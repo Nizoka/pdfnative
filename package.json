@@ -1,0 +1,92 @@
+{
+  "name": "pdfnative",
+  "version": "0.1.0",
+  "description": "Zero-dependency native PDF generation library with multi-font Unicode support (Thai shaping, CJK, Greek, Devanagari). Pure JavaScript ISO 32000-1 implementation.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./worker": {
+      "import": {
+        "types": "./dist/worker/index.d.ts",
+        "default": "./dist/worker/index.js"
+      },
+      "require": {
+        "types": "./dist/worker/index.d.cts",
+        "default": "./dist/worker/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "fonts",
+    "tools",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "bin": {
+    "pdfnative-build-font": "./tools/build-font-data.cjs"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:visual": "vitest run --config vitest.visual.config.ts",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "pdf",
+    "pdf-generation",
+    "zero-dependency",
+    "native-pdf",
+    "unicode",
+    "thai",
+    "cjk",
+    "multi-font",
+    "opentype",
+    "iso-32000",
+    "web-worker",
+    "streaming",
+    "typescript"
+  ],
+  "author": "Nizoka (https://plika.app)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nizoka/pdfnative.git"
+  },
+  "homepage": "https://github.com/Nizoka/pdfnative#readme",
+  "bugs": {
+    "url": "https://github.com/Nizoka/pdfnative/issues"
+  },
+  "funding": {
+    "type": "individual",
+    "url": "https://plika.app"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0",
+    "eslint": "^9.0.0"
+  }
+}

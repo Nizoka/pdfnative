@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
+
+# Raw TTF source fonts (large binaries, download separately)
+fonts/ttf/
