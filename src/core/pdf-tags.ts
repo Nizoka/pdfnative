@@ -1,0 +1,433 @@
+/**
+ * pdfnative — Tagged PDF & PDF/A Support
+ * ========================================
+ * Structure tree, marked content operators, XMP metadata, and OutputIntent
+ * for PDF/UA accessibility and PDF/A archival compliance.
+ *
+ * ISO 14289-1 (PDF/UA-1): logical reading order via structure tree
+ * ISO 19005-1 (PDF/A-1b): archival with mandatory embedded fonts + XMP
+ * ISO 32000-1 §14.7: structure tree and marked content
+ * ISO 32000-1 §14.8: tagged PDF conventions
+ */
+
+// ── Marked Content Operators ─────────────────────────────────────────
+
+/**
+ * Wrap content stream operators in a /Span marked content sequence
+ * with /ActualText for text extraction fidelity.
+ *
+ * @param content - PDF content stream operators to wrap
+ * @param actualText - Original Unicode text for extraction
+ * @param mcid - Marked content identifier (links to structure tree)
+ * @returns Wrapped content stream with BMC...EMC
+ */
+export function wrapSpan(content: string, actualText: string, mcid: number): string {
+    const escaped = escapePdfUtf16(actualText);
+    return `/Span << /MCID ${mcid} /ActualText ${escaped} >> BDC\n${content}\nEMC`;
+}
+
+/**
+ * Wrap content in a generic marked content sequence (no ActualText).
+ */
+export function wrapMarkedContent(content: string, tag: string, mcid: number): string {
+    return `/${tag} << /MCID ${mcid} >> BDC\n${content}\nEMC`;
+}
+
+/**
+ * Escape a Unicode string as a PDF UTF-16BE hex string with BOM.
+ * ISO 32000-1 §7.9.2.2: text strings may use UTF-16BE with 0xFEFF BOM.
+ */
+export function escapePdfUtf16(str: string): string {
+    if (!str) return '<FEFF>';
+    let hex = 'FEFF'; // BOM
+    for (let i = 0; i < str.length; i++) {
+        const cp = str.codePointAt(i) ?? 0;
+        if (cp > 0xFFFF) {
+            // Surrogate pair for supplementary planes
+            const hi = 0xD800 + ((cp - 0x10000) >> 10);
+            const lo = 0xDC00 + ((cp - 0x10000) & 0x3FF);
+            hex += hi.toString(16).padStart(4, '0').toUpperCase();
+            hex += lo.toString(16).padStart(4, '0').toUpperCase();
+            i++; // skip low surrogate in JS string
+        } else {
+            hex += cp.toString(16).padStart(4, '0').toUpperCase();
+        }
+    }
+    return `<${hex}>`;
+}
+
+// ── Structure Tree ───────────────────────────────────────────────────
+
+/**
+ * A structure element node in the tagged PDF structure tree.
+ */
+export interface StructElement {
+    readonly type: string;  // /Document, /Table, /TR, /TH, /TD, /P, /Span, /Figure
+    readonly children: (StructElement | MCRef)[];
+    objNum?: number;
+}
+
+/**
+ * A marked content reference — links a structure element to a
+ * marked content sequence in a page's content stream.
+ */
+export interface MCRef {
+    readonly mcid: number;
+    readonly pageObjNum: number;
+}
+
+/**
+ * MCID allocator — assigns sequential IDs per page for marked content.
+ */
+export function createMCIDAllocator(): {
+    next(pageObjNum: number): number;
+    getPageMCIDs(): Map<number, number[]>;
+} {
+    let counter = 0;
+    const pageMCIDs = new Map<number, number[]>();
+
+    return {
+        next(pageObjNum: number): number {
+            const mcid = counter++;
+            const list = pageMCIDs.get(pageObjNum);
+            if (list) list.push(mcid);
+            else pageMCIDs.set(pageObjNum, [mcid]);
+            return mcid;
+        },
+        getPageMCIDs() { return pageMCIDs; },
+    };
+}
+
+/**
+ * Build the PDF objects for a structure tree.
+ * Returns an array of [objNum, content] pairs to emit.
+ *
+ * Structure (ISO 32000-1 §14.7.2):
+ *   StructTreeRoot → Document → [Table → TR → [TH|TD] ...] + [P] ...
+ *
+ * @param root - Root structure element (/Document)
+ * @param startObjNum - First available object number
+ * @param parentTreeObjNum - Object number reserved for the ParentTree
+ * @returns { objects, structTreeRootObjNum, parentTreeObjNum }
+ */
+export function buildStructureTree(
+    root: StructElement,
+    startObjNum: number,
+): { objects: [number, string][]; structTreeRootObjNum: number; parentTreeObjNum: number; totalObjects: number } {
+    const objects: [number, string][] = [];
+    let nextObj = startObjNum;
+
+    // StructTreeRoot
+    const structTreeRootObjNum = nextObj++;
+    const parentTreeObjNum = nextObj++;
+
+    // Assign object numbers recursively
+    root.objNum = nextObj++;
+    assignObjNums(root);
+
+    function assignObjNums(el: StructElement): void {
+        for (const child of el.children) {
+            if ('type' in child) {
+                (child as StructElement).objNum = nextObj++;
+                assignObjNums(child as StructElement);
+            }
+        }
+    }
+
+    // Build ParentTree number tree — maps MCID → struct element obj ref
+    const parentEntries: [number, number][] = [];
+    collectParentEntries(root, parentEntries);
+
+    function collectParentEntries(el: StructElement, entries: [number, number][]): void {
+        for (const child of el.children) {
+            if ('type' in child) {
+                collectParentEntries(child as StructElement, entries);
+            } else {
+                // MCRef
+                const ref = child as MCRef;
+                entries.push([ref.mcid, el.objNum ?? 0]);
+            }
+        }
+    }
+
+    parentEntries.sort((a, b) => a[0] - b[0]);
+    const numsArray = parentEntries.map(([mcid, objNum]) => `${mcid} ${objNum} 0 R`).join(' ');
+    objects.push([parentTreeObjNum,
+        `<< /Type /NumberTree /Nums [${numsArray}] >>`]);
+
+    // StructTreeRoot object
+    objects.push([structTreeRootObjNum,
+        `<< /Type /StructTreeRoot /K ${root.objNum} 0 R /ParentTree ${parentTreeObjNum} 0 R >>`]);
+
+    // Emit all structure elements
+    emitElement(root, structTreeRootObjNum);
+
+    function emitElement(el: StructElement, parentObjNum: number): void {
+        const kids: string[] = [];
+        for (const child of el.children) {
+            if ('type' in child) {
+                kids.push(`${(child as StructElement).objNum} 0 R`);
+            } else {
+                const ref = child as MCRef;
+                kids.push(`<< /Type /MCR /MCID ${ref.mcid} /Pg ${ref.pageObjNum} 0 R >>`);
+            }
+        }
+        const kArray = kids.length === 1 ? kids[0] : `[${kids.join(' ')}]`;
+        const elObj = el.objNum ?? 0;
+        objects.push([elObj,
+            `<< /Type /StructElem /S /${el.type} /P ${parentObjNum} 0 R /K ${kArray} >>`]);
+
+        for (const child of el.children) {
+            if ('type' in child) {
+                emitElement(child as StructElement, elObj);
+            }
+        }
+    }
+
+    return {
+        objects,
+        structTreeRootObjNum,
+        parentTreeObjNum,
+        totalObjects: nextObj - startObjNum,
+    };
+}
+
+// ── XMP Metadata ─────────────────────────────────────────────────────
+
+/**
+ * Build an XMP metadata packet for PDF/A compliance.
+ * ISO 19005-1 (PDF/A-1b): pdfaid:part=1, conformance=B
+ * ISO 19005-2 (PDF/A-2b): pdfaid:part=2, conformance=B
+ * ISO 19005-2 (PDF/A-2u): pdfaid:part=2, conformance=U
+ *
+ * @param title - Document title
+ * @param createDate - ISO 8601 formatted creation date
+ * @param pdfaPart - PDF/A part number (1 or 2). Default: 2
+ * @param pdfaConformance - PDF/A conformance level ('B' or 'U'). Default: 'B'
+ * @returns XMP metadata XML string
+ */
+export function buildXMPMetadata(title: string, createDate: string, pdfaPart: number = 2, pdfaConformance: string = 'B'): string {
+    const escapedTitle = escapeXml(title);
+    return [
+        '<?xpacket begin="\xEF\xBB\xBF" id="W5M0MpCehiHzreSzNTczkc9d"?>',
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
+        ' <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
+        '  <rdf:Description rdf:about=""',
+        '    xmlns:dc="http://purl.org/dc/elements/1.1/"',
+        '    xmlns:pdf="http://ns.adobe.com/pdf/1.3/"',
+        '    xmlns:xmp="http://ns.adobe.com/xap/1.0/"',
+        '    xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">',
+        `   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">${escapedTitle}</rdf:li></rdf:Alt></dc:title>`,
+        '   <dc:creator><rdf:Seq><rdf:li>pdfnative</rdf:li></rdf:Seq></dc:creator>',
+        '   <pdf:Producer>pdfnative</pdf:Producer>',
+        `   <xmp:CreateDate>${createDate}</xmp:CreateDate>`,
+        `   <pdfaid:part>${pdfaPart}</pdfaid:part>`,
+        `   <pdfaid:conformance>${pdfaConformance}</pdfaid:conformance>`,
+        '  </rdf:Description>',
+        ' </rdf:RDF>',
+        '</x:xmpmeta>',
+        '<?xpacket end="w"?>',
+    ].join('\n');
+}
+
+/**
+ * Build the sRGB OutputIntent dictionary content for PDF/A.
+ * ISO 19005-1 §6.2.2: at least one OutputIntent required.
+ *
+ * @param iccStreamObjNum - Object number of the ICC profile stream
+ * @param subtype - OutputIntent subtype (default: 'GTS_PDFA1')
+ * @returns OutputIntent dictionary string
+ */
+export function buildOutputIntentDict(iccStreamObjNum: number, subtype: string = 'GTS_PDFA1'): string {
+    return `<< /Type /OutputIntent /S /${subtype} ` +
+        `/OutputConditionIdentifier (sRGB IEC61966-2.1) ` +
+        `/RegistryName (http://www.color.org) ` +
+        `/DestOutputProfile ${iccStreamObjNum} 0 R >>`;
+}
+
+/**
+ * Build a minimal sRGB ICC profile stream for PDF/A compliance.
+ * This is the smallest valid sRGB profile that satisfies PDF/A validators.
+ * Per ISO 19005-1 §6.2.2, the ICC profile must be embedded.
+ *
+ * Returns a minimal sRGB ICC v2 profile with all 9 required tags for a
+ * monitor class RGB profile:
+ *   desc, wtpt, cprt, rXYZ, gXYZ, bXYZ, rTRC, gTRC, bTRC
+ *
+ * sRGB colorant values are D50-adapted per ICC PCS specification.
+ */
+export function buildMinimalSRGBProfile(): string {
+    // ── Tag layout ───────────────────────────────────────────────────
+    // 9 tags, but rTRC/gTRC/bTRC share the same data → 7 unique data blocks
+    const tagCount = 9;
+    const tagTableSize = 4 + tagCount * 12; // 4 (count) + 9 × 12 = 112 bytes
+    const dataStart = 128 + tagTableSize;   // 240
+
+    const descSize = 36;     // 'desc' + reserved + len + "sRGB" + padding
+    const wtptSize = 20;     // 'XYZ ' + reserved + X/Y/Z
+    const cprtSize = 20;     // 'text' + reserved + "No CP" + 3 padding (4-byte aligned)
+    const xyzSize = 20;      // 'XYZ ' + reserved + X/Y/Z (per colorant)
+    const trcSize = 14;      // 'curv' + reserved + count(1) + gamma(u8.8) + 2 padding
+
+    const descOffset = dataStart;              // 240
+    const wtptOffset = descOffset + descSize;  // 276
+    const cprtOffset = wtptOffset + wtptSize;  // 296
+    const rXYZOffset = cprtOffset + cprtSize;  // 316
+    const gXYZOffset = rXYZOffset + xyzSize;   // 336
+    const bXYZOffset = gXYZOffset + xyzSize;   // 356
+    const trcOffset  = bXYZOffset + xyzSize;   // 376
+    const totalSize  = trcOffset + trcSize;    // 390
+
+    // ── Header (128 bytes) ───────────────────────────────────────────
+    const header = new Uint8Array(128);
+    const hv = new DataView(header.buffer);
+    hv.setUint32(0, totalSize);                 // Profile size
+    hv.setUint8(8, 2); hv.setUint8(9, 0x10);   // ICC version 2.1.0
+    hv.setUint32(12, 0x6D6E7472);              // 'mntr' (monitor)
+    hv.setUint32(16, 0x52474220);              // 'RGB '
+    hv.setUint32(20, 0x58595A20);              // 'XYZ ' (PCS)
+    hv.setUint16(24, 2025); hv.setUint16(26, 1); hv.setUint16(28, 1); // Date
+    hv.setUint32(36, 0x61637370);              // 'acsp'
+    hv.setUint32(40, 0x4D534654);              // 'MSFT' (primary platform)
+    hv.setUint32(64, 0);                        // Rendering intent: perceptual
+    // PCS illuminant D50: X=0.9505, Y=1.0000, Z=1.0890
+    hv.setUint32(68, 0x0000F6D6);              // X
+    hv.setUint32(72, 0x00010000);              // Y
+    hv.setUint32(76, 0x0000D32D);              // Z
+
+    // ── Tag table (112 bytes) ────────────────────────────────────────
+    const tagTable = new Uint8Array(tagTableSize);
+    const tv = new DataView(tagTable.buffer);
+    tv.setUint32(0, tagCount);
+
+    // Helper: write tag entry at index i
+    const writeTag = (i: number, sig: number, off: number, sz: number) => {
+        const base = 4 + i * 12;
+        tv.setUint32(base, sig);
+        tv.setUint32(base + 4, off);
+        tv.setUint32(base + 8, sz);
+    };
+
+    writeTag(0, 0x64657363, descOffset, descSize);   // 'desc'
+    writeTag(1, 0x77747074, wtptOffset, wtptSize);    // 'wtpt'
+    writeTag(2, 0x63707274, cprtOffset, cprtSize);    // 'cprt'
+    writeTag(3, 0x7258595A, rXYZOffset, xyzSize);     // 'rXYZ'
+    writeTag(4, 0x6758595A, gXYZOffset, xyzSize);     // 'gXYZ'
+    writeTag(5, 0x6258595A, bXYZOffset, xyzSize);     // 'bXYZ'
+    writeTag(6, 0x72545243, trcOffset, trcSize);       // 'rTRC'
+    writeTag(7, 0x67545243, trcOffset, trcSize);       // 'gTRC' (shared data)
+    writeTag(8, 0x62545243, trcOffset, trcSize);       // 'bTRC' (shared data)
+
+    // ── desc data ────────────────────────────────────────────────────
+    const desc = new Uint8Array(descSize);
+    const dv = new DataView(desc.buffer);
+    dv.setUint32(0, 0x64657363);  // 'desc'
+    dv.setUint32(8, 5);           // string length including null
+    desc[12] = 0x73; desc[13] = 0x52; desc[14] = 0x47; desc[15] = 0x42; // "sRGB"
+
+    // ── wtpt data: D50 white point ───────────────────────────────────
+    const wtpt = new Uint8Array(wtptSize);
+    const wv = new DataView(wtpt.buffer);
+    wv.setUint32(0, 0x58595A20);  // 'XYZ '
+    wv.setUint32(8, 0x0000F6D6);  // X (0.9505 in s15Fixed16)
+    wv.setUint32(12, 0x00010000); // Y (1.0000)
+    wv.setUint32(16, 0x0000D32D); // Z (1.0890)
+
+    // ── cprt data ────────────────────────────────────────────────────
+    const cprt = new Uint8Array(cprtSize);
+    const cv = new DataView(cprt.buffer);
+    cv.setUint32(0, 0x74657874);  // 'text'
+    cprt[8] = 0x4E; cprt[9] = 0x6F; cprt[10] = 0x20; cprt[11] = 0x43; cprt[12] = 0x50; // "No CP"
+
+    // ── rXYZ: Red colorant (D50-adapted sRGB) ───────────────────────
+    // X=0.4361, Y=0.2225, Z=0.0139
+    const rXYZ = new Uint8Array(xyzSize);
+    const rv = new DataView(rXYZ.buffer);
+    rv.setUint32(0, 0x58595A20);  // 'XYZ '
+    rv.setUint32(8, 0x00006FA2);  // X (0.4361 → 28578)
+    rv.setUint32(12, 0x000038F5); // Y (0.2225 → 14581)
+    rv.setUint32(16, 0x00000391); // Z (0.0139 → 913)
+
+    // ── gXYZ: Green colorant (D50-adapted sRGB) ─────────────────────
+    // X=0.3851, Y=0.7169, Z=0.0971
+    const gXYZ = new Uint8Array(xyzSize);
+    const gv = new DataView(gXYZ.buffer);
+    gv.setUint32(0, 0x58595A20);  // 'XYZ '
+    gv.setUint32(8, 0x00006299);  // X (0.3851 → 25241)
+    gv.setUint32(12, 0x0000B785); // Y (0.7169 → 46981)
+    gv.setUint32(16, 0x000018DA); // Z (0.0971 → 6362)
+
+    // ── bXYZ: Blue colorant (D50-adapted sRGB) ──────────────────────
+    // X=0.1431, Y=0.0606, Z=0.7141
+    const bXYZ = new Uint8Array(xyzSize);
+    const bv = new DataView(bXYZ.buffer);
+    bv.setUint32(0, 0x58595A20);  // 'XYZ '
+    bv.setUint32(8, 0x000024A0);  // X (0.1431 → 9376)
+    bv.setUint32(12, 0x00000F84); // Y (0.0606 → 3972)
+    bv.setUint32(16, 0x0000B6CF); // Z (0.7141 → 46799)
+
+    // ── TRC: sRGB gamma ≈2.2 (shared by r/g/b) ─────────────────────
+    // curveType with count=1, gamma=2.2 as u8Fixed8 (0x0233)
+    const trc = new Uint8Array(trcSize);
+    const tcv = new DataView(trc.buffer);
+    tcv.setUint32(0, 0x63757276);  // 'curv'
+    tcv.setUint32(8, 1);           // count = 1 (gamma mode)
+    tcv.setUint16(12, 0x0233);     // gamma 2.2 (u8Fixed8: 2 + 51/256)
+
+    // ── Concatenate all parts ────────────────────────────────────────
+    const parts = [header, tagTable, desc, wtpt, cprt, rXYZ, gXYZ, bXYZ, trc];
+    let result = '';
+    for (const part of parts) {
+        for (let i = 0; i < part.length; i++) result += String.fromCharCode(part[i]);
+    }
+    return result;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function escapeXml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+// ── PDF/A Configuration ──────────────────────────────────────────────
+
+/**
+ * Resolved PDF/A configuration from the `tagged` layout option.
+ */
+export interface PdfAConfig {
+    /** Whether tagged mode is enabled. */
+    readonly enabled: boolean;
+    /** PDF version string for header. */
+    readonly pdfVersion: string;
+    /** PDF/A part (1 or 2). */
+    readonly pdfaPart: number;
+    /** PDF/A conformance ('B' or 'U'). */
+    readonly pdfaConformance: string;
+    /** OutputIntent /S name. */
+    readonly outputIntentSubtype: string;
+}
+
+/**
+ * Parse the `tagged` layout option into a resolved PDF/A configuration.
+ *
+ * @param tagged - The tagged option value (boolean, string, or undefined)
+ * @returns Resolved configuration
+ */
+export function resolvePdfAConfig(tagged: boolean | string | undefined): PdfAConfig {
+    if (!tagged) {
+        return { enabled: false, pdfVersion: '1.4', pdfaPart: 1, pdfaConformance: 'B', outputIntentSubtype: 'GTS_PDFA1' };
+    }
+    if (tagged === 'pdfa1b') {
+        return { enabled: true, pdfVersion: '1.4', pdfaPart: 1, pdfaConformance: 'B', outputIntentSubtype: 'GTS_PDFA1' };
+    }
+    if (tagged === 'pdfa2u') {
+        return { enabled: true, pdfVersion: '1.7', pdfaPart: 2, pdfaConformance: 'U', outputIntentSubtype: 'GTS_PDFA1' };
+    }
+    // true or 'pdfa2b' → PDF/A-2b (default tagged mode)
+    return { enabled: true, pdfVersion: '1.7', pdfaPart: 2, pdfaConformance: 'B', outputIntentSubtype: 'GTS_PDFA1' };
+}

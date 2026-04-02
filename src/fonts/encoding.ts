@@ -5,9 +5,11 @@
  * and Unicode (CIDFont/Identity-H) modes.
  */
 
-import type { FontEntry, TextRun, EncodingContext } from '../types/pdf-types.js';
+import type { FontEntry, FontData, TextRun, EncodingContext } from '../types/pdf-types.js';
 import { shapeThaiText, containsThai } from '../shaping/thai-shaper.js';
+import { shapeArabicText, containsArabic } from '../shaping/arabic-shaper.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
+import { resolveBidiRuns, containsRTL, reverseString } from '../shaping/bidi.js';
 
 // ── WinAnsi Encoding ─────────────────────────────────────────────────
 
@@ -72,6 +74,88 @@ export function helveticaWidth(str: string, sz: number): number {
     return w * sz / 1000;
 }
 
+// ── Helvetica Fallback Helpers ───────────────────────────────────────
+
+/** Check if a codepoint is WinAnsi-encodable (basic Latin + Latin-1 Supplement + extras). */
+function isWinAnsi(cp: number): boolean {
+    if ((cp >= 0x20 && cp <= 0x7E) || (cp >= 0xA0 && cp <= 0xFF)) return true;
+    // Extended WinAnsi: €, –, —, '', "", …, NBSP, NNBSP, whitespace
+    if (cp === 0x20AC || cp === 0x2013 || cp === 0x2014) return true;
+    if (cp === 0x2018 || cp === 0x2019 || cp === 0x201C || cp === 0x201D) return true;
+    if (cp === 0x2026 || cp === 0x202F || cp === 0x09 || cp === 0x0A || cp === 0x0D) return true;
+    return false;
+}
+
+/**
+ * Build TextRuns for a non-shaped text segment, splitting into CIDFont and
+ * Helvetica sub-runs based on cmap coverage. Characters with no CIDFont glyph
+ * that are WinAnsi-encodable fall back to Helvetica (/F1).
+ */
+function buildTextRunsWithFallback(
+    text: string,
+    fontRef: string,
+    fd: FontData,
+    sz: number,
+    trackGid: (ref: string, gid: number) => void,
+): TextRun[] {
+    const upm = fd.metrics.unitsPerEm;
+    const result: TextRun[] = [];
+    let mode: 'cid' | 'hel' | null = null;
+    let cidChars = '';
+    let cidHex = '';
+    let cidDesignW = 0;
+    let helChars = '';
+
+    function flushCid(): void {
+        if (!cidChars) return;
+        result.push({
+            text: cidChars, fontRef, fontData: fd, shaped: null,
+            hexStr: '<' + cidHex.toUpperCase() + '>',
+            widthPt: cidDesignW * sz / upm,
+        });
+        cidChars = '';
+        cidHex = '';
+        cidDesignW = 0;
+    }
+
+    function flushHel(): void {
+        if (!helChars) return;
+        result.push({
+            text: helChars, fontRef: '/F1', fontData: fd, shaped: null,
+            hexStr: pdfString(helChars),
+            widthPt: helveticaWidth(helChars, sz),
+        });
+        helChars = '';
+    }
+
+    for (let i = 0; i < text.length;) {
+        const rawCp = text.codePointAt(i) ?? 0;
+        const charLen = rawCp > 0xFFFF ? 2 : 1;
+        const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
+        const char = text.substring(i, i + charLen);
+        const gid = fd.cmap[cp] ?? 0;
+
+        if (gid === 0 && isWinAnsi(cp)) {
+            if (mode === 'cid') flushCid();
+            mode = 'hel';
+            helChars += char;
+        } else {
+            if (mode === 'hel') flushHel();
+            mode = 'cid';
+            cidChars += char;
+            trackGid(fontRef, gid);
+            cidHex += gid.toString(16).padStart(4, '0');
+            const gw = fd.widths[gid];
+            cidDesignW += gw !== undefined ? gw : fd.defaultWidth;
+        }
+        i += charLen;
+    }
+    if (mode === 'cid') flushCid();
+    if (mode === 'hel') flushHel();
+
+    return result;
+}
+
 // ── Encoding Context Factory ─────────────────────────────────────────
 
 /**
@@ -114,13 +198,71 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
 
         textRuns(str: string, sz: number): TextRun[] {
             if (!str) return [];
+
+            // ── RTL path: BiDi reordering ────────────────────────────
+            if (containsRTL(str)) {
+                const bidiRuns = resolveBidiRuns(str);
+                const result: TextRun[] = [];
+
+                for (const bRun of bidiRuns) {
+                    const isRTL = bRun.level % 2 === 1;
+                    const fontRuns = splitTextByFont(bRun.text, fontEntries);
+
+                    for (const fRun of fontRuns) {
+                        const fd = fRun.entry.fontData;
+                        const upm = fd.metrics.unitsPerEm;
+                        const fontRef = fRun.entry.fontRef;
+
+                        if (isRTL && containsArabic(fRun.text)) {
+                            // Reverse back to logical order for shaping, then reverse glyphs
+                            const logical = reverseString(fRun.text);
+                            const shaped = shapeArabicText(logical, fd);
+                            // Reverse shaped glyphs for visual order
+                            const visual = shaped.slice().reverse();
+                            let designW = 0;
+                            for (const g of visual) {
+                                _trackGid(fontRef, g.gid);
+                                if (!g.isZeroAdvance) {
+                                    designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                }
+                            }
+                            result.push({ text: fRun.text, fontRef, fontData: fd, shaped: visual, hexStr: null, widthPt: designW * sz / upm });
+                        } else if (isRTL) {
+                            // RTL non-Arabic (Hebrew etc.): text already reversed by BiDi
+                            // Use fallback helper to handle Latin chars not covered by CIDFont
+                            const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid);
+                            result.push(...subRuns);
+                        } else {
+                            // LTR run: standard path
+                            if (containsThai(fRun.text)) {
+                                const shaped = shapeThaiText(fRun.text, fd);
+                                let designW = 0;
+                                for (const g of shaped) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            } else {
+                                // LTR non-Thai: use fallback helper
+                                const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid);
+                                result.push(...subRuns);
+                            }
+                        }
+                    }
+                }
+                return result;
+            }
+
+            // ── LTR path: existing logic ─────────────────────────────
             const rawRuns = splitTextByFont(str, fontEntries);
-            return rawRuns.map(run => {
+            return rawRuns.flatMap(run => {
                 const fd = run.entry.fontData;
-                const upm = fd.metrics.unitsPerEm;
                 const fontRef = run.entry.fontRef;
 
                 if (containsThai(run.text)) {
+                    const upm = fd.metrics.unitsPerEm;
                     const shaped = shapeThaiText(run.text, fd);
                     let designW = 0;
                     for (const g of shaped) {
@@ -129,28 +271,44 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                             designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
                         }
                     }
-                    return { text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm };
+                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
                 }
 
-                let hex = '';
-                let designW = 0;
-                for (let i = 0; i < run.text.length; i++) {
-                    const rawCp = run.text.codePointAt(i) ?? 0;
-                    if (rawCp > 0xFFFF) i++;
-                    const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
-                    const gid = fd.cmap[cp] || 0;
-                    _trackGid(fontRef, gid);
-                    hex += gid.toString(16).padStart(4, '0');
-                    const gw = fd.widths[gid];
-                    designW += gw !== undefined ? gw : fd.defaultWidth;
-                }
-                return { text: run.text, fontRef, fontData: fd, shaped: null, hexStr: '<' + hex.toUpperCase() + '>', widthPt: designW * sz / upm };
+                return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid);
             });
         },
 
         ps(str: string): string {
             if (!str) return '<>';
             const { cmap } = primary.fontData;
+
+            // BiDi path for RTL text
+            if (containsRTL(str)) {
+                const bidiRuns = resolveBidiRuns(str);
+                let hex = '';
+                for (const bRun of bidiRuns) {
+                    const isRTL = bRun.level % 2 === 1;
+                    if (isRTL && containsArabic(bRun.text)) {
+                        const logical = reverseString(bRun.text);
+                        const shaped = shapeArabicText(logical, primary.fontData);
+                        for (let i = shaped.length - 1; i >= 0; i--) {
+                            _trackGid(primary.fontRef, shaped[i].gid);
+                            hex += shaped[i].gid.toString(16).padStart(4, '0');
+                        }
+                    } else {
+                        for (let i = 0; i < bRun.text.length; i++) {
+                            const rawCp = bRun.text.codePointAt(i) ?? 0;
+                            if (rawCp > 0xFFFF) i++;
+                            const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
+                            const gid = cmap[cp] || 0;
+                            _trackGid(primary.fontRef, gid);
+                            hex += gid.toString(16).padStart(4, '0');
+                        }
+                    }
+                }
+                return '<' + hex.toUpperCase() + '>';
+            }
+
             if (!containsThai(str)) {
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {

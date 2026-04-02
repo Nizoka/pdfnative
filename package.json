@@ -1,7 +1,7 @@
 {
   "name": "pdfnative",
-  "version": "0.1.0",
-  "description": "Zero-dependency native PDF generation library with multi-font Unicode support (Thai shaping, CJK, Greek, Devanagari). Pure JavaScript ISO 32000-1 implementation.",
+  "version": "1.0.0",
+  "description": "Zero-dependency native PDF generation library with 11 Unicode scripts (Thai, CJK, Arabic, Hebrew, Greek, Devanagari). BiDi, PDF/A-2b, AES encryption, images, hyperlinks. ISO 32000-1 compliant.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -46,8 +46,11 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:visual": "vitest run --config vitest.visual.config.ts",
+    "test:generate": "npx tsx scripts/generate-samples.ts",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc --project tsconfig.test.json --noEmit",
+    "typecheck:all": "tsc --noEmit && tsc --project tsconfig.test.json --noEmit",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -58,11 +61,21 @@
     "unicode",
     "thai",
     "cjk",
+    "arabic",
+    "hebrew",
+    "bidi",
+    "rtl",
+    "devanagari",
+    "greek",
     "multi-font",
     "opentype",
     "iso-32000",
+    "pdf-a",
+    "tagged-pdf",
+    "encryption",
+    "aes",
+    "images",
     "web-worker",
-    "streaming",
     "typescript"
   ],
   "author": "Nizoka (https://plika.app)",
@@ -83,10 +96,12 @@
     "node": ">=18"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.9",
+    "eslint": "^9.0.0",
     "tsup": "^8.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.4.0",
-    "vitest": "^2.0.0",
-    "@vitest/coverage-v8": "^2.0.0",
-    "eslint": "^9.0.0"
+    "typescript-eslint": "^8.57.2",
+    "vitest": "^2.1.9"
   }
 }

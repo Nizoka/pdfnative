@@ -126,20 +126,38 @@ export interface PdfParams {
 
 // ── Theme / Style Types ──────────────────────────────────────────────
 
-/** Color palette for the PDF (RGB strings in PDF operator format: "R G B"). */
+/** PDF RGB color string in operator format: "R G B" (values 0.0–1.0). */
+export type PdfRgbString = `${number} ${number} ${number}`;
+
+/** RGB color as a 3-tuple of values 0–255. */
+export type PdfRgbTuple = readonly [r: number, g: number, b: number];
+
+/**
+ * Color input accepted by pdfnative.
+ *
+ * - Hex string: `"#2563EB"` or `"#26E"` (primary — standard web format)
+ * - RGB tuple: `[37, 99, 235]` values 0–255 (alternative — programmatic)
+ * - PDF operator string: `"0.145 0.388 0.922"` values 0.0–1.0 (advanced — native PDF format)
+ */
+export type PdfColor = PdfRgbString | PdfRgbTuple | (string & {});
+
+/**
+ * Color palette for the PDF.
+ * Each field accepts any PdfColor format (hex, RGB tuple, or PDF operator string).
+ */
 export interface PdfColors {
-    title: string;
-    credit: string;
-    debit: string;
-    text: string;
-    thBg: string;
-    thBrd: string;
-    rowBrd: string;
-    ptdBg: string;
-    balBg: string;
-    balBrd: string;
-    label: string;
-    footer: string;
+    title: PdfColor;
+    credit: PdfColor;
+    debit: PdfColor;
+    text: PdfColor;
+    thBg: PdfColor;
+    thBrd: PdfColor;
+    rowBrd: PdfColor;
+    ptdBg: PdfColor;
+    balBg: PdfColor;
+    balBrd: PdfColor;
+    label: PdfColor;
+    footer: PdfColor;
 }
 
 /** Column definition for the table layout. */
@@ -168,6 +186,76 @@ export interface PdfLayoutOptions {
     colors?: PdfColors;
     /** Font sizes { title, info, th, td, ft }. */
     fontSizes?: Partial<{ title: number; info: number; th: number; td: number; ft: number }>;
+    /**
+     * Enable Tagged PDF (PDF/UA) + /ActualText + PDF/A compliance.
+     * - `true` (default tagged): PDF/A-2b (ISO 19005-2) with %PDF-1.7
+     * - `'pdfa1b'`: PDF/A-1b (ISO 19005-1) with %PDF-1.4
+     * - `'pdfa2b'`: PDF/A-2b (ISO 19005-2) with %PDF-1.7
+     * - `'pdfa2u'`: PDF/A-2u (ISO 19005-2, Unicode) with %PDF-1.7
+     * - `false` / omitted: no tagged mode (backward compatible)
+     *
+     * When enabled, the output includes:
+     *   - StructTreeRoot with document structure
+     *   - /ActualText on shaped glyph sequences for text extraction fidelity
+     *   - MarkInfo << /Marked true >> on Catalog
+     *   - XMP metadata stream
+     *   - OutputIntent with sRGB ICC profile
+     * Default: false (backward compatible).
+     */
+    tagged?: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u';
+    /**
+     * Enable PDF encryption (password protection).
+     * Uses AES-128 or AES-256 only — no RC4.
+     *
+     * Mutually exclusive with `tagged` (PDF/A forbids encryption per ISO 19005-1 §6.3.2).
+     * Default: undefined (no encryption).
+     */
+    encryption?: EncryptionOptions;
+    /**
+     * Enable FlateDecode stream compression (ISO 32000-1 §7.3.8.1).
+     *
+     * When enabled, all content streams, font streams, ToUnicode CMaps, and ICC profiles
+     * are compressed using DEFLATE (RFC 1951) in zlib format (RFC 1950).
+     *
+     * - Node.js: uses native `zlib.deflateSync()` for optimal performance
+     * - Browser/other: stored-block fallback (valid FlateDecode, minimal overhead)
+     *
+     * Image streams (JPEG/PNG) are NOT recompressed — they already use DCTDecode/FlateDecode.
+     * XMP metadata streams are NOT compressed when tagged mode is active (PDF/A safety).
+     *
+     * Compression is applied BEFORE encryption when both are active (ISO 32000-1 §7.3.8).
+     *
+     * Default: false (backward compatible).
+     */
+    compress?: boolean;
+}
+
+// ── Encryption Types ─────────────────────────────────────────────────
+
+/**
+ * Options for PDF encryption (password protection).
+ * AES-128 and AES-256 only — no RC4 (insecure).
+ *
+ * Mutually exclusive with `tagged` (PDF/A forbids encryption per ISO 19005-1 §6.3.2).
+ */
+export interface EncryptionOptions {
+    /** Password to open the PDF. Empty string or omitted = no user password required. */
+    readonly userPassword?: string;
+    /** Owner password — required. Controls permissions. */
+    readonly ownerPassword: string;
+    /** Permission flags controlling what readers can do. */
+    readonly permissions?: {
+        /** Allow printing. Default: true. */
+        readonly print?: boolean;
+        /** Allow copying text/images. Default: false. */
+        readonly copy?: boolean;
+        /** Allow modifying the document. Default: false. */
+        readonly modify?: boolean;
+        /** Allow extracting text for accessibility. Default: true. */
+        readonly extractText?: boolean;
+    };
+    /** Encryption algorithm. Default: 'aes128'. */
+    readonly algorithm?: 'aes128' | 'aes256';
 }
 
 // ── Worker Types ─────────────────────────────────────────────────────

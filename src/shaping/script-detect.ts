@@ -9,7 +9,7 @@
  * Latin-script languages using Helvetica built-in don't need embedding.
  */
 export function needsUnicodeFont(lang: string): boolean {
-    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl'].includes(lang);
+    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he'].includes(lang);
 }
 
 /**
@@ -29,6 +29,12 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             if (cp > 0xFFFF) i++;
             // Greek and Coptic + Greek Extended → 'el'
             if ((cp >= 0x0370 && cp <= 0x03FF) || (cp >= 0x1F00 && cp <= 0x1FFF)) { needed.add('el'); continue; }
+            // Hebrew → 'he'
+            if ((cp >= 0x0590 && cp <= 0x05FF) || (cp >= 0xFB1D && cp <= 0xFB4F)) { needed.add('he'); continue; }
+            // Arabic → 'ar'
+            if ((cp >= 0x0600 && cp <= 0x06FF) || (cp >= 0x0750 && cp <= 0x077F) ||
+                (cp >= 0x08A0 && cp <= 0x08FF) || (cp >= 0xFB50 && cp <= 0xFDFF) ||
+                (cp >= 0xFE70 && cp <= 0xFEFF)) { needed.add('ar'); continue; }
             // Devanagari + Devanagari Extended → 'hi'
             if ((cp >= 0x0900 && cp <= 0x097F) || (cp >= 0xA8E0 && cp <= 0xA8FF)) { needed.add('hi'); continue; }
             // Thai script → 'th'

@@ -6,6 +6,7 @@
  */
 
 import type { PdfLayoutOptions, ColumnDef, PdfColors } from '../types/pdf-types.js';
+import { normalizeColors } from './pdf-color.js';
 
 // ── A4 Dimensions ────────────────────────────────────────────────────
 export const PG_W = 595.28;  // A4 width (210mm)
@@ -90,7 +91,8 @@ export function resolveLayout(options?: Partial<PdfLayoutOptions>): {
     const mg: { t: number; r: number; b: number; l: number } = options?.margins ?? { ...DEFAULT_MARGINS };
     const cw = pgW - mg.l - mg.r;
     const columns = options?.columns ?? DEFAULT_COLUMNS;
-    const colors: PdfColors = options?.colors ?? { ...DEFAULT_COLORS };
+    const rawColors: PdfColors = options?.colors ?? { ...DEFAULT_COLORS };
+    const colors: PdfColors = options?.colors ? normalizeColors(rawColors) : rawColors;
     const fs = DEFAULT_FONT_SIZES;
     const { cx, cwi } = computeColumnPositions(columns, mg.l, cw);
 

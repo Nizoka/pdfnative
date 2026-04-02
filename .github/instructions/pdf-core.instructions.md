@@ -1,0 +1,160 @@
+---
+description: "Use when writing or modifying PDF generation code, PDF operators, content streams, xref tables, or object structures. Covers ISO 32000-1 compliance, binary safety, and PDF object model."
+applyTo: "src/core/**"
+---
+# PDF Core Standards (ISO 32000-1)
+
+## PDF Object Model
+- Every indirect object: `N 0 obj ... endobj` with sequential numbering
+- xref table offsets MUST use `byteLength()` — never `.length` (multi-byte chars break offsets)
+- Cross-reference entries: exactly 20 bytes each (`nnnnnnnnnn ggggg n \r\n`)
+- Trailer must contain `/Size`, `/Root`, `/Info`
+- `/Info` dictionary: `/Title`, `/Producer (pdfnative)`, `/CreationDate (D:YYYYMMDDHHmmss)`
+
+## Input Validation (system boundary)
+- `buildPDF()` validates: params is object, rows is array, headers is array
+- Row count limit: 100,000 (throws descriptive error)
+- String escaping: `pdfString()` escapes `\`, `(`, `)` for PDF literals
+- `/Info` title: independently escaped (backslash + parentheses)
+
+## Content Streams
+- Text blocks: `BT ... ET` — never nest, never leave unclosed
+- Font selection: `/<ref> <size> Tf` must precede any text operator
+- Text positioning: `Td` for relative, `Tm` for absolute matrix
+- String encoding: `(WinAnsi)` for Helvetica, `<hex>` for CIDFont glyphs
+- RGB color: `r g b rg` (fill), `r g b RG` (stroke) — values 0.0–1.0
+- Streams may carry `/Filter /FlateDecode` when `compress: true` — added by `emitStreamObj()`
+
+## Binary Safety
+- PDF header: `%PDF-${version}\n%âãÏÓ\n` — version from pdfAConfig (1.7 for PDF/A-2b, 1.4 otherwise)
+- Stream lengths must be exact byte counts of stream content
+- When compression is active, `/Length` must reflect compressed data size (not original)
+- When encryption is active, `/Length` must reflect encrypted data size (not plaintext)
+- Compression ordering: compress BEFORE encrypt (ISO 32000-1 §7.3.8)
+- `startxref` offset must point to exact byte position of `xref` keyword
+- Line endings in xref: `\r\n` (exactly 2 bytes, per spec)
+
+## Performance Rules
+- Build PDF string with array `.join('')` — not repeated concatenation
+- Pre-compute column positions once, reuse across all rows
+- Avoid intermediate string allocations in the rendering loop
+- Font metrics lookup: direct property access, no Map overhead in hot path
+
+## Common Mistakes
+- Using `.length` instead of `byteLength()` for offset calculation
+- Forgetting to increment object count after adding new indirect objects
+- Missing `/Type` entries in dictionary objects
+- Incorrect `/Length` values in stream objects (causes PDF corruption)
+
+## Tagged PDF Object Model (ISO 32000-1 §14.7–14.8)
+- `/MarkInfo << /Marked true >>` on Catalog when tagged mode enabled
+- Structure tree: `/StructTreeRoot` → `/Document` → child elements
+- Table structure: `/Table` → `/TR` → `/TH|/TD`
+- Document blocks: `/H1-H3` for headings, `/P` for paragraphs, `/L` → `/LI` for lists, `/Figure` for images
+- Non-table elements: `/P` for title, info items, balance, footer
+- Marked content references: `<< /Type /MCR /MCID n /Pg pageRef >>`
+- `/ParentTree` number tree maps MCID → parent structure element
+- Every page must have `/StructParents` integer linking to ParentTree
+
+## Marked Content Operators
+- `/Span << /MCID n /ActualText <UTF-16BE hex> >> BDC` opens marked content
+- `EMC` closes marked content — never leave unclosed
+- `/ActualText` carries the original Unicode string for shaped/repositioned glyphs
+- UTF-16BE encoding with `FEFF` BOM for /ActualText values
+- MCID allocation: sequential per page via `createMCIDAllocator()`
+
+## PDF/A Compliance (ISO 19005-1 / ISO 19005-2)
+- `resolvePdfAConfig(tagged)` maps tagged option to PDF/A config: version, part, conformance, subtype
+- PDF/A-2b (default when `tagged: true`): PDF 1.7, `pdfaid:part=2`, `pdfaid:conformance=B`
+- PDF/A-1b (explicit `tagged: 'pdfa1b'`): PDF 1.4, `pdfaid:part=1`, `pdfaid:conformance=B`
+- PDF/A-2u (explicit `tagged: 'pdfa2u'`): PDF 1.7, `pdfaid:part=2`, `pdfaid:conformance=U`
+- XMP metadata stream: `dc:title`, `pdf:Producer`, `xmp:CreateDate`, plus `pdfaid:part`, `pdfaid:conformance`
+- `buildXMPMetadata(title, producer, date, pdfaPart, pdfaConformance)` — parameterized
+- `/OutputIntents` array on Catalog with sRGB ICC profile
+- `buildOutputIntentDict(iccObjNum, subtype)` — subtype param defaults to 'GTS_PDFA1'
+- sRGB ICC profile: 9 required tags (desc, wtpt, cprt, rXYZ, gXYZ, bXYZ, rTRC, gTRC, bTRC)
+- ICC profile class: monitor (`mntr`), color space: RGB, PCS: XYZ, version 2.1.0
+- sRGB D50-adapted primaries: rXYZ(0.4361,0.2225,0.0139), gXYZ(0.3851,0.7169,0.0971), bXYZ(0.1431,0.0606,0.7141)
+- TRC: curveType with gamma 2.2 (u8Fixed8 = 0x0233), shared offset for rTRC/gTRC/bTRC
+- XMP BOM: must be raw UTF-8 bytes `\xEF\xBB\xBF` — NOT `\uFEFF` (which truncates to single byte 0xFF via charCodeAt & 0xFF)
+- All fonts must be embedded (no Helvetica in pure PDF/A — current tagged mode still uses Helvetica)
+- Activated by `{ tagged: true }` layout option — backward compatible
+
+## Image XObject Model (ISO 32000-1 §8.9)
+- Image XObjects: `/Type /XObject /Subtype /Image` indirect objects
+- JPEG images: `/Filter /DCTDecode` — raw JPEG bytes injected as stream
+- PNG images: `/Filter /FlateDecode` with `/DecodeParms << /Predictor 15 /Colors N /BitsPerComponent 8 /Columns W >>`
+- PNG alpha: separated into `/SMask` XObject (DeviceGray) when alpha decompression available
+- Color spaces: `/DeviceRGB`, `/DeviceGray`, `/DeviceCMYK` (JPEG only)
+- Image operators: `q W 0 0 H X Y cm /ImN Do Q` — save state, transform, paint, restore
+- Page resources must include `/XObject << /Im1 N 0 R /Im2 M 0 R ... >>` for each image
+- Object numbering: image XObjects allocated between font objects and page objects
+- Format detection: JPEG magic `FF D8 FF`, PNG magic `89 50 4E 47 0D 0A 1A 0A`
+- JPEG dimension extraction: scan for SOF0–SOF15 markers (excluding DHT/JPG/DAC)
+- PNG parsing: IHDR for dimensions + color type, IDAT concatenation for compressed data
+
+## Link Annotation Model (ISO 32000-1 §12.5.6.5)
+- Annotation object: `/Type /Annot /Subtype /Link /Rect [x1 y1 x2 y2]`
+- URI action: `/A << /Type /Action /S /URI /URI (url) >>`
+- Internal link: `/A << /Type /Action /S /GoTo /D [pageRef /Fit] >>`
+- `/Annots` array on page dict: `/Annots [ref1 ref2 ...]` — references annotation objects
+- URL validation: only `http:`, `https:`, `mailto:` schemes allowed — security boundary
+- Blocked schemes: `javascript:`, `file:`, `data:` — prevents XSS and local file access
+- URL escaping: parentheses `()` and backslashes `\` escaped in PDF string literals
+- Tagged mode: `/Link` structure element wraps annotation for PDF/UA accessibility
+- Visual rendering: blue text with underline stroke (configurable color)
+- Annotation objects emitted after all page+stream objects in PDF assembly
+- `annotsByPage` grouping ensures each page references only its own annotations
+
+## BiDi Text Support (UAX #9)
+- BiDi resolution integrated at encoding level — `textRuns()` and `ps()` in encoding.ts check `containsRTL()` first
+- When RTL detected: `resolveBidiRuns()` produces visual-order runs with embedding levels
+- RTL Arabic runs: un-reverse to logical order → `shapeArabicText()` → reverse shaped glyphs for visual order
+- RTL Hebrew runs: already reversed by BiDi — encode directly (no positional shaping needed)
+- LTR runs: standard encoding path (no BiDi processing)
+- Arabic shaping (`shapeArabicText()`) returns glyphs in logical order — must reverse for RTL visual rendering
+- Hebrew text detected by `containsHebrew()` — uses RTL ordering without shaping
+- Glyph mirroring for brackets/parentheses in RTL context via `MIRROR_MAP`
+- CRITICAL: never call `shapeArabicText()` on already-reversed text — always un-reverse to logical first
+
+## PDF Encryption (ISO 32000-1 §7.6)
+- Two algorithms: AES-128 (V4/R4, /AESV2) and AES-256 (V5/R6, /AESV3)
+- Encryption is mutually exclusive with PDF/A (ISO 19005-1 §6.3.2) — validated at build boundary
+- `/Encrypt` dictionary emitted as indirect object before xref table
+- Trailer includes `/Encrypt N 0 R` and `/ID [<hex> <hex>]` when encrypted
+- AES-CBC with random 16-byte IV prepended to each encrypted stream/string
+- PKCS7 padding: full block added even when data is block-aligned (required by ISO 32000-1)
+- Per-object key derivation: MD5(fileKey + objNum + genNum + 'sAlT') for R4, fileKey directly for R6
+- `emitStreamObj()` helper transparently encrypts streams and updates `/Length`
+- `/Length` regex replacement: `/\/Length \d+/` after encryption adjusts to actual encrypted size
+- R4: `padPassword()` (32-byte PDF padding), `computeOValueR4()` (Algorithm 3), `computeUValueR4()` (Algorithm 5)
+- R6: SHA-256 based, `computeHashR6()` (Algorithm 2.B), `/OE`, `/UE`, `/Perms` values
+- Minimal `rc4()` used ONLY for O/U password hash computation (PDF spec requirement for R4)
+- Permission bitmask: bits 3-12 per ISO 32000-1 Table 22, high bits set via `0xFFFFF000 | perms`
+- `generateDocId()`: 16 random bytes for `/ID` array (same ID repeated for both entries)
+
+## Encryption Integration Pattern
+- Both `pdf-builder.ts` and `pdf-document.ts` follow identical encryption integration:
+  1. Import encryption functions from `pdf-encrypt.ts`
+  2. Mutual exclusivity check at build entry: `if (tagged && encryption) throw`
+  3. Initialize `encState` via `initEncryption()` when encryption option present
+  4. Define `emitStreamObj(num, dictEntries, streamData)` helper
+  5. Replace all direct stream emissions with `emitStreamObj` calls
+  6. Emit `/Encrypt` dict object before xref
+  7. Update trailer with `/Encrypt` ref and `/ID` array
+
+## FlateDecode Compression (ISO 32000-1 §7.3.8.1)
+- Activated by `compress: true` in `PdfLayoutOptions` — backward compatible (default `false`)
+- `compressStream(streamData)` applies zlib deflate: binary string → Uint8Array → deflate → binary string
+- `emitStreamObj()` in both builders transparently applies compression + encryption in correct order
+- Order: raw stream → compress (FlateDecode) → encrypt (AES-CBC) — per ISO 32000-1 §7.3.8
+- Compressed streams get `/Filter /FlateDecode` inserted in dictionary and `/Length` updated
+- FontFile2 streams: `/Length1` preserved by regex only replacing first `/Length \d+` match
+- XMP metadata: always `skipCompress = true` for PDF/A validator compatibility
+- ICC profile streams: normal compression applies (not exempt)
+- Native zlib: `initNodeCompression()` async init for ESM via `import('node:zlib')` with string indirection
+- Stored-block fallback: `deflateStored()` wraps raw data in valid zlib container (no actual compression)
+- `setDeflateImpl(fn)` allows custom deflate injection (e.g., WASM-based compressor)
+- `adler32()` implements RFC 1950 checksum for stored-block zlib wrapper
+- Platform detection: `globalThis['process']?.versions?.node` then CJS `globalThis['require']` or ESM dynamic import
+- Security: no `eval()`, no `new Function()` — uses `globalThis['require']` for CJS access

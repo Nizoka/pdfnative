@@ -3,10 +3,12 @@
  * =================================
  * Low-level PDF content stream operators for text rendering.
  * Supports both Latin (WinAnsi) and Unicode (CIDFont) modes.
+ * Tagged mode wraps text in /Span marked content with /ActualText.
  */
 
 import type { FontData, ShapedGlyph, EncodingContext } from '../types/pdf-types.js';
 import { toWinAnsi, helveticaWidth } from '../fonts/encoding.js';
+import { wrapSpan } from './pdf-tags.js';
 
 /** Format a number as PDF operator value (2 decimal places). */
 export const fmtNum = (v: number): string => v.toFixed(2);
@@ -104,4 +106,54 @@ export function txtC(
 ): string {
     const width = enc.isUnicode ? enc.tw(str, sz) : helveticaWidth(toWinAnsi(str), sz);
     return txt(str, leftX + (colW - width) / 2, y, font, sz, enc);
+}
+
+// ── Tagged variants ─────────────────────────────────────────────────
+// These wrap the rendered text operators in /Span << /ActualText >> BDC...EMC
+// for PDF/UA accessibility and text extraction fidelity.
+
+/**
+ * Tagged text at absolute position — wraps output in /Span with /ActualText.
+ * @param mcid - Marked content identifier for linking to structure tree
+ */
+export function txtTagged(
+    str: string,
+    x: number,
+    y: number,
+    font: string,
+    sz: number,
+    enc: EncodingContext,
+    mcid: number,
+): string {
+    const content = txt(str, x, y, font, sz, enc);
+    return wrapSpan(content, str, mcid);
+}
+
+/** Tagged right-aligned text. */
+export function txtRTagged(
+    str: string,
+    rightX: number,
+    y: number,
+    font: string,
+    sz: number,
+    enc: EncodingContext,
+    mcid: number,
+): string {
+    const content = txtR(str, rightX, y, font, sz, enc);
+    return wrapSpan(content, str, mcid);
+}
+
+/** Tagged center-aligned text. */
+export function txtCTagged(
+    str: string,
+    leftX: number,
+    y: number,
+    font: string,
+    sz: number,
+    colW: number,
+    enc: EncodingContext,
+    mcid: number,
+): string {
+    const content = txtC(str, leftX, y, font, sz, colW, enc);
+    return wrapSpan(content, str, mcid);
 }

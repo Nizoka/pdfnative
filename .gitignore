@@ -9,3 +9,6 @@ Thumbs.db
 
 # Raw TTF source fonts (large binaries, download separately)
 fonts/ttf/
+
+# Generated sample PDFs for visual inspection
+test-output/

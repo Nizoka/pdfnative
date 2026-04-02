@@ -2,16 +2,24 @@
  * pdfnative — Pure Native PDF Generation Library
  * =================================================
  * Zero-dependency PDF generation for Node.js and browsers.
- * ISO 32000-1 (PDF 1.4) compliant output.
+ * ISO 32000-1 (PDF 1.7) compliant output.
  *
  * Features:
  *   - Pure JavaScript, no vendor dependencies
  *   - A4 table-based PDF with headers, data rows, pagination
+ *   - Free-form document builder (headings, paragraphs, lists, tables, images, links)
  *   - Built-in Helvetica (Latin/WinAnsi) — no font embedding needed
  *   - CIDFont Type2/Identity-H embedding for Unicode scripts
+ *   - 11 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew
  *   - Thai OpenType shaping (GSUB + GPOS)
+ *   - Arabic positional shaping (GSUB isolated/initial/medial/final forms)
+ *   - BiDi text layout (simplified UAX #9) with glyph mirroring
  *   - Multi-font cross-script fallback
  *   - TTF font subsetting (dramatic size reduction)
+ *   - Tagged PDF / PDF/A-2b (structure tree, /ActualText, XMP metadata, sRGB OutputIntent)
+ *   - PDF Encryption (AES-128 / AES-256, owner + user passwords, granular permissions)
+ *   - Image embedding (JPEG DCTDecode, PNG FlateDecode)
+ *   - Hyperlinks (PDF link annotations with URL validation)
  *   - Web Worker support for large datasets
  *   - Tree-shakeable ESM + CJS dual build
  *
@@ -50,16 +58,55 @@ export type {
     PdfInfoItem,
     PdfParams,
     PdfColors,
+    PdfColor,
+    PdfRgbString,
+    PdfRgbTuple,
     ColumnDef,
     PdfLayoutOptions,
+    EncryptionOptions,
     WorkerInputMessage,
     WorkerOutputMessage,
 } from './types/pdf-types.js';
 
+export type {
+    HeadingBlock,
+    ParagraphBlock,
+    TableBlock,
+    ListBlock,
+    SpacerBlock,
+    PageBreakBlock,
+    ImageBlock,
+    LinkBlock,
+    DocumentBlock,
+    DocumentMetadata,
+    DocumentParams,
+} from './types/pdf-document-types.js';
+
 // ── Core — PDF Builder ──────────────────────────────────────────────
 export { buildPDF, buildPDFBytes } from './core/pdf-builder.js';
+
+// ── Core — Document Builder ─────────────────────────────────────────
+export { buildDocumentPDF, buildDocumentPDFBytes, wrapText } from './core/pdf-document.js';
+
+// ── Core — Image Support ────────────────────────────────────────────
+export type { ParsedImage } from './core/pdf-image.js';
+export {
+    detectImageFormat, parseJPEG, parsePNG, parseImage,
+    buildImageXObject, buildSMaskXObject, buildImageOperators,
+} from './core/pdf-image.js';
+
+// ── Core — Link Annotations ─────────────────────────────────────────
+export type { LinkAnnotation, InternalLink, Annotation } from './core/pdf-annot.js';
+export { validateURL, buildLinkAnnotation, buildInternalLinkAnnotation, isLinkAnnotation } from './core/pdf-annot.js';
+
+// ── Core — Color Utilities ──────────────────────────────────────────
+export { parseColor, isValidPdfRgb, normalizeColors } from './core/pdf-color.js';
+
+// ── Core — Stream Compression ───────────────────────────────────────
+export { deflateSync, deflateStored, compressStream, adler32, uint8ToBinaryString, initNodeCompression, setDeflateImpl } from './core/pdf-compress.js';
+
 export { downloadBlob, toBytes, slugify } from './core/pdf-stream.js';
-export { txt, txtR, txtC, txtShaped, fmtNum } from './core/pdf-text.js';
+export { txt, txtR, txtC, txtShaped, txtTagged, txtRTagged, txtCTagged, fmtNum } from './core/pdf-text.js';
 
 // ── Core — Layout ───────────────────────────────────────────────────
 export {
@@ -69,6 +116,24 @@ export {
     ROW_H, TH_H, INFO_LN, BAL_H, TITLE_LN, FT_H,
     computeColumnPositions, resolveLayout,
 } from './core/pdf-layout.js';
+
+// ── Core — Tagged PDF & PDF/A ───────────────────────────────────────
+export type { StructElement, MCRef, PdfAConfig } from './core/pdf-tags.js';
+export {
+    wrapSpan, wrapMarkedContent, escapePdfUtf16,
+    createMCIDAllocator, buildStructureTree,
+    buildXMPMetadata, buildOutputIntentDict, buildMinimalSRGBProfile,
+    resolvePdfAConfig,
+} from './core/pdf-tags.js';
+
+// ── Core — PDF Encryption ───────────────────────────────────────────
+export type { EncryptionState } from './core/pdf-encrypt.js';
+export {
+    aesCBC, md5, sha256,
+    computePermissions, generateDocId,
+    initEncryption, encryptStream, encryptString,
+    buildEncryptDict, buildIdArray,
+} from './core/pdf-encrypt.js';
 
 // ── Fonts — Encoding & Loading ──────────────────────────────────────
 export { toWinAnsi, pdfString, truncate, helveticaWidth, createEncodingContext } from './fonts/encoding.js';
@@ -82,6 +147,11 @@ export { shapeThaiText, buildThaiClusters, containsThai, THAI_START, THAI_END } 
 export { needsUnicodeFont, detectFallbackLangs } from './shaping/script-detect.js';
 export { splitTextByFont } from './shaping/multi-font.js';
 export type { FontRun } from './shaping/multi-font.js';
+
+// ── Shaping — BiDi & Arabic/Hebrew ──────────────────────────────────
+export type { BidiType, BidiRun } from './shaping/bidi.js';
+export { classifyBidiType, detectParagraphLevel, resolveBidiRuns, containsRTL, mirrorCodePoint, reverseString } from './shaping/bidi.js';
+export { shapeArabicText, containsArabic, containsHebrew, isLamAlef, ARABIC_START, ARABIC_END, HEBREW_START, HEBREW_END } from './shaping/arabic-shaper.js';
 
 // ── Worker — Off-Thread Generation ──────────────────────────────────
 export { createPDF, generatePDFInWorker, generatePDFMainThread, WORKER_THRESHOLD, WORKER_TIMEOUT_MS } from './worker/worker-api.js';
