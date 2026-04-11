@@ -8,9 +8,10 @@ export { txt, txtR, txtC, txtShaped, txtTagged, txtRTagged, txtCTagged, fmtNum }
 export { toBytes, slugify, downloadBlob } from './pdf-stream.js';
 export {
     PG_W, PG_H, DEFAULT_MARGINS, DEFAULT_CW,
-    ROW_H, TH_H, INFO_LN, BAL_H, TITLE_LN, FT_H,
+    ROW_H, TH_H, INFO_LN, BAL_H, TITLE_LN, FT_H, HEADER_H,
     DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
-    computeColumnPositions, resolveLayout,
+    PAGE_SIZES,
+    computeColumnPositions, resolveLayout, resolveTemplate,
 } from './pdf-layout.js';
 export type { StructElement, MCRef, PdfAConfig } from './pdf-tags.js';
 export {
@@ -27,6 +28,8 @@ export {
 export type { LinkAnnotation, InternalLink, Annotation } from './pdf-annot.js';
 export { validateURL, buildLinkAnnotation, buildInternalLinkAnnotation, isLinkAnnotation } from './pdf-annot.js';
 export { parseColor, isValidPdfRgb, normalizeColors } from './pdf-color.js';
+export type { WatermarkState } from './pdf-watermark.js';
+export { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
 export { deflateSync, deflateStored, compressStream, adler32, uint8ToBinaryString, initNodeCompression, setDeflateImpl } from './pdf-compress.js';
 
 export type { EncryptionState } from './pdf-encrypt.js';

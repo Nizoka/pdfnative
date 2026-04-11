@@ -7,6 +7,9 @@
 /**
  * Convert a single-byte string to Uint8Array.
  * Each character is masked to 0xFF (WinAnsi = 1 byte per char).
+ *
+ * @param str - Binary string (each char ≤ 0xFF)
+ * @returns Uint8Array of byte values
  */
 export function toBytes(str: string): Uint8Array {
     const bytes = new Uint8Array(str.length);
@@ -18,6 +21,9 @@ export function toBytes(str: string): Uint8Array {
 
 /**
  * Sanitize string for use in filename (filesystem-safe).
+ *
+ * @param str - Input string to sanitize
+ * @returns Filesystem-safe slug (max 60 chars)
  */
 export function slugify(str: string): string {
     if (!str) return '';

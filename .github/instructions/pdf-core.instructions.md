@@ -7,9 +7,20 @@ applyTo: "src/core/**"
 ## PDF Object Model
 - Every indirect object: `N 0 obj ... endobj` with sequential numbering
 - xref table offsets MUST use `byteLength()` — never `.length` (multi-byte chars break offsets)
+- XRef offset guard: validate byte offsets before writing cross-reference table entries
 - Cross-reference entries: exactly 20 bytes each (`nnnnnnnnnn ggggg n \r\n`)
 - Trailer must contain `/Size`, `/Root`, `/Info`
 - `/Info` dictionary: `/Title`, `/Producer (pdfnative)`, `/CreationDate (D:YYYYMMDDHHmmss)`
+
+## Shared Assembly Primitives (pdf-assembler.ts)
+- `createPdfWriter()`: creates a reusable PDF binary writer with offset tracking
+- `writeXrefTrailer()`: writes xref table and trailer — shared by both `pdf-builder.ts` and `pdf-document.ts`
+- Eliminates xref/trailer duplication between the two builders
+
+## Encoding Context (encoding-context.ts)
+- `createEncodingContext(fontEntries)`: encoding context factory moved from `fonts/encoding.ts` to `core/`
+- Dependency inversion: breaks the `fonts/ → shaping/` cycle
+- Both builders import from `core/encoding-context.js`
 
 ## Input Validation (system boundary)
 - `buildPDF()` validates: params is object, rows is array, headers is array
@@ -90,8 +101,9 @@ applyTo: "src/core/**"
 - Page resources must include `/XObject << /Im1 N 0 R /Im2 M 0 R ... >>` for each image
 - Object numbering: image XObjects allocated between font objects and page objects
 - Format detection: JPEG magic `FF D8 FF`, PNG magic `89 50 4E 47 0D 0A 1A 0A`
-- JPEG dimension extraction: scan for SOF0–SOF15 markers (excluding DHT/JPG/DAC)
+- JPEG dimension extraction: scan for SOF0–SOF15 markers (excluding DHT/JPG/DAC), with robustness for edge-case byte sequences
 - PNG parsing: IHDR for dimensions + color type, IDAT concatenation for compressed data
+- RGBA PNG rejection: unsupported color types rejected at parse boundary with descriptive error messages
 
 ## Link Annotation Model (ISO 32000-1 §12.5.6.5)
 - Annotation object: `/Type /Annot /Subtype /Link /Rect [x1 y1 x2 y2]`
@@ -99,6 +111,7 @@ applyTo: "src/core/**"
 - Internal link: `/A << /Type /Action /S /GoTo /D [pageRef /Fit] >>`
 - `/Annots` array on page dict: `/Annots [ref1 ref2 ...]` — references annotation objects
 - URL validation: only `http:`, `https:`, `mailto:` schemes allowed — security boundary
+- URL control-char hardening: control characters (U+0000–U+001F, U+007F–U+009F) rejected via `CONTROL_CHARS` regex
 - Blocked schemes: `javascript:`, `file:`, `data:` — prevents XSS and local file access
 - URL escaping: parentheses `()` and backslashes `\` escaped in PDF string literals
 - Tagged mode: `/Link` structure element wraps annotation for PDF/UA accessibility
@@ -158,3 +171,44 @@ applyTo: "src/core/**"
 - `adler32()` implements RFC 1950 checksum for stored-block zlib wrapper
 - Platform detection: `globalThis['process']?.versions?.node` then CJS `globalThis['require']` or ESM dynamic import
 - Security: no `eval()`, no `new Function()` — uses `globalThis['require']` for CJS access
+
+## Header/Footer Template Model
+- `PageTemplate` type: `{ left?: string; center?: string; right?: string; fontSize?: number; color?: PdfColor }`
+- Placeholder variables: `{page}`, `{pages}`, `{date}`, `{title}` — resolved by `resolveTemplate()` pure function
+- `headerTemplate` / `footerTemplate` on `PdfLayoutOptions` — both builders support them
+- `HEADER_H = 15` constant in `pdf-layout.ts` — header zone reduces available content height
+- Backward compat: `footerText` maps to `{ left: footerText, right: '{page}/{pages}' }`
+- `_renderPageTemplate()` (pdf-document.ts) / `_buildPageTemplate()` (pdf-builder.ts) — renders left/center/right at given Y
+- Default color from `colors.footer` (`PdfColor`), parsed via `parseColor()`
+- Tagged mode: template text wrapped in `/P` structure elements with marked content
+
+## Watermark Model (ISO 32000-1 §7.2.4, §11.6.4.4)
+- `WatermarkText`: `{ text; fontSize?: 60; color?: PdfColor; opacity?: 0.15; angle?: -45 }`
+- `WatermarkImage`: `{ data: Uint8Array; opacity?: 0.10; width?; height? }`
+- `WatermarkOptions`: `{ text?; image?; position?: 'background' | 'foreground' }`
+- **ExtGState object**: `<< /Type /ExtGState /ca opacity >>` — non-stroking transparency
+- **Text rotation**: `cos(θ) sin(θ) -sin(θ) cos(θ) cx cy Tm` matrix at page center
+- **Image centering**: `q W 0 0 H X Y cm /ImW Do Q` with aspect ratio preservation
+- **Position**: `'background'` = watermark ops before content stream; `'foreground'` = ops after content
+- `validateWatermark()`: PDF/A-1b blocks transparency (ISO 19005-1 §6.4) — throws if opacity < 1.0
+- `buildWatermarkState()`: returns `WatermarkState { extGStates, imageXObj, backgroundOps, foregroundOps }`
+- Both builders emit ExtGState + optional image XObject as separate indirect objects
+- `wmExtraObjs` count added to `baseObjCount` for correct object numbering
+- Resource dict includes `/ExtGState << /GS1 N 0 R >>` and optionally `/XObject << /ImW M 0 R >>`
+- NOT tagged content — watermarks are decorative, not accessible
+
+## Table of Contents Model
+- `TocBlock`: `{ type: 'toc'; title?: string; maxLevel?: 1|2|3; fontSize?: number; indent?: number }`
+- **Document builder only** — table builder has no headings concept
+- **Multi-pass pagination** (max 3 iterations):
+  1. Pass 1: paginate without TOC → collect `HeadingDestination[]` (destName, text, level, pageIndex, y)
+  2. Pass 2: estimate TOC height via `_estimateTocHeight()`, re-paginate with TOC height included
+  3. Pass 3 (if needed): if heading page assignments shifted, re-paginate one more time
+- `_renderToc()`: renders TOC title (bold, larger font), indented entries with dot leaders, right-aligned page numbers
+- TOC entries are `/GoTo` annotations: `<< /Type /Annot /Subtype /Link /Rect [...] /Dest /toc_h_N >>`
+- Annotations starting with `#` prefix → `/Dest` (internal); others → `/URI` (external)
+- **Named destinations** in catalog: `/Dests << /toc_h_0 [pageObj /XYZ x y null] ... >>`
+- `/Dests` only emitted when `hasToc && headingDests.length > 0`
+- **Tagged mode**: `/TOC` structure element with `/TOCI` children for PDF/UA compliance
+- Constants: `DEFAULT_TOC_SIZE=10`, `DEFAULT_TOC_INDENT=15`, `TOC_LINE_HEIGHT=1.6`, `TOC_TITLE_SPACING=8`
+- `headingDestIdx` counter tracks heading render order, updates Y positions with actual render coordinates

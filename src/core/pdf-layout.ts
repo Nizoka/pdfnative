@@ -25,6 +25,7 @@ export const INFO_LN = 13;
 export const BAL_H = 32;
 export const TITLE_LN = 22;
 export const FT_H = 15;
+export const HEADER_H = 15;
 
 // ── Default Font Sizes ───────────────────────────────────────────────
 export const DEFAULT_FONT_SIZES = { title: 16, info: 9, th: 8, td: 7.5, ft: 7 };
@@ -54,11 +55,27 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
     { f: 0.18, a: 'c', mx: 3,  mxH: 20 },
 ];
 
+// ── Standard Page Sizes (in PDF points, 1pt = 1/72 inch) ─────────
+
+/** Common page sizes with width/height in PDF points. */
+export const PAGE_SIZES = {
+    A4: { width: 595.28, height: 841.89 },
+    Letter: { width: 612, height: 792 },
+    Legal: { width: 612, height: 1008 },
+    A3: { width: 841.89, height: 1190.55 },
+    Tabloid: { width: 792, height: 1224 },
+} as const;
+
 /**
  * Compute column X positions and widths given columns and content width.
+ *
+ * @param columns - Column definitions with fractional widths
+ * @param marginLeft - Left margin in points
+ * @param contentWidth - Available content width in points
+ * @returns Object with cx (X positions) and cwi (column widths) arrays
  */
 export function computeColumnPositions(
-    columns: ColumnDef[],
+    columns: readonly ColumnDef[],
     marginLeft: number,
     contentWidth: number
 ): { cx: number[]; cwi: number[] } {
@@ -75,12 +92,15 @@ export function computeColumnPositions(
 
 /**
  * Create a resolved layout configuration from user options + defaults.
+ *
+ * @param options - Partial layout options to merge with defaults
+ * @returns Fully resolved layout with page dimensions, margins, columns, colors, and font sizes
  */
 export function resolveLayout(options?: Partial<PdfLayoutOptions>): {
     pgW: number; pgH: number;
     mg: { t: number; r: number; b: number; l: number };
     cw: number;
-    columns: ColumnDef[];
+    columns: readonly ColumnDef[];
     colors: PdfColors;
     fs: typeof DEFAULT_FONT_SIZES;
     cx: number[];
@@ -97,4 +117,28 @@ export function resolveLayout(options?: Partial<PdfLayoutOptions>): {
     const { cx, cwi } = computeColumnPositions(columns, mg.l, cw);
 
     return { pgW, pgH, mg, cw, columns, colors, fs, cx, cwi };
+}
+
+/**
+ * Resolve placeholders in a template string.
+ *
+ * @param template - Template string with {page}, {pages}, {date}, {title} placeholders
+ * @param page - Current page number
+ * @param pages - Total page count
+ * @param title - Document title
+ * @param date - Formatted date string (e.g. YYYY-MM-DD)
+ * @returns Resolved string with all placeholders replaced
+ */
+export function resolveTemplate(
+    template: string,
+    page: number,
+    pages: number,
+    title: string,
+    date: string,
+): string {
+    return template
+        .replace(/\{page\}/g, String(page))
+        .replace(/\{pages\}/g, String(pages))
+        .replace(/\{date\}/g, date)
+        .replace(/\{title\}/g, title);
 }

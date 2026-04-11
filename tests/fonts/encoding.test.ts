@@ -1,8 +1,34 @@
 import { describe, it, expect } from 'vitest';
 import {
-    toWinAnsi, pdfString, truncate, helveticaWidth, createEncodingContext,
+    toWinAnsi, pdfString, truncate, helveticaWidth,
 } from '../../src/fonts/encoding.js';
+import { createEncodingContext } from '../../src/core/encoding-context.js';
+import { txt } from '../../src/core/pdf-text.js';
 import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
+import * as hebrewMod from '../../fonts/noto-hebrew-data.js';
+import * as arabicMod from '../../fonts/noto-arabic-data.js';
+
+function makeRealHebrewFontData(): FontData {
+    return {
+        metrics: hebrewMod.metrics, fontName: hebrewMod.fontName,
+        cmap: hebrewMod.cmap, defaultWidth: hebrewMod.defaultWidth,
+        widths: hebrewMod.widths, gsub: hebrewMod.gsub,
+        markAnchors: hebrewMod.markAnchors as FontData['markAnchors'],
+        mark2mark: hebrewMod.mark2mark as FontData['mark2mark'],
+        pdfWidthArray: '', ttfBase64: '',
+    };
+}
+
+function makeRealArabicFontData(): FontData {
+    return {
+        metrics: arabicMod.metrics, fontName: arabicMod.fontName,
+        cmap: arabicMod.cmap, defaultWidth: arabicMod.defaultWidth,
+        widths: arabicMod.widths, gsub: arabicMod.gsub,
+        markAnchors: arabicMod.markAnchors as FontData['markAnchors'],
+        mark2mark: arabicMod.mark2mark as FontData['mark2mark'],
+        pdfWidthArray: '', ttfBase64: '',
+    };
+}
 
 describe('toWinAnsi', () => {
     it('should pass through ASCII text', () => {
@@ -106,6 +132,22 @@ describe('truncate', () => {
     it('should handle null-ish', () => {
         expect(truncate(undefined as unknown as string, 10)).toBe('');
     });
+
+    it('should return .. for max=1 (negative slice guard)', () => {
+        expect(truncate('Hello', 1)).toBe('..');
+    });
+
+    it('should return .. for max=0', () => {
+        expect(truncate('Hello', 0)).toBe('..');
+    });
+
+    it('should return .. for max=2 with long input', () => {
+        expect(truncate('Hello', 2)).toBe('..');
+    });
+
+    it('should return H.. for max=3', () => {
+        expect(truncate('Hello', 3)).toBe('H..');
+    });
 });
 
 describe('helveticaWidth', () => {
@@ -131,6 +173,33 @@ describe('helveticaWidth', () => {
         const withSpace = helveticaWidth('A B', 10);
         const without = helveticaWidth('AB', 10);
         expect(withSpace).toBeGreaterThan(without);
+    });
+
+    it('should use correct width for em-dash (U+2014)', () => {
+        // Em-dash is 1000 design units in Helvetica
+        const w = helveticaWidth('\u2014', 10);
+        expect(w).toBeCloseTo(10.0, 2); // 1000 * 10 / 1000 = 10
+    });
+
+    it('should use correct width for en-dash (U+2013)', () => {
+        // En-dash is 556 design units in Helvetica
+        const w = helveticaWidth('\u2013', 10);
+        expect(w).toBeCloseTo(5.56, 2); // 556 * 10 / 1000 = 5.56
+    });
+
+    it('should use correct width for ellipsis (U+2026)', () => {
+        // Ellipsis is 1000 design units in Helvetica
+        const w = helveticaWidth('\u2026', 10);
+        expect(w).toBeCloseTo(10.0, 2);
+    });
+
+    it('should use correct width for curly quotes', () => {
+        // Single quotes: 222 design units
+        const w1 = helveticaWidth('\u2018', 10);
+        expect(w1).toBeCloseTo(2.22, 2);
+        // Double quotes: 333 design units
+        const w2 = helveticaWidth('\u201C', 10);
+        expect(w2).toBeCloseTo(3.33, 2);
     });
 });
 
@@ -414,6 +483,47 @@ describe('createEncodingContext', () => {
             const runs = enc.textRuns('\u05E9\u05DC', 10);
             // shin=600 + lamed=400 = 1000 design units, scale 10/1000 = 10pt
             expect(runs[0].widthPt).toBeCloseTo(10.0, 2);
+        });
+    });
+
+    describe('RTL title rendering — Helvetica continuation + run order', () => {
+        it('should not split English words with CID space runs', () => {
+            const fd = makeRealHebrewFontData();
+            const fontEntries: FontEntry[] = [{ fontData: fd, fontRef: '/F3', lang: 'he' }];
+            const enc = createEncodingContext(fontEntries);
+
+            const runs = enc.textRuns('\u05D4\u05D0\u05DC\u05E4\u05D1\u05D9\u05EA \u05D4\u05E2\u05D1\u05E8\u05D9 \u2013 Hebrew Alphabet Coverage', 16);
+
+            // English text should be ONE Helvetica run, not split by CID space runs
+            const englishRun = runs.find(r => r.fontRef === '/F1' && r.text.includes('Hebrew') && r.text.includes('Alphabet'));
+            expect(englishRun).toBeDefined();
+            expect(englishRun!.text).toBe('Hebrew Alphabet Coverage');
+        });
+
+        it('should produce correct PDF operators with English first for RTL title', () => {
+            const fd = makeRealHebrewFontData();
+            const fontEntries: FontEntry[] = [{ fontData: fd, fontRef: '/F3', lang: 'he' }];
+            const enc = createEncodingContext(fontEntries);
+
+            const pdfOps = txt('\u05D4\u05D0\u05DC\u05E4\u05D1\u05D9\u05EA \u05D4\u05E2\u05D1\u05E8\u05D9 \u2013 Hebrew Alphabet Coverage', 36, 700, enc.f2, 16, enc);
+
+            // First BT...ET block should use /F1 (Helvetica for English)
+            const firstBT = pdfOps.split('\n')[0];
+            expect(firstBT).toContain('/F1');
+            expect(firstBT).toContain('(Hebrew Alphabet Coverage)');
+        });
+
+        it('should extract en-dash from Arabic shaped run to Helvetica', () => {
+            const fd = makeRealArabicFontData();
+            const fontEntries: FontEntry[] = [{ fontData: fd, fontRef: '/F3', lang: 'ar' }];
+            const enc = createEncodingContext(fontEntries);
+
+            const runs = enc.textRuns('\u0627\u0644\u0623\u0628\u062C\u062F\u064A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u2013 Arabic Script Coverage', 16);
+
+            // En-dash should be in Helvetica (/F1), not in CIDFont
+            const enDashRun = runs.find(r => r.text.includes('\u2013'));
+            expect(enDashRun).toBeDefined();
+            expect(enDashRun!.fontRef).toBe('/F1');
         });
     });
 });

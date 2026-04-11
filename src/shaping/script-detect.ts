@@ -2,7 +2,18 @@
  * pdfnative — Script Detection
  * =============================
  * Detects Unicode script ranges in text to determine which fonts are needed.
+ * Range constants imported from ./script-registry.ts (single source of truth).
  */
+
+import {
+    GREEK_START, GREEK_END, GREEK_EXT_START, GREEK_EXT_END,
+    DEVANAGARI_START, DEVANAGARI_END, DEVANAGARI_EXT_START, DEVANAGARI_EXT_END,
+    HIRAGANA_START, KATAKANA_END,
+    HANGUL_START, HANGUL_END, JAMO_START, JAMO_END, COMPAT_JAMO_START, COMPAT_JAMO_END,
+    CJK_UNIFIED_START, CJK_UNIFIED_END, CJK_EXT_A_START, CJK_EXT_A_END,
+    CJK_COMPAT_START, CJK_COMPAT_END,
+    isArabicCodepoint, isHebrewCodepoint, isThaiCodepoint,
+} from './script-registry.js';
 
 /**
  * Languages requiring Unicode font embedding (non-WinAnsi scripts).
@@ -28,25 +39,23 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             const cp = text.codePointAt(i) ?? 0;
             if (cp > 0xFFFF) i++;
             // Greek and Coptic + Greek Extended → 'el'
-            if ((cp >= 0x0370 && cp <= 0x03FF) || (cp >= 0x1F00 && cp <= 0x1FFF)) { needed.add('el'); continue; }
+            if ((cp >= GREEK_START && cp <= GREEK_END) || (cp >= GREEK_EXT_START && cp <= GREEK_EXT_END)) { needed.add('el'); continue; }
             // Hebrew → 'he'
-            if ((cp >= 0x0590 && cp <= 0x05FF) || (cp >= 0xFB1D && cp <= 0xFB4F)) { needed.add('he'); continue; }
+            if (isHebrewCodepoint(cp)) { needed.add('he'); continue; }
             // Arabic → 'ar'
-            if ((cp >= 0x0600 && cp <= 0x06FF) || (cp >= 0x0750 && cp <= 0x077F) ||
-                (cp >= 0x08A0 && cp <= 0x08FF) || (cp >= 0xFB50 && cp <= 0xFDFF) ||
-                (cp >= 0xFE70 && cp <= 0xFEFF)) { needed.add('ar'); continue; }
+            if (isArabicCodepoint(cp)) { needed.add('ar'); continue; }
             // Devanagari + Devanagari Extended → 'hi'
-            if ((cp >= 0x0900 && cp <= 0x097F) || (cp >= 0xA8E0 && cp <= 0xA8FF)) { needed.add('hi'); continue; }
+            if ((cp >= DEVANAGARI_START && cp <= DEVANAGARI_END) || (cp >= DEVANAGARI_EXT_START && cp <= DEVANAGARI_EXT_END)) { needed.add('hi'); continue; }
             // Thai script → 'th'
-            if (cp >= 0x0E00 && cp <= 0x0E7F) { needed.add('th'); continue; }
+            if (isThaiCodepoint(cp)) { needed.add('th'); continue; }
             // Hiragana / Katakana → 'ja'
-            if (cp >= 0x3040 && cp <= 0x30FF) { needed.add('ja'); continue; }
+            if (cp >= HIRAGANA_START && cp <= KATAKANA_END) { needed.add('ja'); continue; }
             // Hangul Syllables + Jamo + Compat Jamo → 'ko'
-            if ((cp >= 0xAC00 && cp <= 0xD7AF) || (cp >= 0x1100 && cp <= 0x11FF) ||
-                (cp >= 0x3130 && cp <= 0x318F)) { needed.add('ko'); continue; }
+            if ((cp >= HANGUL_START && cp <= HANGUL_END) || (cp >= JAMO_START && cp <= JAMO_END) ||
+                (cp >= COMPAT_JAMO_START && cp <= COMPAT_JAMO_END)) { needed.add('ko'); continue; }
             // CJK Unified Ideographs → default to 'zh' (SC has broadest coverage)
-            if ((cp >= 0x4E00 && cp <= 0x9FFF) || (cp >= 0x3400 && cp <= 0x4DBF) ||
-                (cp >= 0xF900 && cp <= 0xFAFF)) {
+            if ((cp >= CJK_UNIFIED_START && cp <= CJK_UNIFIED_END) || (cp >= CJK_EXT_A_START && cp <= CJK_EXT_A_END) ||
+                (cp >= CJK_COMPAT_START && cp <= CJK_COMPAT_END)) {
                 if (!['ja', 'zh', 'ko'].includes(primaryLang)) needed.add('zh');
                 continue;
             }
@@ -67,4 +76,43 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
     }
     needed.delete(primaryLang);
     return needed;
+}
+
+/**
+ * Map a single code point to its preferred font language based on Unicode script.
+ * Returns the language code for script-specific characters, or null for
+ * common/shared characters (Latin, digits, punctuation, spaces) that should
+ * use continuation bias in multi-font splitting.
+ */
+export function detectCharLang(cp: number): string | null {
+    // Greek and Coptic + Greek Extended
+    if ((cp >= GREEK_START && cp <= GREEK_END) || (cp >= GREEK_EXT_START && cp <= GREEK_EXT_END)) return 'el';
+    // Hebrew
+    if (isHebrewCodepoint(cp)) return 'he';
+    // Arabic
+    if (isArabicCodepoint(cp)) return 'ar';
+    // Devanagari
+    if ((cp >= DEVANAGARI_START && cp <= DEVANAGARI_END) || (cp >= DEVANAGARI_EXT_START && cp <= DEVANAGARI_EXT_END)) return 'hi';
+    // Thai
+    if (isThaiCodepoint(cp)) return 'th';
+    // Japanese Kana
+    if (cp >= HIRAGANA_START && cp <= KATAKANA_END) return 'ja';
+    // Korean Hangul
+    if ((cp >= HANGUL_START && cp <= HANGUL_END) || (cp >= JAMO_START && cp <= JAMO_END) ||
+        (cp >= COMPAT_JAMO_START && cp <= COMPAT_JAMO_END)) return 'ko';
+    // CJK Ideographs → default to zh
+    if ((cp >= CJK_UNIFIED_START && cp <= CJK_UNIFIED_END) || (cp >= CJK_EXT_A_START && cp <= CJK_EXT_A_END) ||
+        (cp >= CJK_COMPAT_START && cp <= CJK_COMPAT_END)) return 'zh';
+    // Vietnamese-specific (Latin Extended Additional + specific chars)
+    if ((cp >= 0x1E00 && cp <= 0x1EFF) || cp === 0x20AB ||
+        cp === 0x0110 || cp === 0x0111 || cp === 0x0103 || cp === 0x0102) return 'vi';
+    // Polish-specific
+    if (cp === 0x0104 || cp === 0x0105 || cp === 0x0106 || cp === 0x0107 ||
+        cp === 0x0118 || cp === 0x0119 || cp === 0x0141 || cp === 0x0142 ||
+        cp === 0x0143 || cp === 0x0144 || cp === 0x015A || cp === 0x015B ||
+        cp === 0x0179 || cp === 0x017A || cp === 0x017B || cp === 0x017C) return 'pl';
+    // Turkish-specific (Latin Extended-A remainder + Lira sign)
+    if ((cp >= 0x0100 && cp <= 0x017F) || cp === 0x20BA) return 'tr';
+    // Common Latin, digits, punctuation, spaces → no preferred font
+    return null;
 }

@@ -54,6 +54,30 @@ describe('validateURL', () => {
         expect(validateURL('example.com')).toBe(false);
         expect(validateURL('//example.com')).toBe(false);
     });
+
+    it('should reject URLs containing newline characters (injection vector)', () => {
+        expect(validateURL('http://site\njavascript:alert(1)')).toBe(false);
+        expect(validateURL('http://site\r\njavascript:alert(1)')).toBe(false);
+        expect(validateURL('https://site\rother')).toBe(false);
+    });
+
+    it('should reject URLs containing null bytes', () => {
+        expect(validateURL('http://example.com\x00')).toBe(false);
+        expect(validateURL('https://\x00evil.com')).toBe(false);
+    });
+
+    it('should reject URLs containing other control characters', () => {
+        expect(validateURL('http://example.com/\x01path')).toBe(false);
+        expect(validateURL('http://example.com/\x1fpath')).toBe(false);
+        expect(validateURL('http://example.com/\x7fpath')).toBe(false);
+        expect(validateURL('http://example.com/\x80path')).toBe(false);
+        expect(validateURL('http://example.com/\x9fpath')).toBe(false);
+    });
+
+    it('should accept URLs with valid non-ASCII characters above 0x9F', () => {
+        expect(validateURL('https://example.com/café')).toBe(true);
+        expect(validateURL('https://example.com/日本語')).toBe(true);
+    });
 });
 
 // ── buildLinkAnnotation ──────────────────────────────────────────────

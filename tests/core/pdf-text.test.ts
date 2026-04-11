@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { txt, txtR, txtC, txtShaped, txtTagged, txtRTagged, txtCTagged, fmtNum } from '../../src/core/pdf-text.js';
-import { createEncodingContext } from '../../src/fonts/encoding.js';
+import { createEncodingContext } from '../../src/core/encoding-context.js';
 import type { FontData, ShapedGlyph } from '../../src/types/pdf-types.js';
 
 describe('fmtNum', () => {

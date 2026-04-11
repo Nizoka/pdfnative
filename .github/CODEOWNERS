@@ -1,0 +1,24 @@
+# CODEOWNERS — GitHub auto-assigns reviewers for pull requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+* @Nizoka
+
+# Core PDF generation
+src/core/ @Nizoka
+
+# Font engineering
+src/fonts/ @Nizoka
+fonts/ @Nizoka
+
+# Text shaping (Thai, Arabic, BiDi)
+src/shaping/ @Nizoka
+
+# Public API surface
+src/index.ts @Nizoka
+src/types/ @Nizoka
+
+# CI/CD and release
+.github/workflows/ @Nizoka
+package.json @Nizoka
+tsup.config.ts @Nizoka

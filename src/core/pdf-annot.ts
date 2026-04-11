@@ -33,16 +33,23 @@ export type Annotation = LinkAnnotation | InternalLink;
 /** Allowed URL schemes for link annotations. */
 const ALLOWED_SCHEMES = ['http:', 'https:', 'mailto:'];
 
+/** Control character pattern: C0 (0x00–0x1F), DEL (0x7F), C1 (0x80–0x9F). */
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARS = /[\x00-\x1f\x7f-\x9f]/;
+
 /**
  * Validate a URL for use in PDF link annotations.
  * Only `http:`, `https:`, and `mailto:` schemes are allowed.
  * Blocks `javascript:`, `file:`, `data:`, and other dangerous schemes.
+ * Rejects URLs containing control characters (newlines, null bytes, etc.)
+ * to prevent injection attacks in PDF literal strings.
  *
  * @param url - URL string to validate
  * @returns true if the URL is safe for embedding
  */
 export function validateURL(url: string): boolean {
     if (!url || typeof url !== 'string') return false;
+    if (CONTROL_CHARS.test(url)) return false;
     const lower = url.toLowerCase().trim();
     return ALLOWED_SCHEMES.some(scheme => lower.startsWith(scheme));
 }
@@ -51,10 +58,16 @@ export function validateURL(url: string): boolean {
 
 /**
  * Escape a URL string for embedding in a PDF literal string.
- * Parentheses and backslashes must be escaped per ISO 32000-1 §7.3.4.2.
+ * Strips control characters, then escapes parentheses and backslashes
+ * per ISO 32000-1 §7.3.4.2.
  */
 function escapeUrlForPdf(url: string): string {
-    return url.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+    return url
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\x00-\x1f\x7f-\x9f]/g, '')
+        .replace(/\\/g, '\\\\')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)');
 }
 
 /**

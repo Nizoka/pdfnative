@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { needsUnicodeFont, detectFallbackLangs } from '../../src/shaping/script-detect.js';
+import { needsUnicodeFont, detectFallbackLangs, detectCharLang } from '../../src/shaping/script-detect.js';
 
 describe('needsUnicodeFont', () => {
     it.each([
@@ -106,5 +106,68 @@ describe('detectFallbackLangs', () => {
     it('should detect Indian rupee sign', () => {
         const result = detectFallbackLangs(['\u20B9'], 'en'); // ₹
         expect(result.has('hi')).toBe(true);
+    });
+});
+
+describe('detectCharLang', () => {
+    it('should detect Greek characters', () => {
+        expect(detectCharLang(0x0391)).toBe('el'); // Alpha
+        expect(detectCharLang(0x03B1)).toBe('el'); // alpha
+        expect(detectCharLang(0x03AE)).toBe('el'); // eta with tonos
+    });
+
+    it('should detect Hebrew characters', () => {
+        expect(detectCharLang(0x05D0)).toBe('he'); // Alef
+        expect(detectCharLang(0x05EA)).toBe('he'); // Tav
+    });
+
+    it('should detect Arabic characters', () => {
+        expect(detectCharLang(0x0627)).toBe('ar'); // Alef
+        expect(detectCharLang(0x0628)).toBe('ar'); // Ba
+    });
+
+    it('should detect Devanagari characters', () => {
+        expect(detectCharLang(0x0915)).toBe('hi'); // Ka
+    });
+
+    it('should detect Thai characters', () => {
+        expect(detectCharLang(0x0E01)).toBe('th'); // Ko Kai
+    });
+
+    it('should detect Japanese kana', () => {
+        expect(detectCharLang(0x3042)).toBe('ja'); // Hiragana A
+        expect(detectCharLang(0x30A2)).toBe('ja'); // Katakana A
+    });
+
+    it('should detect Korean Hangul', () => {
+        expect(detectCharLang(0xAC00)).toBe('ko'); // First Hangul
+    });
+
+    it('should detect CJK ideographs as zh', () => {
+        expect(detectCharLang(0x4E2D)).toBe('zh'); // 中
+    });
+
+    it('should detect Vietnamese-specific characters', () => {
+        expect(detectCharLang(0x1ECB)).toBe('vi'); // ị
+        expect(detectCharLang(0x1EBF)).toBe('vi'); // ế
+        expect(detectCharLang(0x0111)).toBe('vi'); // đ
+    });
+
+    it('should detect Polish-specific characters', () => {
+        expect(detectCharLang(0x0141)).toBe('pl'); // Ł
+        expect(detectCharLang(0x0144)).toBe('pl'); // ń
+    });
+
+    it('should return null for common Latin characters', () => {
+        expect(detectCharLang(0x0041)).toBeNull(); // A
+        expect(detectCharLang(0x0061)).toBeNull(); // a
+        expect(detectCharLang(0x0020)).toBeNull(); // space
+        expect(detectCharLang(0x0030)).toBeNull(); // 0
+    });
+
+    it('should return null for common punctuation', () => {
+        expect(detectCharLang(0x002E)).toBeNull(); // .
+        expect(detectCharLang(0x002C)).toBeNull(); // ,
+        expect(detectCharLang(0x2014)).toBeNull(); // em-dash
     });
 });

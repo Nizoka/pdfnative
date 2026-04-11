@@ -28,6 +28,11 @@ export function wrapSpan(content: string, actualText: string, mcid: number): str
 
 /**
  * Wrap content in a generic marked content sequence (no ActualText).
+ *
+ * @param content - PDF content stream operators to wrap
+ * @param tag - Structure tag name (e.g. 'P', 'Table')
+ * @param mcid - Marked content identifier
+ * @returns Wrapped content stream with BDC/EMC
  */
 export function wrapMarkedContent(content: string, tag: string, mcid: number): string {
     return `/${tag} << /MCID ${mcid} >> BDC\n${content}\nEMC`;
@@ -36,6 +41,9 @@ export function wrapMarkedContent(content: string, tag: string, mcid: number): s
 /**
  * Escape a Unicode string as a PDF UTF-16BE hex string with BOM.
  * ISO 32000-1 §7.9.2.2: text strings may use UTF-16BE with 0xFEFF BOM.
+ *
+ * @param str - Input Unicode string
+ * @returns PDF hex string with FEFF BOM prefix, e.g. '<FEFF0048006F>'
  */
 export function escapePdfUtf16(str: string): string {
     if (!str) return '<FEFF>';
@@ -78,6 +86,8 @@ export interface MCRef {
 
 /**
  * MCID allocator — assigns sequential IDs per page for marked content.
+ *
+ * @returns Allocator with next(pageObjNum) and getPageMCIDs() methods
  */
 export function createMCIDAllocator(): {
     next(pageObjNum: number): number;
@@ -255,6 +265,8 @@ export function buildOutputIntentDict(iccStreamObjNum: number, subtype: string =
  *   desc, wtpt, cprt, rXYZ, gXYZ, bXYZ, rTRC, gTRC, bTRC
  *
  * sRGB colorant values are D50-adapted per ICC PCS specification.
+ *
+ * @returns ICC profile as a binary string
  */
 export function buildMinimalSRGBProfile(): string {
     // ── Tag layout ───────────────────────────────────────────────────

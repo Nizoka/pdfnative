@@ -74,6 +74,19 @@ export interface LinkBlock {
     readonly color?: PdfColor;
 }
 
+/** Table of Contents block — auto-generated from heading blocks. */
+export interface TocBlock {
+    readonly type: 'toc';
+    /** Title shown above TOC entries. Default: `'Table of Contents'`. */
+    readonly title?: string;
+    /** Maximum heading level to include (1–3). Default: `3`. */
+    readonly maxLevel?: 1 | 2 | 3;
+    /** Font size for TOC entries. Default: `10`. */
+    readonly fontSize?: number;
+    /** Indent per heading level in points. Default: `15`. */
+    readonly indent?: number;
+}
+
 /** Union of all supported document blocks. */
 export type DocumentBlock =
     | HeadingBlock
@@ -83,7 +96,8 @@ export type DocumentBlock =
     | SpacerBlock
     | PageBreakBlock
     | ImageBlock
-    | LinkBlock;
+    | LinkBlock
+    | TocBlock;
 
 // ── Document Parameters ──────────────────────────────────────────────
 

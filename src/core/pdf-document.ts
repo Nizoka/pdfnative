@@ -16,6 +16,7 @@ import type {
     FontEntry,
     EncodingContext,
     PdfLayoutOptions,
+    PageTemplate,
 } from '../types/pdf-types.js';
 import type {
     DocumentParams,
@@ -26,22 +27,25 @@ import type {
     ListBlock,
     ImageBlock,
     LinkBlock,
+    TocBlock,
 } from '../types/pdf-document-types.js';
 import { parseImage, buildImageXObject, buildImageOperators } from './pdf-image.js';
 import type { ParsedImage } from './pdf-image.js';
 import { validateURL } from './pdf-annot.js';
 import { parseColor } from './pdf-color.js';
 import type { LinkAnnotation } from './pdf-annot.js';
-import { createEncodingContext, truncate, helveticaWidth } from '../fonts/encoding.js';
+import { createEncodingContext } from './encoding-context.js';
+import { truncate, helveticaWidth } from '../fonts/encoding.js';
 import { base64ToByteString, buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { subsetTTF } from '../fonts/font-subsetter.js';
 import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum } from './pdf-text.js';
 import { toBytes } from './pdf-stream.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
-    ROW_H, TH_H, FT_H,
+    ROW_H, TH_H, FT_H, HEADER_H,
     DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
     computeColumnPositions,
+    resolveTemplate,
 } from './pdf-layout.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
 import {
@@ -53,8 +57,10 @@ import {
     resolvePdfAConfig,
 } from './pdf-tags.js';
 import type { EncryptionState } from './pdf-encrypt.js';
-import { initEncryption, encryptStream, buildEncryptDict, buildIdArray } from './pdf-encrypt.js';
-import { compressStream } from './pdf-compress.js';
+import { initEncryption } from './pdf-encrypt.js';
+import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
+import type { WatermarkState } from './pdf-watermark.js';
+import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -86,6 +92,40 @@ const LIST_INDENT = 14;
 /** Bullet character width approximation. */
 const BULLET_MARK_WIDTH = 10;
 
+/** Default TOC entry font size. */
+const DEFAULT_TOC_SIZE = 10;
+
+/** Default TOC indentation per level (in points). */
+const DEFAULT_TOC_INDENT = 15;
+
+/** Default TOC title text. */
+const DEFAULT_TOC_TITLE = 'Table of Contents';
+
+/** Line height for TOC entries (multiplier). */
+const TOC_LINE_HEIGHT = 1.6;
+
+/** Spacing after TOC title. */
+const TOC_TITLE_SPACING = 8;
+
+/** Post-TOC spacing before next block. */
+const TOC_BOTTOM_SPACING = 12;
+
+// ── Heading Destination Tracking ─────────────────────────────────────
+
+/** A collected heading destination for TOC link targets. */
+interface HeadingDestination {
+    /** Unique destination name (e.g., 'toc_h_0'). */
+    readonly destName: string;
+    /** Heading display text. */
+    readonly text: string;
+    /** Heading level (1–3). */
+    readonly level: 1 | 2 | 3;
+    /** 0-based page index this heading appears on. */
+    pageIndex: number;
+    /** Y coordinate of the heading. */
+    y: number;
+}
+
 // ── Tagged Mode Types ────────────────────────────────────────────────
 
 interface TagContext {
@@ -106,8 +146,52 @@ function measureText(str: string, sz: number, enc: EncodingContext): number {
 }
 
 /**
+ * Check if a codepoint is CJK and allows line-breaking on either side.
+ * Covers CJK Unified Ideographs, Hiragana, Katakana, Hangul,
+ * CJK Symbols/Punctuation, Fullwidth Forms, and CJK extensions.
+ */
+function isCJKBreakable(cp: number): boolean {
+    return (cp >= 0x2E80 && cp <= 0x9FFF) ||
+           (cp >= 0xAC00 && cp <= 0xD7AF) ||
+           (cp >= 0xF900 && cp <= 0xFAFF) ||
+           (cp >= 0xFE30 && cp <= 0xFE4F) ||
+           (cp >= 0xFF00 && cp <= 0xFFEF) ||
+           (cp >= 0x20000 && cp <= 0x2FA1F);
+}
+
+/**
+ * Tokenize text into breakable segments for line wrapping.
+ * Each CJK character becomes a separate segment (breakable).
+ * Latin words (non-space, non-CJK runs) remain grouped.
+ * Spaces are attached to the preceding segment.
+ */
+function tokenizeForWrap(text: string): string[] {
+    const segments: string[] = [];
+    let buf = '';
+
+    for (const ch of text) {
+        const cp = ch.codePointAt(0) ?? 0;
+        if (isCJKBreakable(cp)) {
+            if (buf) { segments.push(buf); buf = ''; }
+            segments.push(ch);
+        } else if (cp === 0x20 || cp === 0x09) {
+            buf += ch;
+            segments.push(buf);
+            buf = '';
+        } else {
+            buf += ch;
+        }
+    }
+    if (buf) segments.push(buf);
+
+    return segments;
+}
+
+/**
  * Wrap text into lines that fit within maxWidth.
- * Greedy line-filling algorithm: split on spaces, fill until overflow.
+ * Greedy line-filling algorithm with CJK character-level breaking.
+ * Latin text breaks at word boundaries (spaces).
+ * CJK characters break individually (no spaces needed).
  *
  * @param text - Input text string
  * @param maxWidth - Maximum line width in points
@@ -124,23 +208,24 @@ export function wrapText(
     if (!text) return [''];
     if (maxWidth <= 0) return [text];
 
-    const words = text.split(/\s+/);
-    if (words.length === 0) return [''];
+    const segments = tokenizeForWrap(text);
+    if (segments.length === 0) return [''];
 
     const lines: string[] = [];
-    let currentLine = words[0];
+    let currentLine = '';
 
-    for (let i = 1; i < words.length; i++) {
-        const candidate = currentLine + ' ' + words[i];
+    for (const seg of segments) {
+        const candidate = currentLine + seg;
         const w = measureText(candidate, fontSize, enc);
-        if (w <= maxWidth) {
+        if (w <= maxWidth || currentLine === '') {
             currentLine = candidate;
         } else {
-            lines.push(currentLine);
-            currentLine = words[i];
+            lines.push(currentLine.trimEnd());
+            currentLine = seg.trimStart();
         }
     }
-    lines.push(currentLine);
+    if (currentLine) lines.push(currentLine.trimEnd());
+
     return lines;
 }
 
@@ -421,37 +506,64 @@ function _renderTable(
 }
 
 /**
- * Render a footer at the bottom of the page.
+ * Render a page template (header or footer) at the given Y position.
+ * Resolves {page}, {pages}, {date}, {title} placeholders and renders
+ * left/center/right text segments.
  */
-function _renderFooter(
-    pageNum: number,
-    totalPages: number,
-    footerText: string,
+function _renderPageTemplate(
+    template: PageTemplate,
+    page: number,
+    pages: number,
+    title: string,
+    date: string,
+    y: number,
     enc: EncodingContext,
     mgL: number,
     mgR: number,
-    mgB: number,
     pgW: number,
+    cw: number,
     tagCtx: TagContext | undefined,
     documentChildren: (StructElement | MCRef)[],
 ): string[] {
     const ops: string[] = [];
-    const fs = DEFAULT_FONT_SIZES;
-    const color = '0.612 0.639 0.682';
-    const y = mgB - 5;
+    const sz = template.fontSize ?? DEFAULT_FONT_SIZES.ft;
+    const color = parseColor(template.color ?? '0.612 0.639 0.682');
 
     ops.push(`${color} rg`);
-    if (tagCtx?.tagged) {
-        const mcid1 = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-        const mcid2 = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-        ops.push(txtTagged(footerText, mgL, y, enc.f1, fs.ft, enc, mcid1));
-        ops.push(txtRTagged(`${pageNum}/${totalPages}`, pgW - mgR, y, enc.f1, fs.ft, enc, mcid2));
-        documentChildren.push({ type: 'P', children: [{ mcid: mcid1, pageObjNum: tagCtx.pageObjNum }] });
-        documentChildren.push({ type: 'P', children: [{ mcid: mcid2, pageObjNum: tagCtx.pageObjNum }] });
-    } else {
-        ops.push(txt(footerText, mgL, y, enc.f1, fs.ft, enc));
-        ops.push(txtR(`${pageNum}/${totalPages}`, pgW - mgR, y, enc.f1, fs.ft, enc));
+
+    if (template.left) {
+        const text = resolveTemplate(template.left, page, pages, title, date);
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            ops.push(txtTagged(text, mgL, y, enc.f1, sz, enc, mcid));
+            documentChildren.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+        } else {
+            ops.push(txt(text, mgL, y, enc.f1, sz, enc));
+        }
     }
+
+    if (template.center) {
+        const text = resolveTemplate(template.center, page, pages, title, date);
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            ops.push(txtCTagged(text, mgL, y, enc.f1, sz, cw, enc, mcid));
+            documentChildren.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+        } else {
+            ops.push(txtC(text, mgL, y, enc.f1, sz, cw, enc));
+        }
+    }
+
+    if (template.right) {
+        const text = resolveTemplate(template.right, page, pages, title, date);
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            ops.push(txtRTagged(text, pgW - mgR, y, enc.f1, sz, enc, mcid));
+            documentChildren.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+        } else {
+            ops.push(txtR(text, pgW - mgR, y, enc.f1, sz, enc));
+        }
+    }
+
     return ops;
 }
 
@@ -630,6 +742,124 @@ function _renderLink(
     return { ops, y };
 }
 
+// ── Table of Contents ────────────────────────────────────────────────
+
+/**
+ * Estimate the height of a TOC block based on collected headings.
+ */
+function _estimateTocHeight(
+    tocBlock: TocBlock,
+    headings: readonly HeadingDestination[],
+): number {
+    const sz = tocBlock.fontSize ?? DEFAULT_TOC_SIZE;
+    const maxLevel = tocBlock.maxLevel ?? 3;
+    const titleSz = 14; // TOC title size
+    const lineH = sz * TOC_LINE_HEIGHT;
+
+    const filteredCount = headings.filter(h => h.level <= maxLevel).length;
+    return titleSz + TOC_TITLE_SPACING + filteredCount * lineH + TOC_BOTTOM_SPACING;
+}
+
+/**
+ * Render a Table of Contents block.
+ * Renders the TOC title and one entry per collected heading with page numbers.
+ * Collects /GoTo annotations for each entry.
+ */
+function _renderToc(
+    tocBlock: TocBlock,
+    headings: readonly HeadingDestination[],
+    y: number,
+    enc: EncodingContext,
+    mgL: number,
+    cw: number,
+    pageIndex: number,
+    pageAnnotations: PageAnnotation[],
+    tagCtx: TagContext | undefined,
+    documentChildren: (StructElement | MCRef)[],
+): { ops: string[]; y: number } {
+    const ops: string[] = [];
+    const sz = tocBlock.fontSize ?? DEFAULT_TOC_SIZE;
+    const indent = tocBlock.indent ?? DEFAULT_TOC_INDENT;
+    const maxLevel = tocBlock.maxLevel ?? 3;
+    const title = tocBlock.title ?? DEFAULT_TOC_TITLE;
+    const lineH = sz * TOC_LINE_HEIGHT;
+
+    // TOC Title
+    const titleSz = 14;
+    const titleColor = '0.145 0.388 0.922';
+    ops.push(`${titleColor} rg`);
+    if (tagCtx?.tagged) {
+        const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+        ops.push(txtTagged(title, mgL, y - titleSz, enc.f2, titleSz, enc, mcid));
+        documentChildren.push({ type: 'TOC', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+    } else {
+        ops.push(txt(title, mgL, y - titleSz, enc.f2, titleSz, enc));
+    }
+    y -= titleSz + TOC_TITLE_SPACING;
+
+    // TOC entries
+    const textColor = '0.216 0.255 0.318';
+    ops.push(`${textColor} rg`);
+
+    for (const heading of headings) {
+        if (heading.level > maxLevel) continue;
+
+        const entryIndent = (heading.level - 1) * indent;
+        const entryX = mgL + entryIndent;
+        const pageNumStr = `${heading.pageIndex + 1}`;
+        const pageNumW = measureText(pageNumStr, sz, enc);
+        const dotLeaderEnd = mgL + cw - pageNumW - 4;
+        const availTextW = dotLeaderEnd - entryX - 8;
+
+        // Truncate heading text if needed
+        let displayText = heading.text;
+        if (measureText(displayText, sz, enc) > availTextW) {
+            while (displayText.length > 1 && measureText(displayText + '...', sz, enc) > availTextW) {
+                displayText = displayText.slice(0, -1);
+            }
+            displayText += '...';
+        }
+        const textW = measureText(displayText, sz, enc);
+
+        // Heading text
+        const textY = y - sz;
+        const font = heading.level === 1 ? enc.f2 : enc.f1;
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            ops.push(txtTagged(displayText, entryX, textY, font, sz, enc, mcid));
+            documentChildren.push({ type: 'TOCI', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+        } else {
+            ops.push(txt(displayText, entryX, textY, font, sz, enc));
+        }
+
+        // Dot leader
+        const dotStart = entryX + textW + 4;
+        if (dotStart < dotLeaderEnd) {
+            const dotStr = '.'.repeat(Math.max(1, Math.floor((dotLeaderEnd - dotStart) / (measureText('.', sz, enc) + 0.5))));
+            ops.push(`0.6 0.6 0.6 rg`);
+            ops.push(txt(dotStr, dotStart, textY, enc.f1, sz, enc));
+            ops.push(`${textColor} rg`);
+        }
+
+        // Page number (right-aligned)
+        ops.push(txtR(pageNumStr, mgL + cw, textY, enc.f1, sz, enc));
+
+        // Collect /GoTo annotation for this entry
+        pageAnnotations.push({
+            annot: {
+                url: `#${heading.destName}`,
+                rect: [entryX, textY - 2, mgL + cw, textY + sz + 2],
+            },
+            page: pageIndex,
+        });
+
+        y -= lineH;
+    }
+
+    y -= TOC_BOTTOM_SPACING;
+    return { ops, y };
+}
+
 // ── Block Height Estimation ──────────────────────────────────────────
 
 /**
@@ -640,6 +870,7 @@ function _estimateBlockHeight(
     block: DocumentBlock,
     enc: EncodingContext,
     cw: number,
+    headings?: readonly HeadingDestination[],
 ): number {
     switch (block.type) {
         case 'heading': {
@@ -683,6 +914,9 @@ function _estimateBlockHeight(
             const sz = block.fontSize ?? DEFAULT_LINK_SIZE;
             const lines = wrapText(block.text, cw, sz, enc);
             return lines.length * (sz * DEFAULT_LINE_HEIGHT) + 4;
+        }
+        case 'toc': {
+            return headings ? _estimateTocHeight(block, headings) : 0;
         }
     }
 }
@@ -736,31 +970,120 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     // ── Compression setup ─────────────────────────────────────────────
     const compress = layout?.compress === true;
 
+    // ── Watermark setup ──────────────────────────────────────────────
+    const watermarkOpts = layout?.watermark;
+    if (watermarkOpts) {
+        validateWatermark(watermarkOpts, layout?.tagged);
+    }
+
     const mcidAlloc = tagged ? createMCIDAllocator() : undefined;
     const documentChildren: (StructElement | MCRef)[] = [];
 
-    // ── Pagination: build pages from blocks ──────────────────────────
+    // ── Resolve header/footer templates ──────────────────────────────
     const footerText = params.footerText ?? '';
-    const availableH = pgH - mg.t - mg.b - FT_H;
+    const footerTpl: PageTemplate = layout?.footerTemplate ?? {
+        left: footerText || undefined,
+        right: '{page}/{pages}',
+    };
+    const headerTpl: PageTemplate | undefined = layout?.headerTemplate;
+    const headerH = headerTpl ? HEADER_H : 0;
 
-    // First pass: assign blocks to pages
-    const pageBlocks: DocumentBlock[][] = [[]];
-    let remainH = availableH;
+    const dateNow = new Date();
+    const pad2d = (n: number) => String(n).padStart(2, '0');
+    const dateStr = `${dateNow.getFullYear()}-${pad2d(dateNow.getMonth() + 1)}-${pad2d(dateNow.getDate())}`;
+    const docTitle = params.title ?? '';
 
-    for (const block of params.blocks) {
-        if (block.type === 'pageBreak') {
-            pageBlocks.push([]);
-            remainH = availableH;
-            continue;
+    // ── Pagination: build pages from blocks ──────────────────────────
+    const availableH = pgH - mg.t - mg.b - FT_H - headerH;
+
+    const hasToc = params.blocks.some(b => b.type === 'toc');
+
+    /**
+     * Run a pagination pass to assign blocks to pages and collect heading positions.
+     * Returns page blocks array and collected headings.
+     */
+    function _paginateBlocks(
+        headingsIn?: readonly HeadingDestination[],
+    ): { pages: DocumentBlock[][]; headings: HeadingDestination[] } {
+        const pages: DocumentBlock[][] = [[]];
+        const headings: HeadingDestination[] = [];
+        let remainH = availableH;
+        let headingIdx = 0;
+        // Track Y per page for heading destination positions
+        let curY = pgH - mg.t - headerH;
+
+        // Account for title on page 0
+        if (params.title) {
+            const titleH = 22 + 12; // TITLE_LN + underline spacing
+            remainH -= titleH;
+            curY -= titleH;
         }
 
-        const blockH = _estimateBlockHeight(block, enc, cw);
-        if (blockH > remainH && pageBlocks[pageBlocks.length - 1].length > 0) {
-            pageBlocks.push([]);
-            remainH = availableH;
+        for (const block of params.blocks) {
+            if (block.type === 'pageBreak') {
+                pages.push([]);
+                remainH = availableH;
+                curY = pgH - mg.t - headerH;
+                continue;
+            }
+
+            const blockH = _estimateBlockHeight(block, enc, cw, headingsIn);
+            if (blockH > remainH && pages[pages.length - 1].length > 0) {
+                pages.push([]);
+                remainH = availableH;
+                curY = pgH - mg.t - headerH;
+            }
+
+            pages[pages.length - 1].push(block);
+
+            if (block.type === 'heading') {
+                headings.push({
+                    destName: `toc_h_${headingIdx++}`,
+                    text: block.text,
+                    level: block.level,
+                    pageIndex: pages.length - 1,
+                    y: curY,
+                });
+            }
+
+            remainH -= blockH;
+            curY -= blockH;
         }
-        pageBlocks[pageBlocks.length - 1].push(block);
-        remainH -= blockH;
+
+        return { pages, headings };
+    }
+
+    // Multi-pass pagination for TOC support (max 3 iterations)
+    let headingDests: HeadingDestination[] = [];
+    let pageBlocks: DocumentBlock[][];
+
+    if (hasToc) {
+        // Pass 1: paginate without TOC content to collect headings
+        const pass1 = _paginateBlocks();
+        headingDests = pass1.headings;
+
+        // Pass 2: re-paginate with TOC height included
+        const pass2 = _paginateBlocks(headingDests);
+
+        // Check if heading page assignments changed
+        const pagesChanged = pass2.headings.some((h, i) =>
+            i < headingDests.length && h.pageIndex !== headingDests[i].pageIndex
+        );
+
+        if (pagesChanged) {
+            // Pass 3: final re-pagination with updated heading positions
+            headingDests = pass2.headings;
+            const pass3 = _paginateBlocks(headingDests);
+            headingDests = pass3.headings;
+            pageBlocks = pass3.pages;
+        } else {
+            headingDests = pass2.headings;
+            pageBlocks = pass2.pages;
+        }
+    } else {
+        const result = _paginateBlocks();
+        pageBlocks = result.pages;
+        headingDests = result.headings;
     }
 
     const totalPages = Math.max(1, pageBlocks.length);
@@ -779,6 +1102,14 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     }
     const imageCount = resolvedImages.length;
 
+    // ── Build watermark state ────────────────────────────────────────
+    const wmState: WatermarkState | null = watermarkOpts
+        ? buildWatermarkState(watermarkOpts, pgW, pgH, enc)
+        : null;
+    const wmExtraObjs = wmState
+        ? wmState.extGStates.size + (wmState.imageXObj ? 1 : 0)
+        : 0;
+
     // ── Collect link annotations ─────────────────────────────────────
     const pageAnnotations: PageAnnotation[] = [];
 
@@ -787,10 +1118,11 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         ? 5 + fontEntries.length * 5
         : 5;
     const imageObjStart = fontObjEnd;
-    const prePageObjStart = fontObjEnd + imageCount;
+    const prePageObjStart = fontObjEnd + imageCount + wmExtraObjs;
 
     // ── Render page content streams ──────────────────────────────────
     const pageStreams: string[] = [];
+    let headingDestIdx = 0;
 
     for (let p = 0; p < totalPages; p++) {
         const pageObjNum = prePageObjStart + p * 2;
@@ -800,6 +1132,22 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
 
         const ops: string[] = [];
         let y = pgH - mg.t;
+
+        // Render header template (if provided)
+        if (headerTpl) {
+            const hOps = _renderPageTemplate(
+                headerTpl, p + 1, totalPages, docTitle, dateStr,
+                y - (headerTpl.fontSize ?? DEFAULT_FONT_SIZES.ft),
+                enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren,
+            );
+            ops.push(...hOps);
+            y -= HEADER_H;
+        }
+
+        // Background watermark (behind content)
+        if (wmState?.backgroundOps) {
+            ops.push(wmState.backgroundOps);
+        }
 
         // Render title on first page
         if (p === 0 && params.title) {
@@ -826,6 +1174,12 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         for (const block of blocks) {
             switch (block.type) {
                 case 'heading': {
+                    // Update heading destination with actual render position
+                    if (headingDestIdx < headingDests.length) {
+                        headingDests[headingDestIdx].pageIndex = p;
+                        headingDests[headingDestIdx].y = y;
+                        headingDestIdx++;
+                    }
                     const result = _renderHeading(block, y, enc, mg.l, cw, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
@@ -869,12 +1223,26 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                     y = result.y;
                     break;
                 }
+                case 'toc': {
+                    const result = _renderToc(block, headingDests, y, enc, mg.l, cw, p, pageAnnotations, tagCtx, documentChildren);
+                    ops.push(...result.ops);
+                    y = result.y;
+                    break;
+                }
                 // pageBreak handled during pagination
             }
         }
 
+        // Foreground watermark (above content)
+        if (wmState?.foregroundOps) {
+            ops.push(wmState.foregroundOps);
+        }
+
         // Footer
-        const ftOps = _renderFooter(p + 1, totalPages, footerText, enc, mg.l, mg.r, mg.b, pgW, tagCtx, documentChildren);
+        const ftOps = _renderPageTemplate(
+            footerTpl, p + 1, totalPages, docTitle, dateStr,
+            mg.b - 5, enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren,
+        );
         ops.push(...ftOps);
 
         pageStreams.push(ops.join('\n'));
@@ -890,43 +1258,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const totalAnnots = pageAnnotations.length;
 
     // ── Assemble PDF binary ──────────────────────────────────────────
-    const parts: string[] = [];
-    let offset = 0;
-
-    function emit(str: string): void {
-        parts.push(str);
-        offset += str.length;
-    }
-
-    const objOffsets: number[] = [];
-    function emitObj(num: number, content: string): void {
-        objOffsets[num] = offset;
-        emit(`${num} 0 obj\n${content}\nendobj\n\n`);
-    }
-
-    /**
-     * Emit a stream object with optional compression and encryption.
-     * Order: compress → encrypt (ISO 32000-1 §7.3.8).
-     */
-    function emitStreamObj(num: number, dictEntries: string, streamData: string, skipCompress?: boolean): void {
-        let data = streamData;
-        let dict = dictEntries;
-
-        // Step 1: Compress (before encryption)
-        if (compress && !skipCompress) {
-            const compressed = compressStream(data);
-            dict = dict.replace(/\/Length \d+/, `/Filter /FlateDecode /Length ${compressed.length}`);
-            data = compressed;
-        }
-
-        // Step 2: Encrypt (after compression)
-        if (encState) {
-            const encrypted = encryptStream(data, encState, num, 0);
-            emitObj(num, `${dict.replace(/\/Length \d+/, `/Length ${encrypted.length}`)} >>\nstream\n${encrypted}\nendstream`);
-        } else {
-            emitObj(num, `${dict} >>\nstream\n${data}\nendstream`);
-        }
-    }
+    const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
 
     // PDF Header
     emit(`%PDF-${pdfaConfig.pdfVersion}\n`);
@@ -945,11 +1277,35 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         for (let i = 0; i < imageCount; i++) {
             imgRefs.push(`/Im${i + 1} ${imageObjStart + i} 0 R`);
         }
-        imgXObjRes = ` /XObject << ${imgRefs.join(' ')} >>`;
+        imgXObjRes = ` /XObject << ${imgRefs.join(' ')}`;
+    }
+
+    // Build watermark resource strings
+    let wmGsRes = '';
+    let wmImgRef = '';
+    const wmObjStart = fontObjEnd + imageCount;
+    if (wmState) {
+        let wmObjIdx = 0;
+        const gsRefs: string[] = [];
+        for (const [gsName] of wmState.extGStates) {
+            gsRefs.push(`${gsName} ${wmObjStart + wmObjIdx} 0 R`);
+            wmObjIdx++;
+        }
+        wmGsRes = gsRefs.length > 0 ? ` /ExtGState << ${gsRefs.join(' ')} >>` : '';
+        if (wmState.imageXObj) {
+            wmImgRef = `/ImW1 ${wmObjStart + wmObjIdx} 0 R`;
+        }
+    }
+
+    // Combine XObject resource dict
+    if (imgXObjRes || wmImgRef) {
+        if (!imgXObjRes) imgXObjRes = ' /XObject <<';
+        if (wmImgRef) imgXObjRes += ` ${wmImgRef}`;
+        imgXObjRes += ' >>';
     }
 
     if (enc.isUnicode && fontEntries.length > 0) {
-        pageObjStart = 5 + fontEntries.length * 5 + imageCount;
+        pageObjStart = 5 + fontEntries.length * 5 + imageCount + wmExtraObjs;
 
         const kids: string[] = [];
         for (let p = 0; p < totalPages; p++) {
@@ -973,7 +1329,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 : fullTtfBinary;
 
             const fm = fd.metrics;
-            const bfName = '/' + fd.fontName.replace(/[^A-Za-z0-9-]/g, '');
+            const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
             const toUnicodeCMap = usedGids && usedGids.size > 0
                 ? buildToUnicodeCMap(fd.cmap, usedGids)
                 : buildToUnicodeCMap(fd.cmap, new Set());
@@ -1015,6 +1371,18 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             emitObj(imageObjStart + i, buildImageXObject(img.parsed));
         }
 
+        // Watermark objects (ExtGState + optional image)
+        if (wmState) {
+            let wmObjIdx = 0;
+            for (const [, gsDict] of wmState.extGStates) {
+                emitObj(wmObjStart + wmObjIdx, gsDict);
+                wmObjIdx++;
+            }
+            if (wmState.imageXObj) {
+                emitObj(wmObjStart + wmObjIdx, wmState.imageXObj);
+            }
+        }
+
         let fontRes = '/F1 3 0 R /F2 4 0 R';
         for (let fi = 0; fi < fontEntries.length; fi++) {
             fontRes += ` ${fontEntries[fi].fontRef} ${5 + fi * 5} 0 R`;
@@ -1043,7 +1411,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << ${fontRes} >>${imgXObjRes} >>${structParents}${annotsStr} >>`
+                `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -1055,23 +1423,34 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             for (const pa of pageAnnotations) {
                 const objNum = annotObjStart + annotIdx;
                 const [x1, y1, x2, y2] = pa.annot.rect;
-                const escapedUrl = pa.annot.url.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-                emitObj(objNum,
-                    `<< /Type /Annot /Subtype /Link ` +
-                    `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
-                    `/Border [0 0 0] ` +
-                    `/A << /Type /Action /S /URI /URI (${escapedUrl}) >> >>`
-                );
+                if (pa.annot.url.startsWith('#')) {
+                    // Internal /GoTo annotation (TOC link)
+                    const destName = pa.annot.url.slice(1);
+                    emitObj(objNum,
+                        `<< /Type /Annot /Subtype /Link ` +
+                        `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
+                        `/Border [0 0 0] ` +
+                        `/Dest /${destName} >>`
+                    );
+                } else {
+                    const escapedUrl = pa.annot.url.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+                    emitObj(objNum,
+                        `<< /Type /Annot /Subtype /Link ` +
+                        `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
+                        `/Border [0 0 0] ` +
+                        `/A << /Type /Action /S /URI /URI (${escapedUrl}) >> >>`
+                    );
+                }
                 annotIdx++;
             }
         }
     } else {
         // Latin mode
-        pageObjStart = 5 + imageCount;
+        pageObjStart = 5 + imageCount + wmExtraObjs;
 
         const kids: string[] = [];
         for (let p = 0; p < totalPages; p++) {
-            kids.push(`${5 + imageCount + p * 2} 0 R`);
+            kids.push(`${5 + imageCount + wmExtraObjs + p * 2} 0 R`);
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
         emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
@@ -1083,9 +1462,21 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             emitObj(imageObjStart + i, buildImageXObject(img.parsed));
         }
 
+        // Watermark objects (Latin mode)
+        if (wmState) {
+            let wmObjIdx = 0;
+            for (const [, gsDict] of wmState.extGStates) {
+                emitObj(wmObjStart + wmObjIdx, gsDict);
+                wmObjIdx++;
+            }
+            if (wmState.imageXObj) {
+                emitObj(wmObjStart + wmObjIdx, wmState.imageXObj);
+            }
+        }
+
         for (let p = 0; p < totalPages; p++) {
-            const pageObjNum = 5 + imageCount + p * 2;
-            const streamObjNum = 6 + imageCount + p * 2;
+            const pageObjNum = 5 + imageCount + wmExtraObjs + p * 2;
+            const streamObjNum = 6 + imageCount + wmExtraObjs + p * 2;
             const stream = pageStreams[p];
             const structParents = tagged ? ` /StructParents ${p}` : '';
 
@@ -1106,7 +1497,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes} >>${structParents}${annotsStr} >>`
+                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -1118,13 +1509,23 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             for (const pa of pageAnnotations) {
                 const objNum = annotObjStart + annotIdx;
                 const [x1, y1, x2, y2] = pa.annot.rect;
-                const escapedUrl = pa.annot.url.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-                emitObj(objNum,
-                    `<< /Type /Annot /Subtype /Link ` +
-                    `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
-                    `/Border [0 0 0] ` +
-                    `/A << /Type /Action /S /URI /URI (${escapedUrl}) >> >>`
-                );
+                if (pa.annot.url.startsWith('#')) {
+                    const destName = pa.annot.url.slice(1);
+                    emitObj(objNum,
+                        `<< /Type /Annot /Subtype /Link ` +
+                        `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
+                        `/Border [0 0 0] ` +
+                        `/Dest /${destName} >>`
+                    );
+                } else {
+                    const escapedUrl = pa.annot.url.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+                    emitObj(objNum,
+                        `<< /Type /Annot /Subtype /Link ` +
+                        `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
+                        `/Border [0 0 0] ` +
+                        `/A << /Type /Action /S /URI /URI (${escapedUrl}) >> >>`
+                    );
+                }
                 annotIdx++;
             }
         }
@@ -1132,8 +1533,8 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
 
     // /Info dictionary
     const baseObjCount = enc.isUnicode
-        ? 4 + fontEntries.length * 5 + imageCount + totalPages * 2 + totalAnnots
-        : 4 + imageCount + totalPages * 2 + totalAnnots;
+        ? 4 + fontEntries.length * 5 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots
+        : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots;
     const infoObjNum = baseObjCount + 1;
 
     const now = new Date();
@@ -1194,6 +1595,16 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         totalObjs = outputIntentObjNum;
     }
 
+    // ── Build named destinations for TOC ────────────────────────────
+    let destsStr = '';
+    if (hasToc && headingDests.length > 0) {
+        const destEntries = headingDests.map(h => {
+            const destPageObjNum = pageObjStart + h.pageIndex * 2;
+            return `/${h.destName} [${destPageObjNum} 0 R /XYZ ${fmtNum(mg.l)} ${fmtNum(h.y)} null]`;
+        });
+        destsStr = ` /Dests << ${destEntries.join(' ')} >>`;
+    }
+
     // ── Rewrite Catalog ──────────────────────────────────────────────
     if (tagged) {
         const catalogContent =
@@ -1201,7 +1612,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             `/MarkInfo << /Marked true >> ` +
             `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
             `/Metadata ${xmpObjNum} 0 R ` +
-            `/OutputIntents [${outputIntentObjNum} 0 R] >>`;
+            `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr} >>`;
 
         const oldCatalog = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\n';
         const newCatalog = `1 0 obj\n${catalogContent}\nendobj\n\n`;
@@ -1209,7 +1620,23 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         if (idx !== -1) {
             const sizeDiff = newCatalog.length - oldCatalog.length;
             parts[idx] = newCatalog;
-            offset += sizeDiff;
+            adjustOffset(sizeDiff);
+            for (let i = 2; i <= totalObjs; i++) {
+                if (objOffsets[i] !== undefined) {
+                    objOffsets[i] += sizeDiff;
+                }
+            }
+        }
+    } else if (destsStr) {
+        // Non-tagged mode with TOC destinations — rewrite catalog
+        const catalogContent = `<< /Type /Catalog /Pages 2 0 R${destsStr} >>`;
+        const oldCatalog = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\n';
+        const newCatalog = `1 0 obj\n${catalogContent}\nendobj\n\n`;
+        const idx = parts.indexOf(oldCatalog);
+        if (idx !== -1) {
+            const sizeDiff = newCatalog.length - oldCatalog.length;
+            parts[idx] = newCatalog;
+            adjustOffset(sizeDiff);
             for (let i = 2; i <= totalObjs; i++) {
                 if (objOffsets[i] !== undefined) {
                     objOffsets[i] += sizeDiff;
@@ -1218,33 +1645,9 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         }
     }
 
-    // ── Encryption dict object ─────────────────────────────────────────
-    let encryptObjNum = 0;
-    if (encState) {
-        encryptObjNum = totalObjs + 1;
-        emitObj(encryptObjNum, buildEncryptDict(encState));
-        totalObjs = encryptObjNum;
-    }
-
-    // ── Cross-reference table ────────────────────────────────────────
-    const xrefOffset = offset;
-    emit('xref\n');
-    emit(`0 ${totalObjs + 1}\n`);
-    emit('0000000000 65535 f \n');
-    for (let i = 1; i <= totalObjs; i++) {
-        emit(`${String(objOffsets[i]).padStart(10, '0')} 00000 n \n`);
-    }
-
-    // Trailer
-    emit('trailer\n');
-    if (encState) {
-        emit(`<< /Size ${totalObjs + 1} /Root 1 0 R /Info ${infoObjNum} 0 R /Encrypt ${encryptObjNum} 0 R /ID ${buildIdArray(encState.docId)} >>\n`);
-    } else {
-        emit(`<< /Size ${totalObjs + 1} /Root 1 0 R /Info ${infoObjNum} 0 R >>\n`);
-    }
-    emit('startxref\n');
-    emit(`${xrefOffset}\n`);
-    emit('%%EOF');
+    // ── Xref, Trailer, %%EOF ────────────────────────────────────────
+    const writer = { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts };
+    writeXrefTrailer(writer, totalObjs, infoObjNum, encState);
 
     return parts.join('');
 }

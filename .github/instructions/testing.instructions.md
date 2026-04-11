@@ -17,21 +17,23 @@ applyTo: "tests/**"
 ## Test Organization
 ```
 tests/
-├── core/           # pdf-builder, pdf-text, pdf-stream, pdf-layout, pdf-annot, pdf-pdfa, pdf-encrypt, pdf-compress
+├── core/           # pdf-builder, pdf-text, pdf-stream, pdf-layout, pdf-annot, pdf-pdfa, pdf-encrypt, pdf-compress, pdf-watermark, pdf-assembler
 ├── fonts/          # encoding, font-loader, font-subsetter, font-embedder
-├── shaping/        # thai-shaper, script-detect, multi-font, bidi, arabic-shaper
+├── shaping/        # thai-shaper, script-detect, script-registry, multi-font, bidi, arabic-shaper
 ├── worker/         # worker-api
 ├── integration/    # full PDF generation end-to-end, pdf-compression
 ├── fuzzing/        # edge-case & adversarial input tests
 └── fixtures/       # test data, sample fonts, expected outputs
 scripts/
-└── generate-samples.ts  # Multi-language PDF generator for manual inspection
+├── generate-samples.ts  # Orchestrator for modular PDF sample generation
+├── generators/          # Per-category sample generators (9 modules)
+└── helpers/             # Shared utilities (fonts, images, I/O)
 ```
 
 ## Current State (maintain these thresholds)
-- **789 tests** across 26 test files + 1 benchmark file
-- Statements: ~99% (threshold: 90%)
-- Branches: ~91% (threshold: 80%)
+- **925+ tests** across 27 test files + 1 benchmark file
+- Statements: ~95% (threshold: 90%)
+- Branches: ~88% (threshold: 80%)
 - Functions: ~98% (threshold: 85%)
 - Lines: 90% threshold
 - Coverage excludes: barrel re-exports (`*/index.ts`), type definitions, `pdf-worker.ts`
@@ -45,7 +47,7 @@ scripts/
 ## PDF-Specific Testing
 - **Binary output**: verify `%PDF-1.4` header, `%%EOF` trailer, valid xref structure
 - **Byte offsets**: parse xref, verify each offset points to `N 0 obj`
-- **Font subsetting**: verify `.notdef` GID 0 present, `numGlyphs` matches subset, tables aligned
+- **Font subsetting**: verify `.notdef` GID 0 present, `numGlyphs` matches subset, tables aligned, buffer bounds respected
 - **Text encoding**: WinAnsi → verify `(escaped)` format; CIDFont → verify `<hex>` format
 - **Thai shaping**: test cluster boundaries, GSUB substitutions, GPOS anchor positions
 - **Multi-font**: test font switching at script boundaries, continuation bias behavior
@@ -93,7 +95,7 @@ scripts/
 - No-image documents: verify `/XObject` is NOT in page resources
 
 ## Document Builder Testing
-- Test each block type renders correct PDF operators
+- Test each block type (9 types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc) renders correct PDF operators
 - Test pagination: blocks split across pages when exceeding available height
 - Test `pageBreak` block forces new page
 - Test title rendering on first page only
@@ -101,6 +103,51 @@ scripts/
 - Test Unicode mode with CIDFont entries
 - Test tagged mode emits correct structure elements per block type
 - Test `wrapText()` with various widths, edge cases, empty strings
+- Test `wrapText()` CJK character-level breaking: Japanese, Chinese, Korean text wraps within margins
+- Test `wrapText()` mixed Latin/CJK text: Latin words stay grouped, CJK chars break individually
+
+## Header/Footer Template Testing
+- Test `resolveTemplate()`: `{page}`, `{pages}`, `{date}`, `{title}` placeholder substitution
+- Test `PageTemplate` rendering: left/center/right zone positioning in content stream
+- Test `HEADER_H` constant usage: header zone height (15pt) reduces available content area
+- Test backward compatibility: `footerText` maps to `{ left: footerText, right: '{page}/{pages}' }`
+- Test header-only: `headerTemplate` without `footerTemplate` — no footer rendered
+- Test footer-only: `footerTemplate` without `headerTemplate` — no header rendered
+- Test `PAGE_SIZES` constant: verify A4, Letter, Legal, A3, Tabloid dimensions
+- Test custom `fontSize` and `color` on PageTemplate
+- Integration — Table builder: `buildPDF` with `headerTemplate`/`footerTemplate` layout options
+- Integration — Document builder: `buildDocumentPDF` with header/footer templates
+- Tagged mode: template text wrapped in `/P` structure elements
+
+## Watermark Testing
+- Test `validateWatermark()`: PDF/A-1b blocks transparency (throws), PDF/A-2b allows, non-tagged allows
+- Test `validateWatermark()`: opacity 1.0 with PDF/A-1b is allowed (no transparency)
+- Test `buildWatermarkState()` text: rotation matrix `cos(θ) sin(θ) -sin(θ) cos(θ)` in operators
+- Test `buildWatermarkState()` text: ExtGState dict contains `/ca opacity` for transparency
+- Test `buildWatermarkState()` text: default values (fontSize=60, opacity=0.15, angle=-45°)
+- Test `buildWatermarkState()` image: centered positioning, aspect ratio preservation
+- Test `buildWatermarkState()` image: ExtGState dict for image opacity
+- Test watermark position: `'background'` ops before content stream, `'foreground'` ops after
+- Test `WatermarkState` interface: `extGStates`, `imageXObj`, `backgroundOps`, `foregroundOps`
+- Integration — Table builder: `buildPDF` with `watermark: { text: { text: 'DRAFT' } }`
+- Integration — Document builder: `buildDocumentPDF` with text and image watermarks
+- Integration — Combined: watermark + encryption, watermark + compression, watermark + tagged
+- PDF/A mutual exclusion: `tagged: 'pdfa1b'` + watermark with opacity < 1.0 → throws
+
+## Table of Contents Testing
+- Test `TocBlock` rendering: title, indented entries, dot leaders, right-aligned page numbers
+- Test TOC with `maxLevel` filtering: level 1 only, level 1+2, all levels
+- Test TOC with custom `title`, `fontSize`, `indent` options
+- Test TOC empty document: only title rendered, no entries
+- Test multi-pass pagination: heading page numbers stabilize within 3 passes
+- Test `/GoTo` annotations: TOC entries link to heading destinations via `/Dest /toc_h_N`
+- Test `/Dests` catalog dictionary: named destinations `[pageObj /XYZ x y null]` for each heading
+- Test `/Dests` only emitted when TOC block is present (not for headings without TOC)
+- Test tagged mode: `/TOC` structure element with `/TOCI` children for PDF/UA
+- Test multi-page TOC: 20+ headings spanning multiple pages
+- Test TOC + watermark: combined features produce valid PDF
+- Test TOC + header/footer templates: combined features produce valid PDF
+- Test TOC page numbers: entries show correct page numbers after pagination
 
 ## Link Annotation Testing
 - Test `validateURL()`: valid http/https/mailto accepted, javascript:/file:/data: blocked
@@ -109,7 +156,7 @@ scripts/
 - Test `isLinkAnnotation()`: type guard for LinkAnnotation vs InternalLink
 - Integration: verify `/Annots` array on page dict, annotation objects in PDF output
 - Tagged links: verify `/Link` structure element in tagged mode
-- Security: verify malicious URLs rejected, parentheses/backslashes properly escaped
+- Security: verify malicious URLs rejected, parentheses/backslashes properly escaped, control characters blocked
 - Multi-link pages: verify correct annotation-to-page grouping
 
 ## BiDi & Arabic/Hebrew Testing

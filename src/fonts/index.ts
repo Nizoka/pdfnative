@@ -4,7 +4,8 @@
  * Re-exports all font-related functionality.
  */
 
-export { toWinAnsi, pdfString, truncate, helveticaWidth, createEncodingContext } from './encoding.js';
+export { toWinAnsi, pdfString, truncate, helveticaWidth } from './encoding.js';
+export { createEncodingContext } from '../core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './font-loader.js';
 export type { FontLoader } from './font-loader.js';
 export { subsetTTF, ttfChecksum } from './font-subsetter.js';

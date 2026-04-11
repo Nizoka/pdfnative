@@ -17,6 +17,7 @@
 export function subsetTTF(ttfBinaryStr: string, usedGids: Set<number>): string {
     try {
         const len = ttfBinaryStr.length;
+        if (len < 12) return ttfBinaryStr; // Too small for a valid TTF offset table
         const buf = new ArrayBuffer(len);
         const u8 = new Uint8Array(buf);
         for (let i = 0; i < len; i++) u8[i] = ttfBinaryStr.charCodeAt(i);
@@ -24,6 +25,8 @@ export function subsetTTF(ttfBinaryStr: string, usedGids: Set<number>): string {
 
         // Parse offset table & table directory
         const numTables = view.getUint16(4);
+        const dirEnd = 12 + numTables * 16;
+        if (dirEnd > len) return ttfBinaryStr; // Table directory exceeds buffer
         const tables: Record<string, { offset: number; length: number }> = {};
         for (let i = 0; i < numTables; i++) {
             const off = 12 + i * 16;
@@ -55,20 +58,26 @@ export function subsetTTF(ttfBinaryStr: string, usedGids: Set<number>): string {
         const allGids = new Set(usedGids);
         allGids.add(0);
 
-        // Resolve compound glyph component references recursively
+        // Resolve compound glyph component references recursively.
+        // Iteration limit prevents excessive processing on deeply nested or malicious fonts.
+        const MAX_COMPOUND_ITERATIONS = 10_000;
+        let iterations = 0;
         const queue = [...allGids];
         while (queue.length > 0) {
+            if (++iterations > MAX_COMPOUND_ITERATIONS) break;
             const gid = queue.pop();
             if (gid === undefined || gid >= numGlyphs) continue;
             const off = origOffsets[gid];
             const next = origOffsets[gid + 1];
             if (off >= next) continue;
             const glyfOff = glyf.offset + off;
+            if (glyfOff + 10 > len) continue; // Not enough room for glyph header
             if (view.getInt16(glyfOff) >= 0) continue; // simple glyph
             // Compound glyph — extract component GIDs
             let pos = glyfOff + 10;
             let flags;
             do {
+                if (pos + 4 > len) break; // Bounds check for flags + GID
                 flags = view.getUint16(pos);
                 const componentGid = view.getUint16(pos + 2);
                 if (!allGids.has(componentGid)) {

@@ -5,9 +5,10 @@ applyTo: "src/fonts/**"
 # Font Engineering Standards
 
 ## WinAnsi Encoding (Helvetica)
-- Code page 1252 — covers Latin-1 + common punctuation
+- Code page 1252 — covers Latin-1 + full Windows-1252 range (0x80–0x9F: bullet, dagger, trademark, Œ/œ, Š/š, Ž/ž, curly quotes, ellipsis, per mille, guillemets — 27 characters)
 - PDF string format: `(escaped text)` with `\(`, `\)`, `\\` escaping
 - Width calculation: built-in Helvetica width table, no font embedding needed
+- Bullet (U+2022 → 0x95): 350 units width in `helveticaWidth()`
 - Truncation: calculate cumulative width, break at column max
 
 ## CIDFont Type2 / Identity-H
@@ -23,7 +24,8 @@ applyTo: "src/fonts/**"
 - Recalculate `checkSumAdjustment` in `head` table after subsetting
 - Table offsets must be 4-byte aligned (pad with zeros)
 - `loca` format (short/long) must match `head.indexToLocFormat`
-- Compound glyphs: recursively include component GIDs
+- Compound glyphs: recursively include component GIDs with iteration limit to prevent infinite loops
+- Buffer bounds checking: all DataView reads validated against buffer length to prevent out-of-range errors
 
 ## Font Data Modules
 - Lazy-loaded via `registerFont()` / `loadFontData()` pattern
