@@ -25,10 +25,10 @@ npm run dev            # tsup --watch
 ## Test
 
 ```bash
-npm run test           # vitest run (743 tests)
+npm run test           # vitest run (925+ tests)
 npm run test:watch     # vitest (watch mode)
-npm run test:coverage  # vitest with v8 coverage (~99% stmts)
-npm run test:generate  # Generate sample PDFs → test-output/ (all languages)
+npm run test:coverage  # vitest with v8 coverage (95%+ stmts)
+npm run test:generate  # Generate 88+ sample PDFs → test-output/
 ```
 
 All new code must include tests. Coverage thresholds: statements 90%, branches 80%, functions 85%, lines 90%.
@@ -36,11 +36,14 @@ All new code must include tests. Coverage thresholds: statements 90%, branches 8
 ## Lint & Type Check
 
 ```bash
-npm run lint           # eslint src/
-npm run typecheck      # tsc --noEmit
+npm run lint              # eslint src/
+npm run typecheck         # tsc --noEmit (src/)
+npm run typecheck:tests   # tsc --project tsconfig.test.json
+npm run typecheck:scripts # tsc --project tsconfig.scripts.json
+npm run typecheck:all     # all three above
 ```
 
-Both must pass before opening a PR.
+All must pass before opening a PR.
 
 ## Code Style
 
@@ -51,20 +54,21 @@ Both must pass before opening a PR.
 - **No `any`** — use `unknown` with type narrowing
 - **Template literals** over concatenation for PDF stream assembly
 - **`readonly`** on interface props where mutation is unnecessary
+- **En-dash separator** — use `–` (U+2013) with spaces (`" – "`) as title/footer separator, not em-dash `—` (U+2014); en-dash is 44% narrower, WinAnsi-encodable, and follows ISO/international typography standards
 
 ## Project Structure
 
 ```
 src/
-├── core/         # PDF assembly, document builder, text rendering, binary stream, layout, tagged PDF, images, annotations, encryption
-├── fonts/        # WinAnsi + CIDFont encoding, font loader, TTF subsetter, CMap
-├── shaping/      # Thai GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
+├── core/         # PDF assembly, document builder, shared assembler, encoding context, text rendering, binary stream, layout, tagged PDF, images, annotations, encryption
+├── fonts/        # WinAnsi + CIDFont pure encoding, font loader, TTF subsetter (buffer guards), CMap
+├── shaping/      # Script registry, Thai GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (.js/.d.ts)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # generate-samples.ts — multi-language PDF visual inspection
-tests/            # 789 tests (unit + integration + fuzz), mirrors src/ structure
+scripts/          # Modular sample PDF generation (see scripts/README.md)
+tests/            # 925+ tests (unit + integration + fuzz), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -72,7 +76,7 @@ bench/            # Performance benchmarks (vitest bench)
 
 | Branch    | Purpose                        |
 | --------- | ------------------------------ |
-| `main`    | Stable release branch          |
+| `master`  | Stable release branch          |
 | `dev`     | Integration branch             |
 | `feat/*`  | New features                   |
 | `fix/*`   | Bug fixes                      |
@@ -81,7 +85,7 @@ bench/            # Performance benchmarks (vitest bench)
 ## Pull Request Checklist
 
 - [ ] All tests pass (`npm run test`)
-- [ ] Type check passes (`npm run typecheck`)
+- [ ] Type check passes (`npm run typecheck:all`)
 - [ ] Lint passes (`npm run lint`)
 - [ ] New code has tests
 - [ ] No `any` types introduced
@@ -103,7 +107,7 @@ docs: update README with font registration example
 
 1. Obtain a Noto Sans TTF covering the target script
 2. Run `node tools/build-font-data.cjs fonts/ttf/NotoSans-<Script>.ttf`
-3. Add script ranges to `src/shaping/script-detect.ts`
+3. Add script ranges to `src/shaping/script-registry.ts` (centralized constants) and detection in `src/shaping/script-detect.ts`
 4. Register the font in your test setup
 5. Add tests for the new script detection and encoding
 
@@ -114,6 +118,9 @@ docs: update README with font registration example
 - All user input is validated at public API boundaries (`buildPDF()` entry point)
 - Input validation: null/undefined checks, type checks, 100K row limit
 - PDF string escaping prevents injection via `pdfString()`
+- URL validation: blocks `javascript:`, `file:`, `data:` schemes + control characters
+- TTF subsetter: buffer bounds checking + compound glyph iteration limits
+- RGBA PNG rejection: unsupported color types rejected at parse boundary
 
 ## License
 

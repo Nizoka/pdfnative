@@ -8,74 +8,74 @@
 
 /** Font metrics embedded in font data modules. */
 export interface FontMetrics {
-    unitsPerEm: number;
-    numGlyphs: number;
-    defaultWidth: number;
-    ascent: number;
-    descent: number;
-    bbox: number[];
-    capHeight: number;
-    stemV: number;
+    readonly unitsPerEm: number;
+    readonly numGlyphs: number;
+    readonly defaultWidth: number;
+    readonly ascent: number;
+    readonly descent: number;
+    readonly bbox: readonly number[];
+    readonly capHeight: number;
+    readonly stemV: number;
 }
 
 /** Pre-built font data loaded from font data modules. */
 export interface FontData {
-    metrics: FontMetrics;
-    fontName: string;
-    cmap: Record<number, number>;
-    defaultWidth: number;
-    widths: Record<number, number>;
-    pdfWidthArray: string;
-    ttfBase64: string;
-    gsub: Record<number, number>;
-    markAnchors: {
-        bases: Record<number, Record<number, [number, number]>>;
-        marks: Record<number, [number, number, number]>;
+    readonly metrics: FontMetrics;
+    readonly fontName: string;
+    readonly cmap: Record<number, number>;
+    readonly defaultWidth: number;
+    readonly widths: Record<number, number>;
+    readonly pdfWidthArray: string;
+    readonly ttfBase64: string;
+    readonly gsub: Record<number, number>;
+    readonly markAnchors: {
+        readonly bases: Record<number, Record<number, [number, number]>>;
+        readonly marks: Record<number, [number, number, number]>;
     } | null;
-    mark2mark: {
-        mark1Anchors: Record<number, Record<number, [number, number]>>;
-        mark2Classes: Record<number, [number, number, number]>;
+    readonly mark2mark: {
+        readonly mark1Anchors: Record<number, Record<number, [number, number]>>;
+        readonly mark2Classes: Record<number, [number, number, number]>;
     } | null;
 }
 
 /** A font entry binding FontData to a PDF font reference. */
 export interface FontEntry {
-    fontData: FontData;
-    fontRef: string;
-    lang?: string;
+    readonly fontData: FontData;
+    readonly fontRef: string;
+    readonly lang?: string;
 }
 
 // ── Shaping Types ────────────────────────────────────────────────────
 
 /** A single positioned glyph output from the Thai shaper. */
 export interface ShapedGlyph {
-    gid: number;
-    dx: number;
-    dy: number;
-    isZeroAdvance: boolean;
+    readonly gid: number;
+    readonly dx: number;
+    readonly dy: number;
+    readonly isZeroAdvance: boolean;
 }
 
 /** A text run produced by the encoding context's textRuns() method. */
 export interface TextRun {
-    text: string;
-    fontRef: string;
-    fontData: FontData;
-    shaped: ShapedGlyph[] | null;
-    hexStr: string | null;
-    widthPt: number;
+    readonly text: string;
+    readonly fontRef: string;
+    readonly fontData: FontData;
+    readonly shaped: ShapedGlyph[] | null;
+    readonly hexStr: string | null;
+    readonly widthPt: number;
 }
 
 /** Encoding context encapsulating text encoding and font reference logic. */
 export interface EncodingContext {
-    isUnicode: boolean;
-    fontEntries: FontEntry[];
-    ps: (str: string) => string;
-    tw: (str: string, sz: number) => number;
-    textRuns: (str: string, sz: number) => TextRun[];
-    f1: string;
-    f2: string;
-    fontData?: FontData;
-    getUsedGids?: () => Map<string, Set<number>>;
+    readonly isUnicode: boolean;
+    readonly fontEntries: FontEntry[];
+    readonly ps: (str: string) => string;
+    readonly tw: (str: string, sz: number) => number;
+    readonly textRuns: (str: string, sz: number) => TextRun[];
+    readonly f1: string;
+    readonly f2: string;
+    readonly fontData?: FontData;
+    readonly getUsedGids?: () => Map<string, Set<number>>;
 }
 
 // ── PDF Parameters ───────────────────────────────────────────────────
@@ -83,17 +83,17 @@ export interface EncodingContext {
 /** A single row in the PDF table. */
 export interface PdfRow {
     /** Cell text values (one per column). */
-    cells: string[];
+    readonly cells: readonly string[];
     /** Row type — used for color styling (e.g. 'credit' → green, 'debit' → red). */
-    type: string;
+    readonly type: string;
     /** Whether the row is "pointed" (highlighted). */
-    pointed: boolean;
+    readonly pointed: boolean;
 }
 
 /** An info key/value pair displayed in the header section. */
 export interface PdfInfoItem {
-    label: string;
-    value: string;
+    readonly label: string;
+    readonly value: string;
 }
 
 /**
@@ -103,25 +103,25 @@ export interface PdfInfoItem {
  */
 export interface PdfParams {
     /** PDF metadata title (invisible, stored in document info). */
-    docTitle?: string;
+    readonly docTitle?: string;
     /** Visible title at the top of the first page. */
-    title: string;
+    readonly title: string;
     /** Key/value info lines displayed below the title. */
-    infoItems: PdfInfoItem[];
+    readonly infoItems: readonly PdfInfoItem[];
     /** Balance text displayed in the highlighted box. */
-    balanceText: string;
+    readonly balanceText: string;
     /** Count text displayed below the balance box (e.g. "42 operations"). */
-    countText: string;
+    readonly countText: string;
     /** Column headers for the table. */
-    headers: string[];
+    readonly headers: readonly string[];
     /** Data rows for the table. */
-    rows: PdfRow[];
+    readonly rows: readonly PdfRow[];
     /** Footer text displayed at the bottom of every page. */
-    footerText: string;
+    readonly footerText: string;
     /** Single font data (legacy, use fontEntries for multi-font). */
-    fontData?: FontData | null;
+    readonly fontData?: FontData | null;
     /** Array of font entries for multi-font support (primary first). */
-    fontEntries?: FontEntry[];
+    readonly fontEntries?: FontEntry[];
 }
 
 // ── Theme / Style Types ──────────────────────────────────────────────
@@ -146,46 +146,46 @@ export type PdfColor = PdfRgbString | PdfRgbTuple | (string & {});
  * Each field accepts any PdfColor format (hex, RGB tuple, or PDF operator string).
  */
 export interface PdfColors {
-    title: PdfColor;
-    credit: PdfColor;
-    debit: PdfColor;
-    text: PdfColor;
-    thBg: PdfColor;
-    thBrd: PdfColor;
-    rowBrd: PdfColor;
-    ptdBg: PdfColor;
-    balBg: PdfColor;
-    balBrd: PdfColor;
-    label: PdfColor;
-    footer: PdfColor;
+    readonly title: PdfColor;
+    readonly credit: PdfColor;
+    readonly debit: PdfColor;
+    readonly text: PdfColor;
+    readonly thBg: PdfColor;
+    readonly thBrd: PdfColor;
+    readonly rowBrd: PdfColor;
+    readonly ptdBg: PdfColor;
+    readonly balBg: PdfColor;
+    readonly balBrd: PdfColor;
+    readonly label: PdfColor;
+    readonly footer: PdfColor;
 }
 
 /** Column definition for the table layout. */
 export interface ColumnDef {
     /** Fraction of content width (0-1). */
-    f: number;
+    readonly f: number;
     /** Alignment: 'l' = left, 'r' = right, 'c' = center. */
-    a: 'l' | 'r' | 'c';
+    readonly a: 'l' | 'r' | 'c';
     /** Max characters for data cells. */
-    mx: number;
+    readonly mx: number;
     /** Max characters for header cells. */
-    mxH: number;
+    readonly mxH: number;
 }
 
 /** Layout options (all optional, A4 defaults applied). */
 export interface PdfLayoutOptions {
     /** Page width in points (default: 595.28 = A4). */
-    pageWidth?: number;
+    readonly pageWidth?: number;
     /** Page height in points (default: 841.89 = A4). */
-    pageHeight?: number;
+    readonly pageHeight?: number;
     /** Margins { top, right, bottom, left } in points. */
-    margins?: { t: number; r: number; b: number; l: number };
+    readonly margins?: { readonly t: number; readonly r: number; readonly b: number; readonly l: number };
     /** Column definitions (overrides default 5-column layout). */
-    columns?: ColumnDef[];
+    readonly columns?: readonly ColumnDef[];
     /** Color palette (overrides default blue theme). */
-    colors?: PdfColors;
+    readonly colors?: PdfColors;
     /** Font sizes { title, info, th, td, ft }. */
-    fontSizes?: Partial<{ title: number; info: number; th: number; td: number; ft: number }>;
+    readonly fontSizes?: Partial<{ readonly title: number; readonly info: number; readonly th: number; readonly td: number; readonly ft: number }>;
     /**
      * Enable Tagged PDF (PDF/UA) + /ActualText + PDF/A compliance.
      * - `true` (default tagged): PDF/A-2b (ISO 19005-2) with %PDF-1.7
@@ -202,7 +202,7 @@ export interface PdfLayoutOptions {
      *   - OutputIntent with sRGB ICC profile
      * Default: false (backward compatible).
      */
-    tagged?: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u';
+    readonly tagged?: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u';
     /**
      * Enable PDF encryption (password protection).
      * Uses AES-128 or AES-256 only — no RC4.
@@ -210,7 +210,7 @@ export interface PdfLayoutOptions {
      * Mutually exclusive with `tagged` (PDF/A forbids encryption per ISO 19005-1 §6.3.2).
      * Default: undefined (no encryption).
      */
-    encryption?: EncryptionOptions;
+    readonly encryption?: EncryptionOptions;
     /**
      * Enable FlateDecode stream compression (ISO 32000-1 §7.3.8.1).
      *
@@ -227,7 +227,31 @@ export interface PdfLayoutOptions {
      *
      * Default: false (backward compatible).
      */
-    compress?: boolean;
+    readonly compress?: boolean;
+    /**
+     * Header template rendered at the top of every page.
+     * Uses placeholder syntax: {page}, {pages}, {date}, {title}.
+     * Default: undefined (no header).
+     */
+    readonly headerTemplate?: PageTemplate;
+    /**
+     * Footer template rendered at the bottom of every page.
+     * Uses placeholder syntax: {page}, {pages}, {date}, {title}.
+     * Overrides `footerText` when both are provided.
+     * Default: undefined (uses footerText with page numbers).
+     */
+    readonly footerTemplate?: PageTemplate;
+    /**
+     * Watermark rendered on every page.
+     * Supports text watermarks, image watermarks, or both.
+     * Position: 'background' (behind content, default) or 'foreground' (above content).
+     *
+     * Note: PDF/A-1b forbids transparency (ISO 19005-1 §6.4). Watermarks with opacity < 1.0
+     * will throw when used with `tagged: 'pdfa1b'`.
+     *
+     * Default: undefined (no watermark).
+     */
+    readonly watermark?: WatermarkOptions;
 }
 
 // ── Encryption Types ─────────────────────────────────────────────────
@@ -258,12 +282,101 @@ export interface EncryptionOptions {
     readonly algorithm?: 'aes128' | 'aes256';
 }
 
+// ── Page Template Types ──────────────────────────────────────────────
+
+/**
+ * Template for page headers and footers with placeholder support.
+ *
+ * Supported placeholders (resolved at render time):
+ * - `{page}` — current page number
+ * - `{pages}` — total page count
+ * - `{date}` — current date (YYYY-MM-DD)
+ * - `{title}` — document title
+ *
+ * @example
+ * ```ts
+ * const footer: PageTemplate = {
+ *   left: 'Confidential',
+ *   center: '{title}',
+ *   right: 'Page {page} of {pages}',
+ * };
+ * ```
+ */
+export interface PageTemplate {
+    /** Left-aligned text (supports placeholders). */
+    readonly left?: string;
+    /** Center-aligned text (supports placeholders). */
+    readonly center?: string;
+    /** Right-aligned text (supports placeholders). */
+    readonly right?: string;
+    /** Font size in points (default: 7). */
+    readonly fontSize?: number;
+    /** Text color (any PdfColor format: hex, RGB tuple, or PDF operator string). */
+    readonly color?: PdfColor;
+}
+
+// ── Watermark Types ──────────────────────────────────────────────────
+
+/**
+ * Text watermark configuration.
+ * Renders as large semi-transparent rotated text centered on each page.
+ */
+export interface WatermarkText {
+    /** Watermark text (e.g. "DRAFT", "CONFIDENTIAL"). */
+    readonly text: string;
+    /** Font size in points. Default: 60. */
+    readonly fontSize?: number;
+    /** Text color. Default: '0.75 0.75 0.75' (light gray). */
+    readonly color?: PdfColor;
+    /** Opacity 0.0–1.0. Default: 0.15. */
+    readonly opacity?: number;
+    /** Rotation angle in degrees (counterclockwise). Default: -45. */
+    readonly angle?: number;
+}
+
+/**
+ * Image watermark configuration.
+ * Renders a semi-transparent image centered on each page.
+ */
+export interface WatermarkImage {
+    /** Image data (JPEG or PNG). */
+    readonly data: Uint8Array;
+    /** Opacity 0.0–1.0. Default: 0.10. */
+    readonly opacity?: number;
+    /** Display width in points (default: auto from image dimensions). */
+    readonly width?: number;
+    /** Display height in points (default: auto from image dimensions). */
+    readonly height?: number;
+}
+
+/**
+ * Watermark options for PDF pages.
+ * Provide either `text` or `image` (or both).
+ *
+ * @example
+ * ```ts
+ * // Text watermark
+ * { text: { text: 'DRAFT', opacity: 0.2, angle: -45 } }
+ *
+ * // Image watermark
+ * { image: { data: pngBytes, opacity: 0.1 } }
+ * ```
+ */
+export interface WatermarkOptions {
+    /** Text watermark rendered at page center. */
+    readonly text?: WatermarkText;
+    /** Image watermark rendered at page center. */
+    readonly image?: WatermarkImage;
+    /** Render position: 'background' (behind content) or 'foreground' (above content). Default: 'background'. */
+    readonly position?: 'background' | 'foreground';
+}
+
 // ── Worker Types ─────────────────────────────────────────────────────
 
 /** Message sent to the PDF Worker. */
 export interface WorkerInputMessage {
-    type: 'GENERATE_PDF';
-    params: PdfParams;
+    readonly type: 'GENERATE_PDF';
+    readonly params: PdfParams;
 }
 
 /** Messages received from the PDF Worker. */

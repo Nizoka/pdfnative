@@ -107,6 +107,118 @@ describe('buildPDF', () => {
     });
 });
 
+// ── Header / Footer Templates ────────────────────────────────────────
+
+describe('Header/Footer Templates (Table Builder)', () => {
+    it('should render custom footer template text', () => {
+        const result = buildPDF(makeMinimalParams(), {
+            footerTemplate: { left: 'Custom Footer', right: 'Page {page} of {pages}' },
+        });
+        expect(result).toContain('Custom Footer');
+        expect(result).toContain('Page 1 of 1');
+    });
+
+    it('should render footer center text', () => {
+        const result = buildPDF(makeMinimalParams(), {
+            footerTemplate: { center: 'Centered' },
+        });
+        expect(result).toContain('Centered');
+    });
+
+    it('should resolve {title} placeholder in footer', () => {
+        const result = buildPDF(makeMinimalParams({ title: 'My Report' }), {
+            footerTemplate: { left: '{title}' },
+        });
+        expect(result).toContain('My Report');
+    });
+
+    it('should resolve {date} placeholder', () => {
+        const result = buildPDF(makeMinimalParams(), {
+            footerTemplate: { left: '{date}' },
+        });
+        expect(result).toMatch(/\d{4}-\d{2}-\d{2}/);
+    });
+
+    it('should override footerText when footerTemplate is provided', () => {
+        const result = buildPDF(
+            makeMinimalParams({ footerText: 'Old Footer' }),
+            { footerTemplate: { left: 'New Footer' } },
+        );
+        expect(result).toContain('New Footer');
+    });
+
+    it('should use footerText as backward compat when no template', () => {
+        const result = buildPDF(makeMinimalParams({ footerText: 'Legacy Footer' }));
+        expect(result).toContain('Legacy Footer');
+        expect(result).toContain('1/1');
+    });
+
+    it('should render header template on each page', () => {
+        // Create enough rows to span 2 pages
+        const rows = Array.from({ length: 80 }, (_, i) => ({
+            cells: [`${i}`, 'Description', 'Cat', '$10', ''],
+            type: 'credit' as const,
+            pointed: false,
+        }));
+        const result = buildPDF(makeMinimalParams({ rows }), {
+            headerTemplate: { left: 'Header Text', right: '{page}/{pages}' },
+        });
+        const matches = result.match(/Header Text/g);
+        expect(matches).not.toBeNull();
+        expect(matches!.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should render header with custom color', () => {
+        const result = buildPDF(makeMinimalParams(), {
+            headerTemplate: { left: 'Red Header', color: '#FF0000' },
+        });
+        expect(result).toContain('Red Header');
+        expect(result).toContain('1 0 0 rg');
+    });
+
+    it('should produce valid PDF with header + footer templates', () => {
+        const result = buildPDF(makeMinimalParams(), {
+            headerTemplate: { left: 'Company', center: '{title}', right: '{date}' },
+            footerTemplate: { left: 'Confidential', right: 'Page {page}/{pages}' },
+        });
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toMatch(/%%EOF$/);
+        expect(result).toContain('xref');
+    });
+
+    it('should handle header + footer + tagged mode', () => {
+        const result = buildPDF(makeMinimalParams(), {
+            tagged: true,
+            headerTemplate: { left: 'Header' },
+            footerTemplate: { right: '{page}/{pages}' },
+        });
+        expect(result).toContain('Header');
+        expect(result).toContain('1/1');
+        expect(result).toContain('/StructTreeRoot');
+    });
+
+    it('should handle empty template (no header/footer content)', () => {
+        const result = buildPDF(makeMinimalParams(), { footerTemplate: {} });
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toMatch(/%%EOF$/);
+    });
+
+    it('should adjust pagination when header reduces available height', () => {
+        const rows = Array.from({ length: 60 }, (_, i) => ({
+            cells: [`${i}`, 'Desc', 'Cat', '$10', ''],
+            type: 'credit' as const,
+            pointed: false,
+        }));
+        const resultNoHeader = buildPDF(makeMinimalParams({ rows }));
+        const resultWithHeader = buildPDF(makeMinimalParams({ rows }), {
+            headerTemplate: { left: 'Header' },
+        });
+        const noHeaderPages = (resultNoHeader.match(/\/Type \/Page /g) ?? []).length;
+        const withHeaderPages = (resultWithHeader.match(/\/Type \/Page /g) ?? []).length;
+        expect(withHeaderPages).toBeGreaterThanOrEqual(noHeaderPages);
+    });
+});
+
 describe('buildPDFBytes', () => {
     it('should return Uint8Array', () => {
         const result = buildPDFBytes(makeMinimalParams());

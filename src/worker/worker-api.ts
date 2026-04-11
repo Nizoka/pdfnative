@@ -96,11 +96,12 @@ export async function createPDF(
     }
 ): Promise<Uint8Array> {
     const threshold = options?.threshold ?? WORKER_THRESHOLD;
-    const useWorker = pdfParams.rows.length > threshold && typeof Worker !== 'undefined' && options?.workerUrl;
+    const workerUrl = options?.workerUrl;
+    const useWorker = pdfParams.rows.length > threshold && typeof Worker !== 'undefined' && workerUrl;
 
     if (useWorker) {
         try {
-            return await generatePDFInWorker(options.workerUrl!, pdfParams, options?.onProgress);
+            return await generatePDFInWorker(workerUrl, pdfParams, options?.onProgress);
         } catch {
             // Fallback to main thread on Worker failure
             return generatePDFMainThread(pdfParams, options?.layoutOptions);

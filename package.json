@@ -32,6 +32,7 @@
     "dist",
     "fonts",
     "tools",
+    "CHANGELOG.md",
     "LICENSE",
     "README.md"
   ],
@@ -50,7 +51,8 @@
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc --project tsconfig.test.json --noEmit",
-    "typecheck:all": "tsc --noEmit && tsc --project tsconfig.test.json --noEmit",
+    "typecheck:scripts": "tsc --project tsconfig.scripts.json --noEmit",
+    "typecheck:all": "tsc --noEmit && tsc --project tsconfig.test.json --noEmit && tsc --project tsconfig.scripts.json --noEmit",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -88,14 +90,21 @@
   "bugs": {
     "url": "https://github.com/Nizoka/pdfnative/issues"
   },
-  "funding": {
-    "type": "individual",
-    "url": "https://plika.app"
-  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/Nizoka"
+    },
+    {
+      "type": "individual",
+      "url": "https://plika.app"
+    }
+  ],
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
+    "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.0.0",
     "tsup": "^8.0.0",

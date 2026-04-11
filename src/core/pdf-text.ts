@@ -10,12 +10,25 @@ import type { FontData, ShapedGlyph, EncodingContext } from '../types/pdf-types.
 import { toWinAnsi, helveticaWidth } from '../fonts/encoding.js';
 import { wrapSpan } from './pdf-tags.js';
 
-/** Format a number as PDF operator value (2 decimal places). */
+/**
+ * Format a number as PDF operator value (2 decimal places).
+ *
+ * @param v - Numeric value
+ * @returns Formatted string with 2 decimal places
+ */
 export const fmtNum = (v: number): string => v.toFixed(2);
 
 /**
  * Render pre-shaped glyphs with GPOS offsets.
  * Each glyph emits its own BT…ET block with absolute coordinates.
+ *
+ * @param shaped - Array of shaped glyphs with glyph IDs and offsets
+ * @param x - Left X position in points
+ * @param y - Baseline Y position in points
+ * @param font - PDF font reference (e.g. '/F3')
+ * @param sz - Font size in points
+ * @param fontData - Font data with metrics and glyph widths
+ * @returns PDF content stream operators string
  */
 export function txtShaped(
     shaped: ShapedGlyph[],
@@ -46,6 +59,14 @@ export function txtShaped(
 /**
  * Text at absolute position (x, y) with font.
  * Multi-font: splits text into runs by cmap coverage.
+ *
+ * @param str - Text string to render
+ * @param x - Left X position in points
+ * @param y - Baseline Y position in points
+ * @param font - PDF font reference (e.g. '/F1')
+ * @param sz - Font size in points
+ * @param enc - Encoding context for font selection and text encoding
+ * @returns PDF content stream operators string
  */
 export function txt(
     str: string,
@@ -81,7 +102,17 @@ export function txt(
     return parts.join('\n');
 }
 
-/** Right-aligned text: rightX is the right boundary. */
+/**
+ * Right-aligned text: rightX is the right boundary.
+ *
+ * @param str - Text string to render
+ * @param rightX - Right boundary X position in points
+ * @param y - Baseline Y position in points
+ * @param font - PDF font reference
+ * @param sz - Font size in points
+ * @param enc - Encoding context
+ * @returns PDF content stream operators string
+ */
 export function txtR(
     str: string,
     rightX: number,
@@ -94,7 +125,18 @@ export function txtR(
     return txt(str, rightX - width, y, font, sz, enc);
 }
 
-/** Center-aligned text within a column. */
+/**
+ * Center-aligned text within a column.
+ *
+ * @param str - Text string to render
+ * @param leftX - Left edge X position of the column in points
+ * @param y - Baseline Y position in points
+ * @param font - PDF font reference
+ * @param sz - Font size in points
+ * @param colW - Column width in points
+ * @param enc - Encoding context
+ * @returns PDF content stream operators string
+ */
 export function txtC(
     str: string,
     leftX: number,
@@ -114,7 +156,15 @@ export function txtC(
 
 /**
  * Tagged text at absolute position — wraps output in /Span with /ActualText.
+ *
+ * @param str - Text string to render
+ * @param x - Left X position in points
+ * @param y - Baseline Y position in points
+ * @param font - PDF font reference
+ * @param sz - Font size in points
+ * @param enc - Encoding context
  * @param mcid - Marked content identifier for linking to structure tree
+ * @returns PDF content stream operators wrapped in BDC/EMC
  */
 export function txtTagged(
     str: string,
@@ -129,7 +179,18 @@ export function txtTagged(
     return wrapSpan(content, str, mcid);
 }
 
-/** Tagged right-aligned text. */
+/**
+ * Tagged right-aligned text.
+ *
+ * @param str - Text string to render
+ * @param rightX - Right boundary X position in points
+ * @param y - Baseline Y position in points
+ * @param font - PDF font reference
+ * @param sz - Font size in points
+ * @param enc - Encoding context
+ * @param mcid - Marked content identifier
+ * @returns PDF content stream operators wrapped in BDC/EMC
+ */
 export function txtRTagged(
     str: string,
     rightX: number,
@@ -143,7 +204,19 @@ export function txtRTagged(
     return wrapSpan(content, str, mcid);
 }
 
-/** Tagged center-aligned text. */
+/**
+ * Tagged center-aligned text.
+ *
+ * @param str - Text string to render
+ * @param leftX - Left edge X position of the column in points
+ * @param y - Baseline Y position in points
+ * @param font - PDF font reference
+ * @param sz - Font size in points
+ * @param colW - Column width in points
+ * @param enc - Encoding context
+ * @param mcid - Marked content identifier
+ * @returns PDF content stream operators wrapped in BDC/EMC
+ */
 export function txtCTagged(
     str: string,
     leftX: number,

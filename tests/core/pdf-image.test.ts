@@ -214,6 +214,18 @@ describe('parseJPEG', () => {
         const bytes = new Uint8Array([0xFF, 0xD8, 0xFF, 0xD9]);
         expect(() => parseJPEG(bytes)).toThrow('no SOF marker found');
     });
+
+    it('throws for JPEG with invalid segment length < 2', () => {
+        // SOI + APP0 marker with segLen=1 (invalid — minimum is 2)
+        const bytes = new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x01, 0x00, 0x00]);
+        expect(() => parseJPEG(bytes)).toThrow('invalid segment length');
+    });
+
+    it('handles JPEG with segment exceeding file length gracefully', () => {
+        // SOI + APP0 marker with segLen=0xFFFF but only 8 bytes total
+        const bytes = new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0, 0xFF, 0xFF, 0x00, 0x00]);
+        expect(() => parseJPEG(bytes)).toThrow('no SOF marker found');
+    });
 });
 
 describe('parsePNG', () => {
@@ -234,20 +246,14 @@ describe('parsePNG', () => {
         expect(result.colorSpace).toBe('/DeviceGray');
     });
 
-    it('parses RGBA PNG (alpha noted as limitation)', () => {
+    it('throws for RGBA PNG (alpha channel not supported)', () => {
         const png = makeMinimalPNG({ width: 2, height: 2, colorType: 6 });
-        const result = parsePNG(png);
-        expect(result.width).toBe(2);
-        expect(result.height).toBe(2);
-        expect(result.colorSpace).toBe('/DeviceRGB');
-        // SMask is null due to zero-dep limitation
-        expect(result.smask).toBeNull();
+        expect(() => parsePNG(png)).toThrow('alpha channel PNGs');
     });
 
-    it('parses GrayAlpha PNG', () => {
+    it('throws for GrayAlpha PNG (alpha channel not supported)', () => {
         const png = makeMinimalPNG({ width: 2, height: 2, colorType: 4 });
-        const result = parsePNG(png);
-        expect(result.colorSpace).toBe('/DeviceGray');
+        expect(() => parsePNG(png)).toThrow('alpha channel PNGs');
     });
 
     it('throws for wrong magic bytes', () => {

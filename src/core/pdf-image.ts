@@ -146,6 +146,8 @@ export function parseJPEG(bytes: Uint8Array): ParsedImage {
         // Skip marker segment
         if (offset + 3 >= bytes.length) break;
         const segLen = readU16BE(bytes, offset + 2);
+        if (segLen < 2) throw new Error('parseJPEG: invalid segment length');
+        if (offset + 2 + segLen > bytes.length) break;
         offset += 2 + segLen;
     }
 
@@ -265,43 +267,14 @@ export function parsePNG(bytes: Uint8Array): ParsedImage {
         };
     }
 
-    // Alpha PNG — we need to decompress, separate channels, and re-compress.
-    // Since we don't have a zlib dependency, we store the full compressed data
-    // and let the PDF decoder handle it, using /DecodeParms to strip the filter byte.
-    // However, for alpha separation, we need raw pixel data.
-    //
-    // Strategy: Use the raw compressed data with DecodeParms for the color channels.
-    // For the alpha channel, we note that full alpha separation requires decompression.
-    //
-    // Compromise for zero-dep: pass the full RGBA compressed data and mark it.
-    // PDF viewers that support PNG predictor + alpha will handle it correctly.
-    //
-    // ACTUALLY: PDF does not natively support RGBA in a single XObject.
-    // We must decompress to separate color and alpha channels.
-    // Use the built-in DecompressionStream (available in Node 18+ and modern browsers).
-    //
-    // For now, we store the compressed data and provide decode parameters.
-    // A future enhancement can add proper alpha separation with DecompressionStream.
-    //
-    // The pragmatic approach: store the complete zlib data. When alpha is detected,
-    // Document the limitation and recommend pre-processing images to remove alpha.
-
-    // For RGBA/GrayA PNGs: we store compressed data and mark hasAlpha = true.
-    // The image will render without transparency in PDF viewers.
-    // This is the same approach most zero-dep PDF libs take.
-
-    return {
-        width,
-        height,
-        colorSpace,
-        bitsPerComponent: 8,
-        filter: '/FlateDecode',
-        data: uint8ToByteString(compressedData),
-        smask: null, // Alpha separation requires decompression — noted as limitation
-        smaskWidth: width,
-        smaskHeight: height,
-        smaskBpc: 8,
-    };
+    // Alpha PNG — PDF does not natively support RGBA in a single XObject (ISO 32000-1 §8.9.5.3).
+    // Proper alpha separation requires decompressing IDAT, splitting channels, and recompressing.
+    // This is not feasible without a zlib dependency. Reject explicitly instead of producing
+    // corrupt output with wrong stride.
+    throw new Error(
+        `parsePNG: alpha channel PNGs (color type ${colorType}) are not supported — ` +
+        'preprocess the image to remove the alpha channel before embedding'
+    );
 }
 
 // ── Image Parsing Entry Point ────────────────────────────────────────

@@ -23,16 +23,13 @@
  */
 
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
+import {
+    ARABIC_START, ARABIC_END, HEBREW_START, HEBREW_END,
+    containsArabic, containsHebrew,
+} from './script-registry.js';
 
-// ── Arabic Unicode Constants ─────────────────────────────────────────
-
-/** Arabic Unicode block range. */
-export const ARABIC_START = 0x0600;
-export const ARABIC_END = 0x06FF;
-
-/** Hebrew Unicode block range. */
-export const HEBREW_START = 0x0590;
-export const HEBREW_END = 0x05FF;
+// Re-export range constants for backward compatibility
+export { ARABIC_START, ARABIC_END, HEBREW_START, HEBREW_END, containsArabic, containsHebrew };
 
 /**
  * Arabic joining type classification.
@@ -220,6 +217,10 @@ const ALEF_VARIANTS = new Set([0x0622, 0x0623, 0x0625, 0x0627]);
 
 /**
  * Check if a codepoint pair should form a Lam-Alef ligature.
+ *
+ * @param cp1 - First code point (expected Lam U+0644)
+ * @param cp2 - Second code point (expected Alef variant)
+ * @returns True if the pair forms a Lam-Alef ligature
  */
 export function isLamAlef(cp1: number, cp2: number): boolean {
     return cp1 === LAM && ALEF_VARIANTS.has(cp2);
@@ -227,33 +228,7 @@ export function isLamAlef(cp1: number, cp2: number): boolean {
 
 // ── Main Shaping API ─────────────────────────────────────────────────
 
-/**
- * Check if text contains Arabic characters requiring shaping.
- */
-export function containsArabic(text: string): boolean {
-    for (let i = 0; i < text.length;) {
-        const cp = text.codePointAt(i) ?? 0;
-        if (cp >= ARABIC_START && cp <= ARABIC_END) return true;
-        if (cp >= 0x0750 && cp <= 0x077F) return true;
-        if (cp >= 0xFB50 && cp <= 0xFDFF) return true;
-        if (cp >= 0xFE70 && cp <= 0xFEFF) return true;
-        i += cp > 0xFFFF ? 2 : 1;
-    }
-    return false;
-}
-
-/**
- * Check if text contains Hebrew characters.
- */
-export function containsHebrew(text: string): boolean {
-    for (let i = 0; i < text.length;) {
-        const cp = text.codePointAt(i) ?? 0;
-        if (cp >= HEBREW_START && cp <= HEBREW_END) return true;
-        if (cp >= 0xFB1D && cp <= 0xFB4F) return true;
-        i += cp > 0xFFFF ? 2 : 1;
-    }
-    return false;
-}
+// containsArabic and containsHebrew are re-exported from script-registry above
 
 /**
  * Shape Arabic text using Unicode Presentation Forms.

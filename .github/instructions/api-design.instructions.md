@@ -29,18 +29,20 @@ applyTo: "src/index.ts"
 - Internal helpers: `_prefixed` or unexported
 
 ## Export Categories (maintain grouping in index.ts)
-1. Types (type-only exports)
+1. Types (type-only exports) — includes `PageTemplate`, `WatermarkText`, `WatermarkImage`, `WatermarkOptions`, `TocBlock`
 2. Core — PDF Builder (table-centric)
 3. Core — Document Builder (`buildDocumentPDF`, `buildDocumentPDFBytes`, `wrapText`)
 4. Core — Image Support (`parseImage`, `buildImageXObject`, `buildImageOperators`, `ParsedImage`)
 5. Core — Link Annotations (`validateURL`, `buildLinkAnnotation`, `buildInternalLinkAnnotation`, `isLinkAnnotation`, `LinkAnnotation`, `InternalLink`, `Annotation`)
-6. Core — Layout
-7. Core — Tagged PDF & PDF/A (`StructElement`, `MCRef`, `wrapSpan`, `buildStructureTree`, `buildXMPMetadata`, etc.)
-8. Core — Stream Compression (`initNodeCompression`, `setDeflateImpl`, `deflateSync`, `deflateStored`, `compressStream`, `adler32`, `uint8ToBinaryString`)
-9. Fonts — Encoding & Loading
-10. Shaping — Thai & Multi-Script
-11. Shaping — BiDi & Arabic/Hebrew (`resolveBidiRuns`, `containsRTL`, `shapeArabicText`, `containsArabic`, `containsHebrew`, `BidiType`, `BidiRun`)
-12. Worker — Off-Thread Generation
+6. Core — Color Utilities (`parseColor`, `isValidPdfRgb`, `normalizeColors`)
+7. Core — Watermark (`WatermarkState`, `validateWatermark`, `buildWatermarkState`)
+8. Core — Layout (`PG_W`, `PG_H`, `HEADER_H`, `PAGE_SIZES`, `resolveTemplate`, `resolveLayout`, `computeColumnPositions`)
+9. Core — Tagged PDF & PDF/A (`StructElement`, `MCRef`, `wrapSpan`, `buildStructureTree`, `buildXMPMetadata`, etc.)
+10. Core — Stream Compression (`initNodeCompression`, `setDeflateImpl`, `deflateSync`, `deflateStored`, `compressStream`, `adler32`, `uint8ToBinaryString`)
+11. Fonts — Encoding & Loading
+12. Shaping — Thai & Multi-Script (`detectCharLang`, `detectFallbackLangs`, `splitTextByFont`, `needsUnicodeFont`)
+13. Shaping — BiDi & Arabic/Hebrew (`resolveBidiRuns`, `containsRTL`, `shapeArabicText`, `containsArabic`, `containsHebrew`, `BidiType`, `BidiRun`)
+14. Worker — Off-Thread Generation
 
 ## Documentation Requirements
 - README Quick Start must work as-is (copy-paste ready)

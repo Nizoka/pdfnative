@@ -6,6 +6,7 @@ coverage/
 Thumbs.db
 .env
 .env.*
+.vscode/
 
 # Raw TTF source fonts (large binaries, download separately)
 fonts/ttf/

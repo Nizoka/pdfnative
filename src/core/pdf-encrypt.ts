@@ -457,6 +457,9 @@ function encodePassword(str: string): Uint8Array {
  * Compute permission integer from user-friendly option flags.
  * Bits 13-32 are reserved and set to 1. Bits 1-2 must be 0.
  * Bit 3: print, Bit 5: modify, Bit 6: extract text/copy, Bit 12: high-quality print
+ *
+ * @param perms - Permission flags (print, copy, modify, extractText)
+ * @returns Signed 32-bit permission integer for the /P entry
  */
 export function computePermissions(perms?: EncryptionOptions['permissions']): number {
     let p = 0xFFFFF000; // bits 13-32 set to 1
@@ -488,6 +491,8 @@ function fillRandom(buf: Uint8Array): Uint8Array {
 
 /**
  * Generate a random document ID (16 bytes).
+ *
+ * @returns 16-byte Uint8Array document identifier
  */
 export function generateDocId(): Uint8Array {
     return fillRandom(new Uint8Array(16));
@@ -643,8 +648,7 @@ function computeHashR6(password: Uint8Array, salt: Uint8Array, userKey: Uint8Arr
     let K = sha256(input);
 
     let round = 0;
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for (;;) {
         // K1 = (password + K + userKey) repeated 64 times
         const seq = new Uint8Array(password.length + K.length + (userKey ? userKey.length : 0));
         let p = 0;
@@ -779,6 +783,9 @@ function initR4(options: EncryptionOptions, docId: Uint8Array): EncryptionState 
 /**
  * Initialize encryption state from options.
  * Call once before PDF assembly.
+ *
+ * @param options - User-facing encryption options (passwords, algorithm, permissions)
+ * @returns Computed encryption state for use during PDF generation
  */
 export function initEncryption(options: EncryptionOptions): EncryptionState {
     const docId = generateDocId();
@@ -877,6 +884,9 @@ function deriveObjectKey(state: EncryptionState, objNum: number, genNum: number)
 
 /**
  * Build the /Encrypt dictionary for the PDF trailer.
+ *
+ * @param state - Encryption state from initEncryption()
+ * @returns PDF dictionary string for the /Encrypt entry
  */
 export function buildEncryptDict(state: EncryptionState): string {
     if (state.algorithm === 'aes256') {
@@ -901,20 +911,24 @@ function buildEncryptDictR4(state: EncryptionState): string {
 }
 
 function buildEncryptDictR6(state: EncryptionState): string {
+    const { oeValue, ueValue, permsValue } = state;
+    if (!oeValue || !ueValue || !permsValue) throw new Error('R6 encryption requires OE, UE, and Perms values');
     return `<< /Type /Encrypt /Filter /Standard /V 5 /R 6 /Length 256 ` +
         `/CF << /StdCF << /Type /CryptFilter /CFM /AESV3 /Length 32 >> >> ` +
         `/StmF /StdCF /StrF /StdCF ` +
         `/O <${hexStr(state.oValue)}> ` +
         `/U <${hexStr(state.uValue)}> ` +
-        `/OE <${hexStr(state.oeValue!)}> ` +
-        `/UE <${hexStr(state.ueValue!)}> ` +
-        `/Perms <${hexStr(state.permsValue!)}> ` +
+        `/OE <${hexStr(oeValue)}> ` +
+        `/UE <${hexStr(ueValue)}> ` +
+        `/Perms <${hexStr(permsValue)}> ` +
         `/P ${state.pValue} >>`;
 }
 
 /**
  * Build the /ID array for the trailer.
- * Returns the PDF syntax for the ID array.
+ *
+ * @param docId - 16-byte document identifier
+ * @returns PDF syntax for the /ID array (two identical hex strings)
  */
 export function buildIdArray(docId: Uint8Array): string {
     const h = hexStr(docId);

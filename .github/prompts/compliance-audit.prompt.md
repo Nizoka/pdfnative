@@ -25,7 +25,8 @@ Perform a comprehensive compliance audit of pdfnative.
 ### 3. Accessibility
 - PDF metadata: Title, Author, CreationDate present
 - Proper font encoding for text extraction (ToUnicode CMap)
-- Table structure semantics (future: Tagged PDF)
+- Tagged PDF: structure tree, marked content, /ActualText
+- PDF/UA: /TOC + /TOCI for table of contents, /Link for annotations
 
 ### 4. Cross-Platform
 - Pure JavaScript — no Node.js-specific APIs in core
@@ -37,5 +38,17 @@ Perform a comprehensive compliance audit of pdfnative.
 - No runtime `dependencies` in package.json
 - No dynamic `require()` or `import()` of external modules
 - All font data bundled as data modules
+
+### 6. Watermark & Template Compliance
+- Watermark transparency: ExtGState /ca validated against PDF/A-1b (ISO 19005-1 §6.4)
+- Watermark validation: `validateWatermark()` enforces mutual exclusion rules
+- Header/footer templates: placeholder substitution produces safe PDF strings
+- Template backward compat: `footerText` still works alongside new `footerTemplate`
+
+### 7. Table of Contents Compliance
+- TOC internal links use `/Dest` (GoTo) — not `/URI`
+- Named destinations emitted in `/Dests` catalog dictionary
+- Multi-pass pagination converges within 3 iterations
+- Tagged mode: `/TOC` and `/TOCI` structure elements for PDF/UA
 
 Report findings with severity (critical/warning/info) and recommended fixes.

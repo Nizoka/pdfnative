@@ -38,6 +38,9 @@ export interface BidiRun {
 /**
  * Classify a Unicode code point into its bidi character type.
  * Based on Unicode Character Database BidiClass property.
+ *
+ * @param cp - Unicode code point
+ * @returns Bidi character type classification
  */
 export function classifyBidiType(cp: number): BidiType {
     // ── Specific types BEFORE broad block ranges ─────────────────────
@@ -124,6 +127,9 @@ export function classifyBidiType(cp: number): BidiType {
     if (cp >= 0x005B && cp <= 0x0060) return 'ON';
     if (cp >= 0x007B && cp <= 0x007E) return 'ON';
     if (cp >= 0x00A1 && cp <= 0x00BF) return 'ON';
+    // General Punctuation: dashes, quotes, leaders, etc. (U+2010–U+205E)
+    if (cp >= 0x2010 && cp <= 0x2027) return 'ON';
+    if (cp >= 0x2030 && cp <= 0x205E) return 'ON';
 
     // Default: Left-to-right for unclassified
     return 'L';
@@ -135,6 +141,9 @@ export function classifyBidiType(cp: number): BidiType {
  * Determine the paragraph embedding level.
  * P2: Find first strong character (L, R, AL).
  * P3: If R or AL → level 1, else level 0.
+ *
+ * @param types - Array of bidi character types for the paragraph
+ * @returns 0 for LTR, 1 for RTL
  */
 export function detectParagraphLevel(types: BidiType[]): number {
     for (const t of types) {
@@ -341,9 +350,83 @@ const MIRROR_MAP: Record<number, number> = {
 /**
  * Apply glyph mirroring for a code point in RTL context.
  * Returns the mirrored code point, or the original if no mirror exists.
+ *
+ * @param cp - Unicode code point to mirror
+ * @returns Mirrored code point (e.g. '(' → ')') or the original
  */
 export function mirrorCodePoint(cp: number): number {
     return MIRROR_MAP[cp] ?? cp;
+}
+
+// ── Practical Fixups ─────────────────────────────────────────────────
+
+/** Sentence-terminating punctuation codepoints. */
+const SENTENCE_PUNCT = new Set([
+    0x002E, // .
+    0x002C, // ,
+    0x003B, // ;
+    0x003A, // :
+    0x0021, // !
+    0x003F, // ?
+]);
+
+/**
+ * In RTL paragraphs, keep sentence punctuation (. , ; : ! ?) attached to
+ * the preceding LTR word. Standard N2 assigns paragraph direction (R) when
+ * neighbors disagree, causing "pdfnative." to split into "pdfnative" + ".".
+ * We reassign the punctuation to L so it stays in the same LTR run.
+ */
+function fixPunctuationAffinity(types: BidiType[], codePoints: number[], len: number): void {
+    for (let i = 1; i < len; i++) {
+        if (types[i] === 'R' && SENTENCE_PUNCT.has(codePoints[i])) {
+            // Check if preceding non-WS character is L
+            let prevIdx = i - 1;
+            while (prevIdx >= 0 && (types[prevIdx] === 'WS' || types[prevIdx] === 'BN')) prevIdx--;
+            if (prevIdx >= 0 && types[prevIdx] === 'L') {
+                types[i] = 'L';
+            }
+        }
+    }
+}
+
+/**
+ * Simplified bracket pairing for parentheses, square brackets, and curly braces.
+ * When brackets enclose LTR content in an RTL paragraph, the opener and closer
+ * should share the LTR level so they visually surround the content.
+ * Handles: ( ), [ ], { }
+ */
+function fixBracketPairing(types: BidiType[], codePoints: number[], len: number): void {
+    const OPEN_BRACKETS: Record<number, number> = {
+        0x0028: 0x0029, // ( → )
+        0x005B: 0x005D, // [ → ]
+        0x007B: 0x007D, // { → }
+    };
+
+    for (let i = 0; i < len; i++) {
+        const closer = OPEN_BRACKETS[codePoints[i]];
+        if (closer === undefined) continue;
+        // Found an opening bracket — find the matching closer
+        let depth = 1;
+        let closeIdx = -1;
+        for (let j = i + 1; j < len; j++) {
+            if (codePoints[j] === codePoints[i]) depth++;
+            else if (codePoints[j] === closer) {
+                depth--;
+                if (depth === 0) { closeIdx = j; break; }
+            }
+        }
+        if (closeIdx === -1) continue;
+        // Check if the content between brackets contains any L
+        let hasL = false;
+        for (let j = i + 1; j < closeIdx; j++) {
+            if (types[j] === 'L') { hasL = true; break; }
+        }
+        if (hasL) {
+            // Assign opener and closer to L so they stay with the LTR content
+            types[i] = 'L';
+            types[closeIdx] = 'L';
+        }
+    }
 }
 
 // ── Main API ─────────────────────────────────────────────────────────
@@ -380,6 +463,17 @@ export function resolveBidiRuns(text: string): BidiRun[] {
     // Step 4: Resolve neutral types (N1-N2)
     resolveNeutralTypes(types, paraLevel);
 
+    // Step 4b: Practical fixups for common mixed RTL/LTR patterns.
+    // Standard N2 assigns paragraph direction to neutrals between opposing strong
+    // types. This causes periods after LTR words to drift into RTL runs and
+    // bracket pairs around LTR content to split across runs. We fix these by
+    // keeping sentence punctuation with the preceding LTR text and by pairing
+    // brackets with their enclosed content.
+    if (paraLevel === 1) {
+        fixPunctuationAffinity(types, codePoints, len);
+        fixBracketPairing(types, codePoints, len);
+    }
+
     // Step 5: Assign levels
     const levels = assignLevels(types, paraLevel);
 
@@ -401,7 +495,12 @@ export function resolveBidiRuns(text: string): BidiRun[] {
             const start = cpToStr[runStart];
             const end = cpToStr[i];
             let runText = text.substring(start, end);
-            // Reverse RTL runs for visual order
+            // Reverse RTL runs for visual order.
+            // Note: do NOT apply glyph mirroring (UAX #9 L4) here — our rendering
+            // model pre-reverses text for a left-to-right PDF engine. The reversal
+            // itself swaps bracket/paren positions correctly: logical "(X)" becomes
+            // visual ")X(" → PDF renders L→R as ")X(" → reader reads R→L as "(X)".
+            // Applying mirrorCodePoint would double-swap and produce wrong output.
             if (runLevel % 2 === 1) {
                 runText = reverseString(runText);
             }
@@ -413,11 +512,22 @@ export function resolveBidiRuns(text: string): BidiRun[] {
         }
     }
 
+    // L2 reordering: for RTL paragraphs, reverse run order so that
+    // the first logical run (rightmost visually) appears last in the
+    // array — txt() renders runs left-to-right, so English text must
+    // come first and Hebrew/Arabic text last.
+    if (paraLevel === 1 && runs.length > 1) {
+        runs.reverse();
+    }
+
     return runs;
 }
 
 /**
  * Check if text contains any RTL characters (Arabic or Hebrew).
+ *
+ * @param text - Input text string
+ * @returns True if text contains R or AL bidi types
  */
 export function containsRTL(text: string): boolean {
     for (let i = 0; i < text.length;) {
@@ -433,6 +543,9 @@ export function containsRTL(text: string): boolean {
 
 /**
  * Reverse a string while keeping surrogate pairs intact.
+ *
+ * @param str - Input string to reverse
+ * @returns Reversed string with valid surrogate pair ordering
  */
 export function reverseString(str: string): string {
     const cps: number[] = [];

@@ -19,19 +19,24 @@ import type {
     FontEntry,
     EncodingContext,
     PdfLayoutOptions,
+    ColumnDef,
+    PageTemplate,
+    PdfColor,
 } from '../types/pdf-types.js';
-import { createEncodingContext, truncate } from '../fonts/encoding.js';
+import { createEncodingContext } from './encoding-context.js';
+import { truncate } from '../fonts/encoding.js';
 import { base64ToByteString, buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { subsetTTF } from '../fonts/font-subsetter.js';
 import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum } from './pdf-text.js';
 import { toBytes } from './pdf-stream.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
-    ROW_H, TH_H, INFO_LN, BAL_H, TITLE_LN, FT_H,
+    ROW_H, TH_H, INFO_LN, BAL_H, TITLE_LN, FT_H, HEADER_H,
     DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
     computeColumnPositions,
+    resolveTemplate,
 } from './pdf-layout.js';
-import { normalizeColors } from './pdf-color.js';
+import { normalizeColors, parseColor } from './pdf-color.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
 import {
     createMCIDAllocator,
@@ -42,8 +47,10 @@ import {
     resolvePdfAConfig,
 } from './pdf-tags.js';
 import type { EncryptionState } from './pdf-encrypt.js';
-import { initEncryption, encryptStream, buildEncryptDict, buildIdArray } from './pdf-encrypt.js';
-import { compressStream } from './pdf-compress.js';
+import { initEncryption } from './pdf-encrypt.js';
+import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
+import type { WatermarkState } from './pdf-watermark.js';
+import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
 
 // ── Tagged Mode Helper Types ─────────────────────────────────────────
 
@@ -58,11 +65,11 @@ interface TagContext {
 
 function _buildTableHeader(
     y: number,
-    headers: string[],
+    headers: readonly string[],
     enc: EncodingContext,
     cx: number[],
     cwi: number[],
-    columns: typeof DEFAULT_COLUMNS,
+    columns: readonly ColumnDef[],
     cw: number,
     mgL: number,
     mgR: number,
@@ -111,13 +118,13 @@ function _buildTableHeader(
 
 function _buildDataRow(
     y: number,
-    cells: string[],
+    cells: readonly string[],
     type: string,
     pointed: boolean,
     enc: EncodingContext,
     cx: number[],
     cwi: number[],
-    columns: typeof DEFAULT_COLUMNS,
+    columns: readonly ColumnDef[],
     cw: number,
     mgL: number,
     mgR: number,
@@ -170,34 +177,62 @@ function _buildDataRow(
     return { ops, y: y - ROW_H, structRow };
 }
 
-function _buildFooter(
-    pageNum: number,
-    totalPages: number,
-    footerText: string,
+function _buildPageTemplate(
+    template: PageTemplate,
+    page: number,
+    pages: number,
+    title: string,
+    date: string,
+    y: number,
     enc: EncodingContext,
     mgL: number,
     mgR: number,
-    mgB: number,
     pgW: number,
-    colors: typeof DEFAULT_COLORS,
-    fs: typeof DEFAULT_FONT_SIZES,
+    cw: number,
+    defaultColor: PdfColor,
+    defaultFontSize: number,
     tagCtx?: TagContext,
 ): { ops: string[]; structEls: StructElement[] } {
     const ops: string[] = [];
     const structEls: StructElement[] = [];
-    const y = mgB - 5;
-    ops.push(`${colors.footer} rg`);
-    if (tagCtx?.tagged) {
-        const mcid1 = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-        const mcid2 = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-        ops.push(txtTagged(footerText, mgL, y, enc.f1, fs.ft, enc, mcid1));
-        ops.push(txtRTagged(`${pageNum}/${totalPages}`, pgW - mgR, y, enc.f1, fs.ft, enc, mcid2));
-        structEls.push({ type: 'P', children: [{ mcid: mcid1, pageObjNum: tagCtx.pageObjNum }] });
-        structEls.push({ type: 'P', children: [{ mcid: mcid2, pageObjNum: tagCtx.pageObjNum }] });
-    } else {
-        ops.push(txt(footerText, mgL, y, enc.f1, fs.ft, enc));
-        ops.push(txtR(`${pageNum}/${totalPages}`, pgW - mgR, y, enc.f1, fs.ft, enc));
+    const sz = template.fontSize ?? defaultFontSize;
+    const color = parseColor(template.color ?? defaultColor);
+
+    ops.push(`${color} rg`);
+
+    if (template.left) {
+        const text = resolveTemplate(template.left, page, pages, title, date);
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            ops.push(txtTagged(text, mgL, y, enc.f1, sz, enc, mcid));
+            structEls.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+        } else {
+            ops.push(txt(text, mgL, y, enc.f1, sz, enc));
+        }
     }
+
+    if (template.center) {
+        const text = resolveTemplate(template.center, page, pages, title, date);
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            ops.push(txtCTagged(text, mgL, y, enc.f1, sz, cw, enc, mcid));
+            structEls.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+        } else {
+            ops.push(txtC(text, mgL, y, enc.f1, sz, cw, enc));
+        }
+    }
+
+    if (template.right) {
+        const text = resolveTemplate(template.right, page, pages, title, date);
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            ops.push(txtRTagged(text, pgW - mgR, y, enc.f1, sz, enc, mcid));
+            structEls.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+        } else {
+            ops.push(txtR(text, pgW - mgR, y, enc.f1, sz, enc));
+        }
+    }
+
     return { ops, structEls };
 }
 
@@ -235,7 +270,9 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     const columns = layoutOptions?.columns ?? DEFAULT_COLUMNS;
     const rawColors = layoutOptions?.colors ?? DEFAULT_COLORS;
     const colors = layoutOptions?.colors ? normalizeColors(rawColors) : rawColors;
-    const fs = DEFAULT_FONT_SIZES;
+    const fs = layoutOptions?.fontSizes
+        ? { ...DEFAULT_FONT_SIZES, ...layoutOptions.fontSizes }
+        : DEFAULT_FONT_SIZES;
     const { cx, cwi } = computeColumnPositions(columns, mg.l, cw);
 
     // Build fontEntries
@@ -244,11 +281,23 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
 
     const enc = createEncodingContext(fontEntries);
 
+    // ── Resolve header/footer templates ──────────────────────────────
+    const footerTpl: PageTemplate = layoutOptions?.footerTemplate ?? {
+        left: footerText || undefined,
+        right: '{page}/{pages}',
+    };
+    const headerTpl: PageTemplate | undefined = layoutOptions?.headerTemplate;
+    const headerH = headerTpl ? HEADER_H : 0;
+
+    const dateNow = new Date();
+    const pad2d = (n: number) => String(n).padStart(2, '0');
+    const dateStr = `${dateNow.getFullYear()}-${pad2d(dateNow.getMonth() + 1)}-${pad2d(dateNow.getDate())}`;
+
     // ── Pagination ───────────────────────────────────────────────────
     const infoCount = infoItems.length;
     const page1Header = TITLE_LN + 16 + (infoCount * INFO_LN) + 8 + BAL_H + 10;
-    const rowsPage1 = Math.max(0, Math.floor((pgH - mg.t - mg.b - page1Header - TH_H - FT_H) / ROW_H));
-    const rowsPerPage = Math.max(1, Math.floor((pgH - mg.t - mg.b - TH_H - FT_H) / ROW_H));
+    const rowsPage1 = Math.max(0, Math.floor((pgH - mg.t - mg.b - page1Header - TH_H - FT_H - headerH) / ROW_H));
+    const rowsPerPage = Math.max(1, Math.floor((pgH - mg.t - mg.b - TH_H - FT_H - headerH) / ROW_H));
     const totalRows = rows.length;
 
     let totalPages: number;
@@ -273,6 +322,18 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     // ── Compression setup ─────────────────────────────────────────────
     const compress = layoutOptions?.compress === true;
 
+    // ── Watermark setup ──────────────────────────────────────────────
+    const watermarkOpts = layoutOptions?.watermark;
+    if (watermarkOpts) {
+        validateWatermark(watermarkOpts, layoutOptions?.tagged);
+    }
+    const wmState: WatermarkState | null = watermarkOpts
+        ? buildWatermarkState(watermarkOpts, pgW, pgH, enc)
+        : null;
+    const wmExtraObjs = wmState
+        ? wmState.extGStates.size + (wmState.imageXObj ? 1 : 0)
+        : 0;
+
     const mcidAlloc = tagged ? createMCIDAllocator() : undefined;
 
     // Structure elements collected during page building (only when tagged)
@@ -287,8 +348,8 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     // We need page obj nums for MCRef, but they depend on font count which we already know.
     // Compute pageObjStart the same way the assembly section does.
     const prePageObjStart = (enc.isUnicode && fontEntries.length > 0)
-        ? 5 + fontEntries.length * 5
-        : 5;
+        ? 5 + fontEntries.length * 5 + wmExtraObjs
+        : 5 + wmExtraObjs;
 
     for (let p = 0; p < totalPages; p++) {
         const pageObjNum = prePageObjStart + p * 2;
@@ -298,6 +359,23 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
 
         const ops: string[] = [];
         let y = pgH - mg.t;
+
+        // Render header template (if provided)
+        if (headerTpl) {
+            const ht = _buildPageTemplate(
+                headerTpl, p + 1, totalPages, title, dateStr,
+                y - (headerTpl.fontSize ?? fs.ft),
+                enc, mg.l, mg.r, pgW, cw, colors.footer, fs.ft, tagCtx,
+            );
+            ops.push(...ht.ops);
+            if (tagged) documentChildren.push(...ht.structEls);
+            y -= HEADER_H;
+        }
+
+        // Background watermark (behind content)
+        if (wmState?.backgroundOps) {
+            ops.push(wmState.backgroundOps);
+        }
 
         if (p === 0) {
             // Title
@@ -322,7 +400,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
                 if (tagCtx) {
                     const mcidLabel = tagCtx.mcidAlloc.next(pageObjNum);
                     const mcidValue = tagCtx.mcidAlloc.next(pageObjNum);
-                    ops.push(txtTagged(item.label + ' :', mg.l, y, enc.f2, fs.info, enc, mcidLabel));
+                    ops.push(txtTagged(`${item.label} :`, mg.l, y, enc.f2, fs.info, enc, mcidLabel));
                     ops.push(`${colors.text} rg`);
                     ops.push(txtTagged(item.value, mg.l + 100, y, enc.f1, fs.info, enc, mcidValue));
                     documentChildren.push({
@@ -333,7 +411,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
                         ],
                     });
                 } else {
-                    ops.push(txt(item.label + ' :', mg.l, y, enc.f2, fs.info, enc));
+                    ops.push(txt(`${item.label} :`, mg.l, y, enc.f2, fs.info, enc));
                     ops.push(`${colors.text} rg`);
                     ops.push(txt(item.value, mg.l + 100, y, enc.f1, fs.info, enc));
                 }
@@ -386,8 +464,16 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
             rowIdx++;
         }
 
+        // Foreground watermark (above content)
+        if (wmState?.foregroundOps) {
+            ops.push(wmState.foregroundOps);
+        }
+
         // Footer
-        const ft = _buildFooter(p + 1, totalPages, footerText, enc, mg.l, mg.r, mg.b, pgW, colors, fs, tagCtx);
+        const ft = _buildPageTemplate(
+            footerTpl, p + 1, totalPages, title, dateStr,
+            mg.b - 5, enc, mg.l, mg.r, pgW, cw, colors.footer, fs.ft, tagCtx,
+        );
         ops.push(...ft.ops);
         if (tagged) documentChildren.push(...ft.structEls);
 
@@ -404,46 +490,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     }
 
     // ── Assemble PDF binary ──────────────────────────────────────────
-    const parts: string[] = [];
-    let offset = 0;
-
-    function emit(str: string): void {
-        parts.push(str);
-        offset += str.length;
-    }
-
-    const objOffsets: number[] = [];
-    function emitObj(num: number, content: string): void {
-        objOffsets[num] = offset;
-        emit(`${num} 0 obj\n${content}\nendobj\n\n`);
-    }
-
-    /**
-     * Emit a stream object with optional compression and encryption.
-     * When compression is active, data is FlateDecode-compressed and /Filter added.
-     * When encryption is active, data is encrypted (after compression).
-     * Order: compress → encrypt (ISO 32000-1 §7.3.8).
-     */
-    function emitStreamObj(num: number, dictEntries: string, streamData: string, skipCompress?: boolean): void {
-        let data = streamData;
-        let dict = dictEntries;
-
-        // Step 1: Compress (before encryption)
-        if (compress && !skipCompress) {
-            const compressed = compressStream(data);
-            // Update /Length and add /Filter /FlateDecode
-            dict = dict.replace(/\/Length \d+/, `/Filter /FlateDecode /Length ${compressed.length}`);
-            data = compressed;
-        }
-
-        // Step 2: Encrypt (after compression)
-        if (encState) {
-            const encrypted = encryptStream(data, encState, num, 0);
-            emitObj(num, `${dict.replace(/\/Length \d+/, `/Length ${encrypted.length}`)} >>\nstream\n${encrypted}\nendstream`);
-        } else {
-            emitObj(num, `${dict} >>\nstream\n${data}\nendstream`);
-        }
-    }
+    const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
 
     // PDF Header
     emit(`%PDF-${pdfaConfig.pdfVersion}\n`);
@@ -457,7 +504,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
 
     if (enc.isUnicode && fontEntries.length > 0) {
         // Unicode mode: 5 objects per CIDFont group
-        pageObjStart = 5 + fontEntries.length * 5;
+        pageObjStart = 5 + fontEntries.length * 5 + wmExtraObjs;
 
         const kids: string[] = [];
         for (let p = 0; p < totalPages; p++) {
@@ -482,7 +529,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
                 : fullTtfBinary;
 
             const fm = fd.metrics;
-            const bfName = '/' + fd.fontName.replace(/[^A-Za-z0-9-]/g, '');
+            const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
             const toUnicodeCMap = usedGids && usedGids.size > 0
                 ? buildToUnicodeCMap(fd.cmap, usedGids)
                 : buildToUnicodeCMap(fd.cmap, new Set());
@@ -524,6 +571,25 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
             emitStreamObj(base + 4, `<< /Length ${toUnicodeCMap.length}`, toUnicodeCMap);
         }
 
+        // Watermark objects (ExtGState + optional image)
+        const wmObjStart = 5 + fontEntries.length * 5;
+        let wmGsRes = '';
+        let wmImgRes = '';
+        if (wmState) {
+            let wmObjIdx = 0;
+            const gsRefs: string[] = [];
+            for (const [gsName, gsDict] of wmState.extGStates) {
+                emitObj(wmObjStart + wmObjIdx, gsDict);
+                gsRefs.push(`${gsName} ${wmObjStart + wmObjIdx} 0 R`);
+                wmObjIdx++;
+            }
+            wmGsRes = gsRefs.length > 0 ? ` /ExtGState << ${gsRefs.join(' ')} >>` : '';
+            if (wmState.imageXObj) {
+                emitObj(wmObjStart + wmObjIdx, wmState.imageXObj);
+                wmImgRes = ` /XObject << /ImW1 ${wmObjStart + wmObjIdx} 0 R >>`;
+            }
+        }
+
         // Build font resources
         let fontRes = '/F1 3 0 R /F2 4 0 R';
         for (let fi = 0; fi < fontEntries.length; fi++) {
@@ -541,25 +607,44 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << ${fontRes} >> >>${structParents} >>`
+                `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes} >>${structParents} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
     } else {
         // Latin mode
-        pageObjStart = 5;
+        pageObjStart = 5 + wmExtraObjs;
 
         const kids: string[] = [];
         for (let p = 0; p < totalPages; p++) {
-            kids.push(`${5 + p * 2} 0 R`);
+            kids.push(`${pageObjStart + p * 2} 0 R`);
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
         emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
         emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
 
+        // Watermark objects (Latin mode)
+        const wmObjStartLatin = 5;
+        let wmGsResLatin = '';
+        let wmImgResLatin = '';
+        if (wmState) {
+            let wmObjIdx = 0;
+            const gsRefs: string[] = [];
+            for (const [gsName, gsDict] of wmState.extGStates) {
+                emitObj(wmObjStartLatin + wmObjIdx, gsDict);
+                gsRefs.push(`${gsName} ${wmObjStartLatin + wmObjIdx} 0 R`);
+                wmObjIdx++;
+            }
+            wmGsResLatin = gsRefs.length > 0 ? ` /ExtGState << ${gsRefs.join(' ')} >>` : '';
+            if (wmState.imageXObj) {
+                emitObj(wmObjStartLatin + wmObjIdx, wmState.imageXObj);
+                wmImgResLatin = ` /XObject << /ImW1 ${wmObjStartLatin + wmObjIdx} 0 R >>`;
+            }
+        }
+
         for (let p = 0; p < totalPages; p++) {
-            const pageObjNum = 5 + p * 2;
-            const streamObjNum = 6 + p * 2;
+            const pageObjNum = pageObjStart + p * 2;
+            const streamObjNum = pageObjStart + 1 + p * 2;
             const stream = pageStreams[p];
 
             const structParents = tagged ? ` /StructParents ${p}` : '';
@@ -567,7 +652,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >>${structParents} >>`
+                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin} >>${structParents} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -647,7 +732,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
             const sizeDiff = newCatalog.length - oldCatalog.length;
             parts[idx] = newCatalog;
             // Adjust all offsets after the catalog
-            offset += sizeDiff;
+            adjustOffset(sizeDiff);
             for (let i = 2; i <= totalObjs; i++) {
                 if (objOffsets[i] !== undefined) {
                     objOffsets[i] += sizeDiff;
@@ -656,39 +741,19 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
         }
     }
 
-    // ── Encryption dict object ─────────────────────────────────────────
-    let encryptObjNum = 0;
-    if (encState) {
-        encryptObjNum = totalObjs + 1;
-        emitObj(encryptObjNum, buildEncryptDict(encState));
-        totalObjs = encryptObjNum;
-    }
-
-    // Cross-reference table
-    const xrefOffset = offset;
-    emit('xref\n');
-    emit(`0 ${totalObjs + 1}\n`);
-    emit('0000000000 65535 f \n');
-    for (let i = 1; i <= totalObjs; i++) {
-        emit(`${String(objOffsets[i]).padStart(10, '0')} 00000 n \n`);
-    }
-
-    // Trailer
-    emit('trailer\n');
-    if (encState) {
-        emit(`<< /Size ${totalObjs + 1} /Root 1 0 R /Info ${infoObjNum} 0 R /Encrypt ${encryptObjNum} 0 R /ID ${buildIdArray(encState.docId)} >>\n`);
-    } else {
-        emit(`<< /Size ${totalObjs + 1} /Root 1 0 R /Info ${infoObjNum} 0 R >>\n`);
-    }
-    emit('startxref\n');
-    emit(`${xrefOffset}\n`);
-    emit('%%EOF');
+    // ── Xref, Trailer, %%EOF ────────────────────────────────────────
+    const writer = { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts };
+    writeXrefTrailer(writer, totalObjs, infoObjNum, encState);
 
     return parts.join('');
 }
 
 /**
  * Build a PDF and return it as a Uint8Array (ready for download or Blob).
+ *
+ * @param params - PDF content parameters (title, rows, info items, fonts)
+ * @param layoutOptions - Optional layout customization (page size, margins, tagged mode)
+ * @returns PDF as Uint8Array ready for download or Blob
  */
 export function buildPDFBytes(params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): Uint8Array {
     return toBytes(buildPDF(params, layoutOptions));

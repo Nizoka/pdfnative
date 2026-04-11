@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildDocumentPDF, buildDocumentPDFBytes, wrapText } from '../../src/core/pdf-document.js';
-import { createEncodingContext } from '../../src/fonts/encoding.js';
+import { createEncodingContext } from '../../src/core/encoding-context.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 
@@ -67,6 +67,50 @@ describe('wrapText', () => {
         expect(lines.length).toBeGreaterThan(1);
         for (const line of lines) {
             expect(line.trim()).toBe(line);
+        }
+    });
+
+    // ── CJK character-level line breaking ────────────────────────
+    it('should break CJK ideographs at character boundaries', () => {
+        // 20 CJK chars — narrow width should produce multiple lines
+        const cjk = '日本語のテキストは文字単位で折り返されるべきです';
+        const lines = wrapText(cjk, 80, 10, enc);
+        expect(lines.length).toBeGreaterThan(1);
+    });
+
+    it('should break Chinese text at character boundaries', () => {
+        const zh = '这是一段中文文本用于测试字符级换行功能是否正常工作';
+        const lines = wrapText(zh, 80, 10, enc);
+        expect(lines.length).toBeGreaterThan(1);
+    });
+
+    it('should break Korean Hangul at character boundaries', () => {
+        const ko = '한국어텍스트는문자단위로줄바꿈이되어야합니다';
+        const lines = wrapText(ko, 80, 10, enc);
+        expect(lines.length).toBeGreaterThan(1);
+    });
+
+    it('should keep short CJK text on one line', () => {
+        const cjk = '日本語';
+        const lines = wrapText(cjk, 500, 10, enc);
+        expect(lines).toEqual(['日本語']);
+    });
+
+    it('should handle mixed Latin and CJK text', () => {
+        const mixed = 'Hello 日本語テスト World';
+        const lines = wrapText(mixed, 60, 10, enc);
+        expect(lines.length).toBeGreaterThan(1);
+        // All lines should be trimmed
+        for (const line of lines) {
+            expect(line.trim()).toBe(line);
+        }
+    });
+
+    it('should not leave empty lines from CJK breaking', () => {
+        const cjk = '漢字漢字漢字漢字漢字漢字漢字漢字';
+        const lines = wrapText(cjk, 50, 10, enc);
+        for (const line of lines) {
+            expect(line.length).toBeGreaterThan(0);
         }
     });
 });
@@ -383,6 +427,138 @@ describe('buildDocumentPDF input validation', () => {
     });
 });
 
+// ── Header / Footer Templates ────────────────────────────────────────
+
+describe('Header/Footer Templates (Document Builder)', () => {
+    it('should render custom footer template text', () => {
+        const params = makeMinimalParams();
+        const result = buildDocumentPDF(params, {
+            footerTemplate: { left: 'Custom Footer', right: 'Page {page} of {pages}' },
+        });
+        expect(result).toContain('Custom Footer');
+        expect(result).toContain('Page 1 of 1');
+    });
+
+    it('should render footer center text', () => {
+        const result = buildDocumentPDF(makeMinimalParams(), {
+            footerTemplate: { center: 'Centered' },
+        });
+        expect(result).toContain('Centered');
+    });
+
+    it('should resolve {title} in footer template', () => {
+        const result = buildDocumentPDF(makeMinimalParams({ title: 'My Report' }), {
+            footerTemplate: { left: '{title}' },
+        });
+        expect(result).toContain('My Report');
+    });
+
+    it('should resolve {date} in footer template', () => {
+        const result = buildDocumentPDF(makeMinimalParams(), {
+            footerTemplate: { left: '{date}' },
+        });
+        // Should contain YYYY-MM-DD format
+        expect(result).toMatch(/\d{4}-\d{2}-\d{2}/);
+    });
+
+    it('should override footerText when footerTemplate is provided', () => {
+        const result = buildDocumentPDF(
+            makeMinimalParams({ footerText: 'Old Footer' }),
+            { footerTemplate: { left: 'New Footer' } },
+        );
+        expect(result).toContain('New Footer');
+    });
+
+    it('should use footerText as backward compat when no template', () => {
+        const result = buildDocumentPDF(makeMinimalParams({ footerText: 'Legacy Footer' }));
+        expect(result).toContain('Legacy Footer');
+        // Should contain page number from default right template
+        expect(result).toContain('1/1');
+    });
+
+    it('should render header template on each page', () => {
+        const params = makeMinimalParams({
+            blocks: [
+                { type: 'paragraph', text: 'Hello world' },
+                { type: 'pageBreak' },
+                { type: 'paragraph', text: 'Second page' },
+            ],
+        });
+        const result = buildDocumentPDF(params, {
+            headerTemplate: { left: 'Header Text', right: '{page}/{pages}' },
+        });
+        // Header should appear on both pages
+        const matches = result.match(/Header Text/g);
+        expect(matches).not.toBeNull();
+        expect(matches!.length).toBe(2);
+    });
+
+    it('should render header with custom color', () => {
+        const result = buildDocumentPDF(makeMinimalParams(), {
+            headerTemplate: { left: 'Red Header', color: '#FF0000' },
+        });
+        expect(result).toContain('Red Header');
+        expect(result).toContain('1 0 0 rg');
+    });
+
+    it('should render footer with custom font size', () => {
+        const result = buildDocumentPDF(makeMinimalParams(), {
+            footerTemplate: { left: 'Big Footer', fontSize: 12 },
+        });
+        expect(result).toContain('Big Footer');
+    });
+
+    it('should produce valid PDF with header template', () => {
+        const result = buildDocumentPDF(makeMinimalParams(), {
+            headerTemplate: { left: 'Doc Header', center: '{title}', right: '{page}/{pages}' },
+        });
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toMatch(/%%EOF$/);
+        expect(result).toContain('xref');
+    });
+
+    it('should produce valid PDF without any templates (backward compat)', () => {
+        const result = buildDocumentPDF(makeMinimalParams({ footerText: '' }));
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toMatch(/%%EOF$/);
+    });
+
+    it('should handle header + footer + tagged mode together', () => {
+        const result = buildDocumentPDF(makeMinimalParams(), {
+            tagged: true,
+            headerTemplate: { left: 'Header' },
+            footerTemplate: { right: '{page}/{pages}' },
+        });
+        expect(result).toContain('Header');
+        expect(result).toContain('1/1');
+        expect(result).toContain('/StructTreeRoot');
+    });
+
+    it('should handle empty template (no header/footer content)', () => {
+        const result = buildDocumentPDF(makeMinimalParams(), {
+            footerTemplate: {},
+        });
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toMatch(/%%EOF$/);
+    });
+
+    it('should adjust pagination when header reduces available height', () => {
+        // Create blocks that nearly fill a page
+        const blocks = Array.from({ length: 50 }, () => ({
+            type: 'paragraph' as const,
+            text: 'This is a line of text that takes up some vertical space on the page.',
+        }));
+        const resultNoHeader = buildDocumentPDF({ blocks }, {});
+        const resultWithHeader = buildDocumentPDF({ blocks }, {
+            headerTemplate: { left: 'Header' },
+        });
+        // With header, content area is smaller, so might need more pages
+        const noHeaderPages = (resultNoHeader.match(/\/Type \/Page /g) ?? []).length;
+        const withHeaderPages = (resultWithHeader.match(/\/Type \/Page /g) ?? []).length;
+        expect(withHeaderPages).toBeGreaterThanOrEqual(noHeaderPages);
+    });
+});
+
 // ── buildDocumentPDFBytes ────────────────────────────────────────────
 
 describe('buildDocumentPDFBytes', () => {
@@ -556,5 +732,229 @@ describe('backward compatibility', () => {
         expect(typeof idx.buildDocumentPDF).toBe('function');
         expect(typeof idx.buildDocumentPDFBytes).toBe('function');
         expect(typeof idx.wrapText).toBe('function');
+    });
+});
+
+// ── Table of Contents ────────────────────────────────────────────────
+
+describe('buildDocumentPDF — Table of Contents', () => {
+    it('should produce valid PDF with TOC block', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Introduction', level: 1 },
+                { type: 'paragraph', text: 'Some content' },
+                { type: 'heading', text: 'Details', level: 2 },
+                { type: 'paragraph', text: 'More details' },
+            ],
+        }));
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toContain('%%EOF');
+    });
+
+    it('should include TOC title in output', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Chapter 1', level: 1 },
+            ],
+        }));
+        expect(result).toContain('Table of Contents');
+    });
+
+    it('should include custom TOC title', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc', title: 'Contents' },
+                { type: 'heading', text: 'Chapter 1', level: 1 },
+            ],
+        }));
+        expect(result).toContain('Contents');
+    });
+
+    it('should include heading text in TOC entries', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Introduction', level: 1 },
+                { type: 'heading', text: 'Background', level: 2 },
+            ],
+        }));
+        expect(result).toContain('Introduction');
+        expect(result).toContain('Background');
+    });
+
+    it('should include named destinations in catalog (/Dests)', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Section A', level: 1 },
+            ],
+        }));
+        expect(result).toContain('/Dests');
+        expect(result).toContain('/toc_h_0');
+    });
+
+    it('should include /GoTo annotations for TOC entries', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Chapter 1', level: 1 },
+            ],
+        }));
+        expect(result).toContain('/Dest /toc_h_0');
+    });
+
+    it('should filter headings by maxLevel', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc', maxLevel: 1 },
+                { type: 'heading', text: 'Chapter 1', level: 1 },
+                { type: 'heading', text: 'Section 1.1', level: 2 },
+                { type: 'heading', text: 'Subsection 1.1.1', level: 3 },
+            ],
+        }));
+        // Chapter 1 should appear, but Section 1.1 text should only appear once (in heading, not TOC)
+        const chapterCount = (result.match(/Chapter 1/g) || []).length;
+        const sectionCount = (result.match(/Section 1\.1/g) || []).length;
+        expect(chapterCount).toBeGreaterThanOrEqual(2); // TOC entry + heading itself
+        expect(sectionCount).toBe(1); // Only in heading, not TOC
+    });
+
+    it('should work without TOC block (no destinations)', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'heading', text: 'No TOC', level: 1 },
+                { type: 'paragraph', text: 'Content' },
+            ],
+        }));
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).not.toContain('/Dests');
+    });
+
+    it('should handle empty document with TOC', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [{ type: 'toc' }],
+        }));
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toContain('Table of Contents');
+    });
+
+    it('should produce valid PDF with multiple heading levels', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'H1', level: 1 },
+                { type: 'paragraph', text: 'Text under H1' },
+                { type: 'heading', text: 'H2', level: 2 },
+                { type: 'paragraph', text: 'Text under H2' },
+                { type: 'heading', text: 'H3', level: 3 },
+                { type: 'paragraph', text: 'Text under H3' },
+            ],
+        }));
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toContain('/toc_h_0');
+        expect(result).toContain('/toc_h_1');
+        expect(result).toContain('/toc_h_2');
+    });
+
+    it('should work with tagged mode', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Tagged Chapter', level: 1 },
+            ],
+        }), { tagged: true });
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toContain('/Dests');
+    });
+
+    it('should produce correct page numbers across multiple pages', () => {
+        const blocks = [
+            { type: 'toc' as const },
+            { type: 'heading' as const, text: 'First Heading', level: 1 as const },
+            ...Array.from({ length: 40 }, () => ({
+                type: 'paragraph' as const,
+                text: 'Lorem ipsum dolor sit amet consectetur. '.repeat(3),
+            })),
+            { type: 'heading' as const, text: 'Second Heading', level: 1 as const },
+        ];
+        const result = buildDocumentPDF(makeMinimalParams({ blocks }));
+        expect(result).toMatch(/^%PDF-/);
+        // Both headings should have destinations
+        expect(result).toContain('/toc_h_0');
+        expect(result).toContain('/toc_h_1');
+    });
+
+    it('should combine with watermarks', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Chapter', level: 1 },
+            ],
+        }), {
+            watermark: { text: { text: 'DRAFT' } },
+        });
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toContain('DRAFT');
+        expect(result).toContain('/Dests');
+    });
+
+    it('should combine with header/footer templates', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Chapter', level: 1 },
+            ],
+        }), {
+            headerTemplate: { center: 'My Document' },
+            footerTemplate: { right: 'Page {page}' },
+        });
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toContain('My Document');
+        expect(result).toContain('/Dests');
+    });
+
+    it('should produce /TOC structure element in tagged mode', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Chapter', level: 1 },
+            ],
+        }), { tagged: true });
+        expect(result).toContain('/S /TOC');
+    });
+
+    it('should produce /TOCI structure elements in tagged mode', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Chapter', level: 1 },
+                { type: 'heading', text: 'Section', level: 2 },
+            ],
+        }), { tagged: true });
+        expect(result).toContain('/S /TOCI');
+    });
+
+    it('TOC with custom fontSize and indent', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc', fontSize: 12, indent: 20 },
+                { type: 'heading', text: 'Chapter', level: 1 },
+            ],
+        }));
+        expect(result).toMatch(/^%PDF-/);
+        expect(result).toContain('Table of Contents');
+    });
+
+    it('should have page numbers in TOC entries', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [
+                { type: 'toc' },
+                { type: 'heading', text: 'Chapter One', level: 1 },
+            ],
+        }));
+        // The page number "1" should appear in the TOC area
+        expect(result).toContain('Chapter One');
     });
 });

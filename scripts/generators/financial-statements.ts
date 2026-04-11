@@ -1,0 +1,42 @@
+/**
+ * Financial statement samples (12 languages + multi-language + pagination).
+ */
+
+import { resolve } from 'path';
+import { buildPDFBytes } from '../../src/index.js';
+import type { PdfParams, FontEntry } from '../../src/index.js';
+import type { GenerateContext } from '../helpers/io.js';
+import { loadFontEntries, loadMultiFontEntries } from '../helpers/fonts.js';
+import { SAMPLES, MULTI_LANG_SAMPLE, PAGINATION_SAMPLE } from '../data/financial-data.js';
+
+export async function generate(ctx: GenerateContext): Promise<void> {
+    const allSamples = [...SAMPLES, MULTI_LANG_SAMPLE, PAGINATION_SAMPLE];
+
+    for (const sample of allSamples) {
+        const isLatin = sample.lang === 'latin' || sample.lang === 'pagination';
+        const isMulti = sample.lang === 'multi';
+
+        let fontEntries: FontEntry[] | undefined;
+
+        if (isMulti) {
+            fontEntries = await loadMultiFontEntries();
+        } else if (!isLatin) {
+            fontEntries = await loadFontEntries(sample.lang);
+        }
+
+        const params: PdfParams = {
+            title: sample.title,
+            infoItems: sample.infoItems,
+            balanceText: sample.balanceText,
+            countText: sample.countText,
+            headers: sample.headers,
+            rows: sample.rows,
+            footerText: sample.footerText,
+            fontEntries,
+        };
+
+        const bytes = buildPDFBytes(params);
+        const filename = `${sample.filename || `sample-${sample.lang}`}.pdf`;
+        ctx.writeSafe(resolve(ctx.outputDir, filename), filename, bytes);
+    }
+}

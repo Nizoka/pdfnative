@@ -64,6 +64,10 @@ export type {
     ColumnDef,
     PdfLayoutOptions,
     EncryptionOptions,
+    PageTemplate,
+    WatermarkText,
+    WatermarkImage,
+    WatermarkOptions,
     WorkerInputMessage,
     WorkerOutputMessage,
 } from './types/pdf-types.js';
@@ -77,6 +81,7 @@ export type {
     PageBreakBlock,
     ImageBlock,
     LinkBlock,
+    TocBlock,
     DocumentBlock,
     DocumentMetadata,
     DocumentParams,
@@ -102,56 +107,42 @@ export { validateURL, buildLinkAnnotation, buildInternalLinkAnnotation, isLinkAn
 // ── Core — Color Utilities ──────────────────────────────────────────
 export { parseColor, isValidPdfRgb, normalizeColors } from './core/pdf-color.js';
 
+// ── Core — Watermark ────────────────────────────────────────────────
+export type { WatermarkState } from './core/pdf-watermark.js';
+export { validateWatermark, buildWatermarkState } from './core/pdf-watermark.js';
+
 // ── Core — Stream Compression ───────────────────────────────────────
-export { deflateSync, deflateStored, compressStream, adler32, uint8ToBinaryString, initNodeCompression, setDeflateImpl } from './core/pdf-compress.js';
+export { initNodeCompression, setDeflateImpl } from './core/pdf-compress.js';
 
 export { downloadBlob, toBytes, slugify } from './core/pdf-stream.js';
-export { txt, txtR, txtC, txtShaped, txtTagged, txtRTagged, txtCTagged, fmtNum } from './core/pdf-text.js';
 
 // ── Core — Layout ───────────────────────────────────────────────────
 export {
     PG_W, PG_H,
     DEFAULT_MARGINS, DEFAULT_CW,
     DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
-    ROW_H, TH_H, INFO_LN, BAL_H, TITLE_LN, FT_H,
-    computeColumnPositions, resolveLayout,
+    ROW_H, TH_H, INFO_LN, BAL_H, TITLE_LN, FT_H, HEADER_H,
+    PAGE_SIZES,
+    computeColumnPositions, resolveLayout, resolveTemplate,
 } from './core/pdf-layout.js';
 
-// ── Core — Tagged PDF & PDF/A ───────────────────────────────────────
-export type { StructElement, MCRef, PdfAConfig } from './core/pdf-tags.js';
-export {
-    wrapSpan, wrapMarkedContent, escapePdfUtf16,
-    createMCIDAllocator, buildStructureTree,
-    buildXMPMetadata, buildOutputIntentDict, buildMinimalSRGBProfile,
-    resolvePdfAConfig,
-} from './core/pdf-tags.js';
-
-// ── Core — PDF Encryption ───────────────────────────────────────────
-export type { EncryptionState } from './core/pdf-encrypt.js';
-export {
-    aesCBC, md5, sha256,
-    computePermissions, generateDocId,
-    initEncryption, encryptStream, encryptString,
-    buildEncryptDict, buildIdArray,
-} from './core/pdf-encrypt.js';
-
 // ── Fonts — Encoding & Loading ──────────────────────────────────────
-export { toWinAnsi, pdfString, truncate, helveticaWidth, createEncodingContext } from './fonts/encoding.js';
+export { toWinAnsi, pdfString, truncate, helveticaWidth } from './fonts/encoding.js';
+export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';
-export { base64ToByteString, buildToUnicodeCMap, buildSubsetWidthArray } from './fonts/font-embedder.js';
-export { subsetTTF, ttfChecksum } from './fonts/font-subsetter.js';
 
 // ── Shaping — Thai & Multi-Script ───────────────────────────────────
-export { shapeThaiText, buildThaiClusters, containsThai, THAI_START, THAI_END } from './shaping/thai-shaper.js';
-export { needsUnicodeFont, detectFallbackLangs } from './shaping/script-detect.js';
+export { shapeThaiText } from './shaping/thai-shaper.js';
+export { containsThai, containsArabic, containsHebrew } from './shaping/script-registry.js';
+export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './shaping/script-detect.js';
 export { splitTextByFont } from './shaping/multi-font.js';
 export type { FontRun } from './shaping/multi-font.js';
 
 // ── Shaping — BiDi & Arabic/Hebrew ──────────────────────────────────
-export type { BidiType, BidiRun } from './shaping/bidi.js';
-export { classifyBidiType, detectParagraphLevel, resolveBidiRuns, containsRTL, mirrorCodePoint, reverseString } from './shaping/bidi.js';
-export { shapeArabicText, containsArabic, containsHebrew, isLamAlef, ARABIC_START, ARABIC_END, HEBREW_START, HEBREW_END } from './shaping/arabic-shaper.js';
+export type { BidiRun } from './shaping/bidi.js';
+export { resolveBidiRuns, containsRTL } from './shaping/bidi.js';
+export { shapeArabicText } from './shaping/arabic-shaper.js';
 
 // ── Worker — Off-Thread Generation ──────────────────────────────────
 export { createPDF, generatePDFInWorker, generatePDFMainThread, WORKER_THRESHOLD, WORKER_TIMEOUT_MS } from './worker/worker-api.js';

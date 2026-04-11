@@ -62,6 +62,17 @@ describe('classifyBidiType', () => {
         expect(classifyBidiType(0x200B)).toBe('BN'); // ZWSP
         expect(classifyBidiType(0xFEFF)).toBe('BN'); // BOM
     });
+
+    it('should classify General Punctuation as ON', () => {
+        expect(classifyBidiType(0x2014)).toBe('ON'); // Em-dash
+        expect(classifyBidiType(0x2013)).toBe('ON'); // En-dash
+        expect(classifyBidiType(0x2010)).toBe('ON'); // Hyphen
+        expect(classifyBidiType(0x2018)).toBe('ON'); // Left single quote
+        expect(classifyBidiType(0x201C)).toBe('ON'); // Left double quote
+        expect(classifyBidiType(0x2026)).toBe('ON'); // Ellipsis
+        expect(classifyBidiType(0x2030)).toBe('ON'); // Per mille
+        expect(classifyBidiType(0x2032)).toBe('ON'); // Prime
+    });
 });
 
 // ── detectParagraphLevel ─────────────────────────────────────────────
@@ -137,6 +148,18 @@ describe('resolveBidiRuns', () => {
         expect(runs[0].level).toBe(1);
     });
 
+    it('should keep em-dash and spaces together between Hebrew and English', () => {
+        // "שלום — Hello" — em-dash (U+2014) between RTL and LTR
+        const text = '\u05E9\u05DC\u05D5\u05DD \u2014 Hello';
+        const runs = resolveBidiRuns(text);
+        // Em-dash classified as ON → resolved to paragraph direction (RTL)
+        // The space+em-dash+space should stay with the Hebrew RTL run
+        const rtlRun = runs.find(r => r.level % 2 === 1);
+        expect(rtlRun).toBeDefined();
+        // The RTL run should contain the em-dash
+        expect(rtlRun!.text).toContain('\u2014');
+    });
+
     it('should handle numbers in RTL context', () => {
         // Arabic text with number: "عدد 123"
         const text = '\u0639\u062F\u062F 123';
@@ -148,6 +171,40 @@ describe('resolveBidiRuns', () => {
         const runs = resolveBidiRuns('   ');
         expect(runs.length).toBe(1);
         expect(runs[0].level).toBe(0);
+    });
+
+    it('should reorder runs for RTL paragraph: English first, Hebrew last', () => {
+        const title = '\u05D4\u05D0\u05DC\u05E4\u05D1\u05D9\u05EA \u05D4\u05E2\u05D1\u05E8\u05D9 \u2013 Hebrew Alphabet Coverage';
+        const runs = resolveBidiRuns(title);
+        expect(runs.length).toBe(2);
+        // LTR run first (leftmost for visual rendering)
+        expect(runs[0].level).toBe(2);
+        expect(runs[0].text).toBe('Hebrew Alphabet Coverage');
+        // RTL run second (rightmost, contains en-dash)
+        expect(runs[1].level).toBe(1);
+        expect(runs[1].text).toContain('\u2013');
+    });
+
+    it('should reorder runs for Arabic RTL paragraph', () => {
+        const title = '\u0627\u0644\u0623\u0628\u062C\u062F\u064A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u2013 Arabic Script Coverage';
+        const runs = resolveBidiRuns(title);
+        expect(runs[0].level).toBe(2); // LTR first
+        expect(runs[0].text).toBe('Arabic Script Coverage');
+        expect(runs[1].level).toBe(1); // RTL second
+    });
+
+    it('should not reorder runs for LTR paragraphs (Devanagari)', () => {
+        const title = 'Devanagari \u0926\u0947\u0935\u0928\u093E\u0917\u0930\u0940 Test';
+        const runs = resolveBidiRuns(title);
+        expect(runs[0].level).toBe(0);
+        expect(runs[0].text).toContain('Devanagari');
+    });
+
+    it('should not reverse single-run pure RTL text', () => {
+        const text = '\u05E9\u05DC\u05D5\u05DD';
+        const runs = resolveBidiRuns(text);
+        expect(runs.length).toBe(1);
+        expect(runs[0].level).toBe(1);
     });
 });
 

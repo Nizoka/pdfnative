@@ -1,7 +1,12 @@
 # pdfnative
 
 [![CI](https://github.com/Nizoka/pdfnative/actions/workflows/ci.yml/badge.svg)](https://github.com/Nizoka/pdfnative/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Nizoka/pdfnative/actions/workflows/codeql.yml/badge.svg)](https://github.com/Nizoka/pdfnative/actions/workflows/codeql.yml)
 [![npm version](https://img.shields.io/npm/v/pdfnative)](https://www.npmjs.com/package/pdfnative)
+[![npm downloads](https://img.shields.io/npm/dm/pdfnative)](https://www.npmjs.com/package/pdfnative)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/pdfnative)](https://bundlephobia.com/package/pdfnative)
+[![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](https://www.npmjs.com/package/pdfnative)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![npm provenance](https://img.shields.io/badge/provenance-signed-blueviolet)](https://docs.npmjs.com/generating-provenance-statements)
 
@@ -19,13 +24,16 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
 - **Tagged PDF / PDF/A-2b** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u)
 - **PDF Encryption** — AES-128 (V4/R4) and AES-256 (V5/R6), owner + user passwords, granular permissions
-- **Free-form document builder** — headings, paragraphs, lists, tables, images, spacers, page breaks
+- **Free-form document builder** — headings, paragraphs, lists, tables, images, spacers, page breaks, table of contents
 - **Image embedding** — JPEG (DCTDecode) and PNG (FlateDecode) with auto-scaling and alignment
 - **Hyperlinks** — PDF link annotations (/URI) with URL validation, blue underlined text, tagged /Link
+- **Header/footer templates** — configurable `PageTemplate` with left/center/right zones and `{page}`/`{pages}`/`{date}`/`{title}` placeholders
+- **Watermarks** — text and image overlays with configurable opacity, rotation, and position (background/foreground)
+- **Table of contents** — auto-generated TOC with internal /GoTo links, dot leaders, and page numbers
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **99% test coverage** — 789 tests, fuzz suite, performance benchmarks
+- **95%+ test coverage** — 925+ tests, fuzz suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 
 ## Installation
@@ -35,6 +43,32 @@ npm install pdfnative
 ```
 
 **Requirements:** Node.js >= 18 | Modern browsers | Deno | Bun
+
+## Why pdfnative?
+
+pdfnative was designed for teams that need **ISO-compliant, production-grade PDF generation** with zero supply-chain risk. Here is how it compares to other popular JavaScript PDF libraries:
+
+| Feature | pdfnative | jsPDF | pdfkit | pdf-lib |
+|---------|:---------:|:-----:|:------:|:-------:|
+| Runtime dependencies | **0** | 3 | 6 | 4 |
+| TypeScript declarations | Built-in | Built-in | @types/* | Built-in |
+| PDF/A (ISO 19005) | 1b, 2b, 2u | — | — | — |
+| Tagged PDF / PDF/UA | ✅ | — | ✅ | — |
+| Encryption | AES-128/256 | RC4 | ✅ | — |
+| Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic | — | Via fontkit | Via @pdf-lib/fontkit |
+| BiDi (RTL) layout | ✅ | — | — | — |
+| Modify existing PDFs | — | — | — | ✅ |
+| Forms (AcroForms) | — | — | ✅ | ✅ |
+| Vector graphics / SVG paths | — | ✅ | ✅ | ✅ |
+| Tree-shakeable (ESM) | ✅ | — | — | ✅ |
+| NPM provenance (SLSA) | ✅ | — | — | — |
+| Weekly npm downloads | — | ~11M | ~2.6M | ~4.5M |
+
+> **Data sources:** npm registry metadata and official README/documentation for each library as of July 2025. Dependency counts reflect direct `dependencies` listed in each package's `package.json`. "—" means the feature is not supported or not documented.
+
+**When to choose pdfnative:** You need zero-dependency PDF generation with ISO archival compliance (PDF/A), accessibility (tagged PDF), AES encryption, and multi-script Unicode support — particularly Arabic/Hebrew BiDi and Thai GSUB/GPOS shaping.
+
+**When to choose another library:** You need to modify existing PDFs (pdf-lib), create interactive forms (pdfkit, pdf-lib), or draw vector graphics and SVG paths (jsPDF, pdfkit, pdf-lib).
 
 ## Quick Start
 
@@ -75,6 +109,7 @@ import { buildDocumentPDFBytes } from 'pdfnative';
 const pdf = buildDocumentPDFBytes({
   title: 'Project Report',
   blocks: [
+    { type: 'toc' },
     { type: 'heading', text: 'Executive Summary', level: 1 },
     { type: 'paragraph', text: 'This quarter saw strong growth across all divisions...' },
     { type: 'image', data: jpegBytes, width: 400, align: 'center', alt: 'Revenue chart' },
@@ -88,6 +123,9 @@ const pdf = buildDocumentPDFBytes({
     { type: 'link', text: 'View full report online', url: 'https://example.com/report' },
   ],
   footerText: 'Confidential',
+}, {
+  headerTemplate: { center: 'Project Report', right: '{date}' },
+  footerTemplate: { left: 'Confidential', right: 'Page {page} of {pages}' },
 });
 ```
 
@@ -219,6 +257,32 @@ parseColor('0.145 0.388 0.922'); // '0.145 0.388 0.922'
 
 All inputs are validated and normalized before interpolation into PDF content streams, preventing operator injection.
 
+### Font Sizes
+
+Customize font sizes for each zone (title, info bar, table header, table cells, footer):
+
+```typescript
+const pdf = buildPDFBytes(params, {
+  fontSizes: {
+    title: 20,   // Title text (default: 16)
+    info: 10,    // Info bar items (default: 9)
+    th: 9,       // Table header cells (default: 8)
+    td: 8,       // Table body cells (default: 7.5)
+    ft: 8,       // Footer text (default: 7)
+  },
+});
+```
+
+| Zone | Key | Default | Description |
+|------|-----|---------|-------------|
+| Title | `title` | 16 | PDF title text |
+| Info bar | `info` | 9 | Key-value pairs below title |
+| Table header | `th` | 8 | Column header row |
+| Table cells | `td` | 7.5 | Data row cells |
+| Footer | `ft` | 7 | Page footer text |
+
+All values are in PDF points (1pt = 1/72 inch). Partial overrides are supported — unspecified keys use defaults.
+
 ## Building Custom Font Data
 
 Convert any TTF font into an importable data module:
@@ -237,7 +301,8 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **66 PDF files** in `test-output/` (git-ignored), organized in eight categories:
+This creates **88 PDF files** in `test-output/` (git-ignored), organized in ten categories.
+See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
 
@@ -338,6 +403,14 @@ This creates **66 PDF files** in `test-output/` (git-ignored), organized in eigh
 | `doc-image.pdf` | Image embedding (JPEG, centered) |
 | `doc-custom-colors.pdf` | Color formats (hex, tuple, PDF operator) |
 | `doc-japanese.pdf` | Japanese Unicode document (headings, lists, table) |
+| `doc-arabic.pdf` | Arabic RTL document (headings, lists, table, BiDi) |
+| `doc-hebrew.pdf` | Hebrew RTL document (headings, lists, table, BiDi) |
+| `doc-thai.pdf` | Thai user manual (GSUB+GPOS shaping, pricing table) |
+| `doc-chinese-catalog.pdf` | Chinese product catalog (tables, ordering info) |
+| `doc-multi-language.pdf` | Multi-language: EN + Arabic + Japanese in one PDF |
+| `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
+| `doc-report-multipage.pdf` | 3-page technical report (7 sections, 4 tables) |
+| `doc-contract-bilingual.pdf` | Bilingual EN/AR contract (legal sections, signatures) |
 | `doc-showcase-all-blocks.pdf` | All 8 block types in one PDF (3 pages) |
 
 ### Compressed PDFs (FlateDecode)
@@ -352,6 +425,29 @@ This creates **66 PDF files** in `test-output/` (git-ignored), organized in eigh
 | `compressed-tagged-pdfa2b.pdf` | FlateDecode + Tagged PDF/A-2b (XMP uncompressed) |
 | `compressed-encrypted-aes128.pdf` | FlateDecode + AES-128 encryption |
 | `doc-compressed.pdf` | Document builder with FlateDecode |
+
+### Stress Test PDFs
+
+| File | Content |
+|------|---------|  
+| `stress-test-10k-rows.pdf` | 10,000-row table (167 pages, 4.3MB) |
+| `doc-extreme-bidi-wrapping.pdf` | Extreme BiDi mixed-script text wrapping |
+| `table-heavy-text-overflow.pdf` | Dense table with heavy text overflow |
+| `media-rich-document.pdf` | Media-rich document with multiple images |
+| `tagged-accessibility-complex.pdf` | Complex tagged PDF/A accessibility tree |
+| `layout-extreme-customization.pdf` | Extreme layout customization (margins, columns, colors) |
+
+### Edge-Case Stress Tests
+
+| File | Content |
+|------|---------|  
+| `doc-unbreakable-text.pdf` | 1000-char words with no spaces (DNA, URL, Base64) |
+| `table-micro-columns.pdf` | Extreme column fractions (f=0.025, mx=1) |
+| `doc-link-annotation-bomb.pdf` | 500 link annotations across 10 pages |
+| `zero-content-empty-table.pdf` | Table with headers but 0 rows |
+| `zero-content-empty-doc.pdf` | Document with no blocks |
+| `zero-content-empty-strings.pdf` | Empty headings, paragraphs, and list items |
+| `doc-heavy-buffer-5mb.pdf` | 5 MB synthetic JPEG embedded (memory stress) |
 
 ## API Reference
 
@@ -413,6 +509,7 @@ This creates **66 PDF files** in `test-output/` (git-ignored), organized in eigh
 | `LinkBlock` | Hyperlink with URL, blue underline, tagged /Link |
 | `SpacerBlock` | Vertical whitespace |
 | `PageBreakBlock` | Force new page |
+| `TocBlock` | Auto-generated table of contents with /GoTo links |
 
 ### Tagged PDF & PDF/A
 
@@ -483,6 +580,7 @@ This creates **66 PDF files** in `test-output/` (git-ignored), organized in eigh
 |----------|-------------|
 | `shapeThaiText(str, fontData)` | Thai OpenType shaping (GSUB + GPOS) |
 | `detectFallbackLangs(texts, primaryLang)` | Detect needed fallback fonts |
+| `detectCharLang(codePoint)` | Map codepoint to preferred font language |
 | `splitTextByFont(str, fontEntries)` | Multi-font text run splitting |
 | `needsUnicodeFont(str)` | Check if text needs CIDFont |
 | `containsThai(str)` | Check for Thai characters |
@@ -501,6 +599,8 @@ This creates **66 PDF files** in `test-output/` (git-ignored), organized in eigh
 | `DEFAULT_COLORS` | Default color palette |
 | `DEFAULT_COLUMNS` | Default 5-column layout |
 | `ROW_H` / `TH_H` | Row / header heights |
+| `HEADER_H` | Header zone height (15pt) |
+| `PAGE_SIZES` | Preset page dimensions (A4, Letter, Legal, A3, Tabloid) |
 
 ## Architecture
 
@@ -513,34 +613,38 @@ src/
 ├── core/
 │   ├── pdf-builder.ts    # Table-centric PDF assembly + /Info metadata + tagged PDF
 │   ├── pdf-document.ts   # Free-form document builder (headings, paragraphs, lists, tables, images)
+│   ├── pdf-assembler.ts  # Shared PDF binary assembly primitives (xref, trailer, writer)
+│   ├── encoding-context.ts # Encoding context factory (dependency inversion from fonts/)
 │   ├── pdf-image.ts      # JPEG/PNG parsing + PDF Image XObject builder
 │   ├── pdf-text.ts       # Text rendering (Latin + CIDFont + shaped + tagged)
 │   ├── pdf-stream.ts     # Binary utilities + download
 │   ├── pdf-layout.ts     # Layout constants & computation
 │   ├── pdf-tags.ts       # Tagged PDF: structure tree, XMP metadata, ICC profile
-│   ├── pdf-annot.ts      # Link annotations: /URI, /GoTo, URL validation
+│   ├── pdf-annot.ts      # Link annotations: /URI, /GoTo, URL validation + control-char hardening
 │   ├── pdf-color.ts      # Color parsing, validation, normalization
 │   ├── pdf-compress.ts   # FlateDecode stream compression (zlib, stored-block fallback)
+│   ├── pdf-watermark.ts  # Text/image watermarks with ExtGState transparency
 │   └── pdf-encrypt.ts    # AES-128/256 encryption, MD5, SHA-256, key derivation
 ├── fonts/
-│   ├── encoding.ts       # WinAnsi + CIDFont encoding context
+│   ├── encoding.ts       # WinAnsi + CIDFont pure encoding functions (no shaping deps)
 │   ├── font-loader.ts    # Configurable font registry + cache
-│   ├── font-subsetter.ts # TTF subsetting engine
+│   ├── font-subsetter.ts # TTF subsetting engine (with buffer bounds checking)
 │   └── font-embedder.ts  # CMap builder + width arrays
 ├── shaping/
+│   ├── script-registry.ts # Centralized Unicode range constants & script predicates
 │   ├── thai-shaper.ts    # Thai GSUB + GPOS shaping pipeline
-│   ├── script-detect.ts  # Unicode script range detection
+│   ├── script-detect.ts  # Unicode script range detection (uses script-registry)
 │   ├── multi-font.ts     # Cross-script font run splitting
 │   ├── bidi.ts           # Unicode Bidirectional Algorithm (UAX #9)
-│   └── arabic-shaper.ts  # Arabic GSUB positional shaping
+│   └── arabic-shaper.ts  # Arabic GSUB positional shaping (uses script-registry)
 └── worker/
     ├── worker-api.ts     # Worker/main-thread dispatch
     └── pdf-worker.ts     # Self-contained worker entry
 
 fonts/                    # Pre-built font data modules (.js/.d.ts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # generate-samples.ts (visual PDF inspection)
-tests/                    # 743 tests (unit + integration + fuzz)
+scripts/                  # Modular sample PDF generation (see scripts/README.md)
+tests/                    # 925+ tests (unit + integration + fuzz)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -552,23 +656,24 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (789 tests)
-npm run test:coverage    # vitest with v8 coverage (~99%)
-npm run test:generate    # Generate 66 sample PDFs → test-output/
-npm run lint             # ESLint 9 + typescript-eslint strict
-npm run typecheck        # tsc --noEmit
-npm run typecheck:tests  # tsc --project tsconfig.test.json --noEmit
-npm run typecheck:all    # Typecheck src/ + tests/
+npm run test             # vitest run (925+ tests)
+npm run test:coverage    # vitest with v8 coverage (95%+)
+npm run test:generate       # Generate 88+ sample PDFs → test-output/
+npm run lint                # ESLint 9 + typescript-eslint strict
+npm run typecheck           # tsc --noEmit (src/)
+npm run typecheck:tests     # tsc --project tsconfig.test.json
+npm run typecheck:scripts   # tsc --project tsconfig.scripts.json
+npm run typecheck:all       # Typecheck src/ + tests/ + scripts/
 ```
 
 ### Quality Metrics
 
 | Metric | Value |
 |--------|-------|
-| Tests | 789 (26 files) |
-| Statement coverage | ~99% |
-| Branch coverage | 90.76% |
-| Function coverage | 98.3% |
+| Tests | 925+ (27 files) |
+| Statement coverage | 95.41% |
+| Branch coverage | 87.79% |
+| Function coverage | 98.5% |
 | Fuzz tests | 33 edge-case scenarios |
 | Benchmarks | Latin 500 rows ~10ms, Unicode ~13ms |
 | Dependencies | 0 runtime |
@@ -642,6 +747,29 @@ const pdf = buildPDFBytes(params, {
 
 **Note:** PDF/A and encryption are mutually exclusive (ISO 19005-1 §6.3.2). Setting both `tagged` and `encryption` will throw an error.
 
+## Typography Convention: En-Dash Separator
+
+pdfnative uses **en-dash** `–` (U+2013) with surrounding spaces as the standard title and footer separator:
+
+```
+"Arabic Script Coverage – الأبجدية العربية"    ✅ recommended
+"Arabic Script Coverage — الأبجدية العربية"    ⚠️ works, but wider gap
+```
+
+**Why en-dash?**
+
+| Property | Em-dash `—` (U+2014) | En-dash `–` (U+2013) |
+|----------|:---:|:---:|
+| Helvetica width | 1000 units (1 em) | 556 units (0.56 em) |
+| Visual gap at 16pt | ~24pt with spaces | ~18pt with spaces |
+| WinAnsi encodable | ✅ (0x97) | ✅ (0x96) |
+| International standard | US English only | ISO / Europe / technical |
+| Cursive script rendering | Disproportionate gap | Balanced spacing |
+
+The en-dash is **44% narrower** than the em-dash and follows ISO/international typography standards. This eliminates disproportionate visual gaps in cursive scripts (Arabic, Thai) where compact shaped text amplifies the perceived space around wider separators.
+
+Both em-dash and en-dash are **fully supported** by the library (encoding, width metrics, BiDi classification) — this is a typographic recommendation for the best cross-script visual balance, not a restriction.
+
 ## Stream Compression (FlateDecode)
 
 Enable FlateDecode compression for dramatically smaller PDFs:
@@ -689,6 +817,24 @@ const pdf = buildPDFBytes(params, {
 
 For browser contexts with full compression, call `setDeflateImpl()` with a custom DEFLATE function.
 
+## Browser & Runtime Compatibility
+
+pdfnative targets ES2020 and works in any environment that supports `Uint8Array`, `TextEncoder`, and `crypto.getRandomValues()`.
+
+| Runtime | Version | Status | Notes |
+|---------|---------|:------:|-------|
+| Node.js | 18, 20, 22+ | ✅ Tested in CI | Full support (ESM + CJS) |
+| Chrome | 80+ | ✅ | ESM via bundler or `<script type="module">` |
+| Firefox | 80+ | ✅ | ESM via bundler or `<script type="module">` |
+| Safari | 14+ | ✅ | ESM via bundler or `<script type="module">` |
+| Edge | 80+ | ✅ | Chromium-based |
+| Deno | 1.0+ | ✅ | Native ESM imports |
+| Bun | 1.0+ | ✅ | Native ESM imports |
+| Web Workers | — | ✅ | Via `pdfnative/worker` entry point |
+| React Native | — | ⚠️ | Requires `TextEncoder` polyfill |
+
+**Bundle format:** ESM (`dist/index.js`) + CJS (`dist/index.cjs`) + TypeScript declarations (`dist/index.d.ts`). Tree-shakeable with `sideEffects: false`.
+
 ## Origin
 
 pdfnative was born inside [**plika.app**](https://plika.app) — a personal finance application where high-quality, multi-language PDF generation (bank statements, transaction reports) was a core requirement. Rather than depending on heavy third-party libraries, the PDF engine was built from scratch with zero dependencies, strict ISO compliance, and native support for 11 Unicode scripts.
@@ -699,10 +845,13 @@ The decision was then made to extract the engine into an independent open-source
 
 - No `eval()`, `Function()`, or dynamic code execution
 - Input validation at `buildPDF()` and `buildDocumentPDF()` entry: type checks, row/block limits
-- URL validation at `validateURL()`: blocks `javascript:`, `file:`, `data:` URI schemes
+- URL validation at `validateURL()`: blocks `javascript:`, `file:`, `data:` URI schemes + control characters (U+0000–U+001F, U+007F–U+009F)
+- RGBA PNG rejection: unsupported color types rejected at parse boundary with descriptive errors
 - PDF string escaping for `\`, `(`, `)` — prevents injection
 - CIDFont hex encoding — no string injection vector
-- TTF subsetting uses typed arrays with bounds checking
+- TTF subsetting uses typed arrays with bounds checking + compound glyph iteration limits
+- XRef offset guard: validates byte offsets before writing cross-reference table
+- JPEG parser robustness: validates SOF markers and handles edge-case byte sequences
 - PDF encryption: AES-128/256 with per-object keys, random IVs — no ECB mode
 - No external crypto dependencies — pure TypeScript AES, MD5, SHA-256 implementations
 - NPM provenance — signed builds via GitHub Actions OIDC

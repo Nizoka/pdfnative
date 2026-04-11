@@ -322,4 +322,21 @@ describe('subsetTTF', () => {
             }
         }
     });
+
+    it('should return original for buffers too small for a TTF', () => {
+        const tiny = '\x00\x01\x00\x00\x00\x02'; // 6 bytes < 12
+        const result = subsetTTF(tiny, new Set([0]));
+        expect(result).toBe(tiny);
+    });
+
+    it('should return original when table directory exceeds buffer', () => {
+        // numTables = 100 → needs 12 + 100*16 = 1612 bytes, but only 16 provided
+        const buf = new Uint8Array(16);
+        new DataView(buf.buffer).setUint32(0, 0x00010000);
+        new DataView(buf.buffer).setUint16(4, 100); // numTables = 100
+        let str = '';
+        for (let i = 0; i < buf.length; i++) str += String.fromCharCode(buf[i]);
+        const result = subsetTTF(str, new Set([0]));
+        expect(result).toBe(str);
+    });
 });

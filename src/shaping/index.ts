@@ -4,10 +4,25 @@
  * Re-exports all shaping-related functionality.
  */
 
-export { shapeThaiText, buildThaiClusters, containsThai, THAI_START, THAI_END } from './thai-shaper.js';
-export { needsUnicodeFont, detectFallbackLangs } from './script-detect.js';
+export { shapeThaiText, buildThaiClusters } from './thai-shaper.js';
+export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './script-detect.js';
 export { splitTextByFont } from './multi-font.js';
 export type { FontRun } from './multi-font.js';
 export type { BidiType, BidiRun } from './bidi.js';
 export { classifyBidiType, detectParagraphLevel, resolveBidiRuns, containsRTL, mirrorCodePoint, reverseString } from './bidi.js';
-export { shapeArabicText, containsArabic, containsHebrew, isLamAlef, ARABIC_START, ARABIC_END, HEBREW_START, HEBREW_END } from './arabic-shaper.js';
+export { shapeArabicText, isLamAlef } from './arabic-shaper.js';
+export {
+    ARABIC_START, ARABIC_END, ARABIC_SUPPLEMENT_START, ARABIC_SUPPLEMENT_END,
+    ARABIC_EXTENDED_A_START, ARABIC_EXTENDED_A_END, ARABIC_PRES_A_START, ARABIC_PRES_A_END,
+    ARABIC_PRES_B_START, ARABIC_PRES_B_END,
+    HEBREW_START, HEBREW_END, HEBREW_PRES_START, HEBREW_PRES_END,
+    THAI_START, THAI_END,
+    GREEK_START, GREEK_END, GREEK_EXT_START, GREEK_EXT_END,
+    DEVANAGARI_START, DEVANAGARI_END, DEVANAGARI_EXT_START, DEVANAGARI_EXT_END,
+    HIRAGANA_START, KATAKANA_END,
+    HANGUL_START, HANGUL_END, JAMO_START, JAMO_END, COMPAT_JAMO_START, COMPAT_JAMO_END,
+    CJK_UNIFIED_START, CJK_UNIFIED_END, CJK_EXT_A_START, CJK_EXT_A_END,
+    CJK_COMPAT_START, CJK_COMPAT_END,
+    isArabicCodepoint, isHebrewCodepoint, isThaiCodepoint,
+    containsArabic, containsHebrew, containsThai,
+} from './script-registry.js';
