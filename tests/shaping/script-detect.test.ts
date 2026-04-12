@@ -12,6 +12,11 @@ describe('needsUnicodeFont', () => {
         ['tr', true],
         ['vi', true],
         ['pl', true],
+        ['ar', true],
+        ['he', true],
+        ['ru', true],
+        ['ka', true],
+        ['hy', true],
     ])('should return true for %s', (lang, expected) => {
         expect(needsUnicodeFont(lang)).toBe(expected);
     });
@@ -107,6 +112,21 @@ describe('detectFallbackLangs', () => {
         const result = detectFallbackLangs(['\u20B9'], 'en'); // ₹
         expect(result.has('hi')).toBe(true);
     });
+
+    it('should detect Cyrillic script', () => {
+        const result = detectFallbackLangs(['Привет'], 'en');
+        expect(result.has('ru')).toBe(true);
+    });
+
+    it('should detect Georgian script', () => {
+        const result = detectFallbackLangs(['გამარჯობა'], 'en');
+        expect(result.has('ka')).toBe(true);
+    });
+
+    it('should detect Armenian script', () => {
+        const result = detectFallbackLangs(['Բարև'], 'en');
+        expect(result.has('hy')).toBe(true);
+    });
 });
 
 describe('detectCharLang', () => {
@@ -156,6 +176,38 @@ describe('detectCharLang', () => {
     it('should detect Polish-specific characters', () => {
         expect(detectCharLang(0x0141)).toBe('pl'); // Ł
         expect(detectCharLang(0x0144)).toBe('pl'); // ń
+    });
+
+    it('should detect Cyrillic characters', () => {
+        expect(detectCharLang(0x0410)).toBe('ru'); // А
+        expect(detectCharLang(0x0430)).toBe('ru'); // а
+        expect(detectCharLang(0x0451)).toBe('ru'); // ё
+    });
+
+    it('should detect Cyrillic Supplement characters', () => {
+        expect(detectCharLang(0x0500)).toBe('ru'); // Ԁ
+        expect(detectCharLang(0x052F)).toBe('ru'); // ԯ
+    });
+
+    it('should detect Georgian characters', () => {
+        expect(detectCharLang(0x10A0)).toBe('ka'); // Ⴀ (Asomtavruli)
+        expect(detectCharLang(0x10D0)).toBe('ka'); // ა (Mkhedruli)
+        expect(detectCharLang(0x10FF)).toBe('ka'); // end of range
+    });
+
+    it('should detect Georgian Supplement characters', () => {
+        expect(detectCharLang(0x2D00)).toBe('ka'); // ⴀ (Nuskhuri)
+    });
+
+    it('should detect Armenian characters', () => {
+        expect(detectCharLang(0x0531)).toBe('hy'); // Ա
+        expect(detectCharLang(0x0561)).toBe('hy'); // ա
+        expect(detectCharLang(0x058F)).toBe('hy'); // ֏ (Armenian dram sign)
+    });
+
+    it('should detect Armenian ligatures', () => {
+        expect(detectCharLang(0xFB13)).toBe('hy'); // ﬓ
+        expect(detectCharLang(0xFB17)).toBe('hy'); // ﬗ
     });
 
     it('should return null for common Latin characters', () => {

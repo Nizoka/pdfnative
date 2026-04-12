@@ -70,6 +70,31 @@ export const CJK_EXT_A_END = 0x4DBF;
 export const CJK_COMPAT_START = 0xF900;
 export const CJK_COMPAT_END = 0xFAFF;
 
+// ── Cyrillic ─────────────────────────────────────────────────────────
+
+export const CYRILLIC_START = 0x0400;
+export const CYRILLIC_END = 0x04FF;
+export const CYRILLIC_SUPPLEMENT_START = 0x0500;
+export const CYRILLIC_SUPPLEMENT_END = 0x052F;
+export const CYRILLIC_EXT_A_START = 0x2DE0;
+export const CYRILLIC_EXT_A_END = 0x2DFF;
+export const CYRILLIC_EXT_B_START = 0xA640;
+export const CYRILLIC_EXT_B_END = 0xA69F;
+
+// ── Georgian ─────────────────────────────────────────────────────────
+
+export const GEORGIAN_START = 0x10A0;
+export const GEORGIAN_END = 0x10FF;
+export const GEORGIAN_SUPPLEMENT_START = 0x2D00;
+export const GEORGIAN_SUPPLEMENT_END = 0x2D2F;
+
+// ── Armenian ─────────────────────────────────────────────────────────
+
+export const ARMENIAN_START = 0x0530;
+export const ARMENIAN_END = 0x058F;
+export const ARMENIAN_LIGATURES_START = 0xFB13;
+export const ARMENIAN_LIGATURES_END = 0xFB17;
+
 // ── Script Predicates ────────────────────────────────────────────────
 
 /** Check if a codepoint falls in any Arabic Unicode block. */
@@ -90,6 +115,26 @@ export function isHebrewCodepoint(cp: number): boolean {
 /** Check if a codepoint falls in the Thai Unicode block. */
 export function isThaiCodepoint(cp: number): boolean {
     return cp >= THAI_START && cp <= THAI_END;
+}
+
+/** Check if a codepoint falls in any Cyrillic Unicode block. */
+export function isCyrillicCodepoint(cp: number): boolean {
+    return (cp >= CYRILLIC_START && cp <= CYRILLIC_END) ||
+           (cp >= CYRILLIC_SUPPLEMENT_START && cp <= CYRILLIC_SUPPLEMENT_END) ||
+           (cp >= CYRILLIC_EXT_A_START && cp <= CYRILLIC_EXT_A_END) ||
+           (cp >= CYRILLIC_EXT_B_START && cp <= CYRILLIC_EXT_B_END);
+}
+
+/** Check if a codepoint falls in any Georgian Unicode block. */
+export function isGeorgianCodepoint(cp: number): boolean {
+    return (cp >= GEORGIAN_START && cp <= GEORGIAN_END) ||
+           (cp >= GEORGIAN_SUPPLEMENT_START && cp <= GEORGIAN_SUPPLEMENT_END);
+}
+
+/** Check if a codepoint falls in any Armenian Unicode block. */
+export function isArmenianCodepoint(cp: number): boolean {
+    return (cp >= ARMENIAN_START && cp <= ARMENIAN_END) ||
+           (cp >= ARMENIAN_LIGATURES_START && cp <= ARMENIAN_LIGATURES_END);
 }
 
 // ── Text-Level Detection ─────────────────────────────────────────────
