@@ -16,15 +16,16 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 
 - **Zero dependencies** — no pdfkit, jsPDF, or other vendors. Pure JavaScript
 - **ISO 32000-1 compliant** — valid xref tables, /Info metadata, proper font embedding
-- **11 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew
+- **14 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian
 - **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
 - **BiDi text layout** — simplified Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
-- **Tagged PDF / PDF/A-2b** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u)
+- **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments)
 - **PDF Encryption** — AES-128 (V4/R4) and AES-256 (V5/R6), owner + user passwords, granular permissions
-- **Free-form document builder** — headings, paragraphs, lists, tables, images, spacers, page breaks, table of contents
+- **Free-form document builder** — headings, paragraphs, lists, tables, images, barcodes, spacers, page breaks, table of contents
+- **Barcode & QR code generation** — Code 128, EAN-13, QR Code, Data Matrix, PDF417 — pure PDF path operators (no images)
 - **Image embedding** — JPEG (DCTDecode) and PNG (FlateDecode) with auto-scaling and alignment
 - **Hyperlinks** — PDF link annotations (/URI) with URL validation, blue underlined text, tagged /Link
 - **Header/footer templates** — configurable `PageTemplate` with left/center/right zones and `{page}`/`{pages}`/`{date}`/`{title}` placeholders
@@ -33,7 +34,7 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 925+ tests, fuzz suite, performance benchmarks
+- **95%+ test coverage** — 1035+ tests, fuzz suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 
 ## Installation
@@ -42,7 +43,7 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 npm install pdfnative
 ```
 
-**Requirements:** Node.js >= 18 | Modern browsers | Deno | Bun
+**Requirements:** Node.js >= 22 | Modern browsers | Deno | Bun
 
 ## Why pdfnative?
 
@@ -59,6 +60,7 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | BiDi (RTL) layout | ✅ | — | — | — |
 | Modify existing PDFs | — | — | — | ✅ |
 | Forms (AcroForms) | — | — | ✅ | ✅ |
+| Barcode / QR code (native) | ✅ 5 formats | — | — | — |
 | Vector graphics / SVG paths | — | ✅ | ✅ | ✅ |
 | Tree-shakeable (ESM) | ✅ | — | — | ✅ |
 | NPM provenance (SLSA) | ✅ | — | — | — |
@@ -101,7 +103,7 @@ writeFileSync('report.pdf', pdf);
 
 ### Document Builder
 
-Build free-form documents with headings, paragraphs, lists, tables, images, and more:
+Build free-form documents with headings, paragraphs, lists, tables, images, barcodes, and more:
 
 ```typescript
 import { buildDocumentPDFBytes } from 'pdfnative';
@@ -121,6 +123,7 @@ const pdf = buildDocumentPDFBytes({
     { type: 'heading', text: 'Next Steps', level: 2 },
     { type: 'paragraph', text: 'Focus areas for next quarter include...', align: 'left' },
     { type: 'link', text: 'View full report online', url: 'https://example.com/report' },
+    { type: 'barcode', format: 'qr', data: 'https://example.com/report', align: 'center' },
   ],
   footerText: 'Confidential',
 }, {
@@ -148,6 +151,9 @@ registerFonts({
   pl: () => import('pdfnative/fonts/noto-polish-data.js'),
   ar: () => import('pdfnative/fonts/noto-arabic-data.js'),
   he: () => import('pdfnative/fonts/noto-hebrew-data.js'),
+  ru: () => import('pdfnative/fonts/noto-cyrillic-data.js'),
+  ka: () => import('pdfnative/fonts/noto-georgian-data.js'),
+  hy: () => import('pdfnative/fonts/noto-armenian-data.js'),
 });
 
 const thaiFont = await loadFontData('th');
@@ -174,6 +180,9 @@ const pdf = buildPDFBytes({
 | Polish | `pl` | Noto Sans Polish | Latin extended (Ł/ł) |
 | Arabic | `ar` | Noto Sans Arabic | GSUB positional shaping |
 | Hebrew | `he` | Noto Sans Hebrew | Right-to-left script |
+| Russian (Cyrillic) | `ru` | Noto Sans | Cyrillic alphabet |
+| Georgian | `ka` | Noto Sans Georgian | Mkhedruli script |
+| Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |
 
 ## Multi-Font (Mixed Scripts)
 
@@ -301,7 +310,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **88 PDF files** in `test-output/` (git-ignored), organized in ten categories.
+This creates **114+ PDF files** in `test-output/` (git-ignored), organized in fourteen categories.
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -320,7 +329,10 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `sample-pl.pdf` | Polish (Ł/ł) |
 | `sample-ar.pdf` | Arabic (RTL, positional shaping) |
 | `sample-he.pdf` | Hebrew (RTL) |
-| `sample-multi.pdf` | Mixed: all 11 scripts in one PDF |
+| `sample-ru.pdf` | Russian (Cyrillic) |
+| `sample-ka.pdf` | Georgian (Mkhedruli) |
+| `sample-hy.pdf` | Armenian |
+| `sample-multi.pdf` | Mixed: all 14 scripts in one PDF |
 | `sample-pagination.pdf` | 200 rows, multi-page layout |
 
 ### Diverse Use Cases (non-financial)
@@ -355,6 +367,9 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `alphabet-polish.pdf` | 32 letters, digraphs, pangram |
 | `alphabet-arabic.pdf` | 28 letters, harakat, numerals, ligatures |
 | `alphabet-hebrew.pdf` | 22 letters, final forms, vowel points |
+| `alphabet-cyrillic.pdf` | 33 Russian letters, Ukrainian/Serbian extended |
+| `alphabet-georgian.pdf` | 33 Mkhedruli letters, Asomtavruli |
+| `alphabet-armenian.pdf` | 38 letters, ligatures |
 
 ### PDF/A Conformance Variants
 
@@ -364,6 +379,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `tagged-pdfa2b-explicit.pdf` | PDF/A-2b (tagged='pdfa2b', explicit) |
 | `tagged-pdfa1b.pdf` | PDF/A-1b (tagged='pdfa1b', legacy) |
 | `tagged-pdfa2u.pdf` | PDF/A-2u (tagged='pdfa2u', Unicode) |
+| `tagged-pdfa3b.pdf` | PDF/A-3b (tagged='pdfa3b', embedded file attachments) |
 
 ### Encrypted PDFs
 
@@ -411,7 +427,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
 | `doc-report-multipage.pdf` | 3-page technical report (7 sections, 4 tables) |
 | `doc-contract-bilingual.pdf` | Bilingual EN/AR contract (legal sections, signatures) |
-| `doc-showcase-all-blocks.pdf` | All 8 block types in one PDF (3 pages) |
+| `doc-showcase-all-blocks.pdf` | All 10 block types in one PDF (3 pages) |
 
 ### Compressed PDFs (FlateDecode)
 
@@ -448,6 +464,14 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `zero-content-empty-doc.pdf` | Document with no blocks |
 | `zero-content-empty-strings.pdf` | Empty headings, paragraphs, and list items |
 | `doc-heavy-buffer-5mb.pdf` | 5 MB synthetic JPEG embedded (memory stress) |
+
+### Barcode & QR Code Samples
+
+| File | Content |
+|------|---------|
+| `barcode-showcase.pdf` | All 5 formats: Code 128, EAN-13, QR Code, Data Matrix, PDF417 |
+| `barcode-alignment-sizing.pdf` | Alignment (left/center/right) and custom size variations |
+| `barcode-tagged-pdfa.pdf` | Barcodes in tagged PDF/A-2b mode (/Figure structure elements) |
 
 ## API Reference
 
@@ -497,6 +521,22 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `containsArabic(text)` | Check for Arabic characters |
 | `containsHebrew(text)` | Check for Hebrew characters |
 
+### Barcode & QR Code
+
+| Function | Description |
+|----------|-------------|
+| `renderBarcode(format, data, x, y, opts?)` | Unified barcode renderer (dispatches to format-specific function) |
+| `encodeCode128(data)` | Encode data into Code 128 barcode pattern (ISO 15417) |
+| `renderCode128(data, x, y, w, h)` | Render Code 128 barcode as PDF path operators |
+| `ean13CheckDigit(digits)` | Compute EAN-13 check digit (ISO 15420) |
+| `renderEAN13(data, x, y, w, h)` | Render EAN-13 barcode with guard bars and digits |
+| `generateQR(data, ecLevel?)` | Generate QR Code matrix (ISO 18004) |
+| `renderQR(data, x, y, size, ecLevel?)` | Render QR Code as PDF path operators |
+| `generateDataMatrix(data)` | Generate Data Matrix ECC 200 matrix (ISO 16022) |
+| `renderDataMatrix(data, x, y, size)` | Render Data Matrix as PDF path operators |
+| `encodePDF417(data, ecLevel?)` | Encode data into PDF417 codewords (ISO 15438) |
+| `renderPDF417(data, x, y, w, h, ecLevel?)` | Render PDF417 barcode as PDF path operators |
+
 ### Document Block Types
 
 | Type | Description |
@@ -510,6 +550,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `SpacerBlock` | Vertical whitespace |
 | `PageBreakBlock` | Force new page |
 | `TocBlock` | Auto-generated table of contents with /GoTo links |
+| `BarcodeBlock` | Barcode / QR code rendered via PDF path operators |
 
 ### Tagged PDF & PDF/A
 
@@ -624,6 +665,7 @@ src/
 │   ├── pdf-color.ts      # Color parsing, validation, normalization
 │   ├── pdf-compress.ts   # FlateDecode stream compression (zlib, stored-block fallback)
 │   ├── pdf-watermark.ts  # Text/image watermarks with ExtGState transparency
+│   ├── pdf-barcode.ts    # Barcode/QR code encoders + PDF path rendering (5 formats)
 │   └── pdf-encrypt.ts    # AES-128/256 encryption, MD5, SHA-256, key derivation
 ├── fonts/
 │   ├── encoding.ts       # WinAnsi + CIDFont pure encoding functions (no shaping deps)
@@ -644,7 +686,7 @@ src/
 fonts/                    # Pre-built font data modules (.js/.d.ts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (see scripts/README.md)
-tests/                    # 925+ tests (unit + integration + fuzz)
+tests/                    # 1035+ tests (unit + integration + fuzz)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -656,9 +698,9 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (925+ tests)
+npm run test             # vitest run (1035+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+)
-npm run test:generate       # Generate 88+ sample PDFs → test-output/
+npm run test:generate       # Generate 114+ sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -670,14 +712,14 @@ npm run typecheck:all       # Typecheck src/ + tests/ + scripts/
 
 | Metric | Value |
 |--------|-------|
-| Tests | 925+ (27 files) |
+| Tests | 1035+ (29 files) |
 | Statement coverage | 95.41% |
 | Branch coverage | 87.79% |
 | Function coverage | 98.5% |
 | Fuzz tests | 33 edge-case scenarios |
 | Benchmarks | Latin 500 rows ~10ms, Unicode ~13ms |
 | Dependencies | 0 runtime |
-| CI | Node 18/20/22 matrix |
+| CI | Node 22/24 matrix |
 | Provenance | npm signed builds |
 
 ## Known Limitations — Visual vs. Semantic PDF
@@ -823,7 +865,7 @@ pdfnative targets ES2020 and works in any environment that supports `Uint8Array`
 
 | Runtime | Version | Status | Notes |
 |---------|---------|:------:|-------|
-| Node.js | 18, 20, 22+ | ✅ Tested in CI | Full support (ESM + CJS) |
+| Node.js | 22, 24+ | ✅ Tested in CI | Full support (ESM + CJS) |
 | Chrome | 80+ | ✅ | ESM via bundler or `<script type="module">` |
 | Firefox | 80+ | ✅ | ESM via bundler or `<script type="module">` |
 | Safari | 14+ | ✅ | ESM via bundler or `<script type="module">` |

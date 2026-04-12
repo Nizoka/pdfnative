@@ -20,6 +20,11 @@ import { generate as generateEncryption } from './generators/encryption.js';
 import { generate as generateDocBuilder } from './generators/document-builder.js';
 import { generate as generateCompression } from './generators/compression.js';
 import { generate as generateStressEdge } from './generators/stress-edge.js';
+import { generate as generateBarcode } from './generators/barcode-showcase.js';
+import { generate as generateWatermarks } from './generators/watermarks.js';
+import { generate as generateHeadersFooters } from './generators/headers-footers.js';
+import { generate as generatePageSizes } from './generators/page-sizes.js';
+import { generate as generateTocShowcase } from './generators/toc-showcase.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -50,6 +55,21 @@ async function generateAll(): Promise<void> {
 
     // ── Stress tests + edge cases ────────────────────────────────
     await generateStressEdge(ctx);
+
+    // ── Barcode & QR Code showcase ───────────────────────────────
+    await generateBarcode(ctx);
+
+    // ── Watermark samples (text + image, bg/fg) ──────────────────
+    await generateWatermarks(ctx);
+
+    // ── Header & footer templates ────────────────────────────────
+    await generateHeadersFooters(ctx);
+
+    // ── Page size variants (A4, Letter, Legal, A3, Tabloid) ──────
+    await generatePageSizes(ctx);
+
+    // ── Table of Contents showcase ───────────────────────────────
+    await generateTocShowcase(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

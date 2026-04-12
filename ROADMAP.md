@@ -6,12 +6,13 @@ This document outlines the planned development direction for pdfnative. Prioriti
 
 - [x] **Core PDF generation** — table-centric builder with Helvetica (ISO 32000-1)
 - [x] **11 Unicode scripts** — Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew
+- [x] **3 additional scripts** — Cyrillic (Russian), Georgian, Armenian (14 total)
 - [x] **Thai OpenType shaping** — GSUB substitution + GPOS mark positioning
 - [x] **Arabic positional shaping** — GSUB isolated/initial/medial/final + lam-alef ligatures
 - [x] **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring
 - [x] **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - [x] **TTF subsetting** — glyph-level subset for reduced file size
-- [x] **Tagged PDF / PDF/A** — PDF/A-1b, 2b, 2u with structure tree, XMP metadata, sRGB ICC
+- [x] **Tagged PDF / PDF/A** — PDF/A-1b, 2b, 2u, 3b with structure tree, XMP metadata, sRGB ICC, embedded file attachments
 - [x] **AES encryption** — AES-128 (V4/R4) and AES-256 (V5/R6) with granular permissions
 - [x] **Document builder** — free-form API with headings, paragraphs, lists, tables, images, links
 - [x] **Image embedding** — JPEG (DCTDecode) and PNG (FlateDecode) with auto-scaling
@@ -25,6 +26,7 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Page number formatting** — subsumed by header/footer templates via `{page}/{pages}` placeholders
 - [x] **Watermarks** — text + image watermarks with configurable opacity, rotation, and position (background/foreground)
 - [x] **Table of contents** — auto-generated TOC with internal `/GoTo` links, dot leaders, and page numbers
+- [x] **Barcode & QR code generation** — Code 128 (ISO 15417), EAN-13 (ISO 15420), QR Code (ISO 18004), Data Matrix ECC 200 (ISO 16022), PDF417 (ISO 15438) — pure PDF path operators (no image dependency)
 
 ## In Progress
 
@@ -35,11 +37,8 @@ _No items currently in progress._
 ### Medium-Term
 
 - [ ] **SVG path rendering** — draw vector graphics via PDF path operators
-- [ ] **Barcode/QR code generation** — pure PDF operator rendering (no image dependency)
 - [ ] **Digital signatures** — CMS/PKCS#7 signatures for document authentication
-- [ ] **PDF/A-3** — embedded file attachments in archival PDFs (ISO 19005-3)
-- [ ] **Devanagari shaping** — GSUB conjuncts and matra reordering
-- [ ] **Additional fonts** — Cyrillic, Georgian, Armenian, Bengali, Tamil
+- [ ] **Additional fonts** — Bengali, Tamil
 
 ### Long-Term
 

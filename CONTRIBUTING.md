@@ -12,7 +12,7 @@ npm install
 
 ### Requirements
 
-- Node.js >= 18
+- Node.js >= 22
 - npm >= 9
 
 ## Build
@@ -25,10 +25,10 @@ npm run dev            # tsup --watch
 ## Test
 
 ```bash
-npm run test           # vitest run (925+ tests)
+npm run test           # vitest run (1035+ tests)
 npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (95%+ stmts)
-npm run test:generate  # Generate 88+ sample PDFs → test-output/
+npm run test:generate  # Generate 114+ sample PDFs → test-output/
 ```
 
 All new code must include tests. Coverage thresholds: statements 90%, branches 80%, functions 85%, lines 90%.
@@ -60,7 +60,7 @@ All must pass before opening a PR.
 
 ```
 src/
-├── core/         # PDF assembly, document builder, shared assembler, encoding context, text rendering, binary stream, layout, tagged PDF, images, annotations, encryption
+├── core/         # PDF assembly, document builder, shared assembler, encoding context, text rendering, binary stream, layout, tagged PDF, images, annotations, encryption, barcodes
 ├── fonts/        # WinAnsi + CIDFont pure encoding, font loader, TTF subsetter (buffer guards), CMap
 ├── shaping/      # Script registry, Thai GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
@@ -68,7 +68,7 @@ src/
 fonts/            # Pre-built font data modules (.js/.d.ts)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (see scripts/README.md)
-tests/            # 925+ tests (unit + integration + fuzz), mirrors src/ structure
+tests/            # 1035+ tests (unit + integration + fuzz), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 

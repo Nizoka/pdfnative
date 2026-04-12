@@ -9,9 +9,9 @@ Target: exceed GAFAM-grade quality standards in code, testing, performance, and 
 
 ```
 src/
-├── core/         # PDF document assembly, text rendering, binary stream, layout constants, tagged PDF, images, annotations, encryption, compression, watermarks
+├── core/         # PDF document assembly, text rendering, binary stream, layout constants, tagged PDF, images, annotations, encryption, compression, watermarks, barcodes
 │   ├── pdf-builder.ts    # Table-centric PDF assembly + tagged mode + encryption + compression
-│   ├── pdf-document.ts   # Free-form document builder (headings, paragraphs, lists, tables, images, links, TOC)
+│   ├── pdf-document.ts   # Free-form document builder (headings, paragraphs, lists, tables, images, links, TOC, barcodes)
 │   ├── pdf-assembler.ts  # Shared PDF binary assembly primitives (createPdfWriter, writeXrefTrailer)
 │   ├── encoding-context.ts # Encoding context factory (dependency inversion — moved from fonts/)
 │   ├── pdf-image.ts      # JPEG/PNG parser + PDF Image XObject builder (RGBA rejection, JPEG robustness)
@@ -20,6 +20,7 @@ src/
 │   ├── pdf-compress.ts   # FlateDecode stream compression (zlib + stored-block fallback)
 │   ├── pdf-tags.ts       # Structure tree, marked content, XMP metadata, ICC profile, OutputIntent, PDF/A config
 │   ├── pdf-watermark.ts  # Text/image watermarks with ExtGState transparency
+│   ├── pdf-barcode.ts    # Barcode/QR code encoders + PDF path rendering (Code 128, EAN-13, QR, DataMatrix, PDF417)
 │   └── pdf-encrypt.ts    # AES-128/256 encryption, MD5, SHA-256, key derivation, permissions
 ├── fonts/        # WinAnsi + CIDFont pure encoding functions, lazy font loader, TTF subsetter (with buffer guards), CMap builder
 ├── shaping/      # Thai GSUB+GPOS shaping, Arabic positional shaping, BiDi resolution, Unicode script detection, multi-font run splitting, centralized script registry
@@ -28,7 +29,7 @@ src/
 fonts/            # Pre-built font data modules (.js/.d.ts) + TTF source files
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (see scripts/README.md)
-tests/            # 925+ tests (unit/integration/fuzz) mirroring src/ structure
+tests/            # 1035+ tests (unit/integration/fuzz) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -52,10 +53,10 @@ bench/            # Performance benchmarks (vitest bench)
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (925+ tests)
+npm run test            # vitest run (1035+ tests)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
-npm run test:generate   # Generate 88+ sample PDFs → test-output/
+npm run test:generate   # Generate 114+ sample PDFs → test-output/
 npm run typecheck       # tsc --noEmit
 npm run typecheck:tests # tsc --project tsconfig.test.json --noEmit
 npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit
@@ -65,9 +66,9 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 
 - Build tool: **tsup** (dual ESM/CJS, tree-shakeable, sourcemaps)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
-- CI: GitHub Actions — lint/typecheck/test/build on Node 18/20/22
+- CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 925+ tests (27 files)
+- All new code must have tests. Current: ~95% statement coverage, 1035+ tests (29 files)
 
 ## Conventions
 
@@ -77,7 +78,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Binary offsets use `byteLength()` helper (not `.length`) — critical for xref table
 - `pdf-assembler.ts`: shared binary assembly primitives (`createPdfWriter`, `writeXrefTrailer`) — used by both `pdf-builder.ts` and `pdf-document.ts` to eliminate xref/trailer duplication
 - `encoding-context.ts`: encoding context factory in `core/` (dependency inversion — `createEncodingContext()` moved from `fonts/encoding.ts` to break `fonts/ → shaping/` cycle)
-- `script-registry.ts`: centralized Unicode range constants and script predicates (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`) — single source of truth, imported by arabic-shaper, thai-shaper, script-detect, encoding-context
+- `script-registry.ts`: centralized Unicode range constants and script predicates (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `CYRILLIC_START/END`, `GEORGIAN_START/END`, `ARMENIAN_START/END`, `isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isCyrillicCodepoint`, `isGeorgianCodepoint`, `isArmenianCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`) — single source of truth, imported by arabic-shaper, thai-shaper, script-detect, encoding-context
 - Font subsetting always preserves `.notdef` (GID 0) per PDF/A spec
 - CIDFont Type2 uses Identity-H encoding — glyph IDs are hex-encoded directly
 - All color values are PDF operator format RGB strings: `"0.145 0.388 0.922"`
@@ -88,6 +89,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - ICC sRGB profile: 9 required tags (desc, wtpt, cprt, rXYZ, gXYZ, bXYZ, rTRC, gTRC, bTRC) — monitor RGB class
 - PDF/A-1b: explicit `tagged: 'pdfa1b'` uses PDF 1.4, `pdfaid:part=1`
 - PDF/A-2u: explicit `tagged: 'pdfa2u'` uses PDF 1.7, `pdfaid:conformance=U`
+- PDF/A-3b: explicit `tagged: 'pdfa3b'` uses PDF 1.7, `pdfaid:part=3`, supports `/EmbeddedFile` attachments
 - `resolvePdfAConfig(tagged)` maps option → config (version, part, conformance, subtype)
 - Encryption: AES-128 (V4/R4/AESV2) and AES-256 (V5/R6/AESV3) via `encryption` layout option
 - Encryption uses per-object keys with random IVs (AES-CBC + PKCS7)
@@ -128,6 +130,12 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - TOC internal links: named destinations `/Dests << /toc_h_N [pageObj /XYZ x y null] >>` in catalog; annotations use `/Dest /toc_h_N` (not `/URI`)
 - TOC tagged mode: `/TOC` structure element with `/TOCI` children for PDF/UA compliance
 - `PAGE_SIZES` constant: `{ A4, Letter, Legal, A3, Tabloid }` with `{ width, height }` in points
+- Barcode rendering: all 5 formats use PDF `re f` rectangle operators (pure vector, no image XObjects)
+- Barcode formats: Code 128 (ISO 15417), EAN-13 (ISO 15420), QR Code (ISO 18004), Data Matrix ECC 200 (ISO 16022), PDF417 (ISO 15438)
+- Barcode math: QR uses GF(256) with 0x11D polynomial; DataMatrix uses GF(256) with 0x12D polynomial; PDF417 uses GF(929)
+- `BarcodeBlock`: `{ type: 'barcode', format, data, width?, height?, align?, ecLevel?, pdf417ECLevel? }` — 10th document block type
+- Barcode tagged mode: wrapped in `/Figure` structure element with MCID
+- `renderBarcode()`: unified dispatcher routing to format-specific render functions
 
 ### API Design
 
@@ -161,7 +169,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 925+ tests (27 files), 33 fuzz edge-cases, performance benchmarks
+- **95%+ test coverage** — 1035+ tests (29 files), 33 fuzz edge-cases, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)

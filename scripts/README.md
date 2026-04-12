@@ -1,6 +1,6 @@
 # scripts/ – Sample PDF Generation
 
-Generates 88+ sample PDFs for visual inspection across all supported languages, features, and edge cases.
+Generates 114+ sample PDFs for visual inspection across all supported languages, features, and edge cases.
 
 ## Quick Start
 
@@ -29,10 +29,15 @@ scripts/
     ├── financial-statements.ts  # 14 PDFs – financial tables in 12 languages + multi + pagination
     ├── diverse-use-cases.ts     # 12 PDFs – non-financial domain tables
     ├── alphabet-coverage.ts     # 11 PDFs – per-script glyph verification
-    ├── pdfa-variants.ts         #  4 PDFs – PDF/A-1b, PDF/A-2b (default + explicit), PDF/A-2u
+    ├── pdfa-variants.ts         #  5 PDFs – PDF/A-1b, PDF/A-2b (default + explicit), PDF/A-2u, PDF/A-3b
     ├── encryption.ts            #  6 PDFs – AES-128/256, passwords, permissions
     ├── document-builder.ts      # 19 PDFs – DOC_SAMPLES loop + Unicode docs (JA, AR, HE, ZH, TH…)
     ├── compression.ts           #  9 PDFs – FlateDecode size comparisons + compressed non-Latin
+    ├── barcode-showcase.ts      #  3 PDFs – 5 barcode formats, alignment/sizing, tagged PDF/A
+    ├── watermarks.ts            #  6 PDFs – text + image watermarks, opacity, rotation, bg/fg
+    ├── headers-footers.ts       #  4 PDFs – PageTemplate zones, placeholders, multi-page
+    ├── page-sizes.ts            #  6 PDFs – A4, Letter, Legal, A3, Tabloid, A3 landscape
+    ├── toc-showcase.ts          #  3 PDFs – multi-level TOC, dot leaders, GoTo links, tagged
     └── stress-edge.ts           # 13 PDFs – 10K rows, BiDi, heavy text, images, annotations, edge cases
 ```
 

@@ -292,5 +292,78 @@ export const ALPHABET_SAMPLES: LangSample[] = [
         ],
         footerText: 'pdfnative \u2013 Hebrew alphabet coverage verification',
     },
+    // Cyrillic Alphabet (Russian)
+    {
+        lang: 'ru',
+        filename: 'alphabet-cyrillic',
+        title: 'Кириллица \u2013 Cyrillic Alphabet Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Cyrillic (U+0400–U+04FF)' },
+            { label: 'Font', value: 'Noto Sans Cyrillic' },
+            { label: 'Test', value: '33 letters + extended' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '8 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Uppercase 1', 'А Б В Г Д Е Ж З И Й К Л М Н О П', '16', 'Capital', 'А–П'], type: 'credit', pointed: false },
+            { cells: ['Uppercase 2', 'Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я', '16', 'Capital', 'Р–Я'], type: 'credit', pointed: false },
+            { cells: ['Lowercase 1', 'а б в г д е ж з и й к л м н о п', '16', 'Small', 'а–п'], type: 'credit', pointed: true },
+            { cells: ['Lowercase 2', 'р с т у ф х ц ч ш щ ъ ы ь э ю я', '16', 'Small', 'р–я'], type: 'credit', pointed: true },
+            { cells: ['Ё/ё', 'Ё ё', '2', 'Special', 'Often omitted'], type: 'debit', pointed: true },
+            { cells: ['Ukrainian', 'Ґ ґ Є є І і Ї ї', '8', 'Extended', 'Ukrainian-specific'], type: 'credit', pointed: false },
+            { cells: ['Serbian', 'Ђ ђ Љ љ Њ њ Ћ ћ Џ џ', '10', 'Extended', 'Serbian-specific'], type: 'credit', pointed: false },
+            { cells: ['Sample', 'Привет мир \u2013 тестирование', '3 words', 'Phrase', 'Hello world'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Cyrillic alphabet coverage verification',
+    },
+    // Georgian Alphabet
+    {
+        lang: 'ka',
+        filename: 'alphabet-georgian',
+        title: 'ქართული ანბანი \u2013 Georgian Alphabet Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Georgian (U+10A0–U+10FF)' },
+            { label: 'Font', value: 'Noto Sans Georgian' },
+            { label: 'Test', value: '33 Mkhedruli letters' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '6 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Letters 1', 'ა ბ გ დ ე ვ ზ თ ი კ ლ', '11', 'Mkhedruli', 'ა–ლ'], type: 'credit', pointed: false },
+            { cells: ['Letters 2', 'მ ნ ო პ ჟ რ ს ტ უ ფ ქ', '11', 'Mkhedruli', 'მ–ქ'], type: 'credit', pointed: false },
+            { cells: ['Letters 3', 'ღ ყ შ ჩ ც ძ წ ჭ ხ ჯ ჰ', '11', 'Mkhedruli', 'ღ–ჰ'], type: 'credit', pointed: false },
+            { cells: ['Asomtavruli', 'Ⴀ Ⴁ Ⴂ Ⴃ Ⴄ Ⴅ', '6', 'Asomtavruli', 'Historical'], type: 'debit', pointed: false },
+            { cells: ['Digits', '0 1 2 3 4 5 6 7 8 9', '10', 'Digit', 'Standard'], type: 'credit', pointed: false },
+            { cells: ['Sample', 'გამარჯობა მსოფლიო \u2013 ტესტი', '3 words', 'Phrase', 'Hello world'], type: 'credit', pointed: true },
+        ],
+        footerText: 'pdfnative \u2013 Georgian alphabet coverage verification',
+    },
+    // Armenian Alphabet
+    {
+        lang: 'hy',
+        filename: 'alphabet-armenian',
+        title: '\u0540\u0561\u0575\u0578\u0581 \u0561\u0575\u0562\u0578\u0582\u0562\u0565\u0576 \u2013 Armenian Alphabet Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Armenian (U+0530–U+058F)' },
+            { label: 'Font', value: 'Noto Sans Armenian' },
+            { label: 'Test', value: '38 letters + ligatures' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '8 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Uppercase 1', 'Ա Բ Գ Դ Ե Զ Է Ը Թ Ժ', '10', 'Capital', 'Ա–Ժ'], type: 'credit', pointed: false },
+            { cells: ['Uppercase 2', 'Ի Լ Խ Ծ Կ Հ Ձ Ղ Ճ Մ', '10', 'Capital', 'Ի–Մ'], type: 'credit', pointed: false },
+            { cells: ['Uppercase 3', 'Յ Ն Շ Ո Չ Պ Ջ Ռ Ս Վ Տ Ր Ց Ւ Փ Ք Օ Ֆ', '18', 'Capital', 'Յ–Ֆ'], type: 'credit', pointed: false },
+            { cells: ['Lowercase 1', 'ա բ գ դ ե զ է ը թ ժ', '10', 'Small', 'ա–ժ'], type: 'credit', pointed: true },
+            { cells: ['Lowercase 2', '\u056B \u056C \u056D \u056E \u056F \u0570 \u0571 \u0572 \u0573 \u0574', '10', 'Small', '\u056B\u2013\u0574'], type: 'credit', pointed: true },
+            { cells: ['Lowercase 3', '\u0575 \u0576 \u0577 \u0578 \u0579 \u057A \u057B \u057C \u057D \u057E \u057F \u0580 \u0581 \u0582 \u0583 \u0584 \u0585 \u0586', '18', 'Small', '\u0575\u2013\u0586'], type: 'credit', pointed: true },
+            { cells: ['Ligatures', '\uFB13 \uFB14 \uFB15 \uFB16 \uFB17', '5', 'Ligature', 'FB13\u2013FB17'], type: 'debit', pointed: false },
+            { cells: ['Sample', '\u0532\u0561\u0580\u0565\u0582 \u0531\u0577\u056D\u0561\u0580\u0570 \u2013 \u0569\u0565\u057D\u057F', '3 words', 'Phrase', 'Hello world'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Armenian alphabet coverage verification',
+    },
 ];
-
+

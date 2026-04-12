@@ -26,12 +26,12 @@ tests/
 └── fixtures/       # test data, sample fonts, expected outputs
 scripts/
 ├── generate-samples.ts  # Orchestrator for modular PDF sample generation
-├── generators/          # Per-category sample generators (9 modules)
+├── generators/          # Per-category sample generators (10 modules)
 └── helpers/             # Shared utilities (fonts, images, I/O)
 ```
 
 ## Current State (maintain these thresholds)
-- **925+ tests** across 27 test files + 1 benchmark file
+- **1035+ tests** across 29 test files + 1 benchmark file
 - Statements: ~95% (threshold: 90%)
 - Branches: ~88% (threshold: 80%)
 - Functions: ~98% (threshold: 85%)

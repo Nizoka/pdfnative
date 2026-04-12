@@ -18,7 +18,7 @@ export interface LangSample {
 
 export interface PdfASample {
     filename: string;
-    tagged: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u';
+    tagged: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u' | 'pdfa3b';
     description: string;
 }
 
