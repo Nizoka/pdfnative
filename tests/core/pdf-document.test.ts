@@ -669,6 +669,33 @@ describe('buildDocumentPDF tagged mode', () => {
             expect(result.substring(off, off + `${i} 0 obj`.length)).toBe(`${i} 0 obj`);
         }
     });
+
+    it('should produce PDF/A-3b with embedded file attachments', () => {
+        const xmlData = new TextEncoder().encode('<invoice/>');
+        const result = buildDocumentPDF(makeMinimalParams(), {
+            tagged: 'pdfa3b',
+            attachments: [{
+                filename: 'data.xml',
+                data: xmlData,
+                mimeType: 'application/xml',
+                relationship: 'Source',
+            }],
+        });
+        expect(result).toContain('pdfaid:part>3');
+        expect(result).toContain('/AF [');
+        expect(result).toContain('/EmbeddedFiles');
+        expect(result).toContain('/AFRelationship /Source');
+        expect(result).toContain('(data.xml)');
+    });
+
+    it('should throw when attachments used with pdfa2b', () => {
+        const att = [{
+            filename: 'test.xml',
+            data: new TextEncoder().encode('<x/>'),
+            mimeType: 'application/xml',
+        }];
+        expect(() => buildDocumentPDF(makeMinimalParams(), { tagged: true, attachments: att })).toThrow('pdfa3b');
+    });
 });
 
 // ── Layout options ───────────────────────────────────────────────────

@@ -28,6 +28,7 @@ import type {
     ImageBlock,
     LinkBlock,
     TocBlock,
+    BarcodeBlock,
 } from '../types/pdf-document-types.js';
 import { parseImage, buildImageXObject, buildImageOperators } from './pdf-image.js';
 import type { ParsedImage } from './pdf-image.js';
@@ -55,12 +56,15 @@ import {
     buildOutputIntentDict,
     buildMinimalSRGBProfile,
     resolvePdfAConfig,
+    buildEmbeddedFiles,
+    validateAttachments,
 } from './pdf-tags.js';
 import type { EncryptionState } from './pdf-encrypt.js';
 import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
+import { renderBarcode } from './pdf-barcode.js';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -860,6 +864,68 @@ function _renderToc(
     return { ops, y };
 }
 
+// ── Barcode Rendering ────────────────────────────────────────────────
+
+/** Default barcode dimensions by format type. */
+const BARCODE_1D_WIDTH = 200;
+const BARCODE_1D_HEIGHT = 60;
+const BARCODE_2D_SIZE = 100;
+
+function _is2DFormat(format: string): boolean {
+    return format === 'qr' || format === 'datamatrix';
+}
+
+function _estimateBarcodeHeight(block: BarcodeBlock): number {
+    if (_is2DFormat(block.format)) {
+        return block.height ?? block.width ?? BARCODE_2D_SIZE;
+    }
+    return block.height ?? BARCODE_1D_HEIGHT;
+}
+
+function _renderBarcodeBlock(
+    block: BarcodeBlock,
+    y: number,
+    mgL: number,
+    cw: number,
+    tagCtx?: TagContext,
+    documentChildren?: (StructElement | MCRef)[],
+): { ops: string[]; y: number } {
+    const ops: string[] = [];
+    const is2D = _is2DFormat(block.format);
+    const w = block.width ?? (is2D ? BARCODE_2D_SIZE : BARCODE_1D_WIDTH);
+    const h = block.height ?? (is2D ? w : BARCODE_1D_HEIGHT);
+
+    // Horizontal alignment
+    let bx = mgL;
+    if (block.align === 'center') {
+        bx = mgL + (cw - w) / 2;
+    } else if (block.align === 'right') {
+        bx = mgL + cw - w;
+    }
+
+    const by = y - h;
+
+    // Tagged mode: wrap in /Figure
+    if (tagCtx?.tagged) {
+        const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+        ops.push(`/Span << /MCID ${mcid} >> BDC`);
+        ops.push(renderBarcode(block.format, block.data, bx, by, w, h, {
+            ecLevel: block.ecLevel,
+            pdf417ECLevel: block.pdf417ECLevel,
+        }));
+        ops.push('EMC');
+        documentChildren?.push({ type: 'Figure', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+    } else {
+        ops.push(renderBarcode(block.format, block.data, bx, by, w, h, {
+            ecLevel: block.ecLevel,
+            pdf417ECLevel: block.pdf417ECLevel,
+        }));
+    }
+
+    y = by - 6; // post-barcode spacing
+    return { ops, y };
+}
+
 // ── Block Height Estimation ──────────────────────────────────────────
 
 /**
@@ -918,6 +984,9 @@ function _estimateBlockHeight(
         case 'toc': {
             return headings ? _estimateTocHeight(block, headings) : 0;
         }
+        case 'barcode': {
+            return _estimateBarcodeHeight(block) + 6;
+        }
     }
 }
 
@@ -975,6 +1044,10 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     if (watermarkOpts) {
         validateWatermark(watermarkOpts, layout?.tagged);
     }
+
+    // ── Attachments setup (PDF/A-3 only) ─────────────────────────────
+    const attachments = layout?.attachments;
+    validateAttachments(attachments, layout?.tagged);
 
     const mcidAlloc = tagged ? createMCIDAllocator() : undefined;
     const documentChildren: (StructElement | MCRef)[] = [];
@@ -1225,6 +1298,12 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 }
                 case 'toc': {
                     const result = _renderToc(block, headingDests, y, enc, mg.l, cw, p, pageAnnotations, tagCtx, documentChildren);
+                    ops.push(...result.ops);
+                    y = result.y;
+                    break;
+                }
+                case 'barcode': {
+                    const result = _renderBarcodeBlock(block, y, mg.l, cw, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
@@ -1566,6 +1645,8 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     // ── Tagged PDF objects ───────────────────────────────────────────
     let xmpObjNum = 0;
     let outputIntentObjNum = 0;
+    let afArrayStr = '';
+    let embeddedFilesNamesDict = '';
 
     if (tagged) {
         const documentEl: StructElement = { type: 'Document', children: documentChildren };
@@ -1593,6 +1674,22 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         outputIntentObjNum = totalObjs + 1;
         emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype));
         totalObjs = outputIntentObjNum;
+
+        // Embedded file attachments (PDF/A-3 only)
+        if (attachments && attachments.length > 0) {
+            const efResult = buildEmbeddedFiles(attachments, totalObjs + 1);
+            for (const [objNum, content] of efResult.objects) {
+                const streamData = efResult.streams.get(objNum);
+                if (streamData !== undefined) {
+                    emitStreamObj(objNum, content, streamData);
+                } else {
+                    emitObj(objNum, content);
+                }
+            }
+            afArrayStr = efResult.filespecObjNums.map(n => `${n} 0 R`).join(' ');
+            embeddedFilesNamesDict = efResult.namesDict;
+            totalObjs += efResult.totalObjects;
+        }
     }
 
     // ── Build named destinations for TOC ────────────────────────────
@@ -1607,12 +1704,16 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
 
     // ── Rewrite Catalog ──────────────────────────────────────────────
     if (tagged) {
-        const catalogContent =
+        let catalogContent =
             `<< /Type /Catalog /Pages 2 0 R ` +
             `/MarkInfo << /Marked true >> ` +
             `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
             `/Metadata ${xmpObjNum} 0 R ` +
-            `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr} >>`;
+            `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr}`;
+        if (afArrayStr) {
+            catalogContent += ` /AF [${afArrayStr}] ${embeddedFilesNamesDict}`;
+        }
+        catalogContent += ` >>`;
 
         const oldCatalog = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\n';
         const newCatalog = `1 0 obj\n${catalogContent}\nendobj\n\n`;

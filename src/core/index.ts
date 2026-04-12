@@ -13,12 +13,12 @@ export {
     PAGE_SIZES,
     computeColumnPositions, resolveLayout, resolveTemplate,
 } from './pdf-layout.js';
-export type { StructElement, MCRef, PdfAConfig } from './pdf-tags.js';
+export type { StructElement, MCRef, PdfAConfig, EmbeddedFilesResult } from './pdf-tags.js';
 export {
     wrapSpan, wrapMarkedContent, escapePdfUtf16,
     createMCIDAllocator, buildStructureTree,
     buildXMPMetadata, buildOutputIntentDict, buildMinimalSRGBProfile,
-    resolvePdfAConfig,
+    resolvePdfAConfig, buildEmbeddedFiles, validateAttachments,
 } from './pdf-tags.js';
 export type { ParsedImage } from './pdf-image.js';
 export {
@@ -31,6 +31,16 @@ export { parseColor, isValidPdfRgb, normalizeColors } from './pdf-color.js';
 export type { WatermarkState } from './pdf-watermark.js';
 export { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
 export { deflateSync, deflateStored, compressStream, adler32, uint8ToBinaryString, initNodeCompression, setDeflateImpl } from './pdf-compress.js';
+
+export type { BarcodeFormat, QRErrorLevel } from './pdf-barcode.js';
+export {
+    encodeCode128, renderCode128,
+    ean13CheckDigit, renderEAN13,
+    generateQR, renderQR,
+    generateDataMatrix, renderDataMatrix,
+    encodePDF417, renderPDF417,
+    renderBarcode,
+} from './pdf-barcode.js';
 
 export type { EncryptionState } from './pdf-encrypt.js';
 export {

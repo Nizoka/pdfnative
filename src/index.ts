@@ -7,10 +7,10 @@
  * Features:
  *   - Pure JavaScript, no vendor dependencies
  *   - A4 table-based PDF with headers, data rows, pagination
- *   - Free-form document builder (headings, paragraphs, lists, tables, images, links)
+ *   - Free-form document builder (headings, paragraphs, lists, tables, images, links, barcodes)
  *   - Built-in Helvetica (Latin/WinAnsi) — no font embedding needed
  *   - CIDFont Type2/Identity-H embedding for Unicode scripts
- *   - 11 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew
+ *   - 14 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian
  *   - Thai OpenType shaping (GSUB + GPOS)
  *   - Arabic positional shaping (GSUB isolated/initial/medial/final forms)
  *   - BiDi text layout (simplified UAX #9) with glyph mirroring
@@ -20,6 +20,7 @@
  *   - PDF Encryption (AES-128 / AES-256, owner + user passwords, granular permissions)
  *   - Image embedding (JPEG DCTDecode, PNG FlateDecode)
  *   - Hyperlinks (PDF link annotations with URL validation)
+ *   - Barcode & QR code generation (Code 128, EAN-13, QR, Data Matrix, PDF417)
  *   - Web Worker support for large datasets
  *   - Tree-shakeable ESM + CJS dual build
  *
@@ -68,6 +69,8 @@ export type {
     WatermarkText,
     WatermarkImage,
     WatermarkOptions,
+    PdfAttachmentRelationship,
+    PdfAttachment,
     WorkerInputMessage,
     WorkerOutputMessage,
 } from './types/pdf-types.js';
@@ -82,6 +85,7 @@ export type {
     ImageBlock,
     LinkBlock,
     TocBlock,
+    BarcodeBlock,
     DocumentBlock,
     DocumentMetadata,
     DocumentParams,
@@ -111,8 +115,23 @@ export { parseColor, isValidPdfRgb, normalizeColors } from './core/pdf-color.js'
 export type { WatermarkState } from './core/pdf-watermark.js';
 export { validateWatermark, buildWatermarkState } from './core/pdf-watermark.js';
 
+// ── Core — Tagged PDF / PDF/A ───────────────────────────────────────
+export type { PdfAConfig, EmbeddedFilesResult } from './core/pdf-tags.js';
+export { resolvePdfAConfig, buildEmbeddedFiles, validateAttachments } from './core/pdf-tags.js';
+
 // ── Core — Stream Compression ───────────────────────────────────────
 export { initNodeCompression, setDeflateImpl } from './core/pdf-compress.js';
+
+// ── Core — Barcodes & QR Codes ──────────────────────────────────────
+export type { BarcodeFormat, QRErrorLevel } from './core/pdf-barcode.js';
+export {
+    encodeCode128, renderCode128,
+    ean13CheckDigit, renderEAN13,
+    generateQR, renderQR,
+    generateDataMatrix, renderDataMatrix,
+    encodePDF417, renderPDF417,
+    renderBarcode,
+} from './core/pdf-barcode.js';
 
 export { downloadBlob, toBytes, slugify } from './core/pdf-stream.js';
 
@@ -134,7 +153,10 @@ export type { FontLoader } from './fonts/font-loader.js';
 
 // ── Shaping — Thai & Multi-Script ───────────────────────────────────
 export { shapeThaiText } from './shaping/thai-shaper.js';
-export { containsThai, containsArabic, containsHebrew } from './shaping/script-registry.js';
+export {
+    containsThai, containsArabic, containsHebrew,
+    isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint,
+} from './shaping/script-registry.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './shaping/script-detect.js';
 export { splitTextByFont } from './shaping/multi-font.js';
 export type { FontRun } from './shaping/multi-font.js';

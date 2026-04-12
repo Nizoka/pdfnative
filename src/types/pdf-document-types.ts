@@ -6,6 +6,7 @@
  */
 
 import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor } from './pdf-types.js';
+import type { BarcodeFormat, QRErrorLevel } from '../core/pdf-barcode.js';
 
 // ── Block Types ──────────────────────────────────────────────────────
 
@@ -87,6 +88,25 @@ export interface TocBlock {
     readonly indent?: number;
 }
 
+/** Barcode block — renders a 1D or 2D barcode using PDF path operators. */
+export interface BarcodeBlock {
+    readonly type: 'barcode';
+    /** Barcode format to render. */
+    readonly format: BarcodeFormat;
+    /** Data to encode in the barcode. */
+    readonly data: string;
+    /** Width in points. Default: `200` for 1D, `100` for 2D. */
+    readonly width?: number;
+    /** Height in points. Default: `60` for 1D, same as width for 2D. */
+    readonly height?: number;
+    /** Horizontal alignment. Default: `'left'`. */
+    readonly align?: 'left' | 'center' | 'right';
+    /** QR Code error correction level. Default: `'M'`. */
+    readonly ecLevel?: QRErrorLevel;
+    /** PDF417 error correction level (0-8). Default: `2`. */
+    readonly pdf417ECLevel?: number;
+}
+
 /** Union of all supported document blocks. */
 export type DocumentBlock =
     | HeadingBlock
@@ -97,7 +117,8 @@ export type DocumentBlock =
     | PageBreakBlock
     | ImageBlock
     | LinkBlock
-    | TocBlock;
+    | TocBlock
+    | BarcodeBlock;
 
 // ── Document Parameters ──────────────────────────────────────────────
 
