@@ -328,6 +328,25 @@ describe('buildDocumentPDF watermark integration', () => {
         expect(result).toContain('/GS1');
     });
 
+    // Regression: watermark must not cause object number collisions (xref corruption)
+    it('should have no duplicate object numbers with text watermark (builder)', () => {
+        const result = buildPDF(makeBuilderParams(), {
+            watermark: { text: { text: 'DRAFT', fontSize: 60, opacity: 0.15 }, position: 'background' },
+        });
+        const objNums = [...result.matchAll(/^(\d+) 0 obj\b/gm)].map(m => Number(m[1]));
+        const unique = new Set(objNums);
+        expect(objNums.length).toBe(unique.size);
+    });
+
+    it('should have no duplicate object numbers with image watermark (builder)', () => {
+        const result = buildPDF(makeBuilderParams(), {
+            watermark: { image: { data: makeMinimalJPEG(), opacity: 0.08 }, position: 'background' },
+        });
+        const objNums = [...result.matchAll(/^(\d+) 0 obj\b/gm)].map(m => Number(m[1]));
+        const unique = new Set(objNums);
+        expect(objNums.length).toBe(unique.size);
+    });
+
     it('watermark on every page of multi-page document', () => {
         const blocks = Array.from({ length: 50 }, () => ({
             type: 'paragraph' as const,

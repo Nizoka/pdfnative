@@ -45,6 +45,8 @@ import {
     buildOutputIntentDict,
     buildMinimalSRGBProfile,
     resolvePdfAConfig,
+    buildEmbeddedFiles,
+    validateAttachments,
 } from './pdf-tags.js';
 import type { EncryptionState } from './pdf-encrypt.js';
 import { initEncryption } from './pdf-encrypt.js';
@@ -327,6 +329,11 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     if (watermarkOpts) {
         validateWatermark(watermarkOpts, layoutOptions?.tagged);
     }
+
+    // ── Attachments setup (PDF/A-3 only) ─────────────────────────────
+    const attachments = layoutOptions?.attachments;
+    validateAttachments(attachments, layoutOptions?.tagged);
+
     const wmState: WatermarkState | null = watermarkOpts
         ? buildWatermarkState(watermarkOpts, pgW, pgH, enc)
         : null;
@@ -660,8 +667,8 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
 
     // /Info dictionary (ISO 32000-1 §14.3.3)
     const baseObjCount = enc.isUnicode
-        ? 4 + fontEntries.length * 5 + totalPages * 2
-        : 4 + totalPages * 2;
+        ? 4 + fontEntries.length * 5 + wmExtraObjs + totalPages * 2
+        : 4 + wmExtraObjs + totalPages * 2;
     const infoObjNum = baseObjCount + 1;
 
     const now = new Date();
@@ -680,6 +687,8 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     // ── Tagged PDF objects (StructTreeRoot, XMP, ICC, OutputIntent) ──
     let xmpObjNum = 0;
     let outputIntentObjNum = 0;
+    let afArrayStr = '';
+    let embeddedFilesNamesDict = '';
 
     if (tagged) {
         // Build document structure tree
@@ -711,18 +720,38 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
         outputIntentObjNum = totalObjs + 1;
         emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype));
         totalObjs = outputIntentObjNum;
+
+        // Embedded file attachments (PDF/A-3 only)
+        if (attachments && attachments.length > 0) {
+            const efResult = buildEmbeddedFiles(attachments, totalObjs + 1);
+            for (const [objNum, content] of efResult.objects) {
+                const streamData = efResult.streams.get(objNum);
+                if (streamData !== undefined) {
+                    emitStreamObj(objNum, content, streamData);
+                } else {
+                    emitObj(objNum, content);
+                }
+            }
+            afArrayStr = efResult.filespecObjNums.map(n => `${n} 0 R`).join(' ');
+            embeddedFilesNamesDict = efResult.namesDict;
+            totalObjs += efResult.totalObjects;
+        }
     }
 
     // ── Rewrite Catalog with tagged attributes ──────────────────────
     if (tagged) {
         // Overwrite the catalog object in-place by rebuilding parts[catalogIdx]
         // We need to find and replace the catalog entry
-        const catalogContent =
+        let catalogContent =
             `<< /Type /Catalog /Pages 2 0 R ` +
             `/MarkInfo << /Marked true >> ` +
             `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
             `/Metadata ${xmpObjNum} 0 R ` +
-            `/OutputIntents [${outputIntentObjNum} 0 R] >>`;
+            `/OutputIntents [${outputIntentObjNum} 0 R]`;
+        if (afArrayStr) {
+            catalogContent += ` /AF [${afArrayStr}] ${embeddedFilesNamesDict}`;
+        }
+        catalogContent += ` >>`;
 
         // Rebuild: find the catalog object string and replace it
         const oldCatalog = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\n';
