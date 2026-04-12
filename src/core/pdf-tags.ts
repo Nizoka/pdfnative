@@ -10,6 +10,8 @@
  * ISO 32000-1 §14.8: tagged PDF conventions
  */
 
+import type { PdfAttachment } from '../types/pdf-types.js';
+
 // ── Marked Content Operators ─────────────────────────────────────────
 
 /**
@@ -209,10 +211,11 @@ export function buildStructureTree(
  * ISO 19005-1 (PDF/A-1b): pdfaid:part=1, conformance=B
  * ISO 19005-2 (PDF/A-2b): pdfaid:part=2, conformance=B
  * ISO 19005-2 (PDF/A-2u): pdfaid:part=2, conformance=U
+ * ISO 19005-3 (PDF/A-3b): pdfaid:part=3, conformance=B
  *
  * @param title - Document title
  * @param createDate - ISO 8601 formatted creation date
- * @param pdfaPart - PDF/A part number (1 or 2). Default: 2
+ * @param pdfaPart - PDF/A part number (1, 2, or 3). Default: 2
  * @param pdfaConformance - PDF/A conformance level ('B' or 'U'). Default: 'B'
  * @returns XMP metadata XML string
  */
@@ -416,7 +419,7 @@ export interface PdfAConfig {
     readonly enabled: boolean;
     /** PDF version string for header. */
     readonly pdfVersion: string;
-    /** PDF/A part (1 or 2). */
+    /** PDF/A part (1, 2, or 3). */
     readonly pdfaPart: number;
     /** PDF/A conformance ('B' or 'U'). */
     readonly pdfaConformance: string;
@@ -440,6 +443,128 @@ export function resolvePdfAConfig(tagged: boolean | string | undefined): PdfACon
     if (tagged === 'pdfa2u') {
         return { enabled: true, pdfVersion: '1.7', pdfaPart: 2, pdfaConformance: 'U', outputIntentSubtype: 'GTS_PDFA1' };
     }
+    if (tagged === 'pdfa3b') {
+        return { enabled: true, pdfVersion: '1.7', pdfaPart: 3, pdfaConformance: 'B', outputIntentSubtype: 'GTS_PDFA1' };
+    }
     // true or 'pdfa2b' → PDF/A-2b (default tagged mode)
     return { enabled: true, pdfVersion: '1.7', pdfaPart: 2, pdfaConformance: 'B', outputIntentSubtype: 'GTS_PDFA1' };
+}
+
+// ── PDF/A-3 Embedded Files (ISO 19005-3) ─────────────────────────────
+
+/**
+ * Result of building embedded file objects for PDF/A-3.
+ */
+export interface EmbeddedFilesResult {
+    /** PDF objects as [objNum, content] pairs (EmbeddedFile streams + Filespec dicts). */
+    readonly objects: ReadonlyArray<readonly [number, string]>;
+    /** Binary stream data keyed by object number (for EmbeddedFile streams). */
+    readonly streams: ReadonlyMap<number, string>;
+    /** Filespec object numbers (for /AF array in catalog). */
+    readonly filespecObjNums: readonly number[];
+    /** Total number of objects created. */
+    readonly totalObjects: number;
+    /** /Names << /EmbeddedFiles << /Names [...] >> >> dictionary content for catalog. */
+    readonly namesDict: string;
+}
+
+/**
+ * Build PDF objects for embedded file attachments (PDF/A-3).
+ *
+ * For each attachment, creates:
+ * 1. An /EmbeddedFile stream object (the file data)
+ * 2. A /Filespec dictionary referencing the stream
+ *
+ * @param attachments - Array of file attachments
+ * @param startObjNum - First available object number
+ * @returns Objects, references, and catalog fragments
+ */
+export function buildEmbeddedFiles(attachments: readonly PdfAttachment[], startObjNum: number): EmbeddedFilesResult {
+    const objects: Array<readonly [number, string]> = [];
+    const streams = new Map<number, string>();
+    const filespecObjNums: number[] = [];
+    const namesEntries: string[] = [];
+    let nextObj = startObjNum;
+
+    for (const att of attachments) {
+        const efObjNum = nextObj++;
+        const fsObjNum = nextObj++;
+
+        // Convert Uint8Array to binary string for stream
+        let binaryStr = '';
+        for (let i = 0; i < att.data.length; i++) binaryStr += String.fromCharCode(att.data[i]);
+
+        // EmbeddedFile stream dictionary (content emitted via emitStreamObj)
+        const efDict =
+            `<< /Type /EmbeddedFile /Subtype /${escapePdfName(att.mimeType)} ` +
+            `/Params << /Size ${att.data.length} >> ` +
+            `/Length ${binaryStr.length}`;
+        objects.push([efObjNum, efDict]);
+        streams.set(efObjNum, binaryStr);
+
+        // Filespec dictionary
+        const relationship = att.relationship ?? 'Unspecified';
+        const escapedFilename = escapePdfString(att.filename);
+        const desc = att.description ? ` /Desc (${escapePdfString(att.description)})` : '';
+        const fsDict =
+            `<< /Type /Filespec /F (${escapedFilename}) /UF (${escapedFilename})` +
+            ` /EF << /F ${efObjNum} 0 R /UF ${efObjNum} 0 R >>` +
+            ` /AFRelationship /${relationship}${desc} >>`;
+        objects.push([fsObjNum, fsDict]);
+        filespecObjNums.push(fsObjNum);
+
+        // Names dict entry: (filename) ref
+        namesEntries.push(`(${escapedFilename}) ${fsObjNum} 0 R`);
+    }
+
+    const namesDict = `/Names << /EmbeddedFiles << /Names [${namesEntries.join(' ')}] >> >>`;
+
+    return {
+        objects,
+        streams,
+        filespecObjNums,
+        totalObjects: nextObj - startObjNum,
+        namesDict,
+    };
+}
+
+/**
+ * Validate attachments against PDF/A configuration.
+ * Attachments are only allowed with PDF/A-3 (pdfaPart === 3).
+ *
+ * @param attachments - Attachments to validate
+ * @param tagged - The tagged option value
+ */
+export function validateAttachments(attachments: readonly PdfAttachment[] | undefined, tagged: boolean | string | undefined): void {
+    if (!attachments || attachments.length === 0) return;
+    if (tagged !== 'pdfa3b') {
+        throw new Error('File attachments require tagged: \'pdfa3b\' (PDF/A-3, ISO 19005-3)');
+    }
+    for (const att of attachments) {
+        if (!att.filename || att.filename.length === 0) {
+            throw new Error('Attachment filename must not be empty');
+        }
+        if (!att.mimeType || att.mimeType.length === 0) {
+            throw new Error(`Attachment '${att.filename}' must have a mimeType`);
+        }
+        if (!att.data || att.data.length === 0) {
+            throw new Error(`Attachment '${att.filename}' must have non-empty data`);
+        }
+    }
+}
+
+// ── PDF Name/String Escaping ─────────────────────────────────────────
+
+/**
+ * Escape a MIME type for use as a PDF name (replace / with #2F).
+ */
+function escapePdfName(mimeType: string): string {
+    return mimeType.replace(/\//g, '#2F');
+}
+
+/**
+ * Escape a string for use in PDF literal strings.
+ */
+function escapePdfString(str: string): string {
+    return str.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 }

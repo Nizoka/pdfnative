@@ -510,4 +510,43 @@ describe('buildPDF Unicode/CIDFont path', () => {
         expect(result).toContain('/Subtype /CIDFontType2');
         expect(result).toContain('/Encoding /Identity-H');
     });
+
+    // ── PDF/A-3 with attachments ─────────────────────────────────
+    it('should produce PDF/A-3b with embedded file attachments', () => {
+        const xmlData = new TextEncoder().encode('<invoice><total>100</total></invoice>');
+        const result = buildPDF(makeMinimalParams(), {
+            tagged: 'pdfa3b',
+            attachments: [{
+                filename: 'invoice.xml',
+                data: xmlData,
+                mimeType: 'application/xml',
+                relationship: 'Data',
+            }],
+        });
+        expect(result).toContain('%PDF-1.7');
+        expect(result).toContain('pdfaid:part>3');
+        expect(result).toContain('/AF [');
+        expect(result).toContain('/EmbeddedFiles');
+        expect(result).toContain('/AFRelationship /Data');
+        expect(result).toContain('/Type /Filespec');
+        expect(result).toContain('/Type /EmbeddedFile');
+        expect(result).toContain('(invoice.xml)');
+    });
+
+    it('should produce PDF/A-3b without attachments', () => {
+        const result = buildPDF(makeMinimalParams(), { tagged: 'pdfa3b' });
+        expect(result).toContain('%PDF-1.7');
+        expect(result).toContain('pdfaid:part>3');
+        expect(result).not.toContain('/AF [');
+    });
+
+    it('should throw when attachments used without pdfa3b', () => {
+        const att = [{
+            filename: 'test.xml',
+            data: new TextEncoder().encode('<x/>'),
+            mimeType: 'application/xml',
+        }];
+        expect(() => buildPDF(makeMinimalParams(), { tagged: true, attachments: att })).toThrow('pdfa3b');
+        expect(() => buildPDF(makeMinimalParams(), { attachments: att })).toThrow('pdfa3b');
+    });
 });

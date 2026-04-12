@@ -8,8 +8,12 @@ import {
     buildXMPMetadata,
     buildOutputIntentDict,
     buildMinimalSRGBProfile,
+    resolvePdfAConfig,
+    buildEmbeddedFiles,
+    validateAttachments,
 } from '../../src/core/pdf-tags.js';
 import type { StructElement, MCRef } from '../../src/core/pdf-tags.js';
+import type { PdfAttachment } from '../../src/types/pdf-types.js';
 
 // ── escapePdfUtf16 ──────────────────────────────────────────────────
 
@@ -272,5 +276,183 @@ describe('buildMinimalSRGBProfile', () => {
         const size = (profile.charCodeAt(0) << 24) | (profile.charCodeAt(1) << 16) |
                      (profile.charCodeAt(2) << 8) | profile.charCodeAt(3);
         expect(size).toBe(profile.length);
+    });
+});
+// ── resolvePdfAConfig ────────────────────────────────────────────────
+
+describe('resolvePdfAConfig', () => {
+    it('should return disabled for false', () => {
+        const cfg = resolvePdfAConfig(false);
+        expect(cfg.enabled).toBe(false);
+    });
+
+    it('should return disabled for undefined', () => {
+        const cfg = resolvePdfAConfig(undefined);
+        expect(cfg.enabled).toBe(false);
+    });
+
+    it('should return PDF/A-2b for true', () => {
+        const cfg = resolvePdfAConfig(true);
+        expect(cfg.enabled).toBe(true);
+        expect(cfg.pdfaPart).toBe(2);
+        expect(cfg.pdfaConformance).toBe('B');
+        expect(cfg.pdfVersion).toBe('1.7');
+    });
+
+    it('should return PDF/A-1b for pdfa1b', () => {
+        const cfg = resolvePdfAConfig('pdfa1b');
+        expect(cfg.enabled).toBe(true);
+        expect(cfg.pdfaPart).toBe(1);
+        expect(cfg.pdfaConformance).toBe('B');
+        expect(cfg.pdfVersion).toBe('1.4');
+    });
+
+    it('should return PDF/A-2u for pdfa2u', () => {
+        const cfg = resolvePdfAConfig('pdfa2u');
+        expect(cfg.enabled).toBe(true);
+        expect(cfg.pdfaPart).toBe(2);
+        expect(cfg.pdfaConformance).toBe('U');
+    });
+
+    it('should return PDF/A-3b for pdfa3b', () => {
+        const cfg = resolvePdfAConfig('pdfa3b');
+        expect(cfg.enabled).toBe(true);
+        expect(cfg.pdfaPart).toBe(3);
+        expect(cfg.pdfaConformance).toBe('B');
+        expect(cfg.pdfVersion).toBe('1.7');
+        expect(cfg.outputIntentSubtype).toBe('GTS_PDFA1');
+    });
+});
+
+// ── buildEmbeddedFiles ──────────────────────────────────────────────
+
+describe('buildEmbeddedFiles', () => {
+    const makeAttachment = (filename = 'test.xml', content = '<data/>'): PdfAttachment => ({
+        filename,
+        data: new TextEncoder().encode(content),
+        mimeType: 'application/xml',
+    });
+
+    it('should create 2 objects per attachment (EF stream + Filespec)', () => {
+        const result = buildEmbeddedFiles([makeAttachment()], 10);
+        expect(result.totalObjects).toBe(2);
+        expect(result.objects).toHaveLength(2);
+        expect(result.filespecObjNums).toHaveLength(1);
+    });
+
+    it('should assign sequential object numbers', () => {
+        const result = buildEmbeddedFiles([makeAttachment()], 10);
+        const objNums = result.objects.map(([n]) => n);
+        expect(objNums).toEqual([10, 11]);
+    });
+
+    it('should handle multiple attachments', () => {
+        const atts = [makeAttachment('a.xml', '<a/>'), makeAttachment('b.csv', 'x,y')];
+        const result = buildEmbeddedFiles(atts, 20);
+        expect(result.totalObjects).toBe(4);
+        expect(result.filespecObjNums).toEqual([21, 23]);
+    });
+
+    it('should include /AFRelationship in Filespec', () => {
+        const att: PdfAttachment = {
+            ...makeAttachment(),
+            relationship: 'Data',
+        };
+        const result = buildEmbeddedFiles([att], 10);
+        const fsContent = result.objects[1][1];
+        expect(fsContent).toContain('/AFRelationship /Data');
+    });
+
+    it('should default AFRelationship to Unspecified', () => {
+        const result = buildEmbeddedFiles([makeAttachment()], 10);
+        const fsContent = result.objects[1][1];
+        expect(fsContent).toContain('/AFRelationship /Unspecified');
+    });
+
+    it('should include description when provided', () => {
+        const att: PdfAttachment = {
+            ...makeAttachment(),
+            description: 'Invoice XML data',
+        };
+        const result = buildEmbeddedFiles([att], 10);
+        const fsContent = result.objects[1][1];
+        expect(fsContent).toContain('/Desc (Invoice XML data)');
+    });
+
+    it('should escape MIME type slash in name', () => {
+        const result = buildEmbeddedFiles([makeAttachment()], 10);
+        const efContent = result.objects[0][1];
+        expect(efContent).toContain('/Subtype /application#2Fxml');
+    });
+
+    it('should include /Params with /Size', () => {
+        const att = makeAttachment('test.xml', '<data/>');
+        const result = buildEmbeddedFiles([att], 10);
+        const efContent = result.objects[0][1];
+        expect(efContent).toContain(`/Params << /Size ${att.data.length} >>`);
+    });
+
+    it('should build correct names dict', () => {
+        const result = buildEmbeddedFiles([makeAttachment('invoice.xml')], 10);
+        expect(result.namesDict).toContain('/EmbeddedFiles');
+        expect(result.namesDict).toContain('(invoice.xml)');
+        expect(result.namesDict).toContain('11 0 R');
+    });
+
+    it('should store stream data for EF objects', () => {
+        const result = buildEmbeddedFiles([makeAttachment()], 10);
+        expect(result.streams.has(10)).toBe(true);
+        expect(result.streams.has(11)).toBe(false);
+    });
+
+    it('should escape special chars in filename', () => {
+        const att = makeAttachment('file (1).xml');
+        const result = buildEmbeddedFiles([att], 10);
+        const fsContent = result.objects[1][1];
+        expect(fsContent).toContain('file \\(1\\).xml');
+    });
+});
+
+// ── validateAttachments ─────────────────────────────────────────────
+
+describe('validateAttachments', () => {
+    const validAtt: PdfAttachment = {
+        filename: 'test.xml',
+        data: new TextEncoder().encode('<data/>'),
+        mimeType: 'application/xml',
+    };
+
+    it('should not throw for undefined attachments', () => {
+        expect(() => validateAttachments(undefined, 'pdfa3b')).not.toThrow();
+    });
+
+    it('should not throw for empty array', () => {
+        expect(() => validateAttachments([], 'pdfa3b')).not.toThrow();
+    });
+
+    it('should not throw for valid pdfa3b attachment', () => {
+        expect(() => validateAttachments([validAtt], 'pdfa3b')).not.toThrow();
+    });
+
+    it('should throw when tagged is not pdfa3b', () => {
+        expect(() => validateAttachments([validAtt], true)).toThrow('pdfa3b');
+        expect(() => validateAttachments([validAtt], 'pdfa2b')).toThrow('pdfa3b');
+        expect(() => validateAttachments([validAtt], false)).toThrow('pdfa3b');
+        expect(() => validateAttachments([validAtt], undefined)).toThrow('pdfa3b');
+    });
+
+    it('should throw for empty filename', () => {
+        const bad = { ...validAtt, filename: '' };
+        expect(() => validateAttachments([bad], 'pdfa3b')).toThrow('filename');
+    });
+
+    it('should throw for empty mimeType', () => {
+        const bad = { ...validAtt, mimeType: '' };
+        expect(() => validateAttachments([bad], 'pdfa3b')).toThrow('mimeType');
+    });
+
+    it('should throw for empty data', () => {
+        const bad = { ...validAtt, data: new Uint8Array(0) };
+        expect(() => validateAttachments([bad], 'pdfa3b')).toThrow('non-empty data');
     });
 });

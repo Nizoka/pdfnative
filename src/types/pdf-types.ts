@@ -192,6 +192,7 @@ export interface PdfLayoutOptions {
      * - `'pdfa1b'`: PDF/A-1b (ISO 19005-1) with %PDF-1.4
      * - `'pdfa2b'`: PDF/A-2b (ISO 19005-2) with %PDF-1.7
      * - `'pdfa2u'`: PDF/A-2u (ISO 19005-2, Unicode) with %PDF-1.7
+     * - `'pdfa3b'`: PDF/A-3b (ISO 19005-3) with %PDF-1.7 — allows embedded file attachments
      * - `false` / omitted: no tagged mode (backward compatible)
      *
      * When enabled, the output includes:
@@ -202,7 +203,7 @@ export interface PdfLayoutOptions {
      *   - OutputIntent with sRGB ICC profile
      * Default: false (backward compatible).
      */
-    readonly tagged?: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u';
+    readonly tagged?: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u' | 'pdfa3b';
     /**
      * Enable PDF encryption (password protection).
      * Uses AES-128 or AES-256 only — no RC4.
@@ -252,6 +253,52 @@ export interface PdfLayoutOptions {
      * Default: undefined (no watermark).
      */
     readonly watermark?: WatermarkOptions;
+    /**
+     * File attachments to embed in the PDF (PDF/A-3 only).
+     * Each attachment becomes an /EmbeddedFile stream with /Filespec and /AFRelationship.
+     *
+     * Requires `tagged: 'pdfa3b'`. Throws if used with other tagged modes.
+     * Default: undefined (no attachments).
+     */
+    readonly attachments?: readonly PdfAttachment[];
+}
+
+// ── Attachment Types ─────────────────────────────────────────────────
+
+/**
+ * Relationship of an embedded file to the PDF document (ISO 19005-3 §6.8).
+ * - `'Source'`: the embedded file is the source of the document
+ * - `'Data'`: the embedded file is data used to derive the document
+ * - `'Alternative'`: an alternative representation
+ * - `'Supplement'`: a supplement to the document
+ * - `'Unspecified'`: no specific relationship
+ */
+export type PdfAttachmentRelationship = 'Source' | 'Data' | 'Alternative' | 'Supplement' | 'Unspecified';
+
+/**
+ * Embedded file attachment for PDF/A-3 (ISO 19005-3).
+ *
+ * @example
+ * ```ts
+ * const attachment: PdfAttachment = {
+ *   filename: 'invoice-data.xml',
+ *   data: new TextEncoder().encode('<invoice>...</invoice>'),
+ *   mimeType: 'application/xml',
+ *   relationship: 'Data',
+ * };
+ * ```
+ */
+export interface PdfAttachment {
+    /** Filename for the embedded file (e.g. 'data.xml'). */
+    readonly filename: string;
+    /** File content as binary data. */
+    readonly data: Uint8Array;
+    /** MIME type (e.g. 'application/xml', 'text/csv'). */
+    readonly mimeType: string;
+    /** Optional description for the file. */
+    readonly description?: string;
+    /** Relationship to the document. Default: `'Unspecified'`. */
+    readonly relationship?: PdfAttachmentRelationship;
 }
 
 // ── Encryption Types ─────────────────────────────────────────────────
