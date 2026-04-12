@@ -13,3 +13,7 @@ fonts/ttf/
 
 # Generated sample PDFs for visual inspection
 test-output/
+
+# Internal review documents (not for public distribution)
+ARCHITECTURE_REVIEW.md
+DEVSECOPS_AUDIT.md
