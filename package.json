@@ -1,7 +1,7 @@
 {
   "name": "pdfnative",
   "version": "1.0.0",
-  "description": "Zero-dependency native PDF generation library with 11 Unicode scripts (Thai, CJK, Arabic, Hebrew, Greek, Devanagari). BiDi, PDF/A-2b, AES encryption, images, hyperlinks. ISO 32000-1 compliant.",
+  "description": "Zero-dependency native PDF generation library with 16 Unicode scripts (Thai, CJK, Arabic, Hebrew, Greek, Devanagari, Bengali, Tamil). BiDi, PDF/A, AES encryption, digital signatures, forms, SVG, streaming, PDF parser. ISO 32000-1 compliant.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -68,6 +68,8 @@
     "bidi",
     "rtl",
     "devanagari",
+    "bengali",
+    "tamil",
     "greek",
     "multi-font",
     "opentype",
@@ -76,17 +78,24 @@
     "tagged-pdf",
     "encryption",
     "aes",
+    "digital-signature",
+    "acroform",
+    "svg",
+    "barcode",
+    "qr-code",
+    "streaming",
+    "pdf-parser",
     "images",
     "web-worker",
     "typescript"
   ],
-  "author": "Nizoka (https://plika.app)",
+  "author": "Nizoka (https://pdfnative.dev)",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Nizoka/pdfnative.git"
   },
-  "homepage": "https://github.com/Nizoka/pdfnative#readme",
+  "homepage": "https://pdfnative.dev",
   "bugs": {
     "url": "https://github.com/Nizoka/pdfnative/issues"
   },
@@ -97,7 +106,7 @@
     },
     {
       "type": "individual",
-      "url": "https://plika.app"
+      "url": "https://pdfnative.dev"
     }
   ],
   "engines": {
