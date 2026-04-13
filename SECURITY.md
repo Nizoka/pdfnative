@@ -6,7 +6,7 @@
 
 To report a security vulnerability, please use [GitHub's private vulnerability reporting](https://github.com/Nizoka/pdfnative/security/advisories/new).
 
-Alternatively, contact us at: **security@plika.app**
+Alternatively, contact us at: **security@pdfnative.dev**
 
 We will acknowledge receipt within 48 hours and aim to provide a fix within 7 days for critical issues.
 
@@ -28,6 +28,13 @@ pdfnative is a pure TypeScript library with **zero runtime dependencies**. This 
 - No ECB mode — all encryption uses CBC with PKCS7 padding
 - Key derivation follows ISO 32000-1 (PDF 1.7) specification
 
+### Digital Signatures
+
+- CMS/PKCS#7 detached signatures (ISO 32000-1 §12.8)
+- RSA PKCS#1 v1.5 (SHA-256) and ECDSA P-256 — pure TypeScript, zero external dependencies
+- X.509 DER certificate parsing for certificate chain embedding
+- `/ByteRange` ensures only the signature `/Contents` is excluded from the signed digest
+
 ### Input Validation
 
 - `buildPDF()` and `buildDocumentPDF()` validate all inputs at the API boundary
@@ -36,6 +43,13 @@ pdfnative is a pure TypeScript library with **zero runtime dependencies**. This 
 - CIDFont hex encoding eliminates string injection vectors
 - TTF subsetting uses typed arrays with bounds checking
 - Row/block count limits prevent resource exhaustion (100K max)
+
+### PDF Parser Safety
+
+- PDF tokenizer validates all token types before parsing
+- Cross-reference parser follows `/Prev` chains with loop detection
+- Stream decompression uses bounded buffers to prevent zip-bomb attacks
+- Object parser uses type guards for safe type narrowing (no `any` casts)
 
 ### Code Safety
 

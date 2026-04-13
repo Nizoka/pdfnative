@@ -7,6 +7,7 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Core PDF generation** — table-centric builder with Helvetica (ISO 32000-1)
 - [x] **11 Unicode scripts** — Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew
 - [x] **3 additional scripts** — Cyrillic (Russian), Georgian, Armenian (14 total)
+- [x] **Bengali + Tamil shaping** — GSUB conjuncts, reph reordering, split vowel decomposition, GPOS mark positioning (16 scripts total)
 - [x] **Thai OpenType shaping** — GSUB substitution + GPOS mark positioning
 - [x] **Arabic positional shaping** — GSUB isolated/initial/medial/final + lam-alef ligatures
 - [x] **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring
@@ -27,6 +28,11 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Watermarks** — text + image watermarks with configurable opacity, rotation, and position (background/foreground)
 - [x] **Table of contents** — auto-generated TOC with internal `/GoTo` links, dot leaders, and page numbers
 - [x] **Barcode & QR code generation** — Code 128 (ISO 15417), EAN-13 (ISO 15420), QR Code (ISO 18004), Data Matrix ECC 200 (ISO 16022), PDF417 (ISO 15438) — pure PDF path operators (no image dependency)
+- [x] **SVG path rendering** — 7 SVG element types (path, rect, circle, ellipse, line, polyline, polygon) rendered as native PDF path operators
+- [x] **Form fields** — AcroForm interactive fields (ISO 32000-1 §12.7): text, multiline, checkbox, radio, dropdown, listbox with appearance streams
+- [x] **Digital signatures** — CMS/PKCS#7 detached signatures (ISO 32000-1 §12.8): RSA PKCS#1 v1.5 + ECDSA P-256, SHA-256/384/512, X.509 certificate parsing, zero-dependency crypto
+- [x] **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size (64 KB default), validation for TOC/template incompatibility, concatChunks utility
+- [x] **PDF parser & modifier** — full PDF reader (tokenizer, object parser, xref table/stream, page tree, FlateDecode inflate) + incremental modification (non-destructive save with /Prev chain)
 
 ## In Progress
 
@@ -36,15 +42,8 @@ _No items currently in progress._
 
 ### Medium-Term
 
-- [ ] **SVG path rendering** — draw vector graphics via PDF path operators
-- [ ] **Digital signatures** — CMS/PKCS#7 signatures for document authentication
-- [ ] **Additional fonts** — Bengali, Tamil
-
 ### Long-Term
 
-- [ ] **PDF modification** — load and edit existing PDF files
-- [ ] **Form fields** — AcroForm creation (text, checkbox, radio, dropdown)
-- [ ] **Streaming output** — progressive PDF generation for very large documents
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression
 
 ## How to Influence the Roadmap

@@ -15,14 +15,14 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 - **ISO 32000-1 (PDF 1.7) compliant** document generation with valid xref tables, `/Info` metadata, and proper binary structure
 - **Table-centric builder** — `buildPDF()` / `buildPDFBytes()` for auto-paginated financial statements with header, data rows, info section, balance box, and footer
-- **Free-form document builder** — `buildDocumentPDF()` / `buildDocumentPDFBytes()` with 10 block types: `HeadingBlock`, `ParagraphBlock`, `ListBlock`, `TableBlock`, `ImageBlock`, `LinkBlock`, `SpacerBlock`, `PageBreakBlock`, `TocBlock`, `BarcodeBlock`
+- **Free-form document builder** — `buildDocumentPDF()` / `buildDocumentPDFBytes()` with 12 block types: `HeadingBlock`, `ParagraphBlock`, `ListBlock`, `TableBlock`, `ImageBlock`, `LinkBlock`, `SpacerBlock`, `PageBreakBlock`, `TocBlock`, `BarcodeBlock`, `SvgBlock`, `FormFieldBlock`
 - **`wrapText()` utility** — greedy line-filling word wrap for Latin, Unicode, and CJK text with character-level CJK breaking
 - **`fontSizes` layout option** — customizable font sizes for title, info bar, table headers, table cells, and footer via `fontSizes: { title, info, th, td, ft }`
 - **Auto-pagination** — blocks and table rows automatically distributed across pages with height estimation
 
 #### Unicode & Font Support
 
-- **14 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian
+- **16 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil
 - **Latin mode** — Helvetica built-in font with full Windows-1252 encoding (including 0x80–0x9F special characters)
 - **CIDFont Type2 / Identity-H** — embedded TTF subsets for all non-Latin scripts
 - **Multi-font fallback** — automatic cross-script font switching with script-aware preference via `detectCharLang()` and Helvetica continuation bias
@@ -34,10 +34,12 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 - **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms with joining type analysis and lam-alef ligatures
+- **Bengali OpenType shaping** — GSUB conjunct formation (consonant clusters via halant) + GPOS mark positioning for matras and vowel signs
+- **Tamil OpenType shaping** — GSUB substitution + split vowel decomposition for multi-part vowel signs
 - **BiDi text layout** — simplified Unicode Bidirectional Algorithm (UAX #9) with paragraph level detection, weak/neutral type resolution, level assignment, L2 run reordering, and glyph mirroring
 - **BiDi punctuation affinity** — sentence punctuation stays with the preceding LTR word in RTL paragraphs
 - **BiDi bracket pairing** — matching brackets enclosing LTR content kept together as a single LTR run
-- **Script detection** — Unicode block-based language detection for all 14 supported scripts
+- **Script detection** — Unicode block-based language detection for all 16 supported scripts
 - **En-dash separator convention** — en-dash `–` (U+2013) with spaces as standard cross-script title/footer separator (44% narrower than em-dash, WinAnsi-encodable, ISO/international standard)
 
 #### Tagged PDF & PDF/A
@@ -108,6 +110,44 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 - **Compression + encryption** — compression applied before encryption per ISO 32000-1 §7.3.8
 - **XMP metadata exclusion** — XMP streams never compressed in tagged mode for PDF/A validator safety
 
+#### SVG Rendering
+
+- **SVG path/shape rendering** — 7 element types (`<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>`, `<polygon>`) rendered as native PDF path operators
+- **`SvgBlock` document block** — `{ type: 'svg', content, width?, height?, align? }` for inline SVG in document builder
+- **ViewBox scaling** — SVG coordinates mapped proportionally to PDF points
+- **Tagged SVG** — wrapped in `/Figure` structure element with MCID in tagged mode
+
+#### Interactive Forms (AcroForm)
+
+- **AcroForm fields (ISO 32000-1 §12.7)** — text, multiline, checkbox, radio, dropdown, listbox with full `/AP` appearance streams
+- **`FormFieldBlock` document block** — `{ type: 'formField', fieldType, name, ... }` for inline form fields in document builder
+- **Appearance stream generation** — `buildAppearanceStream()` renders visual state without external viewer dependency
+- **Tagged forms** — form fields wrapped in `/Form` structure element with MCID
+
+#### Digital Signatures
+
+- **CMS/PKCS#7 detached signatures (ISO 32000-1 §12.8)** — `signPdfBytes()` signs PDF bytes with embedded certificate
+- **RSA PKCS#1 v1.5** — SHA-256 digest with modular exponentiation (BigInt-based, zero dependencies)
+- **ECDSA P-256** — secp256r1 signing and verification
+- **X.509 certificate parsing** — DER format: issuer, subject, validity, public key extraction
+- **Pure TypeScript crypto** — SHA-384, SHA-512, HMAC-SHA-256, ASN.1 DER, RSA, ECDSA, CMS — all zero-dependency
+
+#### Streaming Output
+
+- **AsyncGenerator streaming** — `streamPdf()` / `streamDocumentPdf()` yield `Uint8Array` chunks progressively
+- **Configurable chunk size** — `chunkSize` option (default: 65536 bytes)
+- **`concatChunks()` utility** — concatenate streaming chunks into a single `Uint8Array`
+- **Streaming + compression/encryption** — full feature compatibility in streaming mode
+
+#### PDF Parser & Modifier
+
+- **PDF tokenizer** — lexical scanner (ISO 32000-1 §7.2) for all PDF token types
+- **Object parser** — parses all PDF value types with discriminated union type guards (`isDict`, `isArray`, `isStream`, `isRef`)
+- **Cross-reference parser** — handles both table and stream xref formats, follows `/Prev` chain for incremental updates
+- **PDF reader** — `PdfReader` class: `open(bytes)`, `getPage(n)`, `getPageCount()`, `getMetadata()`, `decodeStream()`
+- **PDF modifier** — `PdfModifier` class: `addPage()`, `removePage()`, `setMetadata()`, `save()` with non-destructive incremental `/Prev` chain
+- **DEFLATE decompression** — FlateDecode stream decode (native zlib + pure JavaScript fallback)
+
 #### Color Safety
 
 - **`parseColor()`** — validates and normalizes hex (`#RRGGBB`/`#RGB`), RGB tuples (`[r, g, b]`), and PDF operator strings before interpolation into content streams
@@ -134,14 +174,21 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 #### Testing & Quality
 
-- **1035+ tests** across 29 test files — unit, integration, and fuzz coverage
+- **1513+ tests** across 36 test files — unit, integration, fuzz, and parser coverage
 - **95%+ statement coverage** — v8 coverage with thresholds: 90/80/85/90 (statements/branches/functions/lines)
 - **33 fuzz edge-case scenarios** — boundary conditions, malformed inputs, extreme dimensions
-- **114 sample PDFs** — financial statements (14), diverse use cases (12), alphabet coverage (14), PDF/A variants (5), encrypted (6), document builder (19), compressed (8), barcodes (3), watermarks (6), headers/footers (4), page sizes (6), TOC (3), stress tests/edge cases (14)
+- **130+ sample PDFs** — financial statements (14), diverse use cases (12), alphabet coverage (13), PDF/A variants (5), encrypted (6), document builder (19), compressed (9), barcodes (3), watermarks (6), headers/footers (4), page sizes (6), TOC (3), SVG (3), forms (3), digital signatures (2), streaming (2), parser (2), stress tests/edge cases (13)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in ISO D:YYYYMMDDHHmmss format
 - **Input validation** — type checks, null/undefined guards, 100K row limit at `buildPDF()` boundary
-- **13 sample generators** — modular `npm run test:generate` → 114+ PDFs in `test-output/`
+- **18 sample generators** — modular `npm run test:generate` → 130+ PDFs in `test-output/`
 
 ### Fixed
 
 - **Watermark xref corruption** — `baseObjCount` in `buildPDF()` did not account for watermark ExtGState/image objects, causing object number collisions and corrupted PDF output (blank pages or viewer errors)
+- **AcroForm text field marked content** — appearance streams now include `/Tx BMC...EMC` wrapper required by ISO 32000-1 §12.7.3.3 for proper viewer rendering
+- **AcroForm radio button group structure** — radio buttons with the same `name` now emit parent-child `/Kids`/`/Parent` hierarchy with mutual exclusivity via `/V` on parent (ISO 32000-1 §12.7.4.2.4)
+- **AcroForm checkbox appearance sizing** — checkbox `/AP` stream scaled to match field dimensions instead of hardcoded 10pt
+- **AcroForm indirect font references** — `/DR << /Font << /Helv N 0 R >> >>` uses actual object number instead of inline font dict, fixing viewer font resolution
+- **AcroForm label parentheses** — field labels no longer include raw parentheses that break PDF string syntax
+- **AcroForm checkbox/radio default state** — `checked: true` on `FormFieldBlock` correctly sets `/V /Yes /AS /Yes` for pre-checked fields
+- **Digital signature ByteRange** — `/ByteRange` placeholder sizing ensures sufficient space for CMS SignedData embedding

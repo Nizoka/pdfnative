@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pdfnative — Zero-dependency PDF generation for TypeScript</title>
+  <meta name="description" content="Pure native PDF generation library with zero dependencies. ISO 32000-1 compliant. 16 Unicode scripts. TypeScript-first. PDF/A, encryption, digital signatures, barcodes, SVG, forms, streaming.">
+  <meta name="keywords" content="pdf, typescript, javascript, pdf generation, zero dependencies, unicode, arabic, thai, pdf/a, encryption, digital signatures, barcodes, svg, acroform">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pdfnative.dev">
+  <meta property="og:title" content="pdfnative — Zero-dependency PDF generation for TypeScript">
+  <meta property="og:description" content="Pure native PDF generation with zero vendor dependencies. ISO 32000-1 compliant. 16 Unicode scripts. PDF/A, AES encryption, digital signatures, barcodes, SVG, forms, streaming.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="pdfnative — Zero-dependency PDF generation for TypeScript">
+  <meta name="twitter:description" content="Pure native PDF generation. Zero dependencies. ISO 32000-1. 16 Unicode scripts. TypeScript-first.">
+
+  <link rel="canonical" href="https://pdfnative.dev">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Prism.js for syntax highlighting (CDN, site-only dependency) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+
+  <!-- Schema.org structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "pdfnative",
+    "description": "Pure native PDF generation library — zero vendor dependencies, ISO 32000-1 compliant.",
+    "url": "https://pdfnative.dev",
+    "codeRepository": "https://github.com/Nizoka/pdfnative",
+    "programmingLanguage": "TypeScript",
+    "license": "https://opensource.org/licenses/MIT",
+    "runtimePlatform": ["Node.js", "Browser", "Deno", "Bun"],
+    "author": {
+      "@type": "Organization",
+      "name": "Nizoka",
+      "url": "https://pdfnative.dev"
+    }
+  }
+  </script>
+</head>
+<body>
+
+<!-- ═══════════════ Navbar ═══════════════ -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="/">
+      <img src="assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#examples">Examples</a></li>
+      <li><a href="#demo">Demo</a></li>
+      <li><a href="#comparison">Compare</a></li>
+      <li><a href="#benchmarks">Benchmarks</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ═══════════════ Hero ═══════════════ -->
+<section class="hero" id="top">
+  <div class="container">
+    <h1>Pure Native <span class="gradient">PDF Generation</span></h1>
+    <p class="hero-sub">
+      Zero dependencies. ISO 32000-1 compliant. 16 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://github.com/Nizoka/pdfnative#quick-start">Get Started →</a>
+      <a class="btn btn-secondary" href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+    <div class="install-cmd">
+      <code>npm install pdfnative</code>
+      <button class="copy-btn" data-copy="npm install pdfnative" aria-label="Copy install command">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Metrics Bar ═══════════════ -->
+<section class="metrics" aria-label="Key metrics">
+  <div class="metric">
+    <div class="metric-value">1 513+</div>
+    <div class="metric-label">Tests</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">95%+</div>
+    <div class="metric-label">Coverage</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">0</div>
+    <div class="metric-label">Dependencies</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">16</div>
+    <div class="metric-label">Unicode Scripts</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">5</div>
+    <div class="metric-label">PDF Standards</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value" id="stars-count">—</div>
+    <div class="metric-label">GitHub Stars</div>
+  </div>
+</section>
+
+<!-- ═══════════════ Features ═══════════════ -->
+<section class="section" id="features">
+  <div class="container">
+    <h2 class="section-title">Everything You Need</h2>
+    <p class="section-subtitle">Production-grade PDF generation with no compromises. Every feature built from scratch.</p>
+    <div class="feature-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon fi-zero">📦</div>
+        <h3>Zero Dependencies</h3>
+        <p>No pdfkit. No jsPDF. Pure TypeScript — tree-shakeable, auditable, and free from supply-chain risk. Even the crypto is built in.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-unicode">🌍</div>
+        <h3>16 Unicode Scripts</h3>
+        <p>Thai, Arabic, Hebrew, Bengali, Tamil, CJK, Cyrillic, Greek, Devanagari, and more. Full BiDi layout (UAX #9) and OpenType GSUB/GPOS shaping.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-iso">✅</div>
+        <h3>ISO Compliant</h3>
+        <p>PDF 1.7 (ISO 32000-1), PDF/A-1b/2b/2u/3b (ISO 19005), PDF/UA tagged accessibility. Structure tree, XMP metadata, ICC profiles.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-security">🔒</div>
+        <h3>Security Built-in</h3>
+        <p>AES-128/256 encryption with granular permissions. CMS/PKCS#7 digital signatures — RSA and ECDSA P-256. Zero external crypto deps.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-content">📄</div>
+        <h3>Rich Content</h3>
+        <p>12 block types: tables, images, barcodes (5 ISO formats), SVG, AcroForm fields, TOC, watermarks, hyperlinks. Pure PDF vector ops — no rasterization.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-production">⚡</div>
+        <h3>Production Ready</h3>
+        <p>AsyncGenerator streaming, Web Worker off-thread generation, PDF parser &amp; modifier. 1 513+ tests, 95%+ coverage, SLSA provenance.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Code Examples ═══════════════ -->
+<section class="section section-alt" id="examples">
+  <div class="container">
+    <h2 class="section-title">Simple, Powerful API</h2>
+    <p class="section-subtitle">Two builders for every use case — table-centric financial reports or free-form documents.</p>
+    <div class="code-tabs">
+      <div class="tab-bar" role="tablist">
+        <button class="tab-btn active" role="tab" data-tab="quick" aria-selected="true">Quick Start</button>
+        <button class="tab-btn" role="tab" data-tab="document" aria-selected="false">Document Builder</button>
+        <button class="tab-btn" role="tab" data-tab="multilang" aria-selected="false">Multi-Language</button>
+      </div>
+      <div class="tab-panel active" id="tab-quick" role="tabpanel">
+<pre><code class="language-typescript">import { buildPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildPDFBytes({
+  title: 'Monthly Report',
+  infoItems: [
+    { label: 'Period', value: 'January 2026' },
+    { label: 'Account', value: 'Main Account' },
+  ],
+  balanceText: 'Balance: $1,234.56',
+  countText: '42 transactions',
+  headers: ['Date', 'Description', 'Category', 'Amount', 'Status'],
+  rows: [
+    { cells: ['01/15', 'Grocery Store', 'Food', '-$45.00', ''],
+      type: 'debit', pointed: false },
+    { cells: ['01/16', 'Salary', 'Income', '+$3,000.00', 'X'],
+      type: 'credit', pointed: true },
+  ],
+  footerText: 'Generated by MyApp',
+});
+
+downloadBlob(pdf, 'report.pdf');</code></pre>
+      </div>
+      <div class="tab-panel" id="tab-document" role="tabpanel">
+<pre><code class="language-typescript">import { buildDocumentPDFBytes } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Project Report',
+  blocks: [
+    { type: 'toc' },
+    { type: 'heading', text: 'Executive Summary', level: 1 },
+    { type: 'paragraph', text: 'This quarter saw strong growth...' },
+    { type: 'image', data: chartBytes, width: 400,
+      align: 'center', alt: 'Revenue chart' },
+    { type: 'list', style: 'bullet',
+      items: ['Revenue up 15%', 'Costs down 8%', 'Net profit +23%'] },
+    { type: 'barcode', format: 'qr', data: 'https://example.com',
+      width: 80, ecLevel: 'M' },
+    { type: 'svg', content: svgString, width: 300 },
+    { type: 'formField', fieldType: 'text', name: 'notes',
+      label: 'Notes', width: 400 },
+  ],
+  footerText: 'Confidential',
+  tagged: 'pdfa2b',     // PDF/A-2b compliance
+  compress: true,        // FlateDecode compression
+});</code></pre>
+      </div>
+      <div class="tab-panel" id="tab-multilang" role="tabpanel">
+<pre><code class="language-typescript">import { registerFonts, loadFontData, buildDocumentPDFBytes }
+  from 'pdfnative';
+
+// Register lazy-loaded Noto Sans font data modules
+registerFonts({
+  th: () =&gt; import('pdfnative/fonts/noto-thai-data.js'),
+  ar: () =&gt; import('pdfnative/fonts/noto-arabic-data.js'),
+  bn: () =&gt; import('pdfnative/fonts/noto-bengali-data.js'),
+  ja: () =&gt; import('pdfnative/fonts/noto-jp-data.js'),
+});
+
+// Load only the scripts you need
+const fonts = await Promise.all(
+  ['th', 'ar', 'bn', 'ja'].map(loadFontData)
+);
+const fontEntries = fonts.filter(Boolean).map((fd, i) =&gt; ({
+  fontData: fd!, fontRef: `/F${3 + i}`,
+  lang: ['th', 'ar', 'bn', 'ja'][i],
+}));
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Multi-Language Document',
+  blocks: [
+    { type: 'heading', text: 'สวัสดี — مرحبا — こんにちは', level: 1 },
+    { type: 'paragraph',
+      text: 'pdfnative renders Thai, Arabic (with BiDi), Bengali, ' +
+            'and Japanese — all from a single API call.' },
+  ],
+  fontEntries,
+  tagged: true,  // PDF/A-2b with structure tree
+});</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Live Demo ═══════════════ -->
+<section class="section" id="demo">
+  <div class="container">
+    <h2 class="section-title">Try It Live</h2>
+    <p class="section-subtitle">Edit the code below, then click "Generate PDF" — it runs entirely in your browser.</p>
+    <div class="demo-container">
+      <textarea class="demo-editor" id="demo-code" spellcheck="false" aria-label="PDF generation code">import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Hello from pdfnative',
+  blocks: [
+    { type: 'heading', text: 'My First PDF', level: 1 },
+    { type: 'paragraph', text: 'This PDF was generated entirely in your browser — zero server calls, zero dependencies.' },
+    { type: 'list', style: 'bullet', items: [
+      'ISO 32000-1 compliant',
+      '16 Unicode scripts',
+      'PDF/A, encryption, signatures',
+    ] },
+    { type: 'heading', text: 'A Simple Table', level: 2 },
+    { type: 'table', headers: ['Feature', 'Status'], rows: [
+      { cells: ['TypeScript-first', '✓'], type: 'credit', pointed: false },
+      { cells: ['Zero dependencies', '✓'], type: 'credit', pointed: false },
+      { cells: ['Tree-shakeable', '✓'], type: 'credit', pointed: false },
+    ] },
+  ],
+  footerText: 'Generated at pdfnative.dev',
+});
+
+downloadBlob(pdf, 'hello-pdfnative.pdf');</textarea>
+      <div class="demo-actions">
+        <button class="btn btn-primary" id="demo-run">▶ Generate PDF</button>
+        <span class="demo-status" id="demo-status"></span>
+      </div>
+      <div class="demo-error" id="demo-error"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Comparison ═══════════════ -->
+<section class="section section-alt" id="comparison">
+  <div class="container">
+    <h2 class="section-title">How It Compares</h2>
+    <p class="section-subtitle">Feature-by-feature comparison with popular PDF libraries.</p>
+    <div class="table-wrap">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>pdfnative</th>
+            <th>pdfkit</th>
+            <th>jsPDF</th>
+            <th>pdfmake</th>
+            <th>pdf-lib</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Runtime dependencies</td>
+            <td><strong>0</strong></td>
+            <td>6</td>
+            <td>3</td>
+            <td>3</td>
+            <td>4</td>
+          </tr>
+          <tr>
+            <td>TypeScript native</td>
+            <td class="cmp-check">✓</td>
+            <td>@types</td>
+            <td class="cmp-check">✓</td>
+            <td>@types</td>
+            <td class="cmp-check">✓</td>
+          </tr>
+          <tr>
+            <td>Unicode scripts</td>
+            <td><strong>16</strong></td>
+            <td>Via fontkit</td>
+            <td>Custom fonts</td>
+            <td>Via pdfkit</td>
+            <td>Via @pdf-lib/fontkit</td>
+          </tr>
+          <tr>
+            <td>BiDi (Arabic / Hebrew)</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+          </tr>
+          <tr>
+            <td>PDF/A compliance</td>
+            <td><strong>4 levels</strong></td>
+            <td>6 levels</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+          </tr>
+          <tr>
+            <td>AES encryption</td>
+            <td><strong>128 + 256</strong></td>
+            <td>Up to AES‑256</td>
+            <td class="cmp-cross">✗</td>
+            <td>Up to AES‑256</td>
+            <td class="cmp-cross">✗</td>
+          </tr>
+          <tr>
+            <td>Digital signatures</td>
+            <td class="cmp-check"><strong>RSA + ECDSA</strong></td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+          </tr>
+          <tr>
+            <td>Barcodes / QR codes</td>
+            <td><strong>5 formats</strong></td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td>QR</td>
+            <td class="cmp-cross">✗</td>
+          </tr>
+          <tr>
+            <td>SVG rendering</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-check">✓</td>
+            <td>Plugin</td>
+            <td class="cmp-check">✓</td>
+            <td>Paths only</td>
+          </tr>
+          <tr>
+            <td>Interactive forms</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-check">✓</td>
+          </tr>
+          <tr>
+            <td>Streaming output</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-cross">✗</td>
+          </tr>
+          <tr>
+            <td>PDF parser / modifier</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-check">✓</td>
+          </tr>
+          <tr>
+            <td>Browser + Node.js</td>
+            <td class="cmp-check">✓</td>
+            <td>Via bundler</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-check">✓</td>
+          </tr>
+          <tr>
+            <td>Tree-shakeable</td>
+            <td class="cmp-check">✓</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-cross">✗</td>
+            <td class="cmp-check">✓</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Benchmarks ═══════════════ -->
+<section class="section" id="benchmarks">
+  <div class="container">
+    <h2 class="section-title">Performance</h2>
+    <p class="section-subtitle">Pure string assembly with zero allocations in hot paths. Measured with vitest bench.</p>
+    <div class="bench-grid">
+      <div class="bench-row">
+        <span class="bench-label">100 rows (Latin)</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:18%"></div></div>
+        <span class="bench-value">~0.9 ms</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-label">500 rows (Latin)</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:40%"></div></div>
+        <span class="bench-value">~3.5 ms</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-label">1 000 rows (Latin)</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:60%"></div></div>
+        <span class="bench-value">~7 ms</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-label">5 000 rows (Latin)</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:100%"></div></div>
+        <span class="bench-value">~35 ms</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-label">100 rows (Unicode)</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:25%"></div></div>
+        <span class="bench-value">~1.5 ms</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-label">500 rows (Unicode)</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:50%"></div></div>
+        <span class="bench-value">~5 ms</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-label">1 000 rows (Unicode)</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:75%"></div></div>
+        <span class="bench-value">~12 ms</span>
+      </div>
+    </div>
+    <p class="bench-note">
+      Benchmarks run on Node.js 22, Apple M-series / Intel i7. Results may vary.
+      Run <code>npx vitest bench</code> to measure on your hardware.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════ Architecture ═══════════════ -->
+<section class="section section-alt" id="architecture">
+  <div class="container">
+    <h2 class="section-title">Architecture</h2>
+    <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
+    <div class="arch-diagram">
+      <a href="https://github.com/Nizoka/pdfnative/tree/master/src" target="_blank" rel="noopener">
+        <img src="assets/architecture.svg" alt="pdfnative module architecture: types → core ← fonts ← shaping ← worker, with standalone crypto and parser modules" width="800" height="360" loading="lazy">
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Origin Story ═══════════════ -->
+<section class="section" id="origin">
+  <div class="container">
+    <div class="origin">
+      <h2 class="section-title">Born from Production Needs</h2>
+      <p>
+        The code that became pdfnative was originally built inside <a href="https://plika.app" target="_blank" rel="noopener"><strong>plika.app</strong></a> — a personal finance application requiring multi-language PDF bank statements across 16 scripts.
+      </p>
+      <p>
+        Rather than depending on heavy third-party libraries, the PDF engine was written from scratch with zero dependencies, strict ISO compliance, and native Unicode shaping. It was then extracted and open-sourced as an independent library for everyone.
+      </p>
+      <p>
+        <a href="https://plika.app" target="_blank" rel="noopener">Discover plika.app — where it all started →</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Footer ═══════════════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/master/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a></li>
+      <li><a href="https://plika.app" target="_blank" rel="noopener">Originally from Plika.app</a></li>
+    </ul>
+  </div>
+</footer>
+
+<!-- Prism.js for syntax highlighting -->
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>

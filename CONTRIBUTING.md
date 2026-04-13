@@ -25,10 +25,10 @@ npm run dev            # tsup --watch
 ## Test
 
 ```bash
-npm run test           # vitest run (1035+ tests)
+npm run test           # vitest run (1513+ tests)
 npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (95%+ stmts)
-npm run test:generate  # Generate 114+ sample PDFs → test-output/
+npm run test:generate  # Generate 130+ sample PDFs → test-output/
 ```
 
 All new code must include tests. Coverage thresholds: statements 90%, branches 80%, functions 85%, lines 90%.
@@ -60,15 +60,17 @@ All must pass before opening a PR.
 
 ```
 src/
-├── core/         # PDF assembly, document builder, shared assembler, encoding context, text rendering, binary stream, layout, tagged PDF, images, annotations, encryption, barcodes
+├── core/         # PDF assembly, document builder, shared assembler, encoding context, text rendering, binary stream, layout, tagged PDF, images, annotations, encryption, barcodes, SVG, forms, signatures, streaming
+├── crypto/       # Zero-dependency cryptographic primitives (SHA, AES, RSA, ECDSA, X.509, CMS)
+├── parser/       # PDF reading & incremental modification (tokenizer, object parser, xref, reader, modifier)
 ├── fonts/        # WinAnsi + CIDFont pure encoding, font loader, TTF subsetter (buffer guards), CMap
-├── shaping/      # Script registry, Thai GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
+├── shaping/      # Script registry, Thai/Bengali/Tamil GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
-fonts/            # Pre-built font data modules (.js/.d.ts)
+fonts/            # Pre-built font data modules (16 scripts)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (see scripts/README.md)
-tests/            # 1035+ tests (unit + integration + fuzz), mirrors src/ structure
+scripts/          # Modular sample PDF generation (18 generators, 130+ PDFs)
+tests/            # 1513+ tests (36 files: unit + integration + fuzz + parser), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -105,11 +107,12 @@ docs: update README with font registration example
 
 ## Adding a New Language / Script
 
-1. Obtain a Noto Sans TTF covering the target script
+1. Obtain a Noto Sans TTF for the target script — download the raw `.ttf` directly from [github.com/notofonts](https://github.com/notofonts) (click the file → **Download raw file**, no zip needed) and save to `fonts/ttf/`
 2. Run `node tools/build-font-data.cjs fonts/ttf/NotoSans-<Script>.ttf`
 3. Add script ranges to `src/shaping/script-registry.ts` (centralized constants) and detection in `src/shaping/script-detect.ts`
-4. Register the font in your test setup
-5. Add tests for the new script detection and encoding
+4. If the script needs OpenType shaping (GSUB/GPOS), create a shaper in `src/shaping/` (see `bengali-shaper.ts` or `tamil-shaper.ts` as examples)
+5. Register the font in your test setup
+6. Add tests for the new script detection and encoding
 
 ## Security
 

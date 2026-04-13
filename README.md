@@ -9,6 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![npm provenance](https://img.shields.io/badge/provenance-signed-blueviolet)](https://docs.npmjs.com/generating-provenance-statements)
+[![website](https://img.shields.io/badge/pdfnative.dev-0066FF?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxyZWN0IHg9IjMiIHk9IjIiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxOCIgcng9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHBhdGggZD0iTTcgN2g2TTcgMTFoOE03IDE1aDQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=)](https://pdfnative.dev)
 
 Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PDF 1.7) compliant.
 
@@ -16,7 +17,7 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 
 - **Zero dependencies** — no pdfkit, jsPDF, or other vendors. Pure JavaScript
 - **ISO 32000-1 compliant** — valid xref tables, /Info metadata, proper font embedding
-- **14 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian
+- **16 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil
 - **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
 - **BiDi text layout** — simplified Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring
@@ -24,8 +25,13 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
 - **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments)
 - **PDF Encryption** — AES-128 (V4/R4) and AES-256 (V5/R6), owner + user passwords, granular permissions
-- **Free-form document builder** — headings, paragraphs, lists, tables, images, barcodes, spacers, page breaks, table of contents
+- **Free-form document builder** — headings, paragraphs, lists, tables, images, barcodes, SVG paths, form fields, spacers, page breaks, table of contents
 - **Barcode & QR code generation** — Code 128, EAN-13, QR Code, Data Matrix, PDF417 — pure PDF path operators (no images)
+- **SVG path rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators
+- **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7)
+- **Digital signatures** — CMS/PKCS#7 detached signatures with RSA + ECDSA, SHA-256/384/512, X.509 parsing (ISO 32000-1 §12.8)
+- **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size
+- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification
 - **Image embedding** — JPEG (DCTDecode) and PNG (FlateDecode) with auto-scaling and alignment
 - **Hyperlinks** — PDF link annotations (/URI) with URL validation, blue underlined text, tagged /Link
 - **Header/footer templates** — configurable `PageTemplate` with left/center/right zones and `{page}`/`{pages}`/`{date}`/`{title}` placeholders
@@ -34,7 +40,7 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 1035+ tests, fuzz suite, performance benchmarks
+- **95%+ test coverage** — 1513+ tests across 36 files, fuzz suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 
 ## Installation
@@ -49,28 +55,31 @@ npm install pdfnative
 
 pdfnative was designed for teams that need **ISO-compliant, production-grade PDF generation** with zero supply-chain risk. Here is how it compares to other popular JavaScript PDF libraries:
 
-| Feature | pdfnative | jsPDF | pdfkit | pdf-lib |
-|---------|:---------:|:-----:|:------:|:-------:|
-| Runtime dependencies | **0** | 3 | 6 | 4 |
-| TypeScript declarations | Built-in | Built-in | @types/* | Built-in |
-| PDF/A (ISO 19005) | 1b, 2b, 2u | — | — | — |
-| Tagged PDF / PDF/UA | ✅ | — | ✅ | — |
-| Encryption | AES-128/256 | RC4 | ✅ | — |
-| Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic | — | Via fontkit | Via @pdf-lib/fontkit |
-| BiDi (RTL) layout | ✅ | — | — | — |
-| Modify existing PDFs | — | — | — | ✅ |
-| Forms (AcroForms) | — | — | ✅ | ✅ |
-| Barcode / QR code (native) | ✅ 5 formats | — | — | — |
-| Vector graphics / SVG paths | — | ✅ | ✅ | ✅ |
-| Tree-shakeable (ESM) | ✅ | — | — | ✅ |
-| NPM provenance (SLSA) | ✅ | — | — | — |
-| Weekly npm downloads | — | ~11M | ~2.6M | ~4.5M |
+| Feature | pdfnative | jsPDF | pdfkit | pdf-lib | pdfmake |
+|---------|:---------:|:-----:|:------:|:-------:|:------:|
+| Runtime dependencies | **0** | 3 | 6 | 4 | 3 |
+| TypeScript declarations | Built-in | Built-in | @types/* | Built-in | @types/* |
+| PDF/A (ISO 19005) | 1b, 2b, 2u, 3b | — | 6 levels | — | — |
+| Tagged PDF / PDF/UA | ✅ | — | ✅ | — | — |
+| Encryption | AES-128/256 | RC4 | Up to AES-256 | — | Up to AES-256 |
+| Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
+| BiDi (RTL) layout | ✅ | — | — | — | — |
+| Modify existing PDFs | ✅ (incremental) | — | — | ✅ | — |
+| Forms (AcroForms) | ✅ | ✅ | ✅ | ✅ | — |
+| Digital signatures | ✅ (RSA + ECDSA) | — | — | — | — |
+| Barcode / QR code (native) | ✅ 5 formats | — | — | — | QR |
+| SVG path rendering | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Streaming output | ✅ | — | ✅ | — | ✅ |
+| PDF parser | ✅ | — | — | ✅ | — |
+| Tree-shakeable (ESM) | ✅ | — | — | ✅ | — |
+| NPM provenance (SLSA) | ✅ | — | — | — | — |
+| Weekly npm downloads | — | ~12M | ~2.6M | ~4.6M | ~1.5M |
 
-> **Data sources:** npm registry metadata and official README/documentation for each library as of July 2025. Dependency counts reflect direct `dependencies` listed in each package's `package.json`. "—" means the feature is not supported or not documented.
+> **Data sources:** npm registry metadata and official README/documentation for each library as of April 2026. Dependency counts reflect direct `dependencies` listed in each package's `package.json`. "—" means the feature is not supported or not documented.
 
-**When to choose pdfnative:** You need zero-dependency PDF generation with ISO archival compliance (PDF/A), accessibility (tagged PDF), AES encryption, and multi-script Unicode support — particularly Arabic/Hebrew BiDi and Thai GSUB/GPOS shaping.
+**When to choose pdfnative:** You need zero-dependency PDF generation with ISO archival compliance (PDF/A), accessibility (tagged PDF), AES encryption, digital signatures, multi-script Unicode support — particularly Arabic/Hebrew BiDi and Thai GSUB/GPOS shaping — form fields, barcode generation, SVG rendering, or the ability to parse and incrementally modify existing PDFs.
 
-**When to choose another library:** You need to modify existing PDFs (pdf-lib), create interactive forms (pdfkit, pdf-lib), or draw vector graphics and SVG paths (jsPDF, pdfkit, pdf-lib).
+**When to choose another library:** You need advanced vector graphics (complex gradients, arbitrary transforms), rich interactive form scripting (JavaScript actions), or mature ecosystem integrations with existing toolchains.
 
 ## Quick Start
 
@@ -154,6 +163,8 @@ registerFonts({
   ru: () => import('pdfnative/fonts/noto-cyrillic-data.js'),
   ka: () => import('pdfnative/fonts/noto-georgian-data.js'),
   hy: () => import('pdfnative/fonts/noto-armenian-data.js'),
+  bn: () => import('pdfnative/fonts/noto-bengali-data.js'),
+  ta: () => import('pdfnative/fonts/noto-tamil-data.js'),
 });
 
 const thaiFont = await loadFontData('th');
@@ -182,7 +193,7 @@ const pdf = buildPDFBytes({
 | Hebrew | `he` | Noto Sans Hebrew | Right-to-left script |
 | Russian (Cyrillic) | `ru` | Noto Sans | Cyrillic alphabet |
 | Georgian | `ka` | Noto Sans Georgian | Mkhedruli script |
-| Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |
+| Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |\n| Bengali | `bn` | Noto Sans Bengali | GSUB conjuncts + GPOS marks |\n| Tamil | `ta` | Noto Sans Tamil | GSUB + split vowel decomposition |
 
 ## Multi-Font (Mixed Scripts)
 
@@ -294,6 +305,19 @@ All values are in PDF points (1pt = 1/72 inch). Partial overrides are supported 
 
 ## Building Custom Font Data
 
+### Obtaining TTF Files
+
+For Noto Sans fonts, download the raw `.ttf` file directly from the [noto-fonts GitHub repository](https://github.com/notofonts):
+
+1. Navigate to the font's GitHub repository (e.g., `github.com/notofonts/bengali`)
+2. Find the TTF file under `fonts/NotoSansBengali/unhinted/ttf/` (or similar path)
+3. Click the file, then click **"Download raw file"** (or use the raw URL)
+4. Save it to `fonts/ttf/`
+
+No zip download or extraction needed — each TTF is a standalone file you can download directly.
+
+### Building the Data Module
+
 Convert any TTF font into an importable data module:
 
 ```bash
@@ -310,7 +334,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **114+ PDF files** in `test-output/` (git-ignored), organized in fourteen categories.
+This creates **130+ PDF files** in `test-output/` (git-ignored), organized in eighteen categories.
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -332,7 +356,9 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `sample-ru.pdf` | Russian (Cyrillic) |
 | `sample-ka.pdf` | Georgian (Mkhedruli) |
 | `sample-hy.pdf` | Armenian |
-| `sample-multi.pdf` | Mixed: all 14 scripts in one PDF |
+| `sample-bn.pdf` | Bengali (GSUB conjuncts + GPOS marks) |
+| `sample-ta.pdf` | Tamil (GSUB + split vowel decomposition) |
+| `sample-multi.pdf` | Mixed: all 16 scripts in one PDF |
 | `sample-pagination.pdf` | 200 rows, multi-page layout |
 
 ### Diverse Use Cases (non-financial)
@@ -370,6 +396,8 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `alphabet-cyrillic.pdf` | 33 Russian letters, Ukrainian/Serbian extended |
 | `alphabet-georgian.pdf` | 33 Mkhedruli letters, Asomtavruli |
 | `alphabet-armenian.pdf` | 38 letters, ligatures |
+| `alphabet-bengali.pdf` | Vowels, consonants, conjuncts, digits |
+| `alphabet-tamil.pdf` | Vowels, consonants, compound characters, digits |
 
 ### PDF/A Conformance Variants
 
@@ -427,7 +455,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
 | `doc-report-multipage.pdf` | 3-page technical report (7 sections, 4 tables) |
 | `doc-contract-bilingual.pdf` | Bilingual EN/AR contract (legal sections, signatures) |
-| `doc-showcase-all-blocks.pdf` | All 10 block types in one PDF (3 pages) |
+| `doc-showcase-all-blocks.pdf` | All 12 block types in one PDF |
 
 ### Compressed PDFs (FlateDecode)
 
@@ -472,6 +500,44 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `barcode-showcase.pdf` | All 5 formats: Code 128, EAN-13, QR Code, Data Matrix, PDF417 |
 | `barcode-alignment-sizing.pdf` | Alignment (left/center/right) and custom size variations |
 | `barcode-tagged-pdfa.pdf` | Barcodes in tagged PDF/A-2b mode (/Figure structure elements) |
+
+### SVG Path Rendering Samples
+
+| File | Content |
+|------|---------|
+| `svg-basic-shapes.pdf` | Rect, circle, ellipse, line, polyline, polygon |
+| `svg-complex-paths.pdf` | Cubic/quadratic Bézier curves, arcs, combined paths |
+| `svg-tagged-pdfa.pdf` | SVG elements in tagged PDF/A-2b mode |
+
+### Form Field Samples
+
+| File | Content |
+|------|---------|
+| `form-fields.pdf` | All field types: text, multiline, checkbox, radio, dropdown, listbox |
+| `form-contact.pdf` | Contact form with name, email, message, and submit fields |
+
+### Digital Signature Samples
+
+| File | Content |
+|------|---------|
+| `sig-rsa-self-signed.pdf` | RSA PKCS#1 v1.5 self-signed signature |
+| `sig-ecdsa-p256.pdf` | ECDSA P-256 digital signature |
+| `sig-multi-field.pdf` | PDF with multiple signature fields |
+
+### Streaming Output Samples
+
+| File | Content |
+|------|---------|
+| `streaming-document.pdf` | Document streamed via `buildDocumentPDFStream()` |
+| `streaming-table.pdf` | Table streamed via `buildPDFStream()` |
+
+### PDF Parser & Modifier Samples
+
+| File | Content |
+|------|---------|
+| `parser-original.pdf` | Generated → parsed → verified round-trip |
+| `parser-modified.pdf` | Generated → parsed → modified → incremental save |
+| `parser-document.pdf` | Document builder → parser round-trip verification |
 
 ## API Reference
 
@@ -537,6 +603,70 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `encodePDF417(data, ecLevel?)` | Encode data into PDF417 codewords (ISO 15438) |
 | `renderPDF417(data, x, y, w, h, ecLevel?)` | Render PDF417 barcode as PDF path operators |
 
+### SVG Path Rendering
+
+| Function | Description |
+|----------|-------------|
+| `parseSvgPath(d)` | Parse SVG path `d` attribute into segments |
+| `renderSvg(segments, options?)` | Render SVG segments as PDF path operators |
+
+### AcroForm Fields
+
+| Function | Description |
+|----------|-------------|
+| `buildFormWidget(field, objNum, pageRef)` | Build form field widget annotation + appearance stream |
+| `buildAcroFormDict(fieldRefs)` | Build `/AcroForm` dictionary for catalog |
+| `buildAppearanceStreamDict(width, height)` | Build appearance stream dictionary |
+| `defaultFieldHeight(type)` | Default height by field type |
+
+### Digital Signatures
+
+| Function | Description |
+|----------|-------------|
+| `buildSigDict(options)` | Build `/Sig` dictionary with ByteRange/Contents placeholders |
+| `signPdfBytes(pdf, options)` | Sign a PDF with CMS/PKCS#7 detached signature |
+| `estimateContentsSize(options)` | Estimate hex-encoded `/Contents` size for pre-allocation |
+
+### Streaming Output
+
+| Function | Description |
+|----------|-------------|
+| `buildDocumentPDFStream(params, layout?, streamOpts?)` | Stream document PDF as `AsyncGenerator<Uint8Array>` |
+| `buildPDFStream(params, layout?, streamOpts?)` | Stream table PDF as `AsyncGenerator<Uint8Array>` |
+| `validateDocumentStreamable(params, layout?)` | Validate document is compatible with streaming (no TOC, no `{pages}`) |
+| `validateTableStreamable(params, layout?)` | Validate table is compatible with streaming |
+| `chunkBinaryString(str, chunkSize)` | Split binary string into `Uint8Array` chunks |
+| `concatChunks(chunks)` | Concatenate `Uint8Array` chunks into one |
+| `streamByteLength(stream)` | Count total bytes from an async stream |
+
+### Crypto (Hashing, ASN.1, RSA, ECDSA, X.509, CMS)
+
+| Function | Description |
+|----------|-------------|
+| `sha384(data)` / `sha512(data)` | SHA-384 / SHA-512 hash (FIPS 180-4) |
+| `hmacSha256(key, data)` | HMAC-SHA-256 (RFC 2104) |
+| `derDecode(data)` | Decode DER-encoded ASN.1 |
+| `rsaSign(msg, key)` / `rsaVerify(msg, sig, key)` | RSA PKCS#1 v1.5 sign/verify |
+| `ecdsaSign(hash, key)` / `ecdsaVerify(hash, sig, key)` | ECDSA P-256 sign/verify |
+| `parseCertificate(der)` | Parse X.509 DER certificate |
+| `buildCmsSignedData(options)` | Build CMS SignedData (PKCS#7) |
+| `initCrypto()` | Initialize crypto module (lazy load) |
+
+### PDF Parser & Modifier
+
+| Function | Description |
+|----------|-------------|
+| `openPdf(bytes)` | Parse a PDF `Uint8Array` and return a `PdfReader` |
+| `createModifier(reader)` | Create an incremental `PdfModifier` from a `PdfReader` |
+| `createTokenizer(data, offset?)` | Create a low-level PDF tokenizer |
+| `parseValue(tok)` | Parse a single PDF value from token stream |
+| `parseIndirectObject(tok)` | Parse an indirect object (`N M obj ... endobj`) |
+| `findStartxref(data)` | Find `startxref` offset in PDF bytes |
+| `parseXrefTable(data, offset)` | Parse xref table/stream at given offset |
+| `isRef(v)` / `isDict(v)` / `isArray(v)` / `isStream(v)` | Type guards for parsed PDF values |
+| `dictGet(dict, key)` / `dictGetName(dict, key)` | Dictionary value accessors |
+| `inflateSync(data)` | Decompress FlateDecode data (zlib inflate) |
+
 ### Document Block Types
 
 | Type | Description |
@@ -551,6 +681,8 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `PageBreakBlock` | Force new page |
 | `TocBlock` | Auto-generated table of contents with /GoTo links |
 | `BarcodeBlock` | Barcode / QR code rendered via PDF path operators |
+| `SvgBlock` | SVG path/shape rendering as native PDF path operators |
+| `FormFieldBlock` | AcroForm interactive fields (text, checkbox, radio, dropdown, listbox) |
 
 ### Tagged PDF & PDF/A
 
@@ -620,6 +752,8 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | Function | Description |
 |----------|-------------|
 | `shapeThaiText(str, fontData)` | Thai OpenType shaping (GSUB + GPOS) |
+| `shapeBengaliText(str, fontData)` | Bengali GSUB conjuncts + GPOS marks |
+| `shapeTamilText(str, fontData)` | Tamil GSUB + split vowel decomposition |
 | `detectFallbackLangs(texts, primaryLang)` | Detect needed fallback fonts |
 | `detectCharLang(codePoint)` | Map codepoint to preferred font language |
 | `splitTextByFont(str, fontEntries)` | Multi-font text run splitting |
@@ -659,6 +793,7 @@ src/
 │   ├── pdf-image.ts      # JPEG/PNG parsing + PDF Image XObject builder
 │   ├── pdf-text.ts       # Text rendering (Latin + CIDFont + shaped + tagged)
 │   ├── pdf-stream.ts     # Binary utilities + download
+│   ├── pdf-stream-writer.ts # AsyncGenerator streaming output
 │   ├── pdf-layout.ts     # Layout constants & computation
 │   ├── pdf-tags.ts       # Tagged PDF: structure tree, XMP metadata, ICC profile
 │   ├── pdf-annot.ts      # Link annotations: /URI, /GoTo, URL validation + control-char hardening
@@ -666,7 +801,24 @@ src/
 │   ├── pdf-compress.ts   # FlateDecode stream compression (zlib, stored-block fallback)
 │   ├── pdf-watermark.ts  # Text/image watermarks with ExtGState transparency
 │   ├── pdf-barcode.ts    # Barcode/QR code encoders + PDF path rendering (5 formats)
+│   ├── pdf-svg.ts        # SVG path/shape rendering as native PDF operators
+│   ├── pdf-form.ts       # AcroForm interactive fields with appearance streams
+│   ├── pdf-signature.ts  # CMS/PKCS#7 digital signatures (RSA + ECDSA)
 │   └── pdf-encrypt.ts    # AES-128/256 encryption, MD5, SHA-256, key derivation
+├── crypto/
+│   ├── sha.ts            # SHA-384, SHA-512, HMAC-SHA-256
+│   ├── asn1.ts           # ASN.1 DER encoding/decoding
+│   ├── rsa.ts            # RSA PKCS#1 v1.5 sign/verify
+│   ├── ecdsa.ts          # ECDSA P-256 sign/verify
+│   ├── x509.ts           # X.509 certificate parsing
+│   └── cms.ts            # CMS SignedData (PKCS#7) builder
+├── parser/
+│   ├── pdf-inflate.ts    # DEFLATE decompression (zlib inflate)
+│   ├── pdf-tokenizer.ts  # PDF lexical scanner (ISO 32000-1 §7.2)
+│   ├── pdf-object-parser.ts # PDF object parser with type guards
+│   ├── pdf-xref-parser.ts # Cross-reference table/stream parser
+│   ├── pdf-reader.ts     # High-level PDF reader (page tree, stream decode)
+│   └── pdf-modifier.ts   # Incremental modification (non-destructive save)
 ├── fonts/
 │   ├── encoding.ts       # WinAnsi + CIDFont pure encoding functions (no shaping deps)
 │   ├── font-loader.ts    # Configurable font registry + cache
@@ -675,6 +827,8 @@ src/
 ├── shaping/
 │   ├── script-registry.ts # Centralized Unicode range constants & script predicates
 │   ├── thai-shaper.ts    # Thai GSUB + GPOS shaping pipeline
+│   ├── bengali-shaper.ts # Bengali GSUB conjuncts + GPOS mark positioning
+│   ├── tamil-shaper.ts   # Tamil GSUB + split vowel decomposition
 │   ├── script-detect.ts  # Unicode script range detection (uses script-registry)
 │   ├── multi-font.ts     # Cross-script font run splitting
 │   ├── bidi.ts           # Unicode Bidirectional Algorithm (UAX #9)
@@ -683,10 +837,10 @@ src/
     ├── worker-api.ts     # Worker/main-thread dispatch
     └── pdf-worker.ts     # Self-contained worker entry
 
-fonts/                    # Pre-built font data modules (.js/.d.ts)
+fonts/                    # Pre-built font data modules (16 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (see scripts/README.md)
-tests/                    # 1035+ tests (unit + integration + fuzz)
+scripts/                  # Modular sample PDF generation (18 generators, 130+ PDFs)
+tests/                    # 1513+ tests (36 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -698,9 +852,9 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (1035+ tests)
+npm run test             # vitest run (1513+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+)
-npm run test:generate       # Generate 114+ sample PDFs → test-output/
+npm run test:generate       # Generate 130+ sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -712,7 +866,7 @@ npm run typecheck:all       # Typecheck src/ + tests/ + scripts/
 
 | Metric | Value |
 |--------|-------|
-| Tests | 1035+ (29 files) |
+| Tests | 1513+ (36 files) |
 | Statement coverage | 95.41% |
 | Branch coverage | 87.79% |
 | Function coverage | 98.5% |
@@ -724,7 +878,7 @@ npm run typecheck:all       # Typecheck src/ + tests/ + scripts/
 
 ## Known Limitations — Visual vs. Semantic PDF
 
-pdfnative generates **visually pixel-perfect** PDFs for all 11 supported scripts. However, PDF is fundamentally a *visual* format (a digital printer), not a *semantic* one. This distinction matters for **text extraction** (copy-paste, `pdftotext`, screen readers):
+pdfnative generates **visually pixel-perfect** PDFs for all 16 supported scripts. However, PDF is fundamentally a *visual* format (a digital printer), not a *semantic* one. This distinction matters for **text extraction** (copy-paste, `pdftotext`, screen readers):
 
 ### Complex Text Layout (CTL) scripts
 
@@ -737,6 +891,8 @@ For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tone
 | Vietnamese (combining diacritics) | ✅ Perfect | ⚠️ May show Win-1252 fallback artifacts |
 | Thai (GSUB + GPOS shaping) | ✅ Perfect | ⚠️ Combining marks may be reordered |
 | Devanagari (matras, conjuncts) | ✅ Perfect | ⚠️ Cluster reconstruction may fail |
+| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ⚠️ Cluster reconstruction may fail |
+| Tamil (split vowels, GSUB) | ✅ Perfect | ⚠️ Split vowel recomposition may fail |
 
 ### Why this happens
 
@@ -879,9 +1035,11 @@ pdfnative targets ES2020 and works in any environment that supports `Uint8Array`
 
 ## Origin
 
-pdfnative was born inside [**plika.app**](https://plika.app) — a personal finance application where high-quality, multi-language PDF generation (bank statements, transaction reports) was a core requirement. Rather than depending on heavy third-party libraries, the PDF engine was built from scratch with zero dependencies, strict ISO compliance, and native support for 11 Unicode scripts.
+pdfnative was born inside [**plika.app**](https://plika.app) — a personal finance application where high-quality, multi-language PDF generation (bank statements, transaction reports) was a core requirement. Rather than depending on heavy third-party libraries, the PDF engine was built from scratch with zero dependencies, strict ISO compliance, and native support for 16 Unicode scripts.
 
 The decision was then made to extract the engine into an independent open-source library so that everyone can benefit from production-grade PDF generation — not just plika.app users.
+
+> **Where it all started** — the PDF engine that became pdfnative was originally built inside [plika.app](https://plika.app), a personal finance app generating multi-language bank statements and financial summaries across 16 scripts.
 
 ## Security
 
