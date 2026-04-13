@@ -127,8 +127,9 @@ function arcSegToCubic(
 
 /**
  * Convert SVG arc endpoint parameterization to cubic bezier curves.
- * SVG spec Appendix F.6 — endpoint-to-center conversion.
- * Splits arcs >90° into multiple cubic segments.
+ * Implements SVG 1.1 Appendix F.6 (F.6.2 out-of-range corrections,
+ * F.6.5 endpoint-to-center conversion, F.6.6 arc segment generation).
+ * Splits arcs >90° into multiple cubic segments for accuracy.
  */
 function arcToCubic(
     x1: number, y1: number,

@@ -30,6 +30,11 @@ import { generate as generateFormShowcase } from './generators/form-showcase.js'
 import { generate as generateDigitalSignature } from './generators/digital-signature.js';
 import { generate as generateStreaming } from './generators/streaming-showcase.js';
 import { generate as generateParser } from './generators/parser-showcase.js';
+import { generate as generateTextShaping } from './generators/text-shaping-deep.js';
+import { generate as generateBidi } from './generators/bidi-algorithm.js';
+import { generate as generateCrypto } from './generators/crypto-showcase.js';
+import { generate as generateFontSubsetting } from './generators/font-subsetting-deep.js';
+import { generate as generateParserDeep } from './generators/parser-deep.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -90,6 +95,21 @@ async function generateAll(): Promise<void> {
 
     // ── PDF parser & modifier showcase (round-trip) ──────────────
     await generateParser(ctx);
+
+    // ── Text shaping deep-dive (Thai/Bengali/Tamil) ─────────────
+    await generateTextShaping(ctx);
+
+    // ── BiDi algorithm walkthrough (UAX #9, Arabic, Hebrew) ─────
+    await generateBidi(ctx);
+
+    // ── Crypto primitives showcase (SHA, RSA, ECDSA) ────────────
+    await generateCrypto(ctx);
+
+    // ── Font subsetting internals (TTF pipeline, CMap) ──────────
+    await generateFontSubsetting(ctx);
+
+    // ── Parser deep-dive (tokenizer, xref, /Prev chain) ────────
+    await generateParserDeep(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

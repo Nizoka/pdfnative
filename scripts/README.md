@@ -1,6 +1,6 @@
 # scripts/ – Sample PDF Generation
 
-Generates 130+ sample PDFs for visual inspection across all supported languages, features, and edge cases.
+Generates 140+ sample PDFs for visual inspection across all supported languages, features, and edge cases.
 
 ## Quick Start
 
@@ -43,6 +43,11 @@ scripts/
     ├── digital-signature.ts     #  2 PDFs – RSA + ECDSA digital signatures
     ├── streaming-showcase.ts    #  2 PDFs – AsyncGenerator streaming output
     ├── parser-showcase.ts       #  2 PDFs – PDF reader/modifier round-trip
+    ├── text-shaping-deep.ts     #  3 PDFs – multi-script shaping, GSUB/GPOS, fallback
+    ├── bidi-algorithm.ts        #  2 PDFs – BiDi resolution, mixed LTR/RTL, bracket pairing
+    ├── crypto-showcase.ts       #  2 PDFs – RSA + ECDSA round-trip, CMS structure
+    ├── font-subsetting-deep.ts  #  2 PDFs – TTF subsetting, CIDFont glyph mapping
+    ├── parser-deep.ts           #  2 PDFs – tokenizer, xref parsing, incremental save
     └── stress-edge.ts           # 13 PDFs – 10K rows, BiDi, heavy text, images, annotations, edge cases
 ```
 

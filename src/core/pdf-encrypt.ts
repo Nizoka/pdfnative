@@ -91,7 +91,11 @@ const RCON = new Uint8Array([
 
 // ── AES Core (FIPS 197) ─────────────────────────────────────────────
 
-/** Multiply by 2 in GF(2^8) with irreducible polynomial 0x11b. */
+/**
+ * Multiply by 2 in GF(2^8) with irreducible polynomial x^8 + x^4 + x^3 + x + 1 (0x11b).
+ * Used by MixColumns: each column is treated as a polynomial over GF(2^8),
+ * multiplied modulo x^4 + 1 by a fixed polynomial {03}x^3 + {01}x^2 + {01}x + {02}.
+ */
 function xtime(a: number): number {
     return ((a << 1) ^ (((a >> 7) & 1) * 0x1b)) & 0xff;
 }
@@ -143,10 +147,19 @@ function aesKeyExpansion(key: Uint8Array): Uint8Array {
 }
 
 /**
- * AES block cipher — encrypt a single 16-byte block.
+ * AES block cipher — encrypt a single 16-byte block (FIPS 197 §5.1).
+ *
+ * Each round applies four transformations:
+ *   - SubBytes: non-linear byte substitution via S-Box (GF(2^8) multiplicative inverse)
+ *   - ShiftRows: cyclic left shift of state rows by 0/1/2/3 positions
+ *   - MixColumns: column-wise polynomial multiplication over GF(2^8)
+ *   - AddRoundKey: XOR state with round key derived from key schedule
+ *
+ * The final round omits MixColumns per FIPS 197 §5.1.
+ *
  * @param block - 16-byte plaintext (mutated in place)
  * @param expandedKey - Expanded round keys
- * @param nr - Number of rounds (10 for 128, 14 for 256)
+ * @param nr - Number of rounds (10 for AES-128, 14 for AES-256)
  */
 function aesEncryptBlock(block: Uint8Array, expandedKey: Uint8Array, nr: number): void {
     // State is 4x4 column-major
@@ -482,7 +495,7 @@ export function computePermissions(perms?: EncryptionOptions['permissions']): nu
  */
 function fillRandom(buf: Uint8Array): Uint8Array {
     if (typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.getRandomValues === 'function') {
-        globalThis.crypto.getRandomValues(buf);
+        globalThis.crypto.getRandomValues(buf as unknown as Uint8Array<ArrayBuffer>);
     } else {
         for (let i = 0; i < buf.length; i++) buf[i] = Math.floor(Math.random() * 256);
     }

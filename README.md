@@ -15,7 +15,7 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 
 ## Highlights
 
-- **Zero dependencies** — no pdfkit, jsPDF, or other vendors. Pure JavaScript
+- **Zero dependencies** — built from scratch in pure TypeScript. Zero runtime dependencies, tree-shakeable, auditable
 - **ISO 32000-1 compliant** — valid xref tables, /Info metadata, proper font embedding
 - **16 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil
 - **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
@@ -75,11 +75,11 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | NPM provenance (SLSA) | ✅ | — | — | — | — |
 | Weekly npm downloads | — | ~12M | ~2.6M | ~4.6M | ~1.5M |
 
-> **Data sources:** npm registry metadata and official README/documentation for each library as of April 2026. Dependency counts reflect direct `dependencies` listed in each package's `package.json`. "—" means the feature is not supported or not documented.
-
-**When to choose pdfnative:** You need zero-dependency PDF generation with ISO archival compliance (PDF/A), accessibility (tagged PDF), AES encryption, digital signatures, multi-script Unicode support — particularly Arabic/Hebrew BiDi and Thai GSUB/GPOS shaping — form fields, barcode generation, SVG rendering, or the ability to parse and incrementally modify existing PDFs.
+> **Data sources:** npm registry metadata and official README/documentation for each library as of April 2026. Dependency counts reflect direct `dependencies` listed in each package's `package.json`. "—" means the feature is not supported or not documented. Sample PDFs validate with veraPDF (PDF/A) and Adobe Acrobat.
 
 **When to choose another library:** You need advanced vector graphics (complex gradients, arbitrary transforms), rich interactive form scripting (JavaScript actions), or mature ecosystem integrations with existing toolchains.
+
+**When to choose pdfnative:** You need zero-dependency PDF generation with ISO archival compliance (PDF/A), accessibility (tagged PDF), AES encryption, digital signatures, multi-script Unicode support — particularly Arabic/Hebrew BiDi and Thai GSUB/GPOS shaping — form fields, barcode generation, SVG rendering, or the ability to parse and incrementally modify existing PDFs.
 
 ## Quick Start
 
@@ -334,7 +334,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **130+ PDF files** in `test-output/` (git-ignored), organized in eighteen categories.
+This creates **140+ PDF files** in `test-output/` (git-ignored), organized in twenty-three categories.
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -839,7 +839,7 @@ src/
 
 fonts/                    # Pre-built font data modules (16 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (18 generators, 130+ PDFs)
+scripts/                  # Modular sample PDF generation (23 generators, 140+ PDFs)
 tests/                    # 1513+ tests (36 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
@@ -854,7 +854,7 @@ npm install
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test             # vitest run (1513+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+)
-npm run test:generate       # Generate 130+ sample PDFs → test-output/
+npm run test:generate       # Generate 140+ sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -871,7 +871,7 @@ npm run typecheck:all       # Typecheck src/ + tests/ + scripts/
 | Branch coverage | 87.79% |
 | Function coverage | 98.5% |
 | Fuzz tests | 33 edge-case scenarios |
-| Benchmarks | Latin 500 rows ~10ms, Unicode ~13ms |
+| Benchmarks | Latin 500 rows ~10ms, Unicode ~13ms (Apple M1, Node 22) |
 | Dependencies | 0 runtime |
 | CI | Node 22/24 matrix |
 | Provenance | npm signed builds |

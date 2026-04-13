@@ -14,41 +14,24 @@
 
 import type {
     FontEntry,
-    EncodingContext,
     PdfLayoutOptions,
     PageTemplate,
 } from '../types/pdf-types.js';
 import type {
     DocumentParams,
     DocumentBlock,
-    HeadingBlock,
-    ParagraphBlock,
-    TableBlock,
-    ListBlock,
     ImageBlock,
-    LinkBlock,
-    TocBlock,
-    BarcodeBlock,
-    SvgBlock,
-    FormFieldBlock,
 } from '../types/pdf-document-types.js';
-import { parseImage, buildImageXObject, buildImageOperators } from './pdf-image.js';
-import type { ParsedImage } from './pdf-image.js';
-import { validateURL } from './pdf-annot.js';
-import { parseColor } from './pdf-color.js';
-import type { LinkAnnotation } from './pdf-annot.js';
+import { buildImageXObject } from './pdf-image.js';
 import { createEncodingContext } from './encoding-context.js';
-import { truncate, helveticaWidth } from '../fonts/encoding.js';
 import { base64ToByteString, buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { subsetTTF } from '../fonts/font-subsetter.js';
-import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
+import { txt, txtTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
 import { toBytes } from './pdf-stream.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
-    ROW_H, TH_H, FT_H, HEADER_H,
-    DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
-    computeColumnPositions,
-    resolveTemplate,
+    FT_H, HEADER_H,
+    DEFAULT_FONT_SIZES,
 } from './pdf-layout.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
 import {
@@ -66,1089 +49,32 @@ import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
-import { renderBarcode } from './pdf-barcode.js';
-import { renderSvg } from './pdf-svg.js';
-import { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent, defaultFieldHeight } from './pdf-form.js';
-import type { FormField } from './pdf-form.js';
-
-// ── Constants ────────────────────────────────────────────────────────
-
-/** Heading font sizes by level. */
-const HEADING_SIZES: Record<1 | 2 | 3, number> = { 1: 18, 2: 14, 3: 11 };
-
-/** Heading spacing (top + bottom) by level. */
-const HEADING_SPACING: Record<1 | 2 | 3, { top: number; bottom: number }> = {
-    1: { top: 14, bottom: 10 },
-    2: { top: 10, bottom: 8 },
-    3: { top: 8, bottom: 6 },
-};
-
-/** Default paragraph font size. */
-const DEFAULT_PARA_SIZE = 10;
-
-/** Default line height multiplier. */
-const DEFAULT_LINE_HEIGHT = 1.4;
-
-/** Default list font size. */
-const DEFAULT_LIST_SIZE = 10;
-
-/** List item vertical spacing. */
-const LIST_ITEM_SPACING = 2;
-
-/** Bullet indent from left margin. */
-const LIST_INDENT = 14;
-
-/** Bullet character width approximation. */
-const BULLET_MARK_WIDTH = 10;
-
-/** Default TOC entry font size. */
-const DEFAULT_TOC_SIZE = 10;
-
-/** Default TOC indentation per level (in points). */
-const DEFAULT_TOC_INDENT = 15;
-
-/** Default TOC title text. */
-const DEFAULT_TOC_TITLE = 'Table of Contents';
-
-/** Line height for TOC entries (multiplier). */
-const TOC_LINE_HEIGHT = 1.6;
-
-/** Spacing after TOC title. */
-const TOC_TITLE_SPACING = 8;
-
-/** Post-TOC spacing before next block. */
-const TOC_BOTTOM_SPACING = 12;
-
-// ── Heading Destination Tracking ─────────────────────────────────────
-
-/** A collected heading destination for TOC link targets. */
-interface HeadingDestination {
-    /** Unique destination name (e.g., 'toc_h_0'). */
-    readonly destName: string;
-    /** Heading display text. */
-    readonly text: string;
-    /** Heading level (1–3). */
-    readonly level: 1 | 2 | 3;
-    /** 0-based page index this heading appears on. */
-    pageIndex: number;
-    /** Y coordinate of the heading. */
-    y: number;
-}
-
-// ── Tagged Mode Types ────────────────────────────────────────────────
-
-interface TagContext {
-    tagged: boolean;
-    mcidAlloc: ReturnType<typeof createMCIDAllocator>;
-    pageObjNum: number;
-    structChildren: (StructElement | MCRef)[];
-}
-
-// ── Text Wrapping ────────────────────────────────────────────────────
-
-/**
- * Measure text width in points.
- * Uses enc.tw() for Unicode mode, helveticaWidth() for Latin mode.
- */
-function measureText(str: string, sz: number, enc: EncodingContext): number {
-    return enc.isUnicode ? enc.tw(str, sz) : helveticaWidth(str, sz);
-}
-
-/**
- * Check if a codepoint is CJK and allows line-breaking on either side.
- * Covers CJK Unified Ideographs, Hiragana, Katakana, Hangul,
- * CJK Symbols/Punctuation, Fullwidth Forms, and CJK extensions.
- */
-function isCJKBreakable(cp: number): boolean {
-    return (cp >= 0x2E80 && cp <= 0x9FFF) ||
-           (cp >= 0xAC00 && cp <= 0xD7AF) ||
-           (cp >= 0xF900 && cp <= 0xFAFF) ||
-           (cp >= 0xFE30 && cp <= 0xFE4F) ||
-           (cp >= 0xFF00 && cp <= 0xFFEF) ||
-           (cp >= 0x20000 && cp <= 0x2FA1F);
-}
-
-/**
- * Tokenize text into breakable segments for line wrapping.
- * Each CJK character becomes a separate segment (breakable).
- * Latin words (non-space, non-CJK runs) remain grouped.
- * Spaces are attached to the preceding segment.
- */
-function tokenizeForWrap(text: string): string[] {
-    const segments: string[] = [];
-    let buf = '';
-
-    for (const ch of text) {
-        const cp = ch.codePointAt(0) ?? 0;
-        if (isCJKBreakable(cp)) {
-            if (buf) { segments.push(buf); buf = ''; }
-            segments.push(ch);
-        } else if (cp === 0x20 || cp === 0x09) {
-            buf += ch;
-            segments.push(buf);
-            buf = '';
-        } else {
-            buf += ch;
-        }
-    }
-    if (buf) segments.push(buf);
-
-    return segments;
-}
-
-/**
- * Wrap text into lines that fit within maxWidth.
- * Greedy line-filling algorithm with CJK character-level breaking.
- * Latin text breaks at word boundaries (spaces).
- * CJK characters break individually (no spaces needed).
- *
- * @param text - Input text string
- * @param maxWidth - Maximum line width in points
- * @param fontSize - Font size for measurement
- * @param enc - Encoding context
- * @returns Array of line strings
- */
-export function wrapText(
-    text: string,
-    maxWidth: number,
-    fontSize: number,
-    enc: EncodingContext,
-): string[] {
-    if (!text) return [''];
-    if (maxWidth <= 0) return [text];
-
-    const segments = tokenizeForWrap(text);
-    if (segments.length === 0) return [''];
-
-    const lines: string[] = [];
-    let currentLine = '';
-
-    for (const seg of segments) {
-        const candidate = currentLine + seg;
-        const w = measureText(candidate, fontSize, enc);
-        if (w <= maxWidth || currentLine === '') {
-            currentLine = candidate;
-        } else {
-            lines.push(currentLine.trimEnd());
-            currentLine = seg.trimStart();
-        }
-    }
-    if (currentLine) lines.push(currentLine.trimEnd());
-
-    return lines;
-}
-
-// ── Block Renderers ──────────────────────────────────────────────────
-
-/**
- * Render a heading block. Returns ops and the new Y position.
- */
-function _renderHeading(
-    block: HeadingBlock,
-    y: number,
-    enc: EncodingContext,
-    mgL: number,
-    cw: number,
-    tagCtx: TagContext | undefined,
-    documentChildren: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const sz = HEADING_SIZES[block.level];
-    const spacing = HEADING_SPACING[block.level];
-    const color = parseColor(block.color ?? '0.145 0.388 0.922');
-    const structTag = block.level === 1 ? 'H1' : block.level === 2 ? 'H2' : 'H3';
-
-    y -= spacing.top;
-    ops.push(`${color} rg`);
-
-    const lines = wrapText(block.text, cw, sz, enc);
-    const lineH = sz * 1.3;
-
-    for (const line of lines) {
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            ops.push(txtTagged(line, mgL, y - sz, enc.f2, sz, enc, mcid));
-            documentChildren.push({ type: structTag, children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-        } else {
-            ops.push(txt(line, mgL, y - sz, enc.f2, sz, enc));
-        }
-        y -= lineH;
-    }
-
-    y -= spacing.bottom;
-    return { ops, y };
-}
-
-/**
- * Render a paragraph block with text wrapping.
- */
-function _renderParagraph(
-    block: ParagraphBlock,
-    y: number,
-    enc: EncodingContext,
-    mgL: number,
-    cw: number,
-    pgW: number,
-    mgR: number,
-    tagCtx: TagContext | undefined,
-    documentChildren: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const sz = block.fontSize ?? DEFAULT_PARA_SIZE;
-    const lhMul = block.lineHeight ?? DEFAULT_LINE_HEIGHT;
-    const lineH = sz * lhMul;
-    const color = parseColor(block.color ?? '0.216 0.255 0.318');
-    const indent = block.indent ?? 0;
-    const align = block.align ?? 'left';
-
-    const availW = cw - indent;
-    const lines = wrapText(block.text, availW, sz, enc);
-
-    ops.push(`${color} rg`);
-
-    const pChildren: MCRef[] = [];
-
-    for (const line of lines) {
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            pChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
-            if (align === 'right') {
-                ops.push(txtRTagged(line, pgW - mgR, y - sz, enc.f1, sz, enc, mcid));
-            } else if (align === 'center') {
-                ops.push(txtCTagged(line, mgL + indent, y - sz, enc.f1, sz, availW, enc, mcid));
-            } else {
-                ops.push(txtTagged(line, mgL + indent, y - sz, enc.f1, sz, enc, mcid));
-            }
-        } else {
-            if (align === 'right') {
-                ops.push(txtR(line, pgW - mgR, y - sz, enc.f1, sz, enc));
-            } else if (align === 'center') {
-                ops.push(txtC(line, mgL + indent, y - sz, enc.f1, sz, availW, enc));
-            } else {
-                ops.push(txt(line, mgL + indent, y - sz, enc.f1, sz, enc));
-            }
-        }
-        y -= lineH;
-    }
-
-    if (tagCtx?.tagged && pChildren.length > 0) {
-        documentChildren.push({ type: 'P', children: pChildren });
-    }
-
-    y -= 4; // post-paragraph spacing
-    return { ops, y };
-}
-
-/**
- * Render a list block (bullet or numbered).
- */
-function _renderList(
-    block: ListBlock,
-    y: number,
-    enc: EncodingContext,
-    mgL: number,
-    cw: number,
-    tagCtx: TagContext | undefined,
-    documentChildren: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const sz = block.fontSize ?? DEFAULT_LIST_SIZE;
-    const lineH = sz * DEFAULT_LINE_HEIGHT;
-    const color = '0.216 0.255 0.318';
-    const availW = cw - LIST_INDENT - BULLET_MARK_WIDTH;
-
-    ops.push(`${color} rg`);
-
-    const listChildren: StructElement[] = [];
-
-    for (let idx = 0; idx < block.items.length; idx++) {
-        const item = block.items[idx];
-        const marker = block.style === 'bullet' ? '\u2022' : `${idx + 1}.`;
-        const lines = wrapText(item, availW, sz, enc);
-
-        const liChildren: MCRef[] = [];
-
-        // Marker
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            liChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
-            ops.push(txtTagged(marker, mgL + LIST_INDENT, y - sz, enc.f1, sz, enc, mcid));
-        } else {
-            ops.push(txt(marker, mgL + LIST_INDENT, y - sz, enc.f1, sz, enc));
-        }
-
-        // Item text lines
-        for (let li = 0; li < lines.length; li++) {
-            const xOffset = mgL + LIST_INDENT + BULLET_MARK_WIDTH;
-            if (li === 0) {
-                // First line on same Y as marker
-                if (tagCtx?.tagged) {
-                    const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-                    liChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
-                    ops.push(txtTagged(lines[li], xOffset, y - sz, enc.f1, sz, enc, mcid));
-                } else {
-                    ops.push(txt(lines[li], xOffset, y - sz, enc.f1, sz, enc));
-                }
-            } else {
-                y -= lineH;
-                if (tagCtx?.tagged) {
-                    const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-                    liChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
-                    ops.push(txtTagged(lines[li], xOffset, y - sz, enc.f1, sz, enc, mcid));
-                } else {
-                    ops.push(txt(lines[li], xOffset, y - sz, enc.f1, sz, enc));
-                }
-            }
-        }
-        y -= lineH + LIST_ITEM_SPACING;
-
-        if (tagCtx?.tagged && liChildren.length > 0) {
-            listChildren.push({ type: 'LI', children: liChildren });
-        }
-    }
-
-    if (tagCtx?.tagged && listChildren.length > 0) {
-        documentChildren.push({ type: 'L', children: listChildren });
-    }
-
-    return { ops, y };
-}
-
-/**
- * Render a table block. Reuses the same pattern as pdf-builder.ts table helpers.
- */
-function _renderTable(
-    block: TableBlock,
-    y: number,
-    enc: EncodingContext,
-    mgL: number,
-    mgR: number,
-    pgW: number,
-    cw: number,
-    tagCtx: TagContext | undefined,
-    documentChildren: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const columns = block.columns ? [...block.columns] : DEFAULT_COLUMNS;
-    const fs = DEFAULT_FONT_SIZES;
-    const colors = DEFAULT_COLORS;
-    const { cx, cwi } = computeColumnPositions(columns, mgL, cw);
-
-    const tableRows: StructElement[] = [];
-
-    // Table header
-    ops.push(`${colors.thBg} rg`);
-    ops.push(`${fmtNum(mgL)} ${fmtNum(y - TH_H)} ${fmtNum(cw)} ${fmtNum(TH_H)} re f`);
-    ops.push(`0.75 w ${colors.thBrd} RG`);
-    ops.push(`${fmtNum(mgL)} ${fmtNum(y - TH_H)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - TH_H)} l S`);
-    ops.push(`${colors.text} rg`);
-
-    const thChildren: (StructElement | MCRef)[] = [];
-    for (let i = 0; i < block.headers.length && i < columns.length; i++) {
-        const t = truncate(block.headers[i], columns[i].mxH ?? columns[i].mx);
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            thChildren.push({ type: 'TH', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-            if (columns[i].a === 'r') {
-                ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid));
-            } else if (columns[i].a === 'c') {
-                ops.push(txtCTagged(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc, mcid));
-            } else {
-                ops.push(txtTagged(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid));
-            }
-        } else {
-            if (columns[i].a === 'r') {
-                ops.push(txtR(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc));
-            } else if (columns[i].a === 'c') {
-                ops.push(txtC(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc));
-            } else {
-                ops.push(txt(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc));
-            }
-        }
-    }
-    if (tagCtx?.tagged) tableRows.push({ type: 'TR', children: thChildren });
-    y -= TH_H;
-
-    // Table data rows
-    for (const row of block.rows) {
-        ops.push(`0.25 w ${colors.rowBrd} RG`);
-        ops.push(`${fmtNum(mgL)} ${fmtNum(y - ROW_H)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - ROW_H)} l S`);
-
-        const tdChildren: (StructElement | MCRef)[] = [];
-        for (let i = 0; i < row.cells.length && i < columns.length; i++) {
-            const t = truncate(row.cells[i], columns[i].mx);
-            const isAmount = (i === 3);
-            const color = isAmount ? (row.type === 'credit' ? colors.credit : colors.debit) : colors.text;
-            const font = isAmount ? enc.f2 : enc.f1;
-            ops.push(`${color} rg`);
-
-            if (tagCtx?.tagged) {
-                const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-                tdChildren.push({ type: 'TD', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-                if (columns[i].a === 'r') {
-                    ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc, mcid));
-                } else if (columns[i].a === 'c') {
-                    ops.push(txtCTagged(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc, mcid));
-                } else {
-                    ops.push(txtTagged(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc, mcid));
-                }
-            } else {
-                if (columns[i].a === 'r') {
-                    ops.push(txtR(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc));
-                } else if (columns[i].a === 'c') {
-                    ops.push(txtC(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc));
-                } else {
-                    ops.push(txt(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc));
-                }
-            }
-        }
-        if (tagCtx?.tagged) tableRows.push({ type: 'TR', children: tdChildren });
-        y -= ROW_H;
-    }
-
-    if (tagCtx?.tagged && tableRows.length > 0) {
-        documentChildren.push({ type: 'Table', children: tableRows });
-    }
-
-    y -= 6; // post-table spacing
-    return { ops, y };
-}
-
-/**
- * Render a page template (header or footer) at the given Y position.
- * Resolves {page}, {pages}, {date}, {title} placeholders and renders
- * left/center/right text segments.
- */
-function _renderPageTemplate(
-    template: PageTemplate,
-    page: number,
-    pages: number,
-    title: string,
-    date: string,
-    y: number,
-    enc: EncodingContext,
-    mgL: number,
-    mgR: number,
-    pgW: number,
-    cw: number,
-    tagCtx: TagContext | undefined,
-    documentChildren: (StructElement | MCRef)[],
-): string[] {
-    const ops: string[] = [];
-    const sz = template.fontSize ?? DEFAULT_FONT_SIZES.ft;
-    const color = parseColor(template.color ?? '0.612 0.639 0.682');
-
-    ops.push(`${color} rg`);
-
-    if (template.left) {
-        const text = resolveTemplate(template.left, page, pages, title, date);
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            ops.push(txtTagged(text, mgL, y, enc.f1, sz, enc, mcid));
-            documentChildren.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-        } else {
-            ops.push(txt(text, mgL, y, enc.f1, sz, enc));
-        }
-    }
-
-    if (template.center) {
-        const text = resolveTemplate(template.center, page, pages, title, date);
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            ops.push(txtCTagged(text, mgL, y, enc.f1, sz, cw, enc, mcid));
-            documentChildren.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-        } else {
-            ops.push(txtC(text, mgL, y, enc.f1, sz, cw, enc));
-        }
-    }
-
-    if (template.right) {
-        const text = resolveTemplate(template.right, page, pages, title, date);
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            ops.push(txtRTagged(text, pgW - mgR, y, enc.f1, sz, enc, mcid));
-            documentChildren.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-        } else {
-            ops.push(txtR(text, pgW - mgR, y, enc.f1, sz, enc));
-        }
-    }
-
-    return ops;
-}
-
-// ── Image Rendering ──────────────────────────────────────────────────
-
-/** Resolved image with parsed data and display dimensions. */
-interface ResolvedImage {
-    readonly parsed: ParsedImage;
-    readonly displayW: number;
-    readonly displayH: number;
-    readonly align: 'left' | 'center' | 'right';
-    readonly alt?: string;
-}
-
-/**
- * Parse and resolve display dimensions for an image block.
- * Scales to fit within contentWidth while preserving aspect ratio.
- */
-function _resolveImage(block: ImageBlock, contentWidth: number): ResolvedImage {
-    const parsed = parseImage(block.data);
-    const nativeW = parsed.width;
-    const nativeH = parsed.height;
-    const aspect = nativeW / nativeH;
-
-    let displayW: number;
-    let displayH: number;
-
-    if (block.width && block.height) {
-        displayW = block.width;
-        displayH = block.height;
-    } else if (block.width) {
-        displayW = block.width;
-        displayH = block.width / aspect;
-    } else if (block.height) {
-        displayH = block.height;
-        displayW = block.height * aspect;
-    } else {
-        // Default: use native dimensions, scale down if wider than content area
-        displayW = nativeW;
-        displayH = nativeH;
-    }
-
-    // Clamp to content width
-    if (displayW > contentWidth) {
-        displayW = contentWidth;
-        displayH = contentWidth / aspect;
-    }
-
-    return {
-        parsed,
-        displayW,
-        displayH,
-        align: block.align ?? 'left',
-        alt: block.alt,
-    };
-}
-
-/**
- * Render an image block. Returns ops and the new Y position.
- */
-function _renderImage(
-    resolved: ResolvedImage,
-    imgName: string,
-    y: number,
-    mgL: number,
-    cw: number,
-    tagCtx: TagContext | undefined,
-    documentChildren: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const { displayW, displayH, align } = resolved;
-
-    let x = mgL;
-    if (align === 'center') x = mgL + (cw - displayW) / 2;
-    else if (align === 'right') x = mgL + cw - displayW;
-
-    const imgY = y - displayH;
-
-    if (tagCtx?.tagged) {
-        const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-        const altHex = resolved.alt
-            ? Array.from(resolved.alt).map(c => {
-                const cp = c.codePointAt(0) ?? 0;
-                return cp.toString(16).toUpperCase().padStart(4, '0');
-            }).join('')
-            : '';
-        const actualText = resolved.alt ? ` /ActualText <FEFF${altHex}>` : '';
-        ops.push(`/Span << /MCID ${mcid}${actualText} >> BDC`);
-        ops.push(buildImageOperators(imgName, x, imgY, displayW, displayH));
-        ops.push('EMC');
-        documentChildren.push({ type: 'Figure', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-    } else {
-        ops.push(buildImageOperators(imgName, x, imgY, displayW, displayH));
-    }
-
-    return { ops, y: imgY - 6 }; // post-image spacing
-}
-
-/** Default link color — PDF blue. */
-const LINK_COLOR = '0.0 0.0 0.8';
-
-/** Default link font size. */
-const DEFAULT_LINK_SIZE = 10;
-
-/** Link underline offset below baseline. */
-const LINK_UNDERLINE_OFFSET = 1.5;
-
-// ── Link Rendering ───────────────────────────────────────────────────
-
-/** A collected annotation to be emitted as a PDF indirect object. */
-interface PageAnnotation {
-    readonly annot: LinkAnnotation;
-    readonly page: number; // page index (0-based)
-}
-
-/** A collected form field widget to be emitted after all pages. */
-interface PageFormField {
-    readonly field: FormField;
-    readonly page: number;
-}
-
-/**
- * Render a link block. Renders clickable underlined text and collects annotations.
- */
-function _renderLink(
-    block: LinkBlock,
-    y: number,
-    enc: EncodingContext,
-    mgL: number,
-    cw: number,
-    pageIndex: number,
-    pageAnnotations: PageAnnotation[],
-    tagCtx: TagContext | undefined,
-    documentChildren: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const sz = block.fontSize ?? DEFAULT_LINK_SIZE;
-    const color = parseColor(block.color ?? LINK_COLOR);
-    const lineH = sz * DEFAULT_LINE_HEIGHT;
-
-    // Validate URL — only render as link if valid
-    const isValid = validateURL(block.url);
-
-    const lines = wrapText(block.text, cw, sz, enc);
-
-    ops.push(`${color} rg`);
-
-    for (const line of lines) {
-        const textW = measureText(line, sz, enc);
-        const textX = mgL;
-        const textY = y - sz;
-
-        // Render text
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            ops.push(txtTagged(line, textX, textY, enc.f1, sz, enc, mcid));
-            documentChildren.push({ type: 'Link', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-        } else {
-            ops.push(txt(line, textX, textY, enc.f1, sz, enc));
-        }
-
-        // Underline
-        const ulY = textY - LINK_UNDERLINE_OFFSET;
-        ops.push(`${color} RG 0.5 w`);
-        ops.push(`${fmtNum(textX)} ${fmtNum(ulY)} m ${fmtNum(textX + textW)} ${fmtNum(ulY)} l S`);
-
-        // Collect annotation for this line (rect in PDF coords)
-        if (isValid) {
-            pageAnnotations.push({
-                annot: {
-                    url: block.url,
-                    rect: [textX, textY - 2, textX + textW, textY + sz + 2],
-                },
-                page: pageIndex,
-            });
-        }
-
-        y -= lineH;
-    }
-
-    y -= 4; // post-link spacing
-    return { ops, y };
-}
-
-// ── Table of Contents ────────────────────────────────────────────────
-
-/**
- * Estimate the height of a TOC block based on collected headings.
- */
-function _estimateTocHeight(
-    tocBlock: TocBlock,
-    headings: readonly HeadingDestination[],
-): number {
-    const sz = tocBlock.fontSize ?? DEFAULT_TOC_SIZE;
-    const maxLevel = tocBlock.maxLevel ?? 3;
-    const titleSz = 14; // TOC title size
-    const lineH = sz * TOC_LINE_HEIGHT;
-
-    const filteredCount = headings.filter(h => h.level <= maxLevel).length;
-    return titleSz + TOC_TITLE_SPACING + filteredCount * lineH + TOC_BOTTOM_SPACING;
-}
-
-/**
- * Render a Table of Contents block.
- * Renders the TOC title and one entry per collected heading with page numbers.
- * Collects /GoTo annotations for each entry.
- */
-function _renderToc(
-    tocBlock: TocBlock,
-    headings: readonly HeadingDestination[],
-    y: number,
-    enc: EncodingContext,
-    mgL: number,
-    cw: number,
-    pageIndex: number,
-    pageAnnotations: PageAnnotation[],
-    tagCtx: TagContext | undefined,
-    documentChildren: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const sz = tocBlock.fontSize ?? DEFAULT_TOC_SIZE;
-    const indent = tocBlock.indent ?? DEFAULT_TOC_INDENT;
-    const maxLevel = tocBlock.maxLevel ?? 3;
-    const title = tocBlock.title ?? DEFAULT_TOC_TITLE;
-    const lineH = sz * TOC_LINE_HEIGHT;
-
-    // TOC Title
-    const titleSz = 14;
-    const titleColor = '0.145 0.388 0.922';
-    ops.push(`${titleColor} rg`);
-    if (tagCtx?.tagged) {
-        const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-        ops.push(txtTagged(title, mgL, y - titleSz, enc.f2, titleSz, enc, mcid));
-        documentChildren.push({ type: 'TOC', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-    } else {
-        ops.push(txt(title, mgL, y - titleSz, enc.f2, titleSz, enc));
-    }
-    y -= titleSz + TOC_TITLE_SPACING;
-
-    // TOC entries
-    const textColor = '0.216 0.255 0.318';
-    ops.push(`${textColor} rg`);
-
-    for (const heading of headings) {
-        if (heading.level > maxLevel) continue;
-
-        const entryIndent = (heading.level - 1) * indent;
-        const entryX = mgL + entryIndent;
-        const pageNumStr = `${heading.pageIndex + 1}`;
-        const pageNumW = measureText(pageNumStr, sz, enc);
-        const dotLeaderEnd = mgL + cw - pageNumW - 4;
-        const availTextW = dotLeaderEnd - entryX - 8;
-
-        // Truncate heading text if needed
-        let displayText = heading.text;
-        if (measureText(displayText, sz, enc) > availTextW) {
-            while (displayText.length > 1 && measureText(displayText + '...', sz, enc) > availTextW) {
-                displayText = displayText.slice(0, -1);
-            }
-            displayText += '...';
-        }
-        const textW = measureText(displayText, sz, enc);
-
-        // Heading text
-        const textY = y - sz;
-        const font = heading.level === 1 ? enc.f2 : enc.f1;
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            ops.push(txtTagged(displayText, entryX, textY, font, sz, enc, mcid));
-            documentChildren.push({ type: 'TOCI', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-        } else {
-            ops.push(txt(displayText, entryX, textY, font, sz, enc));
-        }
-
-        // Dot leader
-        const dotStart = entryX + textW + 4;
-        if (dotStart < dotLeaderEnd) {
-            const dotStr = '.'.repeat(Math.max(1, Math.floor((dotLeaderEnd - dotStart) / (measureText('.', sz, enc) + 0.5))));
-            ops.push(`0.6 0.6 0.6 rg`);
-            ops.push(txt(dotStr, dotStart, textY, enc.f1, sz, enc));
-            ops.push(`${textColor} rg`);
-        }
-
-        // Page number (right-aligned)
-        ops.push(txtR(pageNumStr, mgL + cw, textY, enc.f1, sz, enc));
-
-        // Collect /GoTo annotation for this entry
-        pageAnnotations.push({
-            annot: {
-                url: `#${heading.destName}`,
-                rect: [entryX, textY - 2, mgL + cw, textY + sz + 2],
-            },
-            page: pageIndex,
-        });
-
-        y -= lineH;
-    }
-
-    y -= TOC_BOTTOM_SPACING;
-    return { ops, y };
-}
-
-// ── Barcode Rendering ────────────────────────────────────────────────
-
-/** Default barcode dimensions by format type. */
-const BARCODE_1D_WIDTH = 200;
-const BARCODE_1D_HEIGHT = 60;
-const BARCODE_2D_SIZE = 100;
-
-function _is2DFormat(format: string): boolean {
-    return format === 'qr' || format === 'datamatrix';
-}
-
-function _estimateBarcodeHeight(block: BarcodeBlock): number {
-    if (_is2DFormat(block.format)) {
-        return block.height ?? block.width ?? BARCODE_2D_SIZE;
-    }
-    return block.height ?? BARCODE_1D_HEIGHT;
-}
-
-function _renderBarcodeBlock(
-    block: BarcodeBlock,
-    y: number,
-    mgL: number,
-    cw: number,
-    tagCtx?: TagContext,
-    documentChildren?: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const is2D = _is2DFormat(block.format);
-    const w = block.width ?? (is2D ? BARCODE_2D_SIZE : BARCODE_1D_WIDTH);
-    const h = block.height ?? (is2D ? w : BARCODE_1D_HEIGHT);
-
-    // Horizontal alignment
-    let bx = mgL;
-    if (block.align === 'center') {
-        bx = mgL + (cw - w) / 2;
-    } else if (block.align === 'right') {
-        bx = mgL + cw - w;
-    }
-
-    const by = y - h;
-
-    // Tagged mode: wrap in /Figure
-    if (tagCtx?.tagged) {
-        const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-        ops.push(`/Span << /MCID ${mcid} >> BDC`);
-        ops.push(renderBarcode(block.format, block.data, bx, by, w, h, {
-            ecLevel: block.ecLevel,
-            pdf417ECLevel: block.pdf417ECLevel,
-        }));
-        ops.push('EMC');
-        documentChildren?.push({ type: 'Figure', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-    } else {
-        ops.push(renderBarcode(block.format, block.data, bx, by, w, h, {
-            ecLevel: block.ecLevel,
-            pdf417ECLevel: block.pdf417ECLevel,
-        }));
-    }
-
-    y = by - 6; // post-barcode spacing
-    return { ops, y };
-}
-
-// ── SVG Rendering ────────────────────────────────────────────────────
-
-/** Default SVG block width in points. */
-const DEFAULT_SVG_SIZE = 200;
-
-function _renderSvgBlock(
-    block: SvgBlock,
-    y: number,
-    mgL: number,
-    cw: number,
-    tagCtx?: TagContext,
-    documentChildren?: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const w = block.width ?? DEFAULT_SVG_SIZE;
-    const h = block.height ?? DEFAULT_SVG_SIZE;
-
-    // Horizontal alignment
-    let bx = mgL;
-    if (block.align === 'center') {
-        bx = mgL + (cw - w) / 2;
-    } else if (block.align === 'right') {
-        bx = mgL + cw - w;
-    }
-
-    const by = y; // top edge (renderSvg handles Y-up internally)
-
-    const svgOps = renderSvg(block.data, bx, by, w, h, {
-        fill: block.fill,
-        stroke: block.stroke,
-        strokeWidth: block.strokeWidth,
-        viewBox: block.viewBox,
-    });
-
-    if (svgOps) {
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            const altText = block.alt ?? '';
-            if (altText) {
-                const altHex = Array.from(altText).map(c =>
-                    (c.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, '0')
-                ).join('');
-                ops.push(`/Span << /MCID ${mcid} /ActualText <FEFF${altHex}> >> BDC`);
-            } else {
-                ops.push(`/Span << /MCID ${mcid} >> BDC`);
-            }
-            ops.push(svgOps);
-            ops.push('EMC');
-            documentChildren?.push({ type: 'Figure', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-        } else {
-            ops.push(svgOps);
-        }
-    }
-
-    y = y - h - 6; // post-SVG spacing
-    return { ops, y };
-}
-
-// ── Form Field Rendering ─────────────────────────────────────────────
-
-/**
- * Render a form field block. Renders the label (if any) inline in the content
- * stream and collects the field descriptor for widget/annotation emission.
- */
-function _renderFormFieldBlock(
-    block: FormFieldBlock,
-    y: number,
-    enc: EncodingContext,
-    mgL: number,
-    cw: number,
-    pageIndex: number,
-    formFields: PageFormField[],
-    tagCtx?: TagContext,
-    documentChildren?: (StructElement | MCRef)[],
-): { ops: string[]; y: number } {
-    const ops: string[] = [];
-    const fontSize = block.fontSize ?? DEFAULT_PARA_SIZE;
-
-    // Render label above field
-    if (block.label) {
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            ops.push(`/Span << /MCID ${mcid} >> BDC`);
-            ops.push('BT');
-            ops.push(`${enc.f2} ${fmtNum(fontSize)} Tf`);
-            ops.push(`${fmtNum(mgL)} ${fmtNum(y - fontSize)} Td`);
-            ops.push(`${enc.ps(block.label)} Tj`);
-            ops.push('ET');
-            ops.push('EMC');
-            documentChildren?.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-        } else {
-            ops.push('BT');
-            ops.push(`${enc.f2} ${fmtNum(fontSize)} Tf`);
-            ops.push(`${fmtNum(mgL)} ${fmtNum(y - fontSize)} Td`);
-            ops.push(`${enc.ps(block.label)} Tj`);
-            ops.push('ET');
-        }
-        y -= fontSize * 1.3;
-    }
-
-    // Compute widget rectangle
-    const isButton = block.fieldType === 'checkbox' || block.fieldType === 'radio';
-    const fieldH = block.height ?? defaultFieldHeight(block.fieldType);
-    const fieldW = block.width ?? (isButton ? fieldH : cw);
-    const x1 = mgL;
-    const y1 = y - fieldH;
-    const x2 = x1 + fieldW;
-    const y2 = y;
-
-    // Collect form field for widget emission
-    formFields.push({
-        field: {
-            fieldType: block.fieldType,
-            name: block.name,
-            value: block.value ?? '',
-            rect: [x1, y1, x2, y2],
-            fontSize: block.fontSize ?? DEFAULT_PARA_SIZE,
-            options: block.options ?? [],
-            readOnly: block.readOnly ?? false,
-            required: block.required ?? false,
-            maxLength: block.maxLength ?? null,
-            page: pageIndex,
-            checked: block.checked ?? false,
-        },
-        page: pageIndex,
-    });
-
-    // Tagged mode: /Form structure element
-    if (tagCtx?.tagged) {
-        const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-        const nameHex = Array.from(block.name).map(c =>
-            (c.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, '0')
-        ).join('');
-        ops.push(`/Span << /MCID ${mcid} /ActualText <FEFF${nameHex}> >> BDC`);
-        ops.push('EMC');
-        documentChildren?.push({ type: 'Form', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-    }
-
-    y = y1 - 6; // post-field spacing
-    return { ops, y };
-}
-
-// ── Block Height Estimation ──────────────────────────────────────────
-
-/**
- * Estimate the height of a block for pagination purposes.
- * This is a pre-rendering pass to decide if a block fits on the current page.
- */
-function _estimateBlockHeight(
-    block: DocumentBlock,
-    enc: EncodingContext,
-    cw: number,
-    headings?: readonly HeadingDestination[],
-): number {
-    switch (block.type) {
-        case 'heading': {
-            const sz = HEADING_SIZES[block.level];
-            const spacing = HEADING_SPACING[block.level];
-            const lines = wrapText(block.text, cw, sz, enc);
-            return spacing.top + lines.length * (sz * 1.3) + spacing.bottom;
-        }
-        case 'paragraph': {
-            const sz = block.fontSize ?? DEFAULT_PARA_SIZE;
-            const lhMul = block.lineHeight ?? DEFAULT_LINE_HEIGHT;
-            const indent = block.indent ?? 0;
-            const lines = wrapText(block.text, cw - indent, sz, enc);
-            return lines.length * (sz * lhMul) + 4;
-        }
-        case 'list': {
-            const sz = block.fontSize ?? DEFAULT_LIST_SIZE;
-            const lineH = sz * DEFAULT_LINE_HEIGHT;
-            const availW = cw - LIST_INDENT - BULLET_MARK_WIDTH;
-            let h = 0;
-            for (const item of block.items) {
-                const lines = wrapText(item, availW, sz, enc);
-                h += lineH + (lines.length - 1) * lineH + LIST_ITEM_SPACING;
-            }
-            return h;
-        }
-        case 'table': {
-            return TH_H + block.rows.length * ROW_H + 6;
-        }
-        case 'spacer': {
-            return block.height;
-        }
-        case 'pageBreak': {
-            return Infinity; // Forces new page
-        }
-        case 'image': {
-            const resolved = _resolveImage(block, cw);
-            return resolved.displayH + 6; // post-image spacing
-        }
-        case 'link': {
-            const sz = block.fontSize ?? DEFAULT_LINK_SIZE;
-            const lines = wrapText(block.text, cw, sz, enc);
-            return lines.length * (sz * DEFAULT_LINE_HEIGHT) + 4;
-        }
-        case 'toc': {
-            return headings ? _estimateTocHeight(block, headings) : 0;
-        }
-        case 'barcode': {
-            return _estimateBarcodeHeight(block) + 6;
-        }
-        case 'svg': {
-            return (block.height ?? DEFAULT_SVG_SIZE) + 6;
-        }
-        case 'formField': {
-            const labelH = block.label ? DEFAULT_PARA_SIZE * 1.3 : 0;
-            return labelH + (block.height ?? defaultFieldHeight(block.fieldType)) + 6;
-        }
-    }
-}
+import { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent } from './pdf-form.js';
+import {
+    estimateBlockHeight,
+    renderHeading,
+    renderParagraph,
+    renderList,
+    renderTable,
+    renderPageTemplate,
+    resolveImage,
+    renderImage,
+    renderLink,
+    renderToc,
+    renderBarcodeBlock,
+    renderSvgBlock,
+    renderFormFieldBlock,
+} from './pdf-renderers.js';
+import type {
+    TagContext,
+    HeadingDestination,
+    PageAnnotation,
+    PageFormField,
+    ResolvedImage,
+} from './pdf-renderers.js';
+
+// Re-export wrapText as public API
+export { wrapText } from './pdf-renderers.js';
 
 // ── Main Builder ─────────────────────────────────────────────────────
 
@@ -1260,7 +186,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 continue;
             }
 
-            const blockH = _estimateBlockHeight(block, enc, cw, headingsIn);
+            const blockH = estimateBlockHeight(block, enc, cw, headingsIn);
             if (blockH > remainH && pages[pages.length - 1].length > 0) {
                 pages.push([]);
                 remainH = availableH;
@@ -1329,7 +255,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             if (block.type === 'image') {
                 const idx = resolvedImages.length;
                 imageBlockMap.set(block, idx);
-                resolvedImages.push(_resolveImage(block, cw));
+                resolvedImages.push(resolveImage(block, cw));
             }
         }
     }
@@ -1375,7 +301,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
 
         // Render header template (if provided)
         if (headerTpl) {
-            const hOps = _renderPageTemplate(
+            const hOps = renderPageTemplate(
                 headerTpl, p + 1, totalPages, docTitle, dateStr,
                 y - (headerTpl.fontSize ?? DEFAULT_FONT_SIZES.ft),
                 enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren,
@@ -1420,25 +346,25 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                         headingDests[headingDestIdx].y = y;
                         headingDestIdx++;
                     }
-                    const result = _renderHeading(block, y, enc, mg.l, cw, tagCtx, documentChildren);
+                    const result = renderHeading(block, y, enc, mg.l, cw, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
                 }
                 case 'paragraph': {
-                    const result = _renderParagraph(block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren);
+                    const result = renderParagraph(block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
                 }
                 case 'list': {
-                    const result = _renderList(block, y, enc, mg.l, cw, tagCtx, documentChildren);
+                    const result = renderList(block, y, enc, mg.l, cw, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
                 }
                 case 'table': {
-                    const result = _renderTable(block, y, enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren);
+                    const result = renderTable(block, y, enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
@@ -1451,38 +377,38 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                     const imgIdx = imageBlockMap.get(block);
                     if (imgIdx !== undefined) {
                         const imgName = `/Im${imgIdx + 1}`;
-                        const result = _renderImage(resolvedImages[imgIdx], imgName, y, mg.l, cw, tagCtx, documentChildren);
+                        const result = renderImage(resolvedImages[imgIdx], imgName, y, mg.l, cw, tagCtx, documentChildren);
                         ops.push(...result.ops);
                         y = result.y;
                     }
                     break;
                 }
                 case 'link': {
-                    const result = _renderLink(block, y, enc, mg.l, cw, p, pageAnnotations, tagCtx, documentChildren);
+                    const result = renderLink(block, y, enc, mg.l, cw, p, pageAnnotations, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
                 }
                 case 'toc': {
-                    const result = _renderToc(block, headingDests, y, enc, mg.l, cw, p, pageAnnotations, tagCtx, documentChildren);
+                    const result = renderToc(block, headingDests, y, enc, mg.l, cw, p, pageAnnotations, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
                 }
                 case 'barcode': {
-                    const result = _renderBarcodeBlock(block, y, mg.l, cw, tagCtx, documentChildren);
+                    const result = renderBarcodeBlock(block, y, mg.l, cw, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
                 }
                 case 'svg': {
-                    const result = _renderSvgBlock(block, y, mg.l, cw, tagCtx, documentChildren);
+                    const result = renderSvgBlock(block, y, mg.l, cw, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
                 }
                 case 'formField': {
-                    const result = _renderFormFieldBlock(block, y, enc, mg.l, cw, p, pageFormFields, tagCtx, documentChildren);
+                    const result = renderFormFieldBlock(block, y, enc, mg.l, cw, p, pageFormFields, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
@@ -1497,7 +423,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         }
 
         // Footer
-        const ftOps = _renderPageTemplate(
+        const ftOps = renderPageTemplate(
             footerTpl, p + 1, totalPages, docTitle, dateStr,
             mg.b - 5, enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren,
         );
@@ -1782,7 +708,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 // Radio group child: pass parent context
                 const isRadioGroup = field.fieldType === 'radio' && radioGroups.has(field.name);
                 const radioCtx = isRadioGroup
-                    ? { parentObjNum: radioGroupObjNums.get(field.name)!, exportValue: field.value || 'opt' + fi }
+                    ? { parentObjNum: radioGroupObjNums.get(field.name) ?? 0, exportValue: field.value || 'opt' + fi }
                     : undefined;
 
                 const result = buildFormWidget(field, apObjNum, radioCtx);
@@ -1790,8 +716,8 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 const w = field.rect[2] - field.rect[0];
                 const h = field.rect[3] - field.rect[1];
                 if (isButton) {
-                    const yesStream = result.apYesStream!;
-                    const offStream = result.apOffStream!;
+                    const yesStream = result.apYesStream ?? '';
+                    const offStream = result.apOffStream ?? '';
                     emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum), yesStream);
                     emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum), offStream);
                 } else {
@@ -1801,7 +727,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
 
             // Emit radio group parent objects
             for (const [groupName, fieldIndices] of radioGroups) {
-                const parentObjNum = radioGroupObjNums.get(groupName)!;
+                const parentObjNum = radioGroupObjNums.get(groupName) ?? 0;
                 const childObjNums = fieldIndices.map(fi => formObjStart + formFieldObjOffsets[fi]);
                 const checkedField = fieldIndices.find(fi => pageFormFields[fi].field.checked);
                 const selectedValue = checkedField !== undefined
@@ -1940,7 +866,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 // Radio group child: pass parent context
                 const isRadioGroup = field.fieldType === 'radio' && radioGroups.has(field.name);
                 const radioCtx = isRadioGroup
-                    ? { parentObjNum: radioGroupObjNums.get(field.name)!, exportValue: field.value || 'opt' + fi }
+                    ? { parentObjNum: radioGroupObjNums.get(field.name) ?? 0, exportValue: field.value || 'opt' + fi }
                     : undefined;
 
                 const result = buildFormWidget(field, apObjNum, radioCtx);
@@ -1948,8 +874,8 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 const w = field.rect[2] - field.rect[0];
                 const h = field.rect[3] - field.rect[1];
                 if (isButton) {
-                    const yesStream = result.apYesStream!;
-                    const offStream = result.apOffStream!;
+                    const yesStream = result.apYesStream ?? '';
+                    const offStream = result.apOffStream ?? '';
                     emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum), yesStream);
                     emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum), offStream);
                 } else {
@@ -1959,7 +885,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
 
             // Emit radio group parent objects
             for (const [groupName, fieldIndices] of radioGroups) {
-                const parentObjNum = radioGroupObjNums.get(groupName)!;
+                const parentObjNum = radioGroupObjNums.get(groupName) ?? 0;
                 const childObjNums = fieldIndices.map(fi => formObjStart + formFieldObjOffsets[fi]);
                 const checkedField = fieldIndices.find(fi => pageFormFields[fi].field.checked);
                 const selectedValue = checkedField !== undefined
@@ -2077,10 +1003,8 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 fieldObjNums.push(formObjStart + formFieldObjOffsets[fi]);
             }
         }
-        let rgIdx = 0;
-        for (const _groupName of radioGroups.keys()) {
+        for (let rgIdx = 0; rgIdx < radioGroups.size; rgIdx++) {
             fieldObjNums.push(radioGroupParentStart + rgIdx);
-            rgIdx++;
         }
         acroFormStr = ` ${buildAcroFormDict(fieldObjNums, formFontObjNum)}`;
     }

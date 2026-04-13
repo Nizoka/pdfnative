@@ -34,6 +34,25 @@ export interface PdfStream {
 export type PdfDict = Map<string, PdfValue>;
 export type PdfArray = PdfValue[];
 
+/**
+ * Union of all PDF object types (ISO 32000-1 §7.3).
+ *
+ * Discriminants:
+ *  - `null`, `boolean`, `number`, `string` — JS primitives
+ *  - `PdfName` — `{ type: 'name', value }` for PDF names (/Type, /Page)
+ *  - `PdfRef` — `{ type: 'ref', num, gen }` for indirect references (5 0 R)
+ *  - `PdfStream` — `{ type: 'stream', dict, data }` for stream objects
+ *  - `PdfDict` — `Map<string, PdfValue>` for dictionaries
+ *  - `PdfArray` — `PdfValue[]` for arrays
+ *
+ * @example
+ * ```ts
+ * if (isName(val))    console.log(val.value);   // PDF name string
+ * if (isRef(val))     console.log(val.num);      // object number
+ * if (isStream(val))  console.log(val.data);     // stream bytes
+ * if (val instanceof Map) { ... }                // dictionary
+ * ```
+ */
 export type PdfValue =
     | null
     | boolean

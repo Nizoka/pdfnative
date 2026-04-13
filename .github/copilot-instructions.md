@@ -12,6 +12,7 @@ src/
 ├── core/         # PDF document assembly, text rendering, binary stream, layout constants, tagged PDF, images, annotations, encryption, compression, watermarks, barcodes, SVG, forms, signatures, streaming
 │   ├── pdf-builder.ts    # Table-centric PDF assembly + tagged mode + encryption + compression
 │   ├── pdf-document.ts   # Free-form document builder (headings, paragraphs, lists, tables, images, links, TOC, barcodes, SVG, forms)
+│   ├── pdf-renderers.ts  # Extracted block renderers, text wrapping, constants (used by pdf-document.ts)
 │   ├── pdf-assembler.ts  # Shared PDF binary assembly primitives (createPdfWriter, writeXrefTrailer)
 │   ├── encoding-context.ts # Encoding context factory (dependency inversion — moved from fonts/)
 │   ├── pdf-image.ts      # JPEG/PNG parser + PDF Image XObject builder (RGBA rejection, JPEG robustness)
@@ -46,7 +47,7 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (.js/.d.ts) — 16 scripts + TTF source files
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (18 generators, 130+ PDFs)
+scripts/          # Modular sample PDF generation (23 generators, 140+ PDFs)
 tests/            # 1513+ tests (36 files: unit/integration/fuzz/parser) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
@@ -72,10 +73,10 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (1513+ tests)
+npm run test            # vitest run (1513+ tests, 36 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
-npm run test:generate   # Generate 130+ sample PDFs → test-output/
+npm run test:generate   # Generate 140+ sample PDFs → test-output/
 npm run typecheck       # tsc --noEmit
 npm run typecheck:tests # tsc --project tsconfig.test.json --noEmit
 npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit
@@ -95,6 +96,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 
 - PDF operators are built as plain strings, not AST: `"BT /F1 10 Tf ... ET"`
 - Binary offsets use `byteLength()` helper (not `.length`) — critical for xref table
+- `pdf-renderers.ts`: extracted block renderers, text wrapping, height estimation, constants — used exclusively by `pdf-document.ts` (internal module, not re-exported from `core/index.ts`)
 - `pdf-assembler.ts`: shared binary assembly primitives (`createPdfWriter`, `writeXrefTrailer`) — used by both `pdf-builder.ts` and `pdf-document.ts` to eliminate xref/trailer duplication
 - `encoding-context.ts`: encoding context factory in `core/` (dependency inversion — `createEncodingContext()` moved from `fonts/encoding.ts` to break `fonts/ → shaping/` cycle)
 - `script-registry.ts`: centralized Unicode range constants and script predicates (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `CYRILLIC_START/END`, `GEORGIAN_START/END`, `ARMENIAN_START/END`, `BENGALI_START/END`, `TAMIL_START/END`, `isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isCyrillicCodepoint`, `isGeorgianCodepoint`, `isArmenianCodepoint`, `isBengaliCodepoint`, `isTamilCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`, `containsBengali`, `containsTamil`) — single source of truth, imported by arabic-shaper, thai-shaper, bengali-shaper, tamil-shaper, script-detect, encoding-context
