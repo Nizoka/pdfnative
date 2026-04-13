@@ -95,6 +95,18 @@ export const ARMENIAN_END = 0x058F;
 export const ARMENIAN_LIGATURES_START = 0xFB13;
 export const ARMENIAN_LIGATURES_END = 0xFB17;
 
+// ── Bengali ──────────────────────────────────────────────────────────
+
+/** Bengali Unicode block. */
+export const BENGALI_START = 0x0980;
+export const BENGALI_END = 0x09FF;
+
+// ── Tamil ────────────────────────────────────────────────────────────
+
+/** Tamil Unicode block. */
+export const TAMIL_START = 0x0B80;
+export const TAMIL_END = 0x0BFF;
+
 // ── Script Predicates ────────────────────────────────────────────────
 
 /** Check if a codepoint falls in any Arabic Unicode block. */
@@ -137,6 +149,16 @@ export function isArmenianCodepoint(cp: number): boolean {
            (cp >= ARMENIAN_LIGATURES_START && cp <= ARMENIAN_LIGATURES_END);
 }
 
+/** Check if a codepoint falls in the Bengali Unicode block. */
+export function isBengaliCodepoint(cp: number): boolean {
+    return cp >= BENGALI_START && cp <= BENGALI_END;
+}
+
+/** Check if a codepoint falls in the Tamil Unicode block. */
+export function isTamilCodepoint(cp: number): boolean {
+    return cp >= TAMIL_START && cp <= TAMIL_END;
+}
+
 // ── Text-Level Detection ─────────────────────────────────────────────
 
 /** Check if text contains Arabic characters requiring shaping. */
@@ -163,6 +185,22 @@ export function containsHebrew(text: string): boolean {
 export function containsThai(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isThaiCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Bengali characters. */
+export function containsBengali(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isBengaliCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Tamil characters. */
+export function containsTamil(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isTamilCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }

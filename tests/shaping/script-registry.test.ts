@@ -3,6 +3,10 @@ import {
     isCyrillicCodepoint,
     isGeorgianCodepoint,
     isArmenianCodepoint,
+    isBengaliCodepoint,
+    isTamilCodepoint,
+    containsBengali,
+    containsTamil,
     CYRILLIC_START, CYRILLIC_END,
     CYRILLIC_SUPPLEMENT_START, CYRILLIC_SUPPLEMENT_END,
     CYRILLIC_EXT_A_START, CYRILLIC_EXT_A_END,
@@ -11,6 +15,8 @@ import {
     GEORGIAN_SUPPLEMENT_START, GEORGIAN_SUPPLEMENT_END,
     ARMENIAN_START, ARMENIAN_END,
     ARMENIAN_LIGATURES_START, ARMENIAN_LIGATURES_END,
+    BENGALI_START, BENGALI_END,
+    TAMIL_START, TAMIL_END,
 } from '../../src/shaping/script-registry.js';
 
 describe('Cyrillic Unicode ranges', () => {
@@ -95,5 +101,55 @@ describe('Armenian Unicode ranges', () => {
         expect(isArmenianCodepoint(0x0041)).toBe(false);
         expect(isArmenianCodepoint(0x0530 - 1)).toBe(false);
         expect(isArmenianCodepoint(0x0590)).toBe(false); // Hebrew
+    });
+});
+
+describe('Bengali Unicode ranges', () => {
+    it('should have correct range boundaries', () => {
+        expect(BENGALI_START).toBe(0x0980);
+        expect(BENGALI_END).toBe(0x09FF);
+    });
+
+    it('isBengaliCodepoint should match main block', () => {
+        expect(isBengaliCodepoint(0x0995)).toBe(true); // Ka
+        expect(isBengaliCodepoint(0x09BE)).toBe(true); // aa-matra
+        expect(isBengaliCodepoint(0x09E6)).toBe(true); // digit 0
+    });
+
+    it('isBengaliCodepoint should reject non-Bengali', () => {
+        expect(isBengaliCodepoint(0x0041)).toBe(false); // Latin A
+        expect(isBengaliCodepoint(0x0B95)).toBe(false); // Tamil Ka
+        expect(isBengaliCodepoint(0x097F)).toBe(false); // below range
+    });
+
+    it('containsBengali should detect Bengali text', () => {
+        expect(containsBengali('বাংলা')).toBe(true);
+        expect(containsBengali('Hello')).toBe(false);
+        expect(containsBengali('')).toBe(false);
+    });
+});
+
+describe('Tamil Unicode ranges', () => {
+    it('should have correct range boundaries', () => {
+        expect(TAMIL_START).toBe(0x0B80);
+        expect(TAMIL_END).toBe(0x0BFF);
+    });
+
+    it('isTamilCodepoint should match main block', () => {
+        expect(isTamilCodepoint(0x0B95)).toBe(true); // Ka
+        expect(isTamilCodepoint(0x0BBE)).toBe(true); // aa-matra
+        expect(isTamilCodepoint(0x0BE6)).toBe(true); // digit 0
+    });
+
+    it('isTamilCodepoint should reject non-Tamil', () => {
+        expect(isTamilCodepoint(0x0041)).toBe(false); // Latin A
+        expect(isTamilCodepoint(0x0995)).toBe(false); // Bengali Ka
+        expect(isTamilCodepoint(0x0B7F)).toBe(false); // below range
+    });
+
+    it('containsTamil should detect Tamil text', () => {
+        expect(containsTamil('தமிழ்')).toBe(true);
+        expect(containsTamil('Hello')).toBe(false);
+        expect(containsTamil('')).toBe(false);
     });
 });

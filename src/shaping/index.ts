@@ -5,6 +5,8 @@
  */
 
 export { shapeThaiText, buildThaiClusters } from './thai-shaper.js';
+export { shapeBengaliText, buildBengaliClusters } from './bengali-shaper.js';
+export { shapeTamilText, buildTamilClusters } from './tamil-shaper.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './script-detect.js';
 export { splitTextByFont } from './multi-font.js';
 export type { FontRun } from './multi-font.js';
@@ -27,7 +29,11 @@ export {
     CYRILLIC_EXT_A_START, CYRILLIC_EXT_A_END, CYRILLIC_EXT_B_START, CYRILLIC_EXT_B_END,
     GEORGIAN_START, GEORGIAN_END, GEORGIAN_SUPPLEMENT_START, GEORGIAN_SUPPLEMENT_END,
     ARMENIAN_START, ARMENIAN_END, ARMENIAN_LIGATURES_START, ARMENIAN_LIGATURES_END,
+    BENGALI_START, BENGALI_END,
+    TAMIL_START, TAMIL_END,
     isArabicCodepoint, isHebrewCodepoint, isThaiCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint,
+    isBengaliCodepoint, isTamilCodepoint,
     containsArabic, containsHebrew, containsThai,
+    containsBengali, containsTamil,
 } from './script-registry.js';

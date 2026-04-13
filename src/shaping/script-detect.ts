@@ -14,6 +14,7 @@ import {
     CJK_COMPAT_START, CJK_COMPAT_END,
     isArabicCodepoint, isHebrewCodepoint, isThaiCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint,
+    isBengaliCodepoint, isTamilCodepoint,
 } from './script-registry.js';
 
 /**
@@ -21,7 +22,7 @@ import {
  * Latin-script languages using Helvetica built-in don't need embedding.
  */
 export function needsUnicodeFont(lang: string): boolean {
-    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy'].includes(lang);
+    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'bn', 'ta'].includes(lang);
 }
 
 /**
@@ -55,6 +56,10 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             if (isGeorgianCodepoint(cp)) { needed.add('ka'); continue; }
             // Armenian → 'hy'
             if (isArmenianCodepoint(cp)) { needed.add('hy'); continue; }
+            // Bengali → 'bn'
+            if (isBengaliCodepoint(cp)) { needed.add('bn'); continue; }
+            // Tamil → 'ta'
+            if (isTamilCodepoint(cp)) { needed.add('ta'); continue; }
             // Hiragana / Katakana → 'ja'
             if (cp >= HIRAGANA_START && cp <= KATAKANA_END) { needed.add('ja'); continue; }
             // Hangul Syllables + Jamo + Compat Jamo → 'ko'
@@ -108,6 +113,10 @@ export function detectCharLang(cp: number): string | null {
     if (isGeorgianCodepoint(cp)) return 'ka';
     // Armenian
     if (isArmenianCodepoint(cp)) return 'hy';
+    // Bengali
+    if (isBengaliCodepoint(cp)) return 'bn';
+    // Tamil
+    if (isTamilCodepoint(cp)) return 'ta';
     // Japanese Kana
     if (cp >= HIRAGANA_START && cp <= KATAKANA_END) return 'ja';
     // Korean Hangul
