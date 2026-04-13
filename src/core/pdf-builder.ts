@@ -27,7 +27,7 @@ import { createEncodingContext } from './encoding-context.js';
 import { truncate } from '../fonts/encoding.js';
 import { base64ToByteString, buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { subsetTTF } from '../fonts/font-subsetter.js';
-import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum } from './pdf-text.js';
+import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
 import { toBytes } from './pdf-stream.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
@@ -358,8 +358,12 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
         ? 5 + fontEntries.length * 5 + wmExtraObjs
         : 5 + wmExtraObjs;
 
+    // Map page object numbers to /StructParents values for ParentTree (ISO 32000-1 §14.7.4.4)
+    const pageObjToStructParents = new Map<number, number>();
+
     for (let p = 0; p < totalPages; p++) {
         const pageObjNum = prePageObjStart + p * 2;
+        if (tagged) pageObjToStructParents.set(pageObjNum, p);
         const tagCtx: TagContext | undefined = tagged && mcidAlloc
             ? { tagged: true, mcidAlloc, pageObjNum, structChildren: [] }
             : undefined;
@@ -678,9 +682,8 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     const isoDate = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}` +
         `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
     const infoTitle = params.docTitle || title || '';
-    const escapedTitle = infoTitle.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
     emitObj(infoObjNum,
-        `<< /Title (${escapedTitle}) /Producer (pdfnative) /CreationDate (${pdfDate}) >>`);
+        `<< /Title ${encodePdfTextString(infoTitle)} /Producer (pdfnative) /CreationDate (${pdfDate}) >>`);
 
     let totalObjs = infoObjNum;
 
@@ -694,7 +697,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
         // Build document structure tree
         const documentEl: StructElement = { type: 'Document', children: documentChildren };
         const treeStart = totalObjs + 1;
-        const tree = buildStructureTree(documentEl, treeStart);
+        const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
 
         for (const [objNum, content] of tree.objects) {
             emitObj(objNum, content);

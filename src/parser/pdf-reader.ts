@@ -11,7 +11,7 @@
  */
 
 import { createTokenizer } from './pdf-tokenizer.js';
-import { parseValue, parseIndirectObject, isDict, isRef, isStream, isArray, dictGetNum } from './pdf-object-parser.js';
+import { parseValue, parseIndirectObject, isDict, isRef, isName, isStream, isArray, dictGetNum, dictGetName } from './pdf-object-parser.js';
 import type { PdfValue, PdfDict, PdfRef, PdfStream } from './pdf-object-parser.js';
 import { parseXrefTable } from './pdf-xref-parser.js';
 import type { XrefTable } from './pdf-xref-parser.js';
@@ -143,9 +143,10 @@ export function openPdf(bytes: Uint8Array): PdfReader {
 
     function decodeStreamData(stream: PdfStream): Uint8Array {
         let data = stream.data;
+        const filterName = dictGetName(stream.dict, 'Filter');
         const filter = stream.dict.get('Filter');
 
-        if (filter === 'FlateDecode') {
+        if (filterName === 'FlateDecode') {
             data = inflateSync(data);
             // Apply predictor if specified
             const decodeParms = stream.dict.get('DecodeParms');
@@ -158,7 +159,7 @@ export function openPdf(bytes: Uint8Array): PdfReader {
         } else if (filter !== undefined && isArray(filter)) {
             // Multi-filter chain — apply in order
             for (const f of filter) {
-                if (f === 'FlateDecode') {
+                if (isName(f) && f.value === 'FlateDecode') {
                     data = inflateSync(data);
                 }
                 // Other filters (ASCII85Decode, etc.) can be added later
@@ -202,7 +203,7 @@ function flattenPageTree(
     resolve: (val: PdfValue) => PdfValue,
     pages: PdfDict[],
 ): void {
-    const type = node.get('Type');
+    const type = dictGetName(node, 'Type');
     if (type === 'Page') {
         pages.push(node);
         return;
@@ -242,7 +243,7 @@ function resolveCompressedObject(
 
     // Decode stream data
     let data = streamObj.data;
-    const filter = streamObj.dict.get('Filter');
+    const filter = dictGetName(streamObj.dict, 'Filter');
     if (filter === 'FlateDecode') {
         data = inflateSync(data);
     }

@@ -230,3 +230,48 @@ export function txtCTagged(
     const content = txtC(str, leftX, y, font, sz, colW, enc);
     return wrapSpan(content, str, mcid);
 }
+
+/**
+ * Encode a string for a PDF /Info text string entry (ISO 32000-1 §7.9.2).
+ *
+ * If all codepoints fit PDFDocEncoding (≤ U+00FF, excluding undefined slots),
+ * returns an escaped PDF literal string `(...)`.
+ * Otherwise returns a UTF-16BE hex string `<FEFF...>`.
+ */
+export function encodePdfTextString(str: string): string {
+    if (canPDFDocEncode(str)) {
+        const escaped = str
+            .replace(/\\/g, '\\\\')
+            .replace(/\(/g, '\\(')
+            .replace(/\)/g, '\\)');
+        return `(${escaped})`;
+    }
+    // UTF-16BE with BOM
+    const codes: string[] = ['FEFF'];
+    for (let i = 0; i < str.length; i++) {
+        const cp = str.codePointAt(i)!;
+        if (cp > 0xFFFF) {
+            // Surrogate pair
+            const hi = 0xD800 + ((cp - 0x10000) >> 10);
+            const lo = 0xDC00 + ((cp - 0x10000) & 0x3FF);
+            codes.push(hi.toString(16).toUpperCase().padStart(4, '0'));
+            codes.push(lo.toString(16).toUpperCase().padStart(4, '0'));
+            i++; // skip surrogate pair
+        } else {
+            codes.push(cp.toString(16).toUpperCase().padStart(4, '0'));
+        }
+    }
+    return `<${codes.join('')}>`;
+}
+
+/** PDFDocEncoding undefined slots (ISO 32000-1 Table D.2): bytes with no defined character. */
+const PDF_DOC_UNDEF = new Set([0x7F, 0x80, 0xAD]);
+
+function canPDFDocEncode(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        const cp = str.charCodeAt(i);
+        if (cp > 0xFF) return false;
+        if (PDF_DOC_UNDEF.has(cp)) return false;
+    }
+    return true;
+}

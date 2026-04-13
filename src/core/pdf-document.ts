@@ -41,7 +41,7 @@ import { createEncodingContext } from './encoding-context.js';
 import { truncate, helveticaWidth } from '../fonts/encoding.js';
 import { base64ToByteString, buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { subsetTTF } from '../fonts/font-subsetter.js';
-import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum } from './pdf-text.js';
+import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
 import { toBytes } from './pdf-stream.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
@@ -1360,8 +1360,12 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const pageStreams: string[] = [];
     let headingDestIdx = 0;
 
+    // Map page object numbers to /StructParents values for ParentTree (ISO 32000-1 §14.7.4.4)
+    const pageObjToStructParents = new Map<number, number>();
+
     for (let p = 0; p < totalPages; p++) {
         const pageObjNum = prePageObjStart + p * 2;
+        if (tagged) pageObjToStructParents.set(pageObjNum, p);
         const tagCtx: TagContext | undefined = tagged && mcidAlloc
             ? { tagged: true, mcidAlloc, pageObjNum, structChildren: [] }
             : undefined;
@@ -1980,20 +1984,16 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const isoDate = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}` +
         `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
     const infoTitle = params.title ?? '';
-    const escapedTitle = infoTitle.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 
-    const metaParts: string[] = [`/Title (${escapedTitle})`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];
+    const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];
     if (params.metadata?.author) {
-        const a = params.metadata.author.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-        metaParts.push(`/Author (${a})`);
+        metaParts.push(`/Author ${encodePdfTextString(params.metadata.author)}`);
     }
     if (params.metadata?.subject) {
-        const s = params.metadata.subject.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-        metaParts.push(`/Subject (${s})`);
+        metaParts.push(`/Subject ${encodePdfTextString(params.metadata.subject)}`);
     }
     if (params.metadata?.keywords) {
-        const k = params.metadata.keywords.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-        metaParts.push(`/Keywords (${k})`);
+        metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
     }
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
@@ -2008,7 +2008,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     if (tagged) {
         const documentEl: StructElement = { type: 'Document', children: documentChildren };
         const treeStart = totalObjs + 1;
-        const tree = buildStructureTree(documentEl, treeStart);
+        const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
 
         for (const [objNum, content] of tree.objects) {
             emitObj(objNum, content);

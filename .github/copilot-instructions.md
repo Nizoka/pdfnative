@@ -181,7 +181,11 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - PDF xref parser: `parseXref()` handles both table and stream xref formats, follows `/Prev` chain
 - PDF reader: `PdfReader` class — `open(bytes)`, `getPage(n)`, `getPageCount()`, `getMetadata()`, `decodeStream()`
 - PDF modifier: `PdfModifier` class — `addPage()`, `removePage()`, `setMetadata()`, `save()` with incremental `/Prev` chain
-- Parser types: `PdfValue`, `PdfDict`, `PdfArray`, `PdfStream`, `PdfRef` — discriminated union for type-safe parsing
+- Parser types: `PdfValue`, `PdfName`, `PdfDict`, `PdfArray`, `PdfStream`, `PdfRef` — discriminated union for type-safe parsing
+- PdfName type: `{ type: 'name', value: string }` — distinguishes PDF names from string literals (ISO 32000-1 §7.3.4-7.3.5)
+- Name helpers: `isName(v)` type guard, `nameValue(v)` extractor, `dictGetName(dict, key)` returns string value of PdfName
+- /Info text strings: `encodePdfTextString(str)` — PDFDocEncoding literal `(...)` or UTF-16BE hex `<FEFF...>` (ISO 32000-1 §7.9.2)
+- ParentTree: per-page arrays keyed by `/StructParents` value (ISO 32000-1 §14.7.4.4); MCIDs restart at 0 per page
 - Bengali shaping: `shapeBengaliText()` — GSUB conjunct formation + GPOS mark positioning via `bengali-shaper.ts`
 - Tamil shaping: `shapeTamilText()` — GSUB substitution + split vowel decomposition via `tamil-shaper.ts`
 

@@ -11,7 +11,7 @@
  */
 
 import { createTokenizer } from './pdf-tokenizer.js';
-import { parseValue, isDict } from './pdf-object-parser.js';
+import { parseValue, isDict, dictGetName } from './pdf-object-parser.js';
 import type { PdfDict, PdfValue, PdfRef } from './pdf-object-parser.js';
 import { inflateSync } from './pdf-inflate.js';
 
@@ -150,13 +150,13 @@ function parseXrefStream(buf: Uint8Array, offset: number): { entries: Map<number
     }
 
     const dict = val.dict;
-    const typeVal = dict.get('Type');
+    const typeVal = dictGetName(dict, 'Type');
     if (typeVal !== 'XRef') throw new Error('xref stream: /Type must be /XRef');
 
     // Decode stream data
     let streamData = val.data;
-    const filter = dict.get('Filter');
-    if (filter === 'FlateDecode') {
+    const filterName = dictGetName(dict, 'Filter');
+    if (filterName === 'FlateDecode') {
         streamData = inflateSync(streamData);
     }
 

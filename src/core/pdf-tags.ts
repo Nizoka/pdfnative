@@ -88,6 +88,7 @@ export interface MCRef {
 
 /**
  * MCID allocator — assigns sequential IDs per page for marked content.
+ * MCIDs restart at 0 for each page (ISO 32000-1 §14.7.4.4).
  *
  * @returns Allocator with next(pageObjNum) and getPageMCIDs() methods
  */
@@ -95,16 +96,17 @@ export function createMCIDAllocator(): {
     next(pageObjNum: number): number;
     getPageMCIDs(): Map<number, number[]>;
 } {
-    let counter = 0;
+    const pageCounters = new Map<number, number>();
     const pageMCIDs = new Map<number, number[]>();
 
     return {
         next(pageObjNum: number): number {
-            const mcid = counter++;
+            const counter = pageCounters.get(pageObjNum) ?? 0;
+            pageCounters.set(pageObjNum, counter + 1);
             const list = pageMCIDs.get(pageObjNum);
-            if (list) list.push(mcid);
-            else pageMCIDs.set(pageObjNum, [mcid]);
-            return mcid;
+            if (list) list.push(counter);
+            else pageMCIDs.set(pageObjNum, [counter]);
+            return counter;
         },
         getPageMCIDs() { return pageMCIDs; },
     };
@@ -117,14 +119,19 @@ export function createMCIDAllocator(): {
  * Structure (ISO 32000-1 §14.7.2):
  *   StructTreeRoot → Document → [Table → TR → [TH|TD] ...] + [P] ...
  *
+ * ParentTree (ISO 32000-1 §14.7.4.4):
+ *   NumberTree keyed by /StructParents value → array of struct element refs
+ *   indexed by MCID within that page.
+ *
  * @param root - Root structure element (/Document)
  * @param startObjNum - First available object number
- * @param parentTreeObjNum - Object number reserved for the ParentTree
+ * @param pageObjToStructParents - Map from page object number to /StructParents value
  * @returns { objects, structTreeRootObjNum, parentTreeObjNum }
  */
 export function buildStructureTree(
     root: StructElement,
     startObjNum: number,
+    pageObjToStructParents?: ReadonlyMap<number, number>,
 ): { objects: [number, string][]; structTreeRootObjNum: number; parentTreeObjNum: number; totalObjects: number } {
     const objects: [number, string][] = [];
     let nextObj = startObjNum;
@@ -146,26 +153,57 @@ export function buildStructureTree(
         }
     }
 
-    // Build ParentTree number tree — maps MCID → struct element obj ref
-    const parentEntries: [number, number][] = [];
-    collectParentEntries(root, parentEntries);
+    // Build ParentTree number tree (ISO 32000-1 §14.7.4.4)
+    // Collect MCRef→parent struct element mapping, grouped by page
+    const pageParentMap = new Map<number, Map<number, number>>(); // pageObjNum → (mcid → structElemObjNum)
+    collectPageParents(root, pageParentMap);
 
-    function collectParentEntries(el: StructElement, entries: [number, number][]): void {
+    function collectPageParents(el: StructElement, map: Map<number, Map<number, number>>): void {
         for (const child of el.children) {
             if ('type' in child) {
-                collectParentEntries(child as StructElement, entries);
+                collectPageParents(child as StructElement, map);
             } else {
-                // MCRef
                 const ref = child as MCRef;
-                entries.push([ref.mcid, el.objNum ?? 0]);
+                let pageMap = map.get(ref.pageObjNum);
+                if (!pageMap) {
+                    pageMap = new Map();
+                    map.set(ref.pageObjNum, pageMap);
+                }
+                pageMap.set(ref.mcid, el.objNum ?? 0);
             }
         }
     }
 
-    parentEntries.sort((a, b) => a[0] - b[0]);
-    const numsArray = parentEntries.map(([mcid, objNum]) => `${mcid} ${objNum} 0 R`).join(' ');
-    objects.push([parentTreeObjNum,
-        `<< /Type /NumberTree /Nums [${numsArray}] >>`]);
+    if (pageObjToStructParents && pageObjToStructParents.size > 0) {
+        // Per-page arrays: /Nums [structParents0 [ref ref ...] structParents1 [ref ref ...] ...]
+        const numsParts: string[] = [];
+        const sorted = [...pageObjToStructParents.entries()].sort((a, b) => a[1] - b[1]);
+        for (const [pageObjNum, structParents] of sorted) {
+            const pageMap = pageParentMap.get(pageObjNum);
+            if (pageMap) {
+                const maxMcid = Math.max(...pageMap.keys());
+                const refs: string[] = [];
+                for (let i = 0; i <= maxMcid; i++) {
+                    refs.push(`${pageMap.get(i) ?? 0} 0 R`);
+                }
+                numsParts.push(`${structParents} [${refs.join(' ')}]`);
+            }
+        }
+        objects.push([parentTreeObjNum,
+            `<< /Type /NumberTree /Nums [${numsParts.join(' ')}] >>`]);
+    } else {
+        // Flat fallback for backward compatibility
+        const parentEntries: [number, number][] = [];
+        for (const [, pageMap] of pageParentMap) {
+            for (const [mcid, objNum] of pageMap) {
+                parentEntries.push([mcid, objNum]);
+            }
+        }
+        parentEntries.sort((a, b) => a[0] - b[0]);
+        const numsArray = parentEntries.map(([mcid, objNum]) => `${mcid} ${objNum} 0 R`).join(' ');
+        objects.push([parentTreeObjNum,
+            `<< /Type /NumberTree /Nums [${numsArray}] >>`]);
+    }
 
     // StructTreeRoot object
     objects.push([structTreeRootObjNum,

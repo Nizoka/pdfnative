@@ -4,7 +4,7 @@
  */
 
 export { buildPDF, buildPDFBytes } from './pdf-builder.js';
-export { txt, txtR, txtC, txtShaped, txtTagged, txtRTagged, txtCTagged, fmtNum } from './pdf-text.js';
+export { txt, txtR, txtC, txtShaped, txtTagged, txtRTagged, txtCTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
 export { toBytes, slugify, downloadBlob } from './pdf-stream.js';
 export {
     PG_W, PG_H, DEFAULT_MARGINS, DEFAULT_CW,

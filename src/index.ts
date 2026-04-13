@@ -181,6 +181,9 @@ export {
     computeColumnPositions, resolveLayout, resolveTemplate,
 } from './core/pdf-layout.js';
 
+// ── Core — Text & String Encoding ───────────────────────────────────
+export { encodePdfTextString } from './core/pdf-text.js';
+
 // ── Fonts — Encoding & Loading ──────────────────────────────────────
 export { toWinAnsi, pdfString, truncate, helveticaWidth } from './fonts/encoding.js';
 export { createEncodingContext } from './core/encoding-context.js';
@@ -209,10 +212,10 @@ export { shapeArabicText } from './shaping/arabic-shaper.js';
 // ── Parser — PDF Reading & Modification ─────────────────────────────
 export type { PdfToken, TokenType, PdfTokenizer } from './parser/pdf-tokenizer.js';
 export { createTokenizer } from './parser/pdf-tokenizer.js';
-export type { PdfRef, PdfStream, PdfDict as ParsedDict, PdfArray as ParsedArray, PdfValue, PdfIndirectObject } from './parser/pdf-object-parser.js';
+export type { PdfRef, PdfName, PdfStream, PdfDict as ParsedDict, PdfArray as ParsedArray, PdfValue, PdfIndirectObject } from './parser/pdf-object-parser.js';
 export {
-    isRef, isStream, isDict, isArray,
-    dictGet, dictGetName, dictGetNum, dictGetRef, dictGetDict, dictGetArray,
+    isRef, isName, isStream, isDict, isArray,
+    dictGet, dictGetName, nameValue, dictGetNum, dictGetRef, dictGetDict, dictGetArray,
     parseValue, parseIndirectObject,
 } from './parser/pdf-object-parser.js';
 export type { XrefEntry, XrefTable } from './parser/pdf-xref-parser.js';

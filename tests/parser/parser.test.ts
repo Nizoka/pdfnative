@@ -15,10 +15,10 @@ import {
 import type { PdfToken } from '../../src/parser/pdf-tokenizer.js';
 import {
     parseValue, parseIndirectObject,
-    isRef, isStream, isDict, isArray,
+    isRef, isName, isStream, isDict, isArray,
     dictGet, dictGetName, dictGetNum, dictGetRef, dictGetDict, dictGetArray,
 } from '../../src/parser/pdf-object-parser.js';
-import type { PdfValue, PdfDict, PdfRef, PdfStream } from '../../src/parser/pdf-object-parser.js';
+import type { PdfValue, PdfName, PdfDict, PdfRef, PdfStream } from '../../src/parser/pdf-object-parser.js';
 import {
     findStartxref, parseXrefTable,
     getTrailerValue, getTrailerRef,
@@ -316,7 +316,9 @@ describe('pdf-object-parser', () => {
         });
 
         it('parses names', () => {
-            expect(parse('/Type')).toBe('Type');
+            const val = parse('/Type');
+            expect(isName(val)).toBe(true);
+            expect((val as PdfName).value).toBe('Type');
         });
 
         it('parses strings', () => {
@@ -351,7 +353,7 @@ describe('pdf-object-parser', () => {
             const val = parse('[1 /Name (string) true null]');
             expect(isArray(val)).toBe(true);
             const arr = val as PdfValue[];
-            expect(arr).toEqual([1, 'Name', 'string', true, null]);
+            expect(arr).toEqual([1, { type: 'name', value: 'Name' }, 'string', true, null]);
         });
 
         it('parses nested arrays', () => {
@@ -571,7 +573,7 @@ describe('pdf-reader', () => {
 
         it('page has /Type /Page', () => {
             const page = reader.getPage(0);
-            expect(page.get('Type')).toBe('Page');
+            expect(dictGetName(page, 'Type')).toBe('Page');
         });
 
         it('page has /MediaBox', () => {
@@ -592,7 +594,7 @@ describe('pdf-reader', () => {
 
         it('getCatalog returns dict with /Type /Catalog', () => {
             const catalog = reader.getCatalog();
-            expect(catalog.get('Type')).toBe('Catalog');
+            expect(dictGetName(catalog, 'Type')).toBe('Catalog');
         });
 
         it('getInfo returns the info dictionary', () => {
@@ -673,7 +675,7 @@ describe('pdf-reader', () => {
 
         it('reads page structure from compressed PDF', () => {
             const page = reader.getPage(0);
-            expect(page.get('Type')).toBe('Page');
+            expect(dictGetName(page, 'Type')).toBe('Page');
         });
     });
 
@@ -702,7 +704,7 @@ describe('pdf-reader', () => {
         it('all pages have /Type /Page', () => {
             for (let i = 0; i < reader.pageCount; i++) {
                 const page = reader.getPage(i);
-                expect(page.get('Type')).toBe('Page');
+                expect(dictGetName(page, 'Type')).toBe('Page');
             }
         });
     });
@@ -842,7 +844,7 @@ describe('round-trip integration', () => {
 
         expect(reader.pageCount).toBeGreaterThanOrEqual(1);
         const catalog = reader.getCatalog();
-        expect(catalog.get('Type')).toBe('Catalog');
+        expect(dictGetName(catalog, 'Type')).toBe('Catalog');
         const info = reader.getInfo();
         expect(info).not.toBeNull();
     });
@@ -853,7 +855,7 @@ describe('round-trip integration', () => {
 
         expect(reader.pageCount).toBeGreaterThanOrEqual(1);
         const catalog = reader.getCatalog();
-        expect(catalog.get('Type')).toBe('Catalog');
+        expect(dictGetName(catalog, 'Type')).toBe('Catalog');
     });
 
     it('generate → parse → modify → re-parse', () => {
@@ -863,8 +865,8 @@ describe('round-trip integration', () => {
 
         // Add a custom annotation dict
         const annot: PdfDict = new Map();
-        annot.set('Type', 'Annot');
-        annot.set('Subtype', 'Text');
+        annot.set('Type', { type: 'name', value: 'Annot' } as PdfName);
+        annot.set('Subtype', { type: 'name', value: 'Text' } as PdfName);
         annot.set('Contents', 'Test annotation');
         const annotNum = mod.addObject(annot);
 
@@ -875,7 +877,7 @@ describe('round-trip integration', () => {
         const resolvedAnnot = reader2.getObject(annotNum);
         expect(isDict(resolvedAnnot)).toBe(true);
         if (isDict(resolvedAnnot)) {
-            expect(resolvedAnnot.get('Subtype')).toBe('Text');
+            expect(dictGetName(resolvedAnnot, 'Subtype')).toBe('Text');
             expect(resolvedAnnot.get('Contents')).toBe('Test annotation');
         }
     });
@@ -886,7 +888,7 @@ describe('round-trip integration', () => {
 
         // Basic structure should still be parseable
         expect(reader.pageCount).toBeGreaterThanOrEqual(1);
-        expect(reader.getCatalog().get('Type')).toBe('Catalog');
+        expect(dictGetName(reader.getCatalog(), 'Type')).toBe('Catalog');
     });
 
     it('document PDF with multiple block types → parse', () => {

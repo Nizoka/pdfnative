@@ -11,7 +11,7 @@
 
 import type { PdfReader } from './pdf-reader.js';
 import type { PdfValue, PdfDict, PdfArray, PdfStream } from './pdf-object-parser.js';
-import { isRef, isDict, isArray, isStream } from './pdf-object-parser.js';
+import { isRef, isName, isDict, isArray, isStream } from './pdf-object-parser.js';
 import type { XrefEntry } from './pdf-xref-parser.js';
 import { findStartxref } from './pdf-xref-parser.js';
 
@@ -175,27 +175,13 @@ function serializeValue(val: PdfValue): string {
         if (Number.isInteger(val)) return String(val);
         return val.toFixed(4).replace(/\.?0+$/, '');
     }
-    if (typeof val === 'string') return serializeName(val);
+    if (typeof val === 'string') return `(${escapePdfStr(val)})`;
+    if (isName(val)) return `/${val.value}`;
     if (isRef(val)) return `${val.num} ${val.gen} R`;
     if (isArray(val)) return serializeArray(val);
     if (isDict(val)) return serializeDict(val);
     if (isStream(val)) return serializeDict(val.dict); // Streams handled at object level
     return 'null';
-}
-
-function serializeName(name: string): string {
-    // Check if it looks like a PDF name (no spaces, printable ASCII)
-    let isName = true;
-    for (let i = 0; i < name.length; i++) {
-        const c = name.charCodeAt(i);
-        if (c < 0x21 || c > 0x7E || c === 0x28 || c === 0x29) {
-            isName = false;
-            break;
-        }
-    }
-    if (isName && name.length > 0) return `/${name}`;
-    // Looks like a string value
-    return `(${escapePdfStr(name)})`;
 }
 
 function escapePdfStr(s: string): string {

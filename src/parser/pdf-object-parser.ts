@@ -20,6 +20,11 @@ export interface PdfRef {
     readonly gen: number;
 }
 
+export interface PdfName {
+    readonly type: 'name';
+    readonly value: string;
+}
+
 export interface PdfStream {
     readonly type: 'stream';
     readonly dict: PdfDict;
@@ -34,6 +39,7 @@ export type PdfValue =
     | boolean
     | number
     | string
+    | PdfName
     | PdfRef
     | PdfArray
     | PdfDict
@@ -43,6 +49,10 @@ export type PdfValue =
 
 export function isRef(v: PdfValue): v is PdfRef {
     return v !== null && typeof v === 'object' && 'type' in v && v.type === 'ref';
+}
+
+export function isName(v: PdfValue | undefined): v is PdfName {
+    return v !== null && v !== undefined && typeof v === 'object' && 'type' in v && v.type === 'name';
 }
 
 export function isStream(v: PdfValue): v is PdfStream {
@@ -63,7 +73,13 @@ export function dictGet(dict: PdfDict, key: string): PdfValue | undefined {
 
 export function dictGetName(dict: PdfDict, key: string): string | undefined {
     const v = dict.get(key);
+    if (isName(v)) return v.value;
     return typeof v === 'string' ? v : undefined;
+}
+
+/** Extract the string value from a PdfName, or undefined if not a name. */
+export function nameValue(v: PdfValue): string | undefined {
+    return isName(v) ? v.value : undefined;
 }
 
 export function dictGetNum(dict: PdfDict, key: string): number | undefined {
@@ -116,7 +132,7 @@ export function parseValue(tok: PdfTokenizer): PdfValue {
         case 'string':
             return t.value as string;
         case 'name':
-            return t.value as string;
+            return { type: 'name', value: t.value as string } as PdfName;
         case 'keyword':
             switch (t.value) {
                 case 'true': return true;

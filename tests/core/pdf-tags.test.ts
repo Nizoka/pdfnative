@@ -81,7 +81,7 @@ describe('createMCIDAllocator', () => {
         const alloc = createMCIDAllocator();
         expect(alloc.next(10)).toBe(0);
         expect(alloc.next(10)).toBe(1);
-        expect(alloc.next(12)).toBe(2);
+        expect(alloc.next(12)).toBe(0); // per-page: resets for new page
     });
 
     it('should track MCIDs per page', () => {
@@ -91,7 +91,7 @@ describe('createMCIDAllocator', () => {
         alloc.next(12);
         const pageMCIDs = alloc.getPageMCIDs();
         expect(pageMCIDs.get(10)).toEqual([0, 1]);
-        expect(pageMCIDs.get(12)).toEqual([2]);
+        expect(pageMCIDs.get(12)).toEqual([0]); // per-page: starts at 0
     });
 });
 
