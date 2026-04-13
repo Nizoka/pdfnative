@@ -25,6 +25,11 @@ import { generate as generateWatermarks } from './generators/watermarks.js';
 import { generate as generateHeadersFooters } from './generators/headers-footers.js';
 import { generate as generatePageSizes } from './generators/page-sizes.js';
 import { generate as generateTocShowcase } from './generators/toc-showcase.js';
+import { generate as generateSvgShowcase } from './generators/svg-showcase.js';
+import { generate as generateFormShowcase } from './generators/form-showcase.js';
+import { generate as generateDigitalSignature } from './generators/digital-signature.js';
+import { generate as generateStreaming } from './generators/streaming-showcase.js';
+import { generate as generateParser } from './generators/parser-showcase.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -38,7 +43,7 @@ async function generateAll(): Promise<void> {
     // ── Diverse use-cases (12 non-financial tables) ──────────────
     await generateDiverse(ctx);
 
-    // ── Alphabet / character coverage (11 scripts) ───────────────
+    // ── Alphabet / character coverage (16 scripts) ───────────────
     await generateAlphabet(ctx);
 
     // ── PDF/A variants (4 conformance levels) ────────────────────
@@ -70,6 +75,21 @@ async function generateAll(): Promise<void> {
 
     // ── Table of Contents showcase ───────────────────────────────
     await generateTocShowcase(ctx);
+
+    // ── SVG path rendering showcase ──────────────────────────────
+    await generateSvgShowcase(ctx);
+
+    // ── AcroForm interactive fields showcase ─────────────────────
+    await generateFormShowcase(ctx);
+
+    // ── Digital signature showcase (RSA + ECDSA) ─────────────────
+    await generateDigitalSignature(ctx);
+
+    // ── Streaming output showcase (chunked emission) ─────────────
+    await generateStreaming(ctx);
+
+    // ── PDF parser & modifier showcase (round-trip) ──────────────
+    await generateParser(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

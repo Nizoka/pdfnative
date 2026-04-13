@@ -24,6 +24,8 @@ export function registerAllFonts(): void {
         ru: fl(() => import('../../fonts/noto-cyrillic-data.js')),
         ka: fl(() => import('../../fonts/noto-georgian-data.js')),
         hy: fl(() => import('../../fonts/noto-armenian-data.js')),
+        bn: fl(() => import('../../fonts/noto-bengali-data.js')),
+        ta: fl(() => import('../../fonts/noto-tamil-data.js')),
     });
 }
 
@@ -34,7 +36,7 @@ export async function loadFontEntries(lang: string, fontRef = '/F3'): Promise<Fo
 }
 
 export async function loadMultiFontEntries(): Promise<FontEntry[]> {
-    const langs = ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy'];
+    const langs = ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'bn', 'ta'];
     const entries: FontEntry[] = [];
     for (let i = 0; i < langs.length; i++) {
         const fd = await loadFontData(langs[i]);

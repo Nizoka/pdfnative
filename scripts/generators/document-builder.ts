@@ -121,7 +121,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                         { cells: ['Line break', 'Word-level', 'Word-level', 'Character-level'], type: 'credit', pointed: true },
                     ] },
                     { type: 'heading', text: 'Conclusion – الخلاصة – 結論', level: 2 },
-                    { type: 'paragraph', text: 'pdfnative handles 11 scripts with zero external dependencies, full BiDi support, and OpenType shaping. All content above is rendered from a single DocumentParams object with shared fontEntries.' },
+                    { type: 'paragraph', text: 'pdfnative handles 16 scripts with zero external dependencies, full BiDi support, and OpenType shaping. All content above is rendered from a single DocumentParams object with shared fontEntries.' },
                 ],
                 footerText: 'pdfnative – Multi-language document sample',
                 fontEntries: [
@@ -192,6 +192,12 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Thai with complex script ─────────────────────────────────
     await generateThaiDoc(ctx);
+
+    // ── Bengali with Indic shaping ───────────────────────────────
+    await generateBengaliDoc(ctx);
+
+    // ── Tamil with Indic shaping ─────────────────────────────────
+    await generateTamilDoc(ctx);
 
     // ── All block types showcase ─────────────────────────────────
     generateShowcase(ctx);
@@ -360,6 +366,66 @@ async function generateThaiDoc(ctx: GenerateContext): Promise<void> {
     ctx.writeSafe(resolve(ctx.outputDir, 'doc-thai.pdf'), 'doc-thai.pdf', buildDocumentPDFBytes(params));
 }
 
+async function generateBengaliDoc(ctx: GenerateContext): Promise<void> {
+    const bnFd = await loadFontData('bn');
+    if (!bnFd) return;
+    const params: DocumentParams = {
+        title: '\u09AC\u09BE\u0982\u09B2\u09BE \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0 \u2013 \u09AA\u09CD\u09B0\u09A4\u09BF\u09AC\u09C7\u09A6\u09A8',
+        blocks: [
+            { type: 'heading', text: '\u09AA\u09CD\u09B0\u09A5\u09AE \u0985\u09A7\u09CD\u09AF\u09BE\u09AF\u09BC: \u09AD\u09C2\u09AE\u09BF\u0995\u09BE', level: 1 },
+            { type: 'paragraph', text: '\u098F\u099F\u09BF pdfnative \u09B2\u09BE\u0987\u09AC\u09CD\u09B0\u09C7\u09B0\u09BF\u09B0 \u09AC\u09BE\u0982\u09B2\u09BE \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0 \u09A8\u09BF\u09B0\u09CD\u09AE\u09BE\u09A3\u09C7\u09B0 \u09AA\u09CD\u09B0\u09A6\u09B0\u09CD\u09B6\u09A8\u0964 \u098F\u0987 \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0\u09C7 \u09B6\u09BF\u09B0\u09CB\u09A8\u09BE\u09AE, \u0985\u09A8\u09C1\u099A\u09CD\u099B\u09C7\u09A6, \u09A4\u09BE\u09B2\u09BF\u0995\u09BE \u098F\u09AC\u0982 \u09A4\u09BE\u09B2\u09BF\u0995\u09BE \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964' },
+            { type: 'heading', text: '\u09AA\u09CD\u09B0\u09A7\u09BE\u09A8 \u09AC\u09C8\u09B6\u09BF\u09B7\u09CD\u099F\u09CD\u09AF', level: 2 },
+            { type: 'list', items: [
+                '\u09AC\u09BE\u0982\u09B2\u09BE OpenType \u09B6\u09C7\u09AA\u09BF\u0982 (GSUB + GPOS)',
+                '\u09B0\u09C7\u09AB \u09AA\u09C1\u09A8\u09B0\u09CD\u09AC\u09BF\u09A8\u09CD\u09AF\u09BE\u09B8 (\u09B0 + \u09CD)',
+                '\u09B9\u09B2\u09A8\u09CD\u09A4-\u09AE\u09A7\u09CD\u09AF\u09B8\u09CD\u09A5 \u09AF\u09C1\u0995\u09CD\u09A4\u09BE\u0995\u09CD\u09B7\u09B0',
+                '\u09AC\u09BF\u09AD\u0995\u09CD\u09A4 \u09B8\u09CD\u09AC\u09B0\u09AC\u09B0\u09CD\u09A3 (\u09CB, \u09CC)',
+                'PDF/A-2b \u09B8\u09AE\u09B0\u09CD\u09A5\u09A8',
+            ], style: 'bullet' },
+            { type: 'heading', text: '\u09AE\u09C2\u09B2\u09CD\u09AF \u09A4\u09BE\u09B2\u09BF\u0995\u09BE', level: 2 },
+            { type: 'table', headers: ['\u0995\u09CD\u09B0\u09AE', '\u09AA\u09B0\u09BF\u09B7\u09C7\u09AC\u09BE', '\u09AE\u09C2\u09B2\u09CD\u09AF', '\u0985\u09AC\u09B8\u09CD\u09A5\u09BE'], rows: [
+                { cells: ['\u09E7', '\u09AC\u09C7\u09B8\u09BF\u0995 PDF', '\u09E7,\u09E6\u09E6\u09E6 \u099F\u09BE\u0995\u09BE', '\u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8'], type: 'credit', pointed: false },
+                { cells: ['\u09E8', '\u09AC\u09BE\u0982\u09B2\u09BE \u09B6\u09C7\u09AA\u09BF\u0982', '\u09E8,\u09E6\u09E6\u09E6 \u099F\u09BE\u0995\u09BE', '\u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8'], type: 'credit', pointed: false },
+                { cells: ['\u09E9', '\u098F\u09A8\u0995\u09CD\u09B0\u09BF\u09AA\u09B6\u09A8', '\u09E9,\u09E6\u09E6\u09E6 \u099F\u09BE\u0995\u09BE', '\u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8'], type: 'credit', pointed: true },
+            ] },
+            { type: 'paragraph', text: '\u0989\u09AA\u09B0\u09C7\u09B0 \u09A4\u09BE\u09B2\u09BF\u0995\u09BE\u099F\u09BF pdfnative-\u098F\u09B0 \u09AA\u09B0\u09BF\u09B7\u09C7\u09AC\u09BE\u09B0 \u09AE\u09C2\u09B2\u09CD\u09AF \u09A6\u09C7\u0996\u09BE\u099A\u09CD\u099B\u09C7\u0964' },
+        ],
+        footerText: 'pdfnative \u2013 \u09AC\u09BE\u0982\u09B2\u09BE \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0 \u09A8\u09AE\u09C1\u09A8\u09BE',
+        fontEntries: [{ fontData: bnFd, fontRef: '/F3', lang: 'bn' }],
+    };
+    ctx.writeSafe(resolve(ctx.outputDir, 'doc-bengali.pdf'), 'doc-bengali.pdf', buildDocumentPDFBytes(params));
+}
+
+async function generateTamilDoc(ctx: GenerateContext): Promise<void> {
+    const taFd = await loadFontData('ta');
+    if (!taFd) return;
+    const params: DocumentParams = {
+        title: '\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u0B86\u0BB5\u0BA3\u0BAE\u0BCD \u2013 \u0BAE\u0BC1\u0BA9\u0BCD\u0BAE\u0BBE\u0BA4\u0BBF\u0BB0\u0BBF',
+        blocks: [
+            { type: 'heading', text: '\u0B85\u0BA4\u0BCD\u0BA4\u0BBF\u0BAF\u0BBE\u0BAF\u0BAE\u0BCD \u0B92\u0BA9\u0BCD\u0BB1\u0BC1: \u0BAE\u0BC1\u0BA9\u0BCD\u0BA9\u0BC1\u0BB0\u0BC8', level: 1 },
+            { type: 'paragraph', text: '\u0B87\u0BA4\u0BC1 pdfnative \u0BA8\u0BC2\u0BB2\u0B95\u0BA4\u0BCD\u0BA4\u0BBF\u0BA9\u0BCD \u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u0B86\u0BB5\u0BA3\u0BAE\u0BCD \u0B89\u0BB0\u0BC1\u0BB5\u0BBE\u0B95\u0BCD\u0B95\u0BA4\u0BCD\u0BA4\u0BBF\u0BA9\u0BCD \u0BAE\u0BC1\u0BA9\u0BCD\u0BAE\u0BBE\u0BA4\u0BBF\u0BB0\u0BBF\u0BAF\u0BBE\u0B95\u0BC1\u0BAE\u0BCD. \u0B87\u0BA8\u0BCD\u0BA4 \u0B86\u0BB5\u0BA3\u0BA4\u0BCD\u0BA4\u0BBF\u0BB2\u0BCD \u0BA4\u0BB2\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1\u0B95\u0BB3\u0BCD, \u0BAA\u0BA4\u0BCD\u0BA4\u0BBF\u0B95\u0BB3\u0BCD, \u0BAA\u0B9F\u0BCD\u0B9F\u0BBF\u0BAF\u0BB2\u0BCD\u0B95\u0BB3\u0BCD \u0BAE\u0BB1\u0BCD\u0BB1\u0BC1\u0BAE\u0BCD \u0B85\u0B9F\u0BCD\u0B9F\u0BB5\u0BA3\u0BC8 \u0B89\u0BB3\u0BCD\u0BB3\u0BA9.' },
+            { type: 'heading', text: '\u0BAE\u0BC1\u0B95\u0BCD\u0B95\u0BBF\u0BAF \u0B85\u0BAE\u0BCD\u0B9A\u0B99\u0BCD\u0B95\u0BB3\u0BCD', level: 2 },
+            { type: 'list', items: [
+                '\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD OpenType \u0BB5\u0B9F\u0BBF\u0BB5\u0BAE\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1 (GSUB + GPOS)',
+                '\u0BAE\u0BC1\u0BA9\u0BCD-\u0B85\u0B9F\u0BBF\u0BAA\u0BCD\u0BAA\u0B9F\u0BC8 \u0BAE\u0BBE\u0BA4\u0BCD\u0BA4\u0BBF\u0BB0\u0BC8 \u0BAE\u0BB1\u0BC1\u0B9A\u0BC0\u0BB0\u0BAE\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1',
+                '\u0BAA\u0BBF\u0BB0\u0BBF\u0BA8\u0BCD\u0BA4 \u0B89\u0BAF\u0BBF\u0BB0\u0BCD\u0B95\u0BB3\u0BCD (\u0BCA, \u0BCB, \u0BCC)',
+                '\u0BAA\u0BC1\u0BB3\u0BCD\u0BB3\u0BBF-\u0BAE\u0BC1\u0B9F\u0BBF\u0BAA\u0BCD\u0BAA\u0BC1 \u0B87\u0BA3\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1',
+                'PDF/A-2b \u0B86\u0BA4\u0BB0\u0BB5\u0BC1',
+            ], style: 'bullet' },
+            { type: 'heading', text: '\u0BB5\u0BBF\u0BB2\u0BC8 \u0BAA\u0B9F\u0BCD\u0B9F\u0BBF\u0BAF\u0BB2\u0BCD', level: 2 },
+            { type: 'table', headers: ['\u0B8E\u0BA3\u0BCD', '\u0B9A\u0BC7\u0BB5\u0BC8', '\u0BB5\u0BBF\u0BB2\u0BC8', '\u0BA8\u0BBF\u0BB2\u0BC8'], rows: [
+                { cells: ['\u0BE7', '\u0B85\u0B9F\u0BBF\u0BAA\u0BCD\u0BAA\u0B9F\u0BC8 PDF', '\u0BE7,\u0BE6\u0BE6\u0BE6 \u0BB0\u0BC2', '\u0BAE\u0BC1\u0B9F\u0BBF\u0BA8\u0BCD\u0BA4\u0BA4\u0BC1'], type: 'credit', pointed: false },
+                { cells: ['\u0BE8', '\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u0BB5\u0B9F\u0BBF\u0BB5\u0BAE\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1', '\u0BE8,\u0BE6\u0BE6\u0BE6 \u0BB0\u0BC2', '\u0BAE\u0BC1\u0B9F\u0BBF\u0BA8\u0BCD\u0BA4\u0BA4\u0BC1'], type: 'credit', pointed: false },
+                { cells: ['\u0BE9', '\u0BAE\u0BB1\u0BC1\u0B95\u0BC1\u0BB1\u0BBF\u0BAF\u0BBE\u0B95\u0BCD\u0B95\u0BAE\u0BCD', '\u0BE9,\u0BE6\u0BE6\u0BE6 \u0BB0\u0BC2', '\u0BAE\u0BC1\u0B9F\u0BBF\u0BA8\u0BCD\u0BA4\u0BA4\u0BC1'], type: 'credit', pointed: true },
+            ] },
+            { type: 'paragraph', text: '\u0BAE\u0BC7\u0BB2\u0BC7 \u0B89\u0BB3\u0BCD\u0BB3 \u0B85\u0B9F\u0BCD\u0B9F\u0BB5\u0BA3\u0BC8 pdfnative-\u0BA9\u0BCD \u0B9A\u0BC7\u0BB5\u0BC8 \u0BB5\u0BBF\u0BB2\u0BC8\u0B95\u0BB3\u0BC8\u0B95\u0BCD \u0B95\u0BBE\u0B9F\u0BCD\u0B9F\u0BC1\u0B95\u0BBF\u0BB1\u0BA4\u0BC1.' },
+        ],
+        footerText: 'pdfnative \u2013 \u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u0B86\u0BB5\u0BA3 \u0BAE\u0BBE\u0BA4\u0BBF\u0BB0\u0BBF',
+        fontEntries: [{ fontData: taFd, fontRef: '/F3', lang: 'ta' }],
+    };
+    ctx.writeSafe(resolve(ctx.outputDir, 'doc-tamil.pdf'), 'doc-tamil.pdf', buildDocumentPDFBytes(params));
+}
+
 function generateShowcase(ctx: GenerateContext): void {
     const params: DocumentParams = {
         title: 'Document Builder – Complete Showcase',
@@ -374,7 +440,7 @@ function generateShowcase(ctx: GenerateContext): void {
             { type: 'paragraph', text: 'Standard paragraph with automatic text wrapping.' },
             { type: 'paragraph', text: 'Colored paragraph with custom formatting.', color: '#2563EB' },
             { type: 'heading', text: 'Bullet List', level: 2 },
-            { type: 'list', items: ['Zero external dependencies', '11 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
+            { type: 'list', items: ['Zero external dependencies', '16 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
             { type: 'heading', text: 'Numbered List', level: 2 },
             { type: 'list', items: ['Install: npm install pdfnative', 'Import the builder function', 'Define parameters', 'Generate bytes', 'Write to file'], style: 'numbered' },
             { type: 'heading', text: 'Embedded Table', level: 2 },
