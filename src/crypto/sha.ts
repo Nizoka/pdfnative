@@ -234,7 +234,7 @@ export function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {
     const blockSize = 64;
 
     // If key > block size, hash it first
-    let k = key.length > blockSize ? sha256(key) : key;
+    const k = key.length > blockSize ? sha256(key) : key;
 
     // Pad key to block size
     const kPad = new Uint8Array(blockSize);

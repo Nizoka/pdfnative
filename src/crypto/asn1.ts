@@ -83,7 +83,7 @@ function decodeAt(buf: Uint8Array, pos: number): { node: Asn1Node; nextPos: numb
     const isConstructed = (tag & 0x20) !== 0;
     const value = buf.subarray(pos, valueEnd);
 
-    let children: Asn1Node[] = [];
+    const children: Asn1Node[] = [];
     if (isConstructed) {
         let childPos = 0;
         while (childPos < value.length) {
@@ -184,7 +184,7 @@ export function derInteger(value: bigint | Uint8Array): Uint8Array {
         if (value === 0n) return derWrap(ASN1_INTEGER, new Uint8Array([0]));
 
         const isNeg = value < 0n;
-        let abs = isNeg ? -value : value;
+        const abs = isNeg ? -value : value;
         const hexStr = abs.toString(16);
         const padded = hexStr.length % 2 === 1 ? '0' + hexStr : hexStr;
         bytes = new Uint8Array(padded.length / 2);

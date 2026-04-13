@@ -91,7 +91,7 @@ export function openPdf(bytes: Uint8Array): PdfReader {
 
     function resolveRef(ref: PdfRef): PdfValue {
         const key = ref.num;
-        if (cache.has(key)) return cache.get(key)!;
+        if (cache.has(key)) return cache.get(key) ?? null;
 
         const entry = xref.entries.get(ref.num);
         if (!entry || entry.type === 0) return null; // free object

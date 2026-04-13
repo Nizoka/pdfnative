@@ -7,6 +7,7 @@
  */
 
 import { sha256 } from './sha.js';
+import type * as Asn1Module from './asn1.js';
 
 // ── DigestInfo prefixes (RFC 8017 §9.2) ─────────────────────────────
 
@@ -81,7 +82,7 @@ function rsaPrivateOp(msg: bigint, key: RsaPrivateKey): bigint {
     const m1 = modPow(msg % key.p, key.dp, key.p);
     const m2 = modPow(msg % key.q, key.dq, key.q);
     // h = qi * (m1 - m2) mod p
-    let h = (key.qi * (((m1 - m2) % key.p) + key.p)) % key.p;
+    const h = (key.qi * (((m1 - m2) % key.p) + key.p)) % key.p;
     // m = m2 + h * q
     return m2 + h * key.q;
 }
@@ -92,15 +93,15 @@ function rsaPrivateOp(msg: bigint, key: RsaPrivateKey): bigint {
  * PKCS#1 v1.5 signature padding (RFC 8017 §8.2.1).
  * Constructs: 0x00 0x01 [0xFF padding] 0x00 [DigestInfo + hash]
  */
-function pkcs1v15Pad(hash: Uint8Array, keyByteLen: number): Uint8Array {
+function pkcs1v15Pad(hash: Uint8Array, keyLen: number): Uint8Array {
     const digestInfo = new Uint8Array(DIGESTINFO_SHA256.length + hash.length);
     digestInfo.set(DIGESTINFO_SHA256);
     digestInfo.set(hash, DIGESTINFO_SHA256.length);
 
-    const padLen = keyByteLen - 3 - digestInfo.length;
+    const padLen = keyLen - 3 - digestInfo.length;
     if (padLen < 8) throw new Error('RSA key too short for PKCS#1 v1.5 signature');
 
-    const em = new Uint8Array(keyByteLen);
+    const em = new Uint8Array(keyLen);
     em[0] = 0x00;
     em[1] = 0x01;
     for (let i = 2; i < 2 + padLen; i++) em[i] = 0xff;
@@ -281,7 +282,7 @@ export function parseRsaPublicKey(der: Uint8Array): RsaPublicKey {
 }
 
 // Lazy ASN.1 import to avoid circular dependency at module load time
-let _asn1: typeof import('./asn1.js') | undefined;
+let _asn1: typeof Asn1Module | undefined;
 function requireAsn1() {
     if (!_asn1) {
         // This is a synchronous require-like pattern using import
@@ -292,6 +293,6 @@ function requireAsn1() {
 }
 
 /** Initialize the ASN.1 dependency for key parsing functions. */
-export function initRsaAsn1(asn1Module: typeof import('./asn1.js')): void {
+export function initRsaAsn1(asn1Module: typeof Asn1Module): void {
     _asn1 = asn1Module;
 }

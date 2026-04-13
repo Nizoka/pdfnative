@@ -306,7 +306,7 @@ function inflateRaw(data: Uint8Array, startOffset: number): InflateResult {
                     _fixedDistTable = buildHuffmanTable(buildFixedDistTable(), 32);
                 }
                 litLenTable = _fixedLitLenTable;
-                distTable = _fixedDistTable!;
+                distTable = _fixedDistTable ?? buildHuffmanTable(buildFixedDistTable(), 32);
             } else {
                 // Dynamic Huffman codes
                 const hlit = readBits(br, 5) + 257;

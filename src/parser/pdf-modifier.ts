@@ -76,7 +76,7 @@ export function createModifier(reader: PdfReader): PdfModifier {
     }
 
     function getObject(num: number): PdfValue | null {
-        if (modified.has(num)) return modified.get(num)!;
+        if (modified.has(num)) return modified.get(num) ?? null;
         return reader.getObject(num);
     }
 
@@ -184,6 +184,7 @@ function serializeValue(val: PdfValue): string {
     return 'null';
 }
 
+/** Escape PDF special characters (backslash, parentheses) in string literals. */
 function escapePdfStr(s: string): string {
     return s.replace(/[\\()]/g, c => '\\' + c);
 }
@@ -222,7 +223,7 @@ function buildIncrementalXref(entries: Map<number, XrefEntry>, _size: number): s
         result += `${start} ${count}\n`;
 
         for (let num = start; num <= end; num++) {
-            const entry = entries.get(num)!;
+            const entry = entries.get(num) ?? { offset: 0, gen: 0, type: 1 as const };
             const offsetStr = String(entry.offset).padStart(10, '0');
             const genStr = String(entry.gen).padStart(5, '0');
             result += `${offsetStr} ${genStr} n \n`;

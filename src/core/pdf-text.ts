@@ -249,7 +249,7 @@ export function encodePdfTextString(str: string): string {
     // UTF-16BE with BOM
     const codes: string[] = ['FEFF'];
     for (let i = 0; i < str.length; i++) {
-        const cp = str.codePointAt(i)!;
+        const cp = str.codePointAt(i) ?? 0;
         if (cp > 0xFFFF) {
             // Surrogate pair
             const hi = 0xD800 + ((cp - 0x10000) >> 10);

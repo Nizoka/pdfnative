@@ -8,6 +8,8 @@
 
 import { sha256, hmacSha256 } from './sha.js';
 import { bigIntToBytes, bytesToBigInt } from './rsa.js';
+import type * as Asn1Module from './asn1.js';
+import type * as Asn1Module from './asn1.js';
 
 // ── P-256 Curve Parameters (FIPS 186-4, SEC 2 §2.7.2) ───────────────
 
@@ -285,13 +287,13 @@ export function decodeDerSignature(der: Uint8Array): { r: bigint; s: bigint } {
 }
 
 // Lazy ASN.1 import
-let _asn1: typeof import('./asn1.js') | undefined;
+let _asn1: typeof Asn1Module | undefined;
 function requireAsn1() {
     if (!_asn1) throw new Error('ASN.1 module must be initialized. Call initEcdsaAsn1() first.');
     return _asn1;
 }
 
 /** Initialize the ASN.1 dependency for DER signature encoding. */
-export function initEcdsaAsn1(asn1Module: typeof import('./asn1.js')): void {
+export function initEcdsaAsn1(asn1Module: typeof Asn1Module): void {
     _asn1 = asn1Module;
 }
