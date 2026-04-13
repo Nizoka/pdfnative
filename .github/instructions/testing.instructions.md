@@ -17,21 +17,23 @@ applyTo: "tests/**"
 ## Test Organization
 ```
 tests/
-├── core/           # pdf-builder, pdf-text, pdf-stream, pdf-layout, pdf-annot, pdf-pdfa, pdf-encrypt, pdf-compress, pdf-watermark, pdf-assembler
+├── core/           # pdf-builder, pdf-text, pdf-stream, pdf-layout, pdf-annot, pdf-pdfa, pdf-encrypt, pdf-compress, pdf-watermark, pdf-assembler, pdf-svg, pdf-form, pdf-signature, pdf-stream-writer
+├── crypto/         # sha, asn1, rsa, ecdsa, x509, cms — crypto primitives
+├── parser/         # pdf-tokenizer, pdf-object-parser, pdf-xref-parser, pdf-reader, pdf-modifier
 ├── fonts/          # encoding, font-loader, font-subsetter, font-embedder
-├── shaping/        # thai-shaper, script-detect, script-registry, multi-font, bidi, arabic-shaper
+├── shaping/        # thai-shaper, bengali-shaper, tamil-shaper, script-detect, script-registry, multi-font, bidi, arabic-shaper
 ├── worker/         # worker-api
 ├── integration/    # full PDF generation end-to-end, pdf-compression
 ├── fuzzing/        # edge-case & adversarial input tests
 └── fixtures/       # test data, sample fonts, expected outputs
 scripts/
 ├── generate-samples.ts  # Orchestrator for modular PDF sample generation
-├── generators/          # Per-category sample generators (10 modules)
+├── generators/          # Per-category sample generators (18 modules)
 └── helpers/             # Shared utilities (fonts, images, I/O)
 ```
 
 ## Current State (maintain these thresholds)
-- **1035+ tests** across 29 test files + 1 benchmark file
+- **1513+ tests** across 36 test files + 1 benchmark file
 - Statements: ~95% (threshold: 90%)
 - Branches: ~88% (threshold: 80%)
 - Functions: ~98% (threshold: 85%)
@@ -95,7 +97,7 @@ scripts/
 - No-image documents: verify `/XObject` is NOT in page resources
 
 ## Document Builder Testing
-- Test each block type (9 types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc) renders correct PDF operators
+- Test each block type (12 types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc, barcode, svg, formField) renders correct PDF operators
 - Test pagination: blocks split across pages when exceeding available height
 - Test `pageBreak` block forces new page
 - Test title rendering on first page only
@@ -107,6 +109,18 @@ scripts/
 - Test `wrapText()` mixed Latin/CJK text: Latin words stay grouped, CJK chars break individually
 
 ## Header/Footer Template Testing
+
+## AcroForm Testing
+- Test all field types: text, multiline, checkbox, radio, dropdown, listbox
+- Text field appearance: verify `/Tx BMC...EMC` marked content wrapper in AP stream
+- Radio button groups: verify parent-child `/Kids`/`/Parent` structure for same-name radio fields
+- Radio mutual exclusivity: verify `/V` on parent object, `/AS` on children
+- Checkbox/radio `checked: true`: verify `/V /Yes /AS /Yes` in field and appearance
+- Appearance stream sizing: verify checkbox marks scale to field `width`/`height`
+- Indirect font refs: verify `/DR << /Font << /Helv N 0 R >> >>` uses object reference
+- Label escaping: verify field labels with parentheses don't break PDF string syntax
+- Tagged mode: verify `/Form` structure element with MCID
+- Integration: verify `/AcroForm` dict on Catalog, field objects referenced from `/Fields`
 - Test `resolveTemplate()`: `{page}`, `{pages}`, `{date}`, `{title}` placeholder substitution
 - Test `PageTemplate` rendering: left/center/right zone positioning in content stream
 - Test `HEADER_H` constant usage: header zone height (15pt) reduces available content area
@@ -205,3 +219,55 @@ scripts/
 - Integration — Compressed + Tagged: tagged mode with compression, XMP metadata uncompressed (`skipCompress`), ICC profile compressed, document builder
 - Size benchmarks: 100-row table with compression should achieve >30% size reduction versus uncompressed
 - ESM init: `beforeAll(async () => { await initNodeCompression(); })` required for native zlib in vitest
+
+## SVG Testing
+- Test `parseSvg()`: path, rect, circle, ellipse, line, polyline, polygon → `SvgSegment[]`
+- Test `renderSvgToPdf()`: correct PDF path operators (m, l, c, re, h, S, f)
+- Test SVG viewBox scaling: coordinates mapped to PDF points
+- Test `SvgBlock` in document builder: `/Figure` structure element in tagged mode
+- Integration: verify SVG content renders as PDF path operators in content stream
+
+## AcroForm Testing
+- Test `buildAcroFormDict()`: `/AcroForm << /Fields [...] /DR << /Font << >> >> >>`
+- Test field types: text, checkbox, radio, dropdown, button — each with correct `/FT`
+- Test `buildAppearanceStream()`: `/AP << /N stream >>` for each field type
+- Test field properties: `/T`, `/V`, `/DA`, `/Rect`, `/Ff` flags
+- Test `FormFieldBlock` in document builder: `/Form` structure element in tagged mode
+- Integration: verify `/AcroForm` in catalog and field objects in PDF output
+
+## Digital Signature Testing
+- Test `buildSignatureField()`: `/Sig` field with `/ByteRange` placeholder
+- Test CMS SignedData structure: signed attributes, certificate embedding
+- Test `signPdfBytes()`: round-trip sign + verify
+- Test RSA PKCS#1 v1.5 signing against known vectors
+- Test ECDSA P-256 signing and verification
+- Test X.509 certificate parsing: issuer, subject, validity, public key extraction
+- Test ASN.1 DER encoding/decoding: SEQUENCE, INTEGER, OID, OCTET STRING
+- Test SHA-384, SHA-512, HMAC-SHA-256 against NIST test vectors
+
+## Streaming Testing
+- Test `buildPdfStream()`: yields Uint8Array chunks that concatenate to valid PDF
+- Test `streamPdf()`: table PDF streaming with configurable chunk size
+- Test `streamDocumentPdf()`: document PDF streaming end-to-end
+- Test chunk boundaries: verify no data loss at chunk splits
+- Test streaming + compression: compressed streams via AsyncGenerator
+- Test streaming + encryption: encrypted streams via AsyncGenerator
+
+## Parser Testing
+- Test `PdfTokenizer`: number, string, name, boolean, null, array, dict, stream tokens
+- Test `parseObject()`: all PDF object types including nested structures
+- Test `parseDictionary()`: simple, nested, with references
+- Test type guards: `isDict()`, `isArray()`, `isStream()`, `isRef()`
+- Test `parseXref()`: table format, stream format, `/Prev` chain following
+- Test `PdfReader.open()`: page count, page tree traversal, metadata extraction
+- Test `PdfReader.decodeStream()`: FlateDecode decompression
+- Test `PdfModifier`: add/remove pages, set metadata, incremental save with `/Prev`
+- Integration: generate PDF → parse → verify round-trip structural integrity
+
+## Bengali/Tamil Shaping Testing
+- Test `shapeBengaliText()`: conjunct formation (ক + ্ + ষ → ক্ষ), GPOS mark positioning
+- Test `shapeTamilText()`: split vowel decomposition, GSUB substitutions
+- Test Bengali/Tamil glyph IDs: non-zero, valid subset
+- Test script detection: `containsBengali()`, `containsTamil()` positive and negative
+- Test multi-font: Bengali/Tamil text routed to correct Noto font via `splitTextByFont()`
+- Integration: verify Bengali/Tamil text renders correctly in PDF output

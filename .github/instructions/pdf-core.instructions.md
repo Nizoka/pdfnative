@@ -212,3 +212,59 @@ applyTo: "src/core/**"
 - **Tagged mode**: `/TOC` structure element with `/TOCI` children for PDF/UA compliance
 - Constants: `DEFAULT_TOC_SIZE=10`, `DEFAULT_TOC_INDENT=15`, `TOC_LINE_HEIGHT=1.6`, `TOC_TITLE_SPACING=8`
 - `headingDestIdx` counter tracks heading render order, updates Y positions with actual render coordinates
+
+## SVG Rendering Model (pdf-svg.ts)
+- `parseSvg(svgString)`: parses SVG XML → `SvgSegment[]` (path data + style)
+- `renderSvgToPdf(segments, width, height, viewBox)`: maps SVG coordinates to PDF path operators
+- Supported element types: `<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>`, `<polygon>` — 7 types
+- PDF path operators: `m` (moveto), `l` (lineto), `c` (curveto), `re` (rectangle), `h` (closepath), `S` (stroke), `f` (fill)
+- ViewBox scaling: SVG coordinates mapped proportionally to PDF points
+- `SvgBlock`: `{ type: 'svg', content, width?, height?, align? }` — document block type
+- Tagged mode: wrapped in `/Figure` structure element with MCID
+
+## AcroForm Model (pdf-form.ts — ISO 32000-1 §12.7)
+- `buildAcroFormDict(fields, fontRef)`: builds `/AcroForm << /Fields [...] /DR << /Font << >> >> >>`
+- Field types: text (`/FT /Tx`), checkbox (`/FT /Btn`), radio (`/FT /Btn /Ff`), dropdown (`/FT /Ch`), listbox (`/FT /Ch /Ff`)
+- `buildFormField(field, objNum, pageRef)`: builds individual field object with `/T`, `/V`, `/DA`, `/Rect`, `/Ff`
+- `buildAppearanceStream(field)`: generates `/AP << /N stream >>` for visual rendering
+- Text field appearance streams: `/Tx BMC...EMC` marked content wrapper required (ISO 32000-1 §12.7.3.3)
+- Radio button groups: parent-child `/Kids`/`/Parent` hierarchy — parent holds `/V`, children are mutually exclusive (ISO 32000-1 §12.7.4.2.4)
+- `RadioGroupContext`: tracks radio groups by name, emits parent objects with `/Kids` array
+- `checked` property: `FormFieldBlock.checked?: boolean` for checkbox/radio default state → `/V /Yes /AS /Yes`
+- Indirect font refs: `/DR << /Font << /Helv fontObjNum 0 R >> >>` uses actual object number, not inline dict
+- `FormFieldBlock`: `{ type: 'formField', fieldType, name, ... }` — document block type
+- Tagged mode: form fields wrapped in `/Form` structure element with MCID
+- `/AcroForm` dict emitted on Catalog when form fields present
+
+## Digital Signature Model (pdf-signature.ts — ISO 32000-1 §12.8)
+- `buildSignatureField(objNum, byteRangeSize)`: builds `/Sig` field with `/ByteRange` placeholder
+- Signature includes `/Filter /Adobe.PPKLite /SubFilter /adbe.pkcs7.detached`
+- `signPdfBytes(pdfBytes, privateKey, certificate)`: round-trip sign → inject CMS into `/Contents`
+- `/ByteRange [0 before after end]`: specifies which bytes are signed (excludes `/Contents` hex)
+- CMS SignedData via `crypto/cms.ts`: signed attributes, certificate embedding, digest
+
+## Crypto Module (src/crypto/ — standalone, zero-dependency)
+- `sha.ts`: SHA-384, SHA-512, HMAC-SHA-256 — pure JavaScript, no WebCrypto dependency
+- `asn1.ts`: ASN.1 DER encoding/decoding: SEQUENCE, INTEGER, OID, OCTET STRING, BIT STRING
+- `rsa.ts`: RSA PKCS#1 v1.5 signing/verification with modular exponentiation (BigInt)
+- `ecdsa.ts`: ECDSA P-256 (secp256r1) signing/verification
+- `x509.ts`: X.509 DER certificate parsing — issuer, subject, validity, public key extraction
+- `cms.ts`: CMS SignedData (PKCS#7) builder — signs digest, embeds certificate chain
+
+## Streaming Output Model (pdf-stream-writer.ts)
+- `buildPdfStream(objects, trailer)`: AsyncGenerator yielding `Uint8Array` chunks
+- `streamPdf(params)` / `streamDocumentPdf(params)`: public streaming API
+- Chunk size configurable via `chunkSize` option (default: 65536 bytes)
+- Each yield is a self-contained Uint8Array — consumer concatenates or writes to stream
+- Supports compression and encryption in streaming mode
+
+## PDF Parser Module (src/parser/ — ISO 32000-1 §7)
+- `PdfTokenizer`: lexical scanner — scans one token at a time (lazy, streaming-friendly)
+- `parseObject()`: parses all PDF value types (number, string, name, boolean, null, array, dict, stream, ref)
+- `parseDictionary()`: convenience for `<< >>` blocks with type guards
+- Type guards: `isDict()`, `isArray()`, `isStream()`, `isRef()` — discriminated union
+- `parseXref()`: handles table format (`xref\n0 N\n...`) and stream format (`/Type /XRef`), follows `/Prev` chain
+- `PdfReader`: high-level reader — `open(bytes)`, `getPage(n)`, `getPageCount()`, `getMetadata()`, `decodeStream()`
+- `PdfModifier`: incremental modification — `addPage()`, `removePage()`, `setMetadata()`, `save()` with `/Prev` chain
+- Parser types: `PdfValue`, `PdfDict`, `PdfArray`, `PdfStream`, `PdfRef` — type-safe union
+- `pdf-inflate.ts`: DEFLATE decompression (native zlib fallback → pure JS inflate)

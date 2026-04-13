@@ -43,6 +43,12 @@ applyTo: "src/index.ts"
 12. Shaping — Thai & Multi-Script (`detectCharLang`, `detectFallbackLangs`, `splitTextByFont`, `needsUnicodeFont`)
 13. Shaping — BiDi & Arabic/Hebrew (`resolveBidiRuns`, `containsRTL`, `shapeArabicText`, `containsArabic`, `containsHebrew`, `BidiType`, `BidiRun`)
 14. Worker — Off-Thread Generation
+15. Core — SVG Rendering (`parseSvg`, `renderSvgToPdf`, `SvgSegment`)
+16. Core — AcroForm (`buildAcroFormDict`, `buildFormField`, `buildAppearanceStream`, `buildRadioGroupParent`, `RadioGroupContext`, `FormFieldBlock`)
+17. Core — Digital Signatures (`buildSignatureField`, `signPdfBytes`)
+18. Core — Streaming (`streamPdf`, `streamDocumentPdf`, `buildPdfStream`, `StreamOptions`)
+19. Crypto — Primitives (`sha384`, `sha512`, `hmacSha256`, `rsaSign`, `ecdsaSign`, `parseX509`, `buildCmsSignedData`)
+20. Parser — Read & Modify (`PdfReader`, `PdfModifier`, `PdfTokenizer`, `parseObject`, `parseXref`, `PdfValue`, `PdfDict`, `PdfRef`)
 
 ## Documentation Requirements
 - README Quick Start must work as-is (copy-paste ready)

@@ -51,4 +51,32 @@ Perform a comprehensive compliance audit of pdfnative.
 - Multi-pass pagination converges within 3 iterations
 - Tagged mode: `/TOC` and `/TOCI` structure elements for PDF/UA
 
+### 8. SVG Rendering Compliance
+- SVG viewBox coordinates mapped correctly to PDF coordinate space
+- 7 element types render as correct PDF path operators
+- Tagged mode: SVG wrapped in `/Figure` structure element
+
+### 9. AcroForm Compliance (ISO 32000-1 §12.7)
+- Field types: `/FT /Tx`, `/FT /Btn`, `/FT /Ch` with correct flags
+- `/AcroForm` dict on Catalog with `/Fields` and `/DR`
+- Appearance streams: `/AP << /N stream >>` generated for all field types
+- Tagged mode: form fields wrapped in `/Form` structure element
+
+### 10. Digital Signature Compliance (ISO 32000-1 §12.8)
+- `/ByteRange` covers entire PDF minus `/Contents` hex
+- CMS SignedData structure embeds X.509 certificate chain
+- `/Filter /Adobe.PPKLite /SubFilter /adbe.pkcs7.detached`
+- RSA and ECDSA signatures produce valid ASN.1 DER output
+
+### 11. Streaming Output Compliance
+- Concatenated chunks produce byte-identical PDF to non-streaming output
+- Chunk boundaries don't split PDF objects incorrectly
+- Streaming + compression/encryption produce valid output
+
+### 12. PDF Parser & Modifier Compliance
+- Tokenizer handles all PDF token types per ISO 32000-1 §7.2
+- Cross-reference parser follows `/Prev` chain correctly
+- Incremental save preserves original PDF structure
+- `PdfModifier.save()` produces valid incremental update with correct xref
+
 Report findings with severity (critical/warning/info) and recommended fixes.

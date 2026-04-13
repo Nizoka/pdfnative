@@ -18,9 +18,9 @@ applyTo: "src/shaping/**"
 - Coordinates in font units (divide by unitsPerEm × fontSize for PDF points)
 
 ## Script Detection
-- `script-registry.ts`: centralized Unicode range constants (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`) and predicates (`isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`) — single source of truth
-- All script detection modules (`arabic-shaper.ts`, `thai-shaper.ts`, `script-detect.ts`, `encoding-context.ts`) import from `script-registry.ts`
-- Unicode range-based detection for: Thai, CJK, Korean, Greek, Devanagari, Arabic, Hebrew, Turkish, Vietnamese, Polish
+- `script-registry.ts`: centralized Unicode range constants (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `BENGALI_START/END`, `TAMIL_START/END`) and predicates (`isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isBengaliCodepoint`, `isTamilCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`, `containsBengali`, `containsTamil`) — single source of truth
+- All script detection modules (`arabic-shaper.ts`, `thai-shaper.ts`, `bengali-shaper.ts`, `tamil-shaper.ts`, `script-detect.ts`, `encoding-context.ts`) import from `script-registry.ts`
+- Unicode range-based detection for: Thai, CJK, Korean, Greek, Devanagari, Arabic, Hebrew, Turkish, Vietnamese, Polish, Bengali, Tamil
 - Arabic ranges: U+0600–06FF, U+0750–077F, U+08A0–08FF, U+FB50–FDFF, U+FE70–FEFE
 - Hebrew ranges: U+0590–05FF, U+FB1D–FB4F
 - Detection must be O(n) single-pass — no regex per character
@@ -46,7 +46,7 @@ applyTo: "src/shaping/**"
 - `/ActualText` carries the original Unicode string (pre-shaping) so text extractors get correct output
 - This solves the fundamental issue where GPOS-repositioned marks cause garbled copy-paste
 - The tagged text functions (`txtTagged`, `txtRTagged`, `txtCTagged`) delegate to `wrapSpan()` in `pdf-tags.ts`
-- Critical for Thai, Devanagari, and Vietnamese where combining marks get spatially repositioned
+- Critical for Thai, Devanagari, Bengali, Tamil, and Vietnamese where combining marks get spatially repositioned
 
 ## BiDi Resolution (UAX #9)
 - Simplified UBA: paragraph level detection (P2-P3), weak type resolution (W1-W7), neutral resolution (N1-N2)
@@ -103,3 +103,18 @@ applyTo: "src/shaping/**"
 - Rationale: en-dash is 44% narrower (556 vs 1000 Helvetica units), WinAnsi-encodable, ISO/international standard
 - Avoids disproportionate visual gaps in cursive scripts (Arabic) where compact shaped text amplifies the perceived space
 - Em-dash still fully supported by the library (encoding, width metrics, BiDi classification) — this is a typographic recommendation, not a restriction
+
+## Bengali OpenType Shaping Pipeline (bengali-shaper.ts)
+1. **Cluster building**: group base consonant + halant + following consonant(s) into conjuncts
+2. **GSUB Substitution**: substitute conjunct sequences (e.g., ক + ্ + ষ → ক্ষ) for contextual forms
+3. **GPOS Mark Positioning**: position matras and vowel signs relative to base glyph anchors
+4. Output: `ShapedGlyph[]` with `{ gid, dx, dy, isZeroAdvance }`
+- Bengali ranges: U+0980–U+09FF
+- `containsBengali(text)`: fast O(n) check imported from `script-registry.ts`
+
+## Tamil OpenType Shaping Pipeline (tamil-shaper.ts)
+1. **Split vowel decomposition**: multi-part vowel signs split into components positioned around base
+2. **GSUB Substitution**: contextual form substitution for consonant+vowel combinations
+3. Output: `ShapedGlyph[]` with glyph IDs and positioning offsets
+- Tamil ranges: U+0B80–U+0BFF
+- `containsTamil(text)`: fast O(n) check imported from `script-registry.ts`

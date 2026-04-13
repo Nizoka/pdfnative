@@ -9,9 +9,9 @@ Target: exceed GAFAM-grade quality standards in code, testing, performance, and 
 
 ```
 src/
-├── core/         # PDF document assembly, text rendering, binary stream, layout constants, tagged PDF, images, annotations, encryption, compression, watermarks, barcodes
+├── core/         # PDF document assembly, text rendering, binary stream, layout constants, tagged PDF, images, annotations, encryption, compression, watermarks, barcodes, SVG, forms, signatures, streaming
 │   ├── pdf-builder.ts    # Table-centric PDF assembly + tagged mode + encryption + compression
-│   ├── pdf-document.ts   # Free-form document builder (headings, paragraphs, lists, tables, images, links, TOC, barcodes)
+│   ├── pdf-document.ts   # Free-form document builder (headings, paragraphs, lists, tables, images, links, TOC, barcodes, SVG, forms)
 │   ├── pdf-assembler.ts  # Shared PDF binary assembly primitives (createPdfWriter, writeXrefTrailer)
 │   ├── encoding-context.ts # Encoding context factory (dependency inversion — moved from fonts/)
 │   ├── pdf-image.ts      # JPEG/PNG parser + PDF Image XObject builder (RGBA rejection, JPEG robustness)
@@ -21,21 +21,40 @@ src/
 │   ├── pdf-tags.ts       # Structure tree, marked content, XMP metadata, ICC profile, OutputIntent, PDF/A config
 │   ├── pdf-watermark.ts  # Text/image watermarks with ExtGState transparency
 │   ├── pdf-barcode.ts    # Barcode/QR code encoders + PDF path rendering (Code 128, EAN-13, QR, DataMatrix, PDF417)
+│   ├── pdf-svg.ts        # SVG path/shape rendering as native PDF path operators (7 element types)
+│   ├── pdf-form.ts       # AcroForm interactive fields with appearance streams (ISO 32000-1 §12.7)
+│   ├── pdf-signature.ts  # CMS/PKCS#7 digital signatures (RSA + ECDSA, ISO 32000-1 §12.8)
+│   ├── pdf-stream-writer.ts # AsyncGenerator streaming output with configurable chunk size
 │   └── pdf-encrypt.ts    # AES-128/256 encryption, MD5, SHA-256, key derivation, permissions
+├── crypto/       # Zero-dependency cryptographic primitives
+│   ├── sha.ts            # SHA-384, SHA-512, HMAC-SHA-256
+│   ├── asn1.ts           # ASN.1 DER encoding/decoding
+│   ├── rsa.ts            # RSA PKCS#1 v1.5 sign/verify (modular arithmetic)
+│   ├── ecdsa.ts          # ECDSA P-256 sign/verify (secp256r1)
+│   ├── x509.ts           # X.509 DER certificate parsing
+│   └── cms.ts            # CMS SignedData (PKCS#7) builder
+├── parser/       # PDF reading & modification (ISO 32000-1 §7)
+│   ├── pdf-inflate.ts    # DEFLATE decompression (zlib inflate, pure JS + native fallback)
+│   ├── pdf-tokenizer.ts  # PDF lexical scanner (ISO 32000-1 §7.2)
+│   ├── pdf-object-parser.ts # PDF object parser with type guards and dict helpers
+│   ├── pdf-xref-parser.ts # Cross-reference table/stream parser with /Prev chain
+│   ├── pdf-reader.ts     # High-level PDF reader (page tree, stream decode, caching)
+│   └── pdf-modifier.ts   # Incremental modification (non-destructive save with /Prev)
 ├── fonts/        # WinAnsi + CIDFont pure encoding functions, lazy font loader, TTF subsetter (with buffer guards), CMap builder
-├── shaping/      # Thai GSUB+GPOS shaping, Arabic positional shaping, BiDi resolution, Unicode script detection, multi-font run splitting, centralized script registry
+├── shaping/      # Thai/Bengali/Tamil GSUB+GPOS shaping, Arabic positional shaping, BiDi resolution, Unicode script detection, multi-font run splitting, centralized script registry
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
-fonts/            # Pre-built font data modules (.js/.d.ts) + TTF source files
+fonts/            # Pre-built font data modules (.js/.d.ts) — 16 scripts + TTF source files
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (see scripts/README.md)
-tests/            # 1035+ tests (unit/integration/fuzz) mirroring src/ structure
+scripts/          # Modular sample PDF generation (18 generators, 130+ PDFs)
+tests/            # 1513+ tests (36 files: unit/integration/fuzz/parser) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
+docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
 ```
 
 - **Single entry point**: `src/index.ts` re-exports everything. All public API surfaces live there.
 - **Type-first**: All domain types in `src/types/pdf-types.ts` and `src/types/pdf-document-types.ts`. Consumers import types from root.
-- **No circular deps**: strict unidirectional dependency flow: types → core ← fonts ← shaping ← worker.
+- **No circular deps**: strict unidirectional dependency flow: types → core ← fonts ← shaping ← worker; crypto is standalone; parser imports from core/compress for inflate.
 
 ## Code Style
 
@@ -53,10 +72,10 @@ bench/            # Performance benchmarks (vitest bench)
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (1035+ tests)
+npm run test            # vitest run (1513+ tests)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
-npm run test:generate   # Generate 114+ sample PDFs → test-output/
+npm run test:generate   # Generate 130+ sample PDFs → test-output/
 npm run typecheck       # tsc --noEmit
 npm run typecheck:tests # tsc --project tsconfig.test.json --noEmit
 npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit
@@ -68,7 +87,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 1035+ tests (29 files)
+- All new code must have tests. Current: ~95% statement coverage, 1513+ tests (36 files)
 
 ## Conventions
 
@@ -78,7 +97,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Binary offsets use `byteLength()` helper (not `.length`) — critical for xref table
 - `pdf-assembler.ts`: shared binary assembly primitives (`createPdfWriter`, `writeXrefTrailer`) — used by both `pdf-builder.ts` and `pdf-document.ts` to eliminate xref/trailer duplication
 - `encoding-context.ts`: encoding context factory in `core/` (dependency inversion — `createEncodingContext()` moved from `fonts/encoding.ts` to break `fonts/ → shaping/` cycle)
-- `script-registry.ts`: centralized Unicode range constants and script predicates (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `CYRILLIC_START/END`, `GEORGIAN_START/END`, `ARMENIAN_START/END`, `isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isCyrillicCodepoint`, `isGeorgianCodepoint`, `isArmenianCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`) — single source of truth, imported by arabic-shaper, thai-shaper, script-detect, encoding-context
+- `script-registry.ts`: centralized Unicode range constants and script predicates (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `CYRILLIC_START/END`, `GEORGIAN_START/END`, `ARMENIAN_START/END`, `BENGALI_START/END`, `TAMIL_START/END`, `isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isCyrillicCodepoint`, `isGeorgianCodepoint`, `isArmenianCodepoint`, `isBengaliCodepoint`, `isTamilCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`, `containsBengali`, `containsTamil`) — single source of truth, imported by arabic-shaper, thai-shaper, bengali-shaper, tamil-shaper, script-detect, encoding-context
 - Font subsetting always preserves `.notdef` (GID 0) per PDF/A spec
 - CIDFont Type2 uses Identity-H encoding — glyph IDs are hex-encoded directly
 - All color values are PDF operator format RGB strings: `"0.145 0.388 0.922"`
@@ -133,9 +152,38 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Barcode rendering: all 5 formats use PDF `re f` rectangle operators (pure vector, no image XObjects)
 - Barcode formats: Code 128 (ISO 15417), EAN-13 (ISO 15420), QR Code (ISO 18004), Data Matrix ECC 200 (ISO 16022), PDF417 (ISO 15438)
 - Barcode math: QR uses GF(256) with 0x11D polynomial; DataMatrix uses GF(256) with 0x12D polynomial; PDF417 uses GF(929)
-- `BarcodeBlock`: `{ type: 'barcode', format, data, width?, height?, align?, ecLevel?, pdf417ECLevel? }` — 10th document block type
+- `BarcodeBlock`: `{ type: 'barcode', format, data, width?, height?, align?, ecLevel?, pdf417ECLevel? }` — document block type
 - Barcode tagged mode: wrapped in `/Figure` structure element with MCID
 - `renderBarcode()`: unified dispatcher routing to format-specific render functions
+- SVG rendering: `parseSvg()` → `SvgSegment[]` → `renderSvgToPdf()` → PDF path operators (m, l, c, re, h, S, f)
+- SVG element types: `<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>`, `<polygon>` — 7 types
+- `SvgBlock`: `{ type: 'svg', content, width?, height?, align? }` — document block type
+- SVG tagged mode: wrapped in `/Figure` structure element with MCID
+- AcroForm: `pdf-form.ts` builds `/AcroForm` dict, `/Fields` array, field objects with `/AP` appearance streams
+- AcroForm field types: text, checkbox, radio, dropdown, listbox — all with `/T`, `/V`, `/DA`, `/Rect`
+- AcroForm appearance streams: generated via `buildAppearanceStream()` — no external viewer dependency
+- AcroForm text fields: `/Tx BMC...EMC` marked content wrapper required (ISO 32000-1 §12.7.3.3)
+- AcroForm radio buttons: parent-child group structure — parent `/Kids` array, children `/Parent` ref, mutual exclusivity via `/V` on parent (ISO 32000-1 §12.7.4.2.4)
+- AcroForm `checked` property: `FormFieldBlock.checked?: boolean` for checkbox/radio default state
+- AcroForm indirect font refs: `/DR << /Font << /Helv fontObjNum 0 R >> >>` uses actual object number, not inline dict
+- `FormFieldBlock`: `{ type: 'formField', fieldType, name, ... }` — document block type
+- AcroForm tagged mode: form fields wrapped in `/Form` structure element with MCID
+- Digital signatures: `pdf-signature.ts` builds `/Sig` field with `/ByteRange` placeholder, CMS SignedData via `crypto/cms.ts`
+- Signature algorithms: RSA PKCS#1 v1.5 (SHA-256) and ECDSA P-256 (SHA-256)
+- Crypto module: standalone `src/crypto/` — sha.ts (SHA-384/512, HMAC-SHA-256), asn1.ts (DER), rsa.ts, ecdsa.ts, x509.ts, cms.ts
+- `signPdfBytes()`: takes PDF bytes + private key + certificate → signed PDF bytes with embedded CMS
+- Streaming output: `pdf-stream-writer.ts` provides `buildPdfStream()` AsyncGenerator yielding Uint8Array chunks
+- Streaming API: `streamPdf(params)` / `streamDocumentPdf(params)` — both return `AsyncGenerator<Uint8Array>`
+- Streaming chunk size: configurable via `chunkSize` option (default: 65536 bytes)
+- Parser module: `src/parser/` — tokenizer → object parser → xref parser → reader → modifier
+- PDF tokenizer: `PdfTokenizer` class scans tokens one at a time (lazy, streaming-friendly)
+- PDF object parser: `parseObject()`, `parseDictionary()`, `parseArray()` + type guards (`isDict`, `isArray`, `isStream`)
+- PDF xref parser: `parseXref()` handles both table and stream xref formats, follows `/Prev` chain
+- PDF reader: `PdfReader` class — `open(bytes)`, `getPage(n)`, `getPageCount()`, `getMetadata()`, `decodeStream()`
+- PDF modifier: `PdfModifier` class — `addPage()`, `removePage()`, `setMetadata()`, `save()` with incremental `/Prev` chain
+- Parser types: `PdfValue`, `PdfDict`, `PdfArray`, `PdfStream`, `PdfRef` — discriminated union for type-safe parsing
+- Bengali shaping: `shapeBengaliText()` — GSUB conjunct formation + GPOS mark positioning via `bengali-shaper.ts`
+- Tamil shaping: `shapeTamilText()` — GSUB substitution + split vowel decomposition via `tamil-shaper.ts`
 
 ### API Design
 
@@ -169,7 +217,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 1035+ tests (29 files), 33 fuzz edge-cases, performance benchmarks
+- **95%+ test coverage** — 1513+ tests (36 files), 33 fuzz edge-cases, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)
