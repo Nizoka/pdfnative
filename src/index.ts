@@ -10,7 +10,7 @@
  *   - Free-form document builder (headings, paragraphs, lists, tables, images, links, barcodes)
  *   - Built-in Helvetica (Latin/WinAnsi) — no font embedding needed
  *   - CIDFont Type2/Identity-H embedding for Unicode scripts
- *   - 14 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian
+ *   - 16 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil
  *   - Thai OpenType shaping (GSUB + GPOS)
  *   - Arabic positional shaping (GSUB isolated/initial/medial/final forms)
  *   - BiDi text layout (simplified UAX #9) with glyph mirroring
@@ -86,6 +86,8 @@ export type {
     LinkBlock,
     TocBlock,
     BarcodeBlock,
+    SvgBlock,
+    FormFieldBlock,
     DocumentBlock,
     DocumentMetadata,
     DocumentParams,
@@ -133,6 +135,40 @@ export {
     renderBarcode,
 } from './core/pdf-barcode.js';
 
+// ── Core — SVG Path Rendering ───────────────────────────────────────
+export type { SvgSegment, SvgRenderOptions } from './core/pdf-svg.js';
+export { parseSvgPath, renderSvg } from './core/pdf-svg.js';
+
+// ── Core — AcroForm Fields ──────────────────────────────────────────
+export type { FormFieldType, FormField, FormWidgetResult, RadioGroupContext } from './core/pdf-form.js';
+export { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent, defaultFieldHeight } from './core/pdf-form.js';
+
+// ── Core — Digital Signatures ───────────────────────────────────────
+export type { PdfSignOptions } from './core/pdf-signature.js';
+export { buildSigDict, signPdfBytes, estimateContentsSize } from './core/pdf-signature.js';
+
+// ── Core — Streaming Output ─────────────────────────────────────────
+export type { StreamOptions } from './core/pdf-stream-writer.js';
+export {
+    validateDocumentStreamable, validateTableStreamable,
+    chunkBinaryString, concatChunks, streamByteLength,
+    buildDocumentPDFStream, buildPDFStream,
+} from './core/pdf-stream-writer.js';
+
+// ── Crypto — Hashing, ASN.1, RSA, ECDSA, X.509, CMS ────────────────
+export { sha384, sha512, hmacSha256 } from './crypto/sha.js';
+export type { Asn1Node } from './crypto/asn1.js';
+export { derDecode, derSequence, derInteger, derOid, derOctetString, derBitString } from './crypto/asn1.js';
+export type { RsaPublicKey, RsaPrivateKey } from './crypto/rsa.js';
+export { rsaSign, rsaVerify, rsaSignHash, rsaVerifyHash, parseRsaPrivateKey, parseRsaPublicKey } from './crypto/rsa.js';
+export type { EcPublicKey, EcPrivateKey } from './crypto/ecdsa.js';
+export { ecdsaSign, ecdsaVerify, ecPublicKeyFromPrivate, encodeEcPublicKey, decodeEcPublicKey } from './crypto/ecdsa.js';
+export type { X509Name, X509Certificate } from './crypto/x509.js';
+export { parseCertificate, verifyCertSignature, isSelfSigned } from './crypto/x509.js';
+export type { SignatureAlgorithm, CmsSignOptions } from './crypto/cms.js';
+export { buildCmsSignedData, estimateCmsSize } from './crypto/cms.js';
+export { initCrypto } from './crypto/index.js';
+
 export { downloadBlob, toBytes, slugify } from './core/pdf-stream.js';
 
 // ── Core — Layout ───────────────────────────────────────────────────
@@ -151,10 +187,14 @@ export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';
 
-// ── Shaping — Thai & Multi-Script ───────────────────────────────────
+// ── Shaping — Thai, Bengali, Tamil & Multi-Script ───────────────────
 export { shapeThaiText } from './shaping/thai-shaper.js';
+export { shapeBengaliText } from './shaping/bengali-shaper.js';
+export { shapeTamilText } from './shaping/tamil-shaper.js';
 export {
     containsThai, containsArabic, containsHebrew,
+    containsBengali, containsTamil,
+    isBengaliCodepoint, isTamilCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint,
 } from './shaping/script-registry.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './shaping/script-detect.js';
@@ -165,6 +205,23 @@ export type { FontRun } from './shaping/multi-font.js';
 export type { BidiRun } from './shaping/bidi.js';
 export { resolveBidiRuns, containsRTL } from './shaping/bidi.js';
 export { shapeArabicText } from './shaping/arabic-shaper.js';
+
+// ── Parser — PDF Reading & Modification ─────────────────────────────
+export type { PdfToken, TokenType, PdfTokenizer } from './parser/pdf-tokenizer.js';
+export { createTokenizer } from './parser/pdf-tokenizer.js';
+export type { PdfRef, PdfStream, PdfDict as ParsedDict, PdfArray as ParsedArray, PdfValue, PdfIndirectObject } from './parser/pdf-object-parser.js';
+export {
+    isRef, isStream, isDict, isArray,
+    dictGet, dictGetName, dictGetNum, dictGetRef, dictGetDict, dictGetArray,
+    parseValue, parseIndirectObject,
+} from './parser/pdf-object-parser.js';
+export type { XrefEntry, XrefTable } from './parser/pdf-xref-parser.js';
+export { findStartxref, parseXrefTable, getTrailerValue, getTrailerRef } from './parser/pdf-xref-parser.js';
+export type { PdfReader } from './parser/pdf-reader.js';
+export { openPdf } from './parser/pdf-reader.js';
+export type { PdfModifier } from './parser/pdf-modifier.js';
+export { createModifier } from './parser/pdf-modifier.js';
+export { inflateSync, setInflateImpl, initNodeDecompression as initNodeDecompression_parser } from './parser/pdf-inflate.js';
 
 // ── Worker — Off-Thread Generation ──────────────────────────────────
 export { createPDF, generatePDFInWorker, generatePDFMainThread, WORKER_THRESHOLD, WORKER_TIMEOUT_MS } from './worker/worker-api.js';

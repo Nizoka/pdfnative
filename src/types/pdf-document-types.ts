@@ -7,6 +7,8 @@
 
 import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor } from './pdf-types.js';
 import type { BarcodeFormat, QRErrorLevel } from '../core/pdf-barcode.js';
+import type { SvgRenderOptions } from '../core/pdf-svg.js';
+import type { FormFieldType } from '../core/pdf-form.js';
 
 // ── Block Types ──────────────────────────────────────────────────────
 
@@ -107,6 +109,60 @@ export interface BarcodeBlock {
     readonly pdf417ECLevel?: number;
 }
 
+/** SVG block — renders vector graphics via PDF path operators. */
+export interface SvgBlock {
+    readonly type: 'svg';
+    /** SVG path `d` attribute, or SVG markup with path/rect/circle/ellipse/line/polyline/polygon elements. */
+    readonly data: string;
+    /** Display width in points. Default: `200`. */
+    readonly width?: number;
+    /** Display height in points. Default: `200`. */
+    readonly height?: number;
+    /** Horizontal alignment. Default: `'left'`. */
+    readonly align?: 'left' | 'center' | 'right';
+    /** SVG viewBox [minX, minY, width, height]. Extracted from SVG markup or defaults to `[0, 0, width, height]`. */
+    readonly viewBox?: readonly [number, number, number, number];
+    /** Fill color (hex, tuple, or PDF RGB). Default: black. `'none'` disables fill. */
+    readonly fill?: SvgRenderOptions['fill'];
+    /** Stroke color (hex, tuple, or PDF RGB). Default: none. */
+    readonly stroke?: SvgRenderOptions['stroke'];
+    /** Stroke width in SVG user units. Default: `1`. */
+    readonly strokeWidth?: number;
+    /** Alt text for tagged PDF accessibility (/Figure /ActualText). */
+    readonly alt?: string;
+}
+
+/** Form field block — interactive AcroForm widget (ISO 32000-1 §12.7). */
+export interface FormFieldBlock {
+    readonly type: 'formField';
+    /** Field type. */
+    readonly fieldType: FormFieldType;
+    /** Unique field name (T entry in field dictionary). */
+    readonly name: string;
+    /** Display label rendered before the widget. */
+    readonly label?: string;
+    /** Default / initial value. */
+    readonly value?: string;
+    /** Placeholder hint (used in appearance stream when value is empty). */
+    readonly placeholder?: string;
+    /** Width of the widget in points. Default: full content width. */
+    readonly width?: number;
+    /** Height of the widget in points. Default varies by fieldType. */
+    readonly height?: number;
+    /** Font size for text fields and dropdown. Default: `10`. */
+    readonly fontSize?: number;
+    /** Options for dropdown and listbox field types. */
+    readonly options?: readonly string[];
+    /** Whether the field is read-only. Default: `false`. */
+    readonly readOnly?: boolean;
+    /** Whether the field is required. Default: `false`. */
+    readonly required?: boolean;
+    /** Maximum character count for text/multilineText. */
+    readonly maxLength?: number;
+    /** Whether a checkbox/radio option is initially selected. Default: `false`. */
+    readonly checked?: boolean;
+}
+
 /** Union of all supported document blocks. */
 export type DocumentBlock =
     | HeadingBlock
@@ -118,7 +174,9 @@ export type DocumentBlock =
     | ImageBlock
     | LinkBlock
     | TocBlock
-    | BarcodeBlock;
+    | BarcodeBlock
+    | SvgBlock
+    | FormFieldBlock;
 
 // ── Document Parameters ──────────────────────────────────────────────
 

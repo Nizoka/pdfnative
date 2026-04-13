@@ -42,6 +42,12 @@ export {
     renderBarcode,
 } from './pdf-barcode.js';
 
+export type { SvgSegment, SvgRenderOptions } from './pdf-svg.js';
+export { parseSvgPath, renderSvg } from './pdf-svg.js';
+
+export type { FormFieldType, FormField, FormWidgetResult } from './pdf-form.js';
+export { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, defaultFieldHeight } from './pdf-form.js';
+
 export type { EncryptionState } from './pdf-encrypt.js';
 export {
     aesCBC, md5, sha256,
@@ -49,3 +55,13 @@ export {
     initEncryption, encryptStream, encryptString,
     buildEncryptDict, buildIdArray,
 } from './pdf-encrypt.js';
+
+export type { PdfSignOptions } from './pdf-signature.js';
+export { buildSigDict, signPdfBytes, estimateContentsSize } from './pdf-signature.js';
+
+export type { StreamOptions } from './pdf-stream-writer.js';
+export {
+    validateDocumentStreamable, validateTableStreamable,
+    chunkBinaryString, concatChunks, streamByteLength,
+    buildDocumentPDFStream, buildPDFStream,
+} from './pdf-stream-writer.js';

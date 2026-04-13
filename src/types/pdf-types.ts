@@ -98,7 +98,7 @@ export interface PdfInfoItem {
 
 /**
  * Parameters for PDF generation.
- * This is the main input interface — all Plika-specific coupling has been removed.
+ * This is the main input interface for table-centric PDF generation.
  * The consumer builds these params from their own data model.
  */
 export interface PdfParams {

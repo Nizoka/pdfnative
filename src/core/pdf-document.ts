@@ -29,6 +29,8 @@ import type {
     LinkBlock,
     TocBlock,
     BarcodeBlock,
+    SvgBlock,
+    FormFieldBlock,
 } from '../types/pdf-document-types.js';
 import { parseImage, buildImageXObject, buildImageOperators } from './pdf-image.js';
 import type { ParsedImage } from './pdf-image.js';
@@ -65,6 +67,9 @@ import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
 import { renderBarcode } from './pdf-barcode.js';
+import { renderSvg } from './pdf-svg.js';
+import { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent, defaultFieldHeight } from './pdf-form.js';
+import type { FormField } from './pdf-form.js';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -683,6 +688,12 @@ interface PageAnnotation {
     readonly page: number; // page index (0-based)
 }
 
+/** A collected form field widget to be emitted after all pages. */
+interface PageFormField {
+    readonly field: FormField;
+    readonly page: number;
+}
+
 /**
  * Render a link block. Renders clickable underlined text and collects annotations.
  */
@@ -926,6 +937,148 @@ function _renderBarcodeBlock(
     return { ops, y };
 }
 
+// ── SVG Rendering ────────────────────────────────────────────────────
+
+/** Default SVG block width in points. */
+const DEFAULT_SVG_SIZE = 200;
+
+function _renderSvgBlock(
+    block: SvgBlock,
+    y: number,
+    mgL: number,
+    cw: number,
+    tagCtx?: TagContext,
+    documentChildren?: (StructElement | MCRef)[],
+): { ops: string[]; y: number } {
+    const ops: string[] = [];
+    const w = block.width ?? DEFAULT_SVG_SIZE;
+    const h = block.height ?? DEFAULT_SVG_SIZE;
+
+    // Horizontal alignment
+    let bx = mgL;
+    if (block.align === 'center') {
+        bx = mgL + (cw - w) / 2;
+    } else if (block.align === 'right') {
+        bx = mgL + cw - w;
+    }
+
+    const by = y; // top edge (renderSvg handles Y-up internally)
+
+    const svgOps = renderSvg(block.data, bx, by, w, h, {
+        fill: block.fill,
+        stroke: block.stroke,
+        strokeWidth: block.strokeWidth,
+        viewBox: block.viewBox,
+    });
+
+    if (svgOps) {
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            const altText = block.alt ?? '';
+            if (altText) {
+                const altHex = Array.from(altText).map(c =>
+                    (c.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, '0')
+                ).join('');
+                ops.push(`/Span << /MCID ${mcid} /ActualText <FEFF${altHex}> >> BDC`);
+            } else {
+                ops.push(`/Span << /MCID ${mcid} >> BDC`);
+            }
+            ops.push(svgOps);
+            ops.push('EMC');
+            documentChildren?.push({ type: 'Figure', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+        } else {
+            ops.push(svgOps);
+        }
+    }
+
+    y = y - h - 6; // post-SVG spacing
+    return { ops, y };
+}
+
+// ── Form Field Rendering ─────────────────────────────────────────────
+
+/**
+ * Render a form field block. Renders the label (if any) inline in the content
+ * stream and collects the field descriptor for widget/annotation emission.
+ */
+function _renderFormFieldBlock(
+    block: FormFieldBlock,
+    y: number,
+    enc: EncodingContext,
+    mgL: number,
+    cw: number,
+    pageIndex: number,
+    formFields: PageFormField[],
+    tagCtx?: TagContext,
+    documentChildren?: (StructElement | MCRef)[],
+): { ops: string[]; y: number } {
+    const ops: string[] = [];
+    const fontSize = block.fontSize ?? DEFAULT_PARA_SIZE;
+
+    // Render label above field
+    if (block.label) {
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            ops.push(`/Span << /MCID ${mcid} >> BDC`);
+            ops.push('BT');
+            ops.push(`${enc.f2} ${fmtNum(fontSize)} Tf`);
+            ops.push(`${fmtNum(mgL)} ${fmtNum(y - fontSize)} Td`);
+            ops.push(`${enc.ps(block.label)} Tj`);
+            ops.push('ET');
+            ops.push('EMC');
+            documentChildren?.push({ type: 'P', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+        } else {
+            ops.push('BT');
+            ops.push(`${enc.f2} ${fmtNum(fontSize)} Tf`);
+            ops.push(`${fmtNum(mgL)} ${fmtNum(y - fontSize)} Td`);
+            ops.push(`${enc.ps(block.label)} Tj`);
+            ops.push('ET');
+        }
+        y -= fontSize * 1.3;
+    }
+
+    // Compute widget rectangle
+    const isButton = block.fieldType === 'checkbox' || block.fieldType === 'radio';
+    const fieldH = block.height ?? defaultFieldHeight(block.fieldType);
+    const fieldW = block.width ?? (isButton ? fieldH : cw);
+    const x1 = mgL;
+    const y1 = y - fieldH;
+    const x2 = x1 + fieldW;
+    const y2 = y;
+
+    // Collect form field for widget emission
+    formFields.push({
+        field: {
+            fieldType: block.fieldType,
+            name: block.name,
+            value: block.value ?? '',
+            rect: [x1, y1, x2, y2],
+            fontSize: block.fontSize ?? DEFAULT_PARA_SIZE,
+            options: block.options ?? [],
+            readOnly: block.readOnly ?? false,
+            required: block.required ?? false,
+            maxLength: block.maxLength ?? null,
+            page: pageIndex,
+            checked: block.checked ?? false,
+        },
+        page: pageIndex,
+    });
+
+    // Tagged mode: /Form structure element
+    if (tagCtx?.tagged) {
+        const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+        const nameHex = Array.from(block.name).map(c =>
+            (c.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, '0')
+        ).join('');
+        ops.push(`/Span << /MCID ${mcid} /ActualText <FEFF${nameHex}> >> BDC`);
+        ops.push('EMC');
+        documentChildren?.push({ type: 'Form', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+    }
+
+    y = y1 - 6; // post-field spacing
+    return { ops, y };
+}
+
 // ── Block Height Estimation ──────────────────────────────────────────
 
 /**
@@ -986,6 +1139,13 @@ function _estimateBlockHeight(
         }
         case 'barcode': {
             return _estimateBarcodeHeight(block) + 6;
+        }
+        case 'svg': {
+            return (block.height ?? DEFAULT_SVG_SIZE) + 6;
+        }
+        case 'formField': {
+            const labelH = block.label ? DEFAULT_PARA_SIZE * 1.3 : 0;
+            return labelH + (block.height ?? defaultFieldHeight(block.fieldType)) + 6;
         }
     }
 }
@@ -1186,6 +1346,9 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     // ── Collect link annotations ─────────────────────────────────────
     const pageAnnotations: PageAnnotation[] = [];
 
+    // ── Collect form fields ──────────────────────────────────────────
+    const pageFormFields: PageFormField[] = [];
+
     // ── Pre-compute page object start ────────────────────────────────
     const fontObjEnd = (enc.isUnicode && fontEntries.length > 0)
         ? 5 + fontEntries.length * 5
@@ -1308,6 +1471,18 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                     y = result.y;
                     break;
                 }
+                case 'svg': {
+                    const result = _renderSvgBlock(block, y, mg.l, cw, tagCtx, documentChildren);
+                    ops.push(...result.ops);
+                    y = result.y;
+                    break;
+                }
+                case 'formField': {
+                    const result = _renderFormFieldBlock(block, y, enc, mg.l, cw, p, pageFormFields, tagCtx, documentChildren);
+                    ops.push(...result.ops);
+                    y = result.y;
+                    break;
+                }
                 // pageBreak handled during pagination
             }
         }
@@ -1335,6 +1510,41 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         annotsByPage.set(pa.page, list);
     }
     const totalAnnots = pageAnnotations.length;
+
+    // ── Group form fields by page ────────────────────────────────────
+    const formFieldsByPage = new Map<number, PageFormField[]>();
+    for (const pf of pageFormFields) {
+        const list = formFieldsByPage.get(pf.page) ?? [];
+        list.push(pf);
+        formFieldsByPage.set(pf.page, list);
+    }
+    const totalFormFields = pageFormFields.length;
+    // Each form field: button types (checkbox/radio) = 3 objects (widget + Yes AP + Off AP)
+    // Other types = 2 objects (widget + AP XObject)
+    // Plus 1 dedicated Helvetica font object for form field rendering
+    // Plus 1 parent object per radio group
+    let totalFieldObjs = 0;
+    const formFieldObjOffsets: number[] = []; // cumulative offset of each field within form block
+    for (let fi = 0; fi < totalFormFields; fi++) {
+        formFieldObjOffsets.push(totalFieldObjs);
+        const ft = pageFormFields[fi].field.fieldType;
+        totalFieldObjs += (ft === 'checkbox' || ft === 'radio') ? 3 : 2;
+    }
+
+    // Detect radio groups: radio fields sharing the same name form a group (ISO 32000-1 §12.7.4.2.4)
+    const radioGroups = new Map<string, number[]>(); // group name → field indices
+    for (let fi = 0; fi < totalFormFields; fi++) {
+        const f = pageFormFields[fi].field;
+        if (f.fieldType === 'radio') {
+            const list = radioGroups.get(f.name);
+            if (list) list.push(fi);
+            else radioGroups.set(f.name, [fi]);
+        }
+    }
+    const numRadioGroups = radioGroups.size;
+    // Radio group parents sit after all field objects, before the font object
+    const totalFormObjs = totalFieldObjs + numRadioGroups;
+    const formFontObjs = totalFormFields > 0 ? 1 : 0; // dedicated /Helv font object for forms
 
     // ── Assemble PDF binary ──────────────────────────────────────────
     const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
@@ -1473,17 +1683,37 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             const stream = pageStreams[p];
             const structParents = tagged ? ` /StructParents ${p}` : '';
 
-            // Build /Annots reference if this page has link annotations
+            // Build /Annots reference if this page has link annotations or form widgets
             const pageAnnots = annotsByPage.get(p);
+            const pageFields = formFieldsByPage.get(p);
             let annotsStr = '';
+            const annotRefs: string[] = [];
+
             if (pageAnnots && pageAnnots.length > 0) {
                 const annotObjStart = pageObjStart + totalPages * 2;
                 let annotIdx = 0;
                 for (let pp = 0; pp < p; pp++) {
                     annotIdx += (annotsByPage.get(pp)?.length ?? 0);
                 }
-                const refs = pageAnnots.map((_, i) => `${annotObjStart + annotIdx + i} 0 R`).join(' ');
-                annotsStr = ` /Annots [${refs}]`;
+                for (let i = 0; i < pageAnnots.length; i++) {
+                    annotRefs.push(`${annotObjStart + annotIdx + i} 0 R`);
+                }
+            }
+
+            if (pageFields && pageFields.length > 0) {
+                // Form widget objects start after all link annotations
+                const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
+                let fieldIdx = 0;
+                for (let pp = 0; pp < p; pp++) {
+                    fieldIdx += (formFieldsByPage.get(pp)?.length ?? 0);
+                }
+                for (let i = 0; i < pageFields.length; i++) {
+                    annotRefs.push(`${formObjStart + formFieldObjOffsets[fieldIdx + i]} 0 R`);
+                }
+            }
+
+            if (annotRefs.length > 0) {
+                annotsStr = ` /Annots [${annotRefs.join(' ')}]`;
             }
 
             emitObj(pageObjNum,
@@ -1523,6 +1753,60 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 annotIdx++;
             }
         }
+
+        // Emit form field widget + appearance objects (after link annotations)
+        if (totalFormFields > 0) {
+            const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
+            const radioGroupParentStart = formObjStart + totalFieldObjs;
+            const formFontObjNum = formObjStart + totalFormObjs;
+            emitObj(formFontObjNum, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+
+            // Build radio group parent object map: group name → parent obj num + selected value
+            const radioGroupObjNums = new Map<string, number>();
+            let rgIdx = 0;
+            for (const [groupName] of radioGroups) {
+                radioGroupObjNums.set(groupName, radioGroupParentStart + rgIdx);
+                rgIdx++;
+            }
+
+            for (let fi = 0; fi < pageFormFields.length; fi++) {
+                const widgetObjNum = formObjStart + formFieldObjOffsets[fi];
+                const apObjNum = widgetObjNum + 1;
+                const field = pageFormFields[fi].field;
+                const isButton = field.fieldType === 'checkbox' || field.fieldType === 'radio';
+
+                // Radio group child: pass parent context
+                const isRadioGroup = field.fieldType === 'radio' && radioGroups.has(field.name);
+                const radioCtx = isRadioGroup
+                    ? { parentObjNum: radioGroupObjNums.get(field.name)!, exportValue: field.value || 'opt' + fi }
+                    : undefined;
+
+                const result = buildFormWidget(field, apObjNum, radioCtx);
+                emitObj(widgetObjNum, result.widgetDict);
+                const w = field.rect[2] - field.rect[0];
+                const h = field.rect[3] - field.rect[1];
+                if (isButton) {
+                    const yesStream = result.apYesStream!;
+                    const offStream = result.apOffStream!;
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum), yesStream);
+                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum), offStream);
+                } else {
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum), result.appearanceStream);
+                }
+            }
+
+            // Emit radio group parent objects
+            for (const [groupName, fieldIndices] of radioGroups) {
+                const parentObjNum = radioGroupObjNums.get(groupName)!;
+                const childObjNums = fieldIndices.map(fi => formObjStart + formFieldObjOffsets[fi]);
+                const checkedField = fieldIndices.find(fi => pageFormFields[fi].field.checked);
+                const selectedValue = checkedField !== undefined
+                    ? (pageFormFields[checkedField].field.value || 'opt' + checkedField)
+                    : '';
+                const first = pageFormFields[fieldIndices[0]].field;
+                emitObj(parentObjNum, buildRadioGroupParent(groupName, selectedValue, childObjNums, first.readOnly, first.required));
+            }
+        }
     } else {
         // Latin mode
         pageObjStart = 5 + imageCount + wmExtraObjs;
@@ -1559,17 +1843,36 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             const stream = pageStreams[p];
             const structParents = tagged ? ` /StructParents ${p}` : '';
 
-            // Build /Annots reference if this page has link annotations
+            // Build /Annots reference if this page has link annotations or form widgets
             const pageAnnots = annotsByPage.get(p);
+            const pageFields = formFieldsByPage.get(p);
             let annotsStr = '';
+            const annotRefs: string[] = [];
+
             if (pageAnnots && pageAnnots.length > 0) {
                 const annotObjStart = pageObjStart + totalPages * 2;
                 let annotIdx = 0;
                 for (let pp = 0; pp < p; pp++) {
                     annotIdx += (annotsByPage.get(pp)?.length ?? 0);
                 }
-                const refs = pageAnnots.map((_, i) => `${annotObjStart + annotIdx + i} 0 R`).join(' ');
-                annotsStr = ` /Annots [${refs}]`;
+                for (let i = 0; i < pageAnnots.length; i++) {
+                    annotRefs.push(`${annotObjStart + annotIdx + i} 0 R`);
+                }
+            }
+
+            if (pageFields && pageFields.length > 0) {
+                const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
+                let fieldIdx = 0;
+                for (let pp = 0; pp < p; pp++) {
+                    fieldIdx += (formFieldsByPage.get(pp)?.length ?? 0);
+                }
+                for (let i = 0; i < pageFields.length; i++) {
+                    annotRefs.push(`${formObjStart + formFieldObjOffsets[fieldIdx + i]} 0 R`);
+                }
+            }
+
+            if (annotRefs.length > 0) {
+                annotsStr = ` /Annots [${annotRefs.join(' ')}]`;
             }
 
             emitObj(pageObjNum,
@@ -1608,12 +1911,66 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 annotIdx++;
             }
         }
+
+        // Emit form field widget + appearance objects (Latin mode)
+        if (totalFormFields > 0) {
+            const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
+            const radioGroupParentStart = formObjStart + totalFieldObjs;
+            const formFontObjNum = formObjStart + totalFormObjs;
+            emitObj(formFontObjNum, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+
+            // Build radio group parent object map
+            const radioGroupObjNums = new Map<string, number>();
+            let rgIdx = 0;
+            for (const [groupName] of radioGroups) {
+                radioGroupObjNums.set(groupName, radioGroupParentStart + rgIdx);
+                rgIdx++;
+            }
+
+            for (let fi = 0; fi < pageFormFields.length; fi++) {
+                const widgetObjNum = formObjStart + formFieldObjOffsets[fi];
+                const apObjNum = widgetObjNum + 1;
+                const field = pageFormFields[fi].field;
+                const isButton = field.fieldType === 'checkbox' || field.fieldType === 'radio';
+
+                // Radio group child: pass parent context
+                const isRadioGroup = field.fieldType === 'radio' && radioGroups.has(field.name);
+                const radioCtx = isRadioGroup
+                    ? { parentObjNum: radioGroupObjNums.get(field.name)!, exportValue: field.value || 'opt' + fi }
+                    : undefined;
+
+                const result = buildFormWidget(field, apObjNum, radioCtx);
+                emitObj(widgetObjNum, result.widgetDict);
+                const w = field.rect[2] - field.rect[0];
+                const h = field.rect[3] - field.rect[1];
+                if (isButton) {
+                    const yesStream = result.apYesStream!;
+                    const offStream = result.apOffStream!;
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum), yesStream);
+                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum), offStream);
+                } else {
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum), result.appearanceStream);
+                }
+            }
+
+            // Emit radio group parent objects
+            for (const [groupName, fieldIndices] of radioGroups) {
+                const parentObjNum = radioGroupObjNums.get(groupName)!;
+                const childObjNums = fieldIndices.map(fi => formObjStart + formFieldObjOffsets[fi]);
+                const checkedField = fieldIndices.find(fi => pageFormFields[fi].field.checked);
+                const selectedValue = checkedField !== undefined
+                    ? (pageFormFields[checkedField].field.value || 'opt' + checkedField)
+                    : '';
+                const first = pageFormFields[fieldIndices[0]].field;
+                emitObj(parentObjNum, buildRadioGroupParent(groupName, selectedValue, childObjNums, first.readOnly, first.required));
+            }
+        }
     }
 
     // /Info dictionary
     const baseObjCount = enc.isUnicode
-        ? 4 + fontEntries.length * 5 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots
-        : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots;
+        ? 4 + fontEntries.length * 5 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs
+        : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
     const infoObjNum = baseObjCount + 1;
 
     const now = new Date();
@@ -1702,6 +2059,32 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         destsStr = ` /Dests << ${destEntries.join(' ')} >>`;
     }
 
+    // ── Build AcroForm dictionary ──────────────────────────────────
+    let acroFormStr = '';
+    if (totalFormFields > 0) {
+        const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
+        const radioGroupParentStart = formObjStart + totalFieldObjs;
+        const formFontObjNum = formObjStart + totalFormObjs;
+
+        // /Fields: non-radio widgets + radio group parent objects (not individual radio children)
+        const radioFieldIndices = new Set<number>();
+        for (const indices of radioGroups.values()) {
+            for (const fi of indices) radioFieldIndices.add(fi);
+        }
+        const fieldObjNums: number[] = [];
+        for (let fi = 0; fi < pageFormFields.length; fi++) {
+            if (!radioFieldIndices.has(fi)) {
+                fieldObjNums.push(formObjStart + formFieldObjOffsets[fi]);
+            }
+        }
+        let rgIdx = 0;
+        for (const _groupName of radioGroups.keys()) {
+            fieldObjNums.push(radioGroupParentStart + rgIdx);
+            rgIdx++;
+        }
+        acroFormStr = ` ${buildAcroFormDict(fieldObjNums, formFontObjNum)}`;
+    }
+
     // ── Rewrite Catalog ──────────────────────────────────────────────
     if (tagged) {
         let catalogContent =
@@ -1709,7 +2092,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             `/MarkInfo << /Marked true >> ` +
             `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
             `/Metadata ${xmpObjNum} 0 R ` +
-            `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr}`;
+            `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr}${acroFormStr}`;
         if (afArrayStr) {
             catalogContent += ` /AF [${afArrayStr}] ${embeddedFilesNamesDict}`;
         }
@@ -1728,9 +2111,9 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 }
             }
         }
-    } else if (destsStr) {
-        // Non-tagged mode with TOC destinations — rewrite catalog
-        const catalogContent = `<< /Type /Catalog /Pages 2 0 R${destsStr} >>`;
+    } else if (destsStr || acroFormStr) {
+        // Non-tagged mode with TOC destinations or AcroForm — rewrite catalog
+        const catalogContent = `<< /Type /Catalog /Pages 2 0 R${destsStr}${acroFormStr} >>`;
         const oldCatalog = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\n';
         const newCatalog = `1 0 obj\n${catalogContent}\nendobj\n\n`;
         const idx = parts.indexOf(oldCatalog);

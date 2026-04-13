@@ -12,10 +12,12 @@
 import type { FontEntry, FontData, TextRun, EncodingContext } from '../types/pdf-types.js';
 import { pdfString, helveticaWidth } from '../fonts/encoding.js';
 import { shapeThaiText } from '../shaping/thai-shaper.js';
+import { shapeBengaliText } from '../shaping/bengali-shaper.js';
+import { shapeTamilText } from '../shaping/tamil-shaper.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
 import { resolveBidiRuns, containsRTL, reverseString } from '../shaping/bidi.js';
-import { isArabicCodepoint, containsThai, containsArabic } from '../shaping/script-registry.js';
+import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil } from '../shaping/script-registry.js';
 
 // ── Helvetica Fallback Helpers ───────────────────────────────────────
 
@@ -243,8 +245,28 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                                     }
                                 }
                                 result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            } else if (containsBengali(fRun.text)) {
+                                const shaped = shapeBengaliText(fRun.text, fd);
+                                let designW = 0;
+                                for (const g of shaped) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            } else if (containsTamil(fRun.text)) {
+                                const shaped = shapeTamilText(fRun.text, fd);
+                                let designW = 0;
+                                for (const g of shaped) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
                             } else {
-                                // LTR non-Thai: use fallback helper
+                                // LTR non-shaped: use fallback helper
                                 const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid);
                                 result.push(...subRuns);
                             }
@@ -259,10 +281,34 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
             return rawRuns.flatMap(run => {
                 const fd = run.entry.fontData;
                 const fontRef = run.entry.fontRef;
+                const upm = fd.metrics.unitsPerEm;
 
                 if (containsThai(run.text)) {
-                    const upm = fd.metrics.unitsPerEm;
                     const shaped = shapeThaiText(run.text, fd);
+                    let designW = 0;
+                    for (const g of shaped) {
+                        _trackGid(fontRef, g.gid);
+                        if (!g.isZeroAdvance) {
+                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                        }
+                    }
+                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
+                }
+
+                if (containsBengali(run.text)) {
+                    const shaped = shapeBengaliText(run.text, fd);
+                    let designW = 0;
+                    for (const g of shaped) {
+                        _trackGid(fontRef, g.gid);
+                        if (!g.isZeroAdvance) {
+                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                        }
+                    }
+                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
+                }
+
+                if (containsTamil(run.text)) {
+                    const shaped = shapeTamilText(run.text, fd);
                     let designW = 0;
                     for (const g of shaped) {
                         _trackGid(fontRef, g.gid);
@@ -308,7 +354,7 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                 return `<${hex.toUpperCase()}>`;
             }
 
-            if (!containsThai(str)) {
+            if (!containsThai(str) && !containsBengali(str) && !containsTamil(str)) {
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     const rawCp = str.codePointAt(i) ?? 0;
@@ -320,7 +366,11 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                 }
                 return `<${hex.toUpperCase()}>`;
             }
-            const shaped = shapeThaiText(str, primary.fontData);
+            // Shaped text path (Thai, Bengali, Tamil)
+            const shapeFn = containsThai(str) ? shapeThaiText
+                : containsBengali(str) ? shapeBengaliText
+                : shapeTamilText;
+            const shaped = shapeFn(str, primary.fontData);
             let hex = '';
             for (const g of shaped) { _trackGid(primary.fontRef, g.gid); hex += g.gid.toString(16).padStart(4, '0'); }
             return `<${hex.toUpperCase()}>`;
