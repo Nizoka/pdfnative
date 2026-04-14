@@ -61,7 +61,7 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | TypeScript declarations | Built-in | Built-in | @types/* | Built-in | @types/* |
 | PDF/A (ISO 19005) | 1b, 2b, 2u, 3b | — | — | — | — |
 | Tagged PDF / PDF/UA | ✅ | — | ✅ | — | — |
-| Encryption | AES-128/256 | RC4 | Up to AES-256 | — | Up to AES-256 |
+| Encryption | AES-128/256 | ✅ | ✅ | — | ✅ |
 | Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
 | BiDi (RTL) layout | ✅ | — | — | — | — |
 | Modify existing PDFs | ✅ (incremental) | — | — | ✅ | — |
@@ -72,10 +72,9 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | Streaming output | ✅ | — | ✅ | — | ✅ |
 | PDF parser | ✅ | — | — | ✅ | — |
 | Tree-shakeable (ESM) | ✅ | — | — | ✅ | — |
-| NPM provenance (SLSA) | ✅ | — | — | — | — |
-| Weekly npm downloads | — | ~12M | ~2.6M | ~4.6M | ~1.5M |
+| NPM provenance (SLSA) | ✅ | — | — | — | ✅ |
 
-> **Data sources:** npm registry metadata and official README/documentation for each library as of April 2026. Dependency counts reflect direct `dependencies` listed in each package's `package.json`. "—" means the feature is not supported or not documented. Sample PDFs validate with veraPDF (PDF/A) and Adobe Acrobat.
+> **Data sources:** npm registry metadata and official README/documentation for each library as of April 2026. Dependency counts reflect direct `dependencies` listed in each package's `package.json`. "—" means the feature is not supported or not documented. Feature claims about third-party libraries are based on their public documentation and may not reflect the latest version — please verify against current releases. Sample PDFs validate with veraPDF (PDF/A) and Adobe Acrobat.
 
 **When to choose another library:** You need advanced vector graphics (complex gradients, arbitrary transforms), rich interactive form scripting (JavaScript actions), or mature ecosystem integrations with existing toolchains.
 
