@@ -253,6 +253,11 @@ function parseTTF(buffer) {
     // Result: gsub[baseGid] = substituteGid (or vice-versa for above-base forms)
     const gsub = parseTTFGSUB(r, tables);
 
+    // ── Parse 'GSUB' table — Ligature Substitutions for Indic ────────
+    // We extract LookupType 4 (LigatureSubst) for conjunct formation:
+    //   C + Halant + C → single ligature glyph (Bengali, Tamil, Devanagari)
+    const ligatures = parseTTFGSUBLigatures(r, tables);
+
     // ── Parse 'GPOS' table — MarkToBase + MarkToMark anchor offsets ──
     // LookupType 4 (MarkToBase): mark glyph anchored to base glyph
     // LookupType 6 (MarkToMark): mark glyph anchored to another mark
@@ -273,6 +278,7 @@ function parseTTF(buffer) {
         cmap,
         widths,
         gsub,
+        ligatures,
         markAnchors
     };
 }
@@ -372,6 +378,100 @@ function parseTTFGSUB(r, tables) {
         console.warn('[build-font-data] GSUB parse error (non-fatal):', e.message);
     }
     return gsub;
+}
+
+// ── GSUB Parser — LookupType 4 (LigatureSubst) ───────────────────────
+/**
+ * Parse GSUB table and extract LigatureSubst (LookupType 4) mappings.
+ * These are used for Indic conjunct formation: C + Halant + C → ligature glyph.
+ *
+ * Returns a sparse object keyed by first glyph ID:
+ *   { [firstGid]: [[resultGid, comp1, comp2, ...], ...] }
+ * Each entry is sorted longest-first for greedy matching.
+ * Only LookupType 4 (Ligature Substitution) is extracted.
+ *
+ * OpenType spec: §6.2.4 — LigatureSubstFormat1
+ * Coverage table identifies first glyph; LigatureSet per covered glyph
+ * contains Ligature records: substituteGlyph + component[componentCount-1].
+ */
+function parseTTFGSUBLigatures(r, tables) {
+    const ligatures = {};
+    if (!tables['GSUB']) return ligatures;
+
+    try {
+        const base = tables['GSUB'].offset;
+        r.seek(base);
+        r.skip(4); // version (major.minor uint16+uint16)
+        r.skip(2); // scriptListOffset
+        r.skip(2); // featureListOffset
+        const lookupListOffset = r.readUint16();
+
+        // ── Read LookupList ──────────────────────────────────────────
+        r.seek(base + lookupListOffset);
+        const lookupCount = r.readUint16();
+        const lookupOffsets = [];
+        for (let i = 0; i < lookupCount; i++) lookupOffsets.push(r.readUint16());
+
+        for (let li = 0; li < lookupCount; li++) {
+            const lookupBase = base + lookupListOffset + lookupOffsets[li];
+            r.seek(lookupBase);
+            const lookupType = r.readUint16();
+            r.skip(2); // lookupFlag
+            const subtableCount = r.readUint16();
+            const subtableOffsets = [];
+            for (let si = 0; si < subtableCount; si++) subtableOffsets.push(r.readUint16());
+
+            // LookupType 4 = LigatureSubst
+            if (lookupType !== 4) continue;
+
+            for (const stOffset of subtableOffsets) {
+                const stBase = lookupBase + stOffset;
+                r.seek(stBase);
+                const substFormat = r.readUint16();
+                if (substFormat !== 1) continue; // Only Format 1 defined for LigatureSubst
+
+                const coverageOffset = r.readUint16();
+                const ligSetCount = r.readUint16();
+                const ligSetOffsets = [];
+                for (let lsi = 0; lsi < ligSetCount; lsi++) ligSetOffsets.push(r.readUint16());
+
+                // Read Coverage table — identifies first glyph of each ligature
+                const coverageGlyphs = readCoverageTable(r, stBase + coverageOffset);
+
+                for (let lsi = 0; lsi < ligSetCount && lsi < coverageGlyphs.length; lsi++) {
+                    const firstGid = coverageGlyphs[lsi];
+                    const ligSetBase = stBase + ligSetOffsets[lsi];
+                    r.seek(ligSetBase);
+                    const ligCount = r.readUint16();
+                    const ligOffsets = [];
+                    for (let lgi = 0; lgi < ligCount; lgi++) ligOffsets.push(r.readUint16());
+
+                    for (const ligOff of ligOffsets) {
+                        r.seek(ligSetBase + ligOff);
+                        const ligatureGlyph = r.readUint16();
+                        const componentCount = r.readUint16();
+                        // componentCount includes the first glyph, so components array has componentCount-1 entries
+                        const components = [];
+                        for (let ci = 0; ci < componentCount - 1; ci++) {
+                            components.push(r.readUint16());
+                        }
+
+                        if (!ligatures[firstGid]) ligatures[firstGid] = [];
+                        // Store as [resultGid, comp1, comp2, ...]
+                        ligatures[firstGid].push([ligatureGlyph, ...components]);
+                    }
+                }
+            }
+        }
+
+        // Sort entries for each first glyph: longest component list first (greedy matching)
+        for (const gid of Object.keys(ligatures)) {
+            ligatures[gid].sort((a, b) => b.length - a.length);
+        }
+    } catch (e) {
+        console.warn('[build-font-data] GSUB ligature parse error (non-fatal):', e.message);
+    }
+    return ligatures;
 }
 
 // ── GPOS Parser — LookupType 4 (MarkToBase) + LookupType 6 (MarkToMark) ──
@@ -540,7 +640,7 @@ function readCoverageTable(r, absOffset) {
 // ── JS Module Generator ──────────────────────────────────────────────
 
 function generateModule(fontName, parsed, ttfBase64) {
-    const { metrics, cmap, widths, gsub, markAnchors } = parsed;
+    const { metrics, cmap, widths, gsub, ligatures, markAnchors } = parsed;
 
     // Compact cmap: only entries where glyph exists
     const cmapEntries = Object.entries(cmap)
@@ -558,6 +658,14 @@ function generateModule(fontName, parsed, ttfBase64) {
     // Compact gsub: sparse object { fromGid: toGid }
     const gsubEntries = Object.entries(gsub || {})
         .map(([k, v]) => `${k}:${v}`)
+        .join(',');
+
+    // Compact ligatures: { firstGid: [[resultGid, comp1, ...], ...] }
+    const ligaturesEntries = Object.entries(ligatures || {})
+        .map(([gid, ligs]) => {
+            const inner = ligs.map(lig => `[${lig.join(',')}]`).join(',');
+            return `${gid}:[${inner}]`;
+        })
         .join(',');
 
     // Compact markAnchors — split into marks and bases sub-maps
@@ -623,6 +731,11 @@ export const widths = {${widthEntries}};
 // GSUB SingleSubst: fromGid → substituteGid
 // Used by the Thai mini-shaper to select below-clash variants of consonants.
 export const gsub = {${gsubEntries}};
+
+// GSUB LigatureSubst: firstGid → [[resultGid, comp1, comp2, ...], ...]
+// Used by Indic shapers for conjunct formation (C + Halant + C → ligature).
+// Entries sorted longest-first for greedy matching.
+export const ligatures = {${ligaturesEntries}};
 
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)
