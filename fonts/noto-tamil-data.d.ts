@@ -6,6 +6,7 @@ export declare const cmap: Record<number, number>;
 export declare const defaultWidth: number;
 export declare const widths: Record<number, number>;
 export declare const gsub: Record<number, number>;
+export declare const ligatures: Record<number, number[][]>;
 export declare const markAnchors: Record<number, unknown>;
 export declare const mark2mark: Record<string, unknown>;
 export declare const pdfWidthArray: string;
