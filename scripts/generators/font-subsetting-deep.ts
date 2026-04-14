@@ -6,12 +6,11 @@ import { resolve } from 'path';
 import { buildDocumentPDFBytes } from '../../src/index.js';
 import type { DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
-import { loadMultiFontEntries } from '../helpers/fonts.js';
+import { loadSelectedFontEntries } from '../helpers/fonts.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
-    const fontEntries = await loadMultiFontEntries();
 
-    // ── 1. Subsetting pipeline overview ─────────────────────────
+    // ── 1. Subsetting pipeline overview (Latin-only — no font embedding needed) ──
     {
         const params: DocumentParams = {
             title: 'Font Subsetting Internals',
@@ -38,7 +37,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { type: 'paragraph', text: 'Unicode fonts use CIDFont Type2 embedding with Identity-H CMap encoding. Glyph IDs are hex-encoded directly in the content stream: <0041> for GID 65.' },
                 { type: 'paragraph', text: 'The /ToUnicode CMap maps GIDs back to Unicode codepoints for text extraction (copy-paste) support.' },
             ],
-            fontEntries,
             footerText: 'pdfnative – Font Subsetting Deep Dive',
         };
         ctx.writeSafe(resolve(ctx.outputDir, 'font-subsetting-overview.pdf'), 'font-subsetting-overview.pdf', buildDocumentPDFBytes(params));
@@ -46,6 +44,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── 2. Multi-script subsetting comparison ────────────────────
     {
+        const fontEntries = await loadSelectedFontEntries(['th', 'ja', 'ar', 'bn', 'ta']);
         const params: DocumentParams = {
             title: 'Multi-Script Font Subsetting',
             blocks: [

@@ -6,13 +6,13 @@ import { resolve } from 'path';
 import { buildDocumentPDFBytes } from '../../src/index.js';
 import type { DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
-import { loadMultiFontEntries } from '../helpers/fonts.js';
+import { loadSelectedFontEntries } from '../helpers/fonts.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
-    const fontEntries = await loadMultiFontEntries();
 
     // ── 1. Thai GSUB/GPOS shaping ───────────────────────────────
     {
+        const fontEntries = await loadSelectedFontEntries(['th']);
         const params: DocumentParams = {
             title: 'Thai Text Shaping – GSUB/GPOS Deep Dive',
             blocks: [
@@ -42,6 +42,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── 2. Bengali conjunct formation ────────────────────────────
     {
+        const fontEntries = await loadSelectedFontEntries(['bn']);
         const params: DocumentParams = {
             title: 'Bengali Text Shaping – Conjuncts & Marks',
             blocks: [
@@ -72,6 +73,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── 3. Tamil split vowel decomposition ───────────────────────
     {
+        const fontEntries = await loadSelectedFontEntries(['ta']);
         const params: DocumentParams = {
             title: 'Tamil Text Shaping – Split Vowels & GSUB',
             blocks: [

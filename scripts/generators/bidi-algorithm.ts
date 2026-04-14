@@ -6,10 +6,10 @@ import { resolve } from 'path';
 import { buildDocumentPDFBytes } from '../../src/index.js';
 import type { DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
-import { loadMultiFontEntries } from '../helpers/fonts.js';
+import { loadSelectedFontEntries } from '../helpers/fonts.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
-    const fontEntries = await loadMultiFontEntries();
+    const fontEntries = await loadSelectedFontEntries(['ar', 'he']);
 
     // ── 1. BiDi fundamentals — Arabic & Hebrew ──────────────────
     {

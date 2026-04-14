@@ -35,14 +35,17 @@ export async function loadFontEntries(lang: string, fontRef = '/F3'): Promise<Fo
     return [{ fontData: fd, fontRef, lang }];
 }
 
-export async function loadMultiFontEntries(): Promise<FontEntry[]> {
-    const langs = ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'bn', 'ta'];
+export async function loadSelectedFontEntries(langs: string[]): Promise<FontEntry[]> {
     const entries: FontEntry[] = [];
     for (let i = 0; i < langs.length; i++) {
         const fd = await loadFontData(langs[i]);
         if (fd) entries.push({ fontData: fd, fontRef: `/F${3 + i}`, lang: langs[i] });
     }
     return entries;
+}
+
+export async function loadMultiFontEntries(): Promise<FontEntry[]> {
+    return loadSelectedFontEntries(['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'bn', 'ta']);
 }
 
 export { loadFontData };
