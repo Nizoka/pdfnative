@@ -28,6 +28,7 @@ export interface FontData {
     readonly pdfWidthArray: string;
     readonly ttfBase64: string;
     readonly gsub: Record<number, number>;
+    readonly ligatures?: Record<number, number[][]> | null;
     readonly markAnchors: {
         readonly bases: Record<number, Record<number, [number, number]>>;
         readonly marks: Record<number, [number, number, number]>;
