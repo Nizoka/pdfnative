@@ -42,13 +42,13 @@ src/
 │   ├── pdf-reader.ts     # High-level PDF reader (page tree, stream decode, caching)
 │   └── pdf-modifier.ts   # Incremental modification (non-destructive save with /Prev)
 ├── fonts/        # WinAnsi + CIDFont pure encoding functions, lazy font loader, TTF subsetter (with buffer guards), CMap builder
-├── shaping/      # Thai/Bengali/Tamil GSUB+GPOS shaping, Arabic positional shaping, BiDi resolution, Unicode script detection, multi-font run splitting, centralized script registry
+├── shaping/      # Thai/Devanagari/Bengali/Tamil GSUB+GPOS shaping, Arabic positional shaping, BiDi resolution, Unicode script detection, multi-font run splitting, centralized script registry
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (.js/.d.ts) — 16 scripts + TTF source files
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (23 generators, 140+ PDFs)
-tests/            # 1513+ tests (36 files: unit/integration/fuzz/parser) mirroring src/ structure
+tests/            # 1563+ tests (37 files: unit/integration/fuzz/parser) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
 ```
@@ -73,7 +73,7 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (1513+ tests, 36 files)
+npm run test            # vitest run (1563+ tests, 37 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
 npm run test:generate   # Generate 140+ sample PDFs → test-output/
@@ -88,7 +88,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 1513+ tests (36 files)
+- All new code must have tests. Current: ~95% statement coverage, 1563+ tests (37 files)
 
 ## Conventions
 
@@ -99,7 +99,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - `pdf-renderers.ts`: extracted block renderers, text wrapping, height estimation, constants — used exclusively by `pdf-document.ts` (internal module, not re-exported from `core/index.ts`)
 - `pdf-assembler.ts`: shared binary assembly primitives (`createPdfWriter`, `writeXrefTrailer`) — used by both `pdf-builder.ts` and `pdf-document.ts` to eliminate xref/trailer duplication
 - `encoding-context.ts`: encoding context factory in `core/` (dependency inversion — `createEncodingContext()` moved from `fonts/encoding.ts` to break `fonts/ → shaping/` cycle)
-- `script-registry.ts`: centralized Unicode range constants and script predicates (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `CYRILLIC_START/END`, `GEORGIAN_START/END`, `ARMENIAN_START/END`, `BENGALI_START/END`, `TAMIL_START/END`, `isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isCyrillicCodepoint`, `isGeorgianCodepoint`, `isArmenianCodepoint`, `isBengaliCodepoint`, `isTamilCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`, `containsBengali`, `containsTamil`) — single source of truth, imported by arabic-shaper, thai-shaper, bengali-shaper, tamil-shaper, script-detect, encoding-context
+- `script-registry.ts`: centralized Unicode range constants and script predicates (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `CYRILLIC_START/END`, `GEORGIAN_START/END`, `ARMENIAN_START/END`, `BENGALI_START/END`, `TAMIL_START/END`, `DEVANAGARI_START/END`, `isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isCyrillicCodepoint`, `isGeorgianCodepoint`, `isArmenianCodepoint`, `isBengaliCodepoint`, `isTamilCodepoint`, `isDevanagariCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`, `containsBengali`, `containsTamil`, `containsDevanagari`) — single source of truth, imported by arabic-shaper, thai-shaper, bengali-shaper, tamil-shaper, devanagari-shaper, script-detect, encoding-context
 - Font subsetting always preserves `.notdef` (GID 0) per PDF/A spec
 - CIDFont Type2 uses Identity-H encoding — glyph IDs are hex-encoded directly
 - All color values are PDF operator format RGB strings: `"0.145 0.388 0.922"`
@@ -190,6 +190,8 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - ParentTree: per-page arrays keyed by `/StructParents` value (ISO 32000-1 §14.7.4.4); MCIDs restart at 0 per page
 - Bengali shaping: `shapeBengaliText()` — GSUB conjunct formation + GPOS mark positioning via `bengali-shaper.ts`
 - Tamil shaping: `shapeTamilText()` — GSUB substitution + split vowel decomposition via `tamil-shaper.ts`
+- Devanagari shaping: `shapeDevanagariText()` — cluster building, reph detection, matra reordering, split vowels, GSUB ligature conjuncts, GPOS mark positioning via `devanagari-shaper.ts`
+- GSUB LookupType 4 (LigatureSubst): `fontData.ligatures` — `Record<number, number[][]>` mapping first-glyph GID → arrays of `[resultGID, ...componentGIDs]`; `tryLigature()` pattern used by Bengali, Tamil, and Devanagari shapers
 
 ### API Design
 
@@ -223,7 +225,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 1513+ tests (36 files), 33 fuzz edge-cases, performance benchmarks
+- **95%+ test coverage** — 1563+ tests (37 files), 33 fuzz edge-cases, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)

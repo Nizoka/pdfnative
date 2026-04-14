@@ -30,7 +30,7 @@ applyTo: "src/fonts/**"
 ## Font Data Modules
 - Lazy-loaded via `registerFont()` / `loadFontData()` pattern
 - Base64 TTF decoded once, cached — never decode twice
-- Font data shape: `{ metrics, fontName, cmap, widths, ttfBase64, gsub, markAnchors, mark2mark }`
+- Font data shape: `{ metrics, fontName, cmap, widths, ttfBase64, gsub, ligatures, markAnchors, mark2mark }`
 - Build with: `npx pdfnative-build-font <input.ttf> <output.js>`
 
 ## CMap Builder

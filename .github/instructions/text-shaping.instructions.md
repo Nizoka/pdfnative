@@ -12,14 +12,15 @@ applyTo: "src/shaping/**"
 5. Output: `ShapedGlyph[]` with `{ gid, dx, dy, isZeroAdvance }`
 
 ## GSUB/GPOS Data Format
-- GSUB: `Record<number, number>` — simple GID → GID substitution map
+- GSUB SingleSubst: `Record<number, number>` — simple GID → GID substitution map
+- GSUB LigatureSubst: `Record<number, number[][]>` — first-glyph GID → arrays of `[resultGID, ...componentGIDs]`; stored in `fontData.ligatures`; `tryLigature()` pattern used by Bengali, Tamil, and Devanagari shapers
 - MarkToBase anchors: `{ bases: { baseGID: { markClass: [x, y] } }, marks: { markGID: [x, y, class] } }`
 - MarkToMark: same structure with `mark1Anchors` / `mark2Classes`
 - Coordinates in font units (divide by unitsPerEm × fontSize for PDF points)
 
 ## Script Detection
-- `script-registry.ts`: centralized Unicode range constants (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `BENGALI_START/END`, `TAMIL_START/END`) and predicates (`isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isBengaliCodepoint`, `isTamilCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`, `containsBengali`, `containsTamil`) — single source of truth
-- All script detection modules (`arabic-shaper.ts`, `thai-shaper.ts`, `bengali-shaper.ts`, `tamil-shaper.ts`, `script-detect.ts`, `encoding-context.ts`) import from `script-registry.ts`
+- `script-registry.ts`: centralized Unicode range constants (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `BENGALI_START/END`, `TAMIL_START/END`, `DEVANAGARI_START/END`) and predicates (`isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isBengaliCodepoint`, `isTamilCodepoint`, `isDevanagariCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`, `containsBengali`, `containsTamil`, `containsDevanagari`) — single source of truth
+- All script detection modules (`arabic-shaper.ts`, `thai-shaper.ts`, `bengali-shaper.ts`, `tamil-shaper.ts`, `devanagari-shaper.ts`, `script-detect.ts`, `encoding-context.ts`) import from `script-registry.ts`
 - Unicode range-based detection for: Thai, CJK, Korean, Greek, Devanagari, Arabic, Hebrew, Turkish, Vietnamese, Polish, Bengali, Tamil
 - Arabic ranges: U+0600–06FF, U+0750–077F, U+08A0–08FF, U+FB50–FDFF, U+FE70–FEFE
 - Hebrew ranges: U+0590–05FF, U+FB1D–FB4F
@@ -40,6 +41,7 @@ applyTo: "src/shaping/**"
 - Batch glyph encoding: build hex string in one pass
 - Pre-compute width accumulation, don't re-traverse for truncation
 - Thai shaping: single pass cluster build, single pass GSUB, single pass GPOS
+- Devanagari shaping: cluster build + matra reorder + GSUB ligatures + GPOS marks in sequential passes
 
 ## Tagged Mode Integration
 - When `tagged: true`, shaped glyphs are wrapped in `/Span << /MCID n /ActualText <hex> >> BDC...EMC`
@@ -118,3 +120,12 @@ applyTo: "src/shaping/**"
 3. Output: `ShapedGlyph[]` with glyph IDs and positioning offsets
 - Tamil ranges: U+0B80–U+0BFF
 - `containsTamil(text)`: fast O(n) check imported from `script-registry.ts`
+
+## Devanagari OpenType Shaping Pipeline (devanagari-shaper.ts)
+1. **Cluster building**: group base consonant + halant + following consonant(s) + matras into orthographic clusters; reph detection (Ra + Halant at cluster start)
+2. **Matra reordering**: pre-base matras (ि) moved before cluster; split vowels decomposed into pre-base + post-base components
+3. **GSUB LigatureSubst**: substitute conjunct sequences via `tryLigature()` using `fontData.ligatures` (152 groups for Noto Sans Devanagari)
+4. **GPOS Mark Positioning**: position matras and vowel signs relative to base glyph anchors via mark-to-base and mark-to-mark
+5. Output: `ShapedGlyph[]` with `{ gid, dx, dy, isZeroAdvance }`
+- Devanagari ranges: U+0900–U+097F
+- `containsDevanagari(text)`: fast O(n) check imported from `script-registry.ts`
