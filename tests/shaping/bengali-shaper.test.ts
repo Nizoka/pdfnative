@@ -347,4 +347,47 @@ describe('shapeBengaliText', () => {
         const shaped = shapeBengaliText(text, fd);
         expect(shaped.length).toBeGreaterThan(0);
     });
+
+    // ── Ligature conjunct tests ──────────────────────────────────────
+
+    it('should substitute conjunct via ligature table', () => {
+        const kaGid = 0x0995 - BENGALI_START + 100;
+        const halantGid = 0x09CD - BENGALI_START + 100;
+        const raGid = 0x09B0 - BENGALI_START + 100;
+        const ligGid = 700;
+        const fd = mockFontData({
+            ligatures: {
+                [kaGid]: [[ligGid, halantGid, raGid]],
+            },
+            widths: { ...mockFontData().widths, [ligGid]: 800 },
+        });
+        // ক্র = Ka + Halant + Ra → should produce single ligature glyph
+        const shaped = shapeBengaliText('\u0995\u09CD\u09B0', fd);
+        expect(shaped.length).toBe(1);
+        expect(shaped[0].gid).toBe(ligGid);
+        expect(shaped[0].isZeroAdvance).toBe(false);
+    });
+
+    it('should fall back to individual glyphs without ligature data', () => {
+        const fd = mockFontData(); // no ligatures
+        // ক্র = Ka + Halant + Ra → no ligature match → individual glyphs
+        const shaped = shapeBengaliText('\u0995\u09CD\u09B0', fd);
+        expect(shaped.length).toBe(3);
+    });
+
+    it('should handle partial ligature with remaining glyphs', () => {
+        const kaGid = 0x0995 - BENGALI_START + 100;
+        const halantGid = 0x09CD - BENGALI_START + 100;
+        const raGid = 0x09B0 - BENGALI_START + 100;
+        const ligGid = 700;
+        const fd = mockFontData({
+            ligatures: {
+                [kaGid]: [[ligGid, halantGid, raGid]], // Ka+H+Ra
+            },
+        });
+        // Ka + Halant + Ra + Halant + Ta → ligature + Halant(zero-advance) + Ta
+        const shaped = shapeBengaliText('\u0995\u09CD\u09B0\u09CD\u09A4', fd);
+        expect(shaped[0].gid).toBe(ligGid);
+        expect(shaped.length).toBe(3);
+    });
 });

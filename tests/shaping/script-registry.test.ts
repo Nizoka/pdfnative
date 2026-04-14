@@ -5,8 +5,10 @@ import {
     isArmenianCodepoint,
     isBengaliCodepoint,
     isTamilCodepoint,
+    isDevanagariCodepoint,
     containsBengali,
     containsTamil,
+    containsDevanagari,
     CYRILLIC_START, CYRILLIC_END,
     CYRILLIC_SUPPLEMENT_START, CYRILLIC_SUPPLEMENT_END,
     CYRILLIC_EXT_A_START, CYRILLIC_EXT_A_END,
@@ -17,6 +19,8 @@ import {
     ARMENIAN_LIGATURES_START, ARMENIAN_LIGATURES_END,
     BENGALI_START, BENGALI_END,
     TAMIL_START, TAMIL_END,
+    DEVANAGARI_START, DEVANAGARI_END,
+    DEVANAGARI_EXT_START, DEVANAGARI_EXT_END,
 } from '../../src/shaping/script-registry.js';
 
 describe('Cyrillic Unicode ranges', () => {
@@ -151,5 +155,31 @@ describe('Tamil Unicode ranges', () => {
         expect(containsTamil('தமிழ்')).toBe(true);
         expect(containsTamil('Hello')).toBe(false);
         expect(containsTamil('')).toBe(false);
+    });
+});
+
+describe('Devanagari script predicates', () => {
+    it('isDevanagariCodepoint should detect primary range', () => {
+        expect(isDevanagariCodepoint(DEVANAGARI_START)).toBe(true);
+        expect(isDevanagariCodepoint(DEVANAGARI_END)).toBe(true);
+        expect(isDevanagariCodepoint(0x0915)).toBe(true); // Ka
+        expect(isDevanagariCodepoint(0x094D)).toBe(true); // Halant
+    });
+
+    it('isDevanagariCodepoint should detect extended range', () => {
+        expect(isDevanagariCodepoint(DEVANAGARI_EXT_START)).toBe(true);
+        expect(isDevanagariCodepoint(DEVANAGARI_EXT_END)).toBe(true);
+    });
+
+    it('isDevanagariCodepoint should reject non-Devanagari', () => {
+        expect(isDevanagariCodepoint(0x0041)).toBe(false); // Latin A
+        expect(isDevanagariCodepoint(0x0995)).toBe(false); // Bengali Ka
+        expect(isDevanagariCodepoint(0x0B95)).toBe(false); // Tamil Ka
+    });
+
+    it('containsDevanagari should detect Devanagari text', () => {
+        expect(containsDevanagari('नमस्ते')).toBe(true);
+        expect(containsDevanagari('Hello')).toBe(false);
+        expect(containsDevanagari('')).toBe(false);
     });
 });

@@ -365,4 +365,45 @@ describe('shapeTamilText', () => {
         const shaped = shapeTamilText('\u0BD0', fd);
         expect(shaped.length).toBe(1);
     });
+
+    // ── Ligature conjunct tests ──────────────────────────────────────
+
+    it('should substitute conjunct via ligature table', () => {
+        const kaGid = 0x0B95 - TAMIL_START + 100;
+        const pulliGid = 0x0BCD - TAMIL_START + 100;
+        const taGid = 0x0BA4 - TAMIL_START + 100;
+        const ligGid = 700;
+        const fd = mockFontData({
+            ligatures: {
+                [kaGid]: [[ligGid, pulliGid, taGid]],
+            },
+            widths: { ...mockFontData().widths, [ligGid]: 800 },
+        });
+        // Ka + Pulli + Ta → ligature
+        const shaped = shapeTamilText('\u0B95\u0BCD\u0BA4', fd);
+        expect(shaped.length).toBe(1);
+        expect(shaped[0].gid).toBe(ligGid);
+    });
+
+    it('should fall back without ligature data', () => {
+        const fd = mockFontData(); // no ligatures
+        const shaped = shapeTamilText('\u0B95\u0BCD\u0BA4', fd);
+        expect(shaped.length).toBe(3);
+    });
+
+    it('should handle partial ligature with remainder', () => {
+        const kaGid = 0x0B95 - TAMIL_START + 100;
+        const pulliGid = 0x0BCD - TAMIL_START + 100;
+        const taGid = 0x0BA4 - TAMIL_START + 100;
+        const ligGid = 700;
+        const fd = mockFontData({
+            ligatures: {
+                [kaGid]: [[ligGid, pulliGid, taGid]],
+            },
+        });
+        // Ka + Pulli + Ta + Pulli + Na → ligature + Pulli + Na
+        const shaped = shapeTamilText('\u0B95\u0BCD\u0BA4\u0BCD\u0BA8', fd);
+        expect(shaped[0].gid).toBe(ligGid);
+        expect(shaped.length).toBe(3);
+    });
 });
