@@ -7,6 +7,7 @@
 export { shapeThaiText, buildThaiClusters } from './thai-shaper.js';
 export { shapeBengaliText, buildBengaliClusters } from './bengali-shaper.js';
 export { shapeTamilText, buildTamilClusters } from './tamil-shaper.js';
+export { shapeDevanagariText, buildDevanagariClusters } from './devanagari-shaper.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './script-detect.js';
 export { splitTextByFont } from './multi-font.js';
 export type { FontRun } from './multi-font.js';
@@ -34,6 +35,8 @@ export {
     isArabicCodepoint, isHebrewCodepoint, isThaiCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint,
     isBengaliCodepoint, isTamilCodepoint,
+    isDevanagariCodepoint,
     containsArabic, containsHebrew, containsThai,
     containsBengali, containsTamil,
+    containsDevanagari,
 } from './script-registry.js';

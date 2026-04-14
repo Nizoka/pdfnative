@@ -159,6 +159,12 @@ export function isTamilCodepoint(cp: number): boolean {
     return cp >= TAMIL_START && cp <= TAMIL_END;
 }
 
+/** Check if a codepoint falls in any Devanagari Unicode block. */
+export function isDevanagariCodepoint(cp: number): boolean {
+    return (cp >= DEVANAGARI_START && cp <= DEVANAGARI_END) ||
+           (cp >= DEVANAGARI_EXT_START && cp <= DEVANAGARI_EXT_END);
+}
+
 // ── Text-Level Detection ─────────────────────────────────────────────
 
 /** Check if text contains Arabic characters requiring shaping. */
@@ -201,6 +207,14 @@ export function containsBengali(str: string): boolean {
 export function containsTamil(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isTamilCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Devanagari characters. */
+export function containsDevanagari(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isDevanagariCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }
