@@ -14,10 +14,11 @@ import { pdfString, helveticaWidth } from '../fonts/encoding.js';
 import { shapeThaiText } from '../shaping/thai-shaper.js';
 import { shapeBengaliText } from '../shaping/bengali-shaper.js';
 import { shapeTamilText } from '../shaping/tamil-shaper.js';
+import { shapeDevanagariText } from '../shaping/devanagari-shaper.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
 import { resolveBidiRuns, containsRTL, reverseString } from '../shaping/bidi.js';
-import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil } from '../shaping/script-registry.js';
+import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil, containsDevanagari } from '../shaping/script-registry.js';
 
 // ── Helvetica Fallback Helpers ───────────────────────────────────────
 
@@ -265,6 +266,16 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                                     }
                                 }
                                 result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            } else if (containsDevanagari(fRun.text)) {
+                                const shaped = shapeDevanagariText(fRun.text, fd);
+                                let designW = 0;
+                                for (const g of shaped) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
                             } else {
                                 // LTR non-shaped: use fallback helper
                                 const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid);
@@ -319,6 +330,18 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                     return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
                 }
 
+                if (containsDevanagari(run.text)) {
+                    const shaped = shapeDevanagariText(run.text, fd);
+                    let designW = 0;
+                    for (const g of shaped) {
+                        _trackGid(fontRef, g.gid);
+                        if (!g.isZeroAdvance) {
+                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                        }
+                    }
+                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
+                }
+
                 return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid);
             });
         },
@@ -354,7 +377,7 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                 return `<${hex.toUpperCase()}>`;
             }
 
-            if (!containsThai(str) && !containsBengali(str) && !containsTamil(str)) {
+            if (!containsThai(str) && !containsBengali(str) && !containsTamil(str) && !containsDevanagari(str)) {
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     const rawCp = str.codePointAt(i) ?? 0;
@@ -366,10 +389,11 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                 }
                 return `<${hex.toUpperCase()}>`;
             }
-            // Shaped text path (Thai, Bengali, Tamil)
+            // Shaped text path (Thai, Bengali, Tamil, Devanagari)
             const shapeFn = containsThai(str) ? shapeThaiText
                 : containsBengali(str) ? shapeBengaliText
-                : shapeTamilText;
+                : containsTamil(str) ? shapeTamilText
+                : shapeDevanagariText;
             const shaped = shapeFn(str, primary.fontData);
             let hex = '';
             for (const g of shaped) { _trackGid(primary.fontRef, g.gid); hex += g.gid.toString(16).padStart(4, '0'); }
