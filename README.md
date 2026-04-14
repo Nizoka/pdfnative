@@ -40,7 +40,7 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 1513+ tests across 36 files, fuzz suite, performance benchmarks
+- **95%+ test coverage** — 1563+ tests across 37 files, fuzz suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 
 ## Installation
@@ -62,7 +62,7 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | PDF/A (ISO 19005) | 1b, 2b, 2u, 3b | — | — | — | — |
 | Tagged PDF / PDF/UA | ✅ | — | ✅ | — | — |
 | Encryption | AES-128/256 | ✅ | ✅ | — | ✅ |
-| Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
+| Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic, Devanagari, Bengali, Tamil | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
 | BiDi (RTL) layout | ✅ | — | — | — | — |
 | Modify existing PDFs | ✅ (incremental) | — | — | ✅ | — |
 | Forms (AcroForms) | ✅ | ✅ | ✅ | ✅ | — |
@@ -184,7 +184,7 @@ const pdf = buildPDFBytes({
 | Chinese (Simplified) | `zh` | Noto Sans SC | CJK ideographs |
 | Korean | `ko` | Noto Sans KR | Hangul syllables |
 | Greek | `el` | Noto Sans Greek | Greek alphabet |
-| Hindi (Devanagari) | `hi` | Noto Sans Devanagari | Basic glyph mapping (CTL shaping planned) |
+| Hindi (Devanagari) | `hi` | Noto Sans Devanagari | GSUB conjuncts + GPOS marks |
 | Turkish | `tr` | Noto Sans Turkish | Latin extended (İ/ı) |
 | Vietnamese | `vi` | Noto Sans Vietnamese | Latin + combining marks |
 | Polish | `pl` | Noto Sans Polish | Latin extended (Ł/ł) |
@@ -192,7 +192,7 @@ const pdf = buildPDFBytes({
 | Hebrew | `he` | Noto Sans Hebrew | Right-to-left script |
 | Russian (Cyrillic) | `ru` | Noto Sans | Cyrillic alphabet |
 | Georgian | `ka` | Noto Sans Georgian | Mkhedruli script |
-| Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |\n| Bengali | `bn` | Noto Sans Bengali | Basic glyph mapping (GSUB conjuncts planned) |\n| Tamil | `ta` | Noto Sans Tamil | Basic glyph mapping (GSUB ligatures planned) |
+| Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |\n| Bengali | `bn` | Noto Sans Bengali | GSUB conjuncts + GPOS marks |\n| Tamil | `ta` | Noto Sans Tamil | GSUB ligatures + split vowels |
 
 ## Multi-Font (Mixed Scripts)
 
@@ -839,7 +839,7 @@ src/
 fonts/                    # Pre-built font data modules (16 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (23 generators, 140+ PDFs)
-tests/                    # 1513+ tests (36 files: unit + integration + fuzz + parser)
+tests/                    # 1563+ tests (37 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -851,7 +851,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (1513+ tests)
+npm run test             # vitest run (1563+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+)
 npm run test:generate       # Generate 140+ sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -865,7 +865,7 @@ npm run typecheck:all       # Typecheck src/ + tests/ + scripts/
 
 | Metric | Value |
 |--------|-------|
-| Tests | 1513+ (36 files) |
+| Tests | 1563+ (37 files) |
 | Statement coverage | 95.41% |
 | Branch coverage | 87.79% |
 | Function coverage | 98.5% |
@@ -889,9 +889,9 @@ For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tone
 | CJK (Japanese, Chinese, Korean) | ✅ Perfect | ✅ Perfect |
 | Vietnamese (combining diacritics) | ✅ Perfect | ⚠️ May show Win-1252 fallback artifacts |
 | Thai (GSUB + GPOS shaping) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Devanagari (matras, conjuncts) | ⚠️ Partial — matras/conjuncts not yet shaped | ⚠️ Cluster reconstruction may fail |
-| Bengali (conjuncts, GPOS marks) | ⚠️ Partial — conjuncts not yet shaped | ⚠️ Cluster reconstruction may fail |
-| Tamil (split vowels, GSUB) | ⚠️ Partial — split vowels not yet reordered | ⚠️ Split vowel recomposition may fail |
+| Devanagari (matras, conjuncts) | ✅ Perfect | ⚠️ Combining marks may be reordered |
+| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ⚠️ Combining marks may be reordered |
+| Tamil (split vowels, GSUB) | ✅ Perfect | ⚠️ Split vowel recomposition may fail |
 
 ### Why this happens
 

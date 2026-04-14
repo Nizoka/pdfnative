@@ -25,7 +25,7 @@ npm run dev            # tsup --watch
 ## Test
 
 ```bash
-npm run test           # vitest run (1513+ tests)
+npm run test           # vitest run (1563+ tests)
 npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (95%+ stmts)
 npm run test:generate  # Generate 140+ sample PDFs → test-output/
@@ -64,13 +64,13 @@ src/
 ├── crypto/       # Zero-dependency cryptographic primitives (SHA, AES, RSA, ECDSA, X.509, CMS)
 ├── parser/       # PDF reading & incremental modification (tokenizer, object parser, xref, reader, modifier)
 ├── fonts/        # WinAnsi + CIDFont pure encoding, font loader, TTF subsetter (buffer guards), CMap
-├── shaping/      # Script registry, Thai/Bengali/Tamil GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
+├── shaping/      # Script registry, Thai/Devanagari/Bengali/Tamil GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (16 scripts)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (23 generators, 140+ PDFs)
-tests/            # 1513+ tests (36 files: unit + integration + fuzz + parser), mirrors src/ structure
+tests/            # 1563+ tests (37 files: unit + integration + fuzz + parser), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] — 2026-04-14
+## [Unreleased]
 
 Initial release. Pure native PDF generation library with zero runtime dependencies.
 
@@ -34,8 +34,10 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 - **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms with joining type analysis and lam-alef ligatures
-- **Bengali OpenType shaping** — basic glyph mapping via CIDFont embedding (GSUB LookupType 4 ligature extraction planned — conjuncts not yet shaped)
-- **Tamil OpenType shaping** — basic glyph mapping via CIDFont embedding (GSUB LookupType 4 ligature extraction planned — split vowels not yet reordered)
+- **Bengali OpenType shaping** — GSUB LookupType 4 ligature-based conjunct formation + GPOS mark-to-base positioning via `bengali-shaper.ts`
+- **Tamil OpenType shaping** — GSUB LookupType 4 ligature substitution + split vowel decomposition via `tamil-shaper.ts`
+- **Devanagari OpenType shaping** — full cluster building, reph detection, matra reordering, split vowels, GSUB ligature conjuncts, GPOS mark positioning via `devanagari-shaper.ts`
+- **GSUB LookupType 4 extraction** — `build-font-data.cjs` now parses LigatureSubst tables; font data modules include `ligatures` field for Bengali (42 groups), Tamil (35), Devanagari (152)
 - **BiDi text layout** — simplified Unicode Bidirectional Algorithm (UAX #9) with paragraph level detection, weak/neutral type resolution, level assignment, L2 run reordering, and glyph mirroring
 - **BiDi punctuation affinity** — sentence punctuation stays with the preceding LTR word in RTL paragraphs
 - **BiDi bracket pairing** — matching brackets enclosing LTR content kept together as a single LTR run
@@ -174,7 +176,7 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 #### Testing & Quality
 
-- **1513+ tests** across 36 test files — unit, integration, fuzz, and parser coverage
+- **1563+ tests** across 37 test files — unit, integration, fuzz, and parser coverage
 - **95%+ statement coverage** — v8 coverage with thresholds: 90/80/85/90 (statements/branches/functions/lines)
 - **33 fuzz edge-case scenarios** — boundary conditions, malformed inputs, extreme dimensions
 - **140+ sample PDFs** — financial statements (14), diverse use cases (12), alphabet coverage (13), PDF/A variants (5), encrypted (6), document builder (19), compressed (9), barcodes (3), watermarks (6), headers/footers (4), page sizes (6), TOC (3), SVG (3), forms (3), digital signatures (2), streaming (2), parser (2), stress tests/edge cases (13), text shaping deep-dives (3), BiDi algorithm walkthroughs (2), font subsetting deep-dives (2), crypto showcase (1), parser deep-dive (1)
@@ -197,5 +199,4 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 ### Known Limitations
 
-- **Indic CTL shaping (Bengali, Tamil, Devanagari)** — `build-font-data.cjs` GSUB parser currently handles only LookupType 1 (SingleSubst); LookupType 4 (Ligature) is needed for conjunct formation. Bengali and Tamil shapers are architecturally complete but receive insufficient GSUB data. Visually rendered as individual glyphs rather than shaped conjuncts. Future work: extend TTF GSUB parser + regenerate font data modules
-- **Devanagari shaper** — no dedicated shaper exists yet; font data is embedded for basic glyph coverage but matras and conjuncts are not shaped
+_No major limitations at this time._

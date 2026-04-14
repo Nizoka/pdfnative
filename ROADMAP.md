@@ -7,7 +7,9 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Core PDF generation** — table-centric builder with Helvetica (ISO 32000-1)
 - [x] **11 Unicode scripts** — Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew
 - [x] **3 additional scripts** — Cyrillic (Russian), Georgian, Armenian (14 total)
-- [x] **Bengali + Tamil shaping** — GSUB conjuncts, reph reordering, split vowel decomposition, GPOS mark positioning (16 scripts total)
+- [x] **Bengali + Tamil shaping** — GSUB LookupType 4 ligature conjuncts, reph reordering, split vowel decomposition, GPOS mark positioning (16 scripts total)
+- [x] **Devanagari OpenType shaping** — full cluster building, reph detection, matra reordering, split vowels, GSUB ligature conjuncts, GPOS mark positioning
+- [x] **GSUB LookupType 4 extraction** — `build-font-data.cjs` parses LigatureSubst tables; font data modules include `ligatures` field
 - [x] **Thai OpenType shaping** — GSUB substitution + GPOS mark positioning
 - [x] **Arabic positional shaping** — GSUB isolated/initial/medial/final + lam-alef ligatures
 - [x] **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring
