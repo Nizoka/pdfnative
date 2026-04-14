@@ -59,7 +59,7 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 |---------|:---------:|:-----:|:------:|:-------:|:------:|
 | Runtime dependencies | **0** | 3 | 6 | 4 | 3 |
 | TypeScript declarations | Built-in | Built-in | @types/* | Built-in | @types/* |
-| PDF/A (ISO 19005) | 1b, 2b, 2u, 3b | — | 6 levels | — | — |
+| PDF/A (ISO 19005) | 1b, 2b, 2u, 3b | — | — | — | — |
 | Tagged PDF / PDF/UA | ✅ | — | ✅ | — | — |
 | Encryption | AES-128/256 | RC4 | Up to AES-256 | — | Up to AES-256 |
 | Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
@@ -185,7 +185,7 @@ const pdf = buildPDFBytes({
 | Chinese (Simplified) | `zh` | Noto Sans SC | CJK ideographs |
 | Korean | `ko` | Noto Sans KR | Hangul syllables |
 | Greek | `el` | Noto Sans Greek | Greek alphabet |
-| Hindi (Devanagari) | `hi` | Noto Sans Devanagari | Devanagari script |
+| Hindi (Devanagari) | `hi` | Noto Sans Devanagari | Basic glyph mapping (CTL shaping planned) |
 | Turkish | `tr` | Noto Sans Turkish | Latin extended (İ/ı) |
 | Vietnamese | `vi` | Noto Sans Vietnamese | Latin + combining marks |
 | Polish | `pl` | Noto Sans Polish | Latin extended (Ł/ł) |
@@ -193,7 +193,7 @@ const pdf = buildPDFBytes({
 | Hebrew | `he` | Noto Sans Hebrew | Right-to-left script |
 | Russian (Cyrillic) | `ru` | Noto Sans | Cyrillic alphabet |
 | Georgian | `ka` | Noto Sans Georgian | Mkhedruli script |
-| Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |\n| Bengali | `bn` | Noto Sans Bengali | GSUB conjuncts + GPOS marks |\n| Tamil | `ta` | Noto Sans Tamil | GSUB + split vowel decomposition |
+| Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |\n| Bengali | `bn` | Noto Sans Bengali | Basic glyph mapping (GSUB conjuncts planned) |\n| Tamil | `ta` | Noto Sans Tamil | Basic glyph mapping (GSUB ligatures planned) |
 
 ## Multi-Font (Mixed Scripts)
 
@@ -890,9 +890,9 @@ For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tone
 | CJK (Japanese, Chinese, Korean) | ✅ Perfect | ✅ Perfect |
 | Vietnamese (combining diacritics) | ✅ Perfect | ⚠️ May show Win-1252 fallback artifacts |
 | Thai (GSUB + GPOS shaping) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Devanagari (matras, conjuncts) | ✅ Perfect | ⚠️ Cluster reconstruction may fail |
-| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ⚠️ Cluster reconstruction may fail |
-| Tamil (split vowels, GSUB) | ✅ Perfect | ⚠️ Split vowel recomposition may fail |
+| Devanagari (matras, conjuncts) | ⚠️ Partial — matras/conjuncts not yet shaped | ⚠️ Cluster reconstruction may fail |
+| Bengali (conjuncts, GPOS marks) | ⚠️ Partial — conjuncts not yet shaped | ⚠️ Cluster reconstruction may fail |
+| Tamil (split vowels, GSUB) | ⚠️ Partial — split vowels not yet reordered | ⚠️ Split vowel recomposition may fail |
 
 ### Why this happens
 

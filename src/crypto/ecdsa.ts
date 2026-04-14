@@ -9,7 +9,6 @@
 import { sha256, hmacSha256 } from './sha.js';
 import { bigIntToBytes, bytesToBigInt } from './rsa.js';
 import type * as Asn1Module from './asn1.js';
-import type * as Asn1Module from './asn1.js';
 
 // ── P-256 Curve Parameters (FIPS 186-4, SEC 2 §2.7.2) ───────────────
 

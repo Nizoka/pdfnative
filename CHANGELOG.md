@@ -34,8 +34,8 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 - **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms with joining type analysis and lam-alef ligatures
-- **Bengali OpenType shaping** — GSUB conjunct formation (consonant clusters via halant) + GPOS mark positioning for matras and vowel signs
-- **Tamil OpenType shaping** — GSUB substitution + split vowel decomposition for multi-part vowel signs
+- **Bengali OpenType shaping** — basic glyph mapping via CIDFont embedding (GSUB LookupType 4 ligature extraction planned — conjuncts not yet shaped)
+- **Tamil OpenType shaping** — basic glyph mapping via CIDFont embedding (GSUB LookupType 4 ligature extraction planned — split vowels not yet reordered)
 - **BiDi text layout** — simplified Unicode Bidirectional Algorithm (UAX #9) with paragraph level detection, weak/neutral type resolution, level assignment, L2 run reordering, and glyph mirroring
 - **BiDi punctuation affinity** — sentence punctuation stays with the preceding LTR word in RTL paragraphs
 - **BiDi bracket pairing** — matching brackets enclosing LTR content kept together as a single LTR run
@@ -177,10 +177,10 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 - **1513+ tests** across 36 test files — unit, integration, fuzz, and parser coverage
 - **95%+ statement coverage** — v8 coverage with thresholds: 90/80/85/90 (statements/branches/functions/lines)
 - **33 fuzz edge-case scenarios** — boundary conditions, malformed inputs, extreme dimensions
-- **130+ sample PDFs** — financial statements (14), diverse use cases (12), alphabet coverage (13), PDF/A variants (5), encrypted (6), document builder (19), compressed (9), barcodes (3), watermarks (6), headers/footers (4), page sizes (6), TOC (3), SVG (3), forms (3), digital signatures (2), streaming (2), parser (2), stress tests/edge cases (13)
+- **140+ sample PDFs** — financial statements (14), diverse use cases (12), alphabet coverage (13), PDF/A variants (5), encrypted (6), document builder (19), compressed (9), barcodes (3), watermarks (6), headers/footers (4), page sizes (6), TOC (3), SVG (3), forms (3), digital signatures (2), streaming (2), parser (2), stress tests/edge cases (13), text shaping deep-dives (3), BiDi algorithm walkthroughs (2), font subsetting deep-dives (2), crypto showcase (1), parser deep-dive (1)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in ISO D:YYYYMMDDHHmmss format
 - **Input validation** — type checks, null/undefined guards, 100K row limit at `buildPDF()` boundary
-- **18 sample generators** — modular `npm run test:generate` → 130+ PDFs in `test-output/`
+- **23 sample generators** — modular `npm run test:generate` → 140+ PDFs in `test-output/`
 
 ### Fixed
 
@@ -192,3 +192,10 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 - **AcroForm label parentheses** — field labels no longer include raw parentheses that break PDF string syntax
 - **AcroForm checkbox/radio default state** — `checked: true` on `FormFieldBlock` correctly sets `/V /Yes /AS /Yes` for pre-checked fields
 - **Digital signature ByteRange** — `/ByteRange` placeholder sizing ensures sufficient space for CMS SignedData embedding
+- **Sample generator font bloat** — `text-shaping-deep`, `bidi-algorithm`, and `font-subsetting-deep` generators now load only the fonts used by each PDF instead of all 16, reducing output sizes from 30–40 MB to < 5 MB per file
+- **Comparison table accuracy** — corrected pdfkit PDF/A claim (pdfkit supports Tagged PDF/PDF/UA but not PDF/A per ISO 19005)
+
+### Known Limitations
+
+- **Indic CTL shaping (Bengali, Tamil, Devanagari)** — `build-font-data.cjs` GSUB parser currently handles only LookupType 1 (SingleSubst); LookupType 4 (Ligature) is needed for conjunct formation. Bengali and Tamil shapers are architecturally complete but receive insufficient GSUB data. Visually rendered as individual glyphs rather than shaped conjuncts. Future work: extend TTF GSUB parser + regenerate font data modules
+- **Devanagari shaper** — no dedicated shaper exists yet; font data is embedded for basic glyph coverage but matras and conjuncts are not shaped
