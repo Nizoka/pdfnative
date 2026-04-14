@@ -202,7 +202,7 @@ export function buildTamilClusters(str: string): TamilCluster[] {
  * @returns Array of positioned glyphs
  */
 export function shapeTamilText(str: string, fontData: FontData): ShapedGlyph[] {
-    const { cmap, gsub, markAnchors, widths, defaultWidth } = fontData;
+    const { cmap, ligatures, markAnchors, widths, defaultWidth } = fontData;
     const shaped: ShapedGlyph[] = [];
 
     function resolveGid(cp: number): number {
@@ -210,10 +210,27 @@ export function shapeTamilText(str: string, fontData: FontData): ShapedGlyph[] {
         return cmap[normCp] || 0;
     }
 
-    function resolveGidGsub(cp: number): number {
-        const gid = resolveGid(cp);
-        if (gsub[gid] !== undefined) return gsub[gid];
-        return gid;
+    /**
+     * Try to match a GID sequence against the GSUB ligature table.
+     * Returns the ligature result GID and the number of GIDs consumed,
+     * or null if no ligature matches.
+     */
+    function tryLigature(gids: number[]): { resultGid: number; consumed: number } | null {
+        if (!ligatures || gids.length < 2) return null;
+        const firstGid = gids[0];
+        const entries = ligatures[firstGid];
+        if (!entries) return null;
+
+        for (const entry of entries) {
+            const compCount = entry.length - 1;
+            if (compCount > gids.length - 1) continue;
+            let match = true;
+            for (let ci = 0; ci < compCount; ci++) {
+                if (gids[1 + ci] !== entry[1 + ci]) { match = false; break; }
+            }
+            if (match) return { resultGid: entry[0], consumed: compCount + 1 };
+        }
+        return null;
     }
 
     function getAdv(gid: number): number {
@@ -293,34 +310,83 @@ export function shapeTamilText(str: string, fontData: FontData): ShapedGlyph[] {
             }
         }
 
-        // Emit consonant cluster + matras + modifiers
+        // Emit consonant cluster — try ligature matching first
+        // Collect the consonant+pulli sequence as GIDs for ligature lookup
+        const clusterGids: number[] = [];
+        const clusterEndIdx: number[] = [];
+        let matraStart = codepoints.length;
         for (let ci = 0; ci < codepoints.length; ci++) {
+            const ct = tamilCharType(codepoints[ci]);
+            if (ct === 0 || ct === 7) {
+                clusterGids.push(resolveGid(codepoints[ci]));
+                clusterEndIdx.push(ci);
+            } else if (ct >= 2) {
+                matraStart = ci;
+                break;
+            } else if (ct < 0) {
+                // Non-Tamil character (space, punctuation) — emit directly
+                emitGlyph(resolveGid(codepoints[ci]), false);
+            } else if (ct === 1) {
+                // Independent vowel — emit directly
+                emitGlyph(resolveGid(codepoints[ci]), false);
+            }
+        }
+
+        // Try ligature substitution on the full consonant+pulli GID sequence
+        let ligConsumed = 0;
+        const ligResult = tryLigature(clusterGids);
+        if (ligResult) {
+            emitGlyph(ligResult.resultGid, false);
+            baseGid = ligResult.resultGid;
+            ligConsumed = ligResult.consumed;
+
+            // Emit remaining unconsumed glyphs
+            let gi = ligConsumed;
+            while (gi < clusterGids.length) {
+                const subSeq = clusterGids.slice(gi);
+                const subLig = tryLigature(subSeq);
+                if (subLig) {
+                    emitGlyph(subLig.resultGid, false);
+                    gi += subLig.consumed;
+                } else {
+                    const origCi = clusterEndIdx[gi];
+                    const ct = tamilCharType(codepoints[origCi]);
+                    if (ct === 7) {
+                        emitGlyph(clusterGids[gi], true, baseGid);
+                    } else {
+                        emitGlyph(clusterGids[gi], false);
+                    }
+                    gi++;
+                }
+            }
+        } else {
+            // No ligature match — emit individual glyphs
+            for (let ci = 0; ci < matraStart; ci++) {
+                const cp = codepoints[ci];
+                const ct = tamilCharType(cp);
+                if (ct === 0) {
+                    emitGlyph(resolveGid(cp), false);
+                } else if (ct === 7) {
+                    emitGlyph(resolveGid(cp), true, baseGid);
+                }
+            }
+        }
+
+        // Emit matras and modifiers
+        for (let ci = matraStart; ci < codepoints.length; ci++) {
             const cp = codepoints[ci];
             const ct = tamilCharType(cp);
 
             // Skip pre-base matras (already emitted)
             if (ct === 4) continue;
 
-            if (ct === 0) {
-                // Consonant — try GSUB
-                const nextCi = ci + 1;
-                const hasPulli = nextCi < codepoints.length && codepoints[nextCi] === PULLI;
-                const gid = hasPulli ? resolveGidGsub(cp) : resolveGid(cp);
-                emitGlyph(gid, false);
-            } else if (ct === 7) {
-                // Pulli — zero-advance mark
-                emitGlyph(resolveGid(cp), true, baseGid);
-            } else if (ct === 2 || ct === 3) {
-                // Above/below marks — GPOS positioned
+            if (ct === 2 || ct === 3) {
                 emitGlyph(resolveGid(cp), true, baseGid);
             } else if (ct === 5) {
-                // Post-base matra (non-split)
                 emitGlyph(resolveGid(cp), false);
             } else if (ct === 6) {
-                // Modifier — zero-advance mark
                 emitGlyph(resolveGid(cp), true, baseGid);
             } else if (ct === 9) {
-                // Digit/special
                 emitGlyph(resolveGid(cp), false);
             } else {
                 emitGlyph(resolveGid(cp), false);

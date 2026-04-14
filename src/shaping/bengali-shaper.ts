@@ -228,7 +228,7 @@ export function buildBengaliClusters(str: string): BengaliCluster[] {
  * @returns Array of positioned glyphs
  */
 export function shapeBengaliText(str: string, fontData: FontData): ShapedGlyph[] {
-    const { cmap, gsub, markAnchors, widths, defaultWidth } = fontData;
+    const { cmap, gsub, ligatures, markAnchors, widths, defaultWidth } = fontData;
     const shaped: ShapedGlyph[] = [];
 
     function resolveGid(cp: number): number {
@@ -240,6 +240,32 @@ export function shapeBengaliText(str: string, fontData: FontData): ShapedGlyph[]
         const gid = resolveGid(cp);
         if (gsub[gid] !== undefined) return gsub[gid];
         return gid;
+    }
+
+    /**
+     * Try to match a GID sequence against the GSUB ligature table.
+     * Returns the ligature result GID and the number of GIDs consumed,
+     * or null if no ligature matches.
+     *
+     * Ligature entries are sorted longest-first for greedy matching.
+     */
+    function tryLigature(gids: number[]): { resultGid: number; consumed: number } | null {
+        if (!ligatures || gids.length < 2) return null;
+        const firstGid = gids[0];
+        const entries = ligatures[firstGid];
+        if (!entries) return null;
+
+        for (const entry of entries) {
+            // entry = [resultGid, comp1, comp2, ...]
+            const compCount = entry.length - 1;
+            if (compCount > gids.length - 1) continue;
+            let match = true;
+            for (let ci = 0; ci < compCount; ci++) {
+                if (gids[1 + ci] !== entry[1 + ci]) { match = false; break; }
+            }
+            if (match) return { resultGid: entry[0], consumed: compCount + 1 };
+        }
+        return null;
     }
 
     function getAdv(gid: number): number {
@@ -319,43 +345,83 @@ export function shapeBengaliText(str: string, fontData: FontData): ShapedGlyph[]
             }
         }
 
-        // Emit consonant cluster
+        // Emit consonant cluster — try ligature matching first
+        // Collect the consonant+halant sequence as GIDs for ligature lookup
+        const clusterGids: number[] = [];
+        const clusterEndIdx: number[] = []; // maps each GID position back to codepoint index
+        let matraStart = codepoints.length;
         for (let ci = baseStart; ci < codepoints.length; ci++) {
+            const ct = bengaliCharType(codepoints[ci]);
+            if (ct === 0 || ct === 7 || ct === 8) {
+                clusterGids.push(resolveGid(codepoints[ci]));
+                clusterEndIdx.push(ci);
+            } else if (ct < 0 || ct === 1 || ct === 9) {
+                // Non-Bengali char, independent vowel, or digit — emit directly
+                emitGlyph(resolveGid(codepoints[ci]), false);
+            } else {
+                matraStart = ci;
+                break;
+            }
+        }
+
+        // Try ligature substitution on the full consonant+halant GID sequence
+        let ligConsumed = 0;
+        const ligResult = tryLigature(clusterGids);
+        if (ligResult) {
+            // Ligature matched — emit single glyph for the entire matched sequence
+            emitGlyph(ligResult.resultGid, false);
+            baseGid = ligResult.resultGid;
+            ligConsumed = ligResult.consumed;
+
+            // Emit any remaining consonant+halant glyphs not consumed by the ligature
+            let gi = ligConsumed;
+            while (gi < clusterGids.length) {
+                const subSeq = clusterGids.slice(gi);
+                const subLig = tryLigature(subSeq);
+                if (subLig) {
+                    emitGlyph(subLig.resultGid, false);
+                    gi += subLig.consumed;
+                } else {
+                    // No further ligature — emit individual glyph
+                    const origCi = clusterEndIdx[gi];
+                    const ct = bengaliCharType(codepoints[origCi]);
+                    if (ct === 7) {
+                        emitGlyph(clusterGids[gi], true, baseGid);
+                    } else {
+                        emitGlyph(clusterGids[gi], false);
+                    }
+                    gi++;
+                }
+            }
+        } else {
+            // No ligature match — emit individual consonant+halant glyphs
+            for (let ci = baseStart; ci < matraStart; ci++) {
+                const cp = codepoints[ci];
+                const ct = bengaliCharType(cp);
+                if (ct === 0) {
+                    emitGlyph(resolveGid(cp), false);
+                } else if (ct === 7) {
+                    emitGlyph(resolveGid(cp), true, baseGid);
+                } else if (ct === 8) {
+                    emitGlyph(resolveGid(cp), true, baseGid);
+                }
+            }
+        }
+
+        // Emit matras and modifiers
+        for (let ci = matraStart; ci < codepoints.length; ci++) {
             const cp = codepoints[ci];
             const ct = bengaliCharType(cp);
 
             // Skip pre-base matras (already emitted above)
             if (ct === 4) continue;
 
-            if (ct === 0) {
-                // Consonant — try GSUB substitution for conjuncts
-                const nextCi = ci + 1;
-                const hasHalant = nextCi < codepoints.length && codepoints[nextCi] === HALANT;
-                const gid = hasHalant ? resolveGidGsub(cp) : resolveGid(cp);
-                emitGlyph(gid, false);
-            } else if (ct === 7) {
-                // Halant — check if it's part of a conjunct or explicit
-                const nextCi = ci + 1;
-                if (nextCi < codepoints.length && isConsonant(codepoints[nextCi])) {
-                    // Part of a conjunct — emit halant as zero-advance
-                    emitGlyph(resolveGid(cp), true, baseGid);
-                } else {
-                    // Explicit halant
-                    emitGlyph(resolveGid(cp), true, baseGid);
-                }
-            } else if (ct === 8) {
-                // Nukta — zero-advance mark on preceding consonant
+            if (ct === 2 || ct === 3) {
+                // Above/below mark — GPOS positioned
                 emitGlyph(resolveGid(cp), true, baseGid);
-            } else if (ct === 2 || ct === 3 || ct === 5) {
-                // Dependent vowel sign — positioning depends on type
-                const mGid = resolveGid(cp);
-                if (ct === 2 || ct === 3) {
-                    // Above/below mark — GPOS positioned
-                    emitGlyph(mGid, true, baseGid);
-                } else {
-                    // Post-base matra — normal advance
-                    emitGlyph(mGid, false);
-                }
+            } else if (ct === 5) {
+                // Post-base matra — normal advance
+                emitGlyph(resolveGid(cp), false);
             } else if (ct === 6) {
                 // Modifiers — zero-advance marks
                 emitGlyph(resolveGid(cp), true, baseGid);
@@ -363,7 +429,6 @@ export function shapeBengaliText(str: string, fontData: FontData): ShapedGlyph[]
                 // Digit — normal advance
                 emitGlyph(resolveGid(cp), false);
             } else {
-                // Fallback — normal advance
                 emitGlyph(resolveGid(cp), false);
             }
         }
