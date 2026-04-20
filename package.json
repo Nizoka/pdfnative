@@ -94,12 +94,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "^4.1.4",
     "eslint": "^9.0.0",
     "tsup": "^8.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.57.2",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.4"
   }
 }
