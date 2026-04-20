@@ -124,10 +124,24 @@ export function dictGetArray(dict: PdfDict, key: string): PdfArray | undefined {
 // ── Object Parser ────────────────────────────────────────────────────
 
 /**
+ * Maximum depth for recursive PDF object parsing (nested arrays/dicts).
+ * Prevents stack-overflow DoS from malicious PDFs with deeply nested structures
+ * (CWE-674: Uncontrolled Recursion).
+ */
+export const MAX_PARSE_DEPTH = 1000;
+
+/**
  * Parse a single PDF value from the token stream.
  * Handles object references (num gen R) by looking ahead.
+ *
+ * @param tok   Tokenizer positioned at the value to parse
+ * @param depth Current recursion depth (internal — do not pass from outside)
+ * @throws Error if nesting exceeds {@link MAX_PARSE_DEPTH}
  */
-export function parseValue(tok: PdfTokenizer): PdfValue {
+export function parseValue(tok: PdfTokenizer, depth = 0): PdfValue {
+    if (depth > MAX_PARSE_DEPTH) {
+        throw new Error(`parseValue: PDF nesting exceeds maximum depth of ${MAX_PARSE_DEPTH}`);
+    }
     const t = tok.next();
     if (!t) throw new Error('parseValue: unexpected end of tokens');
 
@@ -161,15 +175,15 @@ export function parseValue(tok: PdfTokenizer): PdfValue {
                     throw new Error(`parseValue: unexpected keyword '${t.value}' at offset ${t.offset}`);
             }
         case 'arrayOpen':
-            return parseArray(tok);
+            return parseArray(tok, depth + 1);
         case 'dictOpen':
-            return parseDictOrStream(tok);
+            return parseDictOrStream(tok, depth + 1);
         default:
             throw new Error(`parseValue: unexpected token type '${t.type}' at offset ${t.offset}`);
     }
 }
 
-function parseArray(tok: PdfTokenizer): PdfArray {
+function parseArray(tok: PdfTokenizer, depth: number): PdfArray {
     const arr: PdfArray = [];
     while (true) {
         const peek = tok.peek();
@@ -178,11 +192,11 @@ function parseArray(tok: PdfTokenizer): PdfArray {
             tok.next(); // consume ]
             return arr;
         }
-        arr.push(parseValue(tok));
+        arr.push(parseValue(tok, depth));
     }
 }
 
-function parseDictOrStream(tok: PdfTokenizer): PdfDict | PdfStream {
+function parseDictOrStream(tok: PdfTokenizer, depth: number): PdfDict | PdfStream {
     const dict: PdfDict = new Map();
 
     while (true) {
@@ -201,7 +215,7 @@ function parseDictOrStream(tok: PdfTokenizer): PdfDict | PdfStream {
         const key = keyToken.value as string;
 
         // Value
-        dict.set(key, parseValue(tok));
+        dict.set(key, parseValue(tok, depth));
     }
 
     // Check for stream keyword after >>

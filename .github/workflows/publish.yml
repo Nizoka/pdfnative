@@ -4,6 +4,12 @@ on:
   release:
     types: [published]
 
+# Trusted Publishing (npmjs.com OIDC):
+#   This workflow uses npm Trusted Publishing — no long-lived NPM_TOKEN secret.
+#   The OIDC id-token permission mints a short-lived token that:
+#     1. Authorises the `npm publish` HTTP request
+#     2. Signs the provenance attestation (SLSA Level 2+ via Sigstore)
+#   Configure at npmjs.com → package settings → "Configure Trusted Publishing".
 permissions:
   contents: read
   id-token: write
@@ -11,6 +17,7 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -25,7 +32,7 @@ jobs:
         run: npm ci
 
       - name: Type check
-        run: npm run typecheck
+        run: npm run typecheck:all
 
       - name: Lint
         run: npm run lint
@@ -44,5 +51,3 @@ jobs:
 
       - name: Publish with provenance
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

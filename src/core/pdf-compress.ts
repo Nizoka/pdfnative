@@ -22,6 +22,12 @@ let _zlibDeflateSync: ((buf: Uint8Array) => Uint8Array) | null | undefined;
  * Called once at module init if Node.js is detected via eager resolution.
  *
  * @param fn - deflateSync-compatible function, or null to disable
+ * @example
+ * ```typescript
+ * import { setDeflateImpl } from 'pdfnative';
+ * import { deflateSync } from 'fflate';
+ * setDeflateImpl(deflateSync);
+ * ```
  */
 export function setDeflateImpl(fn: ((buf: Uint8Array) => Uint8Array) | null): void {
     _zlibDeflateSync = fn;

@@ -35,6 +35,21 @@ pdfnative is a pure TypeScript library with **zero runtime dependencies**. This 
 - X.509 DER certificate parsing for certificate chain embedding
 - `/ByteRange` ensures only the signature `/Contents` is excluded from the signed digest
 
+### Cryptographic Implementation Scope & Known Limitations
+
+pdfnative ships pure-TypeScript implementations of RSA (PKCS#1 v1.5) and ECDSA (P-256) to uphold the zero-dependency contract and to support restricted runtimes (browsers, Deno, Bun, Web Workers) where native crypto may be unavailable.
+
+**RSA signature verification** (`rsaVerify`) is designed to resist Bleichenbacher-style signature forgery attacks: rather than parsing the PKCS#1 v1.5 padding leniently, it reconstructs the full expected `EM` encoding and compares byte-by-byte using a constant-time XOR accumulator (`diff |= em[i] ^ expected[i]`). This eliminates the class of "lax parser" forgery attacks.
+
+**ECDSA P-256** uses RFC 6979 deterministic `k` generation (HMAC-DRBG over the private key and message hash), which eliminates nonce-reuse vulnerabilities inherent in CSPRNG-based `k` selection.
+
+**Timing-attack caveat**: JavaScript's `BigInt` arithmetic (used throughout `src/crypto/`) does not execute in constant time in V8 or SpiderMonkey. This is a fundamental limitation of pure-JS big-integer arithmetic. The practical impact is:
+
+- **Low risk in typical usage**: signing a PDF once per user action on a server is not meaningfully exploitable.
+- **Higher risk in high-frequency server-side pipelines**: a backend signing thousands of PDFs per second with the same private key under adversarial timing observation could theoretically leak key material over many measurements.
+
+**Recommendation for high-security, high-frequency server pipelines**: perform signing externally using Node.js native `crypto.sign()` / `crypto.verify()` or WebCrypto `crypto.subtle.sign()` / `crypto.subtle.verify()`, both of which provide hardware-backed constant-time operations. You can then inject the pre-computed CMS/PKCS#7 blob into the PDF via `signPdfBytes()`. This avoids the pure-JS BigInt arithmetic path entirely.
+
 ### Input Validation
 
 - `buildPDF()` and `buildDocumentPDF()` validate all inputs at the API boundary

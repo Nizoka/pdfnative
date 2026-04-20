@@ -7,26 +7,40 @@
  */
 
 /**
- * Subset a TTF binary string to only include used glyphs.
- * Returns the subset TTF as a binary string.
+ * Subset a TTF binary to contain only used glyphs.
+ * Returns the subset TTF as a binary string (for PDF stream embedding).
  *
- * @param ttfBinaryStr - Full TTF as binary string (from atob/Buffer)
+ * Accepts either a pre-decoded `Uint8Array` (zero-copy, preferred for cached font data)
+ * or a binary string (legacy path, used when the font was loaded via `atob`).
+ *
+ * @param ttfInput - Full TTF as Uint8Array (preferred) or binary string
  * @param usedGids - Set of glyph IDs used in the document
  * @returns Subset TTF as binary string
  */
-export function subsetTTF(ttfBinaryStr: string, usedGids: Set<number>): string {
+export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>): string {
     try {
-        const len = ttfBinaryStr.length;
-        if (len < 12) return ttfBinaryStr; // Too small for a valid TTF offset table
-        const buf = new ArrayBuffer(len);
-        const u8 = new Uint8Array(buf);
-        for (let i = 0; i < len; i++) u8[i] = ttfBinaryStr.charCodeAt(i);
-        const view = new DataView(buf);
+        let u8: Uint8Array;
+        let len: number;
+
+        if (ttfInput instanceof Uint8Array) {
+            // Zero-copy path: use the buffer directly, no charCodeAt loop
+            u8 = ttfInput;
+            len = u8.length;
+        } else {
+            // Legacy string path: decode binary string to Uint8Array
+            len = ttfInput.length;
+            const buf = new ArrayBuffer(len);
+            u8 = new Uint8Array(buf);
+            for (let i = 0; i < len; i++) u8[i] = ttfInput.charCodeAt(i);
+        }
+
+        if (len < 12) return ttfInput instanceof Uint8Array ? uint8ToBinaryString(u8) : ttfInput; // Too small for a valid TTF offset table
+        const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
 
         // Parse offset table & table directory
         const numTables = view.getUint16(4);
         const dirEnd = 12 + numTables * 16;
-        if (dirEnd > len) return ttfBinaryStr; // Table directory exceeds buffer
+        if (dirEnd > len) return ttfInput instanceof Uint8Array ? uint8ToBinaryString(u8) : ttfInput; // Table directory exceeds buffer
         const tables: Record<string, { offset: number; length: number }> = {};
         for (let i = 0; i < numTables; i++) {
             const off = 12 + i * 16;
@@ -41,7 +55,7 @@ export function subsetTTF(ttfBinaryStr: string, usedGids: Set<number>): string {
         const maxp = tables['maxp'];
         const loca = tables['loca'];
         const glyf = tables['glyf'];
-        if (!head || !maxp || !loca || !glyf) return ttfBinaryStr;
+        if (!head || !maxp || !loca || !glyf) return ttfInput instanceof Uint8Array ? uint8ToBinaryString(u8) : ttfInput;
 
         const numGlyphs = view.getUint16(maxp.offset + 4);
         const locaFormat = view.getInt16(head.offset + 50);
@@ -184,8 +198,21 @@ export function subsetTTF(ttfBinaryStr: string, usedGids: Set<number>): string {
         }
         return result;
     } catch {
-        return ttfBinaryStr;
+        return ttfInput instanceof Uint8Array ? uint8ToBinaryString(ttfInput) : ttfInput;
     }
+}
+
+/**
+ * Convert a Uint8Array to a binary string (for PDF stream embedding).
+ * Uses chunked String.fromCharCode.apply to avoid call-stack overflow on large arrays.
+ */
+export function uint8ToBinaryString(u8: Uint8Array): string {
+    let result = '';
+    for (let i = 0; i < u8.length; i += 8192) {
+        const end = Math.min(i + 8192, u8.length);
+        result += String.fromCharCode.apply(null, Array.from(u8.subarray(i, end)));
+    }
+    return result;
 }
 
 /**

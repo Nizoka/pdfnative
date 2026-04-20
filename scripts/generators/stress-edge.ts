@@ -31,7 +31,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             rows,
             footerText: 'pdfnative – 10K row stress test',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'stress-test-10k-rows.pdf'), 'stress-test-10k-rows.pdf', buildPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'stress-test-10k-rows.pdf'), 'stress/stress-test-10k-rows.pdf', buildPDFBytes(params));
     }
 
     // ── 2. Extreme BiDi + multi-script wrapping ──────────────────
@@ -66,7 +66,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { fontData: jaFd, fontRef: '/F5', lang: 'ja' },
                 ],
             };
-            ctx.writeSafe(resolve(ctx.outputDir, 'doc-extreme-bidi-wrapping.pdf'), 'doc-extreme-bidi-wrapping.pdf', buildDocumentPDFBytes(params));
+            ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'doc-extreme-bidi-wrapping.pdf'), 'stress/doc-extreme-bidi-wrapping.pdf', buildDocumentPDFBytes(params));
         }
     }
 
@@ -87,7 +87,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { f: 0.77, a: 'l' as const, mx: 80, mxH: 20 },
             ],
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'table-heavy-text-overflow.pdf'), 'table-heavy-text-overflow.pdf', buildPDFBytes({
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'table-heavy-text-overflow.pdf'), 'stress/table-heavy-text-overflow.pdf', buildPDFBytes({
             title: 'Asymmetric Table – Heavy Text Truncation',
             infoItems: [{ label: 'Report', value: 'LAYOUT-OVERFLOW-001' }, { label: 'Type', value: 'mx truncation stress test' }],
             balanceText: '',
@@ -123,7 +123,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Media-rich document stress test',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'media-rich-document.pdf'), 'media-rich-document.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'media-rich-document.pdf'), 'stress/media-rich-document.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── 5. Tagged accessibility complex ──────────────────────────
@@ -158,7 +158,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             footerText: 'pdfnative – Tagged PDF/UA accessibility stress test',
             layout: { tagged: true },
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'tagged-accessibility-complex.pdf'), 'tagged-accessibility-complex.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'tagged-accessibility-complex.pdf'), 'stress/tagged-accessibility-complex.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── 6. Layout extreme customization ──────────────────────────
@@ -190,7 +190,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             footerText: 'pdfnative – Extreme layout customization stress test',
             layout: { margins: { t: 60, r: 30, b: 50, l: 100 } },
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'layout-extreme-customization.pdf'), 'layout-extreme-customization.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'layout-extreme-customization.pdf'), 'stress/layout-extreme-customization.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── 7. Custom fontSizes ──────────────────────────────────────
@@ -211,7 +211,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             footerText: 'pdfnative – Custom fontSizes layout option demo',
         };
         const layout: Partial<PdfLayoutOptions> = { fontSizes: { title: 18, info: 9, th: 11, td: 10, ft: 7 } };
-        ctx.writeSafe(resolve(ctx.outputDir, 'custom-font-sizes.pdf'), 'custom-font-sizes.pdf', buildPDFBytes(params, layout));
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'custom-font-sizes.pdf'), 'stress/custom-font-sizes.pdf', buildPDFBytes(params, layout));
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -241,7 +241,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Unbreakable text stress test',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'doc-unbreakable-text.pdf'), 'doc-unbreakable-text.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'doc-unbreakable-text.pdf'), 'stress/doc-unbreakable-text.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── 9. Micro-column table ────────────────────────────────────
@@ -258,7 +258,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { f: 0.025, a: 'c' as const, mx: 1, mxH: 1 },
             ],
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'table-micro-columns.pdf'), 'table-micro-columns.pdf', buildPDFBytes({
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'table-micro-columns.pdf'), 'stress/table-micro-columns.pdf', buildPDFBytes({
             title: 'Micro-Column Table – Extreme Fractions',
             infoItems: [{ label: 'Test', value: 'MICRO-COL-001' }],
             balanceText: '',
@@ -279,7 +279,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             blocks.push({ type: 'link', text: `Link #${String(i).padStart(3, '0')} – https://example.com/page/${i}`, url: `https://example.com/page/${i}`, fontSize: 7 } as DocumentBlock);
         }
         blocks.push({ type: 'paragraph', text: 'All 500 links rendered successfully.' } as DocumentBlock);
-        ctx.writeSafe(resolve(ctx.outputDir, 'doc-link-annotation-bomb.pdf'), 'doc-link-annotation-bomb.pdf', buildDocumentPDFBytes({
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'doc-link-annotation-bomb.pdf'), 'stress/doc-link-annotation-bomb.pdf', buildDocumentPDFBytes({
             title: 'Link Annotation Bomb – 500 Links',
             blocks,
             footerText: 'pdfnative – Annotation density stress test',
@@ -288,7 +288,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── 11. Zero-content edge cases ──────────────────────────────
     {
-        ctx.writeSafe(resolve(ctx.outputDir, 'zero-content-empty-table.pdf'), 'zero-content-empty-table.pdf', buildPDFBytes({
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'zero-content-empty-table.pdf'), 'stress/zero-content-empty-table.pdf', buildPDFBytes({
             title: 'Zero Content – Empty Table',
             infoItems: [{ label: 'Test', value: 'EMPTY-TABLE-001' }],
             balanceText: '',
@@ -298,13 +298,13 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             footerText: 'pdfnative – Empty table edge case',
         }));
 
-        ctx.writeSafe(resolve(ctx.outputDir, 'zero-content-empty-doc.pdf'), 'zero-content-empty-doc.pdf', buildDocumentPDFBytes({
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'zero-content-empty-doc.pdf'), 'stress/zero-content-empty-doc.pdf', buildDocumentPDFBytes({
             title: 'Zero Content – Empty Document',
             blocks: [],
             footerText: 'pdfnative – Empty document edge case',
         }));
 
-        ctx.writeSafe(resolve(ctx.outputDir, 'zero-content-empty-strings.pdf'), 'zero-content-empty-strings.pdf', buildDocumentPDFBytes({
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'zero-content-empty-strings.pdf'), 'stress/zero-content-empty-strings.pdf', buildDocumentPDFBytes({
             title: 'Zero Content – Empty Strings',
             blocks: [
                 { type: 'heading', text: '', level: 1 },
@@ -322,7 +322,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // ── 12. Heavy buffer memory test (5 MB JPEG) ─────────────────
     {
         const heavyJpeg = makeLargeJPEG(5 * 1024 * 1024);
-        ctx.writeSafe(resolve(ctx.outputDir, 'doc-heavy-buffer-5mb.pdf'), 'doc-heavy-buffer-5mb.pdf', buildDocumentPDFBytes({
+        ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'doc-heavy-buffer-5mb.pdf'), 'stress/doc-heavy-buffer-5mb.pdf', buildDocumentPDFBytes({
             title: 'Heavy Buffer – 5 MB Image Memory Test',
             blocks: [
                 { type: 'heading', text: 'Large Image Embedding', level: 1 },

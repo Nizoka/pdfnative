@@ -24,8 +24,9 @@ import type {
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
 import { createEncodingContext } from './encoding-context.js';
-import { base64ToByteString, buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
-import { subsetTTF } from '../fonts/font-subsetter.js';
+import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
+import { getDecodedFontBytes } from '../fonts/font-loader.js';
+import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
 import { txt, txtTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
 import { toBytes } from './pdf-stream.js';
 import {
@@ -541,11 +542,11 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             const fd = fe.fontData;
             const base = 5 + fi * 5;
 
-            const fullTtfBinary = base64ToByteString(fd.ttfBase64);
+            const fontBytes = getDecodedFontBytes(fd);
             const usedGids = enc.getUsedGids ? enc.getUsedGids().get(fe.fontRef) : null;
             const ttfBinary = usedGids && usedGids.size > 0
-                ? subsetTTF(fullTtfBinary, usedGids)
-                : fullTtfBinary;
+                ? subsetTTF(fontBytes, usedGids)
+                : uint8ToBinaryString(fontBytes);
 
             const fm = fd.metrics;
             const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;

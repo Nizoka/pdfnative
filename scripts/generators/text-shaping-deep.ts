@@ -37,7 +37,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             fontEntries,
             footerText: 'pdfnative – Thai Shaping Deep Dive',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'shaping-thai.pdf'), 'shaping-thai.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'shaping', 'shaping-thai.pdf'), 'shaping/shaping-thai.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── 2. Bengali conjunct formation ────────────────────────────
@@ -68,7 +68,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             fontEntries,
             footerText: 'pdfnative – Bengali Shaping Deep Dive',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'shaping-bengali.pdf'), 'shaping-bengali.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'shaping', 'shaping-bengali.pdf'), 'shaping/shaping-bengali.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── 3. Tamil split vowel decomposition ───────────────────────
@@ -99,6 +99,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             fontEntries,
             footerText: 'pdfnative – Tamil Shaping Deep Dive',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'shaping-tamil.pdf'), 'shaping-tamil.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'shaping', 'shaping-tamil.pdf'), 'shaping/shaping-tamil.pdf', buildDocumentPDFBytes(params));
     }
 }

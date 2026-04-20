@@ -27,6 +27,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
         const bytes = buildPDFBytes(params);
         const filename = `${sample.filename || `alphabet-${sample.lang}`}.pdf`;
-        ctx.writeSafe(resolve(ctx.outputDir, filename), filename, bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'alphabet', filename), `alphabet/${filename}`, bytes);
     }
 }

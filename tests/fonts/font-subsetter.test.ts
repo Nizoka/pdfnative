@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { subsetTTF, ttfChecksum } from '../../src/fonts/font-subsetter.js';
+import { subsetTTF, ttfChecksum, uint8ToBinaryString } from '../../src/fonts/font-subsetter.js';
 
 // ── Minimal TTF builder for subsetter testing ────────────────────────
 
@@ -338,5 +338,65 @@ describe('subsetTTF', () => {
         for (let i = 0; i < buf.length; i++) str += String.fromCharCode(buf[i]);
         const result = subsetTTF(str, new Set([0]));
         expect(result).toBe(str);
+    });
+
+    it('should produce identical output when given Uint8Array vs binary string', () => {
+        const ttfStr = buildMinimalTTF();
+        const u8 = new Uint8Array(ttfStr.length);
+        for (let i = 0; i < ttfStr.length; i++) u8[i] = ttfStr.charCodeAt(i);
+
+        const usedGids = new Set([1, 2]);
+        const fromStr = subsetTTF(ttfStr, usedGids);
+        const fromU8  = subsetTTF(u8, usedGids);
+
+        expect(fromU8).toBe(fromStr);
+    });
+
+    it('should skip the charCodeAt loop when given a Uint8Array (zero-copy path)', () => {
+        const ttfStr = buildMinimalTTF({ longLoca: true });
+        const u8 = new Uint8Array(ttfStr.length);
+        for (let i = 0; i < ttfStr.length; i++) u8[i] = ttfStr.charCodeAt(i);
+
+        const result = subsetTTF(u8, new Set([1]));
+        const metrics = parseSubset(result);
+
+        expect(metrics.numGlyphs).toBe(5);
+        expect(metrics.glyphSizes[1]).toBeGreaterThan(0);
+        expect(metrics.glyphSizes[2]).toBe(0);
+    });
+
+    it('should fall back to uint8ToBinaryString for Uint8Array when tables are missing', () => {
+        // A Uint8Array with only 6 bytes (< 12 → too small)
+        const tiny = new Uint8Array([0x00, 0x01, 0x00, 0x00, 0x00, 0x02]);
+        const result = subsetTTF(tiny, new Set([0]));
+        expect(result).toBe(uint8ToBinaryString(tiny));
+    });
+});
+
+describe('uint8ToBinaryString', () => {
+    it('should convert Uint8Array to binary string', () => {
+        const u8 = new Uint8Array([65, 66, 67]);
+        expect(uint8ToBinaryString(u8)).toBe('ABC');
+    });
+
+    it('should handle empty Uint8Array', () => {
+        expect(uint8ToBinaryString(new Uint8Array(0))).toBe('');
+    });
+
+    it('should handle values 0x80–0xFF without truncation', () => {
+        const u8 = new Uint8Array([0x80, 0xFF]);
+        const str = uint8ToBinaryString(u8);
+        expect(str.charCodeAt(0)).toBe(0x80);
+        expect(str.charCodeAt(1)).toBe(0xFF);
+    });
+
+    it('should handle arrays larger than one chunk (> 8192 bytes)', () => {
+        const size = 9000;
+        const u8 = new Uint8Array(size);
+        for (let i = 0; i < size; i++) u8[i] = i & 0xFF;
+        const str = uint8ToBinaryString(u8);
+        expect(str.length).toBe(size);
+        expect(str.charCodeAt(0)).toBe(0);
+        expect(str.charCodeAt(8192)).toBe(8192 & 0xFF);
     });
 });

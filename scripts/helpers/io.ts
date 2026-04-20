@@ -27,6 +27,7 @@ export function createContext(): GenerateContext {
 
     function writeSafe(filepath: string, filename: string, bytes: Uint8Array): void {
         try {
+            mkdirSync(dirname(filepath), { recursive: true });
             writeFileSync(filepath, bytes);
         } catch (err: unknown) {
             const code = (err as NodeJS.ErrnoException).code;

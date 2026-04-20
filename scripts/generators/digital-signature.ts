@@ -255,7 +255,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         };
 
         const signed = signPdfBytes(pdfBytes, signOptions);
-        ctx.writeSafe(resolve(ctx.outputDir, 'digital-signature-rsa.pdf'), 'digital-signature-rsa.pdf', signed);
+        ctx.writeSafe(resolve(ctx.outputDir, 'signature', 'digital-signature-rsa.pdf'), 'signature/digital-signature-rsa.pdf', signed);
     }
 
     // ── ECDSA-signed PDF ─────────────────────────────────────────
@@ -283,7 +283,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         };
 
         const signed = signPdfBytes(pdfBytes, signOptions);
-        ctx.writeSafe(resolve(ctx.outputDir, 'digital-signature-ecdsa.pdf'), 'digital-signature-ecdsa.pdf', signed);
+        ctx.writeSafe(resolve(ctx.outputDir, 'signature', 'digital-signature-ecdsa.pdf'), 'signature/digital-signature-ecdsa.pdf', signed);
     }
 
     // ── Documentation PDF (unsigned, describes capabilities) ─────
@@ -335,6 +335,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         };
 
         const bytes = buildDocumentPDFBytes(params);
-        ctx.writeSafe(resolve(ctx.outputDir, 'digital-signature-info.pdf'), 'digital-signature-info.pdf', bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'signature', 'digital-signature-info.pdf'), 'signature/digital-signature-info.pdf', bytes);
     }
 }

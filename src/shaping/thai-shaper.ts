@@ -16,10 +16,12 @@
  */
 
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
-import { THAI_START, THAI_END, containsThai } from './script-registry.js';
 
-// Re-export range constants for backward compatibility
-export { THAI_START, THAI_END, containsThai };
+// ── Thai Unicode Constants ───────────────────────────────────────────
+
+/** Thai Unicode block range */
+export const THAI_START = 0x0E00;
+export const THAI_END = 0x0E7F;
 
 /**
  * Thai character classification by combining class.
@@ -63,9 +65,6 @@ interface ThaiCluster {
 /**
  * Build text clusters: each cluster = { base, aboves, belows, leadings }.
  * Sara Am (U+0E33) is decomposed into Nikhahit (U+0E4D) + Sara Aa (U+0E32).
- *
- * @param str - Input Thai text string
- * @returns Array of Thai clusters for shaping
  */
 export function buildThaiClusters(str: string): ThaiCluster[] {
     const clusters: ThaiCluster[] = [];
@@ -254,4 +253,13 @@ export function shapeThaiText(str: string, fontData: FontData): ShapedGlyph[] {
     return shaped;
 }
 
-// containsThai is re-exported from script-registry above
+/**
+ * Check whether a string contains any Thai characters.
+ */
+export function containsThai(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        const c = str.charCodeAt(i);
+        if (c >= THAI_START && c <= THAI_END) return true;
+    }
+    return false;
+}

@@ -36,7 +36,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         };
         const uncompressedBytes = buildPDFBytes(params, { compress: false });
         const compressedBytes = buildPDFBytes(params, { compress: true });
-        ctx.writeSafe(resolve(ctx.outputDir, 'compressed-latin-100rows.pdf'), 'compressed-latin-100rows.pdf', compressedBytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'compression', 'compressed-latin-100rows.pdf'), 'compression/compressed-latin-100rows.pdf', compressedBytes);
         const ratio = ((1 - compressedBytes.length / uncompressedBytes.length) * 100).toFixed(1);
         console.log(`  ℹ compressed-latin-100rows.pdf: ${uncompressedBytes.length} → ${compressedBytes.length} bytes (${ratio}% reduction)`);
     }
@@ -61,7 +61,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Compressed + Tagged (PDF/A-2b)',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'compressed-tagged-pdfa2b.pdf'), 'compressed-tagged-pdfa2b.pdf', buildPDFBytes(params, { compress: true, tagged: true }));
+        ctx.writeSafe(resolve(ctx.outputDir, 'compression', 'compressed-tagged-pdfa2b.pdf'), 'compression/compressed-tagged-pdfa2b.pdf', buildPDFBytes(params, { compress: true, tagged: true }));
     }
 
     // ── Compressed + Encrypted (AES-128 + FlateDecode) ───────────
@@ -83,7 +83,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Compressed + Encrypted',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'compressed-encrypted-aes128.pdf'), 'compressed-encrypted-aes128.pdf', buildPDFBytes(params, {
+        ctx.writeSafe(resolve(ctx.outputDir, 'compression', 'compressed-encrypted-aes128.pdf'), 'compression/compressed-encrypted-aes128.pdf', buildPDFBytes(params, {
             compress: true,
             encryption: { ownerPassword: 'compress-owner', algorithm: 'aes128' },
         }));
@@ -110,7 +110,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Document Builder with FlateDecode',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'doc-compressed.pdf'), 'doc-compressed.pdf', buildDocumentPDFBytes(params, { compress: true }));
+        ctx.writeSafe(resolve(ctx.outputDir, 'compression', 'doc-compressed.pdf'), 'compression/doc-compressed.pdf', buildDocumentPDFBytes(params, { compress: true }));
     }
 
     // ── Uncompressed baseline ────────────────────────────────────
@@ -138,7 +138,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             })),
             footerText: 'pdfnative – Uncompressed baseline for size comparison',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'uncompressed-latin-100rows.pdf'), 'uncompressed-latin-100rows.pdf', buildPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'compression', 'uncompressed-latin-100rows.pdf'), 'compression/uncompressed-latin-100rows.pdf', buildPDFBytes(params));
     }
 
     // ── Compressed non-Latin: Japanese ────────────────────────────
@@ -162,7 +162,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             };
             const uncompBytes = buildPDFBytes(params);
             const compBytes = buildPDFBytes(params, { compress: true });
-            ctx.writeSafe(resolve(ctx.outputDir, 'compressed-japanese.pdf'), 'compressed-japanese.pdf', compBytes);
+            ctx.writeSafe(resolve(ctx.outputDir, 'compression', 'compressed-japanese.pdf'), 'compression/compressed-japanese.pdf', compBytes);
             const r = ((1 - compBytes.length / uncompBytes.length) * 100).toFixed(1);
             console.log(`  ℹ compressed-japanese.pdf: ${uncompBytes.length} → ${compBytes.length} bytes (${r}% reduction)`);
         }
@@ -186,7 +186,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 footerText: 'pdfnative – مخرجات مضغوطة (FlateDecode)',
                 fontEntries: [{ fontData: arFd, fontRef: '/F3', lang: 'ar' }],
             };
-            ctx.writeSafe(resolve(ctx.outputDir, 'compressed-arabic.pdf'), 'compressed-arabic.pdf', buildPDFBytes(params, { compress: true }));
+            ctx.writeSafe(resolve(ctx.outputDir, 'compression', 'compressed-arabic.pdf'), 'compression/compressed-arabic.pdf', buildPDFBytes(params, { compress: true }));
         }
     }
 
@@ -208,7 +208,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 footerText: 'pdfnative – ผลลัพธ์บีบอัด (FlateDecode)',
                 fontEntries: [{ fontData: thFd, fontRef: '/F3', lang: 'th' }],
             };
-            ctx.writeSafe(resolve(ctx.outputDir, 'compressed-thai.pdf'), 'compressed-thai.pdf', buildPDFBytes(params, { compress: true }));
+            ctx.writeSafe(resolve(ctx.outputDir, 'compression', 'compressed-thai.pdf'), 'compression/compressed-thai.pdf', buildPDFBytes(params, { compress: true }));
         }
     }
 }

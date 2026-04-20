@@ -56,5 +56,5 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         ],
         footerText: 'pdfnative – Zero-Dependency Crypto',
     };
-    ctx.writeSafe(resolve(ctx.outputDir, 'crypto-showcase.pdf'), 'crypto-showcase.pdf', buildDocumentPDFBytes(params));
+    ctx.writeSafe(resolve(ctx.outputDir, 'crypto', 'crypto-showcase.pdf'), 'crypto/crypto-showcase.pdf', buildDocumentPDFBytes(params));
 }

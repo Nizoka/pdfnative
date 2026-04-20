@@ -6,7 +6,6 @@
  */
 
 import type { PdfLayoutOptions, ColumnDef, PdfColors } from '../types/pdf-types.js';
-import { normalizeColors } from './pdf-color.js';
 
 // ── A4 Dimensions ────────────────────────────────────────────────────
 export const PG_W = 595.28;  // A4 width (210mm)
@@ -26,6 +25,15 @@ export const BAL_H = 32;
 export const TITLE_LN = 22;
 export const FT_H = 15;
 export const HEADER_H = 15;
+
+// ── Page Size Presets ────────────────────────────────────────────────
+export const PAGE_SIZES = {
+    A4:      { width: 595.28, height: 841.89 },
+    Letter:  { width: 612,    height: 792 },
+    Legal:   { width: 612,    height: 1008 },
+    A3:      { width: 841.89, height: 1190.55 },
+    Tabloid: { width: 792,    height: 1224 },
+} as const;
 
 // ── Default Font Sizes ───────────────────────────────────────────────
 export const DEFAULT_FONT_SIZES = { title: 16, info: 9, th: 8, td: 7.5, ft: 7 };
@@ -52,27 +60,11 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
     { f: 0.32, a: 'l', mx: 42, mxH: 42 },
     { f: 0.18, a: 'l', mx: 24, mxH: 24 },
     { f: 0.20, a: 'r', mx: 26, mxH: 26 },
-    { f: 0.18, a: 'c', mx: 3,  mxH: 20 },
+    { f: 0.18, a: 'c', mx: 20, mxH: 20 },
 ];
-
-// ── Standard Page Sizes (in PDF points, 1pt = 1/72 inch) ─────────
-
-/** Common page sizes with width/height in PDF points. */
-export const PAGE_SIZES = {
-    A4: { width: 595.28, height: 841.89 },
-    Letter: { width: 612, height: 792 },
-    Legal: { width: 612, height: 1008 },
-    A3: { width: 841.89, height: 1190.55 },
-    Tabloid: { width: 792, height: 1224 },
-} as const;
 
 /**
  * Compute column X positions and widths given columns and content width.
- *
- * @param columns - Column definitions with fractional widths
- * @param marginLeft - Left margin in points
- * @param contentWidth - Available content width in points
- * @returns Object with cx (X positions) and cwi (column widths) arrays
  */
 export function computeColumnPositions(
     columns: readonly ColumnDef[],
@@ -92,9 +84,6 @@ export function computeColumnPositions(
 
 /**
  * Create a resolved layout configuration from user options + defaults.
- *
- * @param options - Partial layout options to merge with defaults
- * @returns Fully resolved layout with page dimensions, margins, columns, colors, and font sizes
  */
 export function resolveLayout(options?: Partial<PdfLayoutOptions>): {
     pgW: number; pgH: number;
@@ -111,8 +100,7 @@ export function resolveLayout(options?: Partial<PdfLayoutOptions>): {
     const mg: { t: number; r: number; b: number; l: number } = options?.margins ?? { ...DEFAULT_MARGINS };
     const cw = pgW - mg.l - mg.r;
     const columns = options?.columns ?? DEFAULT_COLUMNS;
-    const rawColors: PdfColors = options?.colors ?? { ...DEFAULT_COLORS };
-    const colors: PdfColors = options?.colors ? normalizeColors(rawColors) : rawColors;
+    const colors: PdfColors = options?.colors ?? { ...DEFAULT_COLORS };
     const fs = DEFAULT_FONT_SIZES;
     const { cx, cwi } = computeColumnPositions(columns, mg.l, cw);
 
@@ -120,25 +108,26 @@ export function resolveLayout(options?: Partial<PdfLayoutOptions>): {
 }
 
 /**
- * Resolve placeholders in a template string.
+ * Replace placeholder tokens in a header/footer template string.
  *
- * @param template - Template string with {page}, {pages}, {date}, {title} placeholders
- * @param page - Current page number
+ * @param tpl - Template string with `{page}`, `{pages}`, `{title}`, `{date}` placeholders
+ * @param page - Current page number (1-based)
  * @param pages - Total page count
  * @param title - Document title
- * @param date - Formatted date string (e.g. YYYY-MM-DD)
- * @returns Resolved string with all placeholders replaced
+ * @param date - Formatted date string
+ * @returns Resolved string with placeholders replaced
  */
 export function resolveTemplate(
-    template: string,
+    tpl: string | undefined,
     page: number,
     pages: number,
     title: string,
     date: string,
 ): string {
-    return template
+    if (!tpl) return '';
+    return tpl
         .replace(/\{page\}/g, String(page))
         .replace(/\{pages\}/g, String(pages))
-        .replace(/\{date\}/g, date)
-        .replace(/\{title\}/g, title);
+        .replace(/\{title\}/g, title)
+        .replace(/\{date\}/g, date);
 }

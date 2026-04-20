@@ -214,6 +214,14 @@ function readFieldValue(data: Uint8Array, offset: number, width: number): number
 // ── Full xref Chain Parser ───────────────────────────────────────────
 
 /**
+ * Maximum depth of the xref `/Prev` chain.
+ * Prevents CPU-exhaustion DoS from PDFs with excessively chained incremental
+ * updates (CWE-400: Uncontrolled Resource Consumption). Legitimate PDFs
+ * rarely have more than a handful of incremental updates.
+ */
+export const MAX_XREF_CHAIN = 100;
+
+/**
  * Parse the complete xref table including incremental updates (via /Prev chain).
  *
  * @param buf - PDF file bytes
@@ -231,11 +239,21 @@ function parseXrefChain(buf: Uint8Array, startOffset: number): XrefTable {
     const allEntries = new Map<number, XrefEntry>();
     let mergedTrailer: PdfDict = new Map();
     let offset: number | undefined = startOffset;
+    const visited = new Set<number>();
+    let chainCount = 0;
 
     // Follow /Prev chain (newest first)
     const trailers: PdfDict[] = [];
 
     while (offset !== undefined) {
+        if (chainCount++ >= MAX_XREF_CHAIN) {
+            throw new Error(`xref: /Prev chain exceeds maximum depth of ${MAX_XREF_CHAIN}`);
+        }
+        if (visited.has(offset)) {
+            throw new Error(`xref: cycle detected at offset ${offset}`);
+        }
+        visited.add(offset);
+
         let result: { entries: Map<number, XrefEntry>; trailer: PdfDict };
 
         // Detect xref type: traditional starts with 'xref', streams start with object number

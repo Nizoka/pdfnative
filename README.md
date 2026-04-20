@@ -40,7 +40,7 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 1563+ tests across 37 files, fuzz suite, performance benchmarks
+- **95%+ test coverage** — 1588+ tests across 40 files, fuzz suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 
 ## Installation
@@ -230,8 +230,23 @@ import { createPDF } from 'pdfnative';
 const pdf = await createPDF(params, {
   workerUrl: new URL('pdfnative/worker', import.meta.url),
   threshold: 500, // use Worker above 500 rows
+  timeout: 30000, // Worker timeout in ms (default: 60000)
   onProgress: (percent) => console.log(`${percent}%`),
 });
+```
+
+For lower-level control, use `generatePDFInWorker` directly with `WorkerGenerationOptions`:
+
+```typescript
+import { generatePDFInWorker } from 'pdfnative';
+import type { WorkerGenerationOptions } from 'pdfnative';
+
+const options: WorkerGenerationOptions = {
+  timeout: 15000,
+  onProgress: (percent) => console.log(`${percent}%`),
+};
+
+const pdf = await generatePDFInWorker(workerUrl, params, options);
 ```
 
 ## Layout Customization
@@ -581,7 +596,6 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 |----------|-------------|
 | `resolveBidiRuns(text)` | Resolve text into BiDi runs with levels |
 | `containsRTL(text)` | Check if text contains RTL characters |
-| `mirrorCodePoint(cp)` | Mirror bracket/parenthesis for RTL |
 | `shapeArabicText(str, fontData)` | Arabic GSUB positional shaping |
 | `containsArabic(text)` | Check for Arabic characters |
 | `containsHebrew(text)` | Check for Hebrew characters |
@@ -615,6 +629,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 |----------|-------------|
 | `buildFormWidget(field, objNum, pageRef)` | Build form field widget annotation + appearance stream |
 | `buildAcroFormDict(fieldRefs)` | Build `/AcroForm` dictionary for catalog |
+| `buildRadioGroupParent(group)` | Build radio button group parent object |
 | `buildAppearanceStreamDict(width, height)` | Build appearance stream dictionary |
 | `defaultFieldHeight(type)` | Default height by field type |
 
@@ -687,33 +702,18 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 
 | Function | Description |
 |----------|-------------|
-| `txtTagged(str, x, y, font, sz, enc, mcid)` | Text at position with /ActualText BDC/EMC |
-| `txtRTagged(str, rightX, y, font, sz, enc, mcid)` | Right-aligned tagged text |
-| `txtCTagged(str, leftX, y, font, sz, colW, enc, mcid)` | Center-aligned tagged text |
-| `wrapSpan(content, actualText, mcid)` | Wrap operators in /Span marked content |
-| `wrapMarkedContent(content, tag, mcid)` | Generic marked content wrapper |
-| `escapePdfUtf16(str)` | Encode string as PDF UTF-16BE hex |
-| `createMCIDAllocator()` | Sequential MCID allocator |
-| `buildStructureTree(root, startObj)` | Build structure tree PDF objects |
-| `buildXMPMetadata(title, producer, date, part?, conformance?)` | XMP metadata for PDF/A (part=2, conformance=B default) |
-| `buildOutputIntentDict(iccObjNum, subtype?)` | sRGB OutputIntent dictionary |
-| `buildMinimalSRGBProfile()` | Minimal sRGB ICC profile bytes |
 | `resolvePdfAConfig(tagged)` | Resolve tagged option → PDF/A config (version, part, conformance) |
+| `encodePdfTextString(str)` | Encode string as PDF text (PDFDocEncoding or UTF-16BE hex) |
 
 ### Encryption
 
-| Function | Description |
-|----------|-------------|
-| `initEncryption(options)` | Initialize encryption state (AES-128 or AES-256) |
-| `encryptStream(data, state, objNum, genNum)` | Encrypt stream data (IV + AES-CBC) |
-| `encryptString(str, state, objNum, genNum)` | Encrypt string to hex |
-| `buildEncryptDict(state)` | Build /Encrypt dictionary (R4 or R6) |
-| `buildIdArray(docId)` | Build /ID trailer array |
-| `computePermissions(perms?)` | Compute permission bitmask (ISO 32000-1 Table 22) |
-| `generateDocId()` | Generate random 16-byte document ID |
-| `aesCBC(data, key, iv)` | AES-CBC encryption with PKCS7 padding |
-| `md5(data)` | MD5 hash (RFC 1321) |
-| `sha256(data)` | SHA-256 hash (FIPS 180-4) |
+Encryption is configured via the `encryption` option in layout options. Internal encryption functions are not part of the public API.
+
+```typescript
+const pdf = buildPDFBytes(params, {
+  encryption: { userPassword: 'secret', ownerPassword: 'admin', permissions: { printing: true } }
+});
+```
 
 ### Color Utilities
 
@@ -729,10 +729,17 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 |----------|-------------|
 | `initNodeCompression()` | Initialize native zlib (async, call once in ESM before `compress: true`) |
 | `setDeflateImpl(fn)` | Inject custom DEFLATE function (e.g. for browser polyfill) |
-| `deflateSync(data)` | Compress `Uint8Array` via best available platform API |
-| `deflateStored(data)` | Wrap data in stored-block zlib (valid FlateDecode, zero compression) |
-| `compressStream(str)` | Compress binary string (PDF stream) → compressed binary string |
-| `adler32(data)` | Compute Adler-32 checksum (RFC 1950) |
+
+**Browser compression** — In browser environments without native zlib, inject a third-party DEFLATE via `setDeflateImpl`:
+
+```typescript
+import { setDeflateImpl, buildPDFBytes } from 'pdfnative';
+import { deflateSync } from 'fflate'; // or pako
+
+setDeflateImpl(deflateSync);
+
+const pdf = buildPDFBytes(params, { compress: true });
+```
 
 ### Fonts
 
@@ -744,7 +751,6 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `hasFontLoader(lang)` | Check if loader is registered |
 | `getRegisteredLangs()` | List registered language codes |
 | `createEncodingContext(fontEntries)` | Create encoding context |
-| `subsetTTF(ttfBinary, usedGids)` | Subset a TTF font binary |
 
 ### Shaping
 
@@ -753,6 +759,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `shapeThaiText(str, fontData)` | Thai OpenType shaping (GSUB + GPOS) |
 | `shapeBengaliText(str, fontData)` | Bengali GSUB conjuncts + GPOS marks |
 | `shapeTamilText(str, fontData)` | Tamil GSUB + split vowel decomposition |
+| `shapeDevanagariText(str, fontData)` | Devanagari cluster shaping + GSUB/GPOS |
 | `detectFallbackLangs(texts, primaryLang)` | Detect needed fallback fonts |
 | `detectCharLang(codePoint)` | Map codepoint to preferred font language |
 | `splitTextByFont(str, fontEntries)` | Multi-font text run splitting |
@@ -775,6 +782,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `ROW_H` / `TH_H` | Row / header heights |
 | `HEADER_H` | Header zone height (15pt) |
 | `PAGE_SIZES` | Preset page dimensions (A4, Letter, Legal, A3, Tabloid) |
+| `resolveTemplate(tpl, page, pages, title, date)` | Resolve header/footer template placeholders |
 
 ## Architecture
 
@@ -839,7 +847,7 @@ src/
 fonts/                    # Pre-built font data modules (16 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (23 generators, 140+ PDFs)
-tests/                    # 1563+ tests (37 files: unit + integration + fuzz + parser)
+tests/                    # 1588+ tests (40 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -851,7 +859,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (1563+ tests)
+npm run test             # vitest run (1588+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+)
 npm run test:generate       # Generate 140+ sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -859,17 +867,18 @@ npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
 npm run typecheck:scripts   # tsc --project tsconfig.scripts.json
 npm run typecheck:all       # Typecheck src/ + tests/ + scripts/
+npm run bench               # Performance benchmarks (vitest bench)
 ```
 
 ### Quality Metrics
 
 | Metric | Value |
 |--------|-------|
-| Tests | 1563+ (37 files) |
+| Tests | 1588+ (40 files) |
 | Statement coverage | 95.41% |
 | Branch coverage | 87.79% |
 | Function coverage | 98.5% |
-| Fuzz tests | 33 edge-case scenarios |
+| Fuzz tests | 48 edge-case scenarios |
 | Benchmarks | Latin 500 rows ~10ms, Unicode ~13ms (Apple M1, Node 22) |
 | Dependencies | 0 runtime |
 | CI | Node 22/24 matrix |
@@ -1008,7 +1017,7 @@ const pdf = buildPDFBytes(params, {
 
 | Runtime | Compression Method | Performance |
 |---------|-------------------|-------------|
-| Node.js 18+ | `zlib.deflateSync()` (native C) | Optimal |
+| Node.js 22+ | `zlib.deflateSync()` (native C) | Optimal |
 | Browser | Stored-block fallback (valid FlateDecode) | No size reduction |
 | Deno / Bun | CJS require fallback | Depends on compat layer |
 

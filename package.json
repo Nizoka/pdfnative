@@ -1,7 +1,7 @@
 {
   "name": "pdfnative",
   "version": "1.0.0",
-  "description": "Zero-dependency native PDF generation library with 16 Unicode scripts (Thai, CJK, Arabic, Hebrew, Greek, Devanagari, Bengali, Tamil). BiDi, PDF/A, AES encryption, digital signatures, forms, SVG, streaming, PDF parser. ISO 32000-1 compliant.",
+  "description": "Zero-dependency native PDF generation library with multi-font Unicode support (Thai shaping, CJK, Greek, Devanagari). Pure JavaScript ISO 32000-1 implementation.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -30,9 +30,9 @@
   },
   "files": [
     "dist",
-    "fonts",
+    "fonts/*.js",
+    "fonts/*.d.ts",
     "tools",
-    "CHANGELOG.md",
     "LICENSE",
     "README.md"
   ],
@@ -48,11 +48,13 @@
     "test:coverage": "vitest run --coverage",
     "test:visual": "vitest run --config vitest.visual.config.ts",
     "test:generate": "npx tsx scripts/generate-samples.ts",
+    "fonts:download": "npx tsx scripts/download-fonts.ts",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc --project tsconfig.test.json --noEmit",
     "typecheck:scripts": "tsc --project tsconfig.scripts.json --noEmit",
-    "typecheck:all": "tsc --noEmit && tsc --project tsconfig.test.json --noEmit && tsc --project tsconfig.scripts.json --noEmit",
+    "typecheck:all": "npm run typecheck && npm run typecheck:tests && npm run typecheck:scripts",
+    "bench": "vitest bench",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -63,57 +65,34 @@
     "unicode",
     "thai",
     "cjk",
-    "arabic",
-    "hebrew",
-    "bidi",
-    "rtl",
-    "devanagari",
-    "bengali",
-    "tamil",
-    "greek",
     "multi-font",
     "opentype",
     "iso-32000",
-    "pdf-a",
-    "tagged-pdf",
-    "encryption",
-    "aes",
-    "digital-signature",
-    "acroform",
-    "svg",
-    "barcode",
-    "qr-code",
-    "streaming",
-    "pdf-parser",
-    "images",
     "web-worker",
+    "streaming",
     "typescript"
   ],
-  "author": "Nizoka (https://pdfnative.dev)",
+  "author": "Nizoka <hello@pdfnative.dev> (https://pdfnative.dev)",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Nizoka/pdfnative.git"
   },
-  "homepage": "https://pdfnative.dev",
+  "homepage": "https://github.com/Nizoka/pdfnative#readme",
   "bugs": {
     "url": "https://github.com/Nizoka/pdfnative/issues"
   },
-  "funding": [
-    {
-      "type": "github",
-      "url": "https://github.com/sponsors/Nizoka"
-    },
-    {
-      "type": "individual",
-      "url": "https://pdfnative.dev"
-    }
-  ],
+  "funding": {
+    "type": "individual",
+    "url": "https://plika.app"
+  },
   "engines": {
     "node": ">=22"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
-    "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.0.0",
     "tsup": "^8.0.0",

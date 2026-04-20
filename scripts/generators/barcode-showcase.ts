@@ -38,7 +38,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Barcode & QR Code Showcase',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'barcode-showcase.pdf'), 'barcode-showcase.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'barcode', 'barcode-showcase.pdf'), 'barcode/barcode-showcase.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── Multiple barcodes with alignment variations ──────────────
@@ -78,7 +78,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Barcode Alignment Samples',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'barcode-alignment.pdf'), 'barcode-alignment.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'barcode', 'barcode-alignment.pdf'), 'barcode/barcode-alignment.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── Tagged barcode (PDF/A) ───────────────────────────────────
@@ -94,6 +94,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             footerText: 'pdfnative – Tagged Barcode Sample',
             layout: { tagged: true },
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'barcode-tagged.pdf'), 'barcode-tagged.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'barcode', 'barcode-tagged.pdf'), 'barcode/barcode-tagged.pdf', buildDocumentPDFBytes(params));
     }
 }

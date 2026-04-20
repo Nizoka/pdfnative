@@ -36,8 +36,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Text watermark (background, default rotation) ────────────
     ctx.writeSafe(
-        resolve(ctx.outputDir, 'watermark-text-bg.pdf'),
-        'watermark-text-bg.pdf',
+        resolve(ctx.outputDir, 'watermark', 'watermark-text-bg.pdf'),
+        'watermark/watermark-text-bg.pdf',
         buildPDFBytes(baseParams, {
             watermark: {
                 text: { text: 'CONFIDENTIAL', fontSize: 60, opacity: 0.15, angle: 45 },
@@ -48,8 +48,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Text watermark (foreground, horizontal) ──────────────────
     ctx.writeSafe(
-        resolve(ctx.outputDir, 'watermark-text-fg.pdf'),
-        'watermark-text-fg.pdf',
+        resolve(ctx.outputDir, 'watermark', 'watermark-text-fg.pdf'),
+        'watermark/watermark-text-fg.pdf',
         buildPDFBytes(baseParams, {
             watermark: {
                 text: { text: 'DRAFT', fontSize: 80, opacity: 0.10, angle: 0, color: '#FF0000' },
@@ -62,8 +62,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     {
         const jpegBytes = makeMinimalJPEG();
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'watermark-image-bg.pdf'),
-            'watermark-image-bg.pdf',
+            resolve(ctx.outputDir, 'watermark', 'watermark-image-bg.pdf'),
+            'watermark/watermark-image-bg.pdf',
             buildPDFBytes(baseParams, {
                 watermark: {
                     image: { data: jpegBytes, opacity: 0.08, width: 200 },
@@ -91,8 +91,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
         };
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'watermark-doc-text.pdf'),
-            'watermark-doc-text.pdf',
+            resolve(ctx.outputDir, 'watermark', 'watermark-doc-text.pdf'),
+            'watermark/watermark-doc-text.pdf',
             buildDocumentPDFBytes(docParams, {
                 watermark: {
                     text: { text: 'INTERNAL USE ONLY', fontSize: 48, opacity: 0.15, angle: 30 },
@@ -104,8 +104,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Text watermark with custom color + high opacity ──────────
     ctx.writeSafe(
-        resolve(ctx.outputDir, 'watermark-text-custom.pdf'),
-        'watermark-text-custom.pdf',
+        resolve(ctx.outputDir, 'watermark', 'watermark-text-custom.pdf'),
+        'watermark/watermark-text-custom.pdf',
         buildPDFBytes(baseParams, {
             watermark: {
                 text: { text: 'SAMPLE', fontSize: 70, opacity: 0.25, angle: -30, color: '#2563EB' },
@@ -126,8 +126,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
         };
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'watermark-doc-image.pdf'),
-            'watermark-doc-image.pdf',
+            resolve(ctx.outputDir, 'watermark', 'watermark-doc-image.pdf'),
+            'watermark/watermark-doc-image.pdf',
             buildDocumentPDFBytes(docParams, {
                 watermark: {
                     image: { data: jpegBytes, opacity: 0.10, width: 150 },

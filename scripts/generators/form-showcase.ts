@@ -54,7 +54,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         };
 
         const bytes = buildDocumentPDFBytes(params);
-        ctx.writeSafe(resolve(ctx.outputDir, 'form-fields.pdf'), 'form-fields.pdf', bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'form', 'form-fields.pdf'), 'form/form-fields.pdf', bytes);
     }
 
     // ── Minimal form ─────────────────────────────────────────────
@@ -72,6 +72,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         };
 
         const bytes = buildDocumentPDFBytes(params);
-        ctx.writeSafe(resolve(ctx.outputDir, 'form-contact.pdf'), 'form-contact.pdf', bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'form', 'form-contact.pdf'), 'form/form-contact.pdf', bytes);
     }
 }

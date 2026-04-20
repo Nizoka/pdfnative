@@ -14,7 +14,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     for (const doc of DOC_SAMPLES) {
         const bytes = buildDocumentPDFBytes(doc.params, doc.options);
         const filename = `${doc.filename}.pdf`;
-        ctx.writeSafe(resolve(ctx.outputDir, filename), filename, bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', filename), `document/${filename}`, bytes);
     }
 
     // ── Unicode: Japanese ────────────────────────────────────────
@@ -41,7 +41,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 footerText: 'pdfnative – 日本語ドキュメントサンプル',
                 fontEntries: [{ fontData: jaFd, fontRef: '/F3', lang: 'ja' }],
             };
-            ctx.writeSafe(resolve(ctx.outputDir, 'doc-japanese.pdf'), 'doc-japanese.pdf', buildDocumentPDFBytes(params));
+            ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-japanese.pdf'), 'document/doc-japanese.pdf', buildDocumentPDFBytes(params));
         }
     }
 
@@ -68,7 +68,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 footerText: 'pdfnative – نموذج مستند عربي',
                 fontEntries: [{ fontData: arFd, fontRef: '/F3', lang: 'ar' }],
             };
-            ctx.writeSafe(resolve(ctx.outputDir, 'doc-arabic.pdf'), 'doc-arabic.pdf', buildDocumentPDFBytes(params));
+            ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-arabic.pdf'), 'document/doc-arabic.pdf', buildDocumentPDFBytes(params));
         }
     }
 
@@ -95,7 +95,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 footerText: 'pdfnative – דוגמת מסמך בעברית',
                 fontEntries: [{ fontData: heFd, fontRef: '/F3', lang: 'he' }],
             };
-            ctx.writeSafe(resolve(ctx.outputDir, 'doc-hebrew.pdf'), 'doc-hebrew.pdf', buildDocumentPDFBytes(params));
+            ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-hebrew.pdf'), 'document/doc-hebrew.pdf', buildDocumentPDFBytes(params));
         }
     }
 
@@ -129,7 +129,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { fontData: jaFd, fontRef: '/F4', lang: 'ja' },
                 ],
             };
-            ctx.writeSafe(resolve(ctx.outputDir, 'doc-multi-language.pdf'), 'doc-multi-language.pdf', buildDocumentPDFBytes(params));
+            ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-multi-language.pdf'), 'document/doc-multi-language.pdf', buildDocumentPDFBytes(params));
         }
     }
 
@@ -178,7 +178,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Invoice template sample',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'doc-invoice.pdf'), 'doc-invoice.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-invoice.pdf'), 'document/doc-invoice.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── Multi-page technical report ──────────────────────────────
@@ -266,7 +266,7 @@ async function generateReport(ctx: GenerateContext): Promise<void> {
         footerText: 'pdfnative – Q1 2026 Technical Performance Report – Confidential',
         metadata: { author: 'Engineering Division', subject: 'Quarterly Report', keywords: 'performance, infrastructure, security' },
     };
-    ctx.writeSafe(resolve(ctx.outputDir, 'doc-report-multipage.pdf'), 'doc-report-multipage.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-report-multipage.pdf'), 'document/doc-report-multipage.pdf', buildDocumentPDFBytes(params));
 }
 
 async function generateContract(ctx: GenerateContext): Promise<void> {
@@ -305,7 +305,7 @@ async function generateContract(ctx: GenerateContext): Promise<void> {
         fontEntries: [{ fontData: arFd, fontRef: '/F3', lang: 'ar' }],
         metadata: { author: 'TechSolutions Inc.', subject: 'Service Agreement', keywords: 'contract, bilingual' },
     };
-    ctx.writeSafe(resolve(ctx.outputDir, 'doc-contract-bilingual.pdf'), 'doc-contract-bilingual.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-contract-bilingual.pdf'), 'document/doc-contract-bilingual.pdf', buildDocumentPDFBytes(params));
 }
 
 async function generateChineseCatalog(ctx: GenerateContext): Promise<void> {
@@ -339,7 +339,7 @@ async function generateChineseCatalog(ctx: GenerateContext): Promise<void> {
         footerText: 'pdfnative – 2026年春季产品目录',
         fontEntries: [{ fontData: zhFd, fontRef: '/F3', lang: 'zh' }],
     };
-    ctx.writeSafe(resolve(ctx.outputDir, 'doc-chinese-catalog.pdf'), 'doc-chinese-catalog.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-chinese-catalog.pdf'), 'document/doc-chinese-catalog.pdf', buildDocumentPDFBytes(params));
 }
 
 async function generateThaiDoc(ctx: GenerateContext): Promise<void> {
@@ -363,7 +363,7 @@ async function generateThaiDoc(ctx: GenerateContext): Promise<void> {
         footerText: 'pdfnative – คู่มือผู้ใช้ระบบจัดการเอกสาร',
         fontEntries: [{ fontData: thFd, fontRef: '/F3', lang: 'th' }],
     };
-    ctx.writeSafe(resolve(ctx.outputDir, 'doc-thai.pdf'), 'doc-thai.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-thai.pdf'), 'document/doc-thai.pdf', buildDocumentPDFBytes(params));
 }
 
 async function generateBengaliDoc(ctx: GenerateContext): Promise<void> {
@@ -393,7 +393,7 @@ async function generateBengaliDoc(ctx: GenerateContext): Promise<void> {
         footerText: 'pdfnative \u2013 \u09AC\u09BE\u0982\u09B2\u09BE \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0 \u09A8\u09AE\u09C1\u09A8\u09BE',
         fontEntries: [{ fontData: bnFd, fontRef: '/F3', lang: 'bn' }],
     };
-    ctx.writeSafe(resolve(ctx.outputDir, 'doc-bengali.pdf'), 'doc-bengali.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-bengali.pdf'), 'document/doc-bengali.pdf', buildDocumentPDFBytes(params));
 }
 
 async function generateTamilDoc(ctx: GenerateContext): Promise<void> {
@@ -423,7 +423,7 @@ async function generateTamilDoc(ctx: GenerateContext): Promise<void> {
         footerText: 'pdfnative \u2013 \u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u0B86\u0BB5\u0BA3 \u0BAE\u0BBE\u0BA4\u0BBF\u0BB0\u0BBF',
         fontEntries: [{ fontData: taFd, fontRef: '/F3', lang: 'ta' }],
     };
-    ctx.writeSafe(resolve(ctx.outputDir, 'doc-tamil.pdf'), 'doc-tamil.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-tamil.pdf'), 'document/doc-tamil.pdf', buildDocumentPDFBytes(params));
 }
 
 function generateShowcase(ctx: GenerateContext): void {
@@ -466,5 +466,5 @@ function generateShowcase(ctx: GenerateContext): void {
         ],
         footerText: 'pdfnative – Complete block type showcase',
     };
-    ctx.writeSafe(resolve(ctx.outputDir, 'doc-showcase-all-blocks.pdf'), 'doc-showcase-all-blocks.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-showcase-all-blocks.pdf'), 'document/doc-showcase-all-blocks.pdf', buildDocumentPDFBytes(params));
 }

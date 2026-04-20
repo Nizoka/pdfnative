@@ -38,8 +38,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
         const params: DocumentParams = { title: 'TOC Showcase – Full', blocks };
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'toc-full.pdf'),
-            'toc-full.pdf',
+            resolve(ctx.outputDir, 'toc', 'toc-full.pdf'),
+            'toc/toc-full.pdf',
             buildDocumentPDFBytes(params),
         );
     }
@@ -66,8 +66,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
         const params: DocumentParams = { title: 'TOC Showcase – Level 2', blocks };
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'toc-level2.pdf'),
-            'toc-level2.pdf',
+            resolve(ctx.outputDir, 'toc', 'toc-level2.pdf'),
+            'toc/toc-level2.pdf',
             buildDocumentPDFBytes(params),
         );
     }
@@ -86,8 +86,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
         const params: DocumentParams = { title: 'TOC Showcase – Tagged PDF/A', blocks };
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'toc-tagged.pdf'),
-            'toc-tagged.pdf',
+            resolve(ctx.outputDir, 'toc', 'toc-tagged.pdf'),
+            'toc/toc-tagged.pdf',
             buildDocumentPDFBytes(params, { tagged: true }),
         );
     }

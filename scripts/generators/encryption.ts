@@ -46,6 +46,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             },
         });
         const filename = `${enc.filename}.pdf`;
-        ctx.writeSafe(resolve(ctx.outputDir, filename), filename, bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'encryption', filename), `encryption/${filename}`, bytes);
     }
 }

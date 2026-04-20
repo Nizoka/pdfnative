@@ -3,8 +3,26 @@ name: CodeQL
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.md'
+      - '.github/FUNDING.yml'
+      - 'LICENSE'
+      - '.editorconfig'
+      - '.gitignore'
   pull_request:
     branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.md'
+      - '.github/FUNDING.yml'
+      - 'LICENSE'
+      - '.editorconfig'
+      - '.gitignore'
   schedule:
     - cron: '27 3 * * 1'
 
@@ -21,6 +39,7 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     strategy:
       fail-fast: false

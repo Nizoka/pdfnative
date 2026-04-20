@@ -35,10 +35,10 @@ src/
 │   ├── x509.ts           # X.509 DER certificate parsing
 │   └── cms.ts            # CMS SignedData (PKCS#7) builder
 ├── parser/       # PDF reading & modification (ISO 32000-1 §7)
-│   ├── pdf-inflate.ts    # DEFLATE decompression (zlib inflate, pure JS + native fallback)
+│   ├── pdf-inflate.ts    # DEFLATE decompression (zlib inflate, pure JS + native fallback, zip-bomb cap via MAX_INFLATE_OUTPUT)
 │   ├── pdf-tokenizer.ts  # PDF lexical scanner (ISO 32000-1 §7.2)
-│   ├── pdf-object-parser.ts # PDF object parser with type guards and dict helpers
-│   ├── pdf-xref-parser.ts # Cross-reference table/stream parser with /Prev chain
+│   ├── pdf-object-parser.ts # PDF object parser with type guards and dict helpers (MAX_PARSE_DEPTH=1000 recursion cap)
+│   ├── pdf-xref-parser.ts # Cross-reference table/stream parser with /Prev chain (MAX_XREF_CHAIN=100 + cycle detection)
 │   ├── pdf-reader.ts     # High-level PDF reader (page tree, stream decode, caching)
 │   └── pdf-modifier.ts   # Incremental modification (non-destructive save with /Prev)
 ├── fonts/        # WinAnsi + CIDFont pure encoding functions, lazy font loader, TTF subsetter (with buffer guards), CMap builder
@@ -48,7 +48,7 @@ src/
 fonts/            # Pre-built font data modules (.js/.d.ts) — 16 scripts + TTF source files
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (23 generators, 140+ PDFs)
-tests/            # 1563+ tests (37 files: unit/integration/fuzz/parser) mirroring src/ structure
+tests/            # 1588+ tests (40 files: unit/integration/fuzz/parser) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
 ```
@@ -73,7 +73,7 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (1563+ tests, 37 files)
+npm run test            # vitest run (1588+ tests, 40 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
 npm run test:generate   # Generate 140+ sample PDFs → test-output/
@@ -88,7 +88,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 1563+ tests (37 files)
+- All new code must have tests. Current: ~95% statement coverage, 1588+ tests (40 files)
 
 ## Conventions
 
@@ -225,7 +225,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 1563+ tests (37 files), 33 fuzz edge-cases, performance benchmarks
+- **95%+ test coverage** — 1588+ tests (40 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)

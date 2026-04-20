@@ -136,7 +136,7 @@ describe('generatePDFInWorker', () => {
 
     it('should call onProgress callback on progress message', async () => {
         const onProgress = vi.fn();
-        const promise = generatePDFInWorker('worker.js', minimalParams, onProgress);
+        const promise = generatePDFInWorker('worker.js', minimalParams, { onProgress });
 
         await new Promise(r => setTimeout(r, 0));
         mockWorkerInstance.onmessage!({ data: { type: 'progress', percent: 50 } });
@@ -180,6 +180,42 @@ describe('generatePDFInWorker', () => {
         expect(caughtError!.message).toBe('PDF Worker timeout');
         expect(mockWorkerInstance.terminate).toHaveBeenCalled();
         vi.useRealTimers();
+    });
+
+    it('should respect custom timeout via options.timeout', async () => {
+        vi.useFakeTimers();
+        const customTimeout = 100;
+        const promise = generatePDFInWorker('worker.js', minimalParams, { timeout: customTimeout });
+
+        let caughtError: Error | null = null;
+        const handled = promise.catch(e => { caughtError = e as Error; });
+
+        // Should NOT fire before the custom timeout
+        await vi.advanceTimersByTimeAsync(customTimeout - 1);
+        expect(caughtError).toBeNull();
+
+        // Should fire AT the custom timeout
+        await vi.advanceTimersByTimeAsync(1);
+        await handled;
+
+        expect(caughtError).toBeInstanceOf(Error);
+        expect(caughtError!.message).toBe('PDF Worker timeout');
+        expect(mockWorkerInstance.terminate).toHaveBeenCalled();
+        vi.useRealTimers();
+    });
+
+    it('should support both onProgress and custom timeout together', async () => {
+        const onProgress = vi.fn();
+        const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
+        const promise = generatePDFInWorker('worker.js', minimalParams, { timeout: 5000, onProgress });
+
+        await new Promise(r => setTimeout(r, 0));
+        mockWorkerInstance.onmessage!({ data: { type: 'progress', percent: 75 } });
+        mockWorkerInstance.onmessage!({ data: { type: 'complete', pdfBytes } });
+
+        const result = await promise;
+        expect(result).toBe(pdfBytes);
+        expect(onProgress).toHaveBeenCalledWith(75);
     });
 
     it('should send GENERATE_PDF message to worker', async () => {
@@ -228,5 +264,42 @@ describe('createPDF with Worker', () => {
         expect(result).toBeInstanceOf(Uint8Array);
         const header = String.fromCharCode(...result.slice(0, 5));
         expect(header).toBe('%PDF-');
+    });
+
+    it('should forward timeout option to generatePDFInWorker', async () => {
+        vi.useFakeTimers();
+
+        let workerInstance: { terminate: ReturnType<typeof vi.fn> } | null = null;
+        vi.stubGlobal('Worker', class {
+            onmessage: ((e: { data: unknown }) => void) | null = null;
+            onerror: ((e: unknown) => void) | null = null;
+            postMessage = vi.fn();
+            terminate = vi.fn();
+            constructor() { workerInstance = this as unknown as typeof workerInstance; }
+        });
+
+        const manyRows = Array.from({ length: 600 }, (_, i) => ({
+            cells: [`${i}`, `row${i}`, '$0.00'], type: 'credit', pointed: false,
+        }));
+
+        const customTimeout = 200;
+        const promise = createPDF(
+            { ...minimalParams, rows: manyRows },
+            { workerUrl: 'worker.js', timeout: customTimeout }
+        );
+
+        // Worker should NOT be terminated before the custom timeout
+        await vi.advanceTimersByTimeAsync(customTimeout - 1);
+        expect(workerInstance).not.toBeNull();
+        expect(workerInstance!.terminate).not.toHaveBeenCalled();
+
+        // Worker SHOULD be terminated AT the custom timeout (proves forwarding)
+        await vi.advanceTimersByTimeAsync(1);
+
+        // createPDF catches the timeout and falls back to main thread
+        const result = await promise;
+        expect(workerInstance!.terminate).toHaveBeenCalled();
+        expect(result).toBeInstanceOf(Uint8Array);
+        vi.useRealTimers();
     });
 });

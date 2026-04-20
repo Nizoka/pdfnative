@@ -139,7 +139,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – SVG Path Rendering',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'svg-showcase.pdf'), 'svg-showcase.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'svg', 'svg-showcase.pdf'), 'svg/svg-showcase.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── SVG sizing & stroke variations ───────────────────────────
@@ -201,6 +201,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – SVG Stroke & Size Variations',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'svg-variations.pdf'), 'svg-variations.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'svg', 'svg-variations.pdf'), 'svg/svg-variations.pdf', buildDocumentPDFBytes(params));
     }
 }

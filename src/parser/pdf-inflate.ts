@@ -15,6 +15,42 @@
 let _zlibInflateSync: ((buf: Uint8Array) => Uint8Array) | null | undefined;
 
 /**
+ * Default maximum decompressed size (bytes) for inflate operations.
+ * Prevents zip-bomb memory exhaustion (CWE-400: Uncontrolled Resource Consumption).
+ *
+ * DEFLATE worst-case compression ratio is ~1032:1, so a 1 MB malicious stream
+ * could expand to ~1 GB without this cap.
+ *
+ * Default: 100 MB. Override with {@link setMaxInflateOutputSize}.
+ */
+export const DEFAULT_MAX_INFLATE_OUTPUT = 100 * 1024 * 1024;
+
+let _maxInflateOutput = DEFAULT_MAX_INFLATE_OUTPUT;
+
+/**
+ * Set the global maximum decompressed output size for {@link inflateSync}.
+ * Applies to both the native zlib path and the pure-JS fallback.
+ *
+ * @param size - Maximum output size in bytes. Use `Infinity` to disable (not recommended for untrusted input).
+ */
+export function setMaxInflateOutputSize(size: number): void {
+    if (!Number.isFinite(size) && size !== Infinity) {
+        throw new Error('setMaxInflateOutputSize: size must be a finite number or Infinity');
+    }
+    if (size <= 0) {
+        throw new Error('setMaxInflateOutputSize: size must be positive');
+    }
+    _maxInflateOutput = size;
+}
+
+/**
+ * Get the current maximum decompressed output size.
+ */
+export function getMaxInflateOutputSize(): number {
+    return _maxInflateOutput;
+}
+
+/**
  * Inject a custom inflate implementation.
  *
  * @param fn - inflateSync-compatible function, or null to disable
@@ -39,9 +75,9 @@ function getZlibInflateSync(): ((buf: Uint8Array) => Uint8Array) | null {
             ?? (g['require'] as ((m: string) => Record<string, unknown>) | undefined);
         if (mod) {
             const zlib = mod('node:zlib');
-            const fn = zlib['inflateSync'] as ((buf: Uint8Array) => Uint8Array) | undefined;
+            const fn = zlib['inflateSync'] as ((buf: Uint8Array, opts?: { maxOutputLength?: number }) => Uint8Array) | undefined;
             if (typeof fn === 'function') {
-                _zlibInflateSync = (buf: Uint8Array) => new Uint8Array(fn(buf));
+                _zlibInflateSync = (buf: Uint8Array) => new Uint8Array(fn(buf, { maxOutputLength: _maxInflateOutput }));
                 return _zlibInflateSync;
             }
         }
@@ -68,9 +104,9 @@ export async function initNodeDecompression(): Promise<void> {
         }
         const modName = 'node:zlib';
         const zlib = await (import(modName) as Promise<Record<string, unknown>>);
-        const fn = zlib['inflateSync'] as ((buf: Uint8Array) => Uint8Array) | undefined;
+        const fn = zlib['inflateSync'] as ((buf: Uint8Array, opts?: { maxOutputLength?: number }) => Uint8Array) | undefined;
         if (typeof fn === 'function') {
-            _zlibInflateSync = (buf: Uint8Array) => new Uint8Array(fn(buf));
+            _zlibInflateSync = (buf: Uint8Array) => new Uint8Array(fn(buf, { maxOutputLength: _maxInflateOutput }));
         } else {
             _zlibInflateSync = null;
         }
@@ -259,14 +295,20 @@ const CL_ORDER = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 
 
 function inflateRaw(data: Uint8Array, startOffset: number): InflateResult {
     const br: BitReader = { buf: data, pos: startOffset, bitBuf: 0, bitCnt: 0 };
+    const maxOutput = _maxInflateOutput;
 
-    // Output buffer — grows dynamically
-    let out = new Uint8Array(data.length * 4);
+    // Output buffer — grows dynamically, capped at maxOutput
+    const initialCap = Math.min(data.length * 4, maxOutput);
+    let out = new Uint8Array(initialCap);
     let outPos = 0;
 
     function ensureCapacity(needed: number): void {
+        if (outPos + needed > maxOutput) {
+            throw new Error(`inflate: decompressed output exceeds maximum of ${maxOutput} bytes (potential zip bomb)`);
+        }
         while (outPos + needed > out.length) {
-            const newOut = new Uint8Array(out.length * 2);
+            const newSize = Math.min(out.length * 2, maxOutput);
+            const newOut = new Uint8Array(newSize);
             newOut.set(out);
             out = newOut;
         }

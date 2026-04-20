@@ -173,6 +173,22 @@ export interface ColumnDef {
     readonly mxH: number;
 }
 
+/**
+ * Options for generating a PDF in a Web Worker via `generatePDFInWorker()`.
+ */
+export interface WorkerGenerationOptions {
+    /**
+     * Timeout in milliseconds before the worker is terminated.
+     * Defaults to `WORKER_TIMEOUT_MS` (60 000 ms).
+     */
+    readonly timeout?: number;
+    /**
+     * Progress callback invoked as the worker sends `{ type: 'progress', percent }` messages.
+     * @param percent - Completion percentage (0–100)
+     */
+    readonly onProgress?: (percent: number) => void;
+}
+
 /** Layout options (all optional, A4 defaults applied). */
 export interface PdfLayoutOptions {
     /** Page width in points (default: 595.28 = A4). */
@@ -219,15 +235,28 @@ export interface PdfLayoutOptions {
      * When enabled, all content streams, font streams, ToUnicode CMaps, and ICC profiles
      * are compressed using DEFLATE (RFC 1951) in zlib format (RFC 1950).
      *
-     * - Node.js: uses native `zlib.deflateSync()` for optimal performance
-     * - Browser/other: stored-block fallback (valid FlateDecode, minimal overhead)
+     * - Node.js (ESM): call `await initNodeCompression()` once before first use.
+     * - Node.js (CJS): native `zlib.deflateSync` is resolved automatically via `require`.
+     * - Browser / edge runtimes: no native deflate is available by default. The library
+     *   falls back to a valid DEFLATE **stored-block** wrapper (0x78 0x01 header + Adler-32
+     *   checksum, no actual compression). All PDF readers accept this as valid FlateDecode,
+     *   but the output will be slightly larger than the uncompressed baseline due to the
+     *   DEFLATE framing overhead (~5 bytes per 64 KB block).
+     *
+     *   To enable real compression in the browser, supply a deflate implementation via
+     *   `setDeflateImpl()` before calling `buildPDF` / `buildDocumentPDF`:
+     *   ```ts
+     *   import { deflate } from 'fflate'; // or 'pako', or CompressionStream
+     *   import { setDeflateImpl } from 'pdfnative';
+     *   setDeflateImpl((buf) => deflate(buf));
+     *   ```
      *
      * Image streams (JPEG/PNG) are NOT recompressed — they already use DCTDecode/FlateDecode.
      * XMP metadata streams are NOT compressed when tagged mode is active (PDF/A safety).
      *
      * Compression is applied BEFORE encryption when both are active (ISO 32000-1 §7.3.8).
      *
-     * Default: false (backward compatible).
+     * Default: false (no compression).
      */
     readonly compress?: boolean;
     /**

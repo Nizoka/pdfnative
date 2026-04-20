@@ -4,28 +4,28 @@
  * High-level API for generating PDFs using Web Workers or main thread fallback.
  */
 
-import type { PdfParams, PdfLayoutOptions, WorkerInputMessage, WorkerOutputMessage } from '../types/pdf-types.js';
+import type { PdfParams, PdfLayoutOptions, WorkerGenerationOptions, WorkerInputMessage, WorkerOutputMessage } from '../types/pdf-types.js';
 import { buildPDFBytes } from '../core/pdf-builder.js';
 
 /** Default threshold: use Worker for datasets above this row count. */
 export const WORKER_THRESHOLD = 500;
 
-/** Worker timeout in milliseconds. */
+/** Worker timeout in milliseconds (used when options.timeout is not supplied). */
 export const WORKER_TIMEOUT_MS = 60000;
 
 /**
  * Generate PDF in a Web Worker (off-main-thread).
  * Returns Uint8Array via Transferable (zero-copy).
  *
- * @param workerUrl - URL to the worker script (e.g. import.meta.url for bundled worker)
+ * @param workerUrl - URL to the worker script
  * @param pdfParams - Parameters for PDF generation
- * @param onProgress - Called with percent (0-100)
+ * @param options   - Optional: `timeout` (ms, default 60 000) and `onProgress` callback
  * @returns PDF binary data
  */
 export function generatePDFInWorker(
     workerUrl: string | URL,
     pdfParams: PdfParams,
-    onProgress?: (percent: number) => void
+    options?: WorkerGenerationOptions
 ): Promise<Uint8Array> {
     return new Promise((resolve, reject) => {
         let worker: Worker;
@@ -36,16 +36,17 @@ export function generatePDFInWorker(
             return;
         }
 
+        const timeoutMs = options?.timeout ?? WORKER_TIMEOUT_MS;
         const timeoutId = setTimeout(() => {
             worker.terminate();
             reject(new Error('PDF Worker timeout'));
-        }, WORKER_TIMEOUT_MS);
+        }, timeoutMs);
 
         worker.onmessage = (e: MessageEvent<WorkerOutputMessage>) => {
             const msg = e.data;
 
             if (msg.type === 'progress') {
-                onProgress?.(msg.percent);
+                options?.onProgress?.(msg.percent);
             } else if (msg.type === 'complete') {
                 clearTimeout(timeoutId);
                 worker.terminate();
@@ -91,6 +92,7 @@ export async function createPDF(
     options?: {
         workerUrl?: string | URL;
         threshold?: number;
+        timeout?: number;
         onProgress?: (percent: number) => void;
         layoutOptions?: Partial<PdfLayoutOptions>;
     }
@@ -101,7 +103,7 @@ export async function createPDF(
 
     if (useWorker) {
         try {
-            return await generatePDFInWorker(workerUrl, pdfParams, options?.onProgress);
+            return await generatePDFInWorker(workerUrl, pdfParams, { onProgress: options?.onProgress, timeout: options?.timeout });
         } catch {
             // Fallback to main thread on Worker failure
             return generatePDFMainThread(pdfParams, options?.layoutOptions);

@@ -39,7 +39,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Font Subsetting Deep Dive',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'font-subsetting-overview.pdf'), 'font-subsetting-overview.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'font', 'font-subsetting-overview.pdf'), 'font/font-subsetting-overview.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── 2. Multi-script subsetting comparison ────────────────────
@@ -76,6 +76,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             fontEntries,
             footerText: 'pdfnative – Multi-Script Subsetting',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'font-subsetting-multiscript.pdf'), 'font-subsetting-multiscript.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'font', 'font-subsetting-multiscript.pdf'), 'font/font-subsetting-multiscript.pdf', buildDocumentPDFBytes(params));
     }
 }

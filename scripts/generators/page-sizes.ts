@@ -40,8 +40,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         };
         const filename = `page-size-${sizeName.toLowerCase()}.pdf`;
         ctx.writeSafe(
-            resolve(ctx.outputDir, filename),
-            filename,
+            resolve(ctx.outputDir, 'page-sizes', filename),
+            `page-sizes/${filename}`,
             buildPDFBytes(params, {
                 pageWidth: size.width,
                 pageHeight: size.height,
@@ -68,8 +68,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
         };
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'page-size-a3-landscape.pdf'),
-            'page-size-a3-landscape.pdf',
+            resolve(ctx.outputDir, 'page-sizes', 'page-size-a3-landscape.pdf'),
+            'page-sizes/page-size-a3-landscape.pdf',
             buildDocumentPDFBytes(docParams, {
                 pageWidth: PAGE_SIZES.A3.height,
                 pageHeight: PAGE_SIZES.A3.width,

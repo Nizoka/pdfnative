@@ -35,8 +35,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Full template (all 3 zones + all placeholders) ───────────
     ctx.writeSafe(
-        resolve(ctx.outputDir, 'header-footer-full.pdf'),
-        'header-footer-full.pdf',
+        resolve(ctx.outputDir, 'headers', 'header-footer-full.pdf'),
+        'headers/header-footer-full.pdf',
         buildPDFBytes(baseParams, {
             headerTemplate: { left: '{title}', center: 'Q1 2026 – Financial Report', right: '{date}' },
             footerTemplate: { left: 'Confidential', center: 'pdfnative v1.0', right: 'Page {page} of {pages}' },
@@ -45,8 +45,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Center-only header + right-only footer ───────────────────
     ctx.writeSafe(
-        resolve(ctx.outputDir, 'header-footer-minimal.pdf'),
-        'header-footer-minimal.pdf',
+        resolve(ctx.outputDir, 'headers', 'header-footer-minimal.pdf'),
+        'headers/header-footer-minimal.pdf',
         buildPDFBytes(baseParams, {
             headerTemplate: { center: '{title}' },
             footerTemplate: { right: '{page}/{pages}' },
@@ -75,8 +75,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
         };
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'header-footer-doc.pdf'),
-            'header-footer-doc.pdf',
+            resolve(ctx.outputDir, 'headers', 'header-footer-doc.pdf'),
+            'headers/header-footer-doc.pdf',
             buildDocumentPDFBytes(docParams, {
                 headerTemplate: { left: 'Technical Report', center: '{title}', right: '{date}' },
                 footerTemplate: { left: '© 2026 pdfnative', right: 'Page {page} of {pages}' },
@@ -86,8 +86,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Custom font size + tagged PDF/A with templates ───────────
     ctx.writeSafe(
-        resolve(ctx.outputDir, 'header-footer-tagged.pdf'),
-        'header-footer-tagged.pdf',
+        resolve(ctx.outputDir, 'headers', 'header-footer-tagged.pdf'),
+        'headers/header-footer-tagged.pdf',
         buildPDFBytes(baseParams, {
             tagged: true,
             headerTemplate: { left: '{title}', right: 'PDF/A-2b Compliant' },

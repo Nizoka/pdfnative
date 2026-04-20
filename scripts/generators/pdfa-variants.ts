@@ -55,6 +55,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
         const bytes = buildPDFBytes(params, layoutOpts);
         const filename = `${pdfa.filename}.pdf`;
-        ctx.writeSafe(resolve(ctx.outputDir, filename), filename, bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'tagged', filename), `tagged/${filename}`, bytes);
     }
 }

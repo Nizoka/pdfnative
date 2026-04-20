@@ -44,7 +44,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             chunks.push(chunk);
         }
         const bytes = concatChunks(chunks);
-        ctx.writeSafe(resolve(ctx.outputDir, 'streaming-document.pdf'), 'streaming-document.pdf', bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'streaming', 'streaming-document.pdf'), 'streaming/streaming-document.pdf', bytes);
     }
 
     // ── Streamed table PDF ───────────────────────────────────────
@@ -69,6 +69,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             chunks.push(chunk);
         }
         const bytes = concatChunks(chunks);
-        ctx.writeSafe(resolve(ctx.outputDir, 'streaming-table.pdf'), 'streaming-table.pdf', bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'streaming', 'streaming-table.pdf'), 'streaming/streaming-table.pdf', bytes);
     }
 }

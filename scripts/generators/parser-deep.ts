@@ -42,7 +42,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Parser Internals',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'parser-tokenizer.pdf'), 'parser-tokenizer.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'parser', 'parser-tokenizer.pdf'), 'parser/parser-tokenizer.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── 2. Xref table/stream + /Prev chain ──────────────────────
@@ -93,9 +93,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Xref & /Prev Chain',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'parser-xref-chain.pdf'), 'parser-xref-chain.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'parser', 'parser-xref-chain.pdf'), 'parser/parser-xref-chain.pdf', buildDocumentPDFBytes(params));
 
         // Also save the multi-revision PDF for inspection
-        ctx.writeSafe(resolve(ctx.outputDir, 'parser-3-revisions.pdf'), 'parser-3-revisions.pdf', rev3);
+        ctx.writeSafe(resolve(ctx.outputDir, 'parser', 'parser-3-revisions.pdf'), 'parser/parser-3-revisions.pdf', rev3);
     }
 }

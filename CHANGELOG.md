@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+## [1.0.0] – 2026-04-20
+
 Initial release. Pure native PDF generation library with zero runtime dependencies.
+
+### Security
+
+- **CWE-674 mitigation** — parser recursion depth cap (`MAX_PARSE_DEPTH = 1000`) prevents stack overflow from maliciously nested PDF arrays/dictionaries.
+- **CWE-400 mitigation (decompression)** — `inflateSync()` output-size cap (default 100 MB, configurable via `setMaxInflateOutputSize()`) prevents zip-bomb memory exhaustion. Enforced on both the pure-JS fallback and the native Node.js zlib path (via `maxOutputLength`).
+- **CWE-400 mitigation (xref)** — xref `/Prev` chain depth cap (`MAX_XREF_CHAIN = 100`) and cycle detection prevent CPU/memory DoS from pathological cross-reference chains.
 
 ### Added
 
@@ -176,13 +186,23 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 #### Testing & Quality
 
-- **1563+ tests** across 37 test files — unit, integration, fuzz, and parser coverage
+- **1588+ tests** across 40 test files — unit, integration, fuzz, and parser coverage
 - **95%+ statement coverage** — v8 coverage with thresholds: 90/80/85/90 (statements/branches/functions/lines)
-- **33 fuzz edge-case scenarios** — boundary conditions, malformed inputs, extreme dimensions
+- **48 fuzz edge-case scenarios** — boundary conditions, malformed inputs, extreme dimensions, recursion/zip-bomb/xref-chain hardening
 - **140+ sample PDFs** — financial statements (14), diverse use cases (12), alphabet coverage (13), PDF/A variants (5), encrypted (6), document builder (19), compressed (9), barcodes (3), watermarks (6), headers/footers (4), page sizes (6), TOC (3), SVG (3), forms (3), digital signatures (2), streaming (2), parser (2), stress tests/edge cases (13), text shaping deep-dives (3), BiDi algorithm walkthroughs (2), font subsetting deep-dives (2), crypto showcase (1), parser deep-dive (1)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in ISO D:YYYYMMDDHHmmss format
 - **Input validation** — type checks, null/undefined guards, 100K row limit at `buildPDF()` boundary
 - **23 sample generators** — modular `npm run test:generate` → 140+ PDFs in `test-output/`
+
+#### Governance & CI
+
+- Public exports: `MAX_PARSE_DEPTH`, `MAX_XREF_CHAIN`, `DEFAULT_MAX_INFLATE_OUTPUT`, `setMaxInflateOutputSize()`, `getMaxInflateOutputSize()`
+- OpenSSF Scorecard workflow (`.github/workflows/scorecard.yml`) for continuous supply-chain security assessment
+- `CITATION.cff` (Citation File Format 1.2.0) for academic citation
+- `SUPPORT.md` documenting support channels and expectations
+- CI workflows declare explicit `timeout-minutes` (CI 15 min, Publish 20 min, CodeQL 30 min, Scorecard 20 min)
+- Trusted Publishing (npm OIDC) — no long-lived NPM_TOKEN secret required
+- Published tarball narrowed via `package.json` `files` whitelist — `fonts/ttf/` source files not shipped to npm (~25 MB reduction)
 
 ### Fixed
 
@@ -200,3 +220,7 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 ### Known Limitations
 
 _No major limitations at this time._
+
+## [0.0.1] – 2026-04-13
+
+Name reservation placeholder on npm. No functional code.

@@ -37,7 +37,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         const title = reader.getInfo()?.get('Title') ?? '(unknown)';
 
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'parser-original.pdf'),
+            resolve(ctx.outputDir, 'parser', 'parser-original.pdf'),
             `parser-original.pdf (${pageCount} pages, title="${title}")`,
             bytes,
         );
@@ -73,7 +73,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
         const reader2 = openPdf(modified);
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'parser-modified.pdf'),
+            resolve(ctx.outputDir, 'parser', 'parser-modified.pdf'),
             `parser-modified.pdf (${reader2.pageCount} pages, incremental update)`,
             modified,
         );
@@ -107,7 +107,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         const reader = openPdf(bytes);
 
         ctx.writeSafe(
-            resolve(ctx.outputDir, 'parser-document.pdf'),
+            resolve(ctx.outputDir, 'parser', 'parser-document.pdf'),
             `parser-document.pdf (${reader.pageCount} pages, document builder round-trip)`,
             bytes,
         );

@@ -17,6 +17,39 @@ const _fontRegistry = new Map<string, FontLoader>();
 const _fontDataCache = new Map<string, FontData>();
 
 /**
+ * Per-FontData decoded binary cache. WeakMap ensures entries are GC'd when FontData
+ * is no longer referenced (e.g., after clearFontCache / resetFontRegistry).
+ * Avoids re-running base64 decode + charCodeAt loop on every buildPDF() call.
+ */
+const _fontBinaryCache = new WeakMap<FontData, Uint8Array>();
+
+/**
+ * Decode the TTF binary for a FontData object and return a cached Uint8Array.
+ * Subsequent calls for the same FontData instance are zero-cost (WeakMap lookup).
+ *
+ * This is an internal helper used by pdf-builder and pdf-document to feed
+ * subsetTTF() the Uint8Array path, skipping the charCodeAt decode loop.
+ */
+export function getDecodedFontBytes(fontData: FontData): Uint8Array {
+    const cached = _fontBinaryCache.get(fontData);
+    if (cached) return cached;
+
+    // Decode base64 → Uint8Array (runs once per FontData instance)
+    let bytes: Uint8Array;
+    if (typeof atob === 'function') {
+        const binaryStr = atob(fontData.ttfBase64);
+        bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    } else {
+        const buf = (globalThis as Record<string, unknown>)['Buffer'] as { from(s: string, e: string): Uint8Array };
+        bytes = buf.from(fontData.ttfBase64, 'base64');
+    }
+
+    _fontBinaryCache.set(fontData, bytes);
+    return bytes;
+}
+
+/**
  * Register a font data loader for a language.
  *
  * @example

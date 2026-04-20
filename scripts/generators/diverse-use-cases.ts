@@ -30,6 +30,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
         const bytes = buildPDFBytes(params);
         const filename = `${sample.filename || `sample-${sample.lang}`}.pdf`;
-        ctx.writeSafe(resolve(ctx.outputDir, filename), filename, bytes);
+        ctx.writeSafe(resolve(ctx.outputDir, 'diverse', filename), `diverse/${filename}`, bytes);
     }
 }

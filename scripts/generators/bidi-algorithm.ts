@@ -45,7 +45,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             fontEntries,
             footerText: 'pdfnative – BiDi Algorithm Walkthrough',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'bidi-algorithm.pdf'), 'bidi-algorithm.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'bidi', 'bidi-algorithm.pdf'), 'bidi/bidi-algorithm.pdf', buildDocumentPDFBytes(params));
     }
 
     // ── 2. Arabic positional shaping + BiDi ─────────────────────
@@ -75,6 +75,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             fontEntries,
             footerText: 'pdfnative – Arabic Shaping + BiDi',
         };
-        ctx.writeSafe(resolve(ctx.outputDir, 'bidi-arabic-shaping.pdf'), 'bidi-arabic-shaping.pdf', buildDocumentPDFBytes(params));
+        ctx.writeSafe(resolve(ctx.outputDir, 'bidi', 'bidi-arabic-shaping.pdf'), 'bidi/bidi-arabic-shaping.pdf', buildDocumentPDFBytes(params));
     }
 }

@@ -73,6 +73,7 @@ export type {
     PdfAttachment,
     WorkerInputMessage,
     WorkerOutputMessage,
+    WorkerGenerationOptions,
 } from './types/pdf-types.js';
 
 export type {
@@ -217,15 +218,18 @@ export type { PdfRef, PdfName, PdfStream, PdfDict as ParsedDict, PdfArray as Par
 export {
     isRef, isName, isStream, isDict, isArray,
     dictGet, dictGetName, nameValue, dictGetNum, dictGetRef, dictGetDict, dictGetArray,
-    parseValue, parseIndirectObject,
+    parseValue, parseIndirectObject, MAX_PARSE_DEPTH,
 } from './parser/pdf-object-parser.js';
 export type { XrefEntry, XrefTable } from './parser/pdf-xref-parser.js';
-export { findStartxref, parseXrefTable, getTrailerValue, getTrailerRef } from './parser/pdf-xref-parser.js';
+export { findStartxref, parseXrefTable, getTrailerValue, getTrailerRef, MAX_XREF_CHAIN } from './parser/pdf-xref-parser.js';
 export type { PdfReader } from './parser/pdf-reader.js';
 export { openPdf } from './parser/pdf-reader.js';
 export type { PdfModifier } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
-export { inflateSync, setInflateImpl, initNodeDecompression as initNodeDecompression_parser } from './parser/pdf-inflate.js';
+export {
+    inflateSync, setInflateImpl, initNodeDecompression as initNodeDecompression_parser,
+    setMaxInflateOutputSize, getMaxInflateOutputSize, DEFAULT_MAX_INFLATE_OUTPUT,
+} from './parser/pdf-inflate.js';
 
 // ── Worker — Off-Thread Generation ──────────────────────────────────
 export { createPDF, generatePDFInWorker, generatePDFMainThread, WORKER_THRESHOLD, WORKER_TIMEOUT_MS } from './worker/worker-api.js';

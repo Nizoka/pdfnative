@@ -44,6 +44,15 @@ _No items currently in progress._
 
 ### Medium-Term
 
+- [ ] **Pixel-based truncation** — truncate table cell text at the actual column width in PDF points (replace character-count truncation in `truncate()`)
+- [ ] **Unicode ellipsis** — use `…` (U+2026) instead of `..` for professional typographic rendering
+- [ ] **Auto-fit column widths** — scan input data to compute optimal `mx` per column automatically
+- [ ] **Column min/max constraints** — optional `minWidth` / `maxWidth` in `ColumnDef` for fine-grained control
+- [ ] **Cell clipping paths** — PDF clip rectangle per table cell (`q re W n … Q`) to prevent visual overflow
+- [ ] **Constant-memory streaming** — page-by-page assembly for very large documents without buffering the full PDF
+- [ ] **Additional PDF decode filters** — ASCII85Decode, LZWDecode support in the parser module
+- [ ] **npm metadata enrichment** — expanded description (16+ scripts, encryption, forms, signatures) and keywords (pdf-a, barcode, qr-code, digital-signature, tagged-pdf, accessibility, arabic, hebrew, bengali, tamil)
+
 ### Long-Term
 
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression

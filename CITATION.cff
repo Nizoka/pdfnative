@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: >-
+  If you use pdfnative in academic work or cite it in publications,
+  please cite it using the metadata below.
+title: "pdfnative — Zero-dependency native PDF generation library"
+abstract: >-
+  A zero-dependency, pure-TypeScript library for generating ISO 32000-1 (PDF 1.7)
+  compliant PDF documents with first-class support for Unicode text shaping
+  (Thai, CJK, Arabic, Hebrew, Devanagari, Bengali, Tamil), tagged PDF/UA,
+  PDF/A-1b/2b/2u/3b, AES-128/256 encryption, AcroForm, digital signatures
+  (RSA + ECDSA P-256), barcodes, SVG rendering, and streaming output.
+type: software
+authors:
+  - name: "Nizoka"
+    email: "hello@pdfnative.dev"
+    website: "https://pdfnative.dev"
+repository-code: "https://github.com/Nizoka/pdfnative"
+url: "https://pdfnative.dev"
+license: MIT
+version: 1.0.0
+keywords:
+  - pdf
+  - pdf-generation
+  - typescript
+  - iso-32000
+  - unicode
+  - text-shaping
+  - pdf-ua
+  - pdf-a
+  - acroform
+  - digital-signatures
+  - zero-dependency

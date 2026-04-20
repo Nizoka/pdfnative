@@ -3,8 +3,26 @@ name: CI
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.md'
+      - '.github/FUNDING.yml'
+      - 'LICENSE'
+      - '.editorconfig'
+      - '.gitignore'
   pull_request:
     branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.md'
+      - '.github/FUNDING.yml'
+      - 'LICENSE'
+      - '.editorconfig'
+      - '.gitignore'
 
 permissions:
   contents: read
@@ -16,6 +34,7 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     strategy:
       fail-fast: false
@@ -38,7 +57,7 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Type check
-        run: npm run typecheck
+        run: npm run typecheck:all
 
       - name: Lint
         run: npm run lint
