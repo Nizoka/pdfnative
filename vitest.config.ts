@@ -16,6 +16,8 @@ export default defineConfig({
                 'src/shaping/index.ts',
                 'src/worker/index.ts',
                 'src/types/pdf-types.ts',
+                'src/parser/index.ts',
+                'src/types/pdf-document-types.ts',
             ],
             thresholds: {
                 statements: 90,

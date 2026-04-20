@@ -34,6 +34,10 @@ import {
     type EcPrivateKey,
 } from '../../src/crypto/ecdsa.js';
 import * as asn1Module from '../../src/crypto/asn1.js';
+import {
+    parseCertificate, verifyCertSignature, isSelfSigned,
+    certRsaPublicKey, certEcPublicKey,
+} from '../../src/crypto/x509.js';
 
 // ── Initialize cross-module dependencies ─────────────────────────────
 
@@ -591,11 +595,13 @@ describe('PDF Signature', () => {
     // Lazy imports to avoid circular import issues
     let buildSigDict: typeof import('../../src/core/pdf-signature.js').buildSigDict;
     let estimateContentsSize: typeof import('../../src/core/pdf-signature.js').estimateContentsSize;
+    let signPdfBytes: typeof import('../../src/core/pdf-signature.js').signPdfBytes;
 
     beforeAll(async () => {
         const mod = await import('../../src/core/pdf-signature.js');
         buildSigDict = mod.buildSigDict;
         estimateContentsSize = mod.estimateContentsSize;
+        signPdfBytes = mod.signPdfBytes;
     });
 
     it('builds a /Sig dictionary with placeholders', () => {
@@ -639,6 +645,33 @@ describe('PDF Signature', () => {
         const ecSize = estimateContentsSize([1000], 'ecdsa-sha256');
         // ECDSA signatures are much smaller
         expect(ecSize).toBeLessThanOrEqual(rsaSize);
+    });
+
+    it('signs a minimal PDF with RSA key', () => {
+        const key = makeTestRsaKey();
+        const cert = makeFakeCert();
+        const dict = buildSigDict({ signerCert: cert, algorithm: 'rsa-sha256' });
+        const body = `%PDF-1.7\n${dict}\n%%EOF`;
+        const pdfBytes = new Uint8Array(body.length);
+        for (let i = 0; i < body.length; i++) pdfBytes[i] = body.charCodeAt(i);
+
+        const signed = signPdfBytes(pdfBytes, {
+            signerCert: cert,
+            rsaKey: key.priv,
+            algorithm: 'rsa-sha256',
+        });
+
+        expect(signed.length).toBe(pdfBytes.length);
+        const signedStr = String.fromCharCode(...signed);
+        expect(signedStr).not.toContain('/ByteRange [0 0000000000');
+    });
+
+    it('throws when no /Contents placeholder', () => {
+        const bytes = new TextEncoder().encode('%PDF-1.7\n%%EOF');
+        expect(() => signPdfBytes(bytes, {
+            signerCert: makeFakeCert(),
+            rsaKey: makeTestRsaKey().priv,
+        })).toThrow('No /Contents');
     });
 });
 
@@ -685,6 +718,65 @@ describe('CMS SignedData', () => {
             algorithm: 'rsa-sha256',
             rsaKey: makeTestRsaKey().priv,
         })).toThrow('32-byte');
+    });
+});
+
+// ════════════════════════════════════════════════════════════════════
+// X.509 Certificate Parsing
+// ════════════════════════════════════════════════════════════════════
+
+describe('X.509 Certificate Parsing', () => {
+    it('parses a minimal v3 RSA certificate', () => {
+        const cert = parseCertificate(makeTestCertDer());
+        expect(cert.version).toBe(3);
+        expect(cert.serialNumber).toBe(1n);
+        expect(cert.subject.cn).toBe('Test');
+        expect(cert.issuer.cn).toBe('Test');
+        expect(cert.isCA).toBe(false);
+        expect(cert.notBefore).toBeInstanceOf(Date);
+        expect(cert.notAfter).toBeInstanceOf(Date);
+    });
+
+    it('isSelfSigned returns true when issuer and subject raw bytes match', () => {
+        const rawName = new Uint8Array([0x30, 0x03, 0x01, 0x02, 0x03]);
+        const cert = parseCertificate(makeTestCertDer());
+        const self = { ...cert, issuer: { ...cert.issuer, raw: rawName }, subject: { ...cert.subject, raw: rawName } };
+        expect(isSelfSigned(self)).toBe(true);
+        const notSelf = { ...cert, issuer: { ...cert.issuer, raw: new Uint8Array([1]) }, subject: { ...cert.subject, raw: new Uint8Array([2]) } };
+        expect(isSelfSigned(notSelf)).toBe(false);
+    });
+
+    it('extracts RSA public key from certificate', () => {
+        const cert = parseCertificate(makeTestCertDer());
+        const pub = certRsaPublicKey(cert);
+        expect(pub).not.toBeNull();
+        expect(pub!.e).toBe(65537n);
+    });
+
+    it('returns null EC key for RSA certificate', () => {
+        const cert = parseCertificate(makeTestCertDer());
+        expect(certEcPublicKey(cert)).toBeNull();
+    });
+
+    it('returns false for unrecognized signature algorithm', () => {
+        const cert = parseCertificate(makeTestCertDer());
+        const unknown = { ...cert, signatureAlgorithm: new Uint8Array([0x01, 0x02, 0x03]) };
+        expect(verifyCertSignature(unknown, cert)).toBe(false);
+    });
+
+    it('rejects missing certificate structure', () => {
+        expect(() => parseCertificate(derSequence())).toThrow();
+    });
+});
+
+// ════════════════════════════════════════════════════════════════════
+// initCrypto
+// ════════════════════════════════════════════════════════════════════
+
+describe('initCrypto', () => {
+    it('resolves without error', async () => {
+        const { initCrypto } = await import('../../src/crypto/index.js');
+        await expect(initCrypto()).resolves.toBeUndefined();
     });
 });
 
@@ -759,4 +851,38 @@ function makeFakeCert(): import('../../src/crypto/x509.js').X509Certificate {
         signatureBytes: new Uint8Array(64),
         raw: derSequence(new Uint8Array(100)),
     };
+}
+
+/**
+ * Build a minimal DER-encoded self-signed RSA X.509 v3 certificate for testing.
+ */
+function makeTestCertDer(): Uint8Array {
+    const cnOid = new Uint8Array([0x55, 0x04, 0x03]);
+    const rsaOid = new Uint8Array([0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01]);
+    const sha256RsaOid = new Uint8Array([0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x0b]);
+
+    const name = derSequence(
+        derSet(derSequence(derOid(cnOid), derUtf8String('Test'))),
+    );
+    const algId = derSequence(derOid(sha256RsaOid), derNull());
+    const validity = derSequence(
+        derUtcTime(new Date('2020-01-01T00:00:00Z')),
+        derUtcTime(new Date('2030-01-01T00:00:00Z')),
+    );
+    // Minimal RSA public key: SEQUENCE { INTEGER(n), INTEGER(e) }
+    const rsaKey = derSequence(derInteger(0x10001n), derInteger(65537n));
+    const spki = derSequence(
+        derSequence(derOid(rsaOid), derNull()),
+        derBitString(rsaKey),
+    );
+    const tbs = derSequence(
+        derContextExplicit(0, derInteger(2n)), // version v3
+        derInteger(1n),                        // serial = 1
+        algId,
+        name,                                  // issuer
+        validity,
+        name,                                  // subject (same → self-signed)
+        spki,
+    );
+    return derSequence(tbs, algId, derBitString(new Uint8Array(64)));
 }
