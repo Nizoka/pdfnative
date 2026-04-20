@@ -93,6 +93,7 @@
     "access": "public"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.0.0",
     "tsup": "^8.0.0",
