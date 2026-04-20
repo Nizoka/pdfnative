@@ -3,6 +3,7 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 # Trusted Publishing (npmjs.com OIDC):
 #   This workflow uses npm Trusted Publishing — no long-lived NPM_TOKEN secret.
