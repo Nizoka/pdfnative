@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.0.1] – 2026-04-23
+
+### Fixed
+
+- **fix(encoding):** bullet list items (`{ type: 'list', style: 'bullet' }`) no
+  longer render as `?` in default WinAnsi mode. Root cause: `toWinAnsi()` was
+  missing the CP1252 mapping for `•` (U+2022 → 0x95) ([#1]).
+- **fix(encoding):** completes all 18 remaining CP1252 0x80–0x9F character
+  mappings — ‚ ƒ „ † ‡ ˆ ‰ Š ‹ Œ Ž ˜ ™ š › œ ž Ÿ — which previously fell through
+  to the `?` replacement path.
+- **fix(docs):** landing page live demo no longer uses U+2713 (✓) which is not
+  encodable in WinAnsi; replaced with ASCII text. Removed unrelated financial
+  API properties (`type: 'credit'`, `pointed: false`) from the document demo.
+
+[#17]: https://github.com/Nizoka/pdfnative/issues/17
+[1.0.1]: https://github.com/Nizoka/pdfnative/compare/v1.0.0...v1.0.1
+
 ## [1.0.0] – 2026-04-20
 
 Initial release. Pure native PDF generation library with zero runtime dependencies.

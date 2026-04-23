@@ -22,14 +22,34 @@ export function toWinAnsi(str: string): string {
         const c = str.charCodeAt(i);
         if (c >= 0x20 && c <= 0x7E) r += str[i];
         else if (c >= 0xA0 && c <= 0xFF) r += str[i];
-        else if (c === 0x20AC) r += '\x80';
-        else if (c === 0x2013) r += '\x96';
-        else if (c === 0x2014) r += '\x97';
-        else if (c === 0x2018) r += '\x91';
-        else if (c === 0x2019) r += '\x92';
-        else if (c === 0x201C) r += '\x93';
-        else if (c === 0x201D) r += '\x94';
-        else if (c === 0x2026) r += '\x85';
+        // CP1252 0x80–0x9F — punctuation & symbols absent from ISO-8859-1
+        else if (c === 0x20AC) r += '\x80'; // € euro sign
+        else if (c === 0x201A) r += '\x82'; // ‚ single low-9 quote
+        else if (c === 0x0192) r += '\x83'; // ƒ latin small f with hook
+        else if (c === 0x201E) r += '\x84'; // „ double low-9 quote
+        else if (c === 0x2026) r += '\x85'; // … horizontal ellipsis
+        else if (c === 0x2020) r += '\x86'; // † dagger
+        else if (c === 0x2021) r += '\x87'; // ‡ double dagger
+        else if (c === 0x02C6) r += '\x88'; // ˆ modifier circumflex
+        else if (c === 0x2030) r += '\x89'; // ‰ per mille
+        else if (c === 0x0160) r += '\x8A'; // Š S with caron
+        else if (c === 0x2039) r += '\x8B'; // ‹ single left-pointing angle quote
+        else if (c === 0x0152) r += '\x8C'; // Œ ligature OE
+        else if (c === 0x017D) r += '\x8E'; // Ž Z with caron
+        else if (c === 0x2018) r += '\x91'; // ' left single quote
+        else if (c === 0x2019) r += '\x92'; // ' right single quote
+        else if (c === 0x201C) r += '\x93'; // " left double quote
+        else if (c === 0x201D) r += '\x94'; // " right double quote
+        else if (c === 0x2022) r += '\x95'; // • bullet
+        else if (c === 0x2013) r += '\x96'; // – en-dash
+        else if (c === 0x2014) r += '\x97'; // — em-dash
+        else if (c === 0x02DC) r += '\x98'; // ˜ small tilde
+        else if (c === 0x2122) r += '\x99'; // ™ trademark
+        else if (c === 0x0161) r += '\x9A'; // š s with caron
+        else if (c === 0x203A) r += '\x9B'; // › single right-pointing angle quote
+        else if (c === 0x0153) r += '\x9C'; // œ ligature oe
+        else if (c === 0x017E) r += '\x9E'; // ž z with caron
+        else if (c === 0x0178) r += '\x9F'; // Ÿ Y with diaeresis
         else if (c === 0xA0 || c === 0x202F) r += ' ';
         else if (c === 0x09 || c === 0x0A || c === 0x0D) r += ' ';
         else if (c < 0x20) { /* skip control chars */ }

@@ -1,6 +1,6 @@
 {
   "name": "pdfnative",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zero-dependency native PDF generation library with multi-font Unicode support (Thai shaping, CJK, Greek, Devanagari). Pure JavaScript ISO 32000-1 implementation.",
   "type": "module",
   "main": "./dist/index.cjs",
