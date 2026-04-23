@@ -62,6 +62,36 @@ describe('toWinAnsi', () => {
         expect(toWinAnsi('\u2026')).toBe('\x85');
     });
 
+    it('should map bullet to 0x95 (CP1252)', () => {
+        // Regression: bullet rendered as '?' prior to v1.0.1
+        expect(toWinAnsi('\u2022')).toBe('\x95');
+        expect(toWinAnsi('• item')).toBe('\x95 item');
+    });
+
+    it('should map CP1252 0x80–0x9F punctuation and symbols', () => {
+        expect(toWinAnsi('\u201A')).toBe('\x82'); // ‚
+        expect(toWinAnsi('\u0192')).toBe('\x83'); // ƒ
+        expect(toWinAnsi('\u201E')).toBe('\x84'); // „
+        expect(toWinAnsi('\u2020')).toBe('\x86'); // †
+        expect(toWinAnsi('\u2021')).toBe('\x87'); // ‡
+        expect(toWinAnsi('\u02C6')).toBe('\x88'); // ˆ
+        expect(toWinAnsi('\u2030')).toBe('\x89'); // ‰
+        expect(toWinAnsi('\u2039')).toBe('\x8B'); // ‹
+        expect(toWinAnsi('\u203A')).toBe('\x9B'); // ›
+        expect(toWinAnsi('\u02DC')).toBe('\x98'); // ˜
+        expect(toWinAnsi('\u2122')).toBe('\x99'); // ™
+    });
+
+    it('should map CP1252 European latin letters (Š Œ Ž š œ ž Ÿ)', () => {
+        expect(toWinAnsi('\u0160')).toBe('\x8A'); // Š
+        expect(toWinAnsi('\u0152')).toBe('\x8C'); // Œ
+        expect(toWinAnsi('\u017D')).toBe('\x8E'); // Ž
+        expect(toWinAnsi('\u0161')).toBe('\x9A'); // š
+        expect(toWinAnsi('\u0153')).toBe('\x9C'); // œ
+        expect(toWinAnsi('\u017E')).toBe('\x9E'); // ž
+        expect(toWinAnsi('\u0178')).toBe('\x9F'); // Ÿ
+    });
+
     it('should pass through NBSP as WinAnsi 0xA0', () => {
         // 0xA0 is a valid WinAnsi character (non-breaking space), passed through
         expect(toWinAnsi('\u00A0')).toBe('\xA0');
