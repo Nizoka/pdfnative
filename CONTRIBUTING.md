@@ -78,13 +78,14 @@ bench/            # Performance benchmarks (vitest bench)
 
 ## Branch Strategy
 
-| Branch    | Purpose                        |
-| --------- | ------------------------------ |
-| `master`  | Stable release branch          |
-| `dev`     | Integration branch             |
-| `feat/*`  | New features                   |
-| `fix/*`   | Bug fixes                      |
-| `docs/*`  | Documentation improvements     |
+| Branch    | Purpose                                          |
+| --------- | ------------------------------------------------ |
+| `main`    | Stable release branch                            |
+| `dev`     | Integration branch                               |
+| `feat/*`  | New features                                     |
+| `fix/*`   | Bug fixes                                        |
+| `docs/*`  | Documentation improvements                       |
+| `chore/*` | Release tasks, metadata, governance, maintenance |
 
 ## Pull Request Checklist
 
@@ -95,6 +96,7 @@ bench/            # Performance benchmarks (vitest bench)
 - [ ] No `any` types introduced
 - [ ] No new runtime dependencies added
 - [ ] CHANGELOG.md updated if user-facing changes
+- [ ] For releases: `release-notes/vX.Y.Z.md` created from [release-notes/TEMPLATE.md](release-notes/TEMPLATE.md)
 
 ## Commit Messages
 

@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.0.2] – 2026-04-24
+
+### Changed
+
+- **chore(meta):** enriched npm package metadata. `description` now enumerates
+  the 16 supported scripts and headline features (BiDi, PDF/A, AES encryption,
+  digital signatures, AcroForm, barcodes, SVG). `keywords` expanded from 13 to
+  27 entries for improved npm search discoverability (adds `arabic`, `hebrew`,
+  `bengali`, `tamil`, `devanagari`, `bidi`, `pdf-a`, `tagged-pdf`,
+  `accessibility`, `encryption`, `digital-signature`, `acroform`, `barcode`,
+  `qr-code`).
+
+### Fixed
+
+- **fix(docs):** `README.md` multi-font table — Bengali and Tamil rows were
+  concatenated on a single line with literal `\n` characters instead of real
+  newlines, rendering as broken markdown on npmjs.com and GitHub.
+- **fix(samples):** `doc-devanagari.pdf` heading used a Bengali digit one
+  (U+09E7) instead of a Devanagari digit one (U+0967), producing a `.notdef`
+  tofu box in the rendered PDF.
+- **fix(build):** added `scripts/tsconfig.json` extending `tsconfig.scripts.json`
+  so VS Code's ts-server picks up `@types/node` for files under `scripts/`.
+  Suppresses spurious `Cannot find name 'path'` IDE errors without changing CLI
+  behavior (`npm run typecheck:scripts` was already green).
+
+### Added
+
+- **feat(samples):** new `doc-devanagari.pdf` sample demonstrating Hindi
+  (Devanagari) document generation with GSUB conjuncts, reph reordering, matra
+  reordering, and split vowels — completing the Indic sample triad alongside
+  `doc-bengali.pdf` and `doc-tamil.pdf`.
+- **feat(samples):** `doc-multi-language.pdf` now covers all 16 supported
+  scripts (Latin, Greek, Cyrillic, Turkish, Vietnamese, Polish, Georgian,
+  Armenian, Thai, Devanagari, Bengali, Tamil, Japanese, Chinese, Korean,
+  Arabic, Hebrew) in a single document instead of the previous EN/AR/JA subset.
+- **docs(governance):** new `.github/ISSUE_TEMPLATE/maintenance.md` template
+  for release tasks, metadata updates, and governance work.
+- **docs(governance):** new `release-notes/TEMPLATE.md` standardizing future
+  release notes (section structure, conventional commit prefixes, SemVer
+  classification, publication workflow).
+- **docs(contributing):** `CONTRIBUTING.md` branch strategy updated — default
+  branch corrected from `master` to `main`, added `chore/*` convention for
+  maintenance and release branches.
+
+[#19]: https://github.com/Nizoka/pdfnative/issues/19
+[1.0.2]: https://github.com/Nizoka/pdfnative/compare/v1.0.1...v1.0.2
+
 ## [1.0.1] – 2026-04-23
 
 ### Fixed

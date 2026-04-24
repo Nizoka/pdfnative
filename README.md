@@ -192,7 +192,9 @@ const pdf = buildPDFBytes({
 | Hebrew | `he` | Noto Sans Hebrew | Right-to-left script |
 | Russian (Cyrillic) | `ru` | Noto Sans | Cyrillic alphabet |
 | Georgian | `ka` | Noto Sans Georgian | Mkhedruli script |
-| Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |\n| Bengali | `bn` | Noto Sans Bengali | GSUB conjuncts + GPOS marks |\n| Tamil | `ta` | Noto Sans Tamil | GSUB ligatures + split vowels |
+| Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |
+| Bengali | `bn` | Noto Sans Bengali | GSUB conjuncts + GPOS marks |
+| Tamil | `ta` | Noto Sans Tamil | GSUB ligatures + split vowels |
 
 ## Multi-Font (Mixed Scripts)
 
