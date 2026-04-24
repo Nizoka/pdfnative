@@ -7,6 +7,7 @@ import { buildDocumentPDFBytes, loadFontData } from '../../src/index.js';
 import type { DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
 import { makeMinimalJPEG } from '../helpers/images.js';
+import { loadMultiFontEntries } from '../helpers/fonts.js';
 import { DOC_SAMPLES } from '../data/doc-samples-data.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
@@ -99,35 +100,112 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         }
     }
 
-    // ── Unicode: Multi-language (EN/AR/JA) ───────────────────────
+    // ── Unicode: Multi-language (all 16 scripts) ─────────────────
     {
-        const arFd = await loadFontData('ar');
-        const jaFd = await loadFontData('ja');
-        if (arFd && jaFd) {
+        const fontEntries = await loadMultiFontEntries();
+        if (fontEntries.length === 16) {
             const params: DocumentParams = {
-                title: 'Multi-Language Document – EN/AR/JA',
+                title: 'Multi-Language Document \u2013 16 Scripts',
                 blocks: [
-                    { type: 'heading', text: 'International Service Report', level: 1 },
-                    { type: 'paragraph', text: 'This document demonstrates multi-language support in the document builder API. It contains English, Arabic (RTL), and Japanese (CJK) content with automatic font switching per Unicode script block.' },
-                    { type: 'heading', text: 'تقرير الخدمة الدولي', level: 1 },
-                    { type: 'paragraph', text: 'يوضح هذا المستند دعم اللغات المتعددة في واجهة منشئ المستندات. يحتوي على نصوص باللغات الإنجليزية والعربية – من اليمين إلى اليسار – واليابانية مع التبديل التلقائي للخطوط حسب كتلة يونيكود.' },
-                    { type: 'heading', text: '国際サービスレポート', level: 1 },
-                    { type: 'paragraph', text: 'このドキュメントは、ドキュメントビルダーAPIの多言語サポートを示しています。英語、アラビア語（右から左）、日本語のコンテンツが含まれており、Unicodeスクリプトブロックごとにフォントが自動的に切り替わります。' },
-                    { type: 'heading', text: 'Feature Comparison', level: 2 },
-                    { type: 'table', headers: ['Feature', 'English', 'العربية', '日本語'], rows: [
-                        { cells: ['Direction', 'LTR', 'RTL', 'LTR'], type: 'credit', pointed: false },
-                        { cells: ['Shaping', 'None', 'GSUB positional', 'CIDFont'], type: 'credit', pointed: false },
-                        { cells: ['Encoding', 'WinAnsi', 'Identity-H', 'Identity-H'], type: 'credit', pointed: false },
-                        { cells: ['Line break', 'Word-level', 'Word-level', 'Character-level'], type: 'credit', pointed: true },
+                    { type: 'heading', text: 'pdfnative \u2013 16 Scripts, One Engine', level: 1 },
+                    { type: 'paragraph', text: 'This document renders every script supported by pdfnative in a single PDF. Each section contains a native heading, a sample paragraph, and uses automatic font switching via script-aware Unicode block detection. All content is produced from a single DocumentParams object with a shared fontEntries array.' },
+
+                    { type: 'heading', text: 'Supported Scripts', level: 2 },
+                    { type: 'table', headers: ['Script', 'Code', 'Direction', 'Shaping'], rows: [
+                        { cells: ['Latin (Helvetica)', '\u2013', 'LTR', 'None'], type: 'credit', pointed: false },
+                        { cells: ['Thai', 'th', 'LTR', 'GSUB + GPOS'], type: 'credit', pointed: false },
+                        { cells: ['Japanese', 'ja', 'LTR', 'CIDFont'], type: 'credit', pointed: false },
+                        { cells: ['Chinese (SC)', 'zh', 'LTR', 'CIDFont'], type: 'credit', pointed: false },
+                        { cells: ['Korean', 'ko', 'LTR', 'CIDFont'], type: 'credit', pointed: false },
+                        { cells: ['Greek', 'el', 'LTR', 'None'], type: 'credit', pointed: false },
+                        { cells: ['Hindi (Devanagari)', 'hi', 'LTR', 'GSUB + GPOS'], type: 'credit', pointed: true },
+                        { cells: ['Turkish', 'tr', 'LTR', 'None'], type: 'credit', pointed: false },
+                        { cells: ['Vietnamese', 'vi', 'LTR', 'Combining marks'], type: 'credit', pointed: false },
+                        { cells: ['Polish', 'pl', 'LTR', 'None'], type: 'credit', pointed: false },
+                        { cells: ['Arabic', 'ar', 'RTL', 'GSUB positional'], type: 'credit', pointed: true },
+                        { cells: ['Hebrew', 'he', 'RTL', 'BiDi'], type: 'credit', pointed: true },
+                        { cells: ['Cyrillic (Russian)', 'ru', 'LTR', 'None'], type: 'credit', pointed: false },
+                        { cells: ['Georgian', 'ka', 'LTR', 'None'], type: 'credit', pointed: false },
+                        { cells: ['Armenian', 'hy', 'LTR', 'None'], type: 'credit', pointed: false },
+                        { cells: ['Bengali', 'bn', 'LTR', 'GSUB + GPOS'], type: 'credit', pointed: true },
+                        { cells: ['Tamil', 'ta', 'LTR', 'GSUB + GPOS'], type: 'credit', pointed: true },
                     ] },
-                    { type: 'heading', text: 'Conclusion – الخلاصة – 結論', level: 2 },
-                    { type: 'paragraph', text: 'pdfnative handles 16 scripts with zero external dependencies, full BiDi support, and OpenType shaping. All content above is rendered from a single DocumentParams object with shared fontEntries.' },
+
+                    // Latin
+                    { type: 'heading', text: 'English (Latin)', level: 2 },
+                    { type: 'paragraph', text: 'The quick brown fox jumps over the lazy dog. pdfnative renders Latin text using the Helvetica built-in font with full Windows-1252 encoding.' },
+
+                    // Greek
+                    { type: 'heading', text: '\u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC \u2013 Greek', level: 2 },
+                    { type: 'paragraph', text: '\u0397 pdfnative \u03C0\u03B1\u03C1\u03AC\u03B3\u03B5\u03B9 \u03AD\u03B3\u03B3\u03C1\u03B1\u03C6\u03B1 PDF \u03C3\u03C4\u03B1 \u03B5\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC \u03BC\u03B5 \u03C0\u03BB\u03AE\u03C1\u03B7 \u03C5\u03C0\u03BF\u03C3\u03C4\u03AE\u03C1\u03B9\u03BE\u03B7 Unicode.' },
+
+                    // Cyrillic
+                    { type: 'heading', text: '\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u2013 Russian (Cyrillic)', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u0442 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u044B PDF \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C \u044F\u0437\u044B\u043A\u0435 \u0441 \u043F\u043E\u043B\u043D\u043E\u0439 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u043E\u0439 \u043A\u0438\u0440\u0438\u043B\u043B\u0438\u0446\u044B.' },
+
+                    // Turkish
+                    { type: 'heading', text: 'T\u00FCrk\u00E7e \u2013 Turkish', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative, T\u00FCrk\u00E7e karakterleri (\u0130stanbul, I\u011Fd\u0131r, g\u00F6zl\u00FCk) tam destekler. Noktal\u0131/noktas\u0131z I/\u0131 ayr\u0131m\u0131 korunur.' },
+
+                    // Vietnamese
+                    { type: 'heading', text: 'Ti\u1EBFng Vi\u1EC7t \u2013 Vietnamese', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative h\u1ED7 tr\u1EE3 \u0111\u1EA7y \u0111\u1EE7 ti\u1EBFng Vi\u1EC7t v\u1EDBi d\u1EA5u thanh v\u00E0 c\u00E1c k\u00FD t\u1EF1 k\u1EBFt h\u1EE3p Unicode.' },
+
+                    // Polish
+                    { type: 'heading', text: 'Polski \u2013 Polish', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative generuje dokumenty PDF w j\u0119zyku polskim z pe\u0142n\u0105 obs\u0142ug\u0105 znak\u00F3w diakrytycznych (\u0105, \u0107, \u0119, \u0142, \u0144, \u00F3, \u015B, \u017A, \u017C).' },
+
+                    // Georgian
+                    { type: 'heading', text: '\u10E5\u10D0\u10E0\u10D7\u10E3\u10DA\u10D8 \u2013 Georgian', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u10E5\u10DB\u10DC\u10D8\u10E1 PDF \u10D3\u10DD\u10D9\u10E3\u10DB\u10D4\u10DC\u10E2\u10D4\u10D1\u10E1 \u10E5\u10D0\u10E0\u10D7\u10E3\u10DA \u10D4\u10DC\u10D0\u10D6\u10D4 (\u10DB\u10EE\u10D4\u10D3\u10E0\u10E3\u10DA\u10D8).' },
+
+                    // Armenian
+                    { type: 'heading', text: '\u0540\u0561\u0575\u0565\u0580\u0565\u0576 \u2013 Armenian', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative-\u0568 \u057D\u057F\u0565\u0572\u056E\u0578\u0582\u0574 \u0567 PDF \u0583\u0561\u057D\u057F\u0561\u0569\u0572\u0569\u0565\u0580 \u0570\u0561\u0575\u0565\u0580\u0565\u0576 \u056C\u0565\u0566\u057E\u0578\u057E:' },
+
+                    { type: 'pageBreak' },
+
+                    // Thai
+                    { type: 'heading', text: '\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22 \u2013 Thai', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u0E2A\u0E23\u0E49\u0E32\u0E07\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23 PDF \u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E01\u0E32\u0E23\u0E08\u0E31\u0E14\u0E27\u0E32\u0E07\u0E2A\u0E23\u0E30\u0E41\u0E25\u0E30\u0E27\u0E23\u0E23\u0E13\u0E22\u0E38\u0E01\u0E15\u0E4C\u0E17\u0E35\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 (GSUB + GPOS).' },
+
+                    // Hindi (Devanagari)
+                    { type: 'heading', text: '\u0939\u093F\u0928\u094D\u0926\u0940 \u2013 Hindi (Devanagari)', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u0939\u093F\u0928\u094D\u0926\u0940 \u092E\u0947\u0902 PDF \u0926\u0938\u094D\u0924\u093E\u0935\u0947\u095B \u092C\u0928\u093E\u0924\u093E \u0939\u0948 \u091C\u093F\u0938\u092E\u0947\u0902 \u0938\u0902\u092F\u0941\u0915\u094D\u0924\u093E\u0915\u094D\u0937\u0930, \u0930\u0947\u092B, \u0914\u0930 \u092E\u093E\u0924\u094D\u0930\u093E\u0913\u0902 \u0915\u093E \u092A\u0942\u0930\u094D\u0923 \u0938\u092E\u0930\u094D\u0925\u0928 \u0939\u0948.' },
+
+                    // Bengali
+                    { type: 'heading', text: '\u09AC\u09BE\u0982\u09B2\u09BE \u2013 Bengali', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u09AC\u09BE\u0982\u09B2\u09BE\u09AD\u09BE\u09B7\u09BE\u09AF\u09BC PDF \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0 \u09A4\u09C8\u09B0\u09BF \u0995\u09B0\u09C7 \u09AF\u09C1\u0995\u09CD\u09A4\u09BE\u0995\u09CD\u09B7\u09B0, \u09B0\u09C7\u09AB \u098F\u09AC\u0982 \u09AE\u09BE\u09A4\u09CD\u09B0\u09BE\u09B0 \u09B8\u09AE\u09CD\u09AA\u09C2\u09B0\u09CD\u09A3 \u09B8\u09AE\u09B0\u09CD\u09A5\u09A8 \u09B8\u09B9.' },
+
+                    // Tamil
+                    { type: 'heading', text: '\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u2013 Tamil', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u0BA4\u0BAE\u0BBF\u0BB4\u0BCD PDF \u0B86\u0BB5\u0BA3\u0B99\u0BCD\u0B95\u0BB3\u0BC8 \u0B89\u0BB0\u0BC1\u0BB5\u0BBE\u0B95\u0BCD\u0B95\u0BC1\u0B95\u0BBF\u0BB1\u0BA4\u0BC1, \u0B87\u0BA3\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1\u0B95\u0BB3\u0BCD \u0BAE\u0BB1\u0BCD\u0BB1\u0BC1\u0BAE\u0BCD \u0BAA\u0BBF\u0BB0\u0BBF\u0BA8\u0BCD\u0BA4 \u0B89\u0BAF\u0BBF\u0BB0\u0BCD\u0B95\u0BB3\u0BC1\u0B9F\u0BA9\u0BCD \u0BAE\u0BC1\u0BB4\u0BC1 \u0B86\u0BA4\u0BB0\u0BB5\u0BC1.' },
+
+                    // Japanese
+                    { type: 'heading', text: '\u65E5\u672C\u8A9E \u2013 Japanese', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative\u306F\u65E5\u672C\u8A9E\u306EPDF\u6587\u66F8\u3092\u751F\u6210\u3057\u307E\u3059\u3002\u6F22\u5B57\u3001\u3072\u3089\u304C\u306A\u3001\u30AB\u30BF\u30AB\u30CA\u3092CIDFont Type2\u3068Identity-H\u30A8\u30F3\u30B3\u30FC\u30C7\u30A3\u30F3\u30B0\u3067\u5B8C\u5168\u306B\u30B5\u30DD\u30FC\u30C8\u3057\u307E\u3059\u3002' },
+
+                    // Chinese
+                    { type: 'heading', text: '\u4E2D\u6587 \u2013 Chinese (Simplified)', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u652F\u6301\u751F\u6210\u4E2D\u6587\u7B80\u4F53 PDF \u6587\u6863\uFF0C\u4F7F\u7528 CIDFont Type2 \u7F16\u7801\u548C Identity-H \u6620\u5C04\u5B9E\u73B0\u7CBE\u786E\u7684\u5B57\u5F62\u5B9A\u4F4D\u548C\u81EA\u52A8\u6362\u884C\u3002' },
+
+                    // Korean
+                    { type: 'heading', text: '\uD55C\uAD6D\uC5B4 \uB2E8\uC5B4 \u2013 Korean', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative\uB294 \uD55C\uAD6D\uC5B4 PDF \uBB38\uC11C\uB97C \uC0DD\uC131\uD569\uB2C8\uB2E4. CIDFont Type2 \uC778\uCF54\uB529\uACFC Identity-H \uB9E4\uD551\uC744 \uD1B5\uD574 \uC644\uBCBD\uD55C \uD55C\uAE00 \uC9C0\uC6D0\uC744 \uC81C\uACF5\uD569\uB2C8\uB2E4.' },
+
+                    // Arabic (RTL)
+                    { type: 'heading', text: '\u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u2013 Arabic (RTL)', level: 2 },
+                    { type: 'paragraph', text: '\u064A\u062F\u0639\u0645 pdfnative \u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644 \u0645\u0639 \u062A\u0634\u0643\u064A\u0644 GSUB \u0644\u0644\u0623\u0634\u0643\u0627\u0644 \u0627\u0644\u0645\u0646\u0641\u0631\u062F\u0629 \u0648\u0627\u0644\u0628\u062F\u0626\u064A\u0629 \u0648\u0627\u0644\u0648\u0633\u0637\u0649 \u0648\u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629\u060C \u0648\u062F\u0645\u062C \u0644\u0627\u0645-\u0623\u0644\u0641.' },
+
+                    // Hebrew (RTL)
+                    { type: 'heading', text: '\u05E2\u05D1\u05E8\u05D9\u05EA \u2013 Hebrew (RTL)', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u05EA\u05D5\u05DE\u05DA \u05DE\u05DC\u05D0 \u05D1\u05E2\u05D1\u05E8\u05D9\u05EA \u05D5\u05D1\u05DB\u05EA\u05D9\u05D1\u05D4 \u05DE\u05D9\u05DE\u05D9\u05DF \u05DC\u05E9\u05DE\u05D0\u05DC \u05E2\u05DD \u05D9\u05D9\u05E9\u05D5\u05DD \u05D0\u05DC\u05D2\u05D5\u05E8\u05D9\u05EA\u05DD BiDi \u05DC\u05E4\u05D9 Unicode UAX #9.' },
+
+                    { type: 'heading', text: 'Conclusion', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative handles all 16 scripts with zero external dependencies, full BiDi support, OpenType shaping, and a single shared fontEntries array. This demonstrates the width of the library, not its depth \u2013 script-specific sample PDFs in the same folder show the depth of each implementation.' },
                 ],
-                footerText: 'pdfnative – Multi-language document sample',
-                fontEntries: [
-                    { fontData: arFd, fontRef: '/F3', lang: 'ar' },
-                    { fontData: jaFd, fontRef: '/F4', lang: 'ja' },
-                ],
+                footerText: 'pdfnative \u2013 Multi-language document sample (16 scripts)',
+                fontEntries,
             };
             ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-multi-language.pdf'), 'document/doc-multi-language.pdf', buildDocumentPDFBytes(params));
         }
@@ -198,6 +276,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Tamil with Indic shaping ─────────────────────────────────
     await generateTamilDoc(ctx);
+
+    // ── Devanagari (Hindi) with Indic shaping ────────────────────
+    await generateDevanagariDoc(ctx);
 
     // ── All block types showcase ─────────────────────────────────
     generateShowcase(ctx);
@@ -424,6 +505,37 @@ async function generateTamilDoc(ctx: GenerateContext): Promise<void> {
         fontEntries: [{ fontData: taFd, fontRef: '/F3', lang: 'ta' }],
     };
         ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-tamil.pdf'), 'document/doc-tamil.pdf', buildDocumentPDFBytes(params));
+}
+
+async function generateDevanagariDoc(ctx: GenerateContext): Promise<void> {
+    const hiFd = await loadFontData('hi');
+    if (!hiFd) return;
+    const params: DocumentParams = {
+        title: '\u0939\u093F\u0928\u094D\u0926\u0940 \u0926\u0938\u094D\u0924\u093E\u0935\u0947\u095B \u2013 \u092A\u094D\u0930\u0926\u0930\u094D\u0936\u0928',
+        blocks: [
+            { type: 'heading', text: '\u0905\u0927\u094D\u092F\u093E\u092F \u0967: \u092A\u0930\u093F\u091A\u092F', level: 1 },
+            { type: 'paragraph', text: '\u092F\u0939 pdfnative \u092A\u0941\u0938\u094D\u0924\u0915\u093E\u0932\u092F \u0915\u0947 \u0926\u094D\u0935\u093E\u0930\u093E \u0939\u093F\u0928\u094D\u0926\u0940 (\u0926\u0947\u0935\u0928\u093E\u0917\u0930\u0940) \u092E\u0947\u0902 PDF \u0928\u093F\u0930\u094D\u092E\u093E\u0923 \u0915\u093E \u0928\u092E\u0942\u0928\u093E \u0939\u0948\u0964 \u0907\u0938 \u0926\u0938\u094D\u0924\u093E\u0935\u0947\u095B \u092E\u0947\u0902 \u0936\u0940\u0930\u094D\u0937\u0915, \u0905\u0928\u0941\u091A\u094D\u091B\u0947\u0926, \u0938\u0942\u091A\u0940 \u0914\u0930 \u0924\u093E\u0932\u093F\u0915\u093E \u0936\u093E\u092E\u093F\u0932 \u0939\u0948\u0902\u0964' },
+            { type: 'heading', text: '\u092E\u0941\u0916\u094D\u092F \u0935\u093F\u0936\u0947\u0937\u0924\u093E\u090F\u0901', level: 2 },
+            { type: 'list', items: [
+                '\u0926\u0947\u0935\u0928\u093E\u0917\u0930\u0940 OpenType \u0936\u0947\u092A\u093F\u0902\u0917 (GSUB + GPOS)',
+                '\u0938\u0902\u092F\u0941\u0915\u094D\u0924\u093E\u0915\u094D\u0937\u0930 \u092C\u0928\u093E\u0928\u093E (\u0915\u094D\u0937, \u091C\u094D\u091E, \u0924\u094D\u0930)',
+                '\u0930\u0947\u092B \u092A\u0941\u0928\u0930\u094D\u0935\u094D\u092F\u0935\u0938\u094D\u0925\u093E (\u0930\u094D\u0915)',
+                '\u092E\u093E\u0924\u094D\u0930\u093E \u092A\u0941\u0928\u0930\u094D\u0935\u094D\u092F\u0935\u0938\u094D\u0925\u093E (\u093F, \u0947, \u0948)',
+                '\u0935\u093F\u092D\u0915\u094D\u0924 \u0938\u094D\u0935\u0930 (\u094B, \u094C)',
+                'PDF/A-2b \u0938\u092E\u0930\u094D\u0925\u0928',
+            ], style: 'bullet' },
+            { type: 'heading', text: '\u092E\u0942\u0932\u094D\u092F \u0924\u093E\u0932\u093F\u0915\u093E', level: 2 },
+            { type: 'table', headers: ['\u0915\u094D\u0930\u092E', '\u0938\u0947\u0935\u093E', '\u092E\u0942\u0932\u094D\u092F', '\u0938\u094D\u0925\u093F\u0924\u093F'], rows: [
+                { cells: ['\u0967', '\u092C\u0941\u0928\u093F\u092F\u093E\u0926\u0940 PDF', '\u0967,\u0966\u0966\u0966 \u0930\u0941\u092A\u092F\u0947', '\u092A\u0942\u0930\u094D\u0923'], type: 'credit', pointed: false },
+                { cells: ['\u0968', '\u0939\u093F\u0928\u094D\u0926\u0940 \u0936\u0947\u092A\u093F\u0902\u0917', '\u0968,\u0966\u0966\u0966 \u0930\u0941\u092A\u092F\u0947', '\u092A\u0942\u0930\u094D\u0923'], type: 'credit', pointed: false },
+                { cells: ['\u0969', '\u090F\u0928\u0915\u094D\u0930\u093F\u092A\u0936\u0928', '\u0969,\u0966\u0966\u0966 \u0930\u0941\u092A\u092F\u0947', '\u092A\u0942\u0930\u094D\u0923'], type: 'credit', pointed: true },
+            ] },
+            { type: 'paragraph', text: '\u0909\u092A\u0930\u094B\u0915\u094D\u0924 \u0924\u093E\u0932\u093F\u0915\u093E pdfnative \u0915\u0940 \u0938\u0947\u0935\u093E\u0913\u0902 \u0915\u093E \u092E\u0942\u0932\u094D\u092F \u0926\u093F\u0916\u093E\u0924\u0940 \u0939\u0948\u0964' },
+        ],
+        footerText: 'pdfnative \u2013 \u0939\u093F\u0928\u094D\u0926\u0940 \u0926\u0938\u094D\u0924\u093E\u0935\u0947\u095B \u0928\u092E\u0942\u0928\u093E',
+        fontEntries: [{ fontData: hiFd, fontRef: '/F3', lang: 'hi' }],
+    };
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-devanagari.pdf'), 'document/doc-devanagari.pdf', buildDocumentPDFBytes(params));
 }
 
 function generateShowcase(ctx: GenerateContext): void {

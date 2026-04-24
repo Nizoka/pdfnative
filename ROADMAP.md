@@ -35,6 +35,7 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Digital signatures** — CMS/PKCS#7 detached signatures (ISO 32000-1 §12.8): RSA PKCS#1 v1.5 + ECDSA P-256, SHA-256/384/512, X.509 certificate parsing, zero-dependency crypto
 - [x] **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size (64 KB default), validation for TOC/template incompatibility, concatChunks utility
 - [x] **PDF parser & modifier** — full PDF reader (tokenizer, object parser, xref table/stream, page tree, FlateDecode inflate) + incremental modification (non-destructive save with /Prev chain)
+- [x] **npm metadata enrichment** — description enumerates 16 scripts + headline features (BiDi, PDF/A, encryption, signatures, AcroForm, barcodes, SVG); keywords expanded to 27 entries for npm search discoverability (v1.0.2)
 
 ## In Progress
 
@@ -51,7 +52,6 @@ _No items currently in progress._
 - [ ] **Cell clipping paths** — PDF clip rectangle per table cell (`q re W n … Q`) to prevent visual overflow
 - [ ] **Constant-memory streaming** — page-by-page assembly for very large documents without buffering the full PDF
 - [ ] **Additional PDF decode filters** — ASCII85Decode, LZWDecode support in the parser module
-- [ ] **npm metadata enrichment** — expanded description (16+ scripts, encryption, forms, signatures) and keywords (pdf-a, barcode, qr-code, digital-signature, tagged-pdf, accessibility, arabic, hebrew, bengali, tamil)
 
 ### Long-Term
 
