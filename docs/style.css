@@ -158,6 +158,13 @@ img, svg { max-width: 100%; height: auto; }
   margin: 0 auto 36px; line-height: 1.5;
 }
 .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.hero-badges {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 6px 8px; margin: 28px auto 0; max-width: 760px;
+}
+.hero-badges img { display: block; height: 20px; width: auto; opacity: .92; }
+.hero-badges a:hover img { opacity: 1; }
+[data-theme="dark"] .hero-badges img { filter: brightness(.95) contrast(1.05); }
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 12px 24px; border-radius: var(--radius-sm);
@@ -265,6 +272,32 @@ img, svg { max-width: 100%; height: auto; }
 .demo-container {
   max-width: 780px; margin: 0 auto;
   display: grid; gap: 16px;
+}
+.demo-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+}
+.demo-picker-label {
+  font-size: 13px; font-weight: 600; color: var(--c-text-dim);
+}
+.demo-picker {
+  flex: 1 1 240px; min-width: 200px;
+  background: var(--c-bg-card); color: var(--c-text);
+  border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+  padding: 8px 12px; font-size: 14px; font-family: inherit;
+  cursor: pointer;
+}
+.demo-picker:focus { outline: 2px solid var(--c-primary); outline-offset: 1px; }
+.demo-source-link {
+  font-size: 13px; font-weight: 600;
+  white-space: nowrap;
+}
+.demo-description {
+  font-size: 14px; color: var(--c-text-dim);
+  margin: 0; line-height: 1.5;
+}
+.demo-note {
+  font-size: 13px; color: var(--c-text-muted);
+  margin: 4px 0 0; text-align: center;
 }
 .demo-editor {
   width: 100%; min-height: 260px;
