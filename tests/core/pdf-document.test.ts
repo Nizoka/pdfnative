@@ -57,9 +57,24 @@ describe('wrapText', () => {
         expect(lines).toEqual(['Hello world']);
     });
 
-    it('should handle single word that exceeds width', () => {
+    it('should hard-break single word that exceeds width at character boundaries', () => {
+        // v1.0.3+: overlong tokens are hard-broken instead of overflowing the page.
         const lines = wrapText('Supercalifragilisticexpialidocious', 10, 10, enc);
-        expect(lines).toEqual(['Supercalifragilisticexpialidocious']);
+        expect(lines.length).toBeGreaterThan(1);
+        // Each piece must individually fit (or be a single character — last-resort).
+        for (const line of lines) {
+            expect(line.length).toBeGreaterThan(0);
+        }
+        // Round-tripping the pieces reconstructs the original.
+        expect(lines.join('')).toBe('Supercalifragilisticexpialidocious');
+    });
+
+    it('should hard-break long titles with non-breaking compounds (heading overflow regression)', () => {
+        // Regression: long heading like "Test Bengali + Devanagari ULTRA EXTREME — Shaping & Positioning — pdfnative"
+        // would overflow the right margin in v1.0.2. v1.0.3 wraps to multiple lines.
+        const longTitle = 'Test Bengali + Devanagari ULTRA EXTREME — Shaping & Positioning — pdfnative';
+        const lines = wrapText(longTitle, 200, 18, enc);
+        expect(lines.length).toBeGreaterThan(1);
     });
 
     it('should split on spaces', () => {

@@ -39,7 +39,22 @@ This document outlines the planned development direction for pdfnative. Prioriti
 
 ## In Progress
 
-_No items currently in progress._
+### v1.1.0 — Deep OpenType shaping & BiDi (tracked from v1.0.3 baselines)
+
+The v1.0.3 release shipped four extreme-script visual baselines under
+`test-output/extreme/` that surface deeper shaping defects requiring
+GPOS table re-extraction or new OpenType lookup implementations. These
+exceed the scope of a SemVer-patch and are tracked here for v1.1.0.
+See [release-notes/draft-issue-v1.1.0-shaping-epic.md](release-notes/draft-issue-v1.1.0-shaping-epic.md)
+for the full root-cause analysis.
+
+- [ ] **shaping(bidi):** full UAX #9 W1–W7 + N1/N2 + isolates (3+ script paragraphs)
+- [ ] **shaping(common):** multi-pass GSUB driver for nested LookupType 4 ligatures
+- [ ] **shaping(devanagari/bengali):** Universal Shaping Engine (USE)-lite cluster classification
+- [ ] **shaping(arabic):** GPOS MarkBasePos for isolated harakat anchoring
+- [ ] **fonts(thai):** re-extract GPOS anchors covering 3+ mark stacks on tall consonants
+- [ ] **fonts(indic):** verify pre-built `ligatures` tables include deeply-nested chains
+- [ ] **tests(visual):** pixel-diff regression on the four `extreme-*` baselines
 
 ## Planned
 

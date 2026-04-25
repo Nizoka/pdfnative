@@ -47,10 +47,12 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (.js/.d.ts) — 16 scripts + TTF source files
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (23 generators, 140+ PDFs)
-tests/            # 1588+ tests (40 files: unit/integration/fuzz/parser) mirroring src/ structure
+scripts/          # Modular sample PDF generation (24 generators, 140+ PDFs; extreme-shaping.ts added in v1.0.3)
+test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf)
+tests/            # 1606+ tests (41 files: unit/integration/fuzz/parser) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
+  └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, medical-800.html)
 ```
 
 - **Single entry point**: `src/index.ts` re-exports everything. All public API surfaces live there.
@@ -76,7 +78,7 @@ npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test            # vitest run (1588+ tests, 40 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
-npm run test:generate   # Generate 140+ sample PDFs → test-output/
+npm run test:generate   # Generate 140+ sample PDFs → test-output/ (incl. extreme/ baselines)
 npm run typecheck       # tsc --noEmit
 npm run typecheck:tests # tsc --project tsconfig.test.json --noEmit
 npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit
@@ -225,7 +227,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 1588+ tests (40 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), performance benchmarks
+- **95%+ test coverage** — 1606+ tests (41 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)

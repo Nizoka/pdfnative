@@ -23,10 +23,38 @@ npm run build          # tsup → dist/ (ESM + CJS + .d.ts)
 npm run dev            # tsup --watch
 ```
 
+## Docs local preview
+
+The documentation site (`docs/`) is a static HTML/CSS/JS site with no build step.
+Openin `docs/index.html` directly as a `file://` URL works for most pages, but
+the **interactive playgrounds** require an HTTP origin because they load pdfnative
+from a CDN inside a Web Worker and `file:` origins block cross-origin Worker imports.
+
+Serve the site locally with the included npm script:
+
+```bash
+npm run docs:serve
+# → http://localhost:5000
+```
+
+Or use any static file server:
+
+```bash
+npx serve docs/ --listen 5000      # same as npm run docs:serve
+npx http-server docs/ -p 5000      # alternative
+python -m http.server 5000 --directory docs/   # Python stdlib, no install
+```
+
+Then open:
+- `http://localhost:5000/` — landing page
+- `http://localhost:5000/playgrounds/extreme-scripts.html` — extreme-scripts playground
+- `http://localhost:5000/playgrounds/medical-800.html` — medical 800-page playground
+- `http://localhost:5000/guides/` — guides index
+
 ## Test
 
 ```bash
-npm run test           # vitest run (1588+ tests)
+npm run test           # vitest run (1606+ tests)
 npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (95%+ stmts)
 npm run test:generate  # Generate 140+ sample PDFs → test-output/
@@ -71,8 +99,8 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (16 scripts)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (23 generators, 140+ PDFs)
-tests/            # 1588+ tests (40 files: unit + integration + fuzz + parser), mirrors src/ structure
+scripts/          # Modular sample PDF generation (24 generators, 140+ PDFs)
+tests/            # 1606+ tests (41 files: unit + integration + fuzz + parser), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 

@@ -7,26 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [1.0.3] – 2026-04-25
 
-- **docs(landing):** added a row of project-status badges to the
-  `pdfnative.dev` hero (CI, CodeQL, OpenSSF Scorecard, npm version, monthly
-  downloads, bundle size, zero deps, TypeScript strict, npm provenance, MIT)
-  to mirror the `README.md` and surface supply-chain signals upfront.
-- **docs(landing):** rebuilt the "Try It Live" panel as a curated
-  10-example gallery (Quick Start, Financial, TOC, Barcode, SVG, Watermark,
-  Forms, PDF/A, Multi-language with lazy fonts, Streaming) with a picker,
-  reset button, and a "View source" link to the matching generator under
-  `scripts/generators/`. The runtime now supports top-level `await`,
-  dynamic `import(…)`, and exposes `streamDocumentPdf`, `registerFonts`,
-  `loadFontData`, and `signPdfBytes`.
-- **docs(landing):** synced the test counter to 1 588+ tests (matches
-  `tests/` and `package.json`).
-- **docs(landing):** added a "Guides" entry in the navbar and refreshed the
-  footer with direct links to every guide.
+### Fixed
+
+- **core(layout):** `wrapText()` now hard-breaks single overlong tokens at
+  character boundaries when no whitespace breakpoint exists. Long
+  headings and titles such as
+  `"Test Bengali + Devanagari ULTRA EXTREME — Shaping & Positioning — pdfnative"`
+  previously could overflow the right margin when no segment fit. Code
+  points are honored so surrogate pairs and combining sequences remain
+  intact at slice boundaries. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
+- **docs(landing):** footer links to `guides/architecture.html` and
+  `guides/faq.html` previously 404'd because only `.md` files existed
+  under `docs/guides/` and `.nojekyll` disables auto-rendering. Each
+  guide now ships as a real HTML page with a clean URL.
 
 ### Added
 
+- **scripts(generators):** new `extreme-shaping.ts` generator producing
+  four visual-regression baselines under `test-output/extreme/`:
+  `extreme-bidi.pdf` (Arabic + Hebrew + Thai + Latin + digits),
+  `extreme-tamil.pdf` (deep conjuncts, split vowels, BiDi mix),
+  `extreme-bengali-devanagari.pdf` (reph + multi-halant chains),
+  `extreme-arabic-harakat.pdf` (isolated tashkeel anchoring).
+- **tests(integration):** `tests/integration/extreme-shaping.test.ts` —
+  five end-to-end builds covering the same extreme inputs to guard
+  against pipeline regressions.
+- **tests(core):** new regression tests for `wrapText` confirming
+  character-level hard-break of overlong tokens and multi-line wrapping
+  of long em-dash titles.
+- **docs(playgrounds):** new interactive playground
+  `docs/playgrounds/extreme-scripts.html` for stress-testing BiDi, Tamil
+  conjuncts, Bengali + Devanagari ligatures, and Arabic harakat directly
+  in the browser, with editable presets and a code preview.
+- **docs(playgrounds):** new
+  `docs/playgrounds/medical-800.html` — Web Worker showcase generating
+  an 800-page synthetic clinical report using `buildDocumentPDFStream`,
+  with live progress, byte/chunk counters, optional Tagged PDF (PDF/A-2b),
+  and a main-thread comparison toggle. All patient data is generated
+  client-side from a seeded RNG — no real PHI.
 - **docs(guides):** static HTML guide pages (`quickstart.html`,
   `architecture.html`, `faq.html`, `troubleshooting.html`,
   `accessibility.html`) plus a guides index at `/guides/`. Each page
@@ -48,12 +68,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   table was not updated. Added a "Citing pdfnative" section with BibTeX
   pointing to `CITATION.cff`.
 
-### Fixed
+### Changed
 
-- **docs(landing):** footer links to `guides/architecture.html` and
-  `guides/faq.html` previously 404'd because only `.md` files existed
-  under `docs/guides/` and `.nojekyll` disables auto-rendering. Each
-  guide now ships as a real HTML page with a clean URL.
+- **docs(landing):** added a row of project-status badges to the
+  `pdfnative.dev` hero (CI, CodeQL, OpenSSF Scorecard, npm version, monthly
+  downloads, bundle size, zero deps, TypeScript strict, npm provenance, MIT)
+  to mirror the `README.md` and surface supply-chain signals upfront.
+- **docs(landing):** rebuilt the "Try It Live" panel as a curated
+  10-example gallery (Quick Start, Financial, TOC, Barcode, SVG, Watermark,
+  Forms, PDF/A, Multi-language with lazy fonts, Streaming) with a picker,
+  reset button, and a "View source" link to the matching generator under
+  `scripts/generators/`. The runtime now supports top-level `await`,
+  dynamic `import(…)`, and exposes `streamDocumentPdf`, `registerFonts`,
+  `loadFontData`, and `signPdfBytes`.
+- **docs(landing):** synced the test counter to 1 588+ tests (matches
+  `tests/` and `package.json`).
+- **docs(landing):** added "Guides" and "Playgrounds" entries in the
+  navbar and refreshed the footer with direct links to every guide and
+  both new playgrounds.
+
+### Known limitations (tracked for v1.1.0)
+
+The following deeper shaping issues are surfaced by the new extreme
+samples and are tracked for the next minor release. They require
+either GPOS table re-extraction in the pre-built font data modules or
+new OpenType lookups in the shaping pipeline, which exceed the scope of
+a SemVer-patch:
+
+- Arabic isolated harakat (تشكيل) without a base consonant fall back to
+  default mark positioning rather than precise font-anchored placement.
+- Thai mark stacking on tall consonants (ป ฝ ฟ ฬ) with three or more
+  combining marks may overlap with the current font anchor data.
+- Multi-stage Indic ligatures (ক্ষ্ম, क्ष्म, ஸ்ரீ) are matched greedily;
+  some deeply-nested sequences fall back to non-ligated forms.
+- BiDi paragraphs mixing 3+ RTL-capable scripts (Arabic + Hebrew + Thai
+  + Latin + digits) may exhibit non-canonical run ordering at boundaries
+  with neutrals.
+
+See [release-notes/draft-issue-v1.1.0-shaping-epic.md](release-notes/draft-issue-v1.1.0-shaping-epic.md)
+for the full follow-up tracking issue.
+
+[#24]: https://github.com/Nizoka/pdfnative/issues/24
+[1.0.3]: https://github.com/Nizoka/pdfnative/compare/v1.0.2...v1.0.3
 
 ## [1.0.2] – 2026-04-24
 

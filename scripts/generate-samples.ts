@@ -35,6 +35,7 @@ import { generate as generateBidi } from './generators/bidi-algorithm.js';
 import { generate as generateCrypto } from './generators/crypto-showcase.js';
 import { generate as generateFontSubsetting } from './generators/font-subsetting-deep.js';
 import { generate as generateParserDeep } from './generators/parser-deep.js';
+import { generate as generateExtremeShaping } from './generators/extreme-shaping.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -110,6 +111,9 @@ async function generateAll(): Promise<void> {
 
     // ── Parser deep-dive (tokenizer, xref, /Prev chain) ────────
     await generateParserDeep(ctx);
+
+    // ── Extreme-script shaping (BiDi, Tamil, Bengali+Devanagari, Arabic harakat) ─
+    await generateExtremeShaping(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

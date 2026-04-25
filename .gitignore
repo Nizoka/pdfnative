@@ -13,3 +13,6 @@ fonts/ttf/
 
 # Generated sample PDFs for visual inspection
 test-output/
+
+# Draft GitHub issues (copy-paste helpers, never committed)
+release-notes/draft-*.md

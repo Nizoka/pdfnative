@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical 800-page Worker Playground — pdfnative</title>
+  <meta name="description" content="Generate an 800-page synthetic medical report off the main thread using a Web Worker. Showcase of pdfnative streaming output, tables, headers, footers, and Tagged PDF.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/medical-800.html">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+</head>
+<body>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="./extreme-scripts.html">Extreme</a></li>
+      <li><a href="./medical-800.html" aria-current="page">Medical 800p</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Playgrounds &nbsp;›&nbsp; Medical 800-page</p>
+  <article class="guide-content">
+    <h1>800-page Medical Report — Web Worker Showcase</h1>
+    <p>Generates a fictitious, fully synthetic medical report (anonymized data, deterministic seeded RNG) demonstrating how pdfnative scales to large documents off the main thread. Pages contain headers, footers, patient summaries, longitudinal vital signs tables, and laboratory results — typical real-world clinical document patterns.</p>
+    <p><strong>Privacy:</strong> all patient names, IDs, dates, and values are generated client-side from a seeded random number generator. No real PHI is ever sent over the network.</p>
+
+    <div id="localWarning" style="display:none;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:14px;line-height:1.6;">
+      <strong>⚠️ Running from <code>file://</code> — Web Worker disabled</strong><br>
+      Browsers block ESM Workers when a page is opened directly from disk (<code>file://</code> protocol)
+      because <code>file:</code> origins are treated as unique security origins and cannot load cross-origin
+      worker scripts (see <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=40487" target="_blank" rel="noopener">Chromium issue #40487</a>).<br>
+      <strong>To use the Web Worker:</strong> serve this directory with a local HTTP server:
+      <pre style="background:#fef08a;border-radius:4px;padding:8px 10px;margin:8px 0 4px;font-size:13px;">npx serve docs/
+# or: python -m http.server 8080 --directory docs/
+# then open http://localhost:5000/playgrounds/medical-800.html</pre>
+      The page is fully functional on <a href="https://pdfnative.dev/playgrounds/medical-800.html" target="_blank" rel="noopener">pdfnative.dev</a>
+      (served over HTTPS) where Web Workers work correctly.
+      <strong>Generation will automatically fall back to the main thread</strong> for this local session.
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:24px 0;">
+      <label for="pageCount"><strong>Pages:</strong></label>
+      <select id="pageCount" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="100">100 pages — quick test</option>
+        <option value="400">400 pages — medium</option>
+        <option value="800" selected>800 pages — full showcase</option>
+      </select>
+      <label for="useWorker" style="display:flex;align-items:center;gap:6px;">
+        <input id="useWorker" type="checkbox" checked> <strong>Run in Web Worker</strong> <span id="workerNote" style="font-size:12px;color:#64748b;">(off main thread)</span>
+      </label>
+      <label for="useTagged" style="display:flex;align-items:center;gap:6px;">
+        <input id="useTagged" type="checkbox"> Tagged PDF (PDF/A-2b)
+      </label>
+      <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate report</button>
+      <button id="cancel" class="btn btn-secondary" style="padding:8px 18px;display:none;">Cancel</button>
+    </div>
+
+    <div id="status" style="display:none;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:14px;"></div>
+
+    <div style="background:#f1f5f9;border-radius:8px;padding:16px;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;">
+        <span id="progressLabel">Idle</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div style="background:#e2e8f0;border-radius:999px;height:10px;overflow:hidden;">
+        <div id="progressBar" style="background:linear-gradient(90deg,#3b82f6,#8b5cf6);height:100%;width:0%;transition:width 0.2s;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;font-size:13px;">
+        <div><div style="color:#64748b;">Mode</div><div id="statMode" style="font-weight:600;">—</div></div>
+        <div><div style="color:#64748b;">Bytes streamed</div><div id="statBytes" style="font-weight:600;">—</div></div>
+        <div><div style="color:#64748b;">Chunks</div><div id="statChunks" style="font-weight:600;">—</div></div>
+        <div><div style="color:#64748b;">Elapsed</div><div id="statElapsed" style="font-weight:600;">—</div></div>
+      </div>
+    </div>
+
+    <h2>What this showcase demonstrates</h2>
+    <ul>
+      <li><strong>Web Worker offload</strong> — UI stays responsive while the worker generates 800 pages. Toggle the checkbox to compare with main-thread generation.</li>
+      <li><strong>Streaming output</strong> — <code>buildDocumentPDFStream</code> yields chunks as the document is built; the worker forwards them to the main thread for progressive aggregation.</li>
+      <li><strong>Long-form pagination</strong> — heading/paragraph/table block flow with automatic page breaks, headers, and footers.</li>
+      <li><strong>Synthetic data at scale</strong> — seeded RNG produces deterministic, anonymized patient cohorts, vital signs, and lab panels.</li>
+      <li><strong>Tagged PDF (optional)</strong> — enable PDF/A-2b output with full structure tree.</li>
+    </ul>
+
+    <h2>Code structure</h2>
+    <pre><code class="language-typescript">// Main thread
+const worker = new Worker(workerBlobUrl, { type: 'module' });
+worker.onmessage = (e) =&gt; {
+  if (e.data.type === 'progress') updateProgress(e.data);
+  if (e.data.type === 'done') downloadPdf(e.data.bytes);
+};
+worker.postMessage({ pageCount: 800, tagged: true, seed: 42 });
+
+// Inside the worker
+import { buildDocumentPDFStream, concatChunks } from 'https://esm.sh/pdfnative';
+const blocks = synthesizePatientReport(seed, pageCount);
+const chunks = [];
+for await (const chunk of buildDocumentPDFStream({ title, blocks }, {}, { chunkSize: 65536 })) {
+  chunks.push(chunk);
+  postMessage({ type: 'progress', bytes: chunks.reduce((s, c) =&gt; s + c.length, 0) });
+}
+postMessage({ type: 'done', bytes: concatChunks(chunks) }, [bytes.buffer]);
+</code></pre>
+
+    <p><a href="https://github.com/Nizoka/pdfnative/blob/main/docs/playgrounds/medical-800.html" target="_blank" rel="noopener">View this page&rsquo;s source on GitHub →</a></p>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./extreme-scripts.html">← Extreme scripts playground</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+let activeWorker = null;
+
+// ── file:// detection ──────────────────────────────────────────────
+// ESM Workers loaded from Blob URLs that run `import()` of a cross-origin
+// CDN resource are blocked when the page is opened via file:// because
+// Chrome/Firefox treat file: origins as unique and reject the redirect.
+// We detect this early, show a clear explanation, and force main-thread mode.
+const IS_FILE_ORIGIN = location.protocol === 'file:';
+if (IS_FILE_ORIGIN) {
+  $('localWarning').style.display = 'block';
+  const workerCheckbox = $('useWorker');
+  workerCheckbox.checked = false;
+  workerCheckbox.disabled = true;
+  $('workerNote').textContent = '(disabled — file:// origin; serve via HTTP to enable)';
+  $('workerNote').style.color = '#b45309';
+}
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') {
+    status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5';
+  } else if (kind === 'success') {
+    status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7';
+  } else {
+    status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd';
+  }
+}
+function setProgress(pct, label) {
+  $('progressBar').style.width = pct + '%';
+  $('progressPct').textContent = pct.toFixed(0) + '%';
+  if (label) $('progressLabel').textContent = label;
+}
+
+// Worker source: imports pdfnative from CDN, synthesizes a medical report,
+// streams chunks back to main thread, posts progress + final PDF.
+const WORKER_SRC = `
+const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+
+async function loadPdfnative() {
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFStream === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFStream === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFStream === 'function') return mod;
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Failed to load pdfnative: ' + (lastErr ? lastErr.message : ''));
+}
+
+// ── Seeded RNG (Mulberry32) for deterministic synthetic data ───────
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const FIRST = ['Aaron','Beatrice','Carlos','Dominique','Elena','Frédéric','Gabriela','Hiroshi','Ines','Jamal','Kira','Liam','Marie','Noa','Omar','Priya','Quentin','Rania','Sven','Tara','Ursula','Victor','Wei','Xiomara','Yusuf','Zoé'];
+const LAST = ['Adler','Bianchi','Costa','Dubois','Edelman','Fournier','Garcia','Haddad','Iyer','Jensen','Khan','Lopez','Martín','Nakamura','Okafor','Petrov','Quintero','Rossi','Smith','Tanaka','Ulrich','Vasquez','Wang','Yamamoto','Zhao'];
+const DIAG = ['Hypertension','Type 2 diabetes','Asthma','Hypercholesterolemia','Migraine','Hypothyroidism','Anemia (iron deficiency)','GERD','Osteoarthritis','Allergic rhinitis','Vitamin D deficiency','Chronic sinusitis'];
+const MEDS = ['Lisinopril 10 mg','Metformin 500 mg','Atorvastatin 20 mg','Levothyroxine 50 mcg','Albuterol 90 mcg','Sumatriptan 50 mg','Omeprazole 20 mg','Ferrous sulfate 325 mg','Ibuprofen 400 mg','Loratadine 10 mg','Cetirizine 10 mg','Vitamin D3 2000 IU'];
+const ALLERGIES = ['NKDA','Penicillin','Sulfa drugs','Latex','Peanuts','Shellfish','Aspirin','Iodine contrast'];
+const STATUS = ['Stable','Improving','Resolved','Ongoing','Monitored'];
+
+function patient(r, i) {
+  const fn = FIRST[Math.floor(r() * FIRST.length)];
+  const ln = LAST[Math.floor(r() * LAST.length)];
+  const age = 18 + Math.floor(r() * 70);
+  const sex = r() < 0.5 ? 'F' : 'M';
+  const id = 'PT-' + String(100000 + i).padStart(6, '0');
+  return { id, name: fn + ' ' + ln, age, sex };
+}
+
+function vitals(r, n) {
+  const rows = [];
+  for (let i = 0; i < n; i++) {
+    const day = String(1 + Math.floor(r() * 28)).padStart(2, '0');
+    const month = String(1 + Math.floor(r() * 12)).padStart(2, '0');
+    const sysBP = 100 + Math.floor(r() * 50);
+    const diaBP = 60 + Math.floor(r() * 30);
+    const hr = 55 + Math.floor(r() * 40);
+    const temp = (36.0 + r() * 1.8).toFixed(1);
+    const spo2 = (94 + Math.floor(r() * 6));
+    rows.push({ cells: [
+      \`2026-\${month}-\${day}\`,
+      \`\${sysBP}/\${diaBP} mmHg\`,
+      \`\${hr} bpm\`,
+      \`\${temp} °C\`,
+      \`\${spo2}%\`,
+    ]});
+  }
+  return rows;
+}
+
+function labs(r, n) {
+  const tests = [
+    ['Glucose', 70, 110, 'mg/dL'],
+    ['HbA1c', 4.5, 7.0, '%'],
+    ['Total cholesterol', 130, 240, 'mg/dL'],
+    ['HDL', 35, 80, 'mg/dL'],
+    ['LDL', 70, 180, 'mg/dL'],
+    ['Triglycerides', 50, 250, 'mg/dL'],
+    ['Creatinine', 0.6, 1.4, 'mg/dL'],
+    ['eGFR', 60, 120, 'mL/min'],
+    ['ALT', 7, 56, 'U/L'],
+    ['AST', 10, 40, 'U/L'],
+    ['Hemoglobin', 11, 17, 'g/dL'],
+    ['WBC', 3.5, 11.0, 'K/µL'],
+    ['Platelets', 150, 400, 'K/µL'],
+    ['TSH', 0.4, 4.5, 'mIU/L'],
+    ['Vitamin D', 20, 80, 'ng/mL'],
+  ];
+  const rows = [];
+  for (let i = 0; i < Math.min(n, tests.length); i++) {
+    const [name, lo, hi, unit] = tests[i];
+    const range = hi - lo;
+    const val = lo + r() * range * 1.4 - range * 0.2;
+    const fixed = val.toFixed(name === 'HbA1c' || name === 'Creatinine' ? 1 : 0);
+    const flag = (val < lo) ? 'L' : (val > hi) ? 'H' : '';
+    rows.push({ cells: [name, fixed, unit, \`\${lo}–\${hi}\`, flag] });
+  }
+  return rows;
+}
+
+function buildBlocks(seed, pageCount) {
+  const r = rng(seed);
+  // Calibrated for ~4 pages per patient (measured empirically).
+  // 800 pages → 200 patients · 400 → 100 · 100 → 25.
+  const patientCount = Math.max(1, Math.floor(pageCount / 4));
+  const blocks = [];
+
+  blocks.push({ type: 'heading', text: 'Synthetic Clinical Data Report (FICTITIOUS)', level: 1 });
+  blocks.push({ type: 'paragraph', text: 'This document is generated programmatically from a seeded random-number generator for demonstration purposes only. All patient identifiers, names, dates, and values are synthetic. No real Protected Health Information (PHI) is contained.' });
+  blocks.push({ type: 'paragraph', text: \`Cohort size: \${patientCount} patients · Target page count: \${pageCount} · Seed: \${seed}.\` });
+
+  const FINDINGS = [
+    'Patient presents in no acute distress. Vital signs within expected range for chronic conditions.',
+    'Mild fatigue reported over the last two weeks; sleep hygiene counseling provided.',
+    'Mild peripheral edema noted bilaterally; lower extremity examination otherwise unremarkable.',
+    'No new musculoskeletal complaints. Range of motion preserved across all major joints.',
+    'Auscultation reveals clear lung fields bilaterally; cardiac rhythm regular without murmurs.',
+    'Patient reports adequate medication adherence; no adverse effects since last visit.',
+    'Mild seasonal allergic symptoms; antihistamines have provided adequate relief.',
+    'Routine well-visit; no acute concerns identified during interval since last encounter.'
+  ];
+  const PLANS = [
+    'Continue current pharmacological regimen. Reinforce dietary counseling. Re-evaluate in three months.',
+    'Adjust dosage upward by one increment. Order follow-up labs in six weeks. Monitor for side effects.',
+    'Add lifestyle modification component (exercise 150 min/week, sodium <2 g/day). Recheck in one month.',
+    'Order imaging (chest X-ray, abdominal ultrasound) to characterize incidental finding. Specialist referral pending results.',
+    'No changes to current management. Patient reports improvement; continue maintenance therapy.',
+    'Initiate annual screening per USPSTF guidelines. Update vaccination status. Schedule next preventive visit.'
+  ];
+
+  for (let p = 0; p < patientCount; p++) {
+    const pt = patient(r, p);
+    blocks.push({ type: 'heading', text: \`Patient \${pt.id} — \${pt.name}\`, level: 2 });
+    blocks.push({ type: 'paragraph', text: \`Age: \${pt.age} · Sex: \${pt.sex} · Allergies: \${ALLERGIES[Math.floor(r() * ALLERGIES.length)]}\` });
+
+    blocks.push({ type: 'heading', text: 'Active diagnoses', level: 3 });
+    const dxCount = 2 + Math.floor(r() * 3);
+    const dxs = [];
+    for (let i = 0; i < dxCount; i++) dxs.push(\`\${DIAG[Math.floor(r() * DIAG.length)]} — \${STATUS[Math.floor(r() * STATUS.length)]}\`);
+    blocks.push({ type: 'list', items: dxs, style: 'bullet' });
+
+    blocks.push({ type: 'heading', text: 'Current medications', level: 3 });
+    const medCount = 2 + Math.floor(r() * 4);
+    const meds = [];
+    for (let i = 0; i < medCount; i++) meds.push(MEDS[Math.floor(r() * MEDS.length)]);
+    blocks.push({ type: 'list', items: meds, style: 'bullet' });
+
+    // Six longitudinal clinical visits — drives ~0.67 pages each on average.
+    for (let v = 1; v <= 6; v++) {
+      const month = String(1 + Math.floor(r() * 12)).padStart(2, '0');
+      const day = String(1 + Math.floor(r() * 28)).padStart(2, '0');
+      blocks.push({ type: 'heading', text: \`Visit \${v} — 2026-\${month}-\${day}\`, level: 3 });
+      blocks.push({ type: 'paragraph', text: 'Clinical findings: ' + FINDINGS[Math.floor(r() * FINDINGS.length)] });
+      blocks.push({
+        type: 'table',
+        headers: ['Time', 'Blood pressure', 'Heart rate', 'Temperature', 'SpO2'],
+        rows: vitals(r, 8),
+      });
+      blocks.push({
+        type: 'table',
+        headers: ['Test', 'Value', 'Unit', 'Reference range', 'Flag'],
+        rows: labs(r, 15),
+      });
+      blocks.push({ type: 'paragraph', text: 'Assessment & plan: ' + PLANS[Math.floor(r() * PLANS.length)] });
+    }
+  }
+  return blocks;
+}
+
+self.addEventListener('message', async (ev) => {
+  const { pageCount, tagged, seed } = ev.data;
+  try {
+    const mod = await loadPdfnative();
+    const blocks = buildBlocks(seed, pageCount);
+    const params = {
+      title: 'Synthetic Clinical Data Report',
+      blocks,
+      footerText: 'Synthetic / FICTITIOUS — generated by pdfnative.dev playground',
+    };
+    const layoutOptions = tagged ? { tagged: true } : {};
+    const chunks = [];
+    let totalBytes = 0;
+    let count = 0;
+    const t0 = Date.now();
+    for await (const chunk of mod.buildDocumentPDFStream(params, layoutOptions, { chunkSize: 65536 })) {
+      chunks.push(chunk);
+      totalBytes += chunk.length;
+      count++;
+      if (count % 5 === 0) postMessage({ type: 'progress', bytes: totalBytes, chunks: count, elapsed: Date.now() - t0 });
+    }
+    const pdf = mod.concatChunks(chunks);
+    postMessage({ type: 'done', bytes: pdf, elapsed: Date.now() - t0, chunks: count }, [pdf.buffer]);
+  } catch (err) {
+    postMessage({ type: 'error', message: err.message || String(err) });
+  }
+});
+`;
+
+function downloadPdf(bytes, filename) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function generateInWorker(pageCount, tagged) {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([WORKER_SRC], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    const w = new Worker(url, { type: 'module' });
+    activeWorker = w;
+    URL.revokeObjectURL(url);
+    w.onmessage = (e) => {
+      if (e.data.type === 'progress') {
+        const targetBytes = pageCount * 15000; // ~15 KB/page average for the medical layout
+        const pct = Math.min(95, (e.data.bytes / targetBytes) * 100);
+        setProgress(pct, `Streaming chunk ${e.data.chunks}…`);
+        $('statBytes').textContent = (e.data.bytes / 1024).toFixed(1) + ' KB';
+        $('statChunks').textContent = String(e.data.chunks);
+        $('statElapsed').textContent = (e.data.elapsed / 1000).toFixed(1) + ' s';
+      } else if (e.data.type === 'done') {
+        setProgress(100, 'Complete');
+        $('statBytes').textContent = (e.data.bytes.length / 1024).toFixed(1) + ' KB';
+        $('statChunks').textContent = String(e.data.chunks);
+        $('statElapsed').textContent = (e.data.elapsed / 1000).toFixed(1) + ' s';
+        w.terminate();
+        activeWorker = null;
+        resolve(e.data.bytes);
+      } else if (e.data.type === 'error') {
+        w.terminate();
+        activeWorker = null;
+        reject(new Error(e.data.message));
+      }
+    };
+    w.onerror = (e) => { w.terminate(); activeWorker = null; reject(new Error(e.message || 'Worker error')); };
+    w.postMessage({ pageCount, tagged, seed: 42 });
+  });
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+let mainMod = null;
+async function loadPdfnativeMain() {
+  if (mainMod) return mainMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFStream === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFStream === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFStream === 'function') { mainMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Failed to load pdfnative: ' + (lastErr ? lastErr.message : ''));
+}
+
+async function generateOnMain(pageCount, tagged) {
+  const mod = await loadPdfnativeMain();
+  // Reuse the same data shape as the worker (full longitudinal cohort, ~5 pages per patient).
+  // Mirrors WORKER_SRC.buildBlocks exactly so the page count is consistent across modes.
+  const FIRST = ['Aaron','Beatrice','Carlos','Dominique','Elena','Frédéric','Gabriela','Hiroshi','Ines','Jamal','Kira','Liam','Marie','Noa','Omar','Priya','Quentin','Rania','Sven','Tara','Ursula','Victor','Wei','Xiomara','Yusuf','Zoé'];
+  const LAST = ['Adler','Bianchi','Costa','Dubois','Edelman','Fournier','Garcia','Haddad','Iyer','Jensen','Khan','Lopez','Martín','Nakamura','Okafor','Petrov','Quintero','Rossi','Smith','Tanaka','Ulrich','Vasquez','Wang','Yamamoto','Zhao'];
+  const DIAG = ['Hypertension','Type 2 diabetes','Asthma','Hypercholesterolemia','Migraine','Hypothyroidism','Anemia (iron deficiency)','GERD','Osteoarthritis','Allergic rhinitis','Vitamin D deficiency','Chronic sinusitis'];
+  const MEDS = ['Lisinopril 10 mg','Metformin 500 mg','Atorvastatin 20 mg','Levothyroxine 50 mcg','Albuterol 90 mcg','Sumatriptan 50 mg','Omeprazole 20 mg','Ferrous sulfate 325 mg','Ibuprofen 400 mg','Loratadine 10 mg','Cetirizine 10 mg','Vitamin D3 2000 IU'];
+  const ALLERGIES = ['NKDA','Penicillin','Sulfa drugs','Latex','Peanuts','Shellfish','Aspirin','Iodine contrast'];
+  const STATUS = ['Stable','Improving','Resolved','Ongoing','Monitored'];
+  const FINDINGS = [
+    'Patient presents in no acute distress. Vital signs within expected range for chronic conditions.',
+    'Mild fatigue reported over the last two weeks; sleep hygiene counseling provided.',
+    'Mild peripheral edema noted bilaterally; lower extremity examination otherwise unremarkable.',
+    'No new musculoskeletal complaints. Range of motion preserved across all major joints.',
+    'Auscultation reveals clear lung fields bilaterally; cardiac rhythm regular without murmurs.',
+    'Patient reports adequate medication adherence; no adverse effects since last visit.',
+    'Mild seasonal allergic symptoms; antihistamines have provided adequate relief.',
+    'Routine well-visit; no acute concerns identified during interval since last encounter.'
+  ];
+  const PLANS = [
+    'Continue current pharmacological regimen. Reinforce dietary counseling. Re-evaluate in three months.',
+    'Adjust dosage upward by one increment. Order follow-up labs in six weeks. Monitor for side effects.',
+    'Add lifestyle modification component (exercise 150 min/week, sodium <2 g/day). Recheck in one month.',
+    'Order imaging (chest X-ray, abdominal ultrasound) to characterize incidental finding. Specialist referral pending results.',
+    'No changes to current management. Patient reports improvement; continue maintenance therapy.',
+    'Initiate annual screening per USPSTF guidelines. Update vaccination status. Schedule next preventive visit.'
+  ];
+  const r = (() => { let s = 42 >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })();
+  const vitalsRows = (n) => {
+    const rows = [];
+    for (let i = 0; i < n; i++) {
+      const day = String(1 + Math.floor(r() * 28)).padStart(2, '0');
+      const month = String(1 + Math.floor(r() * 12)).padStart(2, '0');
+      rows.push({ cells: [
+        `2026-${month}-${day}`,
+        `${100 + Math.floor(r() * 50)}/${60 + Math.floor(r() * 30)} mmHg`,
+        `${55 + Math.floor(r() * 40)} bpm`,
+        `${(36.0 + r() * 1.8).toFixed(1)} °C`,
+        `${94 + Math.floor(r() * 6)}%`,
+      ]});
+    }
+    return rows;
+  };
+  const labTests = [
+    ['Glucose', 70, 110, 'mg/dL'], ['HbA1c', 4.5, 7.0, '%'], ['Total cholesterol', 130, 240, 'mg/dL'],
+    ['HDL', 35, 80, 'mg/dL'], ['LDL', 70, 180, 'mg/dL'], ['Triglycerides', 50, 250, 'mg/dL'],
+    ['Creatinine', 0.6, 1.4, 'mg/dL'], ['eGFR', 60, 120, 'mL/min'], ['ALT', 7, 56, 'U/L'],
+    ['AST', 10, 40, 'U/L'], ['Hemoglobin', 11, 17, 'g/dL'], ['WBC', 3.5, 11.0, 'K/uL'],
+    ['Platelets', 150, 400, 'K/uL'], ['TSH', 0.4, 4.5, 'mIU/L'], ['Vitamin D', 20, 80, 'ng/mL'],
+  ];
+  const labRows = (n) => {
+    const rows = [];
+    for (let i = 0; i < Math.min(n, labTests.length); i++) {
+      const [name, lo, hi, unit] = labTests[i];
+      const range = hi - lo;
+      const val = lo + r() * range * 1.4 - range * 0.2;
+      const fixed = val.toFixed(name === 'HbA1c' || name === 'Creatinine' ? 1 : 0);
+      const flag = (val < lo) ? 'L' : (val > hi) ? 'H' : '';
+      rows.push({ cells: [name, fixed, unit, `${lo}–${hi}`, flag] });
+    }
+    return rows;
+  };
+
+  const patientCount = Math.max(1, Math.floor(pageCount / 4));
+  const blocks = [
+    { type: 'heading', text: 'Synthetic Clinical Data Report (FICTITIOUS)', level: 1 },
+    { type: 'paragraph', text: 'This document is generated programmatically from a seeded random-number generator for demonstration purposes only. All patient identifiers, names, dates, and values are synthetic. No real Protected Health Information (PHI) is contained.' },
+    { type: 'paragraph', text: `Cohort size: ${patientCount} patients · Target page count: ${pageCount} · Seed: 42 · (Main-thread mode.)` },
+  ];
+  for (let p = 0; p < patientCount; p++) {
+    const fn = FIRST[Math.floor(r() * FIRST.length)];
+    const ln = LAST[Math.floor(r() * LAST.length)];
+    const id = 'PT-' + String(100000 + p).padStart(6, '0');
+    blocks.push({ type: 'heading', text: `Patient ${id} — ${fn} ${ln}`, level: 2 });
+    blocks.push({ type: 'paragraph', text: `Age: ${18 + Math.floor(r()*70)} · Sex: ${r()<0.5?'F':'M'} · Allergies: ${ALLERGIES[Math.floor(r() * ALLERGIES.length)]}` });
+
+    blocks.push({ type: 'heading', text: 'Active diagnoses', level: 3 });
+    const dxs = [];
+    for (let i = 0, n = 2 + Math.floor(r() * 3); i < n; i++) dxs.push(`${DIAG[Math.floor(r() * DIAG.length)]} — ${STATUS[Math.floor(r() * STATUS.length)]}`);
+    blocks.push({ type: 'list', items: dxs, style: 'bullet' });
+
+    blocks.push({ type: 'heading', text: 'Current medications', level: 3 });
+    const meds = [];
+    for (let i = 0, n = 2 + Math.floor(r() * 4); i < n; i++) meds.push(MEDS[Math.floor(r() * MEDS.length)]);
+    blocks.push({ type: 'list', items: meds, style: 'bullet' });
+
+    for (let v = 1; v <= 6; v++) {
+      const month = String(1 + Math.floor(r() * 12)).padStart(2, '0');
+      const day = String(1 + Math.floor(r() * 28)).padStart(2, '0');
+      blocks.push({ type: 'heading', text: `Visit ${v} — 2026-${month}-${day}`, level: 3 });
+      blocks.push({ type: 'paragraph', text: 'Clinical findings: ' + FINDINGS[Math.floor(r() * FINDINGS.length)] });
+      blocks.push({ type: 'table', headers: ['Time', 'Blood pressure', 'Heart rate', 'Temperature', 'SpO2'], rows: vitalsRows(8) });
+      blocks.push({ type: 'table', headers: ['Test', 'Value', 'Unit', 'Reference range', 'Flag'], rows: labRows(15) });
+      blocks.push({ type: 'paragraph', text: 'Assessment & plan: ' + PLANS[Math.floor(r() * PLANS.length)] });
+    }
+  }
+
+  const chunks = [];
+  let totalBytes = 0; let count = 0;
+  const t0 = performance.now();
+  for await (const chunk of mod.buildDocumentPDFStream({ title: 'Synthetic Clinical Data Report', blocks, footerText: 'Synthetic / FICTITIOUS — pdfnative.dev' }, tagged ? { tagged: true } : {}, { chunkSize: 65536 })) {
+    chunks.push(chunk);
+    totalBytes += chunk.length;
+    count++;
+    if (count % 5 === 0) {
+      const targetBytes = pageCount * 15000;
+      setProgress(Math.min(95, (totalBytes / targetBytes) * 100), `Streaming chunk ${count}… (main thread)`);
+      $('statBytes').textContent = (totalBytes / 1024).toFixed(1) + ' KB';
+      $('statChunks').textContent = String(count);
+      $('statElapsed').textContent = ((performance.now() - t0) / 1000).toFixed(1) + ' s';
+      // Yield to UI
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  return mod.concatChunks(chunks);
+}
+
+$('generate').addEventListener('click', async () => {
+  const pageCount = parseInt($('pageCount').value, 10);
+  const useWorker = $('useWorker').checked;
+  const tagged = $('useTagged').checked;
+  $('generate').disabled = true;
+  $('cancel').style.display = 'inline-block';
+  $('statMode').textContent = useWorker ? 'Web Worker' : 'Main thread';
+  $('statBytes').textContent = '0 KB';
+  $('statChunks').textContent = '0';
+  $('statElapsed').textContent = '0.0 s';
+  setStatus(useWorker ? 'Spawning worker, loading pdfnative from CDN…' : 'Generating on main thread…', 'info');
+  setProgress(2, 'Initializing…');
+  try {
+    const t0 = performance.now();
+    const pdf = useWorker ? await generateInWorker(pageCount, tagged) : await generateOnMain(pageCount, tagged);
+    const elapsed = (performance.now() - t0) / 1000;
+    setProgress(100, 'Complete');
+    setStatus(`Generated ${(pdf.length / 1024 / 1024).toFixed(2)} MB PDF in ${elapsed.toFixed(1)} s.`, 'success');
+    downloadPdf(pdf, `medical-${pageCount}p.pdf`);
+  } catch (err) {
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  } finally {
+    $('generate').disabled = false;
+    $('cancel').style.display = 'none';
+  }
+});
+
+$('cancel').addEventListener('click', () => {
+  if (activeWorker) { activeWorker.terminate(); activeWorker = null; setStatus('Cancelled.', 'error'); }
+  $('generate').disabled = false;
+  $('cancel').style.display = 'none';
+});
+</script>
+</body>
+</html>

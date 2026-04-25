@@ -49,6 +49,7 @@ scripts/
     ├── font-subsetting-deep.ts  #  2 PDFs – TTF subsetting, CIDFont glyph mapping
     ├── parser-deep.ts           #  2 PDFs – tokenizer, xref parsing, incremental save
     └── stress-edge.ts           # 13 PDFs – 10K rows, BiDi, heavy text, images, annotations, edge cases
+    └── extreme-shaping.ts       #  4 PDFs – BiDi 3-script mix, Tamil conjuncts, Bengali+Devanagari ligatures, Arabic harakat
 ```
 
 ## How It Works
