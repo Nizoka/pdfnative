@@ -204,10 +204,46 @@ function tokenizeForWrap(text: string): string[] {
 }
 
 /**
+ * Hard-break a single overlong segment at character boundaries so no
+ * single piece exceeds maxWidth. Used as a last-resort fallback when
+ * a single token (e.g. a long URL, NBSP-joined title, or non-breaking
+ * compound) would otherwise overflow the content width.
+ *
+ * Iterates by Unicode code points (not UTF-16 units) to keep surrogate
+ * pairs and combining sequences intact at the slice boundary.
+ */
+function hardBreakSegment(
+    seg: string,
+    maxWidth: number,
+    fontSize: number,
+    enc: EncodingContext,
+): string[] {
+    const pieces: string[] = [];
+    let buf = '';
+    for (const ch of seg) {
+        const candidate = buf + ch;
+        const w = measureText(candidate, fontSize, enc);
+        if (w <= maxWidth || buf === '') {
+            buf = candidate;
+        } else {
+            pieces.push(buf);
+            buf = ch;
+        }
+    }
+    if (buf) pieces.push(buf);
+    return pieces.length > 0 ? pieces : [seg];
+}
+
+/**
  * Wrap text into lines that fit within maxWidth.
  * Greedy line-filling algorithm with CJK character-level breaking.
  * Latin text breaks at word boundaries (spaces).
  * CJK characters break individually (no spaces needed).
+ *
+ * If a single segment exceeds maxWidth (e.g. a long word, URL, or
+ * non-breaking-space-joined compound), it is hard-broken at character
+ * boundaries to prevent overflow past the right margin. This is critical
+ * for headings and titles that may contain long compounds without spaces.
  */
 export function wrapText(
     text: string,
@@ -227,12 +263,31 @@ export function wrapText(
     for (const seg of segments) {
         const candidate = currentLine + seg;
         const w = measureText(candidate, fontSize, enc);
-        if (w <= maxWidth || currentLine === '') {
+        if (w <= maxWidth) {
             currentLine = candidate;
-        } else {
-            lines.push(currentLine.trimEnd());
-            currentLine = seg.trimStart();
+            continue;
         }
+
+        // Flush whatever fit so far on the current line.
+        if (currentLine !== '') {
+            lines.push(currentLine.trimEnd());
+            currentLine = '';
+        }
+
+        // Try to fit the segment by itself on a fresh line.
+        const segTrim = seg.trimStart();
+        const segW = measureText(segTrim, fontSize, enc);
+        if (segW <= maxWidth) {
+            currentLine = segTrim;
+            continue;
+        }
+
+        // Segment alone still overflows — hard-break at character boundaries.
+        const pieces = hardBreakSegment(segTrim, maxWidth, fontSize, enc);
+        for (let pi = 0; pi < pieces.length - 1; pi++) {
+            lines.push(pieces[pi].trimEnd());
+        }
+        currentLine = pieces[pieces.length - 1];
     }
     if (currentLine) lines.push(currentLine.trimEnd());
 

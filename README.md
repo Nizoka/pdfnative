@@ -59,6 +59,7 @@ npm install pdfnative
 - ♿ **Accessibility:** [docs/guides/accessibility.md](docs/guides/accessibility.md) — tagged PDF, PDF/UA, PDF/A.
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
+- 🎮 **Playgrounds:** [docs/playgrounds/extreme-scripts.html](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests) and [docs/playgrounds/medical-800.html](docs/playgrounds/medical-800.html) (800-page Web Worker showcase).
 - 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~140 sample PDFs across 23 categories (see [Sample PDFs](#sample-pdfs) below).
 
 ## Why pdfnative?

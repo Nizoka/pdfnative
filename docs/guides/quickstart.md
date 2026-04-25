@@ -167,6 +167,20 @@ const pdf = concatChunks(chunks);
 
 The async iterable yields `Uint8Array` chunks as the PDF is produced — no full-document buffering. The three-argument API (`params`, `layoutOptions`, `streamOptions`) keeps layout concerns (tagged, compress, watermark) and streaming concerns (chunk size) separate.
 
+## Playgrounds
+
+Both interactive playgrounds on [pdfnative.dev](https://pdfnative.dev) run entirely in the browser:
+
+- [Extreme scripts](../playgrounds/extreme-scripts.html) — live BiDi, Tamil, Bengali + Devanagari, Arabic harakat
+- [Medical 800-page](../playgrounds/medical-800.html) — Web Worker + streaming showcase
+
+> **Local testing:** opening the playgrounds as `file://` disables the Web Worker
+> (browsers block cross-origin Worker imports from `file:` origins).
+> Serve the docs directory instead:
+> ```bash
+> npm run docs:serve   # → http://localhost:5000
+> ```
+
 ## Next steps
 
 - [Architecture](architecture.html) — modules, builders, generation pipeline.
