@@ -7,7 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+### Changed
+
+- **docs(landing):** added a row of project-status badges to the
+  `pdfnative.dev` hero (CI, CodeQL, OpenSSF Scorecard, npm version, monthly
+  downloads, bundle size, zero deps, TypeScript strict, npm provenance, MIT)
+  to mirror the `README.md` and surface supply-chain signals upfront.
+- **docs(landing):** rebuilt the "Try It Live" panel as a curated
+  10-example gallery (Quick Start, Financial, TOC, Barcode, SVG, Watermark,
+  Forms, PDF/A, Multi-language with lazy fonts, Streaming) with a picker,
+  reset button, and a "View source" link to the matching generator under
+  `scripts/generators/`. The runtime now supports top-level `await`,
+  dynamic `import(…)`, and exposes `streamDocumentPdf`, `registerFonts`,
+  `loadFontData`, and `signPdfBytes`.
+- **docs(landing):** synced the test counter to 1 588+ tests (matches
+  `tests/` and `package.json`).
+- **docs(landing):** added a "Guides" entry in the navbar and refreshed the
+  footer with direct links to every guide.
+
+### Added
+
+- **docs(guides):** static HTML guide pages (`quickstart.html`,
+  `architecture.html`, `faq.html`, `troubleshooting.html`,
+  `accessibility.html`) plus a guides index at `/guides/`. Each page
+  renders its companion `.md` via `marked` + `DOMPurify` (CDN), inherits
+  the site chrome, and falls back to the GitHub source on load failure.
+- **docs(guides):** new `quickstart.md` covering Node.js, browser,
+  multi-language, Web Worker, and streaming setups in a single page.
+- **docs(guides):** new `accessibility.md` covering tagged PDF, PDF/UA,
+  PDF/A variants, structure tree contents, alt-text discipline, and
+  validation tooling (veraPDF, PAC, NVDA/VoiceOver).
+- **docs(guides):** rewrote `faq.md` with sectioned topics (Getting
+  started, Fonts and Unicode, Standards, Security, Modifying, Performance,
+  Common errors) and ten concrete code snippets to reduce inbound
+  support load.
+- **docs(readme):** added a "Documentation" pointer block linking to the
+  guides and to `pdfnative.dev`. Added Indic document samples
+  (`doc-bengali`, `doc-tamil`, `doc-devanagari`) to the Document Builder
+  Samples table — the generators were added in v1.0.2 but the README
+  table was not updated. Added a "Citing pdfnative" section with BibTeX
+  pointing to `CITATION.cff`.
+
+### Fixed
+
+- **docs(landing):** footer links to `guides/architecture.html` and
+  `guides/faq.html` previously 404'd because only `.md` files existed
+  under `docs/guides/` and `.nojekyll` disables auto-rendering. Each
+  guide now ships as a real HTML page with a clean URL.
 
 ## [1.0.2] – 2026-04-24
 

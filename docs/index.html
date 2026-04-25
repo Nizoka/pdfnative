@@ -63,6 +63,7 @@
       <li><a href="#comparison">Compare</a></li>
       <li><a href="#benchmarks">Benchmarks</a></li>
       <li><a href="#architecture">Architecture</a></li>
+      <li><a href="guides/">Guides</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
     </ul>
@@ -83,8 +84,17 @@
         GitHub
       </a>
     </div>
-    <div class="hero-badges">
-      <a href="https://github.com/Nizoka/pdfnative/blob/master/LICENSE" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" height="20"></a>
+    <div class="hero-badges" aria-label="Project status badges">
+      <a href="https://github.com/Nizoka/pdfnative/actions/workflows/ci.yml" target="_blank" rel="noopener"><img src="https://github.com/Nizoka/pdfnative/actions/workflows/ci.yml/badge.svg" alt="CI status" height="20" loading="lazy"></a>
+      <a href="https://github.com/Nizoka/pdfnative/actions/workflows/codeql.yml" target="_blank" rel="noopener"><img src="https://github.com/Nizoka/pdfnative/actions/workflows/codeql.yml/badge.svg" alt="CodeQL security scan" height="20" loading="lazy"></a>
+      <a href="https://securityscorecards.dev/viewer/?uri=github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><img src="https://api.securityscorecards.dev/projects/github.com/Nizoka/pdfnative/badge" alt="OpenSSF Scorecard" height="20" loading="lazy"></a>
+      <a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/pdfnative" alt="npm version" height="20" loading="lazy"></a>
+      <a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/dm/pdfnative" alt="npm monthly downloads" height="20" loading="lazy"></a>
+      <a href="https://bundlephobia.com/package/pdfnative" target="_blank" rel="noopener"><img src="https://img.shields.io/bundlephobia/minzip/pdfnative" alt="Minified + gzipped bundle size" height="20" loading="lazy"></a>
+      <a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="Zero runtime dependencies" height="20" loading="lazy"></a>
+      <a href="https://www.typescriptlang.org/" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/TypeScript-strict-blue" alt="TypeScript strict mode" height="20" loading="lazy"></a>
+      <a href="https://docs.npmjs.com/generating-provenance-statements" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/provenance-signed-blueviolet" alt="npm provenance signed" height="20" loading="lazy"></a>
+      <a href="https://github.com/Nizoka/pdfnative/blob/main/LICENSE" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" height="20" loading="lazy"></a>
     </div>
     <div class="install-cmd">
       <code>npm install pdfnative</code>
@@ -98,7 +108,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">1 563+</div>
+    <div class="metric-value">1 588+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -163,7 +173,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming, Web Worker off-thread generation, PDF parser &amp; modifier. 1 563+ tests, 95%+ coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming, Web Worker off-thread generation, PDF parser &amp; modifier. 1 588+ tests, 95%+ coverage, SLSA provenance.</p>
       </div>
 
     </div>
@@ -269,36 +279,26 @@ const pdf = buildDocumentPDFBytes({
 <section class="section" id="demo">
   <div class="container">
     <h2 class="section-title">Try It Live</h2>
-    <p class="section-subtitle">Edit the code below, then click "Generate PDF" — it runs entirely in your browser.</p>
+    <p class="section-subtitle">Pick an example, edit the code, then click "Generate PDF" — it runs entirely in your browser via the npm CDN.</p>
     <div class="demo-container">
-      <textarea class="demo-editor" id="demo-code" spellcheck="false" aria-label="PDF generation code">import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
-
-const pdf = buildDocumentPDFBytes({
-  title: 'Hello from pdfnative',
-  blocks: [
-    { type: 'heading', text: 'My First PDF', level: 1 },
-    { type: 'paragraph', text: 'This PDF was generated entirely in your browser — zero server calls, zero dependencies.' },
-    { type: 'list', style: 'bullet', items: [
-      'ISO 32000-1 compliant',
-      '16 Unicode scripts',
-      'PDF/A, encryption, signatures',
-    ] },
-    { type: 'heading', text: 'A Simple Table', level: 2 },
-    { type: 'table', headers: ['Feature', 'Status'], rows: [
-      { cells: ['TypeScript-first', 'Yes'] },
-      { cells: ['Zero dependencies', 'Yes'] },
-      { cells: ['Tree-shakeable', 'Yes'] },
-    ] },
-  ],
-  footerText: 'Generated at pdfnative.dev',
-});
-
-downloadBlob(pdf, 'hello-pdfnative.pdf');</textarea>
+      <div class="demo-toolbar">
+        <label class="demo-picker-label" for="demo-picker">Example:</label>
+        <select id="demo-picker" class="demo-picker" aria-label="Choose an example"></select>
+        <a class="demo-source-link" id="demo-source-link" href="#" target="_blank" rel="noopener" aria-label="View this example's full generator on GitHub">View source ↗</a>
+      </div>
+      <p class="demo-description" id="demo-description"></p>
+      <textarea class="demo-editor" id="demo-code" spellcheck="false" aria-label="PDF generation code"></textarea>
       <div class="demo-actions">
         <button class="btn btn-primary" id="demo-run">▶ Generate PDF</button>
+        <button class="btn btn-secondary" id="demo-reset" type="button">↺ Reset</button>
         <span class="demo-status" id="demo-status"></span>
       </div>
-      <div class="demo-error" id="demo-error"></div>
+      <div class="demo-error" id="demo-error" role="alert"></div>
+      <p class="demo-note">
+        Need more? Browse all
+        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">23 generator categories (~140 sample PDFs)</a>
+        on GitHub.
+      </p>
     </div>
   </div>
 </section>
@@ -526,10 +526,14 @@ downloadBlob(pdf, 'hello-pdfnative.pdf');</textarea>
     <ul class="footer-links" role="list">
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
-      <li><a href="https://github.com/Nizoka/pdfnative/blob/master/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
-      <li><a href="https://github.com/Nizoka/pdfnative/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a></li>
-      <li><a href="guides/architecture.html" rel="noopener">Architecture</a></li>
-      <li><a href="guides/faq.html" rel="noopener">FAQ</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a></li>
+      <li><a href="guides/">Guides</a></li>
+      <li><a href="guides/quickstart.html">Quick Start</a></li>
+      <li><a href="guides/architecture.html">Architecture</a></li>
+      <li><a href="guides/faq.html">FAQ</a></li>
+      <li><a href="guides/troubleshooting.html">Troubleshooting</a></li>
+      <li><a href="guides/accessibility.html">Accessibility</a></li>
       <li><a href="https://plika.app" target="_blank" rel="noopener">Originally from Plika.app</a></li>
     </ul>
   </div>

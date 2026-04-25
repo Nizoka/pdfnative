@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guides — pdfnative</title>
+  <meta name="description" content="Documentation guides for pdfnative — Quick Start, Architecture, FAQ, Troubleshooting, Accessibility.">
+  <link rel="canonical" href="https://pdfnative.dev/guides/">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="./" aria-current="page">Guides</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Guides</p>
+  <article class="guide-content">
+    <h1>Documentation Guides</h1>
+    <p>Hands-on guides covering installation, architecture, accessibility, and common questions. For the full API surface, see the <a href="https://github.com/Nizoka/pdfnative#api-reference" target="_blank" rel="noopener">API reference</a> in the README.</p>
+
+    <p id="local-preview-note" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px 16px;font-size:14px;color:#78350f;">
+      <strong>Local preview:</strong> guide pages load markdown via <code>fetch()</code> and require a server.
+      Run <code>cd docs &amp;&amp; npx serve .</code> then open
+      <a href="http://localhost:3000/guides/">localhost:3000/guides/</a>.
+    </p>
+    <script>if (location.protocol === 'file:') document.getElementById('local-preview-note').style.display = 'block';</script>
+
+    <ul class="guide-toc-list">
+      <li>
+        <a href="quickstart.html">Quick Start →</a>
+        <span class="guide-toc-desc">Install pdfnative and generate your first PDF in Node.js or the browser in under a minute.</span>
+      </li>
+      <li>
+        <a href="architecture.html">Architecture →</a>
+        <span class="guide-toc-desc">Two builders, generation pipeline, module dependency flow, and key design decisions.</span>
+      </li>
+      <li>
+        <a href="faq.html">FAQ →</a>
+        <span class="guide-toc-desc">Custom fonts, PDF/A variants, encryption, BiDi, browser/Deno/Bun, signatures, workers, and comparison with other libraries.</span>
+      </li>
+      <li>
+        <a href="troubleshooting.html">Troubleshooting →</a>
+        <span class="guide-toc-desc">Fixes for missing glyphs, RTL text appearing backwards, PDF/A validation failures, oversized PDFs, parser errors.</span>
+      </li>
+      <li>
+        <a href="accessibility.html">Accessibility →</a>
+        <span class="guide-toc-desc">Tagged PDF, structure tree, /ActualText, PDF/UA, PDF/A — building accessible PDFs that screen readers and archive validators accept.</span>
+      </li>
+    </ul>
+
+    <h2>Looking for samples?</h2>
+    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">23 generator categories producing ~140 sample PDFs</a> covering every feature: financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, and stress tests.</p>
+
+    <h2>Contributing</h2>
+    <p>Found a typo, an unclear paragraph, or a missing topic? Edit the underlying <code>.md</code> file directly on <a href="https://github.com/Nizoka/pdfnative/tree/main/docs/guides" target="_blank" rel="noopener">GitHub</a> and open a pull request. See <a href="https://github.com/Nizoka/pdfnative/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a> for branch naming conventions (<code>docs/*</code>).</p>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="../">Home</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="guide.js" defer></script>
+</body>
+</html>

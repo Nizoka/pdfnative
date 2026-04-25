@@ -51,6 +51,16 @@ npm install pdfnative
 
 **Requirements:** Node.js >= 22 | Modern browsers | Deno | Bun
 
+## Documentation
+
+- 🌐 **Website:** [pdfnative.dev](https://pdfnative.dev) — landing page, live in-browser demo with 10 examples, comparisons, benchmarks.
+- 📘 **Quick Start:** [docs/guides/quickstart.md](docs/guides/quickstart.md) — Node.js, browser, Web Worker, streaming.
+- 🏛️ **Architecture:** [docs/guides/architecture.md](docs/guides/architecture.md) — modules, builders, generation pipeline.
+- ♿ **Accessibility:** [docs/guides/accessibility.md](docs/guides/accessibility.md) — tagged PDF, PDF/UA, PDF/A.
+- ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
+- 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~140 sample PDFs across 23 categories (see [Sample PDFs](#sample-pdfs) below).
+
 ## Why pdfnative?
 
 pdfnative was designed for teams that need **ISO-compliant, production-grade PDF generation** with zero supply-chain risk. Here is how it compares to other popular JavaScript PDF libraries:
@@ -344,6 +354,8 @@ The tool extracts cmap, widths, metrics, GSUB, GPOS, and embeds the raw TTF as b
 
 ## Visual PDF Inspection
 
+<a id="sample-pdfs"></a>
+
 Generate sample PDFs for all supported languages to visually verify output:
 
 ```bash
@@ -466,6 +478,9 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-arabic.pdf` | Arabic RTL document (headings, lists, table, BiDi) |
 | `doc-hebrew.pdf` | Hebrew RTL document (headings, lists, table, BiDi) |
 | `doc-thai.pdf` | Thai user manual (GSUB+GPOS shaping, pricing table) |
+| `doc-bengali.pdf` | Bengali document (GSUB conjuncts + GPOS marks) |
+| `doc-tamil.pdf` | Tamil document (GSUB substitution + split vowels) |
+| `doc-devanagari.pdf` | Hindi (Devanagari) document — GSUB conjuncts, reph reordering, matra reordering, split vowels |
 | `doc-chinese-catalog.pdf` | Chinese product catalog (tables, ordering info) |
 | `doc-multi-language.pdf` | Multi-language: EN + Arabic + Japanese in one PDF |
 | `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
@@ -1076,6 +1091,19 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - Running tests, linting, and type checking
 - Code style requirements (strict TypeScript, pure functions, ESM-first)
 - Branch strategy and PR process
+
+## Citing pdfnative
+
+If you use pdfnative in academic, governmental, or compliance work, please cite it. Citation metadata is available in [CITATION.cff](CITATION.cff).
+
+```bibtex
+@software{pdfnative,
+  author  = {Nizoka},
+  title   = {pdfnative: Zero-dependency, ISO 32000-1 compliant PDF generation for TypeScript},
+  url     = {https://github.com/Nizoka/pdfnative},
+  year    = {2026}
+}
+```
 
 ## License
 
