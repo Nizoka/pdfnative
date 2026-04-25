@@ -42,6 +42,8 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
 - **95%+ test coverage** — 1588+ tests across 40 files, fuzz suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
+- **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
+- **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
 
 ## Installation
 
@@ -943,6 +945,18 @@ When `tagged` is set, the output includes:
 - **PDF/A-2u variant** — `tagged: 'pdfa2u'` uses PDF 1.7, `pdfaid:conformance=U`
 
 The `tagged` option is backward-compatible — omitting it or setting `false` produces the same output as before.
+
+> **PDF/A status (v1.0.4).** As of v1.0.4 every PDF emits a trailer
+> `/ID` and the `/Info CreationDate` is byte-equivalent to the
+> `xmp:CreateDate` (with timezone offset) — closing two veraPDF
+> reference-validator findings. **Latin font embedding** is **not yet
+> implemented**: standard 14 Helvetica is still emitted as an
+> unembedded reference, which veraPDF flags under ISO 19005-1 §6.3.4.
+> Treat the `pdfaid:part` claim in XMP as aspirational until **v1.0.5**
+> lands. See [docs/guides/pdfa.html](docs/guides/pdfa.html) and the
+> tracking issue [release-notes/draft-issue-v1.0.5-latin-embedding.md](release-notes/draft-issue-v1.0.5-latin-embedding.md).
+> Run `npm run validate:pdfa` locally (with veraPDF installed) to
+> verify against the reference validator.
 
 ### PDF Encryption — Implemented ✅
 

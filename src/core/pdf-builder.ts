@@ -45,6 +45,7 @@ import {
     buildXMPMetadata,
     buildOutputIntentDict,
     buildMinimalSRGBProfile,
+    buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
     validateAttachments,
@@ -676,12 +677,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
         : 4 + wmExtraObjs + totalPages * 2;
     const infoObjNum = baseObjCount + 1;
 
-    const now = new Date();
-    const pad2 = (n: number) => String(n).padStart(2, '0');
-    const pdfDate = `D:${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}` +
-        `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`;
-    const isoDate = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}` +
-        `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata();
     const infoTitle = params.docTitle || title || '';
     emitObj(infoObjNum,
         `<< /Title ${encodePdfTextString(infoTitle)} /Producer (pdfnative) /CreationDate (${pdfDate}) >>`);
@@ -776,7 +772,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
 
     // ── Xref, Trailer, %%EOF ────────────────────────────────────────
     const writer = { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts };
-    writeXrefTrailer(writer, totalObjs, infoObjNum, encState);
+    writeXrefTrailer(writer, totalObjs, infoObjNum, encState, `${infoTitle}|${pdfDate}`);
 
     return parts.join('');
 }

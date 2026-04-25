@@ -1,6 +1,6 @@
 {
   "name": "pdfnative",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Zero-dependency native PDF generation library. 16 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Bengali, Tamil, Cyrillic, Greek, Georgian, Armenian, Latin), BiDi, PDF/A-1b/2b/3b, AES encryption, digital signatures, AcroForm, barcodes, SVG. Pure JavaScript ISO 32000-1 implementation.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -48,6 +48,7 @@
     "test:coverage": "vitest run --coverage",
     "test:visual": "vitest run --config vitest.visual.config.ts",
     "test:generate": "npx tsx scripts/generate-samples.ts",
+    "validate:pdfa": "npx tsx scripts/validate-pdfa.ts",
     "fonts:download": "npx tsx scripts/download-fonts.ts",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",

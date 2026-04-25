@@ -39,6 +39,24 @@ This document outlines the planned development direction for pdfnative. Prioriti
 
 ## In Progress
 
+### v1.0.5 — PDF/A Latin font embedding (tracked from v1.0.4 veraPDF reports)
+
+The v1.0.4 release fixed two upstream PDF/A defects (trailer `/ID`,
+`/Info ↔ XMP` parity) and added a veraPDF CI guardrail. The largest
+remaining defect — embedding the standard 14 Latin fonts when PDF/A is
+requested — requires object-graph rewrites that exceed SemVer-patch
+scope and is tracked here. See
+[release-notes/draft-issue-v1.0.5-latin-embedding.md](release-notes/draft-issue-v1.0.5-latin-embedding.md)
+for the full plan.
+
+- [ ] **fonts(latin):** bundle a permissively-licensed Helvetica metric-compatible face as a pre-built data module
+- [ ] **core(pdf-a):** emit Latin fonts as Font + FontDescriptor + FontFile2 triplet under PDF/A modes
+- [ ] **core(pdf-a):** renumber object graph atomically across `pdf-builder.ts` and `pdf-document.ts`
+- [ ] **core(pdf-a):** replace `helveticaWidth()` lookups with embedded-font widths when PDF/A is active
+- [ ] **core(pdf-a):** audit `OutputIntent` / DefaultRGB cascade (rule 6.2.3.3)
+- [ ] **tests(pdfa):** acceptance suite covering every PDF/A flavour
+- [ ] **ci(verapdf):** workflow becomes blocking once embedding lands
+
 ### v1.1.0 — Deep OpenType shaping & BiDi (tracked from v1.0.3 baselines)
 
 The v1.0.3 release shipped four extreme-script visual baselines under
