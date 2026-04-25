@@ -384,7 +384,8 @@ describe('buildDocumentPDF /Info dictionary', () => {
 
     it('should contain /CreationDate', () => {
         const result = buildDocumentPDF(makeMinimalParams());
-        expect(result).toMatch(/\/CreationDate \(D:\d{14}\)/);
+        // ISO 32000-1 §7.9.4: D:YYYYMMDDHHmmSS[+|-]HH'mm' (timezone optional but emitted by pdfnative for PDF/A parity).
+        expect(result).toMatch(/\/CreationDate \(D:\d{14}[+\-]\d{2}'\d{2}'\)/);
     });
 
     it('should include /Title from params', () => {

@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] – 2026-04-25
+
+### Fixed
+
+- **core(pdf-a):** trailer `/ID` is now emitted for every PDF (previously
+  only when encryption was enabled). The unencrypted ID is derived
+  deterministically from `MD5(title + creation date)`, so byte-equal
+  inputs continue to produce byte-equal outputs. Required by
+  ISO 19005-1 §6.1.3 and strongly recommended by ISO 32000-1 §14.4.
+  ([src/core/pdf-assembler.ts](src/core/pdf-assembler.ts))
+- **core(pdf-a):** `/Info CreationDate` and `xmp:CreateDate` now share
+  a single source of truth via the new `buildPdfMetadata()` helper.
+  Both formats include the local timezone offset
+  (`D:YYYYMMDDHHmmSS+HH'mm'` and ISO 8601 `±HH:MM`), satisfying
+  veraPDF rule 6.7.3 t1 (`doCreationDatesMatch`). XMP also emits
+  matching `xmp:ModifyDate` and `xmp:MetadataDate` for completeness.
+  ([src/core/pdf-tags.ts](src/core/pdf-tags.ts))
+- **core(pdf-a):** XMP `dc:creator` is now emitted only when an
+  author is provided (via `DocumentParams.metadata.author`) and is
+  XML-escaped. The previous unconditional `pdfnative` value caused
+  veraPDF rule 6.7.3 to flag a false `dc:creator` ↔ `/Info /Author`
+  mismatch on documents with no author. Author values flow through to
+  `/Info /Author` and `dc:creator` simultaneously, byte-equivalent.
+  ([src/core/pdf-tags.ts](src/core/pdf-tags.ts))
+
+### Added
+
+- **scripts(validation):** new `npm run validate:pdfa` script invokes
+  the official veraPDF reference validator against every generated
+  sample under `test-output/` that claims PDF/A in its XMP. Skips
+  gracefully (exit 0) when veraPDF is not on `$PATH` and `VERAPDF_HOME`
+  is unset, so it never blocks local development.
+  ([scripts/validate-pdfa.ts](scripts/validate-pdfa.ts))
+- **ci(verapdf):** new GitHub Actions workflow `.github/workflows/verapdf.yml`
+  installs the veraPDF CLI on every PR/push, regenerates samples, and runs
+  `npm run validate:pdfa`. Build fails on any non-compliant PDF/A claim —
+  the canonical guardrail used by reportlab/PDFKit/mPDF. veraPDF is
+  invoked as an external CI tool, never bundled, preserving the
+  zero-runtime-dependency policy.
+  ([.github/workflows/verapdf.yml](.github/workflows/verapdf.yml))
+- **tests(core):** 18 new tests in
+  [tests/core/pdf-trailer-id.test.ts](tests/core/pdf-trailer-id.test.ts)
+  cover trailer `/ID` shape, deterministic derivation, ISO 8601 / PDF
+  date parity, XMP ↔ /Info equivalence, and `dc:creator` escaping.
+- **release-notes:** [release-notes/v1.0.4.md](release-notes/v1.0.4.md)
+  full release notes; tracking issue draft at
+  [release-notes/draft-issue-v1.0.4-pdfa-conformance.md](release-notes/draft-issue-v1.0.4-pdfa-conformance.md);
+  v1.0.5 epic for full Latin font embedding at
+  [release-notes/draft-issue-v1.0.5-latin-embedding.md](release-notes/draft-issue-v1.0.5-latin-embedding.md).
+- **scripts(validation):** `validate:pdfa` wrapper now prints per-OS
+  install hints (macOS / Linux / Windows / online demo) when the
+  veraPDF CLI is missing, and reports a `Scanned N PDF(s); M claim
+  PDF/A, K skipped (not PDF/A)` summary so users see why ISO 32000-1
+  files are filtered out. ([scripts/validate-pdfa.ts](scripts/validate-pdfa.ts))
+- **ci(verapdf):** the workflow now also accepts `workflow_dispatch`
+  triggers, allowing manual runs against any branch from the GitHub
+  Actions UI before opening a pull request. ([.github/workflows/verapdf.yml](.github/workflows/verapdf.yml))
+- **docs(guides):** new "Installing veraPDF locally" + "Troubleshooting"
+  sections in [docs/guides/pdfa.html](docs/guides/pdfa.html) document
+  why ISO 32000-1 files are skipped and how to install the validator
+  on each OS.
+- **docs(landing):** new "Designed for low-impact computing" section
+  on [docs/index.html](docs/index.html) listing factual differentiators
+  only — zero deps, on-device generation, no telemetry, tree-shakeable
+  ESM, streaming output. No carbon claims.
+- **docs(readme):** two factual bullets added to Highlights covering
+  on-device generation and the absence of telemetry.
+
+### Known limitations
+
+- **PDF/A — Latin font embedding:** standard 14 Type 1 Helvetica and
+  Helvetica-Bold are still emitted as unembedded font references for
+  Latin runs. ISO 19005-1 §6.3.4 forbids unembedded fonts in any PDF/A
+  conformance level. Files generated with `tagged: true | 'pdfa1b' |
+  'pdfa2b' | 'pdfa2u' | 'pdfa3b'` therefore still fail veraPDF rule
+  6.3.4 today. v1.0.4 fixes the upstream metadata and trailer issues
+  that were independently flagged; the embedded-Helvetica fix is
+  tracked as a v1.0.5 epic — see
+  [release-notes/draft-issue-v1.0.5-latin-embedding.md](release-notes/draft-issue-v1.0.5-latin-embedding.md).
+  Until then, the PDF/A claim in XMP must be considered aspirational,
+  not validated. The new CI guardrail will turn green once v1.0.5
+  lands.
+
+[#27]: https://github.com/Nizoka/pdfnative/issues/27
+[1.0.3]: https://github.com/Nizoka/pdfnative/compare/v1.0.3...v1.0.4
+
 ## [1.0.3] – 2026-04-25
 
 ### Fixed

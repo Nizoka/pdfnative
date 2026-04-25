@@ -41,6 +41,7 @@ import {
     buildXMPMetadata,
     buildOutputIntentDict,
     buildMinimalSRGBProfile,
+    buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
     validateAttachments,
@@ -904,12 +905,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
     const infoObjNum = baseObjCount + 1;
 
-    const now = new Date();
-    const pad2 = (n: number) => String(n).padStart(2, '0');
-    const pdfDate = `D:${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}` +
-        `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`;
-    const isoDate = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}` +
-        `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata();
     const infoTitle = params.title ?? '';
 
     const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];
@@ -944,7 +940,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         totalObjs = treeStart + tree.totalObjects - 1;
 
         xmpObjNum = totalObjs + 1;
-        const xmpContent = buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance);
+        const xmpContent = buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author);
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
@@ -1056,7 +1052,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
 
     // ── Xref, Trailer, %%EOF ────────────────────────────────────────
     const writer = { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts };
-    writeXrefTrailer(writer, totalObjs, infoObjNum, encState);
+    writeXrefTrailer(writer, totalObjs, infoObjNum, encState, `${infoTitle}|${pdfDate}`);
 
     return parts.join('');
 }

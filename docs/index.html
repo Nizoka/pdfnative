@@ -489,6 +489,43 @@ const pdf = buildDocumentPDFBytes({
   </div>
 </section>
 
+<!-- ═══════════════ Sustainability ═══════════════ -->
+<section class="section" id="sustainability">
+  <div class="container">
+    <h2 class="section-title">Designed for low-impact computing</h2>
+    <p class="section-subtitle">
+      No carbon claims, no offsets, no badges. Just architectural choices that
+      keep the runtime small, local, and verifiable from the source tree.
+    </p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>On-device generation</h3>
+        <p>PDFs are assembled in the calling process — Node, browser, Worker, Deno, Bun. No SaaS round-trip; no document leaves the user's machine unless the application chooses to send it.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Zero runtime dependencies</h3>
+        <p>An empty <code>dependencies</code> field in <code>package.json</code>. No transitive npm graph to install, audit, or patch.</p>
+      </div>
+      <div class="feature-card">
+        <h3>No telemetry, no network calls</h3>
+        <p>The library never opens a socket. Verifiable by reading the source — there is no analytics endpoint, no auto-update channel, no remote font fetch.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Tree-shakeable ESM</h3>
+        <p><code>"sideEffects": false</code> with strict module boundaries. Only the features your build actually imports end up in production bundles.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Streaming output</h3>
+        <p><code>streamPdf()</code> yields <code>Uint8Array</code> chunks via <code>AsyncGenerator</code>, so even very large documents fit in bounded memory on edge runtimes and serverless platforms.</p>
+      </div>
+      <div class="feature-card">
+        <h3>External tooling stays external</h3>
+        <p>The optional veraPDF reference validator runs as a CI tool, downloaded once per workflow run. It is never bundled with the npm package or required by consumers.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════════════ Architecture ═══════════════ -->
 <section class="section section-alt" id="architecture">
   <div class="container">
@@ -535,6 +572,7 @@ const pdf = buildDocumentPDFBytes({
       <li><a href="guides/faq.html">FAQ</a></li>
       <li><a href="guides/troubleshooting.html">Troubleshooting</a></li>
       <li><a href="guides/accessibility.html">Accessibility</a></li>
+      <li><a href="guides/pdfa.html">PDF/A</a></li>
       <li><a href="playgrounds/extreme-scripts.html">Extreme scripts playground</a></li>
       <li><a href="playgrounds/medical-800.html">Medical 800-page playground</a></li>
       <li><a href="https://plika.app" target="_blank" rel="noopener">Originally from Plika.app</a></li>

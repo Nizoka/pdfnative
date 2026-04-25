@@ -1,0 +1,110 @@
+name: PDF/A Validation (veraPDF)
+
+# Run the veraPDF reference validator against every sample PDF that claims
+# PDF/A conformance in its XMP metadata. The job fails if any compliant claim
+# is broken — guarding against PDF/A regressions.
+#
+# veraPDF is invoked as an external CI tool (Java CLI). pdfnative remains a
+# zero-runtime-dependency library; veraPDF is not bundled or linked.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'fonts/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/verapdf.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'fonts/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/verapdf.yml'
+  # Allow manually running the workflow against any branch from the
+  # GitHub Actions UI. Useful for verifying veraPDF integration before
+  # opening a pull request.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verapdf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verapdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Download the latest stable veraPDF release from the official mirror.
+      # The top-level URL always resolves to the latest even-numbered minor
+      # release (stable series). To pin a specific minor, change to e.g.
+      # https://software.verapdf.org/rel/1.28/verapdf-installer.zip
+      # Release index: https://software.verapdf.org/rel/
+      VERAPDF_INSTALL_URL: 'https://software.verapdf.org/rel/verapdf-installer.zip'
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Java (Temurin 17 LTS)
+        uses: actions/setup-java@7a445ee76e6f6f3e9bd74d49e057f0aff35b9a91 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install veraPDF CLI
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/verapdf-installer"
+          curl -fsSL -o "$HOME/verapdf-installer/installer.zip" "${VERAPDF_INSTALL_URL}"
+          unzip -q "$HOME/verapdf-installer/installer.zip" -d "$HOME/verapdf-installer"
+          INSTALLER_JAR=$(find "$HOME/verapdf-installer" -name 'verapdf-izpack-installer-*.jar' | head -n1)
+          if [ -z "${INSTALLER_JAR}" ]; then
+            echo "veraPDF installer jar not found"; exit 1
+          fi
+          mkdir -p "$HOME/verapdf"
+          # Auto-install via izpack XML descriptor (headless).
+          cat > "$HOME/verapdf/auto-install.xml" <<XML
+          <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+          <AutomatedInstallation langpack="eng">
+            <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
+            <com.izforge.izpack.panels.target.TargetPanel id="install_dir"><installpath>$HOME/verapdf</installpath></com.izforge.izpack.panels.target.TargetPanel>
+            <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select"><pack index="0" name="veraPDF GUI" selected="true"/><pack index="1" name="veraPDF Mac and *nix Scripts" selected="true"/><pack index="2" name="veraPDF Documentation" selected="false"/><pack index="3" name="veraPDF Sample Plugins" selected="false"/></com.izforge.izpack.panels.packs.PacksPanel>
+            <com.izforge.izpack.panels.install.InstallPanel id="install"/>
+            <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
+          </AutomatedInstallation>
+          XML
+          java -jar "${INSTALLER_JAR}" "$HOME/verapdf/auto-install.xml"
+          echo "VERAPDF_HOME=$HOME/verapdf" >> "$GITHUB_ENV"
+          echo "$HOME/verapdf" >> "$GITHUB_PATH"
+
+      - name: Verify veraPDF
+        run: |
+          verapdf --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Generate sample PDFs
+        run: npm run test:generate
+
+      - name: Validate PDF/A claims
+        run: npm run validate:pdfa

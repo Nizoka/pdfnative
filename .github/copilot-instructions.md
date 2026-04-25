@@ -109,6 +109,10 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Structure tree: `/Document → /Table → /TR → /TH|/TD`, `/H1-H3`, `/P`, `/L → /LI`, `/Figure`, `/Link`
 - PDF/A-2b: XMP metadata stream + sRGB ICC OutputIntent when `tagged: true` (default since Phase 8)
 - XMP metadata: `<?xpacket begin="\xEF\xBB\xBF"` uses raw UTF-8 BOM bytes (not `\uFEFF` which truncates to 0xFF)
+- PDF/A invariant: `/Info CreationDate` ↔ `xmp:CreateDate` come from the SAME `buildPdfMetadata()` call in `pdf-tags.ts` — never inline `new Date()` in `pdf-builder.ts`/`pdf-document.ts`. Both formats carry timezone offset (`D:YYYYMMDDHHmmSS+HH'mm'` and ISO 8601 `±HH:MM`)
+- Trailer `/ID`: always emitted. Unencrypted = deterministic `md5("pdfnative|"+title+"|"+pdfDate+"|"+totalObjs)` (do NOT randomize — breaks determinism tests). Encrypted = `encState.docId`
+- `dc:creator`: emitted ONLY when `metadata.author` is provided, XML-escaped, mirrors `/Info /Author`
+- veraPDF reference validator runs in CI (`.github/workflows/verapdf.yml`) and locally via `npm run validate:pdfa` — see [.github/instructions/pdfa-conformance.instructions.md](.github/instructions/pdfa-conformance.instructions.md)
 - ICC sRGB profile: 9 required tags (desc, wtpt, cprt, rXYZ, gXYZ, bXYZ, rTRC, gTRC, bTRC) — monitor RGB class
 - PDF/A-1b: explicit `tagged: 'pdfa1b'` uses PDF 1.4, `pdfaid:part=1`
 - PDF/A-2u: explicit `tagged: 'pdfa2u'` uses PDF 1.7, `pdfaid:conformance=U`

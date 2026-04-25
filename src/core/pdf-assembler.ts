@@ -9,7 +9,7 @@
  */
 
 import { compressStream } from './pdf-compress.js';
-import { encryptStream, buildEncryptDict, buildIdArray, type EncryptionState } from './pdf-encrypt.js';
+import { encryptStream, buildEncryptDict, buildIdArray, md5, type EncryptionState } from './pdf-encrypt.js';
 
 // ── PDF Writer ───────────────────────────────────────────────────────
 
@@ -93,6 +93,10 @@ export function createPdfWriter(compress: boolean, encState: EncryptionState | n
  * @param totalObjs - Total number of objects emitted so far
  * @param infoObjNum - Object number of the /Info dictionary
  * @param encState - Encryption state (null if no encryption)
+ * @param idSeed - Seed string used to derive a stable trailer `/ID` for
+ *   unencrypted PDFs. Typically `infoTitle + '|' + pdfDate`. Equal seeds
+ *   produce equal IDs (deterministic, ISO 32000-1 §14.4 friendly).
+ *   Required when `encState` is null.
  * @returns Final totalObjs count (may increase if encryption dict was added)
  */
 export function writeXrefTrailer(
@@ -100,6 +104,7 @@ export function writeXrefTrailer(
     totalObjs: number,
     infoObjNum: number,
     encState: EncryptionState | null,
+    idSeed: string = '',
 ): number {
     let encryptObjNum = 0;
     if (encState) {
@@ -118,10 +123,19 @@ export function writeXrefTrailer(
     }
 
     w.emit('trailer\n');
+    // ISO 19005-1 §6.1.3 / ISO 32000-1 §14.4: trailer /ID is required for PDF/A
+    // and strongly recommended for all PDFs. For unencrypted PDFs we derive a
+    // stable 16-byte ID from the seed string (MD5 of title + creation date)
+    // so byte-equal inputs produce byte-equal outputs. Encrypted PDFs reuse
+    // the random docId already generated for the encryption key.
+    const docId = encState
+        ? encState.docId
+        : md5(new TextEncoder().encode(`pdfnative|${idSeed}|${totalObjs}`));
+    const idArray = buildIdArray(docId);
     if (encState) {
-        w.emit(`<< /Size ${totalObjs + 1} /Root 1 0 R /Info ${infoObjNum} 0 R /Encrypt ${encryptObjNum} 0 R /ID ${buildIdArray(encState.docId)} >>\n`);
+        w.emit(`<< /Size ${totalObjs + 1} /Root 1 0 R /Info ${infoObjNum} 0 R /Encrypt ${encryptObjNum} 0 R /ID ${idArray} >>\n`);
     } else {
-        w.emit(`<< /Size ${totalObjs + 1} /Root 1 0 R /Info ${infoObjNum} 0 R >>\n`);
+        w.emit(`<< /Size ${totalObjs + 1} /Root 1 0 R /Info ${infoObjNum} 0 R /ID ${idArray} >>\n`);
     }
     w.emit('startxref\n');
     w.emit(`${xrefOffset}\n`);

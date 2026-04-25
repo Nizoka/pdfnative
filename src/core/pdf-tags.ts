@@ -245,21 +245,78 @@ export function buildStructureTree(
 // ── XMP Metadata ─────────────────────────────────────────────────────
 
 /**
+ * Synchronized PDF + XMP metadata payload.
+ *
+ * Both `pdfDate` and `xmpDate` represent the same instant with the same
+ * timezone offset. PDF/A validators (e.g. veraPDF rule 6.7.3 t1) require
+ * `/Info CreationDate` and `xmp:CreateDate` to be byte-equivalent after
+ * format-specific parsing — this helper guarantees that.
+ */
+export interface PdfMetadata {
+    /** PDF date string per ISO 32000-1 §7.9.4: `D:YYYYMMDDHHmmSS+HH'mm'`. */
+    readonly pdfDate: string;
+    /** ISO 8601 date string: `YYYY-MM-DDTHH:mm:ss±HH:MM`. */
+    readonly xmpDate: string;
+}
+
+/**
+ * Build synchronized PDF + XMP date strings for a single instant.
+ *
+ * ISO 32000-1 §7.9.4 (PDF date format) and ISO 19005-1 §6.7.3 (PDF/A metadata
+ * equivalence) require both formats to encode the same timezone offset.
+ *
+ * @param now - Date to format. Defaults to the current instant.
+ * @returns `{ pdfDate, xmpDate }` representing the same moment.
+ */
+export function buildPdfMetadata(now: Date = new Date()): PdfMetadata {
+    const pad2 = (n: number) => String(n).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    const mm = pad2(now.getMonth() + 1);
+    const dd = pad2(now.getDate());
+    const hh = pad2(now.getHours());
+    const mi = pad2(now.getMinutes());
+    const ss = pad2(now.getSeconds());
+
+    // Timezone offset in minutes, west of UTC is positive in JS — invert sign for output.
+    const tzMinutes = -now.getTimezoneOffset();
+    const tzSign = tzMinutes >= 0 ? '+' : '-';
+    const tzAbs = Math.abs(tzMinutes);
+    const tzH = pad2(Math.floor(tzAbs / 60));
+    const tzM = pad2(tzAbs % 60);
+
+    const pdfDate = `D:${yyyy}${mm}${dd}${hh}${mi}${ss}${tzSign}${tzH}'${tzM}'`;
+    const xmpDate = `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}${tzSign}${tzH}:${tzM}`;
+
+    return { pdfDate, xmpDate };
+}
+
+/**
  * Build an XMP metadata packet for PDF/A compliance.
  * ISO 19005-1 (PDF/A-1b): pdfaid:part=1, conformance=B
  * ISO 19005-2 (PDF/A-2b): pdfaid:part=2, conformance=B
  * ISO 19005-2 (PDF/A-2u): pdfaid:part=2, conformance=U
  * ISO 19005-3 (PDF/A-3b): pdfaid:part=3, conformance=B
  *
- * @param title - Document title
- * @param createDate - ISO 8601 formatted creation date
+ * @param title - Document title (must equal /Info /Title source string verbatim)
+ * @param createDate - ISO 8601 formatted creation date (must equal /Info /CreationDate same instant)
  * @param pdfaPart - PDF/A part number (1, 2, or 3). Default: 2
  * @param pdfaConformance - PDF/A conformance level ('B' or 'U'). Default: 'B'
+ * @param author - Optional document author (matches /Info /Author).
  * @returns XMP metadata XML string
  */
-export function buildXMPMetadata(title: string, createDate: string, pdfaPart: number = 2, pdfaConformance: string = 'B'): string {
+export function buildXMPMetadata(
+    title: string,
+    createDate: string,
+    pdfaPart: number = 2,
+    pdfaConformance: string = 'B',
+    author?: string,
+): string {
     const escapedTitle = escapeXml(title);
-    return [
+    // dc:creator describes the document author (per Dublin Core),
+    // independent of pdf:Producer (the software). When no author is given,
+    // omit dc:creator entirely so the validator does not try to compare it
+    // against a missing /Info /Author entry.
+    const lines: string[] = [
         '<?xpacket begin="\xEF\xBB\xBF" id="W5M0MpCehiHzreSzNTczkc9d"?>',
         '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
         ' <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
@@ -269,16 +326,23 @@ export function buildXMPMetadata(title: string, createDate: string, pdfaPart: nu
         '    xmlns:xmp="http://ns.adobe.com/xap/1.0/"',
         '    xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">',
         `   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">${escapedTitle}</rdf:li></rdf:Alt></dc:title>`,
-        '   <dc:creator><rdf:Seq><rdf:li>pdfnative</rdf:li></rdf:Seq></dc:creator>',
+    ];
+    if (author !== undefined && author !== '') {
+        lines.push(`   <dc:creator><rdf:Seq><rdf:li>${escapeXml(author)}</rdf:li></rdf:Seq></dc:creator>`);
+    }
+    lines.push(
         '   <pdf:Producer>pdfnative</pdf:Producer>',
         `   <xmp:CreateDate>${createDate}</xmp:CreateDate>`,
+        `   <xmp:ModifyDate>${createDate}</xmp:ModifyDate>`,
+        `   <xmp:MetadataDate>${createDate}</xmp:MetadataDate>`,
         `   <pdfaid:part>${pdfaPart}</pdfaid:part>`,
         `   <pdfaid:conformance>${pdfaConformance}</pdfaid:conformance>`,
         '  </rdf:Description>',
         ' </rdf:RDF>',
         '</x:xmpmeta>',
         '<?xpacket end="w"?>',
-    ].join('\n');
+    );
+    return lines.join('\n');
 }
 
 /**
