@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pdfnative — Zero-dependency PDF generation for TypeScript</title>
   <meta name="description" content="Pure native PDF generation library with zero dependencies. ISO 32000-1 compliant. 16 Unicode scripts. TypeScript-first. PDF/A, encryption, digital signatures, barcodes, SVG, forms, streaming.">
-  <meta name="keywords" content="pdf, typescript, javascript, pdf generation, zero dependencies, unicode, arabic, thai, pdf/a, encryption, digital signatures, barcodes, svg, acroform">
+  <meta name="keywords" content="pdf, typescript, javascript, pdf generation, zero dependencies, unicode, arabic, thai, pdf/a, encryption, digital signatures, barcodes, svg, acroform, mcp, model-context-protocol, claude, cursor, ai, llm">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -63,6 +63,7 @@
       <li><a href="#comparison">Compare</a></li>
       <li><a href="#benchmarks">Benchmarks</a></li>
       <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#mcp">MCP</a></li>
       <li><a href="guides/">Guides</a></li>
       <li><a href="playgrounds/extreme-scripts.html">Playgrounds</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
@@ -175,6 +176,12 @@
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
         <p>AsyncGenerator streaming, Web Worker off-thread generation, PDF parser &amp; modifier. 1 588+ tests, 95%+ coverage, SLSA provenance.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-mcp"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M15 8h2M11 8h2"/></svg></div>
+        <h3>AI Integration — MCP</h3>
+        <p>Use pdfnative from Claude Desktop, Cursor, Continue, and Zed via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. 8 production tools, zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
       </div>
 
     </div>
@@ -533,8 +540,46 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/master/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative module architecture: types → core ← fonts ← shaping ← worker, with standalone crypto and parser modules" width="800" height="360" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative module architecture: pdfnative-mcp ecosystem consumer above the library, types → core ← fonts ← shaping ← worker, with standalone crypto and parser modules" width="960" height="540" loading="lazy">
       </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ MCP ═══════════════ -->
+<section class="section section-alt" id="mcp">
+  <div class="container">
+    <h2 class="section-title">Use pdfnative from Any AI Client</h2>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required.</p>
+    <div class="mcp-layout">
+      <div class="mcp-tools">
+        <h3>8 Production Tools</h3>
+        <table class="mcp-table">
+          <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>generate_basic_pdf</code></td><td>Multi-page documents (headings, paragraphs, lists)</td></tr>
+            <tr><td><code>add_table</code></td><td>Tabular reports from headers and rows</td></tr>
+            <tr><td><code>add_barcode</code></td><td>QR Code, Code 128, EAN-13, Data Matrix, PDF417</td></tr>
+            <tr><td><code>add_international_text</code></td><td>16 scripts with BiDi &amp; OpenType shaping</td></tr>
+            <tr><td><code>add_form</code></td><td>Interactive AcroForm fields</td></tr>
+            <tr><td><code>embed_image</code></td><td>JPEG / PNG image embedding</td></tr>
+            <tr><td><code>prepare_signature_placeholder</code></td><td>PDF with <code>/Sig</code> field ready to sign</td></tr>
+            <tr><td><code>sign_pdf</code></td><td>CMS/PKCS#7 signatures (RSA &amp; ECDSA)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mcp-config">
+        <h3>Claude Desktop — 3-line setup</h3>
+<pre><code class="language-json">{
+  "mcpServers": {
+    "pdfnative": {
+      "command": "npx",
+      "args": ["-y", "pdfnative-mcp"]
+    }
+  }
+}</code></pre>
+        <p>Supports Cursor, Continue, Zed, and any stdio MCP client. See the <a href="guides/mcp.html">MCP Integration Guide →</a></p>
+      </div>
     </div>
   </div>
 </section>
@@ -573,6 +618,7 @@ const pdf = buildDocumentPDFBytes({
       <li><a href="guides/troubleshooting.html">Troubleshooting</a></li>
       <li><a href="guides/accessibility.html">Accessibility</a></li>
       <li><a href="guides/pdfa.html">PDF/A</a></li>
+      <li><a href="guides/mcp.html">MCP Integration</a></li>
       <li><a href="playgrounds/extreme-scripts.html">Extreme scripts playground</a></li>
       <li><a href="playgrounds/medical-800.html">Medical 800-page playground</a></li>
       <li><a href="https://plika.app" target="_blank" rel="noopener">Originally from Plika.app</a></li>

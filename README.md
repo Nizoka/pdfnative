@@ -10,6 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![npm provenance](https://img.shields.io/badge/provenance-signed-blueviolet)](https://docs.npmjs.com/generating-provenance-statements)
 [![website](https://img.shields.io/badge/pdfnative.dev-0066FF?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxyZWN0IHg9IjMiIHk9IjIiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxOCIgcng9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHBhdGggZD0iTTcgN2g2TTcgMTFoOE03IDE1aDQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=)](https://pdfnative.dev)
+[![pdfnative-mcp](https://img.shields.io/npm/v/pdfnative-mcp?label=pdfnative-mcp&color=6366f1)](https://www.npmjs.com/package/pdfnative-mcp)
 
 Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PDF 1.7) compliant.
 
@@ -44,6 +45,7 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
+- **AI client integration** — use pdfnative from Claude Desktop, Cursor, Continue, and Zed via [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp)
 
 ## Installation
 
@@ -803,6 +805,45 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `HEADER_H` | Header zone height (15pt) |
 | `PAGE_SIZES` | Preset page dimensions (A4, Letter, Legal, A3, Tabloid) |
 | `resolveTemplate(tpl, page, pages, title, date)` | Resolve header/footer template placeholders |
+
+## Ecosystem
+
+[`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) is a **Model Context Protocol server** that bridges pdfnative to any MCP-compatible AI client. Once configured, your AI assistant can generate PDFs, embed barcodes, create forms, sign documents, and render international text — all without writing code.
+
+```bash
+npx -y pdfnative-mcp
+```
+
+### Available tools
+
+| Tool | Purpose |
+|------|---------|
+| `generate_basic_pdf` | Multi-page documents from structured blocks (headings, paragraphs, lists) |
+| `add_table` | Tabular reports from column headers and data rows |
+| `add_barcode` | QR Code, Code 128, EAN-13, Data Matrix, PDF417 |
+| `add_international_text` | 16 non-Latin scripts with BiDi & OpenType shaping |
+| `add_form` | Interactive AcroForm PDFs (text, checkbox, radio, dropdown) |
+| `embed_image` | Embed a JPEG or PNG image (base64) |
+| `prepare_signature_placeholder` | PDF with a `/Sig` field ready to be signed |
+| `sign_pdf` | CMS/PKCS#7 digital signatures (RSA-SHA256 / ECDSA-SHA256) |
+
+### Claude Desktop configuration
+
+```json
+{
+  "mcpServers": {
+    "pdfnative": {
+      "command": "npx",
+      "args": ["-y", "pdfnative-mcp"],
+      "env": {
+        "PDFNATIVE_MPC_OUTPUT_DIR": "/Users/you/Documents/mcp-pdfs"
+      }
+    }
+  }
+}
+```
+
+See the [MCP Integration Guide](https://pdfnative.dev/guides/mcp.html) and the [pdfnative-mcp repository](https://github.com/Nizoka/pdfnative-mcp) for configuration on Cursor, Continue, Zed, and more.
 
 ## Architecture
 

@@ -36,6 +36,7 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size (64 KB default), validation for TOC/template incompatibility, concatChunks utility
 - [x] **PDF parser & modifier** — full PDF reader (tokenizer, object parser, xref table/stream, page tree, FlateDecode inflate) + incremental modification (non-destructive save with /Prev chain)
 - [x] **npm metadata enrichment** — description enumerates 16 scripts + headline features (BiDi, PDF/A, encryption, signatures, AcroForm, barcodes, SVG); keywords expanded to 27 entries for npm search discoverability (v1.0.2)
+- [x] **pdfnative-mcp** — Model Context Protocol server bridging pdfnative to AI clients (Claude Desktop, Cursor, Continue, Zed): 8 production tools (`generate_basic_pdf`, `add_table`, `add_barcode`, `add_international_text`, `add_form`, `embed_image`, `prepare_signature_placeholder`, `sign_pdf`), stdio/HTTP transport, sandboxed file output. See [pdfnative-mcp on GitHub](https://github.com/Nizoka/pdfnative-mcp)
 
 ## In Progress
 
