@@ -236,6 +236,7 @@ img, svg { max-width: 100%; height: auto; }
 .fi-security { background: #fee2e2; color: #dc2626; }
 .fi-content { background: #ffedd5; color: #ea580c; }
 .fi-production { background: #fef3c7; color: #d97706; }
+.fi-mcp { background: #eef2ff; color: #4338ca; }
 
 /* ── Code Tabs ─────────────────────────────────────────────── */
 .code-tabs { max-width: 780px; margin: 0 auto; }
@@ -360,8 +361,57 @@ img, svg { max-width: 100%; height: auto; }
 .bench-note { text-align: center; font-size: 12px; color: var(--c-text-muted); margin-top: 24px; }
 
 /* ── Architecture ──────────────────────────────────────────── */
-.arch-diagram { max-width: 700px; margin: 0 auto; }
+.arch-diagram { max-width: 860px; margin: 0 auto; }
 .arch-diagram svg { width: 100%; height: auto; }
+
+/* ── MCP section ───────────────────────────────────────────── */
+.mcp-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 40px;
+  align-items: start;
+}
+.mcp-layout h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.mcp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.mcp-table th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--c-border);
+  font-weight: 700;
+  color: var(--c-text-dim);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.mcp-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--c-border);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.mcp-table tr:last-child td { border-bottom: none; }
+.mcp-table td:first-child code {
+  font-size: 12px;
+  white-space: nowrap;
+  background: var(--c-code-bg, rgba(99,102,241,.08));
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #6366F1;
+}
+.mcp-config pre {
+  font-size: 13px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.mcp-config p { margin-top: 16px; font-size: 14px; }
+@media (max-width: 900px) {
+  .mcp-layout { grid-template-columns: 1fr; }
+}
 
 /* ── Origin ────────────────────────────────────────────────── */
 .origin {
