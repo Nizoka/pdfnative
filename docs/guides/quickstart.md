@@ -181,9 +181,38 @@ Both interactive playgrounds on [pdfnative.dev](https://pdfnative.dev) run entir
 > npm run docs:serve   # → http://localhost:5000
 > ```
 
+## Command line — pdfnative-cli
+
+Prefer the terminal? [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) wraps the same library with three composable commands — `render`, `sign`, `inspect`:
+
+```bash
+# Install once
+npm install --global pdfnative-cli
+
+# Render a JSON document to a PDF
+pdfnative render --input report.json --output report.pdf
+
+# Sign with an RSA key (loaded from env var, never logged)
+export PDFNATIVE_SIGN_KEY="$(cat private.pem)"
+export PDFNATIVE_SIGN_CERT="$(cat cert.pem)"
+pdfnative sign --input report.pdf --output report.signed.pdf
+
+# Inspect any PDF (encryption, signatures, PDF/A, metadata)
+pdfnative inspect --input report.signed.pdf --format text
+```
+
+Stdin/stdout makes it composable in shell pipelines:
+
+```bash
+cat report.json | pdfnative render | pdfnative sign | pdfnative inspect --format text
+```
+
+See the dedicated [CLI guide](cli.html) for the full command reference, security model, and CI/CD recipes.
+
 ## Next steps
 
 - [Architecture](architecture.html) — modules, builders, generation pipeline.
+- [CLI](cli.html) — pdfnative-cli command-line interface.
 - [Accessibility](accessibility.html) — tagged PDF, PDF/UA, PDF/A.
 - [FAQ](faq.html) — fonts, encryption, signatures, comparisons.
 - [Troubleshooting](troubleshooting.html) — common pitfalls and fixes.

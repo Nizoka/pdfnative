@@ -11,6 +11,7 @@
 [![npm provenance](https://img.shields.io/badge/provenance-signed-blueviolet)](https://docs.npmjs.com/generating-provenance-statements)
 [![website](https://img.shields.io/badge/pdfnative.dev-0066FF?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxyZWN0IHg9IjMiIHk9IjIiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxOCIgcng9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHBhdGggZD0iTTcgN2g2TTcgMTFoOE03IDE1aDQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=)](https://pdfnative.dev)
 [![pdfnative-mcp](https://img.shields.io/npm/v/pdfnative-mcp?label=pdfnative-mcp&color=6366f1)](https://www.npmjs.com/package/pdfnative-mcp)
+[![pdfnative-cli](https://img.shields.io/npm/v/pdfnative-cli?label=pdfnative-cli&color=0e7490)](https://www.npmjs.com/package/pdfnative-cli)
 
 Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PDF 1.7) compliant.
 
@@ -46,6 +47,7 @@ Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PD
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
 - **AI client integration** — use pdfnative from Claude Desktop, Cursor, Continue, and Zed via [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp)
+- **Command-line interface** — render, sign, and inspect PDFs from the shell with [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) — zero-config, scriptable, ideal for CI/CD pipelines
 
 ## Installation
 
@@ -807,6 +809,27 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `resolveTemplate(tpl, page, pages, title, date)` | Resolve header/footer template placeholders |
 
 ## Ecosystem
+
+pdfnative ships as a library, but two official companion packages cover the most common non-library use cases. Both live in separate repositories and depend on `pdfnative` only through the public API.
+
+### pdfnative-cli — command-line interface
+
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official CLI**. It exposes three commands — `render`, `sign`, `inspect` — for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed.
+
+```bash
+# render a JSON document spec to PDF
+npx pdfnative-cli render document.json --output report.pdf
+
+# sign an existing PDF (RSA or ECDSA, CMS/PKCS#7)
+npx pdfnative-cli sign report.pdf --cert cert.pem --key key.pem --output signed.pdf
+
+# inspect a PDF (page count, metadata, fonts, signatures)
+npx pdfnative-cli inspect signed.pdf
+```
+
+See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for full reference, security model, and pipeline examples.
+
+### pdfnative-mcp — Model Context Protocol server
 
 [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) is a **Model Context Protocol server** that bridges pdfnative to any MCP-compatible AI client. Once configured, your AI assistant can generate PDFs, embed barcodes, create forms, sign documents, and render international text — all without writing code.
 

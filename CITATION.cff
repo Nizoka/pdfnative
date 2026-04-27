@@ -17,7 +17,7 @@ authors:
 repository-code: "https://github.com/Nizoka/pdfnative"
 url: "https://pdfnative.dev"
 license: MIT
-version: 1.0.0
+version: 1.0.5
 keywords:
   - pdf
   - pdf-generation

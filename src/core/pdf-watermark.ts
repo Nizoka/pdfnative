@@ -11,7 +11,6 @@ import type { WatermarkOptions, WatermarkText, WatermarkImage, EncodingContext }
 import { parseColor } from './pdf-color.js';
 import { parseImage, buildImageXObject } from './pdf-image.js';
 import type { ParsedImage } from './pdf-image.js';
-import { pdfString } from '../fonts/encoding.js';
 import { fmtNum } from './pdf-text.js';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -42,6 +41,18 @@ const DEFAULT_TEXT_COLOR = '0.75 0.75 0.75';
 const DEFAULT_TEXT_OPACITY = 0.15;
 const DEFAULT_TEXT_ANGLE = -45;
 const DEFAULT_IMAGE_OPACITY = 0.10;
+
+/**
+ * Default cap-height ratio for centering text vertically when the encoding
+ * context does not expose font metrics (Latin/Helvetica path). Helvetica's
+ * cap height is 718 of 1000 units per em, so the visual center of all-caps
+ * text sits at capHeight/2 ≈ 0.359 × fontSize above the baseline.
+ *
+ * Using fontSize/2 (the previous heuristic) over-shifted the baseline
+ * downward by ~14% of the font size, which — combined with rotation —
+ * caused the watermark to drift off centre on the page.
+ */
+const DEFAULT_CAP_HEIGHT_RATIO = 0.718;
 
 // ── Public API ───────────────────────────────────────────────────────
 
@@ -150,13 +161,28 @@ function _buildTextWatermarkOps(
     // Approximate text width to center it
     const textWidth = enc.tw(wm.text, sz);
     const offsetX = -textWidth / 2;
-    const offsetY = -sz / 2;
+
+    // Vertical centering: position the visual middle of the glyph box at the
+    // page centre. The PDF text matrix `Tm` places the *baseline* of the
+    // first glyph at (tx, ty), so we shift the baseline downward by half the
+    // cap height. When the encoding context exposes font metrics we use the
+    // actual cap height; otherwise we fall back to Helvetica's 0.718 ratio.
+    const fd = enc.fontData;
+    const capHeightRatio = fd
+        ? fd.metrics.capHeight / fd.metrics.unitsPerEm
+        : DEFAULT_CAP_HEIGHT_RATIO;
+    const offsetY = -sz * capHeightRatio / 2;
 
     // Apply rotation offset to center
     const tx = cx + offsetX * cos - offsetY * sin;
     const ty = cy + offsetX * sin + offsetY * cos;
 
-    const escapedText = pdfString(wm.text);
+    // Use the encoding context's text encoder so the bytes match the font
+    // referenced by `enc.f2`. In Latin mode this returns a WinAnsi literal
+    // `(...)`; in Unicode/CIDFont mode it returns a 2-byte GID hex string
+    // `<...>`. Using `pdfString` unconditionally produced garbage glyphs
+    // (and an incorrect width measurement) under CIDFont encoding.
+    const escapedText = enc.ps(wm.text);
 
     const ops: string[] = [
         'q',

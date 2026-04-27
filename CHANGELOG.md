@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] – 2026-04-27
+
+### Fixed
+
+- **core(watermark):** text watermarks are now correctly centered on
+  the page in both horizontal and vertical axes. The previous
+  implementation used `-fontSize/2` as the vertical offset, which
+  ignored the font's cap-height and produced visibly off-center
+  output. The offset now derives from the font's `capHeight /
+  unitsPerEm` ratio (with a `0.718` fallback matching Helvetica),
+  yielding mathematically centered glyphs regardless of font.
+  ([src/core/pdf-watermark.ts](src/core/pdf-watermark.ts))
+- **core(watermark):** Unicode watermark text is now encoded through
+  the document's active encoding context (`enc.ps()`) rather than
+  unconditionally through the WinAnsi `pdfString()` encoder. When a
+  document uses a CIDFont (Identity-H), watermark glyphs are now
+  emitted as 2-byte hex GIDs instead of being silently dropped or
+  mis-encoded, fixing watermarks for Arabic, Hebrew, CJK, Devanagari,
+  Bengali, Tamil, Cyrillic, Greek, Georgian, and Armenian documents.
+  ([src/core/pdf-watermark.ts](src/core/pdf-watermark.ts))
+
+### Added
+
+- **docs(cli):** new [CLI Guide](https://pdfnative.dev/guides/cli.html)
+  documenting [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli)
+  — the official command-line interface for `render`, `sign`, and
+  `inspect` workflows. Covers installation, security model, pipeline
+  examples, and library-vs-CLI decision guidance.
+- **docs(architecture):** Ecosystem section in the architecture guide
+  now documents both `pdfnative-cli` and `pdfnative-mcp` as separate
+  npm packages consuming the public API surface. Companion update in
+  [README.md](README.md) Ecosystem section.
+- **tests(watermark):** 6 new regression tests in
+  [tests/core/pdf-watermark.test.ts](tests/core/pdf-watermark.test.ts)
+  covering cap-height-based vertical offset, horizontal centering,
+  Latin WinAnsi encoding, Unicode CIDFont 2-byte GID hex encoding,
+  font-metric-driven offset in Unicode mode, and rotation invariance
+  of the visual centering bounding box.
+
+### Changed
+
+- **package:** version bumped from `1.0.4` to `1.0.5` (patch — no
+  breaking changes, no public API surface changes).
+- **CITATION.cff:** version field bumped to `1.0.5` (was stale at
+  `1.0.0`).
+
+### Deferred
+
+- **#28 (PDF/A Latin font embedding):** integration of an embedded
+  Latin font (e.g. Liberation Sans / Arimo) for PDF/A documents has
+  been deferred to **v1.1.0**. The change requires object renumbering
+  across multiple builders and ships ~30–60 KB of additional bytes
+  per PDF/A output, which is out of scope for a patch release.
+
 ## [1.0.4] – 2026-04-25
 
 ### Fixed

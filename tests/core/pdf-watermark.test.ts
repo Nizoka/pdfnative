@@ -395,3 +395,185 @@ describe('buildDocumentPDF watermark integration', () => {
         expect(result).toContain('Confidential');
     });
 });
+
+// ── Regression: centering & encoding (v1.0.5) ────────────────────────
+//
+// These tests guard against three regressions discovered in v1.0.4:
+//   1. Vertical centering used `-fontSize/2` as the baseline offset.
+//      The actual visual center of caps text sits at capHeight/2 ≈ 0.36×
+//      fontSize above the baseline, so the watermark drifted downward by
+//      ~14% of the font size. Combined with rotation this pushed the
+//      visual centre well off the page centre.
+//   2. The text was encoded with `pdfString()` (WinAnsi) regardless of
+//      the active encoding context. In Unicode/CIDFont mode this produced
+//      garbage glyphs and wrong widths.
+//   3. Width measurement (`enc.tw()`) and rendering (`enc.f2`) used
+//      consistent fonts, but the text-encoding helpers did not. Centering
+//      now derives `offsetY` from the font's actual cap-height when the
+//      encoding context exposes metrics.
+
+describe('text watermark centering (regression)', () => {
+    /**
+     * Extract the `Tm` (text matrix) operator coefficients from a
+     * watermark op string. The matrix layout is `a b c d e f Tm` where
+     * (e, f) is the translation (tx, ty).
+     */
+    function parseTm(ops: string): { a: number; b: number; c: number; d: number; tx: number; ty: number } {
+        const m = ops.match(/(-?\d+\.\d+) (-?\d+\.\d+) (-?\d+\.\d+) (-?\d+\.\d+) (-?\d+\.\d+) (-?\d+\.\d+) Tm/);
+        if (!m) throw new Error('Tm operator not found in watermark ops');
+        return {
+            a: Number(m[1]),
+            b: Number(m[2]),
+            c: Number(m[3]),
+            d: Number(m[4]),
+            tx: Number(m[5]),
+            ty: Number(m[6]),
+        };
+    }
+
+    it('vertical offset uses cap-height/2, not fontSize/2 (Latin mode)', () => {
+        const enc = makeEnc();
+        const pgW = 595;
+        const pgH = 842;
+        // Use angle = 0 so the rotation does not mix offsetX and offsetY:
+        // tx = cx + offsetX, ty = cy + offsetY (cleanly observable).
+        const wm: WatermarkOptions = { text: { text: 'CONFIDENTIAL', angle: 0, fontSize: 60 } };
+        const state = buildWatermarkState(wm, pgW, pgH, enc);
+        const { ty } = parseTm(state.backgroundOps);
+
+        // Helvetica cap height = 0.718 × fontSize, so offsetY = -0.359 × 60 ≈ -21.54
+        // Expected ty = pgH/2 + offsetY = 421 - 21.54 ≈ 399.46
+        const expectedTy = pgH / 2 - (60 * 0.718) / 2;
+        expect(ty).toBeCloseTo(expectedTy, 1);
+
+        // The previous (buggy) value would have been pgH/2 - 60/2 = 391.
+        // Assert we are not at the old position (strictly higher on the page).
+        expect(ty).toBeGreaterThan(pgH / 2 - 60 / 2 + 5);
+    });
+
+    it('horizontal offset re-centers the text width on the page', () => {
+        const enc = makeEnc();
+        const pgW = 595;
+        const pgH = 842;
+        const wm: WatermarkOptions = { text: { text: 'DRAFT', angle: 0, fontSize: 40 } };
+        const state = buildWatermarkState(wm, pgW, pgH, enc);
+        const { tx } = parseTm(state.backgroundOps);
+        // For angle=0: tx = cx - textWidth/2. We accept any positive width;
+        // tx must be strictly less than the page centre and strictly
+        // greater than zero.
+        expect(tx).toBeLessThan(pgW / 2);
+        expect(tx).toBeGreaterThan(0);
+    });
+
+    it('Latin watermark text is encoded as WinAnsi literal (round parens)', () => {
+        const enc = makeEnc();
+        const wm: WatermarkOptions = { text: { text: 'DRAFT' } };
+        const state = buildWatermarkState(wm, 595, 842, enc);
+        // WinAnsi literal form: (DRAFT) Tj — must NOT be hex form <...>.
+        expect(state.backgroundOps).toContain('(DRAFT) Tj');
+        expect(state.backgroundOps).not.toMatch(/<[0-9A-F]+> Tj/);
+    });
+
+    it('Unicode/CIDFont mode encodes watermark as 2-byte GID hex', async () => {
+        // Load a CIDFont (Cyrillic data ships pre-built and is small).
+        const cyrModule = await import('../../fonts/noto-cyrillic-data.js');
+        const fontData = {
+            metrics: cyrModule.metrics,
+            fontName: cyrModule.fontName,
+            cmap: cyrModule.cmap,
+            defaultWidth: cyrModule.defaultWidth,
+            widths: cyrModule.widths,
+            pdfWidthArray: cyrModule.pdfWidthArray,
+            ttfBase64: cyrModule.ttfBase64,
+            gsub: cyrModule.gsub,
+            ligatures: cyrModule.ligatures,
+            markAnchors: cyrModule.markAnchors as never,
+            mark2mark: cyrModule.mark2mark as never,
+        };
+        const fontEntry = { fontData, fontRef: '/F2', lang: 'cyr' };
+        const enc = createEncodingContext([fontEntry]);
+
+        const wm: WatermarkOptions = { text: { text: 'DRAFT' } };
+        const state = buildWatermarkState(wm, 595, 842, enc);
+
+        // CIDFont mode emits hex GID strings <XXXX...> not WinAnsi (...).
+        expect(state.backgroundOps).toMatch(/<[0-9A-F]+> Tj/);
+        expect(state.backgroundOps).not.toContain('(DRAFT)');
+        // Hex string should have one 4-digit GID per character (5 chars × 4 = 20 hex digits).
+        const hexMatch = state.backgroundOps.match(/<([0-9A-F]+)> Tj/);
+        expect(hexMatch).not.toBeNull();
+        expect(hexMatch![1].length).toBe('DRAFT'.length * 4);
+    });
+
+    it('Unicode mode uses font cap-height metrics for vertical centering', async () => {
+        const cyrModule = await import('../../fonts/noto-cyrillic-data.js');
+        const fontData = {
+            metrics: cyrModule.metrics,
+            fontName: cyrModule.fontName,
+            cmap: cyrModule.cmap,
+            defaultWidth: cyrModule.defaultWidth,
+            widths: cyrModule.widths,
+            pdfWidthArray: cyrModule.pdfWidthArray,
+            ttfBase64: cyrModule.ttfBase64,
+            gsub: cyrModule.gsub,
+            ligatures: cyrModule.ligatures,
+            markAnchors: cyrModule.markAnchors as never,
+            mark2mark: cyrModule.mark2mark as never,
+        };
+        const fontEntry = { fontData, fontRef: '/F2', lang: 'cyr' };
+        const enc = createEncodingContext([fontEntry]);
+        const pgH = 842;
+        const wm: WatermarkOptions = { text: { text: 'DRAFT', angle: 0, fontSize: 60 } };
+        const state = buildWatermarkState(wm, 595, pgH, enc);
+        const { ty } = parseTm(state.backgroundOps);
+
+        const expectedRatio = fontData.metrics.capHeight / fontData.metrics.unitsPerEm;
+        const expectedTy = pgH / 2 - (60 * expectedRatio) / 2;
+        expect(ty).toBeCloseTo(expectedTy, 1);
+    });
+
+    it('rotation preserves visual centering of the text bounding box', () => {
+        const enc = makeEnc();
+        const pgW = 595;
+        const pgH = 842;
+        const wm: WatermarkOptions = { text: { text: 'CONFIDENTIAL', angle: 45, fontSize: 60 } };
+        const state = buildWatermarkState(wm, pgW, pgH, enc);
+        const { a, b, c, d, tx, ty } = parseTm(state.backgroundOps);
+
+        // The four corners of the text bounding box (local coordinates):
+        // baseline-start (0, 0), baseline-end (textWidth, 0),
+        // top-start (0, capHeight), top-end (textWidth, capHeight).
+        // After applying the Tm matrix [a b; c d; tx ty]:
+        //   global = local · M + (tx, ty)
+        // The midpoint of the bounding box must equal page centre.
+        const sz = 60;
+        const capHeight = sz * 0.718; // Helvetica default
+        // Recompute the textWidth via the same encoder path the renderer used:
+        // because we do not have a direct accessor we re-derive it from
+        // the matrix: tx, ty are placed at (cx + offsetX·cos − offsetY·sin,
+        // cy + offsetX·sin + offsetY·cos). With offsetY = −capHeight/2
+        // we can solve for offsetX and verify centering.
+        const cos = a;
+        const sin = b;
+        // c = -sin, d = cos
+        expect(c).toBeCloseTo(-sin, 2);
+        expect(d).toBeCloseTo(cos, 2);
+        const offsetY = -capHeight / 2;
+        // From: tx = cx + offsetX·cos − offsetY·sin
+        const offsetX = (tx - pgW / 2 + offsetY * sin) / cos;
+        // The visual center of the bounding box is at local (textWidth/2, capHeight/2).
+        // For correct centering this must map to (cx, cy):
+        //   cx = tx + (textWidth/2)·a + (capHeight/2)·c
+        //   cy = ty + (textWidth/2)·b + (capHeight/2)·d
+        // textWidth = -2·offsetX (since offsetX = -textWidth/2):
+        const textWidth = -2 * offsetX;
+        const visualCx = tx + (textWidth / 2) * a + (capHeight / 2) * c;
+        const visualCy = ty + (textWidth / 2) * b + (capHeight / 2) * d;
+        // Precision 0 ⇒ within 0.5pt. The watermark renderer formats Tm
+        // coefficients with 2 decimals (`fmtNum`), so chaining rotation +
+        // rounding accumulates ~0.1pt error — well within the half-point
+        // tolerance that PDF rendering anyway snaps to.
+        expect(visualCx).toBeCloseTo(pgW / 2, 0);
+        expect(visualCy).toBeCloseTo(pgH / 2, 0);
+    });
+});
