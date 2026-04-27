@@ -102,20 +102,38 @@ types/ → core/ ← fonts/ ← shaping/ ← worker/
 
 The architecture diagram above shows the **internal library modules**. External consumers sit above the library and import from `pdfnative` like any npm package.
 
+### pdfnative-cli
+
+[pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface**. It exposes three commands — `render`, `sign`, `inspect` — that map directly to public `pdfnative` APIs:
+
+```
+[shell / Makefile / GitHub Actions / Docker]
+              │ argv + stdin/stdout
+     ┌──────────────────────────┐
+     │  pdfnative-cli (npm)     │  ← thin dispatch layer, 3 commands
+     └──────────────────────────┘
+              │ import { buildDocumentPDFBytes, signPdfBytes, PdfReader } from 'pdfnative'
+     ┌──────────────────────────┐
+     │      pdfnative (npm)     │  ← core library (this repo)
+     └──────────────────────────┘
+```
+
+Like `pdfnative-mcp`, the CLI lives in a separate repository and depends on `pdfnative` only via the public API surface. See the [CLI Guide](cli.html) for usage and the security model.
+
 ### pdfnative-mcp
 
-[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is the primary ecosystem consumer: a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 8 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …).
+[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 8 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …).
 
 ```
 [Claude Desktop / Cursor / Continue / Zed]
               │ MCP stdio protocol
-     ┌──────────────────────└
-     │  pdfnative-mcp (npm)   │  ← MCP server, 8 tools
-     └──────────────────────┘
+     ┌──────────────────────────┐
+     │  pdfnative-mcp (npm)     │  ← MCP server, 8 tools
+     └──────────────────────────┘
               │ import { buildDocumentPDFBytes, … } from 'pdfnative'
-     ┌──────────────────────└
-     │      pdfnative (npm)      │  ← core library (this repo)
-     └──────────────────────┘
+     ┌──────────────────────────┐
+     │      pdfnative (npm)     │  ← core library (this repo)
+     └──────────────────────────┘
 ```
 
 pdfnative-mcp is **not an internal module** — it is a separate npm package with its own repository, versioning, and release cadence. It references `pdfnative` only through the public API.

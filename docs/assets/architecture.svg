@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
   <title>pdfnative — Module Architecture</title>
-  <desc>Dependency diagram showing pdfnative's internal modules (core, fonts, shaping, worker, crypto, parser, types) and the external pdfnative-mcp ecosystem consumer.</desc>
+  <desc>Dependency diagram showing pdfnative's internal modules (core, fonts, shaping, worker, crypto, parser, types) and the external ecosystem consumers: pdfnative-cli (command-line interface) and pdfnative-mcp (MCP server).</desc>
 
   <defs>
     <marker id="arrow" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
@@ -8,6 +8,9 @@
     </marker>
     <marker id="arrow-mcp" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
       <polygon points="0 0, 10 3.5, 0 7" fill="#6366F1"/>
+    </marker>
+    <marker id="arrow-cli" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0E7490"/>
     </marker>
     <marker id="arrow-green" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
       <polygon points="0 0, 10 3.5, 0 7" fill="#10B981"/>
@@ -29,11 +32,17 @@
   <rect x="30" y="44" width="900" height="110" rx="12" fill="none" stroke="#A5B4FC" stroke-width="1.5" stroke-dasharray="8,4"/>
   <text x="48" y="64" font-size="11" font-weight="600" fill="#6366F1" letter-spacing="0.5">ECOSYSTEM</text>
 
+  <!-- pdfnative-cli box -->
+  <rect x="175" y="72" width="250" height="68" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="2" filter="url(#shadow)"/>
+  <text x="300" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#155E75">pdfnative-cli</text>
+  <text x="300" y="118" text-anchor="middle" font-size="11" fill="#0E7490">CLI · 3 commands</text>
+  <text x="300" y="132" text-anchor="middle" font-size="10" fill="#0891B2">render · sign · inspect</text>
+
   <!-- pdfnative-mcp box -->
-  <rect x="350" y="72" width="260" height="68" rx="10" fill="#EEF2FF" stroke="#6366F1" stroke-width="2" filter="url(#shadow)"/>
-  <text x="480" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#4338CA">pdfnative-mcp</text>
-  <text x="480" y="118" text-anchor="middle" font-size="11" fill="#6366F1">MCP Server · 8 tools</text>
-  <text x="480" y="132" text-anchor="middle" font-size="10" fill="#818CF8">Claude · Cursor · Continue · Zed</text>
+  <rect x="535" y="72" width="250" height="68" rx="10" fill="#EEF2FF" stroke="#6366F1" stroke-width="2" filter="url(#shadow)"/>
+  <text x="660" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#4338CA">pdfnative-mcp</text>
+  <text x="660" y="118" text-anchor="middle" font-size="11" fill="#6366F1">MCP Server · 8 tools</text>
+  <text x="660" y="132" text-anchor="middle" font-size="10" fill="#818CF8">Claude · Cursor · Continue · Zed</text>
 
   <!-- ════════════════════════════════════════════════════════════ -->
   <!-- PDFNATIVE LIBRARY ZONE                                      -->
@@ -79,9 +88,13 @@
 
   <!-- ─── Arrows ──────────────────────────────────────────────── -->
 
+  <!-- pdfnative-cli → core (dashed, external consumer) -->
+  <line x1="300" y1="141" x2="278" y2="194" stroke="#0E7490" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#arrow-cli)"/>
+  <text x="192" y="167" font-size="10" fill="#0E7490">npm install pdfnative</text>
+
   <!-- pdfnative-mcp → core (dashed, external consumer) -->
-  <line x1="480" y1="142" x2="370" y2="194" stroke="#6366F1" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#arrow-mcp)"/>
-  <text x="385" y="168" font-size="10" fill="#6366F1">npm install pdfnative</text>
+  <line x1="660" y1="141" x2="382" y2="194" stroke="#6366F1" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#arrow-mcp)"/>
+  <text x="455" y="163" font-size="10" fill="#6366F1">npm install pdfnative</text>
 
   <!-- types → core -->
   <line x1="168" y1="261" x2="226" y2="261" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrow)"/>

@@ -237,6 +237,7 @@ img, svg { max-width: 100%; height: auto; }
 .fi-content { background: #ffedd5; color: #ea580c; }
 .fi-production { background: #fef3c7; color: #d97706; }
 .fi-mcp { background: #eef2ff; color: #4338ca; }
+.fi-cli { background: #ecfeff; color: #0e7490; }
 
 /* ── Code Tabs ─────────────────────────────────────────────── */
 .code-tabs { max-width: 780px; margin: 0 auto; }
