@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP Tool Explorer — pdfnative-mcp playground</title>
+  <meta name="description" content="Interactive explorer for the 8 pdfnative-mcp tools. Browse the JSON schemas, see real example prompts, and generate the same PDFs an AI assistant would receive — directly in your browser. Zero install, zero secrets.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/mcp.html">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+    .mcp-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; margin-top: 24px; }
+    .mcp-card { border: 1px solid var(--c-border); border-radius: 10px; padding: 18px 20px 16px; background: var(--c-bg-card); display: flex; flex-direction: column; gap: 10px; }
+    .mcp-card h3 { font-size: 16px; font-weight: 700; margin: 0; color: var(--c-text); display: flex; align-items: center; gap: 8px; }
+    .mcp-card h3 code { background: var(--c-surface); padding: 2px 8px; border-radius: 4px; font-size: 13px; color: var(--c-primary); }
+    .mcp-card .purpose { font-size: 13px; color: var(--c-text-dim); line-height: 1.5; margin: 0; }
+    .mcp-card details { font-size: 13px; }
+    .mcp-card details summary { cursor: pointer; font-weight: 600; color: var(--c-text); padding: 4px 0; }
+    .mcp-card details > div { margin-top: 8px; }
+    .mcp-card .prompt { background: var(--c-surface); border-left: 3px solid var(--c-primary); padding: 10px 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; font-style: italic; }
+    .mcp-card pre { background: var(--c-code-bg); color: var(--c-code-text); padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; line-height: 1.45; max-height: 200px; }
+    .mcp-card .actions { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+    .mcp-card button { padding: 6px 12px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
+    .mcp-card button.primary { background: var(--c-primary); color: #fff; }
+    .mcp-card button.primary:hover { background: var(--c-accent); }
+    .mcp-card button.secondary { background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border); }
+    .mcp-card button.secondary:hover { background: var(--c-bg-alt); }
+    .mcp-card button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .mcp-card .status { font-size: 12px; color: var(--c-text-dim); padding: 4px 0; min-height: 18px; }
+    .mcp-card .status.success { color: var(--c-success); font-weight: 600; }
+    .mcp-card .status.error { color: #b91c1c; font-weight: 600; }
+    [data-theme="dark"] .mcp-card .status.error { color: #fca5a5; }
+    .mcp-config-block { margin: 30px 0; padding: 20px 24px; border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-bg-card); }
+    .mcp-config-block h2 { margin-top: 0; }
+    .mcp-config-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--c-border); }
+    .mcp-config-tabs button { padding: 8px 14px; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--c-text-dim); }
+    .mcp-config-tabs button[aria-selected="true"] { color: var(--c-primary); border-bottom-color: var(--c-primary); }
+    .mcp-config-block pre { position: relative; }
+    .mcp-config-block .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: 12px; background: var(--c-primary); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; MCP tool explorer</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html" aria-current="page">MCP explorer</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>pdfnative-mcp tool explorer</h1>
+    <p>The eight tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> (currently <strong>v0.1.0</strong>) into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
+
+    <p style="font-size: 14px; color: var(--c-text-dim);">For the full integration story (config, security model, signed-document workflow), see the <a href="../guides/mcp.html">MCP guide</a>.</p>
+
+    <div class="mcp-config-block">
+      <h2 style="font-size: 18px; margin-bottom: 8px;">1. Configure your client</h2>
+      <p style="font-size: 14px; color: var(--c-text-dim);">Pick your client. The snippet below is what you paste into its MCP servers config. <code>npx</code> downloads pdfnative-mcp on first use; no global install needed.</p>
+      <div class="mcp-config-tabs" role="tablist">
+        <button role="tab" aria-selected="true"  data-client="claude">Claude Desktop</button>
+        <button role="tab" aria-selected="false" data-client="cursor">Cursor</button>
+        <button role="tab" aria-selected="false" data-client="continue">Continue</button>
+        <button role="tab" aria-selected="false" data-client="zed">Zed</button>
+      </div>
+<pre><code class="language-json" id="config-output"></code><button class="copy-btn" id="copy-config">Copy</button></pre>
+      <p style="font-size: 13px; color: var(--c-text-dim); margin-top: 10px;"><strong>Other clients:</strong> any tool that speaks the <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> over stdio works — Cline, Windsurf, Goose, Aider, LibreChat, Sourcegraph Cody, Gemini CLI, and your own custom client. Use the same <code>command: "npx"</code> / <code>args: ["-y", "pdfnative-mcp"]</code> pair in whatever JSON shape your client expects.</p>
+    </div>
+
+    <h2 style="margin-top: 36px;">2. Try the 8 tools</h2>
+    <p id="loader-status" style="font-size: 13px; color: var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once per page load.</p>
+
+    <div class="mcp-cards" id="cards"></div>
+
+    <h2 style="margin-top: 40px;">3. Now ask your AI assistant</h2>
+    <p>Once you've pasted the config snippet above and restarted your client, ask it anything PDF-shaped:</p>
+    <ul>
+      <li><em>"Generate a 3-page invoice for ACME Corp totalling €1 200 and embed a QR code that links to the payment portal."</em></li>
+      <li><em>"Create a Thai-language welcome letter with our logo as a header."</em></li>
+      <li><em>"Draft a contract with a signature placeholder and inspect the resulting PDF for me."</em></li>
+    </ul>
+    <p>The AI assistant will pick the right tools, fill the JSON arguments, and pdfnative will render the PDF — no code from you.</p>
+
+    <h2>Resources</h2>
+    <ul>
+      <li><a href="../guides/mcp.html">MCP guide</a> — full configuration, security model, signed-document workflow</li>
+      <li><a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp on GitHub</a></li>
+      <li><a href="../guides/cli.html">CLI guide</a> &middot; <a href="./cli.html">CLI playground</a></li>
+      <li><a href="https://modelcontextprotocol.io">Model Context Protocol specification</a></li>
+    </ul>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="../">Home</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="../guides/mcp.html">MCP guide</a></li>
+      <li><a href="./extreme-scripts.html">Extreme scripts playground</a></li>
+      <li><a href="./medical-800.html">Medical 800-page playground</a></li>
+      <li><a href="./cli.html">CLI playground</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script type="module">
+  // ─────────────────────────── Client config snippets ───────────────────────────
+  const CONFIGS = {
+    claude:   `{
+  "mcpServers": {
+    "pdfnative": {
+      "command": "npx",
+      "args": ["-y", "pdfnative-mcp"]
+    }
+  }
+}`,
+    cursor:   `// .cursor/mcp.json
+{
+  "mcpServers": {
+    "pdfnative": {
+      "command": "npx",
+      "args": ["-y", "pdfnative-mcp"]
+    }
+  }
+}`,
+    continue: `// ~/.continue/config.json — under "experimental.modelContextProtocolServers"
+{
+  "name": "pdfnative",
+  "transport": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "pdfnative-mcp"]
+  }
+}`,
+    zed:      `// ~/.config/zed/settings.json — under "context_servers"
+"context_servers": {
+  "pdfnative": {
+    "command": "npx",
+    "args": ["-y", "pdfnative-mcp"]
+  }
+}`,
+  };
+
+  const cfgOut = document.getElementById('config-output');
+  function setConfig(client) {
+    cfgOut.textContent = CONFIGS[client] || '';
+    if (window.Prism) window.Prism.highlightElement(cfgOut);
+  }
+  document.querySelectorAll('.mcp-config-tabs button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mcp-config-tabs button').forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+      setConfig(btn.dataset.client);
+    });
+  });
+  setConfig('claude');
+
+  document.getElementById('copy-config').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(cfgOut.textContent);
+      const b = document.getElementById('copy-config'); const old = b.textContent;
+      b.textContent = 'Copied!'; setTimeout(() => { b.textContent = old; }, 1500);
+    } catch (e) { alert('Clipboard write failed.'); }
+  });
+
+  // ─────────────────────────── Tool catalogue ───────────────────────────
+  // Each tool maps to a real pdfnative entry-point so the playground can produce the
+  // PDF the AI assistant would receive. The `args` is the canonical MCP tool-call
+  // payload; `build(p, m)` returns Uint8Array bytes given those args + loaded module.
+  const TOOLS = [
+    {
+      id: 'generate_basic_pdf',
+      purpose: 'Render a multi-page document from headings, paragraphs, and lists.',
+      prompt: 'Write a one-page welcome memo titled "Welcome to ACME" with a paragraph and a bullet list of three onboarding steps.',
+      args: {
+        title: 'Welcome to ACME',
+        blocks: [
+          { type: 'heading', text: 'Welcome to ACME', level: 1 },
+          { type: 'paragraph', text: 'We are thrilled to have you on board. Here is what to expect during your first week.' },
+          { type: 'list', style: 'bullet', items: [
+            'Day 1 — meet your team and complete IT setup.',
+            'Day 2 — onboarding deep-dive with the People team.',
+            'Day 3 — shadow a customer call and review our product roadmap.',
+          ]},
+        ],
+        footerText: 'Confidential · ACME People Team',
+        metadata: { author: 'People Team', subject: 'Welcome' },
+      },
+      build: (p, m) => m.buildDocumentPDFBytes(p),
+    },
+    {
+      id: 'add_table',
+      purpose: 'Render a tabular report from headers and rows.',
+      prompt: 'Build a PDF with our Q1 vs Q2 revenue and profit table.',
+      args: {
+        title: 'H1 Performance',
+        blocks: [
+          { type: 'heading', text: 'H1 2026 — Performance', level: 1 },
+          { type: 'table',
+            headers: ['Quarter', 'Revenue', 'Profit'],
+            rows: [
+              { cells: ['Q1', '$1.2M', '$400K'], type: 'credit', pointed: false },
+              { cells: ['Q2', '$1.5M', '$600K'], type: 'credit', pointed: true  },
+            ],
+          },
+        ],
+      },
+      build: (p, m) => m.buildDocumentPDFBytes(p),
+    },
+    {
+      id: 'add_barcode',
+      purpose: 'Embed a QR code, Code 128, EAN-13, Data Matrix, or PDF417 barcode.',
+      prompt: 'Make a PDF that contains a QR code linking to our payment portal at https://acme.example/pay/INV-001.',
+      args: {
+        title: 'Invoice INV-001',
+        blocks: [
+          { type: 'heading', text: 'Invoice INV-001', level: 1 },
+          { type: 'paragraph', text: 'Scan the QR code below to settle this invoice.' },
+          { type: 'barcode', format: 'qr', data: 'https://acme.example/pay/INV-001', width: 140, ecLevel: 'M', align: 'center' },
+        ],
+      },
+      build: (p, m) => m.buildDocumentPDFBytes(p),
+    },
+    {
+      id: 'add_international_text',
+      purpose: 'Render text in any of 16 scripts with BiDi & OpenType shaping (Arabic, Thai, Japanese, …).',
+      prompt: 'Create a multilingual greeting card with English, Thai, and Arabic.',
+      args: {
+        title: 'Multilingual greeting',
+        fonts: [{ lang: 'th' }, { lang: 'ar' }],
+        blocks: [
+          { type: 'heading', text: 'Hello · สวัสดี · مرحبا', level: 1 },
+          { type: 'paragraph', text: 'English: a multilingual document rendered with native shaping and BiDi.' },
+          { type: 'paragraph', text: 'ภาษาไทย: เอกสารหลายภาษาที่จัดรูปแบบด้วยการสร้างรูปร่างและการจัดวางทิศทางสองทิศทาง' },
+          { type: 'paragraph', text: 'العربية: مستند متعدد اللغات يتم عرضه باستخدام التشكيل الأصلي ودعم اتجاهي ثنائي.' },
+        ],
+      },
+      build: async (p, m) => {
+        // Lazy-load Thai + Arabic font data the same way the homepage demo does.
+        const [thai, arabic] = await Promise.all([
+          import('https://esm.sh/pdfnative/fonts/noto-thai-data.js'),
+          import('https://esm.sh/pdfnative/fonts/noto-arabic-data.js'),
+        ]);
+        if (typeof m.registerFontLoader === 'function') {
+          m.registerFontLoader('th', () => Promise.resolve(thai.default || thai));
+          m.registerFontLoader('ar', () => Promise.resolve(arabic.default || arabic));
+        }
+        return m.buildDocumentPDFBytes(p);
+      },
+    },
+    {
+      id: 'add_form',
+      purpose: 'Build an interactive AcroForm PDF (text, checkbox, radio, dropdown).',
+      prompt: 'Create a contact form PDF with a name field, an email field, and a “subscribe to newsletter” checkbox.',
+      args: {
+        title: 'Contact us',
+        blocks: [
+          { type: 'heading', text: 'Contact us', level: 1 },
+          { type: 'formField', fieldType: 'text',     name: 'fullName', label: 'Full name', x: 60, y: 680, width: 300, height: 24 },
+          { type: 'formField', fieldType: 'text',     name: 'email',    label: 'Email',     x: 60, y: 640, width: 300, height: 24 },
+          { type: 'formField', fieldType: 'checkbox', name: 'subscribe', label: 'Subscribe to newsletter', x: 60, y: 600, width: 18, height: 18, checked: false },
+        ],
+      },
+      build: (p, m) => m.buildDocumentPDFBytes(p),
+    },
+    {
+      id: 'embed_image',
+      purpose: 'Embed a JPEG or PNG image (base64 encoded).',
+      prompt: 'Generate a PDF with our company logo as the first block.',
+      args: { /* placeholder: in this playground we draw a simple SVG-as-PDF since base64 image data can be very large */ },
+      noteHtml: 'In a real MCP call the AI assistant supplies the image as base64. The playground equivalent below uses an inline <code>svg</code> block so the demo stays small.',
+      build: (p, m) => m.buildDocumentPDFBytes({
+        title: 'Logo demo',
+        blocks: [
+          { type: 'svg', width: 80, height: 80, align: 'left', content:
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="2" width="14" height="18" rx="2" fill="#2563eb"/><path d="M7 7h6M7 11h8M7 15h4" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>'
+          },
+          { type: 'heading', text: 'ACME Inc.', level: 1 },
+          { type: 'paragraph', text: 'Pure native PDF generation.' },
+        ],
+      }),
+    },
+    {
+      id: 'prepare_signature_placeholder',
+      purpose: 'Build a PDF with a /Sig signature field ready to be signed.',
+      prompt: 'Prepare a sign-ready contract PDF for the legal team.',
+      args: {
+        title: 'Service agreement (draft)',
+        blocks: [
+          { type: 'heading', text: 'Service agreement', level: 1 },
+          { type: 'paragraph', text: 'This agreement enters into effect upon countersignature by both parties.' },
+          { type: 'formField', fieldType: 'text', name: 'sigPlaceholder', label: 'Signature: ____________________', x: 60, y: 200, width: 300, height: 30 },
+        ],
+      },
+      build: (p, m) => m.buildDocumentPDFBytes(p),
+    },
+    {
+      id: 'sign_pdf',
+      purpose: 'Apply a CMS/PKCS#7 signature (RSA or ECDSA) to an existing PDF.',
+      prompt: 'Sign the prepared contract using our corporate certificate.',
+      args: {
+        algorithm: 'rsa-sha256',
+        reason: 'Approved by Legal',
+        name: 'Legal Department',
+        location: 'Paris, FR',
+        signingTime: '2026-04-28T10:00:00Z',
+      },
+      noteHtml: 'Signing requires real private keys we cannot ship in a public playground. The button below renders the unsigned source PDF this tool would receive; run <code>pdfnative-cli sign</code> locally with your real keys to apply the signature.',
+      build: (p, m) => m.buildDocumentPDFBytes({
+        title: 'Service agreement (unsigned)',
+        blocks: [
+          { type: 'heading', text: 'Service agreement', level: 1 },
+          { type: 'paragraph', text: 'Source document handed to sign_pdf — the MCP server would run signPdfBytes() with your private key and certificate.' },
+        ],
+      }),
+    },
+  ];
+
+  // ─────────────────────────── Card rendering ───────────────────────────
+  const cards = document.getElementById('cards');
+  TOOLS.forEach((t, idx) => {
+    const card = document.createElement('div');
+    card.className = 'mcp-card';
+    card.innerHTML = `
+      <h3><code>${t.id}</code></h3>
+      <p class="purpose">${t.purpose}</p>
+      <div class="prompt">${t.prompt}</div>
+      ${t.noteHtml ? `<p class="purpose">${t.noteHtml}</p>` : ''}
+      <details>
+        <summary>MCP tool-call payload</summary>
+        <div><pre><code class="language-json">${escapeHtml(JSON.stringify(t.args, null, 2))}</code></pre></div>
+      </details>
+      <div class="actions">
+        <button class="primary" data-action="run" data-tool="${idx}" disabled>Generate PDF</button>
+        <button class="secondary" data-action="copy-args" data-tool="${idx}">Copy args</button>
+      </div>
+      <div class="status" data-status></div>
+    `;
+    cards.appendChild(card);
+  });
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  // ─────────────────────────── pdfnative loader (mirrors app.js) ───────────────────────────
+  const CDN_URLS = ['https://esm.sh/pdfnative', 'https://unpkg.com/pdfnative?module'];
+  let pdfnativeMod = null;
+  let loadErr = null;
+
+  (async () => {
+    for (const url of CDN_URLS) {
+      try {
+        const mod = await import(url);
+        // esm.sh sometimes nests named exports under `.default`
+        pdfnativeMod = mod.buildDocumentPDFBytes ? mod : (mod.default && mod.default.buildDocumentPDFBytes ? mod.default : mod);
+        if (pdfnativeMod && typeof pdfnativeMod.buildDocumentPDFBytes === 'function') break;
+      } catch (e) { loadErr = e; }
+    }
+    const status = document.getElementById('loader-status');
+    if (pdfnativeMod && typeof pdfnativeMod.buildDocumentPDFBytes === 'function') {
+      status.textContent = 'pdfnative loaded — try any tool below.';
+      status.style.color = 'var(--c-success)';
+      document.querySelectorAll('button[data-action="run"]').forEach((b) => { b.disabled = false; });
+    } else {
+      status.textContent = 'Failed to load pdfnative from CDN: ' + (loadErr && loadErr.message ? loadErr.message : 'unknown error');
+      status.style.color = '#b91c1c';
+    }
+  })();
+
+  // ─────────────────────────── Actions ───────────────────────────
+  cards.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('button[data-action]');
+    if (!btn) return;
+    const card = btn.closest('.mcp-card');
+    const status = card.querySelector('[data-status]');
+    const tool = TOOLS[Number(btn.dataset.tool)];
+
+    if (btn.dataset.action === 'copy-args') {
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(tool.args, null, 2));
+        status.textContent = 'Tool arguments copied.';
+        status.className = 'status success';
+        setTimeout(() => { status.textContent = ''; status.className = 'status'; }, 1800);
+      } catch (e) { status.textContent = 'Clipboard write failed.'; status.className = 'status error'; }
+      return;
+    }
+
+    if (btn.dataset.action === 'run') {
+      if (!pdfnativeMod) return;
+      btn.disabled = true;
+      status.textContent = 'Generating…'; status.className = 'status';
+      try {
+        const t0 = performance.now();
+        const bytes = await tool.build(tool.args, pdfnativeMod);
+        const elapsed = (performance.now() - t0).toFixed(0);
+        downloadPdf(bytes, tool.id + '.pdf');
+        status.textContent = `Generated ${(bytes.length / 1024).toFixed(1)} KB in ${elapsed} ms.`;
+        status.className = 'status success';
+      } catch (e) {
+        status.textContent = 'Error: ' + (e && e.message ? e.message : e);
+        status.className = 'status error';
+        console.error(e);
+      } finally { btn.disabled = false; }
+    }
+  });
+
+  function downloadPdf(bytes, name) {
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  }
+
+  // ─────────────────────────── Theme + hamburger parity ───────────────────────────
+  const themeBtn = document.querySelector('.theme-toggle');
+  if (themeBtn) {
+    const stored = localStorage.getItem('pdfnative-theme');
+    if (stored) document.documentElement.setAttribute('data-theme', stored);
+    themeBtn.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+      if (cur) document.documentElement.setAttribute('data-theme', cur);
+      else     document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('pdfnative-theme', cur);
+    });
+  }
+  const hb = document.querySelector('.nav-hamburger');
+  if (hb) hb.addEventListener('click', () => {
+    const nav = document.querySelector('.nav-links');
+    if (nav) nav.classList.toggle('open');
+    hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js" defer></script>
+</body>
+</html>

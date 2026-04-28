@@ -23,9 +23,10 @@
       <li><a href="../#features">Features</a></li>
       <li><a href="../#examples">Examples</a></li>
       <li><a href="../#demo">Demo</a></li>
-      <li><a href="./extreme-scripts.html">Extreme</a></li>
-      <li><a href="./medical-800.html" aria-current="page">Medical 800p</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
       <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
     </ul>
@@ -33,7 +34,15 @@
 </nav>
 
 <main class="guide-shell">
-  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Playgrounds &nbsp;›&nbsp; Medical 800-page</p>
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Medical 800-page</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./medical-800.html" aria-current="page">Medical 800-page</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
   <article class="guide-content">
     <h1>800-page Medical Report — Web Worker Showcase</h1>
     <p>Generates a fictitious, fully synthetic medical report (anonymized data, deterministic seeded RNG) demonstrating how pdfnative scales to large documents off the main thread. Pages contain headers, footers, patient summaries, longitudinal vital signs tables, and laboratory results — typical real-world clinical document patterns.</p>

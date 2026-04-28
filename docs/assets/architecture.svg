@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
   <title>pdfnative — Module Architecture</title>
-  <desc>Dependency diagram showing pdfnative's internal modules (core, fonts, shaping, worker, crypto, parser, types) and the external ecosystem consumers: pdfnative-cli (command-line interface) and pdfnative-mcp (MCP server).</desc>
+  <desc>Dependency diagram showing pdfnative's internal modules (core, fonts, shaping, worker, crypto, parser, types) and the external ecosystem consumers: pdfnative-cli (command-line interface with 4 commands: render, sign, inspect, verify) and pdfnative-mcp (Model Context Protocol server with 8 tools, compatible with Claude Desktop, Cursor, Zed, and any other stdio MCP client). Shaping covers GSUB, GPOS, BiDi, and 16 scripts. Crypto and parser are standalone modules.</desc>
 
   <defs>
     <marker id="arrow" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
@@ -35,14 +35,14 @@
   <!-- pdfnative-cli box -->
   <rect x="175" y="72" width="250" height="68" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="2" filter="url(#shadow)"/>
   <text x="300" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#155E75">pdfnative-cli</text>
-  <text x="300" y="118" text-anchor="middle" font-size="11" fill="#0E7490">CLI · 3 commands</text>
-  <text x="300" y="132" text-anchor="middle" font-size="10" fill="#0891B2">render · sign · inspect</text>
+  <text x="300" y="118" text-anchor="middle" font-size="11" fill="#0E7490">CLI · 4 commands</text>
+  <text x="300" y="132" text-anchor="middle" font-size="10" fill="#0891B2">render · sign · inspect · verify</text>
 
   <!-- pdfnative-mcp box -->
   <rect x="535" y="72" width="250" height="68" rx="10" fill="#EEF2FF" stroke="#6366F1" stroke-width="2" filter="url(#shadow)"/>
   <text x="660" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#4338CA">pdfnative-mcp</text>
   <text x="660" y="118" text-anchor="middle" font-size="11" fill="#6366F1">MCP Server · 8 tools</text>
-  <text x="660" y="132" text-anchor="middle" font-size="10" fill="#818CF8">Claude · Cursor · Continue · Zed</text>
+  <text x="660" y="132" text-anchor="middle" font-size="10" fill="#818CF8">Claude · Cursor · Zed · any stdio client</text>
 
   <!-- ════════════════════════════════════════════════════════════ -->
   <!-- PDFNATIVE LIBRARY ZONE                                      -->
@@ -61,7 +61,7 @@
   <text x="317" y="268" text-anchor="middle" font-size="11" fill="#3B82F6">pdf-document</text>
   <text x="317" y="284" text-anchor="middle" font-size="11" fill="#3B82F6">pdf-encrypt</text>
   <text x="317" y="300" text-anchor="middle" font-size="11" fill="#3B82F6">pdf-tags</text>
-  <text x="317" y="316" text-anchor="middle" font-size="11" fill="#3B82F6">+ 12 modules</text>
+  <text x="317" y="316" text-anchor="middle" font-size="11" fill="#3B82F6">+ 13 modules</text>
 
   <!-- fonts box -->
   <rect x="468" y="196" width="130" height="62" rx="10" fill="#F3E8FF" stroke="#8B5CF6" stroke-width="1.5" filter="url(#shadow)"/>
@@ -70,7 +70,7 @@
   <!-- shaping box -->
   <rect x="468" y="298" width="130" height="64" rx="10" fill="#CCFBF1" stroke="#14B8A6" stroke-width="1.5" filter="url(#shadow)"/>
   <text x="533" y="326" text-anchor="middle" font-size="14" font-weight="600" fill="#0D9488">shaping</text>
-  <text x="533" y="345" text-anchor="middle" font-size="10" fill="#14B8A6">BiDi · Thai · Arabic</text>
+  <text x="533" y="345" text-anchor="middle" font-size="10" fill="#14B8A6">GSUB · GPOS · BiDi · 16 scripts</text>
 
   <!-- worker box -->
   <rect x="664" y="236" width="120" height="62" rx="10" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1.5" filter="url(#shadow)"/>
@@ -79,7 +79,7 @@
   <!-- crypto box -->
   <rect x="230" y="410" width="130" height="62" rx="10" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5" filter="url(#shadow)"/>
   <text x="295" y="437" text-anchor="middle" font-size="14" font-weight="600" fill="#059669">crypto</text>
-  <text x="295" y="455" text-anchor="middle" font-size="10" fill="#10B981">AES · RSA · ECDSA</text>
+  <text x="295" y="455" text-anchor="middle" font-size="10" fill="#10B981">AES · RSA · ECDSA · SHA · CMS</text>
 
   <!-- parser box -->
   <rect x="430" y="410" width="130" height="62" rx="10" fill="#FFEDD5" stroke="#F97316" stroke-width="1.5" filter="url(#shadow)"/>
