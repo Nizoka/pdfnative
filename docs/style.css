@@ -471,3 +471,20 @@ img, svg { max-width: 100%; height: auto; }
   padding: 0; margin: -1px; overflow: hidden;
   clip: rect(0,0,0,0); border: 0;
 }
+
+/* ── Playground switcher (sub-nav between sibling playgrounds) ── */
+.playground-switcher {
+  display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  padding: 10px 14px; margin: 14px 0 28px;
+  background: var(--c-bg-alt); border: 1px solid var(--c-border); border-radius: 8px;
+  font-size: 14px;
+}
+.playground-switcher-label { font-weight: 600; color: var(--c-text-dim); margin-right: 6px; }
+.playground-switcher a {
+  padding: 5px 12px; border-radius: 5px;
+  color: var(--c-text); text-decoration: none; font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.playground-switcher a:hover { background: var(--c-surface); }
+.playground-switcher a[aria-current="page"] { background: var(--c-primary); color: #fff; }
+.playground-switcher a[aria-current="page"]:hover { background: var(--c-accent); }

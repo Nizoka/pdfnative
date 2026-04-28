@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playgrounds — pdfnative</title>
+  <meta name="description" content="Four interactive playgrounds for pdfnative: extreme-script shaping (BiDi, Tamil, Bengali, Devanagari), an 800-page Web Worker stress test, a CLI command builder, and a Model Context Protocol tool explorer. All zero-install, zero-config, in your browser.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <style>
+    .pg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 28px; }
+    .pg-card {
+      display: flex; flex-direction: column; gap: 10px;
+      padding: 22px 24px; border: 1px solid var(--c-border); border-radius: 12px;
+      background: var(--c-bg-card); text-decoration: none; color: inherit;
+      transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .pg-card:hover { border-color: var(--c-primary); transform: translateY(-2px); box-shadow: 0 6px 18px -8px rgba(37,99,235,0.35); }
+    .pg-card .pg-icon { font-size: 28px; line-height: 1; }
+    .pg-card h3 { font-size: 18px; margin: 0; color: var(--c-text); display: flex; align-items: center; gap: 10px; }
+    .pg-card h3 .badge { font-size: 11px; padding: 2px 7px; border-radius: 4px; background: var(--c-primary); color: #fff; font-weight: 700; letter-spacing: 0.04em; }
+    .pg-card h3 .badge.alt { background: #16a34a; }
+    .pg-card p { font-size: 14px; color: var(--c-text-dim); line-height: 1.55; margin: 0; }
+    .pg-card .pg-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .pg-card .pg-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--c-surface); color: var(--c-text-dim); font-weight: 600; }
+    .pg-card .pg-cta { font-size: 13px; font-weight: 600; color: var(--c-primary); margin-top: auto; padding-top: 4px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./" aria-current="page">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Playgrounds</p>
+  <article class="guide-content">
+    <h1>Interactive playgrounds</h1>
+    <p>Four hands-on environments that exercise the entire pdfnative ecosystem in your browser. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
+
+    <div class="pg-grid">
+      <a class="pg-card" href="./extreme-scripts.html">
+        <div class="pg-icon" aria-hidden="true">🌍</div>
+        <h3>Extreme scripts <span class="badge">Library</span></h3>
+        <p>Stress-test BiDi mixing across Arabic + Hebrew + Thai + Latin, Tamil ultra-conjuncts, Bengali &amp; Devanagari with reph and multi-halant ligature chains, and isolated Arabic harakat. Edit the inputs and regenerate.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">BiDi</span><span class="pg-tag">GSUB</span><span class="pg-tag">GPOS</span><span class="pg-tag">16 scripts</span>
+        </div>
+        <div class="pg-cta">Open extreme-scripts playground →</div>
+      </a>
+
+      <a class="pg-card" href="./medical-800.html">
+        <div class="pg-icon" aria-hidden="true">📊</div>
+        <h3>Medical 800-page <span class="badge">Library</span></h3>
+        <p>Generate a synthetic 800-page clinical report off the main thread using a Web Worker. Live progress bar, streaming output, optional Tagged PDF/A. The performance benchmark you can run yourself.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">Web Worker</span><span class="pg-tag">Streaming</span><span class="pg-tag">Tagged PDF</span><span class="pg-tag">Benchmark</span>
+        </div>
+        <div class="pg-cta">Open medical-800 playground →</div>
+      </a>
+
+      <a class="pg-card" href="./cli.html">
+        <div class="pg-icon" aria-hidden="true">⌨️</div>
+        <h3>CLI builder <span class="badge alt">v0.2.0</span></h3>
+        <p>Compose <code>pdfnative-cli</code> commands (<code>render</code> · <code>sign</code> · <code>inspect</code> · <code>verify</code>) interactively. Live shell preview, validation rules, copy-to-clipboard, and 10 ready presets covering every common workflow.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">render</span><span class="pg-tag">sign</span><span class="pg-tag">inspect</span><span class="pg-tag">verify</span>
+        </div>
+        <div class="pg-cta">Open CLI playground →</div>
+      </a>
+
+      <a class="pg-card" href="./mcp.html">
+        <div class="pg-icon" aria-hidden="true">🤖</div>
+        <h3>MCP tool explorer <span class="badge alt">v0.1.0</span></h3>
+        <p>Browse the eight <strong>pdfnative-mcp</strong> tools, copy a ready-to-paste config snippet for Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client), and generate the same PDFs an AI assistant would receive — directly in your browser.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">8 tools</span><span class="pg-tag">Claude</span><span class="pg-tag">Cursor</span><span class="pg-tag">Zed</span><span class="pg-tag">+ any stdio client</span>
+        </div>
+        <div class="pg-cta">Open MCP playground →</div>
+      </a>
+    </div>
+
+    <h2 style="margin-top: 44px;">What about non-interactive examples?</h2>
+    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">23 generator categories producing ~140 sample PDFs</a> covering financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, and stress tests. Run <code>npm run test:generate</code> after cloning.</p>
+
+    <h2>Resources</h2>
+    <ul>
+      <li><a href="../guides/">All guides</a> — quick start, architecture, accessibility, PDF/A, troubleshooting, FAQ, MCP, CLI</li>
+      <li><a href="../#demo">Homepage live demo</a> — minimal in-page example</li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub repository</a></li>
+    </ul>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="../">Home</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./extreme-scripts.html">Extreme scripts</a></li>
+      <li><a href="./medical-800.html">Medical 800-page</a></li>
+      <li><a href="./cli.html">CLI builder</a></li>
+      <li><a href="./mcp.html">MCP explorer</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  // Theme toggle parity
+  const themeBtn = document.querySelector('.theme-toggle');
+  if (themeBtn) {
+    const stored = localStorage.getItem('pdfnative-theme');
+    if (stored) document.documentElement.setAttribute('data-theme', stored);
+    themeBtn.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+      if (cur) document.documentElement.setAttribute('data-theme', cur);
+      else     document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('pdfnative-theme', cur);
+    });
+  }
+  const hb = document.querySelector('.nav-hamburger');
+  if (hb) hb.addEventListener('click', () => {
+    const nav = document.querySelector('.nav-links');
+    if (nav) nav.classList.toggle('open');
+    hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+  });
+</script>
+
+</body>
+</html>

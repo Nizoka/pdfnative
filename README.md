@@ -814,20 +814,31 @@ pdfnative ships as a library, but two official companion packages cover the most
 
 ### pdfnative-cli — command-line interface
 
-[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official CLI**. It exposes three commands — `render`, `sign`, `inspect` — for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed.
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v0.2.0 is the **official CLI**. It exposes four commands — `render`, `sign`, `inspect`, **`verify`** — covering the full `pdfnative` v1.0.5 surface for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed.
+
+**Highlights (v0.2.0):** hybrid `flags + --layout file.json` model, encryption (AES-128/256), watermarks (text + image), header/footer page templates with `{page}/{pages}/{date}/{title}`, PDF/A-3 attachments (Factur-X / ZUGFeRD pattern), multilingual fonts via `--lang`, table-variant rendering, signing metadata + intermediate cert chains, `inspect --verbose/--pages/--check`, and a brand-new `verify` command for byte-range integrity and certificate-chain validation. **100 % backward-compatible** with v0.1.0.
 
 ```bash
-# render a JSON document spec to PDF
-npx pdfnative-cli render document.json --output report.pdf
+# render with full layout coverage (encryption + watermark + PDF/A-2b)
+npx pdfnative-cli render --input doc.json --output report.pdf \
+  --tagged pdfa2b --compress \
+  --watermark-text "DRAFT" --watermark-opacity 0.15
 
-# sign an existing PDF (RSA or ECDSA, CMS/PKCS#7)
-npx pdfnative-cli sign report.pdf --cert cert.pem --key key.pem --output signed.pdf
+# sign with metadata and intermediate cert chain
+npx pdfnative-cli sign --input report.pdf --output signed.pdf \
+  --reason "Approved" --name "Finance Team" \
+  --signing-time 2026-04-28T10:00:00Z \
+  --cert-chain intermediate.pem
 
-# inspect a PDF (page count, metadata, fonts, signatures)
-npx pdfnative-cli inspect signed.pdf
+# verify embedded signatures (byte-range + chain + trust)
+npx pdfnative-cli verify --input signed.pdf --strict --trust ca-root.pem
+
+# inspect with CI assertions (exit 1 on failure)
+npx pdfnative-cli inspect --input signed.pdf \
+  --check pdfa --check signed --format json
 ```
 
-See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for full reference, security model, and pipeline examples.
+See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v0.2.0 reference, security model, recipes, and the `--conformance` → `--tagged` migration path. Try the [interactive CLI playground](https://pdfnative.dev/playgrounds/cli.html) to build commands without leaving the browser.
 
 ### pdfnative-mcp — Model Context Protocol server
 

@@ -64,8 +64,9 @@
       <li><a href="#benchmarks">Benchmarks</a></li>
       <li><a href="#architecture">Architecture</a></li>
       <li><a href="#mcp">MCP</a></li>
+      <li><a href="#cli">CLI</a></li>
       <li><a href="guides/">Guides</a></li>
-      <li><a href="playgrounds/extreme-scripts.html">Playgrounds</a></li>
+      <li><a href="playgrounds/">Playgrounds</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
     </ul>
@@ -97,6 +98,7 @@
       <a href="https://www.typescriptlang.org/" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/TypeScript-strict-blue" alt="TypeScript strict mode" height="20" loading="lazy"></a>
       <a href="https://docs.npmjs.com/generating-provenance-statements" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/provenance-signed-blueviolet" alt="npm provenance signed" height="20" loading="lazy"></a>
       <a href="https://github.com/Nizoka/pdfnative/blob/main/LICENSE" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" height="20" loading="lazy"></a>
+      <a href="https://www.npmjs.com/package/pdfnative-cli" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/pdfnative-cli?label=pdfnative-cli&color=0e7490" alt="pdfnative-cli npm version" height="20" loading="lazy"></a>
     </div>
     <div class="install-cmd">
       <code>npm install pdfnative</code>
@@ -181,13 +183,13 @@
       <div class="feature-card">
         <div class="feature-icon fi-mcp"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M15 8h2M11 8h2"/></svg></div>
         <h3>AI Integration — MCP</h3>
-        <p>Use pdfnative from Claude Desktop, Cursor, Continue, and Zed via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. 8 production tools, zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
+        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. 8 production tools, zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-cli"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
         <h3>Command-Line Interface</h3>
-        <p>Render JSON to PDF, sign, and inspect from the terminal with <a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a>. Stdin/stdout pipelines, streaming, PDF/A. <a href="guides/cli.html">Read the CLI guide →</a></p>
+        <p>Render, sign, inspect &amp; <strong>verify</strong> PDFs from the terminal with <a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> v0.2.0. Encryption, watermarks, headers/footers, PDF/A-3 attachments, multilingual fonts, signature metadata + cert chains. <a href="guides/cli.html">Read the CLI guide →</a> &middot; <a href="playgrounds/cli.html">Try the playground →</a></p>
       </div>
 
     </div>
@@ -546,7 +548,7 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/master/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative module architecture: pdfnative-mcp ecosystem consumer above the library, types → core ← fonts ← shaping ← worker, with standalone crypto and parser modules" width="960" height="540" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative module architecture: pdfnative-cli (4 commands: render · sign · inspect · verify) and pdfnative-mcp (8 tools, any stdio client) ecosystem consumers above the library, types → core ← fonts ← shaping (GSUB · GPOS · BiDi · 16 scripts) ← worker, with standalone crypto and parser modules" width="960" height="540" loading="lazy">
       </a>
     </div>
   </div>
@@ -584,7 +586,41 @@ const pdf = buildDocumentPDFBytes({
     }
   }
 }</code></pre>
-        <p>Supports Cursor, Continue, Zed, and any stdio MCP client. See the <a href="guides/mcp.html">MCP Integration Guide →</a></p>
+        <p>Supports Cursor, Continue, Zed, and any stdio MCP client. See the <a href="guides/mcp.html">MCP Integration Guide →</a> &middot; <a href="playgrounds/mcp.html">Try the MCP playground →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CLI ═══════════════ -->
+<section class="section" id="cli">
+  <div class="container">
+    <h2 class="section-title">Use pdfnative from your shell, CI, or Makefile</h2>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> v0.2.0 is the <strong>official command-line interface</strong>. Four commands, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. Covers the full <code>pdfnative</code> v1.0.5 surface — encryption, watermarks, headers/footers, PDF/A-3 attachments, multilingual fonts, signing metadata, and signature verification.</p>
+    <div class="mcp-layout">
+      <div class="mcp-tools">
+        <h3>4 Production Commands</h3>
+        <table class="mcp-table">
+          <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>render</code></td><td>JSON → PDF, hybrid <code>flags + --layout</code> model, encryption, watermarks, page templates, PDF/A-3 attachments, multilingual fonts, streaming</td></tr>
+            <tr><td><code>sign</code></td><td>CMS/PKCS#7 signatures (RSA today; ECDSA stub) with <code>--reason</code>/<code>--name</code>/<code>--location</code>/<code>--contact</code>/<code>--signing-time</code> and intermediate cert chains</td></tr>
+            <tr><td><code>inspect</code></td><td>Read-only PDF analysis. <code>--verbose</code>, <code>--pages</code>, and <code>--check pdfa|signed|encrypted</code> for CI assertions</td></tr>
+            <tr><td><code>verify</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW v0.2.0</span></td><td>Verify CMS/PKCS#7 signatures: byte-range integrity, certificate chain, trust roots. <code>--strict</code> and <code>--trust</code> for CI</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mcp-config">
+        <h3>One npx away</h3>
+<pre><code class="language-bash">npx pdfnative-cli render --input doc.json --output report.pdf \
+  --tagged pdfa2b --compress \
+  --watermark-text "DRAFT" --watermark-opacity 0.15
+
+npx pdfnative-cli sign --input report.pdf --output signed.pdf \
+  --reason "Approved" --signing-time 2026-04-28T10:00:00Z
+
+npx pdfnative-cli verify --input signed.pdf --strict</code></pre>
+        <p>Keys, certs, and encryption passwords are read from env vars (<code>PDFNATIVE_SIGN_KEY</code>, <code>PDFNATIVE_ENCRYPT_OWNER_PASS</code>…) and never logged. See the <a href="guides/cli.html">CLI guide →</a> &middot; <a href="playgrounds/cli.html">Try the CLI builder →</a></p>
       </div>
     </div>
   </div>
@@ -625,8 +661,11 @@ const pdf = buildDocumentPDFBytes({
       <li><a href="guides/accessibility.html">Accessibility</a></li>
       <li><a href="guides/pdfa.html">PDF/A</a></li>
       <li><a href="guides/mcp.html">MCP Integration</a></li>
+      <li><a href="guides/cli.html">CLI Guide</a></li>
       <li><a href="playgrounds/extreme-scripts.html">Extreme scripts playground</a></li>
       <li><a href="playgrounds/medical-800.html">Medical 800-page playground</a></li>
+      <li><a href="playgrounds/cli.html">CLI playground</a></li>
+      <li><a href="playgrounds/mcp.html">MCP playground</a></li>
       <li><a href="https://plika.app" target="_blank" rel="noopener">Originally from Plika.app</a></li>
     </ul>
   </div>
