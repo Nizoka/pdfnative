@@ -57,7 +57,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             headers: ['Feature', 'Status', 'Standard', 'Details', 'Notes'],
             rows: [
                 { cells: ['FlateDecode', 'Active', 'ISO 32000-1 §7.3.8.1', 'zlib / RFC 1950', 'Content + Font + ICC'], type: 'credit', pointed: false },
-                { cells: ['Tagged PDF', 'Active', 'ISO 14289-1', 'StructTreeRoot', '/Document → /Table → /TR → /TD'], type: 'credit', pointed: false },
+                { cells: ['Tagged PDF', 'Active', 'ISO 14289-1', 'StructTreeRoot', '/Document > /Table > /TR > /TD'], type: 'credit', pointed: false },
                 { cells: ['XMP Metadata', 'Uncompressed', 'ISO 19005-2', 'pdfaid:part=2', 'PDF/A validator safety'], type: 'credit', pointed: true },
                 { cells: ['ICC Profile', 'Compressed', 'ISO 15076-1', 'sRGB D50', 'OutputIntent'], type: 'credit', pointed: false },
                 { cells: ['Encryption', 'N/A', 'ISO 19005-1 §6.3.2', 'Mutually exclusive', 'PDF/A forbids encryption'], type: 'debit', pointed: false },
