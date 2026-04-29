@@ -7,8 +7,11 @@ import { buildPDFBytes, buildDocumentPDFBytes, loadFontData } from '../../src/in
 import type { PdfParams, PdfLayoutOptions, DocumentParams, DocumentBlock } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
 import { makeMinimalJPEG, makeLargeJPEG, makeSyntheticPNG } from '../helpers/images.js';
+import { loadFontEntries } from '../helpers/fonts.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
+    // Latin font for PDF/A embedding (rule 6.2.11.4.1)
+    const latinEntries = await loadFontEntries('latin', '/F3');
     // ── 1. 10,000 rows (~300 pages) ──────────────────────────────
     {
         const rows = Array.from({ length: 10000 }, (_, i) => ({
@@ -157,6 +160,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Tagged PDF/UA accessibility stress test',
             layout: { tagged: true },
+            fontEntries: latinEntries,
         };
         ctx.writeSafe(resolve(ctx.outputDir, 'stress', 'tagged-accessibility-complex.pdf'), 'stress/tagged-accessibility-complex.pdf', buildDocumentPDFBytes(params));
     }

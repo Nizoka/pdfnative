@@ -399,6 +399,7 @@ export function buildFormWidget(field: FormField, apObjNum: number, radioCtx?: R
     const parts: string[] = [
         '<< /Type /Annot /Subtype /Widget',
         `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}]`,
+        '/F 4',
     ];
 
     // Radio children within a group: field-level keys (/FT, /Ff, /T, /V) live on parent

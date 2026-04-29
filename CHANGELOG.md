@@ -55,6 +55,17 @@ features are opt-in. **1726 tests / 48 files green.** See full notes in
   `scripts/generators/pdfa-latin-embedding.ts` math operators paragraph
   trimmed to characters covered by Noto Sans VF (number sets ℝ ℂ ℕ ℤ,
   basic ops × ÷ ±) — Noto Sans Math support deferred.
+- **scripts(samples):** Five additional PDF/A-claiming sample
+  generators now register a `latin` font entry — `barcode-tagged.pdf`,
+  `compressed-tagged-pdfa2b.pdf`, `header-footer-tagged.pdf`,
+  `tagged-accessibility-complex.pdf`, `toc-tagged.pdf`. Closes the
+  remaining veraPDF rule 6.2.11.4.1-1 (font embedding) failures
+  reported by CI.
+- **core(annot):** Link annotations (`/Subtype /Link`, both `/URI` and
+  `/GoTo`) and form widget annotations (`/Subtype /Widget`) now emit
+  `/F 4` (Print flag set, NoView/Hidden/Invisible cleared) per ISO
+  19005-2 §6.5.3 / veraPDF rule 6.3.2-1. Required on every annotation
+  in PDF/A-2 / PDF/A-3.
 - **ci(verapdf):** veraPDF validation is now **blocking** on PRs and
   pushes to `main` (the previous `continue-on-error: true` was a
   pre-v1.0.5 placeholder). `scripts/validate-pdfa.ts` already

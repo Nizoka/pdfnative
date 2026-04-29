@@ -684,6 +684,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                         `<< /Type /Annot /Subtype /Link ` +
                         `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
                         `/Border [0 0 0] ` +
+                        `/F 4 ` +
                         `/Dest /${destName} >>`
                     );
                 } else {
@@ -692,6 +693,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                         `<< /Type /Annot /Subtype /Link ` +
                         `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
                         `/Border [0 0 0] ` +
+                        `/F 4 ` +
                         `/A << /Type /Action /S /URI /URI (${escapedUrl}) >> >>`
                     );
                 }
@@ -837,11 +839,13 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 const objNum = annotObjStart + annotIdx;
                 const [x1, y1, x2, y2] = pa.annot.rect;
                 if (pa.annot.url.startsWith('#')) {
+                    // Internal /GoTo annotation (TOC link)
                     const destName = pa.annot.url.slice(1);
                     emitObj(objNum,
                         `<< /Type /Annot /Subtype /Link ` +
                         `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
                         `/Border [0 0 0] ` +
+                        `/F 4 ` +
                         `/Dest /${destName} >>`
                     );
                 } else {
@@ -850,6 +854,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                         `<< /Type /Annot /Subtype /Link ` +
                         `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
                         `/Border [0 0 0] ` +
+                        `/F 4 ` +
                         `/A << /Type /Action /S /URI /URI (${escapedUrl}) >> >>`
                     );
                 }

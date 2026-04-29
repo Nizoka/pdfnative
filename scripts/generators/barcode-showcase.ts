@@ -6,8 +6,11 @@ import { resolve } from 'path';
 import { buildDocumentPDFBytes } from '../../src/index.js';
 import type { DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
+import { loadFontEntries } from '../helpers/fonts.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
+    // Latin font for PDF/A embedding (rule 6.2.11.4.1)
+    const latinEntries = await loadFontEntries('latin', '/F3');
     // ── All barcode formats showcase ─────────────────────────────
     {
         const params: DocumentParams = {
@@ -93,6 +96,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ],
             footerText: 'pdfnative – Tagged Barcode Sample',
             layout: { tagged: true },
+            fontEntries: latinEntries,
         };
         ctx.writeSafe(resolve(ctx.outputDir, 'barcode', 'barcode-tagged.pdf'), 'barcode/barcode-tagged.pdf', buildDocumentPDFBytes(params));
     }

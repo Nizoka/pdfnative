@@ -88,6 +88,7 @@ export function buildLinkAnnotation(annot: LinkAnnotation, objNum: number): stri
         `<< /Type /Annot /Subtype /Link ` +
         `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
         `/Border [0 0 0] ` +
+        `/F 4 ` +
         `/A << /Type /Action /S /URI /URI (${escapedUrl}) >> >>\n` +
         `endobj`;
 }
@@ -106,6 +107,7 @@ export function buildInternalLinkAnnotation(annot: InternalLink, pageObjNum: num
         `<< /Type /Annot /Subtype /Link ` +
         `/Rect [${fmtNum(x1)} ${fmtNum(y1)} ${fmtNum(x2)} ${fmtNum(y2)}] ` +
         `/Border [0 0 0] ` +
+        `/F 4 ` +
         `/A << /Type /Action /S /GoTo /D [${pageObjNum} 0 R /Fit] >> >>\n` +
         `endobj`;
 }
