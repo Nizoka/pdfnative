@@ -1,17 +1,24 @@
 /*!
- * pdfnative — Live version badge widget
- * =======================================
+ * pdfnative — Live version widget (dual-mode)
+ * ==============================================
  * Renders the current published versions of `pdfnative`, `pdfnative-cli`,
  * and `pdfnative-mcp` straight from the public npm registry on page load.
  * Includes the *transitive pdfnative pin* declared in each downstream
  * package's `dependencies` so visitors can verify the wiring at a glance.
  *
+ * Two presentation modes:
+ *  - `compact` — one-line horizontal strip (sticky-discreet, intended for
+ *    placement just under the main nav). Triggered by `data-mode="compact"`
+ *    or by class `.pn-version-strip`.
+ *  - `detailed` (default) — title + bullet list with pin annotations.
+ *    Used by the rich block at the bottom of the page.
+ *
+ * Mount points: all elements matching `#pdfnative-versions`, `.pn-version-strip`,
+ * or `[data-pn-versions]` are rendered once on DOMContentLoaded. Individual
+ * values are also exposed as data attributes on each host element.
+ *
  * Fully zero-dependency, zero-build: a single fetch per package against
  * https://registry.npmjs.org. Falls back gracefully when offline.
- *
- * Mount points: any element with id `pdfnative-versions` is replaced by
- * the rendered widget. Individual values are also exposed as data attributes
- * on the host element for downstream styling/scripting.
  *
  * @since 1.1.0
  */
@@ -55,11 +62,52 @@
             .catch(function () { return FALLBACK[name]; });
     }
 
-    function render(host, results) {
-        host.innerHTML = '';
+    function applyDataAttrs(host, results) {
         host.setAttribute('data-pdfnative-version', results['pdfnative'].version);
         host.setAttribute('data-pdfnative-cli-version', results['pdfnative-cli'].version);
         host.setAttribute('data-pdfnative-mcp-version', results['pdfnative-mcp'].version);
+    }
+
+    /** Compact one-line strip: `Live npm: pdfnative v1.1.0 · cli v0.2.0 (→ ^1.1.0) · mcp v0.2.0 (→ ^1.1.0)`. */
+    function renderCompact(host, results) {
+        host.innerHTML = '';
+        applyDataAttrs(host, results);
+
+        var inner = el('div', { class: 'pn-version-strip-inner' });
+        inner.appendChild(el('span', { class: 'pn-version-strip-label', text: 'Live npm:' }));
+
+        PKGS.forEach(function (name, idx) {
+            var info = results[name];
+            if (idx > 0) {
+                inner.appendChild(el('span', { class: 'pn-version-strip-sep', text: '\u00b7' }));
+            }
+            var link = el('a', {
+                class: 'pn-version-strip-pkg',
+                href: 'https://www.npmjs.com/package/' + name,
+                target: '_blank',
+                rel: 'noopener'
+            });
+            // Short name: pdfnative-cli → cli, pdfnative-mcp → mcp
+            var shortName = name === 'pdfnative' ? 'pdfnative' : name.replace('pdfnative-', '');
+            link.appendChild(document.createTextNode(shortName + ' '));
+            link.appendChild(el('strong', { text: 'v' + info.version }));
+            if (info.pin) {
+                link.appendChild(el('span', {
+                    class: 'pn-version-strip-pin',
+                    title: 'pdfnative pin declared in this package\'s dependencies',
+                    text: ' (\u2192 ' + info.pin + ')'
+                }));
+            }
+            inner.appendChild(link);
+        });
+
+        host.appendChild(inner);
+    }
+
+    /** Detailed block: title + sub + bullet list + footer source link. */
+    function renderDetailed(host, results) {
+        host.innerHTML = '';
+        applyDataAttrs(host, results);
 
         var rows = [];
         rows.push(el('h3', { class: 'pn-versions-title', text: 'Live versions' }));
@@ -106,13 +154,42 @@
         rows.forEach(function (n) { host.appendChild(n); });
     }
 
+    function pickRenderer(host) {
+        var mode = host.getAttribute('data-mode');
+        if (mode === 'compact') return renderCompact;
+        if (mode === 'detailed') return renderDetailed;
+        // Class-based default
+        if (host.classList && host.classList.contains('pn-version-strip')) return renderCompact;
+        return renderDetailed;
+    }
+
     function boot() {
-        var host = document.getElementById('pdfnative-versions');
-        if (!host) return;
+        // All possible mounts, deduplicated.
+        var mounts = [];
+        var seen = (typeof Set !== 'undefined') ? new Set() : null;
+        function add(node) {
+            if (!node) return;
+            if (seen) {
+                if (seen.has(node)) return;
+                seen.add(node);
+            } else if (mounts.indexOf(node) !== -1) return;
+            mounts.push(node);
+        }
+        var byId = document.getElementById('pdfnative-versions');
+        if (byId) add(byId);
+        var stripList = document.querySelectorAll('.pn-version-strip');
+        for (var i = 0; i < stripList.length; i++) add(stripList[i]);
+        var dataList = document.querySelectorAll('[data-pn-versions]');
+        for (var j = 0; j < dataList.length; j++) add(dataList[j]);
+
+        if (mounts.length === 0) return;
+
         Promise.all(PKGS.map(fetchPkg)).then(function (resArr) {
             var byName = {};
-            for (var i = 0; i < PKGS.length; i++) byName[PKGS[i]] = resArr[i] || FALLBACK[PKGS[i]];
-            render(host, byName);
+            for (var k = 0; k < PKGS.length; k++) byName[PKGS[k]] = resArr[k] || FALLBACK[PKGS[k]];
+            mounts.forEach(function (host) {
+                pickRenderer(host)(host, byName);
+            });
         });
     }
 

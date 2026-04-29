@@ -299,6 +299,34 @@ describe('buildDocumentPDF table blocks', () => {
         expect(result).toContain('Alpha');
         expect(result).toContain('Beta');
     });
+
+    it('should emit cell clipping operators by default (clipCells defaults to true)', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [{
+                type: 'table',
+                headers: ['Name'],
+                rows: [{ cells: ['Alpha'], type: 'credit', pointed: false }],
+            }],
+        }));
+        // Each cell wrapped in `q <rect> re W n ... Q` — both header + data rows
+        const reWnCount = (result.match(/re W n/g) || []).length;
+        expect(reWnCount).toBeGreaterThanOrEqual(2);
+        // Save (q) and restore (Q) operators must balance around the clips
+        expect(result).toMatch(/q [^\n]+ re W n/);
+    });
+
+    it('should skip cell clipping when clipCells is false', () => {
+        const result = buildDocumentPDF(makeMinimalParams({
+            blocks: [{
+                type: 'table',
+                headers: ['Name'],
+                rows: [{ cells: ['Alpha'], type: 'credit', pointed: false }],
+                clipCells: false,
+            }],
+        }));
+        // No `re W n` clip operators on cells (the table border `re f` is a fill, not a clip)
+        expect(result).not.toMatch(/re W n/);
+    });
 });
 
 describe('buildDocumentPDF spacer and page break', () => {

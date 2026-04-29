@@ -477,6 +477,20 @@ export function renderTable(
     const colors = DEFAULT_COLORS;
     const { cx, cwi } = computeColumnPositions(columns, mgL, cw);
 
+    // Cell clipping: ISO 32000-1 §8.5.4 — `q <rect> re W n ... Q` keeps cell
+    // contents inside their column rectangle. Defaults to `true` for v1.1.0+.
+    const clip = block.clipCells !== false;
+
+    /**
+     * Wrap a text-emitting operator in a clipping rectangle for cell `i`.
+     * The clip rect spans the full column width and a generous vertical band
+     * (TH_H or ROW_H) so descenders aren't cut. Uses `q ... Q` to scope the clip.
+     */
+    const clipCell = (op: string, i: number, top: number, h: number): string =>
+        clip
+            ? `q ${fmtNum(cx[i])} ${fmtNum(top - h)} ${fmtNum(cwi[i])} ${fmtNum(h)} re W n\n${op}\nQ`
+            : op;
+
     const tableRows: StructElement[] = [];
 
     // Table header
@@ -493,19 +507,19 @@ export function renderTable(
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             thChildren.push({ type: 'TH', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
             if (columns[i].a === 'r') {
-                ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid));
+                ops.push(clipCell(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid), i, y, TH_H));
             } else if (columns[i].a === 'c') {
-                ops.push(txtCTagged(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc, mcid));
+                ops.push(clipCell(txtCTagged(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc, mcid), i, y, TH_H));
             } else {
-                ops.push(txtTagged(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid));
+                ops.push(clipCell(txtTagged(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid), i, y, TH_H));
             }
         } else {
             if (columns[i].a === 'r') {
-                ops.push(txtR(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc));
+                ops.push(clipCell(txtR(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc), i, y, TH_H));
             } else if (columns[i].a === 'c') {
-                ops.push(txtC(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc));
+                ops.push(clipCell(txtC(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc), i, y, TH_H));
             } else {
-                ops.push(txt(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc));
+                ops.push(clipCell(txt(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc), i, y, TH_H));
             }
         }
     }
@@ -529,19 +543,19 @@ export function renderTable(
                 const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
                 tdChildren.push({ type: 'TD', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
                 if (columns[i].a === 'r') {
-                    ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc, mcid));
+                    ops.push(clipCell(txtRTagged(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc, mcid), i, y, ROW_H));
                 } else if (columns[i].a === 'c') {
-                    ops.push(txtCTagged(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc, mcid));
+                    ops.push(clipCell(txtCTagged(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc, mcid), i, y, ROW_H));
                 } else {
-                    ops.push(txtTagged(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc, mcid));
+                    ops.push(clipCell(txtTagged(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc, mcid), i, y, ROW_H));
                 }
             } else {
                 if (columns[i].a === 'r') {
-                    ops.push(txtR(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc));
+                    ops.push(clipCell(txtR(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc), i, y, ROW_H));
                 } else if (columns[i].a === 'c') {
-                    ops.push(txtC(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc));
+                    ops.push(clipCell(txtC(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc), i, y, ROW_H));
                 } else {
-                    ops.push(txt(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc));
+                    ops.push(clipCell(txt(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc), i, y, ROW_H));
                 }
             }
         }

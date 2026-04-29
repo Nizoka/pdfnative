@@ -37,6 +37,31 @@ export interface TableBlock {
     readonly headers: readonly string[];
     readonly rows: readonly PdfRow[];
     readonly columns?: readonly ColumnDef[];
+    /**
+     * Clip cell contents to column bounds using PDF clip-path operators.
+     * When `true`, each header/data cell is wrapped in `q <rect> re W n ... Q` so
+     * over-long text cannot escape the column rectangle visually.
+     *
+     * When `false`, cells rely solely on the existing `truncate()` character cap
+     * (ColumnDef.mx / mxH) — variable-width glyphs may still overflow visually.
+     *
+     * Default: `true` (recommended for PDF/A and visual safety).
+     * @since 1.1.0
+     */
+    readonly clipCells?: boolean;
+    /**
+     * Auto-fit column widths to actual content widths, respecting per-column
+     * `minWidth` / `maxWidth` constraints. Surplus or deficit is redistributed
+     * across unconstrained columns proportional to their `f` fraction.
+     *
+     * When `false` (default), the explicit `f` fractions are used as-is.
+     *
+     * Note: byte-output is non-deterministic vs explicit widths because resolved
+     * widths depend on text content and font metrics. Use only when content-aware
+     * sizing is desired.
+     * @since 1.1.0
+     */
+    readonly autoFitColumns?: boolean;
 }
 
 /** List block — bullet or numbered items. */
