@@ -12,11 +12,11 @@
 import { describe, it, expect } from 'vitest';
 import { buildDocumentPDF } from '../../src/core/pdf-document.js';
 import * as notoSansData from '../../fonts/noto-sans-data.js';
-import type { FontEntry } from '../../src/types/pdf-types.js';
+import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 
 const latinFontEntry: FontEntry = {
     fontRef: '/F1',
-    fontData: notoSansData,
+    fontData: notoSansData as unknown as FontData,
 };
 
 describe('PDF/A Latin font embedding (issue #28)', () => {

@@ -27,6 +27,7 @@ import {
     ARABIC_START, ARABIC_END, HEBREW_START, HEBREW_END,
     containsArabic, containsHebrew,
 } from './script-registry.js';
+import { positionMarkOnBase } from './gpos-positioner.js';
 
 // Re-export range constants for backward compatibility
 export { ARABIC_START, ARABIC_END, HEBREW_START, HEBREW_END, containsArabic, containsHebrew };
@@ -254,9 +255,18 @@ export function shapeArabicText(str: string, fontData: FontData): ShapedGlyph[] 
     // Resolve positional forms
     const forms = resolvePositionalForms(codePoints);
 
-    // Apply presentation form substitutions and build glyph array
+    // Apply presentation form substitutions and build glyph array.
+    // GPOS MarkBasePos (LookupType 4): when a mark follows a base glyph and
+    // both are present in `markAnchors`, position the mark using its anchor
+    // delta (v1.1.0 — issue #25). Falls back to (0,0) when anchors are missing
+    // (e.g. presentation forms without anchor entries), preserving v1.0
+    // behaviour for unsupported fonts.
     const glyphs: ShapedGlyph[] = [];
     const cmap = fontData.cmap;
+    const widths = fontData.widths;
+    const defaultWidth = fontData.defaultWidth;
+    const markAnchors = fontData.markAnchors;
+    let lastBaseGid = 0; // Track the most recent base glyph for mark anchoring
 
     for (let i = 0; i < codePoints.length; i++) {
         const cp = codePoints[i];
@@ -271,6 +281,7 @@ export function shapeArabicText(str: string, fontData: FontData): ShapedGlyph[] 
                 const ligGid = cmap[ligCP];
                 if (ligGid) {
                     glyphs.push({ gid: ligGid, dx: 0, dy: 0, isZeroAdvance: false });
+                    lastBaseGid = ligGid;
                     i++; // Skip the Alef
                     continue;
                 }
@@ -300,7 +311,20 @@ export function shapeArabicText(str: string, fontData: FontData): ShapedGlyph[] 
         const joining = getJoiningType(cp);
         const isZeroAdvance = joining === 'T';
 
+        if (isZeroAdvance && lastBaseGid !== 0) {
+            // GPOS MarkBasePos: anchor harakat / transparent marks on the
+            // preceding base glyph if the font provides anchors. Otherwise
+            // emit at (0,0) — same as pre-v1.1.0 behaviour.
+            const baseAdv = widths[lastBaseGid] !== undefined ? widths[lastBaseGid] : defaultWidth;
+            const offset = positionMarkOnBase(markAnchors, gid, lastBaseGid, baseAdv);
+            if (offset) {
+                glyphs.push({ gid, dx: offset.dx, dy: offset.dy, isZeroAdvance: true });
+                continue;
+            }
+        }
+
         glyphs.push({ gid, dx: 0, dy: 0, isZeroAdvance });
+        if (!isZeroAdvance) lastBaseGid = gid;
     }
 
     return glyphs;
