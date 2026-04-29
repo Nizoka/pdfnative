@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0-alpha.2] – 2026-04-29
+
+This iteration extends alpha.1 with two contained, fully-tested table-layout
+features that were on the v1.1.0 medium-term list, plus a small UX polish to
+the documentation site. The remaining epics (issue
+[#28](https://github.com/Nizoka/pdfnative/issues/28) PDF/A Latin font
+embedding, issue [#25](https://github.com/Nizoka/pdfnative/issues/25) full
+UAX #9 + multi-pass GSUB + GPOS MarkBasePos) and emoji support stay scheduled
+for v1.1.0 stable. True page-by-page constant-memory streaming is deferred
+to v1.2.0 because it requires an architectural refactor of `pdf-document.ts`
+that we don't want to ship under alpha-velocity.
+
+### Added
+
+- **core(table):** `TableBlock.clipCells?: boolean` (default `true`) —
+  every header and data cell is now wrapped in `q <rect> re W n ... Q` so
+  variable-width content cannot escape its column rectangle visually. The
+  existing character-cap (`ColumnDef.mx` / `mxH`) and clipping operate
+  in tandem; opt out with `clipCells: false` for byte-identical v1.0.x
+  output. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
+- **core(table):** `TableBlock.autoFitColumns?: boolean` — when `true`,
+  column-width fractions are derived from actual measured content widths
+  (header at `fs.th`, cells at `fs.td`, plus 6 pt cell padding). The
+  resulting fractions are forwarded to `computeColumnPositions()` which
+  still honours per-column `minWidth` / `maxWidth` clamping. Defaults
+  to `false` for byte-stability. ([src/core/pdf-column-fit.ts](src/core/pdf-column-fit.ts))
+- **docs(site):** added live `pdfnative-mcp` npm version badge in the
+  hero badge strip, mirroring the existing `pdfnative-cli` badge.
+- **docs(site):** new compact one-line **live version strip** mounted
+  directly under the main `<nav>` (`.pn-version-strip` /
+  `data-mode="compact"`), giving visitors immediate visibility into the
+  current published `pdfnative` / `pdfnative-cli` / `pdfnative-mcp`
+  versions and their transitive `pdfnative` pins. The richer detailed
+  widget (footer block) is preserved verbatim.
+  ([docs/assets/versions.js](docs/assets/versions.js),
+  [docs/style.css](docs/style.css))
+
+### Changed
+
+- **docs(site):** `versions.js` refactored to dual-mode (`compact` /
+  `detailed`) with auto-discovery of all matching mounts
+  (`#pdfnative-versions`, `.pn-version-strip`, `[data-pn-versions]`)
+  on a single `DOMContentLoaded`. Strip propagated to
+  `docs/playgrounds/cli.html` and `docs/playgrounds/mcp.html`.
+
+### Tests
+
+- 9 new tests across two files (clip operator emission +
+  `computeAutoFitColumns()` redistribution + wiring sanity), bringing
+  the suite to **1674 / 1674 green** (45 files).
+
+### Deferred to v1.1.0 stable
+
+- Issue #28 — PDF/A Latin font embedding (Noto Sans subset + ObjectAllocator).
+- Issue #25 — Full UAX #9 BiDi (embeddings, isolates, levels >2,
+  BD13/14/16) + multi-pass GSUB + GPOS MarkBasePos for Arabic harakat.
+- Emoji monochrome support (Noto Emoji OFL-1.1, ZWJ + VS-15/16 + Fitzpatrick).
+
+### Deferred to v1.2.0
+
+- True page-by-page constant-memory streaming
+  (`buildDocumentPDFStreamPageByPage()`). The current
+  `buildDocumentPDFStream()` already chunks output but materialises the
+  full PDF binary string first.
+
 ## [1.1.0-alpha.1] – 2026-04-29
 
 This release lands the **Medium-Term roadmap items** that fit cleanly within

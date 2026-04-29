@@ -45,6 +45,7 @@ import { renderBarcode } from './pdf-barcode.js';
 import { renderSvg } from './pdf-svg.js';
 import { defaultFieldHeight } from './pdf-form.js';
 import type { FormField } from './pdf-form.js';
+import { computeAutoFitColumns } from './pdf-column-fit.js';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -472,9 +473,16 @@ export function renderTable(
     documentChildren: (StructElement | MCRef)[],
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
-    const columns = block.columns ? [...block.columns] : DEFAULT_COLUMNS;
+    const baseColumns = block.columns ? [...block.columns] : DEFAULT_COLUMNS;
     const fs = DEFAULT_FONT_SIZES;
     const colors = DEFAULT_COLORS;
+    // Phase 4 — auto-fit column widths based on actual content.
+    // When enabled, override `f` fractions with content-derived values; the
+    // existing minWidth/maxWidth clamping in `computeColumnPositions()` still
+    // applies, so per-column constraints are honoured.
+    const columns = block.autoFitColumns
+        ? computeAutoFitColumns(baseColumns, block.headers, block.rows, enc, fs.th, fs.td)
+        : baseColumns;
     const { cx, cwi } = computeColumnPositions(columns, mgL, cw);
 
     // Cell clipping: ISO 32000-1 §8.5.4 — `q <rect> re W n ... Q` keeps cell
