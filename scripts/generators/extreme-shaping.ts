@@ -139,4 +139,45 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             ctx.writeSafe(resolve(ctx.outputDir, 'extreme', 'extreme-arabic-harakat.pdf'), 'extreme/extreme-arabic-harakat.pdf', buildDocumentPDFBytes(params));
         }
     }
+
+    // ── 5. UAX #9 isolates regression — LRI / RLI / FSI / PDI ────
+    {
+        const fontEntries = await loadSelectedFontEntries(['ar', 'he']);
+        if (fontEntries.length === 2) {
+            // U+2066 LRI, U+2067 RLI, U+2068 FSI, U+2069 PDI
+            const LRI = '\u2066';
+            const RLI = '\u2067';
+            const FSI = '\u2068';
+            const PDI = '\u2069';
+            const params: DocumentParams = {
+                title: 'Extreme BiDi — UAX #9 Isolates (LRI / RLI / FSI / PDI)',
+                blocks: [
+                    { type: 'heading', text: 'UAX #9 isolates — v1.1.0 regression baseline', level: 1 },
+                    { type: 'paragraph', text: 'pdfnative v1.1.0 honours the four Unicode bidirectional isolate characters (U+2066 LRI, U+2067 RLI, U+2068 FSI, U+2069 PDI). Isolated runs are resolved with a forced paragraph level and recursed independently of the surrounding context.' },
+
+                    { type: 'heading', text: 'LRI inside an RTL paragraph', level: 2 },
+                    { type: 'paragraph', text: `\u0627\u0644\u0639\u0646\u0648\u0627\u0646: ${LRI}pdfnative v1.1.0${PDI} \u0635\u062f\u0631 \u0641\u064a 2026.` },
+
+                    { type: 'heading', text: 'RLI inside an LTR paragraph', level: 2 },
+                    { type: 'paragraph', text: `Document title: ${RLI}\u0627\u0644\u0633\u0644\u0627\u0645 \u0639\u0644\u064a\u0643\u0645${PDI} appears between Latin words.` },
+
+                    { type: 'heading', text: 'Nested isolates (FSI auto-detect)', level: 2 },
+                    { type: 'paragraph', text: `Outer LTR ${FSI}\u05e9\u05dc\u05d5\u05dd ${LRI}Hello${PDI} \u05e2\u05d5\u05dc\u05dd${PDI} continues.` },
+
+                    { type: 'heading', text: 'Unmatched isolates fall through', level: 2 },
+                    { type: 'paragraph', text: `Open ${LRI}without close — graceful fallback (no PDI here).` },
+
+                    { type: 'list', items: [
+                        `LRI demo: ${LRI}forced LTR${PDI}`,
+                        `RLI demo: ${RLI}forced RTL${PDI}`,
+                        `FSI demo: ${FSI}first-strong${PDI}`,
+                        'PDI closes the most recent matching isolate',
+                    ], style: 'bullet' },
+                ],
+                footerText: 'pdfnative — UAX #9 isolates visual regression baseline',
+                fontEntries,
+            };
+            ctx.writeSafe(resolve(ctx.outputDir, 'extreme', 'extreme-bidi-isolates.pdf'), 'extreme/extreme-bidi-isolates.pdf', buildDocumentPDFBytes(params));
+        }
+    }
 }

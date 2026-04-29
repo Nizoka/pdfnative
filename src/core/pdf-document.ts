@@ -45,6 +45,7 @@ import {
     resolvePdfAConfig,
     buildEmbeddedFiles,
     validateAttachments,
+    utf8EncodeBinaryString,
 } from './pdf-tags.js';
 import type { EncryptionState } from './pdf-encrypt.js';
 import { initEncryption } from './pdf-encrypt.js';
@@ -111,11 +112,12 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const fontEntries: FontEntry[] = params.fontEntries
         ? [...params.fontEntries]
         : [];
-    const enc = createEncodingContext(fontEntries);
 
     // ── Tagged mode setup ────────────────────────────────────────────
     const pdfaConfig = resolvePdfAConfig(layout?.tagged);
     const tagged = pdfaConfig.enabled;
+
+    const enc = createEncodingContext(fontEntries, tagged);
 
     // ── Encryption setup ──────────────────────────────────────────────
     const encryptionOpts = layout?.encryption;
@@ -534,8 +536,19 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
 
-        emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
-        emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+        if (tagged) {
+            // PDF/A: /F1 and /F2 alias to primary's Type0 (embedded). Bold = regular.
+            const pf = fontEntries[0];
+            const bfName = `/${pf.fontData.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
+            const primaryBase = 5;
+            const refDict = `<< /Type /Font /Subtype /Type0 /BaseFont ${bfName} ` +
+                `/Encoding /Identity-H /DescendantFonts [${primaryBase + 1} 0 R] /ToUnicode ${primaryBase + 4} 0 R >>`;
+            emitObj(3, refDict);
+            emitObj(4, refDict);
+        } else {
+            emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+        }
 
         // CIDFont Type2 objects — 5 per fontEntry
         for (let fi = 0; fi < fontEntries.length; fi++) {
@@ -940,7 +953,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         totalObjs = treeStart + tree.totalObjects - 1;
 
         xmpObjNum = totalObjs + 1;
-        const xmpContent = buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author);
+        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;

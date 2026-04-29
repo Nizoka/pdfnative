@@ -376,7 +376,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **140+ PDF files** in `test-output/` (git-ignored), organized in twenty-three categories.
+This creates **150+ PDF files** in `test-output/` (git-ignored), organized in twenty-five categories (including `emoji/` and `pdfa-latin/` added in v1.1.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -949,7 +949,7 @@ src/
 fonts/                    # Pre-built font data modules (16 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (23 generators, 140+ PDFs)
-tests/                    # 1588+ tests (40 files: unit + integration + fuzz + parser)
+tests/                    # 1726+ tests (48 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -963,7 +963,7 @@ npm install
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test             # vitest run (1588+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+)
-npm run test:generate       # Generate 140+ sample PDFs → test-output/
+npm run test:generate       # Generate 150+ sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -1028,17 +1028,26 @@ When `tagged` is set, the output includes:
 
 The `tagged` option is backward-compatible — omitting it or setting `false` produces the same output as before.
 
-> **PDF/A status (v1.0.4).** As of v1.0.4 every PDF emits a trailer
-> `/ID` and the `/Info CreationDate` is byte-equivalent to the
-> `xmp:CreateDate` (with timezone offset) — closing two veraPDF
-> reference-validator findings. **Latin font embedding** is **not yet
-> implemented**: standard 14 Helvetica is still emitted as an
-> unembedded reference, which veraPDF flags under ISO 19005-1 §6.3.4.
-> Treat the `pdfaid:part` claim in XMP as aspirational until **v1.0.5**
-> lands. See [docs/guides/pdfa.html](docs/guides/pdfa.html) and the
-> tracking issue [release-notes/draft-issue-v1.0.5-latin-embedding.md](release-notes/draft-issue-v1.0.5-latin-embedding.md).
-> Run `npm run validate:pdfa` locally (with veraPDF installed) to
-> verify against the reference validator.
+> **PDF/A status (v1.1.0).** Every PDF/A-claiming sample now passes
+> the **veraPDF** reference validator (1b / 2b / 2u / 3b) when the
+> Latin font module is registered. Trailer `/ID` and
+> `/Info CreationDate` are byte-equivalent to `xmp:CreateDate`
+> (with timezone offset). `<dc:title>`, `<dc:description>`,
+> `<pdf:Keywords>` mirror `/Info /Title`, `/Subject`, `/Keywords`
+> byte-for-byte (ISO 19005-1 §6.7.3 t1 / t4 / t5). Object 3 / Object 4
+> are emitted as Type0 redirector dicts pointing to the embedded
+> CIDFontType2 chain — no more unembedded `Helvetica` references
+> (ISO 19005-1 §6.3.4 / ISO 19005-2 §6.2.11.4.1). To produce strict
+> PDF/A:
+>
+> ```ts
+> import { registerFont } from 'pdfnative';
+> registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'));
+> ```
+>
+> Run `npm run validate:pdfa` locally (with veraPDF installed, see
+> [docs/guides/pdfa.html](docs/guides/pdfa.html)) to verify against
+> the reference validator. CI runs veraPDF as a blocking check.
 
 ### PDF Encryption — Implemented ✅
 

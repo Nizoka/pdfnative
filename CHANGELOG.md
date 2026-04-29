@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
 ## [1.1.0] – 2026-04-30
 
 Maximalist stable cut. Closes issues
@@ -15,8 +17,61 @@ embedding) and [#25](https://github.com/Nizoka/pdfnative/issues/25)
 (UAX #9 isolates + GPOS MarkBasePos for Arabic harakat), and adds
 monochrome emoji support. Folds the alpha.1 / alpha.2 medium-term items
 into a single stable release. 100% backward-compatible — all new
-features are opt-in. **1717 tests / 47 files green.** See full notes in
+features are opt-in. **1726 tests / 48 files green.** See full notes in
 [release-notes/v1.1.0.md](release-notes/v1.1.0.md).
+
+### Fixed
+
+- **core(pdfa):** PDF/A samples no longer reference unembedded
+  `Helvetica` / `Helvetica-Bold` standard-14 fonts when a Latin font
+  entry is registered. Object 3 and Object 4 are now emitted as Type0
+  redirector dictionaries pointing to the primary embedded font's
+  `CIDFontType2` / `FontFile2` chain — making `/F1` and `/F2` valid
+  embedded references for veraPDF (ISO 19005-1 §6.3.4 / ISO 19005-2
+  §6.2.11.4.1). Bold renders identical to regular under PDF/A in v1.1.0
+  (a future release will add Noto Sans Bold as a separate font module).
+- **core(xmp):** XMP metadata streams are now UTF-8 encoded via the new
+  `utf8EncodeBinaryString()` helper before passing through `toBytes()`.
+  Previously, `toBytes()` masked each char to `0xFF`, truncating
+  characters above U+00FF (em-dash, ellipsis, smart quotes, CJK) to
+  control bytes — which broke ISO 19005-1 §6.7.3 dc:title parity. Now
+  `<dc:title>` matches `/Info /Title` byte-for-byte.
+- **core(xmp):** `buildXMPMetadata()` now emits `<dc:description>` and
+  `<pdf:Keywords>` whenever `/Info /Subject` and `/Info /Keywords` are
+  set in the document metadata, satisfying ISO 19005-1 §6.7.3 t4 / t5
+  parity rules. Previously, PDF/A-1b validation failed with veraPDF
+  rules 6.7.3-4 and 6.7.3-5 on any document carrying `subject` or
+  `keywords` metadata. ISO 19005-2/3 was lenient on this and still
+  passed; v1.1.0 closes both gaps.
+- **core(encoding):** `createEncodingContext(fontEntries, pdfA)` accepts
+  an optional `pdfA` flag. When `true` and `fontEntries` is non-empty,
+  the WinAnsi/Helvetica fallback in mixed-content runs is disabled —
+  characters not covered by the primary CIDFont's cmap render as
+  `.notdef` (gid 0) instead of being routed to the unembedded Helvetica
+  Type1 font. Required for strict PDF/A conformance.
+- **scripts(samples):** `scripts/generators/pdfa-variants.ts` now
+  registers a `latin` font entry so `tagged-pdfa{1b,2b,2u,3b}.pdf` are
+  fully embedded (zero `Helvetica` references in the output).
+  `scripts/generators/pdfa-latin-embedding.ts` math operators paragraph
+  trimmed to characters covered by Noto Sans VF (number sets ℝ ℂ ℕ ℤ,
+  basic ops × ÷ ±) — Noto Sans Math support deferred.
+- **ci(verapdf):** veraPDF validation is now **blocking** on PRs and
+  pushes to `main` (the previous `continue-on-error: true` was a
+  pre-v1.0.5 placeholder). `scripts/validate-pdfa.ts` already
+  auto-detects PDF/A-claiming files via XMP `pdfaid:part`, so non-PDF/A
+  samples never trigger CI failures.
+
+### Notes
+
+- `Helvetica` / `Helvetica-Bold` standard-14 fonts are still emitted in
+  non-PDF/A mode and in the Latin-only path (no font entries) for
+  backward compatibility. To produce a strictly veraPDF-compliant
+  PDF/A, register Noto Sans VF: `registerFont('latin', () =>
+  import('pdfnative/fonts/noto-sans-data.js'))`.
+- Noto Emoji uses `defaultWidth=2600` over `unitsPerEm=2048` (≈1.27 em
+  per glyph), per the font's authoritative metrics. This produces wider
+  advance than typical Latin fonts in mixed-script paragraphs — visually
+  correct per the font designer's intent but may look spacious.
 
 ### Added
 
@@ -71,7 +126,7 @@ features are opt-in. **1717 tests / 47 files green.** See full notes in
   (ranges, predicates, script-detect integration, baked module shape).
 - New PDF/A Latin embedding integration in
   [tests/fonts/pdfa-latin-embedding.test.ts](tests/fonts/pdfa-latin-embedding.test.ts).
-- Total: **1717 / 1717 green** (47 files), up from 1674.
+- Total: **1726 / 1726 green** (48 files), up from 1674.
 
 ### Deferred to v1.2.0
 

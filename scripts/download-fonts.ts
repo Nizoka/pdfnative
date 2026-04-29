@@ -1,8 +1,9 @@
 /**
- * Download Noto Sans TTF fonts for pdfnative development.
+ * Download Noto Sans + Noto Emoji TTF fonts for pdfnative development.
  *
- * Fetches 12 Noto Sans variable-font TTFs from the google/fonts repository
- * and saves them to fonts/ttf/ with the local filenames used by build-font-data.
+ * Fetches 13 Noto Sans variable-font TTFs and Noto Emoji from the
+ * google/fonts repository and saves them to fonts/ttf/ with the local
+ * filenames used by build-font-data.
  *
  * Usage:
  *   npx tsx scripts/download-fonts.ts           # skip existing files
@@ -10,9 +11,14 @@
  *
  * The 5 Latin-subset fonts (Cyrillic, Greek, Polish, Turkish, Vietnamese) are
  * derived from NotoSans and must be subsetted separately — see CONTRIBUTING.md.
- * This script downloads the full NotoSans VF as a development placeholder for each.
+ * This script downloads the full NotoSans VF as a development placeholder for
+ * each. NotoSans-VF.ttf also doubles as the source for `noto-sans-data.js`
+ * (the v1.1.0 Latin fallback for PDF/A documents).
  *
- * License: All Noto Sans fonts are distributed under the SIL Open Font License.
+ * NotoEmoji-Regular.ttf is the source for `noto-emoji-data.js` (v1.1.0
+ * monochrome emoji — OFL-1.1, no COLRv1).
+ *
+ * License: All Noto fonts are distributed under the SIL Open Font License 1.1.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -36,7 +42,7 @@ interface FontEntry {
 }
 
 /**
- * 12 distinct Noto Sans font families.
+ * 13 Noto Sans font families + Noto Emoji.
  * CJK fonts use [wght] axis only; others use [wdth,wght].
  */
 const FONTS: FontEntry[] = [

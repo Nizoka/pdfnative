@@ -36,6 +36,8 @@ import { generate as generateCrypto } from './generators/crypto-showcase.js';
 import { generate as generateFontSubsetting } from './generators/font-subsetting-deep.js';
 import { generate as generateParserDeep } from './generators/parser-deep.js';
 import { generate as generateExtremeShaping } from './generators/extreme-shaping.js';
+import { generate as generateEmoji } from './generators/emoji-showcase.js';
+import { generate as generatePdfALatin } from './generators/pdfa-latin-embedding.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -114,6 +116,12 @@ async function generateAll(): Promise<void> {
 
     // ── Extreme-script shaping (BiDi, Tamil, Bengali+Devanagari, Arabic harakat) ─
     await generateExtremeShaping(ctx);
+
+    // ── Emoji showcase (v1.1.0 — Noto Emoji monochrome) ───────
+    await generateEmoji(ctx);
+
+    // ── PDF/A Latin embedding (v1.1.0 — Noto Sans VF, issue #28) ─
+    await generatePdfALatin(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);
