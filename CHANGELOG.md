@@ -7,6 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] – 2026-04-30
+
+Maximalist stable cut. Closes issues
+[#28](https://github.com/Nizoka/pdfnative/issues/28) (PDF/A Latin font
+embedding) and [#25](https://github.com/Nizoka/pdfnative/issues/25)
+(UAX #9 isolates + GPOS MarkBasePos for Arabic harakat), and adds
+monochrome emoji support. Folds the alpha.1 / alpha.2 medium-term items
+into a single stable release. 100% backward-compatible — all new
+features are opt-in. **1717 tests / 47 files green.** See full notes in
+[release-notes/v1.1.0.md](release-notes/v1.1.0.md).
+
+### Added
+
+- **fonts(latin):** `fonts/noto-sans-data.{js,d.ts}` — Noto Sans VF
+  (OFL-1.1), 4515 glyphs / 3094 cmap entries. Opt-in via
+  `registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'))`.
+  Activates automatically for PDF/A documents containing non-WinAnsi
+  Latin (curly quotes, em-dash, ellipsis…). Closes
+  [#28](https://github.com/Nizoka/pdfnative/issues/28).
+- **fonts(emoji):** `fonts/noto-emoji-data.{js,d.ts}` — Noto Emoji
+  monochrome (OFL-1.1), 1891 glyphs / 1489 cmap entries. Opt-in via
+  `registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'))`.
+- **shaping(bidi):** UAX #9 isolate handling — LRI / RLI / FSI / PDI
+  (U+2066–U+2069) classified as `BN`, recursed via three-tier
+  dispatcher (`resolveBidiRuns` → `resolveBidiRunsForced` →
+  `resolveBidiCore`). Nested and unmatched isolates supported.
+  Closes the syntactic half of [#25](https://github.com/Nizoka/pdfnative/issues/25).
+- **shaping(arabic):** GPOS MarkBasePos applied to transparent marks
+  (harakat: fatha, kasra, damma, sukun, shadda, …). Marks now anchor
+  on the preceding base glyph. Closes the visual half of
+  [#25](https://github.com/Nizoka/pdfnative/issues/25).
+  ([src/shaping/arabic-shaper.ts](src/shaping/arabic-shaper.ts))
+- **shaping(drivers):** new shared `src/shaping/gsub-driver.ts`
+  (`tryLigature(gids, ligatures)`) and
+  `src/shaping/gpos-positioner.ts` (`getBaseAnchor`, `getMarkAnchor`,
+  `getMark2MarkAnchor`, `positionMarkOnBase`). Bengali / Tamil /
+  Devanagari / Arabic shapers route through these instead of three
+  duplicated implementations.
+- **shaping(emoji):** `EMOJI_RANGES`, `isEmojiCodepoint`,
+  `containsEmoji`, `FITZPATRICK_START/END`, `ZWJ`, `VS15`, `VS16` in
+  [src/shaping/script-registry.ts](src/shaping/script-registry.ts).
+  `detectCharLang()` returns `'emoji'` for emoji codepoints;
+  `detectFallbackLangs()` adds `'emoji'` to the set automatically.
+
+### Changed
+
+- **shaping(bidi):** `resolveBidiRuns()` rewritten as a recursive
+  isolate-aware dispatcher. Output byte-identical for inputs without
+  isolate characters.
+- **shaping(types):** `fixPunctuationAffinity` and `fixBracketPairing`
+  parameter types widened to `readonly number[]`. No public API impact.
+- **shaping(bengali, tamil, devanagari):** local `tryLigature`
+  removed; thin `tryLig(gids)` closure forwards to shared driver.
+  Output bytes unchanged.
+
+### Tests
+
+- 24 new tests in
+  [tests/shaping/phase2-shaping.test.ts](tests/shaping/phase2-shaping.test.ts)
+  (GSUB driver, GPOS positioner, BiDi isolates, Arabic MarkBasePos).
+- 15 new tests in [tests/shaping/emoji.test.ts](tests/shaping/emoji.test.ts)
+  (ranges, predicates, script-detect integration, baked module shape).
+- New PDF/A Latin embedding integration in
+  [tests/fonts/pdfa-latin-embedding.test.ts](tests/fonts/pdfa-latin-embedding.test.ts).
+- Total: **1717 / 1717 green** (47 files), up from 1674.
+
+### Deferred to v1.2.0
+
+- Full UAX #9 embeddings (LRE / RLE / LRO / RLO / PDF) —
+  isolates ship now; embeddings remain rare in practice.
+- True page-by-page constant-memory streaming
+  (`buildDocumentPDFStreamPageByPage()`).
+- COLRv1 colour emoji (v1.1.0 ships monochrome only).
+
 ## [1.1.0-alpha.2] – 2026-04-29
 
 This iteration extends alpha.1 with two contained, fully-tested table-layout

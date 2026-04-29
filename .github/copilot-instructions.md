@@ -133,6 +133,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - URL validation: only `http:`, `https:`, `mailto:` schemes allowed; `javascript:`, `file:`, `data:` blocked; control characters (U+0000–U+001F, U+007F–U+009F) rejected
 - Color safety: `parseColor()` validates/normalizes hex, tuple, PDF string → safe `"R G B"` output; `normalizeColors()` at layout boundary
 - Color types: `PdfColor = PdfRgbString | PdfRgbTuple | (string & {})` — union preserves autocomplete for template literals
+- BiDi: UAX #9 isolates (LRI U+2066 / RLI U+2067 / FSI U+2068 / PDI U+2069) classified as `BN` and recursed via three-tier dispatcher: public `resolveBidiRuns(text)` finds outermost isolate pairs, internal `resolveBidiRunsForced(text, forcedLevel)` recurses, internal `resolveBidiCore(text, codePoints, cpToStr, forcedLevel?)` runs the W1–W7 / N1–N2 / L2 pipeline. Embeddings (LRE/RLE/LRO/RLO/PDF) deferred to v1.2.
 - BiDi: simplified UAX #9 — paragraph level detection, weak/neutral type resolution, level assignment, L2 paragraph-level run reordering
 - BiDi: General Punctuation (U+2010–U+2027, U+2030–U+205E) classified as ON — covers dashes, quotes, ellipsis, primes
 - BiDi: `resolveBidiRuns()` returns runs in visual order — for RTL paragraphs (paraLevel=1), runs are reversed so LTR text comes first (leftmost) and RTL text last (rightmost)
@@ -197,7 +198,10 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Bengali shaping: `shapeBengaliText()` — GSUB conjunct formation + GPOS mark positioning via `bengali-shaper.ts`
 - Tamil shaping: `shapeTamilText()` — GSUB substitution + split vowel decomposition via `tamil-shaper.ts`
 - Devanagari shaping: `shapeDevanagariText()` — cluster building, reph detection, matra reordering, split vowels, GSUB ligature conjuncts, GPOS mark positioning via `devanagari-shaper.ts`
-- GSUB LookupType 4 (LigatureSubst): `fontData.ligatures` — `Record<number, number[][]>` mapping first-glyph GID → arrays of `[resultGID, ...componentGIDs]`; `tryLigature()` pattern used by Bengali, Tamil, and Devanagari shapers
+- GSUB LookupType 4 (LigatureSubst): `fontData.ligatures` — `Record<number, number[][]>` mapping first-glyph GID → arrays of `[resultGID, ...componentsAfterKey]` (the first GID is the implicit lookup key, NOT included in the components array). Shared `tryLigature(gids, ligatures)` lives in `src/shaping/gsub-driver.ts` and is used by Bengali, Tamil, Devanagari, and Arabic shapers. Each shaper exposes a thin `tryLig(gids)` closure that forwards to the shared driver.
+- GPOS MarkBasePos: shared helpers in `src/shaping/gpos-positioner.ts` (`getBaseAnchor`, `getMarkAnchor`, `getMark2MarkAnchor`, `positionMarkOnBase(markAnchors, markGid, baseGid, baseAdv)`). Used by Devanagari and Arabic shapers. Arabic tracks `lastBaseGid` through the shaping pipeline (including lam-alef ligatures) and applies the anchor offset to transparent (joining type 'T') marks; falls back to (0, 0) when font lacks anchors.
+- Emoji: monochrome via Noto Emoji (OFL-1.1) under lang `'emoji'`. Detection in `src/shaping/script-registry.ts` (`EMOJI_RANGES`, `isEmojiCodepoint`, `containsEmoji`, `FITZPATRICK_START/END`, `ZWJ`, `VS15`, `VS16`). `detectCharLang(cp)` returns `'emoji'` for emoji codepoints; `splitTextByFont()` routes them to the registered `'emoji'` font automatically. Opt-in via `registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'))`. COLRv1 colour emoji deferred to v1.2.
+- Latin VF (PDF/A): Noto Sans VF (OFL-1.1) bundled as `fonts/noto-sans-data.{js,d.ts}` under lang `'latin'`. Activates automatically for PDF/A documents containing non-WinAnsi Latin (curly quotes, em-dash, ellipsis…). Opt-in via `registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'))`.
 
 ### API Design
 

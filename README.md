@@ -181,6 +181,11 @@ registerFonts({
   hy: () => import('pdfnative/fonts/noto-armenian-data.js'),
   bn: () => import('pdfnative/fonts/noto-bengali-data.js'),
   ta: () => import('pdfnative/fonts/noto-tamil-data.js'),
+  // v1.1.0+ — optional Latin fallback for PDF/A documents with curly quotes,
+  // em-dash, ellipsis, etc. (activates automatically when needed):
+  latin: () => import('pdfnative/fonts/noto-sans-data.js'),
+  // v1.1.0+ — optional monochrome emoji:
+  emoji: () => import('pdfnative/fonts/noto-emoji-data.js'),
 });
 
 const thaiFont = await loadFontData('th');
@@ -212,6 +217,8 @@ const pdf = buildPDFBytes({
 | Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |
 | Bengali | `bn` | Noto Sans Bengali | GSUB conjuncts + GPOS marks |
 | Tamil | `ta` | Noto Sans Tamil | GSUB ligatures + split vowels |
+| Latin (PDF/A) | `latin` | Noto Sans VF | WinAnsi-extended Latin (curly quotes, em-dash, ellipsis…) |
+| Emoji | `emoji` | Noto Emoji | Monochrome emoji (BMP/SMP, Fitzpatrick, ZWJ, VS-15/16) |
 
 ## Multi-Font (Mixed Scripts)
 
