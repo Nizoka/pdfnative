@@ -4,12 +4,14 @@
  * Detects Unicode script ranges in text to determine which fonts are needed.
  */
 
+import { isEmojiCodepoint } from './script-registry.js';
+
 /**
  * Languages requiring Unicode font embedding (non-WinAnsi scripts).
  * Latin-script languages using Helvetica built-in don't need embedding.
  */
 export function needsUnicodeFont(lang: string): boolean {
-    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy'].includes(lang);
+    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'emoji'].includes(lang);
 }
 
 /**
@@ -67,6 +69,8 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             if ((cp >= 0x10A0 && cp <= 0x10FF) || (cp >= 0x2D00 && cp <= 0x2D2F)) { needed.add('ka'); continue; }
             // Armenian + Armenian Ligatures → 'hy'
             if ((cp >= 0x0530 && cp <= 0x058F) || (cp >= 0xFB13 && cp <= 0xFB17)) { needed.add('hy'); continue; }
+            // Emoji ranges → 'emoji'  (v1.1.0)
+            if (isEmojiCodepoint(cp)) { needed.add('emoji'); continue; }
         }
     }
     needed.delete(primaryLang);
@@ -78,7 +82,7 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
  * Returns the language code of the font most appropriate for rendering.
  *
  * @param cp - Unicode codepoint
- * @returns Language code ('el', 'hi', 'th', 'ja', 'ko', 'zh', 'vi', 'pl', 'tr', 'he', 'ar', 'ru', 'ka', 'hy') or null for Latin/common
+ * @returns Language code ('el', 'hi', 'th', 'ja', 'ko', 'zh', 'vi', 'pl', 'tr', 'he', 'ar', 'ru', 'ka', 'hy', 'emoji') or null for Latin/common
  */
 export function detectCharLang(cp: number): string | null {
     if ((cp >= 0x0370 && cp <= 0x03FF) || (cp >= 0x1F00 && cp <= 0x1FFF)) return 'el';
@@ -103,5 +107,8 @@ export function detectCharLang(cp: number): string | null {
     if ((cp >= 0x10A0 && cp <= 0x10FF) || (cp >= 0x2D00 && cp <= 0x2D2F)) return 'ka';
     // Armenian + Armenian Ligatures
     if ((cp >= 0x0530 && cp <= 0x058F) || (cp >= 0xFB13 && cp <= 0xFB17)) return 'hy';
+    // Emoji — must come last so plane-0 ranges (Greek, Hebrew, Arabic, etc.)
+    // win for codepoints they share with the dingbats/symbols blocks. (v1.1.0)
+    if (isEmojiCodepoint(cp)) return 'emoji';
     return null;
 }

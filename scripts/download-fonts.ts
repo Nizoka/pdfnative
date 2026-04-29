@@ -55,6 +55,8 @@ const FONTS: FontEntry[] = [
     { local: 'NotoSansJP-Regular.ttf', dir: 'notosansjp', remote: 'NotoSansJP%5Bwght%5D.ttf' },
     { local: 'NotoSansKR-Regular.ttf', dir: 'notosanskr', remote: 'NotoSansKR%5Bwght%5D.ttf' },
     { local: 'NotoSansSC-Regular.ttf', dir: 'notosanssc', remote: 'NotoSansSC%5Bwght%5D.ttf' },
+    // ── Emoji (monochrome, wght-only axis) ───────────────────────────
+    { local: 'NotoEmoji-Regular.ttf', dir: 'notoemoji', remote: 'NotoEmoji%5Bwght%5D.ttf' },
 ];
 
 /**
