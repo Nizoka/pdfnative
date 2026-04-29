@@ -37,55 +37,33 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **PDF parser & modifier** — full PDF reader (tokenizer, object parser, xref table/stream, page tree, FlateDecode inflate) + incremental modification (non-destructive save with /Prev chain)
 - [x] **npm metadata enrichment** — description enumerates 16 scripts + headline features (BiDi, PDF/A, encryption, signatures, AcroForm, barcodes, SVG); keywords expanded to 27 entries for npm search discoverability (v1.0.2)
 - [x] **pdfnative-mcp** — Model Context Protocol server bridging pdfnative to AI clients (Claude Desktop, Cursor, Continue, Zed): 8 production tools (`generate_basic_pdf`, `add_table`, `add_barcode`, `add_international_text`, `add_form`, `embed_image`, `prepare_signature_placeholder`, `sign_pdf`), stdio/HTTP transport, sandboxed file output. See [pdfnative-mcp on GitHub](https://github.com/Nizoka/pdfnative-mcp)
+- [x] **Watermark auto-fit** (v1.1.0) — text watermarks with aggressive `fontSize` + `angle` combinations are now scaled down so the rotated bounding box fits within the page. Default `autoFit: true`; opt-out via `autoFit: false` for byte-stable v1.0.x output. ([src/core/pdf-watermark.ts](src/core/pdf-watermark.ts))
+- [x] **Unicode ellipsis** (v1.1.0) — `truncate()` and TOC truncation use `…` (U+2026) instead of `..` / `...` for professional typographic output (single grapheme cluster, ~50% narrower in Latin mode, identical glyph in CIDFont mode).
+- [x] **Pixel-based truncation API** (v1.1.0) — new `truncateToWidth(str, maxWidthPt, sz, enc)` exported from the root for measurement-based string shortening that respects proportional font widths.
+- [x] **Column min/max constraints** (v1.1.0) — additive `minWidth` / `maxWidth` (in points) on `ColumnDef`; constrained columns are clamped first, surplus or deficit is redistributed across unconstrained columns proportional to their `f` weight. Byte-identical to v1.0.5 when no constraint is set.
+- [x] **Additional PDF decode filters** (v1.1.0) — `ASCII85Decode`, `ASCIIHexDecode`, `LZWDecode` (variable-width 9–12 bit), and `RunLengthDecode` in the parser module. Handles single-filter and multi-filter chain dispatch. ([src/parser/pdf-decode-filters.ts](src/parser/pdf-decode-filters.ts))
+- [x] **Live version widget for the docs site** (v1.1.0) — zero-build, registry-fetched panel showing live versions of `pdfnative`, `pdfnative-cli`, `pdfnative-mcp`, plus the transitive `pdfnative` pin declared by each downstream package. Mounted on the homepage and both playgrounds. ([docs/assets/versions.js](docs/assets/versions.js))
+- [x] **PDF/A Latin font embedding** (v1.1.0, [#28](https://github.com/Nizoka/pdfnative/issues/28)) — Noto Sans VF (OFL-1.1) bundleable as `pdfnative/fonts/noto-sans-data.js`. Opt-in via `registerFont('latin', …)`; activates automatically for PDF/A documents containing non-WinAnsi Latin (curly quotes, em-dash, ellipsis…). 4515 glyphs / 3094 cmap entries.
+- [x] **UAX #9 isolates** (v1.1.0, [#25](https://github.com/Nizoka/pdfnative/issues/25)) — LRI / RLI / FSI / PDI (U+2066–U+2069) handled with full recursion via three-tier dispatcher (`resolveBidiRuns` → `resolveBidiRunsForced` → `resolveBidiCore`). Nested and unmatched isolates supported. ([src/shaping/bidi.ts](src/shaping/bidi.ts))
+- [x] **Arabic GPOS MarkBasePos** (v1.1.0, [#25](https://github.com/Nizoka/pdfnative/issues/25)) — transparent marks (harakat: fatha, kasra, damma, sukun, shadda…) now anchor on the preceding base glyph using font-provided GPOS anchor data. ([src/shaping/arabic-shaper.ts](src/shaping/arabic-shaper.ts))
+- [x] **Shared GSUB / GPOS drivers** (v1.1.0) — `src/shaping/gsub-driver.ts` (`tryLigature()`) and `src/shaping/gpos-positioner.ts` (`positionMarkOnBase()`) consolidate three duplicated implementations across Bengali, Tamil, Devanagari, and Arabic shapers.
+- [x] **Monochrome emoji** (v1.1.0) — Noto Emoji (OFL-1.1) bundleable as `pdfnative/fonts/noto-emoji-data.js`. 1891 glyphs / 1489 cmap entries. Opt-in via `registerFont('emoji', …)`. Detection covers BMP/SMP emoji ranges, Fitzpatrick modifiers, ZWJ, and VS-15 / VS-16. Multi-font run splitting routes emoji codepoints automatically.
+- [x] **Auto-fit column widths** (v1.1.0) — `TableBlock.autoFitColumns: true` derives column-width fractions from measured content widths. Honours per-column `minWidth` / `maxWidth` clamping. Default `false` for byte-stability. ([src/core/pdf-column-fit.ts](src/core/pdf-column-fit.ts))
+- [x] **Cell clipping paths** (v1.1.0) — `TableBlock.clipCells: true` (default) wraps every header and data cell in `q <rect> re W n … Q` so variable-width content cannot escape its column rectangle visually. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
 
 ## In Progress
 
-### v1.0.5 — PDF/A Latin font embedding (tracked from v1.0.4 veraPDF reports)
-
-The v1.0.4 release fixed two upstream PDF/A defects (trailer `/ID`,
-`/Info ↔ XMP` parity) and added a veraPDF CI guardrail. The largest
-remaining defect — embedding the standard 14 Latin fonts when PDF/A is
-requested — requires object-graph rewrites that exceed SemVer-patch
-scope and is tracked here. See
-[release-notes/draft-issue-v1.0.5-latin-embedding.md](release-notes/draft-issue-v1.0.5-latin-embedding.md)
-for the full plan.
-
-- [ ] **fonts(latin):** bundle a permissively-licensed Helvetica metric-compatible face as a pre-built data module
-- [ ] **core(pdf-a):** emit Latin fonts as Font + FontDescriptor + FontFile2 triplet under PDF/A modes
-- [ ] **core(pdf-a):** renumber object graph atomically across `pdf-builder.ts` and `pdf-document.ts`
-- [ ] **core(pdf-a):** replace `helveticaWidth()` lookups with embedded-font widths when PDF/A is active
-- [ ] **core(pdf-a):** audit `OutputIntent` / DefaultRGB cascade (rule 6.2.3.3)
-- [ ] **tests(pdfa):** acceptance suite covering every PDF/A flavour
-- [ ] **ci(verapdf):** workflow becomes blocking once embedding lands
-
-### v1.1.0 — Deep OpenType shaping & BiDi (tracked from v1.0.3 baselines)
-
-The v1.0.3 release shipped four extreme-script visual baselines under
-`test-output/extreme/` that surface deeper shaping defects requiring
-GPOS table re-extraction or new OpenType lookup implementations. These
-exceed the scope of a SemVer-patch and are tracked here for v1.1.0.
-See [release-notes/draft-issue-v1.1.0-shaping-epic.md](release-notes/draft-issue-v1.1.0-shaping-epic.md)
-for the full root-cause analysis.
-
-- [ ] **shaping(bidi):** full UAX #9 W1–W7 + N1/N2 + isolates (3+ script paragraphs)
-- [ ] **shaping(common):** multi-pass GSUB driver for nested LookupType 4 ligatures
-- [ ] **shaping(devanagari/bengali):** Universal Shaping Engine (USE)-lite cluster classification
-- [ ] **shaping(arabic):** GPOS MarkBasePos for isolated harakat anchoring
-- [ ] **fonts(thai):** re-extract GPOS anchors covering 3+ mark stacks on tall consonants
-- [ ] **fonts(indic):** verify pre-built `ligatures` tables include deeply-nested chains
-- [ ] **tests(visual):** pixel-diff regression on the four `extreme-*` baselines
+_All v1.1.0 in-progress items have been merged into the [v1.1.0 release](release-notes/v1.1.0.md). Next iteration is v1.2.0 — see Planned below._
 
 ## Planned
 
-### Medium-Term
+### v1.2.0 — Streaming, full BiDi, colour emoji
 
-- [ ] **Pixel-based truncation** — truncate table cell text at the actual column width in PDF points (replace character-count truncation in `truncate()`)
-- [ ] **Unicode ellipsis** — use `…` (U+2026) instead of `..` for professional typographic rendering
-- [ ] **Auto-fit column widths** — scan input data to compute optimal `mx` per column automatically
-- [ ] **Column min/max constraints** — optional `minWidth` / `maxWidth` in `ColumnDef` for fine-grained control
-- [ ] **Cell clipping paths** — PDF clip rectangle per table cell (`q re W n … Q`) to prevent visual overflow
-- [ ] **Constant-memory streaming** — page-by-page assembly for very large documents without buffering the full PDF
-- [ ] **Additional PDF decode filters** — ASCII85Decode, LZWDecode support in the parser module
+- [ ] **Constant-memory streaming** — true page-by-page assembly (`buildDocumentPDFStreamPageByPage()`) without buffering the full PDF. The current `buildDocumentPDFStream()` already chunks output but materialises the full PDF binary first.
+- [ ] **UAX #9 embeddings** — LRE / RLE / LRO / RLO / PDF (U+202A–U+202E). Isolates ship in v1.1.0; embeddings remain rare in practice and require a deeper level-stack refactor.
+- [ ] **COLRv1 colour emoji** — currently ships monochrome only.
+- [ ] **Universal Shaping Engine (USE)-lite cluster classification** for Devanagari / Bengali edge cases.
+- [ ] **Pixel-diff visual regression** on the four `extreme-*` baselines under `test-output/extreme/`.
 
 ### Long-Term
 

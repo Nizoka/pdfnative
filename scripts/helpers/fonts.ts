@@ -26,6 +26,9 @@ export function registerAllFonts(): void {
         hy: fl(() => import('../../fonts/noto-armenian-data.js')),
         bn: fl(() => import('../../fonts/noto-bengali-data.js')),
         ta: fl(() => import('../../fonts/noto-tamil-data.js')),
+        // v1.1.0 — Latin VF (PDF/A non-WinAnsi fallback) + monochrome emoji
+        latin: fl(() => import('../../fonts/noto-sans-data.js')),
+        emoji: fl(() => import('../../fonts/noto-emoji-data.js')),
     });
 }
 

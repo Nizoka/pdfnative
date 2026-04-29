@@ -66,11 +66,53 @@ export function pdfString(str: string): string {
     return '(' + s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)') + ')';
 }
 
-/** Truncate string to max characters, appending '..' if needed. */
+/**
+ * Truncate string to max characters, appending Unicode ellipsis (…, U+2026) if needed.
+ *
+ * The horizontal ellipsis is rendered correctly in both Latin/WinAnsi mode
+ * (mapped to byte 0x85) and Unicode/CIDFont mode. This produces typographically
+ * correct output and is ~50% narrower than ASCII "..." while remaining a single
+ * grapheme cluster.
+ *
+ * @since 1.1.0 — the ellipsis character changed from `'..'` (two ASCII dots)
+ *   to `'…'` (U+2026). Output is one character shorter for the same `max`.
+ */
 export function truncate(str: string, max: number): string {
     if (!str || str.length <= max) return str || '';
-    if (max <= 2) return '..';
-    return str.slice(0, max - 2) + '..';
+    if (max <= 1) return '…';
+    return str.slice(0, max - 1) + '…';
+}
+
+/**
+ * Truncate string so that its rendered width does not exceed `maxWidthPt`,
+ * appending the Unicode ellipsis (…, U+2026) when truncation occurs.
+ *
+ * Unlike {@link truncate}, this measures actual glyph width using the encoding
+ * context — appropriate for proportional fonts and Unicode text.
+ *
+ * @since 1.1.0
+ */
+export function truncateToWidth(
+    str: string,
+    maxWidthPt: number,
+    sz: number,
+    enc: EncodingContext,
+): string {
+    if (!str) return '';
+    const measure = (s: string): number =>
+        enc.isUnicode ? enc.tw(s, sz) : helveticaWidth(s, sz);
+    if (measure(str) <= maxWidthPt) return str;
+    const ell = '…';
+    const ellW = measure(ell);
+    if (maxWidthPt <= ellW) return ell;
+    let lo = 0;
+    let hi = str.length;
+    while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (measure(str.slice(0, mid) + ell) <= maxWidthPt) lo = mid;
+        else hi = mid - 1;
+    }
+    return lo <= 0 ? ell : str.slice(0, lo) + ell;
 }
 
 /**

@@ -6,8 +6,11 @@ import { resolve } from 'path';
 import { buildDocumentPDFBytes } from '../../src/index.js';
 import type { DocumentParams, DocumentBlock } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
+import { loadFontEntries } from '../helpers/fonts.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
+    // Latin font for PDF/A embedding (rule 6.2.11.4.1)
+    const latinEntries = await loadFontEntries('latin', '/F3');
     // ── Full TOC with 3-level headings ───────────────────────────
     {
         const blocks: DocumentBlock[] = [
@@ -79,12 +82,12 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             { type: 'heading', text: 'Accessibility Compliance', level: 1 },
             { type: 'paragraph', text: 'When tagged mode is enabled, the TOC is wrapped in /TOC and /TOCI structure elements for PDF/UA compliance. This enables screen readers to recognize and navigate the table of contents.' },
             { type: 'heading', text: 'Structure Tree', level: 2 },
-            { type: 'paragraph', text: 'The structure tree includes: /Document → /TOC → /TOCI entries, each with /Reference to the target heading element. Tagged TOC entries include /ActualText for text extraction fidelity.' },
+            { type: 'paragraph', text: 'The structure tree includes: /Document > /TOC > /TOCI entries, each with /Reference to the target heading element. Tagged TOC entries include /ActualText for text extraction fidelity.' },
             { type: 'heading', text: 'Validation', level: 1 },
             { type: 'paragraph', text: 'PDF/A validators (veraPDF, PAC) confirm that tagged TOC output meets ISO 14289-1 requirements for accessible table of contents structures.' },
         ];
 
-        const params: DocumentParams = { title: 'TOC Showcase – Tagged PDF/A', blocks };
+        const params: DocumentParams = { title: 'TOC Showcase – Tagged PDF/A', blocks, fontEntries: latinEntries };
         ctx.writeSafe(
             resolve(ctx.outputDir, 'toc', 'toc-tagged.pdf'),
             'toc/toc-tagged.pdf',

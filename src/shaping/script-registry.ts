@@ -107,6 +107,41 @@ export const BENGALI_END = 0x09FF;
 export const TAMIL_START = 0x0B80;
 export const TAMIL_END = 0x0BFF;
 
+// ── Emoji (v1.1.0) ───────────────────────────────────────────────────
+
+/**
+ * Unicode ranges that should route to a monochrome emoji font (e.g.
+ * Noto Emoji). Includes Miscellaneous Symbols & Pictographs, Emoticons,
+ * Transport, Supplemental Symbols, Symbols & Pictographs Extended-A,
+ * Dingbats, and Miscellaneous Symbols.
+ */
+export const EMOJI_RANGES: ReadonlyArray<readonly [number, number]> = [
+    [0x1F300, 0x1F5FF], // Miscellaneous Symbols and Pictographs
+    [0x1F600, 0x1F64F], // Emoticons
+    [0x1F680, 0x1F6FF], // Transport and Map Symbols
+    [0x1F700, 0x1F77F], // Alchemical Symbols (partial)
+    [0x1F780, 0x1F7FF], // Geometric Shapes Extended
+    [0x1F800, 0x1F8FF], // Supplemental Arrows-C
+    [0x1F900, 0x1F9FF], // Supplemental Symbols and Pictographs
+    [0x1FA00, 0x1FA6F], // Chess Symbols
+    [0x1FA70, 0x1FAFF], // Symbols and Pictographs Extended-A
+    [0x2600,  0x26FF],  // Miscellaneous Symbols
+    [0x2700,  0x27BF],  // Dingbats
+    [0x1F000, 0x1F02F], // Mahjong Tiles
+    [0x1F0A0, 0x1F0FF], // Playing Cards
+];
+
+/** Skin-tone modifiers (Fitzpatrick scale). */
+export const FITZPATRICK_START = 0x1F3FB;
+export const FITZPATRICK_END = 0x1F3FF;
+
+/** Zero-Width Joiner — used to combine emoji into ZWJ sequences. */
+export const ZWJ = 0x200D;
+/** Variation Selector-15: text presentation. */
+export const VS15 = 0xFE0E;
+/** Variation Selector-16: emoji presentation. */
+export const VS16 = 0xFE0F;
+
 // ── Script Predicates ────────────────────────────────────────────────
 
 /** Check if a codepoint falls in any Arabic Unicode block. */
@@ -165,6 +200,20 @@ export function isDevanagariCodepoint(cp: number): boolean {
            (cp >= DEVANAGARI_EXT_START && cp <= DEVANAGARI_EXT_END);
 }
 
+/**
+ * Check if a codepoint should be rendered using an emoji font.
+ * Includes the EMOJI_RANGES blocks plus Fitzpatrick skin-tone modifiers.
+ * VS-15/VS-16 are NOT covered here — the caller decides based on the
+ * preceding base character.
+ */
+export function isEmojiCodepoint(cp: number): boolean {
+    if (cp >= FITZPATRICK_START && cp <= FITZPATRICK_END) return true;
+    for (const [lo, hi] of EMOJI_RANGES) {
+        if (cp >= lo && cp <= hi) return true;
+    }
+    return false;
+}
+
 // ── Text-Level Detection ─────────────────────────────────────────────
 
 /** Check if text contains Arabic characters requiring shaping. */
@@ -215,6 +264,19 @@ export function containsTamil(str: string): boolean {
 export function containsDevanagari(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isDevanagariCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any emoji codepoints (including surrogate
+ * pairs that decode into the supplementary emoji planes).
+ */
+export function containsEmoji(str: string): boolean {
+    for (let i = 0; i < str.length;) {
+        const cp = str.codePointAt(i) ?? 0;
+        if (isEmojiCodepoint(cp)) return true;
+        i += cp > 0xFFFF ? 2 : 1;
     }
     return false;
 }

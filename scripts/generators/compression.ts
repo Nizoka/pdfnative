@@ -6,8 +6,11 @@ import { resolve } from 'path';
 import { buildPDFBytes, buildDocumentPDFBytes, loadFontData } from '../../src/index.js';
 import type { PdfParams, FontEntry, DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
+import { loadFontEntries } from '../helpers/fonts.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
+    // Latin font for PDF/A embedding (rule 6.2.11.4.1 — fonts must be embedded)
+    const latinEntries = await loadFontEntries('latin', '/F3');
     // ── Compressed Latin table (100 rows) ────────────────────────
     {
         const compressRows = Array.from({ length: 100 }, (_, i) => ({
@@ -54,12 +57,13 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             headers: ['Feature', 'Status', 'Standard', 'Details', 'Notes'],
             rows: [
                 { cells: ['FlateDecode', 'Active', 'ISO 32000-1 §7.3.8.1', 'zlib / RFC 1950', 'Content + Font + ICC'], type: 'credit', pointed: false },
-                { cells: ['Tagged PDF', 'Active', 'ISO 14289-1', 'StructTreeRoot', '/Document → /Table → /TR → /TD'], type: 'credit', pointed: false },
+                { cells: ['Tagged PDF', 'Active', 'ISO 14289-1', 'StructTreeRoot', '/Document > /Table > /TR > /TD'], type: 'credit', pointed: false },
                 { cells: ['XMP Metadata', 'Uncompressed', 'ISO 19005-2', 'pdfaid:part=2', 'PDF/A validator safety'], type: 'credit', pointed: true },
                 { cells: ['ICC Profile', 'Compressed', 'ISO 15076-1', 'sRGB D50', 'OutputIntent'], type: 'credit', pointed: false },
                 { cells: ['Encryption', 'N/A', 'ISO 19005-1 §6.3.2', 'Mutually exclusive', 'PDF/A forbids encryption'], type: 'debit', pointed: false },
             ],
             footerText: 'pdfnative – Compressed + Tagged (PDF/A-2b)',
+            fontEntries: latinEntries,
         };
         ctx.writeSafe(resolve(ctx.outputDir, 'compression', 'compressed-tagged-pdfa2b.pdf'), 'compression/compressed-tagged-pdfa2b.pdf', buildPDFBytes(params, { compress: true, tagged: true }));
     }

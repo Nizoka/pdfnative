@@ -21,6 +21,8 @@
 
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { DEVANAGARI_START, DEVANAGARI_END, containsDevanagari } from './script-registry.js';
+import { tryLigature } from './gsub-driver.js';
+import { getBaseAnchor, getMarkAnchor } from './gpos-positioner.js';
 
 // Re-export range constants
 export { DEVANAGARI_START, DEVANAGARI_END, containsDevanagari };
@@ -232,51 +234,21 @@ export function shapeDevanagariText(str: string, fontData: FontData): ShapedGlyp
 
     /**
      * Try to match a GID sequence against the GSUB ligature table.
-     * Returns the ligature result GID and the number of GIDs consumed,
-     * or null if no ligature matches.
-     *
-     * Ligature entries are sorted longest-first for greedy matching.
+     * Delegates to the shared driver in `gsub-driver.ts` (v1.1.0).
      */
-    function tryLigature(gids: number[]): { resultGid: number; consumed: number } | null {
-        if (!ligatures || gids.length < 2) return null;
-        const firstGid = gids[0];
-        const entries = ligatures[firstGid];
-        if (!entries) return null;
-
-        for (const entry of entries) {
-            // entry = [resultGid, comp1, comp2, ...]
-            const compCount = entry.length - 1;
-            if (compCount > gids.length - 1) continue;
-            let match = true;
-            for (let ci = 0; ci < compCount; ci++) {
-                if (gids[1 + ci] !== entry[1 + ci]) { match = false; break; }
-            }
-            if (match) return { resultGid: entry[0], consumed: compCount + 1 };
-        }
-        return null;
+    function tryLig(gids: number[]) {
+        return tryLigature(gids, ligatures);
     }
 
     function getAdv(gid: number): number {
         return widths[gid] !== undefined ? widths[gid] : defaultWidth;
     }
 
-    function getBaseAnchor(baseGid: number, markClass: number): [number, number] | null {
-        const base = markAnchors && markAnchors.bases && markAnchors.bases[baseGid];
-        if (!base) return null;
-        return base[markClass] ?? null;
-    }
-
-    function getMarkAnchor(markGid: number): { classIdx: number; x: number; y: number } | null {
-        const mark = markAnchors && markAnchors.marks && markAnchors.marks[markGid];
-        if (!mark) return null;
-        return { classIdx: mark[0], x: mark[1], y: mark[2] };
-    }
-
     function emitGlyph(gid: number, isZero: boolean, baseGid?: number): void {
         if (isZero && baseGid !== undefined) {
-            const markAnchor = getMarkAnchor(gid);
+            const markAnchor = getMarkAnchor(markAnchors, gid);
             if (markAnchor) {
-                const baseAnchorPt = getBaseAnchor(baseGid, markAnchor.classIdx);
+                const baseAnchorPt = getBaseAnchor(markAnchors, baseGid, markAnchor.classIdx);
                 if (baseAnchorPt) {
                     const baseAdv = getAdv(baseGid);
                     shaped.push({
@@ -337,7 +309,7 @@ export function shapeDevanagariText(str: string, fontData: FontData): ShapedGlyp
             // Reph pair: try GSUB for reph form
             const raGid = resolveGid(RA);
             const halantGid = resolveGid(HALANT);
-            const rephLig = tryLigature([raGid, halantGid]);
+            const rephLig = tryLig([raGid, halantGid]);
             if (rephLig) {
                 emitGlyph(rephLig.resultGid, true, baseGid);
             } else {
@@ -365,7 +337,7 @@ export function shapeDevanagariText(str: string, fontData: FontData): ShapedGlyp
         }
 
         // Try ligature substitution on the full consonant+halant GID sequence
-        const ligResult = tryLigature(clusterGids);
+        const ligResult = tryLig(clusterGids);
         if (ligResult) {
             emitGlyph(ligResult.resultGid, false);
             baseGid = ligResult.resultGid;
@@ -374,7 +346,7 @@ export function shapeDevanagariText(str: string, fontData: FontData): ShapedGlyp
             let gi = ligResult.consumed;
             while (gi < clusterGids.length) {
                 const subSeq = clusterGids.slice(gi);
-                const subLig = tryLigature(subSeq);
+                const subLig = tryLig(subSeq);
                 if (subLig) {
                     emitGlyph(subLig.resultGid, false);
                     gi += subLig.consumed;

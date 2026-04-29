@@ -45,6 +45,7 @@ import { renderBarcode } from './pdf-barcode.js';
 import { renderSvg } from './pdf-svg.js';
 import { defaultFieldHeight } from './pdf-form.js';
 import type { FormField } from './pdf-form.js';
+import { computeAutoFitColumns } from './pdf-column-fit.js';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -472,10 +473,31 @@ export function renderTable(
     documentChildren: (StructElement | MCRef)[],
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
-    const columns = block.columns ? [...block.columns] : DEFAULT_COLUMNS;
+    const baseColumns = block.columns ? [...block.columns] : DEFAULT_COLUMNS;
     const fs = DEFAULT_FONT_SIZES;
     const colors = DEFAULT_COLORS;
+    // Phase 4 — auto-fit column widths based on actual content.
+    // When enabled, override `f` fractions with content-derived values; the
+    // existing minWidth/maxWidth clamping in `computeColumnPositions()` still
+    // applies, so per-column constraints are honoured.
+    const columns = block.autoFitColumns
+        ? computeAutoFitColumns(baseColumns, block.headers, block.rows, enc, fs.th, fs.td)
+        : baseColumns;
     const { cx, cwi } = computeColumnPositions(columns, mgL, cw);
+
+    // Cell clipping: ISO 32000-1 §8.5.4 — `q <rect> re W n ... Q` keeps cell
+    // contents inside their column rectangle. Defaults to `true` for v1.1.0+.
+    const clip = block.clipCells !== false;
+
+    /**
+     * Wrap a text-emitting operator in a clipping rectangle for cell `i`.
+     * The clip rect spans the full column width and a generous vertical band
+     * (TH_H or ROW_H) so descenders aren't cut. Uses `q ... Q` to scope the clip.
+     */
+    const clipCell = (op: string, i: number, top: number, h: number): string =>
+        clip
+            ? `q ${fmtNum(cx[i])} ${fmtNum(top - h)} ${fmtNum(cwi[i])} ${fmtNum(h)} re W n\n${op}\nQ`
+            : op;
 
     const tableRows: StructElement[] = [];
 
@@ -493,19 +515,19 @@ export function renderTable(
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             thChildren.push({ type: 'TH', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
             if (columns[i].a === 'r') {
-                ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid));
+                ops.push(clipCell(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid), i, y, TH_H));
             } else if (columns[i].a === 'c') {
-                ops.push(txtCTagged(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc, mcid));
+                ops.push(clipCell(txtCTagged(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc, mcid), i, y, TH_H));
             } else {
-                ops.push(txtTagged(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid));
+                ops.push(clipCell(txtTagged(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid), i, y, TH_H));
             }
         } else {
             if (columns[i].a === 'r') {
-                ops.push(txtR(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc));
+                ops.push(clipCell(txtR(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc), i, y, TH_H));
             } else if (columns[i].a === 'c') {
-                ops.push(txtC(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc));
+                ops.push(clipCell(txtC(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc), i, y, TH_H));
             } else {
-                ops.push(txt(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc));
+                ops.push(clipCell(txt(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc), i, y, TH_H));
             }
         }
     }
@@ -529,19 +551,19 @@ export function renderTable(
                 const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
                 tdChildren.push({ type: 'TD', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
                 if (columns[i].a === 'r') {
-                    ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc, mcid));
+                    ops.push(clipCell(txtRTagged(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc, mcid), i, y, ROW_H));
                 } else if (columns[i].a === 'c') {
-                    ops.push(txtCTagged(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc, mcid));
+                    ops.push(clipCell(txtCTagged(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc, mcid), i, y, ROW_H));
                 } else {
-                    ops.push(txtTagged(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc, mcid));
+                    ops.push(clipCell(txtTagged(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc, mcid), i, y, ROW_H));
                 }
             } else {
                 if (columns[i].a === 'r') {
-                    ops.push(txtR(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc));
+                    ops.push(clipCell(txtR(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc), i, y, ROW_H));
                 } else if (columns[i].a === 'c') {
-                    ops.push(txtC(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc));
+                    ops.push(clipCell(txtC(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc), i, y, ROW_H));
                 } else {
-                    ops.push(txt(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc));
+                    ops.push(clipCell(txt(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc), i, y, ROW_H));
                 }
             }
         }
@@ -813,10 +835,11 @@ export function renderToc(
 
         let displayText = heading.text;
         if (measureText(displayText, sz, enc) > availTextW) {
-            while (displayText.length > 1 && measureText(displayText + '...', sz, enc) > availTextW) {
+            const ell = '…';
+            while (displayText.length > 1 && measureText(displayText + ell, sz, enc) > availTextW) {
                 displayText = displayText.slice(0, -1);
             }
-            displayText += '...';
+            displayText += ell;
         }
         const textW = measureText(displayText, sz, enc);
 

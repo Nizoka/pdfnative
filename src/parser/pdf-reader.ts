@@ -16,6 +16,7 @@ import type { PdfValue, PdfDict, PdfRef, PdfStream } from './pdf-object-parser.j
 import { parseXrefTable } from './pdf-xref-parser.js';
 import type { XrefTable } from './pdf-xref-parser.js';
 import { inflateSync } from './pdf-inflate.js';
+import { applyDecodeFilter, KNOWN_DECODE_FILTERS } from './pdf-decode-filters.js';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -156,13 +157,20 @@ export function openPdf(bytes: Uint8Array): PdfReader {
                     data = decodePNGPredictor(data, decodeParms);
                 }
             }
+        } else if (filterName !== undefined && KNOWN_DECODE_FILTERS.has(filterName)) {
+            // Single non-Flate filter (ASCII85, ASCIIHex, LZW, RunLength).
+            data = applyDecodeFilter(filterName, data);
         } else if (filter !== undefined && isArray(filter)) {
-            // Multi-filter chain — apply in order
+            // Multi-filter chain — apply in order. Each filter consumes the
+            // output of the previous one.
             for (const f of filter) {
-                if (isName(f) && f.value === 'FlateDecode') {
+                if (!isName(f)) continue;
+                if (f.value === 'FlateDecode') {
                     data = inflateSync(data);
+                } else if (KNOWN_DECODE_FILTERS.has(f.value)) {
+                    data = applyDecodeFilter(f.value, data);
                 }
-                // Other filters (ASCII85Decode, etc.) can be added later
+                // Unknown filters are silently skipped to mirror prior behaviour.
             }
         }
 

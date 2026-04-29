@@ -76,6 +76,11 @@ function splitArabicNonArabic(text: string, fd: FontData): ArabicSegment[] {
  * Build TextRuns for a non-shaped text segment, splitting into CIDFont and
  * Helvetica sub-runs based on cmap coverage. Characters with no CIDFont glyph
  * that are WinAnsi-encodable fall back to Helvetica (/F1).
+ *
+ * @param pdfA - When true, disables Helvetica fallback (PDF/A forbids unembedded
+ *   standard-14 fonts). Missing glyphs route through the primary CIDFont as
+ *   .notdef (gid 0). Callers must register a Latin-coverage font (e.g. Noto Sans)
+ *   to ensure full WinAnsi range is covered.
  */
 function buildTextRunsWithFallback(
     text: string,
@@ -83,6 +88,7 @@ function buildTextRunsWithFallback(
     fd: FontData,
     sz: number,
     trackGid: (ref: string, gid: number) => void,
+    pdfA: boolean = false,
 ): TextRun[] {
     const upm = fd.metrics.unitsPerEm;
     const result: TextRun[] = [];
@@ -121,12 +127,13 @@ function buildTextRunsWithFallback(
         const char = text.substring(i, i + charLen);
         const gid = fd.cmap[cp] ?? 0;
 
-        if (gid === 0 && isWinAnsi(cp)) {
-            // No CIDFont glyph, but WinAnsi-encodable → Helvetica
+        if (gid === 0 && isWinAnsi(cp) && !pdfA) {
+            // No CIDFont glyph, but WinAnsi-encodable → Helvetica fallback
+            // Disabled under PDF/A (unembedded standard-14 fonts forbidden).
             if (mode === 'cid') flushCid();
             mode = 'hel';
             helChars += char;
-        } else if (mode === 'hel' && isWinAnsi(cp)) {
+        } else if (mode === 'hel' && isWinAnsi(cp) && !pdfA) {
             // Stay in Helvetica for WinAnsi chars (avoids font-switching on spaces
             // between Latin words when the CIDFont happens to cover space)
             helChars += char;
@@ -154,8 +161,13 @@ function buildTextRunsWithFallback(
  * Latin mode uses WinAnsi/Helvetica, Unicode mode uses CIDFont/Identity-H.
  *
  * @param fontEntries - Array of font entries (primary first). Empty = Latin mode.
+ * @param pdfA - When true and at least one font entry is registered, disables
+ *   WinAnsi/Helvetica fallback in mixed-content runs (Helvetica is unembedded
+ *   standard-14, forbidden by ISO 19005). When pdfA is true with no fontEntries,
+ *   Latin mode is used as before — strict PDF/A conformance requires the caller
+ *   to register a Latin font (e.g. Noto Sans VF).
  */
-export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext {
+export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = false): EncodingContext {
     if (!fontEntries || fontEntries.length === 0) {
         return {
             isUnicode: false,
@@ -225,14 +237,14 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                                     result.push({ text: seg.text, fontRef, fontData: fd, shaped: visual, hexStr: null, widthPt: designW * sz / upm });
                                 } else {
                                     // Non-Arabic segment: use Helvetica fallback
-                                    const subRuns = buildTextRunsWithFallback(seg.text, fontRef, fd, sz, _trackGid);
+                                    const subRuns = buildTextRunsWithFallback(seg.text, fontRef, fd, sz, _trackGid, pdfA);
                                     result.push(...subRuns);
                                 }
                             }
                         } else if (isRTL) {
                             // RTL non-Arabic (Hebrew etc.): text already reversed by BiDi
                             // Use fallback helper to handle Latin chars not covered by CIDFont
-                            const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid);
+                            const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA);
                             result.push(...subRuns);
                         } else {
                             // LTR run: standard path
@@ -278,7 +290,7 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                                 result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
                             } else {
                                 // LTR non-shaped: use fallback helper
-                                const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid);
+                                const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA);
                                 result.push(...subRuns);
                             }
                         }
@@ -342,7 +354,7 @@ export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext
                     return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
                 }
 
-                return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid);
+                return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid, pdfA);
             });
         },
 

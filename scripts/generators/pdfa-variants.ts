@@ -7,6 +7,7 @@ import { buildPDFBytes } from '../../src/index.js';
 import type { PdfParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
 import type { PdfASample } from '../helpers/types.js';
+import { loadFontEntries } from '../helpers/fonts.js';
 
 const PDFA_SAMPLES: PdfASample[] = [
     { filename: 'tagged-pdfa2b-default', tagged: true, description: 'PDF/A-2b (default tagged=true)' },
@@ -17,6 +18,9 @@ const PDFA_SAMPLES: PdfASample[] = [
 ];
 
 export async function generate(ctx: GenerateContext): Promise<void> {
+    // Register Latin font for PDF/A embedding (required for veraPDF conformance)
+    const latinEntries = await loadFontEntries('latin', '/F3');
+
     for (const pdfa of PDFA_SAMPLES) {
         const params: PdfParams = {
             title: `PDF/A Compliance – ${pdfa.description}`,
@@ -33,6 +37,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { cells: ['ICC profile', 'sRGB', 'Color', 'OK', 'OutputIntent'], type: 'credit', pointed: true },
             ],
             footerText: `pdfnative – ${pdfa.description}`,
+            fontEntries: latinEntries,
         };
 
         // PDF/A-3b includes an embedded XML attachment

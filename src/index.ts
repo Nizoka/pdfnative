@@ -186,7 +186,7 @@ export {
 export { encodePdfTextString } from './core/pdf-text.js';
 
 // ── Fonts — Encoding & Loading ──────────────────────────────────────
-export { toWinAnsi, pdfString, truncate, helveticaWidth } from './fonts/encoding.js';
+export { toWinAnsi, pdfString, truncate, truncateToWidth, helveticaWidth } from './fonts/encoding.js';
 export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';
@@ -230,6 +230,10 @@ export {
     inflateSync, setInflateImpl, initNodeDecompression as initNodeDecompression_parser,
     setMaxInflateOutputSize, getMaxInflateOutputSize, DEFAULT_MAX_INFLATE_OUTPUT,
 } from './parser/pdf-inflate.js';
+export {
+    decodeASCIIHex, decodeASCII85, decodeLZW, decodeRunLength,
+    applyDecodeFilter, KNOWN_DECODE_FILTERS,
+} from './parser/pdf-decode-filters.js';
 
 // ── Worker — Off-Thread Generation ──────────────────────────────────
 export { createPDF, generatePDFInWorker, generatePDFMainThread, WORKER_THRESHOLD, WORKER_TIMEOUT_MS } from './worker/worker-api.js';

@@ -106,9 +106,9 @@ jobs:
       - name: Generate sample PDFs
         run: npm run test:generate
 
-      # Pre-release mode for v1.0.4: keep veraPDF visible in CI but do not block merges yet.
-      # Reason: full PDF/A conformance is completed in v1.0.5 (Latin font embedding work).
-      # Switch this back to blocking in v1.0.5 by removing `continue-on-error`.
-      - name: Validate PDF/A claims (non-blocking pre-v1.0.5)
-        continue-on-error: true
+      # v1.1.0+: veraPDF is blocking. Every PDF/A-claiming sample (detected
+      # automatically via pdfaid:part in XMP) must validate against the
+      # corresponding PDF/A profile (1b, 2b, 2u, 3b). Non-PDF/A files are
+      # skipped by scripts/validate-pdfa.ts and never trigger failures.
+      - name: Validate PDF/A claims (blocking)
         run: npm run validate:pdfa

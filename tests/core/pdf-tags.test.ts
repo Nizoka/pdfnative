@@ -11,6 +11,7 @@ import {
     resolvePdfAConfig,
     buildEmbeddedFiles,
     validateAttachments,
+    utf8EncodeBinaryString,
 } from '../../src/core/pdf-tags.js';
 import type { StructElement, MCRef } from '../../src/core/pdf-tags.js';
 import type { PdfAttachment } from '../../src/types/pdf-types.js';
@@ -206,6 +207,66 @@ describe('buildXMPMetadata', () => {
         const xmp = buildXMPMetadata('Test', '2026-01-15T10:30:00');
         // UTF-8 BOM as 3 Latin-1 characters
         expect(xmp).toContain('<?xpacket begin="\xEF\xBB\xBF"');
+    });
+
+    it('should preserve non-ASCII characters in title (em-dash, ellipsis, smart quotes)', () => {
+        const title = 'Report — “Q1 2026” … done';
+        const xmp = buildXMPMetadata(title, '2026-01-15T10:30:00');
+        expect(xmp).toContain(title);
+    });
+
+    it('should emit dc:description when subject is provided (ISO 19005-1 §6.7.3 t4)', () => {
+        const xmp = buildXMPMetadata('T', '2026-01-15T10:30:00', 2, 'B', undefined, 'My subject');
+        expect(xmp).toContain('<dc:description><rdf:Alt><rdf:li xml:lang="x-default">My subject</rdf:li></rdf:Alt></dc:description>');
+    });
+
+    it('should emit pdf:Keywords when keywords is provided (ISO 19005-1 §6.7.3 t5)', () => {
+        const xmp = buildXMPMetadata('T', '2026-01-15T10:30:00', 2, 'B', undefined, undefined, 'a, b, c');
+        expect(xmp).toContain('<pdf:Keywords>a, b, c</pdf:Keywords>');
+    });
+
+    it('should omit dc:description / pdf:Keywords when not provided', () => {
+        const xmp = buildXMPMetadata('T', '2026-01-15T10:30:00');
+        expect(xmp).not.toContain('dc:description');
+        expect(xmp).not.toContain('pdf:Keywords');
+    });
+
+    it('should escape XML special chars in subject and keywords', () => {
+        const xmp = buildXMPMetadata('T', '2026-01-15T10:30:00', 2, 'B', undefined, 'A & B', '<x>');
+        expect(xmp).toContain('A &amp; B');
+        expect(xmp).toContain('&lt;x&gt;');
+    });
+});
+
+// ── utf8EncodeBinaryString ───────────────────────────────────────────
+
+describe('utf8EncodeBinaryString', () => {
+    it('should pass ASCII through unchanged', () => {
+        expect(utf8EncodeBinaryString('Hello')).toBe('Hello');
+    });
+
+    it('should encode em-dash (U+2014) as 3 UTF-8 bytes', () => {
+        const out = utf8EncodeBinaryString('—'); // U+2014
+        expect(out.length).toBe(3);
+        expect(out.charCodeAt(0)).toBe(0xE2);
+        expect(out.charCodeAt(1)).toBe(0x80);
+        expect(out.charCodeAt(2)).toBe(0x94);
+    });
+
+    it('should encode emoji (U+1F600) as 4 UTF-8 bytes (surrogate pair)', () => {
+        const out = utf8EncodeBinaryString('😀'); // U+1F600
+        expect(out.length).toBe(4);
+        expect(out.charCodeAt(0)).toBe(0xF0);
+        expect(out.charCodeAt(1)).toBe(0x9F);
+        expect(out.charCodeAt(2)).toBe(0x98);
+        expect(out.charCodeAt(3)).toBe(0x80);
+    });
+
+    it('should produce only single-byte chars (ready for toBytes mask 0xFF)', () => {
+        const out = utf8EncodeBinaryString('Café — naïve “résumé”');
+        for (let i = 0; i < out.length; i++) {
+            expect(out.charCodeAt(i)).toBeLessThan(256);
+        }
     });
 });
 

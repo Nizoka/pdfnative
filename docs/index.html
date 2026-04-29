@@ -73,6 +73,9 @@
   </div>
 </nav>
 
+<!-- ═══════════════ Live version strip (compact, sticky-discreet) ═══════════════ -->
+<div class="pn-version-strip" data-mode="compact" aria-label="Live published versions"></div>
+
 <!-- ═══════════════ Hero ═══════════════ -->
 <section class="hero" id="top">
   <div class="container">
@@ -99,6 +102,7 @@
       <a href="https://docs.npmjs.com/generating-provenance-statements" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/provenance-signed-blueviolet" alt="npm provenance signed" height="20" loading="lazy"></a>
       <a href="https://github.com/Nizoka/pdfnative/blob/main/LICENSE" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" height="20" loading="lazy"></a>
       <a href="https://www.npmjs.com/package/pdfnative-cli" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/pdfnative-cli?label=pdfnative-cli&color=0e7490" alt="pdfnative-cli npm version" height="20" loading="lazy"></a>
+      <a href="https://www.npmjs.com/package/pdfnative-mcp" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/pdfnative-mcp?label=pdfnative-mcp&color=d97706" alt="pdfnative-mcp npm version" height="20" loading="lazy"></a>
     </div>
     <div class="install-cmd">
       <code>npm install pdfnative</code>
@@ -647,6 +651,7 @@ npx pdfnative-cli verify --input signed.pdf --strict</code></pre>
 <!-- ═══════════════ Footer ═══════════════ -->
 <footer class="footer">
   <div class="footer-inner">
+    <section id="pdfnative-versions" class="pn-versions" aria-label="Live package versions" style="max-width:680px;margin:0 auto 24px;"></section>
     <span>MIT License · © 2026 Nizoka</span>
     <ul class="footer-links" role="list">
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
@@ -675,5 +680,6 @@ npx pdfnative-cli verify --input signed.pdf --strict</code></pre>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
 <script src="app.js" defer></script>
+<script src="assets/versions.js" defer></script>
 </body>
 </html>

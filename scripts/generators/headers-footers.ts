@@ -6,8 +6,11 @@ import { resolve } from 'path';
 import { buildPDFBytes, buildDocumentPDFBytes } from '../../src/index.js';
 import type { PdfParams, DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
+import { loadFontEntries } from '../helpers/fonts.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
+    // Latin font for PDF/A embedding (rule 6.2.11.4.1)
+    const latinEntries = await loadFontEntries('latin', '/F3');
     const baseRows = Array.from({ length: 50 }, (_, i) => ({
         cells: [
             `2026-${String(Math.floor(i / 28) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
@@ -88,7 +91,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     ctx.writeSafe(
         resolve(ctx.outputDir, 'headers', 'header-footer-tagged.pdf'),
         'headers/header-footer-tagged.pdf',
-        buildPDFBytes(baseParams, {
+        buildPDFBytes({ ...baseParams, fontEntries: latinEntries }, {
             tagged: true,
             headerTemplate: { left: '{title}', right: 'PDF/A-2b Compliant' },
             footerTemplate: { left: '{date}', center: 'ISO 19005-2', right: 'Page {page} of {pages}' },

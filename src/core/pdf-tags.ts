@@ -302,6 +302,8 @@ export function buildPdfMetadata(now: Date = new Date()): PdfMetadata {
  * @param pdfaPart - PDF/A part number (1, 2, or 3). Default: 2
  * @param pdfaConformance - PDF/A conformance level ('B' or 'U'). Default: 'B'
  * @param author - Optional document author (matches /Info /Author).
+ * @param subject - Optional document subject (matches /Info /Subject → dc:description['x-default']).
+ * @param keywords - Optional document keywords (matches /Info /Keywords → pdf:Keywords).
  * @returns XMP metadata XML string
  */
 export function buildXMPMetadata(
@@ -310,6 +312,8 @@ export function buildXMPMetadata(
     pdfaPart: number = 2,
     pdfaConformance: string = 'B',
     author?: string,
+    subject?: string,
+    keywords?: string,
 ): string {
     const escapedTitle = escapeXml(title);
     // dc:creator describes the document author (per Dublin Core),
@@ -330,6 +334,10 @@ export function buildXMPMetadata(
     if (author !== undefined && author !== '') {
         lines.push(`   <dc:creator><rdf:Seq><rdf:li>${escapeXml(author)}</rdf:li></rdf:Seq></dc:creator>`);
     }
+    // dc:description must equal /Info /Subject when present (ISO 19005-1 §6.7.3 t4)
+    if (subject !== undefined && subject !== '') {
+        lines.push(`   <dc:description><rdf:Alt><rdf:li xml:lang="x-default">${escapeXml(subject)}</rdf:li></rdf:Alt></dc:description>`);
+    }
     lines.push(
         '   <pdf:Producer>pdfnative</pdf:Producer>',
         `   <xmp:CreateDate>${createDate}</xmp:CreateDate>`,
@@ -337,12 +345,59 @@ export function buildXMPMetadata(
         `   <xmp:MetadataDate>${createDate}</xmp:MetadataDate>`,
         `   <pdfaid:part>${pdfaPart}</pdfaid:part>`,
         `   <pdfaid:conformance>${pdfaConformance}</pdfaid:conformance>`,
+    );
+    // pdf:Keywords must equal /Info /Keywords when present (ISO 19005-1 §6.7.3 t5)
+    if (keywords !== undefined && keywords !== '') {
+        lines.push(`   <pdf:Keywords>${escapeXml(keywords)}</pdf:Keywords>`);
+    }
+    lines.push(
         '  </rdf:Description>',
         ' </rdf:RDF>',
         '</x:xmpmeta>',
         '<?xpacket end="w"?>',
     );
     return lines.join('\n');
+}
+
+/**
+ * UTF-8 encode a Unicode string into a binary-safe string where each char
+ * is a single byte (charCodeAt < 256). Required for XMP metadata streams
+ * which must be UTF-8 (per Adobe XMP spec / ISO 16684-1) but are written
+ * through `toBytes()` which masks each char to 0xFF.
+ *
+ * Without this, characters above U+00FF (em-dash U+2014, ellipsis U+2026,
+ * smart quotes, CJK, …) are truncated to control bytes, breaking PDF/A-1b
+ * dc:title parity (ISO 19005-1 §6.7.3) and corrupting XMP metadata.
+ */
+export function utf8EncodeBinaryString(str: string): string {
+    let out = '';
+    for (let i = 0; i < str.length; i++) {
+        let cp = str.charCodeAt(i);
+        // Surrogate pair → combine to single codepoint
+        if (cp >= 0xD800 && cp <= 0xDBFF && i + 1 < str.length) {
+            const lo = str.charCodeAt(i + 1);
+            if (lo >= 0xDC00 && lo <= 0xDFFF) {
+                cp = ((cp - 0xD800) << 10) + (lo - 0xDC00) + 0x10000;
+                i++;
+            }
+        }
+        if (cp < 0x80) {
+            out += String.fromCharCode(cp);
+        } else if (cp < 0x800) {
+            out += String.fromCharCode(0xC0 | (cp >> 6));
+            out += String.fromCharCode(0x80 | (cp & 0x3F));
+        } else if (cp < 0x10000) {
+            out += String.fromCharCode(0xE0 | (cp >> 12));
+            out += String.fromCharCode(0x80 | ((cp >> 6) & 0x3F));
+            out += String.fromCharCode(0x80 | (cp & 0x3F));
+        } else {
+            out += String.fromCharCode(0xF0 | (cp >> 18));
+            out += String.fromCharCode(0x80 | ((cp >> 12) & 0x3F));
+            out += String.fromCharCode(0x80 | ((cp >> 6) & 0x3F));
+            out += String.fromCharCode(0x80 | (cp & 0x3F));
+        }
+    }
+    return out;
 }
 
 /**

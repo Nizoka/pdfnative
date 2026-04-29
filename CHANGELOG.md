@@ -7,6 +7,321 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+## [1.1.0] – 2026-04-30
+
+Maximalist stable cut. Closes issues
+[#28](https://github.com/Nizoka/pdfnative/issues/28) (PDF/A Latin font
+embedding) and [#25](https://github.com/Nizoka/pdfnative/issues/25)
+(UAX #9 isolates + GPOS MarkBasePos for Arabic harakat), and adds
+monochrome emoji support. Folds the alpha.1 / alpha.2 medium-term items
+into a single stable release. 100% backward-compatible — all new
+features are opt-in. **1726 tests / 48 files green.** See full notes in
+[release-notes/v1.1.0.md](release-notes/v1.1.0.md).
+
+### Fixed
+
+- **core(pdfa):** PDF/A samples no longer reference unembedded
+  `Helvetica` / `Helvetica-Bold` standard-14 fonts when a Latin font
+  entry is registered. Object 3 and Object 4 are now emitted as Type0
+  redirector dictionaries pointing to the primary embedded font's
+  `CIDFontType2` / `FontFile2` chain — making `/F1` and `/F2` valid
+  embedded references for veraPDF (ISO 19005-1 §6.3.4 / ISO 19005-2
+  §6.2.11.4.1). Bold renders identical to regular under PDF/A in v1.1.0
+  (a future release will add Noto Sans Bold as a separate font module).
+- **core(xmp):** XMP metadata streams are now UTF-8 encoded via the new
+  `utf8EncodeBinaryString()` helper before passing through `toBytes()`.
+  Previously, `toBytes()` masked each char to `0xFF`, truncating
+  characters above U+00FF (em-dash, ellipsis, smart quotes, CJK) to
+  control bytes — which broke ISO 19005-1 §6.7.3 dc:title parity. Now
+  `<dc:title>` matches `/Info /Title` byte-for-byte.
+- **core(xmp):** `buildXMPMetadata()` now emits `<dc:description>` and
+  `<pdf:Keywords>` whenever `/Info /Subject` and `/Info /Keywords` are
+  set in the document metadata, satisfying ISO 19005-1 §6.7.3 t4 / t5
+  parity rules. Previously, PDF/A-1b validation failed with veraPDF
+  rules 6.7.3-4 and 6.7.3-5 on any document carrying `subject` or
+  `keywords` metadata. ISO 19005-2/3 was lenient on this and still
+  passed; v1.1.0 closes both gaps.
+- **core(encoding):** `createEncodingContext(fontEntries, pdfA)` accepts
+  an optional `pdfA` flag. When `true` and `fontEntries` is non-empty,
+  the WinAnsi/Helvetica fallback in mixed-content runs is disabled —
+  characters not covered by the primary CIDFont's cmap render as
+  `.notdef` (gid 0) instead of being routed to the unembedded Helvetica
+  Type1 font. Required for strict PDF/A conformance.
+- **scripts(samples):** `scripts/generators/pdfa-variants.ts` now
+  registers a `latin` font entry so `tagged-pdfa{1b,2b,2u,3b}.pdf` are
+  fully embedded (zero `Helvetica` references in the output).
+  `scripts/generators/pdfa-latin-embedding.ts` math operators paragraph
+  trimmed to characters covered by Noto Sans VF (number sets ℝ ℂ ℕ ℤ,
+  basic ops × ÷ ±) — Noto Sans Math support deferred.
+- **scripts(samples):** Five additional PDF/A-claiming sample
+  generators now register a `latin` font entry — `barcode-tagged.pdf`,
+  `compressed-tagged-pdfa2b.pdf`, `header-footer-tagged.pdf`,
+  `tagged-accessibility-complex.pdf`, `toc-tagged.pdf`. Closes the
+  remaining veraPDF rule 6.2.11.4.1-1 (font embedding) failures
+  reported by CI.
+- **core(annot):** Link annotations (`/Subtype /Link`, both `/URI` and
+  `/GoTo`) and form widget annotations (`/Subtype /Widget`) now emit
+  `/F 4` (Print flag set, NoView/Hidden/Invisible cleared) per ISO
+  19005-2 §6.5.3 / veraPDF rule 6.3.2-1. Required on every annotation
+  in PDF/A-2 / PDF/A-3.
+- **ci(verapdf):** veraPDF validation is now **blocking** on PRs and
+  pushes to `main` (the previous `continue-on-error: true` was a
+  pre-v1.0.5 placeholder). `scripts/validate-pdfa.ts` already
+  auto-detects PDF/A-claiming files via XMP `pdfaid:part`, so non-PDF/A
+  samples never trigger CI failures.
+
+### Notes
+
+- `Helvetica` / `Helvetica-Bold` standard-14 fonts are still emitted in
+  non-PDF/A mode and in the Latin-only path (no font entries) for
+  backward compatibility. To produce a strictly veraPDF-compliant
+  PDF/A, register Noto Sans VF: `registerFont('latin', () =>
+  import('pdfnative/fonts/noto-sans-data.js'))`.
+- Noto Emoji uses `defaultWidth=2600` over `unitsPerEm=2048` (≈1.27 em
+  per glyph), per the font's authoritative metrics. This produces wider
+  advance than typical Latin fonts in mixed-script paragraphs — visually
+  correct per the font designer's intent but may look spacious.
+
+### Added
+
+- **fonts(latin):** `fonts/noto-sans-data.{js,d.ts}` — Noto Sans VF
+  (OFL-1.1), 4515 glyphs / 3094 cmap entries. Opt-in via
+  `registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'))`.
+  Activates automatically for PDF/A documents containing non-WinAnsi
+  Latin (curly quotes, em-dash, ellipsis…). Closes
+  [#28](https://github.com/Nizoka/pdfnative/issues/28).
+- **fonts(emoji):** `fonts/noto-emoji-data.{js,d.ts}` — Noto Emoji
+  monochrome (OFL-1.1), 1891 glyphs / 1489 cmap entries. Opt-in via
+  `registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'))`.
+- **shaping(bidi):** UAX #9 isolate handling — LRI / RLI / FSI / PDI
+  (U+2066–U+2069) classified as `BN`, recursed via three-tier
+  dispatcher (`resolveBidiRuns` → `resolveBidiRunsForced` →
+  `resolveBidiCore`). Nested and unmatched isolates supported.
+  Closes the syntactic half of [#25](https://github.com/Nizoka/pdfnative/issues/25).
+- **shaping(arabic):** GPOS MarkBasePos applied to transparent marks
+  (harakat: fatha, kasra, damma, sukun, shadda, …). Marks now anchor
+  on the preceding base glyph. Closes the visual half of
+  [#25](https://github.com/Nizoka/pdfnative/issues/25).
+  ([src/shaping/arabic-shaper.ts](src/shaping/arabic-shaper.ts))
+- **shaping(drivers):** new shared `src/shaping/gsub-driver.ts`
+  (`tryLigature(gids, ligatures)`) and
+  `src/shaping/gpos-positioner.ts` (`getBaseAnchor`, `getMarkAnchor`,
+  `getMark2MarkAnchor`, `positionMarkOnBase`). Bengali / Tamil /
+  Devanagari / Arabic shapers route through these instead of three
+  duplicated implementations.
+- **shaping(emoji):** `EMOJI_RANGES`, `isEmojiCodepoint`,
+  `containsEmoji`, `FITZPATRICK_START/END`, `ZWJ`, `VS15`, `VS16` in
+  [src/shaping/script-registry.ts](src/shaping/script-registry.ts).
+  `detectCharLang()` returns `'emoji'` for emoji codepoints;
+  `detectFallbackLangs()` adds `'emoji'` to the set automatically.
+
+### Changed
+
+- **shaping(bidi):** `resolveBidiRuns()` rewritten as a recursive
+  isolate-aware dispatcher. Output byte-identical for inputs without
+  isolate characters.
+- **shaping(types):** `fixPunctuationAffinity` and `fixBracketPairing`
+  parameter types widened to `readonly number[]`. No public API impact.
+- **shaping(bengali, tamil, devanagari):** local `tryLigature`
+  removed; thin `tryLig(gids)` closure forwards to shared driver.
+  Output bytes unchanged.
+
+### Tests
+
+- 24 new tests in
+  [tests/shaping/phase2-shaping.test.ts](tests/shaping/phase2-shaping.test.ts)
+  (GSUB driver, GPOS positioner, BiDi isolates, Arabic MarkBasePos).
+- 15 new tests in [tests/shaping/emoji.test.ts](tests/shaping/emoji.test.ts)
+  (ranges, predicates, script-detect integration, baked module shape).
+- New PDF/A Latin embedding integration in
+  [tests/fonts/pdfa-latin-embedding.test.ts](tests/fonts/pdfa-latin-embedding.test.ts).
+- Total: **1726 / 1726 green** (48 files), up from 1674.
+
+### Deferred to v1.2.0
+
+- Full UAX #9 embeddings (LRE / RLE / LRO / RLO / PDF) —
+  isolates ship now; embeddings remain rare in practice.
+- True page-by-page constant-memory streaming
+  (`buildDocumentPDFStreamPageByPage()`).
+- COLRv1 colour emoji (v1.1.0 ships monochrome only).
+
+## [1.1.0-alpha.2] – 2026-04-29
+
+This iteration extends alpha.1 with two contained, fully-tested table-layout
+features that were on the v1.1.0 medium-term list, plus a small UX polish to
+the documentation site. The remaining epics (issue
+[#28](https://github.com/Nizoka/pdfnative/issues/28) PDF/A Latin font
+embedding, issue [#25](https://github.com/Nizoka/pdfnative/issues/25) full
+UAX #9 + multi-pass GSUB + GPOS MarkBasePos) and emoji support stay scheduled
+for v1.1.0 stable. True page-by-page constant-memory streaming is deferred
+to v1.2.0 because it requires an architectural refactor of `pdf-document.ts`
+that we don't want to ship under alpha-velocity.
+
+### Added
+
+- **core(table):** `TableBlock.clipCells?: boolean` (default `true`) —
+  every header and data cell is now wrapped in `q <rect> re W n ... Q` so
+  variable-width content cannot escape its column rectangle visually. The
+  existing character-cap (`ColumnDef.mx` / `mxH`) and clipping operate
+  in tandem; opt out with `clipCells: false` for byte-identical v1.0.x
+  output. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
+- **core(table):** `TableBlock.autoFitColumns?: boolean` — when `true`,
+  column-width fractions are derived from actual measured content widths
+  (header at `fs.th`, cells at `fs.td`, plus 6 pt cell padding). The
+  resulting fractions are forwarded to `computeColumnPositions()` which
+  still honours per-column `minWidth` / `maxWidth` clamping. Defaults
+  to `false` for byte-stability. ([src/core/pdf-column-fit.ts](src/core/pdf-column-fit.ts))
+- **docs(site):** added live `pdfnative-mcp` npm version badge in the
+  hero badge strip, mirroring the existing `pdfnative-cli` badge.
+- **docs(site):** new compact one-line **live version strip** mounted
+  directly under the main `<nav>` (`.pn-version-strip` /
+  `data-mode="compact"`), giving visitors immediate visibility into the
+  current published `pdfnative` / `pdfnative-cli` / `pdfnative-mcp`
+  versions and their transitive `pdfnative` pins. The richer detailed
+  widget (footer block) is preserved verbatim.
+  ([docs/assets/versions.js](docs/assets/versions.js),
+  [docs/style.css](docs/style.css))
+
+### Changed
+
+- **docs(site):** `versions.js` refactored to dual-mode (`compact` /
+  `detailed`) with auto-discovery of all matching mounts
+  (`#pdfnative-versions`, `.pn-version-strip`, `[data-pn-versions]`)
+  on a single `DOMContentLoaded`. Strip propagated to
+  `docs/playgrounds/cli.html` and `docs/playgrounds/mcp.html`.
+
+### Tests
+
+- 9 new tests across two files (clip operator emission +
+  `computeAutoFitColumns()` redistribution + wiring sanity), bringing
+  the suite to **1674 / 1674 green** (45 files).
+
+### Deferred to v1.1.0 stable
+
+- Issue #28 — PDF/A Latin font embedding (Noto Sans subset + ObjectAllocator).
+- Issue #25 — Full UAX #9 BiDi (embeddings, isolates, levels >2,
+  BD13/14/16) + multi-pass GSUB + GPOS MarkBasePos for Arabic harakat.
+- Emoji monochrome support (Noto Emoji OFL-1.1, ZWJ + VS-15/16 + Fitzpatrick).
+
+### Deferred to v1.2.0
+
+- True page-by-page constant-memory streaming
+  (`buildDocumentPDFStreamPageByPage()`). The current
+  `buildDocumentPDFStream()` already chunks output but materialises the
+  full PDF binary string first.
+
+## [1.1.0-alpha.1] – 2026-04-29
+
+This release lands the **Medium-Term roadmap items** that fit cleanly within
+a SemVer-minor surface, plus a watermark layout fix that ships a sane default
+for aggressive `fontSize` + `angle` combinations. Two larger epics — issue
+[#28](https://github.com/Nizoka/pdfnative/issues/28) (PDF/A Latin font
+embedding) and issue [#25](https://github.com/Nizoka/pdfnative/issues/25)
+(full UAX #9 BiDi + multi-pass GSUB) — remain in progress for the
+v1.1.0 stable cut: they require atomic object-graph renumbering and font-data
+rebuilds whose risk profile is incompatible with shipping in the same
+iteration as smaller, fully-tested changes.
+
+### Added
+
+- **core(watermark):** `WatermarkText.autoFit?: boolean` — when `true`
+  (the new default), the renderer scales `fontSize` down so the rotated
+  bounding box `(textW·|cos θ| + textH·|sin θ|, textW·|sin θ| + textH·|cos θ|)`
+  fits within the page minus a 24 pt safety margin. Aggressive presets
+  like `fontSize: 120, angle: -30` on A4 no longer overflow the page;
+  set `autoFit: false` to preserve byte-stable v1.0.x output.
+  ([src/core/pdf-watermark.ts](src/core/pdf-watermark.ts))
+- **fonts(encoding):** new `truncateToWidth(str, maxWidthPt, sz, enc)`
+  exported from the root — measurement-based string shortening that
+  respects proportional font widths in both Latin and CIDFont modes.
+  Uses the active encoding context's width metrics; appends the Unicode
+  horizontal ellipsis (`…`, U+2026) on truncation.
+  ([src/fonts/encoding.ts](src/fonts/encoding.ts))
+- **types(layout):** `ColumnDef.minWidth?: number` /
+  `ColumnDef.maxWidth?: number` — additive constraints on table column
+  widths in points. Constrained columns are clamped first, then the
+  surplus or deficit is redistributed across the unconstrained columns
+  proportional to their `f` weight. When neither is set on any column,
+  output is byte-identical to v1.0.5.
+  ([src/core/pdf-layout.ts](src/core/pdf-layout.ts))
+- **parser(decode):** new `pdf-decode-filters.ts` module — pure,
+  zero-dependency decoders for the standard non-Flate stream filters:
+  `ASCIIHexDecode` (§7.4.2), `ASCII85Decode` (§7.4.3),
+  `LZWDecode` (§7.4.4, variable-width 9–12 bit codes with CLEAR / EOD),
+  and `RunLengthDecode` (§7.4.5). Wired into the reader's single-filter
+  and multi-filter-chain dispatch. Includes a 256 MiB output cap to
+  defend against zip-bomb-style adversarial streams.
+  ([src/parser/pdf-decode-filters.ts](src/parser/pdf-decode-filters.ts))
+- **docs(site):** live version widget — zero-build, zero-dependency
+  panel that fetches the latest `pdfnative`, `pdfnative-cli`, and
+  `pdfnative-mcp` versions from `registry.npmjs.org` on page load and
+  surfaces the **transitive `pdfnative` pin** declared by each
+  downstream package. Mounted on the homepage and both playgrounds.
+  Falls back to static defaults when the registry is unreachable.
+  ([docs/assets/versions.js](docs/assets/versions.js))
+
+### Changed
+
+- **fonts(encoding):** `truncate(str, max)` now appends `…` (U+2026)
+  instead of `..`. The Unicode ellipsis is a single grapheme cluster,
+  is mapped to WinAnsi `0x85`, and renders correctly in both Latin and
+  CIDFont modes. Output is one character shorter for the same `max`
+  (e.g. `truncate('Hello World', 7)` was `'Hello..'`, now `'Hello …'`).
+  See **Breaking Changes** below.
+- **core(renderers):** TOC entry truncation uses `…` (U+2026) instead
+  of `'...'` (three ASCII dots).
+  ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
+
+### Breaking Changes
+
+- **`truncate()` ellipsis character changed** from `..` (two ASCII
+  dots) to `…` (U+2026). Snapshot-style assertions on truncated cell
+  text need updating. Affected call sites: legacy table builder
+  (`pdf-builder.ts`), document-builder table renderer
+  (`pdf-renderers.ts`), and TOC renderer. The change is intentional:
+  the Unicode ellipsis is the typographically correct character, is
+  ~50% narrower than three dots in Latin mode, and is a single
+  grapheme cluster.
+- **`WatermarkText.autoFit` defaults to `true`.** Generated PDF bytes
+  for callers that rely on overflowing watermark presets will differ.
+  Set `autoFit: false` on the `WatermarkText` to restore exact
+  v1.0.x output for those cases. Watermarks that already fit the page
+  are unaffected (the auto-fit branch is short-circuited when no
+  overflow is detected).
+
+### Internal
+
+- **tests:** 49 new tests across watermark auto-fit (5), column
+  min/max (6), updated truncate ellipsis (9), and the new decode filter
+  module (24). Test files: [tests/core/pdf-watermark.test.ts](tests/core/pdf-watermark.test.ts),
+  [tests/core/pdf-layout-columns.test.ts](tests/core/pdf-layout-columns.test.ts),
+  [tests/parser/pdf-decode-filters.test.ts](tests/parser/pdf-decode-filters.test.ts),
+  [tests/fonts/encoding.test.ts](tests/fonts/encoding.test.ts).
+
+### Tracked for v1.1.0 stable
+
+The following items are tracked under the v1.1.0 milestone and
+deliberately deferred from this alpha because they require atomic
+multi-file object-graph rewrites:
+
+- **Issue [#28](https://github.com/Nizoka/pdfnative/issues/28)** —
+  PDF/A Latin font embedding (Helvetica → Noto Sans Regular + Bold,
+  SIL OFL-1.1). Requires bundling pre-built font data, replacing
+  `helveticaWidth()` with embedded-font widths under PDF/A, and
+  renumbering the object graph atomically across `pdf-builder.ts`,
+  `pdf-document.ts`, and `pdf-assembler.ts`.
+- **Issue [#25](https://github.com/Nizoka/pdfnative/issues/25)** —
+  full UAX #9 W1–W7 + N1/N2 + isolates, multi-pass GSUB driver for
+  nested LookupType 4 ligatures, USE-lite cluster classification for
+  Indic scripts, and GPOS MarkBasePos for isolated Arabic harakat.
+- **Auto-fit column widths** — content-aware `mx` computation.
+- **Cell clipping paths** — `q re W n … Q` per cell.
+- **Constant-memory streaming** — page-by-page assembly without
+  buffering the full PDF.
+
+
 ## [1.0.5] – 2026-04-27
 
 ### Fixed

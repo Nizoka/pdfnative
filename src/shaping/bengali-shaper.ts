@@ -21,6 +21,7 @@
 
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { BENGALI_START, BENGALI_END, containsBengali } from './script-registry.js';
+import { tryLigature } from './gsub-driver.js';
 
 // Re-export range constants
 export { BENGALI_START, BENGALI_END, containsBengali };
@@ -244,28 +245,10 @@ export function shapeBengaliText(str: string, fontData: FontData): ShapedGlyph[]
 
     /**
      * Try to match a GID sequence against the GSUB ligature table.
-     * Returns the ligature result GID and the number of GIDs consumed,
-     * or null if no ligature matches.
-     *
-     * Ligature entries are sorted longest-first for greedy matching.
+     * Delegates to the shared driver in `gsub-driver.ts` (v1.1.0).
      */
-    function tryLigature(gids: number[]): { resultGid: number; consumed: number } | null {
-        if (!ligatures || gids.length < 2) return null;
-        const firstGid = gids[0];
-        const entries = ligatures[firstGid];
-        if (!entries) return null;
-
-        for (const entry of entries) {
-            // entry = [resultGid, comp1, comp2, ...]
-            const compCount = entry.length - 1;
-            if (compCount > gids.length - 1) continue;
-            let match = true;
-            for (let ci = 0; ci < compCount; ci++) {
-                if (gids[1 + ci] !== entry[1 + ci]) { match = false; break; }
-            }
-            if (match) return { resultGid: entry[0], consumed: compCount + 1 };
-        }
-        return null;
+    function tryLig(gids: number[]) {
+        return tryLigature(gids, ligatures);
     }
 
     function getAdv(gid: number): number {
@@ -366,7 +349,7 @@ export function shapeBengaliText(str: string, fontData: FontData): ShapedGlyph[]
 
         // Try ligature substitution on the full consonant+halant GID sequence
         let ligConsumed = 0;
-        const ligResult = tryLigature(clusterGids);
+        const ligResult = tryLig(clusterGids);
         if (ligResult) {
             // Ligature matched — emit single glyph for the entire matched sequence
             emitGlyph(ligResult.resultGid, false);
@@ -377,7 +360,7 @@ export function shapeBengaliText(str: string, fontData: FontData): ShapedGlyph[]
             let gi = ligConsumed;
             while (gi < clusterGids.length) {
                 const subSeq = clusterGids.slice(gi);
-                const subLig = tryLigature(subSeq);
+                const subLig = tryLig(subSeq);
                 if (subLig) {
                     emitGlyph(subLig.resultGid, false);
                     gi += subLig.consumed;

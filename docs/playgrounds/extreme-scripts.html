@@ -76,14 +76,14 @@
       <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
     </details>
 
-    <div style="margin-top:32px;padding:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;">
-      <strong style="color:#78350f;">Known shaping limitations (v1.0.3):</strong>
-      <ul style="margin-top:8px;color:#78350f;">
-        <li>Arabic isolated harakat (تشكيل) without a base consonant may render with default GPOS positioning rather than precise font anchors. <a href="https://github.com/Nizoka/pdfnative/issues" target="_blank" rel="noopener">Tracked issue →</a></li>
-        <li>Thai mark stacking on tall consonants (ป ฝ ฟ ฬ) relies on font anchor data; some 3+ mark combinations may overlap with v1.0.3 fonts.</li>
-        <li>Multi-stage Indic ligatures (ক্ষ্ম, क्ष्म) are matched greedily; some sequences with deep nesting may fall back to non-ligated forms.</li>
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">v1.1.0 shaping improvements:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li>Arabic harakat (تشكيل — fatha, kasra, damma, sukun, shadda…) now anchor on the preceding base glyph using font-provided GPOS MarkBasePos data, with fallback to (0, 0) when anchors are missing. Closes the visual half of <a href="https://github.com/Nizoka/pdfnative/issues/25" target="_blank" rel="noopener">#25</a>.</li>
+        <li>UAX #9 isolates (LRI / RLI / FSI / PDI, U+2066–U+2069) handled via three-tier dispatcher with full recursion. Nested and unmatched isolates supported.</li>
+        <li>Shared GSUB / GPOS drivers — Bengali / Tamil / Devanagari / Arabic shapers route through a single ligature lookup and a single mark-base anchor helper.</li>
       </ul>
-      <p style="color:#78350f;margin-top:8px;font-size:14px;">These limitations are tracked for the v1.1 minor release. The visual baseline is preserved in <code>test-output/extreme/</code>.</p>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">Visual baselines refreshed under <code>test-output/extreme/</code>. Remaining work — UAX #9 embeddings (LRE / RLE / LRO / RLO / PDF) and COLRv1 colour emoji — is scheduled for v1.2.0.</p>
     </div>
   </article>
 </main>

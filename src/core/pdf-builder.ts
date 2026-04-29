@@ -49,6 +49,7 @@ import {
     resolvePdfAConfig,
     buildEmbeddedFiles,
     validateAttachments,
+    utf8EncodeBinaryString,
 } from './pdf-tags.js';
 import type { EncryptionState } from './pdf-encrypt.js';
 import { initEncryption } from './pdf-encrypt.js';
@@ -283,7 +284,11 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     const fontEntries: FontEntry[] = params.fontEntries
         || (fontData ? [{ fontData, fontRef: '/F3', lang: 'unknown' }] : []);
 
-    const enc = createEncodingContext(fontEntries);
+    // Resolve PDF/A config early (required by encoding context)
+    const pdfaConfig = resolvePdfAConfig(layoutOptions?.tagged);
+    const tagged = pdfaConfig.enabled;
+
+    const enc = createEncodingContext(fontEntries, tagged);
 
     // ── Resolve header/footer templates ──────────────────────────────
     const footerTpl: PageTemplate = layoutOptions?.footerTemplate ?? {
@@ -313,8 +318,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     if (totalPages < 1) totalPages = 1;
 
     // ── Tagged mode setup ─────────────────────────────────────────────
-    const pdfaConfig = resolvePdfAConfig(layoutOptions?.tagged);
-    const tagged = pdfaConfig.enabled;
+    // (pdfaConfig and tagged already resolved above for encoding context)
 
     // ── Encryption setup ──────────────────────────────────────────────
     const encryptionOpts = layoutOptions?.encryption;
@@ -525,9 +529,22 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
 
-        // Helvetica fonts (kept for mixed-content fallback)
-        emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
-        emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+        if (tagged) {
+            // PDF/A: /F1 and /F2 must reference embedded fonts. Alias both to
+            // primary font's Type0 (sharing FontFile2 stream). Bold renders as
+            // regular under PDF/A — register a separate Bold font for true bold.
+            const pf = fontEntries[0];
+            const bfName = `/${pf.fontData.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
+            const primaryBase = 5;
+            const refDict = `<< /Type /Font /Subtype /Type0 /BaseFont ${bfName} ` +
+                `/Encoding /Identity-H /DescendantFonts [${primaryBase + 1} 0 R] /ToUnicode ${primaryBase + 4} 0 R >>`;
+            emitObj(3, refDict);
+            emitObj(4, refDict);
+        } else {
+            // Helvetica fonts (kept for mixed-content fallback)
+            emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+        }
 
         // CIDFont Type2 objects — one group of 5 per fontEntry
         for (let fi = 0; fi < fontEntries.length; fi++) {
@@ -704,7 +721,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
 
         // XMP metadata stream (skip compression for PDF/A validator compatibility)
         xmpObjNum = totalObjs + 1;
-        const xmpContent = buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance);
+        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;

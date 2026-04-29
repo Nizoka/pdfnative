@@ -64,6 +64,9 @@
   </div>
 </nav>
 
+<!-- Live version strip (compact) -->
+<div class="pn-version-strip" data-mode="compact" aria-label="Live published versions"></div>
+
 <main class="guide-shell">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; MCP tool explorer</p>
   <nav class="playground-switcher" aria-label="Playground switcher">
@@ -77,6 +80,8 @@
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
     <p>The eight tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> (currently <strong>v0.1.0</strong>) into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
+
+    <section id="pdfnative-versions" class="pn-versions" aria-label="Live package versions"></section>
 
     <p style="font-size: 14px; color: var(--c-text-dim);">For the full integration story (config, security model, signed-document workflow), see the <a href="../guides/mcp.html">MCP guide</a>.</p>
 
@@ -464,5 +469,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js" defer></script>
+<script src="../assets/versions.js" defer></script>
 </body>
 </html>

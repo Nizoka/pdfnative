@@ -29,28 +29,40 @@ Every output written with `tagged` set ships:
 - `/Info CreationDate` byte-equivalent to `xmp:CreateDate`, both with
   timezone offsets.
 
-## v1.0.4 status
+## v1.1.0 status — fully validated
 
-The v1.0.4 patch closes the upstream metadata defects flagged by the
-official veraPDF reference validator on `medical-800p.pdf` and
-`barcode-showcase.pdf`:
+v1.1.0 ships full PDF/A-1b / 2b / 2u / 3b conformance against the
+official veraPDF reference validator. The validator runs as a
+**blocking** check on every PR (see
+[.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml)).
 
 | Rule | Status | Fixed in |
 |------|--------|----------|
 | ISO 19005-1 §6.1.3 — trailer `/ID` always present | ✅ | v1.0.4 |
 | veraPDF 6.7.3 t1 — `CreationDate` ↔ `xmp:CreateDate` parity | ✅ | v1.0.4 |
+| veraPDF 6.7.3 t1 — `dc:title` ↔ `/Info /Title` parity | ✅ | v1.1.0 |
+| veraPDF 6.7.3 t4 — `dc:description` ↔ `/Info /Subject` parity | ✅ | v1.1.0 |
+| veraPDF 6.7.3 t5 — `pdf:Keywords` ↔ `/Info /Keywords` parity | ✅ | v1.1.0 |
 | veraPDF 6.7.3 — `dc:creator` ↔ `/Info /Author` parity | ✅ | v1.0.4 |
-| ISO 19005-1 §6.3.4 — `isFontEmbedded` (Latin Helvetica) | ❌ | tracked → v1.0.5 |
-| veraPDF 6.2.3.3 — DeviceRGB cascade audit | ❓ | tracked → v1.0.5 |
+| ISO 19005-1 §6.3.4 — Latin font embedding | ✅ | v1.1.0 |
+| ISO 19005-2 §6.2.11.4.1 — Type0 font references | ✅ | v1.1.0 |
+| veraPDF 6.2.3.3 — DeviceRGB OutputIntent | ✅ | v1.0.4 |
 
-Until v1.0.5 ships, the `pdfaid:part` claim in XMP must be considered
-**aspirational** for any document containing Latin runs — pdfnative
-still emits Helvetica as an unembedded standard 14 reference, which
-PDF/A forbids. We chose to keep the metadata correct and surface the
-gap honestly rather than silently invalidate output.
+To produce a strictly veraPDF-compliant PDF/A document, register the
+Latin font module (one line at app startup):
 
-The full v1.0.5 plan lives in
-[release-notes/draft-issue-v1.0.5-latin-embedding.md](https://github.com/Nizoka/pdfnative/blob/main/release-notes/draft-issue-v1.0.5-latin-embedding.md).
+```ts
+import { registerFont, buildPDFBytes } from 'pdfnative';
+
+registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'));
+
+const pdf = buildPDFBytes(params, { tagged: true });
+```
+
+Without the `'latin'` font registered, pdfnative falls back to the
+unembedded Helvetica standard-14 references for byte-stable v1.0.x
+output — convenient for non-archival rendering but invalid under
+PDF/A.
 
 ## Validating your output
 
@@ -139,9 +151,11 @@ If you want a file to be validated, generate it with `tagged: true`
 
 **"My tagged file still fails rule 6.3.4 (font embedding)."**
 
-This is the documented v1.0.4 known limitation — see the table at
-the top of this page. Tracking issue:
-[draft-issue-v1.0.5-latin-embedding.md](https://github.com/Nizoka/pdfnative/blob/main/release-notes/draft-issue-v1.0.5-latin-embedding.md).
+Register the Latin font module: `registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'))`.
+Without it, pdfnative emits Helvetica as an unembedded standard-14
+reference for byte-stable v1.0.x output. With it, every glyph used
+in the document is embedded as `CIDFontType2` / `FontFile2` — see
+the v1.1.0 status table above.
 
 ### Output bytes change in v1.0.4
 
