@@ -37,6 +37,12 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **PDF parser & modifier** — full PDF reader (tokenizer, object parser, xref table/stream, page tree, FlateDecode inflate) + incremental modification (non-destructive save with /Prev chain)
 - [x] **npm metadata enrichment** — description enumerates 16 scripts + headline features (BiDi, PDF/A, encryption, signatures, AcroForm, barcodes, SVG); keywords expanded to 27 entries for npm search discoverability (v1.0.2)
 - [x] **pdfnative-mcp** — Model Context Protocol server bridging pdfnative to AI clients (Claude Desktop, Cursor, Continue, Zed): 8 production tools (`generate_basic_pdf`, `add_table`, `add_barcode`, `add_international_text`, `add_form`, `embed_image`, `prepare_signature_placeholder`, `sign_pdf`), stdio/HTTP transport, sandboxed file output. See [pdfnative-mcp on GitHub](https://github.com/Nizoka/pdfnative-mcp)
+- [x] **Watermark auto-fit** (v1.1.0) — text watermarks with aggressive `fontSize` + `angle` combinations are now scaled down so the rotated bounding box fits within the page. Default `autoFit: true`; opt-out via `autoFit: false` for byte-stable v1.0.x output. ([src/core/pdf-watermark.ts](src/core/pdf-watermark.ts))
+- [x] **Unicode ellipsis** (v1.1.0) — `truncate()` and TOC truncation use `…` (U+2026) instead of `..` / `...` for professional typographic output (single grapheme cluster, ~50% narrower in Latin mode, identical glyph in CIDFont mode).
+- [x] **Pixel-based truncation API** (v1.1.0) — new `truncateToWidth(str, maxWidthPt, sz, enc)` exported from the root for measurement-based string shortening that respects proportional font widths.
+- [x] **Column min/max constraints** (v1.1.0) — additive `minWidth` / `maxWidth` (in points) on `ColumnDef`; constrained columns are clamped first, surplus or deficit is redistributed across unconstrained columns proportional to their `f` weight. Byte-identical to v1.0.5 when no constraint is set.
+- [x] **Additional PDF decode filters** (v1.1.0) — `ASCII85Decode`, `ASCIIHexDecode`, `LZWDecode` (variable-width 9–12 bit), and `RunLengthDecode` in the parser module. Handles single-filter and multi-filter chain dispatch. ([src/parser/pdf-decode-filters.ts](src/parser/pdf-decode-filters.ts))
+- [x] **Live version widget for the docs site** (v1.1.0) — zero-build, registry-fetched panel showing live versions of `pdfnative`, `pdfnative-cli`, `pdfnative-mcp`, plus the transitive `pdfnative` pin declared by each downstream package. Mounted on the homepage and both playgrounds. ([docs/assets/versions.js](docs/assets/versions.js))
 
 ## In Progress
 
@@ -79,13 +85,9 @@ for the full root-cause analysis.
 
 ### Medium-Term
 
-- [ ] **Pixel-based truncation** — truncate table cell text at the actual column width in PDF points (replace character-count truncation in `truncate()`)
-- [ ] **Unicode ellipsis** — use `…` (U+2026) instead of `..` for professional typographic rendering
 - [ ] **Auto-fit column widths** — scan input data to compute optimal `mx` per column automatically
-- [ ] **Column min/max constraints** — optional `minWidth` / `maxWidth` in `ColumnDef` for fine-grained control
 - [ ] **Cell clipping paths** — PDF clip rectangle per table cell (`q re W n … Q`) to prevent visual overflow
 - [ ] **Constant-memory streaming** — page-by-page assembly for very large documents without buffering the full PDF
-- [ ] **Additional PDF decode filters** — ASCII85Decode, LZWDecode support in the parser module
 
 ### Long-Term
 

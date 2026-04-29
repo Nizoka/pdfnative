@@ -7,6 +7,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0-alpha.1] – 2026-04-29
+
+This release lands the **Medium-Term roadmap items** that fit cleanly within
+a SemVer-minor surface, plus a watermark layout fix that ships a sane default
+for aggressive `fontSize` + `angle` combinations. Two larger epics — issue
+[#28](https://github.com/Nizoka/pdfnative/issues/28) (PDF/A Latin font
+embedding) and issue [#25](https://github.com/Nizoka/pdfnative/issues/25)
+(full UAX #9 BiDi + multi-pass GSUB) — remain in progress for the
+v1.1.0 stable cut: they require atomic object-graph renumbering and font-data
+rebuilds whose risk profile is incompatible with shipping in the same
+iteration as smaller, fully-tested changes.
+
+### Added
+
+- **core(watermark):** `WatermarkText.autoFit?: boolean` — when `true`
+  (the new default), the renderer scales `fontSize` down so the rotated
+  bounding box `(textW·|cos θ| + textH·|sin θ|, textW·|sin θ| + textH·|cos θ|)`
+  fits within the page minus a 24 pt safety margin. Aggressive presets
+  like `fontSize: 120, angle: -30` on A4 no longer overflow the page;
+  set `autoFit: false` to preserve byte-stable v1.0.x output.
+  ([src/core/pdf-watermark.ts](src/core/pdf-watermark.ts))
+- **fonts(encoding):** new `truncateToWidth(str, maxWidthPt, sz, enc)`
+  exported from the root — measurement-based string shortening that
+  respects proportional font widths in both Latin and CIDFont modes.
+  Uses the active encoding context's width metrics; appends the Unicode
+  horizontal ellipsis (`…`, U+2026) on truncation.
+  ([src/fonts/encoding.ts](src/fonts/encoding.ts))
+- **types(layout):** `ColumnDef.minWidth?: number` /
+  `ColumnDef.maxWidth?: number` — additive constraints on table column
+  widths in points. Constrained columns are clamped first, then the
+  surplus or deficit is redistributed across the unconstrained columns
+  proportional to their `f` weight. When neither is set on any column,
+  output is byte-identical to v1.0.5.
+  ([src/core/pdf-layout.ts](src/core/pdf-layout.ts))
+- **parser(decode):** new `pdf-decode-filters.ts` module — pure,
+  zero-dependency decoders for the standard non-Flate stream filters:
+  `ASCIIHexDecode` (§7.4.2), `ASCII85Decode` (§7.4.3),
+  `LZWDecode` (§7.4.4, variable-width 9–12 bit codes with CLEAR / EOD),
+  and `RunLengthDecode` (§7.4.5). Wired into the reader's single-filter
+  and multi-filter-chain dispatch. Includes a 256 MiB output cap to
+  defend against zip-bomb-style adversarial streams.
+  ([src/parser/pdf-decode-filters.ts](src/parser/pdf-decode-filters.ts))
+- **docs(site):** live version widget — zero-build, zero-dependency
+  panel that fetches the latest `pdfnative`, `pdfnative-cli`, and
+  `pdfnative-mcp` versions from `registry.npmjs.org` on page load and
+  surfaces the **transitive `pdfnative` pin** declared by each
+  downstream package. Mounted on the homepage and both playgrounds.
+  Falls back to static defaults when the registry is unreachable.
+  ([docs/assets/versions.js](docs/assets/versions.js))
+
+### Changed
+
+- **fonts(encoding):** `truncate(str, max)` now appends `…` (U+2026)
+  instead of `..`. The Unicode ellipsis is a single grapheme cluster,
+  is mapped to WinAnsi `0x85`, and renders correctly in both Latin and
+  CIDFont modes. Output is one character shorter for the same `max`
+  (e.g. `truncate('Hello World', 7)` was `'Hello..'`, now `'Hello …'`).
+  See **Breaking Changes** below.
+- **core(renderers):** TOC entry truncation uses `…` (U+2026) instead
+  of `'...'` (three ASCII dots).
+  ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
+
+### Breaking Changes
+
+- **`truncate()` ellipsis character changed** from `..` (two ASCII
+  dots) to `…` (U+2026). Snapshot-style assertions on truncated cell
+  text need updating. Affected call sites: legacy table builder
+  (`pdf-builder.ts`), document-builder table renderer
+  (`pdf-renderers.ts`), and TOC renderer. The change is intentional:
+  the Unicode ellipsis is the typographically correct character, is
+  ~50% narrower than three dots in Latin mode, and is a single
+  grapheme cluster.
+- **`WatermarkText.autoFit` defaults to `true`.** Generated PDF bytes
+  for callers that rely on overflowing watermark presets will differ.
+  Set `autoFit: false` on the `WatermarkText` to restore exact
+  v1.0.x output for those cases. Watermarks that already fit the page
+  are unaffected (the auto-fit branch is short-circuited when no
+  overflow is detected).
+
+### Internal
+
+- **tests:** 49 new tests across watermark auto-fit (5), column
+  min/max (6), updated truncate ellipsis (9), and the new decode filter
+  module (24). Test files: [tests/core/pdf-watermark.test.ts](tests/core/pdf-watermark.test.ts),
+  [tests/core/pdf-layout-columns.test.ts](tests/core/pdf-layout-columns.test.ts),
+  [tests/parser/pdf-decode-filters.test.ts](tests/parser/pdf-decode-filters.test.ts),
+  [tests/fonts/encoding.test.ts](tests/fonts/encoding.test.ts).
+
+### Tracked for v1.1.0 stable
+
+The following items are tracked under the v1.1.0 milestone and
+deliberately deferred from this alpha because they require atomic
+multi-file object-graph rewrites:
+
+- **Issue [#28](https://github.com/Nizoka/pdfnative/issues/28)** —
+  PDF/A Latin font embedding (Helvetica → Noto Sans Regular + Bold,
+  SIL OFL-1.1). Requires bundling pre-built font data, replacing
+  `helveticaWidth()` with embedded-font widths under PDF/A, and
+  renumbering the object graph atomically across `pdf-builder.ts`,
+  `pdf-document.ts`, and `pdf-assembler.ts`.
+- **Issue [#25](https://github.com/Nizoka/pdfnative/issues/25)** —
+  full UAX #9 W1–W7 + N1/N2 + isolates, multi-pass GSUB driver for
+  nested LookupType 4 ligatures, USE-lite cluster classification for
+  Indic scripts, and GPOS MarkBasePos for isolated Arabic harakat.
+- **Auto-fit column widths** — content-aware `mx` computation.
+- **Cell clipping paths** — `q re W n … Q` per cell.
+- **Constant-memory streaming** — page-by-page assembly without
+  buffering the full PDF.
+
+
 ## [1.0.5] – 2026-04-27
 
 ### Fixed

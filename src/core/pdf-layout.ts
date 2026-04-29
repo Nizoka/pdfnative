@@ -65,19 +65,62 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
 
 /**
  * Compute column X positions and widths given columns and content width.
+ *
+ * Honours optional `minWidth` / `maxWidth` constraints (in points) by clamping
+ * each constrained column then redistributing the surplus or deficit across
+ * the unconstrained columns proportional to their fractional weight `f`.
+ * Falls back to a single uniform proration pass when all columns are
+ * constrained or the unconstrained weights sum to zero.
+ *
+ * @since 1.1.0 — added support for `minWidth` / `maxWidth` (additive).
  */
 export function computeColumnPositions(
     columns: readonly ColumnDef[],
     marginLeft: number,
     contentWidth: number
 ): { cx: number[]; cwi: number[] } {
-    const cx: number[] = [];
-    const cwi: number[] = [];
+    const n = columns.length;
+    const cwi: number[] = new Array<number>(n).fill(0);
+    const fixed: boolean[] = new Array<boolean>(n).fill(false);
+    let totalFixed = 0;
+    let freeWeight = 0;
+
+    // Pass 1: clamp columns whose nominal `f * contentWidth` violates a bound.
+    for (let i = 0; i < n; i++) {
+        const col = columns[i];
+        let w = col.f * contentWidth;
+        let clamped = false;
+        if (col.minWidth !== undefined && w < col.minWidth) {
+            w = col.minWidth;
+            clamped = true;
+        }
+        if (col.maxWidth !== undefined && w > col.maxWidth) {
+            w = col.maxWidth;
+            clamped = true;
+        }
+        if (clamped) {
+            cwi[i] = w;
+            fixed[i] = true;
+            totalFixed += w;
+        } else {
+            freeWeight += col.f;
+        }
+    }
+
+    // Pass 2: distribute remaining width across unconstrained columns.
+    const remaining = contentWidth - totalFixed;
+    if (freeWeight > 0) {
+        for (let i = 0; i < n; i++) {
+            if (!fixed[i]) cwi[i] = (columns[i].f / freeWeight) * remaining;
+        }
+    }
+
+    // Compute X positions in column order.
+    const cx: number[] = new Array<number>(n);
     let x = marginLeft;
-    for (const col of columns) {
-        cx.push(x);
-        cwi.push(col.f * contentWidth);
-        x += col.f * contentWidth;
+    for (let i = 0; i < n; i++) {
+        cx[i] = x;
+        x += cwi[i];
     }
     return { cx, cwi };
 }

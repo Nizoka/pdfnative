@@ -577,3 +577,82 @@ describe('text watermark centering (regression)', () => {
         expect(visualCy).toBeCloseTo(pgH / 2, 0);
     });
 });
+
+// ── autoFit (v1.1.0) ────────────────────────────────────────────────
+
+describe('text watermark — autoFit (v1.1.0)', () => {
+    function tfFromOps(ops: string): number | null {
+        const m = ops.match(/(\d+\.\d+) Tf/);
+        return m ? parseFloat(m[1]) : null;
+    }
+
+    it('does NOT scale a watermark that fits within the page', () => {
+        const enc = makeEnc();
+        const wm: WatermarkOptions = {
+            text: { text: 'DRAFT', fontSize: 60, angle: -45 },
+        };
+        const state = buildWatermarkState(wm, 595, 842, enc);
+        // 'DRAFT' at 60pt rotated 45° on A4 = ~175pt rotW → no scaling
+        expect(tfFromOps(state.backgroundOps)).toBeCloseTo(60, 1);
+    });
+
+    it('scales an oversized watermark down to fit (default autoFit=true)', () => {
+        const enc = makeEnc();
+        // Aggressive setup: long text, large size, steep angle, A4 page
+        const wm: WatermarkOptions = {
+            text: { text: 'CONFIDENTIAL DOCUMENT', fontSize: 120, angle: -30 },
+        };
+        const state = buildWatermarkState(wm, 595, 842, enc);
+        const sz = tfFromOps(state.backgroundOps);
+        expect(sz).not.toBeNull();
+        expect(sz!).toBeLessThan(120);
+        expect(sz!).toBeGreaterThan(0);
+    });
+
+    it('preserves byte-stable behaviour when autoFit is explicitly disabled', () => {
+        const enc = makeEnc();
+        const wm: WatermarkOptions = {
+            text: { text: 'CONFIDENTIAL DOCUMENT', fontSize: 120, angle: -30, autoFit: false },
+        };
+        const state = buildWatermarkState(wm, 595, 842, enc);
+        // With autoFit=false, fontSize must be emitted unchanged.
+        expect(tfFromOps(state.backgroundOps)).toBeCloseTo(120, 1);
+    });
+
+    it('scales differently on landscape vs portrait pages', () => {
+        const enc = makeEnc();
+        const wm: WatermarkOptions = {
+            text: { text: 'CONFIDENTIAL DOCUMENT', fontSize: 200, angle: -30 },
+        };
+        const portrait = buildWatermarkState(wm, 595, 842, enc);
+        const landscape = buildWatermarkState(wm, 842, 595, enc);
+        const szP = tfFromOps(portrait.backgroundOps);
+        const szL = tfFromOps(landscape.backgroundOps);
+        expect(szP).not.toBeNull();
+        expect(szL).not.toBeNull();
+        // Both scaled below 200; sizes can legitimately differ since
+        // the rotated bbox has different overflow on each axis.
+        expect(szP!).toBeLessThan(200);
+        expect(szL!).toBeLessThan(200);
+    });
+
+    it('keeps the watermark inside the page bounds after auto-fit', () => {
+        const enc = makeEnc();
+        const wm: WatermarkOptions = {
+            text: { text: 'CONFIDENTIAL DOCUMENT', fontSize: 200, angle: -30 },
+        };
+        const state = buildWatermarkState(wm, 595, 842, enc);
+        const sz = tfFromOps(state.backgroundOps)!;
+        // Recompute rotated bbox at the emitted size and assert it fits.
+        const angle = -30 * Math.PI / 180;
+        const cos = Math.abs(Math.cos(angle));
+        const sin = Math.abs(Math.sin(angle));
+        const textW = enc.tw('CONFIDENTIAL DOCUMENT', sz);
+        const textH = sz * 0.718;
+        const rotW = textW * cos + textH * sin;
+        const rotH = textW * sin + textH * cos;
+        const safety = 24;
+        expect(rotW).toBeLessThanOrEqual(595 - safety * 2 + 0.5);
+        expect(rotH).toBeLessThanOrEqual(842 - safety * 2 + 0.5);
+    });
+});

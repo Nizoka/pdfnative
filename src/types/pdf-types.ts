@@ -171,6 +171,20 @@ export interface ColumnDef {
     readonly mx: number;
     /** Max characters for header cells. */
     readonly mxH: number;
+    /**
+     * Minimum column width in points. When set, the resolved width is
+     * clamped to at least this value, redistributing the surplus across
+     * the remaining unconstrained columns (proportional to their `f`).
+     * @since 1.1.0
+     */
+    readonly minWidth?: number;
+    /**
+     * Maximum column width in points. When set, the resolved width is
+     * clamped to at most this value, redistributing the surplus across
+     * the remaining unconstrained columns (proportional to their `f`).
+     * @since 1.1.0
+     */
+    readonly maxWidth?: number;
 }
 
 /**
@@ -409,6 +423,15 @@ export interface WatermarkText {
     readonly opacity?: number;
     /** Rotation angle in degrees (counterclockwise). Default: -45. */
     readonly angle?: number;
+    /**
+     * Auto-fit: clamp `fontSize` so the rotated bounding box fits within the
+     * page minus a 24-pt safety margin. Default: `true` (added in v1.1.0).
+     *
+     * Set to `false` to preserve byte-stable output when callers depend on
+     * the exact `fontSize` even if it produces a watermark that overflows
+     * the page (legacy v1.0.x behaviour).
+     */
+    readonly autoFit?: boolean;
 }
 
 /**

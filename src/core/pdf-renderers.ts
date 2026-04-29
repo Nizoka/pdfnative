@@ -813,10 +813,11 @@ export function renderToc(
 
         let displayText = heading.text;
         if (measureText(displayText, sz, enc) > availTextW) {
-            while (displayText.length > 1 && measureText(displayText + '...', sz, enc) > availTextW) {
+            const ell = '…';
+            while (displayText.length > 1 && measureText(displayText + ell, sz, enc) > availTextW) {
                 displayText = displayText.slice(0, -1);
             }
-            displayText += '...';
+            displayText += ell;
         }
         const textW = measureText(displayText, sz, enc);
 

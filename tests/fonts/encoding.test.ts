@@ -147,8 +147,8 @@ describe('truncate', () => {
         expect(truncate('Hello', 10)).toBe('Hello');
     });
 
-    it('should truncate and add .. if over max', () => {
-        expect(truncate('Hello World', 7)).toBe('Hello..');
+    it('should truncate and append … (U+2026) if over max', () => {
+        expect(truncate('Hello World', 7)).toBe('Hello \u2026');
     });
 
     it('should handle exact max length', () => {
@@ -163,20 +163,20 @@ describe('truncate', () => {
         expect(truncate(undefined as unknown as string, 10)).toBe('');
     });
 
-    it('should return .. for max=1 (negative slice guard)', () => {
-        expect(truncate('Hello', 1)).toBe('..');
+    it('should return … for max=1 (negative slice guard)', () => {
+        expect(truncate('Hello', 1)).toBe('\u2026');
     });
 
-    it('should return .. for max=0', () => {
-        expect(truncate('Hello', 0)).toBe('..');
+    it('should return … for max=0', () => {
+        expect(truncate('Hello', 0)).toBe('\u2026');
     });
 
-    it('should return .. for max=2 with long input', () => {
-        expect(truncate('Hello', 2)).toBe('..');
+    it('should return H… for max=2 with long input', () => {
+        expect(truncate('Hello', 2)).toBe('H\u2026');
     });
 
-    it('should return H.. for max=3', () => {
-        expect(truncate('Hello', 3)).toBe('H..');
+    it('should return He… for max=3', () => {
+        expect(truncate('Hello', 3)).toBe('He\u2026');
     });
 });
 

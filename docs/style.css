@@ -488,3 +488,70 @@ img, svg { max-width: 100%; height: auto; }
 .playground-switcher a:hover { background: var(--c-surface); }
 .playground-switcher a[aria-current="page"] { background: var(--c-primary); color: #fff; }
 .playground-switcher a[aria-current="page"]:hover { background: var(--c-accent); }
+
+/* ── Live version widget (v1.1.0) ─────────────────────────────────── */
+.pn-versions {
+  border: 1px solid var(--c-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 18px 20px;
+  background: var(--c-surface, #fff);
+  margin: 24px 0;
+}
+.pn-versions-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--c-text, #0f172a);
+}
+.pn-versions-sub {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--c-text-dim, #64748b);
+}
+.pn-versions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.pn-versions-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px dashed var(--c-border, #e2e8f0);
+}
+.pn-versions-list li:first-child { border-top: 0; }
+.pn-versions-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--c-text, #0f172a);
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+.pn-versions-name:hover { text-decoration: underline; }
+.pn-versions-ver {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-accent, #2563eb);
+  background: rgba(37, 99, 235, .08);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.pn-versions-pin {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--c-text-dim, #64748b);
+}
+.pn-versions-foot {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: var(--c-text-dim, #64748b);
+}
+.pn-versions-foot a { color: inherit; }

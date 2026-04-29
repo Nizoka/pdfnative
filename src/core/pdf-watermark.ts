@@ -54,6 +54,13 @@ const DEFAULT_IMAGE_OPACITY = 0.10;
  */
 const DEFAULT_CAP_HEIGHT_RATIO = 0.718;
 
+/**
+ * Safety margin in points subtracted from each page edge before sizing
+ * an auto-fit text watermark. 24 pt ≈ 1/3 inch — large enough to keep
+ * the watermark visually centred without grazing the page bounds.
+ */
+const WATERMARK_SAFETY_MARGIN = 24;
+
 // ── Public API ───────────────────────────────────────────────────────
 
 /**
@@ -147,18 +154,42 @@ function _buildTextWatermarkOps(
     enc: EncodingContext,
     gsName: string,
 ): string {
-    const sz = wm.fontSize ?? DEFAULT_TEXT_FONT_SIZE;
+    let sz = wm.fontSize ?? DEFAULT_TEXT_FONT_SIZE;
     const color = parseColor(wm.color ?? DEFAULT_TEXT_COLOR);
     const angle = (wm.angle ?? DEFAULT_TEXT_ANGLE) * DEG_TO_RAD;
 
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
 
+    // Auto-fit (default true since v1.1.0): scale `sz` down so the rotated
+    // bounding box fits within the page minus a safety margin. Without this
+    // step, callers that pass an aggressive `fontSize` + `angle` combination
+    // (e.g. fontSize=88 at -30° on A4) end up with a watermark that
+    // overflows the page on one or both axes.
+    const fdMetrics = enc.fontData?.metrics;
+    const capRatio = fdMetrics
+        ? fdMetrics.capHeight / fdMetrics.unitsPerEm
+        : DEFAULT_CAP_HEIGHT_RATIO;
+    if (wm.autoFit !== false) {
+        const textW = enc.tw(wm.text, sz);
+        const textH = sz * capRatio;
+        const aCos = Math.abs(cos);
+        const aSin = Math.abs(sin);
+        const rotW = textW * aCos + textH * aSin;
+        const rotH = textW * aSin + textH * aCos;
+        const safeW = pgW - WATERMARK_SAFETY_MARGIN * 2;
+        const safeH = pgH - WATERMARK_SAFETY_MARGIN * 2;
+        if (rotW > safeW || rotH > safeH) {
+            const scale = Math.min(safeW / rotW, safeH / rotH);
+            sz *= scale;
+        }
+    }
+
     // Center of page
     const cx = pgW / 2;
     const cy = pgH / 2;
 
-    // Approximate text width to center it
+    // Approximate text width to center it (re-measured at the final size).
     const textWidth = enc.tw(wm.text, sz);
     const offsetX = -textWidth / 2;
 
@@ -167,11 +198,7 @@ function _buildTextWatermarkOps(
     // first glyph at (tx, ty), so we shift the baseline downward by half the
     // cap height. When the encoding context exposes font metrics we use the
     // actual cap height; otherwise we fall back to Helvetica's 0.718 ratio.
-    const fd = enc.fontData;
-    const capHeightRatio = fd
-        ? fd.metrics.capHeight / fd.metrics.unitsPerEm
-        : DEFAULT_CAP_HEIGHT_RATIO;
-    const offsetY = -sz * capHeightRatio / 2;
+    const offsetY = -sz * capRatio / 2;
 
     // Apply rotation offset to center
     const tx = cx + offsetX * cos - offsetY * sin;
