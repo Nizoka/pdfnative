@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLI Command Builder — pdfnative-cli playground</title>
-  <meta name="description" content="Interactive command-builder for pdfnative-cli v0.2.0 — assemble render, sign, inspect, and verify invocations with full flag coverage. Live shell preview, copy-to-clipboard, validation. Zero install.">
+  <title>CLI Command Builder — pdfnative-cli v0.3.0 playground</title>
+  <meta name="description" content="Interactive command-builder for pdfnative-cli v0.3.0 — assemble render, sign, inspect, and verify invocations with full flag coverage. ECDSA-SHA256, RFC 3161 detection, --watch, --template, --font. Live shell preview, copy-to-clipboard, validation. Zero install.">
+  <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/cli.html">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -84,7 +85,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-cli command builder</h1>
-    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers the full <a href="../guides/cli.html">v0.2.0 surface</a>: <code>render</code>, <code>sign</code>, <code>inspect</code>, and <code>verify</code>. The builder runs entirely in your browser — nothing is uploaded.</p>
+    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers the full <a href="../guides/cli.html">v0.3.0 surface</a>: <code>render</code> (with <code>--watch</code> / <code>--template</code> / <code>--font</code>), <code>sign</code> (RSA + ECDSA-SHA256, auto signature placeholder), <code>inspect</code>, and <code>verify</code> (real CMS verification + RFC 3161 detection). The builder runs entirely in your browser — nothing is uploaded.</p>
 
     <section id="pdfnative-versions" class="pn-versions" aria-label="Live package versions"></section>
 
@@ -107,10 +108,10 @@
     </div>
 
     <div class="cli-tabs" role="tablist">
-      <button class="cli-tab" role="tab" aria-selected="true"  data-tab="render">render</button>
-      <button class="cli-tab" role="tab" aria-selected="false" data-tab="sign">sign</button>
+      <button class="cli-tab" role="tab" aria-selected="true"  data-tab="render">render <span class="new-badge">v0.3.0</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="sign">sign <span class="new-badge">v0.3.0</span></button>
       <button class="cli-tab" role="tab" aria-selected="false" data-tab="inspect">inspect</button>
-      <button class="cli-tab" role="tab" aria-selected="false" data-tab="verify">verify <span class="new-badge">v0.2.0</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="verify">verify <span class="new-badge">v0.3.0</span></button>
     </div>
 
     <!-- ─────────────── RENDER ─────────────── -->
@@ -182,6 +183,31 @@
           <input id="r-lang" type="text" data-cmd="render" data-flag="--lang" placeholder="th,ja,ar">
           <span class="hint">Comma-separated language codes. Non-Latin requires a <code>registerFontLoader()</code> wrapper.</span>
         </div>
+
+        <fieldset>
+          <legend>Iteration helpers <span style="color:var(--c-success);font-size:11px;font-weight:700;">(v0.3.0)</span></legend>
+          <div class="grid">
+            <div>
+              <label><input type="checkbox" data-cmd="render" data-flag="--watch"> --watch</label>
+              <span class="hint">Re-render on input/layout/template change. Requires <code>--input</code> + <code>--output</code>.</span>
+            </div>
+            <div>
+              <label for="r-template">--template</label>
+              <input id="r-template" type="text" data-cmd="render" data-flag="--template" placeholder="vars.json">
+              <span class="hint">JSON file with <code>{ "key": "value" }</code> pairs substituted into the document.</span>
+            </div>
+            <div>
+              <label for="r-font">--font</label>
+              <select id="r-font" data-cmd="render" data-flag="--font">
+                <option value="">— none —</option>
+                <option value="latin">latin (Noto Sans VF)</option>
+                <option value="emoji">emoji (Noto Emoji)</option>
+                <option value="latin,emoji">latin,emoji</option>
+              </select>
+              <span class="hint">Bundled font codes. For other scripts use <code>--lang</code>.</span>
+            </div>
+          </div>
+        </fieldset>
 
         <fieldset>
           <legend>Watermark</legend>
@@ -303,7 +329,7 @@
           <select id="s-algo" data-cmd="sign" data-flag="--algorithm">
             <option value="">rsa-sha256 (default)</option>
             <option value="rsa-sha256">rsa-sha256</option>
-            <option value="ecdsa-sha256">ecdsa-sha256 (stub in v0.2.0)</option>
+            <option value="ecdsa-sha256">ecdsa-sha256</option>
           </select>
         </div>
         <div>
@@ -389,7 +415,7 @@
           <span class="hint">Trust-anchor PEMs. Repeatable.</span>
         </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Scope (v0.2.0): byte-range integrity (SHA-256), certificate chain, trust evaluation. Out of scope: full CMS signature-value, OCSP/CRL, RFC 3161 timestamps, LTV — see the <a href="../guides/cli.html#pdfnative-verify-new-in-v020">CLI guide</a>.</p>
+      <p class="hint" style="margin-top: 14px;">Scope (v0.3.0): full CMS/PKCS#7 verification (RSA + ECDSA-SHA256), byte-range integrity (SHA-256), certificate chain, trust evaluation against <code>--trust</code> roots, and RFC 3161 timestamp <em>detection</em>. Out of scope (planned for v0.4.0): TSA chain validation, OCSP/CRL revocation, LTV — see the <a href="../guides/cli.html#pdfnative-verify-new-in-v020">CLI guide</a>.</p>
     </section>
 
     <div class="cli-validation" id="validation"></div>
@@ -405,9 +431,9 @@
 
     <h2>Resources</h2>
     <ul>
-      <li><a href="../guides/cli.html">CLI guide</a> — full v0.2.0 reference, security model, recipes</li>
+      <li><a href="../guides/cli.html">CLI guide</a> — full v0.3.0 reference, security model, recipes</li>
       <li><a href="https://github.com/Nizoka/pdfnative-cli">pdfnative-cli on GitHub</a></li>
-      <li><a href="https://github.com/Nizoka/pdfnative-cli/blob/main/release-notes/v0.2.0.md">v0.2.0 release notes</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative-cli/blob/main/release-notes/v0.3.0.md">v0.3.0 release notes</a></li>
       <li><a href="../guides/mcp.html">MCP guide</a> &middot; <a href="./mcp.html">MCP playground</a></li>
     </ul>
   </article>
@@ -534,9 +560,9 @@
 
     if (activeCmd === 'sign') {
       const s = state.sign;
-      if (!s['--input']) warns.push('`sign` requires `--input` (no stdin sentinel for binary signing in v0.2.0 sample workflows).');
+      if (!s['--input']) warns.push('`sign` requires `--input` (no stdin sentinel for binary signing).');
       if (s['--algorithm'] === 'ecdsa-sha256') {
-        warns.push('`--algorithm ecdsa-sha256` is parsed but returns a clear stub error in v0.2.0 (full support tracked for v0.3.0).');
+        warns.push('`--algorithm ecdsa-sha256` requires a P-256 (secp256r1) private key. Fully wired in v0.3.0.');
       }
       if (s['--signing-time'] && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s['--signing-time'])) {
         errors.push('`--signing-time` must be ISO 8601 (e.g. `2026-04-28T10:00:00Z`).');

@@ -68,7 +68,7 @@
         host.setAttribute('data-pdfnative-mcp-version', results['pdfnative-mcp'].version);
     }
 
-    /** Compact one-line strip: `Live npm: pdfnative v1.1.0 · cli v0.2.0 (→ ^1.1.0) · mcp v0.2.0 (→ ^1.1.0)`. */
+    /** Compact one-line strip: `Live npm: pdfnative v1.1.0 · cli v0.3.0 (→ ^1.1.0) · mcp v0.3.0 (→ ^1.1.0)`. */
     function renderCompact(host, results) {
         host.innerHTML = '';
         applyDataAttrs(host, results);
