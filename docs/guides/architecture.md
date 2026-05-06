@@ -122,13 +122,13 @@ Like `pdfnative-mcp`, the CLI lives in a separate repository and depends on `pdf
 
 ### pdfnative-mcp
 
-[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 8 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …).
+[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 9 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …). Each tool publishes an `outputSchema` per the MCP 2025-06-18 spec for client-side static validation.
 
 ```
 [Claude Desktop / Cursor / Continue / Zed]
               │ MCP stdio protocol
      ┌──────────────────────────┐
-     │  pdfnative-mcp (npm)     │  ← MCP server, 8 tools
+     │  pdfnative-mcp (npm)     │  ← MCP server, 9 tools
      └──────────────────────────┘
               │ import { buildDocumentPDFBytes, … } from 'pdfnative'
      ┌──────────────────────────┐

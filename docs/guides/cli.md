@@ -1,6 +1,6 @@
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks pdfnative-cli v0.2.0** (April 2026). Compatible with `pdfnative` ≥ 1.0.5. The CLI versions independently from the library — see the [release notes](https://github.com/Nizoka/pdfnative-cli/blob/main/release-notes/v0.2.0.md).
+> **Tracks pdfnative-cli v0.3.0** (May 2026). Compatible with `pdfnative` ≥ 1.1.0. The CLI versions independently from the library — see the [release notes](https://github.com/Nizoka/pdfnative-cli/releases/tag/v0.3.0).
 
 [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes four commands — `render`, `sign`, `inspect`, and `verify` — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF.
 
@@ -19,9 +19,27 @@ This means **every feature of the library is one release away from the CLI**, an
 
 ---
 
-## What's new in v0.2.0
+## What's new in v0.3.0
 
-The v0.2.0 release expands the CLI from ~10 flags to a near-complete projection of the `pdfnative` v1.0.5 surface, while remaining **100 % backward-compatible** with v0.1.0.
+v0.3.0 finishes the digital-signature story and adds three iteration-friendly `render` flags. **100 % backward-compatible** with v0.2.0 — every previous invocation produces an equivalent PDF.
+
+| Area | v0.2.0 | v0.3.0 |
+|---|---|---|
+| `sign` algorithm | RSA-SHA256 only (ECDSA stub) | RSA-SHA256 **and** ECDSA-SHA256 — fully wired via `parseEcPrivateKey` (SEC1 / PKCS#8 P-256) |
+| `sign` placeholder | Required a prior `prepare_signature_placeholder` call | **Auto-injection** — CLI detects PDFs with no AcroForm signature field and performs a single incremental update adding `/Sig`, the signature widget, and `AcroForm /SigFlags 3` |
+| `sign` crypto bootstrap | Manual | Transparent `ensureCryptoReady()` on first use |
+| `verify` scope | Byte-range integrity + cert chain | **Real CMS/PKCS#7 verification** — signature value (RSA + ECDSA), message digest, certificate chain, trust roots, **RFC 3161 timestamp token detection** |
+| `verify` JSON report | `valid`, `chainValid` | Adds `signatureValid`, `signatureAlgorithm`, `timestampPresent`, `signerSubject`, `signerIssuer`, `notes[]` |
+| `render --watch` | — | Re-render on input change (200 ms debounce, stderr-only logs). Requires file `--input` and file `--output` |
+| `render --template <file.json>` | — | Deep-merge a base template under stdin / `--input`. Plain objects merge recursively; arrays and primitives are replaced (caller wins) |
+| `render --font <name>` | — | Bundled font shortcut. Repeatable. Allow-list: `latin` (Noto Sans VF) and `emoji` (Noto Emoji). Activates the matching pdfnative font loader |
+| Compatibility | `pdfnative ^1.0.5` | `pdfnative ^1.1.0` |
+
+Full changelog: [pdfnative-cli release notes v0.3.0](https://github.com/Nizoka/pdfnative-cli/releases/tag/v0.3.0).
+
+## Previously in v0.2.0
+
+The v0.2.0 release expanded the CLI from ~10 flags to a near-complete projection of the `pdfnative` v1.0.5 surface, while remaining 100 % backward-compatible with v0.1.0.
 
 | Area | v0.1.0 | v0.2.0 |
 |---|---|---|
@@ -32,17 +50,7 @@ The v0.2.0 release expands the CLI from ~10 flags to a near-complete projection 
 | Headers / footers | — | `--header-{l,c,r}`, `--footer-{l,c,r}` with `{page}/{pages}/{date}/{title}` placeholders |
 | PDF/A-3 attachments | — | `--attachment <path>[:mime[:rel[:desc]]]` (repeatable) |
 | Multilingual fonts | — | `--lang th,ja,ar` (requires `registerFontLoader()` wrapper) |
-| Renderer variant | document only | `--variant document\|table` |
-| Page geometry | — | `--page-size`, `--margin` |
-| Compression | — | `--compress` |
-| `sign` metadata | — | `--reason`, `--name`, `--location`, `--contact`, `--signing-time` |
-| `sign` cert chains | — | `--cert-chain <pem>` (repeatable) + `PDFNATIVE_SIGN_CHAIN` env |
-| `sign` algorithm | RSA implicit | `--algorithm rsa-sha256\|ecdsa-sha256` (ECDSA stub pending pdfnative `parseEcPrivateKey`, v0.3.0) |
-| `inspect` depth | basic report | `--verbose`, `--pages`, `--check pdfa\|signed\|encrypted` (composable, ANDed, exit codes) |
-| `verify` command | n/a | **NEW** — byte-range integrity + cert chain + `--trust` roots |
-| Tests | 47 | 123 |
-
-Full changelog: [pdfnative-cli release notes v0.2.0](https://github.com/Nizoka/pdfnative-cli/blob/main/release-notes/v0.2.0.md).
+| `verify` command | n/a | byte-range integrity + cert chain + `--trust` roots
 
 ---
 
@@ -133,13 +141,36 @@ pdfnative sign \
 
 The CLI accepts both **RSA PKCS#1 v1.5** and **ECDSA P-256** keys, both with SHA-256 digests. The signed PDF carries a CMS/PKCS#7 signature embedded as ISO 32000-1 §12.8 prescribes, validatable by Adobe Acrobat, MuPDF, and any other PAdES-compatible reader.
 
-### 3. Verify embedded signatures _(new in v0.2.0)_
+### 3. Verify embedded signatures
 
 ```bash
 pdfnative verify --input report.signed.pdf --strict --trust ca-root.pem
 ```
 
-`verify` checks byte-range integrity (SHA-256 recomputed against the CMS `messageDigest` attribute), validates the certificate chain via `pdfnative`'s `verifyCertSignature`, and evaluates trust against `--trust` roots and self-signed acceptance. Exit code is 0 on success, 1 on any failure under `--strict`.
+v0.3.0 performs **real CMS/PKCS#7 verification** — the CLI recomputes the byte-range digest, validates the signature value (RSA-SHA256 or ECDSA-SHA256), walks the certificate chain via `pdfnative`'s `verifyCertSignature`, evaluates trust against `--trust` roots and self-signed acceptance, and reports the presence of an RFC 3161 timestamp token. Exit code is 0 on success, 1 on any failure under `--strict`.
+
+A sample JSON report:
+
+```json
+{
+  "signatures": [
+    {
+      "integrity": true,
+      "signatureValid": true,
+      "signatureAlgorithm": "ecdsa-sha256",
+      "chainValid": true,
+      "trustedRoot": true,
+      "timestampPresent": false,
+      "signerSubject": "CN=pdfnative-cli ECDSA Test, O=pdfnative-cli, C=FR",
+      "signerIssuer": "CN=pdfnative-cli ECDSA Test, O=pdfnative-cli, C=FR",
+      "notes": ["no --trust provided; accepted self-signed root"]
+    }
+  ]
+}
+```
+
+<!-- legacy anchor preserved for incoming external links -->
+<a id="pdfnative-verify-new-in-v020"></a>
 
 ### 4. Inspect any PDF
 
@@ -278,8 +309,29 @@ The Windows drive-letter colon (`D:\path`) is detected and not split — see *Tr
 | Flag | Description |
 |------|-------------|
 | `--lang <code,code>` | Activate font loaders for the listed languages (e.g. `th,ja,ar`) |
+| `--font <name>` *(v0.3.0)* | Register a bundled pdfnative font shortcut. Repeatable. Allow-list: `latin` (Noto Sans VF) and `emoji` (Noto Emoji). After registration the name is usable through `--lang` |
 
-`--lang` activates a *programmatically registered* font loader via `loadFontData(code)`. Latin scripts are built-in; non-Latin scripts require the caller to invoke `registerFontLoader(lang, loader)` in a wrapper script before invoking the CLI. See *Recipes → Multilang via wrapper*.
+`--lang` activates a *programmatically registered* font loader via `loadFontData(code)`. Latin scripts are built-in; non-Latin scripts require the caller to invoke `registerFontLoader(lang, loader)` in a wrapper script before invoking the CLI. With v0.3.0, `--font latin` and `--font emoji` are registered for you \u2014 no wrapper needed. See *Recipes \u2192 Multilang via wrapper* for arbitrary scripts.
+
+#### Iteration helpers _(v0.3.0)_
+
+| Flag | Description |
+|------|-------------|
+| `--watch` | Re-render on input file change. 200 ms debounce, stderr-only logs. Requires `--input <file>` and a file `--output` (stdin / stdout pipelines are not supported \u2014 watch needs a stable on-disk source) |
+| `--template <file.json>` | Deep-merge a base template under stdin / `--input`. Plain objects merge recursively; arrays and primitives are replaced (caller wins). Useful for centralising title / layout / headers in CI |
+
+```bash
+# Watch a file
+pdfnative render --input report.json --output report.pdf --watch
+
+# Template + override (template carries title/layout/headers, stdin overrides body)
+echo '{"blocks":[{"type":"paragraph","text":"Today only."}]}' \
+  | pdfnative render --template template.json -o today.pdf
+
+# Bundled fonts via flag (no wrapper)
+echo '{"blocks":[{"type":"paragraph","text":"Hi \ud83d\ude80"}]}' \
+  | pdfnative render --font latin --font emoji --lang latin,emoji -o out.pdf
+```
 
 ### `pdfnative sign`
 
@@ -292,7 +344,7 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 | `--key <file>` | `PDFNATIVE_SIGN_KEY` env | PEM-encoded private key (env var takes precedence) |
 | `--cert <file>` | `PDFNATIVE_SIGN_CERT` env | PEM-encoded X.509 certificate (env var takes precedence) |
 | `--cert-chain <file>` | `PDFNATIVE_SIGN_CHAIN` env | Intermediate-CA PEM (repeatable, concatenated into `certChain[]`) |
-| `--algorithm <algo>` | `rsa-sha256` | `rsa-sha256` or `ecdsa-sha256` (ECDSA returns a clear stub error in v0.2.0; full support tracked for v0.3.0) |
+| `--algorithm <algo>` | `rsa-sha256` | `rsa-sha256` or `ecdsa-sha256` (both fully wired in v0.3.0; SEC1 / PKCS#8 P-256 keys accepted) |
 | `--reason <str>` | — | `PdfSignOptions.reason` |
 | `--name <str>` | — | `PdfSignOptions.name` |
 | `--location <str>` | — | `PdfSignOptions.location` |
@@ -322,7 +374,7 @@ pdfnative inspect --input dist/q1.pdf \
 echo "exit code: $?"   # 0 if both assertions hold
 ```
 
-### `pdfnative verify` _(new in v0.2.0)_
+### `pdfnative verify`
 
 Verifies CMS/PKCS#7 signatures embedded in a PDF.
 
@@ -333,18 +385,19 @@ Verifies CMS/PKCS#7 signatures embedded in a PDF.
 | `--strict` | off | Exit 1 on any failure or zero signatures |
 | `--trust <pem>` | — | Trust-anchor certificate (repeatable) |
 
-**Scope (v0.2.0):**
+**Scope (v0.3.0):**
 
 - ✅ Byte-range integrity (SHA-256 recomputed and compared with CMS `messageDigest` attribute)
+- ✅ Signature value verification — RSA-SHA256 and ECDSA-SHA256
 - ✅ Certificate chain verification via `pdfnative`'s `verifyCertSignature`
 - ✅ Trust evaluation against `--trust` roots, with self-signed acceptance for testing
+- ✅ RFC 3161 timestamp token detection — reported as `timestampPresent`
 
-**Out of scope (deferred):**
+**Out of scope (deferred to v0.4.0):**
 
-- ⚠️ Full CMS signature-value verification — v0.3.0
-- ⚠️ OCSP / CRL revocation checks — v0.3.0+
-- ⚠️ RFC 3161 timestamp tokens — v0.3.0+
-- ⚠️ Long-Term Validation (LTV) — v0.3.0+
+- ⚠️ Full RFC 3161 timestamp validation (TSA chain, MD compare)
+- ⚠️ OCSP / CRL revocation checks
+- ⚠️ Long-Term Validation (LTV) PAdES-LTA
 
 ---
 
@@ -442,21 +495,24 @@ The CLI **does not** open network connections, write to system directories outsi
 
 The CLI now covers nearly the full library surface; only Web Worker offloading remains library-only.
 
-| Feature | CLI v0.2.0 | Library |
+| Feature | CLI v0.3.0 | Library |
 |---|---|---|
 | Document rendering (12 block types) | ✅ | ✅ |
 | Streaming output | ✅ `--stream` | ✅ `streamDocumentPdf()` |
 | PDF/A conformance (1b, 2b, 2u, 3b) | ✅ `--tagged` | ✅ `tagged: '…'` |
-| Digital signatures (RSA) | ✅ | ✅ `signPdfBytes()` |
-| Digital signatures (ECDSA) | ⚠️ stub error in v0.2.0; v0.3.0 | ✅ `signPdfBytes()` |
+| Digital signatures (RSA-SHA256) | ✅ | ✅ `signPdfBytes()` |
+| Digital signatures (ECDSA-SHA256) | ✅ `--algorithm ecdsa-sha256` | ✅ `signPdfBytes()` |
 | Inspection / metadata | ✅ | ✅ `PdfReader` |
-| **Signature verification** | ✅ `verify` (v0.2.0) | ✅ `verifyCertSignature` |
+| **Signature verification (CMS/PKCS#7)** | ✅ `verify` (real CMS, RSA + ECDSA) | ✅ `verifyCertSignature` |
+| **RFC 3161 timestamp detection** | ✅ `timestampPresent` | (partial) |
 | **Encryption (AES-128/256)** | ✅ `--encrypt-*` | ✅ `encryption: {…}` |
 | **Watermarks** | ✅ `--watermark-*` | ✅ `watermark: {…}` |
 | **Custom page sizes** | ✅ `--page-size` | ✅ `pageSize: {…}` |
 | **Custom headers/footers** | ✅ `--header-*` / `--footer-*` | ✅ `headerTemplate` / `footerTemplate` |
 | **PDF/A-3 attachments** | ✅ `--attachment` | ✅ `attachments: [...]` |
-| **Multilang fonts** | ✅ `--lang` (wrapper for non-Latin) | ✅ `registerFontLoader()` |
+| **Multilang fonts** | ✅ `--lang` + `--font {latin,emoji}` (bundled shortcuts) | ✅ `registerFontLoader()` |
+| **Watch loop** | ✅ `--watch` | ❌ N/A |
+| **Template merging** | ✅ `--template <file.json>` | ❌ N/A |
 | **Table-centric variant** | ✅ `--variant table` | ✅ `buildPDFBytes()` |
 | **Full `PdfLayoutOptions`** | ✅ `--layout file.json` | ✅ |
 | **Web Worker offloading** | ❌ N/A | ✅ `pdfWorker.ts` |
@@ -498,6 +554,26 @@ node samples/run-all.js
 
 ---
 
+## Migration v0.2.0 → v0.3.0
+
+**100 % backward-compatible.** Every v0.2.0 invocation continues to produce a byte-equivalent PDF. Three forward-looking opportunities:
+
+```diff
+# 1. ECDSA signing now works without a workaround
+- pdfnative sign -i in.pdf -o out.pdf --algorithm rsa-sha256 ...
++ pdfnative sign -i in.pdf -o out.pdf --algorithm ecdsa-sha256 \
++   --key ec-key.pem --cert ec-cert.pem
+
+# 2. Sign without a prior placeholder step
+- pdfnative-mcp prepare_signature_placeholder ...   # external dependency
+- pdfnative sign -i with-placeholder.pdf -o signed.pdf ...
++ pdfnative sign -i any-pdf.pdf -o signed.pdf ...   # placeholder auto-injected
+
+# 3. Bundled fonts via flag instead of a wrapper
+- # required: registerFontLoader('latin', loader) wrapper script
++ pdfnative render --font latin --font emoji --lang latin,emoji -o out.pdf
+```
+
 ## Migration v0.1.0 → v0.2.0
 
 **100 % backward-compatible** — every v0.1.0 invocation continues to produce a byte-equivalent PDF, modulo a one-line stderr notice for `--conformance`. All v0.1.0 exit codes and JSON shapes are preserved; new `inspect` JSON fields are additive only.
@@ -522,7 +598,7 @@ You installed via `npx` (one-shot) and not globally. Either prepend `npx` to eve
 The CLI caps input JSON at 50 MB to prevent memory exhaustion. For very large documents, either split the document into multiple PDFs or use the library directly with the streaming API.
 
 ### `Error: invalid private key`
-Both RSA PKCS#1 and ECDSA P-256 keys are accepted, but they must be **PEM-encoded**. Convert DER to PEM with `openssl pkcs8 -topk8 -in key.der -out key.pem -nocrypt`. ECDSA support in `sign` returns a clear stub error in v0.2.0 — full support tracked for v0.3.0 once `pdfnative` exposes `parseEcPrivateKey`.
+Both RSA PKCS#1 and ECDSA P-256 keys are accepted, but they must be **PEM-encoded**. Convert DER to PEM with `openssl pkcs8 -topk8 -in key.der -out key.pem -nocrypt`. As of v0.3.0, ECDSA support in `sign` is fully wired (SEC1 / PKCS#8 P-256 via `parseEcPrivateKey`).
 
 ### `Error: --encrypt-* flag set without --encrypt-owner-pass`
 Encryption requires an owner password. Provide it via `--encrypt-owner-pass <pass>` or — recommended — the `PDFNATIVE_ENCRYPT_OWNER_PASS` env var so it never enters shell history.

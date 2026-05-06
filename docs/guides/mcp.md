@@ -1,14 +1,32 @@
 # pdfnative-mcp — AI Client Integration Guide
 
+> **Tracks pdfnative-mcp v0.3.0** (April 2026). Compatible with `pdfnative` ≥ 1.1.0. Full release notes: [v0.3.0](https://github.com/Nizoka/pdfnative-mcp/releases/tag/v0.3.0).
+
 [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is an **MCP server** that exposes the full pdfnative library to any AI client supporting the [Model Context Protocol](https://modelcontextprotocol.io) — Claude Desktop, Cursor, Continue, Zed, ChatGPT, and more.
 
 > **What is MCP?** The Model Context Protocol is an open standard (originally developed by Anthropic) that lets AI assistants call external tools in a structured, safe way. An MCP server declares a set of tools with typed inputs and outputs; the AI client invokes those tools on your behalf during a conversation.
 
 With `pdfnative-mcp` installed, you can say to your AI assistant:
 
-> _"Generate a Q1 2026 financial report as PDF with a QR code pointing to our dashboard"_
+> _"Generate a Q1 2026 financial report as PDF/A-2b with a QR code pointing to our dashboard, then inspect the result to confirm it's archive-grade."_
 
-…and the AI will call the right combination of `generate_basic_pdf`, `add_barcode`, or `add_table` tools, returning a ready-to-download PDF.
+…and the AI will call the right combination of `generate_basic_pdf`, `add_barcode`, `add_table`, and `inspect_pdf` tools, returning a ready-to-download PDF.
+
+---
+
+## What's new in v0.3.0
+
+100 % backward-compatible with v0.2.0 — every new field is optional, and omitting them produces byte-identical output.
+
+- **9th tool: `inspect_pdf`** — read-only inspection over `openPdf()`. Reports version, page count, encryption, PDF/A claim, signature count, info dict; optional per-page sizes; optional CI-style `check: ('pdfa'|'signed'|'encrypted')[]` assertions.
+- **`pdfA` flag on every document tool** — `generate_basic_pdf`, `add_table`, `add_form`, `embed_image`, `add_barcode`, `prepare_signature_placeholder`, `add_international_text`. Values: `pdfa1b`, `pdfa2b`, `pdfa2u`, `pdfa3b`. Maps to pdfnative's `tagged` layout option.
+- **Multi-script `add_international_text`** — `lang` now accepts `string`, `string[]`, or comma-separated values, e.g. `["ar", "emoji"]` or `"ar,emoji"`.
+- **Latin & Emoji font packs** — two new `lang` codes (`latin`, `emoji`) backed by Noto Sans VF and Noto Emoji from pdfnative v1.1. The `latin` font auto-registers when `pdfA` is set so curly quotes, em-dashes, and ellipses validate cleanly.
+- **`add_table` autoFit + clipCells** — transparently switches to the document-block backend when set (pdfnative v1.1 `TableBlock` props).
+- **MCP `outputSchema`** — every tool now publishes a JSON Schema for its response, enabling client-side static validation per the MCP 2025-06-18 spec.
+- **Server bootstrap** — `initCrypto()` is awaited at startup so the first signing/inspection call no longer pays an init penalty.
+
+Deferred to v0.4.0: `verify_pdf` (no high-level CMS verify primitive in pdfnative 1.1 yet), `sign_pdf` placeholder auto-injection, ECDSA DER private-key input, encrypted-PDF fixtures.
 
 ---
 
@@ -122,18 +140,21 @@ In your Zed `settings.json`:
 
 ## Tool reference
 
-`pdfnative-mcp` exposes **8 tools**:
+`pdfnative-mcp` exposes **9 tools**:
 
 | Tool | Purpose |
 |---|---|
-| `generate_basic_pdf` | Multi-page A4 documents from structured blocks (headings, paragraphs, lists, page breaks) |
-| `add_table` | Tabular PDF reports from column headers and data rows |
-| `add_barcode` | QR Code, Code 128, EAN-13, Data Matrix, PDF417 — embedded in a single-page PDF |
-| `add_international_text` | 16 non-Latin scripts (Arabic, Thai, CJK, Devanagari, Bengali, Tamil, …) with BiDi & OpenType shaping |
-| `add_form` | Interactive AcroForm PDFs with text fields, checkboxes, radio buttons, and dropdowns |
-| `embed_image` | Embed a JPEG or PNG image (base64-encoded) into a titled PDF document |
-| `prepare_signature_placeholder` | Create a PDF with a `/Sig` AcroForm placeholder ready to be signed |
-| `sign_pdf` | PAdES-style CMS digital signatures (RSA-SHA256 / ECDSA-SHA256 P-256) |
+| `generate_basic_pdf` | Multi-page A4 documents from structured blocks (headings, paragraphs, lists, page breaks). Accepts optional `pdfA`. |
+| `add_table` | Tabular PDF reports from column headers and data rows. Optional `autoFitColumns` and `clipCells` (pdfnative v1.1). Accepts `pdfA`. |
+| `add_barcode` | QR Code, Code 128, EAN-13, Data Matrix, PDF417 — embedded in a single-page PDF. Accepts `pdfA`. |
+| `add_international_text` | 16 non-Latin scripts plus `latin` and `emoji` font codes, with BiDi & OpenType shaping. `lang` accepts `string`, `string[]`, or comma-separated. |
+| `add_form` | Interactive AcroForm PDFs with text fields, checkboxes, radio buttons, and dropdowns. Accepts `pdfA`. |
+| `embed_image` | Embed a JPEG or PNG image (base64-encoded) into a titled PDF document. Accepts `pdfA`. |
+| `prepare_signature_placeholder` | Create a PDF with a `/Sig` AcroForm placeholder ready to be signed. Accepts `pdfA`. |
+| `sign_pdf` | PAdES-style CMS digital signatures (RSA-SHA256 / ECDSA-SHA256 P-256). |
+| `inspect_pdf` *(new in v0.3.0)* | Read-only inspection. Returns `version`, `pageCount`, `encryption`, `pdfA`, `signatureCount`, `info`, optional `perPage`, optional `checks` + `checksPassed`. |
+
+Every tool now publishes an `outputSchema` advertised in `tools/list` per the [MCP 2025-06-18 spec](https://modelcontextprotocol.io/specification/2025-06-18), enabling clients to statically validate responses.
 
 ---
 
@@ -172,11 +193,16 @@ Generates a tabular report from column headers and rows.
     ["APAC", "1 200", "$240,000"],
     ["EMEA", "800",   "$160,000"]
   ],
-  "infoItems":  [{ "label": "Period", "value": "January 2026" }],
-  "footerText": "Internal use only",
-  "outputMode": "base64"
+  "infoItems":      [{ "label": "Period", "value": "January 2026" }],
+  "footerText":     "Internal use only",
+  "autoFitColumns": true,
+  "clipCells":      true,
+  "pdfA":           "pdfa2b",
+  "outputMode":     "base64"
 }
 ```
+
+`autoFitColumns` and `clipCells` (added in v0.3.0) transparently switch to the document-block backend so cell content fits its column or is clipped at the boundary, leveraging pdfnative v1.1's `TableBlock` props. Optional `pdfA` produces an archive-grade variant.
 
 ---
 
@@ -202,16 +228,18 @@ Generates a tabular report from column headers and rows.
 
 ```jsonc
 {
-  "title":      "مرحبا بالعالم",
-  "lang":       "ar",
+  "title":      "مرحبا بالعالم 👋",
+  "lang":       ["ar", "emoji"],
   "paragraphs": [
     "هذا اختبار للنص العربي مع تشكيل OpenType ومحارف ثنائية الاتجاه.",
-    "Mixed content: العربية + English ✓"
+    "Mixed content: العربية + English + emoji 🚀 ✓"
   ]
 }
 ```
 
-**Supported `lang` codes:** `ar` (Arabic), `he` (Hebrew), `th` (Thai), `ja` (Japanese), `zh` (Chinese Simplified), `ko` (Korean), `el` (Greek), `hi` (Devanagari/Hindi), `bn` (Bengali), `ta` (Tamil), `ru` (Cyrillic/Russian), `ka` (Georgian), `hy` (Armenian), `tr` (Turkish), `vi` (Vietnamese), `pl` (Polish).
+**Supported `lang` codes:** `ar` (Arabic), `he` (Hebrew), `th` (Thai), `ja` (Japanese), `zh` (Chinese Simplified), `ko` (Korean), `el` (Greek), `hi` (Devanagari/Hindi), `bn` (Bengali), `ta` (Tamil), `ru` (Cyrillic/Russian), `ka` (Georgian), `hy` (Armenian), `tr` (Turkish), `vi` (Vietnamese), `pl` (Polish), plus **`latin`** (Noto Sans VF) and **`emoji`** (Noto Emoji) added in v0.3.0.
+
+`lang` accepts `string`, `string[]`, or a comma-separated value — e.g. `"ar,emoji"` or `["ar", "emoji"]`. When `pdfA` is set on this tool, the `latin` font is auto-registered so curly quotes, em-dashes, and ellipses validate cleanly under PDF/A.
 
 ---
 
@@ -289,6 +317,50 @@ Signs a PDF that already contains a `/Sig` placeholder (produced by `prepare_sig
 ```
 
 For ECDSA P-256: use `"algorithm": "ecdsa-sha256"` and supply `ecPrivateScalarHex` (64 hex chars) instead of `rsaKeyPkcs1DerBase64`.
+
+---
+
+### `inspect_pdf` *(new in v0.3.0)*
+
+Read-only PDF inspection over `openPdf()`. Never modifies the input.
+
+```jsonc
+{
+  "pdfBase64": "<base64 PDF bytes>",
+  "pages":     true,
+  "check":     ["pdfa", "signed"]
+}
+```
+
+**Inputs:**
+- `pdfBase64` — base64 PDF bytes (required).
+- `pages` — when `true`, includes per-page `width`, `height`, `rotation`.
+- `check` — array of CI assertions. Allowed values: `pdfa`, `signed`, `encrypted`. The response includes `checks` (per-assertion result) and `checksPassed` (boolean AND).
+
+**Outputs:** `version`, `pageCount`, `encryption` (`null` or `{ algorithm, keyLength, version, revision }`), `pdfA` (`null` or `{ part, conformance }`), `signatureCount`, `info` (`{ title?, author?, subject?, keywords?, creator?, producer?, creationDate?, modDate? }`), optional `perPage[]`, optional `checks` + `checksPassed`.
+
+Useful in CI as a final assertion step before publishing a PDF artifact:
+
+```jsonc
+{ "tool": "inspect_pdf",
+  "input": { "pdfBase64": "<...>", "check": ["pdfa", "signed"] } }
+// → { ..., "checks": { "pdfa": true, "signed": true }, "checksPassed": true }
+```
+
+---
+
+## The `pdfA` flag
+
+Every document tool (`generate_basic_pdf`, `add_table`, `add_form`, `embed_image`, `add_barcode`, `prepare_signature_placeholder`, `add_international_text`) accepts an optional `pdfA` field in v0.3.0:
+
+| `pdfA` value | PDF version | Notes |
+|---|---|---|
+| `"pdfa1b"` | 1.4 | Most conservative \u2014 no transparency, no AES |
+| `"pdfa2b"` | 1.7 | Default archive target |
+| `"pdfa2u"` | 1.7 | 2b + Unicode mapping for every glyph |
+| `"pdfa3b"` | 1.7 | 2b + arbitrary `/EmbeddedFile` attachments |
+
+When set on `add_international_text`, the `latin` font auto-registers so non-WinAnsi Latin characters validate cleanly. Mutually exclusive with the underlying pdfnative encryption layer (ISO 19005-1 \u00a76.3.2).
 
 ---
 
