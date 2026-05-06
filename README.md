@@ -15,6 +15,24 @@
 
 Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PDF 1.7) compliant.
 
+## Ecosystem
+
+pdfnative ships as three coordinated packages — pick whichever entry point fits your workflow:
+
+| Package | Latest | Use it for |
+|---|:---:|---|
+| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.1.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
+| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v0.3.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256, RFC 3161 detection), inspect, and verify CMS signatures from the shell. New in v0.3.0: `--watch`, `--template`, `--font {latin,emoji}`, auto signature placeholder. |
+| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v0.3.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **9 structured tools** including the new `inspect_pdf`, a `pdfA` flag on every doc tool, multi-script `lang`, and per-tool `outputSchema` (MCP 2025-06-18). |
+
+```bash
+npm install pdfnative                 # library
+npm install -g pdfnative-cli          # CLI
+npm install -g pdfnative-mcp          # MCP server
+```
+
+Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md) · [Onboarding cheatsheet](docs/guides/onboarding.md).
+
 ## Highlights
 
 - **Zero dependencies** — built from scratch in pure TypeScript. Zero runtime dependencies, tree-shakeable, auditable
@@ -821,9 +839,11 @@ pdfnative ships as a library, but two official companion packages cover the most
 
 ### pdfnative-cli — command-line interface
 
-[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v0.2.0 is the **official CLI**. It exposes four commands — `render`, `sign`, `inspect`, **`verify`** — covering the full `pdfnative` v1.0.5 surface for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed.
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v0.3.0 is the **official CLI**. It exposes four commands — `render`, `sign`, `inspect`, **`verify`** — covering the full `pdfnative` v1.1.0 surface for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed.
 
-**Highlights (v0.2.0):** hybrid `flags + --layout file.json` model, encryption (AES-128/256), watermarks (text + image), header/footer page templates with `{page}/{pages}/{date}/{title}`, PDF/A-3 attachments (Factur-X / ZUGFeRD pattern), multilingual fonts via `--lang`, table-variant rendering, signing metadata + intermediate cert chains, `inspect --verbose/--pages/--check`, and a brand-new `verify` command for byte-range integrity and certificate-chain validation. **100 % backward-compatible** with v0.1.0.
+**New in v0.3.0:** ECDSA-SHA256 (P-256) signing fully wired, real CMS/PKCS#7 verification with RFC 3161 timestamp detection, automatic signature-placeholder injection on `sign`, plus three iteration-friendly `render` flags (`--watch`, `--template`, `--font {latin,emoji}`). **100 % backward-compatible** with v0.2.0.
+
+**Previously (v0.2.0):** hybrid `flags + --layout file.json` model, encryption (AES-128/256), watermarks (text + image), header/footer page templates with `{page}/{pages}/{date}/{title}`, PDF/A-3 attachments (Factur-X / ZUGFeRD pattern), multilingual fonts via `--lang`, table-variant rendering, signing metadata + intermediate cert chains, `inspect --verbose/--pages/--check`, and the `verify` command.
 
 ```bash
 # render with full layout coverage (encryption + watermark + PDF/A-2b)
@@ -845,11 +865,13 @@ npx pdfnative-cli inspect --input signed.pdf \
   --check pdfa --check signed --format json
 ```
 
-See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v0.2.0 reference, security model, recipes, and the `--conformance` → `--tagged` migration path. Try the [interactive CLI playground](https://pdfnative.dev/playgrounds/cli.html) to build commands without leaving the browser.
+See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v0.3.0 reference, security model, recipes, and the `--conformance` → `--tagged` migration path. Try the [interactive CLI playground](https://pdfnative.dev/playgrounds/cli.html) to build commands without leaving the browser.
 
 ### pdfnative-mcp — Model Context Protocol server
 
-[`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) is a **Model Context Protocol server** that bridges pdfnative to any MCP-compatible AI client. Once configured, your AI assistant can generate PDFs, embed barcodes, create forms, sign documents, and render international text — all without writing code.
+[`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) v0.3.0 is a **Model Context Protocol server** that bridges pdfnative to any MCP-compatible AI client. Once configured, your AI assistant can generate PDFs, embed barcodes, create forms, sign documents, render international text, and **inspect** existing PDFs — all without writing code.
+
+**New in v0.3.0:** `inspect_pdf` (the 9th tool, structured metadata/page/signature/PDF/A report), `pdfA` flag on every document tool, multi-script `lang` (`string | string[] | csv`) with bundled `latin` + `emoji` codes, `add_table` `autoFitColumns`/`clipCells`, and per-tool `outputSchema` per the MCP 2025-06-18 spec.
 
 ```bash
 npx -y pdfnative-mcp
@@ -860,13 +882,14 @@ npx -y pdfnative-mcp
 | Tool | Purpose |
 |------|---------|
 | `generate_basic_pdf` | Multi-page documents from structured blocks (headings, paragraphs, lists) |
-| `add_table` | Tabular reports from column headers and data rows |
+| `add_table` | Tabular reports from column headers and data rows (v0.3.0: `autoFitColumns`, `clipCells`) |
 | `add_barcode` | QR Code, Code 128, EAN-13, Data Matrix, PDF417 |
-| `add_international_text` | 16 non-Latin scripts with BiDi & OpenType shaping |
+| `add_international_text` | 16 non-Latin scripts with BiDi & OpenType shaping (v0.3.0: multi-script `lang`) |
 | `add_form` | Interactive AcroForm PDFs (text, checkbox, radio, dropdown) |
 | `embed_image` | Embed a JPEG or PNG image (base64) |
 | `prepare_signature_placeholder` | PDF with a `/Sig` field ready to be signed |
 | `sign_pdf` | CMS/PKCS#7 digital signatures (RSA-SHA256 / ECDSA-SHA256) |
+| `inspect_pdf` | **New in v0.3.0** — structured PDF report (metadata, pages, signatures, PDF/A) |
 
 ### Claude Desktop configuration
 
