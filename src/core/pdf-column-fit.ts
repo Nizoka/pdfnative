@@ -22,6 +22,7 @@
  */
 
 import type { ColumnDef, EncodingContext, PdfRow } from '../types/pdf-types.js';
+import { helveticaBoldWidth } from '../fonts/encoding.js';
 
 /** Cell padding in points (matches the 3pt left + 3pt right inset used by renderTable). */
 const CELL_PAD_LEFT = 3;
@@ -58,7 +59,12 @@ export function computeAutoFitColumns(
         let max = 0;
         const hdr = headers[i];
         if (hdr) {
-            const w = enc.tw(hdr, thSize);
+            // Headers render in Helvetica-Bold (`enc.f2`). In Latin (WinAnsi)
+            // mode, `enc.tw` measures Helvetica-Regular widths which are ~16%
+            // narrower than Bold — using them here would under-size columns
+            // whose widest content is the header. Unicode/CIDFont mode has
+            // its own per-font metrics so `enc.tw` is correct there.
+            const w = enc.isUnicode ? enc.tw(hdr, thSize) : helveticaBoldWidth(hdr, thSize);
             if (w > max) max = w;
         }
         for (const row of rows) {

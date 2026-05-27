@@ -18,19 +18,23 @@ import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 import type { GenerateContext } from '../helpers/io.js';
 
 function makeRows(n: number, longTail = false): { cells: string[]; type: string; pointed: boolean }[] {
-    return Array.from({ length: n }, (_, i) => ({
-        cells: [
-            `2026-05-${String((i % 28) + 1).padStart(2, '0')}`,
-            longTail
-                ? `Transaction ${i + 1} with an unusually verbose human-written description that genuinely deserves wrapping across multiple lines`
-                : `Transaction ${i + 1}`,
-            i % 3 === 0 ? 'Operations' : (i % 3 === 1 ? 'Marketing' : 'R&D'),
-            i % 2 === 0 ? `+${(i + 1) * 12.34}` : `-${(i + 1) * 7.89}`,
-            i % 5 === 0 ? 'Recurring' : '',
-        ],
-        type: i % 2 === 0 ? 'credit' : 'debit',
-        pointed: false,
-    }));
+    return Array.from({ length: n }, (_, i) => {
+        const amt = (i + 1) * (i % 2 === 0 ? 12.34 : 7.89);
+        const signed = i % 2 === 0 ? `+${amt.toFixed(2)}` : `-${amt.toFixed(2)}`;
+        return {
+            cells: [
+                `2026-05-${String((i % 28) + 1).padStart(2, '0')}`,
+                longTail
+                    ? `Transaction ${i + 1} with an unusually verbose human-written description that genuinely deserves wrapping across multiple lines`
+                    : `Transaction ${i + 1}`,
+                i % 3 === 0 ? 'Operations' : (i % 3 === 1 ? 'Marketing' : 'R&D'),
+                signed,
+                i % 5 === 0 ? 'Recurring' : '',
+            ],
+            type: i % 2 === 0 ? 'credit' : 'debit',
+            pointed: false,
+        };
+    });
 }
 
 async function generateWrapAuto(ctx: GenerateContext): Promise<void> {
@@ -48,9 +52,9 @@ async function generateWrapAuto(ctx: GenerateContext): Promise<void> {
                 rows: makeRows(8, true),
                 columns: [
                     { f: 0.15, a: 'l', mx: 12, mxH: 12 },
-                    { f: 0.55, a: 'l', mx: 80, mxH: 80 },
+                    { f: 0.52, a: 'l', mx: 80, mxH: 80 },
                     { f: 0.15, a: 'l', mx: 20, mxH: 20 },
-                    { f: 0.15, a: 'r', mx: 18, mxH: 18 },
+                    { f: 0.18, a: 'r', mx: 18, mxH: 18 },
                 ],
                 wrap: 'auto',
             },

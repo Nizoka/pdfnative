@@ -32,7 +32,7 @@ import type { ParsedImage } from './pdf-image.js';
 import { validateURL } from './pdf-annot.js';
 import { parseColor } from './pdf-color.js';
 import type { LinkAnnotation } from './pdf-annot.js';
-import { truncate, helveticaWidth } from '../fonts/encoding.js';
+import { truncate, helveticaWidth, helveticaBoldWidth } from '../fonts/encoding.js';
 import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum } from './pdf-text.js';
 import {
     ROW_H, TH_H,
@@ -560,16 +560,24 @@ export function planTable(
      *   - `wrap: 'always'`      → run `wrapText()` unconditionally.
      *   - `wrap: 'auto'`        → measure first; wrap only when the text
      *                             genuinely exceeds the column's writable area.
+     *
+     * `bold` controls width metrics for the auto-mode overflow probe: header
+     * cells render in Helvetica-Bold (~16% wider than Regular in Latin mode),
+     * so measuring with regular metrics would under-count their width and
+     * skip wrapping when the glyphs actually overflow. Unicode/CIDFont mode
+     * uses the same per-font metric for both weights.
      */
-    const wrapCell = (text: string, colIdx: number, fontSize: number): string[] => {
+    const wrapCell = (text: string, colIdx: number, fontSize: number, bold: boolean): string[] => {
         if (wrapMode === 'never') return [text];
         const colW = cwi[colIdx];
         const availW = Math.max(0, colW - pad * 2);
+        const measure = (s: string): number =>
+            enc.isUnicode ? enc.tw(s, fontSize) : (bold ? helveticaBoldWidth(s, fontSize) : helveticaWidth(s, fontSize));
         if (wrapMode === 'always') {
             return wrapText(text, availW, fontSize, enc);
         }
         // 'auto' — only wrap when content actually overflows the column.
-        if (availW <= 0 || measureText(text, fontSize, enc) <= availW) {
+        if (availW <= 0 || measure(text) <= availW) {
             return [text];
         }
         return wrapText(text, availW, fontSize, enc);
@@ -579,7 +587,7 @@ export function planTable(
     const headerLines: string[][] = [];
     let headerMaxLines = 1;
     for (let i = 0; i < block.headers.length && i < resolvedColumns.length; i++) {
-        const lines = wrapCell(block.headers[i], i, fs.th);
+        const lines = wrapCell(block.headers[i], i, fs.th, true);
         headerLines.push(lines);
         if (lines.length > headerMaxLines) headerMaxLines = lines.length;
     }
@@ -595,7 +603,7 @@ export function planTable(
         const cells: string[][] = [];
         let maxLines = 1;
         for (let i = 0; i < row.cells.length && i < resolvedColumns.length; i++) {
-            const lines = wrapCell(row.cells[i], i, fs.td);
+            const lines = wrapCell(row.cells[i], i, fs.td, false);
             cells.push(lines);
             if (lines.length > maxLines) maxLines = lines.length;
         }
@@ -721,17 +729,17 @@ export function renderTable(
             let op: string;
             if (targetMcid !== null) {
                 if (col.a === 'r') {
-                    op = txtRTagged(t, cx[colIdx] + cwi[colIdx] - pad, baselineY, font, sz, enc, targetMcid);
+                    op = txtRTagged(t, cx[colIdx] + cwi[colIdx] - pad, baselineY, font, sz, enc, targetMcid, isHeader);
                 } else if (col.a === 'c') {
-                    op = txtCTagged(t, cx[colIdx], baselineY, font, sz, cwi[colIdx], enc, targetMcid);
+                    op = txtCTagged(t, cx[colIdx], baselineY, font, sz, cwi[colIdx], enc, targetMcid, isHeader);
                 } else {
                     op = txtTagged(t, cx[colIdx] + pad, baselineY, font, sz, enc, targetMcid);
                 }
             } else {
                 if (col.a === 'r') {
-                    op = txtR(t, cx[colIdx] + cwi[colIdx] - pad, baselineY, font, sz, enc);
+                    op = txtR(t, cx[colIdx] + cwi[colIdx] - pad, baselineY, font, sz, enc, isHeader);
                 } else if (col.a === 'c') {
-                    op = txtC(t, cx[colIdx], baselineY, font, sz, cwi[colIdx], enc);
+                    op = txtC(t, cx[colIdx], baselineY, font, sz, cwi[colIdx], enc, isHeader);
                 } else {
                     op = txt(t, cx[colIdx] + pad, baselineY, font, sz, enc);
                 }
@@ -756,9 +764,9 @@ export function renderTable(
         }
         for (const line of plan.captionLines) {
             if (captionMcid !== null) {
-                ops.push(txtCTagged(line, mgL, cy, enc.f2, CAPTION_FONT_SIZE, cw, enc, captionMcid));
+                ops.push(txtCTagged(line, mgL, cy, enc.f2, CAPTION_FONT_SIZE, cw, enc, captionMcid, true));
             } else {
-                ops.push(txtC(line, mgL, cy, enc.f2, CAPTION_FONT_SIZE, cw, enc));
+                ops.push(txtC(line, mgL, cy, enc.f2, CAPTION_FONT_SIZE, cw, enc, true));
             }
             cy -= lineH;
         }

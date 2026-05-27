@@ -100,17 +100,17 @@ function _buildTableHeader(
             const thEl: StructElement = { type: 'TH', children: [mcref] };
             thChildren.push(thEl);
             if (columns[i].a === 'r') {
-                ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid));
+                ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid, true));
             } else if (columns[i].a === 'c') {
-                ops.push(txtCTagged(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc, mcid));
+                ops.push(txtCTagged(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc, mcid, true));
             } else {
                 ops.push(txtTagged(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid));
             }
         } else {
             if (columns[i].a === 'r') {
-                ops.push(txtR(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc));
+                ops.push(txtR(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, true));
             } else if (columns[i].a === 'c') {
-                ops.push(txtC(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc));
+                ops.push(txtC(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc, true));
             } else {
                 ops.push(txt(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc));
             }

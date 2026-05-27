@@ -8,13 +8,13 @@ Guidance for AI coding agents (Cursor, Aider, Claude Code, Continue, Zed, Cline,
 
 pdfnative is a **zero-runtime-dependency** TypeScript library that generates ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) compliant PDFs. Pure native — no Cairo, no PDFKit, no node-forge, no fontkit, no anything.
 
-Quality bar: GAFAM-grade. 1808+ tests, 95%+ coverage, blocking veraPDF validation in CI, SLSA provenance on npm.
+Quality bar: GAFAM-grade. 1818+ tests, 95%+ coverage, blocking veraPDF validation in CI, SLSA provenance on npm.
 
 ## Commands
 
 ```bash
 npm run build              # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test               # vitest run (1808+ tests)
+npm run test               # vitest run (1818+ tests)
 npm run typecheck:all      # src/ + tests/ + scripts/
 npm run lint               # eslint
 npm run test:generate      # produce 161 sample PDFs → test-output/

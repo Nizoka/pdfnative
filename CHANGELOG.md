@@ -19,7 +19,7 @@ completes UAX #9 with embedding controls (LRE/RLE/LRO/RLO/PDF), lands
 a USE-lite cluster classifier for future Indic shaper rewires, and adds
 _smart tables_ — planner-driven multi-page rendering with auto-wrap,
 repeated headers, zebra striping, and captions. 100%
-backward-compatible. 53 test files / 1808 tests, all green. See full
+backward-compatible. 53 test files / 1818 tests, all green. See full
 notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
 
 ### Added
@@ -62,7 +62,18 @@ notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
   [src/core/pdf-document.ts](src/core/pdf-document.ts). Tagged-mode
   `/Table` continues across slices via shared structure-tree accumulator
   (ISO 14289-1 §7.10.6). Existing single-page tables are byte-identical
-  to v1.1.0. See [docs/guides/tables.md](docs/guides/tables.md).
+  to v1.1.0 in their body rendering; bold header positioning shifts by
+  2–5pt (correctness fix — see Fixed). See
+  [docs/guides/tables.md](docs/guides/tables.md).
+- **feat(fonts):** new public `helveticaBoldWidth(str, sz)` exported from
+  the root (also from `pdfnative/fonts`). Drives the bold-header
+  positioning fix.
+- **feat(core):** `txtR`, `txtC`, `txtRTagged`, `txtCTagged` in
+  [src/core/pdf-text.ts](src/core/pdf-text.ts) gain an optional trailing
+  `bold` parameter (default `false`, backward-compatible).
+- **chore(types):** `SigDictMetadata` interface now re-exported from the
+  package root. Aligns the runtime surface with the v1.2.0 release notes
+  that already advertised it as a stable public type.
 
 ### Fixed
 
@@ -77,6 +88,24 @@ notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
 - **fix(samples):** `bidi-embeddings-showcase.pdf` — restored a missing
   space in the orphan-PDF demo paragraph (was `"textwith"`, now
   `"text with"`). Cosmetic only.
+- **fix(fonts, tables):** right- and centre-aligned bold text (table
+  headers, captions) is now measured with Helvetica-Bold AFM advance
+  widths instead of Helvetica-Regular. Pre-1.2.0 the `"Amount"` header
+  overshot its column by ~2pt at 8pt because the renderer measured
+  Regular metrics while rendering Bold glyphs; the trailing `t` got
+  clipped/overhung. New `helveticaBoldWidth()` + opt-in `bold` flag on
+  `txtR/C/...`, wired through smart-table headers, legacy `buildPDF()`,
+  and `autoFitColumns`. Unicode/CIDFont mode unaffected.
+  ([src/fonts/encoding.ts](src/fonts/encoding.ts),
+  [src/core/pdf-text.ts](src/core/pdf-text.ts),
+  [src/core/pdf-renderers.ts](src/core/pdf-renderers.ts),
+  [src/core/pdf-builder.ts](src/core/pdf-builder.ts),
+  [src/core/pdf-column-fit.ts](src/core/pdf-column-fit.ts))
+- **fix(samples):** `document/table-wrap-auto.pdf` and
+  `document/table-zebra-caption.pdf` — amount column rewritten with
+  `toFixed(2)` (was rendering floating-point noise like
+  `+37.019999999999996`); Amount column slightly widened in the
+  wrap-auto sample for clarity.
 
 ### Changed
 

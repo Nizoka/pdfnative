@@ -6,7 +6,7 @@
  */
 
 import type { FontData, ShapedGlyph, EncodingContext } from '../types/pdf-types.js';
-import { toWinAnsi, helveticaWidth } from '../fonts/encoding.js';
+import { toWinAnsi, helveticaWidth, helveticaBoldWidth } from '../fonts/encoding.js';
 import { wrapSpan } from './pdf-tags.js';
 
 /** Format a number as PDF operator value (2 decimal places). */
@@ -80,20 +80,42 @@ export function txt(
     return parts.join('\n');
 }
 
-/** Right-aligned text: rightX is the right boundary. */
+/**
+ * Right-aligned text: `rightX` is the right boundary.
+ *
+ * When `bold` is `true` and the encoding context is in Latin (WinAnsi) mode,
+ * width is measured with Helvetica-Bold AFM advances ({@link helveticaBoldWidth})
+ * so the rendered right edge of bold glyphs lands exactly at `rightX`.
+ * Unicode (CIDFont) mode is unaffected — `enc.tw` already routes through the
+ * correct font data. Defaults to `false` for backward compatibility.
+ *
+ * @since 1.2.0 — the `bold` parameter.
+ */
 export function txtR(
     str: string,
     rightX: number,
     y: number,
     font: string,
     sz: number,
-    enc: EncodingContext
+    enc: EncodingContext,
+    bold: boolean = false,
 ): string {
-    const width = enc.isUnicode ? enc.tw(str, sz) : helveticaWidth(toWinAnsi(str), sz);
+    const width = enc.isUnicode
+        ? enc.tw(str, sz)
+        : (bold ? helveticaBoldWidth(str, sz) : helveticaWidth(toWinAnsi(str), sz));
     return txt(str, rightX - width, y, font, sz, enc);
 }
 
-/** Center-aligned text within a column. */
+/**
+ * Centre-aligned text within a column.
+ *
+ * When `bold` is `true` and the encoding context is in Latin (WinAnsi) mode,
+ * width is measured with Helvetica-Bold AFM advances ({@link helveticaBoldWidth})
+ * so bold text is correctly centred. Unicode (CIDFont) mode is unaffected.
+ * Defaults to `false` for backward compatibility.
+ *
+ * @since 1.2.0 — the `bold` parameter.
+ */
 export function txtC(
     str: string,
     leftX: number,
@@ -101,9 +123,12 @@ export function txtC(
     font: string,
     sz: number,
     colW: number,
-    enc: EncodingContext
+    enc: EncodingContext,
+    bold: boolean = false,
 ): string {
-    const width = enc.isUnicode ? enc.tw(str, sz) : helveticaWidth(toWinAnsi(str), sz);
+    const width = enc.isUnicode
+        ? enc.tw(str, sz)
+        : (bold ? helveticaBoldWidth(str, sz) : helveticaWidth(toWinAnsi(str), sz));
     return txt(str, leftX + (colW - width) / 2, y, font, sz, enc);
 }
 
@@ -120,7 +145,11 @@ export function txtTagged(
     return wrapSpan(txt(str, x, y, font, sz, enc), str, mcid);
 }
 
-/** Tagged right-aligned text — wraps in /Span BDC…EMC with /ActualText. */
+/**
+ * Tagged right-aligned text — wraps in /Span BDC…EMC with /ActualText.
+ *
+ * @since 1.2.0 — the `bold` parameter.
+ */
 export function txtRTagged(
     str: string,
     rightX: number,
@@ -129,11 +158,16 @@ export function txtRTagged(
     sz: number,
     enc: EncodingContext,
     mcid: number,
+    bold: boolean = false,
 ): string {
-    return wrapSpan(txtR(str, rightX, y, font, sz, enc), str, mcid);
+    return wrapSpan(txtR(str, rightX, y, font, sz, enc, bold), str, mcid);
 }
 
-/** Tagged center-aligned text — wraps in /Span BDC…EMC with /ActualText. */
+/**
+ * Tagged centre-aligned text — wraps in /Span BDC…EMC with /ActualText.
+ *
+ * @since 1.2.0 — the `bold` parameter.
+ */
 export function txtCTagged(
     str: string,
     leftX: number,
@@ -143,8 +177,9 @@ export function txtCTagged(
     colW: number,
     enc: EncodingContext,
     mcid: number,
+    bold: boolean = false,
 ): string {
-    return wrapSpan(txtC(str, leftX, y, font, sz, colW, enc), str, mcid);
+    return wrapSpan(txtC(str, leftX, y, font, sz, colW, enc, bold), str, mcid);
 }
 
 /**

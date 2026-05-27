@@ -50,7 +50,7 @@ fonts/            # Pre-built font data modules (.js/.d.ts) — 16 scripts + TTF
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (28 generators, 161 PDFs; signature-placeholder.ts, bidi-embeddings-showcase.ts, and document-table-parity.ts added in v1.2.0)
 test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf, extreme-bidi-isolates.pdf)
-tests/            # 1808+ tests (53 files: unit/integration/fuzz/parser) mirroring src/ structure
+tests/            # 1818+ tests (53 files: unit/integration/fuzz/parser) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
   └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, medical-800.html)
@@ -91,7 +91,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 1808+ tests (53 files)
+- All new code must have tests. Current: ~95% statement coverage, 1818+ tests (53 files)
 
 ## Conventions
 
@@ -158,7 +158,8 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Table of contents: `TocBlock` with multi-pass pagination (max 3 passes), `_renderToc()` with dot leaders, right-aligned page numbers
 - TOC internal links: named destinations `/Dests << /toc_h_N [pageObj /XYZ x y null] >>` in catalog; annotations use `/Dest /toc_h_N` (not `/URI`)
 - TOC tagged mode: `/TOC` structure element with `/TOCI` children for PDF/UA compliance
-- Smart tables (v1.2.0): `TableBlock` gains six optional fields — `wrap` (`'auto'`|`'always'`|`'never'`, default `'auto'`), `repeatHeader` (default `true`), `zebra` (`boolean|PdfColor`, default `false`, true uses `'0.969 0.973 0.984'`), `caption`, `minRowHeight` (default `12`), `cellPadding` (default `4`). Architecture: `planTable()` in `pdf-renderers.ts` measures once; `_paginateBlocks()` in `pdf-document.ts` slices at row boundaries into `TableSlice` items; `renderTable()` is page-lifecycle-free and accepts an optional `slice` arg. Tagged-mode `/Table` continues across slices via shared `tableStructAccum` array (ISO 14289-1 §7.10.6); `/Caption` emitted once. Single-page tables that fit without wrapping are byte-identical to v1.1.0 (header baseline `+4`, data baseline `+3`, `ROW_H=12`, `TH_H=15` preserved). `planTable()` and `TableSlice` are internal — NOT re-exported from `src/index.ts`.
+- Smart tables (v1.2.0): `TableBlock` gains six optional fields — `wrap` (`'auto'`|`'always'`|`'never'`, default `'auto'`), `repeatHeader` (default `true`), `zebra` (`boolean|PdfColor`, default `false`, true uses `'0.969 0.973 0.984'`), `caption`, `minRowHeight` (default `12`), `cellPadding` (default `3`). Architecture: `planTable()` in `pdf-renderers.ts` measures once; `_paginateBlocks()` in `pdf-document.ts` slices at row boundaries into `TableSlice` items; `renderTable()` is page-lifecycle-free and accepts an optional `slice` arg. Tagged-mode `/Table` continues across slices via shared `tableStructAccum` array (ISO 14289-1 §7.10.6); `/Caption` emitted once. Single-page tables that fit without wrapping are byte-identical to v1.1.0 in their **body** rendering (header baseline `+4`, data baseline `+3`, `ROW_H=12`, `TH_H=15` preserved); right- and centre-aligned **header** glyph positioning shifts 2–5pt because v1.2.0 corrects a pre-1.2.0 width-measurement bug (see next bullet). `planTable()` and `TableSlice` are internal — NOT re-exported from `src/index.ts`.
+- Bold-text width metrics (v1.2.0): right- and centre-aligned bold text (table headers via `enc.f2`, table captions) must use `helveticaBoldWidth()` in Latin mode — Helvetica-Bold AFM advances are ~16% wider than Helvetica-Regular. `txtR`/`txtC`/`txtRTagged`/`txtCTagged` in `pdf-text.ts` accept an optional trailing `bold` flag (default `false`); `emitCell()` passes `bold: isHeader`, caption passes `bold: true`, legacy `buildPDF()` headers pass `bold: true`. `computeAutoFitColumns()` also uses `helveticaBoldWidth()` for the header measurement branch (Latin only — Unicode/CIDFont mode uses `enc.tw` which is already font-correct).
 - `PAGE_SIZES` constant: `{ A4, Letter, Legal, A3, Tabloid }` with `{ width, height }` in points
 - Barcode rendering: all 5 formats use PDF `re f` rectangle operators (pure vector, no image XObjects)
 - Barcode formats: Code 128 (ISO 15417), EAN-13 (ISO 15420), QR Code (ISO 18004), Data Matrix ECC 200 (ISO 16022), PDF417 (ISO 15438)
@@ -242,7 +243,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 1808+ tests (53 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), performance benchmarks
+- **95%+ test coverage** — 1818+ tests (53 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)

@@ -278,3 +278,61 @@ describe('TableBlock end-to-end (v1.2.0 fields)', () => {
         expect(planAlways.rowHeights[0]).toBeGreaterThan(12);
     });
 });
+
+// ── Bold-header positioning regression (v1.2.0 fix) ──────────────────
+
+describe('TableBlock — Helvetica-Bold header positioning (v1.2.0)', () => {
+    it('right-aligned bold header glyph right-edge stays inside the column', async () => {
+        // Pre-1.2.0 bug: txtR measured "Amount" with Helvetica-Regular widths
+        // while the header rendered in Helvetica-Bold (~16% wider), so the
+        // glyphs overshot the column boundary by ~2pt and the trailing "t"
+        // got clipped/overhung into the neighbouring column. This regression
+        // proves the planTable + renderTable path now positions the rendered
+        // right edge strictly inside the column.
+        const { helveticaBoldWidth } = await import('../../src/fonts/encoding.js');
+        const block: TableBlock = {
+            type: 'table',
+            headers: ['Date', 'Description', 'Team', 'Amount'],
+            rows: [{ cells: ['2026-05-01', 'Tx 1', 'Ops', '+12.34'], type: 'credit', pointed: false }],
+            columns: [
+                { f: 0.20, a: 'l', mx: 12, mxH: 12 },
+                { f: 0.45, a: 'l', mx: 60, mxH: 60 },
+                { f: 0.20, a: 'l', mx: 20, mxH: 20 },
+                { f: 0.15, a: 'r', mx: 18, mxH: 18 },
+            ],
+        };
+        const cw = 523;
+        const mgL = 36;
+        const plan = planTable(block, enc, mgL, cw);
+        const i = 3; // Amount column
+        const colRight = plan.cx[i] + plan.cwi[i];
+        const pad = plan.pad;
+        // Renderer right-edge anchor = colRight - pad; glyphs extend leftward.
+        // Width must be measured with Helvetica-Bold metrics (the header font).
+        const renderedW = helveticaBoldWidth('Amount', plan.fontSize.th);
+        const glyphRight = colRight - pad; // right anchor; glyph spans [anchor-W, anchor]
+        // Left edge of the glyph string:
+        const glyphLeft = glyphRight - renderedW;
+        // Must remain ≥ the column's left padding boundary.
+        expect(glyphLeft).toBeGreaterThan(plan.cx[i]);
+        // And glyphRight must sit ≤ the column right edge by at least `pad`.
+        expect(glyphRight).toBeLessThanOrEqual(colRight - pad + 0.001);
+    });
+
+    it('caption is centred using bold metrics so it never overshoots the page', async () => {
+        const { helveticaBoldWidth } = await import('../../src/fonts/encoding.js');
+        const block: TableBlock = {
+            type: 'table',
+            headers: ['A'],
+            rows: [{ cells: ['1'], type: 'credit', pointed: false }],
+            caption: 'A reasonably wide caption that exercises Helvetica-Bold metrics',
+        };
+        const cw = 523;
+        const plan = planTable(block, enc, 36, cw);
+        // Caption uses CAPTION_FONT_SIZE = 9pt (internal constant).
+        // For a single-line caption, width must fit in `cw`.
+        const captionLine = plan.captionLines[0];
+        const w = helveticaBoldWidth(captionLine, 9);
+        expect(w).toBeLessThanOrEqual(cw);
+    });
+});

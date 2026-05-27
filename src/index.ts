@@ -145,7 +145,7 @@ export type { FormFieldType, FormField, FormWidgetResult, RadioGroupContext } fr
 export { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent, defaultFieldHeight } from './core/pdf-form.js';
 
 // ── Core — Digital Signatures ───────────────────────────────────────
-export type { PdfSignOptions } from './core/pdf-signature.js';
+export type { PdfSignOptions, SigDictMetadata } from './core/pdf-signature.js';
 export { buildSigDict, signPdfBytes, estimateContentsSize } from './core/pdf-signature.js';
 export type { AddSignaturePlaceholderOptions } from './core/pdf-sig-placeholder.js';
 export { addSignaturePlaceholder } from './core/pdf-sig-placeholder.js';
@@ -189,7 +189,7 @@ export {
 export { encodePdfTextString } from './core/pdf-text.js';
 
 // ── Fonts — Encoding & Loading ──────────────────────────────────────
-export { toWinAnsi, pdfString, truncate, truncateToWidth, helveticaWidth } from './fonts/encoding.js';
+export { toWinAnsi, pdfString, truncate, truncateToWidth, helveticaWidth, helveticaBoldWidth } from './fonts/encoding.js';
 export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';

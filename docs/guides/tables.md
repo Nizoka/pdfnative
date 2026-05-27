@@ -47,7 +47,7 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 | `zebra`        | `boolean \| PdfColor`           | `false`                     | Alternating data-row fill. `true` uses `'0.969 0.973 0.984'`.                |
 | `caption`      | `string`                        | `undefined`                 | Caption printed once above the first slice.                                  |
 | `minRowHeight` | `number` (points)               | `12`                        | Minimum visual row height.                                                   |
-| `cellPadding`  | `number` (points)               | `4`                         | Internal cell padding.                                                       |
+| `cellPadding`  | `number` (points)               | `3`                         | Internal cell padding.                                                       |
 
 ### `wrap`
 
@@ -75,7 +75,7 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 ### `minRowHeight` / `cellPadding`
 
 - `minRowHeight` enforces a floor so rows look consistent even with short text.
-- `cellPadding` is the internal padding around each cell's text. Header padding inherits this but the baseline offset is a fixed v1.1.0-compatible constant (preserves byte-stability).
+- `cellPadding` is the internal padding around each cell's text. Header padding inherits this but the baseline offset is a fixed v1.1.0-compatible constant (preserves byte-stability for the row body).
 
 ---
 
@@ -131,9 +131,11 @@ Zebra fills are decorative — they do not appear in the structure tree. PDF/UA 
 
 ## Migration from v1.1.0
 
+> **One unconditional fix.** Right- and centre-aligned **bold header** cells now use Helvetica-Bold metrics for width measurement (Adobe AFM), where pre-1.2.0 they were measured with Helvetica-Regular. This corrects a 2–5pt overshoot per cell that visually clipped the trailing glyph (e.g. the `t` in `Amount`). The fix shifts header glyph positioning by 2–5pt vs v1.1.0 — a genuine correctness improvement, not a regression. There is no opt-out.
+
 | You want…                                       | Setting                                                                 |
 | ----------------------------------------------- | ----------------------------------------------------------------------- |
-| Exact byte-identical v1.1.0 multi-page output   | `wrap: 'never', repeatHeader: false`                                    |
+| Exact byte-identical v1.1.0 multi-page _body_ output | `wrap: 'never', repeatHeader: false` (header positioning still corrected) |
 | Modern default (recommended)                    | Omit all new fields — defaults are correct.                             |
 | Invoice / report parity with commercial libs    | `wrap: 'auto', repeatHeader: true, zebra: true, caption: '…'`           |
 | Uniform row heights regardless of content       | `wrap: 'always', minRowHeight: 18`                                      |
