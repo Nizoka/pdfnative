@@ -9,6 +9,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.2.0] – 2026-05-27
+
+Closes every open item on the v1.2.0 roadmap (constant-memory page-by-page
+streaming, full UAX #9 embeddings, USE-lite cluster classification for
+Devanagari/Bengali, pixel-diff visual regression) plus issues
+[#45](https://github.com/Nizoka/pdfnative/issues/45)
+(`addSignaturePlaceholder()` API) and
+[#46](https://github.com/Nizoka/pdfnative/issues/46) (X.509 issuer/subject DN
+slice corruption). 100% backward-compatible. See full notes in
+[release-notes/v1.2.0.md](release-notes/v1.2.0.md).
+
+### Added
+
+- **feat(crypto, #45):** new `addSignaturePlaceholder(pdfBytes, options?)`
+  API — injects an AcroForm + invisible signature widget into an existing
+  PDF via incremental update so `signPdfBytes()` can sign freshly-rendered
+  output without downstream workarounds. Idempotent on already-signed PDFs.
+- **feat(core):** `buildDocumentPDFStreamPageByPage()` — true
+  constant-memory streaming, one page object at a time. Existing
+  `buildDocumentPDFStream()` now wraps it for lower peak memory at
+  byte-identical output.
+- **feat(shaping):** UAX #9 embeddings (LRE / RLE / LRO / RLO / PDF,
+  U+202A–U+202E) with a directional-status stack (max depth 125). Together
+  with the v1.1.0 isolates work, pdfnative now ships a complete UAX #9
+  implementation.
+- **feat(shaping):** USE-lite cluster classifier — fixes nukta+virama
+  chains, half-form sequences, Marathi eyelash-ra, and Bengali ya-phalaa
+  edge cases in Devanagari / Bengali shaping.
+- **test(visual):** zero-dependency PNG decoder and per-pixel diff for the
+  `test-output/extreme/` baselines, gated CI workflow.
+
+### Fixed
+
+- **fix(crypto, #46):** `parseCertificate()` issuer and subject `raw`
+  slices now correctly begin with the ASN.1 SEQUENCE tag `0x30`. ASN.1
+  `decodeAt()` was only patching direct-child offsets, so grandchildren
+  carried offsets relative to their parent's value buffer rather than the
+  original DER — producing malformed slices that broke CMS
+  `IssuerAndSerialNumber` parsing in Adobe Reader and openssl-cms.
+
+### Changed
+
+- **chore(meta):** version bumped to `1.2.0`. Still zero runtime
+  dependencies.
+- **refactor(core):** `buildDocumentPDF()` factored to share an internal
+  page iterator with `buildDocumentPDFStreamPageByPage()`. Bytes
+  unchanged.
+
 ## [1.1.0] – 2026-04-30
 
 Maximalist stable cut. Closes issues
