@@ -211,7 +211,7 @@ export type { FontRun } from './shaping/multi-font.js';
 
 // ── Shaping — BiDi & Arabic/Hebrew ──────────────────────────────────
 export type { BidiRun } from './shaping/bidi.js';
-export { resolveBidiRuns, containsRTL } from './shaping/bidi.js';
+export { resolveBidiRuns, containsRTL, normalizeBidiEmbeddings } from './shaping/bidi.js';
 export { shapeArabicText } from './shaping/arabic-shaper.js';
 
 // ── Parser — PDF Reading & Modification ─────────────────────────────
