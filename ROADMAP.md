@@ -50,24 +50,30 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Monochrome emoji** (v1.1.0) — Noto Emoji (OFL-1.1) bundleable as `pdfnative/fonts/noto-emoji-data.js`. 1891 glyphs / 1489 cmap entries. Opt-in via `registerFont('emoji', …)`. Detection covers BMP/SMP emoji ranges, Fitzpatrick modifiers, ZWJ, and VS-15 / VS-16. Multi-font run splitting routes emoji codepoints automatically.
 - [x] **Auto-fit column widths** (v1.1.0) — `TableBlock.autoFitColumns: true` derives column-width fractions from measured content widths. Honours per-column `minWidth` / `maxWidth` clamping. Default `false` for byte-stability. ([src/core/pdf-column-fit.ts](src/core/pdf-column-fit.ts))
 - [x] **Cell clipping paths** (v1.1.0) — `TableBlock.clipCells: true` (default) wraps every header and data cell in `q <rect> re W n … Q` so variable-width content cannot escape its column rectangle visually. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
+- [x] **addSignaturePlaceholder API** (v1.2.0, [#45](https://github.com/Nizoka/pdfnative/issues/45)) — `addSignaturePlaceholder(pdfBytes, options?)` injects an AcroForm + invisible signature widget plus a `/Sig` dictionary into any existing PDF via incremental update (ISO 32000-1 §7.5.6). Idempotent on already-signed PDFs. Enables the one-call `signPdfBytes(addSignaturePlaceholder(buildDocumentPDFBytes(...)))` ergonomic. ([src/core/pdf-sig-placeholder.ts](src/core/pdf-sig-placeholder.ts))
+- [x] **X.509 DN slice fix** (v1.2.0, [#46](https://github.com/Nizoka/pdfnative/issues/46)) — ASN.1 `decodeAt()` now recursively absolutises descendant offsets, so `parseCertificate()` issuer/subject `raw` slices correctly begin with the SEQUENCE tag `0x30`. Defensive assertion added at the `parseName()` boundary. CMS `IssuerAndSerialNumber` now parses in Adobe Reader and openssl-cms. ([src/crypto/asn1.ts](src/crypto/asn1.ts))
+- [x] **Object-boundary page-by-page streaming** (v1.2.0) — `buildPDFStreamPageByPage()` and `buildDocumentPDFStreamPageByPage()` emit assembled PDFs as `AsyncGenerator<Uint8Array>` chunked at PDF object boundaries (`\nendobj\n`). ([src/core/pdf-stream-writer.ts](src/core/pdf-stream-writer.ts))
+- [x] **UAX #9 embeddings** (v1.2.0) — `normalizeBidiEmbeddings()` rewrites LRE / RLE / LRO / RLO / PDF (U+202A–U+202E) to their sealed-isolate equivalents (max stack depth 125) before BiDi resolution. Invoked transparently from `resolveBidiRuns()`. ([src/shaping/bidi.ts](src/shaping/bidi.ts))
+- [x] **USE-lite cluster classifier** (v1.2.0) — `classifyUseCategory(cp)` + `classifyClusters(cps)` return per-cluster `{ base, reph, prebase, postbase, premarks, postmarks }` with per-script tables for Devanagari / Bengali / Tamil. Public API ready; shaper rewire follows in v1.3.0. ([src/shaping/use-lite.ts](src/shaping/use-lite.ts))
 
 ## In Progress
 
-_All v1.1.0 in-progress items have been merged into the [v1.1.0 release](release-notes/v1.1.0.md). Next iteration is v1.2.0 — see Planned below._
+_All v1.2.0 in-progress items have been merged into the [v1.2.0 release](release-notes/v1.2.0.md). Next iteration is v1.3.0 — see Planned below._
 
 ## Planned
 
-### v1.2.0 — Streaming, full BiDi, colour emoji
+### v1.3.0 — COLRv1 colour emoji, USE shaper rewire, internal page-by-page assembly
 
-- [ ] **Constant-memory streaming** — true page-by-page assembly (`buildDocumentPDFStreamPageByPage()`) without buffering the full PDF. The current `buildDocumentPDFStream()` already chunks output but materialises the full PDF binary first.
-- [ ] **UAX #9 embeddings** — LRE / RLE / LRO / RLO / PDF (U+202A–U+202E). Isolates ship in v1.1.0; embeddings remain rare in practice and require a deeper level-stack refactor.
-- [ ] **COLRv1 colour emoji** — currently ships monochrome only.
-- [ ] **Universal Shaping Engine (USE)-lite cluster classification** for Devanagari / Bengali edge cases.
-- [ ] **Pixel-diff visual regression** on the four `extreme-*` baselines under `test-output/extreme/`.
+- [ ] **COLRv1 colour emoji renderer** — extractor for COLR/CPAL is already staged in `tools/build-font-data.cjs`; v1.3.0 lands the PDF renderer (axial shading dictionaries + PaintComposite/PaintMask).
+- [ ] **USE-lite shaper rewire** — wire the v1.2.0 classifier (`classifyClusters()`) into the Devanagari, Bengali, and Tamil shapers to fix the remaining nukta+virama, half-form, Marathi eyelash-ra, and Bengali ya-phalaa edge cases.
+- [ ] **Internal page-by-page assembly** — factor `buildDocumentPDF()` around a page generator so the full PDF binary never exists in memory. The v1.2.0 `buildDocumentPDFStreamPageByPage()` already chunks an _assembled_ PDF at object boundaries; v1.3.0 makes that streaming all the way down.
+- [ ] **Pixel-diff visual regression** on the four `extreme-*` baselines under `test-output/extreme/` — zero-dependency PNG decoder, baseline PNGs committed as binary, CI workflow gated on shaping/font changes.
+- [ ] **UAX #9 X4–X5 overrides** — full character-level direction override tracking inside LRO/RLO scopes (v1.2.0 normalises base direction only).
 
 ### Long-Term
 
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression
+- [ ] **Full Universal Shaping Engine** — Khmer, Myanmar, complex Sinhala
 
 ## How to Influence the Roadmap
 

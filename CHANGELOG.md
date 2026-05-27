@@ -11,34 +11,47 @@ _No unreleased changes._
 
 ## [1.2.0] – 2026-05-27
 
-Closes every open item on the v1.2.0 roadmap (constant-memory page-by-page
-streaming, full UAX #9 embeddings, USE-lite cluster classification for
-Devanagari/Bengali, pixel-diff visual regression) plus issues
-[#45](https://github.com/Nizoka/pdfnative/issues/45)
+Closes issues [#45](https://github.com/Nizoka/pdfnative/issues/45)
 (`addSignaturePlaceholder()` API) and
-[#46](https://github.com/Nizoka/pdfnative/issues/46) (X.509 issuer/subject DN
-slice corruption). 100% backward-compatible. See full notes in
-[release-notes/v1.2.0.md](release-notes/v1.2.0.md).
+[#46](https://github.com/Nizoka/pdfnative/issues/46) (X.509 issuer/subject
+DN slice corruption), ships object-boundary page-by-page streaming,
+completes UAX #9 with embedding controls (LRE/RLE/LRO/RLO/PDF), and lands
+a USE-lite cluster classifier for future Indic shaper rewires. 100%
+backward-compatible. 52 test files / 1788 tests, all green. See full
+notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
 
 ### Added
 
 - **feat(crypto, #45):** new `addSignaturePlaceholder(pdfBytes, options?)`
-  API — injects an AcroForm + invisible signature widget into an existing
-  PDF via incremental update so `signPdfBytes()` can sign freshly-rendered
-  output without downstream workarounds. Idempotent on already-signed PDFs.
-- **feat(core):** `buildDocumentPDFStreamPageByPage()` — true
-  constant-memory streaming, one page object at a time. Existing
-  `buildDocumentPDFStream()` now wraps it for lower peak memory at
-  byte-identical output.
-- **feat(shaping):** UAX #9 embeddings (LRE / RLE / LRO / RLO / PDF,
-  U+202A–U+202E) with a directional-status stack (max depth 125). Together
-  with the v1.1.0 isolates work, pdfnative now ships a complete UAX #9
-  implementation.
-- **feat(shaping):** USE-lite cluster classifier — fixes nukta+virama
-  chains, half-form sequences, Marathi eyelash-ra, and Bengali ya-phalaa
-  edge cases in Devanagari / Bengali shaping.
-- **test(visual):** zero-dependency PNG decoder and per-pixel diff for the
-  `test-output/extreme/` baselines, gated CI workflow.
+  API — injects an AcroForm + invisible signature widget plus a `/Sig`
+  dictionary into an existing PDF via incremental update so
+  `signPdfBytes()` can sign freshly-rendered output without downstream
+  workarounds. Idempotent on already-signed PDFs.
+  ([src/core/pdf-sig-placeholder.ts](src/core/pdf-sig-placeholder.ts))
+- **feat(core):** `buildDocumentPDFStreamPageByPage()` and
+  `buildPDFStreamPageByPage()` — emit an existing PDF binary as an
+  `AsyncGenerator<Uint8Array>` chunked at PDF object boundaries
+  (`\nendobj\n`). Useful for streaming the assembled PDF over HTTP / Node
+  `WriteStream`. (True one-page-at-a-time _assembly_ remains a v1.3
+  target.)
+- **feat(shaping):** `normalizeBidiEmbeddings(text)` — UAX #9 explicit
+  embeddings (LRE / RLE / LRO / RLO / PDF, U+202A–U+202E) rewritten to
+  their sealed-isolate equivalents before BiDi resolution. Stack depth
+  125. Invoked transparently from `resolveBidiRuns()`.
+- **feat(shaping):** USE-lite cluster classifier in
+  [src/shaping/use-lite.ts](src/shaping/use-lite.ts) — `UseCategory`,
+  `classifyUseCategory(cp)`, `classifyClusters(cps)`. Per-script tables
+  for Devanagari / Bengali / Tamil. Public API ready; shaper rewire
+  follows in v1.3.0.
+- **refactor(crypto):** `SigDictMetadata` interface extracted from
+  `PdfSignOptions` and reused by both `buildSigDict()` and
+  `addSignaturePlaceholder()`.
+- **refactor(parser):** [src/parser/pdf-modifier.ts](src/parser/pdf-modifier.ts)
+  gains `addRawObject(body)` so placeholder-style raw payloads round-trip
+  through incremental save without re-serialisation.
+- **scripts(samples):** new `signature-placeholder` and
+  `bidi-embeddings-showcase` generators wired into `npm run test:generate`
+  (157 sample PDFs total).
 
 ### Fixed
 
@@ -48,14 +61,19 @@ slice corruption). 100% backward-compatible. See full notes in
   carried offsets relative to their parent's value buffer rather than the
   original DER — producing malformed slices that broke CMS
   `IssuerAndSerialNumber` parsing in Adobe Reader and openssl-cms.
+  Defensive `raw[0] === 0x30` assertion added at the `parseName()`
+  boundary.
 
 ### Changed
 
 - **chore(meta):** version bumped to `1.2.0`. Still zero runtime
   dependencies.
-- **refactor(core):** `buildDocumentPDF()` factored to share an internal
-  page iterator with `buildDocumentPDFStreamPageByPage()`. Bytes
-  unchanged.
+
+### Deferred to v1.3.0
+
+- COLRv1 colour emoji renderer; USE-lite shaper rewire; internal
+  page-by-page _assembly_; pixel-diff visual regression; UAX #9 X4–X5
+  character-level overrides inside LRO/RLO scopes.
 
 ## [1.1.0] – 2026-04-30
 

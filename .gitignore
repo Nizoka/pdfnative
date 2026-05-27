@@ -16,3 +16,6 @@ test-output/
 
 # Draft GitHub issues (copy-paste helpers, never committed)
 release-notes/draft-*.md
+
+# Release PR description scratchpads (per-version, never committed)
+RELEASE_PR_*.md
