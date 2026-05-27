@@ -1,6 +1,6 @@
 # scripts/ – Sample PDF Generation
 
-Generates 140+ sample PDFs for visual inspection across all supported languages, features, and edge cases.
+Generates 157 sample PDFs (28 generators) for visual inspection across all supported languages, features, and edge cases.
 
 ## Quick Start
 
@@ -30,6 +30,8 @@ scripts/
     ├── diverse-use-cases.ts     # 12 PDFs – non-financial domain tables
     ├── alphabet-coverage.ts     # 13 PDFs – per-script glyph verification
     ├── pdfa-variants.ts         #  5 PDFs – PDF/A-1b, PDF/A-2b (default + explicit), PDF/A-2u, PDF/A-3b
+    ├── pdfa-latin-embedding.ts  #  4 PDFs – PDF/A Latin VF font with curly quotes, em-dash (v1.1.0, #28)
+    ├── emoji-showcase.ts        #  3 PDFs – monochrome emoji, multi-script mix, table (v1.1.0)
     ├── encryption.ts            #  6 PDFs – AES-128/256, passwords, permissions
     ├── document-builder.ts      # 19 PDFs – DOC_SAMPLES loop + Unicode docs (JA, AR, HE, ZH, TH, BN, TA…)
     ├── compression.ts           #  9 PDFs – FlateDecode size comparisons + compressed non-Latin
@@ -41,10 +43,12 @@ scripts/
     ├── svg-showcase.ts          #  3 PDFs – SVG path/shape rendering, viewBox scaling, tagged
     ├── form-showcase.ts         #  3 PDFs – AcroForm field types, appearance streams, tagged
     ├── digital-signature.ts     #  2 PDFs – RSA + ECDSA digital signatures
+    ├── signature-placeholder.ts #  2 PDFs – addSignaturePlaceholder() workflow + idempotency proof (v1.2.0, #45)
     ├── streaming-showcase.ts    #  2 PDFs – AsyncGenerator streaming output
     ├── parser-showcase.ts       #  2 PDFs – PDF reader/modifier round-trip
     ├── text-shaping-deep.ts     #  3 PDFs – multi-script shaping, GSUB/GPOS, fallback
     ├── bidi-algorithm.ts        #  2 PDFs – BiDi resolution, mixed LTR/RTL, bracket pairing
+    ├── bidi-embeddings-showcase.ts # 1 PDF  – UAX #9 LRE/RLE/LRO/RLO/PDF normalisation (v1.2.0)
     ├── crypto-showcase.ts       #  2 PDFs – RSA + ECDSA round-trip, CMS structure
     ├── font-subsetting-deep.ts  #  2 PDFs – TTF subsetting, CIDFont glyph mapping
     ├── parser-deep.ts           #  2 PDFs – tokenizer, xref parsing, incremental save

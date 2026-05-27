@@ -1,6 +1,6 @@
 # Onboarding — the pdfnative ecosystem in 90 seconds
 
-> **Tracks:** library v1.1.0 · CLI v0.3.0 · MCP v0.3.0
+> **Tracks:** library v1.2.0 · CLI v0.3.0 · MCP v0.3.0
 > **Pick your entry point:** library for code, CLI for shell scripts, MCP for AI assistants. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs.
 
 ---
