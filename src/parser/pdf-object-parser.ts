@@ -66,8 +66,8 @@ export type PdfValue =
 
 // ── Value Helpers ────────────────────────────────────────────────────
 
-export function isRef(v: PdfValue): v is PdfRef {
-    return v !== null && typeof v === 'object' && 'type' in v && v.type === 'ref';
+export function isRef(v: PdfValue | undefined): v is PdfRef {
+    return v !== null && v !== undefined && typeof v === 'object' && 'type' in v && v.type === 'ref';
 }
 
 export function isName(v: PdfValue | undefined): v is PdfName {
@@ -82,7 +82,7 @@ export function isDict(v: PdfValue): v is PdfDict {
     return v instanceof Map;
 }
 
-export function isArray(v: PdfValue): v is PdfArray {
+export function isArray(v: PdfValue | undefined): v is PdfArray {
     return Array.isArray(v);
 }
 

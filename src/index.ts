@@ -147,6 +147,8 @@ export { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRad
 // ── Core — Digital Signatures ───────────────────────────────────────
 export type { PdfSignOptions } from './core/pdf-signature.js';
 export { buildSigDict, signPdfBytes, estimateContentsSize } from './core/pdf-signature.js';
+export type { AddSignaturePlaceholderOptions } from './core/pdf-sig-placeholder.js';
+export { addSignaturePlaceholder } from './core/pdf-sig-placeholder.js';
 
 // ── Core — Streaming Output ─────────────────────────────────────────
 export type { StreamOptions } from './core/pdf-stream-writer.js';

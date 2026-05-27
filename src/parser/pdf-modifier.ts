@@ -34,6 +34,19 @@ export interface PdfModifier {
     addObject(value: PdfValue): number;
 
     /**
+     * Allocate a new object number whose body is emitted **verbatim**
+     * between `num gen obj` and `endobj`. The caller is responsible
+     * for the body's PDF syntactic validity — used for objects that
+     * need an exact byte layout the PdfValue serialiser cannot
+     * express (e.g. signature `/Sig` dictionaries whose
+     * `/Contents <00…>` and `/ByteRange [0 …]` placeholders must be
+     * preserved byte-for-byte for `signPdfBytes()` to patch them).
+     *
+     * Returns the new object number.
+     */
+    addRawObject(body: string): number;
+
+    /**
      * Get the current value of an object (modified or original).
      */
     getObject(num: number): PdfValue | null;
@@ -60,6 +73,7 @@ export interface PdfModifier {
  */
 export function createModifier(reader: PdfReader): PdfModifier {
     const modified = new Map<number, PdfValue>();
+    const rawBodies = new Map<number, string>();
 
     // Track next object number (from trailer /Size)
     const size = reader.trailer.get('Size');
@@ -72,6 +86,16 @@ export function createModifier(reader: PdfReader): PdfModifier {
     function addObject(value: PdfValue): number {
         const num = nextNum++;
         modified.set(num, value);
+        return num;
+    }
+
+    function addRawObject(body: string): number {
+        const num = nextNum++;
+        rawBodies.set(num, body);
+        // Sentinel: insert null so the iteration order in save() is
+        // preserved and the raw body is emitted in its allocation
+        // slot. The save() loop checks rawBodies first.
+        modified.set(num, null);
         return num;
     }
 
@@ -100,7 +124,10 @@ export function createModifier(reader: PdfReader): PdfModifier {
         for (const [num, value] of modified) {
             const objOffset = offset;
 
-            const serialized = serializeObject(num, 0, value);
+            const rawBody = rawBodies.get(num);
+            const serialized = rawBody !== undefined
+                ? `${num} 0 obj\n${rawBody}\nendobj\n\n`
+                : serializeObject(num, 0, value);
             parts.push(serialized);
             offset += byteLength(serialized);
 
@@ -137,6 +164,7 @@ export function createModifier(reader: PdfReader): PdfModifier {
         reader,
         setObject,
         addObject,
+        addRawObject,
         getObject,
         save,
         get nextObjNum() { return nextNum; },

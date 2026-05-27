@@ -606,8 +606,6 @@ describe('PDF Signature', () => {
 
     it('builds a /Sig dictionary with placeholders', () => {
         const dict = buildSigDict({
-            signerCert: null as never, // not used for dict building
-            algorithm: 'rsa-sha256',
             name: 'Test Signer',
             reason: 'Testing',
             location: 'Test Lab',
@@ -626,8 +624,6 @@ describe('PDF Signature', () => {
 
     it('escapes PDF string special characters', () => {
         const dict = buildSigDict({
-            signerCert: null as never,
-            algorithm: 'rsa-sha256',
             name: 'John (Doe)',
             reason: 'Back\\slash',
         });
@@ -650,7 +646,7 @@ describe('PDF Signature', () => {
     it('signs a minimal PDF with RSA key', () => {
         const key = makeTestRsaKey();
         const cert = makeFakeCert();
-        const dict = buildSigDict({ signerCert: cert, algorithm: 'rsa-sha256' });
+        const dict = buildSigDict({});
         const body = `%PDF-1.7\n${dict}\n%%EOF`;
         const pdfBytes = new Uint8Array(body.length);
         for (let i = 0; i < body.length; i++) pdfBytes[i] = body.charCodeAt(i);

@@ -234,9 +234,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     {
         const cert = makeDemoCert('pdfnative RSA Demo', 'rsa');
         const sigDict = buildSigDict({
-            signerCert: cert,
-            rsaKey: DEMO_RSA_KEY,
-            algorithm: 'rsa-sha256',
             name: 'pdfnative RSA Demo',
             reason: 'Sample digital signature',
             location: 'pdfnative test suite',
@@ -262,9 +259,6 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     {
         const cert = makeDemoCert('pdfnative ECDSA Demo', 'ec');
         const sigDict = buildSigDict({
-            signerCert: cert,
-            ecKey: DEMO_EC_KEY,
-            algorithm: 'ecdsa-sha256',
             name: 'pdfnative ECDSA Demo',
             reason: 'Sample ECDSA signature',
             location: 'pdfnative test suite',

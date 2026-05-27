@@ -23,17 +23,13 @@ import type { X509Certificate } from '../crypto/x509.js';
 
 // ── Types ────────────────────────────────────────────────────────────
 
-export interface PdfSignOptions {
-    /** Signer's X.509 certificate (DER-parsed). */
-    readonly signerCert: X509Certificate;
-    /** Optional certificate chain (intermediate CAs). */
-    readonly certChain?: readonly X509Certificate[];
-    /** RSA private key (for 'rsa-sha256'). */
-    readonly rsaKey?: RsaPrivateKey;
-    /** ECDSA private key (for 'ecdsa-sha256'). */
-    readonly ecKey?: EcPrivateKey;
-    /** Algorithm to use. Default: 'rsa-sha256'. */
-    readonly algorithm?: SignatureAlgorithm;
+/**
+ * Metadata-only subset of {@link PdfSignOptions} used by
+ * {@link buildSigDict} and {@link addSignaturePlaceholder}. None of
+ * these fields require key material — they just go into the `/Sig`
+ * dictionary as descriptive entries.
+ */
+export interface SigDictMetadata {
     /** Signing time (defaults to current time). */
     readonly signingTime?: Date;
     /** Signer display name (for /Name field). */
@@ -44,6 +40,19 @@ export interface PdfSignOptions {
     readonly location?: string;
     /** Contact info (for /ContactInfo field). */
     readonly contactInfo?: string;
+}
+
+export interface PdfSignOptions extends SigDictMetadata {
+    /** Signer's X.509 certificate (DER-parsed). */
+    readonly signerCert: X509Certificate;
+    /** Optional certificate chain (intermediate CAs). */
+    readonly certChain?: readonly X509Certificate[];
+    /** RSA private key (for 'rsa-sha256'). */
+    readonly rsaKey?: RsaPrivateKey;
+    /** ECDSA private key (for 'ecdsa-sha256'). */
+    readonly ecKey?: EcPrivateKey;
+    /** Algorithm to use. Default: 'rsa-sha256'. */
+    readonly algorithm?: SignatureAlgorithm;
 }
 
 // ── Constants ────────────────────────────────────────────────────────
@@ -68,7 +77,7 @@ const HEX_CHARS = '0123456789abcdef';
  * @param contentsSize - Size of /Contents hex string in bytes.
  * @returns The /Sig dictionary string and the contentsHexLen.
  */
-export function buildSigDict(options: PdfSignOptions, contentsSize: number = DEFAULT_CONTENTS_SIZE): string {
+export function buildSigDict(options: SigDictMetadata, contentsSize: number = DEFAULT_CONTENTS_SIZE): string {
     const hexLen = contentsSize * 2;
     const parts: string[] = [
         '<< /Type /Sig',
