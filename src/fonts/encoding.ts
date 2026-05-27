@@ -8,6 +8,7 @@
 import type { FontEntry, TextRun, EncodingContext } from '../types/pdf-types.js';
 import { shapeThaiText, containsThai } from '../shaping/thai-shaper.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
+import { stripBidiControls } from '../shaping/bidi.js';
 
 // ── WinAnsi Encoding ─────────────────────────────────────────────────
 
@@ -60,9 +61,14 @@ export function toWinAnsi(str: string): string {
 
 /**
  * Create a PDF string literal: encode to WinAnsi and escape (, ), \.
+ *
+ * Invisible BiDi directional controls (LRM/RLM, LRE/RLE/PDF/LRO/RLO,
+ * LRI/RLI/FSI/PDI) are stripped before encoding — they carry no
+ * visible width per UAX #9 and would otherwise become '?' under
+ * WinAnsi.
  */
 export function pdfString(str: string): string {
-    const s = toWinAnsi(str);
+    const s = toWinAnsi(stripBidiControls(str));
     return '(' + s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)') + ')';
 }
 
@@ -117,8 +123,12 @@ export function truncateToWidth(
 
 /**
  * Approximate text width in points using Helvetica character metrics.
+ *
+ * Invisible BiDi controls are stripped before measuring (zero-width
+ * per UAX #9).
  */
 export function helveticaWidth(str: string, sz: number): number {
+    str = stripBidiControls(str);
     let w = 0;
     for (let i = 0; i < str.length; i++) {
         const cp = str.codePointAt(i) ?? 0;

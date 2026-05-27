@@ -211,7 +211,7 @@ export type { FontRun } from './shaping/multi-font.js';
 
 // ── Shaping — BiDi & Arabic/Hebrew ──────────────────────────────────
 export type { BidiRun } from './shaping/bidi.js';
-export { resolveBidiRuns, containsRTL, normalizeBidiEmbeddings } from './shaping/bidi.js';
+export { resolveBidiRuns, containsRTL, normalizeBidiEmbeddings, stripBidiControls } from './shaping/bidi.js';
 export type { UseCategory, UseClassifiedCp, UseCluster } from './shaping/use-lite.js';
 export { classifyUseCategory, classifyClusters } from './shaping/use-lite.js';
 export { shapeArabicText } from './shaping/arabic-shaper.js';

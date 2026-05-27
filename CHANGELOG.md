@@ -17,7 +17,7 @@ Closes issues [#45](https://github.com/Nizoka/pdfnative/issues/45)
 DN slice corruption), ships object-boundary page-by-page streaming,
 completes UAX #9 with embedding controls (LRE/RLE/LRO/RLO/PDF), and lands
 a USE-lite cluster classifier for future Indic shaper rewires. 100%
-backward-compatible. 52 test files / 1788 tests, all green. See full
+backward-compatible. 52 test files / 1794 tests, all green. See full
 notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
 
 ### Added

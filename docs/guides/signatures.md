@@ -129,6 +129,52 @@ const result = verifyPdfSignature(await fs.readFile('signed.pdf'));
 // → { valid: true, signerSubject: 'CN=...', signingTime: Date, algorithm: 'rsa-sha256' }
 ```
 
+## Reading the validator output
+
+Two warnings commonly surface when testing the sample PDFs in Adobe Reader.
+Both are **expected by spec** — they are not pdfnative bugs.
+
+### "Validity unknown" / "Identité du signataire inconnue"
+
+Adobe shows this whenever the signing certificate's issuer chain does
+not terminate in a root CA listed in Adobe's Approved Trust List (AATL)
+or in the user's locally configured Trusted Identities.
+
+- The `scripts/generators/digital-signature.ts` sample uses a
+  **self-signed demo CA** so it can ship deterministically. The
+  cryptographic signature itself is valid (Adobe says so:
+  *"Le document n'a pas été modifié depuis l'apposition de la signature"*);
+  only the identity link to a public root is missing.
+- To remove the warning in Adobe Reader: **Preferences → Signatures →
+  Identités → Identités autorisées → Ajouter** and import the demo
+  certificate as a trusted root.
+- To verify the CMS independently of any trust store, use
+  `openssl pkcs7 -in signed.pdf -inform DER -print_certs` and
+  `openssl cms -verify -CAfile demo-ca.pem`.
+- For production signatures, use a certificate issued by a CA in the
+  Adobe Approved Trust List (Sectigo, DigiCert, GlobalSign…) or your
+  organisation's enterprise CA distributed via group policy.
+
+### "Signature non valable" on a placeholder PDF
+
+A PDF that has only been through `addSignaturePlaceholder()` (i.e. not
+yet `signPdfBytes()`) **will** read as invalid in Adobe — and that is
+correct behaviour. The `/Sig` dictionary's `/Contents` slot is
+zero-padded hex by design, reserved for the CMS SignedData that the
+external signer will produce. Adobe sees a malformed CMS and reports
+the signature as broken.
+
+The `scripts/generators/signature-placeholder.ts` sample produces
+exactly this shape on purpose, to demonstrate:
+
+1. The placeholder layout is byte-stable (the `-idempotent` companion
+   PDF proves it — re-running the function produces identical bytes).
+2. Downstream tooling (HSMs, cloud KMS, smartcards) can fill in
+   `/Contents` without touching the surrounding objects.
+
+To turn a placeholder into a valid signature, call `signPdfBytes()` on
+the placeholder bytes — that's the pipeline shown in the TL;DR above.
+
 ## Caveats
 
 - **Encrypted PDFs.** `addSignaturePlaceholder()` throws on encrypted

@@ -822,6 +822,51 @@ export function containsRTL(text: string): boolean {
     return false;
 }
 
+/**
+ * Strip invisible Unicode bidirectional formatting characters.
+ *
+ * The BiDi resolver consumes these characters when it runs, but the
+ * resolver is only invoked when `containsRTL()` is true. For pure-LTR
+ * paragraphs that nonetheless contain directional formatters (e.g. an
+ * orphan PDF U+202C left over after `normalizeBidiEmbeddings()`), the
+ * marker would reach the font encoder as a regular codepoint and
+ * render as `.notdef` (tofu) since no font ships a glyph for it.
+ *
+ * Stripped codepoints:
+ * - LRM / RLM (U+200E, U+200F)
+ * - LRE / RLE / PDF / LRO / RLO (U+202A–U+202E)
+ * - LRI / RLI / FSI / PDI (U+2066–U+2069)
+ *
+ * Safe to call unconditionally — these characters carry no visible
+ * width per UAX #9, so removing them never changes layout.
+ *
+ * @since 1.2.0
+ */
+export function stripBidiControls(text: string): string {
+    if (!text) return text;
+    // Fast path: scan once; only rebuild if a control is present.
+    let needs = false;
+    for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i);
+        if (c === 0x200E || c === 0x200F
+            || (c >= 0x202A && c <= 0x202E)
+            || (c >= 0x2066 && c <= 0x2069)) {
+            needs = true;
+            break;
+        }
+    }
+    if (!needs) return text;
+    let out = '';
+    for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i);
+        if (c === 0x200E || c === 0x200F
+            || (c >= 0x202A && c <= 0x202E)
+            || (c >= 0x2066 && c <= 0x2069)) continue;
+        out += text[i];
+    }
+    return out;
+}
+
 // ── Internal Helpers ─────────────────────────────────────────────────
 
 /**

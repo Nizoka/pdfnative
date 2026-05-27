@@ -24,6 +24,16 @@ function buildShowcaseDoc(): DocumentParams {
             {
                 type: 'paragraph',
                 text:
+                    'NOTE: opening this PDF in Adobe Reader will display "Signature non valable" / '
+                    + '"Signature invalid". That is the expected, by-spec behaviour of an unsigned '
+                    + 'placeholder — the /Contents slot is reserved (zero-padded hex) and the /ByteRange '
+                    + 'is left at its default until a subsequent signPdfBytes() call computes the digest '
+                    + 'and writes the CMS SignedData. The companion digital-signature.* PDFs show the '
+                    + 'same workflow with the signature actually applied.',
+            },
+            {
+                type: 'paragraph',
+                text:
                     'This PDF was assembled in two steps: 1) buildDocumentPDFBytes() produced the body, '
                     + '2) addSignaturePlaceholder() appended an AcroForm signature widget plus a /Sig dictionary '
                     + 'via an incremental update (ISO 32000-1 §7.5.6). A subsequent call to signPdfBytes() '

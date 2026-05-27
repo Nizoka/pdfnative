@@ -287,6 +287,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             blocks: [
                 { type: 'heading', text: 'Digital Signature Support', level: 1 },
                 { type: 'paragraph', text: 'pdfnative provides zero-dependency digital signature support compliant with ISO 32000-1 §12.8. All cryptographic primitives are implemented in pure TypeScript with no external dependencies.' },
+                { type: 'paragraph', text: 'NOTE: this sample is signed with a self-signed demo CA, so Adobe Reader will report "Validité de la signature inconnue" / "Identité du signataire inconnue". The cryptographic signature itself is valid — the warning means the issuing CA is not in your trust store. Add the demo CA via Adobe Preferences → Signatures → Identités autorisées, or use openssl-cms to verify the embedded CMS independently. See docs/guides/signatures.md for the validator output reference.' },
 
                 { type: 'heading', text: 'Supported Algorithms', level: 2 },
                 { type: 'list', style: 'bullet', items: [
