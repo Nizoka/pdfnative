@@ -17,7 +17,7 @@ import { shapeTamilText } from '../shaping/tamil-shaper.js';
 import { shapeDevanagariText } from '../shaping/devanagari-shaper.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
-import { resolveBidiRuns, containsRTL, reverseString } from '../shaping/bidi.js';
+import { resolveBidiRuns, containsRTL, reverseString, stripBidiControls } from '../shaping/bidi.js';
 import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil, containsDevanagari } from '../shaping/script-registry.js';
 
 // ── Helvetica Fallback Helpers ───────────────────────────────────────
@@ -201,7 +201,12 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
 
         textRuns(str: string, sz: number): TextRun[] {
             if (!str) return [];
-
+            // Strip invisible BiDi controls. The BiDi resolver below consumes
+            // them when it runs, but it only runs on RTL paragraphs — pure-LTR
+            // text with an orphan PDF/LRI/RLI marker would otherwise reach the
+            // cmap as .notdef.
+            str = stripBidiControls(str);
+            if (!str) return [];
             // ── RTL path: BiDi reordering ────────────────────────────
             if (containsRTL(str)) {
                 const bidiRuns = resolveBidiRuns(str);
@@ -359,6 +364,9 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
         },
 
         ps(str: string): string {
+            if (!str) return '<>';
+            // Strip invisible BiDi controls before encoding (see textRuns above).
+            str = stripBidiControls(str);
             if (!str) return '<>';
             const { cmap } = primary.fontData;
 

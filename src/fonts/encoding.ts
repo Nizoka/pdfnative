@@ -8,6 +8,7 @@
 import type { FontEntry, TextRun, EncodingContext } from '../types/pdf-types.js';
 import { shapeThaiText, containsThai } from '../shaping/thai-shaper.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
+import { stripBidiControls } from '../shaping/bidi.js';
 
 // ── WinAnsi Encoding ─────────────────────────────────────────────────
 
@@ -60,9 +61,14 @@ export function toWinAnsi(str: string): string {
 
 /**
  * Create a PDF string literal: encode to WinAnsi and escape (, ), \.
+ *
+ * Invisible BiDi directional controls (LRM/RLM, LRE/RLE/PDF/LRO/RLO,
+ * LRI/RLI/FSI/PDI) are stripped before encoding — they carry no
+ * visible width per UAX #9 and would otherwise become '?' under
+ * WinAnsi.
  */
 export function pdfString(str: string): string {
-    const s = toWinAnsi(str);
+    const s = toWinAnsi(stripBidiControls(str));
     return '(' + s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)') + ')';
 }
 
@@ -117,8 +123,12 @@ export function truncateToWidth(
 
 /**
  * Approximate text width in points using Helvetica character metrics.
+ *
+ * Invisible BiDi controls are stripped before measuring (zero-width
+ * per UAX #9).
  */
 export function helveticaWidth(str: string, sz: number): number {
+    str = stripBidiControls(str);
     let w = 0;
     for (let i = 0; i < str.length; i++) {
         const cp = str.codePointAt(i) ?? 0;
@@ -139,6 +149,45 @@ export function helveticaWidth(str: string, sz: number): number {
         else if (cp === 0x201C || cp === 0x201D) w += 333; // double curly quotes
         else if (cp === 0x20AC) w += 556;  // Euro sign
         else w += 556;
+    }
+    return w * sz / 1000;
+}
+
+/**
+ * Approximate text width in points using **Helvetica-Bold** character
+ * metrics. Required for right- and centre-aligned bold text (table headers,
+ * captions) where measuring with the regular {@link helveticaWidth}
+ * would position the rendered glyphs slightly past the intended right edge —
+ * Helvetica-Bold advances are ~16% wider on average than Helvetica-Regular.
+ *
+ * Widths are derived from the Adobe Helvetica-Bold AFM file (Type 1 standard
+ * PostScript font, base-14 PDF). Invisible BiDi controls are stripped before
+ * measuring (zero-width per UAX #9).
+ *
+ * @since 1.2.0
+ */
+export function helveticaBoldWidth(str: string, sz: number): number {
+    str = stripBidiControls(str);
+    let w = 0;
+    for (let i = 0; i < str.length; i++) {
+        const cp = str.codePointAt(i) ?? 0;
+        if (cp > 0xFFFF) i++; // skip surrogate pair
+        if (cp >= 48 && cp <= 57) w += 556;       // digits (same as regular)
+        else if (cp >= 65 && cp <= 90) w += 722;  // A–Z bold (was 680 regular)
+        else if (cp >= 97 && cp <= 122) w += 611; // a–z bold (was 500 regular)
+        else if (cp === 32) w += 278;             // space
+        else if (cp === 46 || cp === 44) w += 278; // . ,
+        else if (cp === 43) w += 584;             // +
+        else if (cp === 45) w += 333;             // -
+        else if (cp === 47 || cp === 58) w += 278; // / :
+        // Unicode typographic characters (Helvetica-Bold AFM)
+        else if (cp === 0x2014) w += 1000; // em-dash
+        else if (cp === 0x2013) w += 556;  // en-dash
+        else if (cp === 0x2026) w += 1000; // ellipsis
+        else if (cp === 0x2018 || cp === 0x2019) w += 278; // single curly quotes
+        else if (cp === 0x201C || cp === 0x201D) w += 500; // double curly quotes
+        else if (cp === 0x20AC) w += 556;  // Euro sign
+        else w += 611;
     }
     return w * sz / 1000;
 }

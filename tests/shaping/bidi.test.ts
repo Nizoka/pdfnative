@@ -6,6 +6,7 @@ import {
     containsRTL,
     mirrorCodePoint,
     reverseString,
+    stripBidiControls,
 } from '../../src/shaping/bidi.js';
 import type { BidiType } from '../../src/shaping/bidi.js';
 
@@ -229,6 +230,38 @@ describe('containsRTL', () => {
 
     it('should detect RTL in mixed text', () => {
         expect(containsRTL('Hello \u0645\u0631\u062D\u0628\u0627')).toBe(true);
+    });
+});
+
+// ── stripBidiControls ─────────────────────────────────
+
+describe('stripBidiControls', () => {
+    it('should return empty string unchanged', () => {
+        expect(stripBidiControls('')).toBe('');
+    });
+
+    it('should be identity on plain Latin text', () => {
+        const s = 'Hello world! 123 + 456 = 579.';
+        expect(stripBidiControls(s)).toBe(s);
+    });
+
+    it('should strip LRM and RLM (U+200E, U+200F)', () => {
+        expect(stripBidiControls('a\u200Eb\u200Fc')).toBe('abc');
+    });
+
+    it('should strip LRE/RLE/PDF/LRO/RLO (U+202A–U+202E)', () => {
+        // LRE, RLE, PDF, LRO, RLO
+        expect(stripBidiControls('a\u202Ab\u202Bc\u202Cd\u202De\u202Ef')).toBe('abcdef');
+    });
+
+    it('should strip LRI/RLI/FSI/PDI (U+2066–U+2069)', () => {
+        expect(stripBidiControls('a\u2066b\u2067c\u2068d\u2069e')).toBe('abcde');
+    });
+
+    it('should preserve order and non-control codepoints', () => {
+        // Orphan PDF in pure-LTR text (the bidi-embeddings-showcase regression).
+        expect(stripBidiControls('text\u202Cwith orphan PDF marker'))
+            .toBe('textwith orphan PDF marker');
     });
 });
 

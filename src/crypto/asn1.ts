@@ -88,11 +88,13 @@ function decodeAt(buf: Uint8Array, pos: number): { node: Asn1Node; nextPos: numb
         let childPos = 0;
         while (childPos < value.length) {
             const { node: child, nextPos: childNext } = decodeAt(value, childPos);
-            // Adjust offsets to be relative to original buffer
-            children.push({
-                ...child,
-                offset: pos + childPos,
-            });
+            // The recursive call returns offsets relative to `value` (the inner
+            // subarray). Shift the child AND every descendant by `pos` so that
+            // every offset is absolute against the original buffer. Without
+            // this recursive shift, grandchildren keep relative offsets and
+            // any caller that slices `originalBuf.subarray(grandchild.offset, …)`
+            // reads from the wrong base address (issue #46).
+            children.push(shiftOffsets(child, pos));
             childPos = childNext;
         }
     }
@@ -106,6 +108,23 @@ function decodeAt(buf: Uint8Array, pos: number): { node: Asn1Node; nextPos: numb
             totalLength: valueEnd - startPos,
         },
         nextPos: valueEnd,
+    };
+}
+
+/**
+ * Recursively rewrite `offset` on `node` and every descendant by adding
+ * `delta`. Used by `decodeAt()` to absolutise offsets after a recursive
+ * decode against a `value` subarray. Pure: returns a new node tree.
+ *
+ * @internal
+ */
+function shiftOffsets(node: Asn1Node, delta: number): Asn1Node {
+    return {
+        tag: node.tag,
+        value: node.value,
+        children: node.children.map((c) => shiftOffsets(c, delta)),
+        offset: node.offset + delta,
+        totalLength: node.totalLength,
     };
 }
 

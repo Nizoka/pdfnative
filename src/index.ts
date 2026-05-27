@@ -119,8 +119,8 @@ export type { WatermarkState } from './core/pdf-watermark.js';
 export { validateWatermark, buildWatermarkState } from './core/pdf-watermark.js';
 
 // ── Core — Tagged PDF / PDF/A ───────────────────────────────────────
-export type { PdfAConfig, EmbeddedFilesResult } from './core/pdf-tags.js';
-export { resolvePdfAConfig, buildEmbeddedFiles, validateAttachments } from './core/pdf-tags.js';
+export type { PdfAConfig, EmbeddedFilesResult, PdfAConformanceTarget } from './core/pdf-tags.js';
+export { resolvePdfAConfig, buildEmbeddedFiles, validateAttachments, PDF_A_CONFORMANCE_TARGETS } from './core/pdf-tags.js';
 
 // ── Core — Stream Compression ───────────────────────────────────────
 export { initNodeCompression, setDeflateImpl } from './core/pdf-compress.js';
@@ -145,8 +145,10 @@ export type { FormFieldType, FormField, FormWidgetResult, RadioGroupContext } fr
 export { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent, defaultFieldHeight } from './core/pdf-form.js';
 
 // ── Core — Digital Signatures ───────────────────────────────────────
-export type { PdfSignOptions } from './core/pdf-signature.js';
+export type { PdfSignOptions, SigDictMetadata } from './core/pdf-signature.js';
 export { buildSigDict, signPdfBytes, estimateContentsSize } from './core/pdf-signature.js';
+export type { AddSignaturePlaceholderOptions } from './core/pdf-sig-placeholder.js';
+export { addSignaturePlaceholder } from './core/pdf-sig-placeholder.js';
 
 // ── Core — Streaming Output ─────────────────────────────────────────
 export type { StreamOptions } from './core/pdf-stream-writer.js';
@@ -154,6 +156,7 @@ export {
     validateDocumentStreamable, validateTableStreamable,
     chunkBinaryString, concatChunks, streamByteLength,
     buildDocumentPDFStream, buildPDFStream,
+    buildDocumentPDFStreamPageByPage, buildPDFStreamPageByPage,
 } from './core/pdf-stream-writer.js';
 
 // ── Crypto — Hashing, ASN.1, RSA, ECDSA, X.509, CMS ────────────────
@@ -186,7 +189,7 @@ export {
 export { encodePdfTextString } from './core/pdf-text.js';
 
 // ── Fonts — Encoding & Loading ──────────────────────────────────────
-export { toWinAnsi, pdfString, truncate, truncateToWidth, helveticaWidth } from './fonts/encoding.js';
+export { toWinAnsi, pdfString, truncate, truncateToWidth, helveticaWidth, helveticaBoldWidth } from './fonts/encoding.js';
 export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';
@@ -208,7 +211,9 @@ export type { FontRun } from './shaping/multi-font.js';
 
 // ── Shaping — BiDi & Arabic/Hebrew ──────────────────────────────────
 export type { BidiRun } from './shaping/bidi.js';
-export { resolveBidiRuns, containsRTL } from './shaping/bidi.js';
+export { resolveBidiRuns, containsRTL, normalizeBidiEmbeddings, stripBidiControls } from './shaping/bidi.js';
+export type { UseCategory, UseClassifiedCp, UseCluster } from './shaping/use-lite.js';
+export { classifyUseCategory, classifyClusters } from './shaping/use-lite.js';
 export { shapeArabicText } from './shaping/arabic-shaper.js';
 
 // ── Parser — PDF Reading & Modification ─────────────────────────────

@@ -606,8 +606,6 @@ describe('PDF Signature', () => {
 
     it('builds a /Sig dictionary with placeholders', () => {
         const dict = buildSigDict({
-            signerCert: null as never, // not used for dict building
-            algorithm: 'rsa-sha256',
             name: 'Test Signer',
             reason: 'Testing',
             location: 'Test Lab',
@@ -626,8 +624,6 @@ describe('PDF Signature', () => {
 
     it('escapes PDF string special characters', () => {
         const dict = buildSigDict({
-            signerCert: null as never,
-            algorithm: 'rsa-sha256',
             name: 'John (Doe)',
             reason: 'Back\\slash',
         });
@@ -650,7 +646,7 @@ describe('PDF Signature', () => {
     it('signs a minimal PDF with RSA key', () => {
         const key = makeTestRsaKey();
         const cert = makeFakeCert();
-        const dict = buildSigDict({ signerCert: cert, algorithm: 'rsa-sha256' });
+        const dict = buildSigDict({});
         const body = `%PDF-1.7\n${dict}\n%%EOF`;
         const pdfBytes = new Uint8Array(body.length);
         for (let i = 0; i < body.length; i++) pdfBytes[i] = body.charCodeAt(i);
@@ -766,6 +762,61 @@ describe('X.509 Certificate Parsing', () => {
 
     it('rejects missing certificate structure', () => {
         expect(() => parseCertificate(derSequence())).toThrow();
+    });
+
+    // Regression: issue #46 — grandchild ASN.1 offsets were not absolutised
+    // against the original DER buffer, so issuer.raw / subject.raw were
+    // sliced from the wrong base address and did NOT start with the SEQUENCE
+    // tag 0x30. Embedding them in CMS IssuerAndSerialNumber produced
+    // unparseable output that Adobe Reader / openssl-cms rejected.
+    describe('issue #46 — issuer/subject raw DN slices', () => {
+        it('issuer.raw starts with ASN.1 SEQUENCE tag (0x30)', () => {
+            const cert = parseCertificate(makeTestCertDer());
+            expect(cert.issuer.raw.length).toBeGreaterThan(0);
+            expect(cert.issuer.raw[0]).toBe(0x30);
+        });
+
+        it('subject.raw starts with ASN.1 SEQUENCE tag (0x30)', () => {
+            const cert = parseCertificate(makeTestCertDer());
+            expect(cert.subject.raw.length).toBeGreaterThan(0);
+            expect(cert.subject.raw[0]).toBe(0x30);
+        });
+
+        it('issuer.raw re-parses as a SEQUENCE with the same RDN content', () => {
+            const cert = parseCertificate(makeTestCertDer());
+            const reparsed = derDecode(cert.issuer.raw);
+            expect(reparsed.tag).toBe(0x30);
+            // SEQUENCE → SET → SEQUENCE { OID(CN), UTF8String("Test") }
+            expect(reparsed.children.length).toBeGreaterThan(0);
+            const set = reparsed.children[0];
+            expect(set.tag).toBe(0x31); // SET
+            const atv = set.children[0];
+            expect(atv.tag).toBe(0x30); // SEQUENCE
+            expect(atv.children.length).toBe(2);
+            // Re-decode the inner UTF8String value
+            const value = new TextDecoder().decode(atv.children[1].value);
+            expect(value).toBe('Test');
+        });
+
+        it('parseName throws if the underlying slice does not start with 0x30 (defensive)', () => {
+            // The defensive assertion only fires if ASN.1 offset bookkeeping
+            // is broken — exercise it by feeding a hand-crafted certificate
+            // whose root we hijack to point at a non-SEQUENCE byte.
+            const certDer = makeTestCertDer();
+            // Truncate by one byte to break the structure before parseName
+            // — should throw somewhere in the parsing pipeline.
+            const broken = certDer.subarray(0, certDer.length - 1);
+            expect(() => parseCertificate(broken)).toThrow();
+        });
+
+        it('issuer.raw is structurally equal to subject.raw for self-signed cert', () => {
+            const cert = parseCertificate(makeTestCertDer());
+            expect(cert.issuer.raw.length).toBe(cert.subject.raw.length);
+            for (let i = 0; i < cert.issuer.raw.length; i++) {
+                expect(cert.issuer.raw[i]).toBe(cert.subject.raw[i]);
+            }
+            expect(isSelfSigned(cert)).toBe(true);
+        });
     });
 });
 

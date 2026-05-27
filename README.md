@@ -21,7 +21,7 @@ pdfnative ships as three coordinated packages — pick whichever entry point fit
 
 | Package | Latest | Use it for |
 |---|:---:|---|
-| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.1.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
+| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.2.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
 | [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v0.3.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256, RFC 3161 detection), inspect, and verify CMS signatures from the shell. New in v0.3.0: `--watch`, `--template`, `--font {latin,emoji}`, auto signature placeholder. |
 | [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v0.3.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **9 structured tools** including the new `inspect_pdf`, a `pdfA` flag on every doc tool, multi-script `lang`, and per-tool `outputSchema` (MCP 2025-06-18). |
 
@@ -40,17 +40,19 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **16 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil
 - **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
-- **BiDi text layout** — simplified Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring
+- **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring, isolates (LRI/RLI/FSI/PDI), and explicit embeddings (LRE/RLE/LRO/RLO/PDF)
+- **USE-lite cluster classifier** — public API (`classifyUseCategory`, `classifyClusters`) with per-script tables for Devanagari, Bengali, Tamil (v1.2.0; shaper rewire lands in v1.3)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
 - **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments)
 - **PDF Encryption** — AES-128 (V4/R4) and AES-256 (V5/R6), owner + user passwords, granular permissions
 - **Free-form document builder** — headings, paragraphs, lists, tables, images, barcodes, SVG paths, form fields, spacers, page breaks, table of contents
+- **Smart tables** — multi-page slicing with repeated headers, auto-wrap on column overflow, zebra striping, captions, and smart auto-fit columns (v1.2.0). [Guide →](docs/guides/tables.md)
 - **Barcode & QR code generation** — Code 128, EAN-13, QR Code, Data Matrix, PDF417 — pure PDF path operators (no images)
 - **SVG path rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators
 - **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7)
-- **Digital signatures** — CMS/PKCS#7 detached signatures with RSA + ECDSA, SHA-256/384/512, X.509 parsing (ISO 32000-1 §12.8)
-- **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size
+- **Digital signatures** — CMS/PKCS#7 detached signatures with RSA + ECDSA, SHA-256/384/512, X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0)
+- **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, plus object-boundary page-by-page streaming (`buildPDFStreamPageByPage()`, v1.2.0)
 - **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification
 - **Image embedding** — JPEG (DCTDecode) and PNG (FlateDecode) with auto-scaling and alignment
 - **Hyperlinks** — PDF link annotations (/URI) with URL validation, blue underlined text, tagged /Link
@@ -60,7 +62,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 1588+ tests across 40 files, fuzz suite, performance benchmarks
+- **95%+ test coverage** — 1822+ tests across 53 files, fuzz suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home

@@ -25,6 +25,7 @@ src/
 │   ├── pdf-svg.ts        # SVG path/shape rendering as native PDF path operators (7 element types)
 │   ├── pdf-form.ts       # AcroForm interactive fields with appearance streams (ISO 32000-1 §12.7)
 │   ├── pdf-signature.ts  # CMS/PKCS#7 digital signatures (RSA + ECDSA, ISO 32000-1 §12.8)
+│   ├── pdf-sig-placeholder.ts # addSignaturePlaceholder: AcroForm + /Sig injection via incremental update (v1.2.0)
 │   ├── pdf-stream-writer.ts # AsyncGenerator streaming output with configurable chunk size
 │   └── pdf-encrypt.ts    # AES-128/256 encryption, MD5, SHA-256, key derivation, permissions
 ├── crypto/       # Zero-dependency cryptographic primitives
@@ -47,9 +48,9 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (.js/.d.ts) — 16 scripts + TTF source files
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (26 generators, 150+ PDFs; emoji-showcase.ts and pdfa-latin-embedding.ts added in v1.1.0)
+scripts/          # Modular sample PDF generation (28 generators, 161 PDFs; signature-placeholder.ts, bidi-embeddings-showcase.ts, and document-table-parity.ts added in v1.2.0)
 test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf, extreme-bidi-isolates.pdf)
-tests/            # 1726+ tests (48 files: unit/integration/fuzz/parser) mirroring src/ structure
+tests/            # 1822+ tests (53 files: unit/integration/fuzz/parser) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
   └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, medical-800.html)
@@ -90,7 +91,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 1726+ tests (48 files)
+- All new code must have tests. Current: ~95% statement coverage, 1822+ tests (53 files)
 
 ## Conventions
 
@@ -157,6 +158,11 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Table of contents: `TocBlock` with multi-pass pagination (max 3 passes), `_renderToc()` with dot leaders, right-aligned page numbers
 - TOC internal links: named destinations `/Dests << /toc_h_N [pageObj /XYZ x y null] >>` in catalog; annotations use `/Dest /toc_h_N` (not `/URI`)
 - TOC tagged mode: `/TOC` structure element with `/TOCI` children for PDF/UA compliance
+- Smart tables (v1.2.0): `TableBlock` gains six optional fields — `wrap` (`'auto'`|`'always'`|`'never'`, default `'auto'`), `repeatHeader` (default `true`), `zebra` (`boolean|PdfColor`, default `false`, true uses `'0.969 0.973 0.984'`), `caption`, `minRowHeight` (default `12`), `cellPadding` (default `3`). Architecture: `planTable()` in `pdf-renderers.ts` measures once; `_paginateBlocks()` in `pdf-document.ts` slices at row boundaries into `TableSlice` items; `renderTable()` is page-lifecycle-free and accepts an optional `slice` arg. Tagged-mode `/Table` continues across slices via shared `tableStructAccum` array (ISO 14289-1 §7.10.6); `/Caption` emitted once. Single-page tables that fit without wrapping are byte-identical to v1.1.0 in their **body** rendering (header baseline `+4`, data baseline `+3`, `ROW_H=12`, `TH_H=15` preserved); right- and centre-aligned **header** glyph positioning shifts 2–5pt because v1.2.0 corrects a pre-1.2.0 width-measurement bug (see next bullet). `planTable()` and `TableSlice` are internal — NOT re-exported from `src/index.ts`.
+- Bold-text width metrics (v1.2.0): right- and centre-aligned bold text (table headers via `enc.f2`, table captions) must use `helveticaBoldWidth()` in Latin mode — Helvetica-Bold AFM advances are ~16% wider than Helvetica-Regular. `txtR`/`txtC`/`txtRTagged`/`txtCTagged` in `pdf-text.ts` accept an optional trailing `bold` flag (default `false`); `emitCell()` passes `bold: isHeader`, caption passes `bold: true`, legacy `buildPDF()` headers pass `bold: true`. `computeAutoFitColumns()` also uses `helveticaBoldWidth()` for the header measurement branch (Latin only — Unicode/CIDFont mode uses `enc.tw` which is already font-correct).
+- Column `kind` opt-in (v1.2.0): `renderTable()` in `pdf-renderers.ts` applies Helvetica-Bold + credit/debit colour ONLY when `columns[i].kind === 'amount'` (new optional `ColumnDef.kind?: 'amount'` field). The pre-1.2.0 hardcoded `i === 3` heuristic was removed from the document-builder path because it broke generic tables. Legacy `buildPDF()` in `pdf-builder.ts` keeps `i === 3` (financial-statement byte-stability invariant).
+- Wrap-aware cell truncate (v1.2.0): `emitCell()` applies the v1.1 character truncate (`mx` / `mxH`) ONLY when `wrap: 'never'`. Under `'auto'` (default) and `'always'`, the planner has already sized the column to fit; an additional char-truncate produces spurious `…` ellipses.
+- PDF/A conformance enum (v1.2.0): `PDF_A_CONFORMANCE_TARGETS = ['pdfa1b','pdfa2b','pdfa2u','pdfa3b'] as const` + `PdfAConformanceTarget` type exported from root (in `core/pdf-tags.ts`). Single source of truth for tooling — `pdfnative-mcp` consumes via `import { PDF_A_CONFORMANCE_TARGETS } from 'pdfnative'` for its tool-schema `enum:`.
 - `PAGE_SIZES` constant: `{ A4, Letter, Legal, A3, Tabloid }` with `{ width, height }` in points
 - Barcode rendering: all 5 formats use PDF `re f` rectangle operators (pure vector, no image XObjects)
 - Barcode formats: Code 128 (ISO 15417), EAN-13 (ISO 15420), QR Code (ISO 18004), Data Matrix ECC 200 (ISO 16022), PDF417 (ISO 15438)
@@ -200,7 +206,12 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Devanagari shaping: `shapeDevanagariText()` — cluster building, reph detection, matra reordering, split vowels, GSUB ligature conjuncts, GPOS mark positioning via `devanagari-shaper.ts`
 - GSUB LookupType 4 (LigatureSubst): `fontData.ligatures` — `Record<number, number[][]>` mapping first-glyph GID → arrays of `[resultGID, ...componentsAfterKey]` (the first GID is the implicit lookup key, NOT included in the components array). Shared `tryLigature(gids, ligatures)` lives in `src/shaping/gsub-driver.ts` and is used by Bengali, Tamil, Devanagari, and Arabic shapers. Each shaper exposes a thin `tryLig(gids)` closure that forwards to the shared driver.
 - GPOS MarkBasePos: shared helpers in `src/shaping/gpos-positioner.ts` (`getBaseAnchor`, `getMarkAnchor`, `getMark2MarkAnchor`, `positionMarkOnBase(markAnchors, markGid, baseGid, baseAdv)`). Used by Devanagari and Arabic shapers. Arabic tracks `lastBaseGid` through the shaping pipeline (including lam-alef ligatures) and applies the anchor offset to transparent (joining type 'T') marks; falls back to (0, 0) when font lacks anchors.
-- Emoji: monochrome via Noto Emoji (OFL-1.1) under lang `'emoji'`. Detection in `src/shaping/script-registry.ts` (`EMOJI_RANGES`, `isEmojiCodepoint`, `containsEmoji`, `FITZPATRICK_START/END`, `ZWJ`, `VS15`, `VS16`). `detectCharLang(cp)` returns `'emoji'` for emoji codepoints; `splitTextByFont()` routes them to the registered `'emoji'` font automatically. Opt-in via `registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'))`. COLRv1 colour emoji deferred to v1.2.
+- Emoji: monochrome via Noto Emoji (OFL-1.1) under lang `'emoji'`. Detection in `src/shaping/script-registry.ts` (`EMOJI_RANGES`, `isEmojiCodepoint`, `containsEmoji`, `FITZPATRICK_START/END`, `ZWJ`, `VS15`, `VS16`). `detectCharLang(cp)` returns `'emoji'` for emoji codepoints; `splitTextByFont()` routes them to the registered `'emoji'` font automatically. Opt-in via `registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'))`. COLRv1 colour emoji deferred to v1.3.
+- UAX #9 embeddings (v1.2.0): `normalizeBidiEmbeddings(text)` in `src/shaping/bidi.ts` rewrites LRE/RLE/LRO/RLO/PDF (U+202A–U+202E) to sealed-isolate equivalents (LRI/RLI/PDI) using a stack with max depth 125. `resolveBidiRuns()` invokes the normaliser transparently. X4–X5 character-level overrides inside LRO/RLO scopes are simplified — only base direction is normalised. Full override tracking deferred to v1.3.
+- USE-lite (v1.2.0): `classifyUseCategory(cp)` + `classifyClusters(cps)` in `src/shaping/use-lite.ts` ship as a public API. Per-script tables for Devanagari/Bengali/Tamil. Devanagari/Bengali/Tamil shapers continue to use their v1.1.0 ad-hoc cluster logic; rewire to consume `classifyClusters()` is the v1.3 follow-up.
+- Signature placeholder (v1.2.0, #45): `addSignaturePlaceholder(pdfBytes, options?)` in `src/core/pdf-sig-placeholder.ts` appends an AcroForm + invisible signature widget + `/Sig` dictionary via incremental update (ISO 32000-1 §7.5.6). Idempotent on already-signed PDFs (returns input unchanged when an `/FT /Sig` widget exists). `SigDictMetadata` interface (metadata-only subset of `PdfSignOptions`) extracted in `pdf-signature.ts` and shared by `buildSigDict()` and `addSignaturePlaceholder()`. `PdfModifier.addRawObject(body)` lets placeholder-style raw payloads round-trip without re-serialisation.
+- ASN.1 grandchild offsets (v1.2.0, #46): `decodeAt()` in `src/crypto/asn1.ts` recursively absolutises every descendant node's `offset` against the original DER buffer. Previously only direct children were patched, so `parseName()`'s `fullDer.subarray(node.offset, ...)` returned a slice off by exactly the parent's value-field offset, breaking CMS `IssuerAndSerialNumber`. Defensive `raw[0] === 0x30` assertion lives at the `parseName()` boundary.
+- Page-by-page streaming (v1.2.0): `buildPDFStreamPageByPage(pdfBytes, opts?)` and `buildDocumentPDFStreamPageByPage(params, opts?)` in `src/core/pdf-stream-writer.ts` chunk an _assembled_ PDF at PDF object boundaries (`\nendobj\n`). `chunkAtObjectBoundaries()` is the underlying helper. True one-page-at-a-time _assembly_ (where the full binary never exists in memory) deferred to v1.3.
 - Latin VF (PDF/A): Noto Sans VF (OFL-1.1) bundled as `fonts/noto-sans-data.{js,d.ts}` under lang `'latin'`. Activates automatically for PDF/A documents containing non-WinAnsi Latin (curly quotes, em-dash, ellipsis…). Opt-in via `registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'))`.
 
 ### API Design
@@ -235,7 +246,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 1726+ tests (48 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), performance benchmarks
+- **95%+ test coverage** — 1822+ tests (53 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)

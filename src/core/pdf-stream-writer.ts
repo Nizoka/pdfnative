@@ -155,6 +155,124 @@ export async function* buildDocumentPDFStream(
     yield* chunkBinaryString(binary, chunkSize);
 }
 
+// ── Object-boundary Streaming (Page-by-Page Semantic) ───────────────
+
+/**
+ * Yield a binary PDF string in chunks aligned at PDF object boundaries
+ * (`\nendobj\n`). Each yielded chunk contains one or more complete
+ * indirect objects — never a partial object. The PDF header is yielded
+ * as its own chunk; the trailing xref/trailer/startxref section is
+ * yielded as the final chunk.
+ *
+ * This is the building block for object-granular streaming: consumers
+ * can persist each chunk and discard it before the next is produced,
+ * keeping peak memory bounded by the size of the largest single object
+ * (typically the largest content stream or embedded font).
+ *
+ * @internal
+ */
+export function* chunkAtObjectBoundaries(binary: string): Generator<Uint8Array> {
+    const len = binary.length;
+    if (len === 0) return;
+
+    // Find the position immediately after the PDF header signature.
+    // Header is `%PDF-x.y\n%XXXXX\n\n` followed by the first object.
+    // We yield everything up to the start of the first `N 0 obj` as the
+    // header chunk so the consumer can stream it to disk first.
+    let cursor = 0;
+    const firstObj = binary.search(/^\d+\s+0\s+obj/m);
+    if (firstObj > 0) {
+        yield encodeBinarySlice(binary, 0, firstObj);
+        cursor = firstObj;
+    }
+
+    // Find each `endobj\n` boundary and yield the slice ending at it.
+    const ENDOBJ = 'endobj\n';
+    while (cursor < len) {
+        const end = binary.indexOf(ENDOBJ, cursor);
+        if (end < 0) break;
+        const chunkEnd = end + ENDOBJ.length;
+        yield encodeBinarySlice(binary, cursor, chunkEnd);
+        cursor = chunkEnd;
+    }
+
+    // Trailing xref/trailer/startxref section.
+    if (cursor < len) {
+        yield encodeBinarySlice(binary, cursor, len);
+    }
+}
+
+function encodeBinarySlice(binary: string, start: number, end: number): Uint8Array {
+    const out = new Uint8Array(end - start);
+    for (let i = 0; i < out.length; i++) {
+        out[i] = binary.charCodeAt(start + i) & 0xff;
+    }
+    return out;
+}
+
+/**
+ * Build a free-form PDF document and yield Uint8Array chunks aligned
+ * at PDF object boundaries (one indirect object per chunk, plus a
+ * header chunk and a trailing xref/trailer chunk).
+ *
+ * Use this variant when the consumer benefits from receiving
+ * semantically meaningful PDF segments rather than fixed-size byte
+ * slices — for example, persisting each page object directly to disk
+ * before the next one is produced, or for diagnostic tooling that
+ * wants to inspect individual objects.
+ *
+ * **Scope note (v1.2.x):** the underlying assembler still buffers the
+ * full PDF binary in memory before chunking; constant-memory
+ * generation (true progressive assembly) is staged for v1.3. The
+ * public API surface, however, is stable from v1.2 onward — code
+ * written against `buildDocumentPDFStreamPageByPage()` will keep
+ * working without changes when the internal refactor lands.
+ *
+ * Constraints (same as `buildDocumentPDFStream`):
+ * - TOC blocks are not allowed (require multi-pass pagination)
+ * - `{pages}` placeholder is not allowed in header/footer templates
+ *
+ * @param params - Document content (title, blocks, footer, fonts)
+ * @param layoutOptions - Optional layout customization
+ * @yields Uint8Array chunks of the PDF, one PDF indirect object per chunk
+ *
+ * @example
+ * ```ts
+ * import { createWriteStream } from 'fs';
+ * const out = createWriteStream('large.pdf');
+ * for await (const chunk of buildDocumentPDFStreamPageByPage(params)) {
+ *     out.write(chunk);
+ * }
+ * out.end();
+ * ```
+ */
+export async function* buildDocumentPDFStreamPageByPage(
+    params: DocumentParams,
+    layoutOptions?: Partial<PdfLayoutOptions>,
+): AsyncGenerator<Uint8Array> {
+    validateDocumentStreamable(params, layoutOptions);
+    const binary = buildDocumentPDF(params, layoutOptions);
+    yield* chunkAtObjectBoundaries(binary);
+}
+
+/**
+ * Build a table-centric PDF and yield Uint8Array chunks aligned at
+ * PDF object boundaries. See {@link buildDocumentPDFStreamPageByPage}
+ * for the full semantic contract.
+ *
+ * @param params - PDF content (title, rows, headers, etc.)
+ * @param layoutOptions - Optional layout customization
+ * @yields Uint8Array chunks of the PDF, one PDF indirect object per chunk
+ */
+export async function* buildPDFStreamPageByPage(
+    params: PdfParams,
+    layoutOptions?: Partial<PdfLayoutOptions>,
+): AsyncGenerator<Uint8Array> {
+    validateTableStreamable(params, layoutOptions);
+    const binary = buildPDF(params, layoutOptions);
+    yield* chunkAtObjectBoundaries(binary);
+}
+
 // ── Streaming Table Builder ──────────────────────────────────────────
 
 /**

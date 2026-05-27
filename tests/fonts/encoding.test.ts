@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-    toWinAnsi, pdfString, truncate, helveticaWidth,
+    toWinAnsi, pdfString, truncate, helveticaWidth, helveticaBoldWidth,
 } from '../../src/fonts/encoding.js';
 import { createEncodingContext } from '../../src/core/encoding-context.js';
 import { txt } from '../../src/core/pdf-text.js';
@@ -230,6 +230,56 @@ describe('helveticaWidth', () => {
         // Double quotes: 333 design units
         const w2 = helveticaWidth('\u201C', 10);
         expect(w2).toBeCloseTo(3.33, 2);
+    });
+});
+
+describe('helveticaBoldWidth (since v1.2.0)', () => {
+    it('returns zero for empty input', () => {
+        expect(helveticaBoldWidth('', 10)).toBe(0);
+    });
+
+    it('matches helveticaWidth for digits (same AFM advance)', () => {
+        expect(helveticaBoldWidth('1234567890', 10)).toBeCloseTo(helveticaWidth('1234567890', 10), 6);
+    });
+
+    it('matches helveticaWidth for space', () => {
+        expect(helveticaBoldWidth(' ', 10)).toBeCloseTo(helveticaWidth(' ', 10), 6);
+    });
+
+    it('is wider than helveticaWidth for ASCII uppercase letters', () => {
+        // Helvetica-Regular 'A' = 680u, Helvetica-Bold 'A' = 722u (per Adobe AFM)
+        const reg = helveticaWidth('ABCDEFG', 10);
+        const bold = helveticaBoldWidth('ABCDEFG', 10);
+        expect(bold).toBeGreaterThan(reg);
+    });
+
+    it('is wider than helveticaWidth for ASCII lowercase letters', () => {
+        // Helvetica-Regular 'a' = 500u, Helvetica-Bold 'a' = 611u
+        const reg = helveticaWidth('abcdefg', 10);
+        const bold = helveticaBoldWidth('abcdefg', 10);
+        expect(bold).toBeGreaterThan(reg);
+    });
+
+    it('measures "Amount" wider in bold than regular (fixes header overflow)', () => {
+        // Regression for v1.2.0 — table headers render bold but were being
+        // measured with regular metrics, causing the right-edge to overshoot.
+        const reg = helveticaWidth('Amount', 8);
+        const bold = helveticaBoldWidth('Amount', 8);
+        expect(bold).toBeGreaterThan(reg);
+        // Empirical reference at 8pt: regular ~25.44pt, bold ~30.22pt.
+        expect(bold).toBeCloseTo(30.22, 1);
+    });
+
+    it('strips invisible BiDi controls before measuring', () => {
+        const w1 = helveticaBoldWidth('Hi', 10);
+        const w2 = helveticaBoldWidth('H\u200Ei\u202C', 10); // LRM + PDF
+        expect(w2).toBeCloseTo(w1, 6);
+    });
+
+    it('scales linearly with font size', () => {
+        const w10 = helveticaBoldWidth('TEST', 10);
+        const w20 = helveticaBoldWidth('TEST', 20);
+        expect(w20).toBeCloseTo(w10 * 2, 4);
     });
 });
 

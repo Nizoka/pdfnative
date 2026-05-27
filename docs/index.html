@@ -156,7 +156,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">1 588+</div>
+    <div class="metric-value">1 818+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -197,7 +197,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-unicode"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
         <h3>16 Unicode Scripts</h3>
-        <p>Thai, Arabic, Hebrew, Bengali, Tamil, CJK, Cyrillic, Greek, Devanagari, and more. Full BiDi layout (UAX #9). OpenType GSUB/GPOS shaping for Thai, Arabic, Devanagari, Bengali, and Tamil.</p>
+        <p>Thai, Arabic, Hebrew, Bengali, Tamil, CJK, Cyrillic, Greek, Devanagari, and more. Full UAX #9 BiDi — isolates + explicit embeddings (LRE/RLE/LRO/RLO/PDF). OpenType GSUB/GPOS shaping for Thai, Arabic, Devanagari, Bengali, and Tamil.</p>
       </div>
 
       <div class="feature-card">
@@ -209,19 +209,19 @@
       <div class="feature-card">
         <div class="feature-icon fi-security"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
         <h3>Security Built-in</h3>
-        <p>AES-128/256 encryption with granular permissions. CMS/PKCS#7 digital signatures — RSA and ECDSA P-256. Zero external crypto deps.</p>
+        <p>AES-128/256 encryption with granular permissions. CMS/PKCS#7 digital signatures — RSA and ECDSA P-256. One-call placeholder injection via <code>addSignaturePlaceholder()</code> (v1.2.0). Zero external crypto deps.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-content"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
         <h3>Rich Content</h3>
-        <p>12 block types: tables, images, barcodes (5 ISO formats), SVG, AcroForm fields, TOC, watermarks, hyperlinks. Pure PDF vector ops — no rasterization.</p>
+        <p>12 block types: tables, images, barcodes (5 ISO formats), SVG, AcroForm fields, TOC, watermarks, hyperlinks. Pure PDF vector ops — no rasterization. <strong>Smart tables (v1.2.0)</strong>: multi-page slicing with repeated headers, auto-wrap, zebra striping, captions. <a href="guides/tables.html">Tables guide →</a></p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming, Web Worker off-thread generation, PDF parser &amp; modifier. 1 588+ tests, 95%+ coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (incl. object-boundary page-by-page, v1.2.0), Web Worker off-thread generation, PDF parser &amp; modifier. 1 822+ tests across 53 files, 95%+ coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -356,7 +356,7 @@ const pdf = buildDocumentPDFBytes({
       <div class="demo-error" id="demo-error" role="alert"></div>
       <p class="demo-note">
         Need more? Browse all
-        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">23 generator categories (~140 sample PDFs)</a>
+        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">28 generator categories (~161 sample PDFs)</a>
         on GitHub.
       </p>
     </div>

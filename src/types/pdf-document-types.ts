@@ -62,6 +62,66 @@ export interface TableBlock {
      * @since 1.1.0
      */
     readonly autoFitColumns?: boolean;
+    /**
+     * Cell text wrapping policy.
+     *
+     * - `'auto'` (default) — wrap a cell's text only when its measured width
+     *   exceeds the column's available width. Cells that fit stay on a single
+     *   line, preserving byte-identical output with v1.1 for tables sized correctly.
+     * - `'always'` — wrap every cell using the available column width.
+     * - `'never'` — never wrap; fall back to v1.1 behaviour (character truncation
+     *   via `ColumnDef.mx` / `mxH`, plus the clipping rectangle when `clipCells`
+     *   is `true`). Useful when byte-identical v1.1 output is required.
+     *
+     * @since 1.2.0
+     */
+    readonly wrap?: 'auto' | 'always' | 'never';
+    /**
+     * Repeat the table header row on every continuation page when the table
+     * spans multiple pages. Default: `true`.
+     *
+     * Single-page tables are unaffected and byte-identical to v1.1.
+     *
+     * @since 1.2.0
+     */
+    readonly repeatHeader?: boolean;
+    /**
+     * Alternate-row background (zebra striping).
+     *
+     * - `false` (default) — no zebra background.
+     * - `true` — fill every other data row with a default light tint
+     *   (`'0.969 0.973 0.984'`, matching the default header background).
+     * - `PdfColor` — fill every other data row with the provided color.
+     *
+     * Uses a static (non-transparent) fill so the table remains PDF/A-1b safe.
+     *
+     * @since 1.2.0
+     */
+    readonly zebra?: boolean | PdfColor;
+    /**
+     * Optional caption rendered immediately above the table.
+     *
+     * In tagged mode, the caption is emitted as a `/Caption` structure element
+     * inside the `/Table` (ISO 14289-1 §7.10.6) for assistive-technology access.
+     *
+     * @since 1.2.0
+     */
+    readonly caption?: string;
+    /**
+     * Minimum row height in points. Rows shorter than this are padded.
+     * Defaults to the v1.1 `ROW_H` constant (`12`pt). Rows that wrap to
+     * multiple lines grow as needed; this only sets the floor.
+     *
+     * @since 1.2.0
+     */
+    readonly minRowHeight?: number;
+    /**
+     * Horizontal cell padding in points (applied to both the left and right
+     * insets inside each cell). Defaults to the v1.1 constant (`3`pt).
+     *
+     * @since 1.2.0
+     */
+    readonly cellPadding?: number;
 }
 
 /** List block — bullet or numbered items. */

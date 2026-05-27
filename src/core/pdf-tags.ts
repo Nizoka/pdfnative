@@ -585,6 +585,34 @@ export interface PdfAConfig {
 }
 
 /**
+ * Canonical list of PDF/A conformance targets accepted by the `tagged`
+ * layout option. Useful as a single source of truth for tooling — most
+ * notably the `pdfnative-mcp` server's tool-schema `enum:` field — so
+ * agents like Gemini-CLI can autocomplete the legal values without
+ * hardcoding string literals.
+ *
+ * @example
+ * ```ts
+ * import { PDF_A_CONFORMANCE_TARGETS, type PdfAConformanceTarget } from 'pdfnative';
+ *
+ * function pickTarget(input: string): PdfAConformanceTarget | undefined {
+ *   return (PDF_A_CONFORMANCE_TARGETS as readonly string[]).includes(input)
+ *     ? input as PdfAConformanceTarget
+ *     : undefined;
+ * }
+ * ```
+ *
+ * @since 1.2.0
+ */
+export const PDF_A_CONFORMANCE_TARGETS = ['pdfa1b', 'pdfa2b', 'pdfa2u', 'pdfa3b'] as const;
+
+/**
+ * Type alias for the string literal members of {@link PDF_A_CONFORMANCE_TARGETS}.
+ * @since 1.2.0
+ */
+export type PdfAConformanceTarget = typeof PDF_A_CONFORMANCE_TARGETS[number];
+
+/**
  * Parse the `tagged` layout option into a resolved PDF/A configuration.
  *
  * @param tagged - The tagged option value (boolean, string, or undefined)

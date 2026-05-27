@@ -18,8 +18,11 @@ import { loadSelectedFontEntries } from '../helpers/fonts.js';
 export async function generate(ctx: GenerateContext): Promise<void> {
     // ── 1. Pure emoji document ──────────────────────────────────
     {
-        const fontEntries = await loadSelectedFontEntries(['emoji']);
-        if (fontEntries.length === 1) {
+        // Register Latin alongside emoji so ASCII codepoints route to Noto Sans VF
+        // (proportional, narrow advance widths) instead of Noto Emoji (em-wide
+        // advance widths) — otherwise digits and punctuation overflow the line.
+        const fontEntries = await loadSelectedFontEntries(['latin', 'emoji']);
+        if (fontEntries.length === 2) {
             const params: DocumentParams = {
                 title: 'Monochrome Emoji — Noto Emoji (OFL-1.1)',
                 blocks: [
@@ -65,8 +68,10 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── 3. Emoji in a table (status column) ─────────────────────
     {
-        const fontEntries = await loadSelectedFontEntries(['emoji']);
-        if (fontEntries.length === 1) {
+        // Same rationale as sample 1: ASCII digits (Duration column) must route to
+        // Noto Sans, not Noto Emoji — otherwise '12s' renders as '1 s2'.
+        const fontEntries = await loadSelectedFontEntries(['latin', 'emoji']);
+        if (fontEntries.length === 2) {
             const params: PdfParams = {
                 title: 'CI dashboard — emoji status indicators',
                 infoItems: [

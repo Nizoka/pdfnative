@@ -19,7 +19,7 @@ With `pdfnative-mcp` installed, you can say to your AI assistant:
 100 % backward-compatible with v0.2.0 — every new field is optional, and omitting them produces byte-identical output.
 
 - **9th tool: `inspect_pdf`** — read-only inspection over `openPdf()`. Reports version, page count, encryption, PDF/A claim, signature count, info dict; optional per-page sizes; optional CI-style `check: ('pdfa'|'signed'|'encrypted')[]` assertions.
-- **`pdfA` flag on every document tool** — `generate_basic_pdf`, `add_table`, `add_form`, `embed_image`, `add_barcode`, `prepare_signature_placeholder`, `add_international_text`. Values: `pdfa1b`, `pdfa2b`, `pdfa2u`, `pdfa3b`. Maps to pdfnative's `tagged` layout option.
+- **`pdfA` flag on every document tool** — `generate_basic_pdf`, `add_table`, `add_form`, `embed_image`, `add_barcode`, `prepare_signature_placeholder`, `add_international_text`. Values: `pdfa1b`, `pdfa2b`, `pdfa2u`, `pdfa3b`. Maps to pdfnative's `tagged` layout option. From pdfnative 1.2.0 onwards, this list is authoritatively exported as `PDF_A_CONFORMANCE_TARGETS` — the MCP server can spread that constant straight into its tool-schema `enum:` so LLM agents (Gemini-CLI, Claude Code, …) autocomplete the legal values without hardcoding.
 - **Multi-script `add_international_text`** — `lang` now accepts `string`, `string[]`, or comma-separated values, e.g. `["ar", "emoji"]` or `"ar,emoji"`.
 - **Latin & Emoji font packs** — two new `lang` codes (`latin`, `emoji`) backed by Noto Sans VF and Noto Emoji from pdfnative v1.1. The `latin` font auto-registers when `pdfA` is set so curly quotes, em-dashes, and ellipses validate cleanly.
 - **`add_table` autoFit + clipCells** — transparently switches to the document-block backend when set (pdfnative v1.1 `TableBlock` props).
@@ -203,6 +203,8 @@ Generates a tabular report from column headers and rows.
 ```
 
 `autoFitColumns` and `clipCells` (added in v0.3.0) transparently switch to the document-block backend so cell content fits its column or is clipped at the boundary, leveraging pdfnative v1.1's `TableBlock` props. Optional `pdfA` produces an archive-grade variant.
+
+> **pdfnative 1.2.0 \(server v0.4 candidate\) — smart-table parameters to surface next.** pdfnative 1.2.0 ships six new optional `TableBlock` fields: `wrap` (`'auto'` | `'always'` | `'never'`, default `'auto'`), `repeatHeader` (default `true`), `zebra`, `caption`, `minRowHeight`, `cellPadding`. Multi-page tables now reprint headers and wrap on overflow by default. The pdfnative-mcp server can forward these as optional `add_table` parameters to give agent-driven invoice/report workflows multi-page-safe output out of the box. See the [Smart tables guide](tables.md) for full semantics.
 
 ---
 

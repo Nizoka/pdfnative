@@ -1,0 +1,36 @@
+# pdfnative
+
+> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) compliant. Works in Node.js, browsers, Deno, Bun, and Web Workers. 16 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. Current version: 1.2.0.
+
+## Docs
+
+- [README](https://github.com/Nizoka/pdfnative/blob/main/README.md): Full feature list, install, quick start, API surface, examples.
+- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.2) + planned (v1.3 USE-lite shaper rewire, COLRv1 colour emoji, internal page-by-page assembly).
+- [CHANGELOG](https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md): Per-version changes.
+- [Release notes v1.2.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.2.0.md): `addSignaturePlaceholder()`, ASN.1 grandchild fix (#46), page-by-page streaming, UAX #9 embeddings, USE-lite classifier.
+- [Quick Start](https://pdfnative.dev/guides/quickstart.html): Install + first PDF in Node or browser.
+- [Architecture](https://pdfnative.dev/guides/architecture.html): Two builders, module dependency flow, design decisions.
+- [PDF/A conformance](https://pdfnative.dev/guides/pdfa.html): How `tagged: true` produces veraPDF-valid PDF/A-1b/2b/2u/3b.
+- [Digital signatures](https://pdfnative.dev/guides/signatures.html): CMS/PKCS#7 + `addSignaturePlaceholder()` three-line workflow.
+- [Accessibility](https://pdfnative.dev/guides/accessibility.html): Tagged PDF, /ActualText, PDF/UA structure tree.
+- [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
+- [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
+- [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
+
+## Agent and AI integration
+
+- [Copilot instructions](https://github.com/Nizoka/pdfnative/blob/main/.github/copilot-instructions.md): Canonical project conventions — architecture, code style, build/test, PDF-specific invariants.
+- [AGENTS.md](https://github.com/Nizoka/pdfnative/blob/main/AGENTS.md): Editor-agnostic agent guidance (Cursor / Aider / Claude Code / Continue).
+- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` server — use pdfnative from Claude Desktop, Cursor, Continue, Zed.
+- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` — render JSON to PDF, sign, inspect, verify from the terminal.
+
+## Source
+
+- [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 28 sample generators producing 157 reference PDFs.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 1822 tests across 53 files. 95%+ coverage.
+
+## Ecosystem
+
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as AI tools.

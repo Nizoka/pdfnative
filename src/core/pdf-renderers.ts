@@ -12,6 +12,7 @@
 import type {
     EncodingContext,
     PageTemplate,
+    ColumnDef,
 } from '../types/pdf-types.js';
 import type {
     DocumentBlock,
@@ -31,7 +32,7 @@ import type { ParsedImage } from './pdf-image.js';
 import { validateURL } from './pdf-annot.js';
 import { parseColor } from './pdf-color.js';
 import type { LinkAnnotation } from './pdf-annot.js';
-import { truncate, helveticaWidth } from '../fonts/encoding.js';
+import { truncate, helveticaWidth, helveticaBoldWidth } from '../fonts/encoding.js';
 import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum } from './pdf-text.js';
 import {
     ROW_H, TH_H,
@@ -461,6 +462,192 @@ export function renderList(
     return { ops, y };
 }
 
+/** Default zebra-row background tint (matches `DEFAULT_COLORS.thBg`). */
+const DEFAULT_ZEBRA_COLOR = '0.969 0.973 0.984';
+
+/** Default font size used to render `TableBlock.caption` (matches title body). */
+const CAPTION_FONT_SIZE = 9;
+
+/** Default line-height multiplier used for wrapped-cell row height. */
+const TABLE_LINE_HEIGHT = 1.3;
+
+/** Bottom padding kept under text inside data cells (v1.1 historic constant). */
+const CELL_PAD_BOTTOM = 3;
+
+/** Bottom padding kept under text inside header cells (v1.1 historic constant). */
+const HEADER_PAD_BOTTOM = 4;
+
+/**
+ * A measurement-pass output describing exactly how a {@link TableBlock} will
+ * be rendered. Computed once during pagination and reused by every slice the
+ * renderer emits — keeps page-break logic free of font/measurement concerns.
+ *
+ * Internal type (re-exported only between `pdf-renderers.ts` and
+ * `pdf-document.ts`); not part of the public API.
+ *
+ * @since 1.2.0
+ */
+export interface TablePlan {
+    readonly columns: readonly ColumnDef[];
+    readonly cx: number[];
+    readonly cwi: number[];
+    readonly headerLines: string[][];   // [colIdx][lineIdx]
+    readonly headerHeight: number;
+    readonly rowLines: string[][][];    // [rowIdx][colIdx][lineIdx]
+    readonly rowHeights: number[];
+    readonly captionLines: string[];
+    readonly captionHeight: number;
+    readonly fontSize: { th: number; td: number };
+    readonly pad: number;
+    readonly trailerSpacing: number;
+}
+
+/**
+ * One contiguous slice of a planned table assigned to a single page.
+ * The renderer reads `fromRow`/`toRow` and the plan to emit exactly those
+ * rows, optionally re-drawing the header (`drawHeader`) and the caption
+ * (`drawCaption`). The last slice for a table sets `isFinalSlice = true`,
+ * which triggers the single `/Table` struct-tree commit in tagged mode.
+ *
+ * @internal
+ * @since 1.2.0
+ */
+export interface TableSlice {
+    readonly plan: TablePlan;
+    readonly fromRow: number;
+    readonly toRow: number;       // exclusive
+    readonly drawCaption: boolean;
+    readonly drawHeader: boolean;
+    readonly isFinalSlice: boolean;
+    /** Shared accumulator collecting `/TR` / `/Caption` children across slices. */
+    readonly tableStructAccum: (StructElement | MCRef)[];
+}
+
+/**
+ * Measurement pass for a {@link TableBlock}. Resolves columns (honouring
+ * `autoFitColumns`), measures every header and data cell against its column
+ * width, wraps cells when needed per the `wrap` policy, and returns a
+ * {@link TablePlan} describing the exact heights and line layout that the
+ * renderer will emit.
+ *
+ * Pure function — safe to call multiple times during multi-pass pagination
+ * (TOC etc.). O(rows × cols × maxLineLen) in the worst case.
+ *
+ * @since 1.2.0
+ */
+export function planTable(
+    block: TableBlock,
+    enc: EncodingContext,
+    mgL: number,
+    cw: number,
+): TablePlan {
+    const fs = DEFAULT_FONT_SIZES;
+    const baseColumns = block.columns ? [...block.columns] : DEFAULT_COLUMNS;
+    const resolvedColumns = block.autoFitColumns
+        ? computeAutoFitColumns(baseColumns, block.headers, block.rows, enc, fs.th, fs.td)
+        : baseColumns;
+    const { cx, cwi } = computeColumnPositions(resolvedColumns, mgL, cw);
+
+    const pad = block.cellPadding ?? 3;
+    const wrapMode = block.wrap ?? 'auto';
+    const minRowH = block.minRowHeight ?? ROW_H;
+
+    /**
+     * Decide how a single cell should be laid out within column `i`:
+     *   - `wrap: 'never'`       → single line (the renderer uses `truncate()`
+     *                             at draw time, so we keep the raw string here
+     *                             for byte-identical v1.1 output).
+     *   - `wrap: 'always'`      → run `wrapText()` unconditionally.
+     *   - `wrap: 'auto'`        → measure first; wrap only when the text
+     *                             genuinely exceeds the column's writable area.
+     *
+     * `bold` controls width metrics for the auto-mode overflow probe: header
+     * cells render in Helvetica-Bold (~16% wider than Regular in Latin mode),
+     * so measuring with regular metrics would under-count their width and
+     * skip wrapping when the glyphs actually overflow. Unicode/CIDFont mode
+     * uses the same per-font metric for both weights.
+     */
+    const wrapCell = (text: string, colIdx: number, fontSize: number, bold: boolean): string[] => {
+        if (wrapMode === 'never') return [text];
+        const colW = cwi[colIdx];
+        const availW = Math.max(0, colW - pad * 2);
+        const measure = (s: string): number =>
+            enc.isUnicode ? enc.tw(s, fontSize) : (bold ? helveticaBoldWidth(s, fontSize) : helveticaWidth(s, fontSize));
+        if (wrapMode === 'always') {
+            return wrapText(text, availW, fontSize, enc);
+        }
+        // 'auto' — only wrap when content actually overflows the column.
+        if (availW <= 0 || measure(text) <= availW) {
+            return [text];
+        }
+        return wrapText(text, availW, fontSize, enc);
+    };
+
+    // Header lines + height.
+    const headerLines: string[][] = [];
+    let headerMaxLines = 1;
+    for (let i = 0; i < block.headers.length && i < resolvedColumns.length; i++) {
+        const lines = wrapCell(block.headers[i], i, fs.th, true);
+        headerLines.push(lines);
+        if (lines.length > headerMaxLines) headerMaxLines = lines.length;
+    }
+    const headerHeight = headerMaxLines === 1
+        ? TH_H
+        : Math.max(TH_H, headerMaxLines * fs.th * TABLE_LINE_HEIGHT + CELL_PAD_BOTTOM + 2);
+
+    // Per-row lines + heights.
+    const rowLines: string[][][] = [];
+    const rowHeights: number[] = [];
+    for (let r = 0; r < block.rows.length; r++) {
+        const row = block.rows[r];
+        const cells: string[][] = [];
+        let maxLines = 1;
+        for (let i = 0; i < row.cells.length && i < resolvedColumns.length; i++) {
+            const lines = wrapCell(row.cells[i], i, fs.td, false);
+            cells.push(lines);
+            if (lines.length > maxLines) maxLines = lines.length;
+        }
+        rowLines.push(cells);
+        const h = maxLines === 1
+            ? minRowH
+            : Math.max(minRowH, maxLines * fs.td * TABLE_LINE_HEIGHT + CELL_PAD_BOTTOM + 2);
+        rowHeights.push(h);
+    }
+
+    // Caption (optional).
+    const captionLines: string[] = block.caption
+        ? wrapText(block.caption, cw, CAPTION_FONT_SIZE, enc)
+        : [];
+    const captionHeight = captionLines.length === 0
+        ? 0
+        : captionLines.length * CAPTION_FONT_SIZE * TABLE_LINE_HEIGHT + 4;
+
+    return {
+        columns: resolvedColumns,
+        cx,
+        cwi,
+        headerLines,
+        headerHeight,
+        rowLines,
+        rowHeights,
+        captionLines,
+        captionHeight,
+        fontSize: { th: fs.th, td: fs.td },
+        pad,
+        trailerSpacing: 6,
+    };
+}
+
+/**
+ * Resolve a `TableBlock.zebra` value to a PDF RGB operator string, or
+ * `null` when zebra striping is disabled.
+ */
+function resolveZebraColor(z: TableBlock['zebra']): string | null {
+    if (!z) return null;
+    if (z === true) return DEFAULT_ZEBRA_COLOR;
+    return parseColor(z);
+}
+
 export function renderTable(
     block: TableBlock,
     y: number,
@@ -471,111 +658,194 @@ export function renderTable(
     cw: number,
     tagCtx: TagContext | undefined,
     documentChildren: (StructElement | MCRef)[],
+    /**
+     * Optional pre-computed slice. When omitted, the renderer plans the table
+     * itself and renders all rows in one call (legacy single-call path used by
+     * any caller that doesn't go through the document paginator). When set,
+     * only `[fromRow, toRow)` is rendered and tagged-mode `/Table` emission is
+     * deferred to `isFinalSlice`.
+     * @since 1.2.0
+     */
+    slice?: TableSlice,
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
-    const baseColumns = block.columns ? [...block.columns] : DEFAULT_COLUMNS;
-    const fs = DEFAULT_FONT_SIZES;
     const colors = DEFAULT_COLORS;
-    // Phase 4 — auto-fit column widths based on actual content.
-    // When enabled, override `f` fractions with content-derived values; the
-    // existing minWidth/maxWidth clamping in `computeColumnPositions()` still
-    // applies, so per-column constraints are honoured.
-    const columns = block.autoFitColumns
-        ? computeAutoFitColumns(baseColumns, block.headers, block.rows, enc, fs.th, fs.td)
-        : baseColumns;
-    const { cx, cwi } = computeColumnPositions(columns, mgL, cw);
 
-    // Cell clipping: ISO 32000-1 §8.5.4 — `q <rect> re W n ... Q` keeps cell
-    // contents inside their column rectangle. Defaults to `true` for v1.1.0+.
+    // Build a synthetic full-table slice when called outside the paginator.
+    const plan = slice?.plan ?? planTable(block, enc, mgL, cw);
+    const fromRow = slice?.fromRow ?? 0;
+    const toRow = slice?.toRow ?? block.rows.length;
+    const drawCaption = slice?.drawCaption ?? true;
+    const drawHeader = slice?.drawHeader ?? true;
+    const isFinalSlice = slice?.isFinalSlice ?? true;
+    const tableStructAccum: (StructElement | MCRef)[] = slice?.tableStructAccum
+        ?? [];
+
+    const { cx, cwi, columns, headerLines, headerHeight, rowLines, rowHeights, fontSize, pad } = plan;
+    const fs = fontSize;
     const clip = block.clipCells !== false;
+    const zebraColor = resolveZebraColor(block.zebra);
+    const wrapMode = block.wrap ?? 'auto';
 
     /**
      * Wrap a text-emitting operator in a clipping rectangle for cell `i`.
-     * The clip rect spans the full column width and a generous vertical band
-     * (TH_H or ROW_H) so descenders aren't cut. Uses `q ... Q` to scope the clip.
+     * The clip rect spans the full column width and the actual cell band so
+     * descenders aren't cut. Uses `q ... Q` to scope the clip.
      */
     const clipCell = (op: string, i: number, top: number, h: number): string =>
         clip
             ? `q ${fmtNum(cx[i])} ${fmtNum(top - h)} ${fmtNum(cwi[i])} ${fmtNum(h)} re W n\n${op}\nQ`
             : op;
 
-    const tableRows: StructElement[] = [];
-
-    // Table header
-    ops.push(`${colors.thBg} rg`);
-    ops.push(`${fmtNum(mgL)} ${fmtNum(y - TH_H)} ${fmtNum(cw)} ${fmtNum(TH_H)} re f`);
-    ops.push(`0.75 w ${colors.thBrd} RG`);
-    ops.push(`${fmtNum(mgL)} ${fmtNum(y - TH_H)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - TH_H)} l S`);
-    ops.push(`${colors.text} rg`);
-
-    const thChildren: (StructElement | MCRef)[] = [];
-    for (let i = 0; i < block.headers.length && i < columns.length; i++) {
-        const t = truncate(block.headers[i], columns[i].mxH ?? columns[i].mx);
-        if (tagCtx?.tagged) {
-            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            thChildren.push({ type: 'TH', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-            if (columns[i].a === 'r') {
-                ops.push(clipCell(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid), i, y, TH_H));
-            } else if (columns[i].a === 'c') {
-                ops.push(clipCell(txtCTagged(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc, mcid), i, y, TH_H));
+    /**
+     * Emit one wrapped cell, vertically top-aligned, with per-line alignment
+     * (left/center/right) applied per `ColumnDef.a`. Tagged-mode uses one
+     * MCID for the whole cell (all lines share marked content).
+     */
+    function emitCell(
+        lines: string[],
+        colIdx: number,
+        rowTop: number,
+        rowH: number,
+        font: string,
+        sz: number,
+        targetMcid: number | null,
+        isHeader: boolean,
+    ): string[] {
+        const col = columns[colIdx];
+        const out: string[] = [];
+        const lineH = sz * TABLE_LINE_HEIGHT;
+        const padBottom = isHeader ? HEADER_PAD_BOTTOM : CELL_PAD_BOTTOM;
+        for (let li = 0; li < lines.length; li++) {
+            // Preserve v1.1 character-truncation only when wrapping is disabled
+            // (`wrap: 'never'`); under `'auto'`/`'always'` the planner already
+            // sized the column to fit, so an extra char-truncate would clip
+            // text that legitimately fits.
+            const t = (lines.length === 1 && wrapMode === 'never')
+                ? truncate(lines[li], (isHeader && col.mxH !== undefined) ? col.mxH : col.mx)
+                : lines[li];
+            // Single-line path reuses the historic v1.1 baseline (`rowH - padBottom`
+            // above the row floor) → byte-identical output when no wrap fires.
+            // Multi-line path top-aligns inside the cell band.
+            const baselineY = lines.length === 1
+                ? rowTop - rowH + padBottom
+                : rowTop - pad - sz + sz * 0.2 - li * lineH; // top-aligned with ascender bias
+            let op: string;
+            if (targetMcid !== null) {
+                if (col.a === 'r') {
+                    op = txtRTagged(t, cx[colIdx] + cwi[colIdx] - pad, baselineY, font, sz, enc, targetMcid, isHeader);
+                } else if (col.a === 'c') {
+                    op = txtCTagged(t, cx[colIdx], baselineY, font, sz, cwi[colIdx], enc, targetMcid, isHeader);
+                } else {
+                    op = txtTagged(t, cx[colIdx] + pad, baselineY, font, sz, enc, targetMcid);
+                }
             } else {
-                ops.push(clipCell(txtTagged(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid), i, y, TH_H));
+                if (col.a === 'r') {
+                    op = txtR(t, cx[colIdx] + cwi[colIdx] - pad, baselineY, font, sz, enc, isHeader);
+                } else if (col.a === 'c') {
+                    op = txtC(t, cx[colIdx], baselineY, font, sz, cwi[colIdx], enc, isHeader);
+                } else {
+                    op = txt(t, cx[colIdx] + pad, baselineY, font, sz, enc);
+                }
             }
-        } else {
-            if (columns[i].a === 'r') {
-                ops.push(clipCell(txtR(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc), i, y, TH_H));
-            } else if (columns[i].a === 'c') {
-                ops.push(clipCell(txtC(t, cx[i], y - TH_H + 4, enc.f2, fs.th, cwi[i], enc), i, y, TH_H));
-            } else {
-                ops.push(clipCell(txt(t, cx[i] + 3, y - TH_H + 4, enc.f2, fs.th, enc), i, y, TH_H));
-            }
+            out.push(clipCell(op, colIdx, rowTop, rowH));
         }
+        return out;
     }
-    if (tagCtx?.tagged) tableRows.push({ type: 'TR', children: thChildren });
-    y -= TH_H;
 
-    // Table data rows
-    for (const row of block.rows) {
+    // ── Caption (first slice only) ───────────────────────────────────
+    if (drawCaption && plan.captionLines.length > 0) {
+        ops.push(`${colors.text} rg`);
+        const lineH = CAPTION_FONT_SIZE * TABLE_LINE_HEIGHT;
+        let cy = y - CAPTION_FONT_SIZE;
+        let captionMcid: number | null = null;
+        if (tagCtx?.tagged) {
+            captionMcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            tableStructAccum.push({
+                type: 'Caption',
+                children: [{ mcid: captionMcid, pageObjNum: tagCtx.pageObjNum }],
+            });
+        }
+        for (const line of plan.captionLines) {
+            if (captionMcid !== null) {
+                ops.push(txtCTagged(line, mgL, cy, enc.f2, CAPTION_FONT_SIZE, cw, enc, captionMcid, true));
+            } else {
+                ops.push(txtC(line, mgL, cy, enc.f2, CAPTION_FONT_SIZE, cw, enc, true));
+            }
+            cy -= lineH;
+        }
+        y -= plan.captionHeight;
+    }
+
+    // ── Header ───────────────────────────────────────────────────────
+    if (drawHeader) {
+        ops.push(`${colors.thBg} rg`);
+        ops.push(`${fmtNum(mgL)} ${fmtNum(y - headerHeight)} ${fmtNum(cw)} ${fmtNum(headerHeight)} re f`);
+        ops.push(`0.75 w ${colors.thBrd} RG`);
+        ops.push(`${fmtNum(mgL)} ${fmtNum(y - headerHeight)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - headerHeight)} l S`);
+        ops.push(`${colors.text} rg`);
+
+        const thChildren: (StructElement | MCRef)[] = [];
+        for (let i = 0; i < block.headers.length && i < columns.length; i++) {
+            let mcid: number | null = null;
+            if (tagCtx?.tagged) {
+                mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+                thChildren.push({ type: 'TH', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+            }
+            ops.push(...emitCell(headerLines[i] ?? [''], i, y, headerHeight, enc.f2, fs.th, mcid, true));
+        }
+        if (tagCtx?.tagged && thChildren.length > 0) {
+            tableStructAccum.push({ type: 'TR', children: thChildren });
+        }
+        y -= headerHeight;
+    }
+
+    // ── Data rows ────────────────────────────────────────────────────
+    for (let r = fromRow; r < toRow; r++) {
+        const row = block.rows[r];
+        const rowH = rowHeights[r];
+
+        // Zebra fill (even data rows, counting from 0 across the entire table).
+        if (zebraColor && r % 2 === 1) {
+            ops.push(`${zebraColor} rg`);
+            ops.push(`${fmtNum(mgL)} ${fmtNum(y - rowH)} ${fmtNum(cw)} ${fmtNum(rowH)} re f`);
+        }
+
+        // Row separator
         ops.push(`0.25 w ${colors.rowBrd} RG`);
-        ops.push(`${fmtNum(mgL)} ${fmtNum(y - ROW_H)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - ROW_H)} l S`);
+        ops.push(`${fmtNum(mgL)} ${fmtNum(y - rowH)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - rowH)} l S`);
 
         const tdChildren: (StructElement | MCRef)[] = [];
+        const cells = rowLines[r];
         for (let i = 0; i < row.cells.length && i < columns.length; i++) {
-            const t = truncate(row.cells[i], columns[i].mx);
-            const isAmount = (i === 3);
+            // Amount-column styling is opt-in via `ColumnDef.kind === 'amount'`
+            // (since v1.2.0). The legacy `buildPDF()` financial path in
+            // `pdf-builder.ts` keeps the historical `i === 3` heuristic for
+            // byte-identical v1.0/v1.1 output.
+            const isAmount = columns[i].kind === 'amount';
             const color = isAmount ? (row.type === 'credit' ? colors.credit : colors.debit) : colors.text;
             const font = isAmount ? enc.f2 : enc.f1;
             ops.push(`${color} rg`);
 
+            let mcid: number | null = null;
             if (tagCtx?.tagged) {
-                const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+                mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
                 tdChildren.push({ type: 'TD', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-                if (columns[i].a === 'r') {
-                    ops.push(clipCell(txtRTagged(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc, mcid), i, y, ROW_H));
-                } else if (columns[i].a === 'c') {
-                    ops.push(clipCell(txtCTagged(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc, mcid), i, y, ROW_H));
-                } else {
-                    ops.push(clipCell(txtTagged(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc, mcid), i, y, ROW_H));
-                }
-            } else {
-                if (columns[i].a === 'r') {
-                    ops.push(clipCell(txtR(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc), i, y, ROW_H));
-                } else if (columns[i].a === 'c') {
-                    ops.push(clipCell(txtC(t, cx[i], y - ROW_H + 3, font, fs.td, cwi[i], enc), i, y, ROW_H));
-                } else {
-                    ops.push(clipCell(txt(t, cx[i] + 3, y - ROW_H + 3, font, fs.td, enc), i, y, ROW_H));
-                }
             }
+            ops.push(...emitCell(cells[i] ?? [''], i, y, rowH, font, fs.td, mcid, false));
         }
-        if (tagCtx?.tagged) tableRows.push({ type: 'TR', children: tdChildren });
-        y -= ROW_H;
+        if (tagCtx?.tagged && tdChildren.length > 0) {
+            tableStructAccum.push({ type: 'TR', children: tdChildren });
+        }
+        y -= rowH;
     }
 
-    if (tagCtx?.tagged && tableRows.length > 0) {
-        documentChildren.push({ type: 'Table', children: tableRows });
+    // ── Tagged-mode /Table emission (only after the LAST slice) ──────
+    if (isFinalSlice && tagCtx?.tagged && tableStructAccum.length > 0) {
+        documentChildren.push({ type: 'Table', children: tableStructAccum });
     }
 
-    y -= 6; // post-table spacing
+    if (isFinalSlice) y -= plan.trailerSpacing;
     return { ops, y };
 }
 
