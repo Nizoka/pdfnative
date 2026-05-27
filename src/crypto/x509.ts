@@ -187,9 +187,22 @@ function parseName(node: Asn1Node, fullDer: Uint8Array): X509Name {
         }
     }
 
+    const raw = fullDer.subarray(node.offset, node.offset + node.totalLength);
+    // Defensive invariant: every Name slice MUST start with the ASN.1
+    // SEQUENCE tag (0x30). Issue #46 was an off-by-N caused by missing
+    // recursive offset adjustment in `decodeAt()`. If this throws, the
+    // ASN.1 parser regressed — do NOT silently produce malformed CMS
+    // IssuerAndSerialNumber output.
+    if (raw.length === 0 || raw[0] !== ASN1_SEQUENCE) {
+        throw new Error(
+            `X.509 parseName: expected SEQUENCE tag 0x30 at slice offset 0, got 0x${raw[0]?.toString(16) ?? 'EOF'} ` +
+            `(offset=${node.offset}, totalLength=${node.totalLength}). This indicates a corrupt ASN.1 offset.`,
+        );
+    }
+
     return {
         cn, c, o, ou,
-        raw: fullDer.subarray(node.offset, node.offset + node.totalLength),
+        raw,
     };
 }
 
