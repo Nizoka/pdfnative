@@ -21,6 +21,7 @@ import type {
     DocumentParams,
     DocumentBlock,
     ImageBlock,
+    TableBlock,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
 import { createEncodingContext } from './encoding-context.js';
@@ -59,6 +60,7 @@ import {
     renderParagraph,
     renderList,
     renderTable,
+    planTable,
     renderPageTemplate,
     resolveImage,
     renderImage,
@@ -74,10 +76,28 @@ import type {
     PageAnnotation,
     PageFormField,
     ResolvedImage,
+    TableSlice,
 } from './pdf-renderers.js';
 
 // Re-export wrapText as public API
 export { wrapText } from './pdf-renderers.js';
+
+// ── Internal Pagination Types ────────────────────────────────────────
+
+/**
+ * Synthetic block produced by `_paginateBlocks()` when a table is sliced
+ * across multiple pages. Carries the original `TableBlock` plus the
+ * pre-computed slice that the renderer consumes. Internal only — never
+ * appears in the public `DocumentBlock` union.
+ */
+interface TableSliceItem {
+    readonly type: '__tableSlice';
+    readonly block: TableBlock;
+    readonly slice: TableSlice;
+}
+
+/** Any item the paginator can place on a page. */
+type PaginatedItem = DocumentBlock | TableSliceItem;
 
 // ── Main Builder ─────────────────────────────────────────────────────
 
@@ -164,11 +184,16 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     /**
      * Run a pagination pass to assign blocks to pages and collect heading positions.
      * Returns page blocks array and collected headings.
+     *
+     * Tables that don't fit on a single page are sliced row-by-row into
+     * {@link PaginatedItem}s of type `'__tableSlice'`; the renderer emits each
+     * slice with optional repeated header and a shared `/Table` struct-tree
+     * accumulator threaded through every slice.
      */
     function _paginateBlocks(
         headingsIn?: readonly HeadingDestination[],
-    ): { pages: DocumentBlock[][]; headings: HeadingDestination[] } {
-        const pages: DocumentBlock[][] = [[]];
+    ): { pages: PaginatedItem[][]; headings: HeadingDestination[] } {
+        const pages: PaginatedItem[][] = [[]];
         const headings: HeadingDestination[] = [];
         let remainH = availableH;
         let headingIdx = 0;
@@ -187,6 +212,103 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                 pages.push([]);
                 remainH = availableH;
                 curY = pgH - mg.t - headerH;
+                continue;
+            }
+
+            // Tables get sliced row-by-row across pages with optional header
+            // repetition and one shared `/Table` struct accumulator per table.
+            if (block.type === 'table') {
+                const plan = planTable(block, enc, mg.l, cw);
+                const repeatHeader = block.repeatHeader !== false; // default true
+                const sharedAccum: (StructElement | MCRef)[] = [];
+                const totalRows = block.rows.length;
+                let rowIdx = 0;
+                let isFirstSlice = true;
+
+                // Empty-rows table: still emit caption + header + trailer on one slice.
+                if (totalRows === 0) {
+                    const totalH = plan.captionHeight + plan.headerHeight + plan.trailerSpacing;
+                    if (totalH > remainH && pages[pages.length - 1].length > 0) {
+                        pages.push([]);
+                        remainH = availableH;
+                        curY = pgH - mg.t - headerH;
+                    }
+                    pages[pages.length - 1].push({
+                        type: '__tableSlice',
+                        block,
+                        slice: {
+                            plan,
+                            fromRow: 0,
+                            toRow: 0,
+                            drawCaption: true,
+                            drawHeader: true,
+                            isFinalSlice: true,
+                            tableStructAccum: sharedAccum,
+                        },
+                    });
+                    remainH -= totalH;
+                    curY -= totalH;
+                    continue;
+                }
+
+                while (rowIdx < totalRows) {
+                    const drawCaption = isFirstSlice;
+                    const drawHeader = isFirstSlice || repeatHeader;
+                    const tCapH = drawCaption ? plan.captionHeight : 0;
+                    const tHdrH = drawHeader ? plan.headerHeight : 0;
+                    const availableForRows = remainH - tCapH - tHdrH - plan.trailerSpacing;
+
+                    let usedH = 0;
+                    let count = 0;
+                    while (
+                        rowIdx + count < totalRows
+                        && usedH + plan.rowHeights[rowIdx + count] <= availableForRows
+                    ) {
+                        usedH += plan.rowHeights[rowIdx + count];
+                        count++;
+                    }
+
+                    // No rows fit AND page has prior content → move to a new page.
+                    if (count === 0 && pages[pages.length - 1].length > 0) {
+                        pages.push([]);
+                        remainH = availableH;
+                        curY = pgH - mg.t - headerH;
+                        continue;
+                    }
+                    // No rows fit even on a fresh page (single row taller than
+                    // the page): force one row through; clipCells clips overflow.
+                    if (count === 0) count = 1;
+
+                    const fromRow = rowIdx;
+                    const toRow = rowIdx + count;
+                    rowIdx = toRow;
+                    const isFinalSlice = rowIdx >= totalRows;
+
+                    pages[pages.length - 1].push({
+                        type: '__tableSlice',
+                        block,
+                        slice: {
+                            plan,
+                            fromRow,
+                            toRow,
+                            drawCaption,
+                            drawHeader,
+                            isFinalSlice,
+                            tableStructAccum: sharedAccum,
+                        },
+                    });
+
+                    const sliceH = tCapH + tHdrH + usedH + (isFinalSlice ? plan.trailerSpacing : 0);
+                    remainH -= sliceH;
+                    curY -= sliceH;
+                    isFirstSlice = false;
+
+                    if (!isFinalSlice) {
+                        pages.push([]);
+                        remainH = availableH;
+                        curY = pgH - mg.t - headerH;
+                    }
+                }
                 continue;
             }
 
@@ -218,7 +340,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
 
     // Multi-pass pagination for TOC support (max 3 iterations)
     let headingDests: HeadingDestination[] = [];
-    let pageBlocks: DocumentBlock[][];
+    let pageBlocks: PaginatedItem[][];
 
     if (hasToc) {
         // Pass 1: paginate without TOC content to collect headings
@@ -368,7 +490,18 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
                     break;
                 }
                 case 'table': {
+                    // Raw table reaches the render loop only if a caller bypasses
+                    // `_paginateBlocks()`. Render the whole table in one slice;
+                    // this matches the pre-v1.2 single-call behaviour.
                     const result = renderTable(block, y, enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren);
+                    ops.push(...result.ops);
+                    y = result.y;
+                    break;
+                }
+                case '__tableSlice': {
+                    const result = renderTable(
+                        block.block, y, enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren, block.slice,
+                    );
                     ops.push(...result.ops);
                     y = result.y;
                     break;

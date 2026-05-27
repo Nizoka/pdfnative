@@ -15,9 +15,11 @@ Closes issues [#45](https://github.com/Nizoka/pdfnative/issues/45)
 (`addSignaturePlaceholder()` API) and
 [#46](https://github.com/Nizoka/pdfnative/issues/46) (X.509 issuer/subject
 DN slice corruption), ships object-boundary page-by-page streaming,
-completes UAX #9 with embedding controls (LRE/RLE/LRO/RLO/PDF), and lands
-a USE-lite cluster classifier for future Indic shaper rewires. 100%
-backward-compatible. 52 test files / 1794 tests, all green. See full
+completes UAX #9 with embedding controls (LRE/RLE/LRO/RLO/PDF), lands
+a USE-lite cluster classifier for future Indic shaper rewires, and adds
+_smart tables_ — planner-driven multi-page rendering with auto-wrap,
+repeated headers, zebra striping, and captions. 100%
+backward-compatible. 53 test files / 1808 tests, all green. See full
 notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
 
 ### Added
@@ -49,9 +51,18 @@ notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
 - **refactor(parser):** [src/parser/pdf-modifier.ts](src/parser/pdf-modifier.ts)
   gains `addRawObject(body)` so placeholder-style raw payloads round-trip
   through incremental save without re-serialisation.
-- **scripts(samples):** new `signature-placeholder` and
-  `bidi-embeddings-showcase` generators wired into `npm run test:generate`
-  (157 sample PDFs total).
+- **scripts(samples):** new `signature-placeholder`,
+  `bidi-embeddings-showcase`, and `document-table-parity` generators
+  wired into `npm run test:generate` (161 sample PDFs total).
+- **feat(core, tables):** six new optional `TableBlock` fields, all
+  `@since 1.2.0`: `wrap` (`'auto'` | `'always'` | `'never'`, default
+  `'auto'`), `repeatHeader` (default `true`), `zebra`, `caption`,
+  `minRowHeight`, `cellPadding`. Planner-driven multi-page slicing in
+  [src/core/pdf-renderers.ts](src/core/pdf-renderers.ts) +
+  [src/core/pdf-document.ts](src/core/pdf-document.ts). Tagged-mode
+  `/Table` continues across slices via shared structure-tree accumulator
+  (ISO 14289-1 §7.10.6). Existing single-page tables are byte-identical
+  to v1.1.0. See [docs/guides/tables.md](docs/guides/tables.md).
 
 ### Fixed
 
@@ -63,11 +74,19 @@ notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
   `IssuerAndSerialNumber` parsing in Adobe Reader and openssl-cms.
   Defensive `raw[0] === 0x30` assertion added at the `parseName()`
   boundary.
+- **fix(samples):** `bidi-embeddings-showcase.pdf` — restored a missing
+  space in the orphan-PDF demo paragraph (was `"textwith"`, now
+  `"text with"`). Cosmetic only.
 
 ### Changed
 
 - **chore(meta):** version bumped to `1.2.0`. Still zero runtime
   dependencies.
+- **feat(core, tables):** `wrap` defaults to `'auto'` and `repeatHeader`
+  defaults to `true` for multi-page tables. Single-page tables that fit
+  without wrapping remain byte-identical to v1.1.0; multi-page tables
+  now reprint their header by default. Opt back into v1.1.0 single-pass
+  behaviour with `repeatHeader: false` and `wrap: 'never'`.
 
 ### Deferred to v1.3.0
 

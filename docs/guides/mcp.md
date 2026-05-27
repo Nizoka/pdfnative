@@ -204,6 +204,8 @@ Generates a tabular report from column headers and rows.
 
 `autoFitColumns` and `clipCells` (added in v0.3.0) transparently switch to the document-block backend so cell content fits its column or is clipped at the boundary, leveraging pdfnative v1.1's `TableBlock` props. Optional `pdfA` produces an archive-grade variant.
 
+> **pdfnative 1.2.0 \(server v0.4 candidate\) — smart-table parameters to surface next.** pdfnative 1.2.0 ships six new optional `TableBlock` fields: `wrap` (`'auto'` | `'always'` | `'never'`, default `'auto'`), `repeatHeader` (default `true`), `zebra`, `caption`, `minRowHeight`, `cellPadding`. Multi-page tables now reprint headers and wrap on overflow by default. The pdfnative-mcp server can forward these as optional `add_table` parameters to give agent-driven invoice/report workflows multi-page-safe output out of the box. See the [Smart tables guide](tables.md) for full semantics.
+
 ---
 
 ### `add_barcode`

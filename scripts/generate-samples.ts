@@ -30,6 +30,7 @@ import { generate as generateFormShowcase } from './generators/form-showcase.js'
 import { generate as generateDigitalSignature } from './generators/digital-signature.js';
 import { generate as generateSignaturePlaceholder } from './generators/signature-placeholder.js';
 import { generate as generateBidiEmbeddings } from './generators/bidi-embeddings-showcase.js';
+import { generate as generateTableParity } from './generators/document-table-parity.js';
 import { generate as generateStreaming } from './generators/streaming-showcase.js';
 import { generate as generateParser } from './generators/parser-showcase.js';
 import { generate as generateTextShaping } from './generators/text-shaping-deep.js';
@@ -100,6 +101,9 @@ async function generateAll(): Promise<void> {
 
     // ── BiDi embeddings showcase (v1.2 — UAX #9 LRE/RLE/LRO/RLO) ─
     await generateBidiEmbeddings(ctx);
+
+    // ── Smart-table parity samples (v1.2 — wrap/repeatHeader/zebra/caption) ─
+    await generateTableParity(ctx);
 
     // ── Streaming output showcase (chunked emission) ─────────────
     await generateStreaming(ctx);

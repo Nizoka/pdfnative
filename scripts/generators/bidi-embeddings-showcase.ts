@@ -47,7 +47,7 @@ async function buildDoc(): Promise<DocumentParams> {
             { type: 'paragraph', text: `outer ${LRE}inner ${RLE}שלום${PDF} back to L${PDF} done` },
 
             { type: 'heading', text: 'Orphan PDF (silently dropped)', level: 2 },
-            { type: 'paragraph', text: `text${PDF}with orphan PDF marker` },
+            { type: 'paragraph', text: `text ${PDF}with orphan PDF marker` },
         ],
     };
 }
