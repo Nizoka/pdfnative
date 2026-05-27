@@ -336,3 +336,101 @@ describe('TableBlock — Helvetica-Bold header positioning (v1.2.0)', () => {
         expect(w).toBeLessThanOrEqual(cw);
     });
 });
+
+// ── kind:'amount' opt-in + wrap-aware truncate (v1.2.0 fix) ──────────
+
+describe('TableBlock — kind:\'amount\' opt-in (v1.2.0)', () => {
+    it('applies bold + credit colour only when ColumnDef.kind === \'amount\'', () => {
+        const CREDIT = '0.086 0.639 0.247 rg';   // colors.credit
+        const cols: ColumnDef[] = [
+            { f: 0.5, a: 'l', mx: 30, mxH: 30 },
+            { f: 0.5, a: 'r', mx: 10, mxH: 10, kind: 'amount' },
+        ];
+        const pdf = buildDocumentPDF({
+            title: 'Amount opt-in',
+            blocks: [{
+                type: 'table',
+                headers: ['Item', 'Value'],
+                rows: [{ cells: ['Item A', '+12.34'], type: 'credit', pointed: false }],
+                columns: cols,
+            }],
+            footerText: 'pdfnative',
+        });
+        // Credit colour fires for the amount column.
+        expect(pdf).toContain(CREDIT);
+    });
+
+    it('does NOT apply bold/credit-debit styling when no column has kind:\'amount\'', () => {
+        const CREDIT = '0.086 0.639 0.247 rg';
+        const DEBIT = '0.863 0.149 0.149 rg';
+        const cols: ColumnDef[] = [
+            { f: 0.5, a: 'l', mx: 30, mxH: 30 },
+            { f: 0.5, a: 'r', mx: 10, mxH: 10 },
+        ];
+        const pdf = buildDocumentPDF({
+            title: 'Plain table',
+            blocks: [{
+                type: 'table',
+                headers: ['Item', 'Value'],
+                rows: [
+                    { cells: ['A', '+12.34'], type: 'credit', pointed: false },
+                    { cells: ['B', '-7.50'], type: 'debit', pointed: false },
+                ],
+                columns: cols,
+            }],
+            footerText: 'pdfnative',
+        });
+        // Neither credit nor debit colour fills should be emitted because
+        // no column opted into kind:'amount'.
+        expect(pdf).not.toContain(CREDIT);
+        expect(pdf).not.toContain(DEBIT);
+    });
+});
+
+describe('TableBlock — wrap-aware character truncate (v1.2.0)', () => {
+    it('wrap=\'never\' preserves v1.1 char-truncate (ellipsis when text exceeds mx)', () => {
+        // mx=10 chars; cell text is 20 chars → truncate() adds an ellipsis.
+        const cols: ColumnDef[] = [
+            { f: 0.5, a: 'l', mx: 100, mxH: 100 },
+            { f: 0.5, a: 'l', mx: 10, mxH: 10 },
+        ];
+        const pdf = buildDocumentPDF({
+            title: 'Never truncate',
+            blocks: [{
+                type: 'table',
+                headers: ['A', 'B'],
+                rows: [{ cells: ['x', 'abcdefghijklmnopqrst'], type: 'credit', pointed: false }],
+                columns: cols,
+                wrap: 'never',
+            }],
+            footerText: 'pdfnative',
+        });
+        // pdfString() encodes the Unicode ellipsis U+2026 as raw WinAnsi byte 0x85
+        // when it sits inside the printable WinAnsi range; the truncated text appears
+        // as e.g. `(abcdefghi\u0085)`. We assert the prefix + the raw byte.
+        expect(pdf).toContain('abcdefghi\u0085');
+    });
+
+    it('wrap=\'auto\' does NOT char-truncate cells that fit the resolved width', () => {
+        // Same mx=10 char limit, but wide enough column → no truncation.
+        const cols: ColumnDef[] = [
+            { f: 0.2, a: 'l', mx: 100, mxH: 100 },
+            { f: 0.8, a: 'l', mx: 10, mxH: 10 },
+        ];
+        const pdf = buildDocumentPDF({
+            title: 'Auto wrap',
+            blocks: [{
+                type: 'table',
+                headers: ['A', 'B'],
+                rows: [{ cells: ['x', 'abcdefghijklmnop'], type: 'credit', pointed: false }],
+                columns: cols,
+                wrap: 'auto',
+            }],
+            footerText: 'pdfnative',
+        });
+        // No ellipsis emitted: text fits the column verbatim.
+        expect(pdf).not.toContain('\u0085');
+        // Full text must appear in the content stream.
+        expect(pdf).toContain('abcdefghijklmnop');
+    });
+});

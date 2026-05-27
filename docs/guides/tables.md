@@ -79,6 +79,33 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 
 ---
 
+## New `ColumnDef.kind` field (v1.2.0, optional)
+
+| Field  | Type       | Default     | Description                                                                                                                                                                                                                  |
+| ------ | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `kind` | `'amount'` | `undefined` | Semantic hint. When set to `'amount'`, data cells in this column render in Helvetica-Bold with credit/debit colouring driven by `row.type`. Replaces the pre-1.2.0 hardcoded `i === 3` heuristic in `renderTable`. |
+
+```ts
+{
+  type: 'table',
+  headers: ['Date', 'Description', 'Status', 'Amount'],
+  columns: [
+    { f: 0.20, a: 'l', mx: 12, mxH: 12 },
+    { f: 0.45, a: 'l', mx: 60, mxH: 60 },
+    { f: 0.20, a: 'l', mx: 20, mxH: 20 },
+    { f: 0.15, a: 'r', mx: 18, mxH: 18, kind: 'amount' }, // ← opt-in bold + credit/debit colour
+  ],
+  rows: [
+    { cells: ['2026-05-01', 'Salary', 'Cleared', '+3 000.00'], type: 'credit', pointed: false },
+    { cells: ['2026-05-03', 'Rent',   'Pending', '-1 250.00'], type: 'debit',  pointed: false },
+  ],
+}
+```
+
+> **Behaviour change for document-builder tables without `kind`.** Pre-1.2.0 the renderer applied Helvetica-Bold + credit/debit colour to whichever column happened to be at index 3. v1.2.0 removes that heuristic — opt in explicitly via `kind: 'amount'`. The legacy `buildPDF()` (financial-statement) path keeps the historical heuristic for byte-identical v1.0/v1.1 output.
+
+---
+
 ## How multi-page tables are sliced
 
 pdfnative v1.2.0 introduces a two-phase pipeline:

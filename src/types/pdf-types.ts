@@ -185,6 +185,15 @@ export interface ColumnDef {
      * @since 1.1.0
      */
     readonly maxWidth?: number;
+    /**
+     * Semantic kind for the column. When set to `'amount'`, data cells in
+     * this column render in Helvetica-Bold with credit/debit colouring
+     * driven by `row.type`. Opt-in replacement for the pre-1.2.0
+     * hardcoded `i === 3` heuristic in `renderTable`. Default: plain text
+     * in `colors.text` and `enc.f1` (Helvetica-Regular).
+     * @since 1.2.0
+     */
+    readonly kind?: 'amount';
 }
 
 /**

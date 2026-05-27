@@ -187,6 +187,28 @@ All four flavours share the same XMP / OutputIntent / structure-tree
 infrastructure — pdfnative only varies the PDF version, the
 `pdfaid:part`, and the `pdfaid:conformance` value.
 
+### Canonical list for tooling
+
+Since v1.2.0, the four legal `tagged` strings are also exposed as a
+typed constant for tooling that needs to populate a JSON-schema
+`enum:` (`pdfnative-mcp` does this for its MCP tool descriptions so
+Gemini-CLI and other agents can autocomplete the right value):
+
+```ts
+import { PDF_A_CONFORMANCE_TARGETS, type PdfAConformanceTarget } from 'pdfnative';
+
+PDF_A_CONFORMANCE_TARGETS;
+// → readonly ['pdfa1b', 'pdfa2b', 'pdfa2u', 'pdfa3b']
+
+function isValidTarget(s: string): s is PdfAConformanceTarget {
+  return (PDF_A_CONFORMANCE_TARGETS as readonly string[]).includes(s);
+}
+```
+
+The constant is the single source of truth — adding a new target in a
+future minor release will surface automatically in every downstream
+consumer that imports it.
+
 ## Hard invariants for contributors
 
 These rules are documented in the contributor instruction file

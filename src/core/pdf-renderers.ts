@@ -685,6 +685,7 @@ export function renderTable(
     const fs = fontSize;
     const clip = block.clipCells !== false;
     const zebraColor = resolveZebraColor(block.zebra);
+    const wrapMode = block.wrap ?? 'auto';
 
     /**
      * Wrap a text-emitting operator in a clipping rectangle for cell `i`.
@@ -716,8 +717,11 @@ export function renderTable(
         const lineH = sz * TABLE_LINE_HEIGHT;
         const padBottom = isHeader ? HEADER_PAD_BOTTOM : CELL_PAD_BOTTOM;
         for (let li = 0; li < lines.length; li++) {
-            const t = lines.length === 1
-                // Preserve v1.1 character-truncation when no wrapping occurred.
+            // Preserve v1.1 character-truncation only when wrapping is disabled
+            // (`wrap: 'never'`); under `'auto'`/`'always'` the planner already
+            // sized the column to fit, so an extra char-truncate would clip
+            // text that legitimately fits.
+            const t = (lines.length === 1 && wrapMode === 'never')
                 ? truncate(lines[li], (isHeader && col.mxH !== undefined) ? col.mxH : col.mx)
                 : lines[li];
             // Single-line path reuses the historic v1.1 baseline (`rowH - padBottom`
@@ -814,7 +818,11 @@ export function renderTable(
         const tdChildren: (StructElement | MCRef)[] = [];
         const cells = rowLines[r];
         for (let i = 0; i < row.cells.length && i < columns.length; i++) {
-            const isAmount = (i === 3);
+            // Amount-column styling is opt-in via `ColumnDef.kind === 'amount'`
+            // (since v1.2.0). The legacy `buildPDF()` financial path in
+            // `pdf-builder.ts` keeps the historical `i === 3` heuristic for
+            // byte-identical v1.0/v1.1 output.
+            const isAmount = columns[i].kind === 'amount';
             const color = isAmount ? (row.type === 'credit' ? colors.credit : colors.debit) : colors.text;
             const font = isAmount ? enc.f2 : enc.f1;
             ops.push(`${color} rg`);

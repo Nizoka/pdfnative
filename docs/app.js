@@ -448,6 +448,46 @@
         'const pdf = concatChunks(chunks);',
         "downloadBlob(pdf, 'streamed.pdf');"
       ].join('\n')
+    },
+    {
+      id: 'smart-tables',
+      label: 'Smart tables — wrap, repeated headers, zebra (v1.2.0)',
+      description: 'Auto-fit columns, automatic cell wrapping, repeated headers across page breaks, zebra striping, and a tagged-PDF caption.',
+      source: GENERATORS_BASE + 'document-table-parity.ts',
+      code: [
+        "import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
+        '',
+        '// Build 32 rows so the table naturally wraps to a second page.',
+        'const rows = Array.from({ length: 32 }, (_, i) => ({',
+        '  cells: [',
+        "    `2026-${String((i % 12) + 1).padStart(2, '0')}-15`,",
+        "    i % 5 === 0",
+        "      ? 'Widget Pro Max XL Limited Edition with extended warranty'",
+        "      : `Item #${i + 1} — standard SKU`,",
+        "    i % 3 === 0 ? 'Stock' : i % 3 === 1 ? 'Backorder' : 'Reserved',",
+        '    (((i + 1) * 37.5) % 1000).toFixed(2),',
+        '  ],',
+        '}));',
+        '',
+        'const pdf = buildDocumentPDFBytes({',
+        "  title: 'Smart Tables Demo',",
+        '  blocks: [',
+        "    { type: 'heading', text: 'Smart Tables (v1.2.0)', level: 1 },",
+        "    { type: 'paragraph', text: 'Auto-fit columns, automatic wrapping, repeated headers across page breaks, and zebra striping.' },",
+        '    {',
+        "      type: 'table',",
+        "      headers: ['Date', 'Product', 'Status', 'Amount'],",
+        '      rows,',
+        "      wrap: 'auto',           // measure first; wrap only when needed",
+        '      repeatHeader: true,     // redraw header on every page',
+        '      zebra: true,            // soft alternating row tint',
+        "      caption: 'Q1 2026 inventory movements',",
+        '    },',
+        '  ],',
+        '});',
+        '',
+        "downloadBlob(pdf, 'smart-tables.pdf');"
+      ].join('\n')
     }
   ];
 

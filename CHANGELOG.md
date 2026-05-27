@@ -19,7 +19,7 @@ completes UAX #9 with embedding controls (LRE/RLE/LRO/RLO/PDF), lands
 a USE-lite cluster classifier for future Indic shaper rewires, and adds
 _smart tables_ — planner-driven multi-page rendering with auto-wrap,
 repeated headers, zebra striping, and captions. 100%
-backward-compatible. 53 test files / 1818 tests, all green. See full
+backward-compatible. 53 test files / 1822 tests, all green. See full
 notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
 
 ### Added
@@ -74,6 +74,20 @@ notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
 - **chore(types):** `SigDictMetadata` interface now re-exported from the
   package root. Aligns the runtime surface with the v1.2.0 release notes
   that already advertised it as a stable public type.
+- **feat(types, tables):** new optional `ColumnDef.kind?: 'amount'` —
+  opt-in replacement for the pre-1.2.0 hardcoded `i === 3` heuristic in
+  `renderTable`. When set, data cells render in Helvetica-Bold with
+  credit/debit colour driven by `row.type`. Reserved enum.
+- **feat(core, mcp):** `PDF_A_CONFORMANCE_TARGETS = ['pdfa1b','pdfa2b','pdfa2u','pdfa3b'] as const`
+  and `PdfAConformanceTarget` type exported from the root. Single
+  source of truth for tooling — most notably the `pdfnative-mcp`
+  server's tool-schema `enum:`. Materially improves how Gemini-CLI and
+  other LLM agents discover the legal `pdfA` values.
+  ([src/core/pdf-tags.ts](src/core/pdf-tags.ts))
+- **docs(demo):** smart-tables example added to the live demo gallery
+  at [pdfnative.dev](https://pdfnative.dev) — 32-row table exercising
+  `wrap: 'auto'`, `repeatHeader: true`, `zebra: true`, and `caption`
+  end-to-end in the browser. ([docs/app.js](docs/app.js))
 
 ### Fixed
 
@@ -106,6 +120,18 @@ notes in [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
   `toFixed(2)` (was rendering floating-point noise like
   `+37.019999999999996`); Amount column slightly widened in the
   wrap-auto sample for clarity.
+- **fix(core, tables):** `renderTable()` no longer hardcodes column
+  index 3 as the Amount column with Helvetica-Bold + credit/debit
+  colour. Styling is now opt-in via the new
+  `ColumnDef.kind === 'amount'` field. Resolves the spurious bold +
+  truncation on the Notes column of `table-smart-autofit.pdf`. The
+  legacy `buildPDF()` financial path keeps the historical heuristic for
+  byte-identical v1.0/v1.1 output.
+- **fix(core, tables):** `emitCell` now applies the v1.1 character
+  truncate (`mx` / `mxH`) only when `wrap: 'never'`. Under `'auto'` and
+  `'always'` the planner has already sized the column to fit, so the
+  redundant char-truncate previously inserted spurious `…` ellipses
+  in auto-fitted tables.
 
 ### Changed
 
