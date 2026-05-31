@@ -391,3 +391,52 @@ describe('shapeBengaliText', () => {
         expect(shaped.length).toBe(3);
     });
 });
+
+// ── Joiner / subjoined edge cases (v1.3.0, USE-lite) ────────────────
+
+describe('shapeBengaliText — ZWJ/ZWNJ + ya-phalaa (v1.3.0)', () => {
+    const ZWJ = '\u200D';
+    const ZWNJ = '\u200C';
+    const bgid = (cp: number): number => cp - BENGALI_START + 100;
+
+    it('drops an orphan ZWJ/ZWNJ (no .notdef box)', () => {
+        const fd = mockFontData();
+        expect(shapeBengaliText('\u0995' + ZWJ, fd).every((g) => g.gid !== 0)).toBe(true);
+        expect(shapeBengaliText('\u0995' + ZWNJ, fd).every((g) => g.gid !== 0)).toBe(true);
+        expect(shapeBengaliText('\u0995' + ZWJ, fd).length).toBe(1);
+    });
+
+    it('ya-phalaa: consonant + virama + ZWJ + Ya keeps the conjunct', () => {
+        const fd = mockFontData();
+        // ক ্ ZWJ য (Ka + virama + ZWJ + Ya → ya-phalaa)
+        const shaped = shapeBengaliText('\u0995\u09CD' + ZWJ + '\u09AF', fd);
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        expect(shaped.some((g) => g.gid === bgid(0x0995))).toBe(true); // Ka
+        expect(shaped.some((g) => g.gid === bgid(0x09AF))).toBe(true); // Ya
+    });
+
+    it('ya-phalaa without ZWJ (plain conjunct) renders Ka + virama + Ya', () => {
+        const fd = mockFontData();
+        const shaped = shapeBengaliText('\u0995\u09CD\u09AF', fd);
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        expect(shaped.some((g) => g.gid === bgid(0x09AF))).toBe(true);
+    });
+
+    it('ZWNJ breaks the conjunct and keeps a visible virama', () => {
+        const fd = mockFontData();
+        // ক ্ ZWNJ য
+        const shaped = shapeBengaliText('\u0995\u09CD' + ZWNJ + '\u09AF', fd);
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        expect(shaped.some((g) => g.gid === bgid(0x09CD))).toBe(true); // visible virama
+    });
+
+    it('consonant + nukta + virama + consonant forms a conjunct', () => {
+        const fd = mockFontData();
+        // ড ় ্ য (Dda + nukta + virama + Ya)
+        const shaped = shapeBengaliText('\u09A1\u09BC\u09CD\u09AF', fd);
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        const nukta = shaped.find((g) => g.gid === bgid(0x09BC));
+        expect(nukta).toBeDefined();
+        expect(nukta?.isZeroAdvance).toBe(true);
+    });
+});

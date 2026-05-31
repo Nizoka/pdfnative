@@ -8,19 +8,20 @@
  * Based on the Universal Shaping Engine specification:
  *   https://learn.microsoft.com/en-us/typography/script-development/use
  *
- * Scope (v1.2.0):
+ * Scope (v1.3.0):
  *   - Public API for cluster classification: callers can run their own
  *     reordering / GSUB pipelines on top of the cluster categories.
  *   - 11 cluster categories sufficient for the four scripts pdfnative
  *     ships shaping for (Devanagari, Bengali, Tamil) plus a generic
  *     fallback that classifies any USE-eligible code point.
+ *   - Marathi eyelash-ra (Ra + virama + ZWJ) is recognised as a distinct
+ *     reph variant (`UseCluster.eyelash`).
+ *   - The bundled Devanagari/Bengali/Tamil shapers consume
+ *     `classifyUseCategory` as the single source of truth for joiner
+ *     (ZWJ/ZWNJ) and half-form/eyelash decisions; their hand-tuned
+ *     happy-path reordering (pinned by the vitest suite) is preserved.
  *
- * Not in scope (deferred to v1.3):
- *   - Rewiring the bundled Devanagari/Bengali/Tamil shapers to drive
- *     their reordering from this module. The shapers currently use
- *     hand-tuned per-script logic that the existing 1700+ vitest
- *     cases pin in place; switching them over is a separate refactor
- *     gated on the v1.3 shaping benchmark harness.
+ * Not in scope (deferred):
  *   - State-table classification for Khmer/Myanmar/Tibetan/Sinhala/
  *     other USE-required scripts not currently bundled.
  */
@@ -70,6 +71,12 @@ export interface UseCluster {
     readonly post: UseClassifiedCp[];
     /** Halant + consonant chains attached after the base (conjunct tail). */
     readonly tail: UseClassifiedCp[];
+    /**
+     * True when the cluster head is a Marathi eyelash-ra — `Ra + virama + ZWJ`
+     * — which renders as the eyelash (rakar) form rather than a reph. The
+     * leading `Ra` is still recorded in {@link prebase} with category `'R'`.
+     */
+    readonly eyelash?: boolean;
 }
 
 // ── Per-script Code Point Tables ─────────────────────────────────────
@@ -209,10 +216,15 @@ function nextCluster(cps: readonly number[], start: number): { cluster: UseClust
     const tail: UseClassifiedCp[] = [];
 
     let i = start;
+    let eyelash = false;
 
     // Reph detection: leading Ra + virama + (consonant) — promote the
     // Ra-virama pair to a single category-R prebase entry. Cluster base
     // is then the following consonant.
+    //
+    // Eyelash-ra (Marathi): Ra + virama + ZWJ requests the eyelash (rakar)
+    // form instead of a reph. The Ra is still recorded as category 'R' but
+    // the cluster is flagged `eyelash` so callers can pick the right glyph.
     const cp0 = cps[i];
     const cat0 = classifyUseCategory(cp0);
     const isRa = (cp0 === DEVA_RA || cp0 === BENG_RA);
@@ -222,6 +234,12 @@ function nextCluster(cps: readonly number[], start: number): { cluster: UseClust
             prebase.push({ cp: cp0, category: 'R' });
             // Skip the virama (it gets consumed by the reph form)
             i += 2;
+        } else if (cat2 === 'ZWJ') {
+            prebase.push({ cp: cp0, category: 'R' });
+            eyelash = true;
+            // Skip the virama + ZWJ; the following consonant (if any)
+            // becomes the cluster base.
+            i += 3;
         }
     }
 
@@ -285,7 +303,9 @@ function nextCluster(cps: readonly number[], start: number): { cluster: UseClust
     }
 
     return {
-        cluster: { prebase, base, above, below, post, tail },
+        cluster: eyelash
+            ? { prebase, base, above, below, post, tail, eyelash: true }
+            : { prebase, base, above, below, post, tail },
         next: i,
     };
 }

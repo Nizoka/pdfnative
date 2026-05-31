@@ -22,6 +22,7 @@
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { BENGALI_START, BENGALI_END, containsBengali } from './script-registry.js';
 import { tryLigature } from './gsub-driver.js';
+import { classifyUseCategory } from './use-lite.js';
 
 // Re-export range constants
 export { BENGALI_START, BENGALI_END, containsBengali };
@@ -123,6 +124,15 @@ export function buildBengaliClusters(str: string): BengaliCluster[] {
         const cp = cps[i];
         const type = bengaliCharType(cp);
 
+        // Zero-width joiners carry no standalone glyph. An orphan ZWJ/ZWNJ
+        // (one not consumed by the conjunct logic below) is dropped so it
+        // never resolves to a .notdef box. (USE-lite is the classification
+        // authority for joiners.)
+        if (classifyUseCategory(cp) === 'ZWJ' || classifyUseCategory(cp) === 'ZWNJ') {
+            i++;
+            continue;
+        }
+
         // Not a Bengali character — emit as standalone
         if (type < 0 || cp < BENGALI_START || cp > BENGALI_END) {
             clusters.push({ codepoints: [cp], baseIndex: 0, hasReph: false, preBaseMatras: [] });
@@ -161,16 +171,28 @@ export function buildBengaliClusters(str: string): BengaliCluster[] {
                     i++;
                 }
 
-                // Halant after consonant — check if followed by another consonant
+                // Halant after consonant — check what follows. A ZWJ/ZWNJ
+                // joiner may sit between the halant and the next consonant:
+                //   • ZWJ  → request a subjoined / half form (e.g. ya-phalaa
+                //            when the next consonant is Ya) — continue conjunct.
+                //   • ZWNJ → break the conjunct, keep the visible virama.
                 if (i < cps.length && cps[i] === HALANT) {
-                    if (i + 1 < cps.length && isConsonant(cps[i + 1])) {
+                    let j = i + 1;
+                    let zwnj = false;
+                    if (j < cps.length) {
+                        const jc = classifyUseCategory(cps[j]);
+                        if (jc === 'ZWJ') { j++; }
+                        else if (jc === 'ZWNJ') { j++; zwnj = true; }
+                    }
+                    if (!zwnj && j < cps.length && isConsonant(cps[j])) {
                         syllable.push(cps[i]); // halant
-                        i++;
+                        i = j; // skip halant (+ optional ZWJ) → next consonant
                         continue; // consume next consonant
                     } else {
-                        // Explicit halant (visible virama) — end of consonant sequence
+                        // Explicit halant (visible virama) — end of consonant
+                        // sequence. Any ZWJ/ZWNJ joiner is consumed silently.
                         syllable.push(cps[i]);
-                        i++;
+                        i = j;
                         break;
                     }
                 }

@@ -24,6 +24,7 @@
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { TAMIL_START, TAMIL_END, containsTamil } from './script-registry.js';
 import { tryLigature } from './gsub-driver.js';
+import { classifyUseCategory } from './use-lite.js';
 
 // Re-export range constants
 export { TAMIL_START, TAMIL_END, containsTamil };
@@ -116,6 +117,13 @@ export function buildTamilClusters(str: string): TamilCluster[] {
         const cp = cps[i];
         const type = tamilCharType(cp);
 
+        // Zero-width joiners carry no standalone glyph; drop orphans so they
+        // never resolve to a .notdef box. (USE-lite classifies joiners.)
+        if (classifyUseCategory(cp) === 'ZWJ' || classifyUseCategory(cp) === 'ZWNJ') {
+            i++;
+            continue;
+        }
+
         // Not a Tamil character — emit as standalone
         if (type < 0 || cp < TAMIL_START || cp > TAMIL_END) {
             clusters.push({ codepoints: [cp], baseIndex: 0, preBaseMatras: [] });
@@ -137,16 +145,26 @@ export function buildTamilClusters(str: string): TamilCluster[] {
                 syllable.push(cc);
                 i++;
 
-                // Pulli after consonant — check if followed by another consonant
+                // Pulli after consonant — check what follows. A ZWJ/ZWNJ
+                // joiner may sit between the pulli and the next consonant:
+                //   • ZWJ  → request a conjunct form — continue the conjunct.
+                //   • ZWNJ → break the conjunct, keep the visible pulli.
                 if (i < cps.length && cps[i] === PULLI) {
-                    if (i + 1 < cps.length && isConsonant(cps[i + 1])) {
+                    let j = i + 1;
+                    let zwnj = false;
+                    if (j < cps.length) {
+                        const jc = classifyUseCategory(cps[j]);
+                        if (jc === 'ZWJ') { j++; }
+                        else if (jc === 'ZWNJ') { j++; zwnj = true; }
+                    }
+                    if (!zwnj && j < cps.length && isConsonant(cps[j])) {
                         syllable.push(cps[i]); // pulli
-                        i++;
+                        i = j; // skip pulli (+ optional ZWJ) → next consonant
                         continue; // consume next consonant
                     } else {
-                        // Explicit pulli (visible virama)
+                        // Explicit pulli (visible virama). Any joiner consumed.
                         syllable.push(cps[i]);
-                        i++;
+                        i = j;
                         break;
                     }
                 }
