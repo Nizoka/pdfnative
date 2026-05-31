@@ -3,7 +3,7 @@
  */
 
 import { resolve } from 'path';
-import { buildDocumentPDFStream, buildPDFStream, concatChunks } from '../../src/index.js';
+import { buildDocumentPDFStream, buildPDFStream, buildDocumentPDFStreamTrue, buildPDFStreamTrue, concatChunks } from '../../src/index.js';
 import type { DocumentParams, PdfParams, PdfRow } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
 
@@ -70,5 +70,48 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         }
         const bytes = concatChunks(chunks);
         ctx.writeSafe(resolve(ctx.outputDir, 'streaming', 'streaming-table.pdf'), 'streaming/streaming-table.pdf', bytes);
+    }
+
+    // ── True constant-memory streaming (v1.3.0) ──────────────────
+    // buildDocumentPDFStreamTrue / buildPDFStreamTrue assemble the document as
+    // an array of string parts and yield byte-chunks from it, freeing each part
+    // as it is emitted — the full binary never co-exists in memory. Output is
+    // byte-identical to the corresponding *Bytes builder.
+    {
+        const params: DocumentParams = {
+            title: 'True Streaming (v1.3.0)',
+            blocks: [
+                { type: 'heading', text: 'Constant-Memory Streaming', level: 1 },
+                { type: 'paragraph', text: 'buildDocumentPDFStreamTrue() yields the PDF as Uint8Array chunks while releasing each assembled part as it is written, so peak memory stays bounded regardless of document size. The bytes are identical to buildDocumentPDFBytes().' },
+                { type: 'heading', text: 'When to use it', level: 2 },
+                { type: 'list', style: 'bullet', items: [
+                    'Very large reports piped to a file or HTTP response',
+                    'Memory-constrained environments (serverless, edge runtimes)',
+                    'Any case where holding the whole PDF in RAM is wasteful',
+                ] },
+            ],
+        };
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of buildDocumentPDFStreamTrue(params)) chunks.push(chunk);
+        ctx.writeSafe(resolve(ctx.outputDir, 'streaming', 'streaming-true-document.pdf'), 'streaming/streaming-true-document.pdf', concatChunks(chunks));
+    }
+
+    {
+        const rows: PdfRow[] = [];
+        for (let i = 1; i <= 400; i++) {
+            rows.push({ cells: [`Row ${i}`, `True-streamed entry ${i}`, `$${(i * 3.5).toFixed(2)}`], type: i % 2 === 0 ? '' : 'credit', pointed: false });
+        }
+        const params: PdfParams = {
+            title: 'True Streaming Table',
+            headers: ['Row', 'Detail', 'Amount'],
+            rows,
+            infoItems: [{ label: 'Mode', value: 'buildPDFStreamTrue()' }],
+            balanceText: '',
+            countText: `${rows.length} rows`,
+            footerText: 'Emitted via buildPDFStreamTrue() — constant peak memory',
+        };
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of buildPDFStreamTrue(params)) chunks.push(chunk);
+        ctx.writeSafe(resolve(ctx.outputDir, 'streaming', 'streaming-true-table.pdf'), 'streaming/streaming-true-table.pdf', concatChunks(chunks));
     }
 }

@@ -34,6 +34,7 @@ import { generate as generateTableParity } from './generators/document-table-par
 import { generate as generateStreaming } from './generators/streaming-showcase.js';
 import { generate as generateParser } from './generators/parser-showcase.js';
 import { generate as generateTextShaping } from './generators/text-shaping-deep.js';
+import { generate as generateUseLite } from './generators/use-lite-showcase.js';
 import { generate as generateBidi } from './generators/bidi-algorithm.js';
 import { generate as generateCrypto } from './generators/crypto-showcase.js';
 import { generate as generateFontSubsetting } from './generators/font-subsetting-deep.js';
@@ -114,6 +115,9 @@ async function generateAll(): Promise<void> {
 
     // ── Text shaping deep-dive (Thai/Bengali/Tamil) ─────────────
     await generateTextShaping(ctx);
+
+    // ── USE-lite cluster classification (public API) ────────────
+    await generateUseLite(ctx);
 
     // ── BiDi algorithm walkthrough (UAX #9, Arabic, Hebrew) ─────
     await generateBidi(ctx);
