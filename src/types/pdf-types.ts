@@ -37,6 +37,77 @@ export interface FontData {
         readonly mark1Anchors: Record<number, Record<number, [number, number]>>;
         readonly mark2Classes: Record<number, [number, number, number]>;
     } | null;
+    /**
+     * Colour glyph table (COLR/CPAL), keyed by base glyph id. Present only
+     * for colour fonts such as Noto Color Emoji (opt-in via the
+     * `'emoji-color'` lang). Each entry is an ordered list of paint layers
+     * resolved against the font's CPAL palette (painter's algorithm).
+     * `undefined`/`null` for ordinary monochrome fonts. (v1.3.0)
+     */
+    readonly colorGlyphs?: Record<number, ColorGlyph> | null;
+}
+
+// ── Colour Glyph Types (COLR/CPAL — v1.3.0) ──────────────────────────
+
+/** An sRGB colour with alpha, each channel 0–255. Resolved from CPAL. */
+export type CpalColor = readonly [number, number, number, number];
+
+/** A gradient colour stop: `offset` in [0,1] with a resolved colour. */
+export interface ColorStop {
+    readonly offset: number;
+    readonly color: CpalColor;
+}
+
+/** How a gradient extends beyond its [0,1] range (COLR Extend / PDF Extend). */
+export type GradientExtend = 'pad' | 'repeat' | 'reflect';
+
+/** A flat colour fill (COLR PaintSolid / COLRv0 layer). */
+export interface SolidPaint {
+    readonly kind: 'solid';
+    readonly color: CpalColor;
+}
+
+/** A linear (axial) gradient fill (COLR PaintLinearGradient → PDF Shading 2). */
+export interface LinearGradientPaint {
+    readonly kind: 'linear';
+    readonly p0: readonly [number, number];
+    readonly p1: readonly [number, number];
+    readonly stops: readonly ColorStop[];
+    readonly extend: GradientExtend;
+}
+
+/** A radial gradient fill (COLR PaintRadialGradient → PDF Shading 3). */
+export interface RadialGradientPaint {
+    readonly kind: 'radial';
+    readonly c0: readonly [number, number];
+    readonly r0: number;
+    readonly c1: readonly [number, number];
+    readonly r1: number;
+    readonly stops: readonly ColorStop[];
+    readonly extend: GradientExtend;
+}
+
+/** A paint used to fill a colour-glyph layer. */
+export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint;
+
+/** A single colour-glyph layer: a base outline filled by a paint. */
+export interface ColorLayer {
+    /** Glyph id of the base outline (in the font's `glyf` table). */
+    readonly glyphId: number;
+    /** The fill applied to the outline. */
+    readonly paint: ColorPaint;
+    /**
+     * Optional affine transform `[a b c d e f]` (font-unit space) applied to
+     * both the outline and the paint geometry of this layer — flattened from
+     * COLRv1 `PaintTransform`/`PaintTranslate`/`PaintScale`. Identity when
+     * absent.
+     */
+    readonly transform?: readonly [number, number, number, number, number, number];
+}
+
+/** A resolved colour glyph: ordered layers painted back-to-front. */
+export interface ColorGlyph {
+    readonly layers: readonly ColorLayer[];
 }
 
 /** A font entry binding FontData to a PDF font reference. */

@@ -216,6 +216,17 @@ export type { UseCategory, UseClassifiedCp, UseCluster } from './shaping/use-lit
 export { classifyUseCategory, classifyClusters } from './shaping/use-lite.js';
 export { shapeArabicText } from './shaping/arabic-shaper.js';
 
+// ── Colour Glyphs — COLR/CPAL emoji (v1.3.0) ────────────────────────
+export type {
+    CpalColor, ColorStop, GradientExtend, SolidPaint, LinearGradientPaint,
+    RadialGradientPaint, ColorPaint, ColorLayer, ColorGlyph,
+} from './types/pdf-types.js';
+export type { OutlinePoint, Contour, GlyfFont } from './fonts/glyf-outline.js';
+export { parseGlyfFont, extractGlyphContours } from './fonts/glyf-outline.js';
+export { parseCpal, parseColrCpal } from './fonts/colr-parser.js';
+export type { ColorGlyphForm, OutlineProvider } from './core/pdf-color-glyph.js';
+export { renderColorGlyph, contoursToPath } from './core/pdf-color-glyph.js';
+
 // ── Parser — PDF Reading & Modification ─────────────────────────────
 export type { PdfToken, TokenType, PdfTokenizer } from './parser/pdf-tokenizer.js';
 export { createTokenizer } from './parser/pdf-tokenizer.js';
