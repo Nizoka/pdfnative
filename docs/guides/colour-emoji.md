@@ -1,6 +1,6 @@
 # Colour emoji (COLRv1)
 
-> **New in v1.3.0.** pdfnative renders colour emoji natively — no rasterisation, no external dependency. Glyph colour layers become PDF Form XObjects with solid fills and axial/radial gradients. Monochrome emoji (v1.1.0) is unchanged and remains the default.
+> **New in v1.3.0.** pdfnative renders colour emoji natively — no rasterisation, no external dependency. Glyph colour layers become PDF Form XObjects with solid fills and axial/radial gradients. The monochrome emoji font is unchanged and remains the default.
 
 ## TL;DR
 
@@ -51,7 +51,7 @@ Colour emoji is **opt-in** for two reasons:
 2. **Byte stability.** When no colour-emoji font is registered, documents are
    **byte-identical** to v1.2.0 — the colour path is fully gated.
 
-To keep monochrome emoji instead, register the v1.1.0 font:
+To keep monochrome emoji instead, register the monochrome font:
 
 ```ts
 registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'));

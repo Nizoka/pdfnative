@@ -105,14 +105,16 @@ img, svg { max-width: 100%; height: auto; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 24px;
 }
 .nav-brand {
   display: flex; align-items: center; gap: 10px;
   font-weight: 700; font-size: 18px; color: var(--c-text);
   text-decoration: none;
+  flex-shrink: 0; white-space: nowrap;
 }
-.nav-brand img { width: 28px; height: 28px; }
-.nav-links { display: flex; align-items: center; gap: 24px; list-style: none; }
+.nav-brand img { width: 28px; height: 28px; flex-shrink: 0; }
+.nav-links { display: flex; align-items: center; gap: 24px; list-style: none; min-width: 0; }
 .nav-links a { color: var(--c-text-dim); font-size: 14px; font-weight: 500; transition: color .15s; }
 .nav-links a:hover { color: var(--c-text); text-decoration: none; }
 .theme-toggle {
@@ -468,7 +470,10 @@ img, svg { max-width: 100%; height: auto; }
 .footer-links a:hover { color: var(--c-text); }
 
 /* ── Responsive ────────────────────────────────────────────── */
-@media (max-width: 768px) {
+/* The primary nav carries many links (Features … CLI); collapse it to the
+   hamburger flyout well before the links can crowd the wordmark. This is a
+   dedicated, wider breakpoint so the content layout below keeps its own. */
+@media (max-width: 1024px) {
   .nav-links { display: none; }
   .nav-links.open {
     display: flex; flex-direction: column;
@@ -479,6 +484,9 @@ img, svg { max-width: 100%; height: auto; }
     padding: 16px 24px; gap: 12px;
   }
   .nav-hamburger { display: block; }
+}
+
+@media (max-width: 768px) {
   .feature-grid { grid-template-columns: 1fr; }
   .metrics { gap: 20px; }
   .metric-value { font-size: 22px; }
@@ -606,9 +614,10 @@ img, svg { max-width: 100%; height: auto; }
 }
 .pn-versions-foot a { color: inherit; }
 
-/* ── Compact version strip (v1.1.0) ───────────────────────────────────
+/* ── Compact version strip (since v1.1.0) ─────────────────────────────
    Sticky-discreet horizontal strip placed directly under the main nav.
-   Renders a single line: `Live npm: pdfnative v1.1.0 · cli v0.3.0 (→ ^1.1.0) · mcp v0.3.0 (→ ^1.1.0)`
+   Renders a single line fetched live from npm, e.g.:
+   `Live npm: pdfnative vX.Y.Z · cli vX.Y.Z (→ ^X.Y.Z) · mcp vX.Y.Z (→ ^X.Y.Z)`
    Falls back to compact wrap on narrow viewports. */
 .pn-version-strip {
   font-size: 11px;

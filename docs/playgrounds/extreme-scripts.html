@@ -77,13 +77,13 @@
     </details>
 
     <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
-      <strong style="color:#065f46;">v1.1.0 shaping improvements:</strong>
+      <strong style="color:#065f46;">Shaping &amp; BiDi coverage:</strong>
       <ul style="margin-top:8px;color:#065f46;">
         <li>Arabic harakat (تشكيل — fatha, kasra, damma, sukun, shadda…) now anchor on the preceding base glyph using font-provided GPOS MarkBasePos data, with fallback to (0, 0) when anchors are missing. Closes the visual half of <a href="https://github.com/Nizoka/pdfnative/issues/25" target="_blank" rel="noopener">#25</a>.</li>
         <li>UAX #9 isolates (LRI / RLI / FSI / PDI, U+2066–U+2069) handled via three-tier dispatcher with full recursion. Nested and unmatched isolates supported.</li>
         <li>Shared GSUB / GPOS drivers — Bengali / Tamil / Devanagari / Arabic shapers route through a single ligature lookup and a single mark-base anchor helper.</li>
       </ul>
-      <p style="color:#065f46;margin-top:8px;font-size:14px;">Visual baselines refreshed under <code>test-output/extreme/</code>. Remaining work — UAX #9 embeddings (LRE / RLE / LRO / RLO / PDF) and COLRv1 colour emoji — is scheduled for v1.2.0.</p>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">UAX #9 explicit embeddings (LRE / RLE / LRO / RLO / PDF) with character-level X4–X5 direction overrides, and native COLRv1 colour emoji, are now shipped — try the embeddings &amp; colour-emoji presets above.</p>
     </div>
   </article>
 </main>
