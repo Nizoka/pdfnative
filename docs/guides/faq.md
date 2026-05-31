@@ -259,7 +259,7 @@ Tables above the threshold automatically run off the main thread.
 See the [feature comparison table](https://github.com/Nizoka/pdfnative#why-pdfnative) in the README. Key differentiators:
 
 - **Zero runtime dependencies** (others ship 3–6).
-- **16 Unicode scripts** with built-in BiDi and OpenType GSUB/GPOS shaping.
+- **17 Unicode scripts** with built-in BiDi and OpenType GSUB/GPOS shaping.
 - **PDF/A** (1b, 2b, 2u, 3b) — none of the others support this directly.
 - **Built-in digital signatures** (RSA + ECDSA) without external crypto modules.
 - **5 native barcode formats** (Code 128, EAN-13, QR, Data Matrix, PDF417) as PDF vector paths.

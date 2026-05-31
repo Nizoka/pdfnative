@@ -1,6 +1,6 @@
 # scripts/ – Sample PDF Generation
 
-Generates 161 sample PDFs (28 generators) for visual inspection across all supported languages, features, and edge cases.
+Generates 170 sample PDFs (32 generators) for visual inspection across all supported languages, features, and edge cases.
 
 ## Quick Start
 
@@ -23,15 +23,17 @@ scripts/
 ├── data/
 │   ├── financial-data.ts    # 14 language financial statement samples + multi-lang + pagination
 │   ├── diverse-data.ts      # 12 non-financial use-case samples (transcript, recipe, inventory…)
-│   ├── alphabet-data.ts     # 13 per-script character coverage verification samples
+│   ├── alphabet-data.ts     # 14 per-script character coverage verification samples (incl. Telugu, v1.3.0)
 │   └── doc-samples-data.ts  # 11 document builder samples (headings, lists, links, tables, images, SVG, forms…)
 └── generators/
     ├── financial-statements.ts  # 14 PDFs – financial tables in 14 languages + multi + pagination
     ├── diverse-use-cases.ts     # 12 PDFs – non-financial domain tables
-    ├── alphabet-coverage.ts     # 13 PDFs – per-script glyph verification
+    ├── alphabet-coverage.ts     # 14 PDFs – per-script glyph verification (incl. Telugu, v1.3.0)
     ├── pdfa-variants.ts         #  5 PDFs – PDF/A-1b, PDF/A-2b (default + explicit), PDF/A-2u, PDF/A-3b
     ├── pdfa-latin-embedding.ts  #  4 PDFs – PDF/A Latin VF font with curly quotes, em-dash (v1.1.0, #28)
     ├── emoji-showcase.ts        #  3 PDFs – monochrome emoji, multi-script mix, table (v1.1.0)
+    ├── color-emoji-showcase.ts  #  3 PDFs – COLRv1 colour emoji: basic, mixed, real-world status report (v1.3.0)
+    ├── currency-symbols.ts      #  3 PDFs – base-14 €£¥¢ + extended ₹₩₪₫₺₽₿ (latin font) + multi price table (v1.3.0)
     ├── encryption.ts            #  6 PDFs – AES-128/256, passwords, permissions
     ├── document-builder.ts      # 19 PDFs – DOC_SAMPLES loop + Unicode docs (JA, AR, HE, ZH, TH, BN, TA…)
     ├── compression.ts           #  9 PDFs – FlateDecode size comparisons + compressed non-Latin
@@ -49,6 +51,8 @@ scripts/
     ├── text-shaping-deep.ts     #  3 PDFs – multi-script shaping, GSUB/GPOS, fallback
     ├── bidi-algorithm.ts        #  2 PDFs – BiDi resolution, mixed LTR/RTL, bracket pairing
     ├── bidi-embeddings-showcase.ts # 1 PDF  – UAX #9 LRE/RLE/LRO/RLO/PDF normalisation (v1.2.0)
+    ├── use-lite-showcase.ts     #  1 PDF  – USE-lite cluster classification (v1.2.0/v1.3.0)
+    ├── document-table-parity.ts #  1 PDF  – document vs legacy table rendering parity (v1.2.0)
     ├── crypto-showcase.ts       #  2 PDFs – RSA + ECDSA round-trip, CMS structure
     ├── font-subsetting-deep.ts  #  2 PDFs – TTF subsetting, CIDFont glyph mapping
     ├── parser-deep.ts           #  2 PDFs – tokenizer, xref parsing, incremental save

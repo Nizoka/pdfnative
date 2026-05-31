@@ -86,6 +86,21 @@ to include the emoji you need, then register the generated module.
 - **PDF/A:** gradient transparency uses `/ExtGState` alpha, which PDF/A-1b
   forbids. Use solid-layer emoji or a non-PDF/A document for colour gradients.
 
+## Variation selectors & skin-tone modifiers (v1.3.0)
+
+Text such as `❤️` carries an invisible **VS-16** variation selector
+(U+FE0F), and `👍🏽` carries a **Fitzpatrick** skin-tone modifier
+(U+1F3FB–U+1F3FF); ZWJ sequences (`👨‍👩‍👧`) join several codepoints. Before
+v1.3.0 these zero-width formatting characters could route to the Latin font and
+render as `.notdef` tofu (the  box). As of v1.3.0 they are **dropped during
+run-splitting** when no registered font covers them, so the base emoji renders
+cleanly. The `isZeroWidthFormat(cp)` predicate is exported for callers who want
+to detect them. Joiners are still preserved when an Indic shaper font maps them.
+
+Colour-glyph Form `/BBox` is also now computed from the glyph's transformed
+contour bounds (v1.3.0), so emoji that dip below the baseline are no longer
+clipped at the top or bottom.
+
 ## See also
 
 - [Quick start](quickstart.html)

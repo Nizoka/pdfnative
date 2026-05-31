@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pdfnative — Zero-dependency PDF generation for TypeScript</title>
-  <meta name="description" content="Zero-dependency PDF library for TypeScript. ISO 32000-1, PDF/A-1b/2b/2u/3b, AES-128/256 encryption, RSA + ECDSA signatures, 16 Unicode scripts, BiDi, barcodes, SVG, AcroForms, streaming. CLI + MCP server included.">
+  <meta name="description" content="Zero-dependency PDF library for TypeScript. ISO 32000-1, PDF/A-1b/2b/2u/3b, AES-128/256 encryption, RSA + ECDSA signatures, 17 Unicode scripts, BiDi, barcodes, SVG, AcroForms, streaming. CLI + MCP server included.">
   <meta name="keywords" content="pdf, typescript, javascript, pdf generation, zero dependencies, unicode, arabic, thai, hebrew, bidi, pdf-a, tagged-pdf, pades, acroform, accessibility, encryption, aes, rsa, ecdsa, cms, pkcs7, rfc-3161, digital-signatures, barcodes, qr-code, svg, opentype, emoji, noto, cjk, mcp, model-context-protocol, claude, cursor, ai, llm, pdfnative-cli, pdfnative-mcp">
   <meta name="author" content="Nizoka">
   <meta name="robots" content="index, follow, max-image-preview:large">
@@ -16,7 +16,7 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev">
   <meta property="og:title" content="pdfnative — Zero-dependency PDF generation for TypeScript">
-  <meta property="og:description" content="Pure native PDF library. Zero dependencies. ISO 32000-1, PDF/A, AES, RSA + ECDSA signatures, 16 Unicode scripts. CLI + MCP server.">
+  <meta property="og:description" content="Pure native PDF library. Zero dependencies. ISO 32000-1, PDF/A, AES, RSA + ECDSA signatures, 17 Unicode scripts. CLI + MCP server.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -24,7 +24,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="pdfnative — Zero-dependency PDF generation for TypeScript">
-  <meta name="twitter:description" content="Pure native PDF library. Zero deps. ISO 32000-1. PDF/A. RSA + ECDSA. 16 Unicode scripts. CLI + MCP.">
+  <meta name="twitter:description" content="Pure native PDF library. Zero deps. ISO 32000-1. PDF/A. RSA + ECDSA. 17 Unicode scripts. CLI + MCP.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
 
   <link rel="canonical" href="https://pdfnative.dev">
@@ -121,7 +121,7 @@
   <div class="container">
     <h1>Pure Native <span class="gradient">PDF Generation</span></h1>
     <p class="hero-sub">
-      Zero dependencies. ISO 32000-1 compliant. 16 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
+      Zero dependencies. ISO 32000-1 compliant. 17 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
     </p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="https://github.com/Nizoka/pdfnative#quick-start">Get Started →</a>
@@ -196,8 +196,8 @@
 
       <div class="feature-card">
         <div class="feature-icon fi-unicode"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
-        <h3>16 Unicode Scripts</h3>
-        <p>Thai, Arabic, Hebrew, Bengali, Tamil, CJK, Cyrillic, Greek, Devanagari, and more. Full UAX #9 BiDi — isolates + explicit embeddings (LRE/RLE/LRO/RLO/PDF). OpenType GSUB/GPOS shaping for Thai, Arabic, Devanagari, Bengali, and Tamil.</p>
+        <h3>17 Unicode Scripts</h3>
+        <p>Thai, Arabic, Hebrew, Bengali, Tamil, Telugu, CJK, Cyrillic, Greek, Devanagari, and more. Full UAX #9 BiDi — isolates + explicit embeddings (LRE/RLE/LRO/RLO/PDF). OpenType GSUB/GPOS shaping for Thai, Arabic, Devanagari, Bengali, Tamil, and Telugu.</p>
       </div>
 
       <div class="feature-card">
@@ -660,7 +660,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
             <tr><td><code>generate_basic_pdf</code></td><td>Multi-page documents (headings, paragraphs, lists). Optional <code>pdfA</code> flag.</td></tr>
             <tr><td><code>add_table</code></td><td>Tabular reports — now with optional <code>autoFitColumns</code> and <code>clipCells</code> (pdfnative v1.1 <code>TableBlock</code>).</td></tr>
             <tr><td><code>add_barcode</code></td><td>QR Code, Code 128, EAN-13, Data Matrix, PDF417</td></tr>
-            <tr><td><code>add_international_text</code></td><td>16 scripts with BiDi &amp; OpenType shaping. <code>lang</code> now accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
+            <tr><td><code>add_international_text</code></td><td>17 scripts with BiDi &amp; OpenType shaping. <code>lang</code> now accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
             <tr><td><code>add_form</code></td><td>Interactive AcroForm fields</td></tr>
             <tr><td><code>embed_image</code></td><td>JPEG / PNG image embedding</td></tr>
             <tr><td><code>prepare_signature_placeholder</code></td><td>PDF with <code>/Sig</code> field ready to sign</td></tr>

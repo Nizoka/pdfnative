@@ -62,12 +62,22 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Pixel-diff visual regression** (v1.3.0) — self-contained extreme-script fixtures (Tamil, Bengali+Devanagari, Arabic) guarded by both a glyph-position snapshot (show-operator GIDs + baselines) and a rendered-glyph pixel diff (self-rendered `glyf` rasteriser + zero-dependency grayscale PNG encoder, ≤1% tolerance). CI workflow gated on shaping/font/core changes. ([tests/visual/](tests/visual/), [.github/workflows/visual-regression.yml](.github/workflows/visual-regression.yml))
 - [x] **UAX #9 X4–X5 overrides** (v1.3.0) — full character-level direction override tracking inside LRO / RLO scopes (`resolveBidiRuns()` now forces inner codepoints to L / R, not just the base direction). ([src/shaping/bidi.ts](src/shaping/bidi.ts))
 - [x] **CP-1252 extended characters** (v1.3.0, [#48](https://github.com/Nizoka/pdfnative/issues/48)) — base-14 Helvetica text now carries a `/ToUnicode` CMap so the Windows-1252 high range (€ ‚ ƒ „ … † ‡ … ™ œ ž Ÿ) is correctly extractable/searchable; when a `latin` font is registered these glyphs also embed and render. ([src/fonts/encoding.ts](src/fonts/encoding.ts))
+- [x] **Telugu script** (v1.3.0) — pure-JS GSUB/GPOS mini-shaper (`src/shaping/telugu-shaper.ts`): virama-mediated conjuncts, subjoined-consonant ligatures, above/below mark positioning (no reph, no pre-base reordering). Bundled font `pdfnative/fonts/noto-telugu-data.js` (Noto Sans Telugu, OFL-1.1). pdfnative now ships 17 OpenType-shaped scripts. ([src/shaping/telugu-shaper.ts](src/shaping/telugu-shaper.ts))
+- [x] **Configurable document block limit** (v1.3.0) — `layout.maxBlocks` replaces the hard-coded 10 000-block cap, default raised to 100 000 (`DEFAULT_MAX_BLOCKS`). Large multi-thousand-page reports no longer hit a spurious ceiling. ([src/core/pdf-document.ts](src/core/pdf-document.ts))
+- [x] **`validatePdfUA()` structural checker** (v1.3.0) — read-only ISO 14289-1 gate verifying `/MarkInfo`, `/StructTreeRoot` + `/ParentTree`, `/Metadata`, `/Lang`, and per-page `/MCID` uniqueness. Complements veraPDF. ([src/parser/pdf-ua-validator.ts](src/parser/pdf-ua-validator.ts))
+- [x] **Colour-emoji robustness** (v1.3.0) — variation selectors (VS-15/16), ZWJ/ZWNJ, and Fitzpatrick skin-tone modifiers no longer leave `.notdef` tofu (`isZeroWidthFormat()` drop in `splitTextByFont()`); colour-glyph Form `/BBox` is computed from contour bounds so emoji are never clipped. ([src/shaping/multi-font.ts](src/shaping/multi-font.ts), [src/core/pdf-color-glyph.ts](src/core/pdf-color-glyph.ts))
 
 ## In Progress
 
 _All v1.3.0 in-progress items have been merged into the [v1.3.0 release](release-notes/v1.3.0.md). See Released above._
 
 ## Planned
+
+### v1.4.0
+
+- [ ] **Document outline / bookmarks** — `/Outlines` tree for navigable PDF bookmarks (deferred from v1.3.0; the catalog object-numbering scheme is intricate and warrants isolated work).
+- [ ] **Page labels** — `/PageLabels` for roman-numeral front matter and custom page numbering.
+- [ ] **`streamToFile()` Node helper** — convenience wrapper writing a streaming builder directly to a `WriteStream` / file path.
 
 ### Long-Term
 

@@ -15,11 +15,32 @@ Closes issue [#48](https://github.com/Nizoka/pdfnative/issues/48) (CP-1252
 extended characters not extractable under base-14 Helvetica) and delivers the
 full v1.3.0 roadmap: COLRv1 colour emoji, USE-lite shaper integration, true
 constant-memory streaming, UAX #9 X4–X5 character-level overrides, and a
-dual-mode pixel-diff visual-regression suite. 100% backward-compatible.
-63 test files / 1908 tests, all green. See full notes in
+dual-mode pixel-diff visual-regression suite. Also adds the **Telugu**
+script, a configurable document block limit (`layout.maxBlocks`), and a
+read-only `validatePdfUA()` structural checker. 100% backward-compatible.
+65 test files / 1938 tests, all green. See full notes in
 [release-notes/v1.3.0.md](release-notes/v1.3.0.md).
 
 ### Added
+
+- **feat(shaping):** Telugu script (`te`, U+0C00–U+0C7F). New pure-JS
+  GSUB/GPOS mini-shaper ([src/shaping/telugu-shaper.ts](src/shaping/telugu-shaper.ts))
+  with virama-mediated conjuncts, subjoined-consonant ligatures, and
+  above/below mark positioning (no reph, no pre-base reordering). Bundled
+  font `pdfnative/fonts/noto-telugu-data.js` (Noto Sans Telugu, OFL-1.1).
+  Exports `shapeTeluguText`, `isTeluguCodepoint`, `containsTelugu`,
+  `TELUGU_START`, `TELUGU_END`. Opt-in via
+  `registerFont('te', () => import('pdfnative/fonts/noto-telugu-data.js'))`.
+- **feat(core):** configurable document block limit. The previously
+  hard-coded 10 000-block cap in `assembleDocumentParts()` is now
+  `layout.maxBlocks` with the default raised to **100 000**
+  (`DEFAULT_MAX_BLOCKS`). Large multi-thousand-page reports no longer hit a
+  spurious ceiling. ([src/core/pdf-document.ts](src/core/pdf-document.ts))
+- **feat(parser):** `validatePdfUA(bytes)` — read-only PDF/UA (ISO 14289-1)
+  structural checker returning `{ valid, errors, warnings }`. Verifies
+  `/MarkInfo /Marked`, `/StructTreeRoot` + `/ParentTree`, `/Metadata`,
+  `/Lang`, and per-page `/MCID` uniqueness. Complements veraPDF.
+  ([src/parser/pdf-ua-validator.ts](src/parser/pdf-ua-validator.ts))
 
 - **feat(fonts):** COLRv1 colour emoji. Noto Color Emoji (OFL-1.1) is
   bundleable as a curated subset (`pdfnative/fonts/noto-color-emoji-data.js`,
@@ -69,6 +90,17 @@ dual-mode pixel-diff visual-regression suite. 100% backward-compatible.
   so the Windows-1252 high range (€ ‚ ƒ „ … † ‡ ™ œ ž Ÿ …) is correctly
   extractable and searchable. When a `latin` font is registered these glyphs
   additionally embed and render. ([src/fonts/encoding.ts](src/fonts/encoding.ts))
+- **fix(shaping, colour emoji):** emoji variation selectors (VS-15/VS-16),
+  ZWJ/ZWNJ, and Fitzpatrick skin-tone modifiers that no registered font
+  covers are now dropped during run-splitting instead of resolving to
+  `.notdef` tofu. Joiners are still preserved when an Indic shaper font maps
+  them. New `isZeroWidthFormat()` predicate.
+  ([src/shaping/multi-font.ts](src/shaping/multi-font.ts),
+  [src/shaping/script-registry.ts](src/shaping/script-registry.ts))
+- **fix(core, colour emoji):** `renderColorGlyph()` now derives each
+  colour-glyph Form `/BBox` from the transformed contour bounds rather than
+  the hard-coded em box, so colour emoji that dip below the baseline are no
+  longer clipped. ([src/core/pdf-color-glyph.ts](src/core/pdf-color-glyph.ts))
 
 ## [1.2.0] – 2026-05-27
 

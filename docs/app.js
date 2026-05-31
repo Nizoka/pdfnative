@@ -153,7 +153,7 @@
         "    { type: 'paragraph', text: 'This PDF was generated entirely in your browser — zero server calls, zero dependencies.' },",
         "    { type: 'list', style: 'bullet', items: [",
         "      'ISO 32000-1 compliant',",
-        "      '16 Unicode scripts',",
+        "      '17 Unicode scripts',",
         "      'PDF/A, encryption, signatures',",
         '    ] },',
         "    { type: 'heading', text: 'A Simple Table', level: 2 },",
