@@ -42,6 +42,7 @@ import { generate as generateParserDeep } from './generators/parser-deep.js';
 import { generate as generateExtremeShaping } from './generators/extreme-shaping.js';
 import { generate as generateEmoji } from './generators/emoji-showcase.js';
 import { generate as generateColorEmoji } from './generators/color-emoji-showcase.js';
+import { generate as generateCurrency } from './generators/currency-symbols.js';
 import { generate as generatePdfALatin } from './generators/pdfa-latin-embedding.js';
 
 async function generateAll(): Promise<void> {
@@ -139,6 +140,9 @@ async function generateAll(): Promise<void> {
 
     // ── Colour-emoji showcase (v1.3.0 — Noto Color Emoji COLR/CPAL) ─
     await generateColorEmoji(ctx);
+
+    // ── Currency symbols (v1.3.0 — base-14 + embedded Noto Sans) ─
+    await generateCurrency(ctx);
 
     // ── PDF/A Latin embedding (v1.1.0 — Noto Sans VF, issue #28) ─
     await generatePdfALatin(ctx);
