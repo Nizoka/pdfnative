@@ -50,7 +50,7 @@
         "programmingLanguage": "TypeScript",
         "license": "https://opensource.org/licenses/MIT",
         "runtimePlatform": ["Node.js", "Browser", "Deno", "Bun"],
-        "softwareVersion": "1.1.0",
+        "softwareVersion": "1.3.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -61,9 +61,9 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#cli",
         "name": "pdfnative-cli",
-        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA), inspect, and verify CMS/PKCS#7 signatures with RFC 3161 detection.",
+        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA), inspect, verify CMS/PKCS#7 signatures, plus batch and shell-completion commands.",
         "url": "https://github.com/Nizoka/pdfnative-cli",
-        "softwareVersion": "0.3.0",
+        "softwareVersion": "1.0.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -73,9 +73,9 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#mcp",
         "name": "pdfnative-mcp",
-        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 9 tools, outputSchema, PDF/A flag.",
+        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 12 tools, outputSchema, PDF/A flag.",
         "url": "https://github.com/Nizoka/pdfnative-mcp",
-        "softwareVersion": "0.3.0",
+        "softwareVersion": "1.0.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -227,13 +227,13 @@
       <div class="feature-card">
         <div class="feature-icon fi-mcp"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M15 8h2M11 8h2"/></svg></div>
         <h3>AI Integration — MCP</h3>
-        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> v0.3.0. <strong>9 production tools</strong> incl. <code>inspect_pdf</code>, <code>pdfA</code> flag everywhere, MCP 2025-06-18 <code>outputSchema</code>. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
+        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> v1.0.0. <strong>12 production tools</strong> incl. <code>verify_pdf</code>, <code>add_attachment</code> (Factur-X / ZUGFeRD), <code>extract_text</code>, <code>pdfA</code> flag everywhere, MCP 2025-06-18 <code>outputSchema</code>. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-cli"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
         <h3>Command-Line Interface</h3>
-        <p>Render, sign, inspect &amp; <strong>verify</strong> PDFs from the terminal with <a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> v0.3.0. End-to-end signing pipeline (RSA + <strong>ECDSA-SHA256</strong>), real CMS/PKCS#7 verify with RFC 3161 detection, <code>render --watch / --template / --font</code>, automatic signature-placeholder injection. <a href="guides/cli.html">Read the CLI guide →</a> &middot; <a href="playgrounds/cli.html">Try the playground →</a></p>
+        <p>Render, sign, inspect &amp; <strong>verify</strong> PDFs from the terminal with <a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> v1.0.0. End-to-end signing pipeline (RSA + <strong>ECDSA-SHA256</strong>), real CMS/PKCS#7 verify with RFC 3161 detection, <code>render --watch / --template / --font</code>, <code>batch</code> &amp; <code>completion</code> commands, automatic signature-placeholder injection. <a href="guides/cli.html">Read the CLI guide →</a> &middot; <a href="playgrounds/cli.html">Try the playground →</a></p>
       </div>
 
     </div>
@@ -381,7 +381,7 @@ const pdf = buildDocumentPDFBytes({
         <a class="ob-link" href="guides/quickstart.html">Quick Start guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>CLI <span class="ob-badge">v0.3.0</span></h3>
+        <h3>CLI <span class="ob-badge">v1.0.0</span></h3>
         <p class="ob-tag">For shells, CI, and Makefiles.</p>
 <pre><code class="language-bash">echo '{"blocks":[{"type":"paragraph","text":"Hi"}]}' \
   | npx pdfnative-cli render -o out.pdf</code></pre>
@@ -392,7 +392,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
         <a class="ob-link" href="guides/cli.html">CLI guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>MCP <span class="ob-badge">v0.3.0</span></h3>
+        <h3>MCP <span class="ob-badge">v1.0.0</span></h3>
         <p class="ob-tag">For Claude Desktop, Cursor, Continue, Zed, …</p>
 <pre><code class="language-json">{
   "mcpServers": {
@@ -649,10 +649,11 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
 <section class="section section-alt" id="mcp">
   <div class="container">
     <h2 class="section-title">Use pdfnative from Any AI Client</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> v0.3.0 is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with <code>inspect_pdf</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and per-tool <code>outputSchema</code> (MCP 2025-06-18 spec).</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> v1.0.0 is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with <code>verify_pdf</code>, <code>add_attachment</code> (Factur-X / ZUGFeRD), <code>extract_text</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and per-tool <code>outputSchema</code> (MCP 2025-06-18 spec).</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>9 Production Tools</h3>
+        <h3>12 Production Tools</h3>
+        <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
           <tbody>
@@ -664,9 +665,13 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
             <tr><td><code>embed_image</code></td><td>JPEG / PNG image embedding</td></tr>
             <tr><td><code>prepare_signature_placeholder</code></td><td>PDF with <code>/Sig</code> field ready to sign</td></tr>
             <tr><td><code>sign_pdf</code></td><td>CMS/PKCS#7 signatures (RSA &amp; ECDSA)</td></tr>
-            <tr><td><code>inspect_pdf</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW v0.3.0</span></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; optional CI-style <code>check: ('pdfa'|'signed'|'encrypted')[]</code>.</td></tr>
+            <tr><td><code>inspect_pdf</code></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; optional CI-style <code>check: ('pdfa'|'signed'|'encrypted')[]</code>.</td></tr>
+            <tr><td><code>verify_pdf</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW v1.0.0</span></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain, RFC 3161 timestamp detection.</td></tr>
+            <tr><td><code>add_attachment</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW v1.0.0</span></td><td>Embed files (Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output.</td></tr>
+            <tr><td><code>extract_text</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW v1.0.0</span></td><td>Extract text content from an existing PDF via the native parser.</td></tr>
           </tbody>
         </table>
+        </div>
         <a class="star-cta" href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><span class="star-icon">⭐</span> Find pdfnative useful? Star it on GitHub.</a>
       </div>
       <div class="mcp-config">
@@ -689,19 +694,23 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
 <section class="section" id="cli">
   <div class="container">
     <h2 class="section-title">Use pdfnative from your shell, CI, or Makefile</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> v0.3.0 is the <strong>official command-line interface</strong>. Four commands, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. v0.3.0 finishes the digital-signature story with end-to-end signing (RSA + ECDSA-SHA256), full CMS/PKCS#7 verification, RFC 3161 timestamp detection, and a fast <code>render --watch / --template / --font</code> iteration loop.</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> v1.0.0 is the <strong>official command-line interface</strong>. Six commands, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. v1.0.0 completes the digital-signature story with end-to-end signing (RSA + ECDSA-SHA256), full CMS/PKCS#7 verification, RFC 3161 timestamp detection, a fast <code>render --watch / --template / --font</code> loop, plus new <code>batch</code> and shell <code>completion</code> commands.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>4 Production Commands</h3>
+        <h3>6 Production Commands</h3>
+        <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
           <tbody>
             <tr><td><code>render</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v0.3.0</span></td><td>JSON → PDF with hybrid <code>flags + --layout</code>. New: <code>--watch</code> (re-render on change), <code>--template &lt;file.json&gt;</code> (deep-merge base), <code>--font {latin,emoji}</code> (bundled font shortcuts).</td></tr>
             <tr><td><code>sign</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v0.3.0</span></td><td>End-to-end CMS/PKCS#7 signing. <strong>ECDSA-SHA256</strong> fully wired. Auto-injects the AcroForm signature placeholder when missing — sign any <code>render</code> output in one command.</td></tr>
             <tr><td><code>inspect</code></td><td>Read-only PDF analysis. <code>--verbose</code>, <code>--pages</code>, and <code>--check pdfa|signed|encrypted</code> for CI assertions.</td></tr>
-            <tr><td><code>verify</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v0.3.0</span></td><td>Real CMS/PKCS#7 verification — signature value (RSA + ECDSA-SHA256), message digest, certificate chain, trust roots, RFC 3161 timestamp token detection. JSON report.</td></tr>
+            <tr><td><code>verify</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.0.0</span></td><td>Real CMS/PKCS#7 verification — signature value (RSA + ECDSA-SHA256), message digest, certificate chain, trust roots, RFC 3161 timestamp token detection. JSON report.</td></tr>
+            <tr><td><code>batch</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW v1.0.0</span></td><td>Render many JSON inputs to PDFs in one invocation — glob input, parallelism, per-file status.</td></tr>
+            <tr><td><code>completion</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW v1.0.0</span></td><td>Generate shell completion scripts (bash / zsh / fish).</td></tr>
           </tbody>
         </table>
+        </div>
         <a class="star-cta" href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><span class="star-icon">⭐</span> Powering this CLI? Star pdfnative on GitHub.</a>
       </div>
       <div class="mcp-config">

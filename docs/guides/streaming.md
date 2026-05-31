@@ -1,0 +1,88 @@
+# Streaming output
+
+> pdfnative emits PDFs as `AsyncGenerator<Uint8Array>` so you can pipe them to disk, an HTTP response, or a Web Stream without buffering the whole document. **New in v1.3.0:** *true constant-memory* streaming, where the fully-joined PDF binary never exists in memory.
+
+## Three streaming modes
+
+| Function | Memory profile | When to use |
+|---|---|---|
+| `buildDocumentPDFStream` / `buildPDFStream` | Assembles full binary, then yields fixed-size chunks | Simple back-pressure-friendly piping |
+| `buildDocumentPDFStreamPageByPage` / `buildPDFStreamPageByPage` | Assembles full binary, yields one PDF object per chunk | Object-granular persistence / diagnostics |
+| **`buildDocumentPDFStreamTrue` / `buildPDFStreamTrue`** | **Never joins the binary — frees each part as it yields** | Large documents, constant memory |
+
+All three produce **byte-identical** output to `buildDocumentPDFBytes()` /
+`buildPDFBytes()`.
+
+## True constant-memory streaming (v1.3.0)
+
+```ts
+import { createWriteStream } from 'node:fs';
+import { buildDocumentPDFStreamTrue } from 'pdfnative';
+
+const out = createWriteStream('report.pdf');
+for await (const chunk of buildDocumentPDFStreamTrue(params, layout, { chunkSize: 65536 })) {
+  out.write(chunk);
+}
+out.end();
+```
+
+Internally, the builder assembles the PDF into an array of raw parts (objects,
+xref, trailer) and the generator walks that array, encoding each part to bytes
+and **freeing it (`parts[i] = ''`) as soon as it is emitted**. Peak memory is
+bounded by the chunk size plus the single largest part — typically the biggest
+content stream or embedded font subset — rather than the whole document.
+
+### HTTP response (Node)
+
+```ts
+import { buildDocumentPDFStreamTrue } from 'pdfnative';
+
+app.get('/report.pdf', async (req, res) => {
+  res.setHeader('Content-Type', 'application/pdf');
+  for await (const chunk of buildDocumentPDFStreamTrue(params)) {
+    res.write(chunk);
+  }
+  res.end();
+});
+```
+
+### Web Streams (browser / Deno / edge)
+
+```ts
+const stream = new ReadableStream({
+  async pull(controller) {
+    for await (const chunk of buildDocumentPDFStreamTrue(params)) {
+      controller.enqueue(chunk);
+    }
+    controller.close();
+  },
+});
+return new Response(stream, { headers: { 'Content-Type': 'application/pdf' } });
+```
+
+## Options
+
+```ts
+interface StreamOptions {
+  /** Bytes per yielded chunk. Default 65536 (64 KB). Clamped to 1 KB–16 MB. */
+  chunkSize?: number;
+}
+```
+
+## Constraints
+
+Streaming is incompatible with two features that need a second pass over the
+whole document. Both are validated at the boundary and throw a descriptive
+error:
+
+- **TOC blocks** — the table of contents requires multi-pass pagination to
+  resolve page numbers.
+- **`{pages}` placeholder** in header/footer templates — the total page count
+  is unknown during progressive emission. Use `{page}` instead, or fall back to
+  `buildDocumentPDFBytes()`.
+
+## See also
+
+- [Quick start](quickstart.html)
+- [Architecture](architecture.html)
+- [CHANGELOG](https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md)

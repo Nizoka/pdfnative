@@ -9,6 +9,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.3.0] – 2026-06-30
+
+Closes issue [#48](https://github.com/Nizoka/pdfnative/issues/48) (CP-1252
+extended characters not extractable under base-14 Helvetica) and delivers the
+full v1.3.0 roadmap: COLRv1 colour emoji, USE-lite shaper integration, true
+constant-memory streaming, UAX #9 X4–X5 character-level overrides, and a
+dual-mode pixel-diff visual-regression suite. 100% backward-compatible.
+62 test files / 1903 tests, all green. See full notes in
+[release-notes/v1.3.0.md](release-notes/v1.3.0.md).
+
+### Added
+
+- **feat(fonts):** COLRv1 colour emoji. Noto Color Emoji (OFL-1.1) is
+  bundleable as a curated subset (`pdfnative/fonts/noto-color-emoji-data.js`,
+  221 colour glyphs). COLR v0 solid layers and COLR v1 linear / radial
+  gradients render as native PDF Form XObjects (`/Shading` Type 2/3 +
+  `/ExtGState` alpha). Opt-in via
+  `registerFont('emoji', () => import('pdfnative/fonts/noto-color-emoji-data.js'))`;
+  monochrome emoji is unchanged when not registered. Self-rendered `glyf` /
+  COLR / CPAL parsers, zero dependency.
+  ([src/core/color-emoji.ts](src/core/color-emoji.ts),
+  [src/fonts/colr-parser.ts](src/fonts/colr-parser.ts))
+- **feat(core):** `buildPDFStreamTrue()` and `buildDocumentPDFStreamTrue()` —
+  true constant-memory streaming. The PDF is assembled into raw parts and
+  yielded as fixed-size `Uint8Array` chunks while each part is freed, so the
+  fully-joined binary never materialises in memory. Byte-identical to the
+  buffered builders.
+  ([src/core/pdf-stream-writer.ts](src/core/pdf-stream-writer.ts))
+- **feat(shaping):** UAX #9 X4–X5 character-level direction overrides.
+  `resolveBidiRuns()` now forces every codepoint inside an LRO / RLO scope to
+  L / R (previously only the base direction was normalised).
+  ([src/shaping/bidi.ts](src/shaping/bidi.ts))
+- **test(visual):** dual-mode pixel-diff visual-regression suite — a
+  glyph-position snapshot guard (show-operator GIDs + baselines) plus a
+  rendered-glyph pixel diff (self-rendered `glyf` rasteriser + zero-dependency
+  grayscale PNG encoder, ≤1% tolerance) over self-contained extreme-script
+  fixtures. CI workflow gated on shaping / font / core changes.
+  ([tests/visual/](tests/visual/),
+  [.github/workflows/visual-regression.yml](.github/workflows/visual-regression.yml))
+
+### Changed
+
+- **feat(shaping):** the USE-lite cluster classifier (`classifyUseCategory()`)
+  is now the joiner-classification authority across the Devanagari, Bengali,
+  and Tamil shapers. Orphan ZWJ / ZWNJ no longer emit `.notdef`; nukta+virama,
+  half-form / ZWJ-conjunct, Marathi eyelash-ra, and Bengali ya-phalaa edge
+  cases are handled correctly. ([src/shaping/use-lite.ts](src/shaping/use-lite.ts))
+
+### Fixed
+
+- **fix(fonts, #48):** base-14 Helvetica text now carries a `/ToUnicode` CMap
+  so the Windows-1252 high range (€ ‚ ƒ „ … † ‡ ™ œ ž Ÿ …) is correctly
+  extractable and searchable. When a `latin` font is registered these glyphs
+  additionally embed and render. ([src/fonts/encoding.ts](src/fonts/encoding.ts))
+
 ## [1.2.0] – 2026-05-27
 
 Closes issues [#45](https://github.com/Nizoka/pdfnative/issues/45)

@@ -50,7 +50,7 @@ fonts/            # Pre-built font data modules (.js/.d.ts) — 16 scripts + TTF
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (28 generators, 161 PDFs; signature-placeholder.ts, bidi-embeddings-showcase.ts, and document-table-parity.ts added in v1.2.0)
 test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf, extreme-bidi-isolates.pdf)
-tests/            # 1822+ tests (53 files: unit/integration/fuzz/parser) mirroring src/ structure
+tests/            # 1903+ tests (62 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
   └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, medical-800.html)
@@ -76,7 +76,7 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (1588+ tests, 40 files)
+npm run test            # vitest run (1903+ tests, 62 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
 npm run test:generate   # Generate 150+ sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/ baselines)
@@ -91,7 +91,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 1822+ tests (53 files)
+- All new code must have tests. Current: ~95% statement coverage, 1903+ tests (62 files)
 
 ## Conventions
 
@@ -246,7 +246,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 1822+ tests (53 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), performance benchmarks
+- **95%+ test coverage** — 1903+ tests (62 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)
