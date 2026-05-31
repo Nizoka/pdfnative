@@ -29,6 +29,8 @@ export function registerAllFonts(): void {
         // v1.1.0 — Latin VF (PDF/A non-WinAnsi fallback) + monochrome emoji
         latin: fl(() => import('../../fonts/noto-sans-data.js')),
         emoji: fl(() => import('../../fonts/noto-emoji-data.js')),
+        // v1.3.0 — COLR/CPAL colour emoji (curated subset)
+        'emoji-color': fl(() => import('../../fonts/noto-color-emoji-data.js')),
     });
 }
 

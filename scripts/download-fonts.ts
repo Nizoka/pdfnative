@@ -63,6 +63,8 @@ const FONTS: FontEntry[] = [
     { local: 'NotoSansSC-Regular.ttf', dir: 'notosanssc', remote: 'NotoSansSC%5Bwght%5D.ttf' },
     // ── Emoji (monochrome, wght-only axis) ───────────────────────────
     { local: 'NotoEmoji-Regular.ttf', dir: 'notoemoji', remote: 'NotoEmoji%5Bwght%5D.ttf' },
+    // ── Colour Emoji (COLRv1/CPAL, source for noto-color-emoji-data.js) ──
+    { local: 'NotoColorEmoji-Regular.ttf', dir: 'notocoloremoji', remote: 'NotoColorEmoji-Regular.ttf' },
 ];
 
 /**
