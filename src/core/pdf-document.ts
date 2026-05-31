@@ -34,7 +34,7 @@ import { toBytes } from './pdf-stream.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
     FT_H, HEADER_H,
-    DEFAULT_FONT_SIZES,
+    DEFAULT_FONT_SIZES, DEFAULT_MAX_BLOCKS,
 } from './pdf-layout.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
 import {
@@ -133,11 +133,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     if (!Array.isArray(params.blocks)) {
         throw new Error('buildDocumentPDF: params.blocks must be an array');
     }
-    if (params.blocks.length > 10_000) {
-        throw new Error(`buildDocumentPDF: block count (${params.blocks.length}) exceeds safe limit (10,000)`);
-    }
-
     const layout = layoutOptions ?? params.layout;
+    const maxBlocks = layout?.maxBlocks ?? DEFAULT_MAX_BLOCKS;
+    if (params.blocks.length > maxBlocks) {
+        throw new Error(`buildDocumentPDF: block count (${params.blocks.length}) exceeds safe limit (${maxBlocks}). Raise it via layout.maxBlocks if this is intentional.`);
+    }
 
     // ── Resolve layout ───────────────────────────────────────────────
     const pgW = layout?.pageWidth ?? PG_W;

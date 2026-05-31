@@ -420,6 +420,19 @@ export interface PdfLayoutOptions {
      * Default: undefined (no attachments).
      */
     readonly attachments?: readonly PdfAttachment[];
+    /**
+     * Maximum number of document blocks `buildDocumentPDF` / `buildDocumentPDFBytes`
+     * (and the streaming variants) will accept before throwing. This is a
+     * safety rail against accidental unbounded input, not a hard engine limit —
+     * raise it for very large generated reports (e.g. multi-thousand-page
+     * medical or financial documents).
+     *
+     * Default: `DEFAULT_MAX_BLOCKS` (100 000), matching the table builder's
+     * 100 000-row ceiling. Has no effect on the table builder (`buildPDF`).
+     *
+     * @since 1.3.0
+     */
+    readonly maxBlocks?: number;
 }
 
 // ── Attachment Types ─────────────────────────────────────────────────

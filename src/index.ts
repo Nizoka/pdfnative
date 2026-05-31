@@ -182,7 +182,7 @@ export {
     DEFAULT_MARGINS, DEFAULT_CW,
     DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
     ROW_H, TH_H, INFO_LN, BAL_H, TITLE_LN, FT_H, HEADER_H,
-    PAGE_SIZES,
+    PAGE_SIZES, DEFAULT_MAX_BLOCKS,
     computeColumnPositions, resolveLayout, resolveTemplate,
 } from './core/pdf-layout.js';
 
