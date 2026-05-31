@@ -625,6 +625,19 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const latinToUniObjNum = tagged ? 0 : preBaseObjCount + 2; // infoObjNum + 1
     const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
 
+    // Colour-emoji Form XObjects (v1.3.0) — collected during the page-stream
+    // build above (via the encoding context's colour-emoji collector). They are
+    // emitted as trailing objects and forward-referenced from every page's
+    // /XObject dict. Empty (and zero-cost) unless an 'emoji-color' font is used.
+    const colorEmojiForms = enc.colorEmoji?.forms ?? [];
+    const colorEmojiStart = colorEmojiForms.length > 0
+        ? (latinToUniObjNum || (preBaseObjCount + 1)) + 1
+        : 0;
+    let colorEmojiXObjRefs = '';
+    for (let k = 0; k < colorEmojiForms.length; k++) {
+        colorEmojiXObjRefs += ` /${colorEmojiForms[k].name} ${colorEmojiStart + k} 0 R`;
+    }
+
     // ── Assemble PDF binary ──────────────────────────────────────────
     const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
 
@@ -666,9 +679,10 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     }
 
     // Combine XObject resource dict
-    if (imgXObjRes || wmImgRef) {
+    if (imgXObjRes || wmImgRef || colorEmojiXObjRefs) {
         if (!imgXObjRes) imgXObjRes = ' /XObject <<';
         if (wmImgRef) imgXObjRes += ` ${wmImgRef}`;
+        imgXObjRes += colorEmojiXObjRefs;
         imgXObjRes += ' >>';
     }
 
@@ -1091,6 +1105,23 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         const cmap = buildWinAnsiToUnicodeCMap();
         emitStreamObj(latinToUniObjNum, `<< /Length ${cmap.length}`, cmap);
         totalObjs = latinToUniObjNum;
+    }
+
+    // Colour-emoji Form XObjects (v1.3.0) — trailing objects forward-referenced
+    // from the page /XObject dicts. Each form inlines its /Shading + /ExtGState
+    // resources, so one indirect object per unique colour glyph.
+    if (colorEmojiForms.length > 0) {
+        for (let k = 0; k < colorEmojiForms.length; k++) {
+            const f = colorEmojiForms[k];
+            const objNum = colorEmojiStart + k;
+            const res = f.resources ? ` /Resources << ${f.resources} >>` : '';
+            emitStreamObj(
+                objNum,
+                `<< /Type /XObject /Subtype /Form /BBox [${f.bbox.join(' ')}]${res} /Length ${f.content.length}`,
+                f.content,
+            );
+        }
+        totalObjs = colorEmojiStart + colorEmojiForms.length - 1;
     }
 
     // ── Tagged PDF objects ───────────────────────────────────────────

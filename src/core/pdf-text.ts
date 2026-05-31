@@ -42,6 +42,43 @@ export function txtShaped(
     return parts.join('\n');
 }
 
+/** Format a scale factor with finer precision (emoji `cm` scaling). */
+const fmtScale = (v: number): string => v.toFixed(5).replace(/0+$/, '').replace(/\.$/, '') || '0';
+
+/**
+ * Emit a colour-emoji run: each glyph is drawn as a colour Form XObject
+ * (`q s 0 0 s x y cm /CEmK Do Q`) instead of a `Tj`. Glyphs the COLR engine
+ * cannot render fall back to a normal `Tj` (monochrome). Returns the advanced
+ * pen x position.
+ */
+function emitColorEmojiRun(
+    parts: string[],
+    run: { fontRef: string; fontData: FontData; hexStr: string | null },
+    penX: number,
+    y: number,
+    sz: number,
+    enc: EncodingContext,
+): number {
+    const fd = run.fontData;
+    const upm = fd.metrics.unitsPerEm;
+    const scale = sz / upm;
+    const s = fmtScale(scale);
+    const hex = (run.hexStr ?? '').replace(/[<>]/g, '');
+    for (let i = 0; i + 4 <= hex.length; i += 4) {
+        const tag = hex.substr(i, 4);
+        const gid = parseInt(tag, 16);
+        const adv = (fd.widths[gid] !== undefined ? fd.widths[gid] : fd.defaultWidth) * scale;
+        const name = enc.colorEmoji?.useGlyph(fd, gid) ?? null;
+        if (name) {
+            parts.push(`q ${s} 0 0 ${s} ${fmtNum(penX)} ${fmtNum(y)} cm /${name} Do Q`);
+        } else {
+            parts.push(`BT ${run.fontRef} ${sz} Tf ${fmtNum(penX)} ${fmtNum(y)} Td <${tag}> Tj ET`);
+        }
+        penX += adv;
+    }
+    return penX;
+}
+
 /**
  * Text at absolute position (x, y) with font.
  * Multi-font: splits text into runs by cmap coverage.
@@ -61,21 +98,18 @@ export function txt(
     const runs = enc.textRuns(str, sz);
     if (runs.length === 0) return '';
 
-    if (runs.length === 1) {
-        const run = runs[0];
-        if (run.shaped) return txtShaped(run.shaped, x, y, run.fontRef, sz, run.fontData);
-        return `BT ${run.fontRef} ${sz} Tf ${fmtNum(x)} ${fmtNum(y)} Td ${run.hexStr} Tj ET`;
-    }
-
     const parts: string[] = [];
     let penX = x;
     for (const run of runs) {
-        if (run.shaped) {
+        if (enc.colorEmoji && run.fontData.colorGlyphs && run.hexStr) {
+            penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
+        } else if (run.shaped) {
             parts.push(txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData));
+            penX += run.widthPt;
         } else {
             parts.push(`BT ${run.fontRef} ${sz} Tf ${fmtNum(penX)} ${fmtNum(y)} Td ${run.hexStr} Tj ET`);
+            penX += run.widthPt;
         }
-        penX += run.widthPt;
     }
     return parts.join('\n');
 }

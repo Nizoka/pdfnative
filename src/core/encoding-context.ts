@@ -19,6 +19,7 @@ import { shapeArabicText } from '../shaping/arabic-shaper.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
 import { resolveBidiRuns, containsRTL, reverseString, stripBidiControls } from '../shaping/bidi.js';
 import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil, containsDevanagari } from '../shaping/script-registry.js';
+import { createColorEmojiCollector } from './color-emoji.js';
 
 // ── Helvetica Fallback Helpers ───────────────────────────────────────
 
@@ -191,6 +192,13 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
         if (s) s.add(gid);
     }
 
+    // Colour-emoji collector: activated only when a registered font carries a
+    // COLR/CPAL `colorGlyphs` table (the opt-in `'emoji-color'` font). When no
+    // such font is present this stays undefined and the builders are unchanged.
+    const _colorEmoji = fontEntries.some((fe) => fe.fontData.colorGlyphs)
+        ? createColorEmojiCollector()
+        : undefined;
+
     return {
         isUnicode: true,
         fontEntries,
@@ -198,6 +206,7 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
         f1: primary.fontRef,
         f2: primary.fontRef,
         getUsedGids() { return _usedGids; },
+        colorEmoji: _colorEmoji,
 
         textRuns(str: string, sz: number): TextRun[] {
             if (!str) return [];

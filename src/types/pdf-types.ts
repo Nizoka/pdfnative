@@ -110,6 +110,35 @@ export interface ColorGlyph {
     readonly layers: readonly ColorLayer[];
 }
 
+/** A colour-emoji Form XObject collected during content building. */
+export interface ColorEmojiForm {
+    /** Resource name (without leading `/`), e.g. `CEm0`. */
+    readonly name: string;
+    /** Form XObject content stream (font-unit space). */
+    readonly content: string;
+    /** Inline `/Resources` body (shadings + ExtGStates), may be empty. */
+    readonly resources: string;
+    /** Form BBox `[x0 y0 x1 y1]` in font units. */
+    readonly bbox: readonly [number, number, number, number];
+}
+
+/**
+ * Collects unique colour-emoji glyphs encountered while building a document's
+ * content streams, de-duplicating them into a shared set of Form XObjects.
+ * Present on the {@link EncodingContext} only when an `'emoji-color'` font
+ * (a {@link FontData} carrying `colorGlyphs`) is registered. (v1.3.0)
+ */
+export interface ColorEmojiCollector {
+    /**
+     * Register use of a colour glyph and return its Form resource name, or
+     * `null` when `gid` is not a colour glyph (caller falls back to normal
+     * text rendering).
+     */
+    useGlyph(fontData: FontData, gid: number): string | null;
+    /** The de-duplicated colour-emoji forms, in first-use order. */
+    readonly forms: ColorEmojiForm[];
+}
+
 /** A font entry binding FontData to a PDF font reference. */
 export interface FontEntry {
     readonly fontData: FontData;
@@ -148,6 +177,12 @@ export interface EncodingContext {
     readonly f2: string;
     readonly fontData?: FontData;
     readonly getUsedGids?: () => Map<string, Set<number>>;
+    /**
+     * Colour-emoji collector — present only when an `'emoji-color'` font
+     * (carrying `colorGlyphs`) is registered. Used by the text emitter to
+     * draw colour-emoji Form XObjects inline. (v1.3.0)
+     */
+    readonly colorEmoji?: ColorEmojiCollector;
 }
 
 // ── PDF Parameters ───────────────────────────────────────────────────
