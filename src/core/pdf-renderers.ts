@@ -699,8 +699,12 @@ export function renderTable(
 
     /**
      * Emit one wrapped cell, vertically top-aligned, with per-line alignment
-     * (left/center/right) applied per `ColumnDef.a`. Tagged-mode uses one
-     * MCID for the whole cell (all lines share marked content).
+     * (left/center/right) applied per `ColumnDef.a`. Tagged-mode allocates a
+     * DISTINCT MCID per wrapped line (ISO 14289-1 §7.3 / PDF/A-2b): each
+     * `Tj`/`TJ` fragment carries its own marked-content id, and every id is
+     * pushed to `mcRefsOut` so the enclosing TD/TH `/K` array references them
+     * all. A single-line cell still consumes exactly one MCID, so unwrapped
+     * tagged tables stay byte-identical to v1.1.0.
      */
     function emitCell(
         lines: string[],
@@ -709,7 +713,7 @@ export function renderTable(
         rowH: number,
         font: string,
         sz: number,
-        targetMcid: number | null,
+        mcRefsOut: MCRef[] | null,
         isHeader: boolean,
     ): string[] {
         const col = columns[colIdx];
@@ -731,13 +735,15 @@ export function renderTable(
                 ? rowTop - rowH + padBottom
                 : rowTop - pad - sz + sz * 0.2 - li * lineH; // top-aligned with ascender bias
             let op: string;
-            if (targetMcid !== null) {
+            if (mcRefsOut !== null && tagCtx?.tagged) {
+                const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+                mcRefsOut.push({ mcid, pageObjNum: tagCtx.pageObjNum });
                 if (col.a === 'r') {
-                    op = txtRTagged(t, cx[colIdx] + cwi[colIdx] - pad, baselineY, font, sz, enc, targetMcid, isHeader);
+                    op = txtRTagged(t, cx[colIdx] + cwi[colIdx] - pad, baselineY, font, sz, enc, mcid, isHeader);
                 } else if (col.a === 'c') {
-                    op = txtCTagged(t, cx[colIdx], baselineY, font, sz, cwi[colIdx], enc, targetMcid, isHeader);
+                    op = txtCTagged(t, cx[colIdx], baselineY, font, sz, cwi[colIdx], enc, mcid, isHeader);
                 } else {
-                    op = txtTagged(t, cx[colIdx] + pad, baselineY, font, sz, enc, targetMcid);
+                    op = txtTagged(t, cx[colIdx] + pad, baselineY, font, sz, enc, mcid);
                 }
             } else {
                 if (col.a === 'r') {
@@ -758,21 +764,19 @@ export function renderTable(
         ops.push(`${colors.text} rg`);
         const lineH = CAPTION_FONT_SIZE * TABLE_LINE_HEIGHT;
         let cy = y - CAPTION_FONT_SIZE;
-        let captionMcid: number | null = null;
-        if (tagCtx?.tagged) {
-            captionMcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-            tableStructAccum.push({
-                type: 'Caption',
-                children: [{ mcid: captionMcid, pageObjNum: tagCtx.pageObjNum }],
-            });
-        }
+        const captionRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
         for (const line of plan.captionLines) {
-            if (captionMcid !== null) {
-                ops.push(txtCTagged(line, mgL, cy, enc.f2, CAPTION_FONT_SIZE, cw, enc, captionMcid, true));
+            if (captionRefs !== null && tagCtx?.tagged) {
+                const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+                captionRefs.push({ mcid, pageObjNum: tagCtx.pageObjNum });
+                ops.push(txtCTagged(line, mgL, cy, enc.f2, CAPTION_FONT_SIZE, cw, enc, mcid, true));
             } else {
                 ops.push(txtC(line, mgL, cy, enc.f2, CAPTION_FONT_SIZE, cw, enc, true));
             }
             cy -= lineH;
+        }
+        if (captionRefs && captionRefs.length > 0) {
+            tableStructAccum.push({ type: 'Caption', children: captionRefs });
         }
         y -= plan.captionHeight;
     }
@@ -787,12 +791,11 @@ export function renderTable(
 
         const thChildren: (StructElement | MCRef)[] = [];
         for (let i = 0; i < block.headers.length && i < columns.length; i++) {
-            let mcid: number | null = null;
-            if (tagCtx?.tagged) {
-                mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-                thChildren.push({ type: 'TH', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+            const cellRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
+            ops.push(...emitCell(headerLines[i] ?? [''], i, y, headerHeight, enc.f2, fs.th, cellRefs, true));
+            if (cellRefs && cellRefs.length > 0) {
+                thChildren.push({ type: 'TH', children: cellRefs });
             }
-            ops.push(...emitCell(headerLines[i] ?? [''], i, y, headerHeight, enc.f2, fs.th, mcid, true));
         }
         if (tagCtx?.tagged && thChildren.length > 0) {
             tableStructAccum.push({ type: 'TR', children: thChildren });
@@ -827,12 +830,11 @@ export function renderTable(
             const font = isAmount ? enc.f2 : enc.f1;
             ops.push(`${color} rg`);
 
-            let mcid: number | null = null;
-            if (tagCtx?.tagged) {
-                mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-                tdChildren.push({ type: 'TD', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+            const cellRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
+            ops.push(...emitCell(cells[i] ?? [''], i, y, rowH, font, fs.td, cellRefs, false));
+            if (cellRefs && cellRefs.length > 0) {
+                tdChildren.push({ type: 'TD', children: cellRefs });
             }
-            ops.push(...emitCell(cells[i] ?? [''], i, y, rowH, font, fs.td, mcid, false));
         }
         if (tagCtx?.tagged && tdChildren.length > 0) {
             tableStructAccum.push({ type: 'TR', children: tdChildren });
