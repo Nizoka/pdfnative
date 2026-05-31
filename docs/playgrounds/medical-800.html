@@ -68,6 +68,8 @@
         <option value="100">100 pages — quick test</option>
         <option value="400">400 pages — medium</option>
         <option value="800" selected>800 pages — full showcase</option>
+        <option value="5000">5 000 pages — large (worker recommended)</option>
+        <option value="10000">10 000 pages — stress test (worker required)</option>
       </select>
       <label for="useWorker" style="display:flex;align-items:center;gap:6px;">
         <input id="useWorker" type="checkbox" checked> <strong>Run in Web Worker</strong> <span id="workerNote" style="font-size:12px;color:#64748b;">(off main thread)</span>
@@ -278,9 +280,12 @@ function labs(r, n) {
 
 function buildBlocks(seed, pageCount) {
   const r = rng(seed);
-  // Calibrated for ~4 pages per patient (measured empirically).
-  // 800 pages → 200 patients · 400 → 100 · 100 → 25.
-  const patientCount = Math.max(1, Math.floor(pageCount / 4));
+  // Empirically calibrated: this block mix renders ~3.875 PDF pages per patient
+  // (heading + summary + diagnoses/medications lists + 6 longitudinal visits,
+  // each with a vitals table and a 15-row lab panel). Derive the cohort size
+  // from the requested page count so 800 → ~800, 5 000 → ~5 000, 10 000 → ~10 000.
+  const PAGES_PER_PATIENT = 3.875;
+  const patientCount = Math.max(1, Math.round(pageCount / PAGES_PER_PATIENT));
   const blocks = [];
 
   blocks.push({ type: 'heading', text: 'Synthetic Clinical Data Report (FICTITIOUS)', level: 1 });
@@ -497,7 +502,8 @@ async function generateOnMain(pageCount, tagged) {
     return rows;
   };
 
-  const patientCount = Math.max(1, Math.floor(pageCount / 4));
+  // Mirror WORKER_SRC.buildBlocks calibration exactly (~3.875 pages/patient).
+  const patientCount = Math.max(1, Math.round(pageCount / 3.875));
   const blocks = [
     { type: 'heading', text: 'Synthetic Clinical Data Report (FICTITIOUS)', level: 1 },
     { type: 'paragraph', text: 'This document is generated programmatically from a seeded random-number generator for demonstration purposes only. All patient identifiers, names, dates, and values are synthetic. No real Protected Health Information (PHI) is contained.' },
