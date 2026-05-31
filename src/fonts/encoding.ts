@@ -73,6 +73,69 @@ export function pdfString(str: string): string {
 }
 
 /**
+ * WinAnsi byte → Unicode codepoint map for the CP1252 0x80–0x9F band.
+ * The reverse of the explicit branches in {@link toWinAnsi}: bytes 0x20–0x7E and
+ * 0xA0–0xFF map 1:1 to Latin-1, while 0x80–0x9F carry the Windows-1252
+ * punctuation/symbol set whose Unicode codepoints differ from their byte values.
+ */
+const WINANSI_HIGH_TO_UNICODE: Readonly<Record<number, number>> = {
+    0x80: 0x20AC, 0x82: 0x201A, 0x83: 0x0192, 0x84: 0x201E, 0x85: 0x2026,
+    0x86: 0x2020, 0x87: 0x2021, 0x88: 0x02C6, 0x89: 0x2030, 0x8A: 0x0160,
+    0x8B: 0x2039, 0x8C: 0x0152, 0x8E: 0x017D, 0x91: 0x2018, 0x92: 0x2019,
+    0x93: 0x201C, 0x94: 0x201D, 0x95: 0x2022, 0x96: 0x2013, 0x97: 0x2014,
+    0x98: 0x02DC, 0x99: 0x2122, 0x9A: 0x0161, 0x9B: 0x203A, 0x9C: 0x0153,
+    0x9E: 0x017E, 0x9F: 0x0178,
+};
+
+/**
+ * Build a single-byte `/ToUnicode` CMap (ISO 32000-1 §9.10.3) for a
+ * WinAnsiEncoding base-14 font, mapping each visible WinAnsi byte to its
+ * Unicode codepoint.
+ *
+ * Without this CMap, text drawn with the non-embedded standard-14 fonts is not
+ * reliably selectable/searchable, and minimal viewers that fall back to the
+ * font program's built-in StandardEncoding render the CP1252 0x80–0x9F band
+ * (Euro `€`, curly quotes, em-dash, …) as `.notdef` / `?`. Emitting the CMap
+ * lets every conformant reader resolve the byte to the intended character.
+ *
+ * @returns A complete CMap stream body (uncompressed PostScript text).
+ * @since 1.3.0 — fixes issue #48 (Euro / CP1252 glyphs lost as `?`).
+ */
+export function buildWinAnsiToUnicodeCMap(): string {
+    const entries: string[] = [];
+    const hex2 = (n: number): string => n.toString(16).toUpperCase().padStart(2, '0');
+    const hex4 = (n: number): string => n.toString(16).toUpperCase().padStart(4, '0');
+    for (let b = 0x20; b <= 0xFF; b++) {
+        if (b >= 0x7F && b <= 0x9F) {
+            const u = WINANSI_HIGH_TO_UNICODE[b];
+            if (u === undefined) continue; // unassigned WinAnsi byte
+            entries.push(`<${hex2(b)}> <${hex4(u)}>`);
+        } else {
+            entries.push(`<${hex2(b)}> <${hex4(b)}>`); // Latin-1: byte === codepoint
+        }
+    }
+    // bfchar blocks are limited to 100 entries each (ISO 32000-1 §9.10.3).
+    const blocks: string[] = [];
+    for (let i = 0; i < entries.length; i += 100) {
+        const chunk = entries.slice(i, i + 100);
+        blocks.push(`${chunk.length} beginbfchar\n${chunk.join('\n')}\nendbfchar`);
+    }
+    return (
+        '/CIDInit /ProcSet findresource begin\n' +
+        '12 dict begin\n' +
+        'begincmap\n' +
+        '/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n' +
+        '/CMapName /Adobe-Identity-UCS def\n' +
+        '/CMapType 2 def\n' +
+        '1 begincodespacerange\n<20> <FF>\nendcodespacerange\n' +
+        blocks.join('\n') + '\n' +
+        'endcmap\n' +
+        'CMapName currentdict /CMap defineresource pop\n' +
+        'end\nend'
+    );
+}
+
+/**
  * Truncate string to max characters, appending Unicode ellipsis (…, U+2026) if needed.
  *
  * The horizontal ellipsis is rendered correctly in both Latin/WinAnsi mode

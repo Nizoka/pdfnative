@@ -24,7 +24,7 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext } from './encoding-context.js';
-import { truncate } from '../fonts/encoding.js';
+import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
 import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
@@ -364,6 +364,18 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
         ? 5 + fontEntries.length * 5 + wmExtraObjs
         : 5 + wmExtraObjs;
 
+    // Base-14 /ToUnicode CMap (issue #48): non-tagged Helvetica/Helvetica-Bold
+    // declare /WinAnsiEncoding but carry no ToUnicode by default, so the CP1252
+    // 0x80–0x9F band (Euro, curly quotes, …) is not selectable/searchable and is
+    // shown as `?` by minimal viewers. We emit one shared CMap as the trailing
+    // object (a forward reference from the font dicts) so existing object numbers
+    // are unaffected. Tagged mode embeds CIDFonts with their own ToUnicode.
+    const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
+        ? 4 + fontEntries.length * 5 + wmExtraObjs + totalPages * 2
+        : 4 + wmExtraObjs + totalPages * 2;
+    const latinToUniObjNum = tagged ? 0 : preBaseObjCount + 2; // infoObjNum + 1
+    const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
+
     // Map page object numbers to /StructParents values for ParentTree (ISO 32000-1 §14.7.4.4)
     const pageObjToStructParents = new Map<number, number>();
 
@@ -542,8 +554,8 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
             emitObj(4, refDict);
         } else {
             // Helvetica fonts (kept for mixed-content fallback)
-            emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
-            emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+            emitObj(3, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
+            emitObj(4, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
         }
 
         // CIDFont Type2 objects — one group of 5 per fontEntry
@@ -650,8 +662,8 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
             kids.push(`${pageObjStart + p * 2} 0 R`);
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
-        emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
-        emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+        emitObj(3, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
+        emitObj(4, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
 
         // Watermark objects (Latin mode)
         const wmObjStartLatin = 5;
@@ -700,6 +712,14 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
         `<< /Title ${encodePdfTextString(infoTitle)} /Producer (pdfnative) /CreationDate (${pdfDate}) >>`);
 
     let totalObjs = infoObjNum;
+
+    // Base-14 /ToUnicode CMap (issue #48) — emitted as the trailing object so the
+    // forward reference written into the Helvetica/Helvetica-Bold dicts resolves.
+    if (latinToUniObjNum) {
+        const cmap = buildWinAnsiToUnicodeCMap();
+        emitStreamObj(latinToUniObjNum, `<< /Length ${cmap.length}`, cmap);
+        totalObjs = latinToUniObjNum;
+    }
 
     // ── Tagged PDF objects (StructTreeRoot, XMP, ICC, OutputIntent) ──
     let xmpObjNum = 0;

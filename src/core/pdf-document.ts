@@ -26,6 +26,7 @@ import type {
 import { buildImageXObject } from './pdf-image.js';
 import { createEncodingContext } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
+import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
 import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
 import { txt, txtTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
@@ -613,6 +614,17 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const totalFormObjs = totalFieldObjs + numRadioGroups;
     const formFontObjs = totalFormFields > 0 ? 1 : 0; // dedicated /Helv font object for forms
 
+    // Base-14 /ToUnicode CMap (issue #48): non-tagged Helvetica/Helvetica-Bold
+    // carry no ToUnicode by default, so the CP1252 0x80–0x9F band (Euro, curly
+    // quotes, …) is not selectable/searchable and renders as `?` in minimal
+    // viewers. Emit one shared CMap as the trailing object (forward reference
+    // from the font dicts). Tagged mode embeds CIDFonts with their own ToUnicode.
+    const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
+        ? 4 + fontEntries.length * 5 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs
+        : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
+    const latinToUniObjNum = tagged ? 0 : preBaseObjCount + 2; // infoObjNum + 1
+    const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
+
     // ── Assemble PDF binary ──────────────────────────────────────────
     const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
 
@@ -679,8 +691,8 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             emitObj(3, refDict);
             emitObj(4, refDict);
         } else {
-            emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
-            emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+            emitObj(3, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
+            emitObj(4, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
         }
 
         // CIDFont Type2 objects — 5 per fontEntry
@@ -896,8 +908,8 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             kids.push(`${5 + imageCount + wmExtraObjs + p * 2} 0 R`);
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
-        emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
-        emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+        emitObj(3, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
+        emitObj(4, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
 
         // Image XObject objects (Latin mode)
         for (let i = 0; i < imageCount; i++) {
@@ -1072,6 +1084,14 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
     let totalObjs = infoObjNum;
+
+    // Base-14 /ToUnicode CMap (issue #48) — trailing object so the forward
+    // reference in the Helvetica/Helvetica-Bold dicts resolves.
+    if (latinToUniObjNum) {
+        const cmap = buildWinAnsiToUnicodeCMap();
+        emitStreamObj(latinToUniObjNum, `<< /Length ${cmap.length}`, cmap);
+        totalObjs = latinToUniObjNum;
+    }
 
     // ── Tagged PDF objects ───────────────────────────────────────────
     let xmpObjNum = 0;
