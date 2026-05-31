@@ -59,8 +59,15 @@ registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'));
 
 ## Full coverage
 
-The bundled module is a **curated subset** (~220 common emoji). To cover the
-full Noto Color Emoji set, build your own data module from the source font:
+The bundled module is a **curated subset** (~220 common emoji). It ships
+pre-built because every file under the package `files` allowlist is included in
+the npm tarball regardless of tree-shaking — the full Noto Color Emoji build
+(thousands of glyphs, tens of MB) would weigh down *every* `npm install`, even
+for consumers who never touch emoji. The subset keeps the install lean while the
+lazy `() => import(...)` keeps it out of bundles that don't reference it.
+
+To cover the full Noto Color Emoji set, build your own data module from the
+source font:
 
 ```bash
 # Download the source TTF, then:
