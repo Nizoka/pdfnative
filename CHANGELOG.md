@@ -16,7 +16,7 @@ extended characters not extractable under base-14 Helvetica) and delivers the
 full v1.3.0 roadmap: COLRv1 colour emoji, USE-lite shaper integration, true
 constant-memory streaming, UAX #9 X4–X5 character-level overrides, and a
 dual-mode pixel-diff visual-regression suite. 100% backward-compatible.
-62 test files / 1903 tests, all green. See full notes in
+63 test files / 1908 tests, all green. See full notes in
 [release-notes/v1.3.0.md](release-notes/v1.3.0.md).
 
 ### Added
@@ -59,6 +59,12 @@ dual-mode pixel-diff visual-regression suite. 100% backward-compatible.
 
 ### Fixed
 
+- **fix(core, tagged PDF):** per-line MCID allocation in wrapped table cells
+  and multi-line table captions. A single MCID was previously reused on every
+  wrapped line, producing duplicate `/MCID` values inside one `/TD` / `/TH` /
+  `/Caption` (a PDF/UA, ISO 14289-1 §7.10, violation). Each wrapped line now
+  gets a distinct MCID; single-line cells and the legacy table path are
+  byte-identical. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
 - **fix(fonts, #48):** base-14 Helvetica text now carries a `/ToUnicode` CMap
   so the Windows-1252 high range (€ ‚ ƒ „ … † ‡ ™ œ ž Ÿ …) is correctly
   extractable and searchable. When a `latin` font is registered these glyphs
