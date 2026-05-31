@@ -251,6 +251,18 @@ function _buildPageTemplate(
  * @returns Complete PDF as a binary string
  */
 export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): string {
+    return assembleTableParts(params, layoutOptions).join('');
+}
+
+/**
+ * Assemble a table-centric PDF and return its raw object/framing parts in
+ * emission order WITHOUT joining them. {@link buildPDF} joins the result;
+ * the true-streaming generator iterates and frees the parts progressively so
+ * the fully-joined PDF binary never materialises. Byte content is identical.
+ *
+ * @internal
+ */
+export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): string[] {
     // ── Input Validation (system boundary) ───────────────────────────
     if (!params || typeof params !== 'object') {
         throw new Error('buildPDF: params is required and must be an object');
@@ -811,7 +823,7 @@ export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOpt
     const writer = { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts };
     writeXrefTrailer(writer, totalObjs, infoObjNum, encState, `${infoTitle}|${pdfDate}`);
 
-    return parts.join('');
+    return parts;
 }
 
 /**

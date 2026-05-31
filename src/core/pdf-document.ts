@@ -110,6 +110,22 @@ type PaginatedItem = DocumentBlock | TableSliceItem;
  * @returns Complete PDF as a binary string
  */
 export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): string {
+    return assembleDocumentParts(params, layoutOptions).join('');
+}
+
+/**
+ * Assemble a free-form PDF document and return its raw object/framing parts
+ * (header, indirect objects, xref, trailer) in emission order — WITHOUT
+ * joining them into a single string.
+ *
+ * {@link buildDocumentPDF} simply joins the result. The true-streaming
+ * generators (`buildDocumentPDFStreamTrue`) iterate the parts and yield them
+ * progressively, freeing each as they go, so the fully-joined PDF binary never
+ * materialises in memory. The byte content is identical to `buildDocumentPDF`.
+ *
+ * @internal
+ */
+export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): string[] {
     // ── Input Validation ─────────────────────────────────────────────
     if (!params || typeof params !== 'object') {
         throw new Error('buildDocumentPDF: params is required and must be an object');
@@ -1256,7 +1272,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const writer = { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts };
     writeXrefTrailer(writer, totalObjs, infoObjNum, encState, `${infoTitle}|${pdfDate}`);
 
-    return parts.join('');
+    return parts;
 }
 
 /**

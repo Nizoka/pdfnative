@@ -157,6 +157,7 @@ export {
     chunkBinaryString, concatChunks, streamByteLength,
     buildDocumentPDFStream, buildPDFStream,
     buildDocumentPDFStreamPageByPage, buildPDFStreamPageByPage,
+    buildDocumentPDFStreamTrue, buildPDFStreamTrue,
 } from './core/pdf-stream-writer.js';
 
 // ── Crypto — Hashing, ASN.1, RSA, ECDSA, X.509, CMS ────────────────
