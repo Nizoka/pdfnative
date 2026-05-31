@@ -56,6 +56,7 @@ const FONTS: FontEntry[] = [
     { local: 'NotoSansGeorgian-Regular.ttf', dir: 'notosansgeorgian', remote: 'NotoSansGeorgian%5Bwdth%2Cwght%5D.ttf' },
     { local: 'NotoSansHebrew-Regular.ttf', dir: 'notosanshebrew', remote: 'NotoSansHebrew%5Bwdth%2Cwght%5D.ttf' },
     { local: 'NotoSansTamil-Regular.ttf', dir: 'notosanstamil', remote: 'NotoSansTamil%5Bwdth%2Cwght%5D.ttf' },
+    { local: 'NotoSansTelugu-Regular.ttf', dir: 'notosanstelugu', remote: 'NotoSansTelugu%5Bwdth%2Cwght%5D.ttf' },
     { local: 'NotoSansThai-Regular.ttf', dir: 'notosansthai', remote: 'NotoSansThai%5Bwdth%2Cwght%5D.ttf' },
     // ── CJK (wght-only axis) ─────────────────────────────────────────
     { local: 'NotoSansJP-Regular.ttf', dir: 'notosansjp', remote: 'NotoSansJP%5Bwght%5D.ttf' },

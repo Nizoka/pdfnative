@@ -419,5 +419,31 @@ export const ALPHABET_SAMPLES: LangSample[] = [
         ],
         footerText: 'pdfnative \u2013 Tamil script coverage verification',
     },
+    // Telugu Script
+    {
+        lang: 'te',
+        filename: 'alphabet-telugu',
+        title: '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 \u0C32\u0C3F\u0C2A\u0C3F \u2013 Telugu Script Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Telugu (U+0C00\u2013U+0C7F)' },
+            { label: 'Font', value: 'Noto Sans Telugu' },
+            { label: 'Test', value: 'Consonants, vowels, matras, conjuncts' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '10 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Vowels', '\u0C05 \u0C06 \u0C07 \u0C08 \u0C09 \u0C0A \u0C0B \u0C0E \u0C0F \u0C10 \u0C12 \u0C13 \u0C14', '13', '\u0C05\u0C1A\u0C4D\u0C1A\u0C41\u0C32\u0C41', 'Independent'], type: 'credit', pointed: false },
+            { cells: ['Consonants 1', '\u0C15 \u0C16 \u0C17 \u0C18 \u0C19 \u0C1A \u0C1B \u0C1C \u0C1D \u0C1E', '10', '\u0C39\u0C32\u0C4D\u0C32\u0C41\u0C32\u0C41', 'Ka\u2013Nya'], type: 'credit', pointed: false },
+            { cells: ['Consonants 2', '\u0C1F \u0C20 \u0C21 \u0C22 \u0C23 \u0C24 \u0C25 \u0C26 \u0C27 \u0C28', '10', '\u0C39\u0C32\u0C4D\u0C32\u0C41\u0C32\u0C41', 'Tta\u2013Na'], type: 'credit', pointed: false },
+            { cells: ['Consonants 3', '\u0C2A \u0C2B \u0C2C \u0C2D \u0C2E \u0C2F \u0C30 \u0C32 \u0C33 \u0C35 \u0C36 \u0C37 \u0C38 \u0C39', '14', '\u0C39\u0C32\u0C4D\u0C32\u0C41\u0C32\u0C41', 'Pa\u2013Ha'], type: 'credit', pointed: true },
+            { cells: ['Matras', '\u0C3E \u0C3F \u0C40 \u0C41 \u0C42 \u0C43 \u0C46 \u0C47 \u0C48 \u0C4A \u0C4B \u0C4C', '12', '\u0C17\u0C41\u0C30\u0C4D\u0C24\u0C41\u0C32\u0C41', 'Dependent vowels'], type: 'credit', pointed: true },
+            { cells: ['Modifiers', '\u0C01 \u0C02 \u0C03', '3', '\u0C38\u0C42\u0C1A\u0C15\u0C32\u0C41', 'Candrabindu, anusvara, visarga'], type: 'debit', pointed: false },
+            { cells: ['Conjuncts', '\u0C15\u0C4D\u0C37 \u0C36\u0C4D\u0C30\u0C40 \u0C1C\u0C4D\u0C1E', '3', '\u0C38\u0C02\u0C2F\u0C41\u0C15\u0C4D\u0C24\u0C3E\u0C32\u0C41', 'kSa, srI, jna'], type: 'debit', pointed: false },
+            { cells: ['Digits', '\u0C66 \u0C67 \u0C68 \u0C69 \u0C6A \u0C6B \u0C6C \u0C6D \u0C6E \u0C6F', '10', '\u0C05\u0C02\u0C15\u0C46\u0C32\u0C41', 'Telugu numerals'], type: 'credit', pointed: false },
+            { cells: ['Sample', '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 \u0C2D\u0C3E\u0C37 \u2013 \u0C2D\u0C3E\u0C30\u0C24\u0C26\u0C47\u0C36\u0C02', '2 words', '\u0C09\u0C26\u0C3E\u0C39\u0C30\u0C23', 'Telugu language + India'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Telugu script coverage verification',
+    },
 ];
 

@@ -106,7 +106,11 @@ export const BENGALI_END = 0x09FF;
 /** Tamil Unicode block. */
 export const TAMIL_START = 0x0B80;
 export const TAMIL_END = 0x0BFF;
+// ── Telugu ──────────────────────────────────────────
 
+/** Telugu Unicode block. */
+export const TELUGU_START = 0x0C00;
+export const TELUGU_END = 0x0C7F;
 // ── Emoji (v1.1.0) ───────────────────────────────────────────────────
 
 /**
@@ -194,6 +198,11 @@ export function isTamilCodepoint(cp: number): boolean {
     return cp >= TAMIL_START && cp <= TAMIL_END;
 }
 
+/** Check if a codepoint falls in the Telugu Unicode block. */
+export function isTeluguCodepoint(cp: number): boolean {
+    return cp >= TELUGU_START && cp <= TELUGU_END;
+}
+
 /** Check if a codepoint falls in any Devanagari Unicode block. */
 export function isDevanagariCodepoint(cp: number): boolean {
     return (cp >= DEVANAGARI_START && cp <= DEVANAGARI_END) ||
@@ -277,6 +286,14 @@ export function containsBengali(str: string): boolean {
 export function containsTamil(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isTamilCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Telugu characters. */
+export function containsTelugu(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isTeluguCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }

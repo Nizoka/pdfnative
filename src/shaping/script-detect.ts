@@ -11,7 +11,7 @@ import { isEmojiCodepoint } from './script-registry.js';
  * Latin-script languages using Helvetica built-in don't need embedding.
  */
 export function needsUnicodeFont(lang: string): boolean {
-    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'emoji'].includes(lang);
+    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'te', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'emoji'].includes(lang);
 }
 
 /**
@@ -33,6 +33,8 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             if ((cp >= 0x0370 && cp <= 0x03FF) || (cp >= 0x1F00 && cp <= 0x1FFF)) { needed.add('el'); continue; }
             // Devanagari + Devanagari Extended → 'hi'
             if ((cp >= 0x0900 && cp <= 0x097F) || (cp >= 0xA8E0 && cp <= 0xA8FF)) { needed.add('hi'); continue; }
+            // Telugu → 'te'
+            if (cp >= 0x0C00 && cp <= 0x0C7F) { needed.add('te'); continue; }
             // Thai script → 'th'
             if (cp >= 0x0E00 && cp <= 0x0E7F) { needed.add('th'); continue; }
             // Hiragana / Katakana → 'ja'
@@ -87,6 +89,7 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
 export function detectCharLang(cp: number): string | null {
     if ((cp >= 0x0370 && cp <= 0x03FF) || (cp >= 0x1F00 && cp <= 0x1FFF)) return 'el';
     if ((cp >= 0x0900 && cp <= 0x097F) || (cp >= 0xA8E0 && cp <= 0xA8FF)) return 'hi';
+    if (cp >= 0x0C00 && cp <= 0x0C7F) return 'te';
     if (cp >= 0x0E00 && cp <= 0x0E7F) return 'th';
     if (cp >= 0x3040 && cp <= 0x30FF) return 'ja';
     if ((cp >= 0xAC00 && cp <= 0xD7AF) || (cp >= 0x1100 && cp <= 0x11FF) || (cp >= 0x3130 && cp <= 0x318F)) return 'ko';

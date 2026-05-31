@@ -195,15 +195,16 @@ export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';
 
-// ── Shaping — Thai, Bengali, Tamil, Devanagari & Multi-Script ───────
+// ── Shaping — Thai, Bengali, Tamil, Telugu, Devanagari & Multi-Script ─
 export { shapeThaiText } from './shaping/thai-shaper.js';
 export { shapeBengaliText } from './shaping/bengali-shaper.js';
 export { shapeTamilText } from './shaping/tamil-shaper.js';
+export { shapeTeluguText } from './shaping/telugu-shaper.js';
 export { shapeDevanagariText } from './shaping/devanagari-shaper.js';
 export {
     containsThai, containsArabic, containsHebrew,
-    containsBengali, containsTamil, containsDevanagari,
-    isBengaliCodepoint, isTamilCodepoint, isDevanagariCodepoint,
+    containsBengali, containsTamil, containsTelugu, containsDevanagari,
+    isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint,
 } from './shaping/script-registry.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './shaping/script-detect.js';
