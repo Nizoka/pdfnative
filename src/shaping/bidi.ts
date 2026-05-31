@@ -12,13 +12,14 @@
  *   - Reordering (L2 — reverse RTL runs)
  *   - Paragraph level detection (P2-P3)
  *   - Isolates (LRI U+2066, RLI U+2067, FSI U+2068, PDI U+2069) — v1.1.0
- *   - Explicit embeddings (LRE/RLE) and overrides (LRO/RLO) via
- *     sealed-isolate normalization — v1.2.0
+ *   - Explicit embeddings (LRE/RLE) via sealed-isolate normalization — v1.2.0
+ *   - Explicit overrides (LRO/RLO) with UAX #9 X4/X5 character-level type
+ *     forcing — every inner code point is forced to L (LRO) or R (RLO) — v1.3.0
  *
- * Not supported (defer to v1.3):
- *   - Character-level type override inside LRO/RLO ranges (UAX #9 X4-X5
- *     would force each inner code point's type to L or R; we currently
- *     only force the base direction by remapping LRO→LRI and RLO→RLI)
+ * Not supported (lite simplifications):
+ *   - Strict per-character override interleaving with nested isolates /
+ *     embeddings *inside* an override scope: pdfnative forces the whole scope
+ *     to the override direction (the common, intended use of LRO/RLO)
  *   - Embedding leakage for N1/N2 neutral resolution across LRE/RLE
  *     boundaries (we treat them as sealed like isolates)
  *   - Levels > 2
@@ -494,35 +495,37 @@ function findOutermostIsolatePairs(codePoints: readonly number[]): IsolatePair[]
 // ── Main API ─────────────────────────────────────────────────────────
 
 /**
- * UAX #9 explicit embedding/override normalization (v1.2.0).
+ * UAX #9 explicit embedding normalization (v1.2.0, refined v1.3.0).
  *
- * Maps the legacy explicit directional formatting characters into their
- * sealed-isolate equivalents so the rest of the pipeline can process
- * them via the existing isolate machinery:
+ * Maps the legacy explicit *embedding* characters into their sealed-isolate
+ * equivalents so the rest of the pipeline can process them via the existing
+ * isolate machinery:
  *
  * - LRE (U+202A) → LRI (U+2066)
  * - RLE (U+202B) → RLI (U+2067)
- * - LRO (U+202D) → LRI (U+2066) — base direction L (character-level
- *   override staged for v1.3)
- * - RLO (U+202E) → RLI (U+2067) — base direction R (character-level
- *   override staged for v1.3)
- * - PDF (U+202C) → PDI (U+2069), but only when popping a matched
- *   LRE/RLE/LRO/RLO from the stack (otherwise dropped)
+ * - PDF (U+202C) → PDI (U+2069), but only when popping a matched LRE/RLE
+ *   from the stack (otherwise preserved or dropped, see below)
  *
- * This is a pragmatic simplification: full UAX #9 embeddings allow
- * neutral resolution to leak across the embedding boundary, while
- * isolates are sealed. In real-world inputs the two are
- * interchangeable for ≥ 95 % of cases. Strict UAX #9 conformance with
- * embedding leakage and character-level override is staged for v1.3.
+ * The explicit *override* characters LRO (U+202D) / RLO (U+202E) and the
+ * PDF (U+202C) that closes them are **preserved verbatim** — they carry
+ * character-level type-override semantics (UAX #9 X4/X5) that the isolate
+ * machinery cannot express. They are resolved separately by
+ * {@link resolveBidiRuns} via the override pre-pass, which forces every
+ * inner code point to L (LRO) or R (RLO). A PDF that would pop an override
+ * frame is therefore left in place for that pre-pass to consume.
+ *
+ * This split keeps the ≥ 95 % common embedding cases on the fast isolate
+ * path while giving LRO/RLO faithful character-level override behaviour.
  *
  * @param text - Raw input text in logical order
- * @returns Normalized text with embeddings mapped to isolates.
+ * @returns Text with embeddings mapped to isolates; overrides preserved.
  */
 export function normalizeBidiEmbeddings(text: string): string {
     const LRE = 0x202A, RLE = 0x202B, PDF_CP = 0x202C, LRO = 0x202D, RLO = 0x202E;
     const LRI = 0x2066, RLI = 0x2067, PDI = 0x2069;
 
-    // Quick fast-path: no embedding markers present.
+    // Quick fast-path: no *embedding* markers present (overrides are handled
+    // elsewhere and must pass through untouched).
     let hasEmbed = false;
     for (let i = 0; i < text.length; i++) {
         const c = text.charCodeAt(i);
@@ -533,26 +536,31 @@ export function normalizeBidiEmbeddings(text: string): string {
     }
     if (!hasEmbed) return text;
 
-    const stack: number[] = []; // depth tracking
+    // Stack frames carry their kind so a PDF closes the right construct:
+    //   'E' = embedding (LRE/RLE) → emit LRI/RLI ... PDI
+    //   'O' = override   (LRO/RLO) → preserved verbatim for the override pass
+    const stack: Array<'E' | 'O'> = [];
     const out: number[] = [];
     const MAX_DEPTH = 125;
 
     for (let i = 0; i < text.length;) {
         const cp = text.codePointAt(i) ?? 0;
         const cpLen = cp > 0xFFFF ? 2 : 1;
-        if (cp === LRE || cp === RLO || cp === LRO || cp === RLE) {
-            if (stack.length >= MAX_DEPTH) {
-                // Stack overflow: drop the marker per UAX #9 BD13 fallback.
-                i += cpLen;
-                continue;
-            }
-            stack.push(1);
-            out.push(cp === LRE || cp === LRO ? LRI : RLI);
+        if (cp === LRE || cp === RLE) {
+            if (stack.length >= MAX_DEPTH) { i += cpLen; continue; } // BD13 fallback
+            stack.push('E');
+            out.push(cp === LRE ? LRI : RLI);
+            i += cpLen;
+        } else if (cp === LRO || cp === RLO) {
+            // Preserve overrides verbatim for the X4/X5 override pre-pass.
+            if (stack.length >= MAX_DEPTH) { i += cpLen; continue; }
+            stack.push('O');
+            out.push(cp);
             i += cpLen;
         } else if (cp === PDF_CP) {
-            if (stack.pop()) {
-                out.push(PDI);
-            }
+            const frame = stack.pop();
+            if (frame === 'E') out.push(PDI);
+            else if (frame === 'O') out.push(PDF_CP); // keep — override pass consumes it
             // Orphan PDF: drop silently per UAX #9 BD15.
             i += cpLen;
         } else {
@@ -567,6 +575,131 @@ export function normalizeBidiEmbeddings(text: string): string {
     let result = '';
     for (let i = 0; i < out.length; i++) result += String.fromCodePoint(out[i]);
     return result;
+}
+
+/**
+ * Find the matching PDF (U+202C) that closes the explicit directional
+ * construct opened at `openCp`, balancing nested LRE/RLE/LRO/RLO openers.
+ *
+ * @returns Codepoint index of the closing PDF, or -1 if unmatched.
+ */
+function matchingPdfIndex(codePoints: readonly number[], openCp: number): number {
+    let depth = 1;
+    for (let j = openCp + 1; j < codePoints.length; j++) {
+        const cj = codePoints[j];
+        if (cj === 0x202A || cj === 0x202B || cj === 0x202D || cj === 0x202E) depth++;
+        else if (cj === 0x202C) { depth--; if (depth === 0) return j; }
+    }
+    return -1;
+}
+
+/**
+ * Find the matching PDI (U+2069) that closes the isolate opened at `openCp`,
+ * balancing nested LRI/RLI/FSI openers.
+ *
+ * @returns Codepoint index of the closing PDI, or -1 if unmatched.
+ */
+function matchingPdiIndex(codePoints: readonly number[], openCp: number): number {
+    let depth = 1;
+    for (let j = openCp + 1; j < codePoints.length; j++) {
+        const cj = codePoints[j];
+        if (cj === 0x2066 || cj === 0x2067 || cj === 0x2068) depth++;
+        else if (cj === 0x2069) { depth--; if (depth === 0) return j; }
+    }
+    return -1;
+}
+
+/**
+ * UAX #9 X4/X5 override pre-pass.
+ *
+ * Resolves the outermost LRO (U+202D) / RLO (U+202E) … PDF (U+202C) scopes by
+ * forcing **every** inner code point to a single direction — L for LRO, R for
+ * RLO — regardless of its natural bidi type. This is what distinguishes an
+ * override from an embedding/isolate: digits and opposite-direction runs inside
+ * the scope are laid out uniformly rather than reordered.
+ *
+ * Top-level embedding scopes (LRE/RLE) found between overrides are left in the
+ * gap text and resolved by the recursive {@link resolveBidiRuns} call, so mixed
+ * embedding + override input composes correctly. Nested directional controls
+ * *inside* an override scope are stripped and absorbed by the uniform forcing
+ * (pdfnative's documented "lite" behaviour — the whole point of an override is a
+ * single forced direction).
+ *
+ * @returns Resolved runs, or `null` when the text has no top-level override.
+ * @since 1.3.0
+ */
+function tryResolveOverrides(text: string, forcedLevel?: number): BidiRun[] | null {
+    const LRE = 0x202A, RLE = 0x202B, LRO = 0x202D, RLO = 0x202E;
+    // Fast path: no override markers at all.
+    if (text.indexOf('\u202D') === -1 && text.indexOf('\u202E') === -1) return null;
+
+    const codePoints: number[] = [];
+    const cpToStr: number[] = [];
+    for (let i = 0; i < text.length;) {
+        cpToStr.push(i);
+        const cp = text.codePointAt(i) ?? 0;
+        codePoints.push(cp);
+        i += cp > 0xFFFF ? 2 : 1;
+    }
+    cpToStr.push(text.length);
+    const len = codePoints.length;
+
+    // Collect top-level (depth-0) override spans, skipping top-level embedding
+    // and isolate scopes (their inner overrides are resolved when the recursion
+    // descends into them).
+    interface OverrideSpan { open: number; close: number; rtl: boolean; }
+    const spans: OverrideSpan[] = [];
+    let i = 0;
+    while (i < len) {
+        const cp = codePoints[i];
+        if (cp === LRO || cp === RLO) {
+            const close = matchingPdfIndex(codePoints, i);
+            if (close === -1) { i++; continue; } // unmatched opener — ignore
+            spans.push({ open: i, close, rtl: cp === RLO });
+            i = close + 1;
+        } else if (cp === LRE || cp === RLE) {
+            // Skip the whole embedding scope; recursion handles it later.
+            const close = matchingPdfIndex(codePoints, i);
+            i = close === -1 ? i + 1 : close + 1;
+        } else if (cp === 0x2066 || cp === 0x2067 || cp === 0x2068) {
+            // Skip the whole isolate scope; recursion handles inner overrides.
+            const close = matchingPdiIndex(codePoints, i);
+            i = close === -1 ? i + 1 : close + 1;
+        } else {
+            i++;
+        }
+    }
+    if (spans.length === 0) return null;
+
+    const out: BidiRun[] = [];
+    const emitGap = (cpStart: number, cpEnd: number): void => {
+        if (cpStart >= cpEnd) return;
+        const segText = text.substring(cpToStr[cpStart], cpToStr[cpEnd]);
+        const baseStrIdx = cpToStr[cpStart];
+        const segRuns = forcedLevel === undefined
+            ? resolveBidiRuns(segText)
+            : resolveBidiRunsForced(segText, forcedLevel);
+        for (const r of segRuns) {
+            out.push({ text: r.text, level: r.level, start: r.start + baseStrIdx });
+        }
+    };
+
+    let cursor = 0;
+    for (const span of spans) {
+        emitGap(cursor, span.open);
+        // Inner content (between the opener and its PDF), with all directional
+        // controls stripped — the override forces a single uniform direction.
+        const innerRaw = text.substring(cpToStr[span.open + 1], cpToStr[span.close]);
+        const inner = stripBidiControls(innerRaw);
+        if (inner) {
+            const level = span.rtl ? 1 : 0;
+            const runText = span.rtl ? reverseString(inner) : inner;
+            out.push({ text: runText, level, start: cpToStr[span.open + 1] });
+        }
+        cursor = span.close + 1;
+    }
+    emitGap(cursor, len);
+    return out;
 }
 
 /**
@@ -585,10 +718,16 @@ export function normalizeBidiEmbeddings(text: string): string {
 export function resolveBidiRuns(text: string): BidiRun[] {
     if (!text) return [];
 
-    // Normalize explicit embeddings/overrides → isolate equivalents.
+    // X4/X5: resolve outermost LRO/RLO override scopes first (they force every
+    // inner code point to a single direction and cannot be expressed as
+    // isolates). Returns null when there is no top-level override.
+    const overrideRuns = tryResolveOverrides(text);
+    if (overrideRuns) return overrideRuns;
+
+    // Normalize explicit embeddings (LRE/RLE) → isolate equivalents.
     const normalized = normalizeBidiEmbeddings(text);
     if (normalized !== text) {
-        // Recurse on the normalized text (now contains only isolates).
+        // Recurse on the normalized text (now contains only isolates / overrides).
         return resolveBidiRuns(normalized);
     }
 
@@ -670,6 +809,12 @@ export function resolveBidiRuns(text: string): BidiRun[] {
  */
 function resolveBidiRunsForced(text: string, forcedLevel: number): BidiRun[] {
     if (!text) return [];
+
+    // X4/X5: resolve override scopes before isolate handling, inheriting the
+    // forced paragraph level for the surrounding (non-override) gaps.
+    const overrideRuns = tryResolveOverrides(text, forcedLevel);
+    if (overrideRuns) return overrideRuns;
+
     const codePoints: number[] = [];
     const cpToStr: number[] = [];
     for (let i = 0; i < text.length;) {
@@ -807,14 +952,18 @@ function resolveBidiCore(
 }
 
 /**
- * Check if text contains any RTL characters (Arabic or Hebrew).
+ * Check if text contains any RTL characters (Arabic or Hebrew) or an explicit
+ * directional override (LRO U+202D / RLO U+202E). The override markers are
+ * included so a direct caller that has not yet stripped controls still routes
+ * through the bidi resolver, where the X4/X5 override pass applies.
  *
  * @param text - Input text string
- * @returns True if text contains R or AL bidi types
+ * @returns True if text contains R/AL bidi types or an LRO/RLO override
  */
 export function containsRTL(text: string): boolean {
     for (let i = 0; i < text.length;) {
         const cp = text.codePointAt(i) ?? 0;
+        if (cp === 0x202D || cp === 0x202E) return true; // LRO / RLO override
         const t = classifyBidiType(cp);
         if (t === 'R' || t === 'AL') return true;
         i += cp > 0xFFFF ? 2 : 1;
