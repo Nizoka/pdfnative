@@ -8,6 +8,7 @@
 
 import type { FontEntry } from '../types/pdf-types.js';
 import { detectCharLang } from './script-detect.js';
+import { isZeroWidthFormat } from './script-registry.js';
 
 /** A text run with its assigned font entry */
 export interface FontRun {
@@ -39,6 +40,15 @@ export function splitTextByFont(str: string, fontEntries: FontEntry[]): FontRun[
         // Continuation bias: if current font covers this cp, keep going
         if (currentEntry && currentEntry.fontData.cmap[normCp]) {
             currentText += char;
+            i += charLen;
+            continue;
+        }
+
+        // Zero-width joiners / variation selectors / skin-tone modifiers that
+        // no registered font covers carry no glyph — drop them rather than
+        // emit .notdef tofu. (When a font, e.g. an Indic shaper font, *does*
+        // map the joiner the continuation-bias check above keeps it.)
+        if (isZeroWidthFormat(normCp) && !fontEntries.some((fe) => fe.fontData.cmap[normCp])) {
             i += charLen;
             continue;
         }

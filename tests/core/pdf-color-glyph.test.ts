@@ -59,7 +59,8 @@ describe('renderColorGlyph', () => {
         const form = renderColorGlyph(glyph, outlineOf, 1000);
         expect(form.content).toContain('1 0 0 rg');
         expect(form.content).toContain('f');
-        expect(form.bbox).toEqual([0, 0, 1000, 1000]);
+        // BBox is computed from the outline (0..100 square + 1-unit pad), not the em box.
+        expect(form.bbox).toEqual([-1, -1, 101, 101]);
         expect(form.shadings).toHaveLength(0);
     });
 

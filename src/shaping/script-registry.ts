@@ -214,6 +214,27 @@ export function isEmojiCodepoint(cp: number): boolean {
     return false;
 }
 
+/**
+ * Zero-width emoji/formatting code points that carry no standalone glyph:
+ * the Zero-Width Joiner / Non-Joiner, the emoji/text variation selectors
+ * (VS-15 / VS-16) and the Fitzpatrick skin-tone modifiers.
+ *
+ * When no registered font covers such a code point it must be **dropped**
+ * rather than rendered as `.notdef` (the tofu box). Run-splitting uses this to
+ * avoid emitting tofu for emoji sequences whose joiners/selectors/modifiers are
+ * absent from the curated colour-emoji subset, while leaving the joiners intact
+ * whenever a font (e.g. an Indic shaper font) *does* map them.
+ *
+ * @since 1.3.0
+ */
+export function isZeroWidthFormat(cp: number): boolean {
+    return cp === ZWJ
+        || cp === 0x200C // ZWNJ
+        || cp === VS15
+        || cp === VS16
+        || (cp >= FITZPATRICK_START && cp <= FITZPATRICK_END);
+}
+
 // ── Text-Level Detection ─────────────────────────────────────────────
 
 /** Check if text contains Arabic characters requiring shaping. */

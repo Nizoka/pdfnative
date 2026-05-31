@@ -184,11 +184,29 @@ export function renderColorGlyph(
 
     let shadingIdx = 0;
 
+    // Track the union of all transformed contour points so the Form /BBox
+    // encloses the actual artwork. A fixed `[0 0 upm upm]` box clips glyphs
+    // whose outlines dip below the baseline or extend past the em square
+    // (Noto Color Emoji glyphs routinely do both), which is what made emoji
+    // appear cut off. Bézier control points are included, so the box is a
+    // guaranteed superset of the rendered curves.
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
     for (const layer of glyph.layers as ColorLayer[]) {
         const m: Mat = layer.transform ?? ID;
         const contours = outlines(layer.glyphId);
         if (contours.length === 0) continue;
         const path = contoursToPath(contours, m);
+
+        for (const contour of contours) {
+            for (const pt of contour) {
+                const [px, py] = tx(m, pt.x, pt.y);
+                if (px < minX) minX = px;
+                if (py < minY) minY = py;
+                if (px > maxX) maxX = px;
+                if (py > maxY) maxY = py;
+            }
+        }
 
         if (layer.paint.kind === 'solid') {
             const c: CpalColor = layer.paint.color;
@@ -221,9 +239,16 @@ export function renderColorGlyph(
         }
     }
 
+    // Fall back to the em square when there were no drawable points, and pad the
+    // computed box by 1 unit so curve extrema sitting exactly on an anchor are
+    // never clipped by rounding.
+    const bbox: [number, number, number, number] = Number.isFinite(minX)
+        ? [Math.floor(minX) - 1, Math.floor(minY) - 1, Math.ceil(maxX) + 1, Math.ceil(maxY) + 1]
+        : [0, 0, unitsPerEm, unitsPerEm];
+
     return {
         content: body.join('\n'),
-        bbox: [0, 0, unitsPerEm, unitsPerEm],
+        bbox,
         shadings,
         extGStates,
     };

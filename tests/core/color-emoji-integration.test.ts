@@ -177,4 +177,27 @@ describe('colour-emoji inline rendering — document integration', () => {
         expect(pdf).not.toContain('/CEm');
         expect(pdf).not.toContain('/Subtype /Form');
     });
+
+    it('computes the Form /BBox from the glyph outline (no hardcoded em-box clip)', () => {
+        // The synthetic colour glyph is a 700×700 square (outline bounds 0..700),
+        // not the full 1000-unit em box. The Form /BBox must hug the outline so
+        // glyphs that dip below the baseline are not clipped.
+        const params: DocumentParams = {
+            title: 'BBox Emoji',
+            blocks: [{ type: 'paragraph', text: 'Box \u{1F600}' }],
+            fontEntries: [colorEmojiEntry(SOLID)],
+        };
+        const pdf = buildDocumentPDF(params);
+        const m = pdf.match(/\/BBox \[\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s*\]/);
+        expect(m).not.toBeNull();
+        const [x0, y0, x1, y1] = [m![1], m![2], m![3], m![4]].map(Number);
+        // Outline is 0..700; allow the ±1 padding the renderer applies.
+        expect(x0).toBeLessThanOrEqual(0);
+        expect(y0).toBeLessThanOrEqual(0);
+        expect(x1).toBeGreaterThanOrEqual(700);
+        expect(y1).toBeGreaterThanOrEqual(700);
+        // Must NOT be the old hardcoded full em box [0 0 1000 1000].
+        expect(x1).toBeLessThan(1000);
+        expect(y1).toBeLessThan(1000);
+    });
 });

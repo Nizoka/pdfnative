@@ -6,6 +6,11 @@
  * via PDF /Shading), with no rasterisation. Opt in by registering the curated
  * Noto Color Emoji data module under lang `'emoji'`.
  *
+ * Every emoji used below is in the curated subset, so all render in colour.
+ * The "real-world" sample also includes emoji-presentation variation selectors
+ * (U+FE0F) inline — they carry no glyph and are dropped during run-splitting
+ * rather than emitted as `.notdef` tofu.
+ *
  * Output: test-output/emoji/color-*.pdf
  */
 
@@ -27,38 +32,79 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         { fontData: colorFont, fontRef: '/F4', lang: 'emoji' },
     ];
 
+    // ── 1. Basic palette (curated subset only) ──────────────────────
     const params: DocumentParams = {
         title: 'Colour Emoji — Noto Color Emoji (COLR/CPAL, OFL-1.1)',
         blocks: [
-            { type: 'heading', level: 1, text: 'pdfnative v1.3.0 — Colour emoji' },
-            { type: 'paragraph', text: 'Native COLR/CPAL rendering — each glyph is a vector Form XObject (no bitmaps).' },
-            { type: 'paragraph', text: 'Smileys: 😀 😃 😄 😁 😆 🤣 😂 🙂 😉 😊 😍 🤩 😘 😎 🥰 🤗 🤔 😴.' },
-            { type: 'paragraph', text: 'Hearts & symbols: ❤️ 🧡 💛 💚 💙 💜 🖤 ⭐ ✨ 🔥 💯 ✅ ❌ ❗ ⚠️.' },
-            { type: 'paragraph', text: 'Hands: 👍 👎 👌 👊 ✊ ✋ 👋 🙌 🙏 👏 🤞 🤝 💪.' },
-            { type: 'paragraph', text: 'Animals & nature: 🐶 🐱 🐭 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐝 🦋 🌸 🌹 🌻 🍀 🌳.' },
-            { type: 'paragraph', text: 'Food: 🍎 🍌 🍇 🍓 🍒 🍑 🍊 🍅 🍕 🍔 🌭 🍿 🍩 🎂 ☕ 🍺 🍷.' },
-            { type: 'paragraph', text: 'Activity & travel: ⚽ 🏀 🏈 🎾 🎸 🎵 🎨 🚗 🚀 🚢 ✈️ ⌚ 📱 💻 💡 🎁 🎉.' },
+            { type: 'heading', level: 1, text: 'pdfnative — Colour emoji' },
+            { type: 'paragraph', text: 'Native COLR/CPAL rendering — each glyph is a vector Form XObject (no bitmaps). The Form /BBox is computed from the glyph outline so nothing is clipped.' },
+            { type: 'paragraph', text: 'Smileys: 😀 😃 😄 😁 😆 🤣 😂 🙂 😉 😊 😍 🤩 😘 😎 🥰 🤗 🤔 😴' },
+            { type: 'paragraph', text: 'Hearts & symbols: ❤ 🧡 💛 💚 💙 💜 🖤 ⭐ ✨ 🔥 💯 ✅ ❌ ❗ ⚠ ♻' },
+            { type: 'paragraph', text: 'Hands: 👍 👎 👌 👊 ✊ ✋ 👋 👐 🙌 🙏 👏 🤘 🤝 🤞 🤟 💪' },
+            { type: 'paragraph', text: 'Animals & nature: 🐶 🐱 🐭 🐹 🐰 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐝 🦋 🐌 🐞 🐢 🐍 🐳 🐬 🐟 🍄 🌺 🌷 🌸 🌹 🌻 🍃 🌲 🌳 🌴' },
+            { type: 'paragraph', text: 'Food: 🍎 🍌 🍇 🍉 🍓 🍒 🍑 🍊 🍅 🥕 🌽 🍔 🍕 🍟 🌭 🍿 🍦 🍰 🍫 🍪 ☕ 🍺 🍷' },
+            { type: 'paragraph', text: 'Activity, travel & objects: ⚽ 🏀 🏈 🎾 🏐 🎸 🎵 🎨 🚗 🚕 🚌 ✈ 🚀 🚢 ⌚ 📱 💻 💡 📖 ✏ 📌 🔒 🔑 🏠 🎁 🎈 🎉 🎶 💰 💵' },
         ],
         footerText: 'pdfnative — colour-emoji showcase (COLR/CPAL → PDF Shading)',
         fontEntries,
     };
     ctx.writeSafe(resolve(ctx.outputDir, 'emoji', 'color-emoji-basic.pdf'), 'emoji/color-emoji-basic.pdf', buildDocumentPDFBytes(params));
 
-    // Mixed Latin + colour emoji in a list (font routing).
+    // ── 2. Mixed Latin + colour emoji in a list (font routing) ──────
     const params2: DocumentParams = {
         title: 'Colour emoji + Latin (font routing)',
         blocks: [
             { type: 'heading', level: 1, text: 'Release checklist' },
             { type: 'list', items: [
-                'Typecheck 🧪 green ✅',
-                'Tests 1900+ passing 🚀',
+                'Typecheck green ✅',
+                'Tests passing 🚀',
                 'Colour emoji 🎨 via COLR/CPAL',
-                'Zero dependencies 📦',
-                'PDF/A conformance ✔️',
+                'Zero dependencies 💯',
+                'PDF/A conformance ✅',
             ], style: 'bullet' },
         ],
         footerText: 'pdfnative — colour emoji + Latin, single document',
         fontEntries,
     };
     ctx.writeSafe(resolve(ctx.outputDir, 'emoji', 'color-emoji-mixed.pdf'), 'emoji/color-emoji-mixed.pdf', buildDocumentPDFBytes(params2));
+
+    // ── 3. Real-world document (sprint status report) ───────────────
+    // Emoji appear naturally in headings, prose, a bulleted list and a table.
+    // Several carry the U+FE0F emoji variation selector (❤️ ⚠️ ✈️ ✏️) to prove
+    // it is dropped rather than rendered as tofu.
+    const params3: DocumentParams = {
+        title: 'Sprint 42 — Status Report',
+        blocks: [
+            { type: 'heading', level: 1, text: '🚀 Sprint 42 — Status Report' },
+            { type: 'paragraph', text: 'Team velocity is up and morale is high 😎. We shipped the colour-emoji engine ✅ and closed the last accessibility blockers ♻.' },
+
+            { type: 'heading', level: 2, text: '✅ Done this sprint' },
+            { type: 'list', items: [
+                'Colour emoji rendering 🎨 — COLR/CPAL → PDF Shading',
+                'Configurable document limits 📈 for very large reports',
+                'Currency symbols 💰 verified (€ £ ¥ all extractable)',
+                'Docs & guides 📖 refreshed',
+            ], style: 'bullet' },
+
+            { type: 'heading', level: 2, text: '⚠️ Risks & follow-ups' },
+            { type: 'paragraph', text: 'Watch the font-subset size 📦 budget. Travel ✈️ for the offsite may slip the review by a day. Love the progress though ❤️.' },
+
+            { type: 'heading', level: 2, text: '📊 Burndown' },
+            { type: 'table',
+              headers: ['Area', 'Owner', 'Status'],
+              rows: [
+                { cells: ['Colour emoji 🎨', 'Ana', 'Done ✅'], type: '', pointed: false },
+                { cells: ['Large docs 📈', 'Bo', 'Done ✅'], type: '', pointed: false },
+                { cells: ['Telugu script 🔤', 'Cy', 'In review 🔍'], type: '', pointed: false },
+                { cells: ['Release notes ✏️', 'Di', 'Done ✅'], type: '', pointed: false },
+              ],
+            },
+
+            { type: 'paragraph', text: 'Thanks team 🙏 — great work this sprint 🎉.' },
+        ],
+        footerText: 'pdfnative — real-world colour-emoji document',
+        fontEntries,
+    };
+    ctx.writeSafe(resolve(ctx.outputDir, 'emoji', 'color-emoji-real.pdf'), 'emoji/color-emoji-real.pdf', buildDocumentPDFBytes(params3));
 }
+
