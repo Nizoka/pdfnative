@@ -199,7 +199,6 @@ function extractCompositeContours(font: GlyfFont, base: number, depth: number): 
     let pos = base + 10;
     const out: Contour[] = [];
 
-    // eslint-disable-next-line no-constant-condition
     while (true) {
         const flags = view.getUint16(pos); pos += 2;
         const componentGid = view.getUint16(pos); pos += 2;

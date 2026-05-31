@@ -251,7 +251,7 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
         case 11: { // PaintColrGlyph → reference another base glyph's paint
             const glyphId = view.getUint16(offset + 1);
             const paintOffset = baseGlyphPaintOffset(ctx, glyphId);
-            if (paintOffset == null) throw new UnsupportedPaint('PaintColrGlyph missing base');
+            if (paintOffset === null) throw new UnsupportedPaint('PaintColrGlyph missing base');
             collectLayers(ctx, paintOffset, m, out, depth + 1);
             return;
         }

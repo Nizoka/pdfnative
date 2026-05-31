@@ -81,8 +81,6 @@ export interface UseCluster {
 
 // ── Per-script Code Point Tables ─────────────────────────────────────
 
-/* eslint-disable no-fallthrough */
-
 function devanagariCategory(cp: number): UseCategory {
     // U+0900–U+097F (Devanagari)
     if (cp === 0x0901 || cp === 0x0902) return 'Mabv';        // candrabindu, anusvara
@@ -145,8 +143,6 @@ function tamilCategory(cp: number): UseCategory {
     if (cp >= 0x0BE6 && cp <= 0x0BEF) return 'N';              // digits
     return 'O';
 }
-
-/* eslint-enable no-fallthrough */
 
 // ── Top-level Classifier ─────────────────────────────────────────────
 
