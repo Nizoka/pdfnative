@@ -1,0 +1,65 @@
+name: Visual Regression
+
+# Guards the text-rendering pipeline (shaping → PDF emission → font embedding)
+# against visual regressions. Builds the extreme-script fixtures from the
+# current source with the real bundled fonts, then runs the glyph-position
+# snapshot guard and the rendered-glyph pixel-diff tests against the committed
+# baselines under tests/visual/baselines/.
+#
+# Gated on the modules that can change rendered glyph geometry so unrelated
+# changes don't pay the cost.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'src/shaping/**'
+      - 'src/fonts/**'
+      - 'src/core/**'
+      - 'fonts/**'
+      - 'tests/visual/**'
+      - '.github/workflows/visual-regression.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'src/shaping/**'
+      - 'src/fonts/**'
+      - 'src/core/**'
+      - 'fonts/**'
+      - 'tests/visual/**'
+      - '.github/workflows/visual-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run visual-regression suite (snapshot + pixel diff)
+        run: npx vitest run tests/visual/
+
+      - name: Upload rendered bitmaps on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-pngs
+          path: tests/visual/baselines/
+          retention-days: 7
