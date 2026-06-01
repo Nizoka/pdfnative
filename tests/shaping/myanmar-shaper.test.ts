@@ -61,3 +61,81 @@ describe('shapeMyanmarText', () => {
         expect(shapeMyanmarText('', mockFontData())).toEqual([]);
     });
 });
+
+    describe('shapeMyanmarText — ligature substitution', () => {
+        // Ka (U+1000) GID = 0x1000 - MYANMAR_START + 100 = 100
+        // virama (U+1039) GID = 0x1039 - MYANMAR_START + 100 = 157
+        // Kha (U+1001) GID = 0x1001 - MYANMAR_START + 100 = 101
+        // Ga (U+1002) GID = 0x1002 - MYANMAR_START + 100 = 102
+        const kaGid = 0x1000 - MYANMAR_START + 100;
+        const virGid = 0x1039 - MYANMAR_START + 100;
+        const khaGid = 0x1001 - MYANMAR_START + 100;
+        const gaGid = 0x1002 - MYANMAR_START + 100;
+
+        it('uses a GSUB ligature when the font provides one', () => {
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, virGid, khaGid]] } });
+            const shaped = shapeMyanmarText('\u1000\u1039\u1001', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+        });
+
+        it('resolves remaining glyphs after ligature match (else sub-branch)', () => {
+            // Ka+virama+Kha → 500; lone virama remains without a sub-ligature
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, virGid, khaGid]] } });
+            const shaped = shapeMyanmarText('\u1000\u1039\u1001\u1039', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+            expect(shaped.some((g) => g.gid === virGid)).toBe(true);
+        });
+
+        it('handles sub-ligature within remaining stack glyphs', () => {
+            // Ka+virama+Kha → 500; virama+Ga → 501
+            const font = mockFontData({
+                ligatures: {
+                    [kaGid]: [[500, virGid, khaGid]],
+                    [virGid]: [[501, gaGid]],
+                },
+            });
+            const shaped = shapeMyanmarText('\u1000\u1039\u1001\u1039\u1002', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+            expect(shaped.some((g) => g.gid === 501)).toBe(true);
+        });
+
+        it('applies GPOS mark anchors for above vowel signs', () => {
+            // vowel i (U+102D, above) GID = 0x102D - MYANMAR_START + 100 = 145
+            const vowelGid = 0x102D - MYANMAR_START + 100;
+            const font = mockFontData({
+                markAnchors: {
+                    bases: { [kaGid]: { 0: [500, 900] as [number, number] } },
+                    marks: { [vowelGid]: [0, 300, 800] as [number, number, number] },
+                },
+            });
+            const shaped = shapeMyanmarText('\u1000\u102D', font);
+            const mark = shaped.find((g) => g.gid === vowelGid);
+            expect(mark).toBeDefined();
+            expect(mark!.isZeroAdvance).toBe(true);
+            expect(mark!.dx).not.toBe(0);
+        });
+
+        it('emits e-vowel (U+1031, pre-base type 4) before the base consonant', () => {
+            const eGid = 0x1031 - MYANMAR_START + 100;
+            const shaped = shapeMyanmarText('\u1000\u1031', mockFontData());
+            const eIdx = shaped.findIndex((g) => g.gid === eGid);
+            const bIdx = shaped.findIndex((g) => g.gid === kaGid);
+            expect(eIdx).toBeGreaterThanOrEqual(0);
+            expect(eIdx).toBeLessThan(bIdx);
+        });
+    });
+
+    describe('buildMyanmarClusters — edge cases', () => {
+        it('emits non-Myanmar codepoints as standalone clusters', () => {
+            const clusters = buildMyanmarClusters('A\u1000');
+            expect(clusters.length).toBe(2);
+            expect(clusters[0].codepoints[0]).toBe(0x41);
+        });
+
+        it('emits orphan non-consonant codepoints as standalone clusters', () => {
+            // A lone virama (type 7) without a preceding consonant
+            const clusters = buildMyanmarClusters('\u1039');
+            expect(clusters.length).toBe(1);
+            expect(clusters[0].codepoints).toContain(0x1039);
+        });
+    });

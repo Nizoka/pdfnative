@@ -68,3 +68,73 @@ describe('shapeSinhalaText', () => {
         expect(shapeSinhalaText('', mockFontData())).toEqual([]);
     });
 });
+
+    describe('shapeSinhalaText — ligature substitution', () => {
+        // Ka (U+0D9A) GID = 0x0D9A - SINHALA_START + 100 = 154
+        // virama/hal kirima (U+0DCA) GID = 0x0DCA - SINHALA_START + 100 = 202
+        // Kha (U+0D9B) GID = 0x0D9B - SINHALA_START + 100 = 155
+        // Ga (U+0D9C) GID = 0x0D9C - SINHALA_START + 100 = 156
+        const kaGid = 0x0D9A - SINHALA_START + 100;
+        const virGid = 0x0DCA - SINHALA_START + 100;
+        const khaGid = 0x0D9B - SINHALA_START + 100;
+        const gaGid = 0x0D9C - SINHALA_START + 100;
+
+        it('uses a GSUB ligature when the font provides one', () => {
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, virGid, khaGid]] } });
+            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u0D9B', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+        });
+
+        it('resolves remaining glyphs after ligature match (else sub-branch)', () => {
+            // Ka+virama+Kha → 500; remaining virama is standalone (no sub-lig)
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, virGid, khaGid]] } });
+            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u0D9B\u0DCA', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+            expect(shaped.length).toBeGreaterThan(1);
+        });
+
+        it('handles sub-ligature within remaining cluster glyphs', () => {
+            // Ka+virama+Kha → 500; virama+Ga → 501
+            const font = mockFontData({
+                ligatures: {
+                    [kaGid]: [[500, virGid, khaGid]],
+                    [virGid]: [[501, gaGid]],
+                },
+            });
+            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u0D9B\u0DCA\u0D9C', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+            expect(shaped.some((g) => g.gid === 501)).toBe(true);
+        });
+
+        it('applies GPOS mark anchors for above vowel signs', () => {
+            // vowel I (U+0DD2, above) GID = 0x0DD2 - SINHALA_START + 100 = 210
+            const iGid = 0x0DD2 - SINHALA_START + 100;
+            const font = mockFontData({
+                markAnchors: {
+                    bases: { [kaGid]: { 0: [500, 900] as [number, number] } },
+                    marks: { [iGid]: [0, 300, 800] as [number, number, number] },
+                },
+            });
+            const shaped = shapeSinhalaText('\u0D9A\u0DD2', font);
+            const mark = shaped.find((g) => g.gid === iGid);
+            expect(mark).toBeDefined();
+            expect(mark!.isZeroAdvance).toBe(true);
+            expect(mark!.dx).not.toBe(0);
+        });
+    });
+
+    describe('buildSinhalaClusters — edge cases', () => {
+        it('emits non-Sinhala codepoints (ASCII) as standalone clusters', () => {
+            const clusters = buildSinhalaClusters('A\u0D9A');
+            expect(clusters.length).toBe(2);
+            expect(clusters[0].codepoints[0]).toBe(0x41);
+        });
+
+        it('decomposes two-part vowel U+0DDC (o)', () => {
+            // U+0DDC → U+0DD9 (pre-base kombuva) + U+0DCF
+            const clusters = buildSinhalaClusters('\u0D9A\u0DDC');
+            const cps = clusters.flatMap((c) => c.codepoints);
+            expect(cps).toContain(0x0DD9);
+            expect(cps).toContain(0x0DCF);
+        });
+    });

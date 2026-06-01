@@ -54,3 +54,86 @@ describe('shapeTibetanText', () => {
         expect(shapeTibetanText('', mockFontData())).toEqual([]);
     });
 });
+
+    describe('shapeTibetanText — ligature substitution', () => {
+        // Ka GID = 0x0F40 - TIBETAN_START + 100 = 164
+        // subjoined Ka GID = 0x0F90 - TIBETAN_START + 100 = 244
+        // subjoined Kha GID = 0x0F91 - TIBETAN_START + 100 = 245
+        // subjoined Ga GID = 0x0F92 - TIBETAN_START + 100 = 246
+        const kaGid = 0x0F40 - TIBETAN_START + 100;
+        const sKaGid = 0x0F90 - TIBETAN_START + 100;
+        const sKhaGid = 0x0F91 - TIBETAN_START + 100;
+        const sGaGid = 0x0F92 - TIBETAN_START + 100;
+
+        it('uses a GSUB ligature when the font provides one', () => {
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, sKaGid]] } });
+            const shaped = shapeTibetanText('\u0F40\u0F90', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+        });
+
+        it('resolves remaining glyphs after a ligature match (else sub-branch)', () => {
+            // Ka+subjKa → 500 (consumed=2); remaining subjKha is standalone (no match)
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, sKaGid]] } });
+            const shaped = shapeTibetanText('\u0F40\u0F90\u0F91', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+            expect(shaped.some((g) => g.gid === sKhaGid)).toBe(true);
+        });
+
+        it('handles sub-ligature within remaining stack glyphs', () => {
+            // Ka+subjKa → 500; subjKha+subjGa → 501
+            const font = mockFontData({
+                ligatures: {
+                    [kaGid]: [[500, sKaGid]],
+                    [sKhaGid]: [[501, sGaGid]],
+                },
+            });
+            const shaped = shapeTibetanText('\u0F40\u0F90\u0F91\u0F92', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+            expect(shaped.some((g) => g.gid === 501)).toBe(true);
+        });
+
+        it('applies GPOS mark anchors for above vowel signs', () => {
+            // vowel i (U+0F72) GID = 0x0F72 - TIBETAN_START + 100 = 214
+            const vowelIGid = 0x0F72 - TIBETAN_START + 100;
+            const font = mockFontData({
+                markAnchors: {
+                    bases: { [kaGid]: { 0: [500, 900] as [number, number] } },
+                    marks: { [vowelIGid]: [0, 300, 800] as [number, number, number] },
+                },
+            });
+            const shaped = shapeTibetanText('\u0F40\u0F72', font);
+            const mark = shaped.find((g) => g.gid === vowelIGid);
+            expect(mark).toBeDefined();
+            expect(mark!.isZeroAdvance).toBe(true);
+            expect(mark!.dx).not.toBe(0); // anchor-computed offset
+        });
+
+        it('emits visarga (type 5) as normal-advance glyph after a stack', () => {
+            // visarga U+0F7F GID = 0x0F7F - TIBETAN_START + 100 = 227
+            const visargaGid = 0x0F7F - TIBETAN_START + 100;
+            const shaped = shapeTibetanText('\u0F40\u0F7F', mockFontData());
+            const vis = shaped.find((g) => g.gid === visargaGid);
+            expect(vis).toBeDefined();
+            expect(vis!.isZeroAdvance).toBe(false);
+        });
+    });
+
+    describe('buildTibetanStacks — edge cases', () => {
+        it('emits non-Tibetan codepoints (ASCII) as standalone stacks', () => {
+            const stacks = buildTibetanStacks('A\u0F40');
+            expect(stacks.length).toBe(2);
+            expect(stacks[0].codepoints[0]).toBe(0x41);
+        });
+
+        it('emits orphan vowel signs (no preceding head) as standalone stacks', () => {
+            // U+0F72 is type 2 (above vowel sign) — no head consonant before it
+            const stacks = buildTibetanStacks('\u0F72');
+            expect(stacks.length).toBe(1);
+            expect(stacks[0].codepoints).toContain(0x0F72);
+        });
+
+        it('recognises independent letters (type 1, e.g. OM U+0F00) as stack starters', () => {
+            const stacks = buildTibetanStacks('\u0F00');
+            expect(stacks.length).toBe(1);
+        });
+    });

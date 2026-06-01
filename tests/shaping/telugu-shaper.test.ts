@@ -167,3 +167,66 @@ describe('shapeTeluguText', () => {
         expect(glyphs.some((g) => g.gid === 900)).toBe(true);
     });
 });
+
+    describe('shapeTeluguText — sub-ligature and matra branches', () => {
+        const kaGid = 0x0C15 - TELUGU_START + 100;     // 121
+        const viramaGid = 0x0C4D - TELUGU_START + 100;  // 177
+        const ssaGid = 0x0C37 - TELUGU_START + 100;     // 155
+        const khaGid = 0x0C16 - TELUGU_START + 100;     // 122
+
+        it('resolves remaining glyphs after a ligature match (else sub-branch)', () => {
+            // Ka+virama+Ssa → 900 (consumed=3); lone virama is not a sub-lig
+            const fd = mockFontData({ ligatures: { [kaGid]: [[900, viramaGid, ssaGid]] } });
+            const glyphs = shapeTeluguText('\u0C15\u0C4D\u0C37\u0C4D', fd);
+            expect(glyphs.some((g) => g.gid === 900)).toBe(true);
+            expect(glyphs.some((g) => g.gid === viramaGid)).toBe(true);
+        });
+
+        it('handles sub-ligature within remaining cluster glyphs (if sub-branch)', () => {
+            // Ka+virama+Ssa → 900; virama+Kha → 901
+            const fd = mockFontData({
+                ligatures: {
+                    [kaGid]: [[900, viramaGid, ssaGid]],
+                    [viramaGid]: [[901, khaGid]],
+                },
+            });
+            const glyphs = shapeTeluguText('\u0C15\u0C4D\u0C37\u0C4D\u0C16', fd);
+            expect(glyphs.some((g) => g.gid === 900)).toBe(true);
+            expect(glyphs.some((g) => g.gid === 901)).toBe(true);
+        });
+
+        it('applies GPOS mark anchors for above matras (ct=2)', () => {
+            // i (U+0C3F, ct=2) GID = 0x0C3F - TELUGU_START + 100 = 163
+            const iGid = 0x0C3F - TELUGU_START + 100;
+            const fd = mockFontData({
+                markAnchors: {
+                    bases: { [kaGid]: { 0: [500, 900] as [number, number] } },
+                    marks: { [iGid]: [0, 300, 800] as [number, number, number] },
+                },
+            });
+            const glyphs = shapeTeluguText('\u0C15\u0C3F', fd);
+            const mark = glyphs.find((g) => g.gid === iGid);
+            expect(mark).toBeDefined();
+            expect(mark!.isZeroAdvance).toBe(true);
+            expect(mark!.dx).not.toBe(0);
+        });
+
+        it('emits anusvara (ct=6 modifier) as zero-advance mark (matra loop ct=6)', () => {
+            // anusvara U+0C02 (ct=6) GID = 0x0C02 - TELUGU_START + 100 = 102
+            const anusvaraGid = 0x0C02 - TELUGU_START + 100;
+            const glyphs = shapeTeluguText('\u0C15\u0C02', mockFontData());
+            const mark = glyphs.find((g) => g.gid === anusvaraGid);
+            expect(mark).toBeDefined();
+            expect(mark!.isZeroAdvance).toBe(true);
+        });
+
+        it('emits Telugu digit after a vowel sign (matra loop ct=9)', () => {
+            // Ka + vowel-i (U+0C3F, ct=2) + digit 0 (U+0C66, ct=9)
+            // digit GID = 0x0C66 - TELUGU_START + 100 = 166
+            const digitGid = 0x0C66 - TELUGU_START + 100;
+            const glyphs = shapeTeluguText('\u0C15\u0C3F\u0C66', mockFontData());
+            const digit = glyphs.find((g) => g.gid === digitGid);
+            expect(digit).toBeDefined();
+            expect(digit!.isZeroAdvance).toBe(false);
+        });
+    });

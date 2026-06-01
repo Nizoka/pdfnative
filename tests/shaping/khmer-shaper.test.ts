@@ -59,3 +59,89 @@ describe('shapeKhmerText', () => {
         expect(shapeKhmerText('', mockFontData())).toEqual([]);
     });
 });
+
+    describe('shapeKhmerText — ligature substitution', () => {
+        // Ka (U+1780) GID = 0x1780 - KHMER_START + 100 = 100
+        // coeng (U+17D2) GID = 0x17D2 - KHMER_START + 100 = 242
+        // Kha (U+1781) GID = 0x1781 - KHMER_START + 100 = 101
+        // Ga (U+1782) GID = 0x1782 - KHMER_START + 100 = 102
+        const kaGid = 0x1780 - KHMER_START + 100;
+        const coengGid = 0x17D2 - KHMER_START + 100;
+        const khaGid = 0x1781 - KHMER_START + 100;
+        const gaGid = 0x1782 - KHMER_START + 100;
+
+        it('uses a GSUB ligature when the font provides one', () => {
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, coengGid, khaGid]] } });
+            const shaped = shapeKhmerText('\u1780\u17D2\u1781', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+        });
+
+        it('resolves remaining glyphs after ligature match (else sub-branch)', () => {
+            // Ka+coeng+Kha → 500; trailing coeng has no sub-ligature
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, coengGid, khaGid]] } });
+            const shaped = shapeKhmerText('\u1780\u17D2\u1781\u17D2', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+            expect(shaped.length).toBeGreaterThan(1);
+        });
+
+        it('handles sub-ligature within remaining stack glyphs', () => {
+            // Ka+coeng+Kha → 500; coeng+Ga → 501
+            const font = mockFontData({
+                ligatures: {
+                    [kaGid]: [[500, coengGid, khaGid]],
+                    [coengGid]: [[501, gaGid]],
+                },
+            });
+            const shaped = shapeKhmerText('\u1780\u17D2\u1781\u17D2\u1782', font);
+            expect(shaped.some((g) => g.gid === 500)).toBe(true);
+            expect(shaped.some((g) => g.gid === 501)).toBe(true);
+        });
+
+        it('applies GPOS mark anchors for above vowel signs', () => {
+            // vowel e (U+17C1) GID = 0x17C1 - KHMER_START + 100 = 129
+            const eGid = 0x17C1 - KHMER_START + 100;
+            const font = mockFontData({
+                markAnchors: {
+                    bases: { [kaGid]: { 0: [500, 900] as [number, number] } },
+                    marks: { [eGid]: [0, 300, 800] as [number, number, number] },
+                },
+            });
+            // Pre-base e is emitted first; but we still verify the mark anchor path
+            // by testing a post-base vowel (ct===2/3/6) with anchor data
+            // niahit U+17C6 (above, ct=2) GID = 0x17C6 - KHMER_START + 100 = 134
+            const niahitGid = 0x17C6 - KHMER_START + 100;
+            const font2 = mockFontData({
+                markAnchors: {
+                    bases: { [kaGid]: { 0: [500, 900] as [number, number] } },
+                    marks: { [niahitGid]: [0, 300, 800] as [number, number, number] },
+                },
+            });
+            const shaped = shapeKhmerText('\u1780\u17C6', font2);
+            const mark = shaped.find((g) => g.gid === niahitGid);
+            expect(mark).toBeDefined();
+            expect(mark!.isZeroAdvance).toBe(true);
+            expect(mark!.dx).not.toBe(0);
+        });
+
+        it('emits Khmer digits as normal-advance glyphs', () => {
+            // Khmer digit 0 = U+17E0 GID = 0x17E0 - KHMER_START + 100 = 228
+            const shaped = shapeKhmerText('\u17E0', mockFontData());
+            expect(shaped.length).toBe(1);
+            expect(shaped[0].isZeroAdvance).toBe(false);
+        });
+    });
+
+    describe('buildKhmerClusters — edge cases', () => {
+        it('emits non-Khmer codepoints (ASCII) as standalone clusters', () => {
+            const clusters = buildKhmerClusters('A\u1780');
+            expect(clusters.length).toBe(2);
+            expect(clusters[0].codepoints[0]).toBe(0x41);
+        });
+
+        it('decomposes two-part vowel U+17C5 (oi)', () => {
+            // U+17C5 → pre-base U+17C1 inserted before the base
+            const clusters = buildKhmerClusters('\u1780\u17C5');
+            const cps = clusters.flatMap((c) => c.codepoints);
+            expect(cps).toContain(0x17C1);
+        });
+    });
