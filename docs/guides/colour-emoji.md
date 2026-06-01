@@ -49,7 +49,7 @@ Colour emoji is **opt-in** for two reasons:
 1. **Module size.** The curated subset is ~936 KB; bundling it by default would
    bloat every consumer. Register it only when you need colour.
 2. **Byte stability.** When no colour-emoji font is registered, documents are
-   **byte-identical** to v1.2.0 — the colour path is fully gated.
+  byte-identical to the pre-colour-emoji path — the colour path is fully gated.
 
 To keep monochrome emoji instead, register the monochrome font:
 

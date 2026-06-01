@@ -10,7 +10,7 @@
  *   - Free-form document builder (headings, paragraphs, lists, tables, images, links, barcodes)
  *   - Built-in Helvetica (Latin/WinAnsi) — no font embedding needed
  *   - CIDFont Type2/Identity-H embedding for Unicode scripts
- *   - 16 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil
+ *   - 17 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu
  *   - Thai OpenType shaping (GSUB + GPOS)
  *   - Arabic positional shaping (GSUB isolated/initial/medial/final forms)
  *   - BiDi text layout (simplified UAX #9) with glyph mirroring

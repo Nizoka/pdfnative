@@ -100,14 +100,14 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         }
     }
 
-    // ── Unicode: Multi-language (all 16 scripts) ─────────────────
+    // ── Unicode: Multi-language (all 17 scripts) ─────────────────
     {
         const fontEntries = await loadMultiFontEntries();
-        if (fontEntries.length === 16) {
+        if (fontEntries.length === 17) {
             const params: DocumentParams = {
-                title: 'Multi-Language Document \u2013 16 Scripts',
+                title: 'Multi-Language Document \u2013 17 Scripts',
                 blocks: [
-                    { type: 'heading', text: 'pdfnative \u2013 16 Scripts, One Engine', level: 1 },
+                    { type: 'heading', text: 'pdfnative \u2013 17 Scripts, One Engine', level: 1 },
                     { type: 'paragraph', text: 'This document renders every script supported by pdfnative in a single PDF. Each section contains a native heading, a sample paragraph, and uses automatic font switching via script-aware Unicode block detection. All content is produced from a single DocumentParams object with a shared fontEntries array.' },
 
                     { type: 'heading', text: 'Supported Scripts', level: 2 },
@@ -129,6 +129,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                         { cells: ['Armenian', 'hy', 'LTR', 'None'], type: 'credit', pointed: false },
                         { cells: ['Bengali', 'bn', 'LTR', 'GSUB + GPOS'], type: 'credit', pointed: true },
                         { cells: ['Tamil', 'ta', 'LTR', 'GSUB + GPOS'], type: 'credit', pointed: true },
+                        { cells: ['Telugu', 'te', 'LTR', 'GSUB + GPOS'], type: 'credit', pointed: true },
                     ] },
 
                     // Latin
@@ -181,6 +182,10 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { type: 'heading', text: '\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u2013 Tamil', level: 2 },
                     { type: 'paragraph', text: 'pdfnative \u0BA4\u0BAE\u0BBF\u0BB4\u0BCD PDF \u0B86\u0BB5\u0BA3\u0B99\u0BCD\u0B95\u0BB3\u0BC8 \u0B89\u0BB0\u0BC1\u0BB5\u0BBE\u0B95\u0BCD\u0B95\u0BC1\u0B95\u0BBF\u0BB1\u0BA4\u0BC1, \u0B87\u0BA3\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1\u0B95\u0BB3\u0BCD \u0BAE\u0BB1\u0BCD\u0BB1\u0BC1\u0BAE\u0BCD \u0BAA\u0BBF\u0BB0\u0BBF\u0BA8\u0BCD\u0BA4 \u0B89\u0BAF\u0BBF\u0BB0\u0BCD\u0B95\u0BB3\u0BC1\u0B9F\u0BA9\u0BCD \u0BAE\u0BC1\u0BB4\u0BC1 \u0B86\u0BA4\u0BB0\u0BB5\u0BC1.' },
 
+                    // Telugu
+                    { type: 'heading', text: '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 \u2013 Telugu', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 PDF \u0C2A\u0C24\u0C4D\u0C30\u0C3E\u0C32\u0C28\u0C41 \u0C38\u0C30\u0C48\u0C28 OpenType \u0C36\u0C47\u0C2A\u0C3F\u0C02\u0C17\u0C4D\u0C24\u0C4B \u0C09\u0C24\u0C4D\u0C2A\u0C24\u0C4D\u0C24\u0C3F \u0C1A\u0C47\u0C38\u0C4D\u0C24\u0C41\u0C02\u0C26\u0C3F. \u0C35\u0C3F\u0C30\u0C3E\u0C2E \u0C2F\u0C41\u0C15\u0C4D\u0C24\u0C3E\u0C15\u0C4D\u0C37\u0C30\u0C3E\u0C32\u0C41, \u0C17\u0C41\u0C23\u0C3F\u0C02\u0C24\u0C3E\u0C32\u0C41 \u0C2E\u0C30\u0C3F\u0C2F\u0C41 \u0C38\u0C39\u0C3E\u0C2F \u0C1A\u0C3F\u0C39\u0C4D\u0C28\u0C3E\u0C32\u0C28\u0C41 \u0C35\u0C3F\u0C36\u0C4D\u0C35\u0C38\u0C28\u0C40\u0C2F\u0C02\u0C17\u0C3E \u0C30\u0C46\u0C02\u0C21\u0C30\u0C4D \u0C1A\u0C47\u0C38\u0C4D\u0C24\u0C41\u0C02\u0C26\u0C3F.' },
+
                     // Japanese
                     { type: 'heading', text: '\u65E5\u672C\u8A9E \u2013 Japanese', level: 2 },
                     { type: 'paragraph', text: 'pdfnative\u306F\u65E5\u672C\u8A9E\u306EPDF\u6587\u66F8\u3092\u751F\u6210\u3057\u307E\u3059\u3002\u6F22\u5B57\u3001\u3072\u3089\u304C\u306A\u3001\u30AB\u30BF\u30AB\u30CA\u3092CIDFont Type2\u3068Identity-H\u30A8\u30F3\u30B3\u30FC\u30C7\u30A3\u30F3\u30B0\u3067\u5B8C\u5168\u306B\u30B5\u30DD\u30FC\u30C8\u3057\u307E\u3059\u3002' },
@@ -202,9 +207,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { type: 'paragraph', text: 'pdfnative \u05EA\u05D5\u05DE\u05DA \u05DE\u05DC\u05D0 \u05D1\u05E2\u05D1\u05E8\u05D9\u05EA \u05D5\u05D1\u05DB\u05EA\u05D9\u05D1\u05D4 \u05DE\u05D9\u05DE\u05D9\u05DF \u05DC\u05E9\u05DE\u05D0\u05DC \u05E2\u05DD \u05D9\u05D9\u05E9\u05D5\u05DD \u05D0\u05DC\u05D2\u05D5\u05E8\u05D9\u05EA\u05DD BiDi \u05DC\u05E4\u05D9 Unicode UAX #9.' },
 
                     { type: 'heading', text: 'Conclusion', level: 2 },
-                    { type: 'paragraph', text: 'pdfnative handles all 16 scripts with zero external dependencies, full BiDi support, OpenType shaping, and a single shared fontEntries array. This demonstrates the width of the library, not its depth \u2013 script-specific sample PDFs in the same folder show the depth of each implementation.' },
+                    { type: 'paragraph', text: 'pdfnative handles all 17 scripts with zero external dependencies, full BiDi support, OpenType shaping, and a single shared fontEntries array. This demonstrates the width of the library, not its depth \u2013 script-specific sample PDFs in the same folder show the depth of each implementation.' },
                 ],
-                footerText: 'pdfnative \u2013 Multi-language document sample (16 scripts)',
+                footerText: 'pdfnative \u2013 Multi-language document sample (17 scripts)',
                 fontEntries,
             };
             ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-multi-language.pdf'), 'document/doc-multi-language.pdf', buildDocumentPDFBytes(params));
@@ -279,6 +284,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Devanagari (Hindi) with Indic shaping ────────────────────
     await generateDevanagariDoc(ctx);
+
+    // ── Telugu with Indic shaping ────────────────────────────────
+    await generateTeluguDoc(ctx);
 
     // ── All block types showcase ─────────────────────────────────
     generateShowcase(ctx);
@@ -538,6 +546,36 @@ async function generateDevanagariDoc(ctx: GenerateContext): Promise<void> {
         ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-devanagari.pdf'), 'document/doc-devanagari.pdf', buildDocumentPDFBytes(params));
 }
 
+async function generateTeluguDoc(ctx: GenerateContext): Promise<void> {
+    const teFd = await loadFontData('te');
+    if (!teFd) return;
+    const params: DocumentParams = {
+        title: '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 \u0C2A\u0C24\u0C4D\u0C30\u0C02 \u2013 \u0C2A\u0C4D\u0C30\u0C26\u0C30\u0C4D\u0C36\u0C28',
+        blocks: [
+            { type: 'heading', text: '\u0C05\u0C27\u0C4D\u0C2F\u0C3E\u0C2F\u0C02 1: \u0C2A\u0C30\u0C3F\u0C1A\u0C2F\u0C02', level: 1 },
+            { type: 'paragraph', text: '\u0C07\u0C26\u0C3F pdfnative \u0C32\u0C48\u0C2C\u0C4D\u0C30\u0C30\u0C40 \u0C26\u0C4D\u0C35\u0C3E\u0C30\u0C3E \u0C24\u0C46\u0C32\u0C41\u0C17\u0C41\u0C32\u0C4B PDF \u0C30\u0C42\u0C2A\u0C4A\u0C02\u0C26\u0C3F\u0C02\u0C1A\u0C21\u0C3E\u0C28\u0C3F\u0C15\u0C3F \u0C12\u0C15 \u0C2A\u0C4D\u0C30\u0C3E\u0C2F\u0C4B\u0C17\u0C3F\u0C15 \u0C09\u0C26\u0C3E\u0C39\u0C30\u0C23. \u0C08 \u0C2A\u0C24\u0C4D\u0C30\u0C02\u0C32\u0C4B \u0C36\u0C40\u0C30\u0C4D\u0C37\u0C3F\u0C15\u0C32\u0C41, \u0C05\u0C28\u0C41\u0C1A\u0C4D\u0C1B\u0C47\u0C26\u0C3E\u0C32\u0C41, \u0C2A\u0C1F\u0C4D\u0C1F\u0C3F\u0C15\u0C32\u0C41 \u0C2E\u0C30\u0C3F\u0C2F\u0C41 \u0C24\u0C3E\u0C32\u0C3F\u0C15\u0C32 \u0C30\u0C46\u0C02\u0C21\u0C30\u0C3F\u0C02\u0C17\u0C4D \u0C09\u0C02\u0C1F\u0C41\u0C02\u0C26\u0C3F.' },
+            { type: 'heading', text: '\u0C2A\u0C4D\u0C30\u0C27\u0C3E\u0C28 \u0C05\u0C02\u0C36\u0C3E\u0C32\u0C41', level: 2 },
+            { type: 'list', items: [
+                '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 OpenType \u0C36\u0C47\u0C2A\u0C3F\u0C02\u0C17\u0C4D (GSUB + GPOS)',
+                '\u0C35\u0C3F\u0C30\u0C3E\u0C2E \u0C06\u0C27\u0C3E\u0C30\u0C3F\u0C24 \u0C2F\u0C41\u0C15\u0C4D\u0C24\u0C3E\u0C15\u0C4D\u0C37\u0C30\u0C3E\u0C32 \u0C0F\u0C30\u0C4D\u0C2A\u0C3E\u0C1F\u0C41',
+                '\u0C17\u0C41\u0C23\u0C3F\u0C02\u0C24\u0C3E\u0C32 \u0C38\u0C30\u0C48\u0C28 \u0C38\u0C4D\u0C25\u0C3E\u0C28\u0C2A\u0C30\u0C1A\u0C21\u0C02',
+                'CIDFont Type2 + Identity-H \u0C2F\u0C42\u0C28\u0C3F\u0C15\u0C4B\u0C21\u0C4D \u0C0E\u0C02\u0C15\u0C4B\u0C21\u0C3F\u0C02\u0C17\u0C4D',
+                'PDF/A-2b \u0C05\u0C28\u0C41\u0C15\u0C42\u0C32\u0C24',
+            ], style: 'bullet' },
+            { type: 'heading', text: '\u0C38\u0C47\u0C35\u0C32 \u0C24\u0C3E\u0C32\u0C3F\u0C15', level: 2 },
+            { type: 'table', headers: ['\u0C15\u0C4D\u0C30\u0C2E\u0C02', '\u0C38\u0C47\u0C35', '\u0C36\u0C41\u0C32\u0C4D\u0C15\u0C02', '\u0C38\u0C4D\u0C25\u0C3F\u0C24\u0C3F'], rows: [
+                { cells: ['1', '\u0C2A\u0C4D\u0C30\u0C3E\u0C25\u0C2E\u0C3F\u0C15 PDF \u0C30\u0C42\u0C2A\u0C4A\u0C02\u0C26\u0C3F\u0C02\u0C1A\u0C21\u0C02', '\u20B9 1,000', '\u0C2A\u0C42\u0C30\u0C4D\u0C24\u0C3F'], type: 'credit', pointed: false },
+                { cells: ['2', '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 \u0C36\u0C47\u0C2A\u0C3F\u0C02\u0C17\u0C4D \u0C2A\u0C4D\u0C30\u0C4A\u0C2B\u0C48\u0C32\u0C3F\u0C02\u0C17\u0C4D', '\u20B9 2,000', '\u0C2A\u0C42\u0C30\u0C4D\u0C24\u0C3F'], type: 'credit', pointed: false },
+                { cells: ['3', '\u0C0E\u0C02\u0C15\u0C4D\u0C30\u0C3F\u0C2A\u0C4D\u0C37\u0C28\u0C4D + PDF/A', '\u20B9 3,000', '\u0C2A\u0C42\u0C30\u0C4D\u0C24\u0C3F'], type: 'credit', pointed: true },
+            ] },
+            { type: 'paragraph', text: '\u0C2A\u0C48 \u0C24\u0C3E\u0C32\u0C3F\u0C15 pdfnative \u0C38\u0C47\u0C35\u0C32 \u0C38\u0C42\u0C1A\u0C28\u0C3E\u0C24\u0C4D\u0C2E\u0C15 \u0C27\u0C30\u0C32\u0C28\u0C41 \u0C1A\u0C42\u0C2A\u0C3F\u0C38\u0C4D\u0C24\u0C41\u0C02\u0C26\u0C3F.' },
+        ],
+        footerText: 'pdfnative \u2013 \u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 \u0C2A\u0C24\u0C4D\u0C30 \u0C2E\u0C3E\u0C26\u0C30\u0C3F',
+        fontEntries: [{ fontData: teFd, fontRef: '/F3', lang: 'te' }],
+    };
+    ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-telugu.pdf'), 'document/doc-telugu.pdf', buildDocumentPDFBytes(params));
+}
+
 function generateShowcase(ctx: GenerateContext): void {
     const params: DocumentParams = {
         title: 'Document Builder – Complete Showcase',
@@ -552,7 +590,7 @@ function generateShowcase(ctx: GenerateContext): void {
             { type: 'paragraph', text: 'Standard paragraph with automatic text wrapping.' },
             { type: 'paragraph', text: 'Colored paragraph with custom formatting.', color: '#2563EB' },
             { type: 'heading', text: 'Bullet List', level: 2 },
-            { type: 'list', items: ['Zero external dependencies', '16 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
+            { type: 'list', items: ['Zero external dependencies', '17 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
             { type: 'heading', text: 'Numbered List', level: 2 },
             { type: 'list', items: ['Install: npm install pdfnative', 'Import the builder function', 'Define parameters', 'Generate bytes', 'Write to file'], style: 'numbered' },
             { type: 'heading', text: 'Embedded Table', level: 2 },

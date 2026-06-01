@@ -7,7 +7,7 @@
  *     Helvetica metrics and are *text-extractable* thanks to the `/ToUnicode`
  *     CMap (issue #48: the Euro sign maps WinAnsi byte 0x80 → U+20AC).
  *
- *  2. Beyond-WinAnsi currencies — ₹ ₩ ₪ ₫ ₺ ₽ ₿ ¤ are not in WinAnsi, so they
+ *  2. Beyond-WinAnsi currencies — ₹ ₩ ₪ ₫ ₺ ₽ ₿ ฿ ¤ are not in WinAnsi, so they
  *     require an embedded Unicode font (Noto Sans, lang `'latin'`) to render.
  *
  * The multi sample mixes both in a realistic price table.
@@ -48,13 +48,17 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // ── 2 & 3. Beyond-WinAnsi currencies + mixed price table ────────────────
     const latinFont = await loadFontData('latin');
     if (!latinFont) return;
+    // The Thai baht (U+0E3F) lives in the Thai Unicode block, so it needs the
+    // Thai font — script-aware run splitting routes it there automatically.
+    const thaiFont = await loadFontData('th');
     const fontEntries: FontEntry[] = [{ fontData: latinFont, fontRef: '/F3', lang: 'latin' }];
+    if (thaiFont) fontEntries.push({ fontData: thaiFont, fontRef: '/F4', lang: 'th' });
 
     const extended: DocumentParams = {
         title: 'Currency symbols — beyond WinAnsi (embedded Noto Sans)',
         blocks: [
             { type: 'heading', level: 1, text: 'Extended currency symbols' },
-            { type: 'paragraph', text: 'These symbols are outside the WinAnsi range and require an embedded Unicode font (Noto Sans, OFL-1.1) to render as glyphs.' },
+            { type: 'paragraph', text: 'These symbols are outside the WinAnsi range and require an embedded Unicode font (Noto Sans, OFL-1.1) to render as glyphs. The Thai baht (U+0E3F) sits in the Thai block, so it is routed to the embedded Thai font via script-aware run splitting.' },
             { type: 'table',
               headers: ['Symbol', 'Currency', 'Example'],
               rows: [
@@ -65,6 +69,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 row(['\u20BA', 'Turkish lira', '\u20BA 12,499']),
                 row(['\u20BD', 'Russian ruble', '\u20BD 99,900']),
                 row(['\u20BF', 'Bitcoin', '\u20BF 0.0125']),
+                row(['\u0E3F', 'Thai baht', '\u0E3F 7,500']),
                 row(['\u00A4', 'Generic currency', '\u00A4 100']),
               ],
             },

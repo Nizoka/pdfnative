@@ -57,7 +57,7 @@ async function generateAll(): Promise<void> {
     // ── Diverse use-cases (12 non-financial tables) ──────────────
     await generateDiverse(ctx);
 
-    // ── Alphabet / character coverage (16 scripts) ───────────────
+    // ── Alphabet / character coverage (17 scripts) ───────────────
     await generateAlphabet(ctx);
 
     // ── PDF/A variants (4 conformance levels) ────────────────────
@@ -114,7 +114,7 @@ async function generateAll(): Promise<void> {
     // ── PDF parser & modifier showcase (round-trip) ──────────────
     await generateParser(ctx);
 
-    // ── Text shaping deep-dive (Thai/Bengali/Tamil) ─────────────
+    // ── Text shaping deep-dive (Thai/Bengali/Tamil/Telugu) ──────
     await generateTextShaping(ctx);
 
     // ── USE-lite cluster classification (public API) ────────────

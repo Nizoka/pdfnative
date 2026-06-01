@@ -1,5 +1,5 @@
 /**
- * Text shaping deep-dive — Thai GSUB/GPOS, Bengali conjuncts, Tamil split vowels.
+ * Text shaping deep-dive — Thai GSUB/GPOS, Bengali conjuncts, Tamil split vowels, Telugu virama clusters.
  */
 
 import { resolve } from 'path';
@@ -100,5 +100,32 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             footerText: 'pdfnative – Tamil Shaping Deep Dive',
         };
         ctx.writeSafe(resolve(ctx.outputDir, 'shaping', 'shaping-tamil.pdf'), 'shaping/shaping-tamil.pdf', buildDocumentPDFBytes(params));
+    }
+
+    // ── 4. Telugu virama-mediated conjuncts ──────────────────────
+    {
+        const fontEntries = await loadSelectedFontEntries(['te']);
+        const params: DocumentParams = {
+            title: 'Telugu Text Shaping – Virama Clusters & Marks',
+            blocks: [
+                { type: 'heading', text: 'Telugu Text Shaping — Virama + GSUB + GPOS', level: 1 },
+                { type: 'paragraph', text: 'Telugu uses virama-mediated consonant clusters with script-specific ligature behaviour. Vowel signs and modifiers are positioned via mark anchors with no Devanagari-style reph handling.' },
+
+                { type: 'heading', text: 'Virama Clusters', level: 2 },
+                { type: 'paragraph', text: 'క్ క్ష జ్ఞ శ్ర త్ర ద్ర గ్న' },
+                { type: 'paragraph', text: 'These sequences exercise consonant + virama + consonant cluster formation and common ligature paths.' },
+
+                { type: 'heading', text: 'Vowel Signs & Modifiers', level: 2 },
+                { type: 'paragraph', text: 'కా కి కీ కు కూ కె కే కొ కో కౌ కం కః' },
+                { type: 'paragraph', text: 'Dependent vowels and modifiers attach around the base consonant according to GPOS anchors in the Telugu font.' },
+
+                { type: 'heading', text: 'Full Sentences', level: 2 },
+                { type: 'paragraph', text: 'తెలుగు పాఠ్యం సరైన శేపింగ్‌తో PDF లో స్పష్టంగా కనిపిస్తుంది.' },
+                { type: 'paragraph', text: 'విరామం, గుణింతాలు, సంయుక్తాక్షరాలు అన్నీ సక్రమంగా రెండర్ అవుతాయి.' },
+            ],
+            fontEntries,
+            footerText: 'pdfnative – Telugu Shaping Deep Dive',
+        };
+        ctx.writeSafe(resolve(ctx.outputDir, 'shaping', 'shaping-telugu.pdf'), 'shaping/shaping-telugu.pdf', buildDocumentPDFBytes(params));
     }
 }

@@ -1,10 +1,10 @@
 # Smart tables
 
-> _Added in v1.2.0. Backward-compatible with v1.1.0 — existing single-page tables produce byte-identical output._
+> _Backward-compatible with v1.1.0 — existing single-page tables produce byte-identical output._
 
 pdfnative's table renderer is **planner-driven** and **multi-page-safe** by default. Long tables wrap on column overflow, slice cleanly across pages, and reprint their header on every continuation page — matching the behaviour readers expect from commercial PDF libraries.
 
-This guide documents the six v1.2.0 `TableBlock` fields, the planner architecture, the tagged-mode contract, and migration tips.
+This guide documents the six `TableBlock` fields, the planner architecture, the tagged-mode contract, and migration tips.
 
 ---
 
@@ -38,7 +38,7 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 
 ---
 
-## New `TableBlock` fields (all v1.2.0, all optional)
+## `TableBlock` fields (all optional)
 
 | Field          | Type                            | Default                     | Description                                                                  |
 | -------------- | ------------------------------- | --------------------------- | ---------------------------------------------------------------------------- |
@@ -79,7 +79,7 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 
 ---
 
-## New `ColumnDef.kind` field (v1.2.0, optional)
+## `ColumnDef.kind` field (optional)
 
 | Field  | Type       | Default     | Description                                                                                                                                                                                                                  |
 | ------ | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -102,13 +102,13 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 }
 ```
 
-> **Behaviour change for document-builder tables without `kind`.** Pre-1.2.0 the renderer applied Helvetica-Bold + credit/debit colour to whichever column happened to be at index 3. v1.2.0 removes that heuristic — opt in explicitly via `kind: 'amount'`. The legacy `buildPDF()` (financial-statement) path keeps the historical heuristic for byte-identical v1.0/v1.1 output.
+> **Behaviour change for document-builder tables without `kind`.** Previously the renderer applied Helvetica-Bold + credit/debit colour to whichever column happened to be at index 3. The current renderer removes that heuristic — opt in explicitly via `kind: 'amount'`. The legacy `buildPDF()` (financial-statement) path keeps the historical heuristic for byte-identical v1.0/v1.1 output.
 
 ---
 
 ## How multi-page tables are sliced
 
-pdfnative v1.2.0 introduces a two-phase pipeline:
+pdfnative uses a two-phase pipeline:
 
 1. **Plan phase** — `planTable()` ([src/core/pdf-renderers.ts](https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-renderers.ts)) measures the entire table once: resolves columns (including `autoFit`), word-wraps each cell according to `wrap`, computes per-row heights, and produces a `TablePlan` containing every row's exact pixel height.
 2. **Slice phase** — `_paginateBlocks()` in [src/core/pdf-document.ts](https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-document.ts) walks the plan greedily: it packs rows onto the current page until the next row would overflow, then emits a `TableSlice` ( `{ fromRow, toRow, drawCaption, drawHeader, isFinalSlice }`) and starts a new page. The caption is emitted once (on the first slice); the header is emitted on every slice when `repeatHeader: true`.
@@ -170,7 +170,7 @@ Zebra fills are decorative — they do not appear in the structure tree. PDF/UA 
 
 ---
 
-## Samples shipped in v1.2.0
+## Samples shipped
 
 Run `npm run test:generate` to produce:
 

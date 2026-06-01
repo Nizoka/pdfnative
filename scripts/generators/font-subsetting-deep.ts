@@ -44,7 +44,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── 2. Multi-script subsetting comparison ────────────────────
     {
-        const fontEntries = await loadSelectedFontEntries(['th', 'ja', 'ar', 'bn', 'ta']);
+        const fontEntries = await loadSelectedFontEntries(['th', 'ja', 'ar', 'bn', 'ta', 'te']);
         const params: DocumentParams = {
             title: 'Multi-Script Font Subsetting',
             blocks: [
@@ -69,6 +69,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
                 { type: 'heading', text: 'Tamil (Noto Sans Tamil)', level: 2 },
                 { type: 'paragraph', text: 'தமிழ் எழுத்துரு சோதனை' },
+
+                { type: 'heading', text: 'Telugu (Noto Sans Telugu)', level: 2 },
+                { type: 'paragraph', text: 'తెలుగు అక్షరాల సబ్‌సెట్టింగ్ పరీక్ష' },
 
                 { type: 'heading', text: 'CMap Structure', level: 2 },
                 { type: 'paragraph', text: 'Each CIDFont includes a /ToUnicode CMap stream that maps GIDs → Unicode. Format: beginbfchar / endbfchar entries for direct mappings, beginbfrange / endbfrange for contiguous ranges.' },

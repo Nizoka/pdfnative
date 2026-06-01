@@ -95,7 +95,7 @@ types/ → core/ ← fonts/ ← shaping/ ← worker/
 | String-based PDF operators | Direct control over output, no AST overhead |
 | Lazy font loading | `registerFonts()` + `loadFontData()` — load only needed scripts |
 | Shared assembler | `pdf-assembler.ts` eliminates xref/trailer duplication between builders |
-| Extracted renderers | `pdf-renderers.ts` — block renderers, text wrapping, constants extracted from `pdf-document.ts` for maintainability. v1.2.0 adds `planTable()` and `TableSlice` for planner-driven multi-page table rendering — `_paginateBlocks()` measures once then slices at row boundaries, keeping `renderTable()` page-lifecycle-free. See [Smart tables guide](tables.md). |
+| Extracted renderers | `pdf-renderers.ts` — block renderers, text wrapping, constants extracted from `pdf-document.ts` for maintainability. `planTable()` and `TableSlice` provide planner-driven multi-page table rendering — `_paginateBlocks()` measures once then slices at row boundaries, keeping `renderTable()` page-lifecycle-free. See [Smart tables guide](tables.md). |
 | Encoding context in core/ | Dependency inversion — breaks fonts/ → shaping/ cycle |
 
 ## Ecosystem

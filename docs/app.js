@@ -451,7 +451,7 @@
     },
     {
       id: 'smart-tables',
-      label: 'Smart tables — wrap, repeated headers, zebra (v1.2.0)',
+      label: 'Smart tables — wrap, repeated headers, zebra',
       description: 'Auto-fit columns, automatic cell wrapping, repeated headers across page breaks, zebra striping, and a tagged-PDF caption.',
       source: GENERATORS_BASE + 'document-table-parity.ts',
       code: [
@@ -472,7 +472,7 @@
         'const pdf = buildDocumentPDFBytes({',
         "  title: 'Smart Tables Demo',",
         '  blocks: [',
-        "    { type: 'heading', text: 'Smart Tables (v1.2.0)', level: 1 },",
+        "    { type: 'heading', text: 'Smart Tables', level: 1 },",
         "    { type: 'paragraph', text: 'Auto-fit columns, automatic wrapping, repeated headers across page breaks, and zebra striping.' },",
         '    {',
         "      type: 'table',",

@@ -17,7 +17,7 @@ npm run build              # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test               # vitest run (1903+ tests)
 npm run typecheck:all      # src/ + tests/ + scripts/
 npm run lint               # eslint
-npm run test:generate      # produce 161 sample PDFs → test-output/
+npm run test:generate      # produce 173 sample PDFs → test-output/
 npm run validate:pdfa      # local veraPDF run
 ```
 
