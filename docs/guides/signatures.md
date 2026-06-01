@@ -188,6 +188,17 @@ the placeholder bytes — that's the pipeline shown in the TL;DR above.
 - **PDF/A + signatures.** PDF/A-2b/3b allow signatures; ISO 19005-2
   §6.3.5 forbids certain `/Sig` dictionary fields (`/Reference`,
   `/Changes`). pdfnative emits only the conformant subset.
+- **Timing side-channels (pure-JS BigInt).** The RSA/ECDSA math runs on
+  JavaScript `BigInt`, which is **not** constant-time — the RSA modular
+  exponentiation in particular is a secret-dependent square-and-multiply
+  loop. Signing a PDF once per user action is not meaningfully
+  exploitable, but a high-frequency server signing thousands of PDFs/s
+  with the same key under adversarial timing observation could
+  theoretically leak key material. For such pipelines, compute the
+  CMS/PKCS#7 blob with a constant-time native backend (Node.js
+  `crypto.sign()` or WebCrypto `crypto.subtle.sign()`) and inject it via
+  `signPdfBytes()`. See [SECURITY.md](https://github.com/Nizoka/pdfnative/blob/main/SECURITY.md#cryptographic-implementation-scope--known-limitations)
+  for the full analysis.
 
 ## Full example
 

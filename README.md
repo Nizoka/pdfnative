@@ -37,7 +37,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 
 - **Zero dependencies** — built from scratch in pure TypeScript. Zero runtime dependencies, tree-shakeable, auditable
 - **ISO 32000-1 compliant** — valid xref tables, /Info metadata, proper font embedding
-- **17 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Telugu, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil
+- **22 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Telugu, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
 - **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
 - **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring, isolates (LRI/RLI/FSI/PDI), and explicit embeddings (LRE/RLE/LRO/RLO/PDF) including character-level X4–X5 overrides (v1.3.0)
@@ -63,7 +63,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 1938+ tests across 65 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
+- **95%+ test coverage** — 1982+ tests across 71 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -87,7 +87,7 @@ npm install pdfnative
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
 - 🎮 **Playgrounds:** [docs/playgrounds/extreme-scripts.html](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests) and [docs/playgrounds/medical-800.html](docs/playgrounds/medical-800.html) (800-page Web Worker showcase).
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~140 sample PDFs across 23 categories (see [Sample PDFs](#sample-pdfs) below).
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~187 sample PDFs across 32 categories (see [Sample PDFs](#sample-pdfs) below).
 
 ## Why pdfnative?
 
@@ -203,6 +203,11 @@ registerFonts({
   bn: () => import('pdfnative/fonts/noto-bengali-data.js'),
   ta: () => import('pdfnative/fonts/noto-tamil-data.js'),
   te: () => import('pdfnative/fonts/noto-telugu-data.js'), // v1.3.0
+  si: () => import('pdfnative/fonts/noto-sinhala-data.js'), // v1.3.0
+  bo: () => import('pdfnative/fonts/noto-tibetan-data.js'), // v1.3.0
+  km: () => import('pdfnative/fonts/noto-khmer-data.js'), // v1.3.0
+  my: () => import('pdfnative/fonts/noto-myanmar-data.js'), // v1.3.0
+  am: () => import('pdfnative/fonts/noto-ethiopic-data.js'), // v1.3.0
   // v1.1.0+ — optional Latin fallback for PDF/A documents with curly quotes,
   // em-dash, ellipsis, etc. (activates automatically when needed):
   latin: () => import('pdfnative/fonts/noto-sans-data.js'),
@@ -422,7 +427,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `sample-hy.pdf` | Armenian |
 | `sample-bn.pdf` | Bengali (GSUB conjuncts + GPOS marks) |
 | `sample-ta.pdf` | Tamil (GSUB + split vowel decomposition) |
-| `sample-multi.pdf` | Mixed: all 16 scripts in one PDF |
+| `sample-multi.pdf` | Mixed: all 22 scripts in one PDF |
 | `sample-pagination.pdf` | 200 rows, multi-page layout |
 
 ### Diverse Use Cases (non-financial)
@@ -517,8 +522,14 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-bengali.pdf` | Bengali document (GSUB conjuncts + GPOS marks) |
 | `doc-tamil.pdf` | Tamil document (GSUB substitution + split vowels) |
 | `doc-devanagari.pdf` | Hindi (Devanagari) document — GSUB conjuncts, reph reordering, matra reordering, split vowels |
+| `doc-telugu.pdf` | Telugu document (virama conjuncts + GPOS marks, no reph) |
+| `doc-sinhala.pdf` | Sinhala document (virama conjuncts + pre-base kombuva reordering) |
+| `doc-tibetan.pdf` | Tibetan document (vertical subjoined-consonant stacking) |
+| `doc-khmer.pdf` | Khmer document (USE-lite: coeng subscripts, pre-base vowels) |
+| `doc-myanmar.pdf` | Myanmar document (USE-lite: medials, pre-base reordering) |
+| `doc-amharic.pdf` | Amharic/Ethiopic document (syllabic abugida, no reordering) |
 | `doc-chinese-catalog.pdf` | Chinese product catalog (tables, ordering info) |
-| `doc-multi-language.pdf` | Multi-language: EN + Arabic + Japanese in one PDF |
+| `doc-multi-language.pdf` | Multi-language showcase: all 22 Unicode scripts in one PDF |
 | `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
 | `doc-report-multipage.pdf` | 3-page technical report (7 sections, 4 tables) |
 | `doc-contract-bilingual.pdf` | Bilingual EN/AR contract (legal sections, signatures) |
@@ -819,6 +830,10 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `shapeTamilText(str, fontData)` | Tamil GSUB + split vowel decomposition |
 | `shapeDevanagariText(str, fontData)` | Devanagari cluster shaping + GSUB/GPOS |
 | `shapeTeluguText(str, fontData)` | Telugu GSUB conjuncts + GPOS marks (v1.3.0) |
+| `shapeSinhalaText(str, fontData)` | Sinhala conjuncts + pre-base reorder + GSUB/GPOS (v1.3.0) |
+| `shapeTibetanText(str, fontData)` | Tibetan vertical subjoined stacking (v1.3.0) |
+| `shapeKhmerText(str, fontData)` | Khmer USE-lite — coeng subscripts + pre-base vowels (v1.3.0) |
+| `shapeMyanmarText(str, fontData)` | Myanmar USE-lite — medials + virama stacking (v1.3.0) |
 | `detectFallbackLangs(texts, primaryLang)` | Detect needed fallback fonts |
 | `detectCharLang(codePoint)` | Map codepoint to preferred font language |
 | `splitTextByFont(str, fontEntries)` | Multi-font text run splitting |
@@ -831,6 +846,8 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `containsHebrew(text)` | Detect Hebrew content |
 | `containsTelugu(text)` | Detect Telugu content (v1.3.0) |
 | `isTeluguCodepoint(cp)` | Telugu codepoint predicate (v1.3.0) |
+| `containsSinhala(text)` / `containsTibetan(text)` / `containsKhmer(text)` / `containsMyanmar(text)` / `containsEthiopic(text)` | Detect script content (v1.3.0) |
+| `isSinhalaCodepoint(cp)` / `isTibetanCodepoint(cp)` / `isKhmerCodepoint(cp)` / `isMyanmarCodepoint(cp)` / `isEthiopicCodepoint(cp)` | Codepoint predicates (v1.3.0) |
 
 ### Layout Constants
 
@@ -981,9 +998,9 @@ src/
     ├── worker-api.ts     # Worker/main-thread dispatch
     └── pdf-worker.ts     # Self-contained worker entry
 
-fonts/                    # Pre-built font data modules (17 scripts)
+fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (23 generators, 140+ PDFs)
+scripts/                  # Modular sample PDF generation (32 generators, 187+ PDFs)
 tests/                    # 1726+ tests (48 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
@@ -1201,7 +1218,7 @@ pdfnative targets ES2020 and works in any environment that supports `Uint8Array`
 
 ## Origin
 
-pdfnative was born inside [**plika.app**](https://plika.app) — a personal finance application where high-quality, multi-language PDF generation (bank statements, transaction reports) was a core requirement. Rather than depending on heavy third-party libraries, the PDF engine was built from scratch with zero dependencies, strict ISO compliance, and native support for 17 Unicode scripts.
+pdfnative was born inside [**plika.app**](https://plika.app) — a personal finance application where high-quality, multi-language PDF generation (bank statements, transaction reports) was a core requirement. Rather than depending on heavy third-party libraries, the PDF engine was built from scratch with zero dependencies, strict ISO compliance, and native support for 22 Unicode scripts.
 
 The decision was then made to extract the engine into an independent open-source library so that everyone can benefit from production-grade PDF generation — not just plika.app users.
 

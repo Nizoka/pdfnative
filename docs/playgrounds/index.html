@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playgrounds — pdfnative</title>
-  <meta name="description" content="Four interactive playgrounds for pdfnative: extreme-script shaping (BiDi, Tamil, Bengali, Devanagari), an 800-page Web Worker stress test, a CLI command builder, and a Model Context Protocol tool explorer. All zero-install, zero-config, in your browser.">
+  <meta name="description" content="Five interactive playgrounds for pdfnative: extreme-script shaping (BiDi, Tamil, Bengali, Devanagari), an all-22-scripts + colour-emoji showcase, an 800-page Web Worker stress test, a CLI command builder, and a Model Context Protocol tool explorer. All zero-install, zero-config, in your browser.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -55,7 +55,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Playgrounds</p>
   <article class="guide-content">
     <h1>Interactive playgrounds</h1>
-    <p>Four hands-on environments that exercise the entire pdfnative ecosystem in your browser. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
+    <p>Five hands-on environments that exercise the entire pdfnative ecosystem in your browser. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
 
     <div class="pg-grid">
       <a class="pg-card" href="./extreme-scripts.html">
@@ -63,9 +63,19 @@
         <h3>Extreme scripts <span class="badge">Library</span></h3>
         <p>Stress-test BiDi mixing across Arabic + Hebrew + Thai + Latin, Tamil ultra-conjuncts, Bengali &amp; Devanagari with reph and multi-halant ligature chains, and isolated Arabic harakat. Edit the inputs and regenerate.</p>
         <div class="pg-tags">
-          <span class="pg-tag">BiDi</span><span class="pg-tag">GSUB</span><span class="pg-tag">GPOS</span><span class="pg-tag">17 scripts</span>
+          <span class="pg-tag">BiDi</span><span class="pg-tag">GSUB</span><span class="pg-tag">GPOS</span><span class="pg-tag">22 scripts</span>
         </div>
         <div class="pg-cta">Open extreme-scripts playground →</div>
+      </a>
+
+      <a class="pg-card" href="./all-scripts.html">
+        <div class="pg-icon" aria-hidden="true">🌐</div>
+        <h3>All 22 scripts + emoji <span class="badge">Library</span></h3>
+        <p>The flagship stress test: render <strong>every Unicode script pdfnative supports</strong> — 22 writing systems with BiDi and OpenType shaping — plus native COLRv1 colour emoji, all composited into a single PDF by one <code>buildDocumentPDFBytes()</code> call. The routing engine dispatches every code point to the right embedded font automatically.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">22 scripts</span><span class="pg-tag">Colour emoji</span><span class="pg-tag">BiDi</span><span class="pg-tag">Subsetting</span>
+        </div>
+        <div class="pg-cta">Open all-scripts playground →</div>
       </a>
 
       <a class="pg-card" href="./medical-800.html">
@@ -100,7 +110,7 @@
     </div>
 
     <h2 style="margin-top: 44px;">What about non-interactive examples?</h2>
-    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">23 generator categories producing ~140 sample PDFs</a> covering financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, and stress tests. Run <code>npm run test:generate</code> after cloning.</p>
+    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">32 generator categories producing 187 sample PDFs</a> covering financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, and stress tests. Run <code>npm run test:generate</code> after cloning.</p>
 
     <h2>Resources</h2>
     <ul>
@@ -118,6 +128,7 @@
       <li><a href="../">Home</a></li>
       <li><a href="../guides/">Guides</a></li>
       <li><a href="./extreme-scripts.html">Extreme scripts</a></li>
+      <li><a href="./all-scripts.html">All 22 scripts</a></li>
       <li><a href="./medical-800.html">Medical 800-page</a></li>
       <li><a href="./cli.html">CLI builder</a></li>
       <li><a href="./mcp.html">MCP explorer</a></li>

@@ -97,7 +97,7 @@ src/
 ├── shaping/      # Script registry, Thai/Devanagari/Bengali/Tamil GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
-fonts/            # Pre-built font data modules (17 scripts)
+fonts/            # Pre-built font data modules (22 scripts)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (24 generators, 140+ PDFs)
 tests/            # 1726+ tests (48 files: unit + integration + fuzz + parser), mirrors src/ structure

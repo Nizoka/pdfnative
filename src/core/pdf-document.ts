@@ -154,9 +154,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const pdfaConfig = resolvePdfAConfig(layout?.tagged);
     const tagged = pdfaConfig.enabled;
 
-    const enc = createEncodingContext(fontEntries, tagged);
+    const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false);
 
-    // ── Encryption setup ──────────────────────────────────────────────
+    // ── Encryption setup ──────────────────────
     const encryptionOpts = layout?.encryption;
     if (tagged && encryptionOpts) {
         throw new Error('PDF/A and encryption are mutually exclusive (ISO 19005-1 §6.3.2)');

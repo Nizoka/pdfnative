@@ -10,7 +10,7 @@
  *   - Free-form document builder (headings, paragraphs, lists, tables, images, links, barcodes)
  *   - Built-in Helvetica (Latin/WinAnsi) — no font embedding needed
  *   - CIDFont Type2/Identity-H embedding for Unicode scripts
- *   - 17 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu
+ *   - 22 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
  *   - Thai OpenType shaping (GSUB + GPOS)
  *   - Arabic positional shaping (GSUB isolated/initial/medial/final forms)
  *   - BiDi text layout (simplified UAX #9) with glyph mirroring
@@ -195,16 +195,22 @@ export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';
 
-// ── Shaping — Thai, Bengali, Tamil, Telugu, Devanagari & Multi-Script ─
+// ── Shaping — Thai, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari & Multi-Script ─
 export { shapeThaiText } from './shaping/thai-shaper.js';
 export { shapeBengaliText } from './shaping/bengali-shaper.js';
 export { shapeTamilText } from './shaping/tamil-shaper.js';
 export { shapeTeluguText } from './shaping/telugu-shaper.js';
+export { shapeSinhalaText } from './shaping/sinhala-shaper.js';
+export { shapeTibetanText } from './shaping/tibetan-shaper.js';
+export { shapeKhmerText } from './shaping/khmer-shaper.js';
+export { shapeMyanmarText } from './shaping/myanmar-shaper.js';
 export { shapeDevanagariText } from './shaping/devanagari-shaper.js';
 export {
     containsThai, containsArabic, containsHebrew,
     containsBengali, containsTamil, containsTelugu, containsDevanagari,
+    containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsEthiopic,
     isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,
+    isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isEthiopicCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint,
 } from './shaping/script-registry.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './shaping/script-detect.js';

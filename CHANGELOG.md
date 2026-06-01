@@ -15,10 +15,11 @@ Closes issue [#48](https://github.com/Nizoka/pdfnative/issues/48) (CP-1252
 extended characters not extractable under base-14 Helvetica) and delivers the
 full v1.3.0 roadmap: COLRv1 colour emoji, USE-lite shaper integration, true
 constant-memory streaming, UAX #9 X4–X5 character-level overrides, and a
-dual-mode pixel-diff visual-regression suite. Also adds the **Telugu**
-script, a configurable document block limit (`layout.maxBlocks`), and a
-read-only `validatePdfUA()` structural checker. 100% backward-compatible.
-65 test files / 1938 tests, all green. See full notes in
+dual-mode pixel-diff visual-regression suite. Also adds **six new scripts**
+(Telugu plus Amharic/Ethiopic, Sinhala, Tibetan, Khmer, Myanmar — **17 → 22
+Unicode scripts**), a configurable document block limit (`layout.maxBlocks`),
+and a read-only `validatePdfUA()` structural checker. 100% backward-compatible.
+71 test files / 1982 tests, all green. See full notes in
 [release-notes/v1.3.0.md](release-notes/v1.3.0.md).
 
 ### Added
@@ -31,6 +32,25 @@ read-only `validatePdfUA()` structural checker. 100% backward-compatible.
   Exports `shapeTeluguText`, `isTeluguCodepoint`, `containsTelugu`,
   `TELUGU_START`, `TELUGU_END`. Opt-in via
   `registerFont('te', () => import('pdfnative/fonts/noto-telugu-data.js'))`.
+- **feat(shaping):** five more scripts — Amharic/Ethiopic (`am`,
+  U+1200–U+137F), Sinhala (`si`, U+0D80–U+0DFF), Tibetan (`bo`,
+  U+0F00–U+0FFF), Khmer (`km`, U+1780–U+17FF), and Myanmar (`my`,
+  U+1000–U+109F) — extend pdfnative from 17 to **22 Unicode scripts**. New
+  pure-JS mini-shapers follow the Telugu model (shared `gsub-driver` +
+  `gpos-positioner`). Ethiopic is a syllabic abugida needing only detection +
+  font routing; Sinhala builds virama conjuncts, pre-base kombuva reordering
+  and two-part vowel decomposition; Tibetan stacks subjoined consonants
+  vertically; Khmer and Myanmar are pragmatic USE-lite (coeng/medials,
+  pre-base vowels, virama stacking). Bundled fonts (all OFL-1.1):
+  `noto-ethiopic-data.js`, `noto-sinhala-data.js`, `noto-tibetan-data.js`
+  (Noto Serif Tibetan), `noto-khmer-data.js`, `noto-myanmar-data.js`. Exports
+  `shapeSinhalaText`, `shapeTibetanText`, `shapeKhmerText`,
+  `shapeMyanmarText` and the matching script-registry predicates. Opt-in via
+  `registerFont('am'|'si'|'bo'|'km'|'my', () => import('pdfnative/fonts/…'))`.
+  ([src/shaping/sinhala-shaper.ts](src/shaping/sinhala-shaper.ts),
+  [src/shaping/tibetan-shaper.ts](src/shaping/tibetan-shaper.ts),
+  [src/shaping/khmer-shaper.ts](src/shaping/khmer-shaper.ts),
+  [src/shaping/myanmar-shaper.ts](src/shaping/myanmar-shaper.ts))
 - **feat(core):** configurable document block limit. The previously
   hard-coded 10 000-block cap in `assembleDocumentParts()` is now
   `layout.maxBlocks` with the default raised to **100 000**
@@ -69,6 +89,17 @@ read-only `validatePdfUA()` structural checker. 100% backward-compatible.
   fixtures. CI workflow gated on shaping / font / core changes.
   ([tests/visual/](tests/visual/),
   [.github/workflows/visual-regression.yml](.github/workflows/visual-regression.yml))
+- **scripts(samples):** per-language document samples for the five new
+  scripts (`doc-sinhala`, `doc-tibetan`, `doc-khmer`, `doc-myanmar`,
+  `doc-amharic`) at parity with `doc-telugu`; four text-shaping deep-dives
+  (`shaping-sinhala`, `shaping-tibetan`, `shaping-khmer`, `shaping-myanmar`);
+  and all five wired into the multi-script font-subsetting and 22-script
+  multi-language showcases. `npm run test:generate` now produces **187 sample
+  PDFs** across 32 generators.
+- **docs(playgrounds):** new `docs/playgrounds/all-scripts.html` — generates a
+  single PDF containing all 22 Unicode scripts plus native COLRv1 colour emoji
+  in the browser, demonstrating automatic per-code-point font routing, BiDi,
+  GSUB/GPOS shaping, and subsetting.
 
 ### Changed
 

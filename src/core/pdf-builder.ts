@@ -300,9 +300,9 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const pdfaConfig = resolvePdfAConfig(layoutOptions?.tagged);
     const tagged = pdfaConfig.enabled;
 
-    const enc = createEncodingContext(fontEntries, tagged);
+    const enc = createEncodingContext(fontEntries, tagged, layoutOptions?.normalize ?? false);
 
-    // ── Resolve header/footer templates ──────────────────────────────
+    // ── Resolve header/footer templates ──────────────
     const footerTpl: PageTemplate = layoutOptions?.footerTemplate ?? {
         left: footerText || undefined,
         right: '{page}/{pages}',

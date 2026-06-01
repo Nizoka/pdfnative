@@ -1,7 +1,8 @@
 /**
  * Download Noto Sans + Noto Emoji TTF fonts for pdfnative development.
  *
- * Fetches 13 Noto Sans variable-font TTFs and Noto Emoji from the
+ * Fetches Noto Sans variable-font TTFs (incl. Ethiopic, Sinhala, Tibetan,
+ * Khmer, Myanmar) and Noto Emoji from the
  * google/fonts repository and saves them to fonts/ttf/ with the local
  * filenames used by build-font-data.
  *
@@ -42,8 +43,8 @@ interface FontEntry {
 }
 
 /**
- * 13 Noto Sans font families + Noto Emoji.
- * CJK fonts use [wght] axis only; others use [wdth,wght].
+ * Noto Sans font families + Noto Emoji.
+ * CJK / Tibetan / Myanmar fonts use [wght] axis only; others use [wdth,wght].
  */
 const FONTS: FontEntry[] = [
     // ── Base Latin / Greek / Cyrillic ────────────────────────────────
@@ -58,7 +59,12 @@ const FONTS: FontEntry[] = [
     { local: 'NotoSansTamil-Regular.ttf', dir: 'notosanstamil', remote: 'NotoSansTamil%5Bwdth%2Cwght%5D.ttf' },
     { local: 'NotoSansTelugu-Regular.ttf', dir: 'notosanstelugu', remote: 'NotoSansTelugu%5Bwdth%2Cwght%5D.ttf' },
     { local: 'NotoSansThai-Regular.ttf', dir: 'notosansthai', remote: 'NotoSansThai%5Bwdth%2Cwght%5D.ttf' },
-    // ── CJK (wght-only axis) ─────────────────────────────────────────
+    // ── Linguistic expansion (v1.3.0) — often-underserved scripts ────
+    { local: 'NotoSansEthiopic-Regular.ttf', dir: 'notosansethiopic', remote: 'NotoSansEthiopic%5Bwdth%2Cwght%5D.ttf' },
+    { local: 'NotoSansSinhala-Regular.ttf', dir: 'notosanssinhala', remote: 'NotoSansSinhala%5Bwdth%2Cwght%5D.ttf' },
+    { local: 'NotoSansTibetan-Regular.ttf', dir: 'notoseriftibetan', remote: 'NotoSerifTibetan%5Bwght%5D.ttf' },
+    { local: 'NotoSansKhmer-Regular.ttf', dir: 'notosanskhmer', remote: 'NotoSansKhmer%5Bwdth%2Cwght%5D.ttf' },
+    { local: 'NotoSansMyanmar-Regular.ttf', dir: 'notosansmyanmar', remote: 'NotoSansMyanmar%5Bwdth%2Cwght%5D.ttf' },
     { local: 'NotoSansJP-Regular.ttf', dir: 'notosansjp', remote: 'NotoSansJP%5Bwght%5D.ttf' },
     { local: 'NotoSansKR-Regular.ttf', dir: 'notosanskr', remote: 'NotoSansKR%5Bwght%5D.ttf' },
     { local: 'NotoSansSC-Regular.ttf', dir: 'notosanssc', remote: 'NotoSansSC%5Bwght%5D.ttf' },

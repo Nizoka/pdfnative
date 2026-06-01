@@ -445,5 +445,117 @@ export const ALPHABET_SAMPLES: LangSample[] = [
         ],
         footerText: 'pdfnative \u2013 Telugu script coverage verification',
     },
+    // Ethiopic Script (Amharic / Tigrinya / Ge'ez) — v1.3.0
+    {
+        lang: 'am',
+        filename: 'alphabet-ethiopic',
+        title: 'የግዕዝ ፊደል \u2013 Ethiopic Script Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Ethiopic (U+1200\u2013U+137F)' },
+            { label: 'Font', value: 'Noto Sans Ethiopic' },
+            { label: 'Test', value: 'Syllabary (abugida) \u2013 no shaping required' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '6 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Order', 'Notes'],
+        rows: [
+            { cells: ['Ha series', 'ሀ ሁ ሂ ሃ ሄ ህ ሆ', '7', '1st', 'Base + 6 vowel orders'], type: 'credit', pointed: false },
+            { cells: ['La series', 'ለ ሉ ሊ ላ ሌ ል ሎ', '7', '2nd', 'Syllabic forms'], type: 'credit', pointed: false },
+            { cells: ['Ma series', 'መ ሙ ሚ ማ ሜ ም ሞ', '7', '4th', 'Syllabic forms'], type: 'credit', pointed: true },
+            { cells: ['Sa series', 'ሰ ሱ ሲ ሳ ሴ ስ ሶ', '7', '6th', 'Syllabic forms'], type: 'credit', pointed: false },
+            { cells: ['Digits', '፩ ፪ ፫ ፬ ፭ ፮ ፯ ፰ ፱ ፲', '10', 'Numerals', 'Ge\u2019ez numerals'], type: 'credit', pointed: false },
+            { cells: ['Sample', 'አማርኛ \u2013 ኢትዮጵያ', '2 words', 'Words', 'Amharic + Ethiopia'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Ethiopic script coverage verification',
+    },
+    // Sinhala Script — v1.3.0
+    {
+        lang: 'si',
+        filename: 'alphabet-sinhala',
+        title: 'සිංහල අක්ෂර \u2013 Sinhala Script Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Sinhala (U+0D80\u2013U+0DFF)' },
+            { label: 'Font', value: 'Noto Sans Sinhala' },
+            { label: 'Test', value: 'Consonants, pillas, conjuncts, pre-base vowels' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '6 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Vowels', 'අ ආ ඇ ඈ ඉ ඊ උ ඌ එ ඒ ඔ', '11', 'Independent', 'Base vowels'], type: 'credit', pointed: false },
+            { cells: ['Consonants 1', 'ක ඛ ග ඝ ඞ ච ඡ ජ ඣ ඤ', '10', 'Base', 'Ka\u2013Nya'], type: 'credit', pointed: false },
+            { cells: ['Consonants 2', 'ට ඨ ඩ ඪ ණ ත ථ ද ධ න', '10', 'Base', 'Tta\u2013Na'], type: 'credit', pointed: false },
+            { cells: ['Pillas', 'කා කි කී කු කූ කෙ කේ කො', '8', 'Dependent', 'Vowel signs'], type: 'credit', pointed: true },
+            { cells: ['Conjuncts', 'ක්‍ර ශ්‍රී ද්ධ', '3', 'Ligature', 'Touching forms'], type: 'debit', pointed: false },
+            { cells: ['Sample', 'ආයුබෝවන් \u2013 ශ්‍රී ලංකා', '2 words', 'Words', 'Hello + Sri Lanka'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Sinhala script coverage verification',
+    },
+    // Tibetan Script — v1.3.0
+    {
+        lang: 'bo',
+        filename: 'alphabet-tibetan',
+        title: 'བོད་ཡིག \u2013 Tibetan Script Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Tibetan (U+0F00\u2013U+0FFF)' },
+            { label: 'Font', value: 'Noto Serif Tibetan' },
+            { label: 'Test', value: 'Head consonants, subjoined stacks, vowels' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '5 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Consonants 1', 'ཀ ཁ ག གྷ ང ཅ ཆ ཇ ཉ', '9', 'Head', 'Ka\u2013Nya'], type: 'credit', pointed: false },
+            { cells: ['Consonants 2', 'ཏ ཐ ད ན པ ཕ བ མ', '8', 'Head', 'Ta\u2013Ma'], type: 'credit', pointed: false },
+            { cells: ['Stacks', 'ཀྐ རྐ སྐ བླ', '4', 'Subjoined', 'Vertical stacking'], type: 'debit', pointed: true },
+            { cells: ['Digits', '༠ ༡ ༢ ༣ ༤ ༥ ༦ ༧ ༨ ༩', '10', 'Numerals', 'Tibetan digits'], type: 'credit', pointed: false },
+            { cells: ['Sample', 'བོད་སྐད་ \u2013 བཀྲ་ཤིས་', '2 words', 'Words', 'Tibetan + Tashi'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Tibetan script coverage verification',
+    },
+    // Khmer Script — v1.3.0
+    {
+        lang: 'km',
+        filename: 'alphabet-khmer',
+        title: 'អក្សរខ្មែរ \u2013 Khmer Script Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Khmer (U+1780\u2013U+17FF)' },
+            { label: 'Font', value: 'Noto Sans Khmer' },
+            { label: 'Test', value: 'Consonants, coeng subscripts, pre-base vowels' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '5 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Consonants 1', 'ក ខ គ ឃ ង ច ឆ ជ ឈ ញ', '10', 'Base', 'Ka\u2013Nho'], type: 'credit', pointed: false },
+            { cells: ['Consonants 2', 'ដ ឋ ឌ ឍ ណ ត ថ ទ ធ ន', '10', 'Base', 'Da\u2013No'], type: 'credit', pointed: false },
+            { cells: ['Subscripts', 'ក្ក ស្ត ង្ក ្រ', '4', 'Coeng', 'Subscript stacks'], type: 'debit', pointed: true },
+            { cells: ['Vowels', 'កា កិ កី កុ កូ កេ កែ កោ', '8', 'Dependent', 'Incl. pre-base'], type: 'credit', pointed: true },
+            { cells: ['Sample', 'ភាសាខ្មែរ \u2013 កម្ពុជា', '2 words', 'Words', 'Khmer + Cambodia'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Khmer script coverage verification',
+    },
+    // Myanmar Script — v1.3.0
+    {
+        lang: 'my',
+        filename: 'alphabet-myanmar',
+        title: 'မြန်မာအက္ခရာ \u2013 Myanmar Script Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Myanmar (U+1000\u2013U+109F)' },
+            { label: 'Font', value: 'Noto Sans Myanmar' },
+            { label: 'Test', value: 'Consonants, medials, stacks, pre-base ra' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '5 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Consonants 1', 'က ခ ဂ ဃ င စ ဆ ဇ ဈ ည', '10', 'Base', 'Ka\u2013Nya'], type: 'credit', pointed: false },
+            { cells: ['Consonants 2', 'ဋ ဌ ဍ ဎ ဏ တ ထ ဒ ဓ န', '10', 'Base', 'Tta\u2013Na'], type: 'credit', pointed: false },
+            { cells: ['Medials', 'ကျ ကြ ကွ ကှ', '4', 'Medial', 'ya, ra, wa, ha'], type: 'debit', pointed: true },
+            { cells: ['Vowels', 'ကာ ကိ ကီ ကု ကူ ကေ ကဲ ကော', '8', 'Dependent', 'Incl. pre-base e'], type: 'credit', pointed: true },
+            { cells: ['Sample', 'မြန်မာစာ \u2013 မြန်မာ', '2 words', 'Words', 'Burmese + Myanmar'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Myanmar script coverage verification',
+    },
 ];
 

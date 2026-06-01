@@ -44,7 +44,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── 2. Multi-script subsetting comparison ────────────────────
     {
-        const fontEntries = await loadSelectedFontEntries(['th', 'ja', 'ar', 'bn', 'ta', 'te']);
+        const fontEntries = await loadSelectedFontEntries(['th', 'ja', 'ar', 'bn', 'ta', 'te', 'si', 'bo', 'km', 'my', 'am']);
         const params: DocumentParams = {
             title: 'Multi-Script Font Subsetting',
             blocks: [
@@ -72,6 +72,21 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
                 { type: 'heading', text: 'Telugu (Noto Sans Telugu)', level: 2 },
                 { type: 'paragraph', text: 'తెలుగు అక్షరాల సబ్‌సెట్టింగ్ పరీక్ష' },
+
+                { type: 'heading', text: 'Sinhala (Noto Sans Sinhala)', level: 2 },
+                { type: 'paragraph', text: '\u0DC3\u0DD2\u0D82\u0DC4\u0DBD \u0DB7\u0DCF\u0DC2\u0DCF\u0DC0\u0DD9\u0DB1\u0DCA PDF \u0DBD\u0DDA\u0D9B\u0DB1 \u0DC3\u0DEF\u0DBA\u0DD2' },
+
+                { type: 'heading', text: 'Tibetan (Noto Serif Tibetan)', level: 2 },
+                { type: 'paragraph', text: '\u0F56\u0F7C\u0F51\u0F0B\u0F61\u0F72\u0F42\u0F0B\u0F61\u0F72\u0F0B\u0F42\u0F7C\u0F0B\u0F46' },
+
+                { type: 'heading', text: 'Khmer (Noto Sans Khmer)', level: 2 },
+                { type: 'paragraph', text: '\u1794\u1784\u17D2\u1780\u17BE\u178F\u17AF\u1780\u179F\u17B6\u179A\u1787\u17B6\u1797\u17B6\u179F\u17B6\u1781\u17D2\u1798\u17C2\u179A' },
+
+                { type: 'heading', text: 'Myanmar (Noto Sans Myanmar)', level: 2 },
+                { type: 'paragraph', text: '\u1019\u103C\u1014\u103A\u1019\u102C\u1018\u102C\u101E\u102C\u1005\u102C\u101B\u103D\u1000\u103A\u1005\u102C' },
+
+                { type: 'heading', text: 'Amharic (Noto Sans Ethiopic)', level: 2 },
+                { type: 'paragraph', text: '\u12A0\u121B\u122D\u129B \u1241\u12CB\u1295\u124B \u12E8 PDF \u1230\u1290\u12F6\u127D' },
 
                 { type: 'heading', text: 'CMap Structure', level: 2 },
                 { type: 'paragraph', text: 'Each CIDFont includes a /ToUnicode CMap stream that maps GIDs → Unicode. Format: beginbfchar / endbfchar entries for direct mappings, beginbfrange / endbfrange for contiguous ranges.' },

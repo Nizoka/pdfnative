@@ -57,7 +57,7 @@ async function generateAll(): Promise<void> {
     // ── Diverse use-cases (12 non-financial tables) ──────────────
     await generateDiverse(ctx);
 
-    // ── Alphabet / character coverage (17 scripts) ───────────────
+    // ── Alphabet / character coverage (22 scripts) ───────────────
     await generateAlphabet(ctx);
 
     // ── PDF/A variants (4 conformance levels) ────────────────────

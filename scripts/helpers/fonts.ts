@@ -27,6 +27,12 @@ export function registerAllFonts(): void {
         bn: fl(() => import('../../fonts/noto-bengali-data.js')),
         ta: fl(() => import('../../fonts/noto-tamil-data.js')),
         te: fl(() => import('../../fonts/noto-telugu-data.js')),
+        // v1.3.0 — linguistic expansion (often-underserved scripts)
+        am: fl(() => import('../../fonts/noto-ethiopic-data.js')),
+        si: fl(() => import('../../fonts/noto-sinhala-data.js')),
+        bo: fl(() => import('../../fonts/noto-tibetan-data.js')),
+        km: fl(() => import('../../fonts/noto-khmer-data.js')),
+        my: fl(() => import('../../fonts/noto-myanmar-data.js')),
         // v1.1.0 — Latin VF (PDF/A non-WinAnsi fallback) + monochrome emoji
         latin: fl(() => import('../../fonts/noto-sans-data.js')),
         emoji: fl(() => import('../../fonts/noto-emoji-data.js')),
@@ -51,7 +57,7 @@ export async function loadSelectedFontEntries(langs: string[]): Promise<FontEntr
 }
 
 export async function loadMultiFontEntries(): Promise<FontEntry[]> {
-    return loadSelectedFontEntries(['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'bn', 'ta', 'te']);
+    return loadSelectedFontEntries(['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'bn', 'ta', 'te', 'si', 'bo', 'km', 'my', 'am']);
 }
 
 export { loadFontData };

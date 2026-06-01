@@ -433,6 +433,25 @@ export interface PdfLayoutOptions {
      * @since 1.3.0
      */
     readonly maxBlocks?: number;
+    /**
+     * Apply Unicode normalization to all rendered text before shaping and
+     * encoding. Uses the native `String.prototype.normalize` (zero dependency).
+     *
+     * Useful when input text may contain decomposed combining sequences (e.g.
+     * Vietnamese, some Indic input, or text copied from macOS which favours
+     * NFD) so that base + combining marks compose to the precomposed code
+     * points a font's cmap is most likely to cover, maximising glyph coverage.
+     *
+     * - `'NFC'` (recommended): canonical composition
+     * - `'NFD'`: canonical decomposition
+     * - `'NFKC'` / `'NFKD'`: compatibility (de)composition
+     * - `false` / omitted: no normalization (default — output is byte-identical)
+     *
+     * Default: `false` (backward compatible, byte-stable).
+     *
+     * @since 1.3.0
+     */
+    readonly normalize?: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false;
 }
 
 // ── Attachment Types ─────────────────────────────────────────────────

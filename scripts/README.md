@@ -1,6 +1,6 @@
 # scripts/ – Sample PDF Generation
 
-Generates 173 sample PDFs (32 generators) for visual inspection across all supported languages, features, and edge cases.
+Generates 187 sample PDFs (32 generators) for visual inspection across all supported languages, features, and edge cases.
 
 ## Quick Start
 
@@ -23,12 +23,12 @@ scripts/
 ├── data/
 │   ├── financial-data.ts    # 14 language financial statement samples + multi-lang + pagination
 │   ├── diverse-data.ts      # 12 non-financial use-case samples (transcript, recipe, inventory…)
-│   ├── alphabet-data.ts     # 14 per-script character coverage verification samples (incl. Telugu, v1.3.0)
+│   ├── alphabet-data.ts     # 22 per-script character coverage verification samples (incl. Telugu/Sinhala/Tibetan/Khmer/Myanmar/Ethiopic, v1.3.0)
 │   └── doc-samples-data.ts  # 11 document builder samples (headings, lists, links, tables, images, SVG, forms…)
 └── generators/
     ├── financial-statements.ts  # 14 PDFs – financial tables in 14 languages + multi + pagination
     ├── diverse-use-cases.ts     # 12 PDFs – non-financial domain tables
-    ├── alphabet-coverage.ts     # 14 PDFs – per-script glyph verification (incl. Telugu, v1.3.0)
+    ├── alphabet-coverage.ts     # 22 PDFs – per-script glyph verification (incl. Telugu/Sinhala/Tibetan/Khmer/Myanmar/Ethiopic, v1.3.0)
     ├── pdfa-variants.ts         #  5 PDFs – PDF/A-1b, PDF/A-2b (default + explicit), PDF/A-2u, PDF/A-3b
     ├── pdfa-latin-embedding.ts  #  4 PDFs – PDF/A Latin VF font with curly quotes, em-dash (v1.1.0, #28)
     ├── emoji-showcase.ts        #  3 PDFs – monochrome emoji, multi-script mix, table (v1.1.0)

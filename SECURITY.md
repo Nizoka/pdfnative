@@ -27,6 +27,13 @@ pdfnative is a pure TypeScript library with **zero runtime dependencies**. This 
 - Per-object encryption keys with random initialization vectors (AES-CBC)
 - No ECB mode — all encryption uses CBC with PKCS7 padding
 - Key derivation follows ISO 32000-1 (PDF 1.7) specification
+- **Cryptographically secure randomness is required.** All random material
+  (document `/ID`, AES IVs, key salts) is sourced exclusively from the platform
+  CSPRNG via `globalThis.crypto.getRandomValues` (Web Crypto — available in
+  Node.js ≥ 18, browsers, Deno, Bun, and Web Workers). pdfnative **never** falls
+  back to `Math.random()` for cryptographic material: if no secure source is
+  available the encryption path **throws** rather than producing predictable
+  output (since 1.3.0).
 
 ### Digital Signatures
 
@@ -43,7 +50,7 @@ pdfnative ships pure-TypeScript implementations of RSA (PKCS#1 v1.5) and ECDSA (
 
 **ECDSA P-256** uses RFC 6979 deterministic `k` generation (HMAC-DRBG over the private key and message hash), which eliminates nonce-reuse vulnerabilities inherent in CSPRNG-based `k` selection.
 
-**Timing-attack caveat**: JavaScript's `BigInt` arithmetic (used throughout `src/crypto/`) does not execute in constant time in V8 or SpiderMonkey. This is a fundamental limitation of pure-JS big-integer arithmetic. The practical impact is:
+**Timing-attack caveat**: JavaScript's `BigInt` arithmetic (used throughout `src/crypto/`) does not execute in constant time in V8 or SpiderMonkey. In particular the modular exponentiation (`modPow`) underpinning RSA is a square-and-multiply loop whose execution path depends on the secret exponent's bits, and is therefore **not** constant-time. (The RSA *verification* equality check is the one place that is deliberately constant-time — see above.) This is a fundamental limitation of pure-JS big-integer arithmetic. The practical impact is:
 
 - **Low risk in typical usage**: signing a PDF once per user action on a server is not meaningfully exploitable.
 - **Higher risk in high-frequency server-side pipelines**: a backend signing thousands of PDFs per second with the same private key under adversarial timing observation could theoretically leak key material over many measurements.
