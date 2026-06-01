@@ -718,7 +718,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         : 4 + wmExtraObjs + totalPages * 2;
     const infoObjNum = baseObjCount + 1;
 
-    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata();
+    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(layoutOptions?.creationDate);
     const infoTitle = params.docTitle || title || '';
     emitObj(infoObjNum,
         `<< /Title ${encodePdfTextString(infoTitle)} /Producer (pdfnative) /CreationDate (${pdfDate}) >>`);

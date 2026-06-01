@@ -452,6 +452,19 @@ export interface PdfLayoutOptions {
      * @since 1.3.0
      */
     readonly normalize?: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false;
+    /**
+     * Override the PDF creation date embedded in `/Info /CreationDate` and
+     * XMP metadata. Accepts any `Date` object.
+     *
+     * When omitted, defaults to `new Date()` at build time. Pinning this
+     * value makes output byte-identical across repeated calls — useful for
+     * deterministic tests and content-addressable storage.
+     *
+     * Default: `undefined` (current wall-clock time).
+     *
+     * @since 1.3.0
+     */
+    readonly creationDate?: Date;
 }
 
 // ── Attachment Types ─────────────────────────────────────────────────

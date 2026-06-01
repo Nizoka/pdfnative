@@ -1098,7 +1098,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
     const infoObjNum = baseObjCount + 1;
 
-    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata();
+    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(layout?.creationDate);
     const infoTitle = params.title ?? '';
 
     const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];

@@ -49,11 +49,15 @@ function makeTableParams(): PdfParams {
     };
 }
 
+/** Fixed date so both calls in byte-identity tests produce the same timestamp. */
+const FIXED_DATE = new Date('2026-01-01T00:00:00.000Z');
+
 describe('buildDocumentPDFStreamTrue', () => {
     it('yields byte-identical output to buildDocumentPDFBytes', async () => {
         const params = makeDocParams();
-        const expected = buildDocumentPDFBytes(params);
-        const got = concatChunks(await collectChunks(buildDocumentPDFStreamTrue(params)));
+        const layout = { creationDate: FIXED_DATE };
+        const expected = buildDocumentPDFBytes(params, layout);
+        const got = concatChunks(await collectChunks(buildDocumentPDFStreamTrue(params, layout)));
         expect(got.length).toBe(expected.length);
         for (let i = 0; i < expected.length; i++) expect(got[i]).toBe(expected[i]);
     });
@@ -98,8 +102,9 @@ describe('buildDocumentPDFStreamTrue', () => {
 describe('buildPDFStreamTrue', () => {
     it('yields byte-identical output to buildPDFBytes', async () => {
         const params = makeTableParams();
-        const expected = buildPDFBytes(params);
-        const got = concatChunks(await collectChunks(buildPDFStreamTrue(params)));
+        const layout = { creationDate: FIXED_DATE };
+        const expected = buildPDFBytes(params, layout);
+        const got = concatChunks(await collectChunks(buildPDFStreamTrue(params, layout)));
         expect(got.length).toBe(expected.length);
         for (let i = 0; i < expected.length; i++) expect(got[i]).toBe(expected[i]);
     });
