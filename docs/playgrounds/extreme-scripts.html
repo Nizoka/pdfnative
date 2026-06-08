@@ -39,6 +39,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html" aria-current="page">Extreme scripts</a>
+    <a href="./all-scripts.html">All 22 scripts</a>
     <a href="./medical-800.html">Medical 800-page</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
@@ -54,6 +55,8 @@
       <label for="preset"><strong>Preset:</strong></label>
       <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
         <option value="bidi">Extreme BiDi — Arabic + Hebrew + Thai + Latin + digits</option>
+        <option value="embeddings">UAX #9 embeddings — LRE / RLE / LRO / RLO (X4–X5)</option>
+        <option value="emoji">Colour emoji — COLRv1 (Noto Color Emoji)</option>
         <option value="tamil">Tamil ultra-extreme — conjuncts &amp; split vowels</option>
         <option value="bengali">Bengali + Devanagari — reph &amp; ligature chains</option>
         <option value="harakat">Arabic harakat — isolated diacritics</option>
@@ -77,13 +80,13 @@
     </details>
 
     <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
-      <strong style="color:#065f46;">v1.1.0 shaping improvements:</strong>
+      <strong style="color:#065f46;">Shaping &amp; BiDi coverage:</strong>
       <ul style="margin-top:8px;color:#065f46;">
         <li>Arabic harakat (تشكيل — fatha, kasra, damma, sukun, shadda…) now anchor on the preceding base glyph using font-provided GPOS MarkBasePos data, with fallback to (0, 0) when anchors are missing. Closes the visual half of <a href="https://github.com/Nizoka/pdfnative/issues/25" target="_blank" rel="noopener">#25</a>.</li>
         <li>UAX #9 isolates (LRI / RLI / FSI / PDI, U+2066–U+2069) handled via three-tier dispatcher with full recursion. Nested and unmatched isolates supported.</li>
         <li>Shared GSUB / GPOS drivers — Bengali / Tamil / Devanagari / Arabic shapers route through a single ligature lookup and a single mark-base anchor helper.</li>
       </ul>
-      <p style="color:#065f46;margin-top:8px;font-size:14px;">Visual baselines refreshed under <code>test-output/extreme/</code>. Remaining work — UAX #9 embeddings (LRE / RLE / LRO / RLO / PDF) and COLRv1 colour emoji — is scheduled for v1.2.0.</p>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">UAX #9 explicit embeddings (LRE / RLE / LRO / RLO / PDF) with character-level X4–X5 direction overrides, and native COLRv1 colour emoji, are now shipped — try the embeddings &amp; colour-emoji presets above.</p>
     </div>
   </article>
 </main>
@@ -115,6 +118,39 @@ const PRESETS = {
       'בדיקה של טקסט עברי מורכב עם ניקוד: שָׁלוֹם עֲלֵיכֶם.',
       '',
       'การทดสอบภาษาไทย: สวัสดีครับ ขอบคุณมากครับ ภาษาไทยมีพยัญชนะและสระและวรรณยุกต์.'
+    ].join('\n')
+  },
+  embeddings: {
+    title: 'UAX #9 Embeddings',
+    heading: 'UAX #9 — Explicit embeddings & X4–X5 overrides',
+    langs: ['he'],
+    // LRE \u202A · RLE \u202B · PDF \u202C · LRO \u202D · RLO \u202E
+    body: [
+      'LRE embedding: English text \u202Aשלום עולם\u202C continues in English.',
+      '',
+      'RLE embedding: שלום \u202BEnglish text\u202C עולם.',
+      '',
+      'LRO override (X4 — forces strong L): English \u202Dשלום\u202C continues.',
+      '',
+      'RLO override (X5 — forces strong R): שלום \u202Eעולם\u202C continues.',
+      '',
+      'RLO forces digits right-to-left: value \u202E12345\u202C end.',
+      '',
+      'Nested: outer \u202Ainner \u202Bשלום\u202C back to L\u202C done.'
+    ].join('\n')
+  },
+  emoji: {
+    title: 'Colour emoji — COLRv1',
+    heading: 'Native COLRv1 colour emoji',
+    langs: ['latin', 'emoji'],
+    body: [
+      'pdfnative renders Noto Color Emoji glyphs natively via COLR/CPAL layer compositing — no rasterization, pure PDF vector fills.',
+      '',
+      'Faces & gestures: 😀 😁 😂 🤣 😊 😍 😎 🤔 👍 👏 🙌 🎉',
+      '',
+      'Symbols & objects: ❤️ 🔥 ⭐ ✅ 🚀 💡 📦 🔒 🌍 ☕ 🍕 🎯',
+      '',
+      'Mixed with text: Build a PDF 📄 with zero dependencies ⚡ and ship it 🚢.'
     ].join('\n')
   },
   tamil: {
@@ -167,7 +203,9 @@ const FONT_MODULE_BY_LANG = {
   th: 'noto-thai-data.js',
   ta: 'noto-tamil-data.js',
   bn: 'noto-bengali-data.js',
-  hi: 'noto-devanagari-data.js'
+  hi: 'noto-devanagari-data.js',
+  latin: 'noto-sans-data.js',
+  emoji: 'noto-color-emoji-data.js'
 };
 
 const $ = (id) => document.getElementById(id);

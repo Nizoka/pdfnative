@@ -10,7 +10,7 @@
  *   - Free-form document builder (headings, paragraphs, lists, tables, images, links, barcodes)
  *   - Built-in Helvetica (Latin/WinAnsi) — no font embedding needed
  *   - CIDFont Type2/Identity-H embedding for Unicode scripts
- *   - 16 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil
+ *   - 22 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
  *   - Thai OpenType shaping (GSUB + GPOS)
  *   - Arabic positional shaping (GSUB isolated/initial/medial/final forms)
  *   - BiDi text layout (simplified UAX #9) with glyph mirroring
@@ -157,6 +157,7 @@ export {
     chunkBinaryString, concatChunks, streamByteLength,
     buildDocumentPDFStream, buildPDFStream,
     buildDocumentPDFStreamPageByPage, buildPDFStreamPageByPage,
+    buildDocumentPDFStreamTrue, buildPDFStreamTrue,
 } from './core/pdf-stream-writer.js';
 
 // ── Crypto — Hashing, ASN.1, RSA, ECDSA, X.509, CMS ────────────────
@@ -181,7 +182,7 @@ export {
     DEFAULT_MARGINS, DEFAULT_CW,
     DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
     ROW_H, TH_H, INFO_LN, BAL_H, TITLE_LN, FT_H, HEADER_H,
-    PAGE_SIZES,
+    PAGE_SIZES, DEFAULT_MAX_BLOCKS,
     computeColumnPositions, resolveLayout, resolveTemplate,
 } from './core/pdf-layout.js';
 
@@ -194,15 +195,22 @@ export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';
 
-// ── Shaping — Thai, Bengali, Tamil, Devanagari & Multi-Script ───────
+// ── Shaping — Thai, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari & Multi-Script ─
 export { shapeThaiText } from './shaping/thai-shaper.js';
 export { shapeBengaliText } from './shaping/bengali-shaper.js';
 export { shapeTamilText } from './shaping/tamil-shaper.js';
+export { shapeTeluguText } from './shaping/telugu-shaper.js';
+export { shapeSinhalaText } from './shaping/sinhala-shaper.js';
+export { shapeTibetanText } from './shaping/tibetan-shaper.js';
+export { shapeKhmerText } from './shaping/khmer-shaper.js';
+export { shapeMyanmarText } from './shaping/myanmar-shaper.js';
 export { shapeDevanagariText } from './shaping/devanagari-shaper.js';
 export {
     containsThai, containsArabic, containsHebrew,
-    containsBengali, containsTamil, containsDevanagari,
-    isBengaliCodepoint, isTamilCodepoint, isDevanagariCodepoint,
+    containsBengali, containsTamil, containsTelugu, containsDevanagari,
+    containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsEthiopic,
+    isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,
+    isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isEthiopicCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint,
 } from './shaping/script-registry.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './shaping/script-detect.js';
@@ -215,6 +223,17 @@ export { resolveBidiRuns, containsRTL, normalizeBidiEmbeddings, stripBidiControl
 export type { UseCategory, UseClassifiedCp, UseCluster } from './shaping/use-lite.js';
 export { classifyUseCategory, classifyClusters } from './shaping/use-lite.js';
 export { shapeArabicText } from './shaping/arabic-shaper.js';
+
+// ── Colour Glyphs — COLR/CPAL emoji (v1.3.0) ────────────────────────
+export type {
+    CpalColor, ColorStop, GradientExtend, SolidPaint, LinearGradientPaint,
+    RadialGradientPaint, ColorPaint, ColorLayer, ColorGlyph,
+} from './types/pdf-types.js';
+export type { OutlinePoint, Contour, GlyfFont } from './fonts/glyf-outline.js';
+export { parseGlyfFont, extractGlyphContours } from './fonts/glyf-outline.js';
+export { parseCpal, parseColrCpal } from './fonts/colr-parser.js';
+export type { ColorGlyphForm, OutlineProvider } from './core/pdf-color-glyph.js';
+export { renderColorGlyph, contoursToPath } from './core/pdf-color-glyph.js';
 
 // ── Parser — PDF Reading & Modification ─────────────────────────────
 export type { PdfToken, TokenType, PdfTokenizer } from './parser/pdf-tokenizer.js';
@@ -231,6 +250,8 @@ export type { PdfReader } from './parser/pdf-reader.js';
 export { openPdf } from './parser/pdf-reader.js';
 export type { PdfModifier } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
+export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
+export { validatePdfUA } from './parser/pdf-ua-validator.js';
 export {
     inflateSync, setInflateImpl, initNodeDecompression as initNodeDecompression_parser,
     setMaxInflateOutputSize, getMaxInflateOutputSize, DEFAULT_MAX_INFLATE_OUTPUT,

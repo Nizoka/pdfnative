@@ -34,12 +34,15 @@ import { generate as generateTableParity } from './generators/document-table-par
 import { generate as generateStreaming } from './generators/streaming-showcase.js';
 import { generate as generateParser } from './generators/parser-showcase.js';
 import { generate as generateTextShaping } from './generators/text-shaping-deep.js';
+import { generate as generateUseLite } from './generators/use-lite-showcase.js';
 import { generate as generateBidi } from './generators/bidi-algorithm.js';
 import { generate as generateCrypto } from './generators/crypto-showcase.js';
 import { generate as generateFontSubsetting } from './generators/font-subsetting-deep.js';
 import { generate as generateParserDeep } from './generators/parser-deep.js';
 import { generate as generateExtremeShaping } from './generators/extreme-shaping.js';
 import { generate as generateEmoji } from './generators/emoji-showcase.js';
+import { generate as generateColorEmoji } from './generators/color-emoji-showcase.js';
+import { generate as generateCurrency } from './generators/currency-symbols.js';
 import { generate as generatePdfALatin } from './generators/pdfa-latin-embedding.js';
 
 async function generateAll(): Promise<void> {
@@ -54,7 +57,7 @@ async function generateAll(): Promise<void> {
     // ── Diverse use-cases (12 non-financial tables) ──────────────
     await generateDiverse(ctx);
 
-    // ── Alphabet / character coverage (16 scripts) ───────────────
+    // ── Alphabet / character coverage (22 scripts) ───────────────
     await generateAlphabet(ctx);
 
     // ── PDF/A variants (4 conformance levels) ────────────────────
@@ -111,8 +114,11 @@ async function generateAll(): Promise<void> {
     // ── PDF parser & modifier showcase (round-trip) ──────────────
     await generateParser(ctx);
 
-    // ── Text shaping deep-dive (Thai/Bengali/Tamil) ─────────────
+    // ── Text shaping deep-dive (Thai/Bengali/Tamil/Telugu) ──────
     await generateTextShaping(ctx);
+
+    // ── USE-lite cluster classification (public API) ────────────
+    await generateUseLite(ctx);
 
     // ── BiDi algorithm walkthrough (UAX #9, Arabic, Hebrew) ─────
     await generateBidi(ctx);
@@ -131,6 +137,12 @@ async function generateAll(): Promise<void> {
 
     // ── Emoji showcase (v1.1.0 — Noto Emoji monochrome) ───────
     await generateEmoji(ctx);
+
+    // ── Colour-emoji showcase (v1.3.0 — Noto Color Emoji COLR/CPAL) ─
+    await generateColorEmoji(ctx);
+
+    // ── Currency symbols (v1.3.0 — base-14 + embedded Noto Sans) ─
+    await generateCurrency(ctx);
 
     // ── PDF/A Latin embedding (v1.1.0 — Noto Sans VF, issue #28) ─
     await generatePdfALatin(ctx);

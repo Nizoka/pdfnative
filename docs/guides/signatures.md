@@ -5,7 +5,7 @@ implementation (ISO 32000-1 §12.8) with full crypto in pure TypeScript —
 RSA PKCS#1 v1.5 and ECDSA P-256, SHA-256/384/512, X.509 DER parsing,
 and ASN.1 DER encoding. No OpenSSL, no node-forge, no external crypto.
 
-## TL;DR — sign any PDF in 3 lines (v1.2.0)
+## TL;DR — sign any PDF in 3 lines
 
 ```ts
 import {
@@ -23,7 +23,7 @@ const signed = signPdfBytes(placeheld, {
 });
 ```
 
-That's it. `addSignaturePlaceholder()` (new in v1.2.0) injects an
+That's it. `addSignaturePlaceholder()` injects an
 AcroForm + invisible signature widget + `/Sig` dictionary into the
 existing PDF via an incremental update (ISO 32000-1 §7.5.6), then
 `signPdfBytes()` computes the `/ByteRange`, hashes the document, builds
@@ -179,7 +179,7 @@ the placeholder bytes — that's the pipeline shown in the TL;DR above.
 
 - **Encrypted PDFs.** `addSignaturePlaceholder()` throws on encrypted
   input — sign before encrypting, or decrypt first.
-- **Timestamping (RFC 3161).** Not in v1.2.0. The
+- **Timestamping (RFC 3161).** Not currently supported. The
   `pdfnative-cli` may detect RFC 3161 timestamp tokens for display
   purposes; embedding a TSA token requires a future API.
 - **Multiple signatures.** Each signature requires its own
@@ -188,6 +188,17 @@ the placeholder bytes — that's the pipeline shown in the TL;DR above.
 - **PDF/A + signatures.** PDF/A-2b/3b allow signatures; ISO 19005-2
   §6.3.5 forbids certain `/Sig` dictionary fields (`/Reference`,
   `/Changes`). pdfnative emits only the conformant subset.
+- **Timing side-channels (pure-JS BigInt).** The RSA/ECDSA math runs on
+  JavaScript `BigInt`, which is **not** constant-time — the RSA modular
+  exponentiation in particular is a secret-dependent square-and-multiply
+  loop. Signing a PDF once per user action is not meaningfully
+  exploitable, but a high-frequency server signing thousands of PDFs/s
+  with the same key under adversarial timing observation could
+  theoretically leak key material. For such pipelines, compute the
+  CMS/PKCS#7 blob with a constant-time native backend (Node.js
+  `crypto.sign()` or WebCrypto `crypto.subtle.sign()`) and inject it via
+  `signPdfBytes()`. See [SECURITY.md](https://github.com/Nizoka/pdfnative/blob/main/SECURITY.md#cryptographic-implementation-scope--known-limitations)
+  for the full analysis.
 
 ## Full example
 

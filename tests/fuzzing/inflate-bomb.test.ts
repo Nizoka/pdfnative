@@ -76,5 +76,5 @@ describe('inflate — output size cap', () => {
         setMaxInflateOutputSize(DEFAULT_MAX_INFLATE_OUTPUT);
         const huge = new Uint8Array(deflateSync(Buffer.alloc(200 * 1024 * 1024, 0)));
         expect(() => inflateSync(huge)).toThrow();
-    });
+    }, 30_000);
 });

@@ -466,8 +466,23 @@ describe('buildDocumentPDF input validation', () => {
     });
 
     it('should throw when block count exceeds limit', () => {
-        const blocks = Array.from({ length: 10_001 }, () => ({ type: 'spacer' as const, height: 1 }));
+        const blocks = Array.from({ length: 100_001 }, () => ({ type: 'spacer' as const, height: 1 }));
         expect(() => buildDocumentPDF({ blocks })).toThrow('exceeds safe limit');
+    });
+
+    it('should accept block counts above the legacy 10k cap (default 100k)', () => {
+        const blocks = Array.from({ length: 12_000 }, () => ({ type: 'spacer' as const, height: 1 }));
+        expect(() => buildDocumentPDF({ blocks })).not.toThrow();
+    });
+
+    it('should honour a custom layout.maxBlocks ceiling', () => {
+        const blocks = Array.from({ length: 50 }, () => ({ type: 'spacer' as const, height: 1 }));
+        expect(() => buildDocumentPDF({ blocks }, { maxBlocks: 25 })).toThrow('exceeds safe limit (25)');
+    });
+
+    it('should allow raising maxBlocks beyond the default for large reports', () => {
+        const blocks = Array.from({ length: 100_050 }, () => ({ type: 'spacer' as const, height: 1 }));
+        expect(() => buildDocumentPDF({ blocks }, { maxBlocks: 250_000 })).not.toThrow();
     });
 });
 

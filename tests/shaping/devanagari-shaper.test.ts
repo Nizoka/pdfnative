@@ -350,3 +350,69 @@ describe('shapeDevanagariText', () => {
         expect(shaped[1].isZeroAdvance).toBe(true); // above-base = zero-advance
     });
 });
+
+// ── Joiner / half-form edge cases (v1.3.0, USE-lite) ────────────────
+
+describe('shapeDevanagariText — ZWJ/ZWNJ + eyelash-ra (v1.3.0)', () => {
+    const ZWJ = '\u200D';
+    const ZWNJ = '\u200C';
+
+    it('drops an orphan ZWJ (no .notdef box)', () => {
+        const fd = mockFontData();
+        const shaped = shapeDevanagariText('\u0915' + ZWJ, fd); // Ka + ZWJ
+        // Only the Ka glyph is emitted; the joiner carries no glyph.
+        expect(shaped.length).toBe(1);
+        expect(shaped[0].gid).toBe(gid(0x0915));
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+    });
+
+    it('drops an orphan ZWNJ (no .notdef box)', () => {
+        const fd = mockFontData();
+        const shaped = shapeDevanagariText('\u0915' + ZWNJ, fd); // Ka + ZWNJ
+        expect(shaped.length).toBe(1);
+        expect(shaped[0].gid).toBe(gid(0x0915));
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+    });
+
+    it('Marathi eyelash-ra: Ra + virama + ZWJ + Ya → conjunct, no .notdef', () => {
+        const fd = mockFontData();
+        // र ् ZWJ य  → eyelash-ra joining to Ya, not a reph
+        const shaped = shapeDevanagariText('\u0930\u094D' + ZWJ + '\u092F', fd);
+        // No ZWJ glyph leaks through as .notdef.
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        // The Ya base glyph is present.
+        expect(shaped.some((g) => g.gid === gid(0x092F))).toBe(true);
+    });
+
+    it('ZWJ between halant and consonant keeps the conjunct (half-form)', () => {
+        const fd = mockFontData();
+        // क ् ZWJ ष  → half-form Ka joining to Ssa
+        const shaped = shapeDevanagariText('\u0915\u094D' + ZWJ + '\u0937', fd);
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        // Ka, halant and Ssa are all present; ZWJ is consumed.
+        expect(shaped.some((g) => g.gid === gid(0x0915))).toBe(true);
+        expect(shaped.some((g) => g.gid === gid(0x0937))).toBe(true);
+    });
+
+    it('ZWNJ between halant and consonant breaks the conjunct (visible virama)', () => {
+        const fd = mockFontData();
+        // क ् ZWNJ ष → explicit virama, two separate aksaras
+        const shaped = shapeDevanagariText('\u0915\u094D' + ZWNJ + '\u0937', fd);
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        // The visible halant glyph is retained.
+        expect(shaped.some((g) => g.gid === gid(0x094D))).toBe(true);
+        expect(shaped.some((g) => g.gid === gid(0x0937))).toBe(true);
+    });
+
+    it('consonant + nukta + virama + consonant forms a conjunct', () => {
+        const fd = mockFontData();
+        // क ़ ् ष  (Ka + nukta + virama + Ssa)
+        const shaped = shapeDevanagariText('\u0915\u093C\u094D\u0937', fd);
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        // Nukta is emitted as a zero-advance mark on the base.
+        const nukta = shaped.find((g) => g.gid === gid(0x093C));
+        expect(nukta).toBeDefined();
+        expect(nukta?.isZeroAdvance).toBe(true);
+        expect(shaped.some((g) => g.gid === gid(0x0937))).toBe(true);
+    });
+});

@@ -106,6 +106,70 @@ export const BENGALI_END = 0x09FF;
 /** Tamil Unicode block. */
 export const TAMIL_START = 0x0B80;
 export const TAMIL_END = 0x0BFF;
+// ── Telugu ──────────────────────────────────────────
+
+/** Telugu Unicode block. */
+export const TELUGU_START = 0x0C00;
+export const TELUGU_END = 0x0C7F;
+
+// ── Ethiopic (v1.3.0) ───────────────────────────────
+
+/** Ethiopic Unicode block (covers Amharic, Tigrinya, Ge'ez…). */
+export const ETHIOPIC_START = 0x1200;
+export const ETHIOPIC_END = 0x137F;
+/** Ethiopic Supplement block. */
+export const ETHIOPIC_SUPPLEMENT_START = 0x1380;
+export const ETHIOPIC_SUPPLEMENT_END = 0x139F;
+/** Ethiopic Extended block. */
+export const ETHIOPIC_EXTENDED_START = 0x2D80;
+export const ETHIOPIC_EXTENDED_END = 0x2DDF;
+/** Ethiopic Extended-A block. */
+export const ETHIOPIC_EXTENDED_A_START = 0xAB00;
+export const ETHIOPIC_EXTENDED_A_END = 0xAB2F;
+
+// ── Sinhala (v1.3.0) ────────────────────────────────
+
+/** Sinhala Unicode block. */
+export const SINHALA_START = 0x0D80;
+export const SINHALA_END = 0x0DFF;
+/** Sinhala virama (al-lakuna), drives conjunct formation. */
+export const SINHALA_VIRAMA = 0x0DCA;
+
+// ── Tibetan (v1.3.0) ────────────────────────────────
+
+/** Tibetan Unicode block. */
+export const TIBETAN_START = 0x0F00;
+export const TIBETAN_END = 0x0FFF;
+/** Tibetan subjoined consonant range (drives vertical stacking). */
+export const TIBETAN_SUBJOINED_START = 0x0F90;
+export const TIBETAN_SUBJOINED_END = 0x0FBC;
+
+// ── Khmer (v1.3.0) ──────────────────────────────────
+
+/** Khmer Unicode block. */
+export const KHMER_START = 0x1780;
+export const KHMER_END = 0x17FF;
+/** Khmer Symbols block. */
+export const KHMER_SYMBOLS_START = 0x19E0;
+export const KHMER_SYMBOLS_END = 0x19FF;
+/** Khmer coeng (subscript register shifter). */
+export const KHMER_COENG = 0x17D2;
+
+// ── Myanmar (v1.3.0) ────────────────────────────────
+
+/** Myanmar Unicode block. */
+export const MYANMAR_START = 0x1000;
+export const MYANMAR_END = 0x109F;
+/** Myanmar Extended-A block. */
+export const MYANMAR_EXTENDED_A_START = 0xAA60;
+export const MYANMAR_EXTENDED_A_END = 0xAA7F;
+/** Myanmar Extended-B block. */
+export const MYANMAR_EXTENDED_B_START = 0xA9E0;
+export const MYANMAR_EXTENDED_B_END = 0xA9FF;
+/** Myanmar virama (asat / killer). */
+export const MYANMAR_VIRAMA = 0x1039;
+/** Myanmar asat (visible virama). */
+export const MYANMAR_ASAT = 0x103A;
 
 // ── Emoji (v1.1.0) ───────────────────────────────────────────────────
 
@@ -194,6 +258,42 @@ export function isTamilCodepoint(cp: number): boolean {
     return cp >= TAMIL_START && cp <= TAMIL_END;
 }
 
+/** Check if a codepoint falls in the Telugu Unicode block. */
+export function isTeluguCodepoint(cp: number): boolean {
+    return cp >= TELUGU_START && cp <= TELUGU_END;
+}
+
+/** Check if a codepoint falls in any Ethiopic Unicode block. */
+export function isEthiopicCodepoint(cp: number): boolean {
+    return (cp >= ETHIOPIC_START && cp <= ETHIOPIC_END) ||
+           (cp >= ETHIOPIC_SUPPLEMENT_START && cp <= ETHIOPIC_SUPPLEMENT_END) ||
+           (cp >= ETHIOPIC_EXTENDED_START && cp <= ETHIOPIC_EXTENDED_END) ||
+           (cp >= ETHIOPIC_EXTENDED_A_START && cp <= ETHIOPIC_EXTENDED_A_END);
+}
+
+/** Check if a codepoint falls in the Sinhala Unicode block. */
+export function isSinhalaCodepoint(cp: number): boolean {
+    return cp >= SINHALA_START && cp <= SINHALA_END;
+}
+
+/** Check if a codepoint falls in the Tibetan Unicode block. */
+export function isTibetanCodepoint(cp: number): boolean {
+    return cp >= TIBETAN_START && cp <= TIBETAN_END;
+}
+
+/** Check if a codepoint falls in any Khmer Unicode block. */
+export function isKhmerCodepoint(cp: number): boolean {
+    return (cp >= KHMER_START && cp <= KHMER_END) ||
+           (cp >= KHMER_SYMBOLS_START && cp <= KHMER_SYMBOLS_END);
+}
+
+/** Check if a codepoint falls in any Myanmar Unicode block. */
+export function isMyanmarCodepoint(cp: number): boolean {
+    return (cp >= MYANMAR_START && cp <= MYANMAR_END) ||
+           (cp >= MYANMAR_EXTENDED_A_START && cp <= MYANMAR_EXTENDED_A_END) ||
+           (cp >= MYANMAR_EXTENDED_B_START && cp <= MYANMAR_EXTENDED_B_END);
+}
+
 /** Check if a codepoint falls in any Devanagari Unicode block. */
 export function isDevanagariCodepoint(cp: number): boolean {
     return (cp >= DEVANAGARI_START && cp <= DEVANAGARI_END) ||
@@ -212,6 +312,27 @@ export function isEmojiCodepoint(cp: number): boolean {
         if (cp >= lo && cp <= hi) return true;
     }
     return false;
+}
+
+/**
+ * Zero-width emoji/formatting code points that carry no standalone glyph:
+ * the Zero-Width Joiner / Non-Joiner, the emoji/text variation selectors
+ * (VS-15 / VS-16) and the Fitzpatrick skin-tone modifiers.
+ *
+ * When no registered font covers such a code point it must be **dropped**
+ * rather than rendered as `.notdef` (the tofu box). Run-splitting uses this to
+ * avoid emitting tofu for emoji sequences whose joiners/selectors/modifiers are
+ * absent from the curated colour-emoji subset, while leaving the joiners intact
+ * whenever a font (e.g. an Indic shaper font) *does* map them.
+ *
+ * @since 1.3.0
+ */
+export function isZeroWidthFormat(cp: number): boolean {
+    return cp === ZWJ
+        || cp === 0x200C // ZWNJ
+        || cp === VS15
+        || cp === VS16
+        || (cp >= FITZPATRICK_START && cp <= FITZPATRICK_END);
 }
 
 // ── Text-Level Detection ─────────────────────────────────────────────
@@ -256,6 +377,54 @@ export function containsBengali(str: string): boolean {
 export function containsTamil(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isTamilCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Telugu characters. */
+export function containsTelugu(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isTeluguCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Ethiopic characters. */
+export function containsEthiopic(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isEthiopicCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Sinhala characters. */
+export function containsSinhala(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isSinhalaCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Tibetan characters. */
+export function containsTibetan(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isTibetanCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Khmer characters. */
+export function containsKhmer(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isKhmerCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Myanmar characters. */
+export function containsMyanmar(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isMyanmarCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }

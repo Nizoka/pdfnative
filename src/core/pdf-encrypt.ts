@@ -490,16 +490,28 @@ export function computePermissions(perms?: EncryptionOptions['permissions']): nu
 // ── AES-128 / Revision 4 Key Derivation ─────────────────────────────
 
 /**
- * Fill a Uint8Array with cryptographically random bytes when available,
- * falling back to Math.random() in environments without Web Crypto.
+ * Fill a Uint8Array with cryptographically secure random bytes.
+ *
+ * Encryption security depends entirely on unpredictable IVs and document IDs,
+ * so this requires a CSPRNG (Web Crypto `crypto.getRandomValues`, available in
+ * all browsers, Node.js 15+, Deno, Bun, and modern React Native via polyfill).
+ * Rather than silently degrade to a non-cryptographic source (`Math.random`),
+ * which would make IVs and salts predictable and the encryption forgeable, this
+ * throws so the caller can surface the missing prerequisite explicitly.
+ *
+ * @throws {Error} when no Web Crypto CSPRNG is available in the host environment
  */
 function fillRandom(buf: Uint8Array): Uint8Array {
     if (typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.getRandomValues === 'function') {
         globalThis.crypto.getRandomValues(buf as unknown as Uint8Array<ArrayBuffer>);
-    } else {
-        for (let i = 0; i < buf.length; i++) buf[i] = Math.floor(Math.random() * 256);
+        return buf;
     }
-    return buf;
+    throw new Error(
+        'pdfnative: PDF encryption requires a cryptographically secure random source ' +
+        '(Web Crypto `crypto.getRandomValues`), which is unavailable in this environment. ' +
+        'Refusing to generate predictable IVs/document IDs. On older runtimes, install a ' +
+        'Web Crypto polyfill (e.g. `react-native-get-random-values`) before encrypting.'
+    );
 }
 
 /**

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCP Tool Explorer — pdfnative-mcp v0.3.0 playground</title>
-  <meta name="description" content="Interactive explorer for the 9 pdfnative-mcp v0.3.0 tools (incl. inspect_pdf). Browse the JSON schemas, see real example prompts, and generate the same PDFs an AI assistant would receive — directly in your browser. Zero install, zero secrets.">
+  <title>MCP Tool Explorer — pdfnative-mcp playground</title>
+  <meta name="description" content="Interactive explorer for the pdfnative-mcp tools (incl. inspect_pdf). Browse the JSON schemas, see real example prompts, and generate the same PDFs an AI assistant would receive — directly in your browser. Zero install, zero secrets.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/mcp.html">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
@@ -73,6 +73,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 22 scripts</a>
     <a href="./medical-800.html">Medical 800-page</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html" aria-current="page">MCP explorer</a>
@@ -80,7 +81,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
-    <p>The nine tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> (currently <strong>v0.3.0</strong>) into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). v0.3.0 adds <code>inspect_pdf</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, and per-tool <code>outputSchema</code> (MCP 2025-06-18). Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
+    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <code>inspect_pdf</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, and per-tool <code>outputSchema</code> (MCP 2025-06-18). Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
 
     <section id="pdfnative-versions" class="pn-versions" aria-label="Live package versions"></section>
 
@@ -257,7 +258,7 @@
     },
     {
       id: 'add_international_text',
-      purpose: 'Render text in any of 16 scripts with BiDi & OpenType shaping. v0.3.0 lets you pass several scripts in one call.',
+      purpose: 'Render text in any of 22 scripts with BiDi & OpenType shaping. You can pass several scripts in one call.',
       prompt: 'Create a multilingual greeting card with English, Thai, Arabic, and a smiling-face emoji.',
       args: {
         title: 'Multilingual greeting',
@@ -355,7 +356,7 @@
     },
     {
       id: 'inspect_pdf',
-      purpose: 'Inspect a PDF (metadata, page count, signatures, PDF/A conformance, encryption) and return a structured report. Added in v0.3.0.',
+      purpose: 'Inspect a PDF (metadata, page count, signatures, PDF/A conformance, encryption) and return a structured report.',
       prompt: 'Open the signed contract and tell me whether it is PDF/A-2b and whether the signature is valid.',
       args: {
         path: 'signed.pdf',
@@ -369,7 +370,7 @@
         layout: { tagged: 'pdfa2b' },
         blocks: [
           { type: 'heading', text: 'Sample PDF/A-2b document', level: 1 },
-          { type: 'paragraph', text: 'This is the kind of file an AI assistant would hand to inspect_pdf. The tool returns metadata, page geometry, signature info, and PDF/A status as structured JSON — driven by the v0.3.0 outputSchema.' },
+          { type: 'paragraph', text: 'This is the kind of file an AI assistant would hand to inspect_pdf. The tool returns metadata, page geometry, signature info, and PDF/A status as structured JSON — driven by the tool outputSchema.' },
         ],
       }),
     },

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pdfnative — Zero-dependency PDF generation for TypeScript</title>
-  <meta name="description" content="Zero-dependency PDF library for TypeScript. ISO 32000-1, PDF/A-1b/2b/2u/3b, AES-128/256 encryption, RSA + ECDSA signatures, 16 Unicode scripts, BiDi, barcodes, SVG, AcroForms, streaming. CLI + MCP server included.">
+  <meta name="description" content="Zero-dependency PDF library for TypeScript. ISO 32000-1, PDF/A-1b/2b/2u/3b, AES-128/256 encryption, RSA + ECDSA signatures, 22 Unicode scripts, BiDi, barcodes, SVG, AcroForms, streaming. CLI + MCP server included.">
   <meta name="keywords" content="pdf, typescript, javascript, pdf generation, zero dependencies, unicode, arabic, thai, hebrew, bidi, pdf-a, tagged-pdf, pades, acroform, accessibility, encryption, aes, rsa, ecdsa, cms, pkcs7, rfc-3161, digital-signatures, barcodes, qr-code, svg, opentype, emoji, noto, cjk, mcp, model-context-protocol, claude, cursor, ai, llm, pdfnative-cli, pdfnative-mcp">
   <meta name="author" content="Nizoka">
   <meta name="robots" content="index, follow, max-image-preview:large">
@@ -16,7 +16,7 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev">
   <meta property="og:title" content="pdfnative — Zero-dependency PDF generation for TypeScript">
-  <meta property="og:description" content="Pure native PDF library. Zero dependencies. ISO 32000-1, PDF/A, AES, RSA + ECDSA signatures, 16 Unicode scripts. CLI + MCP server.">
+  <meta property="og:description" content="Pure native PDF library. Zero dependencies. ISO 32000-1, PDF/A, AES, RSA + ECDSA signatures, 22 Unicode scripts. CLI + MCP server.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -24,7 +24,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="pdfnative — Zero-dependency PDF generation for TypeScript">
-  <meta name="twitter:description" content="Pure native PDF library. Zero deps. ISO 32000-1. PDF/A. RSA + ECDSA. 16 Unicode scripts. CLI + MCP.">
+  <meta name="twitter:description" content="Pure native PDF library. Zero deps. ISO 32000-1. PDF/A. RSA + ECDSA. 22 Unicode scripts. CLI + MCP.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
 
   <link rel="canonical" href="https://pdfnative.dev">
@@ -50,7 +50,7 @@
         "programmingLanguage": "TypeScript",
         "license": "https://opensource.org/licenses/MIT",
         "runtimePlatform": ["Node.js", "Browser", "Deno", "Bun"],
-        "softwareVersion": "1.1.0",
+        "softwareVersion": "1.3.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -61,9 +61,9 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#cli",
         "name": "pdfnative-cli",
-        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA), inspect, and verify CMS/PKCS#7 signatures with RFC 3161 detection.",
+        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA), inspect, verify CMS/PKCS#7 signatures, plus batch and shell-completion commands.",
         "url": "https://github.com/Nizoka/pdfnative-cli",
-        "softwareVersion": "0.3.0",
+        "softwareVersion": "1.0.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -73,9 +73,9 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#mcp",
         "name": "pdfnative-mcp",
-        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 9 tools, outputSchema, PDF/A flag.",
+        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 12 tools, outputSchema, PDF/A flag.",
         "url": "https://github.com/Nizoka/pdfnative-mcp",
-        "softwareVersion": "0.3.0",
+        "softwareVersion": "1.0.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -121,7 +121,7 @@
   <div class="container">
     <h1>Pure Native <span class="gradient">PDF Generation</span></h1>
     <p class="hero-sub">
-      Zero dependencies. ISO 32000-1 compliant. 16 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
+      Zero dependencies. ISO 32000-1 compliant. 22 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
     </p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="https://github.com/Nizoka/pdfnative#quick-start">Get Started →</a>
@@ -196,8 +196,8 @@
 
       <div class="feature-card">
         <div class="feature-icon fi-unicode"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
-        <h3>16 Unicode Scripts</h3>
-        <p>Thai, Arabic, Hebrew, Bengali, Tamil, CJK, Cyrillic, Greek, Devanagari, and more. Full UAX #9 BiDi — isolates + explicit embeddings (LRE/RLE/LRO/RLO/PDF). OpenType GSUB/GPOS shaping for Thai, Arabic, Devanagari, Bengali, and Tamil.</p>
+        <h3>22 Unicode Scripts</h3>
+        <p>Thai, Arabic, Hebrew, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Amharic, CJK, Cyrillic, Greek, Devanagari, and more. Full UAX #9 BiDi — isolates + explicit embeddings (LRE/RLE/LRO/RLO/PDF). OpenType GSUB/GPOS shaping for Thai, Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, and Myanmar.</p>
       </div>
 
       <div class="feature-card">
@@ -209,31 +209,31 @@
       <div class="feature-card">
         <div class="feature-icon fi-security"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
         <h3>Security Built-in</h3>
-        <p>AES-128/256 encryption with granular permissions. CMS/PKCS#7 digital signatures — RSA and ECDSA P-256. One-call placeholder injection via <code>addSignaturePlaceholder()</code> (v1.2.0). Zero external crypto deps.</p>
+        <p>AES-128/256 encryption with granular permissions. CMS/PKCS#7 digital signatures — RSA and ECDSA P-256. One-call placeholder injection via <code>addSignaturePlaceholder()</code>. Zero external crypto deps.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-content"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
         <h3>Rich Content</h3>
-        <p>12 block types: tables, images, barcodes (5 ISO formats), SVG, AcroForm fields, TOC, watermarks, hyperlinks. Pure PDF vector ops — no rasterization. <strong>Smart tables (v1.2.0)</strong>: multi-page slicing with repeated headers, auto-wrap, zebra striping, captions. <a href="guides/tables.html">Tables guide →</a></p>
+        <p>12 block types: tables, images, barcodes (5 ISO formats), SVG, AcroForm fields, TOC, watermarks, hyperlinks. Pure PDF vector ops — no rasterization. <strong>Smart tables</strong>: multi-page slicing with repeated headers, auto-wrap, zebra striping, captions. <a href="guides/tables.html">Tables guide →</a></p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (incl. object-boundary page-by-page, v1.2.0), Web Worker off-thread generation, PDF parser &amp; modifier. 1 822+ tests across 53 files, 95%+ coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 1 822+ tests across 53 files, 95%+ coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-mcp"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M15 8h2M11 8h2"/></svg></div>
         <h3>AI Integration — MCP</h3>
-        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> v0.3.0. <strong>9 production tools</strong> incl. <code>inspect_pdf</code>, <code>pdfA</code> flag everywhere, MCP 2025-06-18 <code>outputSchema</code>. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
+        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. <strong>12 production tools</strong> incl. <code>verify_pdf</code>, <code>add_attachment</code> (Factur-X / ZUGFeRD), <code>extract_text</code>, <code>pdfA</code> flag everywhere, MCP 2025-06-18 <code>outputSchema</code>. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-cli"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
         <h3>Command-Line Interface</h3>
-        <p>Render, sign, inspect &amp; <strong>verify</strong> PDFs from the terminal with <a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> v0.3.0. End-to-end signing pipeline (RSA + <strong>ECDSA-SHA256</strong>), real CMS/PKCS#7 verify with RFC 3161 detection, <code>render --watch / --template / --font</code>, automatic signature-placeholder injection. <a href="guides/cli.html">Read the CLI guide →</a> &middot; <a href="playgrounds/cli.html">Try the playground →</a></p>
+        <p>Render, sign, inspect &amp; <strong>verify</strong> PDFs from the terminal with <a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a>. End-to-end signing pipeline (RSA + <strong>ECDSA-SHA256</strong>), real CMS/PKCS#7 verify with RFC 3161 detection, <code>render --watch / --template / --font</code>, <code>batch</code> &amp; <code>completion</code> commands, automatic signature-placeholder injection. <a href="guides/cli.html">Read the CLI guide →</a> &middot; <a href="playgrounds/cli.html">Try the playground →</a></p>
       </div>
 
     </div>
@@ -356,7 +356,7 @@ const pdf = buildDocumentPDFBytes({
       <div class="demo-error" id="demo-error" role="alert"></div>
       <p class="demo-note">
         Need more? Browse all
-        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">28 generator categories (~161 sample PDFs)</a>
+        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">32 generator categories (~187 sample PDFs)</a>
         on GitHub.
       </p>
     </div>
@@ -370,7 +370,7 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Three adoption paths — pick the one that fits your stack. All three are zero-config and zero-build.</p>
     <div class="onboarding-grid">
       <div class="onboarding-card">
-        <h3>Library <span class="ob-badge">v1.1.0</span></h3>
+        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.3.0</span></h3>
         <p class="ob-tag">For TypeScript / JavaScript apps.</p>
 <pre><code class="language-bash">npm install pdfnative</code></pre>
 <pre><code class="language-typescript">import { buildDocumentPDFBytes } from 'pdfnative';
@@ -381,7 +381,7 @@ const pdf = buildDocumentPDFBytes({
         <a class="ob-link" href="guides/quickstart.html">Quick Start guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>CLI <span class="ob-badge">v0.3.0</span></h3>
+        <h3>CLI <span class="ob-badge" data-pn-badge="pdfnative-cli">v1.0.0</span></h3>
         <p class="ob-tag">For shells, CI, and Makefiles.</p>
 <pre><code class="language-bash">echo '{"blocks":[{"type":"paragraph","text":"Hi"}]}' \
   | npx pdfnative-cli render -o out.pdf</code></pre>
@@ -392,7 +392,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
         <a class="ob-link" href="guides/cli.html">CLI guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>MCP <span class="ob-badge">v0.3.0</span></h3>
+        <h3>MCP <span class="ob-badge" data-pn-badge="pdfnative-mcp">v1.0.0</span></h3>
         <p class="ob-tag">For Claude Desktop, Cursor, Continue, Zed, …</p>
 <pre><code class="language-json">{
   "mcpServers": {
@@ -402,7 +402,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
     }
   }
 }</code></pre>
-        <p class="ob-tag" style="margin-top:auto;">Drop into your MCP client config — 9 tools become available instantly.</p>
+        <p class="ob-tag" style="margin-top:auto;">Drop into your MCP client config — the full tool set becomes available instantly.</p>
         <a class="ob-link" href="guides/mcp.html">MCP guide →</a>
       </div>
     </div>
@@ -639,7 +639,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/master/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative module architecture: pdfnative-cli (4 commands: render · sign · inspect · verify) and pdfnative-mcp (9 tools, any stdio client) ecosystem consumers above the library, types → core ← fonts ← shaping (GSUB · GPOS · BiDi · 16 scripts) ← worker, with standalone crypto and parser modules" width="960" height="540" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative module architecture: pdfnative-cli (commands: render · sign · inspect · verify · batch · completion) and pdfnative-mcp (stdio tools, any MCP client) ecosystem consumers above the library, types → core ← fonts ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker, with standalone crypto and parser modules" width="960" height="540" loading="lazy">
       </a>
     </div>
   </div>
@@ -649,24 +649,29 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
 <section class="section section-alt" id="mcp">
   <div class="container">
     <h2 class="section-title">Use pdfnative from Any AI Client</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> v0.3.0 is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with <code>inspect_pdf</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and per-tool <code>outputSchema</code> (MCP 2025-06-18 spec).</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with <code>verify_pdf</code>, <code>add_attachment</code> (Factur-X / ZUGFeRD), <code>extract_text</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and per-tool <code>outputSchema</code> (MCP 2025-06-18 spec).</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>9 Production Tools</h3>
+        <h3>12 Production Tools</h3>
+        <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
           <tbody>
             <tr><td><code>generate_basic_pdf</code></td><td>Multi-page documents (headings, paragraphs, lists). Optional <code>pdfA</code> flag.</td></tr>
             <tr><td><code>add_table</code></td><td>Tabular reports — now with optional <code>autoFitColumns</code> and <code>clipCells</code> (pdfnative v1.1 <code>TableBlock</code>).</td></tr>
             <tr><td><code>add_barcode</code></td><td>QR Code, Code 128, EAN-13, Data Matrix, PDF417</td></tr>
-            <tr><td><code>add_international_text</code></td><td>16 scripts with BiDi &amp; OpenType shaping. <code>lang</code> now accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
+            <tr><td><code>add_international_text</code></td><td>22 scripts with BiDi &amp; OpenType shaping. <code>lang</code> now accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
             <tr><td><code>add_form</code></td><td>Interactive AcroForm fields</td></tr>
             <tr><td><code>embed_image</code></td><td>JPEG / PNG image embedding</td></tr>
             <tr><td><code>prepare_signature_placeholder</code></td><td>PDF with <code>/Sig</code> field ready to sign</td></tr>
             <tr><td><code>sign_pdf</code></td><td>CMS/PKCS#7 signatures (RSA &amp; ECDSA)</td></tr>
-            <tr><td><code>inspect_pdf</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW v0.3.0</span></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; optional CI-style <code>check: ('pdfa'|'signed'|'encrypted')[]</code>.</td></tr>
+            <tr><td><code>inspect_pdf</code></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; optional CI-style <code>check: ('pdfa'|'signed'|'encrypted')[]</code>.</td></tr>
+            <tr><td><code>verify_pdf</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain, RFC 3161 timestamp detection.</td></tr>
+            <tr><td><code>add_attachment</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Embed files (Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output.</td></tr>
+            <tr><td><code>extract_text</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Extract text content from an existing PDF via the native parser.</td></tr>
           </tbody>
         </table>
+        </div>
         <a class="star-cta" href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><span class="star-icon">⭐</span> Find pdfnative useful? Star it on GitHub.</a>
       </div>
       <div class="mcp-config">
@@ -689,19 +694,23 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
 <section class="section" id="cli">
   <div class="container">
     <h2 class="section-title">Use pdfnative from your shell, CI, or Makefile</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> v0.3.0 is the <strong>official command-line interface</strong>. Four commands, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. v0.3.0 finishes the digital-signature story with end-to-end signing (RSA + ECDSA-SHA256), full CMS/PKCS#7 verification, RFC 3161 timestamp detection, and a fast <code>render --watch / --template / --font</code> iteration loop.</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. Six commands, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. It completes the digital-signature story with end-to-end signing (RSA + ECDSA-SHA256), full CMS/PKCS#7 verification, RFC 3161 timestamp detection, a fast <code>render --watch / --template / --font</code> loop, plus <code>batch</code> and shell <code>completion</code> commands.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>4 Production Commands</h3>
+        <h3>6 Production Commands</h3>
+        <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
           <tbody>
-            <tr><td><code>render</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v0.3.0</span></td><td>JSON → PDF with hybrid <code>flags + --layout</code>. New: <code>--watch</code> (re-render on change), <code>--template &lt;file.json&gt;</code> (deep-merge base), <code>--font {latin,emoji}</code> (bundled font shortcuts).</td></tr>
-            <tr><td><code>sign</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v0.3.0</span></td><td>End-to-end CMS/PKCS#7 signing. <strong>ECDSA-SHA256</strong> fully wired. Auto-injects the AcroForm signature placeholder when missing — sign any <code>render</code> output in one command.</td></tr>
+            <tr><td><code>render</code></td><td>JSON → PDF with hybrid <code>flags + --layout</code>. <code>--watch</code> (re-render on change), <code>--template &lt;file.json&gt;</code> (deep-merge base), <code>--font {latin,emoji}</code> (bundled font shortcuts).</td></tr>
+            <tr><td><code>sign</code></td><td>End-to-end CMS/PKCS#7 signing. <strong>ECDSA-SHA256</strong> fully wired. Auto-injects the AcroForm signature placeholder when missing — sign any <code>render</code> output in one command.</td></tr>
             <tr><td><code>inspect</code></td><td>Read-only PDF analysis. <code>--verbose</code>, <code>--pages</code>, and <code>--check pdfa|signed|encrypted</code> for CI assertions.</td></tr>
-            <tr><td><code>verify</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v0.3.0</span></td><td>Real CMS/PKCS#7 verification — signature value (RSA + ECDSA-SHA256), message digest, certificate chain, trust roots, RFC 3161 timestamp token detection. JSON report.</td></tr>
+            <tr><td><code>verify</code></td><td>Real CMS/PKCS#7 verification — signature value (RSA + ECDSA-SHA256), message digest, certificate chain, trust roots, RFC 3161 timestamp token detection. JSON report.</td></tr>
+            <tr><td><code>batch</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Render many JSON inputs to PDFs in one invocation — glob input, parallelism, per-file status.</td></tr>
+            <tr><td><code>completion</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Generate shell completion scripts (bash / zsh / fish).</td></tr>
           </tbody>
         </table>
+        </div>
         <a class="star-cta" href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><span class="star-icon">⭐</span> Powering this CLI? Star pdfnative on GitHub.</a>
       </div>
       <div class="mcp-config">

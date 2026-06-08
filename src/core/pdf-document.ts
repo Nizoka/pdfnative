@@ -26,6 +26,7 @@ import type {
 import { buildImageXObject } from './pdf-image.js';
 import { createEncodingContext } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
+import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
 import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
 import { txt, txtTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
@@ -33,7 +34,7 @@ import { toBytes } from './pdf-stream.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
     FT_H, HEADER_H,
-    DEFAULT_FONT_SIZES,
+    DEFAULT_FONT_SIZES, DEFAULT_MAX_BLOCKS,
 } from './pdf-layout.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
 import {
@@ -109,6 +110,22 @@ type PaginatedItem = DocumentBlock | TableSliceItem;
  * @returns Complete PDF as a binary string
  */
 export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): string {
+    return assembleDocumentParts(params, layoutOptions).join('');
+}
+
+/**
+ * Assemble a free-form PDF document and return its raw object/framing parts
+ * (header, indirect objects, xref, trailer) in emission order — WITHOUT
+ * joining them into a single string.
+ *
+ * {@link buildDocumentPDF} simply joins the result. The true-streaming
+ * generators (`buildDocumentPDFStreamTrue`) iterate the parts and yield them
+ * progressively, freeing each as they go, so the fully-joined PDF binary never
+ * materialises in memory. The byte content is identical to `buildDocumentPDF`.
+ *
+ * @internal
+ */
+export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): string[] {
     // ── Input Validation ─────────────────────────────────────────────
     if (!params || typeof params !== 'object') {
         throw new Error('buildDocumentPDF: params is required and must be an object');
@@ -116,11 +133,11 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     if (!Array.isArray(params.blocks)) {
         throw new Error('buildDocumentPDF: params.blocks must be an array');
     }
-    if (params.blocks.length > 10_000) {
-        throw new Error(`buildDocumentPDF: block count (${params.blocks.length}) exceeds safe limit (10,000)`);
-    }
-
     const layout = layoutOptions ?? params.layout;
+    const maxBlocks = layout?.maxBlocks ?? DEFAULT_MAX_BLOCKS;
+    if (params.blocks.length > maxBlocks) {
+        throw new Error(`buildDocumentPDF: block count (${params.blocks.length}) exceeds safe limit (${maxBlocks}). Raise it via layout.maxBlocks if this is intentional.`);
+    }
 
     // ── Resolve layout ───────────────────────────────────────────────
     const pgW = layout?.pageWidth ?? PG_W;
@@ -137,9 +154,9 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const pdfaConfig = resolvePdfAConfig(layout?.tagged);
     const tagged = pdfaConfig.enabled;
 
-    const enc = createEncodingContext(fontEntries, tagged);
+    const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false);
 
-    // ── Encryption setup ──────────────────────────────────────────────
+    // ── Encryption setup ──────────────────────
     const encryptionOpts = layout?.encryption;
     if (tagged && encryptionOpts) {
         throw new Error('PDF/A and encryption are mutually exclusive (ISO 19005-1 §6.3.2)');
@@ -613,6 +630,30 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const totalFormObjs = totalFieldObjs + numRadioGroups;
     const formFontObjs = totalFormFields > 0 ? 1 : 0; // dedicated /Helv font object for forms
 
+    // Base-14 /ToUnicode CMap (issue #48): non-tagged Helvetica/Helvetica-Bold
+    // carry no ToUnicode by default, so the CP1252 0x80–0x9F band (Euro, curly
+    // quotes, …) is not selectable/searchable and renders as `?` in minimal
+    // viewers. Emit one shared CMap as the trailing object (forward reference
+    // from the font dicts). Tagged mode embeds CIDFonts with their own ToUnicode.
+    const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
+        ? 4 + fontEntries.length * 5 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs
+        : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
+    const latinToUniObjNum = tagged ? 0 : preBaseObjCount + 2; // infoObjNum + 1
+    const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
+
+    // Colour-emoji Form XObjects (v1.3.0) — collected during the page-stream
+    // build above (via the encoding context's colour-emoji collector). They are
+    // emitted as trailing objects and forward-referenced from every page's
+    // /XObject dict. Empty (and zero-cost) unless an 'emoji-color' font is used.
+    const colorEmojiForms = enc.colorEmoji?.forms ?? [];
+    const colorEmojiStart = colorEmojiForms.length > 0
+        ? (latinToUniObjNum || (preBaseObjCount + 1)) + 1
+        : 0;
+    let colorEmojiXObjRefs = '';
+    for (let k = 0; k < colorEmojiForms.length; k++) {
+        colorEmojiXObjRefs += ` /${colorEmojiForms[k].name} ${colorEmojiStart + k} 0 R`;
+    }
+
     // ── Assemble PDF binary ──────────────────────────────────────────
     const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
 
@@ -654,9 +695,10 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     }
 
     // Combine XObject resource dict
-    if (imgXObjRes || wmImgRef) {
+    if (imgXObjRes || wmImgRef || colorEmojiXObjRefs) {
         if (!imgXObjRes) imgXObjRes = ' /XObject <<';
         if (wmImgRef) imgXObjRes += ` ${wmImgRef}`;
+        imgXObjRes += colorEmojiXObjRefs;
         imgXObjRes += ' >>';
     }
 
@@ -679,8 +721,8 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             emitObj(3, refDict);
             emitObj(4, refDict);
         } else {
-            emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
-            emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+            emitObj(3, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
+            emitObj(4, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
         }
 
         // CIDFont Type2 objects — 5 per fontEntry
@@ -896,8 +938,8 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
             kids.push(`${5 + imageCount + wmExtraObjs + p * 2} 0 R`);
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
-        emitObj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
-        emitObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+        emitObj(3, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
+        emitObj(4, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding${baseFontToUniRef} >>`);
 
         // Image XObject objects (Latin mode)
         for (let i = 0; i < imageCount; i++) {
@@ -1056,7 +1098,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
         : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
     const infoObjNum = baseObjCount + 1;
 
-    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata();
+    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(layout?.creationDate);
     const infoTitle = params.title ?? '';
 
     const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];
@@ -1072,6 +1114,31 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
     let totalObjs = infoObjNum;
+
+    // Base-14 /ToUnicode CMap (issue #48) — trailing object so the forward
+    // reference in the Helvetica/Helvetica-Bold dicts resolves.
+    if (latinToUniObjNum) {
+        const cmap = buildWinAnsiToUnicodeCMap();
+        emitStreamObj(latinToUniObjNum, `<< /Length ${cmap.length}`, cmap);
+        totalObjs = latinToUniObjNum;
+    }
+
+    // Colour-emoji Form XObjects (v1.3.0) — trailing objects forward-referenced
+    // from the page /XObject dicts. Each form inlines its /Shading + /ExtGState
+    // resources, so one indirect object per unique colour glyph.
+    if (colorEmojiForms.length > 0) {
+        for (let k = 0; k < colorEmojiForms.length; k++) {
+            const f = colorEmojiForms[k];
+            const objNum = colorEmojiStart + k;
+            const res = f.resources ? ` /Resources << ${f.resources} >>` : '';
+            emitStreamObj(
+                objNum,
+                `<< /Type /XObject /Subtype /Form /BBox [${f.bbox.join(' ')}]${res} /Length ${f.content.length}`,
+                f.content,
+            );
+        }
+        totalObjs = colorEmojiStart + colorEmojiForms.length - 1;
+    }
 
     // ── Tagged PDF objects ───────────────────────────────────────────
     let xmpObjNum = 0;
@@ -1205,7 +1272,7 @@ export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial
     const writer = { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts };
     writeXrefTrailer(writer, totalObjs, infoObjNum, encState, `${infoTitle}|${pdfDate}`);
 
-    return parts.join('');
+    return parts;
 }
 
 /**

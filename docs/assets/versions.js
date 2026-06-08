@@ -27,12 +27,14 @@
 
     var NPM = 'https://registry.npmjs.org/';
     var PKGS = ['pdfnative', 'pdfnative-cli', 'pdfnative-mcp'];
-    // Static fallbacks used when the registry is unreachable. Bumped at
-    // every release of pdfnative; downstream pins update independently.
+    // Static fallbacks used only when the registry is unreachable. The live
+    // npm widget is the single source of truth for displayed versions across
+    // the whole site; these mirror the latest published releases so an offline
+    // visitor still sees a sensible value. Bumped at every release.
     var FALLBACK = {
-        'pdfnative': { version: '1.1.0', pin: null },
-        'pdfnative-cli': { version: '0.2.0', pin: '^1.0.5' },
-        'pdfnative-mcp': { version: '0.2.0', pin: '^1.0.5' }
+        'pdfnative': { version: '1.3.0', pin: null },
+        'pdfnative-cli': { version: '1.0.0', pin: '^1.3.0' },
+        'pdfnative-mcp': { version: '1.0.0', pin: '^1.3.0' }
     };
 
     function el(tag, attrs, kids) {
@@ -68,7 +70,7 @@
         host.setAttribute('data-pdfnative-mcp-version', results['pdfnative-mcp'].version);
     }
 
-    /** Compact one-line strip: `Live npm: pdfnative v1.1.0 · cli v0.3.0 (→ ^1.1.0) · mcp v0.3.0 (→ ^1.1.0)`. */
+    /** Compact one-line strip fetched live from npm, e.g. `Live npm: pdfnative vX.Y.Z · cli vX.Y.Z (→ ^X.Y.Z) · mcp vX.Y.Z (→ ^X.Y.Z)`. */
     function renderCompact(host, results) {
         host.innerHTML = '';
         applyDataAttrs(host, results);
@@ -163,6 +165,22 @@
         return renderDetailed;
     }
 
+    /**
+     * Fill any inline `[data-pn-badge="<pkg>"]` element with the live version
+     * (e.g. `v1.3.0`). Lets onboarding cards, hero badges, etc. stay correct
+     * without ever hardcoding a number in the markup — the live npm registry
+     * is the single source of truth across the whole site.
+     */
+    function applyInlineBadges(byName) {
+        var badges = document.querySelectorAll('[data-pn-badge]');
+        for (var i = 0; i < badges.length; i++) {
+            var b = badges[i];
+            var pkg = b.getAttribute('data-pn-badge');
+            var info = byName[pkg];
+            if (info && info.version) b.textContent = 'v' + info.version;
+        }
+    }
+
     function boot() {
         // All possible mounts, deduplicated.
         var mounts = [];
@@ -182,7 +200,8 @@
         var dataList = document.querySelectorAll('[data-pn-versions]');
         for (var j = 0; j < dataList.length; j++) add(dataList[j]);
 
-        if (mounts.length === 0) return;
+        var badgeList = document.querySelectorAll('[data-pn-badge]');
+        if (mounts.length === 0 && badgeList.length === 0) return;
 
         Promise.all(PKGS.map(fetchPkg)).then(function (resArr) {
             var byName = {};
@@ -190,6 +209,7 @@
             mounts.forEach(function (host) {
                 pickRenderer(host)(host, byName);
             });
+            applyInlineBadges(byName);
         });
     }
 

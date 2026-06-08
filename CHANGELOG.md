@@ -9,6 +9,130 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.3.0] – 2026-06-30
+
+Closes issue [#48](https://github.com/Nizoka/pdfnative/issues/48) (CP-1252
+extended characters not extractable under base-14 Helvetica) and delivers the
+full v1.3.0 roadmap: COLRv1 colour emoji, USE-lite shaper integration, true
+constant-memory streaming, UAX #9 X4–X5 character-level overrides, and a
+dual-mode pixel-diff visual-regression suite. Also adds **six new scripts**
+(Telugu plus Amharic/Ethiopic, Sinhala, Tibetan, Khmer, Myanmar — **17 → 22
+Unicode scripts**), a configurable document block limit (`layout.maxBlocks`),
+and a read-only `validatePdfUA()` structural checker. 100% backward-compatible.
+71 test files / 1982 tests, all green. See full notes in
+[release-notes/v1.3.0.md](release-notes/v1.3.0.md).
+
+### Added
+
+- **feat(shaping):** Telugu script (`te`, U+0C00–U+0C7F). New pure-JS
+  GSUB/GPOS mini-shaper ([src/shaping/telugu-shaper.ts](src/shaping/telugu-shaper.ts))
+  with virama-mediated conjuncts, subjoined-consonant ligatures, and
+  above/below mark positioning (no reph, no pre-base reordering). Bundled
+  font `pdfnative/fonts/noto-telugu-data.js` (Noto Sans Telugu, OFL-1.1).
+  Exports `shapeTeluguText`, `isTeluguCodepoint`, `containsTelugu`,
+  `TELUGU_START`, `TELUGU_END`. Opt-in via
+  `registerFont('te', () => import('pdfnative/fonts/noto-telugu-data.js'))`.
+- **feat(shaping):** five more scripts — Amharic/Ethiopic (`am`,
+  U+1200–U+137F), Sinhala (`si`, U+0D80–U+0DFF), Tibetan (`bo`,
+  U+0F00–U+0FFF), Khmer (`km`, U+1780–U+17FF), and Myanmar (`my`,
+  U+1000–U+109F) — extend pdfnative from 17 to **22 Unicode scripts**. New
+  pure-JS mini-shapers follow the Telugu model (shared `gsub-driver` +
+  `gpos-positioner`). Ethiopic is a syllabic abugida needing only detection +
+  font routing; Sinhala builds virama conjuncts, pre-base kombuva reordering
+  and two-part vowel decomposition; Tibetan stacks subjoined consonants
+  vertically; Khmer and Myanmar are pragmatic USE-lite (coeng/medials,
+  pre-base vowels, virama stacking). Bundled fonts (all OFL-1.1):
+  `noto-ethiopic-data.js`, `noto-sinhala-data.js`, `noto-tibetan-data.js`
+  (Noto Serif Tibetan), `noto-khmer-data.js`, `noto-myanmar-data.js`. Exports
+  `shapeSinhalaText`, `shapeTibetanText`, `shapeKhmerText`,
+  `shapeMyanmarText` and the matching script-registry predicates. Opt-in via
+  `registerFont('am'|'si'|'bo'|'km'|'my', () => import('pdfnative/fonts/…'))`.
+  ([src/shaping/sinhala-shaper.ts](src/shaping/sinhala-shaper.ts),
+  [src/shaping/tibetan-shaper.ts](src/shaping/tibetan-shaper.ts),
+  [src/shaping/khmer-shaper.ts](src/shaping/khmer-shaper.ts),
+  [src/shaping/myanmar-shaper.ts](src/shaping/myanmar-shaper.ts))
+- **feat(core):** configurable document block limit. The previously
+  hard-coded 10 000-block cap in `assembleDocumentParts()` is now
+  `layout.maxBlocks` with the default raised to **100 000**
+  (`DEFAULT_MAX_BLOCKS`). Large multi-thousand-page reports no longer hit a
+  spurious ceiling. ([src/core/pdf-document.ts](src/core/pdf-document.ts))
+- **feat(parser):** `validatePdfUA(bytes)` — read-only PDF/UA (ISO 14289-1)
+  structural checker returning `{ valid, errors, warnings }`. Verifies
+  `/MarkInfo /Marked`, `/StructTreeRoot` + `/ParentTree`, `/Metadata`,
+  `/Lang`, and per-page `/MCID` uniqueness. Complements veraPDF.
+  ([src/parser/pdf-ua-validator.ts](src/parser/pdf-ua-validator.ts))
+
+- **feat(fonts):** COLRv1 colour emoji. Noto Color Emoji (OFL-1.1) is
+  bundleable as a curated subset (`pdfnative/fonts/noto-color-emoji-data.js`,
+  221 colour glyphs). COLR v0 solid layers and COLR v1 linear / radial
+  gradients render as native PDF Form XObjects (`/Shading` Type 2/3 +
+  `/ExtGState` alpha). Opt-in via
+  `registerFont('emoji', () => import('pdfnative/fonts/noto-color-emoji-data.js'))`;
+  monochrome emoji is unchanged when not registered. Self-rendered `glyf` /
+  COLR / CPAL parsers, zero dependency.
+  ([src/core/color-emoji.ts](src/core/color-emoji.ts),
+  [src/fonts/colr-parser.ts](src/fonts/colr-parser.ts))
+- **feat(core):** `buildPDFStreamTrue()` and `buildDocumentPDFStreamTrue()` —
+  true constant-memory streaming. The PDF is assembled into raw parts and
+  yielded as fixed-size `Uint8Array` chunks while each part is freed, so the
+  fully-joined binary never materialises in memory. Byte-identical to the
+  buffered builders.
+  ([src/core/pdf-stream-writer.ts](src/core/pdf-stream-writer.ts))
+- **feat(shaping):** UAX #9 X4–X5 character-level direction overrides.
+  `resolveBidiRuns()` now forces every codepoint inside an LRO / RLO scope to
+  L / R (previously only the base direction was normalised).
+  ([src/shaping/bidi.ts](src/shaping/bidi.ts))
+- **test(visual):** dual-mode pixel-diff visual-regression suite — a
+  glyph-position snapshot guard (show-operator GIDs + baselines) plus a
+  rendered-glyph pixel diff (self-rendered `glyf` rasteriser + zero-dependency
+  grayscale PNG encoder, ≤1% tolerance) over self-contained extreme-script
+  fixtures. CI workflow gated on shaping / font / core changes.
+  ([tests/visual/](tests/visual/),
+  [.github/workflows/visual-regression.yml](.github/workflows/visual-regression.yml))
+- **scripts(samples):** per-language document samples for the five new
+  scripts (`doc-sinhala`, `doc-tibetan`, `doc-khmer`, `doc-myanmar`,
+  `doc-amharic`) at parity with `doc-telugu`; four text-shaping deep-dives
+  (`shaping-sinhala`, `shaping-tibetan`, `shaping-khmer`, `shaping-myanmar`);
+  and all five wired into the multi-script font-subsetting and 22-script
+  multi-language showcases. `npm run test:generate` now produces **187 sample
+  PDFs** across 32 generators.
+- **docs(playgrounds):** new `docs/playgrounds/all-scripts.html` — generates a
+  single PDF containing all 22 Unicode scripts plus native COLRv1 colour emoji
+  in the browser, demonstrating automatic per-code-point font routing, BiDi,
+  GSUB/GPOS shaping, and subsetting.
+
+### Changed
+
+- **feat(shaping):** the USE-lite cluster classifier (`classifyUseCategory()`)
+  is now the joiner-classification authority across the Devanagari, Bengali,
+  and Tamil shapers. Orphan ZWJ / ZWNJ no longer emit `.notdef`; nukta+virama,
+  half-form / ZWJ-conjunct, Marathi eyelash-ra, and Bengali ya-phalaa edge
+  cases are handled correctly. ([src/shaping/use-lite.ts](src/shaping/use-lite.ts))
+
+### Fixed
+
+- **fix(core, tagged PDF):** per-line MCID allocation in wrapped table cells
+  and multi-line table captions. A single MCID was previously reused on every
+  wrapped line, producing duplicate `/MCID` values inside one `/TD` / `/TH` /
+  `/Caption` (a PDF/UA, ISO 14289-1 §7.10, violation). Each wrapped line now
+  gets a distinct MCID; single-line cells and the legacy table path are
+  byte-identical. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
+- **fix(fonts, #48):** base-14 Helvetica text now carries a `/ToUnicode` CMap
+  so the Windows-1252 high range (€ ‚ ƒ „ … † ‡ ™ œ ž Ÿ …) is correctly
+  extractable and searchable. When a `latin` font is registered these glyphs
+  additionally embed and render. ([src/fonts/encoding.ts](src/fonts/encoding.ts))
+- **fix(shaping, colour emoji):** emoji variation selectors (VS-15/VS-16),
+  ZWJ/ZWNJ, and Fitzpatrick skin-tone modifiers that no registered font
+  covers are now dropped during run-splitting instead of resolving to
+  `.notdef` tofu. Joiners are still preserved when an Indic shaper font maps
+  them. New `isZeroWidthFormat()` predicate.
+  ([src/shaping/multi-font.ts](src/shaping/multi-font.ts),
+  [src/shaping/script-registry.ts](src/shaping/script-registry.ts))
+- **fix(core, colour emoji):** `renderColorGlyph()` now derives each
+  colour-glyph Form `/BBox` from the transformed contour bounds rather than
+  the hard-coded em box, so colour emoji that dip below the baseline are no
+  longer clipped. ([src/core/pdf-color-glyph.ts](src/core/pdf-color-glyph.ts))
+
 ## [1.2.0] – 2026-05-27
 
 Closes issues [#45](https://github.com/Nizoka/pdfnative/issues/45)

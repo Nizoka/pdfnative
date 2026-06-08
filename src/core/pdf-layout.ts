@@ -17,6 +17,14 @@ export const DEFAULT_MARGINS = { t: 45, r: 36, b: 35, l: 36 };
 // ── Computed Content Width ───────────────────────────────────────────
 export const DEFAULT_CW = PG_W - DEFAULT_MARGINS.l - DEFAULT_MARGINS.r;
 
+// ── Safety Limits ────────────────────────────────────────────────────
+/**
+ * Default ceiling for `buildDocumentPDF` block count, overridable per call via
+ * `PdfLayoutOptions.maxBlocks`. Matches the table builder's 100 000-row cap.
+ * @since 1.3.0
+ */
+export const DEFAULT_MAX_BLOCKS = 100_000;
+
 // ── Row Heights ──────────────────────────────────────────────────────
 export const ROW_H = 12;
 export const TH_H = 15;

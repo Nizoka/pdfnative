@@ -407,3 +407,33 @@ describe('shapeTamilText', () => {
         expect(shaped.length).toBe(3);
     });
 });
+
+// ── Joiner edge cases (v1.3.0, USE-lite) ─────────────────────────────
+
+describe('shapeTamilText — ZWJ/ZWNJ joiners (v1.3.0)', () => {
+    const ZWJ = '\u200D';
+    const ZWNJ = '\u200C';
+    const tgid = (cp: number): number => cp - TAMIL_START + 100;
+
+    it('drops an orphan ZWJ/ZWNJ (no .notdef box)', () => {
+        const fd = mockFontData();
+        expect(shapeTamilText('\u0B95' + ZWJ, fd).every((g) => g.gid !== 0)).toBe(true);
+        expect(shapeTamilText('\u0B95' + ZWNJ, fd).every((g) => g.gid !== 0)).toBe(true);
+        expect(shapeTamilText('\u0B95' + ZWJ, fd).length).toBe(1);
+    });
+
+    it('ZWJ between pulli and consonant keeps the conjunct', () => {
+        const fd = mockFontData();
+        // க ் ZWJ ஷ (Ka + pulli + ZWJ + Ssa)
+        const shaped = shapeTamilText('\u0B95\u0BCD' + ZWJ + '\u0BB7', fd);
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        expect(shaped.some((g) => g.gid === tgid(0x0BB7))).toBe(true);
+    });
+
+    it('ZWNJ between pulli and consonant keeps a visible pulli', () => {
+        const fd = mockFontData();
+        const shaped = shapeTamilText('\u0B95\u0BCD' + ZWNJ + '\u0BB7', fd);
+        expect(shaped.every((g) => g.gid !== 0)).toBe(true);
+        expect(shaped.some((g) => g.gid === tgid(0x0BCD))).toBe(true); // visible pulli
+    });
+});

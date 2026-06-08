@@ -13,15 +13,15 @@ applyTo: "src/shaping/**"
 
 ## GSUB/GPOS Data Format
 - GSUB SingleSubst: `Record<number, number>` — simple GID → GID substitution map
-- GSUB LigatureSubst: `Record<number, number[][]>` — first-glyph GID → arrays of `[resultGID, ...componentGIDs]`; stored in `fontData.ligatures`; `tryLigature()` pattern used by Bengali, Tamil, and Devanagari shapers
+- GSUB LigatureSubst: `Record<number, number[][]>` — first-glyph GID → arrays of `[resultGID, ...componentGIDs]`; stored in `fontData.ligatures`; `tryLigature()` pattern used by Bengali, Tamil, Devanagari, Telugu, Sinhala, Tibetan, Khmer, and Myanmar shapers
 - MarkToBase anchors: `{ bases: { baseGID: { markClass: [x, y] } }, marks: { markGID: [x, y, class] } }`
 - MarkToMark: same structure with `mark1Anchors` / `mark2Classes`
 - Coordinates in font units (divide by unitsPerEm × fontSize for PDF points)
 
 ## Script Detection
-- `script-registry.ts`: centralized Unicode range constants (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `BENGALI_START/END`, `TAMIL_START/END`, `DEVANAGARI_START/END`) and predicates (`isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isBengaliCodepoint`, `isTamilCodepoint`, `isDevanagariCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`, `containsBengali`, `containsTamil`, `containsDevanagari`) — single source of truth
-- All script detection modules (`arabic-shaper.ts`, `thai-shaper.ts`, `bengali-shaper.ts`, `tamil-shaper.ts`, `devanagari-shaper.ts`, `script-detect.ts`, `encoding-context.ts`) import from `script-registry.ts`
-- Unicode range-based detection for: Thai, CJK, Korean, Greek, Devanagari, Arabic, Hebrew, Turkish, Vietnamese, Polish, Bengali, Tamil
+- `script-registry.ts`: centralized Unicode range constants (`ARABIC_START/END`, `HEBREW_START/END`, `THAI_START/END`, `BENGALI_START/END`, `TAMIL_START/END`, `DEVANAGARI_START/END`, `TELUGU_START/END`, `ETHIOPIC_START/END`, `SINHALA_START/END`, `TIBETAN_START/END`, `KHMER_START/END`, `MYANMAR_START/END`) and predicates (`isArabicCodepoint`, `isHebrewCodepoint`, `isThaiCodepoint`, `isBengaliCodepoint`, `isTamilCodepoint`, `isDevanagariCodepoint`, `isTeluguCodepoint`, `isEthiopicCodepoint`, `isSinhalaCodepoint`, `isTibetanCodepoint`, `isKhmerCodepoint`, `isMyanmarCodepoint`, `containsArabic`, `containsHebrew`, `containsThai`, `containsBengali`, `containsTamil`, `containsDevanagari`, `containsTelugu`, `containsEthiopic`, `containsSinhala`, `containsTibetan`, `containsKhmer`, `containsMyanmar`) — single source of truth
+- All script detection modules (`arabic-shaper.ts`, `thai-shaper.ts`, `bengali-shaper.ts`, `tamil-shaper.ts`, `devanagari-shaper.ts`, `telugu-shaper.ts`, `sinhala-shaper.ts`, `tibetan-shaper.ts`, `khmer-shaper.ts`, `myanmar-shaper.ts`, `script-detect.ts`, `encoding-context.ts`) import from `script-registry.ts`
+- Unicode range-based detection for: Thai, CJK, Korean, Greek, Devanagari, Arabic, Hebrew, Turkish, Vietnamese, Polish, Bengali, Tamil, Telugu, Ethiopic/Amharic, Sinhala, Tibetan, Khmer, Myanmar
 - Arabic ranges: U+0600–06FF, U+0750–077F, U+08A0–08FF, U+FB50–FDFF, U+FE70–FEFE
 - Hebrew ranges: U+0590–05FF, U+FB1D–FB4F
 - Detection must be O(n) single-pass — no regex per character
@@ -129,3 +129,47 @@ applyTo: "src/shaping/**"
 5. Output: `ShapedGlyph[]` with `{ gid, dx, dy, isZeroAdvance }`
 - Devanagari ranges: U+0900–U+097F
 - `containsDevanagari(text)`: fast O(n) check imported from `script-registry.ts`
+
+## Telugu OpenType Shaping Pipeline (telugu-shaper.ts)
+1. **Cluster building**: virama-mediated conjunct clusters (no reph, no pre-base reordering — Telugu specifics)
+2. **GSUB LigatureSubst**: subjoined-consonant ligatures via shared `gsub-driver` (`tryLigature()`)
+3. **GPOS Mark Positioning**: above/below vowel signs + modifiers via shared `gpos-positioner`
+4. Output: `ShapedGlyph[]` with `{ gid, dx, dy, isZeroAdvance }`
+- Telugu ranges: U+0C00–U+0C7F
+- `containsTelugu(text)`: fast O(n) check imported from `script-registry.ts`
+
+## Ethiopic / Amharic (script-detect.ts only — no shaper)
+- Ethiopic (U+1200–U+137F) is a syllabic abugida: each codepoint is a complete consonant+vowel syllable, so **no GSUB/GPOS reordering is required** — detection + font routing only (lang `'am'`)
+- `containsEthiopic(text)`: fast O(n) check imported from `script-registry.ts`
+
+## Sinhala OpenType Shaping Pipeline (sinhala-shaper.ts)
+1. **Cluster building**: base consonant + virama (U+0DCA) conjuncts
+2. **Pre-base reordering**: kombuva (ේ-class pre-base vowel signs) reordered before the base
+3. **Two-part vowel decomposition**: split vowel signs decomposed into pre-base + post-base components via shaper table
+4. **GSUB/GPOS**: ligatures via shared `gsub-driver`, mark positioning via shared `gpos-positioner`
+- Sinhala ranges: U+0D80–U+0DFF
+- `containsSinhala(text)`: fast O(n) check imported from `script-registry.ts`
+
+## Tibetan OpenType Shaping Pipeline (tibetan-shaper.ts)
+1. **Vertical stacking**: subjoined consonants (U+0F90–U+0FBC) stack below the head consonant
+2. **GSUB/GPOS**: subjoined-form ligatures via shared `gsub-driver`, anchor positioning via shared `gpos-positioner`
+- Tibetan ranges: U+0F00–U+0FFF; bundled font is Noto Serif Tibetan
+- `containsTibetan(text)`: fast O(n) check imported from `script-registry.ts`
+
+## Khmer OpenType Shaping Pipeline (khmer-shaper.ts) — USE-lite
+1. **Cluster building** via `classifyUseCategory()` (use-lite.ts)
+2. **Coeng subscripts**: U+17D2 (coeng) + consonant → subscript form
+3. **Pre-base vowel reordering**: pre-base vowel signs moved before the base
+4. **Two-part vowel decomposition** via shaper table
+- Khmer ranges: U+1780–U+17FF
+- Pragmatic USE-lite with documented limitations (two-part-vowel MultipleSubst handled JS-side, not by the OpenType extractor)
+- `containsKhmer(text)`: fast O(n) check imported from `script-registry.ts`
+
+## Myanmar OpenType Shaping Pipeline (myanmar-shaper.ts) — USE-lite
+1. **Cluster building** via `classifyUseCategory()` (use-lite.ts)
+2. **Medials**: medial consonants positioned around the base
+3. **Pre-base reordering**: medial-ra (U+103C) and e-vowel (U+1031) moved before the base
+4. **Virama stacking**: U+1039 virama-mediated consonant stacking
+- Myanmar ranges: U+1000–U+109F
+- Pragmatic USE-lite with documented limitations (two-part-vowel MultipleSubst handled JS-side)
+- `containsMyanmar(text)`: fast O(n) check imported from `script-registry.ts`

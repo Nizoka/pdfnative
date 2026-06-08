@@ -37,6 +37,106 @@ export interface FontData {
         readonly mark1Anchors: Record<number, Record<number, [number, number]>>;
         readonly mark2Classes: Record<number, [number, number, number]>;
     } | null;
+    /**
+     * Colour glyph table (COLR/CPAL), keyed by base glyph id. Present only
+     * for colour fonts such as Noto Color Emoji (opt-in via the
+     * `'emoji-color'` lang). Each entry is an ordered list of paint layers
+     * resolved against the font's CPAL palette (painter's algorithm).
+     * `undefined`/`null` for ordinary monochrome fonts. (v1.3.0)
+     */
+    readonly colorGlyphs?: Record<number, ColorGlyph> | null;
+}
+
+// ── Colour Glyph Types (COLR/CPAL — v1.3.0) ──────────────────────────
+
+/** An sRGB colour with alpha, each channel 0–255. Resolved from CPAL. */
+export type CpalColor = readonly [number, number, number, number];
+
+/** A gradient colour stop: `offset` in [0,1] with a resolved colour. */
+export interface ColorStop {
+    readonly offset: number;
+    readonly color: CpalColor;
+}
+
+/** How a gradient extends beyond its [0,1] range (COLR Extend / PDF Extend). */
+export type GradientExtend = 'pad' | 'repeat' | 'reflect';
+
+/** A flat colour fill (COLR PaintSolid / COLRv0 layer). */
+export interface SolidPaint {
+    readonly kind: 'solid';
+    readonly color: CpalColor;
+}
+
+/** A linear (axial) gradient fill (COLR PaintLinearGradient → PDF Shading 2). */
+export interface LinearGradientPaint {
+    readonly kind: 'linear';
+    readonly p0: readonly [number, number];
+    readonly p1: readonly [number, number];
+    readonly stops: readonly ColorStop[];
+    readonly extend: GradientExtend;
+}
+
+/** A radial gradient fill (COLR PaintRadialGradient → PDF Shading 3). */
+export interface RadialGradientPaint {
+    readonly kind: 'radial';
+    readonly c0: readonly [number, number];
+    readonly r0: number;
+    readonly c1: readonly [number, number];
+    readonly r1: number;
+    readonly stops: readonly ColorStop[];
+    readonly extend: GradientExtend;
+}
+
+/** A paint used to fill a colour-glyph layer. */
+export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint;
+
+/** A single colour-glyph layer: a base outline filled by a paint. */
+export interface ColorLayer {
+    /** Glyph id of the base outline (in the font's `glyf` table). */
+    readonly glyphId: number;
+    /** The fill applied to the outline. */
+    readonly paint: ColorPaint;
+    /**
+     * Optional affine transform `[a b c d e f]` (font-unit space) applied to
+     * both the outline and the paint geometry of this layer — flattened from
+     * COLRv1 `PaintTransform`/`PaintTranslate`/`PaintScale`. Identity when
+     * absent.
+     */
+    readonly transform?: readonly [number, number, number, number, number, number];
+}
+
+/** A resolved colour glyph: ordered layers painted back-to-front. */
+export interface ColorGlyph {
+    readonly layers: readonly ColorLayer[];
+}
+
+/** A colour-emoji Form XObject collected during content building. */
+export interface ColorEmojiForm {
+    /** Resource name (without leading `/`), e.g. `CEm0`. */
+    readonly name: string;
+    /** Form XObject content stream (font-unit space). */
+    readonly content: string;
+    /** Inline `/Resources` body (shadings + ExtGStates), may be empty. */
+    readonly resources: string;
+    /** Form BBox `[x0 y0 x1 y1]` in font units. */
+    readonly bbox: readonly [number, number, number, number];
+}
+
+/**
+ * Collects unique colour-emoji glyphs encountered while building a document's
+ * content streams, de-duplicating them into a shared set of Form XObjects.
+ * Present on the {@link EncodingContext} only when an `'emoji-color'` font
+ * (a {@link FontData} carrying `colorGlyphs`) is registered. (v1.3.0)
+ */
+export interface ColorEmojiCollector {
+    /**
+     * Register use of a colour glyph and return its Form resource name, or
+     * `null` when `gid` is not a colour glyph (caller falls back to normal
+     * text rendering).
+     */
+    useGlyph(fontData: FontData, gid: number): string | null;
+    /** The de-duplicated colour-emoji forms, in first-use order. */
+    readonly forms: ColorEmojiForm[];
 }
 
 /** A font entry binding FontData to a PDF font reference. */
@@ -77,6 +177,12 @@ export interface EncodingContext {
     readonly f2: string;
     readonly fontData?: FontData;
     readonly getUsedGids?: () => Map<string, Set<number>>;
+    /**
+     * Colour-emoji collector — present only when an `'emoji-color'` font
+     * (carrying `colorGlyphs`) is registered. Used by the text emitter to
+     * draw colour-emoji Form XObjects inline. (v1.3.0)
+     */
+    readonly colorEmoji?: ColorEmojiCollector;
 }
 
 // ── PDF Parameters ───────────────────────────────────────────────────
@@ -314,6 +420,51 @@ export interface PdfLayoutOptions {
      * Default: undefined (no attachments).
      */
     readonly attachments?: readonly PdfAttachment[];
+    /**
+     * Maximum number of document blocks `buildDocumentPDF` / `buildDocumentPDFBytes`
+     * (and the streaming variants) will accept before throwing. This is a
+     * safety rail against accidental unbounded input, not a hard engine limit —
+     * raise it for very large generated reports (e.g. multi-thousand-page
+     * medical or financial documents).
+     *
+     * Default: `DEFAULT_MAX_BLOCKS` (100 000), matching the table builder's
+     * 100 000-row ceiling. Has no effect on the table builder (`buildPDF`).
+     *
+     * @since 1.3.0
+     */
+    readonly maxBlocks?: number;
+    /**
+     * Apply Unicode normalization to all rendered text before shaping and
+     * encoding. Uses the native `String.prototype.normalize` (zero dependency).
+     *
+     * Useful when input text may contain decomposed combining sequences (e.g.
+     * Vietnamese, some Indic input, or text copied from macOS which favours
+     * NFD) so that base + combining marks compose to the precomposed code
+     * points a font's cmap is most likely to cover, maximising glyph coverage.
+     *
+     * - `'NFC'` (recommended): canonical composition
+     * - `'NFD'`: canonical decomposition
+     * - `'NFKC'` / `'NFKD'`: compatibility (de)composition
+     * - `false` / omitted: no normalization (default — output is byte-identical)
+     *
+     * Default: `false` (backward compatible, byte-stable).
+     *
+     * @since 1.3.0
+     */
+    readonly normalize?: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false;
+    /**
+     * Override the PDF creation date embedded in `/Info /CreationDate` and
+     * XMP metadata. Accepts any `Date` object.
+     *
+     * When omitted, defaults to `new Date()` at build time. Pinning this
+     * value makes output byte-identical across repeated calls — useful for
+     * deterministic tests and content-addressable storage.
+     *
+     * Default: `undefined` (current wall-clock time).
+     *
+     * @since 1.3.0
+     */
+    readonly creationDate?: Date;
 }
 
 // ── Attachment Types ─────────────────────────────────────────────────

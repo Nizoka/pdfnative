@@ -14,8 +14,8 @@
  * Future: page-by-page assembly for constant-memory generation.
  */
 
-import { buildPDF } from './pdf-builder.js';
-import { buildDocumentPDF } from './pdf-document.js';
+import { buildPDF, assembleTableParts } from './pdf-builder.js';
+import { buildDocumentPDF, assembleDocumentParts } from './pdf-document.js';
 import type { PdfParams, PdfLayoutOptions } from '../types/pdf-types.js';
 import type { DocumentParams, DocumentBlock } from '../types/pdf-document-types.js';
 
@@ -304,6 +304,92 @@ export async function* buildPDFStream(
     const chunkSize = resolveChunkSize(streamOptions?.chunkSize);
     const binary = buildPDF(params, layoutOptions);
     yield* chunkBinaryString(binary, chunkSize);
+}
+
+// ── True Constant-Memory Streaming (parts-progressive) ───────────────
+
+/**
+ * Iterate an assembled `parts[]` array, encode each part to bytes, and
+ * yield fixed-size `Uint8Array` chunks — freeing each consumed part
+ * (`parts[i] = ''`) immediately so the fully-joined PDF binary never
+ * materialises in memory. Peak memory is bounded by the chunk size plus
+ * the single largest part (a content stream or embedded font subset),
+ * rather than the whole document.
+ *
+ * @param parts - Assembled PDF parts in emission order (mutated: freed)
+ * @param chunkSize - Bytes per yielded chunk
+ * @yields Uint8Array chunks of the PDF
+ * @internal
+ */
+function* streamPartsChunked(parts: string[], chunkSize: number): Generator<Uint8Array> {
+    let buf = new Uint8Array(chunkSize);
+    let filled = 0;
+    for (let p = 0; p < parts.length; p++) {
+        const part = parts[p];
+        parts[p] = ''; // free as we go — constant-memory invariant
+        const len = part.length;
+        for (let i = 0; i < len; i++) {
+            buf[filled++] = part.charCodeAt(i) & 0xff;
+            if (filled === chunkSize) {
+                yield buf;
+                buf = new Uint8Array(chunkSize);
+                filled = 0;
+            }
+        }
+    }
+    if (filled > 0) {
+        yield buf.subarray(0, filled);
+    }
+}
+
+/**
+ * Build a free-form PDF document with **true constant-memory streaming**.
+ *
+ * Unlike {@link buildDocumentPDFStream} (which assembles the full binary
+ * then chunks it), this variant assembles the PDF into its raw parts and
+ * yields them progressively, freeing each part as it is emitted. The
+ * fully-joined PDF binary never exists in memory at once. Byte output is
+ * identical to {@link buildDocumentPDFBytes}.
+ *
+ * Constraints (same as `buildDocumentPDFStream`):
+ * - TOC blocks are not allowed (require multi-pass pagination)
+ * - `{pages}` placeholder is not allowed in header/footer templates
+ *
+ * @param params - Document content (title, blocks, footer, fonts)
+ * @param layoutOptions - Optional layout customization
+ * @param streamOptions - Chunk size configuration
+ * @yields Uint8Array chunks of the PDF
+ */
+export async function* buildDocumentPDFStreamTrue(
+    params: DocumentParams,
+    layoutOptions?: Partial<PdfLayoutOptions>,
+    streamOptions?: StreamOptions,
+): AsyncGenerator<Uint8Array> {
+    validateDocumentStreamable(params, layoutOptions);
+    const chunkSize = resolveChunkSize(streamOptions?.chunkSize);
+    const parts = assembleDocumentParts(params, layoutOptions);
+    yield* streamPartsChunked(parts, chunkSize);
+}
+
+/**
+ * Build a table-centric PDF with **true constant-memory streaming**.
+ * See {@link buildDocumentPDFStreamTrue} for the full contract. Byte
+ * output is identical to {@link buildPDFBytes}.
+ *
+ * @param params - PDF content (title, rows, headers, etc.)
+ * @param layoutOptions - Optional layout customization
+ * @param streamOptions - Chunk size configuration
+ * @yields Uint8Array chunks of the PDF
+ */
+export async function* buildPDFStreamTrue(
+    params: PdfParams,
+    layoutOptions?: Partial<PdfLayoutOptions>,
+    streamOptions?: StreamOptions,
+): AsyncGenerator<Uint8Array> {
+    validateTableStreamable(params, layoutOptions);
+    const chunkSize = resolveChunkSize(streamOptions?.chunkSize);
+    const parts = assembleTableParts(params, layoutOptions);
+    yield* streamPartsChunked(parts, chunkSize);
 }
 
 // ── Chunk Utilities ──────────────────────────────────────────────────

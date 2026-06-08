@@ -160,4 +160,47 @@ describe('splitTextByFont', () => {
         expect(viRun).toBeDefined();
         expect(viRun!.text).toContain('\u1ECB');
     });
+
+    it('should drop uncovered zero-width format chars (VS16/ZWJ/skin-tone) rather than tofu', () => {
+        // latin font covers A/B; emoji font covers U+1F600 but neither covers
+        // the variation selector U+FE0F, the ZWJ U+200D, or a skin-tone modifier.
+        const latinFont: FontEntry = {
+            fontData: makeFontData({ 65: 1, 66: 2, 32: 3 }), // A, B, space
+            fontRef: '/F3',
+            lang: 'latin',
+        };
+        const emojiFont: FontEntry = {
+            fontData: makeFontData({ 0x1F600: 10 }),
+            fontRef: '/F4',
+            lang: 'emoji',
+        };
+
+        // "A 😀\uFE0F\u200D\u{1F3FB} B" — the VS16, ZWJ and skin tone must be dropped.
+        const runs = splitTextByFont('A \u{1F600}\uFE0F\u200D\u{1F3FB} B', [latinFont, emojiFont]);
+        const joined = runs.map((r) => r.text).join('');
+        expect(joined).not.toContain('\uFE0F');
+        expect(joined).not.toContain('\u200D');
+        expect(joined).not.toContain('\u{1F3FB}');
+        // The emoji itself survives and routes to the emoji font.
+        const emojiRun = runs.find((r) => r.entry === emojiFont);
+        expect(emojiRun).toBeDefined();
+        expect(emojiRun!.text).toContain('\u{1F600}');
+    });
+
+    it('should keep a zero-width joiner when a registered font maps it', () => {
+        // An Indic font that explicitly maps ZWJ (U+200D) must retain it.
+        const indicFont: FontEntry = {
+            fontData: makeFontData({ 0x0915: 1, 0x200D: 2, 0x094D: 3 }),
+            fontRef: '/F5',
+            lang: 'hi',
+        };
+        const latinFont: FontEntry = {
+            fontData: makeFontData({ 65: 1 }),
+            fontRef: '/F3',
+            lang: 'latin',
+        };
+        const runs = splitTextByFont('\u0915\u094D\u200D\u0915', [latinFont, indicFont]);
+        const joined = runs.map((r) => r.text).join('');
+        expect(joined).toContain('\u200D');
+    });
 });

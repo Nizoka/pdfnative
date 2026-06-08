@@ -105,7 +105,7 @@ const pdf = buildDocumentPDFBytes({
 });
 ```
 
-The `lang` property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, and Thai.
+The `lang` property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, and Thai.
 
 ### Why does my Arabic text appear backwards?
 
@@ -113,7 +113,7 @@ The most common cause: missing `lang: 'ar'` on the font entry. Without it, BiDi 
 
 ### Which scripts are supported out of the box?
 
-16 Noto Sans scripts ship as separate font modules: Arabic, Armenian, Bengali, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Korean, Polish, Simplified Chinese, Tamil, Thai, Turkish, Vietnamese.
+22 Noto scripts ship as separate font modules: Amharic/Ethiopic, Arabic, Armenian, Bengali, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Myanmar, Polish, Simplified Chinese, Sinhala, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese.
 
 ---
 
@@ -259,7 +259,7 @@ Tables above the threshold automatically run off the main thread.
 See the [feature comparison table](https://github.com/Nizoka/pdfnative#why-pdfnative) in the README. Key differentiators:
 
 - **Zero runtime dependencies** (others ship 3–6).
-- **16 Unicode scripts** with built-in BiDi and OpenType GSUB/GPOS shaping.
+- **22 Unicode scripts** with built-in BiDi and OpenType GSUB/GPOS shaping.
 - **PDF/A** (1b, 2b, 2u, 3b) — none of the others support this directly.
 - **Built-in digital signatures** (RSA + ECDSA) without external crypto modules.
 - **5 native barcode formats** (Code 128, EAN-13, QR, Data Matrix, PDF417) as PDF vector paths.

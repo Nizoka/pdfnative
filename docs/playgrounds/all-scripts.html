@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All 22 Scripts + Emoji Playground — pdfnative</title>
+  <meta name="description" content="The ultimate stress test: generate a single PDF containing all 22 Unicode scripts pdfnative supports — Latin, Greek, Cyrillic, Arabic, Hebrew, Devanagari, Bengali, Tamil, Telugu, Sinhala, Thai, Khmer, Myanmar, Tibetan, Georgian, Armenian, Ethiopic, Chinese, Japanese, Korean — plus native COLRv1 colour emoji, all in your browser with zero install.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/all-scripts.html">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; All 22 scripts + emoji</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html" aria-current="page">All 22 scripts</a>
+    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>All 22 Scripts + Emoji</h1>
+    <p>The flagship stress test. One <code>buildDocumentPDFBytes()</code> call, <strong>every Unicode script pdfnative supports</strong> — 22 writing systems with full BiDi reordering and OpenType GSUB/GPOS shaping — plus native <strong>COLRv1 colour emoji</strong>, composed into a single PDF entirely in your browser. The text-routing engine inspects every code point and dispatches it to the right embedded font automatically, so a single paragraph can freely mix Arabic, Tamil, Japanese and emoji.</p>
+
+    <div class="callout" style="margin:16px 0;padding:12px 16px;border-radius:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:14px;">
+      <strong>Heads-up:</strong> this preset embeds up to <strong>24 fonts</strong> (22 scripts + Latin + colour emoji). The first run fetches several megabytes of font data from the CDN — give it a few seconds. Everything after that is instant.
+    </div>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
+      <label for="preset"><strong>Preset:</strong></label>
+      <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="world-color">World tour — 22 scripts + COLRv1 colour emoji</option>
+        <option value="world-mono">World tour — 22 scripts + monochrome emoji</option>
+        <option value="greetings">Hello, world — greeting per script (compact)</option>
+      </select>
+      <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
+      <span id="timer" style="font-size:13px;color:#64748b;"></span>
+    </div>
+
+    <h2 style="margin-top:32px;">Document title</h2>
+    <input id="title" type="text" style="width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;">
+
+    <h2 style="margin-top:24px;">Heading (H1)</h2>
+    <input id="heading" type="text" style="width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;">
+
+    <h2 style="margin-top:24px;">Body paragraphs <span style="font-weight:400;color:#64748b;font-size:14px;">(one per line; blank line for a new paragraph)</span></h2>
+    <textarea id="body" rows="16" style="width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;line-height:1.5;"></textarea>
+
+    <details style="margin-top:24px;">
+      <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
+      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+    </details>
+
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">What this exercises:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li><strong>Automatic per-code-point font routing</strong> — one mixed paragraph is split into runs and each run dispatched to its embedded CIDFont; Latin stays on Helvetica/Noto Sans.</li>
+        <li><strong>BiDi (UAX #9)</strong> — Arabic, Hebrew, and Ethiopic runs are reordered right-to-left and correctly interleaved with left-to-right neighbours and digits.</li>
+        <li><strong>OpenType shaping</strong> — GSUB ligatures/conjuncts and GPOS mark positioning for the Indic, Thai, Khmer, Myanmar, Tibetan and Sinhala runs; Arabic joining forms.</li>
+        <li><strong>COLRv1 colour emoji</strong> — Noto Color Emoji layers rendered as native PDF vector fills (no rasterization), or monochrome via Noto Emoji.</li>
+        <li><strong>Subsetting</strong> — each of the 22+ fonts is subset to only the glyphs used, then embedded as a CIDFont Type2 with Identity-H.</li>
+      </ul>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">All zero-dependency, all in the browser. The exact same code runs in Node.js, Deno, Bun and Web Workers.</p>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/">All guides</a></li>
+      <li><a href="./extreme-scripts.html">Extreme scripts playground →</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script type="module">
+// Canonical 22-script order (matches pdfnative's font registry) + Latin baseline.
+const ALL_LANGS = [
+  'el', 'ru', 'ka', 'hy', 'tr', 'vi', 'pl', 'ar', 'he', 'am',
+  'hi', 'bn', 'ta', 'te', 'si', 'th', 'km', 'my', 'bo', 'zh', 'ja', 'ko', 'latin'
+];
+
+// Autonym (script name in its own script) + a native greeting, routed automatically.
+const GREETINGS = [
+  ['English',     'Hello'],
+  ['Ελληνικά',    'Γειά σου'],
+  ['Русский',     'Здравствуйте'],
+  ['ქართული',     'გამარჯობა'],
+  ['Հայերեն',     'Բարև'],
+  ['Türkçe',      'Merhaba'],
+  ['Tiếng Việt',  'Xin chào'],
+  ['Polski',      'Dzień dobry'],
+  ['العربية',     'السلام عليكم'],
+  ['עברית',       'שלום'],
+  ['አማርኛ',        'ሰላም'],
+  ['हिन्दी',       'नमस्ते'],
+  ['বাংলা',        'নমস্কার'],
+  ['தமிழ்',        'வணக்கம்'],
+  ['తెలుగు',       'నమస్తే'],
+  ['සිංහල',        'ආයුබෝවන්'],
+  ['ไทย',         'สวัสดี'],
+  ['ខ្មែរ',         'សួស្តី'],
+  ['မြန်မာ',        'မင်္ဂလာပါ'],
+  ['བོད་ཡིག',       'བཀྲ་ཤིས་བདེ་ལེགས།'],
+  ['中文',         '你好'],
+  ['日本語',       'こんにちは'],
+  ['한국어',       '안녕하세요'],
+];
+
+// Region groupings for the "world tour" body — each paragraph mixes several scripts
+// on one line to demonstrate the per-code-point routing engine.
+const REGION_PARAS = [
+  'Europe & the Caucasus:  English Hello · Ελληνικά Γειά σου · Русский Здравствуйте · ქართული გამარჯობა · Հայերեն Բարև · Türkçe Merhaba · Tiếng Việt Xin chào · Polski Dzień dobry',
+  'Middle East & Africa (RTL + BiDi):  العربية السلام عليكم · עברית שלום · አማርኛ ሰላም — mixed with Latin 12345 and back.',
+  'South Asia:  हिन्दी नमस्ते · বাংলা নমস্কার · தமிழ் வணக்கம் · తెలుగు నమస్తే · සිංහල ආයුබෝවන්',
+  'Southeast Asia & the Himalayas:  ไทย สวัสดี · ខ្មែរ សួស្តី · မြန်မာ မင်္ဂလာပါ · བོད་ཡིག བཀྲ་ཤིས་བདེ་ལེགས།',
+  'East Asia:  中文 你好 · 日本語 こんにちは · 한국어 안녕하세요',
+  'And native colour emoji, composited as PDF vectors:  🌍 🌏 🌎 ✨ 🚀 📄 ⚡ 🔒 ✅ ❤️ 🎉 🥳 👋',
+];
+
+const PRESETS = {
+  'world-color': {
+    title: 'pdfnative — 22 Unicode scripts + colour emoji',
+    heading: 'One library · 22 scripts · zero dependencies 🌍',
+    langs: [...ALL_LANGS, 'emoji'],
+    emojiColor: true,
+    body: [
+      'pdfnative renders all 22 of its supported Unicode scripts and native COLRv1 colour emoji into a single PDF — no Cairo, no HarfBuzz, no fontkit, no rasterization. Each code point below is routed to the correct embedded font automatically.',
+      '',
+      ...REGION_PARAS.flatMap(p => [p, '']),
+    ].join('\n').trimEnd()
+  },
+  'world-mono': {
+    title: 'pdfnative — 22 Unicode scripts + monochrome emoji',
+    heading: 'One library · 22 scripts · zero dependencies',
+    langs: [...ALL_LANGS, 'emoji'],
+    emojiColor: false,
+    body: [
+      'Same 22-script world tour, this time with the lighter monochrome Noto Emoji glyphs instead of the full COLRv1 colour set — ideal when file size matters.',
+      '',
+      ...REGION_PARAS.flatMap(p => [p, '']),
+    ].join('\n').trimEnd()
+  },
+  greetings: {
+    title: 'Hello, world — in 22 scripts',
+    heading: 'Hello, world 👋',
+    langs: [...ALL_LANGS, 'emoji'],
+    emojiColor: true,
+    body: GREETINGS.map(([name, hi]) => `${name} — ${hi}`).join('\n')
+  }
+};
+
+const FONT_MODULE_BY_LANG = {
+  th: 'noto-thai-data.js',
+  ja: 'noto-jp-data.js',
+  zh: 'noto-sc-data.js',
+  ko: 'noto-kr-data.js',
+  el: 'noto-greek-data.js',
+  hi: 'noto-devanagari-data.js',
+  tr: 'noto-turkish-data.js',
+  vi: 'noto-vietnamese-data.js',
+  pl: 'noto-polish-data.js',
+  ar: 'noto-arabic-data.js',
+  he: 'noto-hebrew-data.js',
+  ru: 'noto-cyrillic-data.js',
+  ka: 'noto-georgian-data.js',
+  hy: 'noto-armenian-data.js',
+  bn: 'noto-bengali-data.js',
+  ta: 'noto-tamil-data.js',
+  te: 'noto-telugu-data.js',
+  si: 'noto-sinhala-data.js',
+  bo: 'noto-tibetan-data.js',
+  km: 'noto-khmer-data.js',
+  my: 'noto-myanmar-data.js',
+  am: 'noto-ethiopic-data.js',
+  latin: 'noto-sans-data.js',
+};
+
+const emojiModule = (color) => color ? 'noto-color-emoji-data.js' : 'noto-emoji-data.js';
+
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+const codeView = $('code-view');
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') {
+    status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5';
+  } else if (kind === 'success') {
+    status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7';
+  } else {
+    status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd';
+  }
+}
+
+function moduleFor(lang, color) {
+  return lang === 'emoji' ? emojiModule(color) : FONT_MODULE_BY_LANG[lang];
+}
+
+function applyPreset(id) {
+  const p = PRESETS[id];
+  $('title').value = p.title;
+  $('heading').value = p.heading;
+  $('body').value = p.body;
+  updateCodeView(id);
+}
+
+function updateCodeView(id) {
+  const p = PRESETS[id];
+  const code = [
+    "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
+    '',
+    '// 22 scripts + Latin + emoji — each lazy-loaded from the package fonts/ subpath.',
+    `const langs = ${JSON.stringify(p.langs)};`,
+    'registerFonts(Object.fromEntries(langs.map(l => [l,',
+    '  () => import(`https://esm.sh/pdfnative/fonts/${MODULE[l]}`)])));',
+    '',
+    'const fonts = await Promise.all(langs.map(loadFontData));',
+    'const fontEntries = fonts',
+    '  .map((fd, i) => fd ? { fontData: fd, fontRef: `/F${3 + i}`, lang: langs[i] } : null)',
+    '  .filter(Boolean);',
+    '',
+    '// One call. The engine routes every code point to the right embedded font,',
+    '// applies BiDi reordering + GSUB/GPOS shaping, and subsets each font.',
+    'const pdf = buildDocumentPDFBytes({',
+    `  title: ${JSON.stringify(p.title)},`,
+    '  blocks: [',
+    `    { type: 'heading', text: ${JSON.stringify(p.heading)}, level: 1 },`,
+    ...p.body.split(/\n\s*\n/).map(par => `    { type: 'paragraph', text: ${JSON.stringify(par.trim())} },`).filter(s => !s.includes('text: ""')),
+    '  ],',
+    '  fontEntries,',
+    '});',
+    '',
+    "downloadBlob(pdf, 'pdfnative-22-scripts.pdf');"
+  ].join('\n');
+  codeView.textContent = code;
+  if (window.Prism) window.Prism.highlightElement(codeView);
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+let pdfMod = null;
+
+async function loadPdfnative() {
+  if (pdfMod) return pdfMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFBytes === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFBytes === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFBytes === 'function') { pdfMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not load pdfnative from CDN. ' + (lastErr ? lastErr.message : ''));
+}
+
+async function generate() {
+  const id = $('preset').value;
+  const p = PRESETS[id];
+  const t0 = performance.now();
+  try {
+    setStatus('Loading pdfnative from CDN…', 'info');
+    const mod = await loadPdfnative();
+    setStatus(`Loading ${p.langs.length} fonts (this can take a few seconds the first time)…`, 'info');
+    const registry = {};
+    for (const lang of p.langs) {
+      const moduleName = moduleFor(lang, p.emojiColor);
+      registry[lang] = () => import(`https://esm.sh/pdfnative/fonts/${moduleName}`);
+    }
+    mod.registerFonts(registry);
+    const fonts = await Promise.all(p.langs.map(mod.loadFontData));
+    const fontEntries = fonts
+      .map((fd, i) => fd ? { fontData: fd, fontRef: `/F${3 + i}`, lang: p.langs[i] } : null)
+      .filter(Boolean);
+    if (fontEntries.length === 0) throw new Error('No fonts could be loaded from the CDN.');
+    if (fontEntries.length < p.langs.length) {
+      setStatus(`Warning: ${p.langs.length - fontEntries.length} font(s) failed to load; generating with ${fontEntries.length}.`, 'info');
+    }
+    setStatus('Generating PDF…', 'info');
+    const blocks = [{ type: 'heading', text: $('heading').value, level: 1 }];
+    const body = $('body').value;
+    for (const par of body.split(/\n\s*\n/)) {
+      const t = par.trim();
+      if (t) blocks.push({ type: 'paragraph', text: t });
+    }
+    const pdf = mod.buildDocumentPDFBytes({ title: $('title').value, blocks, fontEntries });
+    mod.downloadBlob(pdf, `pdfnative-${id}.pdf`);
+    const ms = (performance.now() - t0).toFixed(0);
+    $('timer').textContent = `Generated ${(pdf.length / 1024).toFixed(1)} KB with ${fontEntries.length} fonts in ${ms} ms`;
+    setStatus('PDF generated and downloaded.', 'success');
+  } catch (err) {
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  }
+}
+
+$('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('generate').addEventListener('click', generate);
+applyPreset('world-color');
+
+// Theme + hamburger parity with the rest of the site.
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('pdfnative-theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('pdfnative-theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

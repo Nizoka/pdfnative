@@ -14,11 +14,17 @@ import { pdfString, helveticaWidth } from '../fonts/encoding.js';
 import { shapeThaiText } from '../shaping/thai-shaper.js';
 import { shapeBengaliText } from '../shaping/bengali-shaper.js';
 import { shapeTamilText } from '../shaping/tamil-shaper.js';
+import { shapeTeluguText } from '../shaping/telugu-shaper.js';
+import { shapeSinhalaText } from '../shaping/sinhala-shaper.js';
+import { shapeTibetanText } from '../shaping/tibetan-shaper.js';
+import { shapeKhmerText } from '../shaping/khmer-shaper.js';
+import { shapeMyanmarText } from '../shaping/myanmar-shaper.js';
 import { shapeDevanagariText } from '../shaping/devanagari-shaper.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
 import { resolveBidiRuns, containsRTL, reverseString, stripBidiControls } from '../shaping/bidi.js';
-import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil, containsDevanagari } from '../shaping/script-registry.js';
+import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil, containsTelugu, containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsDevanagari } from '../shaping/script-registry.js';
+import { createColorEmojiCollector } from './color-emoji.js';
 
 // ── Helvetica Fallback Helpers ───────────────────────────────────────
 
@@ -167,13 +173,17 @@ function buildTextRunsWithFallback(
  *   Latin mode is used as before — strict PDF/A conformance requires the caller
  *   to register a Latin font (e.g. Noto Sans VF).
  */
-export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = false): EncodingContext {
+export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false): EncodingContext {
+    // Optional Unicode normalization applied at every text entry point. Off by
+    // default so output stays byte-identical; opt in via `layout.normalize`.
+    // Uses the native `String.prototype.normalize` (zero dependency).
+    const _norm = normalize ? (s: string): string => s.normalize(normalize) : (s: string): string => s;
     if (!fontEntries || fontEntries.length === 0) {
         return {
             isUnicode: false,
             fontEntries: [],
-            ps: pdfString,
-            tw: helveticaWidth,
+            ps: normalize ? (s: string): string => pdfString(_norm(s)) : pdfString,
+            tw: normalize ? (s: string, sz: number): number => helveticaWidth(_norm(s), sz) : helveticaWidth,
             textRuns: () => [],
             f1: '/F1',
             f2: '/F2'
@@ -191,6 +201,13 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
         if (s) s.add(gid);
     }
 
+    // Colour-emoji collector: activated only when a registered font carries a
+    // COLR/CPAL `colorGlyphs` table (the opt-in `'emoji-color'` font). When no
+    // such font is present this stays undefined and the builders are unchanged.
+    const _colorEmoji = fontEntries.some((fe) => fe.fontData.colorGlyphs)
+        ? createColorEmojiCollector()
+        : undefined;
+
     return {
         isUnicode: true,
         fontEntries,
@@ -198,9 +215,11 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
         f1: primary.fontRef,
         f2: primary.fontRef,
         getUsedGids() { return _usedGids; },
+        colorEmoji: _colorEmoji,
 
         textRuns(str: string, sz: number): TextRun[] {
             if (!str) return [];
+            str = _norm(str);
             // Strip invisible BiDi controls. The BiDi resolver below consumes
             // them when it runs, but it only runs on RTL paragraphs — pure-LTR
             // text with an orphan PDF/LRI/RLI marker would otherwise reach the
@@ -283,6 +302,56 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
                                     }
                                 }
                                 result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            } else if (containsTelugu(fRun.text)) {
+                                const shaped = shapeTeluguText(fRun.text, fd);
+                                let designW = 0;
+                                for (const g of shaped) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            } else if (containsSinhala(fRun.text)) {
+                                const shaped = shapeSinhalaText(fRun.text, fd);
+                                let designW = 0;
+                                for (const g of shaped) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            } else if (containsTibetan(fRun.text)) {
+                                const shaped = shapeTibetanText(fRun.text, fd);
+                                let designW = 0;
+                                for (const g of shaped) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            } else if (containsKhmer(fRun.text)) {
+                                const shaped = shapeKhmerText(fRun.text, fd);
+                                let designW = 0;
+                                for (const g of shaped) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            } else if (containsMyanmar(fRun.text)) {
+                                const shaped = shapeMyanmarText(fRun.text, fd);
+                                let designW = 0;
+                                for (const g of shaped) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
                             } else if (containsDevanagari(fRun.text)) {
                                 const shaped = shapeDevanagariText(fRun.text, fd);
                                 let designW = 0;
@@ -347,6 +416,66 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
                     return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
                 }
 
+                if (containsTelugu(run.text)) {
+                    const shaped = shapeTeluguText(run.text, fd);
+                    let designW = 0;
+                    for (const g of shaped) {
+                        _trackGid(fontRef, g.gid);
+                        if (!g.isZeroAdvance) {
+                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                        }
+                    }
+                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
+                }
+
+                if (containsSinhala(run.text)) {
+                    const shaped = shapeSinhalaText(run.text, fd);
+                    let designW = 0;
+                    for (const g of shaped) {
+                        _trackGid(fontRef, g.gid);
+                        if (!g.isZeroAdvance) {
+                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                        }
+                    }
+                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
+                }
+
+                if (containsTibetan(run.text)) {
+                    const shaped = shapeTibetanText(run.text, fd);
+                    let designW = 0;
+                    for (const g of shaped) {
+                        _trackGid(fontRef, g.gid);
+                        if (!g.isZeroAdvance) {
+                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                        }
+                    }
+                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
+                }
+
+                if (containsKhmer(run.text)) {
+                    const shaped = shapeKhmerText(run.text, fd);
+                    let designW = 0;
+                    for (const g of shaped) {
+                        _trackGid(fontRef, g.gid);
+                        if (!g.isZeroAdvance) {
+                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                        }
+                    }
+                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
+                }
+
+                if (containsMyanmar(run.text)) {
+                    const shaped = shapeMyanmarText(run.text, fd);
+                    let designW = 0;
+                    for (const g of shaped) {
+                        _trackGid(fontRef, g.gid);
+                        if (!g.isZeroAdvance) {
+                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                        }
+                    }
+                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
+                }
+
                 if (containsDevanagari(run.text)) {
                     const shaped = shapeDevanagariText(run.text, fd);
                     let designW = 0;
@@ -365,6 +494,7 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
 
         ps(str: string): string {
             if (!str) return '<>';
+            str = _norm(str);
             // Strip invisible BiDi controls before encoding (see textRuns above).
             str = stripBidiControls(str);
             if (!str) return '<>';
@@ -397,7 +527,7 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
                 return `<${hex.toUpperCase()}>`;
             }
 
-            if (!containsThai(str) && !containsBengali(str) && !containsTamil(str) && !containsDevanagari(str)) {
+            if (!containsThai(str) && !containsBengali(str) && !containsTamil(str) && !containsTelugu(str) && !containsSinhala(str) && !containsTibetan(str) && !containsKhmer(str) && !containsMyanmar(str) && !containsDevanagari(str)) {
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     const rawCp = str.codePointAt(i) ?? 0;
@@ -409,10 +539,15 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
                 }
                 return `<${hex.toUpperCase()}>`;
             }
-            // Shaped text path (Thai, Bengali, Tamil, Devanagari)
+            // Shaped text path (Thai, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari)
             const shapeFn = containsThai(str) ? shapeThaiText
                 : containsBengali(str) ? shapeBengaliText
                 : containsTamil(str) ? shapeTamilText
+                : containsTelugu(str) ? shapeTeluguText
+                : containsSinhala(str) ? shapeSinhalaText
+                : containsTibetan(str) ? shapeTibetanText
+                : containsKhmer(str) ? shapeKhmerText
+                : containsMyanmar(str) ? shapeMyanmarText
                 : shapeDevanagariText;
             const shaped = shapeFn(str, primary.fontData);
             let hex = '';

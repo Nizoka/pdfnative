@@ -189,7 +189,7 @@ infrastructure — pdfnative only varies the PDF version, the
 
 ### Canonical list for tooling
 
-Since v1.2.0, the four legal `tagged` strings are also exposed as a
+The four legal `tagged` strings are also exposed as a
 typed constant for tooling that needs to populate a JSON-schema
 `enum:` (`pdfnative-mcp` does this for its MCP tool descriptions so
 Gemini-CLI and other agents can autocomplete the right value):

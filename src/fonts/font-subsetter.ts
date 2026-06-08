@@ -74,6 +74,15 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>):
 
         // Resolve compound glyph component references recursively.
         // Iteration limit prevents excessive processing on deeply nested or malicious fonts.
+        // NOTE: hitting this cap is effectively impossible for well-formed fonts
+        // (the queue is bounded by the glyph count, and each compound component
+        // is visited at most a few times). It exists purely as a DoS guard
+        // against adversarial fonts with pathological component graphs. When the
+        // cap is reached we stop expanding — already-discovered GIDs are still
+        // subset correctly; only further (untrusted, likely cyclic) expansion is
+        // abandoned. No diagnostic is emitted on purpose (no console output in
+        // library code); the bound is generous enough that legitimate fonts
+        // never reach it.
         const MAX_COMPOUND_ITERATIONS = 10_000;
         let iterations = 0;
         const queue = [...allGids];

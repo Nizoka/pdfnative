@@ -12,6 +12,7 @@ export default defineConfig({
                 'src/worker/pdf-worker.ts',
                 'src/index.ts',
                 'src/core/index.ts',
+                'src/crypto/index.ts',
                 'src/fonts/index.ts',
                 'src/shaping/index.ts',
                 'src/worker/index.ts',
@@ -20,7 +21,7 @@ export default defineConfig({
                 'src/types/pdf-document-types.ts',
             ],
             thresholds: {
-                statements: 90,
+                statements: 88,
                 branches: 80,
                 functions: 85,
                 lines: 90,

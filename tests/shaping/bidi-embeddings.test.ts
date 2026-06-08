@@ -27,12 +27,20 @@ describe('normalizeBidiEmbeddings', () => {
         expect(normalizeBidiEmbeddings(`a${RLE}b${PDF}c`)).toBe(`a${RLI}b${PDI}c`);
     });
 
-    it('maps LRO → LRI (base direction L)', () => {
-        expect(normalizeBidiEmbeddings(`a${LRO}b${PDF}c`)).toBe(`a${LRI}b${PDI}c`);
+    it('preserves LRO verbatim for the X4/X5 override pass', () => {
+        // v1.3.0: overrides are no longer collapsed to isolates — they carry
+        // character-level type forcing that the isolate machinery cannot express.
+        expect(normalizeBidiEmbeddings(`a${LRO}b${PDF}c`)).toBe(`a${LRO}b${PDF}c`);
     });
 
-    it('maps RLO → RLI (base direction R)', () => {
-        expect(normalizeBidiEmbeddings(`a${RLO}b${PDF}c`)).toBe(`a${RLI}b${PDI}c`);
+    it('preserves RLO verbatim for the X4/X5 override pass', () => {
+        expect(normalizeBidiEmbeddings(`a${RLO}b${PDF}c`)).toBe(`a${RLO}b${PDF}c`);
+    });
+
+    it('normalizes embeddings but preserves overrides in mixed input', () => {
+        // LRE → LRI (with its PDF → PDI), RLO kept verbatim (with its PDF).
+        expect(normalizeBidiEmbeddings(`a${LRE}b${PDF}${RLO}c${PDF}d`))
+            .toBe(`a${LRI}b${PDI}${RLO}c${PDF}d`);
     });
 
     it('drops orphan PDF markers', () => {
@@ -105,5 +113,63 @@ describe('resolveBidiRuns with embeddings', () => {
     it('preserves existing isolate behaviour when no embeddings present', () => {
         const runs = resolveBidiRuns(`abc${LRI}שלום${PDI}def`);
         expect(runs.length).toBeGreaterThanOrEqual(2);
+    });
+});
+
+describe('UAX #9 X4/X5 character-level overrides (v1.3.0)', () => {
+    it('RLO forces pure-LTR content to a reversed RTL run', () => {
+        const runs = resolveBidiRuns(`${RLO}abc${PDF}`);
+        expect(runs).toHaveLength(1);
+        expect(runs[0].level).toBe(1);
+        expect(runs[0].text).toBe('cba'); // reversed for visual order
+    });
+
+    it('LRO forces content to a single LTR run in logical order', () => {
+        const runs = resolveBidiRuns(`${LRO}123${PDF}`);
+        expect(runs).toHaveLength(1);
+        expect(runs[0].level).toBe(0);
+        expect(runs[0].text).toBe('123');
+    });
+
+    it('LRO forces Arabic to LTR logical order (no RTL reordering)', () => {
+        // Without the override Arabic would form an RTL (reversed) run; LRO
+        // forces it to lay out left-to-right in logical order.
+        const ar = 'ابج';
+        const runs = resolveBidiRuns(`${LRO}${ar}${PDF}`);
+        expect(runs).toHaveLength(1);
+        expect(runs[0].level).toBe(0);
+        expect(runs[0].text).toBe(ar);
+    });
+
+    it('keeps surrounding text in its own runs', () => {
+        const runs = resolveBidiRuns(`x ${RLO}AB${PDF} y`);
+        const joined = runs.map(r => r.text).join('|');
+        expect(joined).toBe('x |BA| y');
+        expect(runs[1].level).toBe(1);
+    });
+
+    it('resolves an override nested inside an isolate', () => {
+        const runs = resolveBidiRuns(`pre${LRI}in ${RLO}QR${PDF} post${PDI}end`);
+        // The override forces "QR" to a reversed RTL run; no control chars leak.
+        const joined = runs.map(r => r.text).join('');
+        expect(joined).toContain('RQ');
+        expect(joined).not.toContain(RLO);
+        expect(joined).not.toContain(PDF);
+    });
+
+    it('strips inner controls inside an override scope (lite forcing)', () => {
+        // Nested override inside an override is absorbed by the uniform forcing.
+        const runs = resolveBidiRuns(`${LRO}a${RLO}bc${PDF}d${PDF}`);
+        expect(runs).toHaveLength(1);
+        expect(runs[0].level).toBe(0);
+        expect(runs[0].text).toBe('abcd');
+    });
+
+    it('ignores an unmatched override opener (no matching PDF)', () => {
+        // No matching PDF — the opener has no scope, so override does not apply.
+        const runs = resolveBidiRuns(`${LRO}abc`);
+        // Falls through to the normal pipeline (override pass returns null).
+        const joined = runs.map(r => r.text).join('');
+        expect(joined).toContain('abc');
     });
 });

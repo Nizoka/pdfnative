@@ -172,4 +172,20 @@ describe('classifyClusters', () => {
         expect(clusters[0].base?.category).toBe('O');
         expect(clusters[1].base?.category).toBe('O');
     });
+
+    it('detects Marathi eyelash-ra: Ra + virama + ZWJ + consonant', () => {
+        // र ् ZWJ य → eyelash-ra joining to Ya (not a reph)
+        const clusters = classifyClusters([0x0930, 0x094D, 0x200D, 0x092F]);
+        expect(clusters).toHaveLength(1);
+        expect(clusters[0].eyelash).toBe(true);
+        expect(clusters[0].prebase[0].category).toBe('R');
+        expect(clusters[0].prebase[0].cp).toBe(0x0930);
+        expect(clusters[0].base?.cp).toBe(0x092F); // Ya is the base
+    });
+
+    it('plain reph (Ra + virama + consonant) is not flagged eyelash', () => {
+        const clusters = classifyClusters([0x0930, 0x094D, 0x0915]);
+        expect(clusters[0].eyelash).toBeUndefined();
+        expect(clusters[0].prebase[0].category).toBe('R');
+    });
 });
