@@ -6,7 +6,7 @@
  *   - Single-page byte-stability regression guard against the v1.1 path.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { buildDocumentPDF } from '../../src/core/pdf-document.js';
 import { planTable } from '../../src/core/pdf-renderers.js';
 import type { TableBlock } from '../../src/types/pdf-document-types.js';
@@ -151,27 +151,33 @@ describe('planTable() — measurement pass', () => {
 
 describe('TableBlock end-to-end (v1.2.0 fields)', () => {
     it('byte-identical for a single-page table when no new fields are set', () => {
-        const pdf1 = buildDocumentPDF({
-            title: 'Stability',
-            blocks: [{
-                type: 'table',
-                headers: ['Date', 'Description', 'Cat', 'Amount', 'Note'],
-                rows: makeRows(5),
-            }],
-            footerText: 'pdfnative',
-        });
-        const pdf2 = buildDocumentPDF({
-            title: 'Stability',
-            blocks: [{
-                type: 'table',
-                headers: ['Date', 'Description', 'Cat', 'Amount', 'Note'],
-                rows: makeRows(5),
-            }],
-            footerText: 'pdfnative',
-        });
-        // Strip the trailer /ID (deterministic but a function of content+date).
-        // Same input → identical output across two builds (also confirms determinism).
-        expect(pdf1).toBe(pdf2);
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+        try {
+            const pdf1 = buildDocumentPDF({
+                title: 'Stability',
+                blocks: [{
+                    type: 'table',
+                    headers: ['Date', 'Description', 'Cat', 'Amount', 'Note'],
+                    rows: makeRows(5),
+                }],
+                footerText: 'pdfnative',
+            });
+            const pdf2 = buildDocumentPDF({
+                title: 'Stability',
+                blocks: [{
+                    type: 'table',
+                    headers: ['Date', 'Description', 'Cat', 'Amount', 'Note'],
+                    rows: makeRows(5),
+                }],
+                footerText: 'pdfnative',
+            });
+            // Strip the trailer /ID (deterministic but a function of content+date).
+            // Same input → identical output across two builds (also confirms determinism).
+            expect(pdf1).toBe(pdf2);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('repeats header on continuation pages (default repeatHeader=true)', () => {

@@ -99,13 +99,6 @@ describe('shapeKhmerText', () => {
 
         it('applies GPOS mark anchors for above vowel signs', () => {
             // vowel e (U+17C1) GID = 0x17C1 - KHMER_START + 100 = 129
-            const eGid = 0x17C1 - KHMER_START + 100;
-            const font = mockFontData({
-                markAnchors: {
-                    bases: { [kaGid]: { 0: [500, 900] as [number, number] } },
-                    marks: { [eGid]: [0, 300, 800] as [number, number, number] },
-                },
-            });
             // Pre-base e is emitted first; but we still verify the mark anchor path
             // by testing a post-base vowel (ct===2/3/6) with anchor data
             // niahit U+17C6 (above, ct=2) GID = 0x17C6 - KHMER_START + 100 = 134
