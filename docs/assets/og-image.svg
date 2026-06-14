@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  pdfnative Open Graph / social share image (1200x630).
+  Editable vector source. Rasterise to og-image.png with headless Chromium/Edge
+  using a window size of 1200x630 and the screenshot flag.
+  Brand charter: primary #2563eb, accent #1d4ed8, primary-dim #3b82f6
+  on the dark surface palette (bg #0f172a / bg-alt #1e293b).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1326"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#172554"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="18%" cy="14%" r="55%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="logo-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <!-- Hairline frame -->
+  <rect x="0.5" y="0.5" width="1199" height="629" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <!-- Top accent bar -->
+  <rect x="0" y="0" width="1200" height="6" fill="url(#accent)"/>
+
+  <!-- Brand row: logo + wordmark -->
+  <g transform="translate(80, 72)">
+    <!-- Logo (40×40 source scaled ×1.85 → 74px) -->
+    <g transform="scale(1.85)">
+      <rect x="6" y="3" width="22" height="30" rx="3" fill="url(#logo-grad)"/>
+      <polygon points="24,3 28,3 28,8.5 24,3" fill="#93C5FD" opacity="0.35"/>
+      <rect x="10" y="12" width="14" height="1.8" rx="0.9" fill="white" opacity="0.95"/>
+      <rect x="10" y="17" width="10" height="1.8" rx="0.9" fill="white" opacity="0.6"/>
+      <rect x="10" y="22" width="14" height="1.8" rx="0.9" fill="white" opacity="0.95"/>
+      <rect x="10" y="27" width="8" height="1.8" rx="0.9" fill="white" opacity="0.6"/>
+    </g>
+    <text x="74" y="48" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="40" font-weight="700" fill="#f8fafc" letter-spacing="-0.5">pdfnative</text>
+  </g>
+
+  <!-- Top-right URL -->
+  <text x="1120" y="108" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="22" fill="#64748b">pdfnative.dev</text>
+
+  <!-- Headline -->
+  <text x="78" y="290" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="92" font-weight="800" fill="#f8fafc" letter-spacing="-2">Pure Native</text>
+  <text x="78" y="392" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="92" font-weight="800" fill="url(#accent)" letter-spacing="-2">PDF Generation</text>
+
+  <!-- Subtitle -->
+  <text x="80" y="452" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="400" fill="#cbd5e1">Zero dependencies · ISO 32000-1 · TypeScript-first · 22 Unicode scripts</text>
+
+  <!-- Capability pills -->
+  <g font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="600">
+    <!-- PDF/A -->
+    <rect x="80" y="512" width="120" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="140" y="543" text-anchor="middle" fill="#e2e8f0">PDF/A</text>
+    <!-- Signatures -->
+    <rect x="212" y="512" width="208" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="316" y="543" text-anchor="middle" fill="#e2e8f0">RSA + ECDSA</text>
+    <!-- CLI -->
+    <rect x="432" y="512" width="86" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="475" y="543" text-anchor="middle" fill="#e2e8f0">CLI</text>
+    <!-- MCP -->
+    <rect x="530" y="512" width="96" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="578" y="543" text-anchor="middle" fill="#e2e8f0">MCP</text>
+    <!-- React -->
+    <rect x="638" y="512" width="114" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="695" y="543" text-anchor="middle" fill="#e2e8f0">React</text>
+  </g>
+
+  <!-- Bottom-right license / MIT mark -->
+  <text x="1120" y="552" text-anchor="end" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="600" fill="#475569">MIT · open source</text>
+</svg>
