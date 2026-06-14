@@ -1,7 +1,7 @@
 # Onboarding — the pdfnative ecosystem in 90 seconds
 
-> **Tracks:** library · CLI · MCP
-> **Pick your entry point:** library for code, CLI for shell scripts, MCP for AI assistants. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs.
+> **Tracks:** library · CLI · MCP · React
+> **Pick your entry point:** the library for code, the CLI for shell scripts, MCP for AI assistants, and React for declarative JSX. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs from the same zero-dependency engine.
 
 ---
 
@@ -52,7 +52,7 @@ pdfnative-cli sign out.pdf signed.pdf \
 pdfnative-cli verify signed.pdf --json
 ```
 
-Iteration helpers (v0.3.0): `--watch` re-renders on save, `--template` injects variables, `--font latin|emoji` enables the bundled fonts.
+Iteration helpers: `--watch` re-renders on save, `--template` injects variables, `--font` enables any of the 22 bundled scripts + colour emoji. v1.1.0 adds `--stream-true` (constant-memory), `inspect --pdfua` (accessibility gate), and an agent-native `--json`/`E_*`/`--dry-run` contract.
 
 Next: [CLI guide →](cli.html) · [CLI playground →](../playgrounds/cli.html)
 
@@ -81,9 +81,33 @@ Then prompt your assistant:
 
 > *Create a PDF/A-2b invoice for ACME Inc, add a multilingual paragraph in Arabic, and sign it with my key.*
 
-The assistant calls `create_document` (with `pdfA: "2b"`), then `add_international_text` (with `lang: ["ar", "emoji"]`), `add_table`, `sign_document`, and finally `inspect_pdf` — the 9th tool added in v0.3.0 — to confirm the result.
+The assistant calls `generate_basic_pdf` (with `pdfA: "pdfa2b"`), then `add_international_text` (with `lang: ["ar", "emoji"]`), `add_table`, `sign_pdf`, and finally `inspect_pdf` — confirming the result. v1.0.0 ships **12 tools** including `verify_pdf`, `add_attachment` (Factur-X / ZUGFeRD), and `extract_text`.
 
 Next: [MCP guide →](mcp.html) · [MCP playground →](../playgrounds/mcp.html)
+
+---
+
+## 4. React (Next.js, Remix, any React 19 app) — 30 seconds
+
+```bash
+npm install pdfnative-react pdfnative react
+```
+
+```tsx
+import { Document, Heading, Text, Table, renderToBytes } from 'pdfnative-react';
+
+const bytes = renderToBytes(
+  <Document title="Invoice #1024" footerText="Acme Inc">
+    <Heading level={1}>Invoice #1024</Heading>
+    <Text>Thank you for your business.</Text>
+    <Table headers={['Item', 'Total']} rows={[{ cells: ['Pro plan', '$49.00'], type: 'default', pointed: false }]} zebra />
+  </Document>,
+); // → Uint8Array, a valid PDF
+```
+
+A custom React reconciler compiles your JSX to pdfnative blocks on-device — no DOM, no headless browser. Preview live with the `usePdf` hook / `PDFViewer`, or let AI agents author with the token-frugal `DocSpec`. **React 19 is a peer dependency of `pdfnative-react` only** — the engine stays zero-dependency.
+
+Next: [React guide →](react.html) · [React playground →](../playgrounds/react.html)
 
 ---
 

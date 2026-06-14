@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playgrounds — pdfnative</title>
-  <meta name="description" content="Five interactive playgrounds for pdfnative: extreme-script shaping (BiDi, Tamil, Bengali, Devanagari), an all-22-scripts + colour-emoji showcase, an 800-page Web Worker stress test, a CLI command builder, and a Model Context Protocol tool explorer. All zero-install, zero-config, in your browser.">
+  <meta name="description" content="Six interactive playgrounds for pdfnative: extreme-script shaping (BiDi, Tamil, Bengali, Devanagari), an all-22-scripts + colour-emoji showcase, an 800-page Web Worker stress test, a CLI command builder, a Model Context Protocol tool explorer, and a declarative React (JSX) renderer. All zero-install, zero-config, in your browser.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -43,6 +43,7 @@
       <li><a href="../#demo">Demo</a></li>
       <li><a href="../#mcp">MCP</a></li>
       <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
       <li><a href="../guides/">Guides</a></li>
       <li><a href="./" aria-current="page">Playgrounds</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
@@ -55,7 +56,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Playgrounds</p>
   <article class="guide-content">
     <h1>Interactive playgrounds</h1>
-    <p>Five hands-on environments that exercise the entire pdfnative ecosystem in your browser. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
+    <p>Six hands-on environments that exercise the entire pdfnative ecosystem in your browser. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
 
     <div class="pg-grid">
       <a class="pg-card" href="./extreme-scripts.html">
@@ -101,11 +102,21 @@
       <a class="pg-card" href="./mcp.html">
         <div class="pg-icon" aria-hidden="true">🤖</div>
         <h3>MCP tool explorer <span class="badge alt">MCP</span></h3>
-        <p>Browse the <strong>pdfnative-mcp</strong> tools (incl. <code>inspect_pdf</code>), copy a ready-to-paste config snippet for Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client), and generate the same PDFs an AI assistant would receive — directly in your browser.</p>
+        <p>Browse the twelve <strong>pdfnative-mcp</strong> v1.0.0 tools (incl. <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_text</code>), copy a ready-to-paste config snippet for Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client), and generate the same PDFs an AI assistant would receive — directly in your browser.</p>
         <div class="pg-tags">
           <span class="pg-tag">stdio tools</span><span class="pg-tag">Claude</span><span class="pg-tag">Cursor</span><span class="pg-tag">Zed</span><span class="pg-tag">+ any stdio client</span>
         </div>
         <div class="pg-cta">Open MCP playground →</div>
+      </a>
+
+      <a class="pg-card" href="./react.html">
+        <div class="pg-icon" aria-hidden="true">⚛️</div>
+        <h3>React renderer <span class="badge alt">React</span></h3>
+        <p>Write JSX with <strong>pdfnative-react</strong> v0.2.0 and render a real PDF on-device — a custom React reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code> straight to pdfnative blocks, no SaaS round-trip. The demo loads React + the renderer from a CDN; the published package keeps the engine zero-dependency.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">JSX</span><span class="pg-tag">reconciler</span><span class="pg-tag">DocSpec</span><span class="pg-tag">on-device</span>
+        </div>
+        <div class="pg-cta">Open React playground →</div>
       </a>
     </div>
 
@@ -114,7 +125,7 @@
 
     <h2>Resources</h2>
     <ul>
-      <li><a href="../guides/">All guides</a> — quick start, architecture, accessibility, PDF/A, troubleshooting, FAQ, MCP, CLI</li>
+      <li><a href="../guides/">All guides</a> — quick start, architecture, accessibility, PDF/A, troubleshooting, FAQ, MCP, CLI, React</li>
       <li><a href="../#demo">Homepage live demo</a> — minimal in-page example</li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub repository</a></li>
     </ul>
@@ -132,6 +143,7 @@
       <li><a href="./medical-800.html">Medical 800-page</a></li>
       <li><a href="./cli.html">CLI builder</a></li>
       <li><a href="./mcp.html">MCP explorer</a></li>
+      <li><a href="./react.html">React renderer</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
     </ul>
   </div>

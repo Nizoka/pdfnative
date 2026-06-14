@@ -1,6 +1,6 @@
 # pdfnative-mcp — AI Client Integration Guide
 
-> **Tracks the latest `pdfnative-mcp`.** Compatible with current `pdfnative` releases. Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). The live version is shown at the top of the [documentation home](../index.html).
+> **Tracks `pdfnative-mcp` v1.0.0** (January 2026), built on `pdfnative` 1.2.0. Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). The live version is shown at the top of the [documentation home](../index.html).
 
 [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is an **MCP server** that exposes the full pdfnative library to any AI client supporting the [Model Context Protocol](https://modelcontextprotocol.io) — Claude Desktop, Cursor, Continue, Zed, ChatGPT, and more.
 
@@ -14,19 +14,23 @@ With `pdfnative-mcp` installed, you can say to your AI assistant:
 
 ---
 
-## Recent additions
+## What's new in v1.0.0
 
-New fields are optional and backward-compatible — omitting them produces byte-identical output.
+v1.0.0 is the **first stable release**, built on `pdfnative` 1.2.0, and commits to API stability via a per-tool `_meta.apiVersion` field. New fields are optional and backward-compatible — omitting them produces byte-identical output. Tool count: **12** (was 9).
 
-- **9th tool: `inspect_pdf`** — read-only inspection over `openPdf()`. Reports version, page count, encryption, PDF/A claim, signature count, info dict; optional per-page sizes; optional CI-style `check: ('pdfa'|'signed'|'encrypted')[]` assertions.
-- **`pdfA` flag on every document tool** — `generate_basic_pdf`, `add_table`, `add_form`, `embed_image`, `add_barcode`, `prepare_signature_placeholder`, `add_international_text`. Values: `pdfa1b`, `pdfa2b`, `pdfa2u`, `pdfa3b`. Maps to pdfnative's `tagged` layout option. From pdfnative 1.2.0 onwards, this list is authoritatively exported as `PDF_A_CONFORMANCE_TARGETS` — the MCP server can spread that constant straight into its tool-schema `enum:` so LLM agents (Gemini-CLI, Claude Code, …) autocomplete the legal values without hardcoding.
-- **Multi-script `add_international_text`** — `lang` now accepts `string`, `string[]`, or comma-separated values, e.g. `["ar", "emoji"]` or `"ar,emoji"`.
-- **Latin & Emoji font packs** — two `lang` codes (`latin`, `emoji`) backed by Noto Sans VF and Noto Emoji. The `latin` font auto-registers when `pdfA` is set so curly quotes, em-dashes, and ellipses validate cleanly.
-- **`add_table` autoFit + clipCells** — transparently switches to the document-block backend when set (using pdfnative `TableBlock` props).
-- **MCP `outputSchema`** — every tool now publishes a JSON Schema for its response, enabling client-side static validation per the MCP 2025-06-18 spec.
-- **Server bootstrap** — `initCrypto()` is awaited at startup so the first signing/inspection call no longer pays an init penalty.
+- **Three new tools:**
+  - **`verify_pdf`** — read-only verification of every PAdES Baseline / `adbe.pkcs7.detached` signature: recomputes the `ByteRange` SHA-256, validates the CMS `messageDigest`, and verifies the `signatureValue` with the embedded signer certificate (RSA-SHA256 + ECDSA-SHA256 P-256). Optional `trustedRootsDerBase64` enables chain trust.
+  - **`add_attachment`** — generate a **PDF/A-3 (ISO 19005-3)** document with one or more embedded files. Primary use case: **Factur-X / ZUGFeRD** electronic invoices (XML payload with `relationship: 'Source'`). 8 MiB per-file cap.
+  - **`extract_text`** — best-effort plain-text extraction from a non-encrypted PDF (operands of `Tj` / `'` / `"` / `TJ`). Reports `extractable: false` when a page yields no text; encrypted PDFs are rejected.
+- **Smart-table fields on `add_table`** — `wrap`, `repeatHeader`, `zebra`, `caption`, `minRowHeight`, `cellPadding` (pdfnative 1.2 `TableBlock` props). Multi-page tables reprint headers and wrap on overflow by default.
+- **Signing ergonomics** — `sign_pdf` accepts ECDSA SEC1 / PKCS#8 DER keys and `autoInjectPlaceholder: true` (default) transparently calls `addSignaturePlaceholder()` when the input lacks a `/Sig` widget (one-call signing of any PDF).
+- **`inspect_pdf`** now reports `hasSignaturePlaceholder` and an `attachments[]` summary; two new `check` values: `placeholder`, `attachments`. The `signed` check is now `signatureCount > 0 && !hasSignaturePlaceholder`.
+- **Opt-in result cache** (`PDFNATIVE_MCP_CACHE_DIR`) — SHA-256 keyed over canonical JSON of `{tool, apiVersion, input}`, 1 h TTL, 256 MiB LRU. Skips `outputMode: 'file'` calls.
+- **`_meta.apiVersion = '1.0.0'`** and per-tool **`_meta.examples`** on every tool listing for AI-agent discovery — anchored to [`docs/API_STABILITY.md`](https://github.com/Nizoka/pdfnative-mcp/blob/main/docs/API_STABILITY.md).
+- **`pdfA` flag on every document tool** — values `pdfa1b`, `pdfa2b`, `pdfa2u`, `pdfa3b`, mapping to pdfnative's `tagged` option (spread straight from pdfnative's exported `PDF_A_CONFORMANCE_TARGETS`).
+- **Env-var rename:** the canonical name is `PDFNATIVE_MCP_OUTPUT_DIR` (was the misspelt `PDFNATIVE_MPC_OUTPUT_DIR`, which still works as a deprecated alias with a one-shot stderr warning, scheduled for removal in v2.0.0).
 
-Deferred to v0.4.0: `verify_pdf` (no high-level CMS verify primitive in pdfnative 1.1 yet), `sign_pdf` placeholder auto-injection, ECDSA DER private-key input, encrypted-PDF fixtures.
+**Deferred to v1.1:** `merge_pdfs`, `split_pdf`, `redact_pdf` — require pdfnative page-tree primitives not yet exported.
 
 ---
 
@@ -61,7 +65,7 @@ Edit the config file for your OS:
       "command": "npx",
       "args": ["-y", "pdfnative-mcp"],
       "env": {
-        "PDFNATIVE_MPC_OUTPUT_DIR": "/Users/you/Documents/mcp-pdfs"
+        "PDFNATIVE_MCP_OUTPUT_DIR": "/Users/you/Documents/mcp-pdfs"
       }
     }
   }
@@ -81,7 +85,7 @@ In your project `.cursor/mcp.json` (or global `~/.cursor/mcp.json`):
       "command": "npx",
       "args": ["-y", "pdfnative-mcp"],
       "env": {
-        "PDFNATIVE_MPC_OUTPUT_DIR": "/path/to/pdf-output"
+        "PDFNATIVE_MCP_OUTPUT_DIR": "/path/to/pdf-output"
       }
     }
   }
@@ -100,7 +104,7 @@ In your `~/.continue/config.json`:
       "command": "npx",
       "args": ["-y", "pdfnative-mcp"],
       "env": {
-        "PDFNATIVE_MPC_OUTPUT_DIR": "/path/to/pdf-output"
+        "PDFNATIVE_MCP_OUTPUT_DIR": "/path/to/pdf-output"
       }
     }
   ]
@@ -119,7 +123,7 @@ In your Zed `settings.json`:
         "path": "npx",
         "args": ["-y", "pdfnative-mcp"],
         "env": {
-          "PDFNATIVE_MPC_OUTPUT_DIR": "/path/to/pdf-output"
+          "PDFNATIVE_MCP_OUTPUT_DIR": "/path/to/pdf-output"
         }
       }
     }
@@ -133,7 +137,8 @@ In your Zed `settings.json`:
 
 | Variable | Purpose |
 |---|---|
-| `PDFNATIVE_MPC_OUTPUT_DIR` | Absolute path to the sandbox directory. **Required to enable `outputMode: "file"`**. When unset, only `base64` output is available. |
+| `PDFNATIVE_MCP_OUTPUT_DIR` | Absolute path to the sandbox directory. **Required to enable `outputMode: "file"`**. When unset, only `base64` output is available. (The misspelt `PDFNATIVE_MPC_OUTPUT_DIR` still works as a deprecated alias.) |
+| `PDFNATIVE_MCP_CACHE_DIR` | Absolute path to enable the persistent SHA-256-keyed result cache (1 h TTL, 256 MiB LRU). When unset, the cache is disabled. |
 | `PDFNATIVE_MCP_PORT` | When set to a valid port (1–65535), starts an HTTP server on `http://127.0.0.1:<port>/mcp` instead of stdio. |
 
 ---
@@ -147,7 +152,7 @@ In your Zed `settings.json`:
 | `generate_basic_pdf` | Multi-page A4 documents from structured blocks (headings, paragraphs, lists, page breaks). Accepts optional `pdfA`. |
 | `add_table` | Tabular PDF reports from column headers and data rows. Optional `autoFitColumns` and `clipCells`. Accepts `pdfA`. |
 | `add_barcode` | QR Code, Code 128, EAN-13, Data Matrix, PDF417 — embedded in a single-page PDF. Accepts `pdfA`. |
-| `add_international_text` | 16 non-Latin scripts plus `latin` and `emoji` font codes, with BiDi & OpenType shaping. `lang` accepts `string`, `string[]`, or comma-separated. |
+| `add_international_text` | 18 scripts (16 non-Latin plus `latin` and `emoji` font codes) with BiDi & OpenType shaping. `lang` accepts `string`, `string[]`, or comma-separated. |
 | `add_form` | Interactive AcroForm PDFs with text fields, checkboxes, radio buttons, and dropdowns. Accepts `pdfA`. |
 | `embed_image` | Embed a JPEG or PNG image (base64-encoded) into a titled PDF document. Accepts `pdfA`. |
 | `prepare_signature_placeholder` | Create a PDF with a `/Sig` AcroForm placeholder ready to be signed. Accepts `pdfA`. |
@@ -207,7 +212,7 @@ Generates a tabular report from column headers and rows.
 
 `autoFitColumns` and `clipCells` transparently switch to the document-block backend so cell content fits its column or is clipped at the boundary, leveraging pdfnative's `TableBlock` props. Optional `pdfA` produces an archive-grade variant.
 
-> **pdfnative 1.2.0 \(server v0.4 candidate\) — smart-table parameters to surface next.** pdfnative 1.2.0 ships six new optional `TableBlock` fields: `wrap` (`'auto'` | `'always'` | `'never'`, default `'auto'`), `repeatHeader` (default `true`), `zebra`, `caption`, `minRowHeight`, `cellPadding`. Multi-page tables now reprint headers and wrap on overflow by default. The pdfnative-mcp server can forward these as optional `add_table` parameters to give agent-driven invoice/report workflows multi-page-safe output out of the box. See the [Smart tables guide](tables.md) for full semantics.
+> **Smart-table fields (v1.0.0).** `add_table` exposes the six pdfnative 1.2 `TableBlock` fields: `wrap` (`'auto'` | `'always'` | `'never'`, default `'auto'`), `repeatHeader` (default `true`), `zebra`, `caption`, `minRowHeight`, `cellPadding`. Multi-page tables reprint headers and wrap on overflow by default — agent-driven invoice/report workflows get multi-page-safe output out of the box. See the [Smart tables guide](tables.md) for full semantics.
 
 ---
 
@@ -376,7 +381,7 @@ Every tool accepts an `outputMode` field:
 | Mode | Behaviour |
 |---|---|
 | `"base64"` *(default)* | The PDF bytes are returned inline in the MCP response as a base64 string. Suitable for pipelines that immediately consume or display the bytes. |
-| `"file"` | The PDF is written to the sandbox directory configured via `PDFNATIVE_MPC_OUTPUT_DIR`. An `outputPath` (relative, `.pdf` extension) is required. **Disabled unless the environment variable is set.** |
+| `"file"` | The PDF is written to the sandbox directory configured via `PDFNATIVE_MCP_OUTPUT_DIR`. An `outputPath` (relative, `.pdf` extension) is required. **Disabled unless the environment variable is set.** |
 
 ---
 
@@ -424,7 +429,7 @@ This workflow uses two tools in sequence:
 `pdfnative-mcp` is designed to run safely inside your AI client:
 
 - **No network access** — the server does not open outbound connections.
-- **Sandboxed file writes** — `file` output mode is gated by `PDFNATIVE_MPC_OUTPUT_DIR`. When unset, file writes are rejected with a `SecurityError`.
+- **Sandboxed file writes** — `file` output mode is gated by `PDFNATIVE_MCP_OUTPUT_DIR`. When unset, file writes are rejected with a `SecurityError`.
 - **Path traversal protection** — absolute paths, `..` sequences, NUL bytes, and non-`.pdf` extensions are all rejected.
 - **Output size cap** — PDF output is capped at **50 MB** per call.
 - **Input validation** — every tool validates inputs against strict JSON Schemas and Zod runtime checks at the boundary.
@@ -439,7 +444,7 @@ See [SECURITY.md](https://github.com/Nizoka/pdfnative-mcp/blob/main/SECURITY.md)
 Verify that Node.js ≥ 22 is installed (`node --version`) and that the config file path is correct for your OS. Restart the client after any config change.
 
 **`file` output mode returns a SecurityError.**  
-Set the `PDFNATIVE_MPC_OUTPUT_DIR` environment variable to an existing absolute path in the client config.
+Set the `PDFNATIVE_MCP_OUTPUT_DIR` environment variable to an existing absolute path in the client config.
 
 **`add_international_text` produces blank text.**  
 The required Noto font is downloaded lazily on first use. Ensure the process has network access (or pre-install `pdfnative` with fonts cached).

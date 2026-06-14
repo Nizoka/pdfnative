@@ -12,26 +12,29 @@
 [![website](https://img.shields.io/badge/pdfnative.dev-0066FF?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxyZWN0IHg9IjMiIHk9IjIiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxOCIgcng9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHBhdGggZD0iTTcgN2g2TTcgMTFoOE03IDE1aDQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=)](https://pdfnative.dev)
 [![pdfnative-mcp](https://img.shields.io/npm/v/pdfnative-mcp?label=pdfnative-mcp&color=6366f1)](https://www.npmjs.com/package/pdfnative-mcp)
 [![pdfnative-cli](https://img.shields.io/npm/v/pdfnative-cli?label=pdfnative-cli&color=0e7490)](https://www.npmjs.com/package/pdfnative-cli)
+[![pdfnative-react](https://img.shields.io/npm/v/pdfnative-react?label=pdfnative-react&color=06b6d4)](https://www.npmjs.com/package/pdfnative-react)
 
 Pure native PDF generation library — zero vendor dependencies. ISO 32000-1 (PDF 1.7) compliant.
 
 ## Ecosystem
 
-pdfnative ships as three coordinated packages — pick whichever entry point fits your workflow:
+pdfnative ships as four coordinated packages — pick whichever entry point fits your workflow:
 
 | Package | Latest | Use it for |
 |---|:---:|---|
 | [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.3.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
-| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v0.3.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256, RFC 3161 detection), inspect, and verify CMS signatures from the shell. New in v0.3.0: `--watch`, `--template`, `--font {latin,emoji}`, auto signature placeholder. |
-| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v0.3.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **9 structured tools** including the new `inspect_pdf`, a `pdfA` flag on every doc tool, multi-script `lang`, and per-tool `outputSchema` (MCP 2025-06-18). |
+| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.1.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256), inspect, verify (PAdES-T + OCSP/CRL), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.3.0: 22 scripts + COLRv1 emoji, `--stream-true`, `--max-blocks`, `inspect --pdfua`, and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
+| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.0.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **12 structured tools** including `verify_pdf`, `add_attachment` (Factur-X / ZUGFeRD), and `extract_text`, a `pdfA` flag on every doc tool, per-tool `_meta.apiVersion`, and an opt-in result cache. |
+| [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v0.2.0** | Write PDFs as declarative JSX — `<Document>`, `<Table>`, `<Barcode>`… compiled on-device to pdfnative blocks by a custom React reconciler. Render hooks (`usePdf`), client components (`PDFViewer`), and a token-frugal `DocSpec` for AI agents. |
 
 ```bash
 npm install pdfnative                 # library
+npm install pdfnative-react react     # React renderer (React 19 peer)
 npm install -g pdfnative-cli          # CLI
 npm install -g pdfnative-mcp          # MCP server
 ```
 
-Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md) · [Onboarding cheatsheet](docs/guides/onboarding.md).
+Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md) · [React guide](docs/guides/react.md) · [Onboarding cheatsheet](docs/guides/onboarding.md).
 
 ## Highlights
 
@@ -67,8 +70,9 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
-- **AI client integration** — use pdfnative from Claude Desktop, Cursor, Continue, and Zed via [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp)
-- **Command-line interface** — render, sign, and inspect PDFs from the shell with [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) — zero-config, scriptable, ideal for CI/CD pipelines
+- **AI client integration** — use pdfnative from Claude Desktop, Cursor, Continue, and Zed via [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) — **12 structured tools** (generate, tables, barcodes, forms, sign, verify, attachments, text extraction, inspect)
+- **Command-line interface** — render, sign, verify, inspect, and batch-render PDFs from the shell with [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) — zero-config, scriptable, agent-native (`--json`/`E_*`/`--dry-run`), ideal for CI/CD pipelines
+- **React renderer** — author PDFs as declarative JSX with [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react): `<Document>`/`<Table>`/`<Barcode>` components, `usePdf`/`PDFViewer` client hooks, on-device rendering with no DOM or headless browser
 
 ## Installation
 
@@ -864,15 +868,13 @@ const pdf = buildPDFBytes(params, { compress: true });
 
 ## Ecosystem
 
-pdfnative ships as a library, but two official companion packages cover the most common non-library use cases. Both live in separate repositories and depend on `pdfnative` only through the public API.
+pdfnative ships as a library, but three official companion packages cover the most common non-library use cases — a CLI, an MCP server, and a React renderer. All live in separate repositories and depend on `pdfnative` only through the public API, so the core library stays zero-dependency.
 
 ### pdfnative-cli — command-line interface
 
-[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v0.3.0 is the **official CLI**. It exposes four commands — `render`, `sign`, `inspect`, **`verify`** — covering the full `pdfnative` v1.1.0 surface for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed.
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v1.1.0 is the **official CLI**, built on `pdfnative` v1.3.0. It exposes six commands — `render`, `sign`, `inspect`, `verify`, `batch`, and `schema` (plus `completion`) — for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed, with a CycloneDX SBOM attached to every release.
 
-**New in v0.3.0:** ECDSA-SHA256 (P-256) signing fully wired, real CMS/PKCS#7 verification with RFC 3161 timestamp detection, automatic signature-placeholder injection on `sign`, plus three iteration-friendly `render` flags (`--watch`, `--template`, `--font {latin,emoji}`). **100 % backward-compatible** with v0.2.0.
-
-**Previously (v0.2.0):** hybrid `flags + --layout file.json` model, encryption (AES-128/256), watermarks (text + image), header/footer page templates with `{page}/{pages}/{date}/{title}`, PDF/A-3 attachments (Factur-X / ZUGFeRD pattern), multilingual fonts via `--lang`, table-variant rendering, signing metadata + intermediate cert chains, `inspect --verbose/--pages/--check`, and the `verify` command.
+**New in v1.1.0:** **22 Unicode scripts + COLRv1 colour emoji** through the `--font`/`--lang` shortcuts, **true constant-memory streaming** (`--stream-true`), a `--max-blocks` cap for very large documents, and a **PDF/UA (ISO 14289-1) structural validator** (`inspect --pdfua` / `--check pdfua`). It also adds an **agent-native contract** — a global `--json` status/error envelope, stable `E_*` error codes, a `--dry-run` validation mode, the new **`schema`** command (Draft 2020-12), and token-economy output projection (`--summary` / `--fields` + compact JSON) that cuts agent output ~90 %. **100 % backward-compatible.**
 
 ```bash
 # render with full layout coverage (encryption + watermark + PDF/A-2b)
@@ -886,21 +888,21 @@ npx pdfnative-cli sign --input report.pdf --output signed.pdf \
   --signing-time 2026-04-28T10:00:00Z \
   --cert-chain intermediate.pem
 
-# verify embedded signatures (byte-range + chain + trust)
+# verify embedded signatures (byte-range + chain + trust + revocation)
 npx pdfnative-cli verify --input signed.pdf --strict --trust ca-root.pem
 
-# inspect with CI assertions (exit 1 on failure)
+# inspect with CI assertions, incl. PDF/UA accessibility gate (exit 1 on failure)
 npx pdfnative-cli inspect --input signed.pdf \
-  --check pdfa --check signed --format json
+  --check pdfa --check signed --check pdfua --json --summary
 ```
 
-See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v0.3.0 reference, security model, recipes, and the `--conformance` → `--tagged` migration path. Try the [interactive CLI playground](https://pdfnative.dev/playgrounds/cli.html) to build commands without leaving the browser.
+See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v1.1.0 reference, agent contract, security model, and recipes. Try the [interactive CLI playground](https://pdfnative.dev/playgrounds/cli.html) to build commands without leaving the browser.
 
 ### pdfnative-mcp — Model Context Protocol server
 
-[`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) v0.3.0 is a **Model Context Protocol server** that bridges pdfnative to any MCP-compatible AI client. Once configured, your AI assistant can generate PDFs, embed barcodes, create forms, sign documents, render international text, and **inspect** existing PDFs — all without writing code.
+[`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) v1.0.0 is a **Model Context Protocol server** that bridges pdfnative to any MCP-compatible AI client. Once configured, your AI assistant can generate PDFs, embed barcodes, create forms, sign **and verify** documents, embed files, extract text, render international text, and **inspect** existing PDFs — all without writing code.
 
-**New in v0.3.0:** `inspect_pdf` (the 9th tool, structured metadata/page/signature/PDF/A report), `pdfA` flag on every document tool, multi-script `lang` (`string | string[] | csv`) with bundled `latin` + `emoji` codes, `add_table` `autoFitColumns`/`clipCells`, and per-tool `outputSchema` per the MCP 2025-06-18 spec.
+**New in v1.0.0:** three new tools (`verify_pdf`, `add_attachment` for Factur-X / ZUGFeRD PDF/A-3, `extract_text`), smart-table fields on `add_table` (`wrap`, `repeatHeader`, `zebra`, `caption`, `minRowHeight`, `cellPadding`), ECDSA + auto-placeholder signing, an opt-in content-addressed result cache, and a per-tool `_meta.apiVersion` stability anchor. Tool count: **12** (was 9).
 
 ```bash
 npx -y pdfnative-mcp
@@ -911,14 +913,17 @@ npx -y pdfnative-mcp
 | Tool | Purpose |
 |------|---------|
 | `generate_basic_pdf` | Multi-page documents from structured blocks (headings, paragraphs, lists) |
-| `add_table` | Tabular reports from column headers and data rows (v0.3.0: `autoFitColumns`, `clipCells`) |
+| `add_table` | Smart tables (`wrap`, `repeatHeader`, `zebra`, `caption`, `minRowHeight`, `cellPadding`) |
 | `add_barcode` | QR Code, Code 128, EAN-13, Data Matrix, PDF417 |
-| `add_international_text` | 16 non-Latin scripts with BiDi & OpenType shaping (v0.3.0: multi-script `lang`) |
+| `add_international_text` | 18 scripts (incl. Latin & Emoji) with BiDi & OpenType shaping |
 | `add_form` | Interactive AcroForm PDFs (text, checkbox, radio, dropdown) |
 | `embed_image` | Embed a JPEG or PNG image (base64) |
 | `prepare_signature_placeholder` | PDF with a `/Sig` field ready to be signed |
 | `sign_pdf` | CMS/PKCS#7 digital signatures (RSA-SHA256 / ECDSA-SHA256) |
-| `inspect_pdf` | **New in v0.3.0** — structured PDF report (metadata, pages, signatures, PDF/A) |
+| `verify_pdf` | **v1.0.0** — verify every PAdES signature (integrity + value + optional chain trust) |
+| `add_attachment` | **v1.0.0** — PDF/A-3 with embedded files (Factur-X / ZUGFeRD) |
+| `extract_text` | **v1.0.0** — best-effort plain-text extraction from a non-encrypted PDF |
+| `inspect_pdf` | Structured PDF report (metadata, pages, signatures, PDF/A, attachments, placeholder state) |
 
 ### Claude Desktop configuration
 
@@ -929,7 +934,7 @@ npx -y pdfnative-mcp
       "command": "npx",
       "args": ["-y", "pdfnative-mcp"],
       "env": {
-        "PDFNATIVE_MPC_OUTPUT_DIR": "/Users/you/Documents/mcp-pdfs"
+        "PDFNATIVE_MCP_OUTPUT_DIR": "/Users/you/Documents/mcp-pdfs"
       }
     }
   }
@@ -937,6 +942,30 @@ npx -y pdfnative-mcp
 ```
 
 See the [MCP Integration Guide](https://pdfnative.dev/guides/mcp.html) and the [pdfnative-mcp repository](https://github.com/Nizoka/pdfnative-mcp) for configuration on Cursor, Continue, Zed, and more.
+
+### pdfnative-react — declarative JSX renderer
+
+[`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) v0.2.0 turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency pdfnative engine — no DOM, no headless browser, no SaaS round-trips. A custom React reconciler compiles your component tree synchronously into the pdfnative block model. Requires **React 19** and **Node.js ≥ 20** (React is a peer dependency; pdfnative itself stays zero-dependency).
+
+```tsx
+import { Document, Heading, Text, Table, renderToBytes } from 'pdfnative-react';
+
+const bytes = renderToBytes(
+  <Document title="Invoice #1024" footerText="Acme Inc">
+    <Heading level={1}>Invoice #1024</Heading>
+    <Text>Thank you for your business.</Text>
+    <Table
+      headers={['Item', 'Qty', 'Total']}
+      rows={[{ cells: ['Pro plan', '1', '$49.00'], type: 'default', pointed: false }]}
+      zebra
+    />
+  </Document>,
+); // → Uint8Array, a valid PDF
+```
+
+Every component (`Document`, `Page`, `Heading`, `Paragraph`/`Text`, `List`/`Item`, `Table`/`Row`/`Cell`, `Image`, `Link`, `Spacer`, `PageBreak`, `TableOfContents`, `Barcode`, `Svg`, `FormField`) maps 1:1 onto a pdfnative block. Render with `renderToBytes` / `renderToBlob` / `renderToStream` / `renderToFile`, preview live with the `usePdf` hook and `PDFViewer` / `PDFDownloadLink` / `BlobProvider` client components, or let AI agents author documents with the token-frugal `DocSpec` (terse JSON tuples that compile to the *same* PDF, validated by a versioned JSON Schema).
+
+See the [React Guide](https://pdfnative.dev/guides/react.html) for the full component reference, and try the [interactive React playground](https://pdfnative.dev/playgrounds/react.html) to render JSX to PDF in your browser.
 
 ## Architecture
 

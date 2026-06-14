@@ -25,6 +25,7 @@
       <li><a href="../#demo">Demo</a></li>
       <li><a href="../#mcp">MCP</a></li>
       <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
       <li><a href="./" aria-current="page">Guides</a></li>
       <li><a href="../playgrounds/">Playgrounds</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
@@ -49,7 +50,7 @@
     <ul class="guide-toc-list">
       <li>
         <a href="onboarding.html">Onboarding →</a>
-        <span class="guide-toc-desc">90-second start for the full ecosystem — library v1.3.0, pdfnative-cli v1.0.0, and pdfnative-mcp v1.0.0. Install + first call for each.</span>
+        <span class="guide-toc-desc">90-second start for the full ecosystem — library v1.3.0, pdfnative-cli v1.1.0, pdfnative-mcp v1.0.0, and pdfnative-react v0.2.0. Install + first call for each.</span>
       </li>
       <li>
         <a href="quickstart.html">Quick Start →</a>
@@ -97,7 +98,11 @@
       </li>
       <li>
         <a href="cli.html">CLI →</a>
-        <span class="guide-toc-desc">pdfnative-cli — render JSON to PDF, sign, and inspect from the terminal. Stdin/stdout pipelines, streaming, PDF/A conformance, secret-safe signing.</span>
+        <span class="guide-toc-desc">pdfnative-cli v1.1.0 — render, sign, inspect, verify, batch, and emit JSON Schemas from the terminal. Stdin/stdout pipelines, constant-memory streaming, PDF/UA &amp; PDF/A checks, PAdES-T verification, secret-safe signing, and an agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code> contract.</span>
+      </li>
+      <li>
+        <a href="react.html">React →</a>
+        <span class="guide-toc-desc">pdfnative-react v0.2.0 — build PDFs declaratively with JSX. A custom React reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code> on-device to pdfnative blocks. Live-preview hooks, streaming, and a token-frugal <code>DocSpec</code>. React 19 peer dep on the React package only — the engine stays zero-dependency.</span>
       </li>
     </ul>
 
@@ -112,7 +117,11 @@
       </li>
       <li>
         <a href="../playgrounds/cli.html">CLI command builder →</a>
-        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> v1.0.0 commands (render / sign / inspect / verify / batch) interactively — with <code>--watch</code>, <code>--template</code>, ECDSA-SHA256, RFC 3161 detection, and one-click presets.</span>
+        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> v1.1.0 commands (render / sign / inspect / verify / batch / schema) interactively — with <code>--watch</code>, <code>--template</code>, <code>--stream-true</code>, ECDSA-SHA256, PAdES-T detection, and one-click presets.</span>
+      </li>
+      <li>
+        <a href="../playgrounds/react.html">React renderer →</a>
+        <span class="guide-toc-desc">Write JSX in the browser and render a real PDF on-device via pdfnative-react v0.2.0 — components compile to pdfnative blocks with no SaaS round-trip. Loaded from a CDN for the demo; the published package stays zero-dependency at its core.</span>
       </li>
       <li>
         <a href="../playgrounds/extreme-scripts.html">Extreme scripts playground →</a>
