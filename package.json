@@ -133,7 +133,7 @@
     "tsup": "^8.0.0",
     "tsx": "^4.22.4",
     "typescript": "^5.4.0",
-    "typescript-eslint": "^8.57.2",
+    "typescript-eslint": "^8.61.0",
     "vitest": "^4.1.8"
   },
   "overrides": {
