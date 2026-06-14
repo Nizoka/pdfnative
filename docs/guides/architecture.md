@@ -100,35 +100,51 @@ types/ → core/ ← fonts/ ← shaping/ ← worker/
 
 ## Ecosystem
 
-The architecture diagram above shows the **internal library modules**. External consumers sit above the library and import from `pdfnative` like any npm package.
+The architecture diagram above shows the **internal library modules**. External consumers sit above the library and import from `pdfnative` like any npm package. Three official companion packages — a CLI, an MCP server, and a React renderer — cover the most common non-library workflows. All live in separate repositories, version independently, and depend on `pdfnative` only through its public API, so the core engine stays zero-dependency.
+
+```
+                         ┌─────────────────────────────────────────────┐
+   [shell / CI / Docker] │  pdfnative-cli (npm) — 6 commands           │
+                         └─────────────────────────────────────────────┘
+                         ┌─────────────────────────────────────────────┐
+   [Claude / Cursor / …] │  pdfnative-mcp (npm) — 12 AI tools          │
+                         └─────────────────────────────────────────────┘
+                         ┌─────────────────────────────────────────────┐
+   [React / Next.js app] │  pdfnative-react (npm) — declarative JSX    │
+                         └─────────────────────────────────────────────┘
+                            │  import { … } from 'pdfnative'  (public API only)
+                         ┌─────────────────────────────────────────────┐
+                         │  pdfnative (npm) — zero-dependency engine   │  ← this repo
+                         └─────────────────────────────────────────────┘
+```
 
 ### pdfnative-cli
 
-[pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface**. It exposes three commands — `render`, `sign`, `inspect` — that map directly to public `pdfnative` APIs:
+[pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) v1.1.0 is the **official command-line interface**, built on `pdfnative` 1.3.0. It exposes six commands — `render`, `sign`, `inspect`, `verify`, `batch`, `schema` (plus `completion`) — that map directly to public `pdfnative` APIs, with an agent-native `--json`/`E_*`/`--dry-run` automation contract:
 
 ```
 [shell / Makefile / GitHub Actions / Docker]
               │ argv + stdin/stdout
      ┌──────────────────────────┐
-     │  pdfnative-cli (npm)     │  ← thin dispatch layer, 3 commands
+     │  pdfnative-cli (npm)     │  ← dispatch layer, 6 commands + agent contract
      └──────────────────────────┘
-              │ import { buildDocumentPDFBytes, signPdfBytes, PdfReader } from 'pdfnative'
+              │ import { buildDocumentPDFBytes, signPdfBytes, PdfReader, validatePdfUA } from 'pdfnative'
      ┌──────────────────────────┐
      │      pdfnative (npm)     │  ← core library (this repo)
      └──────────────────────────┘
 ```
 
-Like `pdfnative-mcp`, the CLI lives in a separate repository and depends on `pdfnative` only via the public API surface. See the [CLI Guide](cli.html) for usage and the security model.
+Like `pdfnative-mcp` and `pdfnative-react`, the CLI lives in a separate repository and depends on `pdfnative` only via the public API surface. See the [CLI Guide](cli.html) for usage and the security model.
 
 ### pdfnative-mcp
 
-[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 9 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …). Each tool publishes an `outputSchema` per the MCP 2025-06-18 spec for client-side static validation.
+[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.0.0 is a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 12 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …). Built on `pdfnative` 1.2.0, it commits to API stability via a per-tool `_meta.apiVersion` field.
 
 ```
 [Claude Desktop / Cursor / Continue / Zed]
               │ MCP stdio protocol
      ┌──────────────────────────┐
-     │  pdfnative-mcp (npm)     │  ← MCP server, 9 tools
+     │  pdfnative-mcp (npm)     │  ← MCP server, 12 tools
      └──────────────────────────┘
               │ import { buildDocumentPDFBytes, … } from 'pdfnative'
      ┌──────────────────────────┐
@@ -139,3 +155,21 @@ Like `pdfnative-mcp`, the CLI lives in a separate repository and depends on `pdf
 pdfnative-mcp is **not an internal module** — it is a separate npm package with its own repository, versioning, and release cadence. It references `pdfnative` only through the public API.
 
 For setup instructions, tool reference, and per-client configuration, see the [MCP Integration Guide](mcp.html).
+
+### pdfnative-react
+
+[pdfnative-react](https://github.com/Nizoka/pdfnative-react) v0.2.0 is the **declarative React renderer**. A custom React reconciler compiles a JSX component tree — synchronously, with no DOM — into the pdfnative `DocumentParams` model, which the engine renders to bytes:
+
+```
+[React / Next.js / Remix component tree]
+              │ custom react-reconciler (no DOM, no headless browser)
+     ┌──────────────────────────┐
+     │  pdfnative-react (npm)   │  ← <Document>/<Table>/<Barcode> → pdfnative blocks
+     └──────────────────────────┘
+              │ import { buildDocumentPDFBytes, … } from 'pdfnative'
+     ┌──────────────────────────┐
+     │      pdfnative (npm)     │  ← core library (this repo)
+     └──────────────────────────┘
+```
+
+**React 19 is a peer dependency of `pdfnative-react` only** — the core `pdfnative` engine remains zero-dependency. Components map 1:1 onto pdfnative blocks, and the token-frugal `DocSpec` lets AI agents author the same documents with a fraction of the tokens. See the [React Guide](react.html) for the component reference and the [React playground](../playgrounds/react.html) to try it in your browser.

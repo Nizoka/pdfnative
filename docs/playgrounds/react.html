@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Renderer — pdfnative-react playground</title>
+  <meta name="description" content="Write JSX in the browser and render a real PDF on-device with pdfnative-react. A custom React reconciler compiles <Document>/<Table>/<Barcode> components straight to pdfnative blocks — no SaaS round-trip, no Chromium. Live preview, presets, copy-to-clipboard. Zero install.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/react.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/react.html">
+  <meta property="og:title" content="React Renderer — pdfnative-react playground">
+  <meta property="og:description" content="Write JSX in the browser and render a real PDF on-device with pdfnative-react. A custom React reconciler compiles components straight to pdfnative blocks — no SaaS round-trip, no Chromium. Live preview, presets. Zero install.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="React Renderer — pdfnative-react playground">
+  <meta name="twitter:description" content="Write JSX and render a real PDF on-device with pdfnative-react — no SaaS round-trip, no Chromium. Live preview, presets. Zero install.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+    .rx-presets { display: flex; gap: 8px; align-items: center; margin: 18px 0 0; flex-wrap: wrap; }
+    .rx-presets select { padding: 6px 10px; border: 1px solid var(--c-border); border-radius: 6px; font-size: 13px; background: var(--c-bg); color: var(--c-text); }
+    .rx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 22px; align-items: start; }
+    @media (max-width: 900px) { .rx-grid { grid-template-columns: 1fr; } }
+    .rx-pane h3 { font-size: 15px; font-weight: 700; margin: 0 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .rx-editor { width: 100%; min-height: 420px; resize: vertical; padding: 14px; border: 1px solid var(--c-border); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.5; background: var(--c-code-bg); color: var(--c-code-text); tab-size: 2; }
+    .rx-actions { display: flex; gap: 10px; align-items: center; margin: 14px 0 0; flex-wrap: wrap; }
+    .rx-btn { padding: 9px 18px; font-size: 14px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; }
+    .rx-btn.primary { background: var(--c-primary); color: #fff; }
+    .rx-btn.primary:hover { background: var(--c-accent); }
+    .rx-btn.primary:disabled { opacity: 0.6; cursor: progress; }
+    .rx-btn.secondary { background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border); }
+    .rx-preview-frame { width: 100%; height: 560px; border: 1px solid var(--c-border); border-radius: 8px; background: #525659; }
+    .rx-status { margin-top: 12px; padding: 11px 14px; border-radius: 6px; font-size: 13px; line-height: 1.5; display: none; }
+    .rx-status.info { display: block; background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-text-dim); }
+    .rx-status.error { display: block; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; }
+    [data-theme="dark"] .rx-status.error { background: #450a0a; border-color: #7f1d1d; color: #fecaca; }
+    .rx-status.ok { display: block; background: #dcfce7; border: 1px solid #86efac; color: #166534; }
+    [data-theme="dark"] .rx-status.ok { background: #052e16; border-color: #166534; color: #bbf7d0; }
+    .rx-note { margin-top: 18px; padding: 14px 16px; border-left: 3px solid var(--c-primary); background: var(--c-surface); border-radius: 0 8px 8px 0; font-size: 13px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="pn-version-strip" data-mode="compact" aria-label="Live published versions"></div>
+
+<main class="guide-shell">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; React renderer</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html" aria-current="page">React renderer</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>pdfnative-react playground</h1>
+    <p>Edit the JSX on the left, click <strong>Render PDF</strong>, and a real PDF is produced <em>in your browser</em> by <a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a>. A custom React reconciler compiles the component tree into pdfnative blocks — no DOM, no headless browser, no upload. See the <a href="../guides/react.html">React guide</a> for the full component reference.</p>
+
+    <div class="rx-note">
+      <strong>How this demo loads.</strong> React 19, <code>pdfnative-react</code>, and <code>pdfnative</code> are imported from the <a href="https://esm.sh" target="_blank" rel="noopener">esm.sh</a> CDN, and JSX is transpiled in-page with Babel standalone — purely to make a zero-install browser demo. In a real project you install the packages from npm and your bundler handles JSX. <strong>This CDN tooling does not affect the published packages: the core <code>pdfnative</code> engine stays zero-dependency, and React is a peer dependency of <code>pdfnative-react</code> only.</strong>
+    </div>
+
+    <div class="rx-presets">
+      <label for="rx-preset"><strong>Preset:</strong></label>
+      <select id="rx-preset">
+        <option value="invoice">Invoice — heading, text, zebra table</option>
+        <option value="report">Report — list, table, barcode</option>
+        <option value="multilingual">Multilingual — registerFont + Arabic</option>
+      </select>
+      <button id="rx-reset" class="rx-btn secondary">Reset preset</button>
+    </div>
+
+    <div class="rx-grid">
+      <div class="rx-pane">
+        <h3><span>JSX source</span></h3>
+        <textarea id="rx-editor" class="rx-editor" spellcheck="false" aria-label="JSX source"></textarea>
+        <div class="rx-actions">
+          <button id="rx-run" class="rx-btn primary">Render PDF →</button>
+          <button id="rx-copy" class="rx-btn secondary">Copy JSX</button>
+          <a id="rx-download" class="rx-btn secondary" style="display:none;" download="pdfnative-react.pdf">Download PDF</a>
+        </div>
+        <div id="rx-status" class="rx-status info">Loading React + pdfnative-react from CDN…</div>
+      </div>
+      <div class="rx-pane">
+        <h3><span>PDF preview</span></h3>
+        <iframe id="rx-preview" class="rx-preview-frame" title="Rendered PDF preview"></iframe>
+      </div>
+    </div>
+
+    <h2 style="margin-top:40px;">Prefer tokens over JSX? Use a DocSpec</h2>
+    <p>For AI agents and token-frugal authoring, <code>pdfnative-react</code> ships a compact <code>DocSpec</code> — plain data compiled by <code>compileSpec()</code> / <code>renderSpecToBytes()</code> with a published JSON Schema. The same invoice above becomes:</p>
+<pre><code class="language-typescript">import { renderSpecToBytes } from 'pdfnative-react';
+
+const bytes = renderSpecToBytes({
+  title: 'Invoice #1024',
+  footerText: 'Acme Inc',
+  blocks: [
+    ['h1', 'Invoice #1024'],
+    ['p', 'Thank you for your business.'],
+    ['table', { h: ['Item', 'Total'], r: [['Pro plan', '$49.00']], zebra: true }],
+  ],
+});</code></pre>
+    <p>See the <a href="../guides/react.html">React guide</a> for the full component and DocSpec reference.</p>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="../">Home</a></li>
+      <li><a href="../guides/react.html">React guide</a></li>
+      <li><a href="./">All playgrounds</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative-react" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<!-- Import map: resolve bare specifiers to the esm.sh CDN (demo only) -->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@19",
+    "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
+    "pdfnative": "https://esm.sh/pdfnative@1.3.0",
+    "pdfnative/": "https://esm.sh/pdfnative@1.3.0/",
+    "pdfnative-react": "https://esm.sh/pdfnative-react@0.2.0?external=react,pdfnative"
+  }
+}
+</script>
+
+<!-- Babel standalone: transpile the JSX the user types (demo only) -->
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="../assets/versions.js" defer></script>
+
+<script>
+  // Theme toggle + hamburger parity (matches the other playgrounds)
+  (function () {
+    var themeBtn = document.querySelector('.theme-toggle');
+    if (themeBtn) {
+      var stored = localStorage.getItem('pdfnative-theme');
+      if (stored) document.documentElement.setAttribute('data-theme', stored);
+      themeBtn.addEventListener('click', function () {
+        var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+        if (cur) document.documentElement.setAttribute('data-theme', cur);
+        else document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('pdfnative-theme', cur);
+      });
+    }
+    var hb = document.querySelector('.nav-hamburger');
+    if (hb) hb.addEventListener('click', function () {
+      var nav = document.querySelector('.nav-links');
+      if (nav) nav.classList.toggle('open');
+      hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+    });
+  })();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  var PRESETS = {
+    invoice: [
+      "<Document title=\"Invoice #1024\" author=\"Acme Inc\" footerText=\"Acme Inc · Thank you\">",
+      "  <Heading level={1}>Invoice #1024</Heading>",
+      "  <Paragraph>Billed to: Globex Corporation — due in 30 days.</Paragraph>",
+      "  <Spacer height={8} />",
+      "  <Table",
+      "    headers={['Item', 'Qty', 'Total']}",
+      "    rows={[",
+      "      { cells: ['Pro plan (annual)', '1', '$490.00'] },",
+      "      { cells: ['Onboarding', '2', '$200.00'] },",
+      "      { cells: ['Support hours', '5', '$375.00'] },",
+      "    ]}",
+      "    zebra",
+      "  />",
+      "  <Spacer height={6} />",
+      "  <Paragraph>Total due: $1,065.00</Paragraph>",
+      "</Document>",
+    ].join("\n"),
+    report: [
+      "<Document title=\"Quarterly Report\" footerText=\"Confidential\">",
+      "  <Heading level={1}>Q3 Summary</Heading>",
+      "  <Paragraph>Highlights for the quarter:</Paragraph>",
+      "  <List>",
+      "    <Item>Revenue up 18% QoQ</Item>",
+      "    <Item>Two new enterprise customers</Item>",
+      "    <Item>Churn down to 1.2%</Item>",
+      "  </List>",
+      "  <Heading level={2}>Regional breakdown</Heading>",
+      "  <Table",
+      "    headers={['Region', 'Revenue']}",
+      "    rows={[",
+      "      { cells: ['EMEA', '$1.2M'] },",
+      "      { cells: ['AMER', '$2.4M'] },",
+      "      { cells: ['APAC', '$0.9M'] },",
+      "    ]}",
+      "    zebra",
+      "  />",
+      "  <Spacer height={10} />",
+      "  <Barcode format=\"qrcode\" data=\"https://pdfnative.dev\" />",
+      "</Document>",
+    ].join("\n"),
+    multilingual: [
+      "// registerFont is re-exported from pdfnative-react for convenience.",
+      "registerFont('arabic', () => import('pdfnative/fonts/noto-arabic-data.js'));",
+      "",
+      "return (",
+      "  <Document title=\"Multilingual\" layout={{ tagged: 'pdfa2b' }}>",
+      "    <Heading level={1}>Multilingual demo</Heading>",
+      "    <Paragraph>English paragraph rendered with the base font.</Paragraph>",
+      "    <Paragraph>مرحبا بكم في pdfnative — نص عربي مع تشكيل.</Paragraph>",
+      "  </Document>",
+      ");",
+    ].join("\n"),
+  };
+
+  var editor = document.getElementById('rx-editor');
+  var statusEl = document.getElementById('rx-status');
+  var runBtn = document.getElementById('rx-run');
+  var copyBtn = document.getElementById('rx-copy');
+  var downloadLink = document.getElementById('rx-download');
+  var preview = document.getElementById('rx-preview');
+  var presetSel = document.getElementById('rx-preset');
+  var resetBtn = document.getElementById('rx-reset');
+  var lastUrl = null;
+  var modulesReady = false;
+
+  function setStatus(kind, msg) {
+    statusEl.className = 'rx-status ' + kind;
+    statusEl.textContent = msg;
+  }
+
+  function loadPreset(name) {
+    editor.value = PRESETS[name] || PRESETS.invoice;
+  }
+  loadPreset('invoice');
+
+  presetSel.addEventListener('change', function () { loadPreset(presetSel.value); });
+  resetBtn.addEventListener('click', function () { loadPreset(presetSel.value); });
+
+  copyBtn.addEventListener('click', function () {
+    navigator.clipboard.writeText(editor.value).then(function () {
+      var prev = copyBtn.textContent; copyBtn.textContent = 'Copied!';
+      setTimeout(function () { copyBtn.textContent = prev; }, 1200);
+    });
+  });
+
+  // Probe that the CDN modules resolve before the user clicks Render.
+  (async function warmup() {
+    try {
+      await import('pdfnative-react');
+      modulesReady = true;
+      setStatus('info', 'Ready. Edit the JSX and click “Render PDF →”.');
+    } catch (err) {
+      setStatus('error', 'Could not load pdfnative-react from the CDN.\n' +
+        'This can happen offline or if the CDN blocks the import map.\n\n' + String(err));
+    }
+  })();
+
+  runBtn.addEventListener('click', async function () {
+    if (typeof Babel === 'undefined') {
+      setStatus('error', 'Babel standalone has not finished loading yet — try again in a moment.');
+      return;
+    }
+    runBtn.disabled = true;
+    setStatus('info', 'Transpiling JSX and rendering…');
+    try {
+      var src = editor.value;
+      // Wrap the user's JSX into a default-exported async function. If the user
+      // wrote an explicit `return`, respect it; otherwise treat the whole body
+      // as a single JSX expression to return.
+      var hasReturn = /\breturn\b/.test(src);
+      var body = hasReturn ? src : 'return (\n' + src + '\n);';
+      var moduleSrc =
+        "import React from 'react';\n" +
+        "import { registerFont } from 'pdfnative';\n" +
+        "import { Document, Page, Heading, Paragraph, Text, List, Item, Table, Row, Cell, Image, Link, Spacer, PageBreak, Barcode, Svg, FormField, TableOfContents, Toc, renderToBytes } from 'pdfnative-react';\n" +
+        "export default async function build() {\n" + body + "\n}\n";
+
+      var out = Babel.transform(moduleSrc, {
+        presets: [['react', { runtime: 'classic', pragma: 'React.createElement', pragmaFrag: 'React.Fragment' }]],
+        filename: 'playground.jsx',
+      }).code;
+
+      var blob = new Blob([out], { type: 'text/javascript' });
+      var modUrl = URL.createObjectURL(blob);
+      var mod;
+      try {
+        mod = await import(modUrl);
+      } finally {
+        URL.revokeObjectURL(modUrl);
+      }
+
+      var element = await mod.default();
+      var bytes = await renderMaybeAsync(element);
+      if (!(bytes instanceof Uint8Array)) {
+        bytes = new Uint8Array(bytes);
+      }
+
+      if (lastUrl) URL.revokeObjectURL(lastUrl);
+      var pdfBlob = new Blob([bytes], { type: 'application/pdf' });
+      lastUrl = URL.createObjectURL(pdfBlob);
+      preview.src = lastUrl;
+      downloadLink.href = lastUrl;
+      downloadLink.style.display = 'inline-block';
+      setStatus('ok', 'Rendered ' + bytes.length.toLocaleString() + ' bytes. Use “Download PDF” to save it.');
+    } catch (err) {
+      setStatus('error', 'Render failed:\n\n' + (err && err.stack ? err.stack : String(err)));
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+
+  // renderToBytes lives in pdfnative-react; import it lazily so a CDN failure
+  // surfaces a clean message rather than a blank page.
+  async function renderMaybeAsync(element) {
+    var rx = await import('pdfnative-react');
+    var result = rx.renderToBytes(element);
+    return result && typeof result.then === 'function' ? await result : result;
+  }
+})();
+</script>
+
+</body>
+</html>

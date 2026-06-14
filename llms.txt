@@ -22,8 +22,9 @@
 
 - [Copilot instructions](https://github.com/Nizoka/pdfnative/blob/main/.github/copilot-instructions.md): Canonical project conventions — architecture, code style, build/test, PDF-specific invariants.
 - [AGENTS.md](https://github.com/Nizoka/pdfnative/blob/main/AGENTS.md): Editor-agnostic agent guidance (Cursor / Aider / Claude Code / Continue).
-- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` server — use pdfnative from Claude Desktop, Cursor, Continue, Zed.
-- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` — render JSON to PDF, sign, inspect, verify from the terminal.
+- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.0.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 12 structured tools.
+- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.1.0 — render JSON to PDF, sign, inspect, verify, batch, and emit JSON Schemas from the terminal; agent-native `--json`/`E_*`/`--dry-run` contract.
+- [React](https://pdfnative.dev/guides/react.html): `pdfnative-react` v0.2.0 — declarative JSX components compiled on-device to pdfnative blocks; render hooks, client components, token-frugal DocSpec.
 
 ## Source
 
@@ -33,5 +34,6 @@
 
 ## Ecosystem
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative.
-- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as AI tools.
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.1.0, built on pdfnative 1.3.0) — render, sign, inspect, verify, batch, schema.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 12 AI tools (v1.0.0).
+- [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v0.2.0, React 19 peer).

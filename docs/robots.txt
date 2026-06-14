@@ -1,0 +1,7 @@
+# robots.txt for pdfnative.dev
+# Allow all well-behaved crawlers full access to the documentation site.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://pdfnative.dev/sitemap.xml

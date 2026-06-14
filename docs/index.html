@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pdfnative — Zero-dependency PDF generation for TypeScript</title>
   <meta name="description" content="Zero-dependency PDF library for TypeScript. ISO 32000-1, PDF/A-1b/2b/2u/3b, AES-128/256 encryption, RSA + ECDSA signatures, 22 Unicode scripts, BiDi, barcodes, SVG, AcroForms, streaming. CLI + MCP server included.">
-  <meta name="keywords" content="pdf, typescript, javascript, pdf generation, zero dependencies, unicode, arabic, thai, hebrew, bidi, pdf-a, tagged-pdf, pades, acroform, accessibility, encryption, aes, rsa, ecdsa, cms, pkcs7, rfc-3161, digital-signatures, barcodes, qr-code, svg, opentype, emoji, noto, cjk, mcp, model-context-protocol, claude, cursor, ai, llm, pdfnative-cli, pdfnative-mcp">
+  <meta name="keywords" content="pdf, typescript, javascript, pdf generation, zero dependencies, unicode, arabic, thai, hebrew, bidi, pdf-a, tagged-pdf, pades, acroform, accessibility, encryption, aes, rsa, ecdsa, cms, pkcs7, rfc-3161, digital-signatures, barcodes, qr-code, svg, opentype, emoji, noto, cjk, mcp, model-context-protocol, claude, cursor, ai, llm, react, jsx, react-pdf, pdfnative-cli, pdfnative-mcp, pdfnative-react">
   <meta name="author" content="Nizoka">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="theme-color" content="#2563eb">
@@ -36,6 +36,13 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
 
   <!-- Schema.org structured data -->
+  <!--
+    RELEASE CHECKLIST: the "softwareVersion" values below are hand-maintained.
+    On every package release, bump them here to match the live npm versions
+    (pdfnative #library, pdfnative-cli #cli, pdfnative-mcp #mcp, pdfnative-react #react).
+    The visible version badges are driven live from the npm registry by assets/versions.js;
+    these JSON-LD values are the static SEO mirror and must be kept in sync manually.
+  -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -61,9 +68,9 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#cli",
         "name": "pdfnative-cli",
-        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA), inspect, verify CMS/PKCS#7 signatures, plus batch and shell-completion commands.",
+        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA), inspect, verify (PAdES-T + OCSP/CRL), batch, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
         "url": "https://github.com/Nizoka/pdfnative-cli",
-        "softwareVersion": "1.0.0",
+        "softwareVersion": "1.1.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -73,12 +80,29 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#mcp",
         "name": "pdfnative-mcp",
-        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 12 tools, outputSchema, PDF/A flag.",
+        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 12 tools, per-tool apiVersion, PDF/A flag.",
         "url": "https://github.com/Nizoka/pdfnative-mcp",
         "softwareVersion": "1.0.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      },
+      {
+        "@type": "SoftwareSourceCode",
+        "@id": "https://pdfnative.dev/#react",
+        "name": "pdfnative-react",
+        "description": "React renderer for pdfnative — declarative JSX components compiled on-device to PDF by a custom React reconciler. Live preview hooks, streaming, 22 Unicode scripts, token-frugal DocSpec for AI agents.",
+        "url": "https://github.com/Nizoka/pdfnative-react",
+        "codeRepository": "https://github.com/Nizoka/pdfnative-react",
+        "programmingLanguage": "TypeScript",
+        "license": "https://opensource.org/licenses/MIT",
+        "runtimePlatform": ["Node.js", "Browser"],
+        "softwareVersion": "0.2.0",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "isAccessibleForFree": true,
+        "author": { "@type": "Organization", "name": "Nizoka", "url": "https://pdfnative.dev" },
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
     ]
@@ -104,6 +128,7 @@
       <li><a href="#architecture">Architecture</a></li>
       <li><a href="#mcp">MCP</a></li>
       <li><a href="#cli">CLI</a></li>
+      <li><a href="#react">React</a></li>
       <li><a href="#onboarding">Onboarding</a></li>
       <li><a href="guides/">Guides</a></li>
       <li><a href="playgrounds/">Playgrounds</a></li>
@@ -143,6 +168,7 @@
       <a href="https://github.com/Nizoka/pdfnative/blob/main/LICENSE" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" height="20" loading="lazy"></a>
       <a href="https://www.npmjs.com/package/pdfnative-cli" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/pdfnative-cli?label=pdfnative-cli&color=0e7490" alt="pdfnative-cli npm version" height="20" loading="lazy"></a>
       <a href="https://www.npmjs.com/package/pdfnative-mcp" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/pdfnative-mcp?label=pdfnative-mcp&color=d97706" alt="pdfnative-mcp npm version" height="20" loading="lazy"></a>
+      <a href="https://www.npmjs.com/package/pdfnative-react" target="_blank" rel="noopener"><img src="https://img.shields.io/npm/v/pdfnative-react?label=pdfnative-react&color=06b6d4" alt="pdfnative-react npm version" height="20" loading="lazy"></a>
     </div>
     <div class="install-cmd">
       <code>npm install pdfnative</code>
@@ -156,7 +182,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">1 818+</div>
+    <div class="metric-value">2 043+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -168,7 +194,7 @@
     <div class="metric-label">Dependencies</div>
   </div>
   <div class="metric">
-    <div class="metric-value">16</div>
+    <div class="metric-value">22</div>
     <div class="metric-label">Unicode Scripts</div>
   </div>
   <div class="metric">
@@ -221,7 +247,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 1 822+ tests across 53 files, 95%+ coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 043+ tests across 73 files, 95%+ coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -234,6 +260,12 @@
         <div class="feature-icon fi-cli"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
         <h3>Command-Line Interface</h3>
         <p>Render, sign, inspect &amp; <strong>verify</strong> PDFs from the terminal with <a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a>. End-to-end signing pipeline (RSA + <strong>ECDSA-SHA256</strong>), real CMS/PKCS#7 verify with RFC 3161 detection, <code>render --watch / --template / --font</code>, <code>batch</code> &amp; <code>completion</code> commands, automatic signature-placeholder injection. <a href="guides/cli.html">Read the CLI guide →</a> &middot; <a href="playgrounds/cli.html">Try the playground →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-content"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.2"/><path d="M12 2a10 10 0 0 0 0 20M2 12a10 10 0 0 0 20 0"/><ellipse cx="12" cy="12" rx="4.5" ry="10.5"/><ellipse cx="12" cy="12" rx="10.5" ry="4.5"/></svg></div>
+        <h3>React Renderer</h3>
+        <p>Author PDFs declaratively in <strong>JSX</strong> with <a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a>. A custom React reconciler compiles <code>&lt;Document&gt;</code> / <code>&lt;Table&gt;</code> / <code>&lt;Barcode&gt;</code> trees on-device — no DOM, no headless browser. Live-preview hooks (<code>usePdf</code>, <code>&lt;PDFViewer&gt;</code>), streaming, and a token-frugal <code>DocSpec</code> for AI agents. React is a peer dependency of this package only. <a href="guides/react.html">React guide →</a> &middot; <a href="playgrounds/react.html">Try the playground →</a></p>
       </div>
 
     </div>
@@ -367,7 +399,7 @@ const pdf = buildDocumentPDFBytes({
 <section class="section" id="onboarding">
   <div class="container">
     <h2 class="section-title">30-Second Start</h2>
-    <p class="section-subtitle">Three adoption paths — pick the one that fits your stack. All three are zero-config and zero-build.</p>
+    <p class="section-subtitle">Four adoption paths — pick the one that fits your stack. All four are zero-config and zero-build.</p>
     <div class="onboarding-grid">
       <div class="onboarding-card">
         <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.3.0</span></h3>
@@ -381,7 +413,7 @@ const pdf = buildDocumentPDFBytes({
         <a class="ob-link" href="guides/quickstart.html">Quick Start guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>CLI <span class="ob-badge" data-pn-badge="pdfnative-cli">v1.0.0</span></h3>
+        <h3>CLI <span class="ob-badge" data-pn-badge="pdfnative-cli">v1.1.0</span></h3>
         <p class="ob-tag">For shells, CI, and Makefiles.</p>
 <pre><code class="language-bash">echo '{"blocks":[{"type":"paragraph","text":"Hi"}]}' \
   | npx pdfnative-cli render -o out.pdf</code></pre>
@@ -404,6 +436,18 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
 }</code></pre>
         <p class="ob-tag" style="margin-top:auto;">Drop into your MCP client config — the full tool set becomes available instantly.</p>
         <a class="ob-link" href="guides/mcp.html">MCP guide →</a>
+      </div>
+      <div class="onboarding-card">
+        <h3>React <span class="ob-badge" data-pn-badge="pdfnative-react">v0.2.0</span></h3>
+        <p class="ob-tag">For React, Next.js, and Remix apps.</p>
+<pre><code class="language-bash">npm install pdfnative-react pdfnative react</code></pre>
+<pre><code class="language-typescript">import { Document, Heading, renderToBytes } from 'pdfnative-react';
+const pdf = renderToBytes(
+  &lt;Document title="Hello"&gt;
+    &lt;Heading level={1}&gt;Hello, world.&lt;/Heading&gt;
+  &lt;/Document&gt;,
+);</code></pre>
+        <a class="ob-link" href="guides/react.html">React guide →</a>
       </div>
     </div>
     <p style="text-align:center;margin-top:24px;"><a href="guides/onboarding.html">Full onboarding cheatsheet →</a></p>
@@ -446,7 +490,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
           </tr>
           <tr>
             <td>Unicode scripts</td>
-            <td><strong>16</strong></td>
+            <td><strong>22</strong></td>
             <td>Via fontkit</td>
             <td>Custom fonts</td>
             <td>Via pdfkit</td>
@@ -554,42 +598,42 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
     <div class="bench-grid">
       <div class="bench-row">
         <span class="bench-label">100 rows (Latin)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:18%"></div></div>
-        <span class="bench-value">~0.9 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:4%"></div></div>
+        <span class="bench-value">~0.7 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">500 rows (Latin)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:40%"></div></div>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:11%"></div></div>
         <span class="bench-value">~3.5 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">1 000 rows (Latin)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:60%"></div></div>
-        <span class="bench-value">~7 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:21%"></div></div>
+        <span class="bench-value">~6.9 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">5 000 rows (Latin)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:100%"></div></div>
-        <span class="bench-value">~35 ms</span>
+        <span class="bench-value">~33 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">100 rows (Unicode)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:25%"></div></div>
-        <span class="bench-value">~1.5 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:9%"></div></div>
+        <span class="bench-value">~2.9 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">500 rows (Unicode)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:50%"></div></div>
-        <span class="bench-value">~5 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:42%"></div></div>
+        <span class="bench-value">~14 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">1 000 rows (Unicode)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:75%"></div></div>
-        <span class="bench-value">~12 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:82%"></div></div>
+        <span class="bench-value">~27 ms</span>
       </div>
     </div>
     <p class="bench-note">
-      Benchmarks run on Node.js 22, Apple M-series / Intel i7. Results may vary.
+      Measured locally with <code>vitest bench</code> on an Intel Core i3 mini-PC (Node.js 22) — mean wall-clock time per document. Faster hardware (Apple M-series, desktop i7/i9) typically runs 2–4× quicker. Results may vary.
       Run <code>npx vitest bench</code> to measure on your hardware.
     </p>
   </div>
@@ -730,13 +774,53 @@ npx pdfnative-cli verify -i signed.pdf --strict</code></pre>
   </div>
 </section>
 
+<!-- ═══════════════ React ═══════════════ -->
+<section class="section section-alt" id="react">
+  <div class="container">
+    <h2 class="section-title">Build PDFs declaratively with React</h2>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a> is the <strong>official React renderer</strong>. A custom React reconciler compiles your JSX component tree — synchronously, with no DOM and no headless browser — into pdfnative blocks, then renders real ISO 32000-1 / PDF/A bytes on-device. <strong>React 19 is a peer dependency of <code>pdfnative-react</code> only</strong> — the core engine stays zero-dependency.</p>
+    <div class="mcp-layout">
+      <div class="mcp-tools">
+        <h3>Components map 1:1 onto pdfnative blocks</h3>
+        <div class="table-wrap">
+        <table class="mcp-table">
+          <thead><tr><th>Surface</th><th>What you get</th></tr></thead>
+          <tbody>
+            <tr><td><code>&lt;Document&gt;</code> / <code>&lt;Page&gt;</code></td><td>Document metadata, page size, headers/footers, tagged &amp; PDF/A modes.</td></tr>
+            <tr><td>Content</td><td><code>&lt;Heading&gt;</code>, <code>&lt;Text&gt;</code>, <code>&lt;List&gt;</code>/<code>&lt;Item&gt;</code>, <code>&lt;Table&gt;</code>/<code>&lt;Row&gt;</code>/<code>&lt;Cell&gt;</code>, <code>&lt;Image&gt;</code>, <code>&lt;Link&gt;</code>, <code>&lt;Barcode&gt;</code>, <code>&lt;Svg&gt;</code>, <code>&lt;FormField&gt;</code>, <code>&lt;Toc&gt;</code>.</td></tr>
+            <tr><td>Render</td><td><code>renderToBytes</code> / <code>renderToBlob</code> / <code>renderToStream</code> / <code>renderToFile</code> — plus <code>compileDocument</code> for the raw params.</td></tr>
+            <tr><td>Live preview</td><td><code>usePdf</code> / <code>usePdfStream</code> hooks &amp; client components <code>&lt;PDFViewer&gt;</code>, <code>&lt;PDFDownloadLink&gt;</code>, <code>&lt;BlobProvider&gt;</code>.</td></tr>
+            <tr><td>Agent-friendly</td><td>Token-frugal <code>DocSpec</code> (<code>compileSpec</code>/<code>renderSpec*</code>) with a published JSON Schema for LLM authoring.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <a class="star-cta" href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><span class="star-icon">⭐</span> Shipping React PDFs? Star pdfnative on GitHub.</a>
+      </div>
+      <div class="mcp-config">
+        <h3>JSX in, PDF bytes out</h3>
+<pre><code class="language-bash">npm install pdfnative-react pdfnative react</code></pre>
+<pre><code class="language-typescript">import { Document, Heading, Text, Table, renderToBytes } from 'pdfnative-react';
+
+const bytes = renderToBytes(
+  &lt;Document title="Invoice #1024" footerText="Acme Inc"&gt;
+    &lt;Heading level={1}&gt;Invoice #1024&lt;/Heading&gt;
+    &lt;Text&gt;Thank you for your business.&lt;/Text&gt;
+    &lt;Table headers={['Item', 'Total']} rows={[{ cells: ['Pro plan', '$49.00'] }]} zebra /&gt;
+  &lt;/Document&gt;,
+); // → Uint8Array, a valid PDF</code></pre>
+        <p>Compiles on-device — no SaaS round-trip, no Chromium. See the <a href="guides/react.html">React guide →</a> &middot; <a href="playgrounds/react.html">Try the React playground →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════════════ Origin Story ═══════════════ -->
 <section class="section" id="origin">
   <div class="container">
     <div class="origin">
       <h2 class="section-title">Born from Production Needs</h2>
       <p>
-        The code that became pdfnative was originally built inside <a href="https://plika.app" target="_blank" rel="noopener"><strong>plika.app</strong></a> — a personal finance application requiring multi-language PDF bank statements across 16 scripts.
+        The code that became pdfnative was originally built inside <a href="https://plika.app" target="_blank" rel="noopener"><strong>plika.app</strong></a> — a personal finance application requiring multi-language PDF bank statements across many Unicode scripts.
       </p>
       <p>
         Rather than depending on heavy third-party libraries, the PDF engine was written from scratch with zero dependencies, strict ISO compliance, and native Unicode shaping. It was then extracted and open-sourced as an independent library for everyone.
@@ -773,6 +857,7 @@ npx pdfnative-cli verify -i signed.pdf --strict</code></pre>
           <li><a href="guides/accessibility.html">Accessibility</a></li>
           <li><a href="guides/cli.html">CLI Guide</a></li>
           <li><a href="guides/mcp.html">MCP Integration</a></li>
+          <li><a href="guides/react.html">React</a></li>
           <li><a href="guides/faq.html">FAQ</a></li>
           <li><a href="guides/troubleshooting.html">Troubleshooting</a></li>
         </ul>
@@ -785,6 +870,7 @@ npx pdfnative-cli verify -i signed.pdf --strict</code></pre>
           <li><a href="playgrounds/medical-800.html">Medical 800-page</a></li>
           <li><a href="playgrounds/cli.html">CLI builder</a></li>
           <li><a href="playgrounds/mcp.html">MCP tool explorer</a></li>
+          <li><a href="playgrounds/react.html">React renderer</a></li>
         </ul>
       </div>
     </div>

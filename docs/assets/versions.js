@@ -2,9 +2,10 @@
  * pdfnative — Live version widget (dual-mode)
  * ==============================================
  * Renders the current published versions of `pdfnative`, `pdfnative-cli`,
- * and `pdfnative-mcp` straight from the public npm registry on page load.
- * Includes the *transitive pdfnative pin* declared in each downstream
- * package's `dependencies` so visitors can verify the wiring at a glance.
+ * `pdfnative-mcp`, and `pdfnative-react` straight from the public npm registry
+ * on page load. Includes the *transitive pdfnative pin* declared in each
+ * downstream package's `dependencies` so visitors can verify the wiring at a
+ * glance.
  *
  * Two presentation modes:
  *  - `compact` — one-line horizontal strip (sticky-discreet, intended for
@@ -26,15 +27,16 @@
     'use strict';
 
     var NPM = 'https://registry.npmjs.org/';
-    var PKGS = ['pdfnative', 'pdfnative-cli', 'pdfnative-mcp'];
+    var PKGS = ['pdfnative', 'pdfnative-cli', 'pdfnative-mcp', 'pdfnative-react'];
     // Static fallbacks used only when the registry is unreachable. The live
     // npm widget is the single source of truth for displayed versions across
     // the whole site; these mirror the latest published releases so an offline
     // visitor still sees a sensible value. Bumped at every release.
     var FALLBACK = {
         'pdfnative': { version: '1.3.0', pin: null },
-        'pdfnative-cli': { version: '1.0.0', pin: '^1.3.0' },
-        'pdfnative-mcp': { version: '1.0.0', pin: '^1.3.0' }
+        'pdfnative-cli': { version: '1.1.0', pin: '^1.3.0' },
+        'pdfnative-mcp': { version: '1.0.0', pin: '^1.2.0' },
+        'pdfnative-react': { version: '0.2.0', pin: '^1.3.0' }
     };
 
     function el(tag, attrs, kids) {
@@ -68,6 +70,7 @@
         host.setAttribute('data-pdfnative-version', results['pdfnative'].version);
         host.setAttribute('data-pdfnative-cli-version', results['pdfnative-cli'].version);
         host.setAttribute('data-pdfnative-mcp-version', results['pdfnative-mcp'].version);
+        host.setAttribute('data-pdfnative-react-version', results['pdfnative-react'].version);
     }
 
     /** Compact one-line strip fetched live from npm, e.g. `Live npm: pdfnative vX.Y.Z · cli vX.Y.Z (→ ^X.Y.Z) · mcp vX.Y.Z (→ ^X.Y.Z)`. */

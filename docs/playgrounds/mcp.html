@@ -4,9 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCP Tool Explorer — pdfnative-mcp playground</title>
-  <meta name="description" content="Interactive explorer for the pdfnative-mcp tools (incl. inspect_pdf). Browse the JSON schemas, see real example prompts, and generate the same PDFs an AI assistant would receive — directly in your browser. Zero install, zero secrets.">
+  <meta name="description" content="Interactive explorer for the pdfnative-mcp v1.0.0 tools (12 total — incl. inspect_pdf, verify_pdf, add_attachment, extract_text). Browse the JSON schemas, see real example prompts, and generate the same PDFs an AI assistant would receive — directly in your browser. Zero install, zero secrets.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/mcp.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/mcp.html">
+  <meta property="og:title" content="MCP Tool Explorer — pdfnative-mcp playground">
+  <meta property="og:description" content="Interactive explorer for the pdfnative-mcp v1.0.0 tools (12 total — incl. inspect_pdf, verify_pdf, add_attachment, extract_text). Browse the JSON schemas, see example prompts, and generate PDFs in your browser. Zero install, zero secrets.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MCP Tool Explorer — pdfnative-mcp playground">
+  <meta name="twitter:description" content="Browse the 12 pdfnative-mcp tool schemas, see example prompts, and generate PDFs in your browser. Zero install, zero secrets.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
@@ -57,6 +69,7 @@
       <li><a href="../#demo">Demo</a></li>
       <li><a href="../#mcp">MCP</a></li>
       <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
       <li><a href="../guides/">Guides</a></li>
       <li><a href="./">Playgrounds</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
@@ -77,11 +90,12 @@
     <a href="./medical-800.html">Medical 800-page</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html" aria-current="page">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
-    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <code>inspect_pdf</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, and per-tool <code>outputSchema</code> (MCP 2025-06-18). Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
+    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> v1.0.0 into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>12 tools</strong> — including <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> (Factur-X / ZUGFeRD PDF/A-3), and <code>extract_text</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
 
     <section id="pdfnative-versions" class="pn-versions" aria-label="Live package versions"></section>
 
@@ -100,8 +114,9 @@
       <p style="font-size: 13px; color: var(--c-text-dim); margin-top: 10px;"><strong>Other clients:</strong> any tool that speaks the <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> over stdio works — Cline, Windsurf, Goose, Aider, LibreChat, Sourcegraph Cody, Gemini CLI, and your own custom client. Use the same <code>command: "npx"</code> / <code>args: ["-y", "pdfnative-mcp"]</code> pair in whatever JSON shape your client expects.</p>
     </div>
 
-    <h2 style="margin-top: 36px;">2. Try the 9 tools</h2>
+    <h2 style="margin-top: 36px;">2. Try the tools</h2>
     <p id="loader-status" style="font-size: 13px; color: var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once per page load.</p>
+    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools. v1.0.0 adds three more that need local files or a real PDF to act on — <code>verify_pdf</code> (CMS + PAdES-T verification), <code>add_attachment</code> (Factur-X / ZUGFeRD into PDF/A-3), and <code>extract_text</code> — so they run best from your own MCP client. See the <a href="../guides/mcp.html">MCP guide</a> for their schemas.</p>
 
     <div class="mcp-cards" id="cards"></div>
 

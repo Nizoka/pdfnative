@@ -4,9 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLI Command Builder — pdfnative-cli playground</title>
-  <meta name="description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, and verify invocations with full flag coverage. ECDSA-SHA256, RFC 3161 detection, --watch, --template, --font. Live shell preview, copy-to-clipboard, validation. Zero install.">
+  <meta name="description" content="Interactive command-builder for pdfnative-cli v1.1.0 — assemble render, sign, inspect, verify, batch, and schema invocations with full flag coverage. ECDSA-SHA256, PAdES-T + OCSP/CRL, --stream-true, --watch, --template, --font. Live shell preview, copy-to-clipboard, validation. Zero install.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/cli.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/cli.html">
+  <meta property="og:title" content="CLI Command Builder — pdfnative-cli playground">
+  <meta property="og:description" content="Interactive command-builder for pdfnative-cli v1.1.0 — assemble render, sign, inspect, verify, batch, and schema invocations with full flag coverage. Live shell preview, copy-to-clipboard, validation. Zero install.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CLI Command Builder — pdfnative-cli playground">
+  <meta name="twitter:description" content="Assemble render, sign, inspect, verify, batch, and schema commands with full flag coverage. Live shell preview. Zero install.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
@@ -62,6 +74,7 @@
       <li><a href="../#demo">Demo</a></li>
       <li><a href="../#mcp">MCP</a></li>
       <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
       <li><a href="../guides/">Guides</a></li>
       <li><a href="./">Playgrounds</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
@@ -82,6 +95,7 @@
     <a href="./medical-800.html">Medical 800-page</a>
     <a href="./cli.html" aria-current="page">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
@@ -416,7 +430,7 @@
           <span class="hint">Trust-anchor PEMs. Repeatable.</span>
         </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Scope: full CMS/PKCS#7 verification (RSA + ECDSA-SHA256), byte-range integrity (SHA-256), certificate chain, trust evaluation against <code>--trust</code> roots, and RFC 3161 timestamp <em>detection</em>. Out of scope (planned): TSA chain validation, OCSP/CRL revocation, LTV — see the <a href="../guides/cli.html">CLI guide</a>.</p>
+      <p class="hint" style="margin-top: 14px;">Scope (v1.1.0): full CMS/PKCS#7 verification (RSA + ECDSA-SHA256), byte-range integrity (SHA-256), certificate chain, trust evaluation against <code>--trust</code> roots, RFC 3161 timestamp validation (<strong>PAdES-T</strong>), and OCSP/CRL revocation checking via <code>--revocation</code> / <code>--revocation-policy</code>. See the <a href="../guides/cli.html">CLI guide</a>.</p>
     </section>
 
     <div class="cli-validation" id="validation"></div>
@@ -563,7 +577,7 @@
       const s = state.sign;
       if (!s['--input']) warns.push('`sign` requires `--input` (no stdin sentinel for binary signing).');
       if (s['--algorithm'] === 'ecdsa-sha256') {
-        warns.push('`--algorithm ecdsa-sha256` requires a P-256 (secp256r1) private key. Fully wired in v0.3.0.');
+        warns.push('`--algorithm ecdsa-sha256` requires a P-256 (secp256r1) private key. Fully wired in v1.1.0.');
       }
       if (s['--signing-time'] && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s['--signing-time'])) {
         errors.push('`--signing-time` must be ISO 8601 (e.g. `2026-04-28T10:00:00Z`).');
