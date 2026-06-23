@@ -107,7 +107,7 @@ The architecture diagram above shows the **internal library modules**. External 
    [shell / CI / Docker] │  pdfnative-cli (npm) — 6 commands           │
                          └─────────────────────────────────────────────┘
                          ┌─────────────────────────────────────────────┐
-   [Claude / Cursor / …] │  pdfnative-mcp (npm) — 12 AI tools          │
+    [Claude / Cursor / …] │  pdfnative-mcp (npm) — 14 AI tools          │
                          └─────────────────────────────────────────────┘
                          ┌─────────────────────────────────────────────┐
    [React / Next.js app] │  pdfnative-react (npm) — declarative JSX    │
@@ -138,13 +138,13 @@ Like `pdfnative-mcp` and `pdfnative-react`, the CLI lives in a separate reposito
 
 ### pdfnative-mcp
 
-[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.0.0 is a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 12 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …). Built on `pdfnative` 1.2.0, it commits to API stability via a per-tool `_meta.apiVersion` field.
+[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.2.0 is a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 14 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …). Built on `pdfnative` 1.3.0, it commits to API stability via a per-tool `_meta.apiVersion` field.
 
 ```
 [Claude Desktop / Cursor / Continue / Zed]
               │ MCP stdio protocol
      ┌──────────────────────────┐
-     │  pdfnative-mcp (npm)     │  ← MCP server, 12 tools
+      │  pdfnative-mcp (npm)     │  ← MCP server, 14 tools
      └──────────────────────────┘
               │ import { buildDocumentPDFBytes, … } from 'pdfnative'
      ┌──────────────────────────┐
