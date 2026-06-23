@@ -84,7 +84,7 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) §Archite
 ## Ecosystem context
 
 - [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) v1.1.0 — terminal wrapper (render, sign, inspect, verify, batch, schema). Built on pdfnative 1.3.0. Coordinates via explicit pdfnative version pin in its `package.json`.
-- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.0.0 — Model Context Protocol server exposing 12 AI tools. Same coordination model.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.2.0 — Model Context Protocol server exposing 14 AI tools (including `validate_pdf` and `extract_attachments`). Built on pdfnative 1.3.0. Same coordination model.
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react) v0.2.0 — React renderer: declarative JSX compiled on-device to pdfnative blocks via a custom reconciler. React 19 is a peer dependency of *that* package only — pdfnative itself stays zero-dependency. Same coordination model.
 
 Downstream-impacting changes (new public APIs, removed APIs, behaviour shifts) must be documented in the **Downstream integration notes** section of the relevant `release-notes/vX.Y.Z.md`.

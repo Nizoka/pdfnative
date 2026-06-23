@@ -80,9 +80,9 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#mcp",
         "name": "pdfnative-mcp",
-        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 12 tools, per-tool apiVersion, PDF/A flag.",
+        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 14 tools, per-tool apiVersion, PDF/A flag.",
         "url": "https://github.com/Nizoka/pdfnative-mcp",
-        "softwareVersion": "1.0.0",
+        "softwareVersion": "1.2.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -253,7 +253,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-mcp"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M15 8h2M11 8h2"/></svg></div>
         <h3>AI Integration — MCP</h3>
-        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. <strong>12 production tools</strong> incl. <code>verify_pdf</code>, <code>add_attachment</code> (Factur-X / ZUGFeRD), <code>extract_text</code>, <code>pdfA</code> flag everywhere, MCP 2025-06-18 <code>outputSchema</code>. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
+        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. <strong>14 production tools</strong> incl. <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, <code>pdfA</code> flag everywhere, and token-frugal read modes. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
       </div>
 
       <div class="feature-card">
@@ -424,7 +424,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
         <a class="ob-link" href="guides/cli.html">CLI guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>MCP <span class="ob-badge" data-pn-badge="pdfnative-mcp">v1.0.0</span></h3>
+        <h3>MCP <span class="ob-badge" data-pn-badge="pdfnative-mcp">v1.2.0</span></h3>
         <p class="ob-tag">For Claude Desktop, Cursor, Continue, Zed, …</p>
 <pre><code class="language-json">{
   "mcpServers": {
@@ -693,10 +693,10 @@ const pdf = renderToBytes(
 <section class="section section-alt" id="mcp">
   <div class="container">
     <h2 class="section-title">Use pdfnative from Any AI Client</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with <code>verify_pdf</code>, <code>add_attachment</code> (Factur-X / ZUGFeRD), <code>extract_text</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and per-tool <code>outputSchema</code> (MCP 2025-06-18 spec).</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and token-frugal read modes.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>12 Production Tools</h3>
+        <h3>14 Production Tools</h3>
         <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
@@ -710,9 +710,11 @@ const pdf = renderToBytes(
             <tr><td><code>prepare_signature_placeholder</code></td><td>PDF with <code>/Sig</code> field ready to sign</td></tr>
             <tr><td><code>sign_pdf</code></td><td>CMS/PKCS#7 signatures (RSA &amp; ECDSA)</td></tr>
             <tr><td><code>inspect_pdf</code></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; optional CI-style <code>check: ('pdfa'|'signed'|'encrypted')[]</code>.</td></tr>
-            <tr><td><code>verify_pdf</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain, RFC 3161 timestamp detection.</td></tr>
-            <tr><td><code>add_attachment</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Embed files (Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output.</td></tr>
-            <tr><td><code>extract_text</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Extract text content from an existing PDF via the native parser.</td></tr>
+            <tr><td><code>validate_pdf</code></td><td>Read-only PDF/UA structural validation (<code>valid</code>, <code>errors</code>, <code>warnings</code>).</td></tr>
+            <tr><td><code>verify_pdf</code></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain, RFC 3161 timestamp detection (v1.0.0).</td></tr>
+            <tr><td><code>add_attachment</code></td><td>Embed files (Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output (v1.0.0).</td></tr>
+            <tr><td><code>extract_attachments</code></td><td>Extract embedded files from existing PDFs (metadata-only mode available, v1.2.0).</td></tr>
+            <tr><td><code>extract_text</code></td><td>Extract text content from an existing PDF via the native parser (v1.0.0).</td></tr>
           </tbody>
         </table>
         </div>

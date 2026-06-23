@@ -24,7 +24,7 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 |---|:---:|---|
 | [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.3.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
 | [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.1.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256), inspect, verify (PAdES-T + OCSP/CRL), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.3.0: 22 scripts + COLRv1 emoji, `--stream-true`, `--max-blocks`, `inspect --pdfua`, and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
-| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.0.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **12 structured tools** including `verify_pdf`, `add_attachment` (Factur-X / ZUGFeRD), and `extract_text`, a `pdfA` flag on every doc tool, per-tool `_meta.apiVersion`, and an opt-in result cache. |
+| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.2.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **14 production tools** including `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; plus watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, and per-tool `_meta.apiVersion`. Built on pdfnative 1.3.0. |
 | [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v0.2.0** | Write PDFs as declarative JSX — `<Document>`, `<Table>`, `<Barcode>`… compiled on-device to pdfnative blocks by a custom React reconciler. Render hooks (`usePdf`), client components (`PDFViewer`), and a token-frugal `DocSpec` for AI agents. |
 
 ```bash
@@ -70,7 +70,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
-- **AI client integration** — use pdfnative from Claude Desktop, Cursor, Continue, and Zed via [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) — **12 structured tools** (generate, tables, barcodes, forms, sign, verify, attachments, text extraction, inspect)
+- **AI client integration** — use pdfnative from Claude Desktop, Cursor, Continue, and Zed via [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) — **14 production tools** (generate, tables, barcodes, forms, sign, verify, validate, attachments, extraction, inspect)
 - **Command-line interface** — render, sign, verify, inspect, and batch-render PDFs from the shell with [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) — zero-config, scriptable, agent-native (`--json`/`E_*`/`--dry-run`), ideal for CI/CD pipelines
 - **React renderer** — author PDFs as declarative JSX with [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react): `<Document>`/`<Table>`/`<Barcode>` components, `usePdf`/`PDFViewer` client hooks, on-device rendering with no DOM or headless browser
 
@@ -900,9 +900,13 @@ See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v1.1.0 r
 
 ### pdfnative-mcp — Model Context Protocol server
 
-[`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) v1.0.0 is a **Model Context Protocol server** that bridges pdfnative to any MCP-compatible AI client. Once configured, your AI assistant can generate PDFs, embed barcodes, create forms, sign **and verify** documents, embed files, extract text, render international text, and **inspect** existing PDFs — all without writing code.
+[`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) v1.2.0 is a **Model Context Protocol server** that bridges pdfnative to any MCP-compatible AI client. Once configured, your AI assistant can generate PDFs, embed barcodes, create forms, sign and verify documents, validate PDF/UA structure, embed and extract attachments, extract text, render international text, and inspect existing PDFs — all without writing code.
 
-**New in v1.0.0:** three new tools (`verify_pdf`, `add_attachment` for Factur-X / ZUGFeRD PDF/A-3, `extract_text`), smart-table fields on `add_table` (`wrap`, `repeatHeader`, `zebra`, `caption`, `minRowHeight`, `cellPadding`), ECDSA + auto-placeholder signing, an opt-in content-addressed result cache, and a per-tool `_meta.apiVersion` stability anchor. Tool count: **12** (was 9).
+**v1.0.0:** first stable MCP release with 12 tools, `verify_pdf`, `add_attachment` (Factur-X / ZUGFeRD PDF/A-3), `extract_text`, smart-table options, auto-placeholder signing, and `_meta.apiVersion`.
+
+**v1.1.0:** adds `validate_pdf`, six additional scripts (Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic), and COLRv1 colour-emoji support via the pdfnative 1.3.0 engine.
+
+**v1.2.0:** adds `extract_attachments`, watermark options on document tools, Unicode `normalize` (NFC/NFD/NFKC/NFKD), token-frugal read modes (`verbosity`/`fields`), and returns base64 PDF bytes once via a `resource` block.
 
 ```bash
 npx -y pdfnative-mcp
@@ -915,13 +919,15 @@ npx -y pdfnative-mcp
 | `generate_basic_pdf` | Multi-page documents from structured blocks (headings, paragraphs, lists) |
 | `add_table` | Smart tables (`wrap`, `repeatHeader`, `zebra`, `caption`, `minRowHeight`, `cellPadding`) |
 | `add_barcode` | QR Code, Code 128, EAN-13, Data Matrix, PDF417 |
-| `add_international_text` | 18 scripts (incl. Latin & Emoji) with BiDi & OpenType shaping |
+| `add_international_text` | 24 script/font codes (22 Unicode scripts + `latin` + `emoji`) with BiDi & OpenType shaping |
 | `add_form` | Interactive AcroForm PDFs (text, checkbox, radio, dropdown) |
 | `embed_image` | Embed a JPEG or PNG image (base64) |
 | `prepare_signature_placeholder` | PDF with a `/Sig` field ready to be signed |
 | `sign_pdf` | CMS/PKCS#7 digital signatures (RSA-SHA256 / ECDSA-SHA256) |
+| `validate_pdf` | **v1.1.0** — read-only PDF/UA structural validation |
 | `verify_pdf` | **v1.0.0** — verify every PAdES signature (integrity + value + optional chain trust) |
 | `add_attachment` | **v1.0.0** — PDF/A-3 with embedded files (Factur-X / ZUGFeRD) |
+| `extract_attachments` | **v1.2.0** — extract embedded files (optionally metadata-only) |
 | `extract_text` | **v1.0.0** — best-effort plain-text extraction from a non-encrypted PDF |
 | `inspect_pdf` | Structured PDF report (metadata, pages, signatures, PDF/A, attachments, placeholder state) |
 

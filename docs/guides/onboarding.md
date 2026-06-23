@@ -1,6 +1,6 @@
 # Onboarding — the pdfnative ecosystem in 90 seconds
 
-> **Tracks:** library · CLI · MCP · React
+> **Tracks:** pdfnative 1.3.0 · pdfnative-cli 1.1.0 · pdfnative-mcp 1.2.0 · pdfnative-react 0.2.0
 > **Pick your entry point:** the library for code, the CLI for shell scripts, MCP for AI assistants, and React for declarative JSX. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs from the same zero-dependency engine.
 
 ---
@@ -81,7 +81,7 @@ Then prompt your assistant:
 
 > *Create a PDF/A-2b invoice for ACME Inc, add a multilingual paragraph in Arabic, and sign it with my key.*
 
-The assistant calls `generate_basic_pdf` (with `pdfA: "pdfa2b"`), then `add_international_text` (with `lang: ["ar", "emoji"]`), `add_table`, `sign_pdf`, and finally `inspect_pdf` — confirming the result. v1.0.0 ships **12 tools** including `verify_pdf`, `add_attachment` (Factur-X / ZUGFeRD), and `extract_text`.
+The assistant calls `generate_basic_pdf` (with `pdfA: "pdfa2b"`), then `add_international_text` (with `lang: ["ar", "emoji"]`), `add_table`, `sign_pdf`, and finally `inspect_pdf` — confirming the result. v1.2.0 ships **14 tools**, including `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`.
 
 Next: [MCP guide →](mcp.html) · [MCP playground →](../playgrounds/mcp.html)
 

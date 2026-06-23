@@ -89,20 +89,28 @@
   // ── GitHub stars ──────────────────────────────────────────
   var starsEl = document.getElementById('stars-count');
   if (starsEl) {
-    var cached = null;
+    var hasValidCache = false;
     try {
       var raw = localStorage.getItem('gh-stars');
       if (raw) {
-        cached = JSON.parse(raw);
-        if (cached && Date.now() - cached.ts < 3600000) {
+        var cached = JSON.parse(raw);
+        if (
+          cached &&
+          typeof cached.count === 'number' &&
+          typeof cached.ts === 'number' &&
+          Date.now() - cached.ts < 3600000
+        ) {
           starsEl.textContent = formatNumber(cached.count);
+          hasValidCache = true;
         } else {
-          cached = null;
+          localStorage.removeItem('gh-stars');
         }
       }
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      try { localStorage.removeItem('gh-stars'); } catch (__){ /* ignore */ }
+    }
 
-    if (!cached) {
+    if (!hasValidCache) {
       fetch('https://api.github.com/repos/Nizoka/pdfnative', { headers: { Accept: 'application/vnd.github.v3+json' } })
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -113,11 +121,14 @@
             } catch (_) { /* ignore */ }
           }
         })
-        .catch(function () { /* silently fail — dash stays */ });
+        .catch(function (err) {
+          console.warn('GitHub stars fetch failed:', err);
+        });
     }
   }
 
   function formatNumber(n) {
+    if (typeof n !== 'number' || Number.isNaN(n)) return '—';
     if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     return String(n);
   }
