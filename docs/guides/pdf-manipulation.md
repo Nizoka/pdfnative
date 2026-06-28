@@ -110,6 +110,13 @@ directly with `node:fs` `writeFileSync`.
 - **Annotations are filtered to URI `/Link` only** during the rebuild (plus the
   full strip when `dropAnnotations` is set), so interactive form/JS annotations
   don't leak across documents.
+- **Bounded-depth copy.** The object-graph copy is capped at a fixed recursion
+  depth, so a pathologically nested or adversarial source can never overflow the
+  stack — it throws a descriptive error instead.
+- **Deterministic output.** Every result carries a content-addressed trailer
+  `/ID` (ISO 32000-1 §7.5.5) derived from the assembled bytes, so the same
+  inputs always produce a byte-identical PDF — friendly to caching, diffing, and
+  reproducible builds.
 - **Full rebuild, not in-place surgery.** The clean-graph approach trades a
   little speed for correctness and is safe to run on third-party PDFs.
 

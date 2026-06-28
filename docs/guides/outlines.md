@@ -54,19 +54,19 @@ import type { OutlineItem } from 'pdfnative';
 const outline: OutlineItem[] = [
   {
     title: 'Part I — Introduction',
-    page: 0,            // 0-based page index
+    pageIndex: 0,       // 0-based page index
     bold: true,
     children: [
-      { title: 'Background', page: 0 },
-      { title: 'Scope',      page: 1 },
+      { title: 'Background', pageIndex: 0 },
+      { title: 'Scope',      pageIndex: 1 },
     ],
   },
   {
     title: 'Part II — Results',
-    page: 2,
+    pageIndex: 2,
     color: [0.1, 0.3, 0.9], // RGB 0–1; also accepts '#1a4fd6'
     children: [
-      { title: 'Findings', page: 2, italic: true },
+      { title: 'Findings', pageIndex: 2, italic: true },
     ],
   },
 ];
@@ -75,15 +75,41 @@ const outline: OutlineItem[] = [
 | `OutlineItem` field | Type | Description |
 |---|---|---|
 | `title` | `string` | Bookmark label (encoded as PDF text, UTF-16BE when needed) |
-| `page` | `number` | 0-based page index to jump to |
+| `pageIndex` | `number` | 0-based page index to jump to |
 | `y` | `number?` | Optional vertical destination (PDF user units from the bottom); defaults to the top of the page |
 | `bold` | `boolean?` | Render the label bold (`/F` flag 2) |
 | `italic` | `boolean?` | Render the label italic (`/F` flag 1) |
 | `color` | `PdfColor?` | Label colour (`/C`) — `[r,g,b]` 0–1 or a hex string |
+| `open` | `boolean?` | Initial expansion state. `true` (default) renders the bookmark expanded; `false` renders it **collapsed** (negative `/Count`), hiding its children until the reader expands it. Only meaningful with `children`. |
 | `children` | `OutlineItem[]?` | Nested bookmarks |
 
 Destinations use `/XYZ` with the page's top-left as the default anchor, so the
 viewer scrolls the target page into view at 100 % zoom.
+
+### Collapsed bookmarks
+
+Deep hierarchies read better when some branches start collapsed. Set
+`open: false` on any item with children:
+
+```ts
+const outline: OutlineItem[] = [
+  { title: 'Front matter', pageIndex: 0 },
+  {
+    title: 'Appendices',
+    pageIndex: 12,
+    open: false,            // collapsed on open — children hidden until expanded
+    children: [
+      { title: 'Appendix A', pageIndex: 12 },
+      { title: 'Appendix B', pageIndex: 18 },
+    ],
+  },
+];
+```
+
+pdfnative emits the spec-correct signed `/Count` (ISO 32000-1 §12.3.3): a
+positive count for open items, a negative count for collapsed ones, and a
+collapsed node contributes only itself — not its hidden descendants — to its
+ancestors' visible counts.
 
 ## Page labels
 

@@ -98,6 +98,10 @@ await streamToFile(buildDocumentPDFStreamTrue(params), 'report.pdf', {
 }); // rejects with the abort reason; the partial file is closed
 ```
 
+On abort — or on any write error — `streamToFile` releases the file descriptor
+and **removes the partially-written file** (best-effort), so a cancelled or
+failed run never leaves an orphaned half-written PDF on disk.
+
 `streamToFile` is Node-only — it loads `node:fs` lazily via a dynamic import,
 so importing it in a browser or Deno bundle adds no static Node dependency. In
 non-Node runtimes, drive the generator yourself with the Web Streams snippet

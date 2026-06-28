@@ -16,15 +16,16 @@ Delivers the full v1.4.0 roadmap (document outline / bookmarks, page labels,
 manipulation API** (`mergePdfs` / `splitPdf` / `extractPages`) that unblocks
 `pdfnative-mcp`'s `merge_pdfs` / `split_pdf`, and **COLRv1 advanced
 compositing** (sweep gradients + `PaintComposite` blend modes). 100%
-backward-compatible. 77 test files / 2085 tests, all green. See full notes in
+backward-compatible. 77 test files / 2090 tests, all green. See full notes in
 [release-notes/v1.4.0.md](release-notes/v1.4.0.md).
 
 ### Added
 
 - **feat(core):** document outline / bookmarks. `DocumentParams.outline`
-  accepts a nested `OutlineItem[]` (with `bold`/`italic`/`color`) or `'auto'`
-  (derived from heading blocks, nested by level). Emits `/Outlines` +
-  `/PageMode /UseOutlines`. PDF/A-safe. New
+  accepts a nested `OutlineItem[]` (with `bold`/`italic`/`color`, and `open`
+  for collapsible nodes) or `'auto'` (derived from heading blocks, nested by
+  level). Emits `/Outlines` + `/PageMode /UseOutlines`; `open: false` produces a
+  spec-correct negative `/Count` (ISO 32000-1 §12.3.3). PDF/A-safe. New
   [src/core/pdf-outline.ts](src/core/pdf-outline.ts); `OutlineItem` exported.
 - **feat(core):** page labels. `DocumentParams.pageLabels` (`PageLabelRange[]`)
   builds the `/PageLabels` number tree (decimal / roman / Roman / alpha /
@@ -32,14 +33,17 @@ backward-compatible. 77 test files / 2085 tests, all green. See full notes in
   [src/core/pdf-page-labels.ts](src/core/pdf-page-labels.ts);
   `PageLabelRange` / `PageLabelStyle` exported.
 - **feat(stream):** `streamToFile(stream, path, { signal? })` writes any
-  streaming builder to disk in constant memory with back-pressure handling.
-  `node:fs` via dynamic + type-only import (browser-safe). Returns
+  streaming builder to disk in constant memory with back-pressure handling and
+  `AbortSignal` support; on abort/error it removes the partial file. `node:fs`
+  via dynamic + type-only import (browser-safe). Returns
   `StreamToFileResult`. ([src/core/pdf-stream-writer.ts](src/core/pdf-stream-writer.ts))
 - **feat(parser):** page-tree manipulation API — `mergePdfs()`, `splitPdf()`,
   `extractPages()` rebuild a fresh document by deep-copying each kept page's
   transitive object graph into a new object-number space. Rejects encrypted
   sources; drops signatures + `/AcroForm`; keeps self-contained URI `/Link`
-  annotations. Unblocks `pdfnative-mcp` `merge_pdfs` / `split_pdf`. New
+  annotations; bounded-depth copy (stack-overflow hardening); deterministic
+  content-addressed trailer `/ID` (ISO 32000-1 §7.5.5). Unblocks `pdfnative-mcp`
+  `merge_pdfs` / `split_pdf`. New
   [src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts);
   `PageRange` / `MergeOptions` exported.
 - **feat(colr):** COLRv1 advanced compositing. `PaintSweepGradient` (conic) →
@@ -54,7 +58,7 @@ backward-compatible. 77 test files / 2085 tests, all green. See full notes in
 
 ### Changed
 
-- Sample count 178 → 195; test suite 1982 → 2085 (71 → 77 files).
+- Sample count 178 → 195; test suite 1982 → 2090 (71 → 77 files).
 
 ## [1.3.0] – 2026-06-30
 
