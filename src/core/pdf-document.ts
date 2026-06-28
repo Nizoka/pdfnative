@@ -1332,6 +1332,7 @@ function mapOutlineItem(item: OutlineItem): OutlineRenderItem {
         y: item.y,
         bold: item.bold,
         italic: item.italic,
+        open: item.open,
         color: item.color !== undefined ? parseColor(item.color) : undefined,
         children: item.children ? item.children.map(mapOutlineItem) : undefined,
     };

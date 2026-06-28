@@ -65,6 +65,24 @@ describe('streamToFile', () => {
             streamToFile(buildDocumentPDFStreamTrue(params), file, { signal: ctrl.signal }),
         ).rejects.toThrow(/aborted/);
     });
+
+    it('removes the partial file when aborted mid-write', async () => {
+        const fs = await nodeFs();
+        const file = await tmpFile('abort-mid.pdf');
+        const ctrl = new AbortController();
+        async function* slow(): AsyncGenerator<Uint8Array> {
+            let n = 0;
+            for await (const c of buildDocumentPDFStreamTrue(params)) {
+                yield c;
+                if (++n === 1) ctrl.abort();
+            }
+        }
+        await expect(
+            streamToFile(slow(), file, { signal: ctrl.signal }),
+        ).rejects.toThrow(/aborted/);
+        // The half-written file must not be left behind.
+        expect(fs.existsSync(file)).toBe(false);
+    });
 });
 
 async function collect(stream: AsyncGenerator<Uint8Array>): Promise<Uint8Array[]> {

@@ -37,7 +37,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 children: [{ title: '1.1 Background', pageIndex: 1 }],
             },
             {
-                title: 'Chapter 2 — Methods', pageIndex: 2, bold: true, color: '#1a4fad',
+                // Collapsed on open: its child is hidden until the reader expands
+                // it (negative /Count). Demonstrates OutlineItem.open (v1.4.0).
+                title: 'Chapter 2 — Methods', pageIndex: 2, bold: true, color: '#1a4fad', open: false,
                 children: [{ title: '2.1 Apparatus', pageIndex: 2 }],
             },
         ];

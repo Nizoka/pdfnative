@@ -114,6 +114,48 @@ describe('buildOutlineObjects', () => {
         expect(built.objects[1][1]).toContain('/F 3');
         expect(built.objects[1][1]).toContain('/C [1 0 0]');
     });
+
+    it('emits a negative /Count for a collapsed node and hides its children from ancestors', () => {
+        const items = [
+            { title: 'Chapter', pageIndex: 0, open: false, children: [
+                { title: 'S1', pageIndex: 1 },
+                { title: 'S2', pageIndex: 2 },
+            ] },
+            { title: 'Appendix', pageIndex: 2 },
+        ];
+        const built = buildOutlineObjects(items, 40, pageObj, 700, fmt, 3);
+        // Chapter (objects[1]) collapsed with 2 children → /Count -2.
+        expect(built.objects[1][1]).toContain('/Count -2');
+        // Root: Chapter (children hidden) + Appendix → 2 visible items.
+        expect(built.objects[0][1]).toContain('/Count 2');
+    });
+
+    it('a collapsed intermediate node contributes only itself to an open ancestor', () => {
+        const items = [
+            { title: 'Top', pageIndex: 0, children: [
+                { title: 'Mid', pageIndex: 1, open: false, children: [
+                    { title: 'G1', pageIndex: 2 },
+                    { title: 'G2', pageIndex: 2 },
+                ] },
+            ] },
+        ];
+        const built = buildOutlineObjects(items, 50, pageObj, 700, fmt, 3);
+        // Top open: sees Mid only (grandchildren hidden under collapsed Mid) → +1.
+        expect(built.objects[1][1]).toContain('/Count 1');
+        // Mid collapsed with 2 grandchildren → -2.
+        expect(built.objects[2][1]).toContain('/Count -2');
+        // Root: Top + Mid visible, grandchildren hidden → 2.
+        expect(built.objects[0][1]).toContain('/Count 2');
+    });
+
+    it('defaults to open (positive /Count) when `open` is omitted', () => {
+        const items = [
+            { title: 'P', pageIndex: 0, children: [{ title: 'C', pageIndex: 1 }] },
+        ];
+        const built = buildOutlineObjects(items, 60, pageObj, 700, fmt, 2);
+        expect(built.objects[1][1]).toContain('/Count 1');
+        expect(built.objects[1][1]).not.toContain('/Count -');
+    });
 });
 
 // ── Integration ──────────────────────────────────────────────────────

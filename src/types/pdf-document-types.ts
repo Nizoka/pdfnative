@@ -295,6 +295,13 @@ export interface OutlineItem {
     readonly italic?: boolean;
     /** Label colour (`/C`). Accepts hex, RGB tuple, or PDF operator string. */
     readonly color?: PdfColor;
+    /**
+     * Initial expansion state. `true` (default) renders the bookmark expanded
+     * (positive `/Count`); `false` renders it collapsed (negative `/Count`),
+     * hiding its children until the reader expands it. Only meaningful when the
+     * item has `children`.
+     */
+    readonly open?: boolean;
     /** Nested child bookmarks. */
     readonly children?: readonly OutlineItem[];
 }

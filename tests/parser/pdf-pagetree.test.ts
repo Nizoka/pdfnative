@@ -67,6 +67,21 @@ describe('mergePdfs', () => {
         expect(r.trailer.get('Encrypt')).toBeUndefined();
         expect(r.getCatalog().get('AcroForm')).toBeUndefined();
     });
+
+    it('emits a deterministic trailer /ID (ISO 32000-1 §7.5.5)', () => {
+        const a = doc('A', 2);
+        const b = doc('B', 1);
+        const first = mergePdfs([a, b]);
+        const second = mergePdfs([a, b]);
+        // /ID is present and well-formed: two equal 16-byte hex strings.
+        const text = (() => { let s = ''; for (let i = 0; i < first.length; i++) s += String.fromCharCode(first[i]); return s; })();
+        const m = text.match(/\/ID \[<([0-9a-f]{32})> <([0-9a-f]{32})>\]/);
+        expect(m).not.toBeNull();
+        expect(m![1]).toBe(m![2]);
+        // Same inputs → byte-identical output (deterministic).
+        expect(first.length).toBe(second.length);
+        for (let i = 0; i < first.length; i++) expect(first[i]).toBe(second[i]);
+    });
 });
 
 // ── extractPages ─────────────────────────────────────────────────────

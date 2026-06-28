@@ -501,9 +501,24 @@ export async function streamToFile(
             }
         }
 
+        // A late abort (e.g. after the final chunk) must surface as an abort,
+        // not as a downstream "stream destroyed" error from end().
+        if (signal?.aborted) throw new Error('streamToFile aborted');
+
         await new Promise<void>((resolve, reject) => {
             ws.end((err?: Error | null) => (err ? reject(err) : resolve()));
         });
+    } catch (err) {
+        // Best-effort: release the file descriptor, then remove the
+        // partially-written file so an aborted or failed write never leaves an
+        // orphaned partial PDF on disk.
+        await new Promise<void>((resolve) => {
+            if (ws.closed) { resolve(); return; }
+            ws.once('close', () => resolve());
+            ws.destroy();
+        });
+        try { fs.rmSync(filePath, { force: true }); } catch { /* best-effort cleanup */ }
+        throw err;
     } finally {
         signal?.removeEventListener('abort', onAbort);
     }

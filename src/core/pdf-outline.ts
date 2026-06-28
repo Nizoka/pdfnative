@@ -28,6 +28,8 @@ export interface OutlineRenderItem {
     readonly bold?: boolean;
     readonly italic?: boolean;
     readonly color?: string;
+    /** Render expanded (`true`, default) or collapsed (`false`, negative `/Count`). */
+    readonly open?: boolean;
     readonly children?: readonly OutlineRenderItem[];
 }
 
@@ -50,8 +52,10 @@ interface FlatNode {
     lastChildObjNum: number;
     prevObjNum: number;
     nextObjNum: number;
-    /** Count of visible (open) descendants — always expanded in this build. */
-    descendantCount: number;
+    /** Magnitude of `/Count`: descendants visible when THIS node is open. */
+    openDescendantCount: number;
+    /** Whether this node renders expanded (`true`) or collapsed (`false`). */
+    open: boolean;
 }
 
 /**
@@ -89,6 +93,7 @@ export function buildOutlineObjects(
         const siblingNodes: FlatNode[] = [];
         for (const item of list) {
             const objNum = nextObj++;
+            const open = item.open !== false;
             const node: FlatNode = {
                 item,
                 objNum,
@@ -98,7 +103,8 @@ export function buildOutlineObjects(
                 lastChildObjNum: 0,
                 prevObjNum: prev,
                 nextObjNum: 0,
-                descendantCount: 0,
+                openDescendantCount: 0,
+                open,
             };
             if (prev !== 0) {
                 const prevNode = siblingNodes[siblingNodes.length - 1];
@@ -109,6 +115,7 @@ export function buildOutlineObjects(
             if (first === 0) first = objNum;
             last = objNum;
             prev = objNum;
+            // This node is itself visible (its parent is open by construction).
             visibleCount++;
 
             const children = item.children;
@@ -116,8 +123,9 @@ export function buildOutlineObjects(
                 const sub = alloc(children, objNum, depth + 1);
                 node.firstChildObjNum = sub.first;
                 node.lastChildObjNum = sub.last;
-                node.descendantCount = sub.visibleCount;
-                visibleCount += sub.visibleCount;
+                node.openDescendantCount = sub.visibleCount;
+                // Collapsed nodes hide their descendants from the parent's count.
+                if (open) visibleCount += sub.visibleCount;
             }
         }
         return { first, last, visibleCount };
@@ -148,8 +156,10 @@ export function buildOutlineObjects(
         if (node.firstChildObjNum !== 0) {
             parts.push(`/First ${node.firstChildObjNum} 0 R`);
             parts.push(`/Last ${node.lastChildObjNum} 0 R`);
-            // Positive count = open (expanded). All nodes are open in this build.
-            parts.push(`/Count ${node.descendantCount}`);
+            // Positive count = open (expanded); negative = closed (collapsed).
+            // Magnitude is the number of descendants visible when open.
+            const count = node.open ? node.openDescendantCount : -node.openDescendantCount;
+            parts.push(`/Count ${count}`);
         }
         parts.push(`/Dest [${pageObj} 0 R /XYZ 0 ${fmtNum(y)} null]`);
         const flags = (it.bold ? 2 : 0) | (it.italic ? 1 : 0);

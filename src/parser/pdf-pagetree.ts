@@ -34,6 +34,7 @@ import {
     isRef, isName, isDict, isArray, isStream, dictGetName,
 } from './pdf-object-parser.js';
 import type { PdfValue, PdfDict, PdfStream } from './pdf-object-parser.js';
+import { md5 } from '../core/pdf-encrypt.js';
 
 // ── Public types ─────────────────────────────────────────────────────
 
@@ -59,6 +60,13 @@ export interface MergeOptions {
 const MAX_MERGE_SOURCES = 50;
 const DEFAULT_MEDIA_BOX = '[0 0 612 792]'; // US Letter fallback
 const INHERITABLE_KEYS = ['MediaBox', 'CropBox', 'Rotate'] as const;
+/**
+ * Maximum object-graph traversal depth during a copy. Guards against stack
+ * overflow from pathologically deep nesting or long indirect-reference chains
+ * in a malformed/adversarial source (the parser caps per-object nesting at
+ * 1000; this bounds the combined ref-hop + nesting recursion).
+ */
+const MAX_COPY_DEPTH = 2000;
 
 // ── Public API ───────────────────────────────────────────────────────
 
@@ -275,7 +283,7 @@ function filterAnnotations(ctx: CopyCtx, reader: PdfReader, page: PdfDict): stri
  * Memoised per source so shared objects are copied once. Cycle-safe: the new
  * number is reserved before the body is serialized.
  */
-function copyObject(ctx: CopyCtx, reader: PdfReader, srcNum: number, srcGen: number): number {
+function copyObject(ctx: CopyCtx, reader: PdfReader, srcNum: number, srcGen: number, depth = 0): number {
     const memo = memoFor(ctx, reader);
     const existing = memo.get(srcNum);
     if (existing !== undefined) return existing;
@@ -285,40 +293,45 @@ function copyObject(ctx: CopyCtx, reader: PdfReader, srcNum: number, srcGen: num
 
     const resolved = reader.resolve({ type: 'ref', num: srcNum, gen: srcGen });
     if (isStream(resolved)) {
-        ctx.bodies.set(newNum, serializeStreamBody(ctx, reader, resolved));
+        ctx.bodies.set(newNum, serializeStreamBody(ctx, reader, resolved, depth));
     } else {
-        ctx.bodies.set(newNum, serializeValue(rewrite(ctx, reader, resolved)));
+        ctx.bodies.set(newNum, serializeValue(rewrite(ctx, reader, resolved, depth)));
     }
     return newNum;
 }
 
 /** Rewrite a value, replacing every indirect reference with a copied one. */
-function rewrite(ctx: CopyCtx, reader: PdfReader, val: PdfValue): PdfValue {
+function rewrite(ctx: CopyCtx, reader: PdfReader, val: PdfValue, depth = 0): PdfValue {
+    if (depth > MAX_COPY_DEPTH) {
+        throw new Error(
+            `page-tree copy exceeded maximum object nesting depth (${MAX_COPY_DEPTH}) — malformed or adversarial PDF`,
+        );
+    }
     if (isRef(val)) {
         const entry = reader.xref.entries.get(val.num);
         if (!entry || entry.type === 0) return null; // dangling → null (safe)
-        const newNum = copyObject(ctx, reader, val.num, val.gen);
+        const newNum = copyObject(ctx, reader, val.num, val.gen, depth + 1);
         return { type: 'ref', num: newNum, gen: 0 };
     }
-    if (isArray(val)) return val.map(v => rewrite(ctx, reader, v));
+    if (isArray(val)) return val.map(v => rewrite(ctx, reader, v, depth + 1));
     if (isStream(val)) {
         // Inline streams cannot exist; streams are always indirect. Defensive.
         return val;
     }
     if (isDict(val)) {
         const out: PdfDict = new Map();
-        for (const [k, v] of val) out.set(k, rewrite(ctx, reader, v));
+        for (const [k, v] of val) out.set(k, rewrite(ctx, reader, v, depth + 1));
         return out;
     }
     return val;
 }
 
 /** Serialize a stream object body: dict (with corrected /Length) + raw data. */
-function serializeStreamBody(ctx: CopyCtx, reader: PdfReader, stream: PdfStream): string {
+function serializeStreamBody(ctx: CopyCtx, reader: PdfReader, stream: PdfStream, depth = 0): string {
     const dict: PdfDict = new Map();
     for (const [k, v] of stream.dict) {
         if (k === 'Length') continue; // recomputed below
-        dict.set(k, rewrite(ctx, reader, v));
+        dict.set(k, rewrite(ctx, reader, v, depth + 1));
     }
     dict.set('Length', stream.data.length);
     let body = serializeDict(dict);
@@ -395,11 +408,28 @@ function serializeDocument(ctx: CopyCtx): Uint8Array {
     }
     push(xref);
 
-    push(`trailer\n<< /Size ${size} /Root 1 0 R >>\n`);
+    // Deterministic /ID (ISO 32000-1 §7.5.5): content-addressed MD5 of the
+    // assembled body. Same input → same ID, so re-running merge is byte-stable.
+    const id = bytesToHex(md5(latin1ToBytes(parts.join(''))));
+    push(`trailer\n<< /Size ${size} /Root 1 0 R /ID [<${id}> <${id}>] >>\n`);
     push(`startxref\n${xrefOffset}\n%%EOF\n`);
 
     const full = parts.join('');
     const out = new Uint8Array(full.length);
     for (let i = 0; i < full.length; i++) out[i] = full.charCodeAt(i) & 0xff;
     return out;
+}
+
+/** Convert a Latin-1 binary string to its byte array (for hashing). */
+function latin1ToBytes(s: string): Uint8Array {
+    const out = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
+    return out;
+}
+
+/** Lowercase hex encoding of a byte array. */
+function bytesToHex(bytes: Uint8Array): string {
+    let s = '';
+    for (let i = 0; i < bytes.length; i++) s += bytes[i].toString(16).padStart(2, '0');
+    return s;
 }
