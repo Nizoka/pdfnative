@@ -92,6 +92,9 @@ export type {
     DocumentBlock,
     DocumentMetadata,
     DocumentParams,
+    OutlineItem,
+    PageLabelRange,
+    PageLabelStyle,
 } from './types/pdf-document-types.js';
 
 // ── Core — PDF Builder ──────────────────────────────────────────────

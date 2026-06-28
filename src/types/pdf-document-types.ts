@@ -9,6 +9,7 @@ import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor } from '.
 import type { BarcodeFormat, QRErrorLevel } from '../core/pdf-barcode.js';
 import type { SvgRenderOptions } from '../core/pdf-svg.js';
 import type { FormFieldType } from '../core/pdf-form.js';
+import type { PageLabelRange } from '../core/pdf-page-labels.js';
 
 // ── Block Types ──────────────────────────────────────────────────────
 
@@ -273,6 +274,32 @@ export interface DocumentMetadata {
 }
 
 /**
+ * A document outline (bookmark) entry — ISO 32000-1 §12.3.3.
+ *
+ * Outline items form a navigable tree shown in a viewer's bookmarks
+ * panel. Each item points at a 0-based page index and may nest children.
+ * Bookmarks are purely navigational and PDF/A-safe.
+ *
+ * @since 1.4.0
+ */
+export interface OutlineItem {
+    /** Bookmark label (UTF-16BE encoded automatically). */
+    readonly title: string;
+    /** 0-based destination page index. */
+    readonly pageIndex: number;
+    /** Destination Y coordinate in points (default: top of page). */
+    readonly y?: number;
+    /** Render the label bold (`/F` flag bit 2). */
+    readonly bold?: boolean;
+    /** Render the label italic (`/F` flag bit 1). */
+    readonly italic?: boolean;
+    /** Label colour (`/C`). Accepts hex, RGB tuple, or PDF operator string. */
+    readonly color?: PdfColor;
+    /** Nested child bookmarks. */
+    readonly children?: readonly OutlineItem[];
+}
+
+/**
  * Parameters for the free-form document PDF builder.
  *
  * @example
@@ -295,4 +322,26 @@ export interface DocumentParams {
     readonly fontEntries?: readonly FontEntry[];
     readonly metadata?: DocumentMetadata;
     readonly layout?: Partial<PdfLayoutOptions>;
+    /**
+     * Document outline / bookmarks (ISO 32000-1 §12.3.3).
+     *
+     * - An array of {@link OutlineItem}s builds an explicit bookmark tree.
+     * - The literal `'auto'` derives a flat outline from every `heading`
+     *   block in document order, using each heading's page and position.
+     *
+     * Adds `/Outlines` + `/PageMode /UseOutlines` to the catalog. PDF/A-safe.
+     *
+     * @since 1.4.0
+     */
+    readonly outline?: readonly OutlineItem[] | 'auto';
+    /**
+     * Page labels (ISO 32000-1 §12.4.2) — controls the page numbering shown
+     * in a viewer's page box and thumbnails (e.g. roman front matter then
+     * decimal body). Emitted as an inline `/PageLabels` number tree. PDF/A-safe.
+     *
+     * @since 1.4.0
+     */
+    readonly pageLabels?: readonly PageLabelRange[];
 }
+
+export type { PageLabelRange, PageLabelStyle } from '../core/pdf-page-labels.js';
