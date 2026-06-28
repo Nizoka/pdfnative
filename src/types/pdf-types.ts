@@ -87,8 +87,27 @@ export interface RadialGradientPaint {
     readonly extend: GradientExtend;
 }
 
+/**
+ * A sweep (conic/angular) gradient fill (COLR PaintSweepGradient).
+ *
+ * PDF has no native conic shading, so the renderer approximates it as a fan
+ * of flat-colour triangular wedges clipped to the glyph outline — pure path
+ * operators, no shading resource. Angles are in counter-clockwise degrees
+ * from the positive x-axis.
+ *
+ * @since 1.4.0
+ */
+export interface SweepGradientPaint {
+    readonly kind: 'sweep';
+    readonly center: readonly [number, number];
+    readonly startAngle: number;
+    readonly endAngle: number;
+    readonly stops: readonly ColorStop[];
+    readonly extend: GradientExtend;
+}
+
 /** A paint used to fill a colour-glyph layer. */
-export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint;
+export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint | SweepGradientPaint;
 
 /** A single colour-glyph layer: a base outline filled by a paint. */
 export interface ColorLayer {
@@ -103,6 +122,17 @@ export interface ColorLayer {
      * absent.
      */
     readonly transform?: readonly [number, number, number, number, number, number];
+    /**
+     * Optional PDF blend mode name (`/BM`) for this layer, flattened from a
+     * COLRv1 `PaintComposite` whose composite mode maps to a separable or
+     * non-separable PDF blend mode (e.g. `Multiply`, `Screen`, `Overlay`,
+     * `Darken`, `Lighten`, `Difference`, `Hue`, `Luminosity`). Absent =
+     * `Normal`. Porter-Duff structural modes (Clear/Src/Dest/Xor) are not
+     * mapped — those glyphs fall back to the monochrome font instead.
+     *
+     * @since 1.4.0
+     */
+    readonly blendMode?: string;
 }
 
 /** A resolved colour glyph: ordered layers painted back-to-front. */
