@@ -18,6 +18,8 @@ import { buildPDF, assembleTableParts } from './pdf-builder.js';
 import { buildDocumentPDF, assembleDocumentParts } from './pdf-document.js';
 import type { PdfParams, PdfLayoutOptions } from '../types/pdf-types.js';
 import type { DocumentParams, DocumentBlock } from '../types/pdf-document-types.js';
+// Type-only import — erased at compile, keeps the browser bundle free of node:fs.
+import type * as NodeFs from 'node:fs';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -424,6 +426,89 @@ export async function streamByteLength(stream: AsyncGenerator<Uint8Array>): Prom
         total += chunk.length;
     }
     return total;
+}
+
+/** Result of {@link streamToFile}. */
+export interface StreamToFileResult {
+    /** Total number of bytes written to the file. */
+    readonly bytesWritten: number;
+    /** The path the stream was written to. */
+    readonly path: string;
+}
+
+/**
+ * Write a streaming PDF (any of the `streamPdf`/`buildPDFStream*` generators)
+ * directly to a file on disk in **constant memory**, honouring write
+ * back-pressure. Node.js-only convenience wrapper.
+ *
+ * The dependency on `node:fs` is loaded **dynamically** so this module stays
+ * tree-shakeable and bundler-safe for the browser; calling `streamToFile` in
+ * a non-Node environment throws a descriptive error.
+ *
+ * @example
+ * ```ts
+ * await streamToFile(streamDocumentPdf({ blocks }), './out.pdf');
+ * ```
+ *
+ * @param stream   An async generator of PDF byte chunks.
+ * @param filePath Destination path. The caller is responsible for validating
+ *                 untrusted paths (path traversal, allowed directories).
+ * @param opts     Optional `AbortSignal` to cancel mid-write.
+ * @returns Bytes written and the destination path.
+ * @since 1.4.0
+ */
+export async function streamToFile(
+    stream: AsyncGenerator<Uint8Array>,
+    filePath: string,
+    opts?: { readonly signal?: AbortSignal },
+): Promise<StreamToFileResult> {
+    let fs: typeof NodeFs;
+    try {
+        fs = await import('node:fs');
+    } catch {
+        throw new Error('streamToFile requires a Node.js environment (node:fs is unavailable)');
+    }
+
+    const signal = opts?.signal;
+    if (signal?.aborted) throw new Error('streamToFile aborted before start');
+
+    const ws = fs.createWriteStream(filePath);
+    let bytesWritten = 0;
+
+    const onAbort = (): void => {
+        ws.destroy(new Error('streamToFile aborted'));
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+
+    try {
+        await new Promise<void>((resolve, reject) => {
+            ws.on('error', reject);
+            ws.on('open', () => resolve());
+        });
+
+        for await (const chunk of stream) {
+            if (signal?.aborted) throw new Error('streamToFile aborted');
+            bytesWritten += chunk.length;
+            // Honour back-pressure: wait for 'drain' when the buffer is full.
+            const ok = ws.write(chunk);
+            if (!ok) {
+                await new Promise<void>((resolve, reject) => {
+                    const onErr = (e: Error): void => { ws.off('drain', onDrain); reject(e); };
+                    const onDrain = (): void => { ws.off('error', onErr); resolve(); };
+                    ws.once('drain', onDrain);
+                    ws.once('error', onErr);
+                });
+            }
+        }
+
+        await new Promise<void>((resolve, reject) => {
+            ws.end((err?: Error | null) => (err ? reject(err) : resolve()));
+        });
+    } finally {
+        signal?.removeEventListener('abort', onAbort);
+    }
+
+    return { bytesWritten, path: filePath };
 }
 
 // ── Internal ─────────────────────────────────────────────────────────

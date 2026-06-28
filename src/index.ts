@@ -154,13 +154,14 @@ export type { AddSignaturePlaceholderOptions } from './core/pdf-sig-placeholder.
 export { addSignaturePlaceholder } from './core/pdf-sig-placeholder.js';
 
 // ── Core — Streaming Output ─────────────────────────────────────────
-export type { StreamOptions } from './core/pdf-stream-writer.js';
+export type { StreamOptions, StreamToFileResult } from './core/pdf-stream-writer.js';
 export {
     validateDocumentStreamable, validateTableStreamable,
     chunkBinaryString, concatChunks, streamByteLength,
     buildDocumentPDFStream, buildPDFStream,
     buildDocumentPDFStreamPageByPage, buildPDFStreamPageByPage,
     buildDocumentPDFStreamTrue, buildPDFStreamTrue,
+    streamToFile,
 } from './core/pdf-stream-writer.js';
 
 // ── Crypto — Hashing, ASN.1, RSA, ECDSA, X.509, CMS ────────────────
