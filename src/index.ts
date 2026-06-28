@@ -254,6 +254,8 @@ export type { PdfReader } from './parser/pdf-reader.js';
 export { openPdf } from './parser/pdf-reader.js';
 export type { PdfModifier } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
+export type { PageRange, MergeOptions } from './parser/pdf-pagetree.js';
+export { mergePdfs, splitPdf, extractPages } from './parser/pdf-pagetree.js';
 export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
 export { validatePdfUA } from './parser/pdf-ua-validator.js';
 export {

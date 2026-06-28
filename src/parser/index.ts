@@ -30,3 +30,7 @@ export { openPdf } from './pdf-reader.js';
 // ── Modifier ────────────────────────────────────────────────────────
 export type { PdfModifier } from './pdf-modifier.js';
 export { createModifier } from './pdf-modifier.js';
+
+// ── Page-tree manipulation (merge / split / extract) ────────────────
+export type { PageRange, MergeOptions } from './pdf-pagetree.js';
+export { mergePdfs, splitPdf, extractPages } from './pdf-pagetree.js';
