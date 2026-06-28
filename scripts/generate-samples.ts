@@ -44,6 +44,8 @@ import { generate as generateEmoji } from './generators/emoji-showcase.js';
 import { generate as generateColorEmoji } from './generators/color-emoji-showcase.js';
 import { generate as generateCurrency } from './generators/currency-symbols.js';
 import { generate as generatePdfALatin } from './generators/pdfa-latin-embedding.js';
+import { generate as generateOutline } from './generators/outline-bookmarks.js';
+import { generate as generateManipulation } from './generators/pdf-manipulation.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -146,6 +148,12 @@ async function generateAll(): Promise<void> {
 
     // ── PDF/A Latin embedding (v1.1.0 — Noto Sans VF, issue #28) ─
     await generatePdfALatin(ctx);
+
+    // ── Outline/bookmarks + page labels (v1.4.0) ─────────────────
+    await generateOutline(ctx);
+
+    // ── Page-tree manipulation + streamToFile (v1.4.0) ───────────
+    await generateManipulation(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);
