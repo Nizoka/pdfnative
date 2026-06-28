@@ -45,7 +45,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
 - **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring, isolates (LRI/RLI/FSI/PDI), and explicit embeddings (LRE/RLE/LRO/RLO/PDF) including character-level X4–X5 overrides (v1.3.0)
 - **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` drive joiner classification across the Devanagari, Bengali, and Tamil shapers, fixing nukta+virama, half-form, eyelash-ra, and ya-phalaa edge cases (v1.3.0)
-- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset; solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). [Guide →](docs/guides/colour-emoji.md)
+- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset; solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. [Guide →](docs/guides/colour-emoji.md)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
 - **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments)
@@ -56,8 +56,9 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **SVG path rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators
 - **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7)
 - **Digital signatures** — CMS/PKCS#7 detached signatures with RSA + ECDSA, SHA-256/384/512, X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0)
-- **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. [Guide →](docs/guides/streaming.md)
-- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0)
+- **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. One-call `streamToFile()` drains any stream to disk with back-pressure and `AbortSignal` support (v1.4.0). [Guide →](docs/guides/streaming.md)
+- **Document outline & page labels** — nested bookmarks (`/Outlines` tree, with bold/italic/colour, explicit or `outline: 'auto'` from headings) and logical page numbering (`/PageLabels`: decimal, roman, alpha, prefixes, custom start) (v1.4.0). [Guide →](docs/guides/outlines.md)
+- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0). **Page-tree manipulation** (v1.4.0): `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a clean object graph (inherited attributes resolved, annotations/signatures optionally dropped). [Guide →](docs/guides/pdf-manipulation.md)
 - **Image embedding** — JPEG (DCTDecode) and PNG (FlateDecode) with auto-scaling and alignment
 - **Hyperlinks** — PDF link annotations (/URI) with URL validation, blue underlined text, tagged /Link
 - **Header/footer templates** — configurable `PageTemplate` with left/center/right zones and `{page}`/`{pages}`/`{date}`/`{title}` placeholders
@@ -66,7 +67,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 1982+ tests across 71 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
+- **95%+ test coverage** — 2085+ tests across 77 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -621,6 +622,24 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `parser-modified.pdf` | Generated → parsed → modified → incremental save |
 | `parser-document.pdf` | Document builder → parser round-trip verification |
 
+### Outline & Page Label Samples (v1.4.0)
+
+| File | Content |
+|------|---------|
+| `outline/outline-explicit.pdf` | Nested bookmarks (`/Outlines`) + roman/decimal page labels |
+| `outline/outline-auto.pdf` | `outline: 'auto'` — bookmarks derived from headings |
+| `outline/page-labels.pdf` | Roman front matter + prefixed appendix page labels |
+
+### PDF Manipulation Samples (v1.4.0)
+
+| File | Content |
+|------|---------|
+| `manipulation/merged.pdf` | `mergePdfs()` — multiple documents combined |
+| `manipulation/split-report.pdf` | `splitPdf()` — first page range |
+| `manipulation/split-invoice.pdf` | `splitPdf()` — second page range |
+| `manipulation/extract-reordered.pdf` | `extractPages()` — selected pages, reordered |
+| `manipulation/streamed.pdf` | `streamToFile()` — document streamed straight to disk |
+
 ## API Reference
 
 ### Core
@@ -724,6 +743,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `chunkBinaryString(str, chunkSize)` | Split binary string into `Uint8Array` chunks |
 | `concatChunks(chunks)` | Concatenate `Uint8Array` chunks into one |
 | `streamByteLength(stream)` | Count total bytes from an async stream |
+| `streamToFile(stream, filePath, opts?)` | Drain an `AsyncGenerator<Uint8Array>` to disk with back-pressure + `AbortSignal` (Node) — returns `{ bytesWritten, chunks }` (v1.4.0) |
 
 ### Crypto (Hashing, ASN.1, RSA, ECDSA, X.509, CMS)
 
@@ -753,6 +773,9 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `dictGet(dict, key)` / `dictGetName(dict, key)` | Dictionary value accessors |
 | `inflateSync(data)` | Decompress FlateDecode data (zlib inflate) |
 | `validatePdfUA(bytes)` | Read-only PDF/UA structural checker — returns `{ valid, errors, warnings }` (v1.3.0) |
+| `mergePdfs(sources, opts?)` | Merge multiple PDFs into one, rebuilding a clean object graph (v1.4.0) |
+| `splitPdf(src, ranges)` | Split a PDF into multiple documents by page ranges (v1.4.0) |
+| `extractPages(src, indices)` | Extract specific pages (0-based) into a new PDF (v1.4.0) |
 
 ### Document Block Types
 

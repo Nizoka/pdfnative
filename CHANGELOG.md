@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.4.0] – 2026-06-28
+
+Delivers the full v1.4.0 roadmap (document outline / bookmarks, page labels,
+`streamToFile()` Node helper) plus two pulled-forward items: a **page-tree
+manipulation API** (`mergePdfs` / `splitPdf` / `extractPages`) that unblocks
+`pdfnative-mcp`'s `merge_pdfs` / `split_pdf`, and **COLRv1 advanced
+compositing** (sweep gradients + `PaintComposite` blend modes). 100%
+backward-compatible. 77 test files / 2085 tests, all green. See full notes in
+[release-notes/v1.4.0.md](release-notes/v1.4.0.md).
+
+### Added
+
+- **feat(core):** document outline / bookmarks. `DocumentParams.outline`
+  accepts a nested `OutlineItem[]` (with `bold`/`italic`/`color`) or `'auto'`
+  (derived from heading blocks, nested by level). Emits `/Outlines` +
+  `/PageMode /UseOutlines`. PDF/A-safe. New
+  [src/core/pdf-outline.ts](src/core/pdf-outline.ts); `OutlineItem` exported.
+- **feat(core):** page labels. `DocumentParams.pageLabels` (`PageLabelRange[]`)
+  builds the `/PageLabels` number tree (decimal / roman / Roman / alpha /
+  Alpha / none, `prefix`, `start`). New
+  [src/core/pdf-page-labels.ts](src/core/pdf-page-labels.ts);
+  `PageLabelRange` / `PageLabelStyle` exported.
+- **feat(stream):** `streamToFile(stream, path, { signal? })` writes any
+  streaming builder to disk in constant memory with back-pressure handling.
+  `node:fs` via dynamic + type-only import (browser-safe). Returns
+  `StreamToFileResult`. ([src/core/pdf-stream-writer.ts](src/core/pdf-stream-writer.ts))
+- **feat(parser):** page-tree manipulation API — `mergePdfs()`, `splitPdf()`,
+  `extractPages()` rebuild a fresh document by deep-copying each kept page's
+  transitive object graph into a new object-number space. Rejects encrypted
+  sources; drops signatures + `/AcroForm`; keeps self-contained URI `/Link`
+  annotations. Unblocks `pdfnative-mcp` `merge_pdfs` / `split_pdf`. New
+  [src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts);
+  `PageRange` / `MergeOptions` exported.
+- **feat(colr):** COLRv1 advanced compositing. `PaintSweepGradient` (conic) →
+  `SweepGradientPaint`, rendered as flat-colour triangular wedges clipped to the
+  outline; `PaintComposite` → PDF `/BM` blend modes (Multiply, Screen, Overlay,
+  Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference,
+  Exclusion, Hue, Saturation, Color, Luminosity). Porter-Duff structural modes
+  and `PaintMask` keep the documented monochrome fallback. `ColorLayer.blendMode`
+  added. ([src/fonts/colr-parser.ts](src/fonts/colr-parser.ts), [src/core/pdf-color-glyph.ts](src/core/pdf-color-glyph.ts))
+- **docs(samples):** two new generators — `outline-bookmarks.ts` and
+  `pdf-manipulation.ts` (195 sample PDFs total).
+
+### Changed
+
+- Sample count 178 → 195; test suite 1982 → 2085 (71 → 77 files).
+
 ## [1.3.0] – 2026-06-30
 
 Closes issue [#48](https://github.com/Nizoka/pdfnative/issues/48) (CP-1252

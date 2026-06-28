@@ -21,6 +21,9 @@
  *   - Image embedding (JPEG DCTDecode, PNG FlateDecode)
  *   - Hyperlinks (PDF link annotations with URL validation)
  *   - Barcode & QR code generation (Code 128, EAN-13, QR, Data Matrix, PDF417)
+ *   - Document outline/bookmarks (/Outlines) + page labels (/PageLabels)
+ *   - Page-tree manipulation: mergePdfs / splitPdf / extractPages
+ *   - Streaming output incl. streamToFile() to disk with back-pressure
  *   - Web Worker support for large datasets
  *   - Tree-shakeable ESM + CJS dual build
  *

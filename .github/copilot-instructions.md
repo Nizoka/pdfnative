@@ -9,7 +9,7 @@ Target: exceed GAFAM-grade quality standards in code, testing, performance, and 
 
 ```
 src/
-├── core/         # PDF document assembly, text rendering, binary stream, layout constants, tagged PDF, images, annotations, encryption, compression, watermarks, barcodes, SVG, forms, signatures, streaming
+├── core/         # PDF document assembly, text rendering, binary stream, layout constants, tagged PDF, images, annotations, encryption, compression, watermarks, barcodes, SVG, forms, signatures, streaming, outlines, page labels
 │   ├── pdf-builder.ts    # Table-centric PDF assembly + tagged mode + encryption + compression
 │   ├── pdf-document.ts   # Free-form document builder (headings, paragraphs, lists, tables, images, links, TOC, barcodes, SVG, forms)
 │   ├── pdf-renderers.ts  # Extracted block renderers, text wrapping, constants (used by pdf-document.ts)
@@ -26,7 +26,9 @@ src/
 │   ├── pdf-form.ts       # AcroForm interactive fields with appearance streams (ISO 32000-1 §12.7)
 │   ├── pdf-signature.ts  # CMS/PKCS#7 digital signatures (RSA + ECDSA, ISO 32000-1 §12.8)
 │   ├── pdf-sig-placeholder.ts # addSignaturePlaceholder: AcroForm + /Sig injection via incremental update (v1.2.0)
-│   ├── pdf-stream-writer.ts # AsyncGenerator streaming output with configurable chunk size
+│   ├── pdf-stream-writer.ts # AsyncGenerator streaming output with configurable chunk size + streamToFile (v1.4.0)
+│   ├── pdf-outline.ts    # Document outline/bookmarks: /Outlines tree (/First /Last /Next /Prev /Parent /Count, /F flags, /C color, /Dest) (v1.4.0)
+│   ├── pdf-page-labels.ts # /PageLabels number tree (decimal/roman/Roman/alpha/Alpha/none + prefix + start) (v1.4.0)
 │   └── pdf-encrypt.ts    # AES-128/256 encryption, MD5, SHA-256, key derivation, permissions
 ├── crypto/       # Zero-dependency cryptographic primitives
 │   ├── sha.ts            # SHA-384, SHA-512, HMAC-SHA-256
@@ -42,16 +44,17 @@ src/
 │   ├── pdf-xref-parser.ts # Cross-reference table/stream parser with /Prev chain (MAX_XREF_CHAIN=100 + cycle detection)
 │   ├── pdf-reader.ts     # High-level PDF reader (page tree, stream decode, caching)
 │   ├── pdf-modifier.ts   # Incremental modification (non-destructive save with /Prev)
-│   └── pdf-ua-validator.ts # Read-only PDF/UA (ISO 14289-1) structural checker (v1.3.0)
+│   ├── pdf-ua-validator.ts # Read-only PDF/UA (ISO 14289-1) structural checker (v1.3.0)
+│   └── pdf-pagetree.ts   # Page-tree manipulation: mergePdfs/splitPdf/extractPages — clean object-graph rebuild (v1.4.0)
 ├── fonts/        # WinAnsi + CIDFont pure encoding functions, lazy font loader, TTF subsetter (with buffer guards), CMap builder
 ├── shaping/      # Thai/Devanagari/Telugu/Bengali/Tamil GSUB+GPOS shaping, Arabic positional shaping, BiDi resolution, Unicode script detection, multi-font run splitting, centralized script registry
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (.js/.d.ts) — 22 scripts + TTF source files
 tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (32 generators; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0)
+scripts/          # Modular sample PDF generation (34 generators; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0)
 test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf, extreme-bidi-isolates.pdf)
-tests/            # 1982+ tests (71 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
+tests/            # 2085+ tests (77 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
   └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, medical-800.html)
@@ -77,7 +80,7 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (1982+ tests, 71 files)
+npm run test            # vitest run (2085+ tests, 77 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
 npm run test:generate   # Generate 150+ sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/ baselines)
@@ -92,7 +95,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 1982+ tests (71 files)
+- All new code must have tests. Current: ~95% statement coverage, 2085+ tests (77 files)
 
 ## Conventions
 
@@ -222,8 +225,12 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Configurable block limit (v1.3.0): the previously hard-coded 10 000-block cap in `assembleDocumentParts()` (`src/core/pdf-document.ts`) is now `layout.maxBlocks` with default `DEFAULT_MAX_BLOCKS = 100_000` (`src/core/pdf-layout.ts`). Applies to every entry point including the streaming builders. The over-limit error names the active limit. `PdfLayoutOptions.maxBlocks?` in `src/types/pdf-types.ts`.
 - PDF/UA validator (v1.3.0): `validatePdfUA(bytes)` in `src/parser/pdf-ua-validator.ts` — read-only ISO 14289-1 structural checker returning `{ valid, errors, warnings }`. Verifies `/MarkInfo /Marked`, `/StructTreeRoot` + `/ParentTree`, `/Metadata`, `/Lang`, and per-page `/MCID` uniqueness (regex `/\/MCID\s+(\d+)/g`). Imports from `pdf-reader.js` + `pdf-object-parser.js`. Complements (does not replace) veraPDF. Exported from `src/index.ts` with `PdfUAValidationResult`.
 - Latin VF (PDF/A): Noto Sans VF (OFL-1.1) bundled as `fonts/noto-sans-data.{js,d.ts}` under lang `'latin'`. Activates automatically for PDF/A documents containing non-WinAnsi Latin (curly quotes, em-dash, ellipsis…). Opt-in via `registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'))`.
+- Document outline/bookmarks (v1.4.0): `buildOutlineObjects(items, startObjNum, pageObjNumFor, defaultY, fmtNum, pageCount)` in `src/core/pdf-outline.ts` builds the `/Outlines` tree (`/First /Last /Next /Prev /Parent /Count`, nested children, `/F` flags bold=2 italic=1, `/C` color, `/Dest [pageObj /XYZ 0 y null]`). Titles via `encodePdfTextString`. Wired into `pdf-document.ts` as **trailing indirect objects** appended after embedded files (`totalObjs = outlineStart + built.totalObjects - 1`) so the catalog-rewrite offset-adjustment loop covers them — same pattern as colour-emoji/embedded-files. `DocumentParams.outline?: readonly OutlineItem[] | 'auto'`; `'auto'` derives a nested tree from heading levels via `autoOutlineFromHeadings()`. Catalog gains `/Outlines N 0 R`.
+- Page labels (v1.4.0): `buildPageLabelsDict(ranges, pageCount)` in `src/core/pdf-page-labels.ts` emits an inline `/PageLabels << /Nums [...] >>` number tree. `PageLabelStyle` decimal/roman/Roman/alpha/Alpha/none → `/S /D|r|R|a|A` (none omits `/S`). `PageLabelRange { startPage, style?, prefix?, start? }` — validated for ordering/bounds; prefix parens escaped. `DocumentParams.pageLabels?: readonly PageLabelRange[]`. Inline (not indirect) so no object-number impact.
+- Page-tree manipulation (v1.4.0): `mergePdfs(sources, opts?)`, `splitPdf(src, ranges)`, `extractPages(src, indices)` in `src/parser/pdf-pagetree.ts` deep-copy kept pages + their transitive object graph into a fresh object-number space (obj 1=Catalog, 2=Pages, 3+=graph). `copyObject()` is memoized per-reader and cycle-safe; `resolveInherited()` folds MediaBox/CropBox/Rotate/Resources from ancestors onto each page; `filterAnnotations()` keeps only URI `/Link` annots; `serializeValue/Dict` are binary-safe (Latin-1). `assertNotEncrypted()` throws on `/Encrypt`. `MAX_MERGE_SOURCES=50`. `MergeOptions { dropSignatures?, dropAnnotations? }`. Full rebuild (not in-place surgery) — unblocks `pdfnative-mcp` merge_pdfs/split_pdf.
+- streamToFile (v1.4.0): `streamToFile(stream, filePath, { signal? })` in `src/core/pdf-stream-writer.ts` drains any `AsyncGenerator<Uint8Array>` to disk in Node, honouring write back-pressure (awaits `'drain'`) and `AbortSignal`; returns `{ bytesWritten, chunks }`. Uses top-level `import type * as NodeFs from 'node:fs'` + dynamic `await import('node:fs')` (no static node dep — keeps browser/Deno builds clean). ESLint forbids inline `import()` type annotations, so the type-only import MUST be top-level.
+- COLRv1 advanced compositing (v1.4.0): `colr-parser.ts` resolves `PaintSweepGradient` (format 8) → `SweepGradientPaint { kind:'sweep', center, startAngle, endAngle, stops, extend }` (matrix rotation folded via `Math.atan2`), and `PaintComposite` (format 32) → backdrop+source layers with the source tagged `ColorLayer.blendMode` via `compositeModeToBlendMode(mode)` (separable modes 3/13–27 → Normal/Multiply/Screen/Overlay/Darken/Lighten/ColorDodge/ColorBurn/HardLight/SoftLight/Difference/Exclusion/Hue/Saturation/Color/Luminosity; structural Porter-Duff modes → `null` → `UnsupportedPaint` → mono fallback). `pdf-color-glyph.ts`: `emitSweep()` renders flat triangular wedges (no `/Shading` resource); unified `gsFor(alpha, bm)` ExtGState helper combines `/ca`+`/BM`. New types `SweepGradientPaint` + `ColorLayer.blendMode?` in `src/types/pdf-types.ts`.
 
-### API Design
 
 - Public API must be stable and backward-compatible once 1.0 ships
 - Every public function/type is exported from `src/index.ts`
@@ -255,7 +262,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 1982+ tests (71 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
+- **95%+ test coverage** — 2085+ tests (77 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)

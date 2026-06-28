@@ -78,11 +78,31 @@ Edit the `CURATED` codepoint array in
 [`scripts/build-color-emoji-data.ts`](https://github.com/Nizoka/pdfnative/blob/main/scripts/build-color-emoji-data.ts)
 to include the emoji you need, then register the generated module.
 
+## Advanced compositing (v1.4.0)
+
+COLRv1 includes two paint types beyond solid + axial/radial gradients, and
+pdfnative now maps both where a faithful PDF translation exists:
+
+| COLRv1 feature | PDF mapping (v1.4.0) |
+|---|---|
+| Sweep / conic gradient (`PaintSweepGradient`, format 8) | Flat-shaded triangular **wedges** fanned around the centre — no `/Shading` resource, pure path fills. Matrix rotation is folded into the start/end angles via `Math.atan2`. |
+| Composite (`PaintComposite`, format 32) — *separable* blend modes | Backdrop + source layers, with the source tagged via a `/BM` (blend mode) `/ExtGState`: Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference, Exclusion, Hue, Saturation, Color, Luminosity. |
+| Composite — *structural* Porter-Duff modes (`SrcOver`, `DestIn`, clipping masks, …) | No exact PDF equivalent → the glyph falls back to the **monochrome** outline. |
+
+Sweep wedges approximate the smooth conic sweep with a fan of flat-colour
+triangles whose count scales with the angular span — close enough for emoji at
+text sizes while staying within plain PDF path operators. Separable blend modes
+are exactly the set PDF defines in ISO 32000-1 §11.3.5, so they round-trip
+faithfully in any conformant viewer.
+
+> **PDF/A note:** blend modes and constant-alpha `/ExtGState` are transparency
+> features that PDF/A-1b forbids. Use solid-layer emoji for archival documents.
+
 ## Limitations
 
-- **Sweep gradients** (`PaintSweepGradient`) and **Porter-Duff compositing**
-  (`PaintComposite` / `PaintMask`) are not yet rendered; glyphs using them fall
-  back gracefully to the monochrome outline. Tracked for a future release.
+- **`PaintMask`** and COLRv1 variable (animated) paints are not yet rendered;
+  glyphs using them fall back gracefully to the monochrome outline. Tracked for
+  a future release.
 - **PDF/A:** gradient transparency uses `/ExtGState` alpha, which PDF/A-1b
   forbids. Use solid-layer emoji or a non-PDF/A document for colour gradients.
 

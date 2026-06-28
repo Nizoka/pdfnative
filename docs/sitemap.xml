@@ -74,6 +74,18 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://pdfnative.dev/guides/outlines.html</loc>
+    <lastmod>2026-06-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/pdf-manipulation.html</loc>
+    <lastmod>2026-06-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://pdfnative.dev/guides/cli.html</loc>
     <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>

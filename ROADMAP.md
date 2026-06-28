@@ -69,24 +69,29 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Configurable document block limit** (v1.3.0) — `layout.maxBlocks` replaces the hard-coded 10 000-block cap, default raised to 100 000 (`DEFAULT_MAX_BLOCKS`). Large multi-thousand-page reports no longer hit a spurious ceiling. ([src/core/pdf-document.ts](src/core/pdf-document.ts))
 - [x] **`validatePdfUA()` structural checker** (v1.3.0) — read-only ISO 14289-1 gate verifying `/MarkInfo`, `/StructTreeRoot` + `/ParentTree`, `/Metadata`, `/Lang`, and per-page `/MCID` uniqueness. Complements veraPDF. ([src/parser/pdf-ua-validator.ts](src/parser/pdf-ua-validator.ts))
 - [x] **Colour-emoji robustness** (v1.3.0) — variation selectors (VS-15/16), ZWJ/ZWNJ, and Fitzpatrick skin-tone modifiers no longer leave `.notdef` tofu (`isZeroWidthFormat()` drop in `splitTextByFont()`); colour-glyph Form `/BBox` is computed from contour bounds so emoji are never clipped. ([src/shaping/multi-font.ts](src/shaping/multi-font.ts), [src/core/pdf-color-glyph.ts](src/core/pdf-color-glyph.ts))
+- [x] **Document outline / bookmarks** (v1.4.0) — `/Outlines` tree for navigable PDF bookmarks. `DocumentParams.outline` accepts an explicit nested `OutlineItem[]` (with `bold`/`italic`/`color`) or `'auto'` (derived from heading blocks, nested by level). Emits `/PageMode /UseOutlines`. PDF/A-safe. ([src/core/pdf-outline.ts](src/core/pdf-outline.ts))
+- [x] **Page labels** (v1.4.0) — `/PageLabels` number tree via `DocumentParams.pageLabels` (`PageLabelRange[]`): decimal / roman / Roman / alpha / Alpha / prefix-only, with `prefix` and `start`. Roman-numeral front matter, prefixed appendices. PDF/A-safe. ([src/core/pdf-page-labels.ts](src/core/pdf-page-labels.ts))
+- [x] **`streamToFile()` Node helper** (v1.4.0) — pipes any streaming builder (`buildPDFStreamTrue` / `buildDocumentPDFStreamTrue` / `streamPdf`) straight to a file in constant memory, honouring write back-pressure and an optional `AbortSignal`. `node:fs` is loaded via a dynamic + type-only import, so the browser bundle stays clean. ([src/core/pdf-stream-writer.ts](src/core/pdf-stream-writer.ts))
+- [x] **Page-tree manipulation API** (v1.4.0) — `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a fresh document by deep-copying each kept page and its transitive object graph into a new contiguous object-number space (no unsafe in-place `/Kids`/`/Parent` surgery). Rejects encrypted sources; always drops signatures + `/AcroForm` (page edits invalidate `/ByteRange`); keeps self-contained URI `/Link` annotations. Unblocks `pdfnative-mcp`'s `merge_pdfs` / `split_pdf`. ([src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts))
+- [x] **COLRv1 advanced compositing** (v1.4.0) — sweep (conic) gradients rendered as flat-colour triangular wedges clipped to the glyph outline, and `PaintComposite` mapped to PDF `/BM` blend modes (Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference, Exclusion, Hue, Saturation, Color, Luminosity). Porter-Duff structural modes (Clear/Src/Dest/Xor/Plus/…) fall back to the documented monochrome path. ([src/fonts/colr-parser.ts](src/fonts/colr-parser.ts), [src/core/pdf-color-glyph.ts](src/core/pdf-color-glyph.ts))
 
 ## In Progress
 
-_All v1.3.0 in-progress items have been merged into the [v1.3.0 release](release-notes/v1.3.0.md). See Released above._
+_All v1.4.0 in-progress items have been merged into the [v1.4.0 release](release-notes/v1.4.0.md). See Released above._
 
 ## Planned
 
-### v1.4.0
+### v1.5.0
 
-- [ ] **Document outline / bookmarks** — `/Outlines` tree for navigable PDF bookmarks (deferred from v1.3.0; the catalog object-numbering scheme is intricate and warrants isolated work).
-- [ ] **Page labels** — `/PageLabels` for roman-numeral front matter and custom page numbering.
-- [ ] **`streamToFile()` Node helper** — convenience wrapper writing a streaming builder directly to a `WriteStream` / file path.
+- [ ] **Page labels in the viewer chrome** — surface `/PageLabels` in `inspect_pdf` and the docs playgrounds.
+- [ ] **Annotation read/write API** — typed annotation model (link, text, highlight, widget) to unblock `pdfnative-mcp`'s `redact_pdf` overlay mode.
+- [ ] **Encrypted-PDF round-trip** — Standard Security Handler **reader/decryptor** so the page-tree API can ingest encrypted sources.
 
 ### Long-Term
 
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression
 - [ ] **Full Universal Shaping Engine** — Khmer, Myanmar, complex Sinhala
-- [ ] **COLRv1 advanced compositing** — sweep gradients + PaintComposite / PaintMask (Porter-Duff). v1.3.0 ships solid + linear + radial; advanced paints fall back to monochrome.
+- [ ] **COLRv1 PaintMask / variable paints** — soft-mask groups (`PaintComposite` luminosity masks) and variable-font COLR. v1.4.0 ships solid + linear + radial + sweep gradients and blend-mode compositing; masks and variable paints fall back to monochrome.
 
 ## How to Influence the Roadmap
 

@@ -104,6 +104,12 @@
     "watermark",
     "web-worker",
     "streaming",
+    "outline",
+    "bookmarks",
+    "page-labels",
+    "merge-pdf",
+    "split-pdf",
+    "pdf-manipulation",
     "typescript"
   ],
   "author": "Nizoka <hello@pdfnative.dev> (https://pdfnative.dev)",
