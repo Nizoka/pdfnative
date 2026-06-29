@@ -138,6 +138,48 @@ describe('splitPdf', () => {
     });
 });
 
+// ── maxOutputSize guard ──────────────────────────────────────────────
+
+describe('maxOutputSize', () => {
+    it('throws when the assembled output exceeds the limit', () => {
+        // 1 byte is far below any real document, so the guard trips immediately.
+        expect(() => mergePdfs([doc('Big', 2)], { maxOutputSize: 1 }))
+            .toThrow(/maxOutputSize limit/);
+    });
+
+    it('passes when the limit is generous', () => {
+        const merged = mergePdfs([doc('Fits', 2)], { maxOutputSize: 64 * 1024 * 1024 });
+        expect(openPdf(merged).pageCount).toBe(2);
+    });
+
+    it('uses a 256 MiB default that ordinary documents stay under', () => {
+        // No option → default cap; a small doc must not throw.
+        expect(openPdf(mergePdfs([doc('Default', 3)])).pageCount).toBe(3);
+    });
+
+    it('Infinity disables the guard', () => {
+        const merged = mergePdfs([doc('Unbounded', 2)], { maxOutputSize: Infinity });
+        expect(openPdf(merged).pageCount).toBe(2);
+    });
+
+    it('rejects an invalid maxOutputSize before doing any work', () => {
+        expect(() => mergePdfs([doc('A', 1)], { maxOutputSize: 0 })).toThrow(/maxOutputSize/);
+        expect(() => mergePdfs([doc('A', 1)], { maxOutputSize: -5 })).toThrow(/maxOutputSize/);
+        expect(() => mergePdfs([doc('A', 1)], { maxOutputSize: NaN })).toThrow(/maxOutputSize/);
+    });
+
+    it('is honoured by splitPdf and extractPages', () => {
+        const src = doc('Limited', 4);
+        expect(() => splitPdf(src, [{ start: 0, end: 1 }], { maxOutputSize: 1 }))
+            .toThrow(/maxOutputSize/);
+        expect(() => extractPages(src, [0, 1], { maxOutputSize: 1 }))
+            .toThrow(/maxOutputSize/);
+        // Generous limits still produce valid output.
+        expect(openPdf(splitPdf(src, [{ start: 0, end: 1 }], { maxOutputSize: 1 << 30 })[0]).pageCount).toBe(2);
+        expect(openPdf(extractPages(src, [0, 1], { maxOutputSize: 1 << 30 })).pageCount).toBe(2);
+    });
+});
+
 // ── round-trip integrity ─────────────────────────────────────────────
 
 describe('page-tree round-trip integrity', () => {

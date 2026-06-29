@@ -109,7 +109,11 @@
     "page-labels",
     "merge-pdf",
     "split-pdf",
+    "extract-pdf",
     "pdf-manipulation",
+    "viewer-preferences",
+    "rsa",
+    "ecdsa",
     "typescript"
   ],
   "author": "Nizoka <hello@pdfnative.dev> (https://pdfnative.dev)",

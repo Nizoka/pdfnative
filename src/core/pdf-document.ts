@@ -34,6 +34,7 @@ import { txt, txtTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
 import { toBytes } from './pdf-stream.js';
 import { buildOutlineObjects, type OutlineRenderItem } from './pdf-outline.js';
 import { buildPageLabelsDict } from './pdf-page-labels.js';
+import { buildViewerPreferences } from './pdf-viewer-prefs.js';
 import { parseColor } from './pdf-color.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
@@ -1201,6 +1202,17 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         pageLabelsStr = ` /PageLabels ${buildPageLabelsDict(params.pageLabels, totalPages)}`;
     }
 
+    // ── Viewer preferences (ISO 32000-1 §12.2) ─────────────────────
+    // Catalog-level /PageLayout + /PageMode and the /ViewerPreferences dict.
+    // An explicit pageMode here takes precedence over the outline's default.
+    const viewerPrefs = layout?.viewerPreferences
+        ? buildViewerPreferences(layout.viewerPreferences)
+        : undefined;
+    let viewerPrefsStr = viewerPrefs?.dict ?? '';
+    if (viewerPrefs?.pageLayout) {
+        viewerPrefsStr = ` /PageLayout /${viewerPrefs.pageLayout}${viewerPrefsStr}`;
+    }
+
     // ── Document outline / bookmarks (ISO 32000-1 §12.3.3) ──────────
     // Outline items are indirect objects, appended after every other
     // trailing object so their object numbers never collide.
@@ -1224,8 +1236,20 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 emitObj(objNum, content);
             }
             totalObjs = outlineStart + built.totalObjects - 1;
-            outlineCatalogStr = ` /Outlines ${built.rootObjNum} 0 R /PageMode /UseOutlines`;
+            // The outline opens the bookmark panel by default via
+            // /PageMode /UseOutlines — unless viewer preferences set an
+            // explicit pageMode, which wins.
+            outlineCatalogStr = ` /Outlines ${built.rootObjNum} 0 R`;
+            if (!viewerPrefs?.pageMode) {
+                outlineCatalogStr += ' /PageMode /UseOutlines';
+            }
         }
+    }
+
+    // Resolved /PageMode from viewer preferences (after outline, so the
+    // explicit value is appended exactly once).
+    if (viewerPrefs?.pageMode) {
+        viewerPrefsStr = ` /PageMode /${viewerPrefs.pageMode}${viewerPrefsStr}`;
     }
 
     // ── Build named destinations for TOC ────────────────────────────
@@ -1269,7 +1293,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             `/MarkInfo << /Marked true >> ` +
             `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
             `/Metadata ${xmpObjNum} 0 R ` +
-            `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr}${acroFormStr}${outlineCatalogStr}${pageLabelsStr}`;
+            `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr}${acroFormStr}${outlineCatalogStr}${pageLabelsStr}${viewerPrefsStr}`;
         if (afArrayStr) {
             catalogContent += ` /AF [${afArrayStr}] ${embeddedFilesNamesDict}`;
         }
@@ -1288,9 +1312,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 }
             }
         }
-    } else if (destsStr || acroFormStr || outlineCatalogStr || pageLabelsStr) {
-        // Non-tagged mode with TOC destinations, AcroForm, outline, or page labels — rewrite catalog
-        const catalogContent = `<< /Type /Catalog /Pages 2 0 R${destsStr}${acroFormStr}${outlineCatalogStr}${pageLabelsStr} >>`;
+    } else if (destsStr || acroFormStr || outlineCatalogStr || pageLabelsStr || viewerPrefsStr) {
+        // Non-tagged mode with TOC destinations, AcroForm, outline, page labels,
+        // or viewer preferences — rewrite catalog
+        const catalogContent = `<< /Type /Catalog /Pages 2 0 R${destsStr}${acroFormStr}${outlineCatalogStr}${pageLabelsStr}${viewerPrefsStr} >>`;
         const oldCatalog = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\n';
         const newCatalog = `1 0 obj\n${catalogContent}\nendobj\n\n`;
         const idx = parts.indexOf(oldCatalog);

@@ -20,6 +20,7 @@ import type {
     ParagraphBlock,
     TableBlock,
     ListBlock,
+    ListItem,
     ImageBlock,
     LinkBlock,
     TocBlock,
@@ -404,31 +405,71 @@ export function renderList(
     const sz = block.fontSize ?? DEFAULT_LIST_SIZE;
     const lineH = sz * DEFAULT_LINE_HEIGHT;
     const color = '0.216 0.255 0.318';
-    const availW = cw - LIST_INDENT - BULLET_MARK_WIDTH;
 
     ops.push(`${color} rg`);
 
-    const listChildren: StructElement[] = [];
+    // Render the (possibly nested) list recursively. The fill colour is set
+    // once above and persists across levels via PDF graphics state.
+    const root = renderListLevel(block.items, block.style, 0, y, sz, lineH, enc, mgL, cw, tagCtx);
+    ops.push(...root.ops);
 
-    for (let idx = 0; idx < block.items.length; idx++) {
-        const item = block.items[idx];
-        const marker = block.style === 'bullet' ? '\u2022' : `${idx + 1}.`;
-        const lines = wrapText(item, availW, sz, enc);
+    if (tagCtx?.tagged && root.struct && root.struct.children.length > 0) {
+        documentChildren.push(root.struct);
+    }
 
-        const liChildren: MCRef[] = [];
+    return { ops, y: root.y };
+}
+
+/**
+ * Render one nesting level of a list and recurse into child items.
+ *
+ * `depth` 0 reproduces the pre-1.4.0 flat-list geometry exactly (marker at
+ * `mgL + LIST_INDENT`, text at `+ BULLET_MARK_WIDTH`), so string-only lists are
+ * byte-identical. Each deeper level adds one `LIST_INDENT` step. Bullet markers
+ * stay a uniform `•` at every depth — indentation conveys hierarchy and the
+ * single glyph is always encodable (no `.notdef` risk in base-14 mode);
+ * numbered sub-lists restart at 1.
+ */
+function renderListLevel(
+    items: readonly (string | ListItem)[],
+    style: 'bullet' | 'numbered',
+    depth: number,
+    y: number,
+    sz: number,
+    lineH: number,
+    enc: EncodingContext,
+    mgL: number,
+    cw: number,
+    tagCtx: TagContext | undefined,
+): { ops: string[]; y: number; struct?: StructElement } {
+    const ops: string[] = [];
+    const indent = LIST_INDENT * (depth + 1);
+    const markerX = mgL + indent;
+    const xOffset = markerX + BULLET_MARK_WIDTH;
+    const availW = cw - indent - BULLET_MARK_WIDTH;
+
+    const levelChildren: (StructElement | MCRef)[] = [];
+
+    for (let idx = 0; idx < items.length; idx++) {
+        const entry = items[idx];
+        const text = typeof entry === 'string' ? entry : entry.text;
+        const children = typeof entry === 'string' ? undefined : entry.items;
+        const marker = style === 'bullet' ? '\u2022' : `${idx + 1}.`;
+        const lines = wrapText(text, availW, sz, enc);
+
+        const liChildren: (StructElement | MCRef)[] = [];
 
         // Marker
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             liChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
-            ops.push(txtTagged(marker, mgL + LIST_INDENT, y - sz, enc.f1, sz, enc, mcid));
+            ops.push(txtTagged(marker, markerX, y - sz, enc.f1, sz, enc, mcid));
         } else {
-            ops.push(txt(marker, mgL + LIST_INDENT, y - sz, enc.f1, sz, enc));
+            ops.push(txt(marker, markerX, y - sz, enc.f1, sz, enc));
         }
 
         // Item text lines
         for (let li = 0; li < lines.length; li++) {
-            const xOffset = mgL + LIST_INDENT + BULLET_MARK_WIDTH;
             if (li === 0) {
                 if (tagCtx?.tagged) {
                     const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
@@ -450,17 +491,26 @@ export function renderList(
         }
         y -= lineH + LIST_ITEM_SPACING;
 
+        // Nested sub-list (recurse one level deeper).
+        if (children && children.length > 0) {
+            const sub = renderListLevel(children, style, depth + 1, y, sz, lineH, enc, mgL, cw, tagCtx);
+            ops.push(...sub.ops);
+            y = sub.y;
+            if (tagCtx?.tagged && sub.struct && sub.struct.children.length > 0) {
+                liChildren.push(sub.struct);
+            }
+        }
+
         if (tagCtx?.tagged && liChildren.length > 0) {
-            listChildren.push({ type: 'LI', children: liChildren });
+            levelChildren.push({ type: 'LI', children: liChildren });
         }
     }
 
-    if (tagCtx?.tagged && listChildren.length > 0) {
-        documentChildren.push({ type: 'L', children: listChildren });
-    }
-
-    return { ops, y };
+    const struct: StructElement | undefined =
+        tagCtx?.tagged ? { type: 'L', children: levelChildren } : undefined;
+    return { ops, y, struct };
 }
+
 
 /** Default zebra-row background tint (matches `DEFAULT_COLORS.thBg`). */
 const DEFAULT_ZEBRA_COLOR = '0.969 0.973 0.984';
@@ -687,6 +737,46 @@ export function renderTable(
     const zebraColor = resolveZebraColor(block.zebra);
     const wrapMode = block.wrap ?? 'auto';
 
+    // ── Cell borders (opt-in via block.cellBorders) ──────────────────
+    // When unset, `borderSides` is null and `cellBorderOps` returns nothing, so
+    // tables without borders are byte-identical to pre-1.4.0.
+    const borders = block.cellBorders;
+    const borderSides = borders
+        ? {
+            top: borders.all === true || borders.top === true,
+            right: borders.all === true || borders.right === true,
+            bottom: borders.all === true || borders.bottom === true,
+            left: borders.all === true || borders.left === true,
+        }
+        : null;
+    const borderColor = borders?.color ? parseColor(borders.color) : '0.8 0.8 0.8';
+    const borderWidth = borders?.width ?? 0.5;
+    const borderDash = borders?.style === 'dashed'
+        ? '[3] 0 d'
+        : borders?.style === 'dotted'
+            ? `[${fmtNum(borderWidth)} ${fmtNum(borderWidth * 2)}] 0 d`
+            : null;
+
+    /**
+     * Stroke the requested borders of one cell rectangle. Resets the dash
+     * pattern afterwards (when dashed/dotted) so the table's row separators and
+     * header underline keep their solid stroke.
+     */
+    const cellBorderOps = (cellX: number, cellW: number, top: number, h: number): string[] => {
+        if (!borderSides || (!borderSides.top && !borderSides.right && !borderSides.bottom && !borderSides.left)) {
+            return [];
+        }
+        const o: string[] = [];
+        o.push(`${fmtNum(borderWidth)} w ${borderColor} RG${borderDash ? ' ' + borderDash : ''}`);
+        const x0 = cellX, x1 = cellX + cellW, y0 = top - h, y1 = top;
+        if (borderSides.top) o.push(`${fmtNum(x0)} ${fmtNum(y1)} m ${fmtNum(x1)} ${fmtNum(y1)} l S`);
+        if (borderSides.bottom) o.push(`${fmtNum(x0)} ${fmtNum(y0)} m ${fmtNum(x1)} ${fmtNum(y0)} l S`);
+        if (borderSides.left) o.push(`${fmtNum(x0)} ${fmtNum(y0)} m ${fmtNum(x0)} ${fmtNum(y1)} l S`);
+        if (borderSides.right) o.push(`${fmtNum(x1)} ${fmtNum(y0)} m ${fmtNum(x1)} ${fmtNum(y1)} l S`);
+        if (borderDash) o.push('[] 0 d');
+        return o;
+    };
+
     /**
      * Wrap a text-emitting operator in a clipping rectangle for cell `i`.
      * The clip rect spans the full column width and the actual cell band so
@@ -720,6 +810,10 @@ export function renderTable(
         const out: string[] = [];
         const lineH = sz * TABLE_LINE_HEIGHT;
         const padBottom = isHeader ? HEADER_PAD_BOTTOM : CELL_PAD_BOTTOM;
+        // Resolve vertical alignment: per-column overrides the table default.
+        // When neither is set, `vAlign` is undefined and the historic baseline
+        // placement is used verbatim (byte-identical to pre-1.4.0).
+        const vAlign = col.vAlign ?? block.cellVAlign;
         for (let li = 0; li < lines.length; li++) {
             // Preserve v1.1 character-truncation only when wrapping is disabled
             // (`wrap: 'never'`); under `'auto'`/`'always'` the planner already
@@ -728,12 +822,26 @@ export function renderTable(
             const t = (lines.length === 1 && wrapMode === 'never')
                 ? truncate(lines[li], (isHeader && col.mxH !== undefined) ? col.mxH : col.mx)
                 : lines[li];
-            // Single-line path reuses the historic v1.1 baseline (`rowH - padBottom`
-            // above the row floor) → byte-identical output when no wrap fires.
-            // Multi-line path top-aligns inside the cell band.
-            const baselineY = lines.length === 1
-                ? rowTop - rowH + padBottom
-                : rowTop - pad - sz + sz * 0.2 - li * lineH; // top-aligned with ascender bias
+            // Baseline placement. With an explicit vAlign the text block is
+            // positioned within the row band (top/middle/bottom); otherwise the
+            // historic single-line / multi-line formulas are used unchanged.
+            let baselineY: number;
+            if (vAlign) {
+                const blockH = lines.length * lineH;
+                let offset: number;
+                if (vAlign === 'top') offset = pad;
+                else if (vAlign === 'bottom') offset = rowH - blockH - pad;
+                else offset = (rowH - blockH) / 2; // middle
+                if (offset < pad) offset = pad; // guard: content taller than band
+                baselineY = rowTop - offset - li * lineH - sz + sz * 0.2;
+            } else {
+                // Single-line path reuses the historic v1.1 baseline (`rowH - padBottom`
+                // above the row floor) → byte-identical output when no wrap fires.
+                // Multi-line path top-aligns inside the cell band.
+                baselineY = lines.length === 1
+                    ? rowTop - rowH + padBottom
+                    : rowTop - pad - sz + sz * 0.2 - li * lineH; // top-aligned with ascender bias
+            }
             let op: string;
             if (mcRefsOut !== null && tagCtx?.tagged) {
                 const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
@@ -793,6 +901,7 @@ export function renderTable(
         for (let i = 0; i < block.headers.length && i < columns.length; i++) {
             const cellRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
             ops.push(...emitCell(headerLines[i] ?? [''], i, y, headerHeight, enc.f2, fs.th, cellRefs, true));
+            ops.push(...cellBorderOps(cx[i], cwi[i], y, headerHeight));
             if (cellRefs && cellRefs.length > 0) {
                 thChildren.push({ type: 'TH', children: cellRefs });
             }
@@ -832,6 +941,7 @@ export function renderTable(
 
             const cellRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
             ops.push(...emitCell(cells[i] ?? [''], i, y, rowH, font, fs.td, cellRefs, false));
+            ops.push(...cellBorderOps(cx[i], cwi[i], y, rowH));
             if (cellRefs && cellRefs.length > 0) {
                 tdChildren.push({ type: 'TD', children: cellRefs });
             }
@@ -1361,13 +1471,22 @@ export function estimateBlockHeight(
         case 'list': {
             const sz = block.fontSize ?? DEFAULT_LIST_SIZE;
             const lineH = sz * DEFAULT_LINE_HEIGHT;
-            const availW = cw - LIST_INDENT - BULLET_MARK_WIDTH;
-            let h = 0;
-            for (const item of block.items) {
-                const lines = wrapText(item, availW, sz, enc);
-                h += lineH + (lines.length - 1) * lineH + LIST_ITEM_SPACING;
-            }
-            return h;
+            // Recursively accumulate height across nesting levels; depth 0 uses
+            // the original geometry so flat lists estimate identically.
+            const measureLevel = (items: readonly (string | ListItem)[], depth: number): number => {
+                const availW = cw - LIST_INDENT * (depth + 1) - BULLET_MARK_WIDTH;
+                let acc = 0;
+                for (const entry of items) {
+                    const text = typeof entry === 'string' ? entry : entry.text;
+                    const lines = wrapText(text, availW, sz, enc);
+                    acc += lineH + (lines.length - 1) * lineH + LIST_ITEM_SPACING;
+                    if (typeof entry !== 'string' && entry.items && entry.items.length > 0) {
+                        acc += measureLevel(entry.items, depth + 1);
+                    }
+                }
+                return acc;
+            };
+            return measureLevel(block.items, 0);
         }
         case 'table': {
             return TH_H + block.rows.length * ROW_H + 6;

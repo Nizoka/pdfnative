@@ -46,7 +46,10 @@ export interface PageRange {
     readonly end?: number;
 }
 
-/** Options for {@link mergePdfs}. */
+/**
+ * Options for the page-tree manipulation API ({@link mergePdfs},
+ * {@link splitPdf}, {@link extractPages}).
+ */
 export interface MergeOptions {
     /**
      * Drop signature fields/widgets. Accepted for clarity; merging always
@@ -55,6 +58,18 @@ export interface MergeOptions {
     readonly dropSignatures?: boolean;
     /** Drop **all** annotations (default keeps self-contained URI links). */
     readonly dropAnnotations?: boolean;
+    /**
+     * Maximum size, in bytes, of the assembled output document. The operation
+     * throws as soon as the copied object graph would exceed this limit — even
+     * mid-copy, before a multi-gigabyte stream is materialised — so a malicious
+     * or accidentally huge source cannot exhaust process memory.
+     *
+     * Defaults to `268435456` (256 MiB). Pass `Infinity` to disable the guard
+     * (not recommended for untrusted input).
+     *
+     * @defaultValue 268435456 (256 MiB)
+     */
+    readonly maxOutputSize?: number;
 }
 
 const MAX_MERGE_SOURCES = 50;
@@ -67,6 +82,26 @@ const INHERITABLE_KEYS = ['MediaBox', 'CropBox', 'Rotate'] as const;
  * 1000; this bounds the combined ref-hop + nesting recursion).
  */
 const MAX_COPY_DEPTH = 2000;
+/**
+ * Default output-size ceiling (256 MiB). Bounds total memory committed to the
+ * assembled document so an adversarial source PDF cannot trigger an OOM. Tune
+ * via {@link MergeOptions.maxOutputSize}.
+ */
+const DEFAULT_MAX_OUTPUT_SIZE = 256 * 1024 * 1024;
+
+/**
+ * Validate a caller-supplied `maxOutputSize`, returning the effective limit.
+ * Accepts a finite positive number or `Infinity`; rejects everything else.
+ */
+function resolveMaxOutputSize(value: number | undefined): number {
+    if (value === undefined) return DEFAULT_MAX_OUTPUT_SIZE;
+    if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+        throw new Error(
+            `maxOutputSize must be a positive number or Infinity (got ${String(value)})`,
+        );
+    }
+    return value;
+}
 
 // ── Public API ───────────────────────────────────────────────────────
 
@@ -83,6 +118,7 @@ export function mergePdfs(sources: readonly Uint8Array[], opts?: MergeOptions): 
     if (sources.length > MAX_MERGE_SOURCES) {
         throw new Error(`mergePdfs supports at most ${MAX_MERGE_SOURCES} sources (got ${sources.length})`);
     }
+    resolveMaxOutputSize(opts?.maxOutputSize); // validate early, before any I/O
     const specs: PageSpec[] = [];
     for (const src of sources) {
         const reader = openPdf(src);
@@ -99,10 +135,17 @@ export function mergePdfs(sources: readonly Uint8Array[], opts?: MergeOptions): 
  *
  * @param src         Source PDF bytes.
  * @param pageIndices 0-based page indices to keep.
+ * @param opts        See {@link MergeOptions} (e.g. `maxOutputSize`,
+ *                    `dropAnnotations`).
  * @throws If `src` is encrypted, indices is empty, or an index is out of range.
  */
-export function extractPages(src: Uint8Array, pageIndices: readonly number[]): Uint8Array {
+export function extractPages(
+    src: Uint8Array,
+    pageIndices: readonly number[],
+    opts?: MergeOptions,
+): Uint8Array {
     if (pageIndices.length === 0) throw new Error('extractPages requires at least one page index');
+    resolveMaxOutputSize(opts?.maxOutputSize); // validate early
     const reader = openPdf(src);
     assertNotEncrypted(reader);
     const count = reader.pageCount;
@@ -113,7 +156,7 @@ export function extractPages(src: Uint8Array, pageIndices: readonly number[]): U
         }
         specs.push({ reader, pageIndex: idx });
     }
-    return assemble(specs, {});
+    return assemble(specs, opts ?? {});
 }
 
 /**
@@ -121,11 +164,18 @@ export function extractPages(src: Uint8Array, pageIndices: readonly number[]): U
  *
  * @param src    Source PDF bytes.
  * @param ranges Inclusive 0-based page ranges.
+ * @param opts   See {@link MergeOptions} (e.g. `maxOutputSize`,
+ *               `dropAnnotations`); applied to every emitted document.
  * @returns One PDF per range, in order.
  * @throws If `src` is encrypted, ranges is empty, or a range is invalid.
  */
-export function splitPdf(src: Uint8Array, ranges: readonly PageRange[]): Uint8Array[] {
+export function splitPdf(
+    src: Uint8Array,
+    ranges: readonly PageRange[],
+    opts?: MergeOptions,
+): Uint8Array[] {
     if (ranges.length === 0) throw new Error('splitPdf requires at least one range');
+    resolveMaxOutputSize(opts?.maxOutputSize); // validate early
     const reader = openPdf(src);
     assertNotEncrypted(reader);
     const count = reader.pageCount;
@@ -138,7 +188,7 @@ export function splitPdf(src: Uint8Array, ranges: readonly PageRange[]): Uint8Ar
         }
         const specs: PageSpec[] = [];
         for (let i = start; i <= end; i++) specs.push({ reader, pageIndex: i });
-        out.push(assemble(specs, {}));
+        out.push(assemble(specs, opts ?? {}));
     }
     return out;
 }
@@ -182,6 +232,8 @@ function assemble(specs: PageSpec[], opts: MergeOptions): Uint8Array {
         nextNum: 3,
         bodies: new Map<number, string>(),
         memo: new Map<PdfReader, Map<number, number>>(),
+        maxOutputSize: resolveMaxOutputSize(opts.maxOutputSize),
+        totalBytes: 0,
     };
 
     const pageNums: number[] = [];
@@ -191,8 +243,8 @@ function assemble(specs: PageSpec[], opts: MergeOptions): Uint8Array {
 
     // Pages root + Catalog.
     const kids = pageNums.map(n => `${n} 0 R`).join(' ');
-    ctx.bodies.set(2, `<< /Type /Pages /Kids [${kids}] /Count ${pageNums.length} >>`);
-    ctx.bodies.set(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    setBody(ctx, 2, `<< /Type /Pages /Kids [${kids}] /Count ${pageNums.length} >>`);
+    setBody(ctx, 1, '<< /Type /Catalog /Pages 2 0 R >>');
 
     return serializeDocument(ctx);
 }
@@ -203,6 +255,32 @@ interface CopyCtx {
     readonly bodies: Map<number, string>;
     /** Per-source dedup: sourceObjNum → newObjNum. */
     readonly memo: Map<PdfReader, Map<number, number>>;
+    /** Hard ceiling on cumulative serialized output size (bytes). */
+    readonly maxOutputSize: number;
+    /** Running total of bytes committed to {@link bodies}. */
+    totalBytes: number;
+}
+
+/**
+ * Account for `n` bytes about to be committed to the output, throwing before
+ * the allocation happens if it would breach {@link CopyCtx.maxOutputSize}.
+ * Guards against memory exhaustion from adversarial or accidentally huge
+ * sources — checked *before* a large stream is materialised, not after.
+ */
+function accountBytes(ctx: CopyCtx, n: number): void {
+    ctx.totalBytes += n;
+    if (ctx.totalBytes > ctx.maxOutputSize) {
+        throw new Error(
+            `page-tree output exceeded the ${ctx.maxOutputSize}-byte maxOutputSize limit ` +
+            '(raise MergeOptions.maxOutputSize or pass Infinity to disable)',
+        );
+    }
+}
+
+/** Record a serialized object body, charging its byte cost against the cap. */
+function setBody(ctx: CopyCtx, num: number, body: string): void {
+    accountBytes(ctx, body.length);
+    ctx.bodies.set(num, body);
 }
 
 function memoFor(ctx: CopyCtx, reader: PdfReader): Map<number, number> {
@@ -245,7 +323,7 @@ function copyPage(ctx: CopyCtx, spec: PageSpec, opts: MergeOptions): number {
         if (annots) parts.push(`/Annots ${annots}`);
     }
 
-    ctx.bodies.set(pageNum, `<< ${parts.join(' ')} >>`);
+    setBody(ctx, pageNum, `<< ${parts.join(' ')} >>`);
     return pageNum;
 }
 
@@ -295,7 +373,8 @@ function copyObject(ctx: CopyCtx, reader: PdfReader, srcNum: number, srcGen: num
     if (isStream(resolved)) {
         ctx.bodies.set(newNum, serializeStreamBody(ctx, reader, resolved, depth));
     } else {
-        ctx.bodies.set(newNum, serializeValue(rewrite(ctx, reader, resolved, depth)));
+        const body = serializeValue(rewrite(ctx, reader, resolved, depth));
+        setBody(ctx, newNum, body);
     }
     return newNum;
 }
@@ -328,6 +407,10 @@ function rewrite(ctx: CopyCtx, reader: PdfReader, val: PdfValue, depth = 0): Pdf
 
 /** Serialize a stream object body: dict (with corrected /Length) + raw data. */
 function serializeStreamBody(ctx: CopyCtx, reader: PdfReader, stream: PdfStream, depth = 0): string {
+    // Pre-flight the raw payload against the cap *before* the (potentially
+    // multi-gigabyte) Latin-1 conversion, so an oversized stream is rejected
+    // rather than first materialised into a huge JS string.
+    accountBytes(ctx, stream.data.length);
     const dict: PdfDict = new Map();
     for (const [k, v] of stream.dict) {
         if (k === 'Length') continue; // recomputed below
@@ -338,6 +421,9 @@ function serializeStreamBody(ctx: CopyCtx, reader: PdfReader, stream: PdfStream,
     body += '\nstream\n';
     body += bytesToLatin1(stream.data);
     body += '\nendstream';
+    // Charge the wrapper overhead (dict + stream markers); the payload itself
+    // was already accounted above.
+    accountBytes(ctx, body.length - stream.data.length);
     return body;
 }
 

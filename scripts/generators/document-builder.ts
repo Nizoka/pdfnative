@@ -18,6 +18,33 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         ctx.writeSafe(resolve(ctx.outputDir, 'document', filename), `document/${filename}`, bytes);
     }
 
+    // ── Nested (hierarchical) lists (v1.4.0) ─────────────────────
+    {
+        const params: DocumentParams = {
+            title: 'Nested lists (v1.4.0)',
+            blocks: [
+                { type: 'heading', text: 'Hierarchical bullet & numbered lists', level: 1 },
+                { type: 'paragraph', text: 'A list item may be a plain string (leaf) or a { text, items } object carrying its own sub-list. Each deeper level indents one step; numbered sub-lists restart at 1.' },
+                {
+                    type: 'list', style: 'bullet', items: [
+                        'Top-level bullet',
+                        { text: 'Parent with children', items: ['Child A', { text: 'Child B', items: ['Grandchild B.1', 'Grandchild B.2'] }, 'Child C'] },
+                        'Another top-level bullet',
+                    ],
+                },
+                { type: 'heading', text: 'Numbered outline', level: 2 },
+                {
+                    type: 'list', style: 'numbered', items: [
+                        { text: 'Introduction', items: ['Background', 'Scope'] },
+                        { text: 'Methods', items: ['Apparatus', { text: 'Procedure', items: ['Setup', 'Run'] }] },
+                        'Conclusion',
+                    ],
+                },
+            ],
+        };
+        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-nested-lists.pdf'), 'document/doc-nested-lists.pdf', buildDocumentPDFBytes(params));
+    }
+
     // ── Unicode: Japanese ────────────────────────────────────────
     {
         const jaFd = await loadFontData('ja');

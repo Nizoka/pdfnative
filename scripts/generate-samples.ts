@@ -46,6 +46,8 @@ import { generate as generateCurrency } from './generators/currency-symbols.js';
 import { generate as generatePdfALatin } from './generators/pdfa-latin-embedding.js';
 import { generate as generateOutline } from './generators/outline-bookmarks.js';
 import { generate as generateManipulation } from './generators/pdf-manipulation.js';
+import { generate as generateViewerPrefs } from './generators/viewer-prefs-showcase.js';
+import { generate as generateFontValidation } from './generators/font-validation-showcase.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -154,6 +156,12 @@ async function generateAll(): Promise<void> {
 
     // ── Page-tree manipulation + streamToFile (v1.4.0) ───────────
     await generateManipulation(ctx);
+
+    // ── Viewer preferences (v1.4.0 — /PageLayout / /PageMode) ────
+    await generateViewerPrefs(ctx);
+
+    // ── Font-data validator report (v1.4.0) ──────────────────────
+    await generateFontValidation(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

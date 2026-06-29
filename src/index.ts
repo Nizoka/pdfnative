@@ -69,6 +69,7 @@ export type {
     PdfLayoutOptions,
     EncryptionOptions,
     PageTemplate,
+    ViewerPreferences,
     WatermarkText,
     WatermarkImage,
     WatermarkOptions,
@@ -84,6 +85,7 @@ export type {
     ParagraphBlock,
     TableBlock,
     ListBlock,
+    ListItem,
     SpacerBlock,
     PageBreakBlock,
     ImageBlock,
@@ -98,6 +100,7 @@ export type {
     OutlineItem,
     PageLabelRange,
     PageLabelStyle,
+    CellBorders,
 } from './types/pdf-document-types.js';
 
 // ── Core — PDF Builder ──────────────────────────────────────────────
@@ -179,6 +182,8 @@ export type { X509Name, X509Certificate } from './crypto/x509.js';
 export { parseCertificate, verifyCertSignature, isSelfSigned } from './crypto/x509.js';
 export type { SignatureAlgorithm, CmsSignOptions } from './crypto/cms.js';
 export { buildCmsSignedData, estimateCmsSize } from './crypto/cms.js';
+export type { CryptoProvider } from './crypto/crypto-provider.js';
+export { setCryptoProvider, getCryptoProvider } from './crypto/crypto-provider.js';
 export { initCrypto } from './crypto/index.js';
 
 export { downloadBlob, toBytes, slugify } from './core/pdf-stream.js';
@@ -201,6 +206,8 @@ export { toWinAnsi, pdfString, truncate, truncateToWidth, helveticaWidth, helvet
 export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';
+export type { FontValidationResult } from './fonts/font-validator.js';
+export { validateFontData } from './fonts/font-validator.js';
 
 // ── Shaping — Thai, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari & Multi-Script ─
 export { shapeThaiText } from './shaping/thai-shaper.js';

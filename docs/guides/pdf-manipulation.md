@@ -17,10 +17,10 @@ const b = readFileSync('body.pdf');
 // Merge
 writeFileSync('combined.pdf', mergePdfs([a, b]));
 
-// Split into page ranges (0-based, end-exclusive)
+// Split into page ranges (0-based, end inclusive; end defaults to start)
 const [intro, rest] = splitPdf(b, [
-  { start: 0, end: 2 },   // pages 0–1
-  { start: 2, end: 10 },  // pages 2–9
+  { start: 0, end: 1 },   // pages 0–1
+  { start: 2, end: 9 },   // pages 2–9
 ]);
 
 // Extract specific pages (0-based)
@@ -44,10 +44,20 @@ interface MergeOptions {
   dropSignatures?: boolean;
   /** Strip all annotations (links, comments, …) from the result. Default false. */
   dropAnnotations?: boolean;
+  /**
+   * Maximum size, in bytes, of the assembled output. The operation throws as
+   * soon as the copied object graph would exceed this limit — even mid-copy,
+   * before an oversized stream is materialised — so a malicious or accidentally
+   * huge source cannot exhaust process memory. Defaults to **256 MiB**; pass
+   * `Infinity` to disable (not recommended for untrusted input).
+   */
+  maxOutputSize?: number;
 }
 ```
 
 - Up to **50 source documents** per call (`MAX_MERGE_SOURCES`).
+- Output is hard-capped at **256 MiB** by default (`maxOutputSize`) so a hostile
+  source cannot OOM the process; raise it for legitimately large merges.
 - Page resources (`/Font`, `/XObject`, …) are deep-copied into a fresh
   object-number space, so there are no collisions between sources.
 - Inherited attributes (`/MediaBox`, `/CropBox`, `/Rotate`, `/Resources`) are
@@ -65,18 +75,20 @@ Splits one PDF into several, one output per range.
 function splitPdf(
   source: Uint8Array,
   ranges: readonly PageRange[],
+  options?: MergeOptions,
 ): Uint8Array[];
 
 interface PageRange {
   /** 0-based first page (inclusive). */
   start: number;
-  /** 0-based end page (exclusive). */
-  end: number;
+  /** 0-based last page (inclusive). Defaults to `start` (single page). */
+  end?: number;
 }
 ```
 
 Ranges may overlap and need not be contiguous. Each output is an independent,
-fully-formed PDF.
+fully-formed PDF. `options` (including `maxOutputSize`) applies to every emitted
+document.
 
 ## `extractPages(source, indices)`
 
@@ -84,10 +96,16 @@ Builds a new PDF from an explicit list of **0-based** page indices, in the order
 given — handy for reordering or cherry-picking.
 
 ```ts
-function extractPages(source: Uint8Array, indices: readonly number[]): Uint8Array;
+function extractPages(
+  source: Uint8Array,
+  indices: readonly number[],
+  options?: MergeOptions,
+): Uint8Array;
 
 extractPages(pdf, [4, 0, 1]); // page 5 first, then 1, then 2
 ```
+
+`options` (including `maxOutputSize` and `dropAnnotations`) is honoured here too.
 
 ## Streaming the result to disk
 
@@ -113,6 +131,10 @@ directly with `node:fs` `writeFileSync`.
 - **Bounded-depth copy.** The object-graph copy is capped at a fixed recursion
   depth, so a pathologically nested or adversarial source can never overflow the
   stack — it throws a descriptive error instead.
+- **Bounded output size.** Cumulative output is capped at **256 MiB** by default
+  (`maxOutputSize`), checked *before* each stream is materialised, so a source
+  full of multi-gigabyte objects is rejected rather than allowed to exhaust
+  memory. Tune or disable (`Infinity`) per call.
 - **Deterministic output.** Every result carries a content-addressed trailer
   `/ID` (ISO 32000-1 §7.5.5) derived from the assembled bytes, so the same
   inputs always produce a byte-identical PDF — friendly to caching, diffing, and

@@ -152,9 +152,59 @@ async function generateSmartAutoFit(ctx: GenerateContext): Promise<void> {
     );
 }
 
+async function generateCellBordersVAlign(ctx: GenerateContext): Promise<void> {
+    const doc: DocumentParams = {
+        title: 'Table — cell borders + vertical alignment',
+        blocks: [
+            { type: 'heading', text: 'Per-cell borders + vertical alignment (v1.4.0)', level: 1 },
+            {
+                type: 'paragraph',
+                text: 'cellBorders strokes per-cell vector edges (solid/dashed/dotted); cellVAlign positions cell text top/middle/bottom within each row band. Both are opt-in — tables that set neither are byte-identical to pre-1.4.0.',
+            },
+            {
+                type: 'table',
+                headers: ['SKU', 'Item description', 'Qty', 'Amount'],
+                rows: [
+                    { cells: ['A-100', 'Single-line short cell', '2', '+24.00'], type: 'credit', pointed: false },
+                    { cells: ['A-101', 'A deliberately verbose multi-line wrapped description so the row grows tall enough to show vertical alignment', '1', '-9.50'], type: 'debit', pointed: false },
+                    { cells: ['A-102', 'Another item', '5', '+62.10'], type: 'credit', pointed: false },
+                ],
+                columns: [
+                    { f: 0.14, a: 'l', mx: 12, mxH: 12, vAlign: 'top' },
+                    { f: 0.55, a: 'l', mx: 80, mxH: 80 },
+                    { f: 0.12, a: 'c', mx: 8, mxH: 8, vAlign: 'bottom' },
+                    { f: 0.19, a: 'r', mx: 14, mxH: 14, kind: 'amount' },
+                ],
+                wrap: 'auto',
+                cellVAlign: 'middle',
+                cellBorders: { all: true, color: '#9aa0aa', width: 0.5, style: 'solid' },
+                caption: 'Table — solid borders, mixed vAlign',
+            },
+            { type: 'spacer', height: 16 },
+            {
+                type: 'table',
+                headers: ['Metric', 'Q1', 'Q2'],
+                rows: [
+                    { cells: ['Revenue', '120', '138'], type: 'credit', pointed: false },
+                    { cells: ['Margin', '18%', '21%'], type: 'credit', pointed: false },
+                ],
+                cellBorders: { bottom: true, style: 'dashed', color: '#1a4fad', width: 0.75 },
+                caption: 'Table — dashed bottom rule only',
+            },
+        ],
+        footerText: 'pdfnative v1.4.0 — cellBorders + cellVAlign',
+    };
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'document', 'table-cell-borders.pdf'),
+        'document/table-cell-borders.pdf',
+        buildDocumentPDFBytes(doc),
+    );
+}
+
 export async function generate(ctx: GenerateContext): Promise<void> {
     await generateWrapAuto(ctx);
     await generateMultiPageRepeatHeader(ctx);
     await generateZebraCaption(ctx);
     await generateSmartAutoFit(ctx);
+    await generateCellBordersVAlign(ctx);
 }

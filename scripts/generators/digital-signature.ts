@@ -280,6 +280,38 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         ctx.writeSafe(resolve(ctx.outputDir, 'signature', 'digital-signature-ecdsa.pdf'), 'signature/digital-signature-ecdsa.pdf', signed);
     }
 
+    // ── Pluggable crypto provider (v1.4.0 — per-call provider) ───
+    // Production code injects node:crypto for constant-time signing; here the
+    // provider routes the DER-encoded CMS signed attributes through the same
+    // demo ECDSA key so the result still verifies against the demo cert. This
+    // demonstrates the setCryptoProvider/provider wiring — rsaKey/ecKey become
+    // optional once a provider is set.
+    {
+        const cert = makeDemoCert('pdfnative Provider Demo', 'ec');
+        const sigDict = buildSigDict({
+            name: 'pdfnative Provider Demo',
+            reason: 'CryptoProvider escape hatch',
+            signingTime: new Date('2024-06-15T12:00:00Z'),
+        });
+        const pdfBytes = buildMinimalSignedPdf(sigDict, 'Pluggable Crypto Provider Demo');
+        const signOptions: PdfSignOptions = {
+            signerCert: cert,
+            algorithm: 'ecdsa-sha256',
+            name: 'pdfnative Provider Demo',
+            reason: 'CryptoProvider escape hatch',
+            signingTime: new Date('2024-06-15T12:00:00Z'),
+            provider: {
+                sign(tbs) {
+                    // Mirrors node:crypto: hash tbs, sign, return DER ECDSA sig.
+                    const { r, s } = ecdsaSignHash(sha256(tbs), DEMO_EC_KEY);
+                    return encodeDerSignature(r, s);
+                },
+            },
+        };
+        const signed = signPdfBytes(pdfBytes, signOptions);
+        ctx.writeSafe(resolve(ctx.outputDir, 'signature', 'digital-signature-provider.pdf'), 'signature/digital-signature-provider.pdf', signed);
+    }
+
     // ── Documentation PDF (unsigned, describes capabilities) ─────
     {
         const params: DocumentParams = {

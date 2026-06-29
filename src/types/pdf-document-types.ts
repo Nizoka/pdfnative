@@ -123,14 +123,79 @@ export interface TableBlock {
      * @since 1.2.0
      */
     readonly cellPadding?: number;
+    /**
+     * Draw borders around each header/data cell. When omitted, no cell borders
+     * are drawn (byte-identical to pre-1.4.0 — the table keeps only its header
+     * underline and row separators). See {@link CellBorders}.
+     *
+     * @since 1.4.0
+     */
+    readonly cellBorders?: CellBorders;
+    /**
+     * Vertical alignment of cell content within the row band: `'top'`,
+     * `'middle'`, or `'bottom'`. A per-column {@link ColumnDef.vAlign} overrides
+     * this. When omitted, the historic baseline placement is preserved exactly
+     * (byte-identical to pre-1.4.0).
+     *
+     * @since 1.4.0
+     */
+    readonly cellVAlign?: 'top' | 'middle' | 'bottom';
+}
+
+/**
+ * Per-cell border configuration for a {@link TableBlock}. All sides are off by
+ * default; enable individual sides or use `all: true`. Pure vector strokes
+ * (`re`/`l`/`S`), so output stays PDF/A-safe.
+ *
+ * @since 1.4.0
+ */
+export interface CellBorders {
+    /** Draw the top edge of each cell. */
+    readonly top?: boolean;
+    /** Draw the right edge of each cell. */
+    readonly right?: boolean;
+    /** Draw the bottom edge of each cell. */
+    readonly bottom?: boolean;
+    /** Draw the left edge of each cell. */
+    readonly left?: boolean;
+    /** Draw all four edges (shorthand; overrides the individual side flags). */
+    readonly all?: boolean;
+    /** Stroke colour. Default: `'0.8 0.8 0.8'` (light grey). */
+    readonly color?: PdfColor;
+    /** Stroke width in points. Default: `0.5`. */
+    readonly width?: number;
+    /** Stroke style. Default: `'solid'`. */
+    readonly style?: 'solid' | 'dashed' | 'dotted';
 }
 
 /** List block — bullet or numbered items. */
 export interface ListBlock {
     readonly type: 'list';
-    readonly items: readonly string[];
+    /**
+     * List entries. Each entry is either a plain string (leaf item) or a
+     * {@link ListItem} object that can carry its own nested sub-list, enabling
+     * hierarchical (multi-level) bullet/numbered lists. Plain strings and
+     * nested objects may be freely mixed. Passing only strings is byte-identical
+     * to the pre-1.4.0 flat-list behaviour.
+     */
+    readonly items: readonly (string | ListItem)[];
     readonly style: 'bullet' | 'numbered';
     readonly fontSize?: number;
+}
+
+/**
+ * A single hierarchical list entry: text plus an optional nested sub-list.
+ * Used by {@link ListBlock} to build multi-level outlines (bullets within
+ * bullets, numbered sub-items, …). Sub-items inherit the parent list's
+ * `style`; numbered sub-lists restart their numbering at 1.
+ *
+ * @since 1.4.0
+ */
+export interface ListItem {
+    /** The item's text content. */
+    readonly text: string;
+    /** Optional nested child entries (recursive). */
+    readonly items?: readonly (string | ListItem)[];
 }
 
 /** Spacer block — vertical whitespace. */
