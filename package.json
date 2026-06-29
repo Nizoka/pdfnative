@@ -40,7 +40,8 @@
   ],
   "sideEffects": false,
   "bin": {
-    "pdfnative-build-font": "./tools/build-font-data.cjs"
+    "pdfnative-build-font": "./tools/build-font-data.cjs",
+    "pdfnative-build-emoji-font": "./dist/tools/build-emoji-font.js"
   },
   "scripts": {
     "build": "tsup",

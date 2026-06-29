@@ -18,7 +18,8 @@ manipulation API** (`mergePdfs` / `splitPdf` / `extractPages`) that unblocks
 compositing** (sweep gradients + `PaintComposite` blend modes). Also bundles
 five additional pulled-forward items: `setCryptoProvider`, `validateFontData`,
 document viewer preferences, nested lists, and table cell borders + vertical
-alignment. 100% backward-compatible. 82 test files / 2143 tests, all green. See
+alignment, a bundled colour-emoji generator CLI, and an interactive PDF Toolkit
+playground. 100% backward-compatible. 83 test files / 2165 tests, all green. See
 full notes in [release-notes/v1.4.0.md](release-notes/v1.4.0.md).
 
 ### Added
@@ -87,7 +88,20 @@ full notes in [release-notes/v1.4.0.md](release-notes/v1.4.0.md).
   and per-column `ColumnDef.vAlign` position text top/middle/bottom. Both opt-in;
   byte-identical when unset. `CellBorders` exported.
 - **docs(samples):** two new generators — `outline-bookmarks.ts` and
-  `pdf-manipulation.ts` (195 sample PDFs total).
+  `pdf-manipulation.ts` (201 sample PDFs total).
+- **feat(tools):** `pdfnative-build-emoji-font` CLI — bundled with the package
+  (`npx pdfnative-build-emoji-font`), generates a colour-emoji data module with
+  exactly the glyphs you choose, from a few codepoints to the full ~3,600-glyph
+  Noto Color Emoji set, so users of the `pdfnative` package alone get complete
+  colour-emoji coverage without editing library source. `--download` fetches +
+  checksum-verifies the official OFL-1.1 font; `--ttf`, `--all`, `--preset`,
+  `--codepoints`, `--ranges`, `--out`, `--font-name`, `--types`. Dogfoods the
+  same deterministic build core as the bundled curated module.
+- **docs(site):** new **PDF Toolkit** playground
+  ([docs/playgrounds/toolkit.html](docs/playgrounds/toolkit.html)) — interactive,
+  in-browser demos of bookmarks, page labels, viewer preferences, nested lists,
+  table cell borders, and merge / split / extract. New
+  [colour-emoji-cli](docs/guides/colour-emoji-cli.md) guide.
 
 ### Security
 
@@ -97,7 +111,7 @@ full notes in [release-notes/v1.4.0.md](release-notes/v1.4.0.md).
 
 ### Changed
 
-- Sample count 178 → 195; test suite 1982 → 2143 (71 → 82 files).
+- Sample count 178 → 201; test suite 1982 → 2165 (71 → 83 files).
 
 ## [1.3.0] – 2026-06-30
 

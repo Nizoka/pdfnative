@@ -1,6 +1,6 @@
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks pdfnative-cli v1.1.0** (June 2026). Built on `pdfnative` 1.3.0. The CLI versions independently from the library — see the [release notes](https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.1.0).
+> **Tracks the latest published `pdfnative-cli`** (June 2026). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
 [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes six commands — `render`, `sign`, `inspect`, `verify`, `batch`, and `schema` (plus a `completion` helper) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, with an agent-native automation contract for autonomous AI and CI pipelines.
 

@@ -53,10 +53,10 @@ src/
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (.js/.d.ts) — 22 scripts + TTF source files
-tools/            # CLI tool (build-font-data.cjs) for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (34 generators; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0)
+tools/            # CLI tools: build-font-data.cjs (TTF → data module); build-emoji-font (bundled via tsup from scripts/build-emoji-font.ts → dist/tools/, npx pdfnative-build-emoji-font — generates colour-emoji data modules up to the full ~3,600-glyph set)
+scripts/          # Modular sample PDF generation (36 generators; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0). scripts/lib/ holds the shared deterministic emoji-build core (emoji-font-core.ts, curated-emoji.ts, emoji-cli.ts) used by both build-color-emoji-data.ts and the bundled build-emoji-font CLI
 test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf, extreme-bidi-isolates.pdf)
-tests/            # 2090+ tests (77 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
+tests/            # 2165+ tests (83 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
   └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, medical-800.html)
@@ -82,7 +82,7 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (2090+ tests, 77 files)
+npm run test            # vitest run (2165+ tests, 83 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
 npm run test:generate   # Generate 150+ sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/ baselines)
@@ -97,7 +97,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 2090+ tests (77 files)
+- All new code must have tests. Current: ~95% statement coverage, 2165+ tests (83 files)
 
 ## Conventions
 
@@ -219,6 +219,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Emoji: monochrome via Noto Emoji (OFL-1.1) under lang `'emoji'`. Detection in `src/shaping/script-registry.ts` (`EMOJI_RANGES`, `isEmojiCodepoint`, `containsEmoji`, `FITZPATRICK_START/END`, `ZWJ`, `VS15`, `VS16`). `detectCharLang(cp)` returns `'emoji'` for emoji codepoints; `splitTextByFont()` routes them to the registered `'emoji'` font automatically. Opt-in via `registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'))`. COLRv1 colour emoji shipped in v1.3.0 (Noto Color Emoji subset `fonts/noto-color-emoji-data.js`, opt-in under lang `'emoji'`; COLR v0/v1 layers → PDF Form XObjects with `/Shading` Type 2/3).
 - Colour-emoji selector drop (v1.3.0): `isZeroWidthFormat(cp)` in `script-registry.ts` (ZWJ 0x200D, ZWNJ 0x200C, VS15 0xFE0E, VS16 0xFE0F, Fitzpatrick 0x1F3FB–FF). `splitTextByFont()` drops such chars when NO registered font covers them (prevents `.notdef` tofu); joiners are still preserved when an Indic shaper font maps them. NOTE: `splitTextByFont` early-returns for single-font setups, so the drop only applies with 2+ fonts.
 - Colour-emoji computed BBox (v1.3.0): `renderColorGlyph()` in `pdf-color-glyph.ts` derives each colour-glyph Form `/BBox` from transformed contour bounds `[floor(minX)-1, floor(minY)-1, ceil(maxX)+1, ceil(maxY)+1]` (fallback `[0,0,unitsPerEm,unitsPerEm]`) — emoji dipping below the baseline are no longer clipped.
+- Bundled colour-emoji CLI (v1.4.0): `npx pdfnative-build-emoji-font` (bin → `dist/tools/build-emoji-font.js`, built by tsup from `scripts/build-emoji-font.ts` with a `#!/usr/bin/env node` banner + `noExternal: [/.*/]`). Lets pdfnative-only users generate a colour-emoji data module covering any glyph subset up to the **full ~3,600-glyph** Noto Color Emoji set — the package never bundles the ~32 MB source. Selects glyphs via `--ttf`|`--download` (pinned Google Fonts URL + SHA-256, warn-not-fail on mismatch) × `--all`|`--preset`|`--codepoints`|`--ranges`. Shared deterministic core lives in `scripts/lib/`: `emoji-font-core.ts` (`buildEmojiFontModule`, `allColorCodepoints` — imports `parseColrCpal`/`subsetTTF` from `src/fonts/`), `curated-emoji.ts` (`CURATED_EMOJI`, 221 codepoints), `emoji-cli.ts` (pure `parseArgs`/`parseHex`/`resolveCodepoints` — fully CI-testable without a TTF). `build-color-emoji-data.ts` was refactored onto the same core and emits the committed `fonts/noto-color-emoji-data.{js,d.ts}` **byte-identically** (single-quote `fontName`/`dtsTypeImport` emission preserves identity). CLI tests in `tests/tools/build-emoji-font.test.ts` (TTF-gated integration via `it.skipIf`).
 - UAX #9 embeddings: `normalizeBidiEmbeddings(text)` in `src/shaping/bidi.ts` rewrites LRE/RLE/LRO/RLO/PDF (U+202A–U+202E) to sealed-isolate equivalents (LRI/RLI/PDI) using a stack with max depth 125. `resolveBidiRuns()` invokes the normaliser transparently. X4–X5 character-level overrides inside LRO/RLO scopes are fully implemented (v1.3.0): every codepoint within the scope is forced to strong L (LRO) / strong R (RLO) before the W/N/L rules run.
 - USE-lite: `classifyUseCategory(cp)` + `classifyClusters(cps)` in `src/shaping/use-lite.ts` ship as a public API. As of v1.3.0 it is the joiner-classification authority across the Devanagari/Bengali/Tamil shapers (orphan ZWJ/ZWNJ no longer reach the cmap as `.notdef`; ZWJ continues a conjunct, ZWNJ breaks it keeping a visible virama).
 - Signature placeholder (v1.2.0, #45): `addSignaturePlaceholder(pdfBytes, options?)` in `src/core/pdf-sig-placeholder.ts` appends an AcroForm + invisible signature widget + `/Sig` dictionary via incremental update (ISO 32000-1 §7.5.6). Idempotent on already-signed PDFs (returns input unchanged when an `/FT /Sig` widget exists). `SigDictMetadata` interface (metadata-only subset of `PdfSignOptions`) extracted in `pdf-signature.ts` and shared by `buildSigDict()` and `addSignaturePlaceholder()`. `PdfModifier.addRawObject(body)` lets placeholder-style raw payloads round-trip without re-serialisation.
@@ -269,7 +270,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 2090+ tests (77 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
+- **95%+ test coverage** — 2165+ tests (83 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)

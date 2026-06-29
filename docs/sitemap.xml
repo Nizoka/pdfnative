@@ -7,7 +7,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://pdfnative.dev/</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -15,73 +15,79 @@
   <!-- Guides -->
   <url>
     <loc>https://pdfnative.dev/guides/</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/onboarding.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/quickstart.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/architecture.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/tables.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/pdfa.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/accessibility.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/signatures.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/streaming.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/colour-emoji.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/colour-emoji-cli.html</loc>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/outlines.html</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/pdf-manipulation.html</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -99,31 +105,31 @@
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/cli.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/mcp.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/react.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/troubleshooting.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/faq.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -131,43 +137,49 @@
   <!-- Playgrounds -->
   <url>
     <loc>https://pdfnative.dev/playgrounds/</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/all-scripts.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/playgrounds/toolkit.html</loc>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/extreme-scripts.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/medical-800.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/cli.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/mcp.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/react.html</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

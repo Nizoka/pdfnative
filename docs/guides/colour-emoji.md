@@ -36,11 +36,18 @@ and renders each colour glyph as a **PDF Form XObject**:
 | Solid layer (COLR v0 / `PaintSolid`) | `rg` fill of the layer's `glyf` outline, clipped with `W n` |
 | Linear gradient (`PaintLinearGradient`) | `/ShadingType 2` axial shading + `/ExtGState` constant alpha |
 | Radial gradient (`PaintRadialGradient`) | `/ShadingType 3` radial shading |
+| Sweep gradient (`PaintSweepGradient`) | flat-colour triangular wedges fanned around the centre (**v1.4.0**) |
+| Compositing (`PaintComposite`) | separable blend modes mapped to PDF `/BM` (Multiply, Screen, Overlay, Darken, Lighten, …) (**v1.4.0**) |
 | CPAL palette | per-stop RGB(A) colours |
 
 Each unique emoji produces **one indirect Form XObject**, deduplicated and
 forward-referenced into every page's `/XObject` resource dictionary. The text
 run emits `q s 0 0 s x y cm /CEm0 Do Q` to place the glyph.
+
+> **Advanced compositing (v1.4.0).** COLRv1 **sweep (conic) gradients** render as
+> native flat-shaded wedges, and `PaintComposite` **separable blend modes** map to
+> PDF `/BM` ExtGState operators. Structural Porter-Duff modes (Clear / Src / Dest /
+> Xor / …) and `PaintMask` fall back to the documented monochrome path.
 
 ## Opt-in, not default
 
@@ -66,17 +73,27 @@ the npm tarball regardless of tree-shaking — the full Noto Color Emoji build
 for consumers who never touch emoji. The subset keeps the install lean while the
 lazy `() => import(...)` keeps it out of bundles that don't reference it.
 
-To cover the full Noto Color Emoji set, build your own data module from the
-source font:
+To cover the **full** Noto Color Emoji set — or any custom selection — pdfnative
+ships an official generator CLI, `pdfnative-build-emoji-font`, so you never have
+to edit library source:
 
 ```bash
-# Download the source TTF, then:
-npx tsx scripts/build-color-emoji-data.ts
+# Every colour glyph (~3 600), fetched + checksum-verified from Google Fonts:
+npx pdfnative-build-emoji-font --download --all --out ./emoji-full.js
+
+# Or exactly the emoji you need (hex scalars and/or inclusive ranges):
+npx pdfnative-build-emoji-font --download \
+  --ranges 1F600-1F64F,2600-27BF --codepoints 2764,1F680 --out ./emoji.js
 ```
 
-Edit the `CURATED` codepoint array in
-[`scripts/build-color-emoji-data.ts`](https://github.com/Nizoka/pdfnative/blob/main/scripts/build-color-emoji-data.ts)
-to include the emoji you need, then register the generated module.
+Then register the module you generated:
+
+```ts
+registerFont('emoji', () => import('./emoji-full.js'));
+```
+
+See the [colour-emoji CLI guide](colour-emoji-cli.html) for every flag, offline
+usage with `--ttf`, and the checksum/licensing details.
 
 ## Advanced compositing (v1.4.0)
 

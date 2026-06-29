@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Toolkit Playground — pdfnative</title>
+  <meta name="description" content="Try pdfnative's document toolkit in your browser: outline bookmarks, page labels, viewer preferences, nested lists, cell borders, and merge / split / extract.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/toolkit.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/toolkit.html">
+  <meta property="og:title" content="PDF Toolkit Playground — pdfnative">
+  <meta property="og:description" content="Outline bookmarks, page labels, viewer preferences, nested lists, table cell borders, and merge / split / extract — all in your browser.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PDF Toolkit Playground — pdfnative">
+  <meta name="twitter:description" content="Outline bookmarks, page labels, viewer preferences, nested lists, table cell borders, and page-tree manipulation. Zero install.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; PDF Toolkit (v1.4.0)</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./toolkit.html" aria-current="page">PDF Toolkit</a>
+    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>PDF Toolkit — what's new in 1.4.0</h1>
+    <p>pdfnative 1.4.0 adds a document-assembly toolkit: <strong>outline bookmarks</strong>, <strong>page labels</strong>, <strong>viewer preferences</strong>, <strong>nested lists</strong>, <strong>table cell borders &amp; vertical alignment</strong>, and a page-tree API to <strong>merge / split / extract</strong> pages. Every demo below runs entirely in your browser and downloads a real PDF — open it in any compliant viewer (the bookmarks preset is best viewed in a desktop reader with a bookmarks panel).</p>
+
+    <div class="callout" style="margin:16px 0;padding:12px 16px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-size:14px;">
+      <strong>Also new in 1.4.0, but Node-only</strong> (no browser demo): <a href="../guides/streaming.html"><code>streamToFile()</code></a> writes a streamed PDF to disk with back-pressure; <a href="../guides/signatures.html">a pluggable crypto provider</a> (<code>setCryptoProvider</code>) lets you sign with native constant-time primitives; <a href="../guides/font-validation.html"><code>validateFontData()</code></a> sanity-checks a font module; and the <a href="../guides/colour-emoji-cli.html"><code>pdfnative-build-emoji-font</code> CLI</a> generates a colour-emoji module with exactly the glyphs you need.
+    </div>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
+      <label for="preset"><strong>Demo:</strong></label>
+      <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="bookmarks">Bookmarks · page labels · viewer preferences</option>
+        <option value="layout">Nested lists · table cell borders &amp; vertical alignment</option>
+        <option value="manipulation">Merge · split · extract pages</option>
+      </select>
+      <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
+      <span id="timer" style="font-size:13px;color:#64748b;"></span>
+    </div>
+
+    <p id="desc" style="margin-top:20px;color:#475569;font-size:15px;line-height:1.6;"></p>
+
+    <details style="margin-top:16px;" open>
+      <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
+      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+    </details>
+
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">v1.4.0 features exercised here:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li><strong>Outline / bookmarks</strong> — <code>outline: 'auto'</code> derives a bookmark tree from headings; explicit <code>OutlineItem[]</code> supports nesting, bold/italic/colour, and collapsed nodes (<code>open: false</code>).</li>
+        <li><strong>Page labels</strong> — <code>pageLabels</code> renders roman front-matter then decimal body numbering in the viewer's page box.</li>
+        <li><strong>Viewer preferences</strong> — <code>layout.viewerPreferences</code> opens the bookmark panel and shows the document title in the window chrome.</li>
+        <li><strong>Nested lists</strong> — <code>ListItem</code> entries nest bullet/numbered sub-lists to any depth.</li>
+        <li><strong>Table cell borders &amp; vertical alignment</strong> — <code>cellBorders</code> (solid / dashed / dotted) and <code>cellVAlign</code> per table or per column.</li>
+        <li><strong>Page-tree manipulation</strong> — <code>mergePdfs</code>, <code>splitPdf</code>, and <code>extractPages</code> rebuild a clean object graph from existing PDFs.</li>
+      </ul>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">All zero-dependency, all in the browser. The exact same code runs in Node.js, Deno, Bun and Web Workers.</p>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/">All guides</a></li>
+      <li><a href="./all-scripts.html">All 22 scripts playground →</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+const codeView = $('code-view');
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') {
+    status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5';
+  } else if (kind === 'success') {
+    status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7';
+  } else {
+    status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd';
+  }
+}
+
+const DESCRIPTIONS = {
+  bookmarks: 'Builds a six-section report. An auto-derived bookmark tree mirrors the headings, the front-matter pages use roman numerals (i, ii, iii) while the body uses decimals, and the viewer is asked to open with the bookmark panel showing. Open the result in a desktop reader to see the bookmarks panel.',
+  layout: 'Renders a hierarchical (multi-level) list and a table whose cells have dashed borders and middle vertical alignment — the amount column is right-aligned with its own per-column styling.',
+  manipulation: 'Generates a 2-page cover PDF and a 2-page appendix PDF in memory, merges them into one 4-page document, then extracts pages 1 and 3 into a third PDF. The merged document is downloaded; the status line reports the split/extract page counts.',
+};
+
+const CODE = {
+  bookmarks: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Quarterly Report',
+  blocks: [
+    { type: 'heading', text: 'Cover', level: 1 },
+    { type: 'heading', text: 'Table of Contents', level: 1 }, { type: 'pageBreak' },
+    { type: 'heading', text: '1. Summary', level: 1 },
+    { type: 'paragraph', text: 'Executive summary…' }, { type: 'pageBreak' },
+    { type: 'heading', text: '2. Results', level: 1 },
+    { type: 'heading', text: '2.1 Revenue', level: 2 }, { type: 'pageBreak' },
+    { type: 'heading', text: '3. Outlook', level: 1 },
+  ],
+  // Auto-derive a bookmark tree from the heading blocks.
+  outline: 'auto',
+  // Roman front matter (cover + ToC), then decimals for the body.
+  pageLabels: [
+    { startPage: 0, style: 'roman' },
+    { startPage: 2, style: 'decimal', start: 1 },
+  ],
+  layout: {
+    viewerPreferences: { pageMode: 'useOutlines', displayDocTitle: true },
+  },
+});
+
+downloadBlob(pdf, 'bookmarks-page-labels.pdf');`,
+  layout: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Layout Toolkit',
+  blocks: [
+    { type: 'heading', text: 'Project plan', level: 1 },
+    { type: 'list', style: 'numbered', items: [
+      { text: 'Phase 1 — Discovery', items: ['Interviews', 'Audit'] },
+      { text: 'Phase 2 — Build', items: [
+        { text: 'Backend', items: ['API', 'Database'] },
+        'Frontend',
+      ]},
+      'Phase 3 — Launch',
+    ]},
+    { type: 'table',
+      headers: ['Item', 'Qty', 'Amount'],
+      rows: [
+        { cells: ['Design retainer', '1', '4,000.00'], type: '', pointed: false },
+        { cells: ['Engineering (this long cell wraps within the row band)', '120', '36,000.00'], type: '', pointed: false },
+      ],
+      columns: [
+        { f: 0.6,  a: 'l', mx: 60, mxH: 60 },
+        { f: 0.15, a: 'c', mx: 8,  mxH: 8 },
+        { f: 0.25, a: 'r', mx: 14, mxH: 14, kind: 'amount', vAlign: 'middle' },
+      ],
+      cellBorders: { all: true, style: 'dashed', color: '#94a3b8', width: 0.75 },
+      cellVAlign: 'middle',
+    },
+  ],
+});
+
+downloadBlob(pdf, 'nested-lists-cell-borders.pdf');`,
+  manipulation: `import { buildDocumentPDFBytes, mergePdfs, splitPdf, extractPages, downloadBlob } from 'pdfnative';
+
+// Two small source documents, generated in memory.
+const cover = buildDocumentPDFBytes({ title: 'Cover', blocks: [
+  { type: 'heading', text: 'Cover page', level: 1 }, { type: 'pageBreak' },
+  { type: 'paragraph', text: 'Front matter.' },
+]});
+const appendix = buildDocumentPDFBytes({ title: 'Appendix', blocks: [
+  { type: 'heading', text: 'Appendix A', level: 1 }, { type: 'pageBreak' },
+  { type: 'paragraph', text: 'Appendix B.' },
+]});
+
+// Merge → 4-page document with a clean, renumbered object graph.
+const merged = mergePdfs([cover, appendix]);
+
+// Split into the two original halves…
+const halves = splitPdf(merged, [{ start: 0, end: 1 }, { start: 2, end: 3 }]);
+
+// …and extract just pages 1 and 3 into a new PDF.
+const picked = extractPages(merged, [0, 2]);
+
+downloadBlob(merged, 'merged.pdf');`,
+};
+
+function applyPreset(id) {
+  $('desc').textContent = DESCRIPTIONS[id];
+  codeView.textContent = CODE[id];
+  if (window.Prism) window.Prism.highlightElement(codeView);
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+let pdfMod = null;
+
+async function loadPdfnative() {
+  if (pdfMod) return pdfMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFBytes === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFBytes === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFBytes === 'function') { pdfMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not load pdfnative from CDN. ' + (lastErr ? lastErr.message : ''));
+}
+
+function buildBookmarks(mod) {
+  const pdf = mod.buildDocumentPDFBytes({
+    title: 'Quarterly Report',
+    blocks: [
+      { type: 'heading', text: 'Cover', level: 1 },
+      { type: 'paragraph', text: 'pdfnative 1.4.0 — bookmarks, page labels and viewer preferences.' },
+      { type: 'pageBreak' },
+      { type: 'heading', text: 'Table of Contents', level: 1 },
+      { type: 'paragraph', text: 'Front matter uses roman numerals.' },
+      { type: 'pageBreak' },
+      { type: 'heading', text: '1. Summary', level: 1 },
+      { type: 'paragraph', text: 'Executive summary of the quarter.' },
+      { type: 'pageBreak' },
+      { type: 'heading', text: '2. Results', level: 1 },
+      { type: 'heading', text: '2.1 Revenue', level: 2 },
+      { type: 'paragraph', text: 'Revenue grew across all regions.' },
+      { type: 'pageBreak' },
+      { type: 'heading', text: '3. Outlook', level: 1 },
+      { type: 'paragraph', text: 'Guidance for the next quarter.' },
+    ],
+    outline: 'auto',
+    pageLabels: [
+      { startPage: 0, style: 'roman' },
+      { startPage: 2, style: 'decimal', start: 1 },
+    ],
+    layout: { viewerPreferences: { pageMode: 'useOutlines', displayDocTitle: true } },
+  });
+  return { bytes: pdf, filename: 'bookmarks-page-labels.pdf', note: `${(pdf.length / 1024).toFixed(1)} KB · open the bookmarks panel in your reader` };
+}
+
+function buildLayout(mod) {
+  const pdf = mod.buildDocumentPDFBytes({
+    title: 'Layout Toolkit',
+    blocks: [
+      { type: 'heading', text: 'Project plan', level: 1 },
+      { type: 'list', style: 'numbered', items: [
+        { text: 'Phase 1 — Discovery', items: ['Stakeholder interviews', 'Technical audit'] },
+        { text: 'Phase 2 — Build', items: [
+          { text: 'Backend', items: ['API endpoints', 'Database schema'] },
+          'Frontend',
+        ] },
+        'Phase 3 — Launch',
+      ] },
+      { type: 'spacer', height: 16 },
+      { type: 'heading', text: 'Budget', level: 2 },
+      { type: 'table',
+        headers: ['Item', 'Qty', 'Amount'],
+        rows: [
+          { cells: ['Design retainer', '1', '4,000.00'], type: '', pointed: false },
+          { cells: ['Engineering (this long cell wraps onto several lines so you can see vertical centring within the row band)', '120', '36,000.00'], type: '', pointed: false },
+          { cells: ['Hosting', '12', '1,440.00'], type: '', pointed: false },
+        ],
+        columns: [
+          { f: 0.6,  a: 'l', mx: 60, mxH: 60 },
+          { f: 0.15, a: 'c', mx: 8,  mxH: 8 },
+          { f: 0.25, a: 'r', mx: 14, mxH: 14, kind: 'amount', vAlign: 'middle' },
+        ],
+        cellBorders: { all: true, style: 'dashed', color: '#94a3b8', width: 0.75 },
+        cellVAlign: 'middle',
+      },
+    ],
+  });
+  return { bytes: pdf, filename: 'nested-lists-cell-borders.pdf', note: `${(pdf.length / 1024).toFixed(1)} KB` };
+}
+
+function buildManipulation(mod) {
+  const cover = mod.buildDocumentPDFBytes({ title: 'Cover', blocks: [
+    { type: 'heading', text: 'Cover page', level: 1 }, { type: 'pageBreak' },
+    { type: 'paragraph', text: 'Front matter.' },
+  ] });
+  const appendix = mod.buildDocumentPDFBytes({ title: 'Appendix', blocks: [
+    { type: 'heading', text: 'Appendix A', level: 1 }, { type: 'pageBreak' },
+    { type: 'paragraph', text: 'Appendix B.' },
+  ] });
+  const merged = mod.mergePdfs([cover, appendix]);
+  const halves = mod.splitPdf(merged, [{ start: 0, end: 1 }, { start: 2, end: 3 }]);
+  const picked = mod.extractPages(merged, [0, 2]);
+  return {
+    bytes: merged,
+    filename: 'merged.pdf',
+    note: `merged ${(merged.length / 1024).toFixed(1)} KB · split into ${halves.length} files · extracted ${(picked.length / 1024).toFixed(1)} KB`,
+  };
+}
+
+const BUILDERS = { bookmarks: buildBookmarks, layout: buildLayout, manipulation: buildManipulation };
+
+async function generate() {
+  const id = $('preset').value;
+  const t0 = performance.now();
+  try {
+    setStatus('Loading pdfnative from CDN…', 'info');
+    const mod = await loadPdfnative();
+    setStatus('Generating PDF…', 'info');
+    const { bytes, filename, note } = BUILDERS[id](mod);
+    mod.downloadBlob(bytes, filename);
+    const ms = (performance.now() - t0).toFixed(0);
+    $('timer').textContent = `${note} · ${ms} ms`;
+    setStatus('PDF generated and downloaded.', 'success');
+  } catch (err) {
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  }
+}
+
+$('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('generate').addEventListener('click', generate);
+applyPreset('bookmarks');
+
+// Theme + hamburger parity with the rest of the site.
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('pdfnative-theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('pdfnative-theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

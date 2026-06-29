@@ -18,6 +18,7 @@
 - [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
 - [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
 - [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
+- [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set; pinned download + SHA-256 verification.
 
 ## Agent and AI integration
 
@@ -30,8 +31,8 @@
 ## Source
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
-- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 34 sample generators producing reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2090 tests across 77 files. 95%+ coverage.
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 36 sample generators producing reference PDFs.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2165 tests across 83 files. 95%+ coverage.
 
 ## Ecosystem
 

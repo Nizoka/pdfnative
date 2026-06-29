@@ -69,7 +69,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 2090+ tests across 77 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
+- **95%+ test coverage** — 2165+ tests across 83 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -93,8 +93,8 @@ npm install pdfnative
 - ♿ **Accessibility:** [docs/guides/accessibility.md](docs/guides/accessibility.md) — tagged PDF, PDF/UA, PDF/A.
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
-- 🎮 **Playgrounds:** [docs/playgrounds/extreme-scripts.html](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests) and [docs/playgrounds/medical-800.html](docs/playgrounds/medical-800.html) (800-page Web Worker showcase).
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~187 sample PDFs across 32 categories (see [Sample PDFs](#sample-pdfs) below).
+- 🎮 **Playgrounds:** [docs/playgrounds/extreme-scripts.html](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [docs/playgrounds/medical-800.html](docs/playgrounds/medical-800.html) (800-page Web Worker showcase), and [docs/playgrounds/toolkit.html](docs/playgrounds/toolkit.html) (v1.4.0 bookmarks, page labels, viewer prefs, nested lists, cell borders, merge/split/extract).
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~201 sample PDFs across 36 categories (see [Sample PDFs](#sample-pdfs) below).
 
 ## Why pdfnative?
 
@@ -399,6 +399,28 @@ npx pdfnative-build-font fonts/ttf/MyFont.ttf fonts/my-font-data.js
 ```
 
 The tool extracts cmap, widths, metrics, GSUB, GPOS, and embeds the raw TTF as base64.
+
+### Full colour-emoji coverage (`pdfnative-build-emoji-font`)
+
+The bundled colour-emoji module (`pdfnative/fonts/noto-color-emoji-data.js`)
+ships a lean curated subset to keep the package small. When you need glyphs
+beyond that subset — up to the **full ~3,600-glyph** Noto Color Emoji set — a
+second bundled binary generates a custom data module on demand, so even
+**pdfnative-only** users get full coverage without the package ever carrying the
+~32 MB source font:
+
+```bash
+# Download the pinned Noto Color Emoji (SHA-256 verified) and emit every glyph
+npx pdfnative-build-emoji-font --download --all --out my-color-emoji-data.js
+
+# …or build from a local TTF, selecting only the glyphs you need
+npx pdfnative-build-emoji-font --ttf NotoColorEmoji-Regular.ttf \
+  --codepoints "1F600,1F680,2764" --out my-color-emoji-data.js
+```
+
+Select glyphs with `--all`, `--preset`, `--codepoints`, or `--ranges`, then
+register the generated module under lang `'emoji'`. See the
+[Colour-emoji CLI guide](docs/guides/colour-emoji-cli.md).
 
 ## Visual PDF Inspection
 
@@ -1063,7 +1085,7 @@ src/
 
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (32 generators, 187+ PDFs)
+scripts/                  # Modular sample PDF generation (36 generators, 201+ PDFs)
 tests/                    # 1726+ tests (48 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
