@@ -58,8 +58,25 @@
     .cli-panel.active { display: block; }
     @media (max-width: 768px) { .cli-form, .cli-form fieldset > .grid { grid-template-columns: 1fr; } }
   </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "pdfnative-cli Command Builder",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any (browser-based)",
+    "browserRequirements": "Requires JavaScript and HTML5",
+    "url": "https://pdfnative.dev/playgrounds/cli.html",
+    "description": "Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, batch, and schema invocations with a live shell preview.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
+    "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
+  }
+  </script>
 </head>
 <body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
 
 <nav class="nav" role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
@@ -86,7 +103,7 @@
 <!-- Live version strip (compact) -->
 <div class="pn-version-strip" data-mode="compact" aria-label="Live published versions"></div>
 
-<main class="guide-shell">
+<main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; CLI command builder</p>
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
