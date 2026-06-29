@@ -22,6 +22,7 @@ import type {
     DocumentBlock,
     ImageBlock,
     TableBlock,
+    OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
 import { createEncodingContext } from './encoding-context.js';
@@ -31,6 +32,10 @@ import { getDecodedFontBytes } from '../fonts/font-loader.js';
 import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
 import { txt, txtTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
 import { toBytes } from './pdf-stream.js';
+import { buildOutlineObjects, type OutlineRenderItem } from './pdf-outline.js';
+import { buildPageLabelsDict } from './pdf-page-labels.js';
+import { buildViewerPreferences } from './pdf-viewer-prefs.js';
+import { parseColor } from './pdf-color.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
     FT_H, HEADER_H,
@@ -1190,6 +1195,63 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         }
     }
 
+    // ── Page labels (ISO 32000-1 §12.4.2) ───────────────────────────
+    // Inline number tree — no indirect objects required.
+    let pageLabelsStr = '';
+    if (params.pageLabels && params.pageLabels.length > 0) {
+        pageLabelsStr = ` /PageLabels ${buildPageLabelsDict(params.pageLabels, totalPages)}`;
+    }
+
+    // ── Viewer preferences (ISO 32000-1 §12.2) ─────────────────────
+    // Catalog-level /PageLayout + /PageMode and the /ViewerPreferences dict.
+    // An explicit pageMode here takes precedence over the outline's default.
+    const viewerPrefs = layout?.viewerPreferences
+        ? buildViewerPreferences(layout.viewerPreferences)
+        : undefined;
+    let viewerPrefsStr = viewerPrefs?.dict ?? '';
+    if (viewerPrefs?.pageLayout) {
+        viewerPrefsStr = ` /PageLayout /${viewerPrefs.pageLayout}${viewerPrefsStr}`;
+    }
+
+    // ── Document outline / bookmarks (ISO 32000-1 §12.3.3) ──────────
+    // Outline items are indirect objects, appended after every other
+    // trailing object so their object numbers never collide.
+    let outlineCatalogStr = '';
+    if (params.outline) {
+        const items: OutlineRenderItem[] =
+            params.outline === 'auto'
+                ? autoOutlineFromHeadings(headingDests)
+                : params.outline.map(mapOutlineItem);
+        if (items.length > 0) {
+            const outlineStart = totalObjs + 1;
+            const built = buildOutlineObjects(
+                items,
+                outlineStart,
+                (pageIndex: number) => pageObjStart + pageIndex * 2,
+                pgH - mg.t,
+                fmtNum,
+                totalPages,
+            );
+            for (const [objNum, content] of built.objects) {
+                emitObj(objNum, content);
+            }
+            totalObjs = outlineStart + built.totalObjects - 1;
+            // The outline opens the bookmark panel by default via
+            // /PageMode /UseOutlines — unless viewer preferences set an
+            // explicit pageMode, which wins.
+            outlineCatalogStr = ` /Outlines ${built.rootObjNum} 0 R`;
+            if (!viewerPrefs?.pageMode) {
+                outlineCatalogStr += ' /PageMode /UseOutlines';
+            }
+        }
+    }
+
+    // Resolved /PageMode from viewer preferences (after outline, so the
+    // explicit value is appended exactly once).
+    if (viewerPrefs?.pageMode) {
+        viewerPrefsStr = ` /PageMode /${viewerPrefs.pageMode}${viewerPrefsStr}`;
+    }
+
     // ── Build named destinations for TOC ────────────────────────────
     let destsStr = '';
     if (hasToc && headingDests.length > 0) {
@@ -1231,7 +1293,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             `/MarkInfo << /Marked true >> ` +
             `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
             `/Metadata ${xmpObjNum} 0 R ` +
-            `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr}${acroFormStr}`;
+            `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr}${acroFormStr}${outlineCatalogStr}${pageLabelsStr}${viewerPrefsStr}`;
         if (afArrayStr) {
             catalogContent += ` /AF [${afArrayStr}] ${embeddedFilesNamesDict}`;
         }
@@ -1250,9 +1312,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 }
             }
         }
-    } else if (destsStr || acroFormStr) {
-        // Non-tagged mode with TOC destinations or AcroForm — rewrite catalog
-        const catalogContent = `<< /Type /Catalog /Pages 2 0 R${destsStr}${acroFormStr} >>`;
+    } else if (destsStr || acroFormStr || outlineCatalogStr || pageLabelsStr || viewerPrefsStr) {
+        // Non-tagged mode with TOC destinations, AcroForm, outline, page labels,
+        // or viewer preferences — rewrite catalog
+        const catalogContent = `<< /Type /Catalog /Pages 2 0 R${destsStr}${acroFormStr}${outlineCatalogStr}${pageLabelsStr}${viewerPrefsStr} >>`;
         const oldCatalog = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\n';
         const newCatalog = `1 0 obj\n${catalogContent}\nendobj\n\n`;
         const idx = parts.indexOf(oldCatalog);
@@ -1284,4 +1347,48 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
  */
 export function buildDocumentPDFBytes(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): Uint8Array {
     return toBytes(buildDocumentPDF(params, layoutOptions));
+}
+
+/** Convert a public {@link OutlineItem} to the builder's normalised form. */
+function mapOutlineItem(item: OutlineItem): OutlineRenderItem {
+    return {
+        title: item.title,
+        pageIndex: item.pageIndex,
+        y: item.y,
+        bold: item.bold,
+        italic: item.italic,
+        open: item.open,
+        color: item.color !== undefined ? parseColor(item.color) : undefined,
+        children: item.children ? item.children.map(mapOutlineItem) : undefined,
+    };
+}
+
+/**
+ * Derive a nested outline from heading blocks. Headings are nested by
+ * level: an H1 is a top-level item, an H2 becomes a child of the most
+ * recent H1, an H3 a child of the most recent H2. Out-of-order levels
+ * (e.g. a leading H2/H3) gracefully fall back to the top level.
+ */
+function autoOutlineFromHeadings(headings: readonly HeadingDestination[]): OutlineRenderItem[] {
+    const root: OutlineRenderItem[] = [];
+    // Mutable scaffolding (children arrays) mirrored onto readonly result nodes.
+    const stack: Array<{ level: number; children: OutlineRenderItem[] }> = [];
+    for (const h of headings) {
+        const node: OutlineRenderItem & { children: OutlineRenderItem[] } = {
+            title: h.text,
+            pageIndex: h.pageIndex,
+            y: h.y,
+            children: [],
+        };
+        while (stack.length > 0 && stack[stack.length - 1].level >= h.level) {
+            stack.pop();
+        }
+        if (stack.length === 0) {
+            root.push(node);
+        } else {
+            stack[stack.length - 1].children.push(node);
+        }
+        stack.push({ level: h.level, children: node.children });
+    }
+    return root;
 }

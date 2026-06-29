@@ -69,24 +69,40 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Configurable document block limit** (v1.3.0) — `layout.maxBlocks` replaces the hard-coded 10 000-block cap, default raised to 100 000 (`DEFAULT_MAX_BLOCKS`). Large multi-thousand-page reports no longer hit a spurious ceiling. ([src/core/pdf-document.ts](src/core/pdf-document.ts))
 - [x] **`validatePdfUA()` structural checker** (v1.3.0) — read-only ISO 14289-1 gate verifying `/MarkInfo`, `/StructTreeRoot` + `/ParentTree`, `/Metadata`, `/Lang`, and per-page `/MCID` uniqueness. Complements veraPDF. ([src/parser/pdf-ua-validator.ts](src/parser/pdf-ua-validator.ts))
 - [x] **Colour-emoji robustness** (v1.3.0) — variation selectors (VS-15/16), ZWJ/ZWNJ, and Fitzpatrick skin-tone modifiers no longer leave `.notdef` tofu (`isZeroWidthFormat()` drop in `splitTextByFont()`); colour-glyph Form `/BBox` is computed from contour bounds so emoji are never clipped. ([src/shaping/multi-font.ts](src/shaping/multi-font.ts), [src/core/pdf-color-glyph.ts](src/core/pdf-color-glyph.ts))
+- [x] **Document outline / bookmarks** (v1.4.0) — `/Outlines` tree for navigable PDF bookmarks. `DocumentParams.outline` accepts an explicit nested `OutlineItem[]` (with `bold`/`italic`/`color`) or `'auto'` (derived from heading blocks, nested by level). Emits `/PageMode /UseOutlines`. PDF/A-safe. ([src/core/pdf-outline.ts](src/core/pdf-outline.ts))
+- [x] **Page labels** (v1.4.0) — `/PageLabels` number tree via `DocumentParams.pageLabels` (`PageLabelRange[]`): decimal / roman / Roman / alpha / Alpha / prefix-only, with `prefix` and `start`. Roman-numeral front matter, prefixed appendices. PDF/A-safe. ([src/core/pdf-page-labels.ts](src/core/pdf-page-labels.ts))
+- [x] **`streamToFile()` Node helper** (v1.4.0) — pipes any streaming builder (`buildPDFStreamTrue` / `buildDocumentPDFStreamTrue` / `streamPdf`) straight to a file in constant memory, honouring write back-pressure and an optional `AbortSignal`. `node:fs` is loaded via a dynamic + type-only import, so the browser bundle stays clean. ([src/core/pdf-stream-writer.ts](src/core/pdf-stream-writer.ts))
+- [x] **Page-tree manipulation API** (v1.4.0) — `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a fresh document by deep-copying each kept page and its transitive object graph into a new contiguous object-number space (no unsafe in-place `/Kids`/`/Parent` surgery). Rejects encrypted sources; always drops signatures + `/AcroForm` (page edits invalidate `/ByteRange`); keeps self-contained URI `/Link` annotations. Unblocks `pdfnative-mcp`'s `merge_pdfs` / `split_pdf`. ([src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts))
+- [x] **COLRv1 advanced compositing** (v1.4.0) — sweep (conic) gradients rendered as flat-colour triangular wedges clipped to the glyph outline, and `PaintComposite` mapped to PDF `/BM` blend modes (Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference, Exclusion, Hue, Saturation, Color, Luminosity). Porter-Duff structural modes (Clear/Src/Dest/Xor/Plus/…) fall back to the documented monochrome path. ([src/fonts/colr-parser.ts](src/fonts/colr-parser.ts), [src/core/pdf-color-glyph.ts](src/core/pdf-color-glyph.ts))
+- [x] **Pluggable signature crypto provider** (v1.4.0) — `setCryptoProvider(provider)` (global) and `PdfSignOptions.provider` (per-call) inject a native, constant-time signer (`node:crypto` / Web Crypto / HSM) for CMS signing; the pure-JS RSA/ECDSA path stays the zero-dependency default. The clean fix for the documented timing side-channel ([SECURITY.md](SECURITY.md)) in high-frequency server signing. ([src/crypto/crypto-provider.ts](src/crypto/crypto-provider.ts))
+- [x] **Font-data validator** (v1.4.0) — `validateFontData(data)` structurally checks user-built font modules (SFNT magic, base64 integrity, `cmap` coverage, glyph-id range, `pdfWidthArray`, finite metrics) and returns `{ valid, errors, warnings }`. Opt-in and standalone (not auto-run by `registerFont`). Protects consumers who generate their own modules from untrusted TTFs. ([src/fonts/font-validator.ts](src/fonts/font-validator.ts))
+- [x] **Document viewer preferences** (v1.4.0) — `PdfLayoutOptions.viewerPreferences` emits catalog `/PageLayout` + `/PageMode` and the `/ViewerPreferences` dict (`hideToolbar`, `fitWindow`, `displayDocTitle`, `nonFullScreenPageMode`, `direction`, `printScaling`, …). Purely presentational, PDF/A-safe. ([src/core/pdf-viewer-prefs.ts](src/core/pdf-viewer-prefs.ts))
+- [x] **Nested (hierarchical) lists** (v1.4.0) — a `ListBlock.items` entry may be a plain string or a `{ text, items }` object carrying a nested sub-list; deeper levels indent, numbered sub-lists restart at 1, tagged mode nests `/L → /LI → /L`. String-only lists stay byte-identical. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
+- [x] **Table cell borders + vertical alignment** (v1.4.0) — `TableBlock.cellBorders` (sides/`all`, `color`, `width`, `solid`/`dashed`/`dotted`) draws per-cell vector strokes; `TableBlock.cellVAlign` and per-column `ColumnDef.vAlign` position text top/middle/bottom. Both opt-in; byte-identical when unset. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
+- [x] **Bundled colour-emoji generator CLI** (v1.4.0) — `npx pdfnative-build-emoji-font` (shipped in `dist/tools/`) lets pdfnative-only users generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set, without the package ever bundling the ~32 MB source. Accepts a local `--ttf` or a pinned `--download` (SHA-256 verified); selects glyphs via `--all`/`--preset`/`--codepoints`/`--ranges`. Shared deterministic build core keeps the curated module byte-identical. ([scripts/build-emoji-font.ts](scripts/build-emoji-font.ts))
+- [x] **Interactive PDF Toolkit playground** (v1.4.0) — a seventh browser playground exercising the v1.4.0 document features (bookmarks, page labels, viewer preferences, nested lists, table cell borders) plus the merge/split/extract page-tree API, entirely client-side. ([docs/playgrounds/toolkit.html](docs/playgrounds/toolkit.html))
 
 ## In Progress
 
-_All v1.3.0 in-progress items have been merged into the [v1.3.0 release](release-notes/v1.3.0.md). See Released above._
+_All v1.4.0 in-progress items have been merged into the [v1.4.0 release](release-notes/v1.4.0.md). See Released above._
 
 ## Planned
 
-### v1.4.0
+### v1.5.0
 
-- [ ] **Document outline / bookmarks** — `/Outlines` tree for navigable PDF bookmarks (deferred from v1.3.0; the catalog object-numbering scheme is intricate and warrants isolated work).
-- [ ] **Page labels** — `/PageLabels` for roman-numeral front matter and custom page numbering.
-- [ ] **`streamToFile()` Node helper** — convenience wrapper writing a streaming builder directly to a `WriteStream` / file path.
+- [ ] **Page labels in the viewer chrome** — surface `/PageLabels` in `inspect_pdf` and the docs playgrounds.
+- [ ] **Annotation read/write API** — typed annotation model (link, text, highlight, widget) to unblock `pdfnative-mcp`'s `redact_pdf` overlay mode.
+- [ ] **Encrypted-PDF round-trip** — Standard Security Handler **reader/decryptor** so the page-tree API can ingest encrypted sources.
+- [ ] **Streaming document generation** — turn `buildDocumentPDFBytes` assembly into an `AsyncGenerator` so block operators are yielded as they are produced (not just at write time), keeping peak memory constant for 10k-page documents. Must remain **byte-identical** to the buffered builders.
+- [ ] **Streaming page-tree manipulation** — `streamMergedPdfs` / `streamSplitPdf` variants that copy page objects straight into the output stream, holding only the cross-reference tables in memory, so multi-gigabyte merges run in a few MB of RAM. Complements the v1.4.0 `maxOutputSize` cap.
+- [ ] **Layout debug overlay & inspection guide** — opt-in `layout: { debug: true }` that overlays margin / content / cell boxes for visual layout debugging, a richer programmatic inspection output (object tree, embedded font/image sizes), and a new `debugging.md` guide built on the existing parser.
+
 
 ### Long-Term
 
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression
 - [ ] **Full Universal Shaping Engine** — Khmer, Myanmar, complex Sinhala
-- [ ] **COLRv1 advanced compositing** — sweep gradients + PaintComposite / PaintMask (Porter-Duff). v1.3.0 ships solid + linear + radial; advanced paints fall back to monochrome.
+- [ ] **COLRv1 PaintMask / variable paints** — soft-mask groups (`PaintComposite` luminosity masks) and variable-font COLR. v1.4.0 ships solid + linear + radial + sweep gradients and blend-mode compositing; masks and variable paints fall back to monochrome.
 
 ## How to Influence the Roadmap
 

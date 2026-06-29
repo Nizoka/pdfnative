@@ -69,6 +69,44 @@ interface StreamOptions {
 }
 ```
 
+## Draining to a file: `streamToFile` (v1.4.0)
+
+`streamToFile()` drains **any** `AsyncGenerator<Uint8Array>` — including all
+three streaming modes above — straight to a file on disk in Node.js. It honours
+the OS write back-pressure (awaiting the `'drain'` event when the kernel buffer
+fills) and supports cancellation via an `AbortSignal`, so a single call covers
+the common "generate a large PDF to disk without buffering it" case.
+
+```ts
+import { buildDocumentPDFStreamTrue, streamToFile } from 'pdfnative';
+
+const { bytesWritten, chunks } = await streamToFile(
+  buildDocumentPDFStreamTrue(params),
+  'report.pdf',
+);
+console.log(`Wrote ${bytesWritten} bytes in ${chunks} chunks`);
+```
+
+### Cancellation
+
+```ts
+const ac = new AbortController();
+setTimeout(() => ac.abort(), 5000); // give up after 5s
+
+await streamToFile(buildDocumentPDFStreamTrue(params), 'report.pdf', {
+  signal: ac.signal,
+}); // rejects with the abort reason; the partial file is closed
+```
+
+On abort — or on any write error — `streamToFile` releases the file descriptor
+and **removes the partially-written file** (best-effort), so a cancelled or
+failed run never leaves an orphaned half-written PDF on disk.
+
+`streamToFile` is Node-only — it loads `node:fs` lazily via a dynamic import,
+so importing it in a browser or Deno bundle adds no static Node dependency. In
+non-Node runtimes, drive the generator yourself with the Web Streams snippet
+above.
+
 ## Constraints
 
 Streaming is incompatible with two features that need a second pass over the

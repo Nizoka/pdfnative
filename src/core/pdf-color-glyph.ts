@@ -9,6 +9,10 @@
  *   - Linear gradients → `/Shading` Type 2 (axial) painted via `sh`,
  *     clipped to the glyph outline.
  *   - Radial gradients → `/Shading` Type 3, likewise.
+ *   - Sweep (conic) gradients → a fan of flat-colour triangular wedges
+ *     clipped to the outline (PDF has no native conic shading). (v1.4.0)
+ *   - Per-layer blend modes (`/BM`, from COLRv1 `PaintComposite`) via an
+ *     ExtGState applied around the layer's fill. (v1.4.0)
  *
  * The Form XObject's user space is font units; the caller scales it onto the
  * page with a `cm` and draws it with `Do`.
@@ -19,7 +23,7 @@
  */
 
 import type { Contour } from '../fonts/glyf-outline.js';
-import type { ColorGlyph, ColorLayer, ColorStop, CpalColor, LinearGradientPaint, RadialGradientPaint } from '../types/pdf-types.js';
+import type { ColorGlyph, ColorLayer, ColorStop, CpalColor, LinearGradientPaint, RadialGradientPaint, SweepGradientPaint } from '../types/pdf-types.js';
 
 /** A rendered colour glyph ready to be assembled into a Form XObject. */
 export interface ColorGlyphForm {
@@ -165,6 +169,76 @@ function radialShadingDict(p: RadialGradientPaint, m: Mat): string {
     return `<< /ShadingType 3 /ColorSpace /DeviceRGB /Coords [${n(x0)} ${n(y0)} ${n(p.r0 * s)} ${n(x1)} ${n(y1)} ${n(p.r1 * s)}] /Function ${buildGradientFunction(p.stops)} /Extend ${extendFlags(p.extend)} >>`;
 }
 
+/** Linearly interpolate a gradient's colour stops at offset `t` ∈ [0,1]. */
+function colorAtOffset(stops: readonly ColorStop[], t: number): CpalColor {
+    if (stops.length === 0) return [0, 0, 0, 255];
+    const sorted = stops.slice().sort((a, b) => a.offset - b.offset);
+    if (t <= sorted[0].offset) return sorted[0].color;
+    const last = sorted[sorted.length - 1];
+    if (t >= last.offset) return last.color;
+    for (let i = 0; i < sorted.length - 1; i++) {
+        const a = sorted[i], b = sorted[i + 1];
+        if (t >= a.offset && t <= b.offset) {
+            const span = b.offset - a.offset || 1;
+            const f = (t - a.offset) / span;
+            return [
+                Math.round(a.color[0] + (b.color[0] - a.color[0]) * f),
+                Math.round(a.color[1] + (b.color[1] - a.color[1]) * f),
+                Math.round(a.color[2] + (b.color[2] - a.color[2]) * f),
+                Math.round(a.color[3] + (b.color[3] - a.color[3]) * f),
+            ];
+        }
+    }
+    return last.color;
+}
+
+/**
+ * Render a sweep (conic) gradient as a fan of flat-colour triangular wedges,
+ * clipped to the already-emitted glyph outline. Pure path operators — no
+ * shading resource. `cx,cy` is the transformed centre; `maxR` covers the
+ * clip; `body` receives the operators; `gsFor` resolves an alpha ExtGState.
+ */
+function emitSweep(
+    p: SweepGradientPaint,
+    cx: number,
+    cy: number,
+    maxR: number,
+    body: string[],
+    gsFor: (alpha: number, bm: string | undefined) => string,
+    blendMode: string | undefined,
+): void {
+    const start = p.startAngle;
+    const end = p.endAngle;
+    const span = end - start;
+    if (Math.abs(span) < 0.01) {
+        const c = colorAtOffset(p.stops, 0);
+        const gs = gsFor(c[3] / 255, blendMode);
+        if (gs) body.push(`/${gs} gs`);
+        body.push(`${ch(c[0])} ${ch(c[1])} ${ch(c[2])} rg`);
+        body.push(`${n(cx - maxR)} ${n(cy - maxR)} ${n(2 * maxR)} ${n(2 * maxR)} re`);
+        body.push('f');
+        return;
+    }
+    const steps = Math.max(12, Math.min(180, Math.ceil(Math.abs(span) / 3)));
+    const r = maxR * 1.5; // overshoot; the clip trims the excess
+    const rad = Math.PI / 180;
+    for (let i = 0; i < steps; i++) {
+        const a0 = start + (span * i) / steps;
+        const a1 = start + (span * (i + 1)) / steps;
+        const tMid = (i + 0.5) / steps;
+        const c = colorAtOffset(p.stops, tMid);
+        const gs = gsFor(c[3] / 255, blendMode);
+        body.push('q');
+        if (gs) body.push(`/${gs} gs`);
+        body.push(`${ch(c[0])} ${ch(c[1])} ${ch(c[2])} rg`);
+        const x0 = cx + r * Math.cos(a0 * rad), y0 = cy + r * Math.sin(a0 * rad);
+        const x1 = cx + r * Math.cos(a1 * rad), y1 = cy + r * Math.sin(a1 * rad);
+        body.push(`${n(cx)} ${n(cy)} m ${n(x0)} ${n(y0)} l ${n(x1)} ${n(y1)} l h`);
+        body.push('f');
+        body.push('Q');
+    }
+}
+
 /**
  * Render a colour glyph into a {@link ColorGlyphForm}.
  *
@@ -180,9 +254,31 @@ export function renderColorGlyph(
     const body: string[] = [];
     const shadings: { name: string; dict: string }[] = [];
     const extGStates: { name: string; dict: string }[] = [];
-    const alphaMap = new Map<number, string>();
+    const gsMap = new Map<string, string>();
 
     let shadingIdx = 0;
+
+    /**
+     * Resolve (or create) an ExtGState for a given constant alpha + optional
+     * blend mode. Returns the resource name, or '' when both are defaults.
+     */
+    const gsFor = (alpha: number, bm: string | undefined): string => {
+        const a = Math.max(0, Math.min(1, alpha));
+        const needAlpha = a < 0.999;
+        const needBm = bm !== undefined && bm !== 'Normal';
+        if (!needAlpha && !needBm) return '';
+        const key = `${needAlpha ? a.toFixed(3) : '1'}|${needBm ? bm : ''}`;
+        let name = gsMap.get(key);
+        if (!name) {
+            name = `Gs${gsMap.size}`;
+            gsMap.set(key, name);
+            const parts: string[] = [];
+            if (needAlpha) parts.push(`/ca ${n(a)}`, `/CA ${n(a)}`);
+            if (needBm) parts.push(`/BM /${bm}`);
+            extGStates.push({ name, dict: `<< ${parts.join(' ')} >>` });
+        }
+        return name;
+    };
 
     // Track the union of all transformed contour points so the Form /BBox
     // encloses the actual artwork. A fixed `[0 0 upm upm]` box clips glyphs
@@ -194,6 +290,7 @@ export function renderColorGlyph(
 
     for (const layer of glyph.layers as ColorLayer[]) {
         const m: Mat = layer.transform ?? ID;
+        const bm = layer.blendMode;
         const contours = outlines(layer.glyphId);
         if (contours.length === 0) continue;
         const path = contoursToPath(contours, m);
@@ -210,20 +307,30 @@ export function renderColorGlyph(
 
         if (layer.paint.kind === 'solid') {
             const c: CpalColor = layer.paint.color;
-            const alpha = c[3] / 255;
             body.push('q');
-            if (alpha < 0.999) {
-                let gs = alphaMap.get(c[3]);
-                if (!gs) {
-                    gs = `GsA${alphaMap.size}`;
-                    alphaMap.set(c[3], gs);
-                    extGStates.push({ name: gs, dict: `<< /ca ${n(alpha)} /CA ${n(alpha)} >>` });
-                }
-                body.push(`/${gs} gs`);
-            }
+            const gs = gsFor(c[3] / 255, bm);
+            if (gs) body.push(`/${gs} gs`);
             body.push(`${ch(c[0])} ${ch(c[1])} ${ch(c[2])} rg`);
             body.push(path);
             body.push('f');
+            body.push('Q');
+        } else if (layer.paint.kind === 'sweep') {
+            // Clip to the outline, then fill angular wedges. Compute the
+            // covering radius from this layer's transformed contour points.
+            const [cx, cy] = tx(m, layer.paint.center[0], layer.paint.center[1]);
+            let r2 = 0;
+            for (const contour of contours) {
+                for (const pt of contour) {
+                    const [px, py] = tx(m, pt.x, pt.y);
+                    const d = (px - cx) * (px - cx) + (py - cy) * (py - cy);
+                    if (d > r2) r2 = d;
+                }
+            }
+            const maxR = Math.sqrt(r2) || 1;
+            body.push('q');
+            body.push(path);
+            body.push('W n');
+            emitSweep(layer.paint, cx, cy, maxR, body, gsFor, bm);
             body.push('Q');
         } else {
             const name = `Sh${shadingIdx++}`;
@@ -232,6 +339,8 @@ export function renderColorGlyph(
                 : radialShadingDict(layer.paint, m);
             shadings.push({ name, dict });
             body.push('q');
+            const gs = gsFor(1, bm);
+            if (gs) body.push(`/${gs} gs`);
             body.push(path);
             body.push('W n'); // clip to the outline
             body.push(`/${name} sh`);

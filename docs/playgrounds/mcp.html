@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>pdfnative-mcp Tool Explorer — 14 AI PDF tools for Claude, Cursor &amp; MCP clients</title>
-  <meta name="description" content="Browse all 14 pdfnative-mcp tools, read example prompts and JSON payloads, and generate the exact PDFs an AI assistant receives — right in your browser. No API keys, no install, no LLM cost.">
+  <title>MCP Tool Explorer — pdfnative</title>
+  <meta name="description" content="Browse all 14 pdfnative-mcp tools, read example prompts and JSON payloads, and generate the exact PDFs an AI assistant receives — in your browser.">
   <meta name="keywords" content="pdfnative-mcp, Model Context Protocol, MCP server, AI PDF generation, Claude Desktop, Cursor, PDF tools, generate PDF, PDF/A, digital signature">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/mcp.html">
@@ -78,6 +78,8 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
 <nav class="nav" role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
     <a class="nav-brand" href="../">
@@ -103,12 +105,13 @@
 <!-- Live version strip (compact) -->
 <div class="pn-version-strip" data-mode="compact" aria-label="Live published versions"></div>
 
-<main class="guide-shell">
+<main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; MCP tool explorer</p>
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
     <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./medical-800.html">Medical 800-page</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html" aria-current="page">MCP explorer</a>
@@ -117,9 +120,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
-    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> v1.2.0 into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>14 tools</strong> — including <code>validate_pdf</code>, <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code> (Factur-X / ZUGFeRD PDF/A-3), and <code>extract_text</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, token-frugal read modes (<code>verbosity</code> / <code>fields</code>), and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
-
-    <section id="pdfnative-versions" class="pn-versions" aria-label="Live package versions"></section>
+    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>14 tools</strong> — including <code>validate_pdf</code>, <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code> (Factur-X / ZUGFeRD PDF/A-3), and <code>extract_text</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, token-frugal read modes (<code>verbosity</code> / <code>fields</code>), and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
 
     <p style="font-size: 14px; color: var(--c-text-dim);">For the full integration story (config, security model, signed-document workflow), see the <a href="../guides/mcp.html">MCP guide</a>.</p>
 

@@ -291,6 +291,46 @@ img, svg { max-width: 100%; height: auto; }
   cursor: pointer;
 }
 .demo-picker:focus { outline: 2px solid var(--c-primary); outline-offset: 1px; }
+
+/* Accessible keyboard-focus indicator for all interactive elements (WCAG 2.4.7).
+   :focus-visible keeps the ring for keyboard users without showing it on mouse click. */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible,
+.btn:focus-visible,
+.theme-toggle:focus-visible,
+.nav-hamburger:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Skip-to-content link (WCAG 2.4.1 Bypass Blocks).
+   Visually hidden until focused, then slides into the top-left corner. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 2000;
+  padding: 10px 18px;
+  background: var(--c-primary);
+  color: var(--c-primary-fg);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  transition: top .15s ease-in-out;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid var(--c-primary-fg);
+  outline-offset: 2px;
+}
+[id="main-content"]:focus { outline: none; }
 .demo-source-link {
   font-size: 13px; font-weight: 600;
   white-space: nowrap;

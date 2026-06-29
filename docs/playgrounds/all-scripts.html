@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>All 22 Scripts + Emoji Playground — pdfnative</title>
-  <meta name="description" content="The ultimate stress test: generate a single PDF containing all 22 Unicode scripts pdfnative supports — Latin, Greek, Cyrillic, Arabic, Hebrew, Devanagari, Bengali, Tamil, Telugu, Sinhala, Thai, Khmer, Myanmar, Tibetan, Georgian, Armenian, Ethiopic, Chinese, Japanese, Korean — plus native COLRv1 colour emoji, all in your browser with zero install.">
+  <meta name="description" content="Generate one PDF with all 22 Unicode scripts pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji, in your browser.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/all-scripts.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
@@ -22,8 +22,25 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "All 22 Scripts + Emoji Playground",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any (browser-based)",
+    "browserRequirements": "Requires JavaScript and HTML5",
+    "url": "https://pdfnative.dev/playgrounds/all-scripts.html",
+    "description": "Generate one PDF with all 22 Unicode scripts pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji, in your browser.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
+    "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
+  }
+  </script>
 </head>
 <body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
 
 <nav class="nav" role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
@@ -47,12 +64,13 @@
   </div>
 </nav>
 
-<main class="guide-shell">
+<main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; All 22 scripts + emoji</p>
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
     <a href="./all-scripts.html" aria-current="page">All 22 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./medical-800.html">Medical 800-page</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>

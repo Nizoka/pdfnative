@@ -21,6 +21,9 @@
  *   - Image embedding (JPEG DCTDecode, PNG FlateDecode)
  *   - Hyperlinks (PDF link annotations with URL validation)
  *   - Barcode & QR code generation (Code 128, EAN-13, QR, Data Matrix, PDF417)
+ *   - Document outline/bookmarks (/Outlines) + page labels (/PageLabels)
+ *   - Page-tree manipulation: mergePdfs / splitPdf / extractPages
+ *   - Streaming output incl. streamToFile() to disk with back-pressure
  *   - Web Worker support for large datasets
  *   - Tree-shakeable ESM + CJS dual build
  *
@@ -66,6 +69,7 @@ export type {
     PdfLayoutOptions,
     EncryptionOptions,
     PageTemplate,
+    ViewerPreferences,
     WatermarkText,
     WatermarkImage,
     WatermarkOptions,
@@ -81,6 +85,7 @@ export type {
     ParagraphBlock,
     TableBlock,
     ListBlock,
+    ListItem,
     SpacerBlock,
     PageBreakBlock,
     ImageBlock,
@@ -92,6 +97,10 @@ export type {
     DocumentBlock,
     DocumentMetadata,
     DocumentParams,
+    OutlineItem,
+    PageLabelRange,
+    PageLabelStyle,
+    CellBorders,
 } from './types/pdf-document-types.js';
 
 // ── Core — PDF Builder ──────────────────────────────────────────────
@@ -151,13 +160,14 @@ export type { AddSignaturePlaceholderOptions } from './core/pdf-sig-placeholder.
 export { addSignaturePlaceholder } from './core/pdf-sig-placeholder.js';
 
 // ── Core — Streaming Output ─────────────────────────────────────────
-export type { StreamOptions } from './core/pdf-stream-writer.js';
+export type { StreamOptions, StreamToFileResult } from './core/pdf-stream-writer.js';
 export {
     validateDocumentStreamable, validateTableStreamable,
     chunkBinaryString, concatChunks, streamByteLength,
     buildDocumentPDFStream, buildPDFStream,
     buildDocumentPDFStreamPageByPage, buildPDFStreamPageByPage,
     buildDocumentPDFStreamTrue, buildPDFStreamTrue,
+    streamToFile,
 } from './core/pdf-stream-writer.js';
 
 // ── Crypto — Hashing, ASN.1, RSA, ECDSA, X.509, CMS ────────────────
@@ -172,6 +182,8 @@ export type { X509Name, X509Certificate } from './crypto/x509.js';
 export { parseCertificate, verifyCertSignature, isSelfSigned } from './crypto/x509.js';
 export type { SignatureAlgorithm, CmsSignOptions } from './crypto/cms.js';
 export { buildCmsSignedData, estimateCmsSize } from './crypto/cms.js';
+export type { CryptoProvider } from './crypto/crypto-provider.js';
+export { setCryptoProvider, getCryptoProvider } from './crypto/crypto-provider.js';
 export { initCrypto } from './crypto/index.js';
 
 export { downloadBlob, toBytes, slugify } from './core/pdf-stream.js';
@@ -194,6 +206,8 @@ export { toWinAnsi, pdfString, truncate, truncateToWidth, helveticaWidth, helvet
 export { createEncodingContext } from './core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry } from './fonts/font-loader.js';
 export type { FontLoader } from './fonts/font-loader.js';
+export type { FontValidationResult } from './fonts/font-validator.js';
+export { validateFontData } from './fonts/font-validator.js';
 
 // ── Shaping — Thai, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari & Multi-Script ─
 export { shapeThaiText } from './shaping/thai-shaper.js';
@@ -250,6 +264,8 @@ export type { PdfReader } from './parser/pdf-reader.js';
 export { openPdf } from './parser/pdf-reader.js';
 export type { PdfModifier } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
+export type { PageRange, MergeOptions } from './parser/pdf-pagetree.js';
+export { mergePdfs, splitPdf, extractPages } from './parser/pdf-pagetree.js';
 export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
 export { validatePdfUA } from './parser/pdf-ua-validator.js';
 export {

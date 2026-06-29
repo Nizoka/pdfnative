@@ -57,6 +57,21 @@ pdfnative ships pure-TypeScript implementations of RSA (PKCS#1 v1.5) and ECDSA (
 
 **Recommendation for high-security, high-frequency server pipelines**: perform signing externally using Node.js native `crypto.sign()` / `crypto.verify()` or WebCrypto `crypto.subtle.sign()` / `crypto.subtle.verify()`, both of which provide hardware-backed constant-time operations. You can then inject the pre-computed CMS/PKCS#7 blob into the PDF via `signPdfBytes()`. This avoids the pure-JS BigInt arithmetic path entirely.
 
+**Built-in escape hatch (since v1.4.0)**: rather than signing externally and re-injecting, you can install a native, constant-time signer directly via `setCryptoProvider(provider)` (global) or per call via `PdfSignOptions.provider`. The provider receives the DER-encoded CMS signed attributes and returns the raw signature value, so pdfnative's CMS assembly is reused while the secret-dependent RSA/ECDSA math runs in `node:crypto` / Web Crypto / an HSM. When a provider is set, `rsaKey` / `ecKey` are not required and the pure-JS BigInt path is never executed.
+
+```ts
+import { setCryptoProvider } from 'pdfnative';
+import { createSign, createPrivateKey } from 'node:crypto';
+
+const key = createPrivateKey(pemPrivateKey);
+setCryptoProvider({
+  sign(tbs /* DER signed attributes */, algorithm) {
+    // node:crypto hashes `tbs` with SHA-256 internally and returns the sig.
+    return new Uint8Array(createSign('sha256').update(tbs).sign(key));
+  },
+});
+```
+
 ### Input Validation
 
 - `buildPDF()` and `buildDocumentPDF()` validate all inputs at the API boundary

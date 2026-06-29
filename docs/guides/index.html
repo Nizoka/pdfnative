@@ -24,6 +24,8 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
 <nav class="nav" role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
     <a class="nav-brand" href="../">
@@ -46,7 +48,7 @@
   </div>
 </nav>
 
-<main class="guide-shell">
+<main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Guides</p>
   <article class="guide-content">
     <h1>Documentation Guides</h1>
@@ -62,7 +64,7 @@
     <ul class="guide-toc-list">
       <li>
         <a href="onboarding.html">Onboarding →</a>
-        <span class="guide-toc-desc">90-second start for the full ecosystem — library v1.3.0, pdfnative-cli v1.1.0, pdfnative-mcp v1.2.0, and pdfnative-react v0.2.0. Install + first call for each.</span>
+        <span class="guide-toc-desc">90-second start for the full ecosystem — the library, pdfnative-cli, pdfnative-mcp, and pdfnative-react. Install + first call for each.</span>
       </li>
       <li>
         <a href="quickstart.html">Quick Start →</a>
@@ -101,47 +103,75 @@
         <span class="guide-toc-desc">v1.3.0 COLRv1 colour emoji — opt-in Noto Color Emoji subset, solid + linear + radial gradient layers rendered as native PDF Form XObjects. Monochrome fallback when not registered.</span>
       </li>
       <li>
+        <a href="colour-emoji-cli.html">Colour-emoji font CLI →</a>
+        <span class="guide-toc-desc">v1.4.0 <code>pdfnative-build-emoji-font</code> — bundled CLI that generates a colour-emoji data module with exactly the glyphs you need, from a few codepoints to the full ~3,600-glyph set. <code>--download</code> + checksum, <code>--ttf</code>, <code>--all</code>, <code>--ranges</code>.</span>
+      </li>
+      <li>
         <a href="streaming.html">Streaming output →</a>
-        <span class="guide-toc-desc">v1.3.0 true constant-memory streaming — <code>buildDocumentPDFStreamTrue()</code> yields chunks while freeing each part, so the full PDF binary never materialises. Plus fixed-size and object-boundary variants.</span>
+        <span class="guide-toc-desc">v1.3.0 true constant-memory streaming — <code>buildDocumentPDFStreamTrue()</code> yields chunks while freeing each part, so the full PDF binary never materialises. Plus fixed-size and object-boundary variants, and the new v1.4.0 <code>streamToFile()</code> disk drain.</span>
+      </li>
+      <li>
+        <a href="outlines.html">Outlines &amp; page labels →</a>
+        <span class="guide-toc-desc">v1.4.0 navigable bookmarks (<code>/Outlines</code>) — explicit nested tree or <code>outline: 'auto'</code> from headings — and logical page numbering (<code>/PageLabels</code>): roman front matter, prefixed appendices, custom starts.</span>
+      </li>
+      <li>
+        <a href="pdf-manipulation.html">PDF manipulation →</a>
+        <span class="guide-toc-desc">v1.4.0 page-tree API — <code>mergePdfs()</code>, <code>splitPdf()</code>, <code>extractPages()</code>. Production-safe clean object-graph rebuild with resolved inherited attributes and optional signature/annotation stripping.</span>
+      </li>
+      <li>
+        <a href="viewer-preferences.html">Viewer preferences →</a>
+        <span class="guide-toc-desc">v1.4.0 <code>viewerPreferences</code> — control how a reader presents the document on open: page layout, page mode, full-screen kiosk, fit/centre window, reading direction, print scaling. PDF/A-safe.</span>
+      </li>
+      <li>
+        <a href="font-validation.html">Font-data validation →</a>
+        <span class="guide-toc-desc">v1.4.0 opt-in <code>validateFontData()</code> — structurally check custom font modules (SFNT magic, base64, cmap coverage, glyph-id range, finite metrics) and get <code>{ valid, errors, warnings }</code>.</span>
       </li>
       <li>
         <a href="mcp.html">MCP Integration →</a>
-        <span class="guide-toc-desc">Use pdfnative from Claude Desktop, Cursor, Continue, and Zed via pdfnative-mcp v1.2.0 — 14 tools (incl. <code>validate_pdf</code>, <code>verify_pdf</code>, <code>extract_attachments</code>, <code>extract_text</code>), <code>pdfA</code> flag, multi-script <code>lang</code>, and a signed-document workflow.</span>
+        <span class="guide-toc-desc">Use pdfnative from Claude Desktop, Cursor, Continue, and Zed via pdfnative-mcp — 14 tools (incl. <code>validate_pdf</code>, <code>verify_pdf</code>, <code>extract_attachments</code>, <code>extract_text</code>), <code>pdfA</code> flag, multi-script <code>lang</code>, and a signed-document workflow.</span>
       </li>
       <li>
         <a href="cli.html">CLI →</a>
-        <span class="guide-toc-desc">pdfnative-cli v1.1.0 — render, sign, inspect, verify, batch, and emit JSON Schemas from the terminal. Stdin/stdout pipelines, constant-memory streaming, PDF/UA &amp; PDF/A checks, PAdES-T verification, secret-safe signing, and an agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code> contract.</span>
+        <span class="guide-toc-desc">pdfnative-cli — render, sign, inspect, verify, batch, and emit JSON Schemas from the terminal. Stdin/stdout pipelines, constant-memory streaming, PDF/UA &amp; PDF/A checks, PAdES-T verification, secret-safe signing, and an agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code> contract.</span>
       </li>
       <li>
         <a href="react.html">React →</a>
-        <span class="guide-toc-desc">pdfnative-react v0.2.0 — build PDFs declaratively with JSX. A custom React reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code> on-device to pdfnative blocks. Live-preview hooks, streaming, and a token-frugal <code>DocSpec</code>. React 19 peer dep on the React package only — the engine stays zero-dependency.</span>
+        <span class="guide-toc-desc">pdfnative-react — build PDFs declaratively with JSX. A custom React reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code> on-device to pdfnative blocks. Live-preview hooks, streaming, and a token-frugal <code>DocSpec</code>. React 19 peer dep on the React package only — the engine stays zero-dependency.</span>
       </li>
     </ul>
 
     <h2>Looking for samples?</h2>
-    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">32 generator categories producing 187 sample PDFs</a> covering every feature: financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, smart tables, and stress tests.</p>
+    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">36 generator categories producing 201 sample PDFs</a> covering every feature: financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, smart tables, outlines &amp; page labels, PDF manipulation, viewer preferences, font validation, and stress tests.</p>
 
     <h2>Interactive playgrounds</h2>
     <ul class="guide-toc-list">
-      <li>
-        <a href="../playgrounds/mcp.html">MCP tool explorer →</a>
-        <span class="guide-toc-desc">Browse the pdfnative-mcp v1.2.0 toolset (14 total), copy a ready-to-paste config snippet for Claude / Cursor / Continue / Zed, and generate the same PDFs an AI assistant would receive — all in your browser.</span>
-      </li>
-      <li>
-        <a href="../playgrounds/cli.html">CLI command builder →</a>
-        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> v1.1.0 commands (render / sign / inspect / verify / batch / schema) interactively — with <code>--watch</code>, <code>--template</code>, <code>--stream-true</code>, ECDSA-SHA256, PAdES-T detection, and one-click presets.</span>
-      </li>
-      <li>
-        <a href="../playgrounds/react.html">React renderer →</a>
-        <span class="guide-toc-desc">Write JSX in the browser and render a real PDF on-device via pdfnative-react v0.2.0 — components compile to pdfnative blocks with no SaaS round-trip. Loaded from a CDN for the demo; the published package stays zero-dependency at its core.</span>
-      </li>
       <li>
         <a href="../playgrounds/extreme-scripts.html">Extreme scripts playground →</a>
         <span class="guide-toc-desc">Stress-test BiDi (Arabic + Hebrew + Thai), Tamil deep conjuncts, Bengali &amp; Devanagari reph + ligature chains, and isolated Arabic harakat directly in the browser.</span>
       </li>
       <li>
+        <a href="../playgrounds/all-scripts.html">All 22 scripts + emoji →</a>
+        <span class="guide-toc-desc">The flagship showcase: render a single PDF spanning every Unicode script pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji.</span>
+      </li>
+      <li>
+        <a href="../playgrounds/toolkit.html">PDF Toolkit →</a>
+        <span class="guide-toc-desc">Exercise the v1.4.0 document features — outline bookmarks, page labels, viewer preferences, nested lists, table cell borders — plus the merge / split / extract page-tree API, all client-side.</span>
+      </li>
+      <li>
         <a href="../playgrounds/medical-800.html">Medical 800-page Web Worker playground →</a>
         <span class="guide-toc-desc">Generate a synthetic 800-page clinical report off the main thread using a Web Worker. Live progress, streaming output, optional Tagged PDF.</span>
+      </li>
+      <li>
+        <a href="../playgrounds/cli.html">CLI command builder →</a>
+        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> commands (render / sign / inspect / verify / batch / schema) interactively — with <code>--watch</code>, <code>--template</code>, <code>--stream-true</code>, ECDSA-SHA256, PAdES-T detection, and one-click presets.</span>
+      </li>
+      <li>
+        <a href="../playgrounds/mcp.html">MCP tool explorer →</a>
+        <span class="guide-toc-desc">Browse the pdfnative-mcp toolset (14 tools), copy a ready-to-paste config snippet for Claude / Cursor / Continue / Zed, and generate the same PDFs an AI assistant would receive — all in your browser.</span>
+      </li>
+      <li>
+        <a href="../playgrounds/react.html">React renderer →</a>
+        <span class="guide-toc-desc">Write JSX in the browser and render a real PDF on-device via pdfnative-react — components compile to pdfnative blocks with no SaaS round-trip. Loaded from a CDN for the demo; the published package stays zero-dependency at its core.</span>
       </li>
     </ul>
 

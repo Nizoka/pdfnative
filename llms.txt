@@ -1,12 +1,13 @@
 # pdfnative
 
-> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) compliant. Works in Node.js, browsers, Deno, Bun, and Web Workers. 22 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. Current version: 1.3.0.
+> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) compliant. Works in Node.js, browsers, Deno, Bun, and Web Workers. 22 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. Current version: 1.4.0.
 
 ## Docs
 
 - [README](https://github.com/Nizoka/pdfnative/blob/main/README.md): Full feature list, install, quick start, API surface, examples.
-- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, pixel-diff visual regression, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, opt-in NFC normalization, CSPRNG-only crypto, configurable block limit, validatePdfUA) + long-term (WASM, full USE).
+- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.4: document outline/bookmarks, page labels, page-tree manipulation (merge/split/extract), streamToFile, COLRv1 advanced compositing; v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, validatePdfUA) + long-term (WASM, full USE).
 - [CHANGELOG](https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md): Per-version changes.
+- [Release notes v1.4.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.4.0.md): document outline/bookmarks (`/Outlines`, `outline: 'auto'`), page labels (`/PageLabels`), page-tree manipulation (`mergePdfs`/`splitPdf`/`extractPages`, secure-by-default 256 MiB `maxOutputSize` cap), `streamToFile()`, COLRv1 sweep gradients + `PaintComposite` blend modes, pluggable signature crypto provider (`setCryptoProvider`), font-data validator (`validateFontData`), viewer preferences (`/ViewerPreferences`), nested lists, table cell borders + vertical alignment.
 - [Release notes v1.3.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.3.0.md): COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, pixel-diff visual regression, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, opt-in NFC normalization, CSPRNG-only crypto, configurable block limit, validatePdfUA, colour-emoji selector/BBox fixes, #48 CP-1252 fix.
 - [Release notes v1.2.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.2.0.md): `addSignaturePlaceholder()`, ASN.1 grandchild fix (#46), page-by-page streaming, UAX #9 embeddings, USE-lite classifier.
 - [Quick Start](https://pdfnative.dev/guides/quickstart.html): Install + first PDF in Node or browser.
@@ -17,6 +18,7 @@
 - [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
 - [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
 - [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
+- [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set; pinned download + SHA-256 verification.
 
 ## Agent and AI integration
 
@@ -29,8 +31,8 @@
 ## Source
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
-- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 32 sample generators producing reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 1982 tests across 71 files. 95%+ coverage.
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 36 sample generators producing reference PDFs.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2165 tests across 83 files. 95%+ coverage.
 
 ## Ecosystem
 

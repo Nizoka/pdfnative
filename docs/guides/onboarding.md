@@ -1,7 +1,6 @@
 # Onboarding — the pdfnative ecosystem in 90 seconds
 
-> **Tracks:** pdfnative 1.3.0 · pdfnative-cli 1.1.0 · pdfnative-mcp 1.2.0 · pdfnative-react 0.2.0
-> **Pick your entry point:** the library for code, the CLI for shell scripts, MCP for AI assistants, and React for declarative JSX. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs from the same zero-dependency engine.
+> **Pick your entry point:** the library for code, the CLI for shell scripts, MCP for AI assistants, and React for declarative JSX. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs from the same zero-dependency engine. Live versions for every package are shown at the top of the [documentation home](../index.html).
 
 ---
 

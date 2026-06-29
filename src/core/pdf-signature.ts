@@ -17,6 +17,7 @@
 import { sha256 } from '../crypto/sha.js';
 import { buildCmsSignedData, estimateCmsSize } from '../crypto/cms.js';
 import type { CmsSignOptions, SignatureAlgorithm } from '../crypto/cms.js';
+import type { CryptoProvider } from '../crypto/crypto-provider.js';
 import type { RsaPrivateKey } from '../crypto/rsa.js';
 import type { EcPrivateKey } from '../crypto/ecdsa.js';
 import type { X509Certificate } from '../crypto/x509.js';
@@ -53,6 +54,15 @@ export interface PdfSignOptions extends SigDictMetadata {
     readonly ecKey?: EcPrivateKey;
     /** Algorithm to use. Default: 'rsa-sha256'. */
     readonly algorithm?: SignatureAlgorithm;
+    /**
+     * Optional native signature provider (e.g. `node:crypto` / Web Crypto). When
+     * set — or when a global provider is installed via {@link setCryptoProvider}
+     * — the constant-time native signer replaces pdfnative's pure-JS RSA/ECDSA
+     * math, and `rsaKey` / `ecKey` become optional. A per-call provider takes
+     * precedence over the global one.
+     * @since 1.4.0
+     */
+    readonly provider?: CryptoProvider;
 }
 
 // ── Constants ────────────────────────────────────────────────────────
@@ -159,6 +169,7 @@ export function signPdfBytes(pdfBytes: Uint8Array, options: PdfSignOptions): Uin
         ecKey: options.ecKey,
         algorithm,
         signingTime: options.signingTime,
+        provider: options.provider,
     };
     const cms = buildCmsSignedData(cmsOptions);
 

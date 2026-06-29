@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>React Renderer — pdfnative-react playground</title>
-  <meta name="description" content="Write JSX in the browser and render a real PDF on-device with pdfnative-react. A custom React reconciler compiles <Document>/<Table>/<Barcode> components straight to pdfnative blocks — no SaaS round-trip, no Chromium. Live preview, presets, copy-to-clipboard. Zero install.">
+  <meta name="description" content="Write JSX in the browser and render a real PDF on-device with pdfnative-react — a custom React reconciler compiles components straight to pdfnative blocks.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/react.html">
   <meta property="og:type" content="website">
@@ -45,8 +45,25 @@
     [data-theme="dark"] .rx-status.ok { background: #052e16; border-color: #166534; color: #bbf7d0; }
     .rx-note { margin-top: 18px; padding: 14px 16px; border-left: 3px solid var(--c-primary); background: var(--c-surface); border-radius: 0 8px 8px 0; font-size: 13px; line-height: 1.6; }
   </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "pdfnative-react Renderer Playground",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any (browser-based)",
+    "browserRequirements": "Requires JavaScript and HTML5",
+    "url": "https://pdfnative.dev/playgrounds/react.html",
+    "description": "Write JSX in the browser and render a real PDF on-device with pdfnative-react — a custom React reconciler compiles components straight to pdfnative blocks.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
+    "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
+  }
+  </script>
 </head>
 <body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
 
 <nav class="nav" role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
@@ -72,12 +89,13 @@
 
 <div class="pn-version-strip" data-mode="compact" aria-label="Live published versions"></div>
 
-<main class="guide-shell">
+<main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; React renderer</p>
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
     <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./medical-800.html">Medical 800-page</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>

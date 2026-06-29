@@ -8,13 +8,15 @@
  * Supported:
  *   - COLR v0 — layered solid fills.
  *   - COLR v1 — PaintColrLayers, PaintGlyph, PaintColrGlyph, PaintSolid,
- *     PaintLinearGradient, PaintRadialGradient, PaintTransform,
- *     PaintTranslate, PaintScale (+ around-center).
+ *     PaintLinearGradient, PaintRadialGradient, PaintSweepGradient,
+ *     PaintTransform, PaintTranslate, PaintScale (+ around-center),
+ *     PaintComposite (blend-mode-mappable composite modes).
  *
- * Unsupported paints (sweep gradients, compositing, variable paints) cause
- * the affected glyph to be skipped so the caller can fall back to the
- * monochrome emoji font. This keeps output correct (never garbled) while
- * covering the overwhelming majority of Noto Color Emoji glyphs.
+ * Unsupported paints (variable paints, Porter-Duff structural composite
+ * modes Clear/Src/Dest/Xor/…) cause the affected glyph to be skipped so the
+ * caller can fall back to the monochrome emoji font. This keeps output
+ * correct (never garbled) while covering the overwhelming majority of
+ * Noto Color Emoji glyphs.
  *
  * Zero external dependency.
  *
@@ -189,6 +191,24 @@ function resolveFill(ctx: ColrContext, offset: number, m: Mat): ColorPaint {
             const s = avgScale(m);
             return { kind: 'radial', c0: apply(m, x0, y0), r0: r0 * s, c1: apply(m, x1, y1), r1: r1 * s, stops, extend };
         }
+        case 8: { // PaintSweepGradient (conic) — v1.4.0
+            const colorLineOffset = getUint24(view, offset + 1);
+            const cx = view.getInt16(offset + 4), cy = view.getInt16(offset + 6);
+            // Angles: F2Dot14 value × 180° (counter-clockwise from +x axis).
+            const startAngle = f2dot14(view, offset + 8) * 180;
+            const endAngle = f2dot14(view, offset + 10) * 180;
+            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset);
+            // Fold the matrix rotation into the angles; translate the centre.
+            const rot = Math.atan2(m[1], m[0]) * 180 / Math.PI;
+            return {
+                kind: 'sweep',
+                center: apply(m, cx, cy),
+                startAngle: startAngle + rot,
+                endAngle: endAngle + rot,
+                stops,
+                extend,
+            };
+        }
         case 12: { // PaintTransform → fold into inner transform
             const subOffset = getUint24(view, offset + 1);
             const transformOffset = getUint24(view, offset + 4);
@@ -224,8 +244,10 @@ function readAffine(view: DataView, pos: number): Mat {
 /**
  * Collect the flat layer list for a base-glyph paint subtree, applying the
  * accumulated *outline* transform `m` and recursing through structural paints.
+ * `blendMode` is the PDF `/BM` name inherited from an enclosing
+ * `PaintComposite` (undefined = Normal).
  */
-function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer[], depth: number): void {
+function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer[], depth: number, blendMode?: string): void {
     if (depth > 16) throw new UnsupportedPaint('paint recursion too deep');
     const { view } = ctx;
     const format = view.getUint8(offset);
@@ -237,7 +259,7 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
             for (let i = 0; i < numLayers; i++) {
                 const idx = firstLayerIndex + i;
                 const paintOffset = view.getUint32(ctx.layerListBase + 4 + idx * 4);
-                collectLayers(ctx, ctx.layerListBase + paintOffset, m, out, depth + 1);
+                collectLayers(ctx, ctx.layerListBase + paintOffset, m, out, depth + 1, blendMode);
             }
             return;
         }
@@ -245,37 +267,80 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
             const subOffset = getUint24(view, offset + 1);
             const glyphId = view.getUint16(offset + 4);
             const paint = resolveFill(ctx, offset + subOffset, IDENTITY);
-            out.push(m === IDENTITY ? { glyphId, paint } : { glyphId, paint, transform: m });
+            const layer: ColorLayer = m === IDENTITY ? { glyphId, paint } : { glyphId, paint, transform: m };
+            out.push(blendMode ? { ...layer, blendMode } : layer);
             return;
         }
         case 11: { // PaintColrGlyph → reference another base glyph's paint
             const glyphId = view.getUint16(offset + 1);
             const paintOffset = baseGlyphPaintOffset(ctx, glyphId);
             if (paintOffset === null) throw new UnsupportedPaint('PaintColrGlyph missing base');
-            collectLayers(ctx, paintOffset, m, out, depth + 1);
+            collectLayers(ctx, paintOffset, m, out, depth + 1, blendMode);
             return;
         }
         case 12: { // PaintTransform
             const subOffset = getUint24(view, offset + 1);
             const transformOffset = getUint24(view, offset + 4);
             const t = readAffine(view, offset + transformOffset);
-            collectLayers(ctx, offset + subOffset, compose(m, t), out, depth + 1);
+            collectLayers(ctx, offset + subOffset, compose(m, t), out, depth + 1, blendMode);
             return;
         }
         case 14: { // PaintTranslate
             const subOffset = getUint24(view, offset + 1);
             const dx = view.getInt16(offset + 4), dy = view.getInt16(offset + 6);
-            collectLayers(ctx, offset + subOffset, compose(m, [1, 0, 0, 1, dx, dy]), out, depth + 1);
+            collectLayers(ctx, offset + subOffset, compose(m, [1, 0, 0, 1, dx, dy]), out, depth + 1, blendMode);
             return;
         }
         case 16: { // PaintScale
             const subOffset = getUint24(view, offset + 1);
             const sx = f2dot14(view, offset + 4), sy = f2dot14(view, offset + 6);
-            collectLayers(ctx, offset + subOffset, compose(m, [sx, 0, 0, sy, 0, 0]), out, depth + 1);
+            collectLayers(ctx, offset + subOffset, compose(m, [sx, 0, 0, sy, 0, 0]), out, depth + 1, blendMode);
+            return;
+        }
+        case 32: { // PaintComposite — v1.4.0
+            const sourceOffset = getUint24(view, offset + 1);
+            const mode = view.getUint8(offset + 4);
+            const backdropOffset = getUint24(view, offset + 5);
+            const bm = compositeModeToBlendMode(mode);
+            if (bm === null) throw new UnsupportedPaint(`composite mode ${mode}`);
+            // Paint the backdrop first (inheriting any outer blend), then the
+            // source composited over it with the mapped blend mode. SRC_OVER
+            // maps to 'Normal' → no per-layer /BM beyond the inherited one.
+            collectLayers(ctx, offset + backdropOffset, m, out, depth + 1, blendMode);
+            collectLayers(ctx, offset + sourceOffset, m, out, depth + 1, bm === 'Normal' ? blendMode : bm);
             return;
         }
         default:
             throw new UnsupportedPaint(`structural paint format ${format}`);
+    }
+}
+
+/**
+ * Map a COLR CompositeMode (§ COLR table) to a PDF `/BM` blend-mode name.
+ * Returns `null` for Porter-Duff structural modes that PDF cannot express,
+ * which triggers the monochrome fallback for the affected glyph.
+ */
+function compositeModeToBlendMode(mode: number): string | null {
+    switch (mode) {
+        case 3: return 'Normal';      // SRC_OVER
+        case 13: return 'Screen';
+        case 14: return 'Overlay';
+        case 15: return 'Darken';
+        case 16: return 'Lighten';
+        case 17: return 'ColorDodge';
+        case 18: return 'ColorBurn';
+        case 19: return 'HardLight';
+        case 20: return 'SoftLight';
+        case 21: return 'Difference';
+        case 22: return 'Exclusion';
+        case 23: return 'Multiply';
+        case 24: return 'Hue';
+        case 25: return 'Saturation';
+        case 26: return 'Color';
+        case 27: return 'Luminosity';
+        // 0 CLEAR, 1 SRC, 2 DEST, 4 DEST_OVER, 5 SRC_IN, 6 DEST_IN, 7 SRC_OUT,
+        // 8 DEST_OUT, 9 SRC_ATOP, 10 DEST_ATOP, 11 XOR, 12 PLUS → unsupported.
+        default: return null;
     }
 }
 

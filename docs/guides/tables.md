@@ -48,6 +48,8 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 | `caption`      | `string`                        | `undefined`                 | Caption printed once above the first slice.                                  |
 | `minRowHeight` | `number` (points)               | `12`                        | Minimum visual row height.                                                   |
 | `cellPadding`  | `number` (points)               | `3`                         | Internal cell padding.                                                       |
+| `cellBorders`  | `CellBorders`                   | `undefined`                 | Per-cell vector borders (v1.4.0). Omit for byte-identical pre-1.4.0 output.   |
+| `cellVAlign`   | `'top' \| 'middle' \| 'bottom'` | `undefined`                 | Vertical alignment of cell text within the row band (v1.4.0).                |
 
 ### `wrap`
 
@@ -76,6 +78,44 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 
 - `minRowHeight` enforces a floor so rows look consistent even with short text.
 - `cellPadding` is the internal padding around each cell's text. Header padding inherits this but the baseline offset is a fixed v1.1.0-compatible constant (preserves byte-stability for the row body).
+
+### `cellBorders` (v1.4.0)
+
+Draw per-cell vector borders. All sides are off by default — omitting `cellBorders` entirely keeps the table byte-identical to pre-1.4.0 (header underline + row separators only).
+
+```ts
+{
+    type: 'table',
+    headers: ['Item', 'Qty'],
+    rows: [/* … */],
+    cellBorders: {
+        all: true,            // shorthand for top+right+bottom+left
+        color: '#cccccc',     // PdfColor — default '0.8 0.8 0.8'
+        width: 0.5,           // points — default 0.5
+        style: 'solid',       // 'solid' | 'dashed' | 'dotted'
+    },
+}
+```
+
+| Field   | Type                                | Default         | Description                                          |
+| ------- | ----------------------------------- | --------------- | ---------------------------------------------------- |
+| `top` / `right` / `bottom` / `left` | `boolean`     | `false`         | Enable individual edges.                             |
+| `all`   | `boolean`                           | `false`         | Shorthand — enables all four edges.                  |
+| `color` | `PdfColor`                          | `'0.8 0.8 0.8'` | Stroke colour (hex / tuple / PDF-rgb).               |
+| `width` | `number` (points)                   | `0.5`           | Stroke width.                                        |
+| `style` | `'solid' \| 'dashed' \| 'dotted'`   | `'solid'`       | Stroke style. The dash is reset after each cell so row separators stay solid. |
+
+Borders are pure vector strokes (`m … l S`), so output stays PDF/A-safe.
+
+### `cellVAlign` (v1.4.0)
+
+Vertically align cell text within the row band. Useful when rows have a tall `minRowHeight` or wrapped cells of differing height. A per-column [`ColumnDef.vAlign`](#columndef-fields) overrides the table default.
+
+```ts
+{ type: 'table', headers: [/* … */], rows: [/* … */], minRowHeight: 30, cellVAlign: 'middle' }
+```
+
+`'top'` | `'middle'` | `'bottom'`. When omitted, the historic baseline placement is preserved exactly (byte-identical to pre-1.4.0).
 
 ---
 

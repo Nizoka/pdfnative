@@ -9,6 +9,7 @@ import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor } from '.
 import type { BarcodeFormat, QRErrorLevel } from '../core/pdf-barcode.js';
 import type { SvgRenderOptions } from '../core/pdf-svg.js';
 import type { FormFieldType } from '../core/pdf-form.js';
+import type { PageLabelRange } from '../core/pdf-page-labels.js';
 
 // ── Block Types ──────────────────────────────────────────────────────
 
@@ -122,14 +123,79 @@ export interface TableBlock {
      * @since 1.2.0
      */
     readonly cellPadding?: number;
+    /**
+     * Draw borders around each header/data cell. When omitted, no cell borders
+     * are drawn (byte-identical to pre-1.4.0 — the table keeps only its header
+     * underline and row separators). See {@link CellBorders}.
+     *
+     * @since 1.4.0
+     */
+    readonly cellBorders?: CellBorders;
+    /**
+     * Vertical alignment of cell content within the row band: `'top'`,
+     * `'middle'`, or `'bottom'`. A per-column {@link ColumnDef.vAlign} overrides
+     * this. When omitted, the historic baseline placement is preserved exactly
+     * (byte-identical to pre-1.4.0).
+     *
+     * @since 1.4.0
+     */
+    readonly cellVAlign?: 'top' | 'middle' | 'bottom';
+}
+
+/**
+ * Per-cell border configuration for a {@link TableBlock}. All sides are off by
+ * default; enable individual sides or use `all: true`. Pure vector strokes
+ * (`re`/`l`/`S`), so output stays PDF/A-safe.
+ *
+ * @since 1.4.0
+ */
+export interface CellBorders {
+    /** Draw the top edge of each cell. */
+    readonly top?: boolean;
+    /** Draw the right edge of each cell. */
+    readonly right?: boolean;
+    /** Draw the bottom edge of each cell. */
+    readonly bottom?: boolean;
+    /** Draw the left edge of each cell. */
+    readonly left?: boolean;
+    /** Draw all four edges (shorthand; overrides the individual side flags). */
+    readonly all?: boolean;
+    /** Stroke colour. Default: `'0.8 0.8 0.8'` (light grey). */
+    readonly color?: PdfColor;
+    /** Stroke width in points. Default: `0.5`. */
+    readonly width?: number;
+    /** Stroke style. Default: `'solid'`. */
+    readonly style?: 'solid' | 'dashed' | 'dotted';
 }
 
 /** List block — bullet or numbered items. */
 export interface ListBlock {
     readonly type: 'list';
-    readonly items: readonly string[];
+    /**
+     * List entries. Each entry is either a plain string (leaf item) or a
+     * {@link ListItem} object that can carry its own nested sub-list, enabling
+     * hierarchical (multi-level) bullet/numbered lists. Plain strings and
+     * nested objects may be freely mixed. Passing only strings is byte-identical
+     * to the pre-1.4.0 flat-list behaviour.
+     */
+    readonly items: readonly (string | ListItem)[];
     readonly style: 'bullet' | 'numbered';
     readonly fontSize?: number;
+}
+
+/**
+ * A single hierarchical list entry: text plus an optional nested sub-list.
+ * Used by {@link ListBlock} to build multi-level outlines (bullets within
+ * bullets, numbered sub-items, …). Sub-items inherit the parent list's
+ * `style`; numbered sub-lists restart their numbering at 1.
+ *
+ * @since 1.4.0
+ */
+export interface ListItem {
+    /** The item's text content. */
+    readonly text: string;
+    /** Optional nested child entries (recursive). */
+    readonly items?: readonly (string | ListItem)[];
 }
 
 /** Spacer block — vertical whitespace. */
@@ -273,6 +339,39 @@ export interface DocumentMetadata {
 }
 
 /**
+ * A document outline (bookmark) entry — ISO 32000-1 §12.3.3.
+ *
+ * Outline items form a navigable tree shown in a viewer's bookmarks
+ * panel. Each item points at a 0-based page index and may nest children.
+ * Bookmarks are purely navigational and PDF/A-safe.
+ *
+ * @since 1.4.0
+ */
+export interface OutlineItem {
+    /** Bookmark label (UTF-16BE encoded automatically). */
+    readonly title: string;
+    /** 0-based destination page index. */
+    readonly pageIndex: number;
+    /** Destination Y coordinate in points (default: top of page). */
+    readonly y?: number;
+    /** Render the label bold (`/F` flag bit 2). */
+    readonly bold?: boolean;
+    /** Render the label italic (`/F` flag bit 1). */
+    readonly italic?: boolean;
+    /** Label colour (`/C`). Accepts hex, RGB tuple, or PDF operator string. */
+    readonly color?: PdfColor;
+    /**
+     * Initial expansion state. `true` (default) renders the bookmark expanded
+     * (positive `/Count`); `false` renders it collapsed (negative `/Count`),
+     * hiding its children until the reader expands it. Only meaningful when the
+     * item has `children`.
+     */
+    readonly open?: boolean;
+    /** Nested child bookmarks. */
+    readonly children?: readonly OutlineItem[];
+}
+
+/**
  * Parameters for the free-form document PDF builder.
  *
  * @example
@@ -295,4 +394,26 @@ export interface DocumentParams {
     readonly fontEntries?: readonly FontEntry[];
     readonly metadata?: DocumentMetadata;
     readonly layout?: Partial<PdfLayoutOptions>;
+    /**
+     * Document outline / bookmarks (ISO 32000-1 §12.3.3).
+     *
+     * - An array of {@link OutlineItem}s builds an explicit bookmark tree.
+     * - The literal `'auto'` derives a flat outline from every `heading`
+     *   block in document order, using each heading's page and position.
+     *
+     * Adds `/Outlines` + `/PageMode /UseOutlines` to the catalog. PDF/A-safe.
+     *
+     * @since 1.4.0
+     */
+    readonly outline?: readonly OutlineItem[] | 'auto';
+    /**
+     * Page labels (ISO 32000-1 §12.4.2) — controls the page numbering shown
+     * in a viewer's page box and thumbnails (e.g. roman front matter then
+     * decimal body). Emitted as an inline `/PageLabels` number tree. PDF/A-safe.
+     *
+     * @since 1.4.0
+     */
+    readonly pageLabels?: readonly PageLabelRange[];
 }
+
+export type { PageLabelRange, PageLabelStyle } from '../core/pdf-page-labels.js';

@@ -45,19 +45,22 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
 - **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring, isolates (LRI/RLI/FSI/PDI), and explicit embeddings (LRE/RLE/LRO/RLO/PDF) including character-level X4–X5 overrides (v1.3.0)
 - **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` drive joiner classification across the Devanagari, Bengali, and Tamil shapers, fixing nukta+virama, half-form, eyelash-ra, and ya-phalaa edge cases (v1.3.0)
-- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset; solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). [Guide →](docs/guides/colour-emoji.md)
+- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset; solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. [Guide →](docs/guides/colour-emoji.md)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
 - **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments)
 - **PDF Encryption** — AES-128 (V4/R4) and AES-256 (V5/R6), owner + user passwords, granular permissions
-- **Free-form document builder** — headings, paragraphs, lists, tables, images, barcodes, SVG paths, form fields, spacers, page breaks, table of contents. Configurable block limit via `layout.maxBlocks` (default 100 000) for very large reports (v1.3.0)
-- **Smart tables** — multi-page slicing with repeated headers, auto-wrap on column overflow, zebra striping, captions, and smart auto-fit columns (v1.2.0). [Guide →](docs/guides/tables.md)
+- **Free-form document builder** — headings, paragraphs, lists (incl. **nested / hierarchical** bullet & numbered lists, v1.4.0), tables, images, barcodes, SVG paths, form fields, spacers, page breaks, table of contents. Configurable block limit via `layout.maxBlocks` (default 100 000) for very large reports (v1.3.0)
+- **Smart tables** — multi-page slicing with repeated headers, auto-wrap on column overflow, zebra striping, captions, and smart auto-fit columns (v1.2.0), plus per-cell **borders** (`cellBorders`) and **vertical alignment** (`cellVAlign` / `ColumnDef.vAlign`, v1.4.0). [Guide →](docs/guides/tables.md)
 - **Barcode & QR code generation** — Code 128, EAN-13, QR Code, Data Matrix, PDF417 — pure PDF path operators (no images)
 - **SVG path rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators
 - **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7)
-- **Digital signatures** — CMS/PKCS#7 detached signatures with RSA + ECDSA, SHA-256/384/512, X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0)
-- **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. [Guide →](docs/guides/streaming.md)
-- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0)
+- **Digital signatures** — CMS/PKCS#7 detached signatures with RSA + ECDSA, SHA-256/384/512, X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0). Pluggable **native crypto provider** (`setCryptoProvider()` / `PdfSignOptions.provider`, v1.4.0) for constant-time, hardware-backed signing (`node:crypto` / Web Crypto / HSM)
+- **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. One-call `streamToFile()` drains any stream to disk with back-pressure and `AbortSignal` support (v1.4.0). [Guide →](docs/guides/streaming.md)
+- **Document outline & page labels** — nested bookmarks (`/Outlines` tree, with bold/italic/colour, collapsible nodes via `open: false`, explicit or `outline: 'auto'` from headings) and logical page numbering (`/PageLabels`: decimal, roman, alpha, prefixes, custom start) (v1.4.0). [Guide →](docs/guides/outlines.md)
+- **Viewer preferences** — `PdfLayoutOptions.viewerPreferences` controls initial `/PageLayout` & `/PageMode` plus the `/ViewerPreferences` dict (hide toolbar/menubar, fit/center window, display doc title, non-full-screen mode, reading direction, print scaling) — PDF/A-safe (v1.4.0). [Guide →](docs/guides/viewer-preferences.md)
+- **Font-data validator** — opt-in `validateFontData()` structurally checks custom font modules (SFNT magic, base64 integrity, cmap coverage, glyph-id range, width array, finite metrics) and returns `{ valid, errors, warnings }` (v1.4.0). [Guide →](docs/guides/font-validation.md)
+- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0). **Page-tree manipulation** (v1.4.0): `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a clean object graph (inherited attributes resolved, annotations/signatures optionally dropped, deterministic trailer `/ID`, bounded-depth copy, 256 MiB output cap via `maxOutputSize`). [Guide →](docs/guides/pdf-manipulation.md)
 - **Image embedding** — JPEG (DCTDecode) and PNG (FlateDecode) with auto-scaling and alignment
 - **Hyperlinks** — PDF link annotations (/URI) with URL validation, blue underlined text, tagged /Link
 - **Header/footer templates** — configurable `PageTemplate` with left/center/right zones and `{page}`/`{pages}`/`{date}`/`{title}` placeholders
@@ -66,7 +69,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 1982+ tests across 71 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
+- **95%+ test coverage** — 2165+ tests across 83 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -90,8 +93,8 @@ npm install pdfnative
 - ♿ **Accessibility:** [docs/guides/accessibility.md](docs/guides/accessibility.md) — tagged PDF, PDF/UA, PDF/A.
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
-- 🎮 **Playgrounds:** [docs/playgrounds/extreme-scripts.html](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests) and [docs/playgrounds/medical-800.html](docs/playgrounds/medical-800.html) (800-page Web Worker showcase).
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~187 sample PDFs across 32 categories (see [Sample PDFs](#sample-pdfs) below).
+- 🎮 **Playgrounds:** [docs/playgrounds/extreme-scripts.html](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [docs/playgrounds/medical-800.html](docs/playgrounds/medical-800.html) (800-page Web Worker showcase), and [docs/playgrounds/toolkit.html](docs/playgrounds/toolkit.html) (v1.4.0 bookmarks, page labels, viewer prefs, nested lists, cell borders, merge/split/extract).
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~201 sample PDFs across 36 categories (see [Sample PDFs](#sample-pdfs) below).
 
 ## Why pdfnative?
 
@@ -397,6 +400,28 @@ npx pdfnative-build-font fonts/ttf/MyFont.ttf fonts/my-font-data.js
 
 The tool extracts cmap, widths, metrics, GSUB, GPOS, and embeds the raw TTF as base64.
 
+### Full colour-emoji coverage (`pdfnative-build-emoji-font`)
+
+The bundled colour-emoji module (`pdfnative/fonts/noto-color-emoji-data.js`)
+ships a lean curated subset to keep the package small. When you need glyphs
+beyond that subset — up to the **full ~3,600-glyph** Noto Color Emoji set — a
+second bundled binary generates a custom data module on demand, so even
+**pdfnative-only** users get full coverage without the package ever carrying the
+~32 MB source font:
+
+```bash
+# Download the pinned Noto Color Emoji (SHA-256 verified) and emit every glyph
+npx pdfnative-build-emoji-font --download --all --out my-color-emoji-data.js
+
+# …or build from a local TTF, selecting only the glyphs you need
+npx pdfnative-build-emoji-font --ttf NotoColorEmoji-Regular.ttf \
+  --codepoints "1F600,1F680,2764" --out my-color-emoji-data.js
+```
+
+Select glyphs with `--all`, `--preset`, `--codepoints`, or `--ranges`, then
+register the generated module under lang `'emoji'`. See the
+[Colour-emoji CLI guide](docs/guides/colour-emoji-cli.md).
+
 ## Visual PDF Inspection
 
 <a id="sample-pdfs"></a>
@@ -621,6 +646,24 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `parser-modified.pdf` | Generated → parsed → modified → incremental save |
 | `parser-document.pdf` | Document builder → parser round-trip verification |
 
+### Outline & Page Label Samples (v1.4.0)
+
+| File | Content |
+|------|---------|
+| `outline/outline-explicit.pdf` | Nested bookmarks (`/Outlines`) + roman/decimal page labels |
+| `outline/outline-auto.pdf` | `outline: 'auto'` — bookmarks derived from headings |
+| `outline/page-labels.pdf` | Roman front matter + prefixed appendix page labels |
+
+### PDF Manipulation Samples (v1.4.0)
+
+| File | Content |
+|------|---------|
+| `manipulation/merged.pdf` | `mergePdfs()` — multiple documents combined |
+| `manipulation/split-report.pdf` | `splitPdf()` — first page range |
+| `manipulation/split-invoice.pdf` | `splitPdf()` — second page range |
+| `manipulation/extract-reordered.pdf` | `extractPages()` — selected pages, reordered |
+| `manipulation/streamed.pdf` | `streamToFile()` — document streamed straight to disk |
+
 ## API Reference
 
 ### Core
@@ -708,6 +751,8 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `buildSigDict(options)` | Build `/Sig` dictionary with ByteRange/Contents placeholders |
 | `signPdfBytes(pdf, options)` | Sign a PDF with CMS/PKCS#7 detached signature |
 | `estimateContentsSize(options)` | Estimate hex-encoded `/Contents` size for pre-allocation |
+| `setCryptoProvider(provider)` | Install (or clear with `null`) a global native signature provider (v1.4.0) |
+| `getCryptoProvider()` | Return the current global `CryptoProvider`, or `null` (v1.4.0) |
 
 ### Streaming Output
 
@@ -724,6 +769,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `chunkBinaryString(str, chunkSize)` | Split binary string into `Uint8Array` chunks |
 | `concatChunks(chunks)` | Concatenate `Uint8Array` chunks into one |
 | `streamByteLength(stream)` | Count total bytes from an async stream |
+| `streamToFile(stream, filePath, opts?)` | Drain an `AsyncGenerator<Uint8Array>` to disk with back-pressure + `AbortSignal` (Node) — returns `{ bytesWritten, chunks }` (v1.4.0) |
 
 ### Crypto (Hashing, ASN.1, RSA, ECDSA, X.509, CMS)
 
@@ -753,6 +799,9 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `dictGet(dict, key)` / `dictGetName(dict, key)` | Dictionary value accessors |
 | `inflateSync(data)` | Decompress FlateDecode data (zlib inflate) |
 | `validatePdfUA(bytes)` | Read-only PDF/UA structural checker — returns `{ valid, errors, warnings }` (v1.3.0) |
+| `mergePdfs(sources, opts?)` | Merge multiple PDFs into one, rebuilding a clean object graph; `opts.maxOutputSize` caps output at 256 MiB by default (v1.4.0) |
+| `splitPdf(src, ranges, opts?)` | Split a PDF into multiple documents by inclusive 0-based page ranges (v1.4.0) |
+| `extractPages(src, indices, opts?)` | Extract specific pages (0-based) into a new PDF (v1.4.0) |
 
 ### Document Block Types
 
@@ -761,7 +810,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `HeadingBlock` | H1/H2/H3 with color, auto-wrapped |
 | `ParagraphBlock` | Text with fontSize, lineHeight, align, indent, color |
 | `TableBlock` | Headers + rows using PdfRow/ColumnDef |
-| `ListBlock` | Bullet or numbered items |
+| `ListBlock` | Bullet or numbered items; entries may be plain strings or nested `ListItem` `{ text, items }` for hierarchical lists (v1.4.0) |
 | `ImageBlock` | JPEG/PNG with optional width, height, align, alt text |
 | `LinkBlock` | Hyperlink with URL, blue underline, tagged /Link |
 | `SpacerBlock` | Vertical whitespace |
@@ -824,6 +873,7 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `hasFontLoader(lang)` | Check if loader is registered |
 | `getRegisteredLangs()` | List registered language codes |
 | `createEncodingContext(fontEntries)` | Create encoding context |
+| `validateFontData(data)` | Opt-in structural validation of custom font data — returns `{ valid, errors, warnings }` (v1.4.0) |
 
 ### Shaping
 
@@ -1035,7 +1085,7 @@ src/
 
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (32 generators, 187+ PDFs)
+scripts/                  # Modular sample PDF generation (36 generators, 201+ PDFs)
 tests/                    # 1726+ tests (48 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```

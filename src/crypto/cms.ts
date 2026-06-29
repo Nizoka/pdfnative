@@ -15,6 +15,7 @@ import { sha256 } from './sha.js';
 import { rsaSignHash, type RsaPrivateKey } from './rsa.js';
 import { ecdsaSignHash, encodeDerSignature, type EcPrivateKey } from './ecdsa.js';
 import type { X509Certificate } from './x509.js';
+import { getCryptoProvider, type CryptoProvider } from './crypto-provider.js';
 
 // ── OID Constants ────────────────────────────────────────────────────
 
@@ -46,6 +47,14 @@ export interface CmsSignOptions {
     readonly signingTime?: Date;
     /** Signature algorithm. */
     readonly algorithm: SignatureAlgorithm;
+    /**
+     * Optional native signer. When supplied (or when a global provider is set
+     * via {@link setCryptoProvider}), the signature value is produced by the
+     * provider instead of the pure-JS RSA/ECDSA primitives, and `rsaKey` /
+     * `ecKey` are not required.
+     * @since 1.4.0
+     */
+    readonly provider?: CryptoProvider;
 }
 
 // ── Builder ──────────────────────────────────────────────────────────
@@ -137,22 +146,32 @@ function buildSignerInfo(options: CmsSignOptions): Uint8Array {
     // For signature computation, re-encode as explicit SET (tag 0x31)
     const signedAttrsForSig = derSet(attrContentType, attrMessageDigest, attrSigningTime);
 
-    // Hash the SET-encoded signed attributes — this is what gets signed
-    const attrsHash = sha256(signedAttrsForSig);
-
     // ── Signature Algorithm + Signature Value ────────────────────
+    // A native provider (per-call or global) replaces the pure-JS BigInt math
+    // with a constant-time, hardware-backed signer. It receives the DER-encoded
+    // signed attributes and hashes them internally; the pure-JS fallback hashes
+    // here and signs the digest.
+    const provider = options.provider ?? getCryptoProvider();
     let sigAlgId: Uint8Array;
     let signatureValue: Uint8Array;
 
     if (algorithm === 'rsa-sha256') {
-        if (!options.rsaKey) throw new Error('RSA private key required for rsa-sha256');
         sigAlgId = derSequence(derOid(OID_SHA256_RSA), derNull());
-        signatureValue = rsaSignHash(attrsHash, options.rsaKey);
+        if (provider) {
+            signatureValue = provider.sign(signedAttrsForSig, algorithm);
+        } else {
+            if (!options.rsaKey) throw new Error('RSA private key (or a crypto provider) required for rsa-sha256');
+            signatureValue = rsaSignHash(sha256(signedAttrsForSig), options.rsaKey);
+        }
     } else if (algorithm === 'ecdsa-sha256') {
-        if (!options.ecKey) throw new Error('ECDSA private key required for ecdsa-sha256');
         sigAlgId = derSequence(derOid(OID_ECDSA_SHA256));
-        const { r, s } = ecdsaSignHash(attrsHash, options.ecKey);
-        signatureValue = encodeDerSignature(r, s);
+        if (provider) {
+            signatureValue = provider.sign(signedAttrsForSig, algorithm);
+        } else {
+            if (!options.ecKey) throw new Error('ECDSA private key (or a crypto provider) required for ecdsa-sha256');
+            const { r, s } = ecdsaSignHash(sha256(signedAttrsForSig), options.ecKey);
+            signatureValue = encodeDerSignature(r, s);
+        }
     } else {
         throw new Error(`Unsupported algorithm: ${algorithm}`);
     }

@@ -133,8 +133,103 @@
         if (h1) {
           document.title = h1.textContent.trim() + ' — pdfnative';
         }
+
+        // Inject structured data (JSON-LD) derived from the rendered content.
+        // Non-fatal: a malformed graph must never break the page.
+        try {
+          injectStructuredData(container, h1, src);
+        } catch (sdErr) {
+          /* structured data is progressive enhancement only */
+        }
       })
       .catch(function (err) { showError(err.message); });
+  }
+
+  // ── Structured data (schema.org JSON-LD) ──────────────────
+  // BreadcrumbList + TechArticle for every guide, plus a FAQPage
+  // when the page is the FAQ — all derived from the visible DOM so
+  // the markup can never drift from the rendered content.
+  function injectStructuredData(container, h1, src) {
+    var canonicalEl = document.querySelector('link[rel="canonical"]');
+    var canonical = canonicalEl ? canonicalEl.href : location.href.split('#')[0];
+    var descMeta = document.querySelector('meta[name="description"]');
+    var description = descMeta ? (descMeta.getAttribute('content') || '') : '';
+    var headline = h1 ? h1.textContent.trim() : document.title.replace(/ — pdfnative$/, '');
+
+    var graph = [];
+
+    var breadcrumb = buildBreadcrumb(canonical, headline);
+    if (breadcrumb) graph.push(breadcrumb);
+
+    graph.push({
+      '@type': 'TechArticle',
+      'headline': headline,
+      'description': description,
+      'inLanguage': 'en',
+      'author': { '@type': 'Organization', 'name': 'Nizoka', 'url': 'https://github.com/Nizoka' },
+      'publisher': {
+        '@type': 'Organization',
+        'name': 'pdfnative',
+        'url': 'https://pdfnative.dev',
+        'logo': { '@type': 'ImageObject', 'url': 'https://pdfnative.dev/assets/logo.svg' }
+      },
+      'mainEntityOfPage': { '@type': 'WebPage', '@id': canonical },
+      'isPartOf': { '@type': 'WebSite', 'name': 'pdfnative', 'url': 'https://pdfnative.dev' }
+    });
+
+    if (/(^|\/)faq\.md$/i.test(src)) {
+      var faq = buildFaqPage(container);
+      if (faq) graph.push(faq);
+    }
+
+    var ld = { '@context': 'https://schema.org', '@graph': graph };
+    var s = document.createElement('script');
+    s.type = 'application/ld+json';
+    s.textContent = JSON.stringify(ld);
+    document.head.appendChild(s);
+  }
+
+  function buildBreadcrumb(canonical, headline) {
+    var bcEl = document.querySelector('.guide-breadcrumb');
+    if (!bcEl) return null;
+    var items = [];
+    var pos = 1;
+    bcEl.querySelectorAll('a').forEach(function (a) {
+      items.push({
+        '@type': 'ListItem',
+        'position': pos++,
+        'name': a.textContent.trim(),
+        'item': a.href
+      });
+    });
+    items.push({ '@type': 'ListItem', 'position': pos, 'name': headline, 'item': canonical });
+    return { '@type': 'BreadcrumbList', 'itemListElement': items };
+  }
+
+  function buildFaqPage(container) {
+    var questions = container.querySelectorAll('h3');
+    if (!questions.length) return null;
+    var mainEntity = [];
+    questions.forEach(function (h3) {
+      var question = h3.textContent.trim();
+      var parts = [];
+      var node = h3.nextElementSibling;
+      while (node && node.tagName !== 'H3' && node.tagName !== 'H2' && node.tagName !== 'H1') {
+        var txt = node.textContent.trim();
+        if (txt) parts.push(txt);
+        node = node.nextElementSibling;
+      }
+      var answer = parts.join('\n\n').trim();
+      if (question && answer) {
+        mainEntity.push({
+          '@type': 'Question',
+          'name': question,
+          'acceptedAnswer': { '@type': 'Answer', 'text': answer }
+        });
+      }
+    });
+    if (!mainEntity.length) return null;
+    return { '@type': 'FAQPage', 'mainEntity': mainEntity };
   }
 
   tryRender(20);

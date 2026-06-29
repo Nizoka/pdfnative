@@ -27,4 +27,18 @@ export default defineConfig([
         outDir: 'dist',
         noExternal: [/.*/], // Bundle everything into worker
     },
+    // Colour-emoji generator CLI (self-contained ESM bin → dist/tools)
+    {
+        entry: { 'tools/build-emoji-font': 'scripts/build-emoji-font.ts' },
+        format: ['esm'],
+        dts: false,
+        sourcemap: false,
+        splitting: false,
+        treeshake: true,
+        minify: false,
+        target: 'es2020',
+        outDir: 'dist',
+        banner: { js: '#!/usr/bin/env node' },
+        noExternal: [/.*/], // Bundle the build core + src deps into the bin
+    },
 ]);

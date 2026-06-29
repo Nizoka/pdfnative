@@ -9,6 +9,110 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.4.0] – 2026-06-28
+
+Delivers the full v1.4.0 roadmap (document outline / bookmarks, page labels,
+`streamToFile()` Node helper) plus two pulled-forward items: a **page-tree
+manipulation API** (`mergePdfs` / `splitPdf` / `extractPages`) that unblocks
+`pdfnative-mcp`'s `merge_pdfs` / `split_pdf`, and **COLRv1 advanced
+compositing** (sweep gradients + `PaintComposite` blend modes). Also bundles
+five additional pulled-forward items: `setCryptoProvider`, `validateFontData`,
+document viewer preferences, nested lists, and table cell borders + vertical
+alignment, a bundled colour-emoji generator CLI, and an interactive PDF Toolkit
+playground. 100% backward-compatible. 83 test files / 2165 tests, all green. See
+full notes in [release-notes/v1.4.0.md](release-notes/v1.4.0.md).
+
+### Added
+
+- **feat(core):** document outline / bookmarks. `DocumentParams.outline`
+  accepts a nested `OutlineItem[]` (with `bold`/`italic`/`color`, and `open`
+  for collapsible nodes) or `'auto'` (derived from heading blocks, nested by
+  level). Emits `/Outlines` + `/PageMode /UseOutlines`; `open: false` produces a
+  spec-correct negative `/Count` (ISO 32000-1 §12.3.3). PDF/A-safe. New
+  [src/core/pdf-outline.ts](src/core/pdf-outline.ts); `OutlineItem` exported.
+- **feat(core):** page labels. `DocumentParams.pageLabels` (`PageLabelRange[]`)
+  builds the `/PageLabels` number tree (decimal / roman / Roman / alpha /
+  Alpha / none, `prefix`, `start`). New
+  [src/core/pdf-page-labels.ts](src/core/pdf-page-labels.ts);
+  `PageLabelRange` / `PageLabelStyle` exported.
+- **feat(stream):** `streamToFile(stream, path, { signal? })` writes any
+  streaming builder to disk in constant memory with back-pressure handling and
+  `AbortSignal` support; on abort/error it removes the partial file. `node:fs`
+  via dynamic + type-only import (browser-safe). Returns
+  `StreamToFileResult`. ([src/core/pdf-stream-writer.ts](src/core/pdf-stream-writer.ts))
+- **feat(parser):** page-tree manipulation API — `mergePdfs()`, `splitPdf()`,
+  `extractPages()` rebuild a fresh document by deep-copying each kept page's
+  transitive object graph into a new object-number space. Rejects encrypted
+  sources; drops signatures + `/AcroForm`; keeps self-contained URI `/Link`
+  annotations; bounded-depth copy (stack-overflow hardening); secure-by-default
+  256 MiB output cap (`MergeOptions.maxOutputSize`, `Infinity` to disable)
+  enforced before oversized streams are materialised (OOM hardening);
+  deterministic content-addressed trailer `/ID` (ISO 32000-1 §7.5.5). `splitPdf`
+  and `extractPages` also accept `MergeOptions`. Unblocks `pdfnative-mcp`
+  `merge_pdfs` / `split_pdf`. New
+  [src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts);
+  `PageRange` / `MergeOptions` exported.
+- **feat(colr):** COLRv1 advanced compositing. `PaintSweepGradient` (conic) →
+  `SweepGradientPaint`, rendered as flat-colour triangular wedges clipped to the
+  outline; `PaintComposite` → PDF `/BM` blend modes (Multiply, Screen, Overlay,
+  Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference,
+  Exclusion, Hue, Saturation, Color, Luminosity). Porter-Duff structural modes
+  and `PaintMask` keep the documented monochrome fallback. `ColorLayer.blendMode`
+  added. ([src/fonts/colr-parser.ts](src/fonts/colr-parser.ts), [src/core/pdf-color-glyph.ts](src/core/pdf-color-glyph.ts))
+- **feat(crypto):** pluggable signature crypto provider. `setCryptoProvider(provider)`
+  (global) and `PdfSignOptions.provider` (per-call, wins) route CMS signing
+  through a native, constant-time signer (`node:crypto` / Web Crypto / HSM)
+  instead of the pure-JS RSA/ECDSA math; `rsaKey` / `ecKey` then optional. New
+  [src/crypto/crypto-provider.ts](src/crypto/crypto-provider.ts);
+  `setCryptoProvider` / `getCryptoProvider` / `CryptoProvider` exported.
+- **feat(fonts):** `validateFontData(data)` — opt-in, read-only structural
+  validation of custom font-data modules (`{ valid, errors, warnings }`). Catches
+  corrupt base64, non-SFNT binaries, empty `cmap`, out-of-range glyph ids,
+  malformed `pdfWidthArray`, non-finite metrics. NOT auto-run by `registerFont`.
+  New [src/fonts/font-validator.ts](src/fonts/font-validator.ts);
+  `validateFontData` / `FontValidationResult` exported.
+- **feat(core):** document viewer preferences.
+  `PdfLayoutOptions.viewerPreferences` emits catalog `/PageLayout` + `/PageMode`
+  and the `/ViewerPreferences` dict (`hideToolbar`, `fitWindow`,
+  `displayDocTitle`, `nonFullScreenPageMode`, `direction`, `printScaling`, …).
+  PDF/A-safe; an explicit `pageMode` overrides the outline default. New
+  [src/core/pdf-viewer-prefs.ts](src/core/pdf-viewer-prefs.ts); `ViewerPreferences`
+  exported.
+- **feat(doc):** nested (hierarchical) lists. A `ListBlock.items` entry may be a
+  plain string or a `{ text, items }` object with a nested sub-list; deeper
+  levels indent, numbered sub-lists restart at 1, tagged mode nests `/L → /LI →
+  /L`. String-only lists are byte-identical to pre-1.4.0. `ListItem` exported.
+- **feat(doc):** table cell borders + vertical alignment.
+  `TableBlock.cellBorders` (sides/`all`, `color`, `width`,
+  `solid`/`dashed`/`dotted`) draws per-cell vector strokes; `TableBlock.cellVAlign`
+  and per-column `ColumnDef.vAlign` position text top/middle/bottom. Both opt-in;
+  byte-identical when unset. `CellBorders` exported.
+- **docs(samples):** two new generators — `outline-bookmarks.ts` and
+  `pdf-manipulation.ts` (201 sample PDFs total).
+- **feat(tools):** `pdfnative-build-emoji-font` CLI — bundled with the package
+  (`npx pdfnative-build-emoji-font`), generates a colour-emoji data module with
+  exactly the glyphs you choose, from a few codepoints to the full ~3,600-glyph
+  Noto Color Emoji set, so users of the `pdfnative` package alone get complete
+  colour-emoji coverage without editing library source. `--download` fetches +
+  checksum-verifies the official OFL-1.1 font; `--ttf`, `--all`, `--preset`,
+  `--codepoints`, `--ranges`, `--out`, `--font-name`, `--types`. Dogfoods the
+  same deterministic build core as the bundled curated module.
+- **docs(site):** new **PDF Toolkit** playground
+  ([docs/playgrounds/toolkit.html](docs/playgrounds/toolkit.html)) — interactive,
+  in-browser demos of bookmarks, page labels, viewer preferences, nested lists,
+  table cell borders, and merge / split / extract. New
+  [colour-emoji-cli](docs/guides/colour-emoji-cli.md) guide.
+
+### Security
+
+- **`js-yaml` advisory (dev-only) resolved** via `npm audit fix` (transitive dev
+  dep of `@eslint/eslintrc`); `npm audit` reports 0 vulnerabilities. No runtime
+  dependency added.
+
+### Changed
+
+- Sample count 178 → 201; test suite 1982 → 2165 (71 → 83 files).
+
 ## [1.3.0] – 2026-06-30
 
 Closes issue [#48](https://github.com/Nizoka/pdfnative/issues/48) (CP-1252

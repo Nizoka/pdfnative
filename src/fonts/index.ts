@@ -8,5 +8,7 @@ export { toWinAnsi, pdfString, truncate, helveticaWidth, helveticaBoldWidth } fr
 export { createEncodingContext } from '../core/encoding-context.js';
 export { registerFont, registerFonts, loadFontData, hasFontLoader, getRegisteredLangs, clearFontCache, resetFontRegistry, getDecodedFontBytes } from './font-loader.js';
 export type { FontLoader } from './font-loader.js';
+export type { FontValidationResult } from './font-validator.js';
+export { validateFontData } from './font-validator.js';
 export { subsetTTF, ttfChecksum, uint8ToBinaryString } from './font-subsetter.js';
 export { base64ToByteString, buildToUnicodeCMap, buildSubsetWidthArray } from './font-embedder.js';

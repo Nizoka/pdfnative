@@ -194,11 +194,49 @@ the placeholder bytes — that's the pipeline shown in the TL;DR above.
   loop. Signing a PDF once per user action is not meaningfully
   exploitable, but a high-frequency server signing thousands of PDFs/s
   with the same key under adversarial timing observation could
-  theoretically leak key material. For such pipelines, compute the
+  theoretically leak key material. For such pipelines, install a native
+  constant-time signer via `setCryptoProvider()` (see below) — or compute the
   CMS/PKCS#7 blob with a constant-time native backend (Node.js
   `crypto.sign()` or WebCrypto `crypto.subtle.sign()`) and inject it via
   `signPdfBytes()`. See [SECURITY.md](https://github.com/Nizoka/pdfnative/blob/main/SECURITY.md#cryptographic-implementation-scope--known-limitations)
   for the full analysis.
+
+## Native crypto provider (v1.4.0)
+
+For high-security, high-frequency server pipelines you can replace
+pdfnative's pure-JS RSA/ECDSA math with a native, **constant-time** signer
+without giving up the zero-dependency default. Install a provider globally
+with `setCryptoProvider(provider)`, or pass one per call via
+`PdfSignOptions.provider` (per-call wins over global). When a provider is set,
+`rsaKey` / `ecKey` are no longer required.
+
+```ts
+import { setCryptoProvider, signPdfBytes } from 'pdfnative';
+import { createSign, createPrivateKey } from 'node:crypto';
+
+const key = createPrivateKey(pemPrivateKey);
+
+setCryptoProvider({
+    // `tbs` is the DER-encoded CMS signed attributes. The provider hashes it
+    // with SHA-256 internally (node:crypto does this for you) and returns the
+    // raw signature value (RSA PKCS#1 v1.5, or a DER-encoded ECDSA-P256 sig).
+    sign(tbs, algorithm) {
+        return new Uint8Array(createSign('sha256').update(tbs).sign(key));
+    },
+});
+
+const signed = signPdfBytes(placeheld, {
+    signerCert: cert,
+    algorithm: 'rsa-sha256', // rsaKey/ecKey no longer needed
+});
+
+// Restore the pure-JS default at any time:
+setCryptoProvider(null);
+```
+
+This is the in-library escape hatch for the BigInt timing caveat above — the
+secret-dependent math runs in `node:crypto` / Web Crypto / an HSM while
+pdfnative's CMS/PKCS#7 assembly is reused unchanged.
 
 ## Full example
 

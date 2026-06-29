@@ -57,7 +57,7 @@
         "programmingLanguage": "TypeScript",
         "license": "https://opensource.org/licenses/MIT",
         "runtimePlatform": ["Node.js", "Browser", "Deno", "Bun"],
-        "softwareVersion": "1.3.0",
+        "softwareVersion": "1.4.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -111,6 +111,8 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
 <!-- ═══════════════ Navbar ═══════════════ -->
 <nav class="nav" role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
@@ -142,7 +144,7 @@
 <div class="pn-version-strip" data-mode="compact" aria-label="Live published versions"></div>
 
 <!-- ═══════════════ Hero ═══════════════ -->
-<section class="hero" id="top">
+<section class="hero" id="main-content" tabindex="-1">
   <div class="container">
     <h1>Pure Native <span class="gradient">PDF Generation</span></h1>
     <p class="hero-sub">
@@ -182,7 +184,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">2 043+</div>
+    <div class="metric-value">2 165+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -241,13 +243,13 @@
       <div class="feature-card">
         <div class="feature-icon fi-content"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
         <h3>Rich Content</h3>
-        <p>12 block types: tables, images, barcodes (5 ISO formats), SVG, AcroForm fields, TOC, watermarks, hyperlinks. Pure PDF vector ops — no rasterization. <strong>Smart tables</strong>: multi-page slicing with repeated headers, auto-wrap, zebra striping, captions. <a href="guides/tables.html">Tables guide →</a></p>
+        <p>12 block types: tables, images, barcodes (5 ISO formats), SVG, AcroForm fields, TOC, watermarks, hyperlinks. Pure PDF vector ops — no rasterization. <strong>Smart tables</strong>: multi-page slicing with repeated headers, auto-wrap, zebra striping, captions, and per-cell borders. <strong>Document tools</strong>: bookmarks (<code>/Outlines</code>), page labels, viewer preferences, nested lists, and a <strong>merge / split / extract</strong> page-tree API. <a href="guides/tables.html">Tables guide →</a> &middot; <a href="guides/pdf-manipulation.html">Manipulation guide →</a></p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 043+ tests across 73 files, 95%+ coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 165+ tests across 83 files, 95%+ coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -388,7 +390,7 @@ const pdf = buildDocumentPDFBytes({
       <div class="demo-error" id="demo-error" role="alert"></div>
       <p class="demo-note">
         Need more? Browse all
-        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">32 generator categories (~187 sample PDFs)</a>
+        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">36 generator categories (~201 sample PDFs)</a>
         on GitHub.
       </p>
     </div>
@@ -402,7 +404,7 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Four adoption paths — pick the one that fits your stack. All four are zero-config and zero-build.</p>
     <div class="onboarding-grid">
       <div class="onboarding-card">
-        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.3.0</span></h3>
+        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.4.0</span></h3>
         <p class="ob-tag">For TypeScript / JavaScript apps.</p>
 <pre><code class="language-bash">npm install pdfnative</code></pre>
 <pre><code class="language-typescript">import { buildDocumentPDFBytes } from 'pdfnative';
@@ -845,6 +847,7 @@ const bytes = renderToBytes(
           <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
           <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
           <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a></li>
+          <li><a href="https://github.com/Nizoka/pdfnative/blob/main/SECURITY.md" target="_blank" rel="noopener">Security</a></li>
           <li><a href="https://plika.app" target="_blank" rel="noopener">Originally from Plika.app</a></li>
         </ul>
       </div>
@@ -869,6 +872,8 @@ const bytes = renderToBytes(
         <ul>
           <li><a href="playgrounds/">All playgrounds</a></li>
           <li><a href="playgrounds/extreme-scripts.html">Extreme scripts</a></li>
+          <li><a href="playgrounds/all-scripts.html">All 22 scripts</a></li>
+          <li><a href="playgrounds/toolkit.html">PDF Toolkit</a></li>
           <li><a href="playgrounds/medical-800.html">Medical 800-page</a></li>
           <li><a href="playgrounds/cli.html">CLI builder</a></li>
           <li><a href="playgrounds/mcp.html">MCP tool explorer</a></li>

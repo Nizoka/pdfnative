@@ -87,8 +87,27 @@ export interface RadialGradientPaint {
     readonly extend: GradientExtend;
 }
 
+/**
+ * A sweep (conic/angular) gradient fill (COLR PaintSweepGradient).
+ *
+ * PDF has no native conic shading, so the renderer approximates it as a fan
+ * of flat-colour triangular wedges clipped to the glyph outline — pure path
+ * operators, no shading resource. Angles are in counter-clockwise degrees
+ * from the positive x-axis.
+ *
+ * @since 1.4.0
+ */
+export interface SweepGradientPaint {
+    readonly kind: 'sweep';
+    readonly center: readonly [number, number];
+    readonly startAngle: number;
+    readonly endAngle: number;
+    readonly stops: readonly ColorStop[];
+    readonly extend: GradientExtend;
+}
+
 /** A paint used to fill a colour-glyph layer. */
-export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint;
+export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint | SweepGradientPaint;
 
 /** A single colour-glyph layer: a base outline filled by a paint. */
 export interface ColorLayer {
@@ -103,6 +122,17 @@ export interface ColorLayer {
      * absent.
      */
     readonly transform?: readonly [number, number, number, number, number, number];
+    /**
+     * Optional PDF blend mode name (`/BM`) for this layer, flattened from a
+     * COLRv1 `PaintComposite` whose composite mode maps to a separable or
+     * non-separable PDF blend mode (e.g. `Multiply`, `Screen`, `Overlay`,
+     * `Darken`, `Lighten`, `Difference`, `Hue`, `Luminosity`). Absent =
+     * `Normal`. Porter-Duff structural modes (Clear/Src/Dest/Xor) are not
+     * mapped — those glyphs fall back to the monochrome font instead.
+     *
+     * @since 1.4.0
+     */
+    readonly blendMode?: string;
 }
 
 /** A resolved colour glyph: ordered layers painted back-to-front. */
@@ -300,6 +330,14 @@ export interface ColumnDef {
      * @since 1.2.0
      */
     readonly kind?: 'amount';
+    /**
+     * Vertical alignment of this column's cell content within the row band
+     * (`'top'` | `'middle'` | `'bottom'`). Overrides the table-level
+     * `TableBlock.cellVAlign`. When omitted, the historic baseline placement is
+     * preserved (byte-identical to pre-1.4.0).
+     * @since 1.4.0
+     */
+    readonly vAlign?: 'top' | 'middle' | 'bottom';
 }
 
 /**
@@ -465,6 +503,73 @@ export interface PdfLayoutOptions {
      * @since 1.3.0
      */
     readonly creationDate?: Date;
+    /**
+     * How a conforming viewer should present the document when it is first
+     * opened: initial page layout, page mode (bookmark/thumbnail panel, full
+     * screen…), window fit/centering, UI-chrome visibility, and whether the
+     * window title shows the document title. Maps to catalog `/PageLayout`,
+     * `/PageMode`, and the `/ViewerPreferences` dictionary (ISO 32000-1 §12.2).
+     *
+     * Purely presentational, PDF/A-safe, and fully optional. When the document
+     * also has an outline, an explicit `pageMode` here overrides the outline's
+     * default `/UseOutlines`.
+     *
+     * Default: `undefined` (viewer default presentation).
+     *
+     * @since 1.4.0
+     */
+    readonly viewerPreferences?: ViewerPreferences;
+}
+
+/**
+ * Viewer presentation preferences (ISO 32000-1 §12.2, Table 150 + §7.7.2).
+ * Every field is optional; omitted fields leave the viewer's default behaviour
+ * unchanged. Purely presentational and PDF/A-safe.
+ *
+ * @since 1.4.0
+ */
+export interface ViewerPreferences {
+    /**
+     * Initial page layout (catalog `/PageLayout`):
+     * - `'singlePage'`: one page at a time
+     * - `'oneColumn'`: continuous single column
+     * - `'twoColumnLeft'` / `'twoColumnRight'`: continuous two columns, odd pages on the left/right
+     * - `'twoPageLeft'` / `'twoPageRight'`: two pages at a time, odd pages on the left/right
+     */
+    readonly pageLayout?:
+        | 'singlePage' | 'oneColumn'
+        | 'twoColumnLeft' | 'twoColumnRight'
+        | 'twoPageLeft' | 'twoPageRight';
+    /**
+     * Initial page mode (catalog `/PageMode`):
+     * - `'useNone'`: neither bookmarks nor thumbnails visible
+     * - `'useOutlines'`: bookmark panel open
+     * - `'useThumbs'`: thumbnail panel open
+     * - `'fullScreen'`: full-screen, no menu/panel
+     * - `'useOC'`: optional-content (layers) panel
+     * - `'useAttachments'`: attachments panel
+     */
+    readonly pageMode?:
+        | 'useNone' | 'useOutlines' | 'useThumbs'
+        | 'fullScreen' | 'useOC' | 'useAttachments';
+    /** Hide the viewer's tool bars. */
+    readonly hideToolbar?: boolean;
+    /** Hide the viewer's menu bar. */
+    readonly hideMenubar?: boolean;
+    /** Hide UI elements (scrollbars, navigation controls), leaving only the page. */
+    readonly hideWindowUI?: boolean;
+    /** Resize the document window to fit the first displayed page. */
+    readonly fitWindow?: boolean;
+    /** Centre the document window on the screen. */
+    readonly centerWindow?: boolean;
+    /** Show the document title (from `/Info /Title`) in the window title bar. */
+    readonly displayDocTitle?: boolean;
+    /** Page mode to use when exiting full-screen (`/NonFullScreenPageMode`). */
+    readonly nonFullScreenPageMode?: 'useNone' | 'useOutlines' | 'useThumbs' | 'useOC';
+    /** Predominant reading order: left-to-right (default) or right-to-left. */
+    readonly direction?: 'l2r' | 'r2l';
+    /** Page-scaling default for the Print dialog (`/PrintScaling`). */
+    readonly printScaling?: 'none' | 'appDefault';
 }
 
 // ── Attachment Types ─────────────────────────────────────────────────

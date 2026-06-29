@@ -52,6 +52,10 @@ export {
 export type { SignatureAlgorithm, CmsSignOptions } from './cms.js';
 export { buildCmsSignedData, estimateCmsSize } from './cms.js';
 
+// ── Pluggable Signature Provider ────────────────────────────────────
+export type { CryptoProvider } from './crypto-provider.js';
+export { setCryptoProvider, getCryptoProvider } from './crypto-provider.js';
+
 /**
  * Initialize all crypto module cross-dependencies.
  * Must be called once before using key parsing or DER signature encoding.

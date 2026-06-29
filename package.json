@@ -1,6 +1,6 @@
 {
   "name": "pdfnative",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Zero-dependency native PDF generation library. 22 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Telugu, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic, Cyrillic, Greek, Georgian, Armenian, Latin), BiDi, PDF/A-1b/2b/3b, AES encryption, digital signatures, AcroForm, barcodes, SVG, COLRv1 colour emoji. Pure JavaScript ISO 32000-1 implementation.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -40,7 +40,8 @@
   ],
   "sideEffects": false,
   "bin": {
-    "pdfnative-build-font": "./tools/build-font-data.cjs"
+    "pdfnative-build-font": "./tools/build-font-data.cjs",
+    "pdfnative-build-emoji-font": "./dist/tools/build-emoji-font.js"
   },
   "scripts": {
     "build": "tsup",
@@ -104,6 +105,16 @@
     "watermark",
     "web-worker",
     "streaming",
+    "outline",
+    "bookmarks",
+    "page-labels",
+    "merge-pdf",
+    "split-pdf",
+    "extract-pdf",
+    "pdf-manipulation",
+    "viewer-preferences",
+    "rsa",
+    "ecdsa",
     "typescript"
   ],
   "author": "Nizoka <hello@pdfnative.dev> (https://pdfnative.dev)",

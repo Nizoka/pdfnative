@@ -36,11 +36,18 @@ and renders each colour glyph as a **PDF Form XObject**:
 | Solid layer (COLR v0 / `PaintSolid`) | `rg` fill of the layer's `glyf` outline, clipped with `W n` |
 | Linear gradient (`PaintLinearGradient`) | `/ShadingType 2` axial shading + `/ExtGState` constant alpha |
 | Radial gradient (`PaintRadialGradient`) | `/ShadingType 3` radial shading |
+| Sweep gradient (`PaintSweepGradient`) | flat-colour triangular wedges fanned around the centre (**v1.4.0**) |
+| Compositing (`PaintComposite`) | separable blend modes mapped to PDF `/BM` (Multiply, Screen, Overlay, Darken, Lighten, …) (**v1.4.0**) |
 | CPAL palette | per-stop RGB(A) colours |
 
 Each unique emoji produces **one indirect Form XObject**, deduplicated and
 forward-referenced into every page's `/XObject` resource dictionary. The text
 run emits `q s 0 0 s x y cm /CEm0 Do Q` to place the glyph.
+
+> **Advanced compositing (v1.4.0).** COLRv1 **sweep (conic) gradients** render as
+> native flat-shaded wedges, and `PaintComposite` **separable blend modes** map to
+> PDF `/BM` ExtGState operators. Structural Porter-Duff modes (Clear / Src / Dest /
+> Xor / …) and `PaintMask` fall back to the documented monochrome path.
 
 ## Opt-in, not default
 
@@ -66,23 +73,53 @@ the npm tarball regardless of tree-shaking — the full Noto Color Emoji build
 for consumers who never touch emoji. The subset keeps the install lean while the
 lazy `() => import(...)` keeps it out of bundles that don't reference it.
 
-To cover the full Noto Color Emoji set, build your own data module from the
-source font:
+To cover the **full** Noto Color Emoji set — or any custom selection — pdfnative
+ships an official generator CLI, `pdfnative-build-emoji-font`, so you never have
+to edit library source:
 
 ```bash
-# Download the source TTF, then:
-npx tsx scripts/build-color-emoji-data.ts
+# Every colour glyph (~3 600), fetched + checksum-verified from Google Fonts:
+npx pdfnative-build-emoji-font --download --all --out ./emoji-full.js
+
+# Or exactly the emoji you need (hex scalars and/or inclusive ranges):
+npx pdfnative-build-emoji-font --download \
+  --ranges 1F600-1F64F,2600-27BF --codepoints 2764,1F680 --out ./emoji.js
 ```
 
-Edit the `CURATED` codepoint array in
-[`scripts/build-color-emoji-data.ts`](https://github.com/Nizoka/pdfnative/blob/main/scripts/build-color-emoji-data.ts)
-to include the emoji you need, then register the generated module.
+Then register the module you generated:
+
+```ts
+registerFont('emoji', () => import('./emoji-full.js'));
+```
+
+See the [colour-emoji CLI guide](colour-emoji-cli.html) for every flag, offline
+usage with `--ttf`, and the checksum/licensing details.
+
+## Advanced compositing (v1.4.0)
+
+COLRv1 includes two paint types beyond solid + axial/radial gradients, and
+pdfnative now maps both where a faithful PDF translation exists:
+
+| COLRv1 feature | PDF mapping (v1.4.0) |
+|---|---|
+| Sweep / conic gradient (`PaintSweepGradient`, format 8) | Flat-shaded triangular **wedges** fanned around the centre — no `/Shading` resource, pure path fills. Matrix rotation is folded into the start/end angles via `Math.atan2`. |
+| Composite (`PaintComposite`, format 32) — *separable* blend modes | Backdrop + source layers, with the source tagged via a `/BM` (blend mode) `/ExtGState`: Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference, Exclusion, Hue, Saturation, Color, Luminosity. |
+| Composite — *structural* Porter-Duff modes (`SrcOver`, `DestIn`, clipping masks, …) | No exact PDF equivalent → the glyph falls back to the **monochrome** outline. |
+
+Sweep wedges approximate the smooth conic sweep with a fan of flat-colour
+triangles whose count scales with the angular span — close enough for emoji at
+text sizes while staying within plain PDF path operators. Separable blend modes
+are exactly the set PDF defines in ISO 32000-1 §11.3.5, so they round-trip
+faithfully in any conformant viewer.
+
+> **PDF/A note:** blend modes and constant-alpha `/ExtGState` are transparency
+> features that PDF/A-1b forbids. Use solid-layer emoji for archival documents.
 
 ## Limitations
 
-- **Sweep gradients** (`PaintSweepGradient`) and **Porter-Duff compositing**
-  (`PaintComposite` / `PaintMask`) are not yet rendered; glyphs using them fall
-  back gracefully to the monochrome outline. Tracked for a future release.
+- **`PaintMask`** and COLRv1 variable (animated) paints are not yet rendered;
+  glyphs using them fall back gracefully to the monochrome outline. Tracked for
+  a future release.
 - **PDF/A:** gradient transparency uses `/ExtGState` alpha, which PDF/A-1b
   forbids. Use solid-layer emoji or a non-PDF/A document for colour gradients.
 
