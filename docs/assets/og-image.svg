@@ -57,7 +57,8 @@
   <text x="78" y="392" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="92" font-weight="800" fill="url(#accent)" letter-spacing="-2">PDF Generation</text>
 
   <!-- Subtitle -->
-  <text x="80" y="452" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="400" fill="#cbd5e1">Zero dependencies · ISO 32000-1 · TypeScript-first · 22 Unicode scripts</text>
+  <text x="80" y="446" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="27" font-weight="500" fill="#e2e8f0">Zero dependencies · ISO 32000-1 · PDF/A · TypeScript-first</text>
+  <text x="80" y="480" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="400" fill="#94a3b8">Bookmarks · Merge / Split · Signatures · Streaming · 22 Unicode scripts</text>
 
   <!-- Capability pills -->
   <g font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="600">
