@@ -19,7 +19,7 @@ registerFont('arabic', () => import('pdfnative/fonts/noto-arabic-data.js'));
 const bytes = await buildDocumentPDFBytes({
   metadata: { title: 'Hello pdfnative', author: 'Me' },
   blocks: [
-    { type: 'h1', text: 'Hello pdfnative' },
+    { type: 'heading', text: 'Hello pdfnative', level: 1 },
     { type: 'paragraph', text: 'Pure native PDF, zero runtime dependencies.' },
   ],
   layout: { tagged: 'pdfa2b' }, // optional PDF/A-2b

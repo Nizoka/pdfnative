@@ -57,7 +57,7 @@ Then open:
 npm run test           # vitest run (2165+ tests)
 npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (95%+ stmts)
-npm run test:generate  # Generate 195+ sample PDFs → test-output/
+npm run test:generate  # Generate ~201 sample PDFs → test-output/
 npm run bench          # Performance benchmarks (vitest bench)
 ```
 

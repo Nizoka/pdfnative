@@ -22,7 +22,7 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 
 | Package | Latest | Use it for |
 |---|:---:|---|
-| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.3.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
+| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.4.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
 | [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.1.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256), inspect, verify (PAdES-T + OCSP/CRL), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.3.0: 22 scripts + COLRv1 emoji, `--stream-true`, `--max-blocks`, `inspect --pdfua`, and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
 | [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.3.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **17 production tools** including the v1.3.0 page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), a constant-time `node:crypto` signing provider, DNS-rebinding-protected HTTP transport, and per-tool `_meta.apiVersion`. Built on pdfnative 1.4.0. |
 | [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v0.2.0** | Write PDFs as declarative JSX — `<Document>`, `<Table>`, `<Barcode>`… compiled on-device to pdfnative blocks by a custom React reconciler. Render hooks (`usePdf`), client components (`PDFViewer`), and a token-frugal `DocSpec` for AI agents. |
@@ -93,7 +93,7 @@ npm install pdfnative
 - ♿ **Accessibility:** [docs/guides/accessibility.md](docs/guides/accessibility.md) — tagged PDF, PDF/UA, PDF/A.
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
-- 🎮 **Playgrounds:** [docs/playgrounds/extreme-scripts.html](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [docs/playgrounds/medical-800.html](docs/playgrounds/medical-800.html) (800-page Web Worker showcase), and [docs/playgrounds/toolkit.html](docs/playgrounds/toolkit.html) (v1.4.0 bookmarks, page labels, viewer prefs, nested lists, cell borders, merge/split/extract).
+- 🎮 **Playgrounds:** eight interactive demos at [docs/playgrounds/](docs/playgrounds/) — [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [medical-800](docs/playgrounds/medical-800.html) (800-page Web Worker showcase), [toolkit](docs/playgrounds/toolkit.html) (v1.4.0 bookmarks, page labels, viewer prefs, nested lists, cell borders, merge/split/extract), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
 - 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~201 sample PDFs across 36 categories (see [Sample PDFs](#sample-pdfs) below).
 
 ## Why pdfnative?
@@ -432,7 +432,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **150+ PDF files** in `test-output/` (git-ignored), organized in twenty-five categories (including `emoji/` and `pdfa-latin/` added in v1.1.0).
+This creates **~201 PDF files** in `test-output/` (git-ignored), organized in twenty-five categories (including `emoji/` and `pdfa-latin/` added in v1.1.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -1103,9 +1103,9 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (1588+ tests)
+npm run test             # vitest run (2165+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+)
-npm run test:generate       # Generate 150+ sample PDFs → test-output/
+npm run test:generate       # Generate ~201 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -1118,7 +1118,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 1588+ (40 files) |
+| Tests | 2165+ (83 files) |
 | Statement coverage | 95.41% |
 | Branch coverage | 87.79% |
 | Function coverage | 98.5% |
