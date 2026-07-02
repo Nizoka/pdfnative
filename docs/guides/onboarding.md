@@ -80,7 +80,7 @@ Then prompt your assistant:
 
 > *Create a PDF/A-2b invoice for ACME Inc, add a multilingual paragraph in Arabic, and sign it with my key.*
 
-The assistant calls `generate_basic_pdf` (with `pdfA: "pdfa2b"`), then `add_international_text` (with `lang: ["ar", "emoji"]`), `add_table`, `sign_pdf`, and finally `inspect_pdf` — confirming the result. v1.2.0 ships **14 tools**, including `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`.
+The assistant calls `generate_basic_pdf` (with `pdfA: "pdfa2b"`), then `add_international_text` (with `lang: ["ar", "emoji"]`), `add_table`, `sign_pdf`, and finally `inspect_pdf` — confirming the result. v1.3.0 ships **17 tools**, including the page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`.
 
 Next: [MCP guide →](mcp.html) · [MCP playground →](../playgrounds/mcp.html)
 
