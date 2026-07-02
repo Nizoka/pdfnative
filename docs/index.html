@@ -685,7 +685,7 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/master/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative module architecture: pdfnative-cli (commands: render · sign · inspect · verify · batch · completion) and pdfnative-mcp (stdio tools, any MCP client) ecosystem consumers above the library, types → core ← fonts ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker, with standalone crypto and parser modules" width="960" height="540" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative module architecture. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (render · sign · inspect · verify · batch), pdfnative-mcp (MCP server, 17 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core ← fonts ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that imports the compression layer. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
   </div>

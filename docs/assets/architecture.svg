@@ -1,133 +1,200 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
-  <title>pdfnative — Module Architecture</title>
-  <desc>Dependency diagram showing pdfnative's internal modules (core, fonts, shaping, worker, crypto, parser, types) and the external ecosystem consumers: pdfnative-cli (command-line interface with 6 commands: render, sign, inspect, verify, batch, completion), pdfnative-mcp (Model Context Protocol server with 17 tools, compatible with Claude Desktop, Cursor, Zed, and any other stdio MCP client), and pdfnative-react (React renderer that compiles JSX components to PDF on-device). Core adds document outline/bookmarks, page labels, and viewer preferences. Shaping covers GSUB, GPOS, BiDi, and 22 scripts. Crypto is standalone and offers a pluggable native signing provider. Parser is standalone (imports compress) and provides page-tree manipulation: merge, split, and extract.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="arch-title arch-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="arch-title">pdfnative — module architecture</title>
+  <desc id="arch-desc">Layered dependency diagram. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (command-line interface: render, sign, inspect, verify, batch), pdfnative-mcp (Model Context Protocol server exposing 17 tools to Claude, Cursor, Zed and any stdio MCP client), and pdfnative-react (on-device JSX-to-PDF renderer). Bottom band: the zero-dependency library. Strict unidirectional flow — types feeds core; fonts imports into core; shaping imports into fonts; worker imports into shaping. Core groups pdf-builder, pdf-document, pdf-encrypt, pdf-tags plus outline, page labels and viewer preferences. Shaping covers GSUB, GPOS, BiDi and 22 Unicode scripts. crypto is a standalone module (AES, RSA, ECDSA, SHA, CMS and a pluggable native signing provider). parser is standalone, imports the compression layer, and provides page-tree manipulation: read, modify, merge and split. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress.</desc>
 
   <defs>
-    <marker id="arrow" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#94A3B8"/>
+    <!-- Directional arrowheads -->
+    <marker id="ah-import" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#94A3B8"/>
     </marker>
-    <marker id="arrow-mcp" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#6366F1"/>
+    <marker id="ah-npm" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#6366F1"/>
     </marker>
-    <marker id="arrow-cli" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#0E7490"/>
+    <marker id="ah-standalone" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#10B981"/>
     </marker>
-    <marker id="arrow-react" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#0891B2"/>
+    <marker id="ah-compress" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#F97316"/>
     </marker>
-    <marker id="arrow-green" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#10B981"/>
-    </marker>
-    <marker id="arrow-orange" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="7" markerHeight="5" orient="auto-start-reverse">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#F97316"/>
-    </marker>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.10"/>
+
+    <!-- Canvas + band fills -->
+    <linearGradient id="g-canvas" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F8FAFC"/>
+    </linearGradient>
+    <linearGradient id="g-eco" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F6F8FF"/>
+      <stop offset="100%" stop-color="#EEF1FE"/>
+    </linearGradient>
+    <linearGradient id="g-lib" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCFDFE"/>
+      <stop offset="100%" stop-color="#F6F8FB"/>
+    </linearGradient>
+
+    <!-- Consumer card gradients -->
+    <linearGradient id="g-cli" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F2FDFF"/><stop offset="100%" stop-color="#E1F7FB"/></linearGradient>
+    <linearGradient id="g-mcp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F6F8FF"/><stop offset="100%" stop-color="#E9ECFF"/></linearGradient>
+    <linearGradient id="g-react" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EDFEFF"/><stop offset="100%" stop-color="#D7F8FD"/></linearGradient>
+
+    <!-- Library module gradients -->
+    <linearGradient id="g-core" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F3F8FF"/><stop offset="100%" stop-color="#E3EDFE"/></linearGradient>
+    <linearGradient id="g-core-head" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#1D4ED8"/></linearGradient>
+    <linearGradient id="g-types" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#EEF2F7"/></linearGradient>
+    <linearGradient id="g-fonts" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FBF5FF"/><stop offset="100%" stop-color="#F1E4FF"/></linearGradient>
+    <linearGradient id="g-shaping" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F0FDFA"/><stop offset="100%" stop-color="#D7FBF1"/></linearGradient>
+    <linearGradient id="g-worker" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFCEC"/><stop offset="100%" stop-color="#FCF0C7"/></linearGradient>
+    <linearGradient id="g-crypto" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F0FDF8"/><stop offset="100%" stop-color="#DAFBE7"/></linearGradient>
+    <linearGradient id="g-parser" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFF8F0"/><stop offset="100%" stop-color="#FEE8CD"/></linearGradient>
+
+    <linearGradient id="g-accent" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#1D4ED8"/></linearGradient>
+
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#1E293B" flood-opacity="0.08"/>
+    </filter>
+    <filter id="soft-sm" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1E293B" flood-opacity="0.07"/>
     </filter>
   </defs>
 
-  <!-- ── Diagram title ──────────────────────────────────────────── -->
-  <text x="480" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#1E293B" letter-spacing="0.3">pdfnative — Module Architecture</text>
+  <!-- Canvas -->
+  <rect x="0" y="0" width="960" height="600" fill="url(#g-canvas)"/>
 
-  <!-- ════════════════════════════════════════════════════════════ -->
-  <!-- ECOSYSTEM ZONE (external consumers)                         -->
-  <!-- ════════════════════════════════════════════════════════════ -->
-  <rect x="30" y="44" width="900" height="110" rx="12" fill="none" stroke="#A5B4FC" stroke-width="1.5" stroke-dasharray="8,4"/>
-  <text x="48" y="64" font-size="11" font-weight="600" fill="#6366F1" letter-spacing="0.5">ECOSYSTEM</text>
+  <!-- ── Header ─────────────────────────────────────────────────── -->
+  <text x="480" y="38" text-anchor="middle" font-size="20" font-weight="800" fill="#0F172A" letter-spacing="-0.3">pdfnative — Module Architecture</text>
+  <rect x="446" y="48" width="68" height="4" rx="2" fill="url(#g-accent)"/>
+  <text x="480" y="72" text-anchor="middle" font-size="12" font-weight="500" fill="#64748B">Strict unidirectional flow · zero runtime dependencies · types → core ← fonts ← shaping ← worker</text>
 
-  <!-- pdfnative-cli box -->
-  <rect x="55" y="72" width="250" height="68" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="2" filter="url(#shadow)"/>
-  <text x="180" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#155E75">pdfnative-cli</text>
-  <text x="180" y="118" text-anchor="middle" font-size="11" fill="#0E7490">CLI · 6 commands</text>
-  <text x="180" y="132" text-anchor="middle" font-size="10" fill="#0891B2">render · sign · verify · batch</text>
+  <!-- ════════════ ECOSYSTEM BAND ════════════ -->
+  <rect x="28" y="92" width="904" height="120" rx="16" fill="url(#g-eco)" stroke="#C7D2FE" stroke-width="1.25"/>
+  <rect x="44" y="83" width="112" height="20" rx="10" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="1"/>
+  <circle cx="58" cy="93" r="3" fill="#6366F1"/>
+  <text x="68" y="97" font-size="10.5" font-weight="700" fill="#4F46E5" letter-spacing="0.6">ECOSYSTEM</text>
 
-  <!-- pdfnative-mcp box -->
-  <rect x="350" y="72" width="250" height="68" rx="10" fill="#EEF2FF" stroke="#6366F1" stroke-width="2" filter="url(#shadow)"/>
-  <text x="475" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#4338CA">pdfnative-mcp</text>
-  <text x="475" y="118" text-anchor="middle" font-size="11" fill="#6366F1">MCP Server · 17 tools</text>
-  <text x="475" y="132" text-anchor="middle" font-size="10" fill="#818CF8">Claude · Cursor · Zed · any client</text>
+  <!-- pdfnative-cli -->
+  <g filter="url(#soft-sm)">
+    <rect x="56" y="116" width="268" height="80" rx="13" fill="url(#g-cli)" stroke="#5EBECF" stroke-width="1.25"/>
+  </g>
+  <rect x="56" y="116" width="5" height="80" rx="2.5" fill="#0E7490"/>
+  <rect x="78" y="132" width="34" height="34" rx="9" fill="#0E7490" fill-opacity="0.12"/>
+  <path d="M87 143 l7 6 l-7 6 M96 155 h8" fill="none" stroke="#0E7490" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="124" y="146" font-size="15.5" font-weight="700" fill="#155E75">pdfnative-cli</text>
+  <text x="124" y="164" font-size="11" font-weight="600" fill="#0E7490">Command-line interface</text>
+  <text x="124" y="181" font-size="10" fill="#0891B2">render · sign · inspect · verify · batch</text>
 
-  <!-- pdfnative-react box -->
-  <rect x="645" y="72" width="250" height="68" rx="10" fill="#CFFAFE" stroke="#0891B2" stroke-width="2" filter="url(#shadow)"/>
-  <text x="770" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#0E7490">pdfnative-react</text>
-  <text x="770" y="118" text-anchor="middle" font-size="11" fill="#0891B2">React renderer · JSX</text>
-  <text x="770" y="132" text-anchor="middle" font-size="10" fill="#06B6D4">on-device · live preview</text>
+  <!-- pdfnative-mcp -->
+  <g filter="url(#soft-sm)">
+    <rect x="346" y="116" width="268" height="80" rx="13" fill="url(#g-mcp)" stroke="#A5B4FC" stroke-width="1.25"/>
+  </g>
+  <rect x="346" y="116" width="5" height="80" rx="2.5" fill="#6366F1"/>
+  <rect x="368" y="132" width="34" height="34" rx="9" fill="#6366F1" fill-opacity="0.12"/>
+  <g fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round">
+    <circle cx="377" cy="141" r="2.6" fill="#6366F1" stroke="none"/>
+    <circle cx="393" cy="141" r="2.6" fill="#6366F1" stroke="none"/>
+    <circle cx="385" cy="157" r="2.6" fill="#6366F1" stroke="none"/>
+    <path d="M379 143 l4 12 M391 143 l-4 12 M379 141 h12"/>
+  </g>
+  <text x="414" y="146" font-size="15.5" font-weight="700" fill="#4338CA">pdfnative-mcp</text>
+  <text x="414" y="164" font-size="11" font-weight="600" fill="#6366F1">MCP server · 17 tools</text>
+  <text x="414" y="181" font-size="10" fill="#818CF8">Claude · Cursor · Zed · any client</text>
 
-  <!-- ════════════════════════════════════════════════════════════ -->
-  <!-- PDFNATIVE LIBRARY ZONE                                      -->
-  <!-- ════════════════════════════════════════════════════════════ -->
-  <rect x="30" y="168" width="900" height="340" rx="12" fill="none" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="0"/>
-  <text x="48" y="188" font-size="11" font-weight="600" fill="#64748B" letter-spacing="0.5">PDFNATIVE LIBRARY</text>
+  <!-- pdfnative-react -->
+  <g filter="url(#soft-sm)">
+    <rect x="636" y="116" width="268" height="80" rx="13" fill="url(#g-react)" stroke="#5CC6D6" stroke-width="1.25"/>
+  </g>
+  <rect x="636" y="116" width="5" height="80" rx="2.5" fill="#0891B2"/>
+  <rect x="658" y="132" width="34" height="34" rx="9" fill="#0891B2" fill-opacity="0.12"/>
+  <g fill="none" stroke="#0891B2" stroke-width="1.6">
+    <circle cx="675" cy="149" r="2.4" fill="#0891B2" stroke="none"/>
+    <ellipse cx="675" cy="149" rx="12" ry="4.6"/>
+    <ellipse cx="675" cy="149" rx="12" ry="4.6" transform="rotate(60 675 149)"/>
+    <ellipse cx="675" cy="149" rx="12" ry="4.6" transform="rotate(120 675 149)"/>
+  </g>
+  <text x="702" y="146" font-size="15.5" font-weight="700" fill="#0E7490">pdfnative-react</text>
+  <text x="702" y="164" font-size="11" font-weight="600" fill="#0891B2">React renderer · JSX</text>
+  <text x="702" y="181" font-size="10" fill="#06B6D4">on-device · live preview</text>
 
-  <!-- types box -->
-  <rect x="56" y="230" width="110" height="62" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="111" y="267" text-anchor="middle" font-size="14" font-weight="600" fill="#475569">types</text>
+  <!-- ════════════ LIBRARY BAND ════════════ -->
+  <rect x="28" y="238" width="904" height="304" rx="16" fill="url(#g-lib)" stroke="#E2E8F0" stroke-width="1.25"/>
+  <rect x="44" y="229" width="158" height="20" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+  <circle cx="58" cy="239" r="3" fill="#2563EB"/>
+  <text x="68" y="243" font-size="10.5" font-weight="700" fill="#334155" letter-spacing="0.6">PDFNATIVE LIBRARY</text>
 
-  <!-- core box -->
-  <rect x="230" y="196" width="175" height="148" rx="10" fill="#DBEAFE" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
-  <text x="317" y="231" text-anchor="middle" font-size="16" font-weight="700" fill="#1D4ED8">core</text>
-  <text x="317" y="252" text-anchor="middle" font-size="11" fill="#3B82F6">pdf-builder</text>
-  <text x="317" y="268" text-anchor="middle" font-size="11" fill="#3B82F6">pdf-document</text>
-  <text x="317" y="284" text-anchor="middle" font-size="11" fill="#3B82F6">pdf-encrypt</text>
-  <text x="317" y="300" text-anchor="middle" font-size="11" fill="#3B82F6">pdf-tags</text>
-  <text x="317" y="316" text-anchor="middle" font-size="11" fill="#3B82F6">+ outline · labels · viewer-prefs</text>
+  <!-- types -->
+  <g filter="url(#soft-sm)"><rect x="56" y="322" width="116" height="70" rx="12" fill="url(#g-types)" stroke="#CBD5E1" stroke-width="1.25"/></g>
+  <text x="114" y="352" text-anchor="middle" font-size="14.5" font-weight="700" fill="#475569">types</text>
+  <text x="114" y="370" text-anchor="middle" font-size="9.5" fill="#94A3B8">pdf-types</text>
 
-  <!-- fonts box -->
-  <rect x="468" y="196" width="130" height="62" rx="10" fill="#F3E8FF" stroke="#8B5CF6" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="533" y="233" text-anchor="middle" font-size="14" font-weight="600" fill="#6D28D9">fonts</text>
+  <!-- core (prominent, with header strip) -->
+  <g filter="url(#soft)"><rect x="238" y="286" width="196" height="150" rx="14" fill="url(#g-core)" stroke="#3B82F6" stroke-width="1.5"/></g>
+  <path d="M238 320 L238 300 Q238 286 252 286 L420 286 Q434 286 434 300 L434 320 Z" fill="url(#g-core-head)"/>
+  <text x="336" y="309" text-anchor="middle" font-size="15.5" font-weight="800" fill="#FFFFFF" letter-spacing="0.2">core</text>
+  <text x="336" y="342" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1D4ED8">pdf-builder · pdf-document</text>
+  <text x="336" y="362" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1D4ED8">pdf-encrypt · pdf-tags</text>
+  <line x1="262" y1="376" x2="410" y2="376" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="336" y="395" text-anchor="middle" font-size="10.5" fill="#3B82F6">outline · page labels</text>
+  <text x="336" y="412" text-anchor="middle" font-size="10.5" fill="#3B82F6">viewer-prefs · watermark · barcode</text>
 
-  <!-- shaping box -->
-  <rect x="468" y="298" width="130" height="64" rx="10" fill="#CCFBF1" stroke="#14B8A6" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="533" y="326" text-anchor="middle" font-size="14" font-weight="600" fill="#0D9488">shaping</text>
-  <text x="533" y="345" text-anchor="middle" font-size="10" fill="#14B8A6">GSUB · GPOS · BiDi · 22 scripts</text>
+  <!-- fonts -->
+  <g filter="url(#soft-sm)"><rect x="500" y="286" width="150" height="66" rx="12" fill="url(#g-fonts)" stroke="#A78BFA" stroke-width="1.25"/></g>
+  <text x="575" y="315" text-anchor="middle" font-size="14.5" font-weight="700" fill="#6D28D9">fonts</text>
+  <text x="575" y="333" text-anchor="middle" font-size="9.5" fill="#8B5CF6">encoding · subset · CMap</text>
 
-  <!-- worker box -->
-  <rect x="664" y="236" width="120" height="62" rx="10" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="724" y="273" text-anchor="middle" font-size="14" font-weight="600" fill="#D97706">worker</text>
+  <!-- shaping -->
+  <g filter="url(#soft-sm)"><rect x="500" y="372" width="150" height="66" rx="12" fill="url(#g-shaping)" stroke="#2DD4BF" stroke-width="1.25"/></g>
+  <text x="575" y="400" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0D9488">shaping</text>
+  <text x="575" y="419" text-anchor="middle" font-size="9.5" fill="#14B8A6">GSUB · GPOS · BiDi · 22 scripts</text>
 
-  <!-- crypto box -->
-  <rect x="230" y="410" width="130" height="62" rx="10" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="295" y="437" text-anchor="middle" font-size="14" font-weight="600" fill="#059669">crypto</text>
-  <text x="295" y="455" text-anchor="middle" font-size="10" fill="#10B981">AES · RSA · ECDSA · SHA · CMS · provider</text>
+  <!-- worker -->
+  <g filter="url(#soft-sm)"><rect x="716" y="322" width="132" height="70" rx="12" fill="url(#g-worker)" stroke="#FBBF24" stroke-width="1.25"/></g>
+  <text x="782" y="352" text-anchor="middle" font-size="14.5" font-weight="700" fill="#B45309">worker</text>
+  <text x="782" y="370" text-anchor="middle" font-size="9.5" fill="#D97706">off-thread generation</text>
 
-  <!-- parser box -->
-  <rect x="430" y="410" width="130" height="62" rx="10" fill="#FFEDD5" stroke="#F97316" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="495" y="437" text-anchor="middle" font-size="14" font-weight="600" fill="#EA580C">parser</text>
-  <text x="495" y="455" text-anchor="middle" font-size="10" fill="#F97316">read · modify · merge · split</text>
+  <!-- crypto (standalone) -->
+  <g filter="url(#soft-sm)"><rect x="238" y="462" width="196" height="62" rx="12" fill="url(#g-crypto)" stroke="#34D399" stroke-width="1.25"/></g>
+  <text x="336" y="489" text-anchor="middle" font-size="14.5" font-weight="700" fill="#059669">crypto</text>
+  <text x="336" y="508" text-anchor="middle" font-size="9.5" fill="#10B981">AES · RSA · ECDSA · SHA · CMS · provider</text>
 
-  <!-- ─── Arrows ──────────────────────────────────────────────── -->
+  <!-- parser (standalone) -->
+  <g filter="url(#soft-sm)"><rect x="500" y="462" width="196" height="62" rx="12" fill="url(#g-parser)" stroke="#FB923C" stroke-width="1.25"/></g>
+  <text x="598" y="489" text-anchor="middle" font-size="14.5" font-weight="700" fill="#C2410C">parser</text>
+  <text x="598" y="508" text-anchor="middle" font-size="9.5" fill="#F97316">read · modify · merge · split · extract</text>
 
-  <!-- pdfnative-cli → core (dashed, external consumer) -->
-  <line x1="180" y1="141" x2="262" y2="194" stroke="#0E7490" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#arrow-cli)"/>
-
-  <!-- pdfnative-mcp → core (dashed, external consumer) -->
-  <line x1="475" y1="141" x2="330" y2="194" stroke="#6366F1" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#arrow-mcp)"/>
-  <text x="345" y="170" text-anchor="middle" font-size="10" fill="#64748B">npm install pdfnative</text>
-
-  <!-- pdfnative-react → core (dashed, external consumer) -->
-  <line x1="770" y1="141" x2="392" y2="194" stroke="#0891B2" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#arrow-react)"/>
+  <!-- ─── Edges ─── -->
+  <!-- consumers → core (npm) -->
+  <path d="M190 196 C 210 232, 250 250, 292 284" fill="none" stroke="#6366F1" stroke-width="1.75" stroke-dasharray="6,4" marker-end="url(#ah-npm)"/>
+  <path d="M480 197 C 452 228, 420 246, 392 283" fill="none" stroke="#6366F1" stroke-width="1.75" stroke-dasharray="6,4" marker-end="url(#ah-npm)"/>
+  <path d="M770 196 C 640 240, 500 250, 436 300" fill="none" stroke="#6366F1" stroke-width="1.75" stroke-dasharray="6,4" marker-end="url(#ah-npm)"/>
+  <g transform="translate(470 232)">
+    <rect x="-64" y="-13" width="128" height="20" rx="10" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="1"/>
+    <text x="0" y="1" text-anchor="middle" font-size="10" font-weight="600" fill="#4F46E5">npm install pdfnative</text>
+  </g>
 
   <!-- types → core -->
-  <line x1="168" y1="261" x2="226" y2="261" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <text x="177" y="254" font-size="10" fill="#94A3B8">imports</text>
+  <line x1="174" y1="357" x2="234" y2="357" stroke="#94A3B8" stroke-width="1.6" marker-end="url(#ah-import)"/>
+  <!-- fonts → core -->
+  <line x1="498" y1="326" x2="438" y2="335" stroke="#94A3B8" stroke-width="1.6" marker-end="url(#ah-import)"/>
+  <!-- shaping → fonts -->
+  <line x1="575" y1="370" x2="575" y2="356" stroke="#94A3B8" stroke-width="1.6" marker-end="url(#ah-import)"/>
+  <!-- worker → shaping -->
+  <line x1="714" y1="366" x2="654" y2="392" stroke="#94A3B8" stroke-width="1.6" marker-end="url(#ah-import)"/>
+  <!-- crypto → core (standalone) -->
+  <line x1="336" y1="460" x2="336" y2="440" stroke="#10B981" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#ah-standalone)"/>
+  <!-- parser → core (imports compress) -->
+  <path d="M540 460 C 500 440, 460 430, 436 415" fill="none" stroke="#F97316" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#ah-compress)"/>
 
-  <!-- core ← fonts -->
-  <line x1="464" y1="227" x2="410" y2="244" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <text x="418" y="222" font-size="10" fill="#94A3B8">imports</text>
+  <!-- ── Legend ─────────────────────────────────────────────────── -->
+  <line x1="28" y1="558" x2="932" y2="558" stroke="#E2E8F0" stroke-width="1"/>
+  <g font-size="10.5" fill="#475569">
+    <line x1="120" y1="578" x2="150" y2="578" stroke="#94A3B8" stroke-width="1.8" marker-end="url(#ah-import)"/>
+    <text x="158" y="582">imports</text>
 
-  <!-- fonts ← shaping -->
-  <line x1="533" y1="296" x2="533" y2="262" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <text x="538" y="283" font-size="10" fill="#94A3B8">imports</text>
+    <line x1="256" y1="578" x2="286" y2="578" stroke="#6366F1" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#ah-npm)"/>
+    <text x="294" y="582">consumes via npm</text>
 
-  <!-- shaping ← worker -->
-  <line x1="660" y1="278" x2="602" y2="313" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <text x="626" y="285" font-size="10" fill="#94A3B8">imports</text>
+    <line x1="470" y1="578" x2="500" y2="578" stroke="#10B981" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#ah-standalone)"/>
+    <text x="508" y="582">standalone module</text>
 
-  <!-- crypto → core (dashed, standalone) -->
-  <line x1="295" y1="408" x2="297" y2="348" stroke="#10B981" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-green)"/>
-  <text x="302" y="382" font-size="10" fill="#10B981">standalone</text>
-
-  <!-- parser → core (dashed, imports compress) -->
-  <line x1="490" y1="408" x2="380" y2="348" stroke="#F97316" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-orange)"/>
-  <text x="406" y="393" font-size="10" fill="#F97316">imports compress</text>
+    <line x1="678" y1="578" x2="708" y2="578" stroke="#F97316" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#ah-compress)"/>
+    <text x="716" y="582">imports compress</text>
+  </g>
 </svg>
