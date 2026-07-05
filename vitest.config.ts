@@ -19,6 +19,7 @@ export default defineConfig({
                 'src/types/pdf-types.ts',
                 'src/parser/index.ts',
                 'src/types/pdf-document-types.ts',
+                'src/tools/index.ts',
             ],
             thresholds: {
                 statements: 88,
