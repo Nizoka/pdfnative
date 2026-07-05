@@ -128,6 +128,7 @@
       <li><a href="#comparison">Compare</a></li>
       <li><a href="#benchmarks">Benchmarks</a></li>
       <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#governance">Governance</a></li>
       <li><a href="#mcp">MCP</a></li>
       <li><a href="#cli">CLI</a></li>
       <li><a href="#react">React</a></li>
@@ -184,7 +185,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">2 165+</div>
+    <div class="metric-value">2 218+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -249,7 +250,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 165+ tests across 83 files, 95%+ coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 218+ tests across 93 files, 95%+ coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -390,7 +391,7 @@ const pdf = buildDocumentPDFBytes({
       <div class="demo-error" id="demo-error" role="alert"></div>
       <p class="demo-note">
         Need more? Browse all
-        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">36 generator categories (~201 sample PDFs)</a>
+        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">41 generator categories (~210 sample PDFs)</a>
         on GitHub.
       </p>
     </div>
@@ -685,9 +686,23 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/master/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative module architecture. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (render · sign · inspect · verify · batch), pdfnative-mcp (MCP server, 17 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core ← fonts ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that imports the compression layer. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative 1.5.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (render · sign · inspect · verify · batch), pdfnative-mcp (MCP server, 17 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, modifies, annotates, merges and splits PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
+  </div>
+</section>
+
+<!-- ═══════════════ AI Governance ═══════════════ -->
+<section class="section" id="governance">
+  <div class="container">
+    <h2 class="section-title">AI Governance &amp; Human-in-the-Loop</h2>
+    <p class="section-subtitle">pdfnative is built with AI coding agents — and it governs them. A machine-readable contract and a human-in-the-loop protocol keep agents in a <strong>draftsman</strong> role: they may propose, but a human always reviews, approves, and submits. Nothing reaches GitHub autonomously.</p>
+    <div class="arch-diagram">
+      <a href="guides/ai-governance.html">
+        <img src="assets/ai-governance.svg" alt="AI governance and human-in-the-loop flow. Stage one: the agent acts as a draftsman across four steps — detect, reproduce locally, self-check zero dependencies and byte-identity, then write a markdown draft into .github/drafts/. Stage two runs automated checks: verify-issue.mjs confirms no new dependency and a reproduction block, producing a compliance report. Stage three is the critical human review and sign-off gate — the only path to a submission, published under the human's own GitHub identity. A red callout lists what agents must never do: open, edit, comment, close, or submit issues, PRs, or releases autonomously, or add a runtime dependency." width="960" height="600" loading="lazy">
+      </a>
+    </div>
+    <p class="section-subtitle" style="margin-top:1.5rem">Read the full protocol in the <a href="guides/ai-governance.html">AI governance guide</a>, or inspect the source of truth: <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/AGENT_RULES.md" target="_blank" rel="noopener">.github/AGENT_RULES.md</a> and <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/ai-governance.json" target="_blank" rel="noopener">.github/ai-governance.json</a>.</p>
   </div>
 </section>
 

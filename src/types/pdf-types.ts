@@ -519,10 +519,44 @@ export interface PdfLayoutOptions {
      * @since 1.4.0
      */
     readonly viewerPreferences?: ViewerPreferences;
+    /**
+     * Draw a diagnostic layout overlay on every page to visualise how the
+     * document builder placed content. Purely a development aid — leave it
+     * off (the default) for production output.
+     *
+     * - `false` / omitted: no overlay (default — output is byte-identical).
+     * - `true`: draw all overlay layers (margin box, block content bounds,
+     *   and table cell outlines).
+     * - object: enable individual layers selectively.
+     *
+     * The overlay is drawn with thin, semi-transparent-free stroked rectangles
+     * in distinct colours and never alters text placement, so a document built
+     * with `debug` on has identical content geometry to one built with it off —
+     * only extra guide rectangles are added.
+     *
+     * @since 1.5.0
+     */
+    readonly debug?: boolean | LayoutDebugOptions;
+}
+
+/**
+ * Fine-grained control over the {@link PdfLayoutOptions.debug} overlay layers.
+ * Every layer defaults to `false`; pass `debug: true` to enable them all.
+ *
+ * @since 1.5.0
+ */
+export interface LayoutDebugOptions {
+    /** Draw the page content box (page rect inset by the margins). */
+    readonly showMargins?: boolean;
+    /** Draw a rectangle around each block's laid-out content bounds. */
+    readonly showContentBounds?: boolean;
+    /** Draw cell outlines for every table cell. */
+    readonly showCells?: boolean;
 }
 
 /**
  * Viewer presentation preferences (ISO 32000-1 §12.2, Table 150 + §7.7.2).
+ *
  * Every field is optional; omitted fields leave the viewer's default behaviour
  * unchanged. Purely presentational and PDF/A-safe.
  *
@@ -570,6 +604,63 @@ export interface ViewerPreferences {
     readonly direction?: 'l2r' | 'r2l';
     /** Page-scaling default for the Print dialog (`/PrintScaling`). */
     readonly printScaling?: 'none' | 'appDefault';
+}
+
+// ── Layout Inspection Types ──────────────────────────────────────────
+
+/**
+ * One block's laid-out footprint, as reported by {@link inspectDocumentLayout}.
+ * Coordinates are in PDF user space (origin bottom-left, points), matching the
+ * document builder: `top` is the y-coordinate of the block's upper edge and
+ * `height` extends downward from it.
+ *
+ * @since 1.5.0
+ */
+export interface InspectedBlock {
+    /** The originating block's `type` (e.g. `'heading'`, `'paragraph'`, `'table'`). */
+    readonly type: string;
+    /** 0-based index of the page this block was placed on. */
+    readonly page: number;
+    /** X-coordinate of the block's left edge (points). */
+    readonly x: number;
+    /** Y-coordinate of the block's top edge (points, y increases upward). */
+    readonly top: number;
+    /** Content width available to the block (points). */
+    readonly width: number;
+    /** Estimated block height (points). */
+    readonly height: number;
+}
+
+/** One page's worth of {@link InspectedBlock}s. @since 1.5.0 */
+export interface InspectedPage {
+    /** 0-based page index. */
+    readonly index: number;
+    /** Blocks placed on this page, in render order. */
+    readonly blocks: readonly InspectedBlock[];
+}
+
+/**
+ * Deterministic, read-only description of how {@link inspectDocumentLayout}
+ * expects the document builder to paginate and place a set of blocks. Useful
+ * for debugging layout, writing layout assertions in tests, or building
+ * higher-level tooling — it never renders a PDF.
+ *
+ * The result mirrors the builder's pagination using the same measurement
+ * primitives; treat the per-block geometry as a faithful estimate.
+ *
+ * @since 1.5.0
+ */
+export interface LayoutInspection {
+    /** Page width in points. */
+    readonly pageWidth: number;
+    /** Page height in points. */
+    readonly pageHeight: number;
+    /** Page margins `{ t, r, b, l }` in points. */
+    readonly margins: { readonly t: number; readonly r: number; readonly b: number; readonly l: number };
+    /** Total number of pages the blocks paginate into. */
+    readonly totalPages: number;
+    /** Per-page block placement. */
+    readonly pages: readonly InspectedPage[];
 }
 
 // ── Attachment Types ─────────────────────────────────────────────────

@@ -47,6 +47,21 @@ export interface PdfModifier {
     addRawObject(body: string): number;
 
     /**
+     * Attach an annotation to a page's `/Annots` array via incremental update.
+     *
+     * The annotation dictionary body (`<< /Type /Annot … >>`, without the
+     * `obj`/`endobj` wrapper — as produced by `buildAnnotationBody`) is added
+     * as a new object, and the target page dictionary is rewritten with the
+     * new reference appended to its `/Annots` array (created if absent).
+     *
+     * @param pageIndex      0-based page index.
+     * @param annotationBody The annotation dictionary string.
+     * @returns The new annotation object number.
+     * @throws Error when `pageIndex` is out of range.
+     */
+    addAnnotation(pageIndex: number, annotationBody: string): number;
+
+    /**
      * Get the current value of an object (modified or original).
      */
     getObject(num: number): PdfValue | null;
@@ -102,6 +117,26 @@ export function createModifier(reader: PdfReader): PdfModifier {
     function getObject(num: number): PdfValue | null {
         if (modified.has(num)) return modified.get(num) ?? null;
         return reader.getObject(num);
+    }
+
+    function addAnnotation(pageIndex: number, annotationBody: string): number {
+        const pageRef = reader.getPageRef(pageIndex);
+        if (!pageRef) throw new Error(`addAnnotation: no page at index ${pageIndex}`);
+
+        const objNum = addRawObject(annotationBody);
+
+        const page = getObject(pageRef.num);
+        if (!isDict(page)) throw new Error(`addAnnotation: page ${pageIndex} is not a dictionary`);
+
+        const clone: PdfDict = new Map(page);
+        const existing = clone.get('Annots');
+        const resolved = isRef(existing) ? reader.resolveValue(existing) : existing;
+        const annots: PdfArray = isArray(resolved) ? [...resolved] : [];
+        annots.push({ type: 'ref', num: objNum, gen: 0 });
+        clone.set('Annots', annots);
+        setObject(pageRef.num, clone);
+
+        return objNum;
     }
 
     function save(): Uint8Array {
@@ -165,6 +200,7 @@ export function createModifier(reader: PdfReader): PdfModifier {
         setObject,
         addObject,
         addRawObject,
+        addAnnotation,
         getObject,
         save,
         get nextObjNum() { return nextNum; },

@@ -643,7 +643,7 @@ export function planTable(
     }
     const headerHeight = headerMaxLines === 1
         ? TH_H
-        : Math.max(TH_H, headerMaxLines * fs.th * TABLE_LINE_HEIGHT + CELL_PAD_BOTTOM + 2);
+        : Math.max(TH_H, headerMaxLines * fs.th * TABLE_LINE_HEIGHT + pad + 2);
 
     // Per-row lines + heights.
     const rowLines: string[][][] = [];
@@ -660,7 +660,7 @@ export function planTable(
         rowLines.push(cells);
         const h = maxLines === 1
             ? minRowH
-            : Math.max(minRowH, maxLines * fs.td * TABLE_LINE_HEIGHT + CELL_PAD_BOTTOM + 2);
+            : Math.max(minRowH, maxLines * fs.td * TABLE_LINE_HEIGHT + pad + 2);
         rowHeights.push(h);
     }
 
@@ -1325,6 +1325,7 @@ export function renderSvgBlock(
     cw: number,
     tagCtx?: TagContext,
     documentChildren?: (StructElement | MCRef)[],
+    enc?: EncodingContext,
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
     const w = block.width ?? DEFAULT_SVG_SIZE;
@@ -1344,7 +1345,7 @@ export function renderSvgBlock(
         stroke: block.stroke,
         strokeWidth: block.strokeWidth,
         viewBox: block.viewBox,
-    });
+    }, enc);
 
     if (svgOps) {
         if (tagCtx?.tagged) {

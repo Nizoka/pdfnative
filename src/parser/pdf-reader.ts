@@ -17,8 +17,33 @@ import { parseXrefTable } from './pdf-xref-parser.js';
 import type { XrefTable } from './pdf-xref-parser.js';
 import { inflateSync } from './pdf-inflate.js';
 import { applyDecodeFilter, KNOWN_DECODE_FILTERS } from './pdf-decode-filters.js';
+import type { PageLabelRange, PageLabelStyle } from '../core/pdf-page-labels.js';
 
 // ── Types ────────────────────────────────────────────────────────────
+
+/**
+ * A page annotation parsed by {@link PdfReader.getAnnotations}. Covers the
+ * common fields across link, text-markup and drawing annotations; the raw
+ * dictionary is available for anything not surfaced here.
+ *
+ * @since 1.5.0
+ */
+export interface ParsedAnnotation {
+    /** Annotation subtype (`/Subtype`), e.g. `'Link'`, `'Highlight'`, `'Text'`. */
+    readonly subtype: string;
+    /** Annotation rectangle `[x1, y1, x2, y2]`, or `null` when malformed. */
+    readonly rect: readonly [number, number, number, number] | null;
+    /** Decoded `/Contents` text (UTF-16BE or PDFDocEncoding), when present. */
+    readonly contents?: string;
+    /** Decoded author / title (`/T`), when present. */
+    readonly title?: string;
+    /** Colour components (`/C`), 0–1, when present. */
+    readonly color?: readonly number[];
+    /** Text-markup quadrilateral points (`/QuadPoints`), when present. */
+    readonly quadPoints?: readonly number[];
+    /** Target URL for URI-action link annotations, when present. */
+    readonly url?: string;
+}
 
 export interface PdfReader {
     /** Total number of pages in the document. */
@@ -61,6 +86,30 @@ export interface PdfReader {
      * Get the document info dictionary, if present.
      */
     getInfo(): PdfDict | null;
+
+    /**
+     * Read the document's `/PageLabels` number tree (ISO 32000-1 §12.4.2)
+     * back into an ordered list of {@link PageLabelRange}s.
+     *
+     * Returns `null` when the catalog has no `/PageLabels` entry.
+     * The result is the round-trip complement of `buildPageLabelsDict`.
+     */
+    getPageLabels(): PageLabelRange[] | null;
+
+    /**
+     * Read the `/Annots` array of the given page (0-based) and return the
+     * parsed annotations (ISO 32000-1 §12.5). Link, text-markup and drawing
+     * annotations are surfaced with their common fields; use
+     * {@link ParsedAnnotation} for the shape.
+     */
+    getAnnotations(pageIndex: number): ParsedAnnotation[];
+
+    /**
+     * Get the indirect reference of the page at the given index (0-based),
+     * or `null` when out of range. Useful for incremental modification
+     * (e.g. attaching an annotation via `PdfModifier.addAnnotation`).
+     */
+    getPageRef(pageIndex: number): PdfRef | null;
 
     /**
      * Get decoded stream data for a stream object.
@@ -142,6 +191,30 @@ export function openPdf(bytes: Uint8Array): PdfReader {
         return resolveRef({ type: 'ref', num, gen: entry.gen });
     }
 
+    // Indirect refs of leaf pages, in document order (lazy, cached).
+    let _pageRefs: PdfRef[] | undefined;
+    function collectPageRefs(): PdfRef[] {
+        if (_pageRefs) return _pageRefs;
+        const catalog = getCatalog();
+        const refs: PdfRef[] = [];
+        const walk = (nodeVal: PdfValue, depth: number): void => {
+            if (depth > 100) return; // cycle / runaway guard
+            const node = resolveValue(nodeVal);
+            if (!isDict(node)) return;
+            if (dictGetName(node, 'Type') === 'Page') {
+                if (isRef(nodeVal)) refs.push(nodeVal);
+                return;
+            }
+            const kids = node.get('Kids');
+            if (isArray(kids)) {
+                for (const k of kids) walk(k, depth + 1);
+            }
+        };
+        walk(catalog.get('Pages') ?? null, 0);
+        _pageRefs = refs;
+        return refs;
+    }
+
     function decodeStreamData(stream: PdfStream): Uint8Array {
         let data = stream.data;
         const filterName = dictGetName(stream.dict, 'Filter');
@@ -199,9 +272,140 @@ export function openPdf(bytes: Uint8Array): PdfReader {
             const info = resolveValue(infoRef);
             return isDict(info) ? info : null;
         },
+        getPageLabels(): PageLabelRange[] | null {
+            const catalog = getCatalog();
+            const plVal = resolveValue(catalog.get('PageLabels') ?? null);
+            if (!isDict(plVal)) return null;
+
+            const entries = new Map<number, PdfValue>();
+            collectNumberTree(plVal, resolveValue, entries);
+            if (entries.size === 0) return null;
+
+            const ranges: PageLabelRange[] = [];
+            for (const startPage of [...entries.keys()].sort((a, b) => a - b)) {
+                const dict = resolveValue(entries.get(startPage) ?? null);
+                if (!isDict(dict)) continue;
+
+                const range: { -readonly [K in keyof PageLabelRange]: PageLabelRange[K] } = { startPage };
+                const sOp = dictGetName(dict, 'S');
+                range.style = sOp === undefined ? 'none' : (STYLE_FROM_OP[sOp] ?? 'none');
+
+                const prefix = dict.get('P');
+                if (typeof prefix === 'string') range.prefix = prefix;
+
+                const start = dictGetNum(dict, 'St');
+                if (start !== undefined) range.start = start;
+
+                ranges.push(range);
+            }
+            return ranges.length > 0 ? ranges : null;
+        },
+        getAnnotations(pageIndex: number): ParsedAnnotation[] {
+            const pages = collectPages();
+            if (pageIndex < 0 || pageIndex >= pages.length) return [];
+            const annotsVal = resolveValue(pages[pageIndex].get('Annots') ?? null);
+            if (!isArray(annotsVal)) return [];
+
+            const out: ParsedAnnotation[] = [];
+            for (const a of annotsVal) {
+                const d = resolveValue(a);
+                if (!isDict(d)) continue;
+
+                const subtype = dictGetName(d, 'Subtype') ?? '';
+                const rectVal = resolveValue(d.get('Rect') ?? null);
+                let rect: [number, number, number, number] | null = null;
+                if (isArray(rectVal) && rectVal.length === 4 && rectVal.every(n => typeof n === 'number')) {
+                    rect = [rectVal[0], rectVal[1], rectVal[2], rectVal[3]] as [number, number, number, number];
+                }
+
+                const parsed: {
+                    -readonly [K in keyof ParsedAnnotation]: ParsedAnnotation[K]
+                } = { subtype, rect };
+
+                const contents = d.get('Contents');
+                if (typeof contents === 'string') parsed.contents = decodePdfTextString(contents);
+                const title = d.get('T');
+                if (typeof title === 'string') parsed.title = decodePdfTextString(title);
+
+                const c = resolveValue(d.get('C') ?? null);
+                if (isArray(c)) {
+                    const nums = c.filter((x): x is number => typeof x === 'number');
+                    if (nums.length > 0) parsed.color = nums;
+                }
+                const qp = resolveValue(d.get('QuadPoints') ?? null);
+                if (isArray(qp)) {
+                    parsed.quadPoints = qp.filter((x): x is number => typeof x === 'number');
+                }
+                const action = resolveValue(d.get('A') ?? null);
+                if (isDict(action)) {
+                    const uri = action.get('URI');
+                    if (typeof uri === 'string') parsed.url = uri;
+                }
+
+                out.push(parsed);
+            }
+            return out;
+        },
+        getPageRef(pageIndex: number): PdfRef | null {
+            const refs = collectPageRefs();
+            return pageIndex >= 0 && pageIndex < refs.length ? refs[pageIndex] : null;
+        },
         decodeStream: decodeStreamData,
         getObject,
     };
+}
+
+// ── Page-Label Number Tree ───────────────────────────────────────────
+
+/**
+ * Decode a PDF text string (ISO 32000-1 §7.9.2) that the tokenizer returned as
+ * a raw byte string (one JS char per byte). UTF-16BE strings (starting with the
+ * `FE FF` BOM) are decoded to their Unicode text; otherwise the string is
+ * returned as-is (PDFDocEncoding ≈ Latin-1 for the common ASCII case).
+ */
+function decodePdfTextString(raw: string): string {
+    if (raw.length >= 2 && raw.charCodeAt(0) === 0xFE && raw.charCodeAt(1) === 0xFF) {
+        let out = '';
+        for (let i = 2; i + 1 < raw.length; i += 2) {
+            out += String.fromCharCode((raw.charCodeAt(i) << 8) | raw.charCodeAt(i + 1));
+        }
+        return out;
+    }
+    return raw;
+}
+
+/** Reverse of the `/S` numbering-style operator → {@link PageLabelStyle}. */
+const STYLE_FROM_OP: Record<string, PageLabelStyle> = {
+    D: 'decimal',
+    r: 'roman',
+    R: 'Roman',
+    a: 'alpha',
+    A: 'Alpha',
+};
+
+/**
+ * Walk a PDF number tree (ISO 32000-1 §7.9.7), collecting every
+ * integer-key → value pair from `/Nums` leaves, recursing through `/Kids`.
+ */
+function collectNumberTree(
+    node: PdfDict,
+    resolve: (val: PdfValue) => PdfValue,
+    out: Map<number, PdfValue>,
+): void {
+    const nums = resolve(node.get('Nums') ?? null);
+    if (isArray(nums)) {
+        for (let i = 0; i + 1 < nums.length; i += 2) {
+            const key = resolve(nums[i]);
+            if (typeof key === 'number') out.set(key, nums[i + 1]);
+        }
+    }
+    const kids = resolve(node.get('Kids') ?? null);
+    if (isArray(kids)) {
+        for (const kid of kids) {
+            const kd = resolve(kid);
+            if (isDict(kd)) collectNumberTree(kd, resolve, out);
+        }
+    }
 }
 
 // ── Page Tree Flattener ──────────────────────────────────────────────

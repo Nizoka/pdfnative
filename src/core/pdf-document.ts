@@ -59,6 +59,7 @@ import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
+import { resolveDebugOptions, marginBoxOps, blockBoundsOps, tableCellOps } from './pdf-layout-debug.js';
 import { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent } from './pdf-form.js';
 import {
     estimateBlockHeight,
@@ -176,6 +177,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     if (watermarkOpts) {
         validateWatermark(watermarkOpts, layout?.tagged);
     }
+
+    // ── Layout debug overlay setup (development aid; off → byte-identical) ──
+    const debugOpts = resolveDebugOptions(layout?.debug);
 
     // ── Attachments setup (PDF/A-3 only) ─────────────────────────────
     const attachments = layout?.attachments;
@@ -447,6 +451,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         const ops: string[] = [];
         let y = pgH - mg.t;
 
+        // Layout debug overlay ops for this page (drawn on top, at page end).
+        const debugOps: string[] = [];
+        if (debugOpts?.showMargins) {
+            debugOps.push(marginBoxOps(pgW, pgH, mg, FT_H));
+        }
         // Render header template (if provided)
         if (headerTpl) {
             const hOps = renderPageTemplate(
@@ -486,6 +495,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         // Render blocks for this page
         const blocks = pageBlocks[p] ?? [];
         for (const block of blocks) {
+            const yBefore = debugOpts ? y : 0;
             switch (block.type) {
                 case 'heading': {
                     // Update heading destination with actual render position
@@ -561,7 +571,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                     break;
                 }
                 case 'svg': {
-                    const result = renderSvgBlock(block, y, mg.l, cw, tagCtx, documentChildren);
+                    const result = renderSvgBlock(block, y, mg.l, cw, tagCtx, documentChildren, enc);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
@@ -573,6 +583,21 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                     break;
                 }
                 // pageBreak handled during pagination
+            }
+
+            // Layout debug: record this block's exact footprint (dev aid only).
+            if (debugOpts) {
+                if (debugOpts.showContentBounds) {
+                    const bo = blockBoundsOps(mg.l, cw, yBefore, y);
+                    if (bo) debugOps.push(bo);
+                }
+                if (debugOpts.showCells) {
+                    if (block.type === '__tableSlice') {
+                        debugOps.push(tableCellOps(block.slice.plan, block.slice, yBefore));
+                    } else if (block.type === 'table') {
+                        debugOps.push(tableCellOps(planTable(block, enc, mg.l, cw), undefined, yBefore));
+                    }
+                }
             }
         }
 
@@ -587,6 +612,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             mg.b - 5, enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren,
         );
         ops.push(...ftOps);
+
+        // Layout debug overlay — drawn last so guide rectangles sit on top.
+        if (debugOps.length > 0) {
+            ops.push(...debugOps);
+        }
 
         pageStreams.push(ops.join('\n'));
     }

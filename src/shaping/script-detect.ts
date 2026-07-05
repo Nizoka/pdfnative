@@ -4,14 +4,14 @@
  * Detects Unicode script ranges in text to determine which fonts are needed.
  */
 
-import { isEmojiCodepoint, isEthiopicCodepoint, isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint } from './script-registry.js';
+import { isEmojiCodepoint, isMathCodepoint, isEthiopicCodepoint, isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint } from './script-registry.js';
 
 /**
  * Languages requiring Unicode font embedding (non-WinAnsi scripts).
  * Latin-script languages using Helvetica built-in don't need embedding.
  */
 export function needsUnicodeFont(lang: string): boolean {
-    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'te', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'am', 'si', 'bo', 'km', 'my', 'emoji'].includes(lang);
+    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'te', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'am', 'si', 'bo', 'km', 'my', 'math', 'emoji'].includes(lang);
 }
 
 /**
@@ -81,6 +81,9 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             if ((cp >= 0x10A0 && cp <= 0x10FF) || (cp >= 0x2D00 && cp <= 0x2D2F)) { needed.add('ka'); continue; }
             // Armenian + Armenian Ligatures → 'hy'
             if ((cp >= 0x0530 && cp <= 0x058F) || (cp >= 0xFB13 && cp <= 0xFB17)) { needed.add('hy'); continue; }
+            // Mathematical symbols → 'math' (before emoji: math ranges are
+            // distinct from the dingbats/symbols emoji blocks). (v1.5.0)
+            if (isMathCodepoint(cp)) { needed.add('math'); continue; }
             // Emoji ranges → 'emoji'  (v1.1.0)
             if (isEmojiCodepoint(cp)) { needed.add('emoji'); continue; }
         }
@@ -125,6 +128,8 @@ export function detectCharLang(cp: number): string | null {
     if ((cp >= 0x10A0 && cp <= 0x10FF) || (cp >= 0x2D00 && cp <= 0x2D2F)) return 'ka';
     // Armenian + Armenian Ligatures
     if ((cp >= 0x0530 && cp <= 0x058F) || (cp >= 0xFB13 && cp <= 0xFB17)) return 'hy';
+    // Mathematical symbols — before emoji (distinct blocks). (v1.5.0)
+    if (isMathCodepoint(cp)) return 'math';
     // Emoji — must come last so plane-0 ranges (Greek, Hebrew, Arabic, etc.)
     // win for codepoints they share with the dingbats/symbols blocks. (v1.1.0)
     if (isEmojiCodepoint(cp)) return 'emoji';

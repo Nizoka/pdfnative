@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authoring+ Playground (v1.5.0) — pdfnative</title>
+  <meta name="description" content="Try pdfnative 1.5.0 in your browser: SVG <text> labels, the layout debug overlay, and markup annotations (highlight, underline, sticky notes) — all client-side, zero install.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/authoring-plus.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/authoring-plus.html">
+  <meta property="og:title" content="Authoring+ Playground (v1.5.0) — pdfnative">
+  <meta property="og:description" content="SVG text labels, layout debug overlay, and markup annotations — all in your browser.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Authoring+ Playground (v1.5.0) — pdfnative">
+  <meta name="twitter:description" content="SVG text labels, layout debug overlay, and markup annotations. Zero install.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Authoring+ Playground (v1.5.0)",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any (browser-based)",
+    "browserRequirements": "Requires JavaScript and HTML5",
+    "url": "https://pdfnative.dev/playgrounds/authoring-plus.html",
+    "description": "Try pdfnative 1.5.0 in your browser: SVG <text> labels, the layout debug overlay, and markup annotations.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
+    "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Authoring+ (v1.5.0)</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./authoring-plus.html" aria-current="page">Authoring+</a>
+    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>Authoring+ — what's new in 1.5.0</h1>
+    <p>pdfnative 1.5.0 adds <strong>SVG <code>&lt;text&gt;</code> rendering</strong>, an opt-in <strong>layout debug overlay</strong>, and a typed <strong>markup annotation</strong> model. Every demo below runs entirely in your browser and downloads a real PDF.</p>
+
+    <div class="callout" style="margin:16px 0;padding:12px 16px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-size:14px;">
+      <strong>Also new in 1.5.0</strong>: a bundled math / technical-symbols font (lang <code>'math'</code>, auto-routed via script detection), the <a href="https://github.com/Nizoka/pdfnative/tree/main/tools"><code>pdfnative/tools</code></a> font compiler/parser (<code>compileFontData</code> / <code>parseFontData</code>), a page-labels reader (<code>getPageLabels()</code>), and annotation read/write on existing PDFs (<code>getAnnotations()</code> / <code>addAnnotation()</code>).
+    </div>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
+      <label for="preset"><strong>Demo:</strong></label>
+      <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="svgtext">SVG &lt;text&gt; labelled chart</option>
+        <option value="debug">Layout debug overlay + inspection</option>
+        <option value="annotations">Markup annotations (build + read back)</option>
+      </select>
+      <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
+      <span id="timer" style="font-size:13px;color:#64748b;"></span>
+    </div>
+
+    <p id="desc" style="margin-top:20px;color:#475569;font-size:15px;line-height:1.6;"></p>
+
+    <details style="margin-top:16px;" open>
+      <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
+      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+    </details>
+
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">v1.5.0 features exercised here:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li><strong>SVG <code>&lt;text&gt;</code></strong> — text elements render as upright PDF text with <code>text-anchor</code> (start / middle / end) support, ideal for chart labels.</li>
+        <li><strong>Layout debug overlay</strong> — <code>layout: { debug: true }</code> draws margin / content / cell boxes; <code>inspectDocumentLayout()</code> returns per-page block geometry.</li>
+        <li><strong>Markup annotations</strong> — <code>buildAnnotation()</code> / <code>buildAnnotationBody()</code> for nine annotation types; <code>getAnnotations()</code> reads them back out of an existing PDF.</li>
+      </ul>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">All zero-dependency, all in the browser. The exact same code runs in Node.js, Deno, Bun and Web Workers.</p>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/">All guides</a></li>
+      <li><a href="./toolkit.html">PDF Toolkit playground →</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+const codeView = $('code-view');
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') {
+    status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5';
+  } else if (kind === 'success') {
+    status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7';
+  } else {
+    status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd';
+  }
+}
+
+const DESCRIPTIONS = {
+  svgtext: 'Renders a labelled bar chart from a single SVG string. The bars are <rect> elements; the axis and quarter labels are <text> elements with text-anchor="middle", which pdfnative draws as upright PDF text.',
+  debug: 'Renders a short document with the layout debug overlay enabled (layout: { debug: true }), drawing the margin box, per-block content bounds, and table cell outlines. The status line reports the inspectDocumentLayout() block count.',
+  annotations: 'Builds a contract PDF, injects a highlight annotation onto it with addAnnotation(), and reads every annotation back out with getAnnotations(). The annotated PDF is downloaded and the status line lists what was read back.',
+};
+
+const CODE = {
+  svgtext: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Labelled chart',
+  blocks: [
+    { type: 'heading', text: 'Revenue by quarter', level: 1 },
+    { type: 'svg', width: 320, height: 160, align: 'center', data: \`
+      <svg viewBox="0 0 320 160">
+        <rect x="20"  y="60" width="40" height="80"  fill="#2563EB"/>
+        <rect x="80"  y="30" width="40" height="110" fill="#2563EB"/>
+        <rect x="140" y="90" width="40" height="50"  fill="#2563EB"/>
+        <rect x="200" y="20" width="40" height="120" fill="#2563EB"/>
+        <text x="40"  y="155" text-anchor="middle" font-size="11">Q1</text>
+        <text x="100" y="155" text-anchor="middle" font-size="11">Q2</text>
+        <text x="160" y="155" text-anchor="middle" font-size="11">Q3</text>
+        <text x="220" y="155" text-anchor="middle" font-size="11">Q4</text>
+      </svg>\` },
+  ],
+});
+
+downloadBlob(pdf, 'svg-text-chart.pdf');`,
+  debug: `import { buildDocumentPDFBytes, inspectDocumentLayout, downloadBlob } from 'pdfnative';
+
+const params = {
+  title: 'Layout debug',
+  blocks: [
+    { type: 'heading', text: 'Quarterly report', level: 1 },
+    { type: 'paragraph', text: 'Overlay draws margin / content / cell boxes.' },
+    { type: 'table',
+      headers: ['Item', 'Amount'],
+      rows: [
+        { cells: ['Revenue', '120,000'], type: '', pointed: false },
+        { cells: ['Profit',  '40,000'],  type: '', pointed: false },
+      ],
+      columns: [{ f: 0.6, a: 'l', mx: 40, mxH: 40 }, { f: 0.4, a: 'r', mx: 20, mxH: 20 }],
+    },
+  ],
+};
+
+// Programmatic geometry — no rendering:
+const layout = inspectDocumentLayout(params);
+console.log(layout.totalPages, 'pages', layout.pages[0].blocks.length, 'blocks');
+
+// Visual overlay:
+const pdf = buildDocumentPDFBytes(params, { debug: true });
+downloadBlob(pdf, 'layout-overlay.pdf');`,
+  annotations: `import { buildDocumentPDFBytes, openPdf, createModifier, buildAnnotationBody } from 'pdfnative';
+
+// 1. A base document.
+const base = buildDocumentPDFBytes({
+  title: 'Contract',
+  blocks: [
+    { type: 'heading', text: 'Service Agreement', level: 1 },
+    { type: 'paragraph', text: 'The parties agree to the following terms.' },
+  ],
+});
+
+// 2. Inject a highlight via a non-destructive incremental update.
+const modifier = createModifier(openPdf(base));
+modifier.addAnnotation(0, buildAnnotationBody({
+  type: 'highlight', rect: [72, 690, 320, 706], color: '#ffe14d', contents: 'Key clause',
+}));
+const annotated = modifier.save();
+
+// 3. Read the annotations back out.
+const read = openPdf(annotated).getAnnotations(0);
+console.log(read.map(a => a.subtype + ': ' + a.contents));
+
+downloadBlob(annotated, 'annotated-contract.pdf');`,
+};
+
+function applyPreset(id) {
+  $('desc').textContent = DESCRIPTIONS[id];
+  codeView.textContent = CODE[id];
+  if (window.Prism) window.Prism.highlightElement(codeView);
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+let pdfMod = null;
+
+async function loadPdfnative() {
+  if (pdfMod) return pdfMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFBytes === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFBytes === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFBytes === 'function') { pdfMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not load pdfnative from CDN. ' + (lastErr ? lastErr.message : ''));
+}
+
+function buildSvgText(mod) {
+  const pdf = mod.buildDocumentPDFBytes({
+    title: 'Labelled chart',
+    blocks: [
+      { type: 'heading', text: 'Revenue by quarter', level: 1 },
+      { type: 'paragraph', text: 'SVG <text> elements render as upright PDF text with text-anchor support.' },
+      { type: 'svg', width: 320, height: 160, align: 'center', data: `
+        <svg viewBox="0 0 320 160">
+          <rect x="20"  y="60" width="40" height="80"  fill="#2563EB"/>
+          <rect x="80"  y="30" width="40" height="110" fill="#2563EB"/>
+          <rect x="140" y="90" width="40" height="50"  fill="#2563EB"/>
+          <rect x="200" y="20" width="40" height="120" fill="#2563EB"/>
+          <text x="40"  y="155" text-anchor="middle" font-size="11">Q1</text>
+          <text x="100" y="155" text-anchor="middle" font-size="11">Q2</text>
+          <text x="160" y="155" text-anchor="middle" font-size="11">Q3</text>
+          <text x="220" y="155" text-anchor="middle" font-size="11">Q4</text>
+        </svg>` },
+    ],
+  });
+  return { bytes: pdf, filename: 'svg-text-chart.pdf', note: `${(pdf.length / 1024).toFixed(1)} KB` };
+}
+
+function buildDebug(mod) {
+  const params = {
+    title: 'Layout debug',
+    blocks: [
+      { type: 'heading', text: 'Quarterly report', level: 1 },
+      { type: 'paragraph', text: 'The overlay draws the margin box, each block\u2019s content bounds, and table cell outlines.' },
+      { type: 'table',
+        headers: ['Item', 'Amount'],
+        rows: [
+          { cells: ['Revenue', '120,000'], type: '', pointed: false },
+          { cells: ['Costs',   '80,000'],  type: '', pointed: false },
+          { cells: ['Profit',  '40,000'],  type: '', pointed: false },
+        ],
+        columns: [{ f: 0.6, a: 'l', mx: 40, mxH: 40 }, { f: 0.4, a: 'r', mx: 20, mxH: 20 }],
+      },
+    ],
+  };
+  let count = 0;
+  if (typeof mod.inspectDocumentLayout === 'function') {
+    const layout = mod.inspectDocumentLayout(params);
+    count = layout.pages.reduce((n, p) => n + p.blocks.length, 0);
+  }
+  const pdf = mod.buildDocumentPDFBytes(params, { debug: true });
+  return { bytes: pdf, filename: 'layout-overlay.pdf', note: `${(pdf.length / 1024).toFixed(1)} KB · ${count} blocks inspected` };
+}
+
+function buildAnnotations(mod) {
+  const base = mod.buildDocumentPDFBytes({
+    title: 'Contract',
+    blocks: [
+      { type: 'heading', text: 'Service Agreement', level: 1 },
+      { type: 'paragraph', text: 'The parties agree to the following terms and conditions.' },
+    ],
+  });
+  const modifier = mod.createModifier(mod.openPdf(base));
+  modifier.addAnnotation(0, mod.buildAnnotationBody({
+    type: 'highlight', rect: [72, 690, 320, 706], color: '#ffe14d', contents: 'Key clause',
+  }));
+  const annotated = modifier.save();
+  const read = mod.openPdf(annotated).getAnnotations(0);
+  const note = read.length
+    ? `read back: ${read.map(a => a.subtype).join(', ')}`
+    : 'annotation injected';
+  return { bytes: annotated, filename: 'annotated-contract.pdf', note: `${(annotated.length / 1024).toFixed(1)} KB · ${note}` };
+}
+
+const BUILDERS = { svgtext: buildSvgText, debug: buildDebug, annotations: buildAnnotations };
+
+async function generate() {
+  const id = $('preset').value;
+  const t0 = performance.now();
+  try {
+    setStatus('Loading pdfnative from CDN…', 'info');
+    const mod = await loadPdfnative();
+    setStatus('Generating PDF…', 'info');
+    const { bytes, filename, note } = BUILDERS[id](mod);
+    mod.downloadBlob(bytes, filename);
+    const ms = (performance.now() - t0).toFixed(0);
+    $('timer').textContent = `${note} · ${ms} ms`;
+    setStatus('PDF generated and downloaded.', 'success');
+  } catch (err) {
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  }
+}
+
+$('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('generate').addEventListener('click', generate);
+applyPreset('svgtext');
+
+// Theme + hamburger parity with the rest of the site.
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('pdfnative-theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('pdfnative-theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

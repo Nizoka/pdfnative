@@ -17,7 +17,8 @@
  */
 
 import { parseColor } from './pdf-color.js';
-import type { PdfColor } from '../types/pdf-types.js';
+import { txt } from './pdf-text.js';
+import type { PdfColor, EncodingContext } from '../types/pdf-types.js';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -379,6 +380,19 @@ interface ParsedElement {
     readonly strokeWidth?: number;
 }
 
+/**
+ * Parsed SVG `<text>` / `<tspan>` element, resolved to a single positioned run
+ * in the SVG coordinate space (Y-down). (v1.5.0)
+ */
+interface ParsedTextElement {
+    readonly text: string;
+    readonly x: number;
+    readonly y: number;
+    readonly fontSize: number;
+    readonly fill?: string;
+    readonly anchor?: 'start' | 'middle' | 'end';
+}
+
 /** Minimal CSS named color map (SVG/CSS3 basic colors → hex). */
 const CSS_COLORS: Record<string, string> = {
     black: '#000000', white: '#FFFFFF', red: '#FF0000', green: '#008000',
@@ -405,6 +419,62 @@ function getAttr(attrs: string, name: string): string | undefined {
 function getNum(attrs: string, name: string, def = 0): number {
     const v = getAttr(attrs, name);
     return v !== undefined ? +v : def;
+}
+
+/**
+ * Read a length/number attribute that may carry a CSS unit suffix
+ * (e.g. `font-size="16px"`). Returns `undefined` when the attribute is absent
+ * or unparseable. (v1.5.0)
+ */
+function getLen(attrs: string, name: string): number | undefined {
+    const v = getAttr(attrs, name);
+    if (v === undefined) return undefined;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Decode the safe subset of XML/HTML character entities in SVG text content.
+ * Only named entities `&amp; &lt; &gt; &quot; &apos; &nbsp;` and numeric
+ * references (`&#nn;`, `&#xHH;`) are recognised; unknown entities are dropped.
+ * The result is plain text that is later escaped by the PDF string encoder — it
+ * is never re-parsed as markup, so no entity-expansion/injection is possible.
+ * (v1.5.0)
+ */
+function decodeSvgEntities(s: string): string {
+    return s.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, (_m, ent: string) => {
+        if (ent[0] === '#') {
+            const cp = ent[1] === 'x' || ent[1] === 'X'
+                ? parseInt(ent.slice(2), 16)
+                : parseInt(ent.slice(1), 10);
+            return Number.isFinite(cp) && cp >= 0 && cp <= 0x10FFFF ? String.fromCodePoint(cp) : '';
+        }
+        switch (ent) {
+            case 'amp': return '&';
+            case 'lt': return '<';
+            case 'gt': return '>';
+            case 'quot': return '"';
+            case 'apos': return "'";
+            case 'nbsp': return '\u00A0';
+            default: return '';
+        }
+    });
+}
+
+/**
+ * Normalise raw SVG text-node markup into a single-line plain string: strip any
+ * residual tags, decode entities, remove C0/C1 control characters, and collapse
+ * whitespace runs (SVG default `xml:space` behaviour). (v1.5.0)
+ */
+function sanitizeSvgText(raw: string): string {
+    const noTags = raw.replace(/<[^>]*>/g, '');
+    const decoded = decodeSvgEntities(noTags);
+    // Strip control characters, then collapse whitespace to single spaces.
+    return decoded
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\u0000-\u001F\u007F-\u009F]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 /** Convert SVG `<rect>` to path data (handles rounded corners). */
@@ -447,6 +517,7 @@ function polyToPath(points: string, close: boolean): string {
  */
 function parseSvgMarkup(svg: string): {
     elements: ParsedElement[];
+    textElements: ParsedTextElement[];
     viewBox?: readonly [number, number, number, number];
 } {
     // Extract viewBox
@@ -509,7 +580,78 @@ function parseSvgMarkup(svg: string): {
         }
     }
 
-    return { elements, viewBox };
+    const textElements = parseSvgText(svg);
+    return { elements, textElements, viewBox };
+}
+
+/**
+ * Extract `<text>` / `<tspan>` runs from SVG markup, resolving each to an
+ * absolutely-positioned {@link ParsedTextElement} in SVG (Y-down) space.
+ *
+ * - `<text>` attributes (`x`, `y`, `font-size`, `fill`, `text-anchor`) are the
+ *   defaults; each child `<tspan>` inherits and may override them.
+ * - Positioning: an explicit `x`/`y` on the run is absolute; otherwise `dx`/`dy`
+ *   advance from the running pen position (supports the common multi-line
+ *   `<tspan x=".." dy="..">` label pattern).
+ * - A `<text>` with no `<tspan>` children yields a single run from its own
+ *   text content.
+ * (v1.5.0)
+ */
+function parseSvgText(svg: string): ParsedTextElement[] {
+    const out: ParsedTextElement[] = [];
+    const textRe = /<text\b([^>]*)>([\s\S]*?)<\/text>/gi;
+    let tm: RegExpExecArray | null;
+    while ((tm = textRe.exec(svg)) !== null) {
+        const attrs = tm[1];
+        const inner = tm[2];
+        const baseX = getLen(attrs, 'x') ?? 0;
+        const baseY = getLen(attrs, 'y') ?? 0;
+        const baseSize = getLen(attrs, 'font-size') ?? 16;
+        const baseFillRaw = getAttr(attrs, 'fill');
+        const baseFill = baseFillRaw ? normalizeSvgColor(baseFillRaw) : undefined;
+        const baseAnchor = normalizeAnchor(getAttr(attrs, 'text-anchor'));
+
+        const tspanRe = /<tspan\b([^>]*)>([\s\S]*?)<\/tspan>/gi;
+        let sm: RegExpExecArray | null;
+        let penX = baseX;
+        let penY = baseY;
+        let found = false;
+        while ((sm = tspanRe.exec(inner)) !== null) {
+            found = true;
+            const sa = sm[1];
+            const text = sanitizeSvgText(sm[2]);
+            const ax = getLen(sa, 'x');
+            const ay = getLen(sa, 'y');
+            const adx = getLen(sa, 'dx');
+            const ady = getLen(sa, 'dy');
+            penX = ax !== undefined ? ax : penX + (adx ?? 0);
+            penY = ay !== undefined ? ay : penY + (ady ?? 0);
+            if (!text) continue;
+            const fillRaw = getAttr(sa, 'fill');
+            out.push({
+                text,
+                x: penX,
+                y: penY,
+                fontSize: getLen(sa, 'font-size') ?? baseSize,
+                fill: fillRaw ? normalizeSvgColor(fillRaw) : baseFill,
+                anchor: normalizeAnchor(getAttr(sa, 'text-anchor')) ?? baseAnchor,
+            });
+        }
+
+        if (!found) {
+            const text = sanitizeSvgText(inner);
+            if (text) {
+                out.push({ text, x: baseX, y: baseY, fontSize: baseSize, fill: baseFill, anchor: baseAnchor });
+            }
+        }
+    }
+    return out;
+}
+
+/** Normalise a `text-anchor` value to the supported set. */
+function normalizeAnchor(v: string | undefined): 'start' | 'middle' | 'end' | undefined {
+    if (v === 'middle' || v === 'end' || v === 'start') return v;
+    return undefined;
 }
 
 // ── PDF Operator Generation ──────────────────────────────────────────
@@ -591,6 +733,7 @@ export function renderSvg(
     x: number, y: number,
     w: number, h: number,
     options?: SvgRenderOptions,
+    enc?: EncodingContext,
 ): string {
     if (!data || w <= 0 || h <= 0) return '';
 
@@ -599,31 +742,38 @@ export function renderSvg(
     // Resolve viewBox and elements
     let vb: readonly [number, number, number, number];
     let elements: ParsedElement[];
+    let textElements: ParsedTextElement[] = [];
 
     if (isSvgMarkup) {
         const parsed = parseSvgMarkup(data);
         vb = options?.viewBox ?? parsed.viewBox ?? [0, 0, w, h];
         elements = parsed.elements;
+        textElements = parsed.textElements;
     } else {
         vb = options?.viewBox ?? [0, 0, w, h];
         elements = [{ pathData: data }];
     }
 
-    if (elements.length === 0 || vb[2] <= 0 || vb[3] <= 0) return '';
+    if ((elements.length === 0 && textElements.length === 0) || vb[2] <= 0 || vb[3] <= 0) return '';
 
     // Coordinate transform matrix: SVG (Y-down) → PDF (Y-up)
     // [a 0 0 d e f] where a = scaleX, d = -scaleY (Y-flip), e/f = translation
     const sx = w / vb[2];
     const sy = h / vb[3];
-    const cmOp = `${fn(sx)} 0 0 ${fn(-sy)} ${fn(x - vb[0] * sx)} ${fn(y + vb[1] * sy)} cm`;
+    const tx = x - vb[0] * sx;
+    const ty = y + vb[1] * sy;
+    const cmOp = `${fn(sx)} 0 0 ${fn(-sy)} ${fn(tx)} ${fn(ty)} cm`;
 
     // Default colors: fill=black, stroke=none (SVG defaults)
     const defaultFill = resolveColor(options?.fill as string | undefined, '0 0 0');
     const defaultStroke = resolveColor(options?.stroke as string | undefined, null);
     const defaultSw = options?.strokeWidth ?? 1;
 
-    // Build operators: outer q/Q for CM, inner q/Q per element for colors
-    const allOps: string[] = ['q', cmOp];
+    // Build operators: outer q/Q for CM, inner q/Q per element for colors.
+    // Shapes are collected first; the q/cm/Q wrapper is only emitted when at
+    // least one shape actually renders (so a text-only or empty SVG doesn't
+    // leave a bare transform shell behind).
+    const shapeOps: string[] = [];
 
     for (const elem of elements) {
         const segments = parseSvgPath(elem.pathData);
@@ -633,9 +783,40 @@ export function renderSvg(
         const strokeRgb = resolveColor(elem.stroke, defaultStroke);
         const sw = elem.strokeWidth ?? defaultSw;
 
-        allOps.push(buildPathOps(segments, fillRgb, strokeRgb, sw));
+        shapeOps.push(buildPathOps(segments, fillRgb, strokeRgb, sw));
     }
 
-    allOps.push('Q');
+    // ── SVG text (<text>/<tspan>) — rendered in PDF space, upright ────
+    // Text is emitted AFTER (on top of) the shapes and OUTSIDE the vertical-flip
+    // `cm` matrix, so glyphs are never mirrored. Positions are projected through
+    // the same viewBox transform; the run is scaled by the vertical viewBox
+    // factor (sy). Requires an encoding context — without one, text is skipped
+    // (preserving pre-1.5.0 behaviour). (v1.5.0)
+    const textOps: string[] = [];
+    if (enc && textElements.length > 0) {
+        for (const t of textElements) {
+            const szPdf = t.fontSize * sy;
+            if (szPdf <= 0 || !t.text) continue;
+            const pdfBaseX = t.x * sx + tx;
+            const pdfBaseY = -sy * t.y + ty;
+            const width = enc.tw(t.text, szPdf);
+            const anchorOffset = t.anchor === 'middle' ? width / 2 : t.anchor === 'end' ? width : 0;
+            const pdfX = pdfBaseX - anchorOffset;
+            const fillRgb = resolveColor(t.fill, '0 0 0');
+            textOps.push('q');
+            if (fillRgb) textOps.push(`${fillRgb} rg`);
+            textOps.push(txt(t.text, pdfX, pdfBaseY, enc.f1, szPdf, enc));
+            textOps.push('Q');
+        }
+    }
+
+    if (shapeOps.length === 0 && textOps.length === 0) return '';
+
+    const allOps: string[] = [];
+    if (shapeOps.length > 0) {
+        allOps.push('q', cmOp, ...shapeOps, 'Q');
+    }
+    allOps.push(...textOps);
+
     return allOps.join('\n');
 }

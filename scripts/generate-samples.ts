@@ -48,6 +48,11 @@ import { generate as generateOutline } from './generators/outline-bookmarks.js';
 import { generate as generateManipulation } from './generators/pdf-manipulation.js';
 import { generate as generateViewerPrefs } from './generators/viewer-prefs-showcase.js';
 import { generate as generateFontValidation } from './generators/font-validation-showcase.js';
+import { generate as generateMathSymbols } from './generators/math-symbols.js';
+import { generate as generateSvgText } from './generators/svg-text-labels.js';
+import { generate as generateLayoutDebug } from './generators/layout-debug-overlay.js';
+import { generate as generateAnnotations } from './generators/annotations-showcase.js';
+import { generate as generateFontCompiler } from './generators/font-compiler-demo.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -162,6 +167,21 @@ async function generateAll(): Promise<void> {
 
     // ── Font-data validator report (v1.4.0) ──────────────────────
     await generateFontValidation(ctx);
+
+    // ── Math / technical symbols (v1.5.0 — issue #57) ────────────
+    await generateMathSymbols(ctx);
+
+    // ── SVG <text> labels (v1.5.0 — issue #61) ───────────────────
+    await generateSvgText(ctx);
+
+    // ── Layout debug overlay + inspection (v1.5.0) ───────────────
+    await generateLayoutDebug(ctx);
+
+    // ── Markup annotations read/write (v1.5.0) ───────────────────
+    await generateAnnotations(ctx);
+
+    // ── Font-data tools: compile/parse (v1.5.0 — issue #60) ──────
+    await generateFontCompiler(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

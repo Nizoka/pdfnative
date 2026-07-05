@@ -9,6 +9,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.5.0] – 2026-07-05
+
+A feature + fix release resolving six community issues (#56–#61) and delivering
+four v1.5.0 roadmap items. All additions are additive and opt-in; unchanged code
+paths remain **byte-identical** to v1.4.0. Zero runtime dependencies preserved.
+
+### Added
+
+- **feat(fonts):** bundled **Noto Sans Math** data module
+  (`pdfnative/fonts/noto-sans-math-data.js`, OFL-1.1) under lang `'math'`
+  ([#57](https://github.com/Nizoka/pdfnative/issues/57)). Mathematical
+  operators (U+2200–U+22FF), geometric shapes (U+25A0–U+25FF), and supplemental
+  math operators (U+2A00–U+2AFF) are detected and routed to the `'math'` font
+  automatically by `splitTextByFont`. Opt-in via
+  `registerFont('math', () => import('pdfnative/fonts/noto-sans-math-data.js'))`.
+  New predicates `isMathCodepoint` / `containsMath` exported.
+- **feat(tools):** programmatic font-compilation API
+  ([#60](https://github.com/Nizoka/pdfnative/issues/60)). New `pdfnative/tools`
+  sub-path export with `parseFontData(buffer)` → font-data object and
+  `compileFontData(buffer, opts?)` → ES/CJS module source string, enabling
+  in-memory TTF compilation in serverless/edge/sandboxed runtimes without
+  spawning the `pdfnative-build-font` CLI.
+- **feat(core):** SVG `<text>` / `<tspan>` rendering
+  ([#61](https://github.com/Nizoka/pdfnative/issues/61)). SVG blocks now render
+  text labels as native PDF text operators (searchable, copy-pasteable,
+  tagged-`/Span` accessible), with `x`/`y`/`dx`/`dy` positioning,
+  `text-anchor` (start/middle/end), `font-size`, `fill`, HTML-entity decoding,
+  and multi-font fallback (emoji/math inside labels).
+- **feat(parser):** `PdfReader.getPageLabels()` reads a document's
+  `/PageLabels` number tree back into a `PageLabelRange[]` (roadmap).
+- **feat(core):** layout debug overlay + inspection (roadmap).
+  `PdfLayoutOptions.debug` overlays margin / content / cell boxes; new
+  `inspectDocumentLayout()` returns a deterministic, read-only layout report.
+  Byte-identical when `debug` is unset.
+- **feat(core+parser):** typed annotation read/write API (roadmap). New
+  annotation builders (text note, highlight, underline, strikeout, squiggly,
+  square, circle, line, free-text) and `PdfReader.getAnnotations(pageIndex)`.
+- **feat(streaming):** streaming document-generation parity promotion
+  (roadmap). `buildDocumentPDFStreamTrue` is documented as the recommended
+  constant-memory path and guarded by a byte-identity parity test.
+- **chore(governance):** AI issue-reporting governance
+  ([#56](https://github.com/Nizoka/pdfnative/issues/56)). New
+  `.github/ai-governance.json`, `.github/AGENT_RULES.md`, and
+  `scripts/verify-issue.mjs` enforce a Human-in-the-Loop, zero-dependency,
+  draft-only issue-reporting contract for AI agents.
+
+### Fixed
+
+- **fix(core):** control characters (`\n`, `\r`, `\t`, other C0/C1) no longer
+  render as tofu (□) in CID-keyed subset fonts under PDF/A mode
+  ([#58](https://github.com/Nizoka/pdfnative/issues/58)). Control characters are
+  skipped before the subset cmap glyph lookup in `buildTextRunsWithFallback`.
+- **fix(core):** multi-line table cells no longer clip descenders when
+  `cellPadding` exceeds the default
+  ([#59](https://github.com/Nizoka/pdfnative/issues/59)). `planTable` now
+  allocates row height using the actual `cellPadding` instead of the hardcoded
+  bottom-pad constant. Byte-identical at the default padding (3).
+
 ## [1.4.0] – 2026-06-28
 
 Delivers the full v1.4.0 roadmap (document outline / bookmarks, page labels,

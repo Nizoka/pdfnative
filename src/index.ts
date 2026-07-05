@@ -70,6 +70,10 @@ export type {
     EncryptionOptions,
     PageTemplate,
     ViewerPreferences,
+    LayoutDebugOptions,
+    LayoutInspection,
+    InspectedPage,
+    InspectedBlock,
     WatermarkText,
     WatermarkImage,
     WatermarkOptions,
@@ -109,6 +113,9 @@ export { buildPDF, buildPDFBytes } from './core/pdf-builder.js';
 // ── Core — Document Builder ─────────────────────────────────────────
 export { buildDocumentPDF, buildDocumentPDFBytes, wrapText } from './core/pdf-document.js';
 
+// ── Core — Layout Inspection (development aid) ──────────────────────
+export { inspectDocumentLayout } from './core/pdf-layout-inspect.js';
+
 // ── Core — Image Support ────────────────────────────────────────────
 export type { ParsedImage } from './core/pdf-image.js';
 export {
@@ -119,6 +126,19 @@ export {
 // ── Core — Link Annotations ─────────────────────────────────────────
 export type { LinkAnnotation, InternalLink, Annotation } from './core/pdf-annot.js';
 export { validateURL, buildLinkAnnotation, buildInternalLinkAnnotation, isLinkAnnotation } from './core/pdf-annot.js';
+
+// ── Core — Markup & Drawing Annotations ─────────────────────────────
+export type {
+    AnnotationRect,
+    AnnotationBase,
+    TextAnnotation,
+    TextMarkupAnnotation,
+    ShapeAnnotation,
+    LineAnnotation,
+    FreeTextAnnotation,
+    MarkupAnnotation,
+} from './core/pdf-annot-markup.js';
+export { buildAnnotation, buildAnnotationBody } from './core/pdf-annot-markup.js';
 
 // ── Core — Color Utilities ──────────────────────────────────────────
 export { parseColor, isValidPdfRgb, normalizeColors } from './core/pdf-color.js';
@@ -223,9 +243,10 @@ export {
     containsThai, containsArabic, containsHebrew,
     containsBengali, containsTamil, containsTelugu, containsDevanagari,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsEthiopic,
+    containsMath,
     isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,
     isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isEthiopicCodepoint,
-    isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint,
+    isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint, isMathCodepoint,
 } from './shaping/script-registry.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './shaping/script-detect.js';
 export { splitTextByFont } from './shaping/multi-font.js';
@@ -261,6 +282,7 @@ export {
 export type { XrefEntry, XrefTable } from './parser/pdf-xref-parser.js';
 export { findStartxref, parseXrefTable, getTrailerValue, getTrailerRef, MAX_XREF_CHAIN } from './parser/pdf-xref-parser.js';
 export type { PdfReader } from './parser/pdf-reader.js';
+export type { ParsedAnnotation } from './parser/pdf-reader.js';
 export { openPdf } from './parser/pdf-reader.js';
 export type { PdfModifier } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';

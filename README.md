@@ -22,7 +22,7 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 
 | Package | Latest | Use it for |
 |---|:---:|---|
-| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.4.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
+| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.5.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
 | [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.1.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256), inspect, verify (PAdES-T + OCSP/CRL), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.3.0: 22 scripts + COLRv1 emoji, `--stream-true`, `--max-blocks`, `inspect --pdfua`, and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
 | [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.3.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **17 production tools** including the v1.3.0 page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), a constant-time `node:crypto` signing provider, DNS-rebinding-protected HTTP transport, and per-tool `_meta.apiVersion`. Built on pdfnative 1.4.0. |
 | [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v0.2.0** | Write PDFs as declarative JSX — `<Document>`, `<Table>`, `<Barcode>`… compiled on-device to pdfnative blocks by a custom React reconciler. Render hooks (`usePdf`), client components (`PDFViewer`), and a token-frugal `DocSpec` for AI agents. |
@@ -53,14 +53,18 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **Free-form document builder** — headings, paragraphs, lists (incl. **nested / hierarchical** bullet & numbered lists, v1.4.0), tables, images, barcodes, SVG paths, form fields, spacers, page breaks, table of contents. Configurable block limit via `layout.maxBlocks` (default 100 000) for very large reports (v1.3.0)
 - **Smart tables** — multi-page slicing with repeated headers, auto-wrap on column overflow, zebra striping, captions, and smart auto-fit columns (v1.2.0), plus per-cell **borders** (`cellBorders`) and **vertical alignment** (`cellVAlign` / `ColumnDef.vAlign`, v1.4.0). [Guide →](docs/guides/tables.md)
 - **Barcode & QR code generation** — Code 128, EAN-13, QR Code, Data Matrix, PDF417 — pure PDF path operators (no images)
-- **SVG path rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators
+- **SVG rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators, plus `<text>` elements rendered as upright PDF text with `x`/`y` positioning and `text-anchor` (start/middle/end) support (v1.5.0)
 - **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7)
 - **Digital signatures** — CMS/PKCS#7 detached signatures with RSA + ECDSA, SHA-256/384/512, X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0). Pluggable **native crypto provider** (`setCryptoProvider()` / `PdfSignOptions.provider`, v1.4.0) for constant-time, hardware-backed signing (`node:crypto` / Web Crypto / HSM)
 - **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. One-call `streamToFile()` drains any stream to disk with back-pressure and `AbortSignal` support (v1.4.0). [Guide →](docs/guides/streaming.md)
 - **Document outline & page labels** — nested bookmarks (`/Outlines` tree, with bold/italic/colour, collapsible nodes via `open: false`, explicit or `outline: 'auto'` from headings) and logical page numbering (`/PageLabels`: decimal, roman, alpha, prefixes, custom start) (v1.4.0). [Guide →](docs/guides/outlines.md)
 - **Viewer preferences** — `PdfLayoutOptions.viewerPreferences` controls initial `/PageLayout` & `/PageMode` plus the `/ViewerPreferences` dict (hide toolbar/menubar, fit/center window, display doc title, non-full-screen mode, reading direction, print scaling) — PDF/A-safe (v1.4.0). [Guide →](docs/guides/viewer-preferences.md)
 - **Font-data validator** — opt-in `validateFontData()` structurally checks custom font modules (SFNT magic, base64 integrity, cmap coverage, glyph-id range, width array, finite metrics) and returns `{ valid, errors, warnings }` (v1.4.0). [Guide →](docs/guides/font-validation.md)
-- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0). **Page-tree manipulation** (v1.4.0): `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a clean object graph (inherited attributes resolved, annotations/signatures optionally dropped, deterministic trailer `/ID`, bounded-depth copy, 256 MiB output cap via `maxOutputSize`). [Guide →](docs/guides/pdf-manipulation.md)
+- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0). **Page-tree manipulation** (v1.4.0): `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a clean object graph (inherited attributes resolved, annotations/signatures optionally dropped, deterministic trailer `/ID`, bounded-depth copy, 256 MiB output cap via `maxOutputSize`). **Round-trip readers** (v1.5.0): `getPageLabels()` parses `/PageLabels` back into a typed `PageLabelRange[]`; `getAnnotations()` / `getPageRef()` read page annotations, and `PdfModifier.addAnnotation()` injects new ones incrementally. [Guide →](docs/guides/pdf-manipulation.md)
+- **Markup annotations** — typed annotation model (text, highlight, underline, strikeout, squiggly, square, circle, line, freetext) via `buildAnnotation()` / `buildAnnotationBody()`, plus `PdfReader.getAnnotations()` and `PdfModifier.addAnnotation()` for round-trip read/write (v1.5.0). [Guide →](docs/guides/annotations.md)
+- **Layout debug & inspection** — opt-in `layout: { debug: true }` overlays margin / content / cell boxes for visual layout debugging; `inspectDocumentLayout()` returns a programmatic per-page block-geometry report. Byte-identical when debug is off (v1.5.0). [Guide →](docs/guides/debugging.md)
+- **Math & technical symbols** — bundleable math font under lang `'math'`; mathematical operators, Greek, arrows, and technical symbols route automatically via script detection (v1.5.0)
+- **Font-data tooling** — `pdfnative/tools` exposes `compileFontData()` / `parseFontData()` to build and introspect font-data modules programmatically (v1.5.0)
 - **Image embedding** — JPEG (DCTDecode) and PNG (FlateDecode) with auto-scaling and alignment
 - **Hyperlinks** — PDF link annotations (/URI) with URL validation, blue underlined text, tagged /Link
 - **Header/footer templates** — configurable `PageTemplate` with left/center/right zones and `{page}`/`{pages}`/`{date}`/`{title}` placeholders
@@ -69,7 +73,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 2165+ tests across 83 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
+- **95%+ test coverage** — 2218+ tests across 93 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -94,7 +98,7 @@ npm install pdfnative
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
 - 🎮 **Playgrounds:** eight interactive demos at [docs/playgrounds/](docs/playgrounds/) — [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [medical-800](docs/playgrounds/medical-800.html) (800-page Web Worker showcase), [toolkit](docs/playgrounds/toolkit.html) (v1.4.0 bookmarks, page labels, viewer prefs, nested lists, cell borders, merge/split/extract), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~201 sample PDFs across 36 categories (see [Sample PDFs](#sample-pdfs) below).
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~210 sample PDFs across 41 categories (see [Sample PDFs](#sample-pdfs) below).
 
 ## Why pdfnative?
 
@@ -432,7 +436,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **~201 PDF files** in `test-output/` (git-ignored), organized in twenty-five categories (including `emoji/` and `pdfa-latin/` added in v1.1.0).
+This creates **~210 PDF files** in `test-output/` (git-ignored), organized in twenty-nine categories (including `emoji/` and `pdfa-latin/` added in v1.1.0, and `math/`, `svg/`, `debug/`, `annotations/`, `tools/` added in v1.5.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -727,12 +731,36 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `encodePDF417(data, ecLevel?)` | Encode data into PDF417 codewords (ISO 15438) |
 | `renderPDF417(data, x, y, w, h, ecLevel?)` | Render PDF417 barcode as PDF path operators |
 
-### SVG Path Rendering
+### SVG Rendering
 
 | Function | Description |
 |----------|-------------|
 | `parseSvgPath(d)` | Parse SVG path `d` attribute into segments |
-| `renderSvg(segments, options?)` | Render SVG segments as PDF path operators |
+| `renderSvg(segments, options?)` | Render SVG segments (paths + `<text>`) as PDF operators |
+
+### Markup Annotations
+
+| Function | Description |
+|----------|-------------|
+| `buildAnnotation(annot, objNum)` | Build a full markup annotation indirect object (v1.5.0) |
+| `buildAnnotationBody(annot)` | Build a markup annotation dictionary body (for the modifier) (v1.5.0) |
+
+Supported `MarkupAnnotation` types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`.
+
+### Layout Debug & Inspection
+
+| Function | Description |
+|----------|-------------|
+| `inspectDocumentLayout(params, layout?)` | Return a programmatic per-page block-geometry `LayoutInspection` (v1.5.0) |
+
+Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDebugOptions` (`showMargins` / `showContentBounds` / `showCells`). Byte-identical when debug is off.
+
+### Font-Data Tools (`pdfnative/tools`)
+
+| Function | Description |
+|----------|-------------|
+| `compileFontData(buffer, opts?)` | Compile a TTF/OTF `Uint8Array` into a font-data module source string (v1.5.0) |
+| `parseFontData(buffer, opts?)` | Parse a TTF/OTF `Uint8Array` into a `FontDataObject` (metrics, cmap, widths, glyph coverage) (v1.5.0) |
 
 ### AcroForm Fields
 
@@ -802,6 +830,10 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `mergePdfs(sources, opts?)` | Merge multiple PDFs into one, rebuilding a clean object graph; `opts.maxOutputSize` caps output at 256 MiB by default (v1.4.0) |
 | `splitPdf(src, ranges, opts?)` | Split a PDF into multiple documents by inclusive 0-based page ranges (v1.4.0) |
 | `extractPages(src, indices, opts?)` | Extract specific pages (0-based) into a new PDF (v1.4.0) |
+| `reader.getPageLabels()` | Parse an existing `/PageLabels` number tree into `PageLabelRange[]` or `null` (v1.5.0) |
+| `reader.getAnnotations(pageIndex)` | Read a page's annotations into `ParsedAnnotation[]` (v1.5.0) |
+| `reader.getPageRef(pageIndex)` | Get the indirect `PdfRef` for a page (v1.5.0) |
+| `modifier.addAnnotation(pageIndex, body)` | Inject a new annotation on a page via incremental update (v1.5.0) |
 
 ### Document Block Types
 
@@ -902,6 +934,7 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `isTeluguCodepoint(cp)` | Telugu codepoint predicate (v1.3.0) |
 | `containsSinhala(text)` / `containsTibetan(text)` / `containsKhmer(text)` / `containsMyanmar(text)` / `containsEthiopic(text)` | Detect script content (v1.3.0) |
 | `isSinhalaCodepoint(cp)` / `isTibetanCodepoint(cp)` / `isKhmerCodepoint(cp)` / `isMyanmarCodepoint(cp)` / `isEthiopicCodepoint(cp)` | Codepoint predicates (v1.3.0) |
+| `containsMath(text)` / `isMathCodepoint(cp)` | Detect / test mathematical symbols → lang `'math'` (v1.5.0) |
 
 ### Layout Constants
 
@@ -1090,7 +1123,7 @@ src/
 
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (36 generators, 201+ PDFs)
+scripts/                  # Modular sample PDF generation (41 generators, 210+ PDFs)
 tests/                    # 1726+ tests (48 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
@@ -1103,9 +1136,9 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (2165+ tests)
+npm run test             # vitest run (2218+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+)
-npm run test:generate       # Generate ~201 sample PDFs → test-output/
+npm run test:generate       # Generate ~210 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -1118,7 +1151,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 2165+ (83 files) |
+| Tests | 2218+ (93 files) |
 | Statement coverage | 95.41% |
 | Branch coverage | 87.79% |
 | Function coverage | 98.5% |

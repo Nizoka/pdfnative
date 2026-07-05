@@ -27,6 +27,18 @@ export default defineConfig([
         outDir: 'dist',
         noExternal: [/.*/], // Bundle everything into worker
     },
+    // Programmatic tools sub-path export (font compilation API) → dist/tools
+    {
+        entry: { 'tools/index': 'src/tools/index.ts' },
+        format: ['esm', 'cjs'],
+        dts: true,
+        sourcemap: true,
+        splitting: false,
+        treeshake: true,
+        minify: false,
+        target: 'es2020',
+        outDir: 'dist',
+    },
     // Colour-emoji generator CLI (self-contained ESM bin → dist/tools)
     {
         entry: { 'tools/build-emoji-font': 'scripts/build-emoji-font.ts' },
