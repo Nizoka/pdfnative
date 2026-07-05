@@ -17,5 +17,10 @@ test-output/
 # Draft GitHub issues (copy-paste helpers, never committed)
 release-notes/draft-*.md
 
+# AI-agent issue drafts (HITL staging; keep README + TEMPLATE, ignore the rest)
+.github/drafts/*.md
+!.github/drafts/README.md
+!.github/drafts/TEMPLATE.md
+
 # Release PR description scratchpads (per-version, never committed)
 RELEASE_PR_*.md

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "pdfnative AI Governance Configuration",
+  "description": "Machine-readable contract governing how AI coding agents may propose issues, contributions, and changes across the pdfnative monorepo. Agents that scan repository configuration on initialization MUST honour this file. See .github/AGENT_RULES.md for the human-and-agent-readable protocol.",
+  "version": "1.0.0",
+  "spec_updated": "2026-07-05",
+  "applies_to": [
+    "pdfnative",
+    "pdfnative-cli",
+    "pdfnative-mcp",
+    "pdfnative-react"
+  ],
+  "policy": {
+    "automatic_issue_reporting": false,
+    "runtime_dependencies_allowed": false,
+    "human_in_the_loop_mandatory": true,
+    "autonomous_github_writes_allowed": false,
+    "required_issue_fields": [
+      "minimal_reproduction",
+      "environment",
+      "expected_behavior"
+    ]
+  },
+  "human_in_the_loop": {
+    "role_of_agent": "draftsman",
+    "gate": "A human MUST explicitly review, sign off on, and trigger any GitHub issue, comment, PR, or release. The agent's authority ends at producing a local draft plus a compliance report.",
+    "identity_integrity": "Any issue or PR is published under the human user's GitHub identity. The agent MUST remind the user of their shared responsibility for the content before submission.",
+    "draft_location": ".github/drafts/"
+  },
+  "pre_issue_checklist": [
+    "no_duplicate_open_or_closed_issue",
+    "zero_runtime_dependency_preserved",
+    "local_minimal_reproduction_executed",
+    "expected_vs_actual_documented",
+    "environment_captured"
+  ],
+  "compliance_report": {
+    "description": "The structured summary an agent MUST present to the user alongside every draft.",
+    "required_fields": [
+      "zero_dependency_confirmed",
+      "reproduction_command",
+      "reproduction_result",
+      "duplicate_search_performed",
+      "affected_packages",
+      "identity_reminder_shown"
+    ]
+  },
+  "capability_manifest": {
+    "description": "Authoritative project context an agent SHOULD load before proposing changes.",
+    "sources": [
+      "AGENTS.md",
+      ".github/copilot-instructions.md",
+      ".github/AGENT_RULES.md",
+      "ROADMAP.md",
+      "SECURITY.md",
+      "llms.txt"
+    ]
+  },
+  "verification": {
+    "command": "node scripts/verify-issue.mjs <draft.md>",
+    "advisory_in_ci": true,
+    "blocks_submission_on_failure": true
+  },
+  "references": {
+    "zero_dependency_policy": "README.md#why-pdfnative",
+    "issue_templates": [".github/ISSUE_TEMPLATE"]
+  }
+}

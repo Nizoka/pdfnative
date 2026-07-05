@@ -171,6 +171,24 @@ export const MYANMAR_VIRAMA = 0x1039;
 /** Myanmar asat (visible virama). */
 export const MYANMAR_ASAT = 0x103A;
 
+// ── Mathematical typography (v1.5.0) ─────────────────────────────────
+
+/** Mathematical Operators block (∀ ∃ √ ∑ ∫ ∞ ± ÷ × ≈ ≠ ≤ ≥ ⊂ ⊃ ∩ ∪ ∧ ∨ ⊥ ∠ …). */
+export const MATH_OPERATORS_START = 0x2200;
+export const MATH_OPERATORS_END = 0x22FF;
+/** Supplemental Mathematical Operators block (⨀ ⨁ ⨂ ⨃ ⩾ ⩽ …). */
+export const SUPPLEMENTAL_MATH_OPERATORS_START = 0x2A00;
+export const SUPPLEMENTAL_MATH_OPERATORS_END = 0x2AFF;
+/** Geometric Shapes block (■ ● ◆ ◇ ○ □ △ ▽ ▪ ▫ …). */
+export const GEOMETRIC_SHAPES_START = 0x25A0;
+export const GEOMETRIC_SHAPES_END = 0x25FF;
+/** Miscellaneous Mathematical Symbols-A block (⟨ ⟩ ⟦ ⟧ …). */
+export const MISC_MATH_SYMBOLS_A_START = 0x27C0;
+export const MISC_MATH_SYMBOLS_A_END = 0x27EF;
+/** Miscellaneous Mathematical Symbols-B block (⦀ ⦵ ⟨ ⟩ brackets/operators …). */
+export const MISC_MATH_SYMBOLS_B_START = 0x2980;
+export const MISC_MATH_SYMBOLS_B_END = 0x29FF;
+
 // ── Emoji (v1.1.0) ───────────────────────────────────────────────────
 
 /**
@@ -298,6 +316,23 @@ export function isMyanmarCodepoint(cp: number): boolean {
 export function isDevanagariCodepoint(cp: number): boolean {
     return (cp >= DEVANAGARI_START && cp <= DEVANAGARI_END) ||
            (cp >= DEVANAGARI_EXT_START && cp <= DEVANAGARI_EXT_END);
+}
+
+/**
+ * Check if a codepoint should be routed to a mathematical font (e.g. Noto
+ * Sans Math). Covers the Mathematical Operators, Supplemental Mathematical
+ * Operators, Geometric Shapes, and Miscellaneous Mathematical Symbols-A/B
+ * blocks. Deliberately excludes Letterlike Symbols (™ ® ℗ …) and the emoji
+ * Miscellaneous-Symbols/Dingbats ranges so those keep their existing routing.
+ *
+ * @since 1.5.0
+ */
+export function isMathCodepoint(cp: number): boolean {
+    return (cp >= MATH_OPERATORS_START && cp <= MATH_OPERATORS_END) ||
+           (cp >= SUPPLEMENTAL_MATH_OPERATORS_START && cp <= SUPPLEMENTAL_MATH_OPERATORS_END) ||
+           (cp >= GEOMETRIC_SHAPES_START && cp <= GEOMETRIC_SHAPES_END) ||
+           (cp >= MISC_MATH_SYMBOLS_A_START && cp <= MISC_MATH_SYMBOLS_A_END) ||
+           (cp >= MISC_MATH_SYMBOLS_B_START && cp <= MISC_MATH_SYMBOLS_B_END);
 }
 
 /**
@@ -433,6 +468,14 @@ export function containsMyanmar(str: string): boolean {
 export function containsDevanagari(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isDevanagariCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any mathematical symbols. */
+export function containsMath(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isMathCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }

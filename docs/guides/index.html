@@ -75,6 +75,10 @@
         <span class="guide-toc-desc">Two builders, generation pipeline, module dependency flow, and key design decisions.</span>
       </li>
       <li>
+        <a href="ai-governance.html">AI governance &amp; HITL →</a>
+        <span class="guide-toc-desc">How pdfnative governs AI coding agents — a machine-readable contract and a human-in-the-loop protocol that keep agents as draftsmen. Humans review, approve, and submit everything. Six mandatory rules, compliance report, <code>verify-issue.mjs</code> gate. New in v1.5.0.</span>
+      </li>
+      <li>
         <a href="faq.html">FAQ →</a>
         <span class="guide-toc-desc">Custom fonts, PDF/A variants, encryption, BiDi, browser/Deno/Bun, signatures, workers, and comparison with other libraries.</span>
       </li>
@@ -127,6 +131,14 @@
         <span class="guide-toc-desc">v1.4.0 opt-in <code>validateFontData()</code> — structurally check custom font modules (SFNT magic, base64, cmap coverage, glyph-id range, finite metrics) and get <code>{ valid, errors, warnings }</code>.</span>
       </li>
       <li>
+        <a href="debugging.html">Layout debugging →</a>
+        <span class="guide-toc-desc">v1.5.0 opt-in visual overlay (<code>layout: { debug: true }</code>) drawing margin / content / cell boxes, plus <code>inspectDocumentLayout()</code> for programmatic per-page block geometry. Byte-identical when off.</span>
+      </li>
+      <li>
+        <a href="annotations.html">Annotations →</a>
+        <span class="guide-toc-desc">v1.5.0 typed markup annotations — text, highlight, underline, strikeout, squiggly, square, circle, line, freetext — with <code>buildAnnotation()</code>, <code>getAnnotations()</code> to read existing PDFs, and <code>addAnnotation()</code> incremental write.</span>
+      </li>
+      <li>
         <a href="mcp.html">MCP Integration →</a>
         <span class="guide-toc-desc">Use pdfnative from Claude Desktop, Cursor, Continue, and Zed via pdfnative-mcp — 17 tools (incl. page-tree <code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>, plus <code>validate_pdf</code>, <code>verify_pdf</code>, <code>extract_attachments</code>), <code>pdfA</code> flag, multi-script <code>lang</code>, and a signed-document workflow.</span>
       </li>
@@ -141,7 +153,7 @@
     </ul>
 
     <h2>Looking for samples?</h2>
-    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">36 generator categories producing 201 sample PDFs</a> covering every feature: financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, smart tables, outlines &amp; page labels, PDF manipulation, viewer preferences, font validation, and stress tests.</p>
+    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">41 generator categories producing 210 sample PDFs</a> covering every feature: financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, smart tables, outlines &amp; page labels, PDF manipulation, viewer preferences, font validation, math symbols, layout debugging, annotations, and stress tests.</p>
 
     <h2>Interactive playgrounds</h2>
     <ul class="guide-toc-list">
@@ -156,6 +168,10 @@
       <li>
         <a href="../playgrounds/toolkit.html">PDF Toolkit →</a>
         <span class="guide-toc-desc">Exercise the v1.4.0 document features — outline bookmarks, page labels, viewer preferences, nested lists, table cell borders — plus the merge / split / extract page-tree API, all client-side.</span>
+      </li>
+      <li>
+        <a href="../playgrounds/authoring-plus.html">Authoring+ →</a>
+        <span class="guide-toc-desc">The v1.5.0 authoring showcase: SVG <code>&lt;text&gt;</code> labelled charts, the opt-in layout debug overlay plus <code>inspectDocumentLayout()</code>, and typed markup annotations with build + read-back — all in the browser.</span>
       </li>
       <li>
         <a href="../playgrounds/medical-800.html">Medical 800-page Web Worker playground →</a>

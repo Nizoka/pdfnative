@@ -22,7 +22,10 @@ src/
 │   ├── pdf-tags.ts       # Structure tree, marked content, XMP metadata, ICC profile, OutputIntent, PDF/A config
 │   ├── pdf-watermark.ts  # Text/image watermarks with ExtGState transparency
 │   ├── pdf-barcode.ts    # Barcode/QR code encoders + PDF path rendering (Code 128, EAN-13, QR, DataMatrix, PDF417)
-│   ├── pdf-svg.ts        # SVG path/shape rendering as native PDF path operators (7 element types)
+│   ├── pdf-svg.ts        # SVG path/shape rendering as native PDF path operators (7 element types) + <text> (v1.5.0)
+│   ├── pdf-annot-markup.ts # Markup annotations (text/highlight/underline/strikeout/squiggly/square/circle/line/freetext) buildAnnotation/buildAnnotationBody (v1.5.0)
+│   ├── pdf-layout-debug.ts # Opt-in visual layout overlay (margin/content/cell boxes) — resolveDebugOptions + *Ops helpers (v1.5.0)
+│   ├── pdf-layout-inspect.ts # inspectDocumentLayout: programmatic per-page block geometry (LayoutInspection) (v1.5.0)
 │   ├── pdf-form.ts       # AcroForm interactive fields with appearance streams (ISO 32000-1 §12.7)
 │   ├── pdf-signature.ts  # CMS/PKCS#7 digital signatures (RSA + ECDSA, ISO 32000-1 §12.8)
 │   ├── pdf-sig-placeholder.ts # addSignaturePlaceholder: AcroForm + /Sig injection via incremental update (v1.2.0)
@@ -44,19 +47,20 @@ src/
 │   ├── pdf-tokenizer.ts  # PDF lexical scanner (ISO 32000-1 §7.2)
 │   ├── pdf-object-parser.ts # PDF object parser with type guards and dict helpers (MAX_PARSE_DEPTH=1000 recursion cap)
 │   ├── pdf-xref-parser.ts # Cross-reference table/stream parser with /Prev chain (MAX_XREF_CHAIN=100 + cycle detection)
-│   ├── pdf-reader.ts     # High-level PDF reader (page tree, stream decode, caching)
-│   ├── pdf-modifier.ts   # Incremental modification (non-destructive save with /Prev)
+│   ├── pdf-reader.ts     # High-level PDF reader (page tree, stream decode, caching) + getPageLabels/getAnnotations/getPageRef (v1.5.0)
+│   ├── pdf-modifier.ts   # Incremental modification (non-destructive save with /Prev) + addAnnotation (v1.5.0)
 │   ├── pdf-ua-validator.ts # Read-only PDF/UA (ISO 14289-1) structural checker (v1.3.0)
 │   └── pdf-pagetree.ts   # Page-tree manipulation: mergePdfs/splitPdf/extractPages — clean object-graph rebuild (v1.4.0)
 ├── fonts/        # WinAnsi + CIDFont pure encoding functions, lazy font loader, TTF subsetter (with buffer guards), CMap builder, font-data validator (validateFontData, v1.4.0)
 ├── shaping/      # Thai/Devanagari/Telugu/Bengali/Tamil GSUB+GPOS shaping, Arabic positional shaping, BiDi resolution, Unicode script detection, multi-font run splitting, centralized script registry
+├── tools/        # Font-data compiler/parser: compileFontData/parseFontData (pdfnative/tools entry) (v1.5.0)
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
-fonts/            # Pre-built font data modules (.js/.d.ts) — 22 scripts + TTF source files
+fonts/            # Pre-built font data modules (.js/.d.ts) — 22 scripts + math (noto-sans-math-data, v1.5.0) + TTF source files
 tools/            # CLI tools: build-font-data.cjs (TTF → data module); build-emoji-font (bundled via tsup from scripts/build-emoji-font.ts → dist/tools/, npx pdfnative-build-emoji-font — generates colour-emoji data modules up to the full ~3,600-glyph set)
-scripts/          # Modular sample PDF generation (36 generators; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0). scripts/lib/ holds the shared deterministic emoji-build core (emoji-font-core.ts, curated-emoji.ts, emoji-cli.ts) used by both build-color-emoji-data.ts and the bundled build-emoji-font CLI
+scripts/          # Modular sample PDF generation (41 generators; math-symbols.ts + svg-text-labels.ts + layout-debug-overlay.ts + annotations-showcase.ts + font-compiler-demo.ts added in v1.5.0; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0). scripts/lib/ holds the shared deterministic emoji-build core (emoji-font-core.ts, curated-emoji.ts, emoji-cli.ts) used by both build-color-emoji-data.ts and the bundled build-emoji-font CLI
 test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf, extreme-bidi-isolates.pdf)
-tests/            # 2165+ tests (83 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
+tests/            # 2218+ tests (93 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
   └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, medical-800.html)
@@ -82,10 +86,10 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (2165+ tests, 83 files)
+npm run test            # vitest run (2218+ tests, 93 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 90/80/85/90)
-npm run test:generate   # Generate ~201 sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/ baselines)
+npm run test:generate   # Generate ~210 sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/ baselines)
 npm run typecheck       # tsc --noEmit
 npm run typecheck:tests # tsc --project tsconfig.test.json --noEmit
 npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit
@@ -97,7 +101,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC with `npm publish --provenance`
-- All new code must have tests. Current: ~95% statement coverage, 2165+ tests (83 files)
+- All new code must have tests. Current: ~95% statement coverage, 2218+ tests (93 files)
 
 ## Conventions
 
@@ -238,6 +242,15 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Viewer preferences (v1.4.0): `buildViewerPreferences(prefs)` in `src/core/pdf-viewer-prefs.ts` returns `{ pageLayout?, pageMode?, dict }`. `/PageLayout` (singlePage/oneColumn/twoColumnLeft/twoColumnRight/twoPageLeft/twoPageRight) and `/PageMode` (useNone/useOutlines/useThumbs/fullScreen/useOC/useAttachments) are **catalog-level** keys; booleans (HideToolbar/HideMenubar/HideWindowUI/FitWindow/CenterWindow/DisplayDocTitle) + NonFullScreenPageMode + Direction (L2R/R2L) + PrintScaling go in the `/ViewerPreferences` sub-dict. `buildViewerPreferences` kept **internal** (only `ViewerPreferences` type exported, mirroring page-labels). Wired in `pdf-document.ts`: viewer block computed before outline; an explicit `viewerPrefs.pageMode` **wins** over the outline's default `/PageMode /UseOutlines` (`if (!viewerPrefs?.pageMode)` guards the outline emission); `${viewerPrefsStr}` injected into both catalog-rewrite paths + the non-tagged trigger condition. `PdfLayoutOptions.viewerPreferences?: ViewerPreferences`. Byte-identical when unset.
 - Nested lists (v1.4.0): `ListBlock.items` widened to `readonly (string | ListItem)[]`; `ListItem { text, items? }`. `renderList()` delegates to recursive `renderListLevel(items, style, depth, …)` in `src/core/pdf-renderers.ts` — depth 0 reproduces exact pre-1.4.0 geometry (marker at `mgL + LIST_INDENT`), each deeper level adds one `LIST_INDENT`. **Uniform `•` bullet at all depths** (deliberate zero-tofu choice — `◦`/`▪` U+25E6/U+25AA aren't WinAnsi-encodable in base-14 mode; indentation conveys hierarchy); numbered sub-lists restart at 1. Tagged mode nests `/L → /LI → /L`. `estimateBlockHeight` list case uses a parallel recursive `measureLevel`. String-only lists are byte-identical. `ListItem` exported from root.
 - Table cell borders + vertical alignment (v1.4.0): `TableBlock.cellBorders?: CellBorders { top?, right?, bottom?, left?, all?, color?, width?, style? }` and `TableBlock.cellVAlign?: 'top'|'middle'|'bottom'` (per-column `ColumnDef.vAlign` overrides). In `renderTable()` (`pdf-renderers.ts`), `cellBorderOps(cellX, cellW, top, h)` strokes the requested sides (`m … l S`) and returns `[]` when `cellBorders` is undefined (byte-identical); dashed = `[3] 0 d`, dotted = `[${w} ${w*2}] 0 d` (via `fmtNum`, i.e. `[1.00 2.00] 0 d`), and it **resets the dash with `[] 0 d`** after non-solid borders so row separators/header underline stay solid. Called per cell in the header loop (`headerHeight`) and data-row loop (`rowH`). `emitCell` resolves `vAlign = col.vAlign ?? block.cellVAlign`; when set it positions the text block within the row band (top/middle/bottom, `offset < pad` guard) — when undefined it uses the historic single/multi-line baseline formula (byte-identical). `CellBorders` exported from root.
+- Math / technical symbols font (v1.5.0, #57): Noto Sans Math (OFL-1.1) bundled as `fonts/noto-sans-math-data.{js,d.ts}` under lang `'math'`. `MATH_RANGES` + `isMathCodepoint(cp)` / `containsMath(str)` in `script-registry.ts` cover mathematical operators (U+2200–U+22FF), supplemental/misc math operators (U+2A00–U+2AFF, U+27C0–U+27EF, U+2980–U+29FF), arrows (U+2190–U+21FF), letterlike (U+2100–U+214F), and Mathematical Alphanumeric Symbols (U+1D400–U+1D7FF). Wired into `script-detect.ts` (needsUnicodeFont list + `detectFallbackLangs`/`detectCharLang`, **before** emoji since math blocks are distinct). Opt-in via `registerFont('math', () => import('pdfnative/fonts/noto-sans-math-data.js'))`.
+- Font-data tools (v1.5.0, #60): `src/tools/font-compiler.ts` (entry `pdfnative/tools`) exposes `compileFontData(buffer, opts?): string` (TTF/OTF `Uint8Array` → font-data module source, mirroring `tools/build-font-data.cjs` **byte-identically**) and `parseFontData(buffer, opts?): FontDataObject` (introspect metrics/cmap/widths/glyph coverage). Types `CompiledFontMetrics`, `FontDataObject`, `CompileFontDataOptions`, `ParseFontDataOptions`. `./tools` export added to package.json; tsup emits `dist/tools/index.{js,cjs,d.ts}`.
+- SVG `<text>` (v1.5.0, #61): `pdf-svg.ts` `renderSvg()` collects `shapeOps[]` and `textOps[]` **separately** — the `q/cm/…/Q` transform wrapper is emitted ONLY when `shapeOps.length > 0`; text is emitted OUTSIDE the `cm` so it stays upright (`x`/`y` positioning + `text-anchor` start/middle/end via `Td` with `-?` negative-x for anchor shift). Returns `''` when nothing renders (an existing test relies on this). `sanitizeSvgText()` strips control chars (`eslint-disable-next-line no-control-regex`). MVP: no automatic word-wrap.
+- Control-character hardening (v1.5.0, #58): text run encoding drops/escapes control characters that previously produced `.notdef` tofu — byte-safe across base-14 WinAnsi and CIDFont modes.
+- Table descender fix (v1.5.0, #59): table cell clipping rectangle no longer clips glyph descenders (g, j, p, q, y).
+- Page-labels reader (v1.5.0): `PdfReader.getPageLabels(): PageLabelRange[] | null` in `pdf-reader.ts` — `collectNumberTree` walks `/Nums` + `/Kids`; `STYLE_FROM_OP` reverse-maps `/S` operator (D→decimal, r→roman, R→Roman, a→alpha, A→Alpha, absent→none); reads `/P`→prefix, `/St`→start. Round-trips the v1.4.0 `buildPageLabelsDict` writer. Type-only import of `PageLabelRange`/`PageLabelStyle` from `core/pdf-page-labels.js` (allowed parser→core type edge).
+- Annotation read/write (v1.5.0): `pdf-annot-markup.ts` `MarkupAnnotation` union (text/highlight/underline/strikeout/squiggly/square/circle/line/freetext) + `AnnotationBase { rect, contents?, color?, opacity?, title?, modified?, flags? }`. `buildAnnotation(annot, objNum)` (full indirect object) + `buildAnnotationBody(annot)` (dict body, for the modifier). `/Contents`+`/T` via `encodePdfTextString`; `/C`/`/IC` via `parseColor`; `/QuadPoints` auto-derived from `/Rect`; `/F` default 4; line adds `/L`+`/BS`; freetext adds `/DA (/Helv <sz> Tf <col> rg)`. Reader: `getAnnotations(pageIndex): ParsedAnnotation[]` (decodes UTF-16BE `/Contents` via FE FF BOM check) + `getPageRef(pageIndex): PdfRef | null` (depth-capped page-tree walk). Modifier: `addAnnotation(pageIndex, body): number` (addRawObject then rewrites the page `/Annots` via setObject). Unblocks pdfnative-mcp `redact_pdf` overlay.
+- Layout debug + inspect (v1.5.0): `pdf-layout-debug.ts` `resolveDebugOptions(debug) → { showMargins, showContentBounds, showCells } | null` (null when off); pure `marginBoxOps`/`blockBoundsOps`/`tableCellOps`, each wrapped in its own `q…Q` block (margin blue `0 0.45 0.95`, block red `0.90 0.20 0.30`, cell green `0 0.62 0.30`). `PdfLayoutOptions.debug?: boolean | LayoutDebugOptions`. In `pdf-document.ts`, `debugOpts` resolved after watermark; per-block `yBefore` captured only when debugOpts truthy; overlay ops appended LAST (drawn on top). Byte-identical when debug off. `pdf-layout-inspect.ts` `inspectDocumentLayout(params, layout?) → LayoutInspection` faithfully ports pagination (shares `estimateBlockHeight`/`planTable`/constants, `TITLE_BAND_H=34`, table slicing). `inspectDocumentLayout` + `LayoutDebugOptions`/`LayoutInspection`/`InspectedPage`/`InspectedBlock` exported from root; `resolveDebugOptions`/`*Ops` are internal.
+- AI-agent governance (v1.5.0, #56): `.github/ai-governance.json` (policy: no autonomous GitHub writes, no runtime deps, HITL mandatory, required issue fields) + `.github/AGENT_RULES.md` (HITL protocol, 6 mandatory rules). `scripts/verify-issue.mjs` (ESM, NO shebang — a shebang broke vitest import) exports pure `validateIssueMarkdown(content) → { ok, errors, warnings }` (CI-testable) with a CLI `import.meta.url` guard; detects dep-add patterns, requires a fenced code block, warns on missing repro/env/expected; exit 0/1/2. `scripts/verify-issue.d.mts` companion for typecheck. `.github/drafts/` (README+TEMPLATE tracked, `*.md` gitignored). `npm run verify:issue` script.
 
 
 - Public API must be stable and backward-compatible once 1.0 ships
@@ -270,7 +283,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **95%+ test coverage** — 2165+ tests (83 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
+- **95%+ test coverage** — 2218+ tests (93 files), 48 fuzz edge-cases (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)

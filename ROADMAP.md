@@ -81,6 +81,16 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Table cell borders + vertical alignment** (v1.4.0) — `TableBlock.cellBorders` (sides/`all`, `color`, `width`, `solid`/`dashed`/`dotted`) draws per-cell vector strokes; `TableBlock.cellVAlign` and per-column `ColumnDef.vAlign` position text top/middle/bottom. Both opt-in; byte-identical when unset. ([src/core/pdf-renderers.ts](src/core/pdf-renderers.ts))
 - [x] **Bundled colour-emoji generator CLI** (v1.4.0) — `npx pdfnative-build-emoji-font` (shipped in `dist/tools/`) lets pdfnative-only users generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set, without the package ever bundling the ~32 MB source. Accepts a local `--ttf` or a pinned `--download` (SHA-256 verified); selects glyphs via `--all`/`--preset`/`--codepoints`/`--ranges`. Shared deterministic build core keeps the curated module byte-identical. ([scripts/build-emoji-font.ts](scripts/build-emoji-font.ts))
 - [x] **Interactive PDF Toolkit playground** (v1.4.0) — a seventh browser playground exercising the v1.4.0 document features (bookmarks, page labels, viewer preferences, nested lists, table cell borders) plus the merge/split/extract page-tree API, entirely client-side. ([docs/playgrounds/toolkit.html](docs/playgrounds/toolkit.html))
+- [x] **Page-labels reader** (v1.5.0) — `PdfReader.getPageLabels()` parses an existing document's `/PageLabels` number tree (walking `/Nums` + `/Kids`) back into a typed `PageLabelRange[]` (decimal / roman / Roman / alpha / Alpha / none, with `prefix` + `start`), closing the round-trip with the v1.4.0 writer and surfacing labels to `inspect_pdf`. ([src/parser/pdf-reader.ts](src/parser/pdf-reader.ts))
+- [x] **Layout debug overlay & inspection** (v1.5.0) — opt-in `layout: { debug: true }` (or a granular `LayoutDebugOptions`) overlays margin / content-bounds / table-cell boxes for visual layout debugging, and `inspectDocumentLayout(params, layout?)` returns a programmatic `LayoutInspection` (per-page block geometry) built on the shared pagination engine. Byte-identical when debug is off. ([src/core/pdf-layout-debug.ts](src/core/pdf-layout-debug.ts), [src/core/pdf-layout-inspect.ts](src/core/pdf-layout-inspect.ts))
+- [x] **Annotation read/write API** (v1.5.0) — a typed markup-annotation model (`text` / `highlight` / `underline` / `strikeout` / `squiggly` / `square` / `circle` / `line` / `freetext`) with `buildAnnotation()` / `buildAnnotationBody()` builders, `PdfReader.getAnnotations()` (decoding UTF-16BE `/Contents`) + `getPageRef()`, and `PdfModifier.addAnnotation()` for incremental injection. Unblocks `pdfnative-mcp`'s `redact_pdf` overlay mode. ([src/core/pdf-annot-markup.ts](src/core/pdf-annot-markup.ts))
+- [x] **Streaming document generation** (v1.5.0) — audited and confirmed byte-identical constant-memory streaming for the document builder via `buildDocumentPDFStreamTrue()`; block operators are freed as they are emitted so peak memory stays flat for 10k-page documents. ([src/core/pdf-stream-writer.ts](src/core/pdf-stream-writer.ts))
+- [x] **Math / technical symbols font** (v1.5.0, [#57](https://github.com/Nizoka/pdfnative/issues/57)) — bundleable `pdfnative/fonts/*` math font under lang `'math'`; mathematical operators, Greek, arrows, and technical symbols route automatically via script detection. Opt-in via `registerFont('math', …)`. ([src/shaping/script-detect.ts](src/shaping/script-detect.ts))
+- [x] **Font-data compiler/parser tools** (v1.5.0, [#60](https://github.com/Nizoka/pdfnative/issues/60)) — `pdfnative/tools` exposes `compileFontData()` / `parseFontData()` so consumers can build and introspect font-data modules programmatically (in addition to the `npx pdfnative-build-font` CLI). ([tools/](tools/))
+- [x] **SVG `<text>` rendering** (v1.5.0, [#61](https://github.com/Nizoka/pdfnative/issues/61)) — SVG `<text>` elements render as upright PDF text with `x` / `y` positioning and `text-anchor` (start / middle / end) support; control characters sanitised. MVP: no automatic word-wrap. ([src/core/pdf-svg.ts](src/core/pdf-svg.ts))
+- [x] **Control-character hardening** (v1.5.0, [#58](https://github.com/Nizoka/pdfnative/issues/58)) — text run encoding drops/escapes control characters that previously produced `.notdef` tofu, byte-safe across base-14 and CIDFont modes.
+- [x] **Table descender clipping fix** (v1.5.0, [#59](https://github.com/Nizoka/pdfnative/issues/59)) — table cell text with descenders (g, j, p, q, y) is no longer visually clipped by the cell rectangle.
+- [x] **AI-agent governance** (v1.5.0, [#56](https://github.com/Nizoka/pdfnative/issues/56)) — [.github/AGENT_RULES.md](.github/AGENT_RULES.md) + `.github/ai-governance.json` codify a human-in-the-loop protocol (no autonomous GitHub writes, no runtime dependencies, mandatory issue-report review) and a `npm run verify:issue` gate that validates draft issue reports before submission. ([scripts/verify-issue.mjs](scripts/verify-issue.mjs))
 
 ## In Progress
 
@@ -88,15 +98,10 @@ _All v1.4.0 in-progress items have been merged into the [v1.4.0 release](release
 
 ## Planned
 
-### v1.5.0
+### v1.6.0
 
-- [ ] **Page labels in the viewer chrome** — surface `/PageLabels` in `inspect_pdf` and the docs playgrounds.
-- [ ] **Annotation read/write API** — typed annotation model (link, text, highlight, widget) to unblock `pdfnative-mcp`'s `redact_pdf` overlay mode.
 - [ ] **Encrypted-PDF round-trip** — Standard Security Handler **reader/decryptor** so the page-tree API can ingest encrypted sources.
-- [ ] **Streaming document generation** — turn `buildDocumentPDFBytes` assembly into an `AsyncGenerator` so block operators are yielded as they are produced (not just at write time), keeping peak memory constant for 10k-page documents. Must remain **byte-identical** to the buffered builders.
 - [ ] **Streaming page-tree manipulation** — `streamMergedPdfs` / `streamSplitPdf` variants that copy page objects straight into the output stream, holding only the cross-reference tables in memory, so multi-gigabyte merges run in a few MB of RAM. Complements the v1.4.0 `maxOutputSize` cap.
-- [ ] **Layout debug overlay & inspection guide** — opt-in `layout: { debug: true }` that overlays margin / content / cell boxes for visual layout debugging, a richer programmatic inspection output (object tree, embedded font/image sizes), and a new `debugging.md` guide built on the existing parser.
-
 
 ### Long-Term
 

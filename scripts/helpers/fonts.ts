@@ -38,6 +38,8 @@ export function registerAllFonts(): void {
         emoji: fl(() => import('../../fonts/noto-emoji-data.js')),
         // v1.3.0 — COLR/CPAL colour emoji (curated subset)
         'emoji-color': fl(() => import('../../fonts/noto-color-emoji-data.js')),
+        // v1.5.0 — math / technical symbols (issue #57)
+        math: fl(() => import('../../fonts/noto-sans-math-data.js')),
     });
 }
 

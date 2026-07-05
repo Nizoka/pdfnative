@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="gov-title gov-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="gov-title">pdfnative — AI governance &amp; human-in-the-loop</title>
+  <desc id="gov-desc">Contribution-governance flow diagram for AI coding agents working on pdfnative. Stage one, the agent acts only as a draftsman across four steps: detect a bug or improvement, execute a minimal local reproduction that must fail, self-check that no runtime dependency is added and that builder output stays byte-identical, then write a markdown draft into the .github/drafts/ folder. Stage two runs automated checks: the verify-issue.mjs script confirms no new dependency and a reproduction block are present (advisory in CI), producing a compliance report covering zero-dependency confirmation, the reproduction command, a duplicate search, affected packages, and an identity reminder. Stage three is the critical human-in-the-loop gate: a human explicitly reviews, approves, and triggers the submission. Only then is anything published, under the human's own GitHub identity, as an issue, pull request, or release. A red callout states that agents must never open, edit, comment on, close, or submit issues, pull requests, or releases autonomously, and must never add a runtime dependency. A legend distinguishes agent steps, automated gates, human decisions, and blocked autonomous writes.</desc>
+
+  <defs>
+    <!-- Directional arrowheads -->
+    <marker id="gah-agent" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#6366F1"/>
+    </marker>
+    <marker id="gah-auto" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#D97706"/>
+    </marker>
+    <marker id="gah-human" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#10B981"/>
+    </marker>
+
+    <!-- Canvas + band fills -->
+    <linearGradient id="gg-canvas" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F8FAFC"/>
+    </linearGradient>
+    <linearGradient id="gg-agentband" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F6F8FF"/>
+      <stop offset="100%" stop-color="#EEF1FE"/>
+    </linearGradient>
+
+    <!-- Step / node gradients -->
+    <linearGradient id="gg-step" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FBFCFF"/><stop offset="100%" stop-color="#EAEFFE"/></linearGradient>
+    <linearGradient id="gg-auto" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFCEC"/><stop offset="100%" stop-color="#FCF0C7"/></linearGradient>
+    <linearGradient id="gg-human" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F0FDF8"/><stop offset="100%" stop-color="#DAFBE7"/></linearGradient>
+    <linearGradient id="gg-forbid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFF5F5"/><stop offset="100%" stop-color="#FEE2E2"/></linearGradient>
+    <linearGradient id="gg-gate" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EEF2FF"/><stop offset="100%" stop-color="#DDE3FF"/></linearGradient>
+    <linearGradient id="gg-gate-head" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6366F1"/><stop offset="100%" stop-color="#4338CA"/></linearGradient>
+
+    <linearGradient id="gg-accent" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#6366F1"/><stop offset="100%" stop-color="#4338CA"/></linearGradient>
+
+    <filter id="gg-soft" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#1E293B" flood-opacity="0.09"/>
+    </filter>
+    <filter id="gg-soft-sm" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1E293B" flood-opacity="0.07"/>
+    </filter>
+  </defs>
+
+  <!-- Canvas -->
+  <rect x="0" y="0" width="960" height="600" fill="url(#gg-canvas)"/>
+
+  <!-- ── Header ─────────────────────────────────────────────────── -->
+  <text x="480" y="38" text-anchor="middle" font-size="20" font-weight="800" fill="#0F172A" letter-spacing="-0.3">AI Governance &amp; Human-in-the-Loop</text>
+  <rect x="430" y="48" width="100" height="4" rx="2" fill="url(#gg-accent)"/>
+  <text x="480" y="72" text-anchor="middle" font-size="12" font-weight="500" fill="#64748B">Agents draft · humans decide · nothing reaches GitHub without an explicit human sign-off</text>
+
+  <!-- ════════════ STAGE 1 — AGENT (draftsman) ════════════ -->
+  <rect x="28" y="92" width="904" height="150" rx="16" fill="url(#gg-agentband)" stroke="#C7D2FE" stroke-width="1.25"/>
+  <rect x="44" y="83" width="164" height="20" rx="10" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="1"/>
+  <circle cx="58" cy="93" r="3" fill="#6366F1"/>
+  <text x="68" y="97" font-size="10.5" font-weight="700" fill="#4F46E5" letter-spacing="0.6">AGENT · DRAFTSMAN</text>
+
+  <!-- Step 1 -->
+  <g filter="url(#gg-soft-sm)"><rect x="48" y="118" width="194" height="104" rx="13" fill="url(#gg-step)" stroke="#A5B4FC" stroke-width="1.25"/></g>
+  <rect x="48" y="118" width="5" height="104" rx="2.5" fill="#6366F1"/>
+  <circle cx="78" cy="146" r="13" fill="#6366F1" fill-opacity="0.12"/>
+  <text x="78" y="151" text-anchor="middle" font-size="13" font-weight="800" fill="#4338CA">1</text>
+  <text x="100" y="143" font-size="14" font-weight="700" fill="#3730A3">Detect</text>
+  <text x="66" y="180" font-size="10" fill="#4F46E5">Bug or improvement</text>
+  <text x="66" y="196" font-size="10" fill="#4F46E5">spotted in the codebase</text>
+
+  <!-- Step 2 -->
+  <g filter="url(#gg-soft-sm)"><rect x="269" y="118" width="194" height="104" rx="13" fill="url(#gg-step)" stroke="#A5B4FC" stroke-width="1.25"/></g>
+  <rect x="269" y="118" width="5" height="104" rx="2.5" fill="#6366F1"/>
+  <circle cx="299" cy="146" r="13" fill="#6366F1" fill-opacity="0.12"/>
+  <text x="299" y="151" text-anchor="middle" font-size="13" font-weight="800" fill="#4338CA">2</text>
+  <text x="321" y="143" font-size="14" font-weight="700" fill="#3730A3">Reproduce</text>
+  <text x="287" y="180" font-size="10" fill="#4F46E5">Minimal local repro —</text>
+  <text x="287" y="196" font-size="10" fill="#4F46E5">must actually fail</text>
+
+  <!-- Step 3 -->
+  <g filter="url(#gg-soft-sm)"><rect x="490" y="118" width="194" height="104" rx="13" fill="url(#gg-step)" stroke="#A5B4FC" stroke-width="1.25"/></g>
+  <rect x="490" y="118" width="5" height="104" rx="2.5" fill="#6366F1"/>
+  <circle cx="520" cy="146" r="13" fill="#6366F1" fill-opacity="0.12"/>
+  <text x="520" y="151" text-anchor="middle" font-size="13" font-weight="800" fill="#4338CA">3</text>
+  <text x="542" y="143" font-size="14" font-weight="700" fill="#3730A3">Self-check</text>
+  <text x="508" y="180" font-size="10" fill="#4F46E5">Zero runtime deps ·</text>
+  <text x="508" y="196" font-size="10" fill="#4F46E5">byte-identity preserved</text>
+
+  <!-- Step 4 -->
+  <g filter="url(#gg-soft-sm)"><rect x="711" y="118" width="194" height="104" rx="13" fill="url(#gg-step)" stroke="#A5B4FC" stroke-width="1.25"/></g>
+  <rect x="711" y="118" width="5" height="104" rx="2.5" fill="#6366F1"/>
+  <circle cx="741" cy="146" r="13" fill="#6366F1" fill-opacity="0.12"/>
+  <text x="741" y="151" text-anchor="middle" font-size="13" font-weight="800" fill="#4338CA">4</text>
+  <text x="763" y="143" font-size="14" font-weight="700" fill="#3730A3">Draft</text>
+  <text x="729" y="180" font-size="10" fill="#4F46E5">Markdown proposal in</text>
+  <text x="729" y="196" font-size="10" font-weight="600" fill="#4338CA">.github/drafts/</text>
+
+  <!-- step arrows -->
+  <line x1="242" y1="170" x2="269" y2="170" stroke="#6366F1" stroke-width="1.7" marker-end="url(#gah-agent)"/>
+  <line x1="463" y1="170" x2="490" y2="170" stroke="#6366F1" stroke-width="1.7" marker-end="url(#gah-agent)"/>
+  <line x1="684" y1="170" x2="711" y2="170" stroke="#6366F1" stroke-width="1.7" marker-end="url(#gah-agent)"/>
+
+  <!-- ════════════ STAGE 2 — automated checks ════════════ -->
+  <!-- verify-issue.mjs -->
+  <g filter="url(#gg-soft-sm)"><rect x="250" y="262" width="210" height="70" rx="12" fill="url(#gg-auto)" stroke="#FBBF24" stroke-width="1.25"/></g>
+  <text x="355" y="288" text-anchor="middle" font-size="13.5" font-weight="700" fill="#B45309">verify-issue.mjs</text>
+  <text x="355" y="306" text-anchor="middle" font-size="9.5" fill="#D97706">no new dependency · reproduction block</text>
+  <text x="355" y="320" text-anchor="middle" font-size="9.5" fill="#D97706">advisory gate in CI</text>
+
+  <!-- compliance report -->
+  <g filter="url(#gg-soft-sm)"><rect x="500" y="262" width="210" height="70" rx="12" fill="url(#gg-auto)" stroke="#FBBF24" stroke-width="1.25"/></g>
+  <text x="605" y="288" text-anchor="middle" font-size="13.5" font-weight="700" fill="#B45309">Compliance report</text>
+  <text x="605" y="306" text-anchor="middle" font-size="9.5" fill="#D97706">zero-dep · repro cmd · duplicate search</text>
+  <text x="605" y="320" text-anchor="middle" font-size="9.5" fill="#D97706">affected packages · identity reminder</text>
+
+  <!-- draft → verify (curve down-left) -->
+  <path d="M808 222 C 700 244, 470 250, 400 260" fill="none" stroke="#D97706" stroke-width="1.7" stroke-dasharray="5,3" marker-end="url(#gah-auto)"/>
+  <!-- verify → compliance -->
+  <line x1="460" y1="297" x2="500" y2="297" stroke="#D97706" stroke-width="1.7" stroke-dasharray="5,3" marker-end="url(#gah-auto)"/>
+
+  <!-- ════════════ STAGE 3 — human gate + submission ════════════ -->
+  <!-- forbidden callout -->
+  <g filter="url(#gg-soft-sm)"><rect x="40" y="360" width="236" height="94" rx="13" fill="url(#gg-forbid)" stroke="#FCA5A5" stroke-width="1.25"/></g>
+  <circle cx="66" cy="386" r="10" fill="none" stroke="#DC2626" stroke-width="2"/>
+  <line x1="59" y1="393" x2="73" y2="379" stroke="#DC2626" stroke-width="2" stroke-linecap="round"/>
+  <text x="84" y="384" font-size="12" font-weight="700" fill="#B91C1C">Agents MUST NOT</text>
+  <text x="56" y="410" font-size="9.5" fill="#DC2626">open · edit · comment · close · submit</text>
+  <text x="56" y="425" font-size="9.5" fill="#DC2626">issues / PRs / releases autonomously</text>
+  <text x="56" y="443" font-size="9.5" font-weight="600" fill="#B91C1C">— and never add a runtime dependency</text>
+
+  <!-- HUMAN GATE (prominent) -->
+  <g filter="url(#gg-soft)"><rect x="316" y="348" width="316" height="118" rx="15" fill="url(#gg-gate)" stroke="#6366F1" stroke-width="1.75"/></g>
+  <path d="M316 382 L316 363 Q316 348 331 348 L617 348 Q632 348 632 363 L632 382 Z" fill="url(#gg-gate-head)"/>
+  <path d="M362 358 l7 -3.4 l7 3.4 v5.5 c0 4.6 -3.4 6.8 -7 8 c-3.6 -1.2 -7 -3.4 -7 -8 Z" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M366 366.5 l2.4 2.4 l4.4 -4.4" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="486" y="372" text-anchor="middle" font-size="14.5" font-weight="800" fill="#FFFFFF" letter-spacing="0.2">HUMAN REVIEW &amp; SIGN-OFF</text>
+  <text x="474" y="405" text-anchor="middle" font-size="11" font-weight="700" fill="#3730A3">Critical ethical gate</text>
+  <text x="474" y="425" text-anchor="middle" font-size="10.5" fill="#4F46E5">The human explicitly reviews, approves,</text>
+  <text x="474" y="441" text-anchor="middle" font-size="10.5" fill="#4F46E5">and triggers every submission</text>
+
+  <!-- GitHub submission (human identity) -->
+  <g filter="url(#gg-soft-sm)"><rect x="672" y="360" width="248" height="94" rx="13" fill="url(#gg-human)" stroke="#34D399" stroke-width="1.25"/></g>
+  <circle cx="700" cy="388" r="12" fill="none" stroke="#059669" stroke-width="1.8"/>
+  <path d="M694 388 a6 6 0 0 1 12 0 M700 382 v-3 M700 394 a4 4 0 0 0 0 0" fill="none" stroke="#059669" stroke-width="1.6"/>
+  <circle cx="700" cy="386" r="3.4" fill="#059669"/>
+  <path d="M693 396 q7 -6 14 0" fill="none" stroke="#059669" stroke-width="1.8" stroke-linecap="round"/>
+  <text x="718" y="384" font-size="12.5" font-weight="700" fill="#047857">Published by the human</text>
+  <text x="690" y="410" font-size="9.5" fill="#059669">under their own GitHub identity —</text>
+  <text x="690" y="425" font-size="9.5" fill="#059669">shared responsibility for the content</text>
+  <text x="690" y="443" font-size="9.5" font-weight="600" fill="#047857">GitHub issue · pull request · release</text>
+
+  <!-- compliance → human gate -->
+  <path d="M605 332 C 560 342, 520 344, 490 346" fill="none" stroke="#6366F1" stroke-width="1.7" marker-end="url(#gah-agent)"/>
+  <!-- human gate → github (human decision) -->
+  <line x1="632" y1="407" x2="672" y2="407" stroke="#10B981" stroke-width="1.9" marker-end="url(#gah-human)"/>
+  <!-- gate enforces the forbidden zone -->
+  <path d="M316 420 C 300 424, 288 420, 278 414" fill="none" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="296" y="480" text-anchor="middle" font-size="9" font-weight="600" fill="#B91C1C">enforced by the gate</text>
+
+  <!-- ── Legend ─────────────────────────────────────────────────── -->
+  <line x1="28" y1="556" x2="932" y2="556" stroke="#E2E8F0" stroke-width="1"/>
+  <g font-size="10.5" fill="#475569">
+    <line x1="150" y1="578" x2="180" y2="578" stroke="#6366F1" stroke-width="1.9" marker-end="url(#gah-agent)"/>
+    <text x="188" y="582">agent step</text>
+
+    <line x1="300" y1="578" x2="330" y2="578" stroke="#D97706" stroke-width="1.9" stroke-dasharray="5,3" marker-end="url(#gah-auto)"/>
+    <text x="338" y="582">automated gate</text>
+
+    <line x1="480" y1="578" x2="510" y2="578" stroke="#10B981" stroke-width="1.9" marker-end="url(#gah-human)"/>
+    <text x="518" y="582">human decision</text>
+
+    <circle cx="672" cy="578" r="7" fill="none" stroke="#DC2626" stroke-width="1.9"/>
+    <line x1="667" y1="583" x2="677" y2="573" stroke="#DC2626" stroke-width="1.9" stroke-linecap="round"/>
+    <text x="686" y="582">blocked autonomous write</text>
+  </g>
+</svg>

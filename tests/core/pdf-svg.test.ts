@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { parseSvgPath, renderSvg } from '../../src/core/pdf-svg.js';
+import { createEncodingContext } from '../../src/core/encoding-context.js';
 
 // ── parseSvgPath ─────────────────────────────────────────────────────
 
@@ -464,6 +465,38 @@ describe('renderSvg', () => {
     it('should handle zero-radius circle gracefully', () => {
         const svg = '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="0"/></svg>';
         expect(renderSvg(svg, 0, 100, 100, 100)).toBe('');
+    });
+
+    // ── Text sanitisation (CodeQL hardening) ─────────────────────
+    // stripSvgTags() must be a complete, linear one-pass strip: no nested or
+    // unbalanced `<…>` construct may reconstruct a residual tag, and there is
+    // no quadratic backtracking on pathological `<<<<` input.
+    it('should completely strip nested/broken tags from <text> content', () => {
+        const enc = createEncodingContext([]);
+        const svg =
+            '<svg viewBox="0 0 200 100">' +
+            '<rect x="0" y="0" width="10" height="10"/>' +
+            '<text x="10" y="20" font-size="12">a<scr<script>ipt>b</text>' +
+            '</svg>';
+        const ops = renderSvg(svg, 0, 100, 200, 100, undefined, enc);
+        // Any residual "<script" would be a sanitisation failure.
+        expect(ops).not.toContain('<script');
+        expect(ops).not.toContain('<scr');
+    });
+
+    it('should not choke on pathological "<<<<" text input', () => {
+        const enc = createEncodingContext([]);
+        const evil = '<'.repeat(50000);
+        const svg =
+            '<svg viewBox="0 0 200 100">' +
+            '<rect x="0" y="0" width="10" height="10"/>' +
+            `<text x="10" y="20" font-size="12">${evil}</text>` +
+            '</svg>';
+        const start = Date.now();
+        const ops = renderSvg(svg, 0, 100, 200, 100, undefined, enc);
+        // Linear-time: must finish well under any quadratic blow-up budget.
+        expect(Date.now() - start).toBeLessThan(1000);
+        expect(ops).not.toContain('<');
     });
 
     // ── Option Overrides ─────────────────────────────────────────

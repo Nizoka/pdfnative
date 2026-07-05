@@ -129,6 +129,12 @@ function buildTextRunsWithFallback(
     for (let i = 0; i < text.length;) {
         const rawCp = text.codePointAt(i) ?? 0;
         const charLen = rawCp > 0xFFFF ? 2 : 1;
+        // Skip C0 control characters (incl. \n \r \t) and DEL. They are layout
+        // separators consumed by the wrapping layer and must never reach the
+        // subset cmap lookup, where they resolve to .notdef (gid 0) and render
+        // as tofu (□) in CID-keyed fonts under PDF/A (Helvetica fallback is
+        // disabled). (#58)
+        if (rawCp < 0x20 || rawCp === 0x7F) { i += charLen; continue; }
         const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
         const char = text.substring(i, i + charLen);
         const gid = fd.cmap[cp] ?? 0;

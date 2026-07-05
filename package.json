@@ -1,7 +1,7 @@
 {
   "name": "pdfnative",
-  "version": "1.4.0",
-  "description": "Zero-dependency native PDF generation library. 22 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Telugu, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic, Cyrillic, Greek, Georgian, Armenian, Latin), BiDi, PDF/A-1b/2b/3b, AES encryption, digital signatures, AcroForm, barcodes, SVG, COLRv1 colour emoji. Pure JavaScript ISO 32000-1 implementation.",
+  "version": "1.5.0",
+  "description": "Zero-dependency native PDF generation library. 22 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Telugu, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic, Cyrillic, Greek, Georgian, Armenian, Latin), BiDi, PDF/A-1b/2b/3b, AES encryption, digital signatures, AcroForm, barcodes, SVG (with text), math symbols, markup annotations, layout inspection, font-data tools, COLRv1 colour emoji. Pure JavaScript ISO 32000-1 implementation, built under a human-in-the-loop AI-agent governance policy.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -25,6 +25,16 @@
       "require": {
         "types": "./dist/worker/index.d.cts",
         "default": "./dist/worker/index.cjs"
+      }
+    },
+    "./tools": {
+      "import": {
+        "types": "./dist/tools/index.d.ts",
+        "default": "./dist/tools/index.js"
+      },
+      "require": {
+        "types": "./dist/tools/index.d.cts",
+        "default": "./dist/tools/index.cjs"
       }
     },
     "./fonts/*": "./fonts/*",
@@ -53,6 +63,7 @@
     "test:generate": "npx tsx scripts/generate-samples.ts",
     "validate:pdfa": "npx tsx scripts/validate-pdfa.ts",
     "fonts:download": "npx tsx scripts/download-fonts.ts",
+    "verify:issue": "node scripts/verify-issue.mjs",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc --project tsconfig.test.json --noEmit",
@@ -115,7 +126,22 @@
     "viewer-preferences",
     "rsa",
     "ecdsa",
-    "typescript"
+    "typescript",
+    "svg-to-pdf",
+    "math-symbols",
+    "pdf-annotations",
+    "layout-inspection",
+    "font-tools",
+    "ai-governance",
+    "human-in-the-loop",
+    "hitl",
+    "responsible-ai",
+    "agent-safety",
+    "pdfkit-alternative",
+    "puppeteer-alternative",
+    "serverless-pdf",
+    "invoice",
+    "factur-x"
   ],
   "author": "Nizoka <hello@pdfnative.dev> (https://pdfnative.dev)",
   "license": "MIT",
