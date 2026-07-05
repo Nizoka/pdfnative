@@ -8,15 +8,25 @@
  */
 
 import { resolve } from 'path';
-import { readFileSync } from 'fs';
 import { buildDocumentPDFBytes } from '../../src/index.js';
 import { compileFontData, parseFontData } from '../../src/tools/font-compiler.js';
+import * as notoSansMath from '../../fonts/noto-sans-math-data.js';
 import type { DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
 
+/** Decode a base64 string to bytes without relying on Node's `Buffer`. */
+function base64ToBytes(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+}
+
 export async function generate(ctx: GenerateContext): Promise<void> {
-    const ttfPath = resolve(process.cwd(), 'fonts', 'ttf', 'NotoSansMath-Regular.ttf');
-    const ttf = new Uint8Array(readFileSync(ttfPath));
+    // Decode the committed, subsetted font module (fonts/noto-sans-math-data.js)
+    // rather than the raw TTF: fonts/ttf/ is git-ignored and absent in CI, but
+    // the committed module carries a real, parseable SFNT in `ttfBase64`.
+    const ttf = base64ToBytes(notoSansMath.ttfBase64);
 
     const parsed = parseFontData(ttf, { fontName: 'NotoSansMath' });
     const moduleSource = compileFontData(ttf, { fontName: 'NotoSansMath' });
@@ -26,7 +36,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         title: 'Font-data tools (v1.5.0)',
         blocks: [
             { type: 'heading', text: 'parseFontData() / compileFontData()', level: 1 },
-            { type: 'paragraph', text: `Parsed ${parsed.fontName} from NotoSansMath-Regular.ttf.` },
+            { type: 'paragraph', text: `Parsed ${parsed.fontName} from the bundled Noto Sans Math font data.` },
             {
                 type: 'table',
                 headers: ['Field', 'Value'],

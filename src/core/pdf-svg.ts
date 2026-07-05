@@ -462,12 +462,32 @@ function decodeSvgEntities(s: string): string {
 }
 
 /**
+ * Strip every `<…>` tag from an SVG text node in a single linear pass.
+ *
+ * A hand-written scanner (not a regex) is used deliberately: it runs in O(n)
+ * with no backtracking — immune to the quadratic `/</[^>]*>/` worst case on
+ * pathological input like `<<<<…<` — and it is a *complete* one-pass strip, so
+ * no residual `<tag>` can survive (nested/unbalanced `<` never reconstruct a
+ * tag the way a single greedy `replace` can). (v1.5.0)
+ */
+function stripSvgTags(raw: string): string {
+    let out = '';
+    let inTag = false;
+    for (const ch of raw) {
+        if (ch === '<') inTag = true;
+        else if (ch === '>') inTag = false;
+        else if (!inTag) out += ch;
+    }
+    return out;
+}
+
+/**
  * Normalise raw SVG text-node markup into a single-line plain string: strip any
  * residual tags, decode entities, remove C0/C1 control characters, and collapse
  * whitespace runs (SVG default `xml:space` behaviour). (v1.5.0)
  */
 function sanitizeSvgText(raw: string): string {
-    const noTags = raw.replace(/<[^>]*>/g, '');
+    const noTags = stripSvgTags(raw);
     const decoded = decodeSvgEntities(noTags);
     // Strip control characters, then collapse whitespace to single spaces.
     return decoded
