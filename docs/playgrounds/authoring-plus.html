@@ -80,7 +80,7 @@
   </nav>
   <article class="guide-content">
     <h1>Authoring+ — what's new in 1.5.0</h1>
-    <p>pdfnative 1.5.0 adds <strong>SVG <code>&lt;text&gt;</code> rendering</strong>, an opt-in <strong>layout debug overlay</strong>, and a typed <strong>markup annotation</strong> model. Every demo below runs entirely in your browser and downloads a real PDF.</p>
+    <p>pdfnative 1.5.0 adds <strong>SVG <code>&lt;text&gt;</code> rendering</strong>, an opt-in <strong>layout debug overlay</strong>, and a typed <strong>markup annotation</strong> model. The <em>Edge case</em> demos exercise the math font, the page-labels reader and control-character hardening. Every demo below runs entirely in your browser and downloads a real PDF.</p>
 
     <div class="callout" style="margin:16px 0;padding:12px 16px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-size:14px;">
       <strong>Also new in 1.5.0</strong>: a bundled math / technical-symbols font (lang <code>'math'</code>, auto-routed via script detection), the <a href="https://github.com/Nizoka/pdfnative/tree/main/tools"><code>pdfnative/tools</code></a> font compiler/parser (<code>compileFontData</code> / <code>parseFontData</code>), a page-labels reader (<code>getPageLabels()</code>), and annotation read/write on existing PDFs (<code>getAnnotations()</code> / <code>addAnnotation()</code>).
@@ -94,6 +94,9 @@
         <option value="svgtext">SVG &lt;text&gt; labelled chart</option>
         <option value="debug">Layout debug overlay + inspection</option>
         <option value="annotations">Markup annotations (build + read back)</option>
+        <option value="math">Edge case · math / technical symbols</option>
+        <option value="pagelabels">Edge case · page labels (write + read back)</option>
+        <option value="controlchars">Edge case · control-character hardening</option>
       </select>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
       <span id="timer" style="font-size:13px;color:#64748b;"></span>
@@ -112,6 +115,9 @@
         <li><strong>SVG <code>&lt;text&gt;</code></strong> — text elements render as upright PDF text with <code>text-anchor</code> (start / middle / end) support, ideal for chart labels.</li>
         <li><strong>Layout debug overlay</strong> — <code>layout: { debug: true }</code> draws margin / content / cell boxes; <code>inspectDocumentLayout()</code> returns per-page block geometry.</li>
         <li><strong>Markup annotations</strong> — <code>buildAnnotation()</code> / <code>buildAnnotationBody()</code> for nine annotation types; <code>getAnnotations()</code> reads them back out of an existing PDF.</li>
+        <li><strong>Math font</strong> — mathematical operators, arrows and letterlike symbols route to the bundled <code>'math'</code> font automatically via script detection.</li>
+        <li><strong>Page-labels reader</strong> — <code>getPageLabels()</code> round-trips the <code>pageLabels</code> number tree (Roman / decimal / prefixed) back into structured ranges.</li>
+        <li><strong>Control-character hardening</strong> — NUL / BEL / form-feed / DEL embedded in text are dropped or escaped instead of emitting <code>.notdef</code> tofu.</li>
       </ul>
       <p style="color:#065f46;margin-top:8px;font-size:14px;">All zero-dependency, all in the browser. The exact same code runs in Node.js, Deno, Bun and Web Workers.</p>
     </div>
@@ -153,6 +159,9 @@ const DESCRIPTIONS = {
   svgtext: 'Renders a labelled bar chart from a single SVG string. The bars are <rect> elements; the axis and quarter labels are <text> elements with text-anchor="middle", which pdfnative draws as upright PDF text.',
   debug: 'Renders a short document with the layout debug overlay enabled (layout: { debug: true }), drawing the margin box, per-block content bounds, and table cell outlines. The status line reports the inspectDocumentLayout() block count.',
   annotations: 'Builds a contract PDF, injects a highlight annotation onto it with addAnnotation(), and reads every annotation back out with getAnnotations(). The annotated PDF is downloaded and the status line lists what was read back.',
+  math: 'Edge case — a document full of mathematical operators (∑ ∫ √ ≠ ≤ ⇒), arrows and letterlike symbols (ℝ ℕ). The bundled math font is registered from the CDN; script detection routes every math code point to it automatically while Latin words stay on the base font.',
+  pagelabels: 'Edge case — writes a three-range page-label tree (front-matter in lowercase Roman, body in decimal, appendix with an "A-" prefix) then reads it straight back with getPageLabels() to prove the writer↔reader round-trip.',
+  controlchars: 'Edge case — a paragraph deliberately seeded with NUL, BEL, form-feed and DEL control characters. pdfnative 1.5.0 neutralises them (drops or escapes) so no .notdef tofu reaches the page, in both base-14 and CIDFont modes.',
 };
 
 const CODE = {
@@ -225,6 +234,68 @@ const read = openPdf(annotated).getAnnotations(0);
 console.log(read.map(a => a.subtype + ': ' + a.contents));
 
 downloadBlob(annotated, 'annotated-contract.pdf');`,
+  math: `import { registerFont, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+// The bundled math font is opt-in — register it once, lazily.
+registerFont('math', () => import('https://esm.sh/pdfnative/fonts/noto-sans-math-data.js'));
+const mathFont = await loadFontData('math');
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Technical symbols',
+  blocks: [
+    { type: 'heading', text: 'Mathematical & technical symbols', level: 1 },
+    // Latin words stay on the base font; ∑ ∫ √ ≠ … route to the math font.
+    { type: 'paragraph', text: 'For all ε > 0 there is δ > 0 with |x − a| < δ ⇒ |f(x) − f(a)| < ε.' },
+    { type: 'paragraph', text: '∀ n ∈ ℕ: ∑ 1/n² converges; ∫ e^x dx, √2 ∉ ℚ, A ⊆ B ⟺ A ∩ B = A.' },
+  ],
+  // Script detection routes each math code point to this entry automatically.
+  fontEntries: mathFont ? [{ fontData: mathFont, fontRef: '/F3', lang: 'math' }] : [],
+});
+
+downloadBlob(pdf, 'math-symbols.pdf');`,
+  pagelabels: `import { buildDocumentPDFBytes, openPdf, downloadBlob } from 'pdfnative';
+
+const params = {
+  title: 'Front matter + body',
+  // Three label ranges over a 7-page document.
+  pageLabels: [
+    { startPage: 0, style: 'roman' },                       // i, ii, iii
+    { startPage: 3, style: 'decimal', start: 1 },           // 1, 2, 3
+    { startPage: 6, style: 'decimal', prefix: 'A-', start: 1 }, // A-1
+  ],
+  blocks: [
+    { type: 'heading', text: 'Preface', level: 1 }, { type: 'pageBreak' },
+    { type: 'heading', text: 'Foreword', level: 1 }, { type: 'pageBreak' },
+    { type: 'heading', text: 'Acknowledgements', level: 1 }, { type: 'pageBreak' },
+    { type: 'heading', text: 'Chapter 1', level: 1 }, { type: 'pageBreak' },
+    { type: 'heading', text: 'Chapter 2', level: 1 }, { type: 'pageBreak' },
+    { type: 'heading', text: 'Chapter 3', level: 1 }, { type: 'pageBreak' },
+    { type: 'heading', text: 'Appendix', level: 1 },
+  ],
+};
+
+const pdf = buildDocumentPDFBytes(params);
+
+// Round-trip: read the number tree straight back out.
+const ranges = openPdf(pdf).getPageLabels();
+console.log(ranges); // [{ startPage: 0, style: 'roman' }, … ]
+
+downloadBlob(pdf, 'page-labels.pdf');`,
+  controlchars: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+// NUL, BEL, form-feed and DEL embedded in otherwise normal text.
+const seeded = 'Clean\\u0000 output\\u0007 despite\\u000C embedded\\u007F control chars.';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Control-character hardening',
+  blocks: [
+    { type: 'heading', text: 'Control-character hardening', level: 1 },
+    { type: 'paragraph', text: seeded },
+    { type: 'paragraph', text: 'pdfnative 1.5.0 drops or escapes control chars instead of emitting .notdef tofu.' },
+  ],
+});
+
+downloadBlob(pdf, 'control-chars.pdf');`,
 };
 
 function applyPreset(id) {
@@ -319,7 +390,69 @@ function buildAnnotations(mod) {
   return { bytes: annotated, filename: 'annotated-contract.pdf', note: `${(annotated.length / 1024).toFixed(1)} KB · ${note}` };
 }
 
-const BUILDERS = { svgtext: buildSvgText, debug: buildDebug, annotations: buildAnnotations };
+async function buildMath(mod) {
+  let mathFont = null;
+  if (typeof mod.registerFont === 'function' && typeof mod.loadFontData === 'function') {
+    mod.registerFont('math', () => import('https://esm.sh/pdfnative/fonts/noto-sans-math-data.js'));
+    try { mathFont = await mod.loadFontData('math'); } catch (_) { mathFont = null; }
+  }
+  const pdf = mod.buildDocumentPDFBytes({
+    title: 'Technical symbols',
+    blocks: [
+      { type: 'heading', text: 'Mathematical & technical symbols', level: 1 },
+      { type: 'paragraph', text: 'For all \u03b5 > 0 there is \u03b4 > 0 with |x \u2212 a| < \u03b4 \u21d2 |f(x) \u2212 f(a)| < \u03b5.' },
+      { type: 'paragraph', text: '\u2200 n \u2208 \u2115: \u2211 1/n\u00b2 converges; \u222b e^x dx, \u221a2 \u2209 \u211a, A \u2286 B \u27fa A \u2229 B = A.' },
+    ],
+    fontEntries: mathFont ? [{ fontData: mathFont, fontRef: '/F3', lang: 'math' }] : [],
+  });
+  const note = mathFont ? 'math font routed via script detection' : 'math font unavailable — using base font';
+  return { bytes: pdf, filename: 'math-symbols.pdf', note: `${(pdf.length / 1024).toFixed(1)} KB · ${note}` };
+}
+
+function buildPageLabels(mod) {
+  const params = {
+    title: 'Front matter + body',
+    pageLabels: [
+      { startPage: 0, style: 'roman' },
+      { startPage: 3, style: 'decimal', start: 1 },
+      { startPage: 6, style: 'decimal', prefix: 'A-', start: 1 },
+    ],
+    blocks: [
+      { type: 'heading', text: 'Preface', level: 1 }, { type: 'pageBreak' },
+      { type: 'heading', text: 'Foreword', level: 1 }, { type: 'pageBreak' },
+      { type: 'heading', text: 'Acknowledgements', level: 1 }, { type: 'pageBreak' },
+      { type: 'heading', text: 'Chapter 1', level: 1 }, { type: 'pageBreak' },
+      { type: 'heading', text: 'Chapter 2', level: 1 }, { type: 'pageBreak' },
+      { type: 'heading', text: 'Chapter 3', level: 1 }, { type: 'pageBreak' },
+      { type: 'heading', text: 'Appendix', level: 1 },
+    ],
+  };
+  const pdf = mod.buildDocumentPDFBytes(params);
+  let note = 'labels written';
+  if (typeof mod.openPdf === 'function') {
+    const reader = mod.openPdf(pdf);
+    if (typeof reader.getPageLabels === 'function') {
+      const ranges = reader.getPageLabels();
+      note = ranges && ranges.length ? `read back ${ranges.length} label ranges` : 'no labels read back';
+    }
+  }
+  return { bytes: pdf, filename: 'page-labels.pdf', note: `${(pdf.length / 1024).toFixed(1)} KB · ${note}` };
+}
+
+function buildControlChars(mod) {
+  const seeded = 'Clean\u0000 output\u0007 despite\u000C embedded\u007F control chars.';
+  const pdf = mod.buildDocumentPDFBytes({
+    title: 'Control-character hardening',
+    blocks: [
+      { type: 'heading', text: 'Control-character hardening', level: 1 },
+      { type: 'paragraph', text: seeded },
+      { type: 'paragraph', text: 'The paragraph above embeds NUL (U+0000), BEL (U+0007), form-feed (U+000C) and DEL (U+007F). pdfnative 1.5.0 drops or escapes them instead of emitting .notdef tofu.' },
+    ],
+  });
+  return { bytes: pdf, filename: 'control-chars.pdf', note: `${(pdf.length / 1024).toFixed(1)} KB · control chars neutralised` };
+}
+
+const BUILDERS = { svgtext: buildSvgText, debug: buildDebug, annotations: buildAnnotations, math: buildMath, pagelabels: buildPageLabels, controlchars: buildControlChars };
 
 async function generate() {
   const id = $('preset').value;
@@ -328,7 +461,7 @@ async function generate() {
     setStatus('Loading pdfnative from CDN…', 'info');
     const mod = await loadPdfnative();
     setStatus('Generating PDF…', 'info');
-    const { bytes, filename, note } = BUILDERS[id](mod);
+    const { bytes, filename, note } = await BUILDERS[id](mod);
     mod.downloadBlob(bytes, filename);
     const ms = (performance.now() - t0).toFixed(0);
     $('timer').textContent = `${note} · ${ms} ms`;

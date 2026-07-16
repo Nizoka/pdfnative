@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLI Command Builder — pdfnative-cli playground</title>
-  <meta name="description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, batch, and schema invocations with a live shell preview. Zero install.">
+  <meta name="description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, merge, split, extract, annotate, and govern invocations with a live shell preview. Zero install.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/cli.html">
   <meta property="og:type" content="website">
@@ -119,7 +119,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-cli command builder</h1>
-    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers the full <a href="../guides/cli.html">CLI surface</a>: <code>render</code> (with <code>--watch</code> / <code>--template</code> / <code>--font</code>), <code>sign</code> (RSA + ECDSA-SHA256, auto signature placeholder), <code>inspect</code>, and <code>verify</code> (real CMS verification + RFC 3161 detection). The builder runs entirely in your browser — nothing is uploaded.</p>
+    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers the full <a href="../guides/cli.html">CLI surface</a>: <code>render</code> (with <code>--outline</code> / <code>--font math</code> / <code>--inspect-layout</code>), <code>sign</code> (RSA + ECDSA-SHA256, native constant-time crypto, <code>--pure-crypto</code> opt-out), <code>inspect</code> (with <code>--annotations</code>), <code>verify</code>, and the v1.2.0 page-tree / governance commands <code>merge</code>, <code>split</code>, <code>extract</code>, <code>annotate</code>, and <code>govern</code>. The builder runs entirely in your browser — nothing is uploaded.</p>
 
     <div class="cli-presets">
       <label for="preset"><strong>Quick preset:</strong></label>
@@ -134,7 +134,14 @@
         <option value="render-table">render · table variant + layout file</option>
         <option value="sign-meta">sign · with metadata + cert chain</option>
         <option value="inspect-check">inspect · CI assertions</option>
+        <option value="inspect-annotations">inspect · list annotations + page labels · v1.2</option>
         <option value="verify-strict">verify · strict + trust roots</option>
+        <option value="render-outline-math">render · bookmarks (auto) + math font · v1.2</option>
+        <option value="merge-basic">merge · combine PDFs · v1.2</option>
+        <option value="split-ranges">split · by page ranges · v1.2</option>
+        <option value="extract-pages">extract · selected pages · v1.2</option>
+        <option value="annotate-notes">annotate · markup from JSON · v1.2</option>
+        <option value="govern-verify">govern · verify-issue draft · v1.2</option>
       </select>
       <button id="reset" class="btn btn-secondary" style="padding: 6px 14px; font-size: 13px;">Reset</button>
     </div>
@@ -144,6 +151,11 @@
       <button class="cli-tab" role="tab" aria-selected="false" data-tab="sign">sign</button>
       <button class="cli-tab" role="tab" aria-selected="false" data-tab="inspect">inspect</button>
       <button class="cli-tab" role="tab" aria-selected="false" data-tab="verify">verify</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="merge">merge<span class="new-badge">v1.2</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="split">split<span class="new-badge">v1.2</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="extract">extract<span class="new-badge">v1.2</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="annotate">annotate<span class="new-badge">v1.2</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="govern">govern<span class="new-badge">v1.2</span></button>
     </div>
 
     <!-- ─────────────── RENDER ─────────────── -->
@@ -234,9 +246,31 @@
                 <option value="">— none —</option>
                 <option value="latin">latin (Noto Sans VF)</option>
                 <option value="emoji">emoji (Noto Emoji)</option>
+                <option value="math">math (Noto Sans Math) · v1.2</option>
                 <option value="latin,emoji">latin,emoji</option>
+                <option value="latin,math">latin,math</option>
               </select>
               <span class="hint">Bundled font codes. For other scripts use <code>--lang</code>.</span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Bookmarks, math &amp; layout <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.2</span></legend>
+          <div class="grid">
+            <div>
+              <label for="r-outline">--outline</label>
+              <input id="r-outline" type="text" data-cmd="render" data-flag="--outline" placeholder="auto  or  outline.json">
+              <span class="hint">Add a <code>/Outlines</code> bookmark tree. <code>auto</code> derives it from headings.</span>
+            </div>
+            <div>
+              <label><input type="checkbox" data-cmd="render" data-flag="--inspect-layout"> --inspect-layout</label>
+              <span class="hint">Emit a <code>LayoutInspection</code> JSON report instead of a PDF.</span>
+            </div>
+            <div>
+              <label for="r-debug-layout">--debug-layout</label>
+              <input id="r-debug-layout" type="text" data-cmd="render" data-flag="--debug-layout" placeholder="margins,content,cells">
+              <span class="hint">Overlay layout-debug guides on a normal PDF.</span>
             </div>
           </div>
         </fieldset>
@@ -384,6 +418,10 @@
           <label for="s-contact">--contact</label>
           <input id="s-contact" type="text" data-cmd="sign" data-flag="--contact" placeholder="finance@acme.example">
         </div>
+        <div>
+          <label><input type="checkbox" data-cmd="sign" data-flag="--pure-crypto"> --pure-crypto <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.2</span></label>
+          <span class="hint">Force the portable pure-JS CMS path. Default is native constant-time <code>node:crypto</code>.</span>
+        </div>
       </div>
     </section>
 
@@ -409,6 +447,10 @@
         <div>
           <label><input type="checkbox" data-cmd="inspect" data-flag="--pages"> --pages</label>
           <span class="hint">Per-page geometry, annotations, form fields.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="inspect" data-flag="--annotations"> --annotations <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.2</span></label>
+          <span class="hint">List markup + link annotations per page. Page labels reported automatically.</span>
         </div>
         <fieldset class="full">
           <legend>--check (CI assertions, ANDed)</legend>
@@ -448,6 +490,130 @@
         </div>
       </div>
       <p class="hint" style="margin-top: 14px;">Scope (v1.1.0): full CMS/PKCS#7 verification (RSA + ECDSA-SHA256), byte-range integrity (SHA-256), certificate chain, trust evaluation against <code>--trust</code> roots, RFC 3161 timestamp validation (<strong>PAdES-T</strong>), and OCSP/CRL revocation checking via <code>--revocation</code> / <code>--revocation-policy</code>. See the <a href="../guides/cli.html">CLI guide</a>.</p>
+    </section>
+
+    <!-- ─────────────── MERGE (v1.2) ─────────────── -->
+    <section class="cli-panel" data-panel="merge">
+      <div class="cli-form">
+        <div class="full">
+          <label for="m-input">--input (one path per line, 2–50)</label>
+          <textarea id="m-input" data-cmd="merge" data-flag="--input" placeholder="cover.pdf&#10;body.pdf&#10;appendix.pdf"></textarea>
+          <span class="hint">Source PDFs, concatenated in order. Repeatable.</span>
+        </div>
+        <div>
+          <label for="m-output">--output</label>
+          <input id="m-output" type="text" data-cmd="merge" data-flag="--output" placeholder="combined.pdf">
+        </div>
+        <div>
+          <label for="m-max">--max-output-size</label>
+          <input id="m-max" type="text" data-cmd="merge" data-flag="--max-output-size" placeholder="268435456">
+          <span class="hint">Output ceiling in bytes (default 256 MiB).</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="merge" data-flag="--drop-annotations"> --drop-annotations</label>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="merge" data-flag="--dry-run"> --dry-run</label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;">Encrypted sources are rejected; signatures and <code>/AcroForm</code> are dropped (page edits invalidate <code>/ByteRange</code>); URI <code>/Link</code> annotations are preserved. Every path is validated against traversal.</p>
+    </section>
+
+    <!-- ─────────────── SPLIT (v1.2) ─────────────── -->
+    <section class="cli-panel" data-panel="split">
+      <div class="cli-form">
+        <div>
+          <label for="sp-input">--input</label>
+          <input id="sp-input" type="text" data-cmd="split" data-flag="--input" placeholder="report.pdf">
+        </div>
+        <div>
+          <label for="sp-outdir">--output-dir</label>
+          <input id="sp-outdir" type="text" data-cmd="split" data-flag="--output-dir" placeholder="pages/">
+          <span class="hint">Required. Parts written as <code>&lt;prefix&gt;-&lt;n&gt;.pdf</code>.</span>
+        </div>
+        <div>
+          <label for="sp-prefix">--prefix</label>
+          <input id="sp-prefix" type="text" data-cmd="split" data-flag="--prefix" placeholder="page">
+        </div>
+        <div>
+          <label for="sp-pages">--pages</label>
+          <input id="sp-pages" type="text" data-cmd="split" data-flag="--pages" placeholder="1-2,3-4">
+          <span class="hint">Comma-separated 1-based inclusive ranges. Omit for one output per page.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="split" data-flag="--dry-run"> --dry-run</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── EXTRACT (v1.2) ─────────────── -->
+    <section class="cli-panel" data-panel="extract">
+      <div class="cli-form">
+        <div>
+          <label for="e-input">--input</label>
+          <input id="e-input" type="text" data-cmd="extract" data-flag="--input" placeholder="report.pdf">
+        </div>
+        <div>
+          <label for="e-output">--output</label>
+          <input id="e-output" type="text" data-cmd="extract" data-flag="--output" placeholder="cover.pdf">
+        </div>
+        <div class="full">
+          <label for="e-pages">--pages</label>
+          <input id="e-pages" type="text" data-cmd="extract" data-flag="--pages" placeholder="4,1-2">
+          <span class="hint">1-based page list/ranges. Order is preserved and repeats are allowed.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="extract" data-flag="--dry-run"> --dry-run</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── ANNOTATE (v1.2) ─────────────── -->
+    <section class="cli-panel" data-panel="annotate">
+      <div class="cli-form">
+        <div>
+          <label for="a-input">--input</label>
+          <input id="a-input" type="text" data-cmd="annotate" data-flag="--input" placeholder="report.pdf">
+        </div>
+        <div>
+          <label for="a-output">--output</label>
+          <input id="a-output" type="text" data-cmd="annotate" data-flag="--output" placeholder="annotated.pdf">
+        </div>
+        <div class="full">
+          <label for="a-annotations">--annotations (file path)</label>
+          <input id="a-annotations" type="text" data-cmd="annotate" data-flag="--annotations" placeholder="notes.json">
+          <span class="hint">JSON array (or <code>{ "annotations": [...] }</code>): each entry a markup annotation plus a 1-based <code>page</code>.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="annotate" data-flag="--dry-run"> --dry-run</label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;">Written with an <strong>incremental save</strong>, so existing signatures stay valid. Types: text, highlight, underline, strikeout, squiggly, square, circle, line, freetext. <strong>Overlay, not redaction.</strong></p>
+    </section>
+
+    <!-- ─────────────── GOVERN (v1.2) ─────────────── -->
+    <section class="cli-panel" data-panel="govern">
+      <div class="cli-form">
+        <div>
+          <label for="g-sub">subcommand</label>
+          <select id="g-sub" data-cmd="govern" data-flag="__positional__">
+            <option value="rules">rules</option>
+            <option value="policy">policy</option>
+            <option value="verify-issue">verify-issue</option>
+          </select>
+          <span class="hint"><code>rules</code> prints the agent/human protocol; <code>policy</code> the machine-readable JSON; <code>verify-issue</code> gates a draft.</span>
+        </div>
+        <div>
+          <label for="g-draft">draft file (verify-issue)</label>
+          <input id="g-draft" type="text" data-cmd="govern" data-flag="__arg__" placeholder="draft.md">
+          <span class="hint">Path to the local issue draft to gate. Exit 1 / <code>E_POLICY</code> on a violation.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="govern" data-flag="--json"> --json</label>
+          <span class="hint">Machine-readable output (best with <code>policy</code>).</span>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;">Agents act as <strong>draftsmen</strong>: a human must always review and submit. <code>verify-issue</code> is a pure, fully offline validator — no GitHub or network access.</p>
     </section>
 
     <div class="cli-validation" id="validation"></div>
@@ -492,7 +658,7 @@
 
   // ── State ──────────────────────────────────────────
   // For each command, an object { flagName: value | array | bool }
-  const state = { render: {}, sign: {}, inspect: {}, verify: {} };
+  const state = { render: {}, sign: {}, inspect: {}, verify: {}, merge: {}, split: {}, extract: {}, annotate: {}, govern: {} };
   let activeCmd = 'render';
 
   // Repeatable flags (one occurrence per item)
@@ -601,6 +767,34 @@
       }
     }
 
+    if (activeCmd === 'merge') {
+      const m = state.merge;
+      const inputs = Array.isArray(m['--input']) ? m['--input'] : [];
+      if (inputs.length < 2) warns.push('`merge` needs at least 2 source PDFs (2–50).');
+      if (inputs.length > 50) errors.push('`merge` accepts at most 50 source PDFs.');
+    }
+
+    if (activeCmd === 'split') {
+      const sp = state.split;
+      if (!sp['--output-dir']) warns.push('`split` requires `--output-dir`.');
+    }
+
+    if (activeCmd === 'extract') {
+      const e = state.extract;
+      if (!e['--pages']) warns.push('`extract` requires `--pages` (1-based list/ranges).');
+    }
+
+    if (activeCmd === 'annotate') {
+      const a = state.annotate;
+      if (!a['--annotations']) warns.push('`annotate` requires `--annotations` (a JSON spec file).');
+    }
+
+    if (activeCmd === 'govern') {
+      const sub = $('g-sub') ? $('g-sub').value : 'rules';
+      const draft = $('g-draft') ? $('g-draft').value.trim() : '';
+      if (sub === 'verify-issue' && !draft) warns.push('`govern verify-issue` needs a draft file path.');
+    }
+
     return { errors, warns };
   }
 
@@ -617,6 +811,17 @@
     const bag = state[activeCmd];
     const parts = ['npx', 'pdfnative-cli', activeCmd];
 
+    // Special govern: a positional subcommand + optional file arg (read from DOM)
+    if (activeCmd === 'govern') {
+      const sub = $('g-sub') ? $('g-sub').value : 'rules';
+      parts.push(sub || 'rules');
+      const draft = $('g-draft') ? $('g-draft').value.trim() : '';
+      if (sub === 'verify-issue' && draft) parts.push(shellEscape(draft));
+      if (bag['--json'] === true) parts.push('--json');
+      const singleG = parts.join(' ');
+      return singleG;
+    }
+
     // Special render: combine --page-size + --page-size-custom
     if (activeCmd === 'render') {
       if (pageSizeSelect.value === '__custom__' && pageSizeCustom.value) {
@@ -628,6 +833,7 @@
 
     Object.keys(bag).forEach((flag) => {
       if (flag === '--page-size' || flag === '--page-size-custom') return; // handled above
+      if (flag === '__positional__' || flag === '__arg__') return;         // govern, handled above
       const v = bag[flag];
       if (v === true) {
         parts.push(flag);
@@ -709,7 +915,14 @@
     'render-table':      { tab: 'render', fields: { 'r-input': 'ledger.json', 'r-output': 'ledger.pdf', 'r-variant': 'table', 'r-layout': 'layout.json' } },
     'sign-meta':         { tab: 'sign',   fields: { 's-input': 'report.pdf', 's-output': 'signed.pdf', 's-reason': 'Approved by Finance', 's-name': 'Finance Team', 's-loc': 'Paris, FR', 's-time': '2026-04-28T10:00:00Z' }, textareas: { 's-chain': 'intermediate.pem' } },
     'inspect-check':     { tab: 'inspect', fields: { 'i-input': 'signed.pdf', 'i-format': 'json' }, checks: ['--verbose'], multiCheck: { '--check': ['pdfa', 'signed'] } },
+    'inspect-annotations': { tab: 'inspect', fields: { 'i-input': 'annotated.pdf', 'i-format': 'json' }, checks: ['--annotations'] },
     'verify-strict':     { tab: 'verify',  fields: { 'v-input': 'signed.pdf' }, checks: ['--strict'], textareas: { 'v-trust': 'ca-root.pem' } },
+    'render-outline-math': { tab: 'render', fields: { 'r-input': 'paper.json', 'r-output': 'paper.pdf', 'r-outline': 'auto', 'r-font': 'math' } },
+    'merge-basic':       { tab: 'merge',   fields: { 'm-output': 'combined.pdf' }, textareas: { 'm-input': 'cover.pdf\nbody.pdf\nappendix.pdf' } },
+    'split-ranges':      { tab: 'split',   fields: { 'sp-input': 'report.pdf', 'sp-outdir': 'out/', 'sp-pages': '1-2,3-4' } },
+    'extract-pages':     { tab: 'extract', fields: { 'e-input': 'report.pdf', 'e-output': 'cover.pdf', 'e-pages': '4,1-2' } },
+    'annotate-notes':    { tab: 'annotate', fields: { 'a-input': 'report.pdf', 'a-output': 'annotated.pdf', 'a-annotations': 'notes.json' } },
+    'govern-verify':     { tab: 'govern',  fields: { 'g-sub': 'verify-issue', 'g-draft': 'draft.md' } },
   };
 
   $('preset').addEventListener('change', (e) => {

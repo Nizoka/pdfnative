@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="agw-title agw-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="agw-title">pdfnative — agentic workflows</title>
+  <desc id="agw-desc">Diagram of two agentic workflows for pdfnative. An AI agent (an MCP client or a CLI driver) feeds the zero-dependency pdfnative engine through public, validated APIs. Left branch: the agent generates a raster image and embeds it via the image document block or the embed_image MCP tool. Right branch: the agent compiles a TrueType or OpenType font in memory with parseFontData or compileFontData from the pdfnative/tools sub-path and registers it at runtime with registerFont, extending the engine without a library release. Both branches converge on pdfnative, which subsets fonts, embeds images, lays out content and writes an ISO 32000-1 PDF. A side note states that runtime extension is in-process only: any change to the repository itself stays human-gated under the AI-governance human-in-the-loop contract.</desc>
+
+  <defs>
+    <marker id="agw-ah" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#6366F1"/>
+    </marker>
+    <marker id="agw-ah-out" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="8" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#1D4ED8"/>
+    </marker>
+
+    <linearGradient id="agw-canvas" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F8FAFC"/>
+    </linearGradient>
+    <linearGradient id="agw-agent" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F6F8FF"/><stop offset="100%" stop-color="#E9ECFF"/></linearGradient>
+    <linearGradient id="agw-img" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F2FDFF"/><stop offset="100%" stop-color="#E1F7FB"/></linearGradient>
+    <linearGradient id="agw-font" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FBF5FF"/><stop offset="100%" stop-color="#F1E4FF"/></linearGradient>
+    <linearGradient id="agw-core" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#1D4ED8"/></linearGradient>
+    <linearGradient id="agw-out" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F0FDF8"/><stop offset="100%" stop-color="#DAFBE7"/></linearGradient>
+    <linearGradient id="agw-accent" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#1D4ED8"/></linearGradient>
+
+    <filter id="agw-soft" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#1E293B" flood-opacity="0.08"/>
+    </filter>
+    <filter id="agw-soft-sm" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1E293B" flood-opacity="0.07"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="960" height="560" fill="url(#agw-canvas)"/>
+
+  <!-- Header -->
+  <text x="480" y="40" text-anchor="middle" font-size="20" font-weight="800" fill="#0F172A" letter-spacing="-0.3">pdfnative — Agentic Workflows</text>
+  <rect x="446" y="50" width="68" height="4" rx="2" fill="url(#agw-accent)"/>
+  <text x="480" y="74" text-anchor="middle" font-size="12" font-weight="500" fill="#64748B">Agents extend the engine at runtime and feed it generated content — through public, validated APIs</text>
+
+  <!-- HITL badge -->
+  <g filter="url(#agw-soft-sm)">
+    <rect x="724" y="20" width="208" height="26" rx="13" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="1.25"/>
+  </g>
+  <path d="M741 27 l6 -3 l6 3 v5 c0 4 -3 6 -6 7 c-3 -1 -6 -3 -6 -7 Z" fill="none" stroke="#4F46E5" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M744.5 33 l2 2 l4 -4" fill="none" stroke="#4F46E5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="762" y="37" font-size="10.5" font-weight="700" fill="#4338CA" letter-spacing="0.2">AI Governance · Human-in-the-loop</text>
+
+  <!-- AI agent -->
+  <g filter="url(#agw-soft)">
+    <rect x="330" y="96" width="300" height="66" rx="14" fill="url(#agw-agent)" stroke="#A5B4FC" stroke-width="1.25"/>
+  </g>
+  <rect x="330" y="96" width="5" height="66" rx="2.5" fill="#6366F1"/>
+  <text x="480" y="128" text-anchor="middle" font-size="15.5" font-weight="700" fill="#4338CA">AI agent</text>
+  <text x="480" y="147" text-anchor="middle" font-size="10.5" fill="#6366F1">MCP client (Claude · Cursor · Zed …) or CLI driver</text>
+
+  <!-- Branch labels -->
+  <text x="252" y="196" text-anchor="middle" font-size="11" font-weight="700" fill="#0E7490" letter-spacing="0.3">PATTERN 2 — GENERATED IMAGES</text>
+  <text x="708" y="196" text-anchor="middle" font-size="11" font-weight="700" fill="#7C3AED" letter-spacing="0.3">PATTERN 1 — RUNTIME FONT EXTENSION</text>
+
+  <!-- Left branch: generate image -->
+  <g filter="url(#agw-soft-sm)">
+    <rect x="72" y="212" width="360" height="60" rx="12" fill="url(#agw-img)" stroke="#5EBECF" stroke-width="1.25"/>
+  </g>
+  <rect x="72" y="212" width="5" height="60" rx="2.5" fill="#0E7490"/>
+  <text x="94" y="238" font-size="13.5" font-weight="700" fill="#155E75">Generate a raster image</text>
+  <text x="94" y="257" font-size="10.5" fill="#0891B2">chart · diagram · illustration · photo (PNG / JPEG)</text>
+
+  <g filter="url(#agw-soft-sm)">
+    <rect x="72" y="296" width="360" height="60" rx="12" fill="#FFFFFF" stroke="#5EBECF" stroke-width="1.25"/>
+  </g>
+  <rect x="72" y="296" width="5" height="60" rx="2.5" fill="#0891B2"/>
+  <text x="94" y="322" font-size="13" font-weight="700" fill="#155E75">image block · embed_image (MCP)</text>
+  <text x="94" y="341" font-size="10.5" fill="#0891B2">native JPEG/PNG embed — no rasterization, validated</text>
+
+  <!-- Right branch: font -->
+  <g filter="url(#agw-soft-sm)">
+    <rect x="528" y="212" width="360" height="60" rx="12" fill="url(#agw-font)" stroke="#C4A5FC" stroke-width="1.25"/>
+  </g>
+  <rect x="528" y="212" width="5" height="60" rx="2.5" fill="#7C3AED"/>
+  <text x="550" y="238" font-size="13.5" font-weight="700" fill="#5B21B6">Compile a TTF / OTF in memory</text>
+  <text x="550" y="257" font-size="10.5" fill="#7C3AED">parseFontData() / compileFontData() — pdfnative/tools</text>
+
+  <g filter="url(#agw-soft-sm)">
+    <rect x="528" y="296" width="360" height="60" rx="12" fill="#FFFFFF" stroke="#C4A5FC" stroke-width="1.25"/>
+  </g>
+  <rect x="528" y="296" width="5" height="60" rx="2.5" fill="#7C3AED"/>
+  <text x="550" y="322" font-size="13" font-weight="700" fill="#5B21B6">registerFont(lang, loader)</text>
+  <text x="550" y="341" font-size="10.5" fill="#7C3AED">runtime extension — no library release required</text>
+
+  <!-- pdfnative engine -->
+  <g filter="url(#agw-soft)">
+    <rect x="240" y="404" width="480" height="72" rx="16" fill="url(#agw-core)"/>
+  </g>
+  <text x="480" y="435" text-anchor="middle" font-size="16" font-weight="800" fill="#FFFFFF" letter-spacing="-0.2">pdfnative — public API</text>
+  <text x="480" y="457" text-anchor="middle" font-size="11" font-weight="500" fill="#DBEAFE">subsets fonts · embeds images · lays out · writes an ISO 32000-1 PDF</text>
+
+  <!-- Output -->
+  <g filter="url(#agw-soft-sm)">
+    <rect x="392" y="506" width="176" height="38" rx="12" fill="url(#agw-out)" stroke="#6EE7B7" stroke-width="1.25"/>
+  </g>
+  <text x="480" y="530" text-anchor="middle" font-size="12.5" font-weight="700" fill="#065F46">ready-to-use PDF</text>
+
+  <!-- Edges: agent → branches -->
+  <path d="M400 162 C360 178 300 190 252 208" fill="none" stroke="#6366F1" stroke-width="1.75" marker-end="url(#agw-ah)"/>
+  <path d="M560 162 C600 178 660 190 708 208" fill="none" stroke="#6366F1" stroke-width="1.75" marker-end="url(#agw-ah)"/>
+
+  <!-- within-branch arrows -->
+  <path d="M252 272 L252 292" fill="none" stroke="#94A3B8" stroke-width="1.6" marker-end="url(#agw-ah)"/>
+  <path d="M708 272 L708 292" fill="none" stroke="#94A3B8" stroke-width="1.6" marker-end="url(#agw-ah)"/>
+
+  <!-- branches → engine -->
+  <path d="M252 356 C252 384 320 396 372 404" fill="none" stroke="#1D4ED8" stroke-width="1.9" marker-end="url(#agw-ah-out)"/>
+  <path d="M708 356 C708 384 640 396 588 404" fill="none" stroke="#1D4ED8" stroke-width="1.9" marker-end="url(#agw-ah-out)"/>
+
+  <!-- engine → output -->
+  <path d="M480 476 L480 502" fill="none" stroke="#1D4ED8" stroke-width="1.9" marker-end="url(#agw-ah-out)"/>
+
+  <!-- HITL side note -->
+  <g filter="url(#agw-soft-sm)">
+    <rect x="612" y="486" width="316" height="58" rx="12" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="1.25"/>
+  </g>
+  <rect x="612" y="486" width="5" height="58" rx="2.5" fill="#4F46E5"/>
+  <text x="632" y="509" font-size="11" font-weight="700" fill="#4338CA">Runtime extension is in-process only</text>
+  <text x="632" y="526" font-size="10" fill="#64748B">Any change to the repository stays human-gated</text>
+  <text x="632" y="539" font-size="10" fill="#64748B">under the AI-governance / HITL contract.</text>
+</svg>

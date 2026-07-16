@@ -57,7 +57,7 @@
         "programmingLanguage": "TypeScript",
         "license": "https://opensource.org/licenses/MIT",
         "runtimePlatform": ["Node.js", "Browser", "Deno", "Bun"],
-        "softwareVersion": "1.4.0",
+        "softwareVersion": "1.5.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -68,9 +68,9 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#cli",
         "name": "pdfnative-cli",
-        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA), inspect, verify (PAdES-T + OCSP/CRL), batch, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
+        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA, native constant-time crypto), inspect, verify (PAdES-T + OCSP/CRL), merge / split / extract pages, annotate (markup), govern (AI-governance / HITL), batch, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
         "url": "https://github.com/Nizoka/pdfnative-cli",
-        "softwareVersion": "1.1.0",
+        "softwareVersion": "1.2.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -80,9 +80,9 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#mcp",
         "name": "pdfnative-mcp",
-        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 17 tools (incl. page-tree merge/split/extract), per-tool apiVersion, PDF/A flag.",
+        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 19 tools (incl. page-tree merge/split/extract, markup annotate_pdf, and the network-free draft_governance_issue), per-tool apiVersion, PDF/A flag.",
         "url": "https://github.com/Nizoka/pdfnative-mcp",
-        "softwareVersion": "1.3.0",
+        "softwareVersion": "1.4.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -256,7 +256,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-mcp"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M15 8h2M11 8h2"/></svg></div>
         <h3>AI Integration — MCP</h3>
-        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. <strong>17 production tools</strong> incl. page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, <code>pdfA</code> flag everywhere, and token-frugal read modes. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
+        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. <strong>19 production tools</strong> incl. page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, <code>pdfA</code> flag everywhere, and token-frugal read modes. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
       </div>
 
       <div class="feature-card">
@@ -405,7 +405,7 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Four adoption paths — pick the one that fits your stack. All four are zero-config and zero-build.</p>
     <div class="onboarding-grid">
       <div class="onboarding-card">
-        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.4.0</span></h3>
+        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.5.0</span></h3>
         <p class="ob-tag">For TypeScript / JavaScript apps.</p>
 <pre><code class="language-bash">npm install pdfnative</code></pre>
 <pre><code class="language-typescript">import { buildDocumentPDFBytes } from 'pdfnative';
@@ -416,7 +416,7 @@ const pdf = buildDocumentPDFBytes({
         <a class="ob-link" href="guides/quickstart.html">Quick Start guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>CLI <span class="ob-badge" data-pn-badge="pdfnative-cli">v1.1.0</span></h3>
+        <h3>CLI <span class="ob-badge" data-pn-badge="pdfnative-cli">v1.2.0</span></h3>
         <p class="ob-tag">For shells, CI, and Makefiles.</p>
 <pre><code class="language-bash">echo '{"blocks":[{"type":"paragraph","text":"Hi"}]}' \
   | npx pdfnative-cli render -o out.pdf</code></pre>
@@ -427,7 +427,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
         <a class="ob-link" href="guides/cli.html">CLI guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>MCP <span class="ob-badge" data-pn-badge="pdfnative-mcp">v1.3.0</span></h3>
+        <h3>MCP <span class="ob-badge" data-pn-badge="pdfnative-mcp">v1.4.0</span></h3>
         <p class="ob-tag">For Claude Desktop, Cursor, Continue, Zed, …</p>
 <pre><code class="language-json">{
   "mcpServers": {
@@ -686,7 +686,7 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/master/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative 1.5.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (render · sign · inspect · verify · batch), pdfnative-mcp (MCP server, 17 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, modifies, annotates, merges and splits PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative 1.5.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (render · sign · merge · annotate · govern), pdfnative-mcp (MCP server, 19 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, modifies, annotates, merges and splits PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
   </div>
@@ -710,10 +710,10 @@ const pdf = renderToBytes(
 <section class="section section-alt" id="mcp">
   <div class="container">
     <h2 class="section-title">Use pdfnative from Any AI Client</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and token-frugal read modes.</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and token-frugal read modes.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>17 Production Tools</h3>
+        <h3>19 Production Tools</h3>
         <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
@@ -735,6 +735,8 @@ const pdf = renderToBytes(
             <tr><td><code>merge_pdfs</code></td><td>Concatenate 2–50 PDFs into one via the page-tree API (v1.3.0).</td></tr>
             <tr><td><code>split_pdf</code></td><td>Split one PDF into one document per page range — multi-output (v1.3.0).</td></tr>
             <tr><td><code>extract_pages</code></td><td>Pull an arbitrary, order-preserving page subset (max 5000) into a new PDF (v1.3.0).</td></tr>
+            <tr><td><code>annotate_pdf</code></td><td>Overlay markup annotations (highlight / underline / note / shape) on an existing PDF via incremental update. A visual review layer, not a redaction (v1.4.0).</td></tr>
+            <tr><td><code>draft_governance_issue</code></td><td>Assemble a governance-compliant GitHub-issue draft locally — network-free by construction; never submits (v1.4.0).</td></tr>
           </tbody>
         </table>
         </div>
@@ -760,20 +762,25 @@ const pdf = renderToBytes(
 <section class="section" id="cli">
   <div class="container">
     <h2 class="section-title">Use pdfnative from your shell, CI, or Makefile</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. Six commands, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. It completes the digital-signature story with end-to-end signing (RSA + ECDSA-SHA256), full CMS/PKCS#7 verification, RFC 3161 timestamp detection, a fast <code>render --watch / --template / --font</code> loop, plus <code>batch</code> and shell <code>completion</code> commands.</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. Eleven commands, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. It completes the digital-signature story with end-to-end signing (RSA + ECDSA-SHA256, native constant-time crypto), full CMS/PKCS#7 verification, RFC 3161 timestamp detection, a fast <code>render --watch / --template / --font math / --outline</code> loop, page-tree <code>merge</code> / <code>split</code> / <code>extract</code>, markup <code>annotate</code>, an AI-governance <code>govern</code> gate, plus <code>batch</code> and shell <code>completion</code> commands.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>6 Production Commands</h3>
+        <h3>11 Production Commands</h3>
         <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
           <tbody>
-            <tr><td><code>render</code></td><td>JSON → PDF with hybrid <code>flags + --layout</code>. <code>--watch</code> (re-render on change), <code>--template &lt;file.json&gt;</code> (deep-merge base), <code>--font {latin,emoji}</code> (bundled font shortcuts).</td></tr>
-            <tr><td><code>sign</code></td><td>End-to-end CMS/PKCS#7 signing. <strong>ECDSA-SHA256</strong> fully wired. Auto-injects the AcroForm signature placeholder when missing — sign any <code>render</code> output in one command.</td></tr>
-            <tr><td><code>inspect</code></td><td>Read-only PDF analysis. <code>--verbose</code>, <code>--pages</code>, and <code>--check pdfa|signed|encrypted</code> for CI assertions.</td></tr>
+            <tr><td><code>render</code></td><td>JSON → PDF with hybrid <code>flags + --layout</code>. <code>--watch</code> (re-render on change), <code>--template &lt;file.json&gt;</code> (deep-merge base), <code>--font {latin,emoji,math}</code>, <code>--outline auto</code> (bookmarks), <code>--inspect-layout</code> / <code>--debug-layout</code>.</td></tr>
+            <tr><td><code>sign</code></td><td>End-to-end CMS/PKCS#7 signing. <strong>ECDSA-SHA256</strong> fully wired, native constant-time <code>node:crypto</code> by default (<code>--pure-crypto</code> opts out). Auto-injects the AcroForm signature placeholder when missing.</td></tr>
+            <tr><td><code>inspect</code></td><td>Read-only PDF analysis. <code>--verbose</code>, <code>--pages</code>, <code>--annotations</code>, page labels, and <code>--check pdfa|signed|encrypted|pdfua</code> for CI assertions.</td></tr>
             <tr><td><code>verify</code></td><td>Real CMS/PKCS#7 verification — signature value (RSA + ECDSA-SHA256), message digest, certificate chain, trust roots, RFC 3161 timestamp token detection. JSON report.</td></tr>
-            <tr><td><code>batch</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Render many JSON inputs to PDFs in one invocation — glob input, parallelism, per-file status.</td></tr>
-            <tr><td><code>completion</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">NEW</span></td><td>Generate shell completion scripts (bash / zsh / fish).</td></tr>
+            <tr><td><code>merge</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Concatenate 2–50 PDFs into one via the page-tree API.</td></tr>
+            <tr><td><code>split</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Split one PDF into many — one output per page or per range.</td></tr>
+            <tr><td><code>extract</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Pull a selected, order-preserving page subset into a single PDF.</td></tr>
+            <tr><td><code>annotate</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Attach markup annotations via an incremental save — signatures stay valid.</td></tr>
+            <tr><td><code>govern</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Surface the AI-governance / HITL contract — <code>rules</code>, <code>policy</code>, <code>verify-issue</code>.</td></tr>
+            <tr><td><code>batch</code></td><td>Render many JSON inputs to PDFs in one invocation — glob input, parallelism, per-file status.</td></tr>
+            <tr><td><code>completion</code></td><td>Generate shell completion scripts (bash / zsh / fish).</td></tr>
           </tbody>
         </table>
         </div>

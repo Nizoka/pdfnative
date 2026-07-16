@@ -23,8 +23,8 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 | Package | Latest | Use it for |
 |---|:---:|---|
 | [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.5.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
-| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.1.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256), inspect, verify (PAdES-T + OCSP/CRL), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.3.0: 22 scripts + COLRv1 emoji, `--stream-true`, `--max-blocks`, `inspect --pdfua`, and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
-| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.3.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **17 production tools** including the v1.3.0 page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), a constant-time `node:crypto` signing provider, DNS-rebinding-protected HTTP transport, and per-tool `_meta.apiVersion`. Built on pdfnative 1.4.0. |
+| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.2.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256, native constant-time crypto by default), inspect, verify (PAdES-T + OCSP/CRL), **merge / split / extract** pages, **annotate** (markup annotations), **govern** (AI-governance / HITL gate), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.5.0: 22 scripts + COLRv1 emoji, `--font math`, PDF bookmarks (`--outline`), layout introspection (`--inspect-layout` / `--debug-layout`), and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
+| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.4.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **19 production tools** including the page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, markup `annotate_pdf`, the network-free `draft_governance_issue` (AI-governance / HITL), plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), the explicit `math` script, an MCP `prompts` capability, a constant-time `node:crypto` signing provider, DNS-rebinding-protected HTTP transport, and per-tool `_meta.apiVersion`. Built on pdfnative 1.5.0. |
 | [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v0.2.0** | Write PDFs as declarative JSX — `<Document>`, `<Table>`, `<Barcode>`… compiled on-device to pdfnative blocks by a custom React reconciler. Render hooks (`usePdf`), client components (`PDFViewer`), and a token-frugal `DocSpec` for AI agents. |
 
 ```bash
@@ -96,6 +96,7 @@ npm install pdfnative
 - 🏛️ **Architecture:** [docs/guides/architecture.md](docs/guides/architecture.md) — modules, builders, generation pipeline.
 - ♿ **Accessibility:** [docs/guides/accessibility.md](docs/guides/accessibility.md) — tagged PDF, PDF/UA, PDF/A.
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
+- 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
 - 🎮 **Playgrounds:** eight interactive demos at [docs/playgrounds/](docs/playgrounds/) — [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [medical-800](docs/playgrounds/medical-800.html) (800-page Web Worker showcase), [toolkit](docs/playgrounds/toolkit.html) (v1.4.0 bookmarks, page labels, viewer prefs, nested lists, cell borders, merge/split/extract), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
 - 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~210 sample PDFs across 41 categories (see [Sample PDFs](#sample-pdfs) below).
@@ -425,6 +426,44 @@ npx pdfnative-build-emoji-font --ttf NotoColorEmoji-Regular.ttf \
 Select glyphs with `--all`, `--preset`, `--codepoints`, or `--ranges`, then
 register the generated module under lang `'emoji'`. See the
 [Colour-emoji CLI guide](docs/guides/colour-emoji-cli.md).
+
+## Agentic workflows
+
+pdfnative is shaped so an AI agent can do more than *call* the engine — it can
+**extend** it at runtime and **feed it content it generated itself**, without
+waiting for a library release. Both patterns use already-shipped, public APIs.
+
+**1. Extend the engine at runtime — no release required.** The font registry is a
+runtime API. An agent can compile a TTF/OTF in memory and register it on the spot,
+so a document renders the moment it needs a new script, symbol set, or brand font:
+
+```ts
+import { buildDocumentPDFBytes, registerFont } from 'pdfnative';
+import { parseFontData } from 'pdfnative/tools';
+
+const fontData = parseFontData(ttfBytes);        // pure, in-memory (no fs)
+registerFont('custom', () => Promise.resolve(fontData));
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Runtime font',
+  blocks: [{ type: 'paragraph', text: 'Agent-registered font.', lang: 'custom' }],
+});
+```
+
+This is how the bundled **Noto Sans Math** font existed as a *working runtime
+pattern* before it shipped as a default in v1.5.0. Use `compileFontData()` to emit
+a reusable `*-data.js` module (byte-identical to `npx pdfnative-build-font`).
+
+**2. Embed agent-generated images.** Image-generating agents (e.g. Antigravity,
+ChatGPT, and other multimodal assistants) can pipe a generated PNG/JPEG straight
+into a document — via the `image` block (library / CLI) or the `embed_image` MCP
+tool. pdfnative parses and embeds it natively (no rasterization) and validates it
+at the boundary.
+
+Runtime extensibility is **not** autonomous modification of the published package:
+the agent extends its own in-process instance; the repository is only ever changed
+by a human under the [AI-governance / human-in-the-loop contract](docs/guides/ai-governance.md).
+See the [Agentic workflows guide](docs/guides/agentic-workflows.md) for the full walkthrough.
 
 ## Visual PDF Inspection
 
