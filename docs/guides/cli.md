@@ -1,8 +1,8 @@
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks the latest published `pdfnative-cli`** (June 2026). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
+> **Tracks the latest published `pdfnative-cli`** (v1.2.0, built on pdfnative 1.5.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
-[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes six commands — `render`, `sign`, `inspect`, `verify`, `batch`, and `schema` (plus a `completion` helper) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, with an agent-native automation contract for autonomous AI and CI pipelines.
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes eleven commands — `render`, `sign`, `inspect`, `verify`, `merge`, `split`, `extract`, `annotate`, `govern`, `batch`, and `schema` (plus a `completion` helper) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
 > **Why a CLI?** Many real-world workflows live outside Node.js: shell scripts, CI pipelines, Docker containers, Makefiles, batch jobs, build tools written in other languages. The CLI lets all of them call `pdfnative` without writing JavaScript, and is fully composable through stdin/stdout pipelines.
 
@@ -11,9 +11,14 @@ The CLI is a **pure dispatch layer** over `pdfnative`. No PDF logic lives in the
 | CLI command | `pdfnative` API |
 |---|---|
 | `render` | `buildDocumentPDFBytes()` / `streamDocumentPdf()` / `buildDocumentPDFStreamTrue()` / `buildPDFBytes()` (table variant) |
-| `sign` | `signPdfBytes()` / `addSignaturePlaceholder()` |
-| `inspect` | `PdfReader.open()` / `getMetadata()` / `getPageCount()` / `validatePdfUA()` |
+| `sign` | `signPdfBytes()` / `addSignaturePlaceholder()` / `createNativeCryptoProvider()` |
+| `inspect` | `PdfReader.open()` / `getMetadata()` / `getPageCount()` / `getPageLabels()` / `getAnnotations()` / `validatePdfUA()` |
 | `verify` | `PdfReader` + `verifyCertSignature()` (byte-range + chain + timestamp + revocation) |
+| `merge` | `mergePdfs()` |
+| `split` | `splitPdf()` |
+| `extract` | `extractPages()` |
+| `annotate` | `PdfModifier.addAnnotation()` / `buildAnnotationBody()` |
+| `govern` | AI-governance contract (`.github/ai-governance.json`, `AGENT_RULES.md`) + `validateIssueMarkdown()` |
 | `batch` | the `render` pipeline, applied in parallel across a directory |
 | `schema` | versioned JSON Schemas (Draft 2020-12) for every input/output shape |
 
@@ -21,7 +26,24 @@ This means **every feature of the library is one release away from the CLI**, an
 
 ---
 
-## What's new in v1.1.0
+## What's new in v1.2.0
+
+v1.2.0 lands the **pdfnative 1.5.0** engine's page-tree and annotation APIs on the CLI as five new commands, adds document bookmarks, a math font, layout introspection, native constant-time signing, and — for autonomous agents — surfaces pdfnative's **AI-governance / Human-in-the-Loop (HITL)** contract. **100 % backward-compatible** with v1.1.0.
+
+| Area | v1.1.0 | v1.2.0 |
+|---|---|---|
+| Commands | render, sign, inspect, verify, batch, schema | adds **`merge`**, **`split`**, **`extract`** (page-tree), **`annotate`** (markup), and **`govern`** (`rules` / `policy` / `verify-issue`) |
+| Bookmarks | — | **`render --outline auto`** derives a `/Outlines` bookmark tree from headings; `--outline <tree.json>` supplies an explicit `OutlineItem[]` |
+| Math font | — | **`render --font math`** registers the bundled Noto Sans Math font; pdfnative auto-routes math-operator / geometric-shape code points to it |
+| Layout tooling | — | **`render --inspect-layout`** emits a `LayoutInspection` JSON report; **`--debug-layout [margins,content,cells]`** overlays layout guides on a normal PDF |
+| Signing | pure-JS bignum CMS | **native `node:crypto` by default** (constant-time, side-channel-resistant RSA/ECDSA); **`--pure-crypto`** opts back into the portable pure-JS path |
+| Inspection | metadata, PDF/UA | **`inspect --annotations`** lists markup + link annotations; `/PageLabels` are reported automatically when present |
+| Agent / governance | `--json`/`E_*`/`--dry-run` | adds the stable **`E_POLICY`** code; `schema` gains `annotate` + `govern-verify` subjects; `--dry-run` now also covers `merge` / `split` / `extract` / `annotate` |
+| Compatibility | `pdfnative ^1.3.0` | `pdfnative ^1.5.0` |
+
+Full changelog: [pdfnative-cli release notes v1.2.0](https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.2.0).
+
+## Previously in v1.1.0
 
 v1.1.0 is built on **pdfnative 1.3.0** and surfaces its new engine capabilities through the CLI, plus a full agent-native automation contract. **100 % backward-compatible** with v0.3.0.
 
@@ -326,9 +348,26 @@ The Windows drive-letter colon (`D:\path`) is detected and not split — see *Tr
 | Flag | Description |
 |------|-------------|
 | `--lang <code,code>` | Activate font loaders for the listed languages (e.g. `th,ja,ar,te,si,km`) |
-| `--font <name>` *(v1.1.0)* | Register a bundled pdfnative font shortcut. Repeatable. Allow-list covers every bundled font: `latin`, `emoji`, `color-emoji`, and the 22 script codes (`ar hy bn ru hi am ka el he ja km ko my pl zh si ta te th bo tr vi`). Each shortcut name doubles as its `--lang` code |
+| `--font <name>` *(v1.1.0)* | Register a bundled pdfnative font shortcut. Repeatable. Allow-list covers every bundled font: `latin`, `emoji`, `color-emoji`, `math` *(v1.2.0)*, and the 22 script codes (`ar hy bn ru hi am ka el he ja km ko my pl zh si ta te th bo tr vi`). Each shortcut name doubles as its `--lang` code |
 
 `--lang` activates a *programmatically registered* font loader via `loadFontData(code)`. Latin scripts are built-in. With v1.1.0, every bundled font is registrable directly through `--font` — no wrapper script needed for the 22 bundled scripts, colour emoji, or Latin. pdfnative routes each code point to the font whose cmap covers it. See *Recipes → Multilang via wrapper* only for fonts you ship yourself.
+
+#### Bookmarks, math &amp; layout tooling _(v1.2.0)_
+
+| Flag | Description |
+|------|-------------|
+| `--outline auto\|<tree.json>` | Add a navigable PDF bookmark tree (`/Outlines`). `auto` derives it from the document's headings; a file supplies an explicit `OutlineItem[]` tree |
+| `--font math` | Register the bundled **Noto Sans Math** font; pdfnative auto-routes math-operator and geometric-shape code points to it |
+| `--inspect-layout` | Emit a `LayoutInspection` JSON report (per-page blocks, positions, sizes) instead of a PDF (document variant only) |
+| `--debug-layout [margins,content,cells]` | Render a normal PDF with the opt-in layout-debug guides overlaid |
+
+```bash
+# Bookmarks derived from headings + math font
+pdfnative render --input paper.json --output paper.pdf --outline auto --font math
+
+# Layout introspection instead of a PDF
+pdfnative render --input report.json --inspect-layout > layout.json
+```
 
 #### Iteration helpers _(v0.3.0)_
 
@@ -367,6 +406,9 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 | `--location <str>` | — | `PdfSignOptions.location` |
 | `--contact <str>` | — | `PdfSignOptions.contact` |
 | `--signing-time <ISO 8601>` | now | Explicit timestamp; validated up-front before any credential I/O |
+| `--pure-crypto` *(v1.2.0)* | off | Force pdfnative's portable **pure-JS** bignum CMS path instead of the default native provider |
+
+> **Native constant-time signing (v1.2.0).** `sign` now routes CMS signing through Node's `node:crypto` by default (via `createNativeCryptoProvider`), for side-channel-resistant RSA/ECDSA. Pass **`--pure-crypto`** to select the portable pure-JS path (e.g. on a runtime without `node:crypto`).
 
 Signing keys are **never logged** — not in error output, not in debug traces, not in stack traces. The CLI redacts them at every code path that surfaces error context.
 
@@ -381,6 +423,7 @@ Inspects metadata and conformance of an existing PDF. Read-only — never modifi
 | `--verbose` | off | Adds `verbose.{trailerKeys, catalogKeys, objectCount, xmpMetadata}`. Sanitised — no raw stream bytes |
 | `--pages` | off | Adds `pages: [{ index, width, height, rotation, annotations, formFields }]` |
 | `--pdfua` *(v1.1.0)* | off | Adds a `pdfua: { valid, errors, warnings }` report from `validatePdfUA()` (ISO 14289-1 structural checks: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) |
+| `--annotations` *(v1.2.0)* | off | Lists markup + link annotations per page (from `getAnnotations()`). `/PageLabels` are reported automatically when present |
 | `--check <assertion>` | — | Repeatable; ANDed. Values: `pdfa`, `signed`, `encrypted`, `pdfua` *(v1.1.0)*. Sets exit 0 = pass, 1 = fail |
 | `--summary` *(v1.1.0)* | off | Under `--json`, emit a canonical minimal verdict (`{ pages, encrypted, signatures, pdfa }`) |
 | `--fields <a,b.c>` *(v1.1.0)* | — | Project the JSON result to named dot-paths (array segments map over elements; unknown paths omitted) |
@@ -422,6 +465,101 @@ Verifies CMS/PKCS#7 signatures embedded in a PDF.
 
 - ⚠️ Sign-side LTV (timestamp embedding / DSS) — `sign --timestamp` reserved
 
+### `pdfnative merge` _(v1.2.0)_
+
+Concatenates **2–50** PDFs into one document, in order, via `mergePdfs`.
+
+```bash
+pdfnative merge a.pdf b.pdf c.pdf --output combined.pdf
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `<paths…>` / `--input <file>` | — *(required)* | Source PDFs — positional paths and/or repeatable `--input`. 2–50 total |
+| `--output <file>` | stdout | Output PDF |
+| `--drop-annotations` | off | Drop non-link annotations from the sources |
+| `--max-output-size <bytes>` | 256 MiB | Reject an output larger than this ceiling |
+| `--dry-run` | off | Validate inputs without writing output |
+
+> Encrypted sources are rejected; signatures and `/AcroForm` are dropped (page edits invalidate `/ByteRange`); self-contained URI `/Link` annotations are preserved. Every path — positionals included — is validated against traversal.
+
+### `pdfnative split` _(v1.2.0)_
+
+Splits one PDF into many via `splitPdf` — one output per page (default) or one per comma-separated range.
+
+```bash
+# One output per page
+pdfnative split --input report.pdf --output-dir pages/ --prefix page
+
+# One output per range (1-based, inclusive)
+pdfnative split --input report.pdf --output-dir out/ --pages "1-2,3-4"
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--input <file>` | stdin | Source PDF |
+| `--output-dir <dir>` | — *(required)* | Destination directory; parts are written as `<prefix>-<n>.pdf` (zero-padded) |
+| `--prefix <str>` | `page` | Output filename prefix |
+| `--pages <ranges>` | per-page | Comma-separated 1-based inclusive ranges (e.g. `1-2,3-4`) |
+| `--max-output-size <bytes>` | 256 MiB | Per-part output ceiling |
+| `--dry-run` | off | Validate without writing |
+
+### `pdfnative extract` _(v1.2.0)_
+
+Pulls a selected, order-preserving subset of pages into a single PDF via `extractPages`.
+
+```bash
+pdfnative extract --input report.pdf --output cover.pdf --pages "4,1-2"
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--input <file>` | stdin | Source PDF |
+| `--output <file>` | stdout | Output PDF |
+| `--pages <list>` | — *(required)* | 1-based page list/ranges; **order is preserved and repeats are allowed** |
+| `--max-output-size <bytes>` | 256 MiB | Output ceiling |
+| `--dry-run` | off | Validate without writing |
+
+### `pdfnative annotate` _(v1.2.0)_
+
+Attaches markup annotations to an existing PDF via an **incremental save**, so the original bytes — and any existing signature — stay intact.
+
+```bash
+pdfnative annotate --input report.pdf --output annotated.pdf \
+  --annotations notes.json
+```
+
+`notes.json` is a JSON array (or `{ "annotations": […] }`), each entry a markup annotation plus a 1-based `page`:
+
+```json
+[
+  { "page": 1, "type": "highlight", "rect": [72, 700, 520, 715], "color": "#ffe066", "contents": "Review this clause" },
+  { "page": 2, "type": "text", "rect": [80, 640, 100, 660], "contents": "Sticky note" }
+]
+```
+
+Supported types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`. Only known fields are forwarded (no dictionary injection). Read them back with `inspect --annotations`.
+
+> **Overlay, not redaction.** Annotations are a *visual review layer*; the underlying bytes remain. They do **not** remove or obscure content for security purposes.
+
+### `pdfnative govern` _(v1.2.0)_
+
+Surfaces pdfnative's **AI-governance / Human-in-the-Loop (HITL)** contract. Agents act as **draftsmen**: a human must always review and submit under their own GitHub identity.
+
+```bash
+pdfnative govern rules                  # human/agent protocol (AGENT_RULES)
+pdfnative govern policy --json          # machine-readable policy JSON
+pdfnative govern verify-issue draft.md  # gate a draft (exit 1 / E_POLICY)
+```
+
+| Subcommand | Description |
+|------|-------------|
+| `rules` | Print the human-and-agent protocol (mirrors `.github/AGENT_RULES.md`) |
+| `policy [--json]` | Print the governance policy (mirrors `.github/ai-governance.json`) |
+| `verify-issue <draft.md>` | Gate a local issue draft; exit `1` / `E_POLICY` on a violation (proposes a runtime dependency, omits a reproduction code block). Missing recommended fields surface as warnings |
+
+> `verify-issue` is a pure, **fully offline** validator — no GitHub or network access. A passing check is *necessary but not sufficient*: the human review gate always applies.
+
 ### `pdfnative batch`
 
 Renders every JSON file in a directory to PDF **in parallel**, reusing the full `render` pipeline.
@@ -449,7 +587,7 @@ pdfnative schema inspect-summary   # compact inspect verdict shape
 pdfnative schema list              # enumerate every subject
 ```
 
-Subjects: `render`, `inspect`, `verify`, `batch`, and the compact `inspect-summary` / `verify-summary` / `batch-summary` shapes.
+Subjects: `render`, `inspect`, `verify`, `batch`, `annotate` *(v1.2.0)*, `govern-verify` *(v1.2.0)*, and the compact `inspect-summary` / `verify-summary` / `batch-summary` shapes.
 
 ### `pdfnative completion`
 
@@ -462,8 +600,8 @@ Emits a shell-completion script: `pdfnative completion bash|zsh|fish`.
 v1.1.0 makes the CLI deterministic to drive from autonomous AI agents and CI pipelines. The full contract is documented in [pdfnative-cli AGENTS.md](https://github.com/Nizoka/pdfnative-cli/blob/main/AGENTS.md).
 
 - **Global `--json` envelope.** Any command run with `--json` emits a single machine-readable object on **stderr**: `{ ok: false, command, error: { code, message } }` on failure, and a `{ ok: true, … }` status line for `render` / `sign` / `batch` on success. stdout stays reserved for the primary artifact (PDF, report, schema, script).
-- **Stable `E_*` error codes** on every failure: `E_USAGE`, `E_INPUT`, `E_PARSE`, `E_IO`, `E_SIGN`, `E_VERIFY_FAILED`, `E_CHECK_FAILED`, `E_UNSUPPORTED`, `E_RUNTIME`. Numeric exit codes (0/1/2) are unchanged.
-- **`--dry-run`** for `render`, `sign`, and `batch` — fully validate inputs (and, for `sign`, parse credentials and prepare the PDF) without producing output.
+- **Stable `E_*` error codes** on every failure: `E_USAGE`, `E_INPUT`, `E_PARSE`, `E_IO`, `E_SIGN`, `E_VERIFY_FAILED`, `E_CHECK_FAILED`, `E_POLICY` *(v1.2.0 — governance-gate failure)*, `E_UNSUPPORTED`, `E_RUNTIME`. Numeric exit codes (0/1/2) are unchanged.
+- **`--dry-run`** for `render`, `sign`, `batch`, and — since v1.2.0 — `merge`, `split`, `extract`, and `annotate` — fully validate inputs (and, for `sign`, parse credentials and prepare the PDF) without producing output.
 - **Token-economy output projection** (`inspect` / `verify` / `batch`): stdout JSON is **compact by default** under `--json` (`--pretty` opts back into the human 2-space form), **`--summary`** emits a canonical minimal verdict, and **`--fields a,b.c`** projects the result to named dot-paths. Typically ~90 % fewer output tokens with no loss of the fields agents branch on. Non-`--json` human output is unchanged.
 
 ```bash
@@ -571,7 +709,7 @@ The CLI **does not** open network connections, write to system directories outsi
 
 The CLI now covers nearly the full library surface; only Web Worker offloading remains library-only.
 
-| Feature | CLI v1.1.0 | Library |
+| Feature | CLI v1.2.0 | Library |
 |---|---|---|
 | Document rendering (12 block types) | ✅ | ✅ |
 | Streaming output | ✅ `--stream` / `--stream-true` | ✅ `streamDocumentPdf()` / `buildDocumentPDFStreamTrue()` |
@@ -579,14 +717,21 @@ The CLI now covers nearly the full library surface; only Web Worker offloading r
 | PDF/A conformance (1b, 2b, 2u, 3b) | ✅ `--tagged` | ✅ `tagged: '…'` |
 | Digital signatures (RSA-SHA256) | ✅ | ✅ `signPdfBytes()` |
 | Digital signatures (ECDSA-SHA256) | ✅ `--algorithm ecdsa-sha256` | ✅ `signPdfBytes()` |
+| **Native constant-time signing** | ✅ default (`--pure-crypto` opts out) | ✅ `createNativeCryptoProvider()` |
 | Inspection / metadata | ✅ | ✅ `PdfReader` |
 | **PDF/UA structural validation** | ✅ `inspect --pdfua` | ✅ `validatePdfUA()` |
+| **Annotation listing** | ✅ `inspect --annotations` | ✅ `getAnnotations()` |
 | **Signature verification (CMS/PKCS#7)** | ✅ `verify` (real CMS, RSA + ECDSA) | ✅ `verifyCertSignature` |
 | **PAdES-T timestamp + OCSP/CRL revocation** | ✅ `verify --revocation` | ✅ |
 | **Encryption (AES-128/256)** | ✅ `--encrypt-*` | ✅ `encryption: {…}` |
 | **Watermarks** | ✅ `--watermark-*` | ✅ `watermark: {…}` |
 | **PDF/A-3 attachments** | ✅ `--attachment` | ✅ `attachments: [...]` |
-| **22 scripts + COLRv1 emoji** | ✅ `--font` / `--lang` | ✅ `registerFontLoader()` |
+| **22 scripts + COLRv1 emoji + math** | ✅ `--font` / `--lang` | ✅ `registerFontLoader()` |
+| **Page-tree editing (merge / split / extract)** | ✅ `merge` / `split` / `extract` | ✅ `mergePdfs()` / `splitPdf()` / `extractPages()` |
+| **Markup annotations** | ✅ `annotate` | ✅ `PdfModifier.addAnnotation()` / `buildAnnotationBody()` |
+| **Bookmarks / outline** | ✅ `render --outline` | ✅ `outline: '…'` |
+| **Layout introspection / debug** | ✅ `render --inspect-layout` / `--debug-layout` | ✅ `inspectDocumentLayout()` / `layout.debug` |
+| **AI-governance / HITL gate** | ✅ `govern` | ✅ `validateIssueMarkdown()` |
 | **Parallel batch render** | ✅ `batch` | — (compose `render`) |
 | **JSON Schema export** | ✅ `schema` | — N/A |
 | **Agent-native `--json`/`E_*`/`--dry-run`** | ✅ | — N/A |
