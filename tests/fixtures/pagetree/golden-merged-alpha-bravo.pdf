@@ -1,0 +1,616 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 8 0 R 10 0 R 12 0 R 17 0 R] /Count 5 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 4 0 R /F2 6 0 R >> >> /Contents 7 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode 5 0 R >>
+endobj
+5 0 obj
+<< /Length 2988 >>
+stream
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def
+/CMapName /Adobe-Identity-UCS def
+/CMapType 2 def
+1 begincodespacerange
+<20> <FF>
+endcodespacerange
+100 beginbfchar
+<20> <0020>
+<21> <0021>
+<22> <0022>
+<23> <0023>
+<24> <0024>
+<25> <0025>
+<26> <0026>
+<27> <0027>
+<28> <0028>
+<29> <0029>
+<2A> <002A>
+<2B> <002B>
+<2C> <002C>
+<2D> <002D>
+<2E> <002E>
+<2F> <002F>
+<30> <0030>
+<31> <0031>
+<32> <0032>
+<33> <0033>
+<34> <0034>
+<35> <0035>
+<36> <0036>
+<37> <0037>
+<38> <0038>
+<39> <0039>
+<3A> <003A>
+<3B> <003B>
+<3C> <003C>
+<3D> <003D>
+<3E> <003E>
+<3F> <003F>
+<40> <0040>
+<41> <0041>
+<42> <0042>
+<43> <0043>
+<44> <0044>
+<45> <0045>
+<46> <0046>
+<47> <0047>
+<48> <0048>
+<49> <0049>
+<4A> <004A>
+<4B> <004B>
+<4C> <004C>
+<4D> <004D>
+<4E> <004E>
+<4F> <004F>
+<50> <0050>
+<51> <0051>
+<52> <0052>
+<53> <0053>
+<54> <0054>
+<55> <0055>
+<56> <0056>
+<57> <0057>
+<58> <0058>
+<59> <0059>
+<5A> <005A>
+<5B> <005B>
+<5C> <005C>
+<5D> <005D>
+<5E> <005E>
+<5F> <005F>
+<60> <0060>
+<61> <0061>
+<62> <0062>
+<63> <0063>
+<64> <0064>
+<65> <0065>
+<66> <0066>
+<67> <0067>
+<68> <0068>
+<69> <0069>
+<6A> <006A>
+<6B> <006B>
+<6C> <006C>
+<6D> <006D>
+<6E> <006E>
+<6F> <006F>
+<70> <0070>
+<71> <0071>
+<72> <0072>
+<73> <0073>
+<74> <0074>
+<75> <0075>
+<76> <0076>
+<77> <0077>
+<78> <0078>
+<79> <0079>
+<7A> <007A>
+<7B> <007B>
+<7C> <007C>
+<7D> <007D>
+<7E> <007E>
+<80> <20AC>
+<82> <201A>
+<83> <0192>
+<84> <201E>
+<85> <2026>
+endbfchar
+100 beginbfchar
+<86> <2020>
+<87> <2021>
+<88> <02C6>
+<89> <2030>
+<8A> <0160>
+<8B> <2039>
+<8C> <0152>
+<8E> <017D>
+<91> <2018>
+<92> <2019>
+<93> <201C>
+<94> <201D>
+<95> <2022>
+<96> <2013>
+<97> <2014>
+<98> <02DC>
+<99> <2122>
+<9A> <0161>
+<9B> <203A>
+<9C> <0153>
+<9E> <017E>
+<9F> <0178>
+<A0> <00A0>
+<A1> <00A1>
+<A2> <00A2>
+<A3> <00A3>
+<A4> <00A4>
+<A5> <00A5>
+<A6> <00A6>
+<A7> <00A7>
+<A8> <00A8>
+<A9> <00A9>
+<AA> <00AA>
+<AB> <00AB>
+<AC> <00AC>
+<AD> <00AD>
+<AE> <00AE>
+<AF> <00AF>
+<B0> <00B0>
+<B1> <00B1>
+<B2> <00B2>
+<B3> <00B3>
+<B4> <00B4>
+<B5> <00B5>
+<B6> <00B6>
+<B7> <00B7>
+<B8> <00B8>
+<B9> <00B9>
+<BA> <00BA>
+<BB> <00BB>
+<BC> <00BC>
+<BD> <00BD>
+<BE> <00BE>
+<BF> <00BF>
+<C0> <00C0>
+<C1> <00C1>
+<C2> <00C2>
+<C3> <00C3>
+<C4> <00C4>
+<C5> <00C5>
+<C6> <00C6>
+<C7> <00C7>
+<C8> <00C8>
+<C9> <00C9>
+<CA> <00CA>
+<CB> <00CB>
+<CC> <00CC>
+<CD> <00CD>
+<CE> <00CE>
+<CF> <00CF>
+<D0> <00D0>
+<D1> <00D1>
+<D2> <00D2>
+<D3> <00D3>
+<D4> <00D4>
+<D5> <00D5>
+<D6> <00D6>
+<D7> <00D7>
+<D8> <00D8>
+<D9> <00D9>
+<DA> <00DA>
+<DB> <00DB>
+<DC> <00DC>
+<DD> <00DD>
+<DE> <00DE>
+<DF> <00DF>
+<E0> <00E0>
+<E1> <00E1>
+<E2> <00E2>
+<E3> <00E3>
+<E4> <00E4>
+<E5> <00E5>
+<E6> <00E6>
+<E7> <00E7>
+<E8> <00E8>
+<E9> <00E9>
+<EA> <00EA>
+<EB> <00EB>
+<EC> <00EC>
+<ED> <00ED>
+endbfchar
+18 beginbfchar
+<EE> <00EE>
+<EF> <00EF>
+<F0> <00F0>
+<F1> <00F1>
+<F2> <00F2>
+<F3> <00F3>
+<F4> <00F4>
+<F5> <00F5>
+<F6> <00F6>
+<F7> <00F7>
+<F8> <00F8>
+<F9> <00F9>
+<FA> <00FA>
+<FB> <00FB>
+<FC> <00FC>
+<FD> <00FD>
+<FE> <00FE>
+<FF> <00FF>
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+endstream
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /ToUnicode 5 0 R >>
+endobj
+7 0 obj
+<< /Length 336 >>
+stream
+0.145 0.388 0.922 rg
+BT /F2 16 Tf 36.00 780.89 Td (Alpha) Tj ET
+0.75 w 0.145 0.388 0.922 RG
+36.00 774.89 m 559.28 774.89 l S
+0.145 0.388 0.922 rg
+BT /F2 18 Tf 36.00 730.89 Td (Alpha page 1) Tj ET
+0.216 0.255 0.318 rg
+BT /F1 10 Tf 36.00 705.49 Td (Body of Alpha page 1.) Tj ET
+0.612 0.639 0.682 rg
+BT /F1 7 Tf 549.55 30.00 Td (1/3) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 4 0 R /F2 6 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 211 >>
+stream
+0.145 0.388 0.922 rg
+BT /F2 18 Tf 36.00 764.89 Td (Alpha page 2) Tj ET
+0.216 0.255 0.318 rg
+BT /F1 10 Tf 36.00 739.49 Td (Body of Alpha page 2.) Tj ET
+0.612 0.639 0.682 rg
+BT /F1 7 Tf 549.55 30.00 Td (2/3) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 4 0 R /F2 6 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 211 >>
+stream
+0.145 0.388 0.922 rg
+BT /F2 18 Tf 36.00 764.89 Td (Alpha page 3) Tj ET
+0.216 0.255 0.318 rg
+BT /F1 10 Tf 36.00 739.49 Td (Body of Alpha page 3.) Tj ET
+0.612 0.639 0.682 rg
+BT /F1 7 Tf 549.55 30.00 Td (3/3) Tj ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 13 0 R /F2 15 0 R >> >> /Contents 16 0 R /Annots [<< /Type /Annot /Subtype /Link /Rect [36 685.49 98.78 699.49] /Border [0 0 0] /F 4 /A << /Type /Action /S /URI /URI (https://pdfnative.dev) >> >>] >>
+endobj
+13 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode 14 0 R >>
+endobj
+14 0 obj
+<< /Length 2988 >>
+stream
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def
+/CMapName /Adobe-Identity-UCS def
+/CMapType 2 def
+1 begincodespacerange
+<20> <FF>
+endcodespacerange
+100 beginbfchar
+<20> <0020>
+<21> <0021>
+<22> <0022>
+<23> <0023>
+<24> <0024>
+<25> <0025>
+<26> <0026>
+<27> <0027>
+<28> <0028>
+<29> <0029>
+<2A> <002A>
+<2B> <002B>
+<2C> <002C>
+<2D> <002D>
+<2E> <002E>
+<2F> <002F>
+<30> <0030>
+<31> <0031>
+<32> <0032>
+<33> <0033>
+<34> <0034>
+<35> <0035>
+<36> <0036>
+<37> <0037>
+<38> <0038>
+<39> <0039>
+<3A> <003A>
+<3B> <003B>
+<3C> <003C>
+<3D> <003D>
+<3E> <003E>
+<3F> <003F>
+<40> <0040>
+<41> <0041>
+<42> <0042>
+<43> <0043>
+<44> <0044>
+<45> <0045>
+<46> <0046>
+<47> <0047>
+<48> <0048>
+<49> <0049>
+<4A> <004A>
+<4B> <004B>
+<4C> <004C>
+<4D> <004D>
+<4E> <004E>
+<4F> <004F>
+<50> <0050>
+<51> <0051>
+<52> <0052>
+<53> <0053>
+<54> <0054>
+<55> <0055>
+<56> <0056>
+<57> <0057>
+<58> <0058>
+<59> <0059>
+<5A> <005A>
+<5B> <005B>
+<5C> <005C>
+<5D> <005D>
+<5E> <005E>
+<5F> <005F>
+<60> <0060>
+<61> <0061>
+<62> <0062>
+<63> <0063>
+<64> <0064>
+<65> <0065>
+<66> <0066>
+<67> <0067>
+<68> <0068>
+<69> <0069>
+<6A> <006A>
+<6B> <006B>
+<6C> <006C>
+<6D> <006D>
+<6E> <006E>
+<6F> <006F>
+<70> <0070>
+<71> <0071>
+<72> <0072>
+<73> <0073>
+<74> <0074>
+<75> <0075>
+<76> <0076>
+<77> <0077>
+<78> <0078>
+<79> <0079>
+<7A> <007A>
+<7B> <007B>
+<7C> <007C>
+<7D> <007D>
+<7E> <007E>
+<80> <20AC>
+<82> <201A>
+<83> <0192>
+<84> <201E>
+<85> <2026>
+endbfchar
+100 beginbfchar
+<86> <2020>
+<87> <2021>
+<88> <02C6>
+<89> <2030>
+<8A> <0160>
+<8B> <2039>
+<8C> <0152>
+<8E> <017D>
+<91> <2018>
+<92> <2019>
+<93> <201C>
+<94> <201D>
+<95> <2022>
+<96> <2013>
+<97> <2014>
+<98> <02DC>
+<99> <2122>
+<9A> <0161>
+<9B> <203A>
+<9C> <0153>
+<9E> <017E>
+<9F> <0178>
+<A0> <00A0>
+<A1> <00A1>
+<A2> <00A2>
+<A3> <00A3>
+<A4> <00A4>
+<A5> <00A5>
+<A6> <00A6>
+<A7> <00A7>
+<A8> <00A8>
+<A9> <00A9>
+<AA> <00AA>
+<AB> <00AB>
+<AC> <00AC>
+<AD> <00AD>
+<AE> <00AE>
+<AF> <00AF>
+<B0> <00B0>
+<B1> <00B1>
+<B2> <00B2>
+<B3> <00B3>
+<B4> <00B4>
+<B5> <00B5>
+<B6> <00B6>
+<B7> <00B7>
+<B8> <00B8>
+<B9> <00B9>
+<BA> <00BA>
+<BB> <00BB>
+<BC> <00BC>
+<BD> <00BD>
+<BE> <00BE>
+<BF> <00BF>
+<C0> <00C0>
+<C1> <00C1>
+<C2> <00C2>
+<C3> <00C3>
+<C4> <00C4>
+<C5> <00C5>
+<C6> <00C6>
+<C7> <00C7>
+<C8> <00C8>
+<C9> <00C9>
+<CA> <00CA>
+<CB> <00CB>
+<CC> <00CC>
+<CD> <00CD>
+<CE> <00CE>
+<CF> <00CF>
+<D0> <00D0>
+<D1> <00D1>
+<D2> <00D2>
+<D3> <00D3>
+<D4> <00D4>
+<D5> <00D5>
+<D6> <00D6>
+<D7> <00D7>
+<D8> <00D8>
+<D9> <00D9>
+<DA> <00DA>
+<DB> <00DB>
+<DC> <00DC>
+<DD> <00DD>
+<DE> <00DE>
+<DF> <00DF>
+<E0> <00E0>
+<E1> <00E1>
+<E2> <00E2>
+<E3> <00E3>
+<E4> <00E4>
+<E5> <00E5>
+<E6> <00E6>
+<E7> <00E7>
+<E8> <00E8>
+<E9> <00E9>
+<EA> <00EA>
+<EB> <00EB>
+<EC> <00EC>
+<ED> <00ED>
+endbfchar
+18 beginbfchar
+<EE> <00EE>
+<EF> <00EF>
+<F0> <00F0>
+<F1> <00F1>
+<F2> <00F2>
+<F3> <00F3>
+<F4> <00F4>
+<F5> <00F5>
+<F6> <00F6>
+<F7> <00F7>
+<F8> <00F8>
+<F9> <00F9>
+<FA> <00FA>
+<FB> <00FB>
+<FC> <00FC>
+<FD> <00FD>
+<FE> <00FE>
+<FF> <00FF>
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+endstream
+endobj
+15 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /ToUnicode 14 0 R >>
+endobj
+16 0 obj
+<< /Length 455 >>
+stream
+0.145 0.388 0.922 rg
+BT /F2 16 Tf 36.00 780.89 Td (Bravo) Tj ET
+0.75 w 0.145 0.388 0.922 RG
+36.00 774.89 m 559.28 774.89 l S
+0.145 0.388 0.922 rg
+BT /F2 18 Tf 36.00 730.89 Td (Bravo page 1) Tj ET
+0.216 0.255 0.318 rg
+BT /F1 10 Tf 36.00 705.49 Td (Body of Bravo page 1.) Tj ET
+0.0 0.0 0.8 rg
+BT /F1 10 Tf 36.00 687.49 Td (pdfnative.dev) Tj ET
+0.0 0.0 0.8 RG 0.5 w
+36.00 685.99 m 98.78 685.99 l S
+0.612 0.639 0.682 rg
+BT /F1 7 Tf 549.55 30.00 Td (1/2) Tj ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 13 0 R /F2 15 0 R >> >> /Contents 18 0 R /Annots [<< /Type /Annot /Subtype /Link /Rect [36 719.49 98.78 733.49] /Border [0 0 0] /F 4 /A << /Type /Action /S /URI /URI (https://pdfnative.dev) >> >>] >>
+endobj
+18 0 obj
+<< /Length 330 >>
+stream
+0.145 0.388 0.922 rg
+BT /F2 18 Tf 36.00 764.89 Td (Bravo page 2) Tj ET
+0.216 0.255 0.318 rg
+BT /F1 10 Tf 36.00 739.49 Td (Body of Bravo page 2.) Tj ET
+0.0 0.0 0.8 rg
+BT /F1 10 Tf 36.00 721.49 Td (pdfnative.dev) Tj ET
+0.0 0.0 0.8 RG 0.5 w
+36.00 719.99 m 98.78 719.99 l S
+0.612 0.639 0.682 rg
+BT /F1 7 Tf 549.55 30.00 Td (2/2) Tj ET
+endstream
+endobj
+xref
+0 19
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000148 00000 n 
+0000000290 00000 n 
+0000000404 00000 n 
+0000003444 00000 n 
+0000003563 00000 n 
+0000003950 00000 n 
+0000004092 00000 n 
+0000004354 00000 n 
+0000004498 00000 n 
+0000004761 00000 n 
+0000005063 00000 n 
+0000005179 00000 n 
+0000008220 00000 n 
+0000008341 00000 n 
+0000008848 00000 n 
+0000009150 00000 n 
+trailer
+<< /Size 19 /Root 1 0 R /ID [<55e538af307d99c018659b49dd73b953> <55e538af307d99c018659b49dd73b953>] >>
+startxref
+9532
+%%EOF
