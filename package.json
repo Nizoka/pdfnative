@@ -44,6 +44,7 @@
     "dist",
     "fonts/*.js",
     "fonts/*.d.ts",
+    "fonts/LICENSE",
     "tools",
     "LICENSE",
     "README.md"
@@ -59,7 +60,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:visual": "vitest run --config vitest.visual.config.ts",
+    "test:visual": "vitest run tests/visual/",
     "test:generate": "npx tsx scripts/generate-samples.ts",
     "validate:pdfa": "npx tsx scripts/validate-pdfa.ts",
     "fonts:download": "npx tsx scripts/download-fonts.ts",

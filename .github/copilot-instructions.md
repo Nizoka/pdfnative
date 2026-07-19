@@ -100,7 +100,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Build tool: **tsup** (dual ESM/CJS, tree-shakeable, sourcemaps)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
-- Publish: GitHub Actions OIDC with `npm publish --provenance`
+- Publish: GitHub Actions OIDC Trusted Publishing (`npm publish --access public`; provenance is attached automatically via the workflow's `id-token: write`)
 - All new code must have tests. Current: ~95% statement coverage, 2360+ tests (104 files)
 
 ## Conventions

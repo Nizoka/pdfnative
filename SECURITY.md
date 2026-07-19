@@ -14,8 +14,9 @@ We will acknowledge receipt within 48 hours and aim to provide a fix within 7 da
 
 | Version | Supported |
 |---------|-----------|
-| 1.0.x   | ✅        |
-| < 1.0   | ❌        |
+| 1.6.x   | ✅        |
+| 1.5.x   | ✅ (security fixes) |
+| < 1.5   | ❌        |
 
 ## Security Model
 

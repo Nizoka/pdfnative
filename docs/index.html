@@ -185,12 +185,12 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">2 218+</div>
+    <div class="metric-value">2 360+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
     <div class="metric-value">95%+</div>
-    <div class="metric-label">Coverage</div>
+    <div class="metric-label">Stmt coverage</div>
   </div>
   <div class="metric">
     <div class="metric-value">0</div>
@@ -686,7 +686,7 @@ const pdf = renderToBytes(
     <h2 class="section-title">Architecture</h2>
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
-      <a href="https://github.com/Nizoka/pdfnative/tree/master/src" target="_blank" rel="noopener">
+      <a href="https://github.com/Nizoka/pdfnative/tree/main/src" target="_blank" rel="noopener">
         <img src="assets/architecture.svg" alt="pdfnative 1.6.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (render · sign · merge · annotate · govern), pdfnative-mcp (MCP server, 19 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
@@ -900,6 +900,8 @@ const bytes = renderToBytes(
           <li><a href="playgrounds/extreme-scripts.html">Extreme scripts</a></li>
           <li><a href="playgrounds/all-scripts.html">All 22 scripts</a></li>
           <li><a href="playgrounds/toolkit.html">PDF Toolkit</a></li>
+          <li><a href="playgrounds/charts.html">Charts</a></li>
+          <li><a href="playgrounds/authoring-plus.html">Authoring+</a></li>
           <li><a href="playgrounds/medical-800.html">Medical 800-page</a></li>
           <li><a href="playgrounds/cli.html">CLI builder</a></li>
           <li><a href="playgrounds/mcp.html">MCP tool explorer</a></li>

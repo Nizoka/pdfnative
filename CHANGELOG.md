@@ -63,9 +63,11 @@ page-tree golden fixtures). Zero runtime dependencies preserved.
   block (U+1F680–1F6FF)**. A build-time size guard prevents silent bloat.
   Flag/ZWJ/skin-tone sequences remain out of scope (use
   `npx pdfnative-build-emoji-font --download --all` for full coverage).
-- **feat(crypto):** `createMd5()` incremental MD5 hasher (also fixes the
-  one-shot `md5()` 512 MB length ceiling), plus `aesCBCDecrypt`, `aesECBDecrypt`,
-  `sha384`, and `sha512` (FIPS 180-4) primitives.
+- **feat(crypto):** new internal decryptor primitives — an incremental MD5
+  hasher (which also lifts the internal one-shot MD5 512 MB length ceiling)
+  and AES-CBC / AES-ECB decryption routines powering `openPdf` and the
+  Standard Security Handler. These stay internal to the parser; the public
+  crypto surface (`sha256`, `sha384`, `sha512`, `hmacSha256`, …) is unchanged.
 - **feat(parser):** **text extraction**. `extractText(bytes, options?)` decodes
   page content streams into per-page reading-order Unicode text plus optional
   positioned runs (`{ text, x, y, fontSize, fontName }` in device space).
