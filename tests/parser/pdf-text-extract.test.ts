@@ -191,7 +191,9 @@ describe('extractText positions and reading order', () => {
 
 // ── Encrypted documents ──────────────────────────────────────────────
 
-describe('extractText on encrypted documents', () => {
+// AES-256 (R6) key derivation is deliberately expensive and slows further
+// under coverage instrumentation — give these tests generous timeouts.
+describe('extractText on encrypted documents', { timeout: 60_000 }, () => {
     const params: DocumentParams = {
         title: 'Secret',
         blocks: [{ type: 'paragraph', text: 'Confidential payload 12345.' }],

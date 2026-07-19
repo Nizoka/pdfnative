@@ -79,7 +79,7 @@ describe('buildPDF — invalid input rejection', () => {
             .toThrow('exceeds safe limit');
     });
 
-    it('accepts exactly 100,000 rows without throwing', () => {
+    it('accepts exactly 100,000 rows without throwing', { timeout: 60_000 }, () => {
         const maxRows = Array.from({ length: 100_000 }, () => ({
             cells: ['a', 'b', 'c', 'd', 'e'], type: '', pointed: false,
         }));

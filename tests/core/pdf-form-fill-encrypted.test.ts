@@ -40,7 +40,7 @@ function latin1(bytes: Uint8Array): string {
 }
 
 for (const algorithm of ['aes128', 'aes256'] as const) {
-    describe(`fillForm on an ${algorithm}-encrypted document`, () => {
+    describe(`fillForm on an ${algorithm}-encrypted document`, { timeout: 60_000 }, () => {
         const enc: EncryptionOptions = { ownerPassword: 'o-pw', userPassword: 'u-pw', algorithm };
         const blank = blankForm(enc);
 
@@ -90,7 +90,7 @@ for (const algorithm of ['aes128', 'aes256'] as const) {
     });
 }
 
-describe('flattenForm on an encrypted document', () => {
+describe('flattenForm on an encrypted document', { timeout: 60_000 }, () => {
     const enc: EncryptionOptions = { ownerPassword: 'o-pw', userPassword: 'u-pw', algorithm: 'aes128' };
 
     it('flattens with the password: fields gone, overlay decrypts, no plaintext leak', () => {

@@ -48,7 +48,7 @@ function latin1(bytes: Uint8Array): string {
     return s;
 }
 
-describe('mergePdfs with encrypt', () => {
+describe('mergePdfs with encrypt', { timeout: 60_000 }, () => {
     const a = doc('Doc A', SECRET_LINE);
     const b = doc('Doc B', 'Second document body.');
     const plainMergedText = extractText(mergePdfs([a, b])).map(p => p.text);
@@ -109,7 +109,7 @@ describe('mergePdfs with encrypt', () => {
     });
 });
 
-describe('splitPdf / extractPages with encrypt', () => {
+describe('splitPdf / extractPages with encrypt', { timeout: 60_000 }, () => {
     const three = mergePdfs([doc('P1', 'one'), doc('P2', 'two'), doc('P3', 'three')]);
 
     it('every split part opens with the password and carries its page', () => {
@@ -136,7 +136,7 @@ describe('splitPdf / extractPages with encrypt', () => {
     });
 });
 
-describe('streaming variants with encrypt', () => {
+describe('streaming variants with encrypt', { timeout: 60_000 }, () => {
     it('streamMergedPdfs output opens with the password and matches buffered structure', async () => {
         const a = doc('Stream A', SECRET_LINE);
         const b = doc('Stream B', 'streamed second');
@@ -152,7 +152,7 @@ describe('streaming variants with encrypt', () => {
     });
 });
 
-describe('encrypt validation & safety', () => {
+describe('encrypt validation & safety', { timeout: 60_000 }, () => {
     const src = doc('V', 'validation body');
 
     it('rejects an empty ownerPassword before any copying', () => {

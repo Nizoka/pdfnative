@@ -12,12 +12,15 @@ _No unreleased changes._
 ## [1.6.0] – 2026-07-19
 
 Delivers both v1.6.0 roadmap items — a Standard Security Handler **reader/
-decryptor** and **streaming** page-tree manipulation — plus three
+decryptor** and **streaming** page-tree manipulation — plus six
 differentiating additions: **fill & flatten** of existing AcroForm PDFs,
-**native vector charts**, and an **expanded colour-emoji subset** (221 → ~850).
-All additions are additive and opt-in; unchanged code paths remain
-**byte-identical** to v1.5.0 (guarded by the new page-tree golden fixtures).
-Zero runtime dependencies preserved. 100 test files / 2308 tests, all green.
+**native vector charts**, **text extraction** (`extractText`), the completed
+**encrypted round trip** (re-encrypt merge/split output + encrypted
+incremental updates, both pulled forward from v1.7), and an **expanded
+colour-emoji subset** (221 → 1167). All additions are additive and opt-in;
+unchanged code paths remain **byte-identical** to v1.5.0 (guarded by the
+page-tree golden fixtures). Zero runtime dependencies preserved.
+104 test files / 2360 tests, all green.
 
 ### Added
 
@@ -53,14 +56,42 @@ Zero runtime dependencies preserved. 100 test files / 2308 tests, all green.
   PDF/A-safe). New [src/core/pdf-chart.ts](src/core/pdf-chart.ts);
   `ChartBlock` / `ChartSeries` / `ChartType` exported.
 - **feat(fonts):** the bundled curated colour-emoji subset is expanded from
-  **221 to ~850** single-codepoint glyphs (~3.1 MB, within a 3.5 MB tarball
-  budget) — the complete Emoticons and Supplemental Symbols & Pictographs blocks
-  plus the most-used pictographs. A build-time size guard prevents silent bloat.
+  **221 to 1167** single-codepoint glyphs (~4.0 MB, within a 4 MB tarball
+  budget) — the complete Emoticons and Supplemental Symbols & Pictographs
+  blocks, Miscellaneous Symbols & Pictographs through U+1F53D plus clocks and
+  emoji-presentation stragglers, and the **complete assigned Transport & Map
+  block (U+1F680–1F6FF)**. A build-time size guard prevents silent bloat.
   Flag/ZWJ/skin-tone sequences remain out of scope (use
   `npx pdfnative-build-emoji-font --download --all` for full coverage).
 - **feat(crypto):** `createMd5()` incremental MD5 hasher (also fixes the
   one-shot `md5()` 512 MB length ceiling), plus `aesCBCDecrypt`, `aesECBDecrypt`,
   `sha384`, and `sha512` (FIPS 180-4) primitives.
+- **feat(parser):** **text extraction**. `extractText(bytes, options?)` decodes
+  page content streams into per-page reading-order Unicode text plus optional
+  positioned runs (`{ text, x, y, fontSize, fontName }` in device space).
+  Decoding resolves `/ToUnicode` CMaps (bfchar/bfrange, surrogate pairs),
+  `/Encoding /Differences` via a compact AGL subset, and WinAnsi/MacRoman base
+  tables; Form XObjects are recursed; encrypted documents work transparently
+  via `options.password`. Hard `maxTextLength` memory cap (default 16 M chars)
+  and a recursion-free, capped interpreter make it safe on untrusted input.
+  New [src/parser/pdf-text-extract.ts](src/parser/pdf-text-extract.ts).
+- **feat(parser):** **re-encrypt page-tree output** (pulled forward from the
+  v1.7 roadmap). `MergeOptions.encrypt` re-encrypts the document rebuilt by
+  `mergePdfs` / `splitPdf` / `extractPages` (and the streaming variants) with
+  AES-128 (V4/R4, default) or AES-256 (V5/R6) under fresh passwords and
+  permissions — closing the round trip *open encrypted → edit → re-secure*
+  (including password rotation in one call). CSPRNG required; RC4 is never
+  emitted; no key material from source documents is reused; the unencrypted
+  path stays byte-identical.
+- **feat(parser|core):** **encrypted incremental update** (pulled forward from
+  the v1.7 roadmap). `fillForm()` / `flattenForm()` and
+  `PdfModifier.addAnnotation()` now operate on encrypted PDFs: appended
+  objects are encrypted under the document's existing scheme (RC4 / AES-128 /
+  AES-256) using the key recovered on open, so no plaintext leaks into an
+  encrypted file and no scheme downgrade is possible. The incremental trailer
+  now carries `/Encrypt` forward; `addRawObject` fails fast on encrypted
+  documents. `/P` permission bits are not enforced (documented — password
+  authentication gates the update).
 
 ### Fixed
 
@@ -75,6 +106,15 @@ Zero runtime dependencies preserved. 100 test files / 2308 tests, all green.
 - **fix(chart):** bar/line values are clamped to the plot band, so an explicit
   `axis.yMin`/`yMax` that excludes part of the data never draws outside the
   chart rectangle.
+- **fix(fonts):** the curated colour-emoji list omitted ranges its own header
+  claimed (rest of Misc Symbols & Pictographs U+1F4A6–1F5FF, Transport & Map
+  U+1F680–1F6FF), so 15 emoji in `color-emoji-basic.pdf` (🖤 🔥 💯 💪 🚗 🚕 🚌
+  🚀 🚢 📱 📌 🔒 🔑 💰 💵) rendered as `.notdef` tofu. Coverage completed (see
+  the emoji entry above), the header now states actual coverage, and the data
+  test hard-asserts every curated codepoint maps to a colour glyph plus
+  cross-checks every emoji the showcase generator uses against the bundled
+  cmap — the sample can never silently regress to tofu again.
+  ([scripts/lib/curated-emoji.ts](scripts/lib/curated-emoji.ts))
 
 ## [1.5.0] – 2026-07-05
 

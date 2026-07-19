@@ -111,7 +111,7 @@ describe('fillForm', () => {
         expect(filled.subarray(0, original.length)).toEqual(original);
     });
 
-    it('fills encrypted input with the password (supported since v1.6.0)', () => {
+    it('fills encrypted input with the password (supported since v1.6.0)', { timeout: 60_000 }, () => {
         // Historical behaviour rejected encrypted sources; the encrypted
         // incremental update now appends objects under the document's
         // existing scheme. Deep coverage: pdf-form-fill-encrypted.test.ts.

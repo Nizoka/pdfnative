@@ -1,6 +1,6 @@
 # Colour-emoji font CLI (`pdfnative-build-emoji-font`)
 
-> **New in v1.4.0, expanded in v1.6.0.** pdfnative ships a curated ~850-glyph
+> **New in v1.4.0, expanded in v1.6.0.** pdfnative ships a curated 1167-glyph
 > colour-emoji module by default. When you need **more emoji — up to the full
 > ~3 600-glyph set** — the
 > `pdfnative-build-emoji-font` CLI generates a data module containing exactly the
@@ -65,7 +65,7 @@ pass none, the curated set is used.
 | Flag | Meaning |
 |---|---|
 | `--all` | Every colour glyph in the font (large module). |
-| `--preset curated` | pdfnative's lean ~850-glyph default set. |
+| `--preset curated` | pdfnative's lean 1167-glyph default set. |
 | `--preset all` | Same as `--all`. |
 | `--codepoints <list>` | Comma-separated hex scalars: `1F600,1F680,2764`. `U+`, `0x`, `#` prefixes are tolerated. |
 | `--ranges <list>` | Comma-separated **inclusive** hex ranges: `1F600-1F64F,2600-27BF`. |

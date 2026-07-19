@@ -67,6 +67,17 @@ scripts/
 - Font test data: use pre-built font data modules from `fonts/`
 - For binary testing: create known-good PDF snippets as constants
 - Never commit large binary fixtures — generate them in `beforeAll`
+- Encrypted fixtures are **self-hosted**: build them with the library itself
+  (`buildDocumentPDFBytes(params, { encryption })`) or hand-assemble a minimal
+  legacy PDF in-test (see `buildRC4Pdf` in `tests/parser/pdf-decrypt.test.ts`);
+  never commit encrypted binaries
+- AES-256 (R6) key derivation is deliberately slow and slows further under
+  coverage instrumentation — give encryption-heavy describes an explicit
+  `{ timeout: 60_000 }`
+- Emoji-coverage rule: `tests/fonts/color-emoji-data.test.ts` hard-asserts that
+  EVERY `CURATED_EMOJI` codepoint maps to a colour glyph and cross-checks every
+  emoji used by `scripts/generators/color-emoji-showcase.ts` against the bundled
+  cmap — never weaken these to conditional (`if (gid !== undefined)`) checks
 
 ## Anti-Patterns
 - Tests that depend on execution order

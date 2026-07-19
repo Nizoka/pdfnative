@@ -31,7 +31,7 @@ function pageContent(pdf: Uint8Array, password?: string): string {
     return s;
 }
 
-describe('encrypted PDF round-trip', () => {
+describe('encrypted PDF round-trip', { timeout: 60_000 }, () => {
     const plain = pageContent(buildDocumentPDFBytes(docParams()));
 
     it('AES-128 (R4) decrypts to the same content (owner password)', () => {
@@ -105,7 +105,7 @@ describe('encrypted PDF round-trip', () => {
     });
 });
 
-describe('authenticate error model', () => {
+describe('authenticate error model', { timeout: 60_000 }, () => {
     it('throws PdfEncryptionUnsupportedError for a non-Standard filter', () => {
         const dict = new Map<string, unknown>([
             ['Filter', { type: 'name', value: 'Adobe.PPKLite' }],

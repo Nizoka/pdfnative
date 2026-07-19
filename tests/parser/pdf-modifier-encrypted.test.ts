@@ -33,7 +33,7 @@ function latin1(bytes: Uint8Array): string {
 }
 
 for (const algorithm of ['aes128', 'aes256'] as const) {
-    describe(`addAnnotation on an ${algorithm}-encrypted document`, () => {
+    describe(`addAnnotation on an ${algorithm}-encrypted document`, { timeout: 60_000 }, () => {
         const src = docBytes({ ownerPassword: 'o-pw', userPassword: 'u-pw', algorithm });
 
         it('appends an encrypted annotation that reads back through getAnnotations', () => {
@@ -61,7 +61,7 @@ for (const algorithm of ['aes128', 'aes256'] as const) {
     });
 }
 
-describe('signature /Contents exemption under encryption', () => {
+describe('signature /Contents exemption under encryption', { timeout: 60_000 }, () => {
     it('keeps a ByteRange dict Contents string outside encryption', () => {
         const src = docBytes({ ownerPassword: 'o', userPassword: 'u', algorithm: 'aes128' });
         const reader = openPdf(src, { password: 'u' });
@@ -170,7 +170,7 @@ function buildRC4Pdf(docId: Uint8Array): Uint8Array {
     return bytes(body);
 }
 
-describe('addAnnotation on a legacy RC4 (V2/R3) document', () => {
+describe('addAnnotation on a legacy RC4 (V2/R3) document', { timeout: 60_000 }, () => {
     const docId = new Uint8Array(16).map((_, i) => (i * 37 + 11) & 0xFF);
     const src = buildRC4Pdf(docId);
 

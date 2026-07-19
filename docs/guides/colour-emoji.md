@@ -7,7 +7,7 @@
 ```ts
 import { registerFont, buildDocumentPDFBytes } from 'pdfnative';
 
-// Opt in to the curated colour-emoji subset (~850 glyphs, ~3.1 MB).
+// Opt in to the curated colour-emoji subset (1167 glyphs, ~4.0 MB).
 registerFont('emoji', () => import('pdfnative/fonts/noto-color-emoji-data.js'));
 
 const bytes = buildDocumentPDFBytes({
@@ -53,7 +53,7 @@ run emits `q s 0 0 s x y cm /CEm0 Do Q` to place the glyph.
 
 Colour emoji is **opt-in** for two reasons:
 
-1. **Module size.** The curated subset is ~3.1 MB (expanded to ~850 glyphs in
+1. **Module size.** The curated subset is ~4.0 MB (expanded to 1167 glyphs in
    v1.6.0); bundling it by default would bloat every consumer. Register it only
    when you need colour.
 2. **Byte stability.** When no colour-emoji font is registered, documents are
@@ -67,14 +67,17 @@ registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'));
 
 ## Coverage & limits
 
-The bundled module is a **curated subset** of **~850 common single-codepoint
+The bundled module is a **curated subset** of **1167 common single-codepoint
 emoji** (expanded from 221 in v1.6.0): the complete Emoticons and Supplemental
-Symbols & Pictographs blocks plus the most-used nature, food, object, symbol, and
-transport pictographs. It ships pre-built because every file under the package
+Symbols & Pictographs blocks, Miscellaneous Symbols & Pictographs through
+U+1F53D (nature, food, objects, hearts, office, av/ui symbols) plus clocks and
+the emoji-presentation stragglers, and the **complete assigned Transport & Map
+block** (U+1F680–1F6FF). Symbols & Pictographs Extended-A (U+1FA70–1FAFF) is
+not bundled — use the CLI below. It ships pre-built because every file under the package
 `files` allowlist is included in the npm tarball regardless of tree-shaking — the
 full Noto Color Emoji build (thousands of glyphs, ~32 MB) would weigh down
 *every* `npm install`, even for consumers who never touch emoji. The subset keeps
-the install within a ~3.5 MB budget while the lazy `() => import(...)` keeps it
+the install within a ~4 MB budget while the lazy `() => import(...)` keeps it
 out of bundles that don't reference it.
 
 > **Out of scope for the bundled subset:** flag sequences (regional-indicator

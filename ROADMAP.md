@@ -96,7 +96,10 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Streaming page-tree manipulation** (v1.6.0) — `streamMergedPdfs` / `streamSplitPdf` / `streamExtractPages` emit the assembled document as fixed-size chunks, holding only the cross-reference offsets in memory; byte-identical to the buffered functions and composable with `streamToFile()`. ([src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts))
 - [x] **Fill & flatten existing AcroForm PDFs** (v1.6.0) — `readFormFields()`, `fillForm()` (regenerated appearances), `flattenForm()` via non-destructive incremental update that preserves prior signatures. ([src/core/pdf-form-fill.ts](src/core/pdf-form-fill.ts))
 - [x] **Native vector charts** (v1.6.0) — bar / horizontal-bar / line / pie / donut `chart` blocks rendered as pure PDF path operators (zero deps, no rasterisation), multi-series, legends, negative values, tagged `/Figure` + alt text. ([src/core/pdf-chart.ts](src/core/pdf-chart.ts))
-- [x] **Expanded colour-emoji subset** (v1.6.0) — the bundled curated set grows from 221 to ~850 single-codepoint glyphs (~3.1 MB) with a build-time size guard. ([scripts/lib/curated-emoji.ts](scripts/lib/curated-emoji.ts))
+- [x] **Expanded colour-emoji subset** (v1.6.0) — the bundled curated set grows from 221 to **1167** single-codepoint glyphs (~4.0 MB, 4 MB budget guard): complete assigned Transport & Map block (U+1F680–1F6FF) and Misc Symbols & Pictographs completion, fixing 15 `.notdef` tofu in the colour-emoji showcase; the data test now hard-asserts full curated-cmap coverage. ([scripts/lib/curated-emoji.ts](scripts/lib/curated-emoji.ts))
+- [x] **Text extraction** (v1.6.0) — `extractText(bytes, options?)` decodes page content streams into per-page reading-order Unicode text + optional positioned runs: `/ToUnicode` CMaps, `/Encoding /Differences` (AGL subset), WinAnsi/MacRoman tables, Form-XObject recursion, transparent decryption via `options.password`, hard `maxTextLength` memory cap. ([src/parser/pdf-text-extract.ts](src/parser/pdf-text-extract.ts))
+- [x] **Re-encrypt page-tree output** (v1.6.0, pulled forward from Long-Term) — `MergeOptions.encrypt` re-encrypts `mergePdfs` / `splitPdf` / `extractPages` (and streaming) output with AES-128/AES-256 under fresh passwords/permissions, closing the encrypted round trip (incl. one-call password rotation). CSPRNG-gated; RC4 never emitted. ([src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts))
+- [x] **Encrypted incremental update** (v1.6.0, pulled forward from Long-Term) — `fillForm` / `flattenForm` / `PdfModifier.addAnnotation` operate on encrypted PDFs by encrypting appended objects under the document's existing scheme (RC4/AES-128/AES-256); incremental trailer carries `/Encrypt` forward. ([src/parser/pdf-modifier.ts](src/parser/pdf-modifier.ts), [src/core/pdf-form-fill.ts](src/core/pdf-form-fill.ts))
 
 ## In Progress
 
@@ -110,8 +113,6 @@ _All v1.6.0 items have been merged into the v1.6.0 release. See Released above._
 - [ ] **Full Universal Shaping Engine** — Khmer, Myanmar, complex Sinhala
 - [ ] **COLRv1 PaintMask / variable paints** — soft-mask groups (`PaintComposite` luminosity masks) and variable-font COLR. v1.4.0 ships solid + linear + radial + sweep gradients and blend-mode compositing; masks and variable paints fall back to monochrome.
 - [ ] **Colour-emoji sequences** — flag (regional-indicator) and ZWJ sequences via a GSUB-ligature table in the generated module plus a longest-match pre-pass, so the bundled subset can cover multi-codepoint emoji (currently single-codepoint only).
-- [ ] **Re-encrypt page-tree output** — an `encrypt` option on `mergePdfs` / `splitPdf` that re-encrypts the rebuilt document (reusing the decryptor's recovered key path), closing the encrypted round-trip fully.
-- [ ] **Encrypted incremental update** — let `fillForm` / `addAnnotation` operate on encrypted PDFs by encrypting the appended objects (currently rejected).
 - [ ] **Charts v2** — stacked bars, area, scatter, secondary/log/time axes, and per-point data labels (v1.6.0 ships bar / barH / line / pie / donut on a linear axis).
 
 ## How to Influence the Roadmap
