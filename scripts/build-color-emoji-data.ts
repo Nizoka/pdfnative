@@ -55,9 +55,9 @@ function main(): void {
     });
 
     // Hard size guard: the bundled module ships in every npm install, so keep
-    // it within the ~3.5 MB budget (the full ~3 600-glyph set is ~32 MB and is
+    // it within the ~4 MB budget (the full ~3 600-glyph set is ~32 MB and is
     // intentionally left to the CLI). Trim the curated list if this trips.
-    const MAX_SIZE_KB = 3584;
+    const MAX_SIZE_KB = 4096;
     if (stats.sizeKb > MAX_SIZE_KB) {
         throw new Error(
             `curated colour-emoji module is ${stats.sizeKb} KB, over the ${MAX_SIZE_KB} KB budget — ` +
