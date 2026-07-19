@@ -7,7 +7,7 @@
 ```ts
 import { registerFont, buildDocumentPDFBytes } from 'pdfnative';
 
-// Opt in to the curated colour-emoji subset (221 glyphs, ~936 KB).
+// Opt in to the curated colour-emoji subset (1167 glyphs, ~4.0 MB).
 registerFont('emoji', () => import('pdfnative/fonts/noto-color-emoji-data.js'));
 
 const bytes = buildDocumentPDFBytes({
@@ -53,8 +53,9 @@ run emits `q s 0 0 s x y cm /CEm0 Do Q` to place the glyph.
 
 Colour emoji is **opt-in** for two reasons:
 
-1. **Module size.** The curated subset is ~936 KB; bundling it by default would
-   bloat every consumer. Register it only when you need colour.
+1. **Module size.** The curated subset is ~4.0 MB (expanded to 1167 glyphs in
+   v1.6.0); bundling it by default would bloat every consumer. Register it only
+   when you need colour.
 2. **Byte stability.** When no colour-emoji font is registered, documents are
   byte-identical to the pre-colour-emoji path — the colour path is fully gated.
 
@@ -64,14 +65,26 @@ To keep monochrome emoji instead, register the monochrome font:
 registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'));
 ```
 
-## Full coverage
+## Coverage & limits
 
-The bundled module is a **curated subset** (~220 common emoji). It ships
-pre-built because every file under the package `files` allowlist is included in
-the npm tarball regardless of tree-shaking — the full Noto Color Emoji build
-(thousands of glyphs, tens of MB) would weigh down *every* `npm install`, even
-for consumers who never touch emoji. The subset keeps the install lean while the
-lazy `() => import(...)` keeps it out of bundles that don't reference it.
+The bundled module is a **curated subset** of **1167 common single-codepoint
+emoji** (expanded from 221 in v1.6.0): the complete Emoticons and Supplemental
+Symbols & Pictographs blocks, Miscellaneous Symbols & Pictographs through
+U+1F53D (nature, food, objects, hearts, office, av/ui symbols) plus clocks and
+the emoji-presentation stragglers, and the **complete assigned Transport & Map
+block** (U+1F680–1F6FF). Symbols & Pictographs Extended-A (U+1FA70–1FAFF) is
+not bundled — use the CLI below. It ships pre-built because every file under the package
+`files` allowlist is included in the npm tarball regardless of tree-shaking — the
+full Noto Color Emoji build (thousands of glyphs, ~32 MB) would weigh down
+*every* `npm install`, even for consumers who never touch emoji. The subset keeps
+the install within a ~4 MB budget while the lazy `() => import(...)` keeps it
+out of bundles that don't reference it.
+
+> **Out of scope for the bundled subset:** flag sequences (regional-indicator
+> pairs), ZWJ sequences (families, professions, etc.), and skin-tone-modified
+> forms. These are multi-codepoint emoji that require GSUB ligature lookups the
+> single-codepoint module does not carry, so they render as monochrome/tofu.
+> Build a full module with the CLI below to cover them.
 
 To cover the **full** Noto Color Emoji set — or any custom selection — pdfnative
 ships an official generator CLI, `pdfnative-build-emoji-font`, so you never have

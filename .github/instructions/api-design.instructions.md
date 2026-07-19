@@ -48,7 +48,17 @@ applyTo: "src/index.ts"
 17. Core — Digital Signatures (`buildSignatureField`, `signPdfBytes`)
 18. Core — Streaming (`streamPdf`, `streamDocumentPdf`, `buildPdfStream`, `StreamOptions`)
 19. Crypto — Primitives (`sha384`, `sha512`, `hmacSha256`, `rsaSign`, `ecdsaSign`, `parseX509`, `buildCmsSignedData`)
-20. Parser — Read & Modify (`PdfReader`, `PdfModifier`, `PdfTokenizer`, `parseObject`, `parseXref`, `PdfValue`, `PdfDict`, `PdfRef`)
+20. Parser — Read & Modify (`PdfReader`, `PdfModifier`, `PdfTokenizer`, `parseObject`, `parseXref`, `PdfValue`, `PdfDict`, `PdfRef`, `extractText`, `mergePdfs`/`splitPdf`/`extractPages` + streaming variants)
+
+## Parser Option-Type Precedent
+- Parser-module option/result types live in the module itself (`MergeOptions`,
+  `OpenPdfOptions`, `ExtractTextOptions`, `ParsedFormField`), NOT in
+  `src/types/pdf-types.ts`
+- Encryption re-use: `MergeOptions.encrypt` reuses the builder's
+  `EncryptionOptions` shape (`ownerPassword`/`userPassword`/`permissions`/
+  `algorithm`) — never invent a parallel option shape for the same concept
+- Internal key material (e.g. `getDecryptionContext`) is exported from its
+  module for sibling use but NEVER re-exported from `src/index.ts`
 
 ## Documentation Requirements
 - README Quick Start must work as-is (copy-paste ready)

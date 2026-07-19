@@ -87,7 +87,7 @@ npm install -g verapdf
 verapdf --format text my-document.pdf
 ```
 
-veraPDF is the reference PDF/A validator. The pdfnative test suite generates ~210 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
+veraPDF is the reference PDF/A validator. The pdfnative test suite generates ~227 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
 
 ### PAC 2024 (PDF/UA)
 

@@ -9,6 +9,134 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [1.6.0] – 2026-07-19
+
+Delivers both v1.6.0 roadmap items — a Standard Security Handler **reader/
+decryptor** and **streaming** page-tree manipulation — plus six
+differentiating additions: **fill & flatten** of existing AcroForm PDFs,
+**native vector charts**, **text extraction** (`extractText`), the completed
+**encrypted round trip** (re-encrypt merge/split output + encrypted
+incremental updates, both pulled forward from v1.7), and an **expanded
+colour-emoji subset** (221 → 1167). All additions are additive and opt-in;
+unchanged code paths remain **byte-identical** to v1.5.0 (guarded by the
+page-tree golden fixtures). Zero runtime dependencies preserved.
+104 test files / 2379 tests, all green.
+
+### Added
+
+- **feat(parser):** Standard Security Handler **reader/decryptor** (roadmap).
+  `openPdf(bytes, { password })` decrypts RC4 (V1–V4), AES-128 (V4/R4) and
+  AES-256 (V5/R6) documents transparently — strings and streams alike — with
+  user- and owner-password authentication and crypt-filter dispatch. New
+  `reader.encryption` surface; typed `PdfPasswordError` /
+  `PdfEncryptionUnsupportedError`. The page-tree API now ingests encrypted
+  sources via `PdfSourceInput` (`{ bytes, password }`) or `MergeOptions.password`;
+  merged output is always unencrypted. New
+  [src/parser/pdf-decrypt.ts](src/parser/pdf-decrypt.ts).
+- **feat(parser):** **streaming** page-tree manipulation (roadmap).
+  `streamMergedPdfs()` / `streamSplitPdf()` / `streamExtractPages()` emit the
+  assembled document as fixed-size chunks (`StreamMergeOptions.chunkSize`,
+  default 64 KiB), holding only the cross-reference offsets in memory — stream
+  payloads flow straight from the source bytes and the joined document never
+  materialises. Byte-identical to the buffered functions. Composes with
+  `streamToFile()`.
+- **feat(core):** **fill & flatten existing AcroForm PDFs**. `readFormFields()`
+  enumerates a document's field tree; `fillForm()` sets `/V` and regenerates
+  self-contained Helvetica appearances (text/choice) or updates `/AS` from the
+  widget's own on/off states (checkbox/radio); `flattenForm()` stamps
+  appearances into page content and drops the interactive layer. Non-destructive
+  incremental update, so prior signatures stay valid for their revision. Typed
+  `FormFieldNotFoundError` / `FormValueTypeError` / `FormUnsupportedError`. New
+  [src/core/pdf-form-fill.ts](src/core/pdf-form-fill.ts).
+- **feat(core):** **native vector charts**. A new `chart` document block renders
+  bar, horizontal-bar, line (optional markers), pie, and donut charts as pure
+  PDF path operators — zero dependencies, no rasterisation. Multi-series, legend,
+  "nice" 1/2/5×10ⁿ axis ticks, gridlines, negative values, injection-safe
+  colours, and a tagged-PDF `/Figure` + `/Alt` (auto-generated when omitted;
+  PDF/A-safe). New [src/core/pdf-chart.ts](src/core/pdf-chart.ts);
+  `ChartBlock` / `ChartSeries` / `ChartType` exported.
+- **feat(fonts):** the bundled curated colour-emoji subset is expanded from
+  **221 to 1167** single-codepoint glyphs (~4.0 MB, within a 4 MB tarball
+  budget) — the complete Emoticons and Supplemental Symbols & Pictographs
+  blocks, Miscellaneous Symbols & Pictographs through U+1F53D plus clocks and
+  emoji-presentation stragglers, and the **complete assigned Transport & Map
+  block (U+1F680–1F6FF)**. A build-time size guard prevents silent bloat.
+  Flag/ZWJ/skin-tone sequences remain out of scope (use
+  `npx pdfnative-build-emoji-font --download --all` for full coverage).
+- **feat(crypto):** new internal decryptor primitives — an incremental MD5
+  hasher (which also lifts the internal one-shot MD5 512 MB length ceiling)
+  and AES-CBC / AES-ECB decryption routines powering `openPdf` and the
+  Standard Security Handler. These stay internal to the parser; the public
+  crypto surface (`sha256`, `sha384`, `sha512`, `hmacSha256`, …) is unchanged.
+- **feat(parser):** **text extraction**. `extractText(bytes, options?)` decodes
+  page content streams into per-page reading-order Unicode text plus optional
+  positioned runs (`{ text, x, y, fontSize, fontName }` in device space).
+  Decoding resolves `/ToUnicode` CMaps (bfchar/bfrange, surrogate pairs),
+  `/Encoding /Differences` via a compact AGL subset, and WinAnsi/MacRoman base
+  tables; Form XObjects are recursed; encrypted documents work transparently
+  via `options.password`. Hard `maxTextLength` memory cap (default 16 M chars)
+  and a recursion-free, capped interpreter make it safe on untrusted input.
+  New [src/parser/pdf-text-extract.ts](src/parser/pdf-text-extract.ts).
+- **feat(parser):** **re-encrypt page-tree output** (pulled forward from the
+  v1.7 roadmap). `MergeOptions.encrypt` re-encrypts the document rebuilt by
+  `mergePdfs` / `splitPdf` / `extractPages` (and the streaming variants) with
+  AES-128 (V4/R4, default) or AES-256 (V5/R6) under fresh passwords and
+  permissions — closing the round trip *open encrypted → edit → re-secure*
+  (including password rotation in one call). CSPRNG required; RC4 is never
+  emitted; no key material from source documents is reused; the unencrypted
+  path stays byte-identical.
+- **feat(parser|core):** **encrypted incremental update** (pulled forward from
+  the v1.7 roadmap). `fillForm()` / `flattenForm()` and
+  `PdfModifier.addAnnotation()` now operate on encrypted PDFs: appended
+  objects are encrypted under the document's existing scheme (RC4 / AES-128 /
+  AES-256) using the key recovered on open, so no plaintext leaks into an
+  encrypted file and no scheme downgrade is possible. The incremental trailer
+  now carries `/Encrypt` forward; `addRawObject` fails fast on encrypted
+  documents. `/P` permission bits are not enforced (documented — password
+  authentication gates the update).
+
+### Fixed
+
+- **fix(crypto):** `computeHashR6` now uses the required SHA-256/384/512 rotation
+  of ISO 32000-2 Algorithm 2.B instead of substituting SHA-256 for every round,
+  so pdfnative's AES-256 (R6) output is spec-compliant. The decryptor keeps a
+  legacy-hash fallback so documents written by pdfnative ≤ 1.5.0 still open.
+- **fix(core):** encrypted documents now encrypt **all strings** (Info metadata,
+  annotation `/Contents`, outline titles, URIs), not just streams — previously a
+  spec-compliant reader decrypted those strings to garbage. The `/Encrypt` dict
+  and trailer `/ID` stay exempt; non-encrypted output is unchanged.
+- **fix(chart):** bar/line values are clamped to the plot band, so an explicit
+  `axis.yMin`/`yMax` that excludes part of the data never draws outside the
+  chart rectangle.
+- **fix(fonts):** the curated colour-emoji list omitted ranges its own header
+  claimed (rest of Misc Symbols & Pictographs U+1F4A6–1F5FF, Transport & Map
+  U+1F680–1F6FF), so 15 emoji in `color-emoji-basic.pdf` (🖤 🔥 💯 💪 🚗 🚕 🚌
+  🚀 🚢 📱 📌 🔒 🔑 💰 💵) rendered as `.notdef` tofu. Coverage completed (see
+  the emoji entry above), the header now states actual coverage, and the data
+  test hard-asserts every curated codepoint maps to a colour glyph plus
+  cross-checks every emoji the showcase generator uses against the bundled
+  cmap — the sample can never silently regress to tofu again.
+  ([scripts/lib/curated-emoji.ts](scripts/lib/curated-emoji.ts))
+- **fix(shaping):** the Arrows block (U+2190–U+21FF: → ← ⇒ ⇔ ↦ …) is now
+  classified as math by `isMathCodepoint`/`detectCharLang`, so arrows route to
+  the bundled Noto Sans Math font like the operator blocks instead of relying
+  on coverage fallback alone.
+- **fix(parser):** the xref-table reader tolerates stray blank lines between
+  subsections and before `trailer` — seen in hand-assembled real-world PDFs
+  and accepted by desktop readers — instead of failing with
+  "invalid subsection header".
+- **fix(samples):** `math/math-symbols.pdf` rendered every math symbol as `?`
+  since v1.5.0 — the generator never passed the math font in `fontEntries`, so
+  text fell back to base-14/WinAnsi encoding. It now loads Noto Sans Math (and
+  Noto Sans for prose); a new end-to-end test extracts the sample text and
+  asserts no `?` ever appears. The three `signature/digital-signature-*.pdf`
+  samples also emitted a stray blank line inside their hand-assembled xref
+  table; removed.
+- **fix(samples):** `charts/charts-tagged.pdf` claimed PDF/A-2b but rendered
+  its text with non-embedded base-14 Helvetica, failing veraPDF rule
+  6.2.11.4.1 (all rendering fonts must be embedded). The tagged chart sample
+  now embeds Noto Sans like every other PDF/A sample.
+
 ## [1.5.0] – 2026-07-05
 
 A feature + fix release resolving six community issues (#56–#61) and delivering

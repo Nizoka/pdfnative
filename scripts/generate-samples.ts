@@ -53,6 +53,9 @@ import { generate as generateSvgText } from './generators/svg-text-labels.js';
 import { generate as generateLayoutDebug } from './generators/layout-debug-overlay.js';
 import { generate as generateAnnotations } from './generators/annotations-showcase.js';
 import { generate as generateFontCompiler } from './generators/font-compiler-demo.js';
+import { generate as generateFormFill } from './generators/form-fill-showcase.js';
+import { generate as generateChart } from './generators/chart-showcase.js';
+import { generate as generateTextExtract } from './generators/text-extract-showcase.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -182,6 +185,15 @@ async function generateAll(): Promise<void> {
 
     // ── Font-data tools: compile/parse (v1.5.0 — issue #60) ──────
     await generateFontCompiler(ctx);
+
+    // ── AcroForm fill & flatten (v1.6.0) ─────────────────────────
+    await generateFormFill(ctx);
+
+    // ── Native vector charts (v1.6.0) ────────────────────────────
+    await generateChart(ctx);
+
+    // ── Text extraction (v1.6.0) ─────────────────────────────────
+    await generateTextExtract(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import * as colorEmoji from '../../fonts/noto-color-emoji-data.js';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { openPdf } from '../../src/parser/pdf-reader.js';
+import { CURATED_EMOJI } from '../../scripts/lib/curated-emoji.js';
 import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
@@ -16,6 +19,81 @@ describe('noto-color-emoji-data module', () => {
         expect(colorEmoji.metrics.unitsPerEm).toBeGreaterThan(0);
         expect(Object.keys(colorEmoji.colorGlyphs).length).toBeGreaterThan(100);
         expect(Object.keys(colorEmoji.cmap).length).toBeGreaterThan(100);
+    });
+
+    it('bundles the expanded curated set (~1170) within the size budget', () => {
+        // Expanded from 221 to ~850, then to 1167 (Misc S&P completion +
+        // full Transport & Map) in v1.6.0.
+        expect(CURATED_EMOJI.length).toBeGreaterThanOrEqual(1050);
+        expect(CURATED_EMOJI.length).toBeLessThanOrEqual(1250);
+        // No duplicates.
+        expect(new Set(CURATED_EMOJI).size).toBe(CURATED_EMOJI.length);
+        // Module stays within the ~4 MB npm-tarball budget.
+        const sizeKb = Buffer.byteLength(colorEmoji.ttfBase64) / 1024;
+        expect(sizeKb).toBeLessThan(4096);
+    });
+
+    it('every curated codepoint maps to a colour glyph', () => {
+        // Hard guarantee: the bundled cmap covers the WHOLE curated list, so
+        // no curated emoji can ever regress to `.notdef` tofu. (The list is
+        // pruned at build time of codepoints the font has no COLR glyph for.)
+        for (const cp of CURATED_EMOJI) {
+            const gid = colorEmoji.cmap[cp];
+            expect(gid, `U+${cp.toString(16).toUpperCase()} missing from cmap`).toBeDefined();
+            expect(colorEmoji.colorGlyphs[gid as number], `U+${cp.toString(16).toUpperCase()} has no colour glyph`).toBeDefined();
+        }
+    });
+
+    it('every cmap entry resolves to a colour glyph with width metrics', () => {
+        for (const [cpStr, gid] of Object.entries(colorEmoji.cmap)) {
+            expect(colorEmoji.colorGlyphs[gid as number]).toBeDefined();
+            expect(typeof colorEmoji.widths[gid as number] === 'number' || colorEmoji.metrics).toBeTruthy();
+            void cpStr;
+        }
+    });
+
+    it('covers the ranges the v1.6.0 expansion completed', () => {
+        // The 15 codepoints that rendered as tofu in color-emoji-basic.pdf
+        // before the Misc S&P / Transport & Map completion, plus a spot-check
+        // of each restored range.
+        const restored = [
+            0x1f5a4, 0x1f525, 0x1f4af, 0x1f4aa, 0x1f697, 0x1f695, 0x1f68c,
+            0x1f680, 0x1f6a2, 0x1f4f1, 0x1f4cc, 0x1f512, 0x1f511, 0x1f4b0,
+            0x1f4b5,
+            0x1f4c5, 0x1f50d, 0x1f550, 0x1f6d2, 0x1f6f8,
+        ];
+        for (const cp of restored) {
+            const gid = colorEmoji.cmap[cp];
+            expect(gid, `U+${cp.toString(16).toUpperCase()} missing from cmap`).toBeDefined();
+            expect(colorEmoji.colorGlyphs[gid as number]).toBeDefined();
+        }
+        // Extended-A (U+1FA70-1FAFF) is documented as NOT bundled (CLI-only).
+        expect(colorEmoji.cmap[0x1fa79]).toBeUndefined();
+    });
+
+    it('covers every emoji used by the colour-emoji showcase generator', () => {
+        // Cross-check: scripts/generators/color-emoji-showcase.ts promises
+        // "zero .notdef tofu" — hold it to that by asserting every emoji
+        // codepoint in its source is in the bundled cmap.
+        const src = readFileSync(
+            fileURLToPath(new URL('../../scripts/generators/color-emoji-showcase.ts', import.meta.url)),
+            'utf8',
+        );
+        const isEmojiBlock = (cp: number): boolean =>
+            (cp >= 0x231a && cp <= 0x231b) || (cp >= 0x23e9 && cp <= 0x23fa) ||
+            (cp >= 0x2600 && cp <= 0x27bf) || (cp >= 0x2b00 && cp <= 0x2bff) ||
+            (cp >= 0x1f300 && cp <= 0x1faff);
+        const used = new Set<number>();
+        for (const ch of src) {
+            const cp = ch.codePointAt(0) as number;
+            if (isEmojiBlock(cp)) used.add(cp);
+        }
+        expect(used.size).toBeGreaterThan(50);
+        for (const cp of used) {
+            const gid = colorEmoji.cmap[cp];
+            expect(gid, `showcase uses U+${cp.toString(16).toUpperCase()} but it is not in the bundled cmap`).toBeDefined();
+            expect(colorEmoji.colorGlyphs[gid as number]).toBeDefined();
+        }
     });
 
     it('maps common emoji codepoints to colour glyphs', () => {

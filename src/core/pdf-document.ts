@@ -77,6 +77,7 @@ import {
     renderSvgBlock,
     renderFormFieldBlock,
 } from './pdf-renderers.js';
+import { renderChartBlock } from './pdf-chart.js';
 import type {
     TagContext,
     HeadingDestination,
@@ -572,6 +573,12 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 }
                 case 'svg': {
                     const result = renderSvgBlock(block, y, mg.l, cw, tagCtx, documentChildren, enc);
+                    ops.push(...result.ops);
+                    y = result.y;
+                    break;
+                }
+                case 'chart': {
+                    const result = renderChartBlock(block, y, mg.l, cw, enc, tagCtx, documentChildren);
                     ops.push(...result.ops);
                     y = result.y;
                     break;

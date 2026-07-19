@@ -155,6 +155,29 @@ applyTo: "src/core/**"
   5. Replace all direct stream emissions with `emitStreamObj` calls
   6. Emit `/Encrypt` dict object before xref
   7. Update trailer with `/Encrypt` ref and `/ID` array
+- Parser-side encryption (v1.6.0) mirrors this in two places:
+  - `pdf-pagetree.ts` (`MergeOptions.encrypt`): thread `{ state, objNum }`
+    through the copy serializers; strings emit via `encryptString()` (hex —
+    literal-string EOL normalisation corrupts ciphertext); trailer `/ID` MUST
+    be `EncryptionState.docId` (the R4 file key is bound to it), never the
+    content-addressed MD5
+  - `pdf-modifier.ts` (encrypted incremental update): serializers are
+    **non-mutating** (values may share sub-objects with the reader's decrypted
+    cache); use `encryptStringData`/`encryptStreamData` from `pdf-decrypt.ts`
+    (the recovered `DecryptionContext` — same scheme, no downgrade possible);
+    honour `isSignatureDict` (`/Contents` stays raw) and `isExemptStream`;
+    carry `/Encrypt` forward in the incremental trailer; `addRawObject` must
+    throw on encrypted documents
+
+## Text Extraction (`pdf-text-extract.ts`, v1.6.0)
+- Content-stream interpreter is recursion-free with capped stacks (graphics
+  128, operands 32, CMap entries 65 536, Form-XObject depth 8) and NEVER
+  throws on malformed streams — unknown operators are skipped
+- Decoding priority per code: `/ToUnicode` CMap → `/Differences` (AGL subset)
+  → base encoding table (WinAnsi/MacRoman; WinAnsi heuristic default) → U+FFFD
+- Output is memory-bounded by `maxTextLength` (throws when exceeded); the
+  parser module must not import from `src/fonts/` (architecture rule) — the
+  WinAnsi high-band table is a documented local copy
 
 ## FlateDecode Compression (ISO 32000-1 §7.3.8.1)
 - Activated by `compress: true` in `PdfLayoutOptions` — backward compatible (default `false`)

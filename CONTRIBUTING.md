@@ -26,7 +26,7 @@ npm run dev            # tsup --watch
 ## Docs local preview
 
 The documentation site (`docs/`) is a static HTML/CSS/JS site with no build step.
-Openin `docs/index.html` directly as a `file://` URL works for most pages, but
+Opening `docs/index.html` directly as a `file://` URL works for most pages, but
 the **interactive playgrounds** require an HTTP origin because they load pdfnative
 from a CDN inside a Web Worker and `file:` origins block cross-origin Worker imports.
 
@@ -54,10 +54,10 @@ Then open:
 ## Test
 
 ```bash
-npm run test           # vitest run (2218+ tests)
+npm run test           # vitest run (2379+ tests)
 npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (95%+ stmts)
-npm run test:generate  # Generate ~210 sample PDFs → test-output/
+npm run test:generate  # Generate ~227 sample PDFs → test-output/
 npm run bench          # Performance benchmarks (vitest bench)
 ```
 
@@ -99,8 +99,8 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (22 scripts)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (41 generators, 210+ PDFs)
-tests/            # 2218+ tests (93 files: unit + integration + fuzz + parser), mirrors src/ structure
+scripts/          # Modular sample PDF generation (44 generators, ~227 PDFs)
+tests/            # 2379+ tests (104 files: unit + integration + fuzz + parser), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 

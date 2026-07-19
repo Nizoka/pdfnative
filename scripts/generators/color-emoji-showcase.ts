@@ -1,5 +1,5 @@
 /**
- * Colour-emoji showcase — COLR/CPAL colour glyphs (v1.3.0).
+ * Colour-emoji showcase — COLR/CPAL colour glyphs (v1.3.0, expanded v1.6.0).
  *
  * Demonstrates native colour-emoji rendering: each colour glyph is drawn as a
  * Form XObject built from the COLR layer graph (solid + linear + radial paints
@@ -7,8 +7,10 @@
  * Noto Color Emoji data module under lang `'emoji'`.
  *
  * Every emoji used below is in the curated subset, so all render in colour with
- * zero `.notdef` tofu. Non-emoji separators use ASCII (`-`, `->`) rather than
- * typographic dashes/arrows, which the colour-emoji font does not cover.
+ * zero `.notdef` tofu — tests/fonts/color-emoji-data.test.ts cross-checks this
+ * file against the bundled cmap. Non-emoji separators use ASCII (`-`, `->`)
+ * rather than typographic dashes/arrows, which the colour-emoji font does not
+ * cover.
  *
  * Output: test-output/emoji/color-*.pdf
  */
@@ -43,6 +45,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             { type: 'paragraph', text: 'Animals & nature: 🐶 🐱 🐭 🐹 🐰 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐝 🦋 🐌 🐞 🐢 🐍 🐳 🐬 🐟 🍄 🌺 🌷 🌸 🌹 🌻 🍃 🌲 🌳 🌴' },
             { type: 'paragraph', text: 'Food: 🍎 🍌 🍇 🍉 🍓 🍒 🍑 🍊 🍅 🥕 🌽 🍔 🍕 🍟 🌭 🍿 🍦 🍰 🍫 🍪 ☕ 🍺 🍷' },
             { type: 'paragraph', text: 'Activity, travel & objects: ⚽ 🏀 🏈 🎾 🏐 🎸 🎵 🎨 🚗 🚕 🚌 ✈ 🚀 🚢 ⌚ 📱 💡 💡 ✏ 📌 🔒 🔑 🏠 🎁 🎈 🎉 🎶 💰 💵' },
+            { type: 'paragraph', text: 'Transport & Map (complete block, v1.6.0): 🚁 🚂 🚆 🚇 🚉 🚊 🚋 🚎 🚑 🚒 🚓 🚙 🚚 🚛 🚜 🚠 🚡 🚤 🚥 🚧 🚨 🚲 🛑 🛴 🛵 🛶 🛸 🛹 🛺' },
         ],
         footerText: 'pdfnative - colour-emoji showcase (COLR/CPAL -> PDF Shading)',
         fontEntries,

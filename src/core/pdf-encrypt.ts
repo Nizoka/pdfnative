@@ -5,15 +5,17 @@
  *
  * Implements:
  *   - AES block cipher (FIPS 197) — S-Box lookup, SubBytes, ShiftRows, MixColumns
- *   - AES-CBC mode with PKCS7 padding
+ *   - AES-CBC mode with PKCS7 padding (encrypt + decrypt)
  *   - MD5 hash (RFC 1321) — required for AES-128 key derivation (Algorithm 2)
  *   - SHA-256 hash (FIPS 180-4) — required for AES-256 revision 6
+ *   - SHA-384 / SHA-512 (FIPS 180-4) — required by Algorithm 2.B (ISO 32000-2)
  *   - PDF encryption key derivation (ISO 32000-1 §7.6.3.3 Algorithm 2)
  *   - User/Owner password hash computation (Algorithms 3–7, Extension Level 3)
  *   - Permission bitmask computation (Table 22)
  *
  * Security:
- *   - No RC4 (NIST deprecated 2015)
+ *   - No RC4 for content encryption (NIST deprecated 2015); a minimal RC4 is
+ *     kept for R2–R4 password-hash computation and legacy decryption only
  *   - AES uses constant-time S-Box lookup (no branch-based)
  *   - No eval(), no Function(), no dynamic code execution
  */
@@ -248,6 +250,145 @@ function aesECB(data: Uint8Array, key: Uint8Array): Uint8Array {
     return block;
 }
 
+// ── AES Decryption (FIPS 197 §5.3) ──────────────────────────────────
+
+/** Inverse S-Box, derived from SBOX so the two can never drift apart. */
+const INV_SBOX = (() => {
+    const inv = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) inv[SBOX[i]] = i;
+    return inv;
+})();
+
+/** Multiply two elements of GF(2^8) (used by InvMixColumns). */
+function gmul(a: number, b: number): number {
+    let p = 0;
+    for (let i = 0; i < 8; i++) {
+        if (b & 1) p ^= a;
+        a = xtime(a);
+        b >>= 1;
+    }
+    return p & 0xff;
+}
+
+/**
+ * AES block cipher — decrypt a single 16-byte block (FIPS 197 §5.3,
+ * equivalent inverse cipher): InvShiftRows, InvSubBytes, AddRoundKey,
+ * InvMixColumns, applying round keys in reverse order.
+ *
+ * @param block - 16-byte ciphertext (mutated in place)
+ * @param expandedKey - Expanded round keys (from {@link aesKeyExpansion})
+ * @param nr - Number of rounds (10 for AES-128, 14 for AES-256)
+ */
+function aesDecryptBlock(block: Uint8Array, expandedKey: Uint8Array, nr: number): void {
+    const s = block;
+
+    // AddRoundKey (final round key first)
+    let rkOff = nr * 16;
+    for (let i = 0; i < 16; i++) s[i] ^= expandedKey[rkOff + i];
+
+    for (let round = nr - 1; round >= 1; round--) {
+        // InvShiftRows (rows shift right by 0/1/2/3)
+        const t1 = s[13]; s[13] = s[9]; s[9] = s[5]; s[5] = s[1]; s[1] = t1;
+        const t2a = s[2]; const t2b = s[6]; s[2] = s[10]; s[6] = s[14]; s[10] = t2a; s[14] = t2b;
+        const t3 = s[3]; s[3] = s[7]; s[7] = s[11]; s[11] = s[15]; s[15] = t3;
+
+        // InvSubBytes
+        for (let i = 0; i < 16; i++) s[i] = INV_SBOX[s[i]];
+
+        // AddRoundKey
+        rkOff = round * 16;
+        for (let i = 0; i < 16; i++) s[i] ^= expandedKey[rkOff + i];
+
+        // InvMixColumns
+        for (let c = 0; c < 4; c++) {
+            const i = c * 4;
+            const a0 = s[i], a1 = s[i + 1], a2 = s[i + 2], a3 = s[i + 3];
+            s[i] = gmul(a0, 14) ^ gmul(a1, 11) ^ gmul(a2, 13) ^ gmul(a3, 9);
+            s[i + 1] = gmul(a0, 9) ^ gmul(a1, 14) ^ gmul(a2, 11) ^ gmul(a3, 13);
+            s[i + 2] = gmul(a0, 13) ^ gmul(a1, 9) ^ gmul(a2, 14) ^ gmul(a3, 11);
+            s[i + 3] = gmul(a0, 11) ^ gmul(a1, 13) ^ gmul(a2, 9) ^ gmul(a3, 14);
+        }
+    }
+
+    // Final (first) round — no InvMixColumns
+    const t1 = s[13]; s[13] = s[9]; s[9] = s[5]; s[5] = s[1]; s[1] = t1;
+    const t2a = s[2]; const t2b = s[6]; s[2] = s[10]; s[6] = s[14]; s[10] = t2a; s[14] = t2b;
+    const t3 = s[3]; s[3] = s[7]; s[7] = s[11]; s[11] = s[15]; s[15] = t3;
+    for (let i = 0; i < 16; i++) s[i] = INV_SBOX[s[i]];
+    for (let i = 0; i < 16; i++) s[i] ^= expandedKey[i];
+}
+
+/**
+ * Decrypt AES-CBC data.
+ *
+ * With `padding: 'pkcs7'` (the PDF content-encryption default) the trailing
+ * PKCS7 padding is stripped. Malformed padding is handled leniently — the
+ * unpadded plaintext is returned instead of throwing — matching how mainstream
+ * viewers treat real-world files with sloppy padding.
+ *
+ * With `padding: 'none'` the raw block-aligned plaintext is returned; this is
+ * required when unwrapping the R6 `/UE` / `/OE` file-key blobs, which are
+ * encrypted without padding (ISO 32000-2 §7.6.4.4.10).
+ *
+ * @param data - Ciphertext (length must be a multiple of 16)
+ * @param key - 16 or 32 byte AES key
+ * @param iv - 16-byte initialization vector
+ * @param padding - `'pkcs7'` (strip, lenient) or `'none'`
+ * @returns Plaintext bytes
+ */
+export function aesCBCDecrypt(
+    data: Uint8Array,
+    key: Uint8Array,
+    iv: Uint8Array,
+    padding: 'pkcs7' | 'none' = 'pkcs7',
+): Uint8Array {
+    if (data.length === 0) return new Uint8Array(0);
+    if (data.length % 16 !== 0) {
+        // Truncated/corrupt ciphertext: decrypt the whole blocks we have.
+        data = data.subarray(0, data.length - (data.length % 16));
+        if (data.length === 0) return new Uint8Array(0);
+    }
+    const nr = key.length === 16 ? 10 : 14;
+    const expandedKey = aesKeyExpansion(key);
+
+    const out = new Uint8Array(data.length);
+    const prev = new Uint8Array(16);
+    prev.set(iv);
+    const block = new Uint8Array(16);
+
+    for (let off = 0; off < data.length; off += 16) {
+        block.set(data.subarray(off, off + 16));
+        aesDecryptBlock(block, expandedKey, nr);
+        for (let i = 0; i < 16; i++) out[off + i] = block[i] ^ prev[i];
+        prev.set(data.subarray(off, off + 16));
+    }
+
+    if (padding === 'none') return out;
+
+    const padLen = out[out.length - 1];
+    if (padLen >= 1 && padLen <= 16 && padLen <= out.length) {
+        let valid = true;
+        for (let i = out.length - padLen; i < out.length; i++) {
+            if (out[i] !== padLen) { valid = false; break; }
+        }
+        if (valid) return out.subarray(0, out.length - padLen);
+    }
+    // Lenient: malformed padding → return the unpadded plaintext.
+    return out;
+}
+
+/**
+ * Decrypt a single 16-byte block with AES-ECB (no padding) — used to verify
+ * the R6 `/Perms` entry (ISO 32000-2 §7.6.4.4.12).
+ */
+export function aesECBDecrypt(block: Uint8Array, key: Uint8Array): Uint8Array {
+    const nr = key.length === 16 ? 10 : 14;
+    const expandedKey = aesKeyExpansion(key);
+    const out = new Uint8Array(block.subarray(0, 16));
+    aesDecryptBlock(out, expandedKey, nr);
+    return out;
+}
+
 // ── MD5 (RFC 1321) ──────────────────────────────────────────────────
 
 const MD5_S = [
@@ -272,73 +413,117 @@ function rotl32(x: number, n: number): number {
     return ((x << n) | (x >>> (32 - n))) >>> 0;
 }
 
-/**
- * MD5 hash (RFC 1321).
- * @param input - Bytes to hash
- * @returns 16-byte MD5 digest
- */
-export function md5(input: Uint8Array): Uint8Array {
-    const len = input.length;
-    // Padding: 1 bit, then zeros, then 64-bit length
-    const totalBits = len * 8;
-    const padLen = ((56 - ((len + 1) % 64)) + 64) % 64;
-    const padded = new Uint8Array(len + 1 + padLen + 8);
-    padded.set(input);
-    padded[len] = 0x80;
-    // Length in bits as 64-bit little-endian
-    const dv = new DataView(padded.buffer);
-    dv.setUint32(padded.length - 8, totalBits >>> 0, true);
-    dv.setUint32(padded.length - 4, 0, true); // high 32 bits (assume < 2^32 bits)
+/** Incremental MD5 hasher (RFC 1321). */
+export interface Md5Hasher {
+    /** Feed more bytes into the hash. */
+    update(bytes: Uint8Array): void;
+    /** Finalize and return the 16-byte digest. The hasher must not be reused. */
+    digest(): Uint8Array;
+}
 
+/**
+ * Create an incremental MD5 hasher (RFC 1321) with a correct 64-bit message
+ * length, so inputs larger than 512 MB hash correctly (unlike a one-shot that
+ * truncates the bit length to 32 bits). {@link md5} is implemented on top of
+ * this and is byte-identical for all realistic inputs.
+ */
+export function createMd5(): Md5Hasher {
     let a0 = 0x67452301 >>> 0;
     let b0 = 0xefcdab89 >>> 0;
     let c0 = 0x98badcfe >>> 0;
     let d0 = 0x10325476 >>> 0;
 
-    for (let off = 0; off < padded.length; off += 64) {
-        const M = new Uint32Array(16);
-        for (let j = 0; j < 16; j++) {
-            M[j] = dv.getUint32(off + j * 4, true);
-        }
+    const block = new Uint8Array(64);
+    const bv = new DataView(block.buffer);
+    let blockLen = 0;
+    // Total message length in bits, tracked as two 32-bit halves.
+    let lenLo = 0; // low 32 bits (bits)
+    let lenHi = 0; // high 32 bits (bits)
+    const M = new Uint32Array(16);
+    let done = false;
 
+    function processBlock(): void {
+        for (let j = 0; j < 16; j++) M[j] = bv.getUint32(j * 4, true);
         let a = a0, b = b0, c = c0, d = d0;
-
         for (let i = 0; i < 64; i++) {
             let f: number, g: number;
-            if (i < 16) {
-                f = (b & c) | (~b & d);
-                g = i;
-            } else if (i < 32) {
-                f = (d & b) | (~d & c);
-                g = (5 * i + 1) % 16;
-            } else if (i < 48) {
-                f = b ^ c ^ d;
-                g = (3 * i + 5) % 16;
-            } else {
-                f = c ^ (b | ~d);
-                g = (7 * i) % 16;
-            }
-            f = (f >>> 0);
+            if (i < 16) { f = (b & c) | (~b & d); g = i; }
+            else if (i < 32) { f = (d & b) | (~d & c); g = (5 * i + 1) & 15; }
+            else if (i < 48) { f = b ^ c ^ d; g = (3 * i + 5) & 15; }
+            else { f = c ^ (b | ~d); g = (7 * i) & 15; }
+            f = f >>> 0;
             const temp = d;
             d = c;
             c = b;
             b = (b + rotl32((a + f + MD5_K[i] + M[g]) >>> 0, MD5_S[i])) >>> 0;
             a = temp;
         }
-
-        a0 = (a0 + a) >>> 0;
-        b0 = (b0 + b) >>> 0;
-        c0 = (c0 + c) >>> 0;
-        d0 = (d0 + d) >>> 0;
+        a0 = (a0 + a) >>> 0; b0 = (b0 + b) >>> 0; c0 = (c0 + c) >>> 0; d0 = (d0 + d) >>> 0;
     }
 
-    const result = new Uint8Array(16);
-    const rv = new DataView(result.buffer);
-    rv.setUint32(0, a0, true);
-    rv.setUint32(4, b0, true);
-    rv.setUint32(8, c0, true);
-    rv.setUint32(12, d0, true);
-    return result;
+    function update(bytes: Uint8Array): void {
+        if (done) throw new Error('Md5Hasher: update() after digest()');
+        // Advance the 64-bit bit length.
+        const addBits = bytes.length * 8;
+        lenLo += addBits >>> 0;
+        lenHi += Math.floor(bytes.length / 0x20000000); // bytes * 8 / 2^32
+        if (lenLo >= 0x100000000) { lenLo -= 0x100000000; lenHi += 1; }
+        let i = 0;
+        if (blockLen > 0) {
+            const need = 64 - blockLen;
+            const take = Math.min(need, bytes.length);
+            block.set(bytes.subarray(0, take), blockLen);
+            blockLen += take;
+            i = take;
+            if (blockLen === 64) { processBlock(); blockLen = 0; }
+        }
+        for (; i + 64 <= bytes.length; i += 64) {
+            block.set(bytes.subarray(i, i + 64));
+            processBlock();
+        }
+        if (i < bytes.length) {
+            block.set(bytes.subarray(i), 0);
+            blockLen = bytes.length - i;
+        }
+    }
+
+    function digest(): Uint8Array {
+        if (done) throw new Error('Md5Hasher: digest() called twice');
+        // Snapshot the true message length before update() mutates the counter.
+        const finalLo = lenLo >>> 0;
+        const finalHi = lenHi >>> 0;
+        // Append 0x80, zeros to reach 56 mod 64, then the 64-bit LE bit length.
+        // Pad size is measured from the current buffer fill so the length lands
+        // exactly on a block boundary.
+        const pad = new Uint8Array(blockLen < 56 ? 64 - blockLen : 128 - blockLen);
+        pad[0] = 0x80;
+        const tail = new DataView(pad.buffer);
+        tail.setUint32(pad.length - 8, finalLo, true);
+        tail.setUint32(pad.length - 4, finalHi, true);
+        update(pad);
+        done = true;
+
+        const result = new Uint8Array(16);
+        const rv = new DataView(result.buffer);
+        rv.setUint32(0, a0, true);
+        rv.setUint32(4, b0, true);
+        rv.setUint32(8, c0, true);
+        rv.setUint32(12, d0, true);
+        return result;
+    }
+
+    return { update, digest };
+}
+
+/**
+ * MD5 hash (RFC 1321).
+ * @param input - Bytes to hash
+ * @returns 16-byte MD5 digest
+ */
+export function md5(input: Uint8Array): Uint8Array {
+    const h = createMd5();
+    h.update(input);
+    return h.digest();
 }
 
 // ── SHA-256 (FIPS 180-4) ────────────────────────────────────────────
@@ -438,16 +623,195 @@ export function sha256(input: Uint8Array): Uint8Array {
     return result;
 }
 
+// ── SHA-384 / SHA-512 (FIPS 180-4) ──────────────────────────────────
+//
+// 64-bit words are represented as (hi, lo) 32-bit limb pairs so the whole
+// compression stays in fast integer arithmetic (no BigInt), which matters for
+// the R6 password-hash iteration (Algorithm 2.B) that hashes several KB per
+// round across ~150 rounds per authentication.
+
+// Round constants as interleaved hi, lo 32-bit words.
+const SHA512_KH = new Uint32Array([
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+    0xca273ece, 0xd186b8c7, 0xeada7dd6, 0xf57d4f7f, 0x06f067aa, 0x0a637dc5, 0x113f9804, 0x1b710b35,
+    0x28db77f5, 0x32caab7b, 0x3c9ebe0a, 0x431d67c4, 0x4cc5d4be, 0x597f299c, 0x5fcb6fab, 0x6c44198c,
+]);
+const SHA512_KL = new Uint32Array([
+    0xd728ae22, 0x23ef65cd, 0xec4d3b2f, 0x8189dbbc, 0xf348b538, 0xb605d019, 0xaf194f9b, 0xda6d8118,
+    0xa3030242, 0x45706fbe, 0x4ee4b28c, 0xd5ffb4e2, 0xf27b896f, 0x3b1696b1, 0x25c71235, 0xcf692694,
+    0x9ef14ad2, 0x384f25e3, 0x8b8cd5b5, 0x77ac9c65, 0x592b0275, 0x6ea6e483, 0xbd41fbd4, 0x831153b5,
+    0xee66dfab, 0x2db43210, 0x98fb213f, 0xbeef0ee4, 0x3da88fc2, 0x930aa725, 0xe003826f, 0x0a0e6e70,
+    0x46d22ffc, 0x5c26c926, 0x5ac42aed, 0x9d95b3df, 0x8baf63de, 0x3c77b2a8, 0x47edaee6, 0x1482353b,
+    0x4cf10364, 0xbc423001, 0xd0f89791, 0x0654be30, 0xd6ef5218, 0x5565a910, 0x5771202a, 0x32bbd1b8,
+    0xb8d2d0c8, 0x5141ab53, 0xdf8eeb99, 0xe19b48a8, 0xc5c95a63, 0xe3418acb, 0x7763e373, 0xd6b2b8a3,
+    0x5defb2fc, 0x43172f60, 0xa1f0ab72, 0x1a6439ec, 0x23631e28, 0xde82bde9, 0xb2c67915, 0xe372532b,
+    0xea26619c, 0x21c0c207, 0xcde0eb1e, 0xee6ed178, 0x72176fba, 0xa2c898a6, 0xbef90dae, 0x131c471b,
+    0x23047d84, 0x40c72493, 0x15c9bebc, 0x9c100d4c, 0xcb3e42b6, 0xfc657e2a, 0x3ad6faec, 0x4a475817,
+]);
+
+const SHA512_IV_H = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]);
+const SHA512_IV_L = new Uint32Array([0xf3bcc908, 0x84caa73b, 0xfe94f82b, 0x5f1d36f1, 0xade682d1, 0x2b3e6c1f, 0xfb41bd6b, 0x137e2179]);
+const SHA384_IV_H = new Uint32Array([0xcbbb9d5d, 0x629a292a, 0x9159015a, 0x152fecd8, 0x67332667, 0x8eb44a87, 0xdb0c2e0d, 0x47b5481d]);
+const SHA384_IV_L = new Uint32Array([0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4]);
+
+/** In-place 64-bit add of (addH,addL) into the h-word pair at index `i`. */
+function add64(hH: Uint32Array, hL: Uint32Array, i: number, addH: number, addL: number): void {
+    const lo = (hL[i] & 0xffff) + (addL & 0xffff);
+    const mid = (hL[i] >>> 16) + (addL >>> 16) + (lo >>> 16);
+    const hi = (hH[i] & 0xffff) + (addH & 0xffff) + (mid >>> 16);
+    const top = (hH[i] >>> 16) + (addH >>> 16) + (hi >>> 16);
+    hL[i] = ((mid & 0xffff) << 16) | (lo & 0xffff);
+    hH[i] = ((top & 0xffff) << 16) | (hi & 0xffff);
+}
+
+/** Shared SHA-512/384 compression over `input`, starting from `ivH`/`ivL`. */
+function sha512Core(input: Uint8Array, ivH: Uint32Array, ivL: Uint32Array, outBytes: number): Uint8Array {
+    const len = input.length;
+    const padLen = ((111 - (len % 128)) + 128) % 128;
+    const padded = new Uint8Array(len + 1 + padLen + 16);
+    padded.set(input);
+    padded[len] = 0x80;
+    // 128-bit big-endian bit length; high 64 bits stay 0 for realistic sizes.
+    const bitLen = len * 8;
+    padded[padded.length - 4] = (bitLen >>> 24) & 0xff;
+    padded[padded.length - 3] = (bitLen >>> 16) & 0xff;
+    padded[padded.length - 2] = (bitLen >>> 8) & 0xff;
+    padded[padded.length - 1] = bitLen & 0xff;
+
+    const hH = new Uint32Array(ivH);
+    const hL = new Uint32Array(ivL);
+    const wH = new Uint32Array(80);
+    const wL = new Uint32Array(80);
+
+    for (let off = 0; off < padded.length; off += 128) {
+        for (let j = 0; j < 16; j++) {
+            const p = off + j * 8;
+            wH[j] = (padded[p] << 24) | (padded[p + 1] << 16) | (padded[p + 2] << 8) | padded[p + 3];
+            wL[j] = (padded[p + 4] << 24) | (padded[p + 5] << 16) | (padded[p + 6] << 8) | padded[p + 7];
+        }
+        for (let j = 16; j < 80; j++) {
+            // s0 = ror(x,1) ^ ror(x,8) ^ shr(x,7)   (x = W[j-15])
+            let xh = wH[j - 15], xl = wL[j - 15];
+            const s0h = ((xh >>> 1) | (xl << 31)) ^ ((xh >>> 8) | (xl << 24)) ^ (xh >>> 7);
+            const s0l = ((xl >>> 1) | (xh << 31)) ^ ((xl >>> 8) | (xh << 24)) ^ ((xl >>> 7) | (xh << 25));
+            // s1 = ror(x,19) ^ ror(x,61) ^ shr(x,6)  (x = W[j-2])
+            xh = wH[j - 2]; xl = wL[j - 2];
+            const s1h = ((xh >>> 19) | (xl << 13)) ^ ((xl >>> 29) | (xh << 3)) ^ (xh >>> 6);
+            const s1l = ((xl >>> 19) | (xh << 13)) ^ ((xh >>> 29) | (xl << 3)) ^ ((xl >>> 6) | (xh << 26));
+            // W[j] = W[j-16] + s0 + W[j-7] + s1  (64-bit add via lo carry)
+            const l16 = wL[j - 16], h16 = wH[j - 16], l7 = wL[j - 7], h7 = wH[j - 7];
+            const lo = (l16 & 0xffff) + (s0l & 0xffff) + (l7 & 0xffff) + (s1l & 0xffff);
+            const mid = (l16 >>> 16) + (s0l >>> 16) + (l7 >>> 16) + (s1l >>> 16) + (lo >>> 16);
+            const hi = (h16 & 0xffff) + (s0h & 0xffff) + (h7 & 0xffff) + (s1h & 0xffff) + (mid >>> 16);
+            const top = (h16 >>> 16) + (s0h >>> 16) + (h7 >>> 16) + (s1h >>> 16) + (hi >>> 16);
+            wL[j] = ((mid & 0xffff) << 16) | (lo & 0xffff);
+            wH[j] = ((top & 0xffff) << 16) | (hi & 0xffff);
+        }
+
+        let ah = hH[0], al = hL[0], bh = hH[1], bl = hL[1], ch = hH[2], cl = hL[2], dh = hH[3], dl = hL[3];
+        let eh = hH[4], el = hL[4], fh = hH[5], fl = hL[5], gh = hH[6], gl = hL[6], hh = hH[7], hl = hL[7];
+
+        for (let j = 0; j < 80; j++) {
+            const S1h = ((eh >>> 14) | (el << 18)) ^ ((eh >>> 18) | (el << 14)) ^ ((el >>> 9) | (eh << 23));
+            const S1l = ((el >>> 14) | (eh << 18)) ^ ((el >>> 18) | (eh << 14)) ^ ((eh >>> 9) | (el << 23));
+            const chH = (eh & fh) ^ (~eh & gh);
+            const chL = (el & fl) ^ (~el & gl);
+
+            const kh = SHA512_KH[j], kl = SHA512_KL[j];
+            let lo = (hl & 0xffff) + (S1l & 0xffff) + (chL & 0xffff) + (kl & 0xffff) + (wL[j] & 0xffff);
+            let mid = (hl >>> 16) + (S1l >>> 16) + (chL >>> 16) + (kl >>> 16) + (wL[j] >>> 16) + (lo >>> 16);
+            let hi = (hh & 0xffff) + (S1h & 0xffff) + (chH & 0xffff) + (kh & 0xffff) + (wH[j] & 0xffff) + (mid >>> 16);
+            let top = (hh >>> 16) + (S1h >>> 16) + (chH >>> 16) + (kh >>> 16) + (wH[j] >>> 16) + (hi >>> 16);
+            const t1l = ((mid & 0xffff) << 16) | (lo & 0xffff);
+            const t1h = ((top & 0xffff) << 16) | (hi & 0xffff);
+
+            const S0h = ((ah >>> 28) | (al << 4)) ^ ((al >>> 2) | (ah << 30)) ^ ((al >>> 7) | (ah << 25));
+            const S0l = ((al >>> 28) | (ah << 4)) ^ ((ah >>> 2) | (al << 30)) ^ ((ah >>> 7) | (al << 25));
+            const majH = (ah & bh) ^ (ah & ch) ^ (bh & ch);
+            const majL = (al & bl) ^ (al & cl) ^ (bl & cl);
+            lo = (S0l & 0xffff) + (majL & 0xffff);
+            mid = (S0l >>> 16) + (majL >>> 16) + (lo >>> 16);
+            hi = (S0h & 0xffff) + (majH & 0xffff) + (mid >>> 16);
+            top = (S0h >>> 16) + (majH >>> 16) + (hi >>> 16);
+            const t2l = ((mid & 0xffff) << 16) | (lo & 0xffff);
+            const t2h = ((top & 0xffff) << 16) | (hi & 0xffff);
+
+            hh = gh; hl = gl; gh = fh; gl = fl; fh = eh; fl = el;
+            // e = d + t1
+            lo = (dl & 0xffff) + (t1l & 0xffff);
+            mid = (dl >>> 16) + (t1l >>> 16) + (lo >>> 16);
+            hi = (dh & 0xffff) + (t1h & 0xffff) + (mid >>> 16);
+            top = (dh >>> 16) + (t1h >>> 16) + (hi >>> 16);
+            el = ((mid & 0xffff) << 16) | (lo & 0xffff);
+            eh = ((top & 0xffff) << 16) | (hi & 0xffff);
+            dh = ch; dl = cl; ch = bh; cl = bl; bh = ah; bl = al;
+            // a = t1 + t2
+            lo = (t1l & 0xffff) + (t2l & 0xffff);
+            mid = (t1l >>> 16) + (t2l >>> 16) + (lo >>> 16);
+            hi = (t1h & 0xffff) + (t2h & 0xffff) + (mid >>> 16);
+            top = (t1h >>> 16) + (t2h >>> 16) + (hi >>> 16);
+            al = ((mid & 0xffff) << 16) | (lo & 0xffff);
+            ah = ((top & 0xffff) << 16) | (hi & 0xffff);
+        }
+
+        add64(hH, hL, 0, ah, al); add64(hH, hL, 1, bh, bl);
+        add64(hH, hL, 2, ch, cl); add64(hH, hL, 3, dh, dl);
+        add64(hH, hL, 4, eh, el); add64(hH, hL, 5, fh, fl);
+        add64(hH, hL, 6, gh, gl); add64(hH, hL, 7, hh, hl);
+    }
+
+    const result = new Uint8Array(outBytes);
+    for (let i = 0; i < 8; i++) {
+        const bo = i * 8;
+        if (bo >= outBytes) break;
+        const h = hH[i], l = hL[i];
+        result[bo] = (h >>> 24) & 0xff; result[bo + 1] = (h >>> 16) & 0xff;
+        result[bo + 2] = (h >>> 8) & 0xff; result[bo + 3] = h & 0xff;
+        if (bo + 4 < outBytes) {
+            result[bo + 4] = (l >>> 24) & 0xff; result[bo + 5] = (l >>> 16) & 0xff;
+            result[bo + 6] = (l >>> 8) & 0xff; result[bo + 7] = l & 0xff;
+        }
+    }
+    return result;
+}
+
+/**
+ * SHA-384 hash (FIPS 180-4).
+ * @returns 48-byte digest
+ */
+export function sha384(input: Uint8Array): Uint8Array {
+    return sha512Core(input, SHA384_IV_H, SHA384_IV_L, 48);
+}
+
+/**
+ * SHA-512 hash (FIPS 180-4).
+ * @returns 64-byte digest
+ */
+export function sha512(input: Uint8Array): Uint8Array {
+    return sha512Core(input, SHA512_IV_H, SHA512_IV_L, 64);
+}
+
 // ── PDF Password Padding (ISO 32000-1 Table 20) ─────────────────────
 
-const PDF_PADDING = new Uint8Array([
+export const PDF_PADDING = new Uint8Array([
     0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41,
     0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08,
     0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68, 0x3E, 0x80,
     0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A,
 ]);
 
-function padPassword(password: string): Uint8Array {
+/**
+ * Pad or truncate a password to exactly 32 bytes with the standard padding
+ * string (ISO 32000-1 §7.6.3.3 Algorithm 2 step a).
+ */
+export function padPassword(password: string): Uint8Array {
     const result = new Uint8Array(32);
     const bytes = encodePassword(password);
     const len = Math.min(bytes.length, 32);
@@ -532,35 +896,66 @@ function randomBytes(n: number): Uint8Array {
 }
 
 /**
- * Compute the encryption key for AES-128 / Revision 4.
- * ISO 32000-1 §7.6.3.3 Algorithm 2.
+ * Generate `n` cryptographically secure random bytes, throwing when no Web
+ * Crypto CSPRNG is available (never falls back to `Math.random()`).
+ *
+ * @internal Shared with the parser's encrypted-incremental-update path
+ * (`src/parser/pdf-decrypt.ts`); not part of the public API surface.
  */
-function computeKeyR4(
+export function cryptoRandomBytes(n: number): Uint8Array {
+    return randomBytes(n);
+}
+
+/**
+ * Compute the file encryption key for revisions 2–4
+ * (ISO 32000-1 §7.6.3.3 Algorithm 2).
+ *
+ * The writer always uses the R4/AES-128 defaults (16-byte key, metadata
+ * encrypted). The decryptor passes explicit `keyLen` / `revision` /
+ * `encryptMetadata` to also cover R2 (40-bit RC4) and R3 (variable-length
+ * RC4) files, and R4 files with `/EncryptMetadata false`.
+ *
+ * @param userPwd - Padded user password (32 bytes, from {@link padPassword})
+ * @param oValue - The 32-byte `/O` entry
+ * @param pValue - The `/P` permissions integer
+ * @param docId - First element of the trailer `/ID`
+ * @param keyLen - Key length in bytes (5–16; default 16)
+ * @param revision - Security-handler revision (2–4; default 4)
+ * @param encryptMetadata - `/EncryptMetadata` (default true; only meaningful for R4)
+ */
+export function computeKeyR4(
     userPwd: Uint8Array,
     oValue: Uint8Array,
     pValue: number,
     docId: Uint8Array,
+    keyLen = 16,
+    revision = 4,
+    encryptMetadata = true,
 ): Uint8Array {
     // Step a: Password padding (already done)
-    // Step b: MD5(padded + O + P + ID)
-    const buf = new Uint8Array(userPwd.length + oValue.length + 4 + docId.length);
+    // Step b–f: MD5(padded + O + P + ID [+ FFFFFFFF when R4 metadata is plaintext])
+    const extra = revision >= 4 && !encryptMetadata ? 4 : 0;
+    const buf = new Uint8Array(userPwd.length + oValue.length + 4 + docId.length + extra);
     let off = 0;
     buf.set(userPwd, off); off += userPwd.length;
-    buf.set(oValue, off); off += oValue.length;
+    buf.set(oValue.subarray(0, 32), off); off += Math.min(oValue.length, 32);
     buf[off++] = pValue & 0xFF;
     buf[off++] = (pValue >> 8) & 0xFF;
     buf[off++] = (pValue >> 16) & 0xFF;
     buf[off++] = (pValue >> 24) & 0xFF;
-    buf.set(docId, off);
+    buf.set(docId, off); off += docId.length;
+    if (extra) { buf[off] = 0xFF; buf[off + 1] = 0xFF; buf[off + 2] = 0xFF; buf[off + 3] = 0xFF; }
 
-    let hash = md5(buf);
+    let hash = md5(buf.subarray(0, off + extra));
 
-    // Step d: /Length is 128 bits (16 bytes), do 50 additional MD5 rounds
-    for (let i = 0; i < 50; i++) {
-        hash = md5(hash.subarray(0, 16));
+    // Step g: R3+ only — 50 additional MD5 rounds over the first keyLen bytes
+    if (revision >= 3) {
+        for (let i = 0; i < 50; i++) {
+            hash = md5(hash.subarray(0, keyLen));
+        }
     }
 
-    return hash.subarray(0, 16);
+    return hash.subarray(0, keyLen);
 }
 
 /**
@@ -617,10 +1012,11 @@ function computeUValueR4(key: Uint8Array, docId: Uint8Array): Uint8Array {
 }
 
 /**
- * Minimal RC4 — used ONLY for password hash computation (O/U values in R4).
- * NOT used for content encryption (AES only).
+ * Minimal RC4 — used for password hash computation (O/U values in R2–R4) and
+ * for **decrypting** legacy RC4-encrypted documents (V1/V2). Never used to
+ * encrypt new content (AES only).
  */
-function rc4(data: Uint8Array, key: Uint8Array): Uint8Array {
+export function rc4(data: Uint8Array, key: Uint8Array): Uint8Array {
     const S = new Uint8Array(256);
     for (let i = 0; i < 256; i++) S[i] = i;
     let j = 0;
@@ -644,7 +1040,7 @@ function rc4(data: Uint8Array, key: Uint8Array): Uint8Array {
 /**
  * Encode password as UTF-8 bytes, truncated to 127 bytes (ISO 32000-2 §7.6.3.1).
  */
-function encodePasswordUTF8(str: string): Uint8Array {
+export function encodePasswordUTF8(str: string): Uint8Array {
     const bytes: number[] = [];
     for (let i = 0; i < str.length && bytes.length < 127; i++) {
         const cp = str.charCodeAt(i);
@@ -661,8 +1057,20 @@ function encodePasswordUTF8(str: string): Uint8Array {
 
 /**
  * Hash computation for Revision 6 (ISO 32000-2, Algorithm 2.B).
+ *
+ * `variant: 'spec'` (the default, and what the writer emits since v1.6.0)
+ * uses the required SHA-256 / SHA-384 / SHA-512 rotation. pdfnative ≤ 1.5.0
+ * substituted SHA-256 for every round; `variant: 'legacy'` reproduces that
+ * behaviour so the decryptor can still open documents written by those
+ * versions (it retries with `'legacy'` when the spec-compliant hash does not
+ * validate).
  */
-function computeHashR6(password: Uint8Array, salt: Uint8Array, userKey: Uint8Array | null): Uint8Array {
+export function computeHashR6(
+    password: Uint8Array,
+    salt: Uint8Array,
+    userKey: Uint8Array | null,
+    variant: 'spec' | 'legacy' = 'spec',
+): Uint8Array {
     // K = SHA-256(password + salt + userKey)
     const input = new Uint8Array(password.length + salt.length + (userKey ? userKey.length : 0));
     let off = 0;
@@ -684,21 +1092,26 @@ function computeHashR6(password: Uint8Array, salt: Uint8Array, userKey: Uint8Arr
         const K1 = new Uint8Array(seq.length * 64);
         for (let i = 0; i < 64; i++) K1.set(seq, i * seq.length);
 
-        // E = AES-CBC(key=K[0..15], iv=K[16..31], data=K1)
+        // Algorithm 2.B runs AES-128-CBC over exactly K1 with *no* padding.
+        // K1 is always block-aligned (seq × 64, and 64 is a multiple of 16),
+        // but our aesCBC always appends a full PKCS7 block. The spec variant
+        // drops that trailing block; the legacy variant keeps it, because
+        // pdfnative ≤ 1.5.0 hashed the padded ciphertext and used its last
+        // byte for the termination test.
         const aesKey = K.subarray(0, 16);
         const aesIV = K.subarray(16, 32);
-        const E = aesCBC(K1, aesKey, aesIV);
+        const padded = aesCBC(K1, aesKey, aesIV);
+        const E = variant === 'spec' ? padded.subarray(0, K1.length) : padded;
 
-        // Determine hash function from last byte of E mod 3
-        const lastByte = E[E.length - 1] % 3;
-        if (lastByte === 0) {
-            K = sha256(E);
-        } else if (lastByte === 1) {
-            // SHA-384 not implemented — use SHA-256 (pragmatic, compliant with most readers)
+        if (variant === 'legacy') {
             K = sha256(E);
         } else {
-            // SHA-512 not implemented — use SHA-256 (pragmatic)
-            K = sha256(E);
+            // Hash choice: first 16 bytes of E as a big-endian number mod 3
+            // (ISO 32000-2 §7.6.4.3.4). Summing the bytes mod 3 is equivalent
+            // because 256 ≡ 1 (mod 3).
+            let mod = 0;
+            for (let i = 0; i < 16; i++) mod = (mod + E[i]) % 3;
+            K = mod === 0 ? sha256(E) : mod === 1 ? sha384(E) : sha512(E);
         }
 
         round++;

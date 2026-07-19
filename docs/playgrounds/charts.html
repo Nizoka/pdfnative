@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Charts Playground — pdfnative</title>
+  <meta name="description" content="Generate native vector charts (bar, line, pie, donut) as pure PDF path operators in your browser with pdfnative — zero dependencies, no rasterisation. New in v1.6.0.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/charts.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/charts.html">
+  <meta property="og:title" content="Charts Playground — pdfnative">
+  <meta property="og:description" content="Bar, line, pie, and donut charts rendered as pure PDF path operators — zero install, right in your browser.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Charts Playground — pdfnative">
+  <meta name="twitter:description" content="Native vector charts as pure PDF path operators. Zero install.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Charts (v1.6.0)</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./charts.html" aria-current="page">Charts</a>
+    <a href="./authoring-plus.html">Authoring+</a>
+    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>Native vector charts — new in 1.6.0</h1>
+    <p>pdfnative 1.6.0 adds a <code>chart</code> block that renders <strong>bar, horizontal-bar, line, pie, and donut</strong> charts as <strong>pure PDF path operators</strong> — rectangles, line segments, and cubic-Bézier arcs. Zero dependencies, no rasterisation, crisp at any zoom, and PDF/A-safe. Pick a preset, generate, and open the downloaded PDF in any viewer.</p>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
+      <label for="preset"><strong>Chart:</strong></label>
+      <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="bar">Grouped bar — revenue vs cost</option>
+        <option value="line">Multi-series line with markers</option>
+        <option value="pie">Pie — traffic sources</option>
+        <option value="donut">Donut — budget split (tagged + alt text)</option>
+        <option value="mixed">Dashboard — several charts on one page</option>
+      </select>
+      <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
+      <span id="timer" style="font-size:13px;color:#64748b;"></span>
+    </div>
+
+    <p id="desc" style="margin-top:20px;color:#475569;font-size:15px;line-height:1.6;"></p>
+
+    <details style="margin-top:16px;" open>
+      <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
+      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+    </details>
+
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">v1.6.0 chart features:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li><strong>Types</strong> — <code>bar</code>, <code>barH</code>, <code>line</code> (optional markers), <code>pie</code>, <code>donut</code>.</li>
+        <li><strong>Multi-series</strong> grouped bars and lines with an auto-generated legend and "nice" 1/2/5×10ⁿ axis ticks.</li>
+        <li><strong>Negative values</strong> anchor at a zero baseline automatically.</li>
+        <li><strong>Colours</strong> validated (injection-safe); per-series/per-slice palette override.</li>
+        <li><strong>Accessible</strong> — tagged mode emits a <code>/Figure</code> with <code>/Alt</code>; solid fills only, so PDF/A-safe.</li>
+        <li><strong>International labels</strong> shape correctly (CJK/RTL/emoji) via the standard text pipeline.</li>
+      </ul>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/charts.html">Charts guide</a> for the full <code>ChartBlock</code> API.</p>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/charts.html">Charts guide →</a></li>
+      <li><a href="./">All playgrounds →</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+const codeView = $('code-view');
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') { status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5'; }
+  else if (kind === 'success') { status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7'; }
+  else { status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd'; }
+}
+
+const DESCRIPTIONS = {
+  bar: 'A grouped bar chart comparing quarterly revenue against cost across two series, with a legend and gridlines.',
+  line: 'A two-series line chart with square markers on each data point.',
+  pie: 'A pie chart of traffic sources with per-slice percentage labels.',
+  donut: 'A donut chart of a budget split, rendered in tagged mode with an /Alt description for accessibility.',
+  mixed: 'A one-page dashboard combining a grouped bar, a horizontal bar, and a donut chart.',
+};
+
+const CODE = {
+  bar: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Report',
+  blocks: [{
+    type: 'chart', chartType: 'bar', title: 'Quarterly revenue vs cost',
+    categories: ['Q1', 'Q2', 'Q3', 'Q4'],
+    series: [
+      { label: 'Revenue', values: [120, 150, 170, 140] },
+      { label: 'Cost',    values: [80, 90, 100, 95] },
+    ],
+  }],
+});
+downloadBlob(pdf, 'chart-bar.pdf');`,
+  line: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Growth',
+  blocks: [{
+    type: 'chart', chartType: 'line', title: 'Monthly active users', markers: true,
+    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    series: [
+      { label: 'Free', values: [10, 25, 22, 40, 55, 60] },
+      { label: 'Paid', values: [3, 8, 12, 18, 26, 34] },
+    ],
+  }],
+});
+downloadBlob(pdf, 'chart-line.pdf');`,
+  pie: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Traffic',
+  blocks: [{
+    type: 'chart', chartType: 'pie', title: 'Traffic sources',
+    categories: ['Organic', 'Referral', 'Direct', 'Social'],
+    series: [{ label: 'Share', values: [55, 20, 15, 10] }],
+  }],
+});
+downloadBlob(pdf, 'chart-pie.pdf');`,
+  donut: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Budget',
+  blocks: [{
+    type: 'chart', chartType: 'donut', title: 'Budget split',
+    altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.',
+    categories: ['Engineering', 'Sales', 'Operations'],
+    series: [{ label: 'Budget', values: [50, 30, 20] }],
+  }],
+}, { tagged: true });   // tagged PDF → /Figure with /Alt
+downloadBlob(pdf, 'chart-donut.pdf');`,
+  mixed: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Dashboard',
+  blocks: [
+    { type: 'heading', text: 'Q4 dashboard', level: 1 },
+    { type: 'chart', chartType: 'bar', title: 'Revenue vs cost',
+      categories: ['Oct', 'Nov', 'Dec'],
+      series: [{ label: 'Revenue', values: [50, 62, 70] }, { label: 'Cost', values: [30, 34, 38] }] },
+    { type: 'chart', chartType: 'barH', title: 'Sales by region',
+      categories: ['N', 'S', 'E', 'W'], series: [{ label: 'Units', values: [40, 65, 30, 52] }] },
+    { type: 'chart', chartType: 'donut', title: 'Traffic',
+      categories: ['Organic', 'Direct', 'Social'], series: [{ label: 'Share', values: [60, 25, 15] }] },
+  ],
+});
+downloadBlob(pdf, 'chart-dashboard.pdf');`,
+};
+
+function applyPreset(id) {
+  $('desc').textContent = DESCRIPTIONS[id];
+  codeView.textContent = CODE[id];
+  if (window.Prism) window.Prism.highlightElement(codeView);
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+let pdfMod = null;
+async function loadPdfnative() {
+  if (pdfMod) return pdfMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFBytes === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFBytes === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFBytes === 'function') { pdfMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not load pdfnative from CDN. ' + (lastErr ? lastErr.message : ''));
+}
+
+const BUILDERS = {
+  bar: (m) => m.buildDocumentPDFBytes({ title: 'Report', blocks: [{ type: 'chart', chartType: 'bar', title: 'Quarterly revenue vs cost', categories: ['Q1', 'Q2', 'Q3', 'Q4'], series: [{ label: 'Revenue', values: [120, 150, 170, 140] }, { label: 'Cost', values: [80, 90, 100, 95] }] }] }),
+  line: (m) => m.buildDocumentPDFBytes({ title: 'Growth', blocks: [{ type: 'chart', chartType: 'line', title: 'Monthly active users', markers: true, categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], series: [{ label: 'Free', values: [10, 25, 22, 40, 55, 60] }, { label: 'Paid', values: [3, 8, 12, 18, 26, 34] }] }] }),
+  pie: (m) => m.buildDocumentPDFBytes({ title: 'Traffic', blocks: [{ type: 'chart', chartType: 'pie', title: 'Traffic sources', categories: ['Organic', 'Referral', 'Direct', 'Social'], series: [{ label: 'Share', values: [55, 20, 15, 10] }] }] }),
+  donut: (m) => m.buildDocumentPDFBytes({ title: 'Budget', blocks: [{ type: 'chart', chartType: 'donut', title: 'Budget split', altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.', categories: ['Engineering', 'Sales', 'Operations'], series: [{ label: 'Budget', values: [50, 30, 20] }] }] }, { tagged: true }),
+  mixed: (m) => m.buildDocumentPDFBytes({ title: 'Dashboard', blocks: [
+    { type: 'heading', text: 'Q4 dashboard', level: 1 },
+    { type: 'chart', chartType: 'bar', title: 'Revenue vs cost', categories: ['Oct', 'Nov', 'Dec'], series: [{ label: 'Revenue', values: [50, 62, 70] }, { label: 'Cost', values: [30, 34, 38] }] },
+    { type: 'chart', chartType: 'barH', title: 'Sales by region', categories: ['N', 'S', 'E', 'W'], series: [{ label: 'Units', values: [40, 65, 30, 52] }] },
+    { type: 'chart', chartType: 'donut', title: 'Traffic', categories: ['Organic', 'Direct', 'Social'], series: [{ label: 'Share', values: [60, 25, 15] }] },
+  ] }),
+};
+
+async function generate() {
+  const id = $('preset').value;
+  const t0 = performance.now();
+  try {
+    setStatus('Loading pdfnative from CDN…', 'info');
+    const mod = await loadPdfnative();
+    setStatus('Generating chart PDF…', 'info');
+    const bytes = BUILDERS[id](mod);
+    mod.downloadBlob(bytes, `chart-${id}.pdf`);
+    const ms = (performance.now() - t0).toFixed(0);
+    $('timer').textContent = `${(bytes.length / 1024).toFixed(1)} KB · ${ms} ms`;
+    setStatus('Chart PDF generated and downloaded.', 'success');
+  } catch (err) {
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  }
+}
+
+$('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('generate').addEventListener('click', generate);
+applyPreset('bar');
+
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('pdfnative-theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('pdfnative-theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

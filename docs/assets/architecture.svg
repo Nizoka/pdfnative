@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="arch-title arch-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
   <title id="arch-title">pdfnative — module architecture</title>
-  <desc id="arch-desc">Layered dependency diagram for pdfnative 1.5.0. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (command-line interface: render, sign, inspect, verify, merge, split, extract, annotate, govern, batch), pdfnative-mcp (Model Context Protocol server exposing 19 tools to Claude, Cursor, Zed and any stdio MCP client), and pdfnative-react (on-device JSX-to-PDF renderer). Bottom band: the zero-dependency library. Strict unidirectional flow — types feeds core; fonts imports into core; shaping imports into fonts; worker imports into shaping. Core groups pdf-builder, pdf-document, pdf-encrypt, pdf-tags plus outline, page labels, annotations and layout inspection. fonts covers encoding, subsetting, CMap and the font-data tools sub-path. Shaping covers GSUB, GPOS, BiDi and 22 Unicode scripts. crypto is a standalone module (AES, RSA, ECDSA, SHA, CMS and a pluggable native signing provider). parser is standalone, imports the compression layer, and provides page-tree manipulation: read, modify, annotate, merge and split. A header badge notes the repository's AI-agent governance with a human-in-the-loop (HITL) contribution gate. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress.</desc>
+  <desc id="arch-desc">Layered dependency diagram for pdfnative 1.6.0. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (command-line interface: render, sign, inspect, verify, merge, split, extract, annotate, govern, batch), pdfnative-mcp (Model Context Protocol server exposing 19 tools to Claude, Cursor, Zed and any stdio MCP client), and pdfnative-react (on-device JSX-to-PDF renderer). Bottom band: the zero-dependency library. Strict unidirectional flow — types feeds core; fonts imports into core; shaping imports into fonts; worker imports into shaping. Core groups pdf-builder, pdf-document, pdf-encrypt, pdf-tags plus outline, page labels, annotations and layout inspection. fonts covers encoding, subsetting, CMap and the font-data tools sub-path. Shaping covers GSUB, GPOS, BiDi and 22 Unicode scripts. crypto is a standalone module (AES, RSA, ECDSA, SHA, CMS and a pluggable native signing provider). parser is standalone, imports the compression layer, and provides page-tree manipulation: read, decrypt, extract text, modify, annotate, merge, split and re-encrypt. A header badge notes the repository's AI-agent governance with a human-in-the-loop (HITL) contribution gate. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress.</desc>
 
   <defs>
     <!-- Directional arrowheads -->
@@ -118,8 +118,8 @@
     <ellipse cx="675" cy="149" rx="12" ry="4.6" transform="rotate(120 675 149)"/>
   </g>
   <text x="702" y="146" font-size="15.5" font-weight="700" fill="#0E7490">pdfnative-react</text>
-  <text x="702" y="164" font-size="11" font-weight="600" fill="#0891B2">React renderer · JSX</text>
-  <text x="702" y="181" font-size="10" fill="#06B6D4">on-device · live preview</text>
+  <text x="702" y="164" font-size="11" font-weight="600" fill="#0891B2">React 19 renderer · JSX · v1.0</text>
+  <text x="702" y="181" font-size="10" fill="#06B6D4">render · stream · hooks · DocSpec</text>
 
   <!-- ════════════ LIBRARY BAND ════════════ -->
   <rect x="28" y="238" width="904" height="304" rx="16" fill="url(#g-lib)" stroke="#E2E8F0" stroke-width="1.25"/>
@@ -139,8 +139,9 @@
   <text x="336" y="342" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1D4ED8">pdf-builder · pdf-document</text>
   <text x="336" y="362" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1D4ED8">pdf-encrypt · pdf-tags</text>
   <line x1="262" y1="376" x2="410" y2="376" stroke="#BFDBFE" stroke-width="1"/>
-  <text x="336" y="395" text-anchor="middle" font-size="10.5" fill="#3B82F6">outline · page labels · annotations</text>
-  <text x="336" y="412" text-anchor="middle" font-size="10.5" fill="#3B82F6">layout inspect · viewer-prefs · barcode</text>
+  <text x="336" y="393" text-anchor="middle" font-size="10.5" fill="#3B82F6">outline · page labels · annotations</text>
+  <text x="336" y="409" text-anchor="middle" font-size="10.5" fill="#3B82F6">layout inspect · viewer-prefs · barcode</text>
+  <text x="336" y="425" text-anchor="middle" font-size="10.5" fill="#3B82F6">charts · form fill / flatten</text>
 
   <!-- fonts -->
   <g filter="url(#soft-sm)"><rect x="500" y="286" width="150" height="66" rx="12" fill="url(#g-fonts)" stroke="#A78BFA" stroke-width="1.25"/></g>
@@ -166,7 +167,7 @@
   <!-- parser (standalone) -->
   <g filter="url(#soft-sm)"><rect x="500" y="462" width="196" height="62" rx="12" fill="url(#g-parser)" stroke="#FB923C" stroke-width="1.25"/></g>
   <text x="598" y="489" text-anchor="middle" font-size="14.5" font-weight="700" fill="#C2410C">parser</text>
-  <text x="598" y="508" text-anchor="middle" font-size="9.5" fill="#F97316">read · modify · annotate · merge · split</text>
+  <text x="598" y="508" text-anchor="middle" font-size="9" fill="#F97316">read · decrypt · extract text · modify · merge / split · re-encrypt · stream</text>
 
   <!-- ─── Edges ─── -->
   <!-- consumers → core (npm) -->

@@ -9,7 +9,7 @@
  */
 
 import { compressStream } from './pdf-compress.js';
-import { encryptStream, buildEncryptDict, buildIdArray, md5, type EncryptionState } from './pdf-encrypt.js';
+import { encryptStream, encryptString, buildEncryptDict, buildIdArray, md5, type EncryptionState } from './pdf-encrypt.js';
 
 // ── PDF Writer ───────────────────────────────────────────────────────
 
@@ -20,8 +20,13 @@ import { encryptStream, buildEncryptDict, buildIdArray, md5, type EncryptionStat
 export interface PdfWriter {
     /** Append raw string to PDF output and advance byte offset. */
     readonly emit: (str: string) => void;
-    /** Emit a PDF indirect object (`num 0 obj ... endobj`). */
-    readonly emitObj: (num: number, content: string) => void;
+    /**
+     * Emit a PDF indirect object (`num 0 obj ... endobj`). When the document
+     * is encrypted, literal strings in `content` are encrypted with the
+     * object's key unless `skipEncrypt` is set (used for the `/Encrypt` dict
+     * and objects that manage their own encryption).
+     */
+    readonly emitObj: (num: number, content: string, skipEncrypt?: boolean) => void;
     /** Emit a stream object with optional compression and encryption. */
     readonly emitStreamObj: (num: number, dictEntries: string, streamData: string, skipCompress?: boolean) => void;
     /** Current byte offset in the output. */
@@ -51,9 +56,10 @@ export function createPdfWriter(compress: boolean, encState: EncryptionState | n
         _offset += str.length;
     }
 
-    function emitObj(num: number, content: string): void {
+    function emitObj(num: number, content: string, skipEncrypt?: boolean): void {
         objOffsets[num] = _offset;
-        emit(`${num} 0 obj\n${content}\nendobj\n\n`);
+        const body = encState && !skipEncrypt ? encryptObjectStrings(content, encState, num) : content;
+        emit(`${num} 0 obj\n${body}\nendobj\n\n`);
     }
 
     /**
@@ -74,13 +80,112 @@ export function createPdfWriter(compress: boolean, encState: EncryptionState | n
         // Step 2: Encrypt (after compression)
         if (encState) {
             const encrypted = encryptStream(data, encState, num, 0);
-            emitObj(num, `${dict.replace(/\/Length \d+/, `/Length ${encrypted.length}`)} >>\nstream\n${encrypted}\nendstream`);
+            // Encrypt any literal strings in the dict portion, but pass
+            // skipEncrypt so the binary stream payload is never scanned.
+            const encDict = encryptObjectStrings(dict.replace(/\/Length \d+/, `/Length ${encrypted.length}`), encState, num);
+            emitObj(num, `${encDict} >>\nstream\n${encrypted}\nendstream`, true);
         } else {
             emitObj(num, `${dict} >>\nstream\n${data}\nendstream`);
         }
     }
 
     return { emit, emitObj, emitStreamObj, offset: () => _offset, adjustOffset: (d: number) => { _offset += d; }, objOffsets, parts };
+}
+
+// ── String encryption in serialized object bodies ────────────────────
+
+/**
+ * Encrypt every PDF string literal in a serialized object body.
+ *
+ * When a document is encrypted, ISO 32000-1 §7.6.2 requires **all** strings
+ * (not just streams) to be encrypted with the object's key — Info metadata,
+ * annotation `/Contents`, outline titles, link URIs, etc. The object bodies
+ * built by the writer are already fully serialized, so this scans them and
+ * replaces each literal `(...)` and hex `<...>` string with its encrypted
+ * hex form, leaving names, numbers, dict delimiters (`<<` / `>>`) and the
+ * binary stream payload untouched.
+ *
+ * Exempt objects (the `/Encrypt` dict, the trailer `/ID`) are handled by
+ * their callers via `skipEncrypt` and never reach this function.
+ */
+function encryptObjectStrings(content: string, encState: EncryptionState, objNum: number): string {
+    let out = '';
+    let i = 0;
+    const n = content.length;
+    while (i < n) {
+        const ch = content[i];
+        if (ch === '(') {
+            // Literal string — consume with balanced parens + backslash escapes.
+            const { raw, next } = readLiteralString(content, i);
+            out += encryptString(raw, encState, objNum, 0);
+            i = next;
+        } else if (ch === '<' && content[i + 1] === '<') {
+            out += '<<';
+            i += 2;
+        } else if (ch === '<') {
+            // Hex string — up to the next '>'.
+            const end = content.indexOf('>', i + 1);
+            if (end === -1) { out += content.slice(i); break; }
+            const hex = content.slice(i + 1, end).replace(/\s+/g, '');
+            out += encryptString(hexToRaw(hex), encState, objNum, 0);
+            i = end + 1;
+        } else {
+            out += ch;
+            i++;
+        }
+    }
+    return out;
+}
+
+/** Parse a PDF literal string starting at `content[start] === '('`. */
+function readLiteralString(content: string, start: number): { raw: string; next: number } {
+    let raw = '';
+    let depth = 0;
+    let i = start + 1; // skip the opening '('
+    for (; i < content.length; i++) {
+        const c = content[i];
+        if (c === '\\') {
+            const e = content[i + 1];
+            i++;
+            switch (e) {
+                case 'n': raw += '\n'; break;
+                case 'r': raw += '\r'; break;
+                case 't': raw += '\t'; break;
+                case 'b': raw += '\b'; break;
+                case 'f': raw += '\f'; break;
+                case '(': raw += '('; break;
+                case ')': raw += ')'; break;
+                case '\\': raw += '\\'; break;
+                case '\r': if (content[i + 1] === '\n') i++; break; // line continuation
+                case '\n': break; // line continuation
+                default:
+                    if (e >= '0' && e <= '7') {
+                        let oct = e;
+                        for (let k = 0; k < 2 && content[i + 1] >= '0' && content[i + 1] <= '7'; k++) {
+                            oct += content[++i];
+                        }
+                        raw += String.fromCharCode(parseInt(oct, 8) & 0xFF);
+                    } else {
+                        raw += e; // unknown escape → literal char
+                    }
+            }
+            continue;
+        }
+        if (c === '(') { depth++; raw += c; continue; }
+        if (c === ')') {
+            if (depth === 0) { i++; break; } // closing paren of the string
+            depth--; raw += c; continue;
+        }
+        raw += c;
+    }
+    return { raw, next: i };
+}
+
+function hexToRaw(hex: string): string {
+    const even = hex.length % 2 === 0 ? hex : hex + '0';
+    let s = '';
+    for (let k = 0; k < even.length; k += 2) s += String.fromCharCode(parseInt(even.substr(k, 2), 16));
+    return s;
 }
 
 // ── Xref & Trailer ──────────────────────────────────────────────────
@@ -109,7 +214,8 @@ export function writeXrefTrailer(
     let encryptObjNum = 0;
     if (encState) {
         encryptObjNum = totalObjs + 1;
-        w.emitObj(encryptObjNum, buildEncryptDict(encState));
+        // The /Encrypt dict itself is never encrypted (ISO 32000-1 §7.6.1).
+        w.emitObj(encryptObjNum, buildEncryptDict(encState), true);
         totalObjs = encryptObjNum;
     }
 

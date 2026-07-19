@@ -170,8 +170,17 @@ export type { SvgSegment, SvgRenderOptions } from './core/pdf-svg.js';
 export { parseSvgPath, renderSvg } from './core/pdf-svg.js';
 
 // ── Core — AcroForm Fields ──────────────────────────────────────────
+export type { ChartBlock, ChartSeries, ChartType } from './types/pdf-document-types.js';
+export { renderChartBlock, estimateChartHeight, niceTicks } from './core/pdf-chart.js';
 export type { FormFieldType, FormField, FormWidgetResult, RadioGroupContext } from './core/pdf-form.js';
 export { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent, defaultFieldHeight } from './core/pdf-form.js';
+export type {
+    ParsedFormField, ParsedFieldType, FormFillValue, FillFormOptions, FlattenFormOptions,
+} from './core/pdf-form-fill.js';
+export {
+    readFormFields, fillForm, flattenForm,
+    FormFieldNotFoundError, FormValueTypeError, FormUnsupportedError,
+} from './core/pdf-form-fill.js';
 
 // ── Core — Digital Signatures ───────────────────────────────────────
 export type { PdfSignOptions, SigDictMetadata } from './core/pdf-signature.js';
@@ -281,13 +290,17 @@ export {
 } from './parser/pdf-object-parser.js';
 export type { XrefEntry, XrefTable } from './parser/pdf-xref-parser.js';
 export { findStartxref, parseXrefTable, getTrailerValue, getTrailerRef, MAX_XREF_CHAIN } from './parser/pdf-xref-parser.js';
-export type { PdfReader } from './parser/pdf-reader.js';
+export type { PdfReader, OpenPdfOptions, PdfEncryptionInfo } from './parser/pdf-reader.js';
 export type { ParsedAnnotation } from './parser/pdf-reader.js';
 export { openPdf } from './parser/pdf-reader.js';
+export type { DecryptionContext, CryptFilterMethod } from './parser/pdf-decrypt.js';
+export { PdfPasswordError, PdfEncryptionUnsupportedError } from './parser/pdf-decrypt.js';
 export type { PdfModifier } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
-export type { PageRange, MergeOptions } from './parser/pdf-pagetree.js';
-export { mergePdfs, splitPdf, extractPages } from './parser/pdf-pagetree.js';
+export type { PageRange, MergeOptions, PdfSourceInput, StreamMergeOptions, SplitPdfStream } from './parser/pdf-pagetree.js';
+export { mergePdfs, splitPdf, extractPages, streamMergedPdfs, streamExtractPages, streamSplitPdf } from './parser/pdf-pagetree.js';
+export type { ExtractTextOptions, ExtractedTextRun, ExtractedPageText } from './parser/pdf-text-extract.js';
+export { extractText } from './parser/pdf-text-extract.js';
 export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
 export { validatePdfUA } from './parser/pdf-ua-validator.js';
 export {

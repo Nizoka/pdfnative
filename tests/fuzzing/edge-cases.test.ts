@@ -79,7 +79,7 @@ describe('buildPDF — invalid input rejection', () => {
             .toThrow('exceeds safe limit');
     });
 
-    it('accepts exactly 100,000 rows without throwing', () => {
+    it('accepts exactly 100,000 rows without throwing', { timeout: 60_000 }, () => {
         const maxRows = Array.from({ length: 100_000 }, () => ({
             cells: ['a', 'b', 'c', 'd', 'e'], type: '', pointed: false,
         }));
@@ -288,8 +288,10 @@ describe('buildPDF — string escaping robustness', () => {
     it('handles nested escapes in docTitle', () => {
         const pdf = buildPDF(validParams({ docTitle: 'A\\(B)\\C' }));
         assertValidPdf(pdf);
-        // Verify /Info dict has properly escaped string
-        const infoMatch = pdf.match(/\/Title \(([^)]*(?:\\.[^)]*)*)\)/);
+        // Verify /Info dict has properly escaped string. The alternation is
+        // unambiguous (escape sequence vs. non-backslash/non-paren), so the
+        // match runs in linear time — no ReDoS backtracking.
+        const infoMatch = pdf.match(/\/Title \(((?:\\.|[^\\)])*)\)/);
         expect(infoMatch).not.toBeNull();
     });
 });

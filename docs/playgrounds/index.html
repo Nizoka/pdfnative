@@ -4,19 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playgrounds — pdfnative</title>
-  <meta name="description" content="Seven zero-install pdfnative playgrounds: extreme scripts, all 22 scripts + emoji, a document toolkit, an 800-page Worker stress test, CLI, MCP, and React.">
+  <meta name="description" content="Nine zero-install pdfnative playgrounds: extreme scripts, all 22 scripts + emoji, a document toolkit, native charts, authoring+, an 800-page Worker stress test, CLI, MCP, and React.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/">
   <meta property="og:title" content="Playgrounds — pdfnative">
-  <meta property="og:description" content="Eight interactive playgrounds for pdfnative: extreme-script shaping, an all-22-scripts + colour-emoji showcase, a 1.4.0 document toolkit, a 1.5.0 authoring+ showcase, an 800-page Web Worker stress test, a CLI command builder, an MCP tool explorer, and a declarative React (JSX) renderer. All zero-install, in your browser.">
+  <meta property="og:description" content="Nine interactive playgrounds for pdfnative: extreme-script shaping, an all-22-scripts + colour-emoji showcase, a 1.4.0 document toolkit, 1.6.0 native charts, a 1.5.0 authoring+ showcase, an 800-page Web Worker stress test, a CLI command builder, an MCP tool explorer, and a declarative React (JSX) renderer. All zero-install, in your browser.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Playgrounds — pdfnative">
-  <meta name="twitter:description" content="Eight interactive, zero-install playgrounds: extreme scripts, all-22-scripts + emoji, 1.4.0 toolkit, 1.5.0 authoring+, 800-page Worker, CLI builder, MCP explorer, React renderer.">
+  <meta name="twitter:description" content="Nine interactive, zero-install playgrounds: extreme scripts, all-22-scripts + emoji, 1.4.0 toolkit, 1.6.0 charts, 1.5.0 authoring+, 800-page Worker, CLI builder, MCP explorer, React renderer.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -70,7 +70,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Playgrounds</p>
   <article class="guide-content">
     <h1>Interactive playgrounds</h1>
-    <p>Seven hands-on environments that exercise the entire pdfnative ecosystem in your browser. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
+    <p>Nine hands-on environments that exercise the entire pdfnative ecosystem in your browser. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
 
     <div class="pg-grid">
       <a class="pg-card" href="./extreme-scripts.html">
@@ -95,12 +95,22 @@
 
       <a class="pg-card" href="./toolkit.html">
         <div class="pg-icon" aria-hidden="true">🧰</div>
-        <h3>PDF Toolkit <span class="badge">Library</span> <span class="badge alt">1.4.0</span></h3>
-        <p>Everything new in 1.4.0: outline <strong>bookmarks</strong> and <strong>page labels</strong>, <strong>viewer preferences</strong>, <strong>nested lists</strong>, table <strong>cell borders</strong> &amp; vertical alignment, and a page-tree API to <strong>merge / split / extract</strong> pages — each a one-click downloadable PDF.</p>
+        <h3>PDF Toolkit <span class="badge">Library</span> <span class="badge alt">1.4.0 → 1.6.0</span></h3>
+        <p>Outline <strong>bookmarks</strong>, <strong>page labels</strong>, <strong>viewer preferences</strong>, <strong>nested lists</strong>, cell borders, <strong>merge / split / extract</strong> — plus the 1.6.0 round trip: fill &amp; flatten an <strong>encrypted AcroForm</strong>, <strong>re-encrypt</strong> a merged document (AES-256 password rotation), and <strong>extract text</strong> with positions. Each a one-click downloadable PDF.</p>
         <div class="pg-tags">
-          <span class="pg-tag">Bookmarks</span><span class="pg-tag">Page labels</span><span class="pg-tag">Merge/split</span><span class="pg-tag">Cell borders</span>
+          <span class="pg-tag">Bookmarks</span><span class="pg-tag">Merge/split</span><span class="pg-tag">Re-encrypt</span><span class="pg-tag">Form fill</span><span class="pg-tag">Extract text</span>
         </div>
         <div class="pg-cta">Open PDF Toolkit playground →</div>
+      </a>
+
+      <a class="pg-card" href="./charts.html">
+        <div class="pg-icon" aria-hidden="true">📈</div>
+        <h3>Charts <span class="badge">Library</span> <span class="badge alt">1.6.0</span></h3>
+        <p>New in 1.6.0: native <strong>vector charts</strong> — bar, horizontal-bar, line (with markers), pie, and donut — rendered as pure PDF path operators. Multi-series, legends, "nice" axis ticks, negative values, and tagged <code>/Figure</code> alt text. Each preset is a one-click downloadable PDF.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">Bar</span><span class="pg-tag">Line</span><span class="pg-tag">Pie/Donut</span><span class="pg-tag">Zero-dep</span>
+        </div>
+        <div class="pg-cta">Open Charts playground →</div>
       </a>
 
       <a class="pg-card" href="./authoring-plus.html">
@@ -146,7 +156,7 @@
       <a class="pg-card" href="./react.html">
         <div class="pg-icon" aria-hidden="true">⚛️</div>
         <h3>React renderer <span class="badge alt">React</span></h3>
-        <p>Write JSX with <strong>pdfnative-react</strong> v0.2.0 and render a real PDF on-device — a custom React reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code> straight to pdfnative blocks, no SaaS round-trip. The demo loads React + the renderer from a CDN; the published package keeps the engine zero-dependency.</p>
+        <p>Write JSX with <strong>pdfnative-react</strong> v1.0.0 and render a real PDF on-device — a custom React 19 reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code> straight to pdfnative blocks, no SaaS round-trip. The demo loads React + the renderer from a CDN; the published package keeps the engine zero-dependency.</p>
         <div class="pg-tags">
           <span class="pg-tag">JSX</span><span class="pg-tag">reconciler</span><span class="pg-tag">DocSpec</span><span class="pg-tag">on-device</span>
         </div>
@@ -155,7 +165,7 @@
     </div>
 
     <h2 style="margin-top: 44px;">What about non-interactive examples?</h2>
-    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">41 generator categories producing 210 sample PDFs</a> covering financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, and stress tests. Run <code>npm run test:generate</code> after cloning.</p>
+    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">44 generator categories producing ~227 sample PDFs</a> covering financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, charts, and stress tests. Run <code>npm run test:generate</code> after cloning.</p>
 
     <h2>Resources</h2>
     <ul>
@@ -175,6 +185,7 @@
       <li><a href="./extreme-scripts.html">Extreme scripts</a></li>
       <li><a href="./all-scripts.html">All 22 scripts</a></li>
       <li><a href="./toolkit.html">PDF Toolkit</a></li>
+      <li><a href="./charts.html">Charts</a></li>
       <li><a href="./authoring-plus.html">Authoring+</a></li>
       <li><a href="./medical-800.html">Medical 800-page</a></li>
       <li><a href="./cli.html">CLI builder</a></li>

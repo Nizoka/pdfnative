@@ -45,6 +45,7 @@ import type { StructElement, MCRef } from './pdf-tags.js';
 import type { createMCIDAllocator } from './pdf-tags.js';
 import { renderBarcode } from './pdf-barcode.js';
 import { renderSvg } from './pdf-svg.js';
+import { estimateChartHeight } from './pdf-chart.js';
 import { defaultFieldHeight } from './pdf-form.js';
 import type { FormField } from './pdf-form.js';
 import { computeAutoFitColumns } from './pdf-column-fit.js';
@@ -1519,6 +1520,9 @@ export function estimateBlockHeight(
         case 'formField': {
             const labelH = block.label ? DEFAULT_PARA_SIZE * 1.3 : 0;
             return labelH + (block.height ?? defaultFieldHeight(block.fieldType)) + 6;
+        }
+        case 'chart': {
+            return estimateChartHeight(block);
         }
     }
 }

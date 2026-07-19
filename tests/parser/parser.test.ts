@@ -503,6 +503,33 @@ describe('pdf-xref-parser', () => {
         });
     });
 
+    describe('parseXrefTable — whitespace tolerance', () => {
+        // Hand-assembled real-world PDFs sometimes leave a blank line between
+        // the last subsection entry and 'trailer' (or between subsections).
+        // Desktop readers accept this; the parser must too.
+        it('tolerates stray blank lines before trailer and between subsections', () => {
+            const body = '%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n';
+            const xrefPos = body.length;
+            const pdf = textEncoder(
+                body +
+                'xref\n' +
+                '0 1\n' +
+                '0000000000 65535 f \n' +
+                '\n' +                       // stray blank line between subsections
+                '1 1\n' +
+                '0000000009 00000 n \n' +
+                '\n' +                       // stray blank line before trailer
+                'trailer\n' +
+                '<< /Size 2 /Root 1 0 R >>\n' +
+                `startxref\n${xrefPos}\n%%EOF`,
+            );
+            const xref = parseXrefTable(pdf);
+            expect(xref.entries.size).toBe(2);
+            expect(xref.entries.get(1)!.offset).toBe(9);
+            expect(getTrailerRef(xref.trailer, 'Root')!.num).toBe(1);
+        });
+    });
+
     describe('parseXrefTable — generated PDF', () => {
         let pdfBytes: Uint8Array;
         let xref: XrefTable;

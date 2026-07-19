@@ -46,9 +46,26 @@ describe('mergePdfs', () => {
         expect(() => mergePdfs(many)).toThrow(/at most 50/);
     });
 
-    it('rejects encrypted sources', () => {
+    it('ingests encrypted sources given the password (v1.6.0)', () => {
         const enc = doc('Secret', 1, { layout: { encryption: { userPassword: 'u', ownerPassword: 'o' } } });
-        expect(() => mergePdfs([enc, doc('Plain', 1)])).toThrow(/[Ee]ncrypted/);
+        // Per-source password form.
+        const merged = mergePdfs([{ bytes: enc, password: 'u' }, doc('Plain', 1)]);
+        const r = openPdf(merged);
+        expect(r.pageCount).toBe(2);
+        expect(r.trailer.get('Encrypt')).toBeUndefined(); // output is unencrypted
+        expect(pageText(merged, 0)).toContain('Secret');
+        expect(pageText(merged, 1)).toContain('Plain');
+    });
+
+    it('applies opts.password as the default for every source', () => {
+        const a = doc('Alpha', 1, { layout: { encryption: { ownerPassword: 'shared' } } });
+        const b = doc('Bravo', 1, { layout: { encryption: { ownerPassword: 'shared' } } });
+        expect(openPdf(mergePdfs([a, b], { password: 'shared' })).pageCount).toBe(2);
+    });
+
+    it('throws PdfPasswordError when an encrypted source has no valid password', () => {
+        const enc = doc('Secret', 1, { layout: { encryption: { userPassword: 'u', ownerPassword: 'o' } } });
+        expect(() => mergePdfs([enc, doc('Plain', 1)])).toThrow(/password/i);
     });
 
     it('produces a valid xref that re-parses', () => {

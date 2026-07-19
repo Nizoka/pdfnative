@@ -10,10 +10,14 @@
  */
 
 import type { PdfReader } from './pdf-reader.js';
+import { getDecryptionContext } from './pdf-reader.js';
 import type { PdfValue, PdfDict, PdfArray, PdfStream } from './pdf-object-parser.js';
-import { isRef, isName, isDict, isArray, isStream } from './pdf-object-parser.js';
+import { isRef, isName, isDict, isArray, isStream, parseValue } from './pdf-object-parser.js';
 import type { XrefEntry } from './pdf-xref-parser.js';
 import { findStartxref } from './pdf-xref-parser.js';
+import { createTokenizer } from './pdf-tokenizer.js';
+import type { DecryptionContext } from './pdf-decrypt.js';
+import { encryptStringData, encryptStreamData, isSignatureDict, isExemptStream } from './pdf-decrypt.js';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -90,6 +94,13 @@ export function createModifier(reader: PdfReader): PdfModifier {
     const modified = new Map<number, PdfValue>();
     const rawBodies = new Map<number, string>();
 
+    // Recovered decryption context of an encrypted source (null otherwise).
+    // The reader serves objects DECRYPTED, so everything in `modified` is
+    // plaintext; save() re-encrypts appended objects under the document's
+    // existing scheme (same /Encrypt dict, same file key — no downgrade or
+    // upgrade is possible by construction).
+    const encCtx = getDecryptionContext(reader);
+
     // Track next object number (from trailer /Size)
     const size = reader.trailer.get('Size');
     let nextNum = typeof size === 'number' ? size : 1;
@@ -105,6 +116,13 @@ export function createModifier(reader: PdfReader): PdfModifier {
     }
 
     function addRawObject(body: string): number {
+        if (encCtx !== null) {
+            throw new Error(
+                'pdfnative: addRawObject cannot be used on an encrypted document — a verbatim body ' +
+                'cannot be transparently encrypted without breaking its byte layout. Use addObject ' +
+                'with a structured value instead.',
+            );
+        }
         const num = nextNum++;
         rawBodies.set(num, body);
         // Sentinel: insert null so the iteration order in save() is
@@ -123,7 +141,19 @@ export function createModifier(reader: PdfReader): PdfModifier {
         const pageRef = reader.getPageRef(pageIndex);
         if (!pageRef) throw new Error(`addAnnotation: no page at index ${pageIndex}`);
 
-        const objNum = addRawObject(annotationBody);
+        // Unencrypted: emit the body verbatim (byte-stable with ≤ v1.5.0).
+        // Encrypted: parse it into a structured value so save()'s encrypting
+        // serializer can protect its strings.
+        let objNum: number;
+        if (encCtx === null) {
+            objNum = addRawObject(annotationBody);
+        } else {
+            const parsed = parseValue(createTokenizer(stringToBytes(annotationBody)));
+            if (!isDict(parsed)) {
+                throw new Error('addAnnotation: annotation body did not parse to a dictionary');
+            }
+            objNum = addObject(parsed);
+        }
 
         const page = getObject(pageRef.num);
         if (!isDict(page)) throw new Error(`addAnnotation: page ${pageIndex} is not a dictionary`);
@@ -162,7 +192,7 @@ export function createModifier(reader: PdfReader): PdfModifier {
             const rawBody = rawBodies.get(num);
             const serialized = rawBody !== undefined
                 ? `${num} 0 obj\n${rawBody}\nendobj\n\n`
-                : serializeObject(num, 0, value);
+                : serializeObject(num, 0, value, encCtx ?? undefined);
             parts.push(serialized);
             offset += byteLength(serialized);
 
@@ -209,42 +239,70 @@ export function createModifier(reader: PdfReader): PdfModifier {
 
 // ── Object Serialization ─────────────────────────────────────────────
 
-function serializeObject(num: number, gen: number, value: PdfValue): string {
-    if (isStream(value)) {
-        return serializeStreamObject(num, gen, value);
-    }
-    return `${num} ${gen} obj\n${serializeValue(value)}\nendobj\n\n`;
+/**
+ * Encryption context threaded through serialization when appending to an
+ * encrypted document. The serializers build strings only — they NEVER
+ * mutate the input value tree, which may share sub-objects with the
+ * reader's decrypted cache (shallow clones), so a second save() call
+ * still sees plaintext and encrypt-exactly-once holds.
+ */
+interface SerializeEnc {
+    readonly ctx: DecryptionContext;
+    readonly num: number;
+    readonly gen: number;
 }
 
-function serializeStreamObject(num: number, gen: number, stream: PdfStream): string {
+function serializeObject(num: number, gen: number, value: PdfValue, encCtx?: DecryptionContext): string {
+    const enc: SerializeEnc | undefined = encCtx !== undefined ? { ctx: encCtx, num, gen } : undefined;
+    if (isStream(value)) {
+        return serializeStreamObject(num, gen, value, enc);
+    }
+    return `${num} ${gen} obj\n${serializeValue(value, enc)}\nendobj\n\n`;
+}
+
+function serializeStreamObject(num: number, gen: number, stream: PdfStream, enc?: SerializeEnc): string {
+    // Encrypt the payload unless the stream is exempt (XRef, unencrypted
+    // Metadata, /Crypt-filtered — ISO 32000-1 §7.6.2). /Length reflects
+    // the ciphertext.
+    const payload = enc !== undefined && !isExemptStream(stream.dict, enc.ctx)
+        ? encryptStreamData(enc.ctx, stream.data, num, gen)
+        : stream.data;
+
     // Update /Length in dict
     const dict = new Map(stream.dict);
-    dict.set('Length', stream.data.length);
+    dict.set('Length', payload.length);
 
     let result = `${num} ${gen} obj\n`;
-    result += serializeDict(dict);
+    result += serializeDict(dict, enc);
     result += '\nstream\n';
     // Stream data as binary string
-    for (let i = 0; i < stream.data.length; i++) {
-        result += String.fromCharCode(stream.data[i]);
+    for (let i = 0; i < payload.length; i++) {
+        result += String.fromCharCode(payload[i]);
     }
     result += '\nendstream\nendobj\n\n';
     return result;
 }
 
-function serializeValue(val: PdfValue): string {
+function serializeValue(val: PdfValue, enc?: SerializeEnc, skipStrings = false): string {
     if (val === null) return 'null';
     if (typeof val === 'boolean') return val ? 'true' : 'false';
     if (typeof val === 'number') {
         if (Number.isInteger(val)) return String(val);
         return val.toFixed(4).replace(/\.?0+$/, '');
     }
-    if (typeof val === 'string') return `(${escapePdfStr(val)})`;
+    if (typeof val === 'string') {
+        // Encrypted strings are emitted as hex (`<…>`): literal-string EOL
+        // normalisation would corrupt the ciphertext.
+        if (enc !== undefined && !skipStrings) {
+            return `<${binToHex(encryptStringData(enc.ctx, val, enc.num, enc.gen))}>`;
+        }
+        return `(${escapePdfStr(val)})`;
+    }
     if (isName(val)) return `/${val.value}`;
     if (isRef(val)) return `${val.num} ${val.gen} R`;
-    if (isArray(val)) return serializeArray(val);
-    if (isDict(val)) return serializeDict(val);
-    if (isStream(val)) return serializeDict(val.dict); // Streams handled at object level
+    if (isArray(val)) return serializeArray(val, enc, skipStrings);
+    if (isDict(val)) return serializeDict(val, enc, skipStrings);
+    if (isStream(val)) return serializeDict(val.dict, enc, skipStrings); // Streams handled at object level
     return 'null';
 }
 
@@ -253,14 +311,25 @@ function escapePdfStr(s: string): string {
     return s.replace(/[\\()]/g, c => '\\' + c);
 }
 
-function serializeArray(arr: PdfArray): string {
-    return '[' + arr.map(serializeValue).join(' ') + ']';
+/** Uppercase hex of a raw-binary string. */
+function binToHex(s: string): string {
+    let h = '';
+    for (let i = 0; i < s.length; i++) h += (s.charCodeAt(i) & 0xFF).toString(16).padStart(2, '0');
+    return h.toUpperCase();
 }
 
-function serializeDict(dict: PdfDict): string {
+function serializeArray(arr: PdfArray, enc?: SerializeEnc, skipStrings = false): string {
+    return '[' + arr.map(v => serializeValue(v, enc, skipStrings)).join(' ') + ']';
+}
+
+function serializeDict(dict: PdfDict, enc?: SerializeEnc, skipStrings = false): string {
+    // Signature /Contents holds the raw CMS blob and is written outside
+    // encryption so /ByteRange stays valid (§7.6.2 note 3).
+    const sig = enc !== undefined && isSignatureDict(dict);
     let s = '<<';
     for (const [key, val] of dict) {
-        s += ` /${key} ${serializeValue(val)}`;
+        const skip = skipStrings || (sig && key === 'Contents');
+        s += ` /${key} ${serializeValue(val, enc, skip)}`;
     }
     s += ' >>';
     return s;
@@ -315,6 +384,12 @@ function buildIncrementalTrailer(
 
     const idArr = originalTrailer.get('ID');
     if (idArr) result += ` /ID ${serializeValue(idArr)}`;
+
+    // Carry /Encrypt forward: the appended revision is read under the same
+    // scheme as the original (required for encrypted incremental updates;
+    // previously dropped, which broke any encrypted append).
+    const encryptRef = originalTrailer.get('Encrypt');
+    if (encryptRef) result += ` /Encrypt ${serializeValue(encryptRef)}`;
 
     result += ` /Size ${newSize}`;
     result += ` /Prev ${prevXref}`;

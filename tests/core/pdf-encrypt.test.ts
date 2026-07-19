@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-    aesCBC, md5, sha256,
+    aesCBC, md5, createMd5, sha256,
     computePermissions, generateDocId,
     initEncryption, encryptStream, encryptString,
     buildEncryptDict, buildIdArray,
@@ -94,6 +94,32 @@ describe('md5', () => {
     it('should return 16 bytes', () => {
         const hash = md5(new Uint8Array([1, 2, 3]));
         expect(hash.length).toBe(16);
+    });
+});
+
+// ── Incremental MD5 (createMd5) ──────────────────────────────────────
+
+describe('createMd5', () => {
+    it('matches one-shot md5 across block-boundary sizes and split points', () => {
+        for (const size of [0, 1, 55, 56, 63, 64, 65, 119, 120, 128, 1000]) {
+            const data = new Uint8Array(size).map((_, i) => (i * 31 + 7) & 0xFF);
+            const oneShot = bytesToHex(md5(data));
+            for (const split of [0, 1, 13, 32, 64, size]) {
+                if (split > size) continue;
+                const h = createMd5();
+                h.update(data.subarray(0, split));
+                h.update(data.subarray(split));
+                expect(bytesToHex(h.digest())).toBe(oneShot);
+            }
+        }
+    });
+
+    it('throws on reuse after digest()', () => {
+        const h = createMd5();
+        h.update(new Uint8Array([1]));
+        h.digest();
+        expect(() => h.digest()).toThrow();
+        expect(() => h.update(new Uint8Array([2]))).toThrow();
     });
 });
 
@@ -279,7 +305,9 @@ describe('initEncryption', () => {
         expect(state.docId.length).toBe(16);
     });
 
-    it('should initialize AES-256 (R6) state', () => {
+    // R6 key derivation (ISO 32000-2 Algorithm 2.A/2.B) is deliberately slow
+    // and exceeds the 5 s default under coverage instrumentation.
+    it('should initialize AES-256 (R6) state', { timeout: 60_000 }, () => {
         const state = initEncryption({
             ownerPassword: 'owner123',
             userPassword: 'user456',

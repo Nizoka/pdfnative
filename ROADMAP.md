@@ -92,22 +92,28 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Table descender clipping fix** (v1.5.0, [#59](https://github.com/Nizoka/pdfnative/issues/59)) — table cell text with descenders (g, j, p, q, y) is no longer visually clipped by the cell rectangle.
 - [x] **AI-agent governance** (v1.5.0, [#56](https://github.com/Nizoka/pdfnative/issues/56)) — [.github/AGENT_RULES.md](.github/AGENT_RULES.md) + `.github/ai-governance.json` codify a human-in-the-loop protocol (no autonomous GitHub writes, no runtime dependencies, mandatory issue-report review) and a `npm run verify:issue` gate that validates draft issue reports before submission. ([scripts/verify-issue.mjs](scripts/verify-issue.mjs))
 
+- [x] **Encrypted-PDF round-trip** (v1.6.0) — Standard Security Handler **reader/decryptor**: `openPdf(bytes, { password })` decrypts RC4 / AES-128 / AES-256 documents transparently, and the page-tree API ingests encrypted sources via `PdfSourceInput` / `MergeOptions.password`. Also fixes the R6 hash to be ISO 32000-2 spec-compliant and encrypts all strings (not just streams) on the writer side. ([src/parser/pdf-decrypt.ts](src/parser/pdf-decrypt.ts))
+- [x] **Streaming page-tree manipulation** (v1.6.0) — `streamMergedPdfs` / `streamSplitPdf` / `streamExtractPages` emit the assembled document as fixed-size chunks, holding only the cross-reference offsets in memory; byte-identical to the buffered functions and composable with `streamToFile()`. ([src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts))
+- [x] **Fill & flatten existing AcroForm PDFs** (v1.6.0) — `readFormFields()`, `fillForm()` (regenerated appearances), `flattenForm()` via non-destructive incremental update that preserves prior signatures. ([src/core/pdf-form-fill.ts](src/core/pdf-form-fill.ts))
+- [x] **Native vector charts** (v1.6.0) — bar / horizontal-bar / line / pie / donut `chart` blocks rendered as pure PDF path operators (zero deps, no rasterisation), multi-series, legends, negative values, tagged `/Figure` + alt text. ([src/core/pdf-chart.ts](src/core/pdf-chart.ts))
+- [x] **Expanded colour-emoji subset** (v1.6.0) — the bundled curated set grows from 221 to **1167** single-codepoint glyphs (~4.0 MB, 4 MB budget guard): complete assigned Transport & Map block (U+1F680–1F6FF) and Misc Symbols & Pictographs completion, fixing 15 `.notdef` tofu in the colour-emoji showcase; the data test now hard-asserts full curated-cmap coverage. ([scripts/lib/curated-emoji.ts](scripts/lib/curated-emoji.ts))
+- [x] **Text extraction** (v1.6.0) — `extractText(bytes, options?)` decodes page content streams into per-page reading-order Unicode text + optional positioned runs: `/ToUnicode` CMaps, `/Encoding /Differences` (AGL subset), WinAnsi/MacRoman tables, Form-XObject recursion, transparent decryption via `options.password`, hard `maxTextLength` memory cap. ([src/parser/pdf-text-extract.ts](src/parser/pdf-text-extract.ts))
+- [x] **Re-encrypt page-tree output** (v1.6.0, pulled forward from Long-Term) — `MergeOptions.encrypt` re-encrypts `mergePdfs` / `splitPdf` / `extractPages` (and streaming) output with AES-128/AES-256 under fresh passwords/permissions, closing the encrypted round trip (incl. one-call password rotation). CSPRNG-gated; RC4 never emitted. ([src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts))
+- [x] **Encrypted incremental update** (v1.6.0, pulled forward from Long-Term) — `fillForm` / `flattenForm` / `PdfModifier.addAnnotation` operate on encrypted PDFs by encrypting appended objects under the document's existing scheme (RC4/AES-128/AES-256); incremental trailer carries `/Encrypt` forward. ([src/parser/pdf-modifier.ts](src/parser/pdf-modifier.ts), [src/core/pdf-form-fill.ts](src/core/pdf-form-fill.ts))
+
 ## In Progress
 
-_All v1.4.0 in-progress items have been merged into the [v1.4.0 release](release-notes/v1.4.0.md). See Released above._
+_All v1.6.0 items have been merged into the v1.6.0 release. See Released above._
 
 ## Planned
-
-### v1.6.0
-
-- [ ] **Encrypted-PDF round-trip** — Standard Security Handler **reader/decryptor** so the page-tree API can ingest encrypted sources.
-- [ ] **Streaming page-tree manipulation** — `streamMergedPdfs` / `streamSplitPdf` variants that copy page objects straight into the output stream, holding only the cross-reference tables in memory, so multi-gigabyte merges run in a few MB of RAM. Complements the v1.4.0 `maxOutputSize` cap.
 
 ### Long-Term
 
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression
 - [ ] **Full Universal Shaping Engine** — Khmer, Myanmar, complex Sinhala
 - [ ] **COLRv1 PaintMask / variable paints** — soft-mask groups (`PaintComposite` luminosity masks) and variable-font COLR. v1.4.0 ships solid + linear + radial + sweep gradients and blend-mode compositing; masks and variable paints fall back to monochrome.
+- [ ] **Colour-emoji sequences** — flag (regional-indicator) and ZWJ sequences via a GSUB-ligature table in the generated module plus a longest-match pre-pass, so the bundled subset can cover multi-codepoint emoji (currently single-codepoint only).
+- [ ] **Charts v2** — stacked bars, area, scatter, secondary/log/time axes, and per-point data labels (v1.6.0 ships bar / barH / line / pie / donut on a linear axis).
 
 ## How to Influence the Roadmap
 

@@ -29,21 +29,33 @@ writeFileSync('selected.pdf', extractPages(b, [0, 3, 7]));
 
 All three accept and return `Uint8Array` PDF bytes.
 
+> **New in v1.6.0.** Encrypted sources are now **decrypted on ingest** — pass a
+> password (see [Encrypted sources](#encrypted-sources)) — the rebuilt output
+> can be **re-encrypted** with `encrypt` (see
+> [Re-encrypting the output](#re-encrypting-the-output)), and there are
+> constant-memory **streaming** variants (`streamMergedPdfs` / `streamSplitPdf` /
+> `streamExtractPages`, see [Streaming merge & split](#streaming-merge--split)).
+
 ## `mergePdfs(sources, options?)`
 
 Concatenates multiple PDFs into one, in order.
 
 ```ts
 function mergePdfs(
-  sources: readonly Uint8Array[],
+  sources: readonly PdfSourceInput[],
   options?: MergeOptions,
 ): Uint8Array;
+
+// Raw bytes, or bytes + password for an encrypted source (v1.6.0):
+type PdfSourceInput = Uint8Array | { bytes: Uint8Array; password?: string };
 
 interface MergeOptions {
   /** Strip digital-signature widgets/fields from the result. Default false. */
   dropSignatures?: boolean;
   /** Strip all annotations (links, comments, …) from the result. Default false. */
   dropAnnotations?: boolean;
+  /** Password used to decrypt encrypted sources (default for every source). v1.6.0 */
+  password?: string;
   /**
    * Maximum size, in bytes, of the assembled output. The operation throws as
    * soon as the copied object graph would exceed this limit — even mid-copy,
@@ -107,7 +119,95 @@ extractPages(pdf, [4, 0, 1]); // page 5 first, then 1, then 2
 
 `options` (including `maxOutputSize` and `dropAnnotations`) is honoured here too.
 
-## Streaming the result to disk
+## Encrypted sources
+
+Since **v1.6.0**, `mergePdfs` / `splitPdf` / `extractPages` decrypt encrypted
+sources transparently (Standard Security Handler — RC4, AES-128, AES-256). Give
+the password either per-source or as a shared default:
+
+```ts
+// Per-source password (only that source is encrypted):
+mergePdfs([cover, { bytes: encryptedBody, password: 'secret' }]);
+
+// Shared password for every source, via options:
+mergePdfs([a, b], { password: 'secret' });
+
+// splitPdf / extractPages take the password on options:
+splitPdf(encrypted, [{ start: 0, end: 2 }], { password: 'secret' });
+```
+
+A wrong or missing password throws `PdfPasswordError`; an unsupported handler
+(e.g. public-key) throws `PdfEncryptionUnsupportedError`. The rebuilt output is
+unencrypted **unless you set `encrypt`** (below). See the
+[reader guide](../guides/architecture.html) for `openPdf(bytes, { password })`.
+
+## Re-encrypting the output
+
+Since **v1.6.0**, `MergeOptions.encrypt` re-encrypts the rebuilt document —
+closing the round trip: *open encrypted → edit → re-secure*. It takes the same
+shape as the document builder's `encryption` option:
+
+```ts
+import { mergePdfs, splitPdf } from 'pdfnative';
+
+// Merge, then protect the result (AES-256):
+const secured = mergePdfs([a, b], {
+  encrypt: {
+    ownerPassword: 'owner-secret',      // required, non-empty
+    userPassword: 'user-secret',        // optional (empty = opens freely)
+    algorithm: 'aes256',                // 'aes128' (V4/R4, default) | 'aes256' (V5/R6)
+    permissions: { print: true, copy: false, modify: false },
+  },
+});
+
+// Change a document's password: decrypt on ingest, re-encrypt on output.
+const rekeyed = mergePdfs(
+  [{ bytes: oldPdf, password: 'old-password' }],
+  { encrypt: { ownerPassword: 'new-password', algorithm: 'aes256' } },
+);
+
+// Works identically on splitPdf / extractPages and the streaming variants.
+splitPdf(src, [{ start: 0, end: 4 }], { encrypt: { ownerPassword: 'o' } });
+```
+
+Notes:
+
+- **AES only** — new output is never RC4-encrypted (legacy RC4 is read-only).
+- **CSPRNG required** — a missing Web Crypto secure random source throws
+  before any copying starts (encryption keys are never derived from
+  `Math.random()`).
+- **Fresh keys** — no key material, permissions, or passwords from any source
+  document are reused; the caller states the new protection explicitly.
+- **Non-deterministic output** — random IVs/salts and a random document `/ID`
+  mean encrypted output is not byte-reproducible (the unencrypted path keeps
+  its content-addressed deterministic `/ID`).
+
+## Streaming merge & split
+
+For large documents, the streaming variants emit the result as fixed-size
+chunks while holding only the cross-reference offsets and small object dicts in
+memory — stream payloads flow straight from the (in-memory) source bytes, so the
+fully-joined document is never materialised. Each is **byte-identical** to its
+buffered counterpart (except with `encrypt`, where fresh random IVs make each
+invocation structurally — not byte — identical) and composes with
+[`streamToFile`](streaming.html):
+
+```ts
+import { streamMergedPdfs, streamSplitPdf, streamToFile } from 'pdfnative';
+
+// Constant-memory merge straight to disk:
+await streamToFile(streamMergedPdfs([a, b]), 'combined.pdf');
+
+// Split: one output stream per range (drain each fully before advancing):
+for await (const part of streamSplitPdf(body, [{ start: 0, end: 1 }, { start: 2, end: 9 }])) {
+  await streamToFile(part.pdf, `part-${part.index}.pdf`);
+}
+```
+
+`StreamMergeOptions` adds `chunkSize` (1 KiB–16 MiB, default 64 KiB) on top of
+`MergeOptions`. For multi-gigabyte merges pass `maxOutputSize: Infinity` — safe
+with streaming because output bytes are never buffered (the sources themselves
+are still in-memory `Uint8Array`s).
 
 For freshly *built* (not merged) documents, combine the true streaming builders
 with [`streamToFile`](streaming.html) so the binary never fully materialises:
@@ -118,13 +218,12 @@ import { buildDocumentPDFStreamTrue, streamToFile } from 'pdfnative';
 await streamToFile(buildDocumentPDFStreamTrue(params), 'report.pdf');
 ```
 
-`mergePdfs`/`splitPdf`/`extractPages` return a `Uint8Array`, which you can write
-directly with `node:fs` `writeFileSync`.
-
 ## Safety & limits
 
-- **Encrypted input is rejected.** `assertNotEncrypted()` throws on any source
-  carrying an `/Encrypt` dictionary — decrypt first.
+- **Encrypted input is decrypted on ingest** (v1.6.0) when a valid password is
+  supplied; a wrong/missing password throws `PdfPasswordError`. Output is
+  unencrypted unless `encrypt` re-protects it (AES-128/AES-256, CSPRNG
+  required, fresh keys only).
 - **Annotations are filtered to URI `/Link` only** during the rebuild (plus the
   full strip when `dropAnnotations` is set), so interactive form/JS annotations
   don't leak across documents.
@@ -135,10 +234,12 @@ directly with `node:fs` `writeFileSync`.
   (`maxOutputSize`), checked *before* each stream is materialised, so a source
   full of multi-gigabyte objects is rejected rather than allowed to exhaust
   memory. Tune or disable (`Infinity`) per call.
-- **Deterministic output.** Every result carries a content-addressed trailer
-  `/ID` (ISO 32000-1 §7.5.5) derived from the assembled bytes, so the same
-  inputs always produce a byte-identical PDF — friendly to caching, diffing, and
-  reproducible builds.
+- **Deterministic output.** Every unencrypted result carries a
+  content-addressed trailer `/ID` (ISO 32000-1 §7.5.5) derived from the
+  assembled bytes, so the same inputs always produce a byte-identical PDF —
+  friendly to caching, diffing, and reproducible builds. (With `encrypt`, the
+  `/ID` is the encryption state's random document ID, as the file key is bound
+  to it.)
 - **Full rebuild, not in-place surgery.** The clean-graph approach trades a
   little speed for correctness and is safe to run on third-party PDFs.
 
