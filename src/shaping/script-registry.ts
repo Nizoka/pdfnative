@@ -176,6 +176,9 @@ export const MYANMAR_ASAT = 0x103A;
 /** Mathematical Operators block (∀ ∃ √ ∑ ∫ ∞ ± ÷ × ≈ ≠ ≤ ≥ ⊂ ⊃ ∩ ∪ ∧ ∨ ⊥ ∠ …). */
 export const MATH_OPERATORS_START = 0x2200;
 export const MATH_OPERATORS_END = 0x22FF;
+/** Arrows block (→ ← ↔ ⇒ ⇐ ⇔ ↦ ↑ ↓ ⇄ …). @since 1.6.0 */
+export const ARROWS_START = 0x2190;
+export const ARROWS_END = 0x21FF;
 /** Supplemental Mathematical Operators block (⨀ ⨁ ⨂ ⨃ ⩾ ⩽ …). */
 export const SUPPLEMENTAL_MATH_OPERATORS_START = 0x2A00;
 export const SUPPLEMENTAL_MATH_OPERATORS_END = 0x2AFF;
@@ -321,14 +324,17 @@ export function isDevanagariCodepoint(cp: number): boolean {
 /**
  * Check if a codepoint should be routed to a mathematical font (e.g. Noto
  * Sans Math). Covers the Mathematical Operators, Supplemental Mathematical
- * Operators, Geometric Shapes, and Miscellaneous Mathematical Symbols-A/B
- * blocks. Deliberately excludes Letterlike Symbols (™ ® ℗ …) and the emoji
- * Miscellaneous-Symbols/Dingbats ranges so those keep their existing routing.
+ * Operators, Arrows (since 1.6.0), Geometric Shapes, and Miscellaneous
+ * Mathematical Symbols-A/B blocks. Deliberately excludes Letterlike Symbols
+ * (™ ® ℗ …) and the emoji Miscellaneous-Symbols/Dingbats ranges so those
+ * keep their existing routing (math is checked before emoji, and the emoji
+ * ranges start at U+2600, so the Arrows block never collides).
  *
  * @since 1.5.0
  */
 export function isMathCodepoint(cp: number): boolean {
     return (cp >= MATH_OPERATORS_START && cp <= MATH_OPERATORS_END) ||
+           (cp >= ARROWS_START && cp <= ARROWS_END) ||
            (cp >= SUPPLEMENTAL_MATH_OPERATORS_START && cp <= SUPPLEMENTAL_MATH_OPERATORS_END) ||
            (cp >= GEOMETRIC_SHAPES_START && cp <= GEOMETRIC_SHAPES_END) ||
            (cp >= MISC_MATH_SYMBOLS_A_START && cp <= MISC_MATH_SYMBOLS_A_END) ||

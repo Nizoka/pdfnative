@@ -75,6 +75,12 @@ function parseTraditionalXref(buf: Uint8Array, offset: number): { entries: Map<n
 
     // Parse subsections
     while (pos < buf.length) {
+        // Tolerate stray blank lines / whitespace between subsections and
+        // before 'trailer' — seen in real-world hand-assembled PDFs; desktop
+        // readers accept them (ISO 32000-1 treats them as inter-token space).
+        while (pos < buf.length && (buf[pos] === 0x0A || buf[pos] === 0x0D || buf[pos] === 0x20)) pos++;
+        if (pos >= buf.length) break;
+
         // Check if we've reached 'trailer'
         if (buf[pos] === 0x74) { // 't' for 'trailer'
             const word = latin1(buf, pos, pos + 7);

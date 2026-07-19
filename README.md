@@ -75,7 +75,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ statement coverage** — 2360+ tests across 104 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
+- **95%+ statement coverage** — 2365+ tests across 104 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1179,7 +1179,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (2360+ tests)
+npm run test             # vitest run (2365+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+ statements; CI gates: 88/80/85/90)
 npm run test:generate       # Generate ~227 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1194,7 +1194,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 2360+ (104 files) |
+| Tests | 2365+ (104 files) |
 | Statement coverage | 95.41% |
 | Branch coverage | 87.79% |
 | Function coverage | 98.5% |

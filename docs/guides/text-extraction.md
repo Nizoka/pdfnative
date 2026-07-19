@@ -118,7 +118,11 @@ By design (documented, not bugs):
 - Vertical writing mode is treated as horizontal.
 - The structure tree / `/ActualText` is not consulted — order is
   geometric, and ligature reversal is only as good as the embedded
-  `/ToUnicode`.
+  `/ToUnicode`. In practice this means **shaped Indic scripts**
+  (Devanagari, Bengali, Tamil, Telugu, Sinhala, …) extract with U+FFFD
+  for conjunct/ligature glyphs that have no single-codepoint mapping —
+  the PDF *renders* correctly; only extraction of those clusters is
+  lossy. Latin, CJK, Arabic and emoji round-trip cleanly.
 
 ## Samples
 

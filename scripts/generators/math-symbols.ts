@@ -1,16 +1,15 @@
 /**
  * Math / technical symbols showcase (v1.5.0 — issue #57).
  *
- * Demonstrates automatic routing of mathematical operators, arrows, and
- * technical symbols to the bundled Noto Sans Math font (lang `'math'`) via
- * script detection. Register the font once with
- * `registerFont('math', () => import('pdfnative/fonts/noto-sans-math-data.js'))`
- * and math codepoints embed + render without any manual run splitting.
+ * Demonstrates the bundled Noto Sans Math font (lang `'math'`): load it with
+ * `loadFontData('math')`, add it to `fontEntries`, and coverage-based
+ * run splitting routes every math codepoint to it — no manual run splitting.
  */
 
 import { resolve } from 'path';
 import { buildDocumentPDFBytes, containsMath } from '../../src/index.js';
-import type { DocumentParams } from '../../src/index.js';
+import type { DocumentParams, FontEntry } from '../../src/index.js';
+import { loadFontData } from '../helpers/fonts.js';
 import type { GenerateContext } from '../helpers/io.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
@@ -22,13 +21,21 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         'Arrows: → ← ↔ ⇒ ⇐ ⇔ ↦ ↑ ↓ ⇄',
     ];
 
+    const latinFont = await loadFontData('latin');
+    const mathFont = await loadFontData('math');
+    if (!latinFont || !mathFont) return;
+    const fontEntries: FontEntry[] = [
+        { fontData: latinFont, fontRef: '/F3', lang: 'latin' },
+        { fontData: mathFont, fontRef: '/F4', lang: 'math' },
+    ];
+
     const params: DocumentParams = {
         title: 'Math & technical symbols (v1.5.0)',
         blocks: [
             { type: 'heading', text: 'Mathematical & technical symbols', level: 1 },
             {
                 type: 'paragraph',
-                text: 'Math codepoints route automatically to the bundled Noto Sans Math font via script detection — no manual font handling.',
+                text: 'Math codepoints route to the bundled Noto Sans Math font (loaded via loadFontData(\'math\')) through coverage-based run splitting — no manual run splitting.',
             },
             ...lines.map((text) => ({ type: 'paragraph' as const, text })),
             { type: 'heading', text: 'Detection', level: 2 },
@@ -37,6 +44,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 text: `containsMath('x ≠ y') → ${containsMath('x ≠ y')}; containsMath('hello') → ${containsMath('hello')}.`,
             },
         ],
+        fontEntries,
     };
 
     ctx.writeSafe(

@@ -217,7 +217,6 @@ function buildMinimalSignedPdf(sigDict: string, title: string): Uint8Array {
     for (const o of offsets) {
         emit(`${String(o).padStart(10, '0')} 00000 n `);
     }
-    emit('');
     emit('trailer');
     emit(`<< /Size ${offsets.length + 1} /Root 1 0 R /Info 8 0 R >>`);
     emit('startxref');

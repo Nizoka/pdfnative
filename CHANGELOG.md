@@ -20,7 +20,7 @@ incremental updates, both pulled forward from v1.7), and an **expanded
 colour-emoji subset** (221 → 1167). All additions are additive and opt-in;
 unchanged code paths remain **byte-identical** to v1.5.0 (guarded by the
 page-tree golden fixtures). Zero runtime dependencies preserved.
-104 test files / 2360 tests, all green.
+104 test files / 2365 tests, all green.
 
 ### Added
 
@@ -117,6 +117,21 @@ page-tree golden fixtures). Zero runtime dependencies preserved.
   cross-checks every emoji the showcase generator uses against the bundled
   cmap — the sample can never silently regress to tofu again.
   ([scripts/lib/curated-emoji.ts](scripts/lib/curated-emoji.ts))
+- **fix(shaping):** the Arrows block (U+2190–U+21FF: → ← ⇒ ⇔ ↦ …) is now
+  classified as math by `isMathCodepoint`/`detectCharLang`, so arrows route to
+  the bundled Noto Sans Math font like the operator blocks instead of relying
+  on coverage fallback alone.
+- **fix(parser):** the xref-table reader tolerates stray blank lines between
+  subsections and before `trailer` — seen in hand-assembled real-world PDFs
+  and accepted by desktop readers — instead of failing with
+  "invalid subsection header".
+- **fix(samples):** `math/math-symbols.pdf` rendered every math symbol as `?`
+  since v1.5.0 — the generator never passed the math font in `fontEntries`, so
+  text fell back to base-14/WinAnsi encoding. It now loads Noto Sans Math (and
+  Noto Sans for prose); a new end-to-end test extracts the sample text and
+  asserts no `?` ever appears. The three `signature/digital-signature-*.pdf`
+  samples also emitted a stray blank line inside their hand-assembled xref
+  table; removed.
 
 ## [1.5.0] – 2026-07-05
 
