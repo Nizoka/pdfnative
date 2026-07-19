@@ -281,12 +281,14 @@ export {
 } from './parser/pdf-object-parser.js';
 export type { XrefEntry, XrefTable } from './parser/pdf-xref-parser.js';
 export { findStartxref, parseXrefTable, getTrailerValue, getTrailerRef, MAX_XREF_CHAIN } from './parser/pdf-xref-parser.js';
-export type { PdfReader } from './parser/pdf-reader.js';
+export type { PdfReader, OpenPdfOptions, PdfEncryptionInfo } from './parser/pdf-reader.js';
 export type { ParsedAnnotation } from './parser/pdf-reader.js';
 export { openPdf } from './parser/pdf-reader.js';
+export type { DecryptionContext, CryptFilterMethod } from './parser/pdf-decrypt.js';
+export { PdfPasswordError, PdfEncryptionUnsupportedError } from './parser/pdf-decrypt.js';
 export type { PdfModifier } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
-export type { PageRange, MergeOptions } from './parser/pdf-pagetree.js';
+export type { PageRange, MergeOptions, PdfSourceInput } from './parser/pdf-pagetree.js';
 export { mergePdfs, splitPdf, extractPages } from './parser/pdf-pagetree.js';
 export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
 export { validatePdfUA } from './parser/pdf-ua-validator.js';

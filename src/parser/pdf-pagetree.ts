@@ -13,8 +13,9 @@
  * `/Kids`, rewriting `/Parent` chains, merging resource pools).
  *
  * Safety guarantees (documented behaviour):
- *  - **Encrypted sources are rejected** (no Standard Security Handler
- *    writer yet) — throws.
+ *  - **Encrypted sources are decrypted on ingest** (since v1.6.0): pass the
+ *    password via `MergeOptions.password` or the per-source
+ *    `{ bytes, password }` form. The rebuilt output is always **unencrypted**.
  *  - **Signatures are always removed** — any page-tree edit invalidates a
  *    document signature's `/ByteRange`, so signature/Widget annotations and
  *    the `/AcroForm` are dropped. The `dropSignatures` flag is accepted for
@@ -47,6 +48,24 @@ export interface PageRange {
 }
 
 /**
+ * A merge source: raw PDF bytes, or bytes paired with the password needed to
+ * decrypt an encrypted source. The per-source password takes precedence over
+ * {@link MergeOptions.password}.
+ *
+ * @since 1.6.0
+ */
+export type PdfSourceInput = Uint8Array | { readonly bytes: Uint8Array; readonly password?: string };
+
+function sourceBytes(src: PdfSourceInput): Uint8Array {
+    return src instanceof Uint8Array ? src : src.bytes;
+}
+
+function sourcePassword(src: PdfSourceInput, fallback?: string): string | undefined {
+    if (src instanceof Uint8Array) return fallback;
+    return src.password ?? fallback;
+}
+
+/**
  * Options for the page-tree manipulation API ({@link mergePdfs},
  * {@link splitPdf}, {@link extractPages}).
  */
@@ -70,6 +89,15 @@ export interface MergeOptions {
      * @defaultValue 268435456 (256 MiB)
      */
     readonly maxOutputSize?: number;
+    /**
+     * Password used to decrypt encrypted source documents (user or owner).
+     * For {@link mergePdfs} this is the default applied to every source that
+     * does not carry its own `{ bytes, password }`. For {@link splitPdf} /
+     * {@link extractPages} it is the single source's password.
+     *
+     * @since 1.6.0
+     */
+    readonly password?: string;
 }
 
 const MAX_MERGE_SOURCES = 50;
@@ -108,12 +136,14 @@ function resolveMaxOutputSize(value: number | undefined): number {
 /**
  * Concatenate multiple PDF documents into one, preserving page order.
  *
- * @param sources 1–50 PDF byte arrays.
+ * @param sources 1–50 PDF sources (raw bytes, or `{ bytes, password }` for
+ *                encrypted documents).
  * @param opts    See {@link MergeOptions}.
- * @returns A new, self-contained PDF.
- * @throws If `sources` is empty/too large, or any source is encrypted.
+ * @returns A new, self-contained (unencrypted) PDF.
+ * @throws If `sources` is empty/too large, or a source is encrypted and no
+ *         valid password is supplied.
  */
-export function mergePdfs(sources: readonly Uint8Array[], opts?: MergeOptions): Uint8Array {
+export function mergePdfs(sources: readonly PdfSourceInput[], opts?: MergeOptions): Uint8Array {
     if (sources.length === 0) throw new Error('mergePdfs requires at least one source PDF');
     if (sources.length > MAX_MERGE_SOURCES) {
         throw new Error(`mergePdfs supports at most ${MAX_MERGE_SOURCES} sources (got ${sources.length})`);
@@ -121,8 +151,7 @@ export function mergePdfs(sources: readonly Uint8Array[], opts?: MergeOptions): 
     resolveMaxOutputSize(opts?.maxOutputSize); // validate early, before any I/O
     const specs: PageSpec[] = [];
     for (const src of sources) {
-        const reader = openPdf(src);
-        assertNotEncrypted(reader);
+        const reader = openPdf(sourceBytes(src), { password: sourcePassword(src, opts?.password) });
         const count = reader.pageCount;
         for (let i = 0; i < count; i++) specs.push({ reader, pageIndex: i });
     }
@@ -136,18 +165,18 @@ export function mergePdfs(sources: readonly Uint8Array[], opts?: MergeOptions): 
  * @param src         Source PDF bytes.
  * @param pageIndices 0-based page indices to keep.
  * @param opts        See {@link MergeOptions} (e.g. `maxOutputSize`,
- *                    `dropAnnotations`).
- * @throws If `src` is encrypted, indices is empty, or an index is out of range.
+ *                    `dropAnnotations`, `password`).
+ * @throws If indices is empty, an index is out of range, or `src` is encrypted
+ *         and no valid password is supplied.
  */
 export function extractPages(
-    src: Uint8Array,
+    src: PdfSourceInput,
     pageIndices: readonly number[],
     opts?: MergeOptions,
 ): Uint8Array {
     if (pageIndices.length === 0) throw new Error('extractPages requires at least one page index');
     resolveMaxOutputSize(opts?.maxOutputSize); // validate early
-    const reader = openPdf(src);
-    assertNotEncrypted(reader);
+    const reader = openPdf(sourceBytes(src), { password: sourcePassword(src, opts?.password) });
     const count = reader.pageCount;
     const specs: PageSpec[] = [];
     for (const idx of pageIndices) {
@@ -165,19 +194,20 @@ export function extractPages(
  * @param src    Source PDF bytes.
  * @param ranges Inclusive 0-based page ranges.
  * @param opts   See {@link MergeOptions} (e.g. `maxOutputSize`,
- *               `dropAnnotations`); applied to every emitted document.
+ *               `dropAnnotations`, `password`); applied to every emitted
+ *               document.
  * @returns One PDF per range, in order.
- * @throws If `src` is encrypted, ranges is empty, or a range is invalid.
+ * @throws If ranges is empty, a range is invalid, or `src` is encrypted and no
+ *         valid password is supplied.
  */
 export function splitPdf(
-    src: Uint8Array,
+    src: PdfSourceInput,
     ranges: readonly PageRange[],
     opts?: MergeOptions,
 ): Uint8Array[] {
     if (ranges.length === 0) throw new Error('splitPdf requires at least one range');
     resolveMaxOutputSize(opts?.maxOutputSize); // validate early
-    const reader = openPdf(src);
-    assertNotEncrypted(reader);
+    const reader = openPdf(sourceBytes(src), { password: sourcePassword(src, opts?.password) });
     const count = reader.pageCount;
     const out: Uint8Array[] = [];
     for (const range of ranges) {
@@ -198,12 +228,6 @@ export function splitPdf(
 interface PageSpec {
     readonly reader: PdfReader;
     readonly pageIndex: number;
-}
-
-function assertNotEncrypted(reader: PdfReader): void {
-    if (reader.trailer.get('Encrypt') !== undefined) {
-        throw new Error('Encrypted PDFs are not supported by the page-tree API (decrypt first)');
-    }
 }
 
 /**

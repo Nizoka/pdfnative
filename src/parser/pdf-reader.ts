@@ -17,6 +17,8 @@ import { parseXrefTable } from './pdf-xref-parser.js';
 import type { XrefTable } from './pdf-xref-parser.js';
 import { inflateSync } from './pdf-inflate.js';
 import { applyDecodeFilter, KNOWN_DECODE_FILTERS } from './pdf-decode-filters.js';
+import { authenticate, decryptObjectValue } from './pdf-decrypt.js';
+import type { DecryptionContext } from './pdf-decrypt.js';
 import type { PageLabelRange, PageLabelStyle } from '../core/pdf-page-labels.js';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -45,6 +47,35 @@ export interface ParsedAnnotation {
     readonly url?: string;
 }
 
+/**
+ * Options for {@link openPdf}.
+ *
+ * @since 1.6.0
+ */
+export interface OpenPdfOptions {
+    /**
+     * Password for encrypted documents (user or owner — both are tried).
+     * Omit (or pass `''`) for documents with an empty user password, which
+     * open transparently.
+     */
+    readonly password?: string;
+}
+
+/**
+ * Encryption details of an opened document, or `null` when it is not
+ * encrypted. Objects returned by the reader are already decrypted.
+ *
+ * @since 1.6.0
+ */
+export interface PdfEncryptionInfo {
+    /** Content cipher. */
+    readonly algorithm: 'rc4-40' | 'rc4-128' | 'aes128' | 'aes256';
+    /** Standard Security Handler revision (2, 3, 4 or 6). */
+    readonly revision: number;
+    /** Which password opened the document. */
+    readonly authenticatedAs: 'user' | 'owner';
+}
+
 export interface PdfReader {
     /** Total number of pages in the document. */
     readonly pageCount: number;
@@ -54,6 +85,13 @@ export interface PdfReader {
     readonly bytes: Uint8Array;
     /** Xref table. */
     readonly xref: XrefTable;
+    /**
+     * Encryption details when the document is encrypted (objects are served
+     * decrypted), `null` otherwise.
+     *
+     * @since 1.6.0
+     */
+    readonly encryption: PdfEncryptionInfo | null;
 
     /**
      * Resolve an indirect object reference.
@@ -128,16 +166,31 @@ export interface PdfReader {
 /**
  * Open a PDF file for reading.
  *
+ * Encrypted documents (Standard Security Handler) are decrypted
+ * transparently: pass the password via `options.password` (documents with an
+ * empty user password need no password at all). Every object served by the
+ * reader is already decrypted.
+ *
  * @param bytes - Complete PDF file bytes
+ * @param options - Optional `{ password }` for encrypted documents
  * @returns Reader interface for accessing document structure
+ * @throws {PdfPasswordError} when the document is encrypted and the password
+ *         is missing or wrong
+ * @throws {PdfEncryptionUnsupportedError} for unsupported encryption schemes
  */
-export function openPdf(bytes: Uint8Array): PdfReader {
+export function openPdf(bytes: Uint8Array, options?: OpenPdfOptions): PdfReader {
     // Parse xref table
     const xref = parseXrefTable(bytes);
     const cache = new Map<number, PdfValue>();
 
     // Collect pages lazily
     let _pages: PdfDict[] | undefined;
+
+    // Decryption context — established below, BEFORE any object is resolved
+    // through the decrypting path. The /Encrypt dictionary itself and the
+    // trailer are exempt from encryption (ISO 32000-1 §7.6.2).
+    let decryption: DecryptionContext | null = null;
+    let encryptObjNum = -1;
 
     function resolveRef(ref: PdfRef): PdfValue {
         const key = ref.num;
@@ -148,15 +201,37 @@ export function openPdf(bytes: Uint8Array): PdfReader {
 
         let val: PdfValue;
         if (entry.type === 2) {
-            // Compressed object — stored in an object stream
-            val = resolveCompressedObject(bytes, xref, cache, entry.offset, entry.gen, resolveRef);
+            // Compressed object — stored in an object stream. The container
+            // stream is loaded through resolveRef so it is decrypted (and
+            // cached) exactly once; strings inside it are plaintext per spec.
+            val = resolveCompressedObject(xref, entry.offset, entry.gen, resolveRef);
         } else {
             // Direct object at byte offset
             val = parseObjectAt(bytes, entry.offset);
+            if (decryption && ref.num !== encryptObjNum) {
+                val = decryptObjectValue(decryption, val, ref.num, entry.gen);
+            }
         }
 
         cache.set(key, val);
         return val;
+    }
+
+    const encryptRef = xref.trailer.get('Encrypt');
+    if (encryptRef !== undefined) {
+        // Resolve the Encrypt dict with decryption still disabled.
+        if (isRef(encryptRef)) encryptObjNum = encryptRef.num;
+        const encryptDict = isRef(encryptRef) ? resolveRef(encryptRef) : encryptRef;
+        if (isDict(encryptDict)) {
+            const idVal = xref.trailer.get('ID');
+            let idFirst = new Uint8Array(0);
+            if (isArray(idVal) && typeof idVal[0] === 'string') {
+                const s = idVal[0];
+                idFirst = new Uint8Array(s.length);
+                for (let i = 0; i < s.length; i++) idFirst[i] = s.charCodeAt(i) & 0xFF;
+            }
+            decryption = authenticate(encryptDict, idFirst, options?.password ?? '', v => (isRef(v) ? resolveRef(v) : v));
+        }
     }
 
     function resolveValue(val: PdfValue): PdfValue {
@@ -250,11 +325,16 @@ export function openPdf(bytes: Uint8Array): PdfReader {
         return data;
     }
 
+    const encryptionInfo: PdfEncryptionInfo | null = decryption
+        ? { algorithm: decryption.algorithm, revision: decryption.revision, authenticatedAs: decryption.authenticatedAs }
+        : null;
+
     return {
         get pageCount() { return collectPages().length; },
         trailer: xref.trailer,
         bytes,
         xref,
+        encryption: encryptionInfo,
         resolve: resolveRef,
         resolveValue,
         getPage(pageIndex: number): PdfDict {
@@ -437,12 +517,10 @@ function flattenPageTree(
 // ── Compressed Object Stream Reader ──────────────────────────────────
 
 function resolveCompressedObject(
-    buf: Uint8Array,
     xref: XrefTable,
-    _cache: Map<number, PdfValue>,
     streamObjNum: number,
     indexInStream: number,
-    _resolveRef: (ref: PdfRef) => PdfValue,
+    resolveRef: (ref: PdfRef) => PdfValue,
 ): PdfValue {
     // Get the object stream
     const streamEntry = xref.entries.get(streamObjNum);
@@ -450,7 +528,10 @@ function resolveCompressedObject(
         throw new Error(`Object stream ${streamObjNum} not found in xref`);
     }
 
-    const streamObj = parseObjectAt(buf, streamEntry.offset);
+    // Load the container through resolveRef so that, for encrypted files, its
+    // payload is decrypted (and the container cached) exactly once. Object
+    // streams are always uncompressed-object-number type-1 entries.
+    const streamObj = resolveRef({ type: 'ref', num: streamObjNum, gen: streamEntry.gen });
     if (!isStream(streamObj)) throw new Error(`Object ${streamObjNum} is not a stream`);
 
     // Decode stream data

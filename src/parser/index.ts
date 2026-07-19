@@ -24,13 +24,20 @@ export type { XrefEntry, XrefTable } from './pdf-xref-parser.js';
 export { findStartxref, parseXrefTable, getTrailerValue, getTrailerRef } from './pdf-xref-parser.js';
 
 // ── Reader ──────────────────────────────────────────────────────────
-export type { PdfReader } from './pdf-reader.js';
+export type { PdfReader, OpenPdfOptions, PdfEncryptionInfo } from './pdf-reader.js';
 export { openPdf } from './pdf-reader.js';
+
+// ── Decryptor (Standard Security Handler) ───────────────────────────
+export type { DecryptionContext, CryptFilterMethod } from './pdf-decrypt.js';
+export {
+    PdfPasswordError, PdfEncryptionUnsupportedError,
+    authenticate, decryptString, decryptStreamData, decryptObjectValue,
+} from './pdf-decrypt.js';
 
 // ── Modifier ────────────────────────────────────────────────────────
 export type { PdfModifier } from './pdf-modifier.js';
 export { createModifier } from './pdf-modifier.js';
 
 // ── Page-tree manipulation (merge / split / extract) ────────────────
-export type { PageRange, MergeOptions } from './pdf-pagetree.js';
+export type { PageRange, MergeOptions, PdfSourceInput } from './pdf-pagetree.js';
 export { mergePdfs, splitPdf, extractPages } from './pdf-pagetree.js';
