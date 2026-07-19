@@ -113,7 +113,9 @@ The page-tree API has constant-memory variants —
 `streamMergedPdfs` / `streamSplitPdf` / `streamExtractPages` — that emit the
 assembled document as fixed-size chunks while holding only the cross-reference
 offsets in memory. Each is byte-identical to its buffered counterpart and
-composes with `streamToFile`:
+composes with `streamToFile`. (Exception: with `MergeOptions.encrypt` the
+output is AES-encrypted with fresh random IVs/salts, so repeated invocations
+are structurally — not byte — identical.)
 
 ```ts
 import { streamMergedPdfs, streamSplitPdf, streamToFile } from 'pdfnative';

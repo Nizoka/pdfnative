@@ -102,6 +102,20 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         mergedSecure,
     );
 
+    // ── RE-ENCRYPT the merged output (v1.6.0 MergeOptions.encrypt) ────
+    // Full encrypted round trip: decrypt an AES-256 source on ingest, then
+    // protect the rebuilt document with fresh AES-256 passwords.
+    // Open with user password "pdfnative" (owner: "pdfnative-owner").
+    const mergedReEncrypted = mergePdfs(
+        [reportA, { bytes: secret, password: 'boardroom' }],
+        { encrypt: { ownerPassword: 'pdfnative-owner', userPassword: 'pdfnative', algorithm: 'aes256' } },
+    );
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'manipulation', 'merged-reencrypted.pdf'),
+        'manipulation/merged-reencrypted.pdf',
+        mergedReEncrypted,
+    );
+
     // ── streaming merge (constant memory) written straight to disk ────
     const streamMergePath = resolve(ctx.outputDir, 'manipulation', 'stream-merged.pdf');
     await streamToFile(streamMergedPdfs([reportA, invoice]), streamMergePath);
@@ -122,5 +136,20 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             bytes,
         );
         idx++;
+    }
+
+    // ── streaming split WITH re-encryption (v1.6.0) ───────────────────
+    // Each emitted range is AES-128 protected (user password "pdfnative").
+    let encIdx = 0;
+    for await (const part of streamSplitPdf(merged, [{ start: 0, end: 1 }], {
+        encrypt: { ownerPassword: 'pdfnative-owner', userPassword: 'pdfnative', algorithm: 'aes128' },
+    })) {
+        const bytes = await collect(part.pdf);
+        ctx.writeSafe(
+            resolve(ctx.outputDir, 'manipulation', `stream-split-encrypted-${encIdx}.pdf`),
+            `manipulation/stream-split-encrypted-${encIdx}.pdf`,
+            bytes,
+        );
+        encIdx++;
     }
 }

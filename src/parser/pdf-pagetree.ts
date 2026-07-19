@@ -15,7 +15,10 @@
  * Safety guarantees (documented behaviour):
  *  - **Encrypted sources are decrypted on ingest** (since v1.6.0): pass the
  *    password via `MergeOptions.password` or the per-source
- *    `{ bytes, password }` form. The rebuilt output is always **unencrypted**.
+ *    `{ bytes, password }` form. The rebuilt output is **unencrypted unless
+ *    `MergeOptions.encrypt` is set**, which re-encrypts it (AES-128/AES-256)
+ *    under fresh passwords/permissions — no key material from any source is
+ *    reused.
  *  - **Signatures are always removed** — any page-tree edit invalidates a
  *    document signature's `/ByteRange`, so signature/Widget annotations and
  *    the `/AcroForm` are dropped. The `dropSignatures` flag is accepted for
@@ -35,7 +38,10 @@ import {
     isRef, isName, isDict, isArray, isStream, dictGetName,
 } from './pdf-object-parser.js';
 import type { PdfValue, PdfDict, PdfStream } from './pdf-object-parser.js';
-import { createMd5 } from '../core/pdf-encrypt.js';
+import {
+    createMd5, initEncryption, encryptString, encryptStream, buildEncryptDict, buildIdArray,
+} from '../core/pdf-encrypt.js';
+import type { EncryptionOptions, EncryptionState } from '../core/pdf-encrypt.js';
 
 // ── Public types ─────────────────────────────────────────────────────
 
@@ -98,6 +104,24 @@ export interface MergeOptions {
      * @since 1.6.0
      */
     readonly password?: string;
+    /**
+     * Re-encrypt the rebuilt document. Same shape as the document builder's
+     * `encryption` option: `ownerPassword` (required, non-empty),
+     * `userPassword`, `permissions`, and `algorithm` (`'aes128'` V4/R4
+     * default, or `'aes256'` V5/R6). RC4 is never emitted for new output.
+     *
+     * Requires a Web Crypto CSPRNG (throws otherwise). When set, output is
+     * no longer deterministic (random IVs / salts / document ID), so the
+     * buffered and streaming variants are structurally — not byte —
+     * identical across invocations.
+     *
+     * Composable with decryption: pass `{ bytes, password }` sources (or
+     * `password`) to ingest encrypted documents and `encrypt` to protect
+     * the result, possibly with different passwords.
+     *
+     * @since 1.6.0
+     */
+    readonly encrypt?: EncryptionOptions;
 }
 
 const MAX_MERGE_SOURCES = 50;
@@ -139,9 +163,11 @@ function resolveMaxOutputSize(value: number | undefined): number {
  * @param sources 1–50 PDF sources (raw bytes, or `{ bytes, password }` for
  *                encrypted documents).
  * @param opts    See {@link MergeOptions}.
- * @returns A new, self-contained (unencrypted) PDF.
- * @throws If `sources` is empty/too large, or a source is encrypted and no
- *         valid password is supplied.
+ * @returns A new, self-contained PDF — unencrypted, or AES-encrypted when
+ *          `opts.encrypt` is set.
+ * @throws If `sources` is empty/too large, a source is encrypted and no
+ *         valid password is supplied, or `opts.encrypt` is invalid / no
+ *         CSPRNG is available.
  */
 export function mergePdfs(sources: readonly PdfSourceInput[], opts?: MergeOptions): Uint8Array {
     if (sources.length === 0) throw new Error('mergePdfs requires at least one source PDF');
@@ -266,7 +292,9 @@ export interface SplitPdfStream {
  * the fully-joined document is never materialised. Compose with
  * `streamToFile()` for constant-memory disk writes.
  *
- * The output is byte-identical to {@link mergePdfs} for the same inputs.
+ * The output is byte-identical to {@link mergePdfs} for the same inputs —
+ * except when `opts.encrypt` is set, where fresh random IVs/salts make each
+ * invocation structurally (not byte) identical.
  *
  * @since 1.6.0
  */
@@ -393,6 +421,17 @@ function resolveInherited(reader: PdfReader, page: PdfDict, key: string): PdfVal
  * so the buffered and streaming writers can share it.
  */
 function planDocument(specs: PageSpec[], opts: MergeOptions): CopyCtx {
+    // Re-encryption state — initialised BEFORE any copying so a missing
+    // CSPRNG or invalid password fails fast (initEncryption throws without
+    // a cryptographically secure random source).
+    let encState: EncryptionState | null = null;
+    if (opts.encrypt !== undefined) {
+        if (typeof opts.encrypt.ownerPassword !== 'string' || opts.encrypt.ownerPassword.length === 0) {
+            throw new Error('MergeOptions.encrypt.ownerPassword must be a non-empty string');
+        }
+        encState = initEncryption(opts.encrypt);
+    }
+
     // Object numbers: 1 = Catalog, 2 = Pages root, 3.. = pages + graph.
     const ctx: CopyCtx = {
         nextNum: 3,
@@ -400,6 +439,8 @@ function planDocument(specs: PageSpec[], opts: MergeOptions): CopyCtx {
         memo: new Map<PdfReader, Map<number, number>>(),
         maxOutputSize: resolveMaxOutputSize(opts.maxOutputSize),
         totalBytes: 0,
+        encState,
+        encryptNum: 0,
     };
 
     const pageNums: number[] = [];
@@ -407,10 +448,16 @@ function planDocument(specs: PageSpec[], opts: MergeOptions): CopyCtx {
         pageNums.push(copyPage(ctx, spec, opts));
     }
 
-    // Pages root + Catalog.
+    // Pages root + Catalog (no strings — exempt from encryption concerns).
     const kids = pageNums.map(n => `${n} 0 R`).join(' ');
     setBody(ctx, 2, `<< /Type /Pages /Kids [${kids}] /Count ${pageNums.length} >>`);
     setBody(ctx, 1, '<< /Type /Catalog /Pages 2 0 R >>');
+
+    // The /Encrypt dictionary itself is never encrypted (ISO 32000-1 §7.6.2).
+    if (ctx.encState !== null) {
+        ctx.encryptNum = ctx.nextNum++;
+        setBody(ctx, ctx.encryptNum, buildEncryptDict(ctx.encState));
+    }
     return ctx;
 }
 
@@ -446,6 +493,21 @@ interface CopyCtx {
     readonly maxOutputSize: number;
     /** Running total of bytes committed to {@link bodies}. */
     totalBytes: number;
+    /** Re-encryption state when `MergeOptions.encrypt` is set, else null. */
+    readonly encState: EncryptionState | null;
+    /** Object number of the /Encrypt dictionary (0 when not encrypting). */
+    encryptNum: number;
+}
+
+/** Encryption target for the serializers: state + owning object number. */
+interface EncCtx {
+    readonly state: EncryptionState;
+    readonly objNum: number;
+}
+
+/** The serializer encryption context for object `objNum`, or undefined. */
+function encFor(ctx: CopyCtx, objNum: number): EncCtx | undefined {
+    return ctx.encState !== null ? { state: ctx.encState, objNum } : undefined;
 }
 
 /**
@@ -481,6 +543,7 @@ function copyPage(ctx: CopyCtx, spec: PageSpec, opts: MergeOptions): number {
     const { reader, pageIndex } = spec;
     const page = reader.getPage(pageIndex);
     const pageNum = ctx.nextNum++;
+    const enc = encFor(ctx, pageNum);
 
     const parts: string[] = ['/Type /Page', '/Parent 2 0 R'];
 
@@ -488,7 +551,7 @@ function copyPage(ctx: CopyCtx, spec: PageSpec, opts: MergeOptions): number {
     for (const key of INHERITABLE_KEYS) {
         const v = resolveInherited(reader, page, key);
         if (v !== undefined) {
-            parts.push(`/${key} ${serializeValue(rewrite(ctx, reader, v))}`);
+            parts.push(`/${key} ${serializeValue(rewrite(ctx, reader, v), enc)}`);
         } else if (key === 'MediaBox') {
             parts.push(`/MediaBox ${DEFAULT_MEDIA_BOX}`);
         }
@@ -496,17 +559,17 @@ function copyPage(ctx: CopyCtx, spec: PageSpec, opts: MergeOptions): number {
 
     // Resources — inheritable; default to an empty dict.
     const res = resolveInherited(reader, page, 'Resources');
-    parts.push(`/Resources ${res !== undefined ? serializeValue(rewrite(ctx, reader, res)) : '<< >>'}`);
+    parts.push(`/Resources ${res !== undefined ? serializeValue(rewrite(ctx, reader, res), enc) : '<< >>'}`);
 
     // Contents.
     const contents = page.get('Contents');
     if (contents !== undefined) {
-        parts.push(`/Contents ${serializeValue(rewrite(ctx, reader, contents))}`);
+        parts.push(`/Contents ${serializeValue(rewrite(ctx, reader, contents), enc)}`);
     }
 
     // Annotations — keep self-contained URI links unless dropped.
     if (!opts.dropAnnotations) {
-        const annots = filterAnnotations(ctx, reader, page);
+        const annots = filterAnnotations(ctx, reader, page, enc);
         if (annots) parts.push(`/Annots ${annots}`);
     }
 
@@ -518,7 +581,7 @@ function copyPage(ctx: CopyCtx, spec: PageSpec, opts: MergeOptions): number {
  * Keep only self-contained URI `/Link` annotations (no cross-page or form
  * references) and return the inline `/Annots` array string, or `undefined`.
  */
-function filterAnnotations(ctx: CopyCtx, reader: PdfReader, page: PdfDict): string | undefined {
+function filterAnnotations(ctx: CopyCtx, reader: PdfReader, page: PdfDict, enc?: EncCtx): string | undefined {
     const annotsVal = page.get('Annots');
     if (annotsVal === undefined) return undefined;
     const arr = reader.resolveValue(annotsVal);
@@ -538,7 +601,7 @@ function filterAnnotations(ctx: CopyCtx, reader: PdfReader, page: PdfDict): stri
             if (k === 'P' || k === 'Parent') continue;
             clean.set(k, rewrite(ctx, reader, v));
         }
-        kept.push(serializeValue(clean));
+        kept.push(serializeValue(clean, enc));
     }
     return kept.length > 0 ? `[${kept.join(' ')}]` : undefined;
 }
@@ -558,9 +621,9 @@ function copyObject(ctx: CopyCtx, reader: PdfReader, srcNum: number, srcGen: num
 
     const resolved = reader.resolve({ type: 'ref', num: srcNum, gen: srcGen });
     if (isStream(resolved)) {
-        ctx.bodies.set(newNum, serializeStreamBody(ctx, reader, resolved, depth));
+        ctx.bodies.set(newNum, serializeStreamBody(ctx, reader, resolved, depth, encFor(ctx, newNum)));
     } else {
-        const body = serializeValue(rewrite(ctx, reader, resolved, depth));
+        const body = serializeValue(rewrite(ctx, reader, resolved, depth), encFor(ctx, newNum));
         setBody(ctx, newNum, body);
     }
     return newNum;
@@ -598,43 +661,56 @@ function rewrite(ctx: CopyCtx, reader: PdfReader, val: PdfValue, depth = 0): Pdf
  * even multi-gigabyte streams cost nothing until emission — where they are
  * yielded directly instead of being folded into a Latin-1 string.
  */
-function serializeStreamBody(ctx: CopyCtx, reader: PdfReader, stream: PdfStream, depth = 0): StreamBody {
-    // Pre-flight the raw payload against the cap *before* the wrapper is built,
-    // so an oversized stream is rejected up front.
-    accountBytes(ctx, stream.data.length);
+function serializeStreamBody(ctx: CopyCtx, reader: PdfReader, stream: PdfStream, depth = 0, enc?: EncCtx): StreamBody {
+    // Pre-flight the payload against the cap *before* the wrapper (or the
+    // ciphertext) is built, so an oversized stream is rejected up front.
+    // AES adds at most 16 (IV) + 16 (PKCS#7 padding) bytes.
+    accountBytes(ctx, stream.data.length + (enc !== undefined ? 32 : 0));
+
+    let payload = stream.data;
+    if (enc !== undefined) {
+        payload = latin1ToBytes(encryptStream(bytesToLatin1(stream.data), enc.state, enc.objNum, 0));
+    }
+
     const dict: PdfDict = new Map();
     for (const [k, v] of stream.dict) {
         if (k === 'Length') continue; // recomputed below
         dict.set(k, rewrite(ctx, reader, v, depth + 1));
     }
-    dict.set('Length', stream.data.length);
-    const head = serializeDict(dict) + '\nstream\n';
+    dict.set('Length', payload.length);
+    const head = serializeDict(dict, enc) + '\nstream\n';
     const tail = '\nendstream';
     accountBytes(ctx, head.length + tail.length);
-    return { head, data: stream.data, tail };
+    return { head, data: payload, tail };
 }
 
 // ── PDF value serialization (binary-safe, Latin-1) ───────────────────
 
-function serializeValue(val: PdfValue): string {
+function serializeValue(val: PdfValue, enc?: EncCtx): string {
     if (val === null) return 'null';
     if (typeof val === 'boolean') return val ? 'true' : 'false';
     if (typeof val === 'number') {
         if (Number.isInteger(val)) return String(val);
         return val.toFixed(4).replace(/\.?0+$/, '');
     }
-    if (typeof val === 'string') return `(${escapePdfStr(val)})`;
+    if (typeof val === 'string') {
+        // Encrypted strings MUST be emitted as hex (`<…>`): literal-string
+        // EOL normalisation would corrupt the ciphertext. encryptString
+        // returns the complete bracketed hex token.
+        if (enc !== undefined) return encryptString(val, enc.state, enc.objNum, 0);
+        return `(${escapePdfStr(val)})`;
+    }
     if (isName(val)) return `/${val.value}`;
     if (isRef(val)) return `${val.num} ${val.gen} R`;
-    if (isArray(val)) return '[' + val.map(serializeValue).join(' ') + ']';
-    if (isStream(val)) return serializeDict(val.dict);
-    if (isDict(val)) return serializeDict(val);
+    if (isArray(val)) return '[' + val.map(v => serializeValue(v, enc)).join(' ') + ']';
+    if (isStream(val)) return serializeDict(val.dict, enc);
+    if (isDict(val)) return serializeDict(val, enc);
     return 'null';
 }
 
-function serializeDict(dict: PdfDict): string {
+function serializeDict(dict: PdfDict, enc?: EncCtx): string {
     let s = '<<';
-    for (const [key, val] of dict) s += ` /${key} ${serializeValue(val)}`;
+    for (const [key, val] of dict) s += ` /${key} ${serializeValue(val, enc)}`;
     s += ' >>';
     return s;
 }
@@ -648,6 +724,16 @@ function latin1ToBytes(s: string): Uint8Array {
     const out = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
     return out;
+}
+
+/** Convert a byte array to a Latin-1 (binary) string, chunked for large data. */
+function bytesToLatin1(bytes: Uint8Array): string {
+    let s = '';
+    const CHUNK = 8192;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+        s += String.fromCharCode(...bytes.subarray(i, Math.min(i + CHUNK, bytes.length)));
+    }
+    return s;
 }
 
 // ── Document writer (header + body + xref + trailer) ─────────────────
@@ -704,8 +790,18 @@ function* documentSegments(ctx: CopyCtx): Generator<Uint8Array> {
     yield seg(xref);
 
     // Trailer (not part of the hash — the /ID digests only the body + xref).
-    const id = bytesToHex(md5h.digest());
-    yield latin1ToBytes(`trailer\n<< /Size ${size} /Root 1 0 R /ID [<${id}> <${id}>] >>\n`);
+    // When re-encrypting, the /ID MUST be the encryption state's random
+    // docId: the R4 file key is bound to it (ISO 32000-1 §7.6.3.3), so a
+    // content-addressed /ID would break decryption.
+    if (ctx.encState !== null) {
+        yield latin1ToBytes(
+            `trailer\n<< /Size ${size} /Root 1 0 R /Encrypt ${ctx.encryptNum} 0 R ` +
+            `/ID ${buildIdArray(ctx.encState.docId)} >>\n`,
+        );
+    } else {
+        const id = bytesToHex(md5h.digest());
+        yield latin1ToBytes(`trailer\n<< /Size ${size} /Root 1 0 R /ID [<${id}> <${id}>] >>\n`);
+    }
     yield latin1ToBytes(`startxref\n${xrefOffset}\n%%EOF\n`);
 }
 
