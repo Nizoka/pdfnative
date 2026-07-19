@@ -70,7 +70,7 @@ interface FillFormOptions {
   flatten?: boolean;                          // fill then flatten in one call
   onUnknownField?: 'throw' | 'ignore';        // default 'throw'
   nonWinAnsi?: 'throw' | 'needAppearances';   // default 'throw'
-  password?: string;                          // (encrypted input is rejected — see below)
+  password?: string;                          // for encrypted documents (see below)
 }
 ```
 
@@ -93,7 +93,7 @@ interactive layer (`/AcroForm`, widget `/Annots`):
 ```ts
 interface FlattenFormOptions {
   force?: boolean;      // flatten even over a signed signature field
-  password?: string;    // (encrypted input is rejected)
+  password?: string;    // for encrypted documents
 }
 ```
 
@@ -103,14 +103,30 @@ override.
 
 ## Encrypted & signed documents
 
-- **Encrypted input is rejected** (`FormUnsupportedError`): an incremental update
-  would append plaintext objects to an encrypted file, producing an invalid
-  hybrid. Decrypt-and-rebuild first (e.g. via [merge](pdf-manipulation.html)),
-  then fill.
+- **Encrypted documents are supported** (v1.6.0): pass the password —
+
+  ```ts
+  const filled = fillForm(encryptedPdf, { fullName: 'Grace Hopper' }, { password: 'secret' });
+  const flat = flattenForm(filled, { password: 'secret' });
+  ```
+
+  The appended objects — field values, regenerated appearance streams,
+  flatten overlays — are **encrypted under the document's existing scheme**
+  (same `/Encrypt` dictionary, same file key; RC4, AES-128 and AES-256
+  sources all work), so no plaintext ever leaks into an encrypted file and
+  no downgrade or upgrade of the scheme is possible. A wrong or missing
+  password throws `PdfPasswordError`. Note: the `/P` permission bits are
+  **not enforced** — the update proceeds if the password authenticates;
+  honouring the modify bit is the caller's responsibility
+  (`openPdf(bytes, { password }).encryption.authenticatedAs` tells you
+  which password opened the file).
 - **Signed documents:** filling *non-signature* fields is allowed and preserves
   the signed revision byte-for-byte (incremental update only appends). Viewers
   will report "document modified after signing" for the added revision — expected,
-  since the fill is a new, unsigned revision layered on top.
+  since the fill is a new, unsigned revision layered on top. Adding a *new*
+  signature placeholder to an **encrypted** document is not supported
+  (`addSignaturePlaceholder` needs a verbatim byte layout that cannot be
+  transparently encrypted — it fails fast with a clear error).
 
 ## How it works
 

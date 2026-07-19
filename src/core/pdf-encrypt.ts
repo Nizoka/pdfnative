@@ -896,6 +896,17 @@ function randomBytes(n: number): Uint8Array {
 }
 
 /**
+ * Generate `n` cryptographically secure random bytes, throwing when no Web
+ * Crypto CSPRNG is available (never falls back to `Math.random()`).
+ *
+ * @internal Shared with the parser's encrypted-incremental-update path
+ * (`src/parser/pdf-decrypt.ts`); not part of the public API surface.
+ */
+export function cryptoRandomBytes(n: number): Uint8Array {
+    return randomBytes(n);
+}
+
+/**
  * Compute the file encryption key for revisions 2–4
  * (ISO 32000-1 §7.6.3.3 Algorithm 2).
  *

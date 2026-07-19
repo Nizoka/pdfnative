@@ -106,4 +106,27 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         'annotations/annotations-readback.pdf',
         buildDocumentPDFBytes(roundTrip),
     );
+
+    // ── Annotate an ENCRYPTED document (v1.6.0) ──────────────────────
+    // The appended annotation objects are encrypted under the document's
+    // existing AES-128 scheme. Open with user password "pdfnative".
+    const encBase = buildDocumentPDFBytes({
+        title: 'Confidential contract',
+        blocks: [
+            { type: 'heading', text: 'Confidential Service Agreement', level: 1 },
+            { type: 'paragraph', text: 'This encrypted document was annotated after encryption.' },
+        ],
+    }, { encryption: { ownerPassword: 'pdfnative-owner', userPassword: 'pdfnative', algorithm: 'aes128' } });
+
+    const encModifier = createModifier(openPdf(encBase, { password: 'pdfnative' }));
+    encModifier.addAnnotation(0, buildAnnotationBody({
+        type: 'text',
+        rect: [500, 690, 520, 710],
+        contents: 'Reviewed under NDA - annotation stored encrypted.',
+    }));
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'annotations', 'annotated-encrypted.pdf'),
+        'annotations/annotated-encrypted.pdf',
+        encModifier.save(),
+    );
 }

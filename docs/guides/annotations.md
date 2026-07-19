@@ -94,6 +94,18 @@ const updated = modifier.save();  // appended incremental section, original pres
 mutated, so any existing signature's byte range upstream of the appended section
 stays intact.
 
+**Encrypted documents** are supported since v1.6.0: open with
+`openPdf(bytes, { password })` and annotate as usual — the appended
+annotation objects are encrypted under the document's existing scheme
+(RC4, AES-128 and AES-256 sources), so the annotation text never appears
+in cleartext in the file.
+
+```ts
+const modifier = createModifier(openPdf(encryptedBytes, { password: 'secret' }));
+modifier.addAnnotation(0, body);
+const updated = modifier.save(); // annotation stored encrypted
+```
+
 ## Sample
 
 [annotations-showcase.ts](https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/annotations-showcase.ts)

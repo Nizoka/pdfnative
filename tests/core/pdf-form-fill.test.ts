@@ -9,7 +9,7 @@ import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { openPdf } from '../../src/parser/pdf-reader.js';
 import {
     readFormFields, fillForm, flattenForm,
-    FormFieldNotFoundError, FormValueTypeError, FormUnsupportedError,
+    FormFieldNotFoundError, FormValueTypeError,
 } from '../../src/core/pdf-form-fill.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
@@ -111,12 +111,16 @@ describe('fillForm', () => {
         expect(filled.subarray(0, original.length)).toEqual(original);
     });
 
-    it('rejects encrypted input', () => {
+    it('fills encrypted input with the password (supported since v1.6.0)', () => {
+        // Historical behaviour rejected encrypted sources; the encrypted
+        // incremental update now appends objects under the document's
+        // existing scheme. Deep coverage: pdf-form-fill-encrypted.test.ts.
         const enc = buildDocumentPDFBytes(
             { title: 'X', blocks: [{ type: 'formField', fieldType: 'text', name: 'a' }] as never },
             { encryption: { ownerPassword: 'o' } },
         );
-        expect(() => fillForm(enc, { a: 'b' }, { password: 'o' })).toThrow(FormUnsupportedError);
+        const filled = fillForm(enc, { a: 'b' }, { password: 'o' });
+        expect(readFormFields(filled, { password: 'o' }).find(f => f.name === 'a')?.value).toBe('b');
     });
 });
 

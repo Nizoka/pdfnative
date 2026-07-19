@@ -329,7 +329,7 @@ export function openPdf(bytes: Uint8Array, options?: OpenPdfOptions): PdfReader 
         ? { algorithm: decryption.algorithm, revision: decryption.revision, authenticatedAs: decryption.authenticatedAs }
         : null;
 
-    return {
+    const reader: PdfReader = {
         get pageCount() { return collectPages().length; },
         trailer: xref.trailer,
         bytes,
@@ -433,6 +433,25 @@ export function openPdf(bytes: Uint8Array, options?: OpenPdfOptions): PdfReader 
         decodeStream: decodeStreamData,
         getObject,
     };
+
+    if (decryption !== null) DECRYPTION_CONTEXTS.set(reader, decryption);
+    return reader;
+}
+
+// ── Decryption-context access (internal) ─────────────────────────────
+
+const DECRYPTION_CONTEXTS = new WeakMap<PdfReader, DecryptionContext>();
+
+/**
+ * The recovered {@link DecryptionContext} of an encrypted reader (carries the
+ * file key), or `null` for unencrypted documents.
+ *
+ * @internal Consumed by the incremental modifier to encrypt appended
+ * objects under the document's existing scheme. Deliberately NOT re-exported
+ * from the package root — key material stays off the public API surface.
+ */
+export function getDecryptionContext(reader: PdfReader): DecryptionContext | null {
+    return DECRYPTION_CONTEXTS.get(reader) ?? null;
 }
 
 // ── Page-Label Number Tree ───────────────────────────────────────────

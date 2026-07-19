@@ -22,7 +22,7 @@ import { createModifier } from '../parser/pdf-modifier.js';
 import {
     isRef, isName, isDict, isArray, isStream, dictGetName,
 } from '../parser/pdf-object-parser.js';
-import type { PdfValue, PdfDict, PdfRef, PdfArray } from '../parser/pdf-object-parser.js';
+import type { PdfValue, PdfDict, PdfRef, PdfArray, PdfName, PdfStream } from '../parser/pdf-object-parser.js';
 import { buildTextAppearance, buildDropdownAppearance, buildListboxAppearance } from './pdf-form.js';
 
 // ── Errors ───────────────────────────────────────────────────────────
@@ -90,7 +90,7 @@ export type FormFillValue = string | boolean | readonly string[];
 
 /** Options for {@link fillForm}. */
 export interface FillFormOptions {
-    /** Password for an encrypted source (rejected — see below). */
+    /** Password for an encrypted source; appended objects are encrypted under the document's existing scheme (v1.6.0). */
     readonly password?: string;
     /** Also flatten after filling. */
     readonly flatten?: boolean;
@@ -333,6 +333,52 @@ function appearanceBody(w: number, h: number, content: string): string {
         `/Resources << /Font << /Helv ${HELV} >> >> /Length ${bytes} >>\nstream\n${content}\nendstream`;
 }
 
+const pdfName = (v: string): PdfName => ({ type: 'name', value: v });
+
+function latin1Bytes(s: string): Uint8Array {
+    const b = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 0xFF;
+    return b;
+}
+
+/**
+ * Add an appearance Form XObject to the update. Unencrypted documents keep
+ * the exact raw byte layout (byte-stable with earlier releases); encrypted
+ * documents route through `addObject` with a structured stream so the
+ * modifier's encrypting serializer protects the payload.
+ */
+function addAppearanceObject(
+    modifier: ReturnType<typeof createModifier>,
+    w: number, h: number, content: string,
+): number {
+    if (modifier.reader.encryption === null) {
+        return modifier.addRawObject(appearanceBody(w, h, content));
+    }
+    const helv: PdfDict = new Map<string, PdfValue>([
+        ['Type', pdfName('Font')], ['Subtype', pdfName('Type1')],
+        ['BaseFont', pdfName('Helvetica')], ['Encoding', pdfName('WinAnsiEncoding')],
+    ]);
+    const dict: PdfDict = new Map<string, PdfValue>([
+        ['Type', pdfName('XObject')], ['Subtype', pdfName('Form')],
+        ['BBox', [0, 0, w, h]],
+        ['Resources', new Map<string, PdfValue>([['Font', new Map<string, PdfValue>([['Helv', helv]])]])],
+    ]);
+    const stream: PdfStream = { type: 'stream', dict, data: latin1Bytes(content) };
+    return modifier.addObject(stream);
+}
+
+/** Add a plain content stream (flatten overlays), same encryption routing. */
+function addContentStreamObject(
+    modifier: ReturnType<typeof createModifier>,
+    content: string,
+): number {
+    if (modifier.reader.encryption === null) {
+        return modifier.addRawObject(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    }
+    const stream: PdfStream = { type: 'stream', dict: new Map<string, PdfValue>(), data: latin1Bytes(content) };
+    return modifier.addObject(stream);
+}
+
 function latin1Len(s: string): number { return s.length; }
 function num(n: number): string {
     return Math.round(n * 100) / 100 === Math.round(n) ? String(Math.round(n)) : String(Math.round(n * 100) / 100);
@@ -365,9 +411,16 @@ function isWinAnsi(s: string): boolean {
  *                 string (list for multi-select listboxes); checkbox/radio take
  *                 a boolean or the export-state string.
  * @param opts - See {@link FillFormOptions}.
- * @throws {FormUnsupportedError} for encrypted/ signature fields.
+ * Encrypted documents are supported (since v1.6.0): pass the password via
+ * `opts.password` — appended objects (values, appearance streams) are
+ * encrypted under the document's existing scheme, so the update never leaks
+ * plaintext into an encrypted file.
+ *
+ * @throws {FormUnsupportedError} for signature fields.
  * @throws {FormFieldNotFoundError} for unknown names (unless `onUnknownField:'ignore'`).
  * @throws {FormValueTypeError} for type/option mismatches.
+ * @throws {PdfPasswordError} when the document is encrypted and the password
+ *         is missing or wrong.
  */
 export function fillForm(
     pdfBytes: Uint8Array,
@@ -375,11 +428,6 @@ export function fillForm(
     opts?: FillFormOptions,
 ): Uint8Array {
     const reader = openPdf(pdfBytes, opts?.password !== undefined ? { password: opts.password } : undefined);
-    if (reader.encryption) {
-        throw new FormUnsupportedError(
-            'filling encrypted PDFs is not supported — an incremental update would append plaintext objects to an encrypted file',
-        );
-    }
 
     const nodes = collectFields(reader);
     const byName = new Map(nodes.map(n => [n.name, n]));
@@ -436,7 +484,7 @@ function fillText(
             const rect = rectOf(reader, w.dict);
             const fontSize = daFontSize(reader, node);
             const content = buildTextAppearance(value, rect, fontSize, multiline);
-            apRefs.push(modifier.addRawObject(appearanceBody(rect[2] - rect[0], rect[3] - rect[1], content)));
+            apRefs.push(addAppearanceObject(modifier, rect[2] - rect[0], rect[3] - rect[1], content));
         }
         applyAppearance(reader, modifier, node, clone, apRefs);
     } else {
@@ -477,7 +525,7 @@ function fillChoice(
             const content = type === 'dropdown'
                 ? buildDropdownAppearance(display, rect, fontSize)
                 : buildListboxAppearance(display, options.map(o => o.label), rect, fontSize);
-            apRefs.push(modifier.addRawObject(appearanceBody(rect[2] - rect[0], rect[3] - rect[1], content)));
+            apRefs.push(addAppearanceObject(modifier, rect[2] - rect[0], rect[3] - rect[1], content));
         }
         applyAppearance(reader, modifier, node, clone, apRefs);
     } else {
@@ -578,7 +626,7 @@ function setNeedAppearances(reader: PdfReader, modifier: ReturnType<typeof creat
 
 /** Options for {@link flattenForm}. */
 export interface FlattenFormOptions {
-    /** Password for an encrypted source (rejected). */
+    /** Password for an encrypted source; overlay streams are encrypted under the document's existing scheme (v1.6.0). */
     readonly password?: string;
     /** Flatten even when a signed signature field is present. Default `false`. */
     readonly force?: boolean;
@@ -589,14 +637,17 @@ export interface FlattenFormOptions {
  * its page content and remove the interactive fields (`/AcroForm`, widget
  * `/Annots`). Incremental update.
  *
- * @throws {FormUnsupportedError} for encrypted PDFs, or (unless `force`) when a
- *         signed signature field is present.
+ * Encrypted documents are supported (since v1.6.0): pass the password via
+ * `opts.password` — overlay streams are encrypted under the document's
+ * existing scheme.
+ *
+ * @throws {FormUnsupportedError} (unless `force`) when a signed signature
+ *         field is present.
+ * @throws {PdfPasswordError} when the document is encrypted and the password
+ *         is missing or wrong.
  */
 export function flattenForm(pdfBytes: Uint8Array, opts?: FlattenFormOptions): Uint8Array {
     const reader = openPdf(pdfBytes, opts?.password !== undefined ? { password: opts.password } : undefined);
-    if (reader.encryption) {
-        throw new FormUnsupportedError('flattening encrypted PDFs is not supported');
-    }
     const nodes = collectFields(reader);
     if (!opts?.force) {
         for (const n of nodes) {
@@ -638,7 +689,7 @@ export function flattenForm(pdfBytes: Uint8Array, opts?: FlattenFormOptions): Ui
         const pageRef = pageRefs[pageIndex];
         if (!pageRef) return;
         const content = `q\n${ops.join('\n')}\nQ\n`;
-        const streamRef = modifier.addRawObject(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+        const streamRef = addContentStreamObject(modifier, content);
         appendPageContents(modifier, pageRef, streamRef);
     });
 

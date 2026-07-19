@@ -17,8 +17,8 @@
  */
 
 import {
-    aesCBCDecrypt, aesECBDecrypt, computeHashR6, computeKeyR4,
-    encodePasswordUTF8, md5, padPassword, PDF_PADDING, rc4,
+    aesCBC, aesCBCDecrypt, aesECBDecrypt, computeHashR6, computeKeyR4,
+    cryptoRandomBytes, encodePasswordUTF8, md5, padPassword, PDF_PADDING, rc4,
 } from '../core/pdf-encrypt.js';
 import { isArray, isDict, isName, isStream, dictGetName, dictGetNum, nameValue } from './pdf-object-parser.js';
 import type { PdfDict, PdfStream, PdfValue } from './pdf-object-parser.js';
@@ -457,10 +457,67 @@ export function decryptStreamData(ctx: DecryptionContext, data: Uint8Array, num:
     return decryptBytes(ctx, ctx.stmCFM, data, num, gen);
 }
 
+// ── Encryption counterparts (encrypted incremental update) ───────────
+
+/** Encrypt bytes under a crypt-filter method (the inverse of decryptBytes). */
+function encryptBytes(
+    ctx: DecryptionContext,
+    cfm: CryptFilterMethod,
+    data: Uint8Array,
+    num: number,
+    gen: number,
+): Uint8Array {
+    if (cfm === 'Identity') return data;
+    if (cfm === 'V2') {
+        return rc4(data, objectKey(ctx, num, gen, false)); // RC4 is symmetric
+    }
+    // AESV2 / AESV3: emit IV(16) + CBC ciphertext (PKCS#7). The IV comes
+    // from the CSPRNG — cryptoRandomBytes throws when none is available.
+    const key = objectKey(ctx, num, gen, true);
+    const iv = cryptoRandomBytes(16);
+    const cipher = aesCBC(data, key, iv);
+    const out = new Uint8Array(16 + cipher.length);
+    out.set(iv, 0);
+    out.set(cipher, 16);
+    return out;
+}
+
+/**
+ * Encrypt a raw-binary string for object `num gen` under the document's
+ * existing string crypt filter — the inverse of {@link decryptString}.
+ * Lets the incremental modifier append objects to an encrypted document
+ * under the same scheme (no downgrade or upgrade possible: the recovered
+ * context IS the document's `/Encrypt` configuration).
+ *
+ * @internal Used by `pdf-modifier.ts`; not part of the public API.
+ * @since 1.6.0
+ */
+export function encryptStringData(ctx: DecryptionContext, raw: string, num: number, gen: number): string {
+    if (ctx.strCFM === 'Identity' || raw.length === 0) return raw;
+    return bytesToStr(encryptBytes(ctx, ctx.strCFM, strToBytes(raw), num, gen));
+}
+
+/**
+ * Encrypt stream payload bytes for object `num gen` under the document's
+ * existing stream crypt filter — the inverse of {@link decryptStreamData}.
+ *
+ * @internal Used by `pdf-modifier.ts`; not part of the public API.
+ * @since 1.6.0
+ */
+export function encryptStreamData(ctx: DecryptionContext, data: Uint8Array, num: number, gen: number): Uint8Array {
+    if (data.length === 0) return data;
+    return encryptBytes(ctx, ctx.stmCFM, data, num, gen);
+}
+
 // ── Object-graph decryption walker ───────────────────────────────────
 
-/** True for streams that ISO 32000 exempts from encryption. */
-function isExemptStream(dict: PdfDict, ctx: DecryptionContext): boolean {
+/**
+ * True for streams that ISO 32000 exempts from encryption.
+ *
+ * @internal Shared with `pdf-modifier.ts` so appended streams honour the
+ * same exemptions (XRef, unencrypted Metadata, /Crypt-filtered).
+ */
+export function isExemptStream(dict: PdfDict, ctx: DecryptionContext): boolean {
     const type = dictGetName(dict, 'Type');
     if (type === 'XRef') return true; // §7.5.8.2 — never encrypted
     if (type === 'Metadata' && !ctx.encryptMetadata) return true;
@@ -473,8 +530,13 @@ function isExemptStream(dict: PdfDict, ctx: DecryptionContext): boolean {
     return false;
 }
 
-/** True for dictionaries whose /Contents must stay raw (signature values, §7.6.2). */
-function isSignatureDict(dict: PdfDict): boolean {
+/**
+ * True for dictionaries whose /Contents must stay raw (signature values,
+ * §7.6.2).
+ *
+ * @internal Shared with `pdf-modifier.ts` for the same exemption on write.
+ */
+export function isSignatureDict(dict: PdfDict): boolean {
     const type = dictGetName(dict, 'Type');
     return type === 'Sig' || type === 'DocTimeStamp' || dict.has('ByteRange');
 }

@@ -11,10 +11,10 @@ import { resolve } from 'path';
 import {
     buildDocumentPDFBytes, readFormFields, fillForm, flattenForm,
 } from '../../src/index.js';
-import type { DocumentParams, DocumentBlock } from '../../src/index.js';
+import type { DocumentParams, DocumentBlock, EncryptionOptions } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
 
-function blankForm(): Uint8Array {
+function blankForm(encryption?: EncryptionOptions): Uint8Array {
     const blocks: DocumentBlock[] = [
         { type: 'heading', text: 'Membership application', level: 1 },
         { type: 'formField', fieldType: 'text', name: 'fullName', label: 'Full name' },
@@ -24,7 +24,7 @@ function blankForm(): Uint8Array {
         { type: 'formField', fieldType: 'checkbox', name: 'newsletter', label: 'Subscribe to the newsletter' },
     ];
     const params: DocumentParams = { title: 'Membership application', blocks };
-    return buildDocumentPDFBytes(params);
+    return buildDocumentPDFBytes(params, encryption !== undefined ? { encryption } : undefined);
 }
 
 export async function generate(ctx: GenerateContext): Promise<void> {
@@ -46,4 +46,20 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     const flat = flattenForm(filled);
     ctx.writeSafe(resolve(ctx.outputDir, 'forms', 'fill-flattened.pdf'), 'forms/fill-flattened.pdf', flat);
+
+    // ── Encrypted incremental update (v1.6.0) ────────────────────────
+    // The blank form is AES-256 protected; fillForm/flattenForm append
+    // objects encrypted under the document's existing scheme.
+    // Open with user password "pdfnative" (owner: "pdfnative-owner").
+    const encBlank = blankForm({ ownerPassword: 'pdfnative-owner', userPassword: 'pdfnative', algorithm: 'aes256' });
+    const encFilled = fillForm(encBlank, {
+        fullName: 'Grace Hopper',
+        email: 'grace@navy.mil',
+        plan: 'Enterprise',
+        newsletter: true,
+    }, { password: 'pdfnative' });
+    ctx.writeSafe(resolve(ctx.outputDir, 'forms', 'filled-encrypted.pdf'), 'forms/filled-encrypted.pdf', encFilled);
+
+    const encFlat = flattenForm(encFilled, { password: 'pdfnative' });
+    ctx.writeSafe(resolve(ctx.outputDir, 'forms', 'flattened-encrypted.pdf'), 'forms/flattened-encrypted.pdf', encFlat);
 }
