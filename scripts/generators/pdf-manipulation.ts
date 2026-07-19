@@ -13,11 +13,22 @@ import { resolve } from 'path';
 import {
     buildDocumentPDFBytes,
     mergePdfs, splitPdf, extractPages,
+    streamMergedPdfs, streamSplitPdf,
     streamToFile, buildDocumentPDFStreamTrue,
     openPdf,
 } from '../../src/index.js';
 import type { DocumentParams, DocumentBlock } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
+
+async function collect(gen: AsyncGenerator<Uint8Array>): Promise<Uint8Array> {
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for await (const c of gen) { chunks.push(c); total += c.length; }
+    const out = new Uint8Array(total);
+    let o = 0;
+    for (const c of chunks) { out.set(c, o); o += c.length; }
+    return out;
+}
 
 function doc(title: string, sections: number): Uint8Array {
     const blocks: DocumentBlock[] = [];
@@ -75,4 +86,41 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         size: streamedBytes.length,
         pages: openPdf(streamedBytes).pageCount,
     });
+
+    // ── merge an ENCRYPTED source with a plain one (v1.6.0 decryptor) ──
+    const secret = buildDocumentPDFBytes({
+        title: 'Confidential Appendix',
+        blocks: [
+            { type: 'heading', text: 'Confidential Appendix', level: 1 },
+            { type: 'paragraph', text: 'This source was AES-256 encrypted and decrypted on ingest.' },
+        ],
+    }, { encryption: { ownerPassword: 'boardroom', algorithm: 'aes256' } });
+    const mergedSecure = mergePdfs([reportA, { bytes: secret, password: 'boardroom' }]);
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'manipulation', 'merged-with-encrypted.pdf'),
+        'manipulation/merged-with-encrypted.pdf',
+        mergedSecure,
+    );
+
+    // ── streaming merge (constant memory) written straight to disk ────
+    const streamMergePath = resolve(ctx.outputDir, 'manipulation', 'stream-merged.pdf');
+    await streamToFile(streamMergedPdfs([reportA, invoice]), streamMergePath);
+    const streamMergedBytes = readFileSync(streamMergePath);
+    ctx.results.push({
+        file: 'manipulation/stream-merged.pdf',
+        size: streamMergedBytes.length,
+        pages: openPdf(streamMergedBytes).pageCount,
+    });
+
+    // ── streaming split: one file per range ───────────────────────────
+    let idx = 0;
+    for await (const part of streamSplitPdf(merged, [{ start: 0, end: 2 }, { start: 3, end: 4 }])) {
+        const bytes = await collect(part.pdf);
+        ctx.writeSafe(
+            resolve(ctx.outputDir, 'manipulation', `stream-split-${idx}.pdf`),
+            `manipulation/stream-split-${idx}.pdf`,
+            bytes,
+        );
+        idx++;
+    }
 }
