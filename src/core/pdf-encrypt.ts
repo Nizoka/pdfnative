@@ -413,73 +413,117 @@ function rotl32(x: number, n: number): number {
     return ((x << n) | (x >>> (32 - n))) >>> 0;
 }
 
-/**
- * MD5 hash (RFC 1321).
- * @param input - Bytes to hash
- * @returns 16-byte MD5 digest
- */
-export function md5(input: Uint8Array): Uint8Array {
-    const len = input.length;
-    // Padding: 1 bit, then zeros, then 64-bit length
-    const totalBits = len * 8;
-    const padLen = ((56 - ((len + 1) % 64)) + 64) % 64;
-    const padded = new Uint8Array(len + 1 + padLen + 8);
-    padded.set(input);
-    padded[len] = 0x80;
-    // Length in bits as 64-bit little-endian
-    const dv = new DataView(padded.buffer);
-    dv.setUint32(padded.length - 8, totalBits >>> 0, true);
-    dv.setUint32(padded.length - 4, 0, true); // high 32 bits (assume < 2^32 bits)
+/** Incremental MD5 hasher (RFC 1321). */
+export interface Md5Hasher {
+    /** Feed more bytes into the hash. */
+    update(bytes: Uint8Array): void;
+    /** Finalize and return the 16-byte digest. The hasher must not be reused. */
+    digest(): Uint8Array;
+}
 
+/**
+ * Create an incremental MD5 hasher (RFC 1321) with a correct 64-bit message
+ * length, so inputs larger than 512 MB hash correctly (unlike a one-shot that
+ * truncates the bit length to 32 bits). {@link md5} is implemented on top of
+ * this and is byte-identical for all realistic inputs.
+ */
+export function createMd5(): Md5Hasher {
     let a0 = 0x67452301 >>> 0;
     let b0 = 0xefcdab89 >>> 0;
     let c0 = 0x98badcfe >>> 0;
     let d0 = 0x10325476 >>> 0;
 
-    for (let off = 0; off < padded.length; off += 64) {
-        const M = new Uint32Array(16);
-        for (let j = 0; j < 16; j++) {
-            M[j] = dv.getUint32(off + j * 4, true);
-        }
+    const block = new Uint8Array(64);
+    const bv = new DataView(block.buffer);
+    let blockLen = 0;
+    // Total message length in bits, tracked as two 32-bit halves.
+    let lenLo = 0; // low 32 bits (bits)
+    let lenHi = 0; // high 32 bits (bits)
+    const M = new Uint32Array(16);
+    let done = false;
 
+    function processBlock(): void {
+        for (let j = 0; j < 16; j++) M[j] = bv.getUint32(j * 4, true);
         let a = a0, b = b0, c = c0, d = d0;
-
         for (let i = 0; i < 64; i++) {
             let f: number, g: number;
-            if (i < 16) {
-                f = (b & c) | (~b & d);
-                g = i;
-            } else if (i < 32) {
-                f = (d & b) | (~d & c);
-                g = (5 * i + 1) % 16;
-            } else if (i < 48) {
-                f = b ^ c ^ d;
-                g = (3 * i + 5) % 16;
-            } else {
-                f = c ^ (b | ~d);
-                g = (7 * i) % 16;
-            }
-            f = (f >>> 0);
+            if (i < 16) { f = (b & c) | (~b & d); g = i; }
+            else if (i < 32) { f = (d & b) | (~d & c); g = (5 * i + 1) & 15; }
+            else if (i < 48) { f = b ^ c ^ d; g = (3 * i + 5) & 15; }
+            else { f = c ^ (b | ~d); g = (7 * i) & 15; }
+            f = f >>> 0;
             const temp = d;
             d = c;
             c = b;
             b = (b + rotl32((a + f + MD5_K[i] + M[g]) >>> 0, MD5_S[i])) >>> 0;
             a = temp;
         }
-
-        a0 = (a0 + a) >>> 0;
-        b0 = (b0 + b) >>> 0;
-        c0 = (c0 + c) >>> 0;
-        d0 = (d0 + d) >>> 0;
+        a0 = (a0 + a) >>> 0; b0 = (b0 + b) >>> 0; c0 = (c0 + c) >>> 0; d0 = (d0 + d) >>> 0;
     }
 
-    const result = new Uint8Array(16);
-    const rv = new DataView(result.buffer);
-    rv.setUint32(0, a0, true);
-    rv.setUint32(4, b0, true);
-    rv.setUint32(8, c0, true);
-    rv.setUint32(12, d0, true);
-    return result;
+    function update(bytes: Uint8Array): void {
+        if (done) throw new Error('Md5Hasher: update() after digest()');
+        // Advance the 64-bit bit length.
+        const addBits = bytes.length * 8;
+        lenLo += addBits >>> 0;
+        lenHi += Math.floor(bytes.length / 0x20000000); // bytes * 8 / 2^32
+        if (lenLo >= 0x100000000) { lenLo -= 0x100000000; lenHi += 1; }
+        let i = 0;
+        if (blockLen > 0) {
+            const need = 64 - blockLen;
+            const take = Math.min(need, bytes.length);
+            block.set(bytes.subarray(0, take), blockLen);
+            blockLen += take;
+            i = take;
+            if (blockLen === 64) { processBlock(); blockLen = 0; }
+        }
+        for (; i + 64 <= bytes.length; i += 64) {
+            block.set(bytes.subarray(i, i + 64));
+            processBlock();
+        }
+        if (i < bytes.length) {
+            block.set(bytes.subarray(i), 0);
+            blockLen = bytes.length - i;
+        }
+    }
+
+    function digest(): Uint8Array {
+        if (done) throw new Error('Md5Hasher: digest() called twice');
+        // Snapshot the true message length before update() mutates the counter.
+        const finalLo = lenLo >>> 0;
+        const finalHi = lenHi >>> 0;
+        // Append 0x80, zeros to reach 56 mod 64, then the 64-bit LE bit length.
+        // Pad size is measured from the current buffer fill so the length lands
+        // exactly on a block boundary.
+        const pad = new Uint8Array(blockLen < 56 ? 64 - blockLen : 128 - blockLen);
+        pad[0] = 0x80;
+        const tail = new DataView(pad.buffer);
+        tail.setUint32(pad.length - 8, finalLo, true);
+        tail.setUint32(pad.length - 4, finalHi, true);
+        update(pad);
+        done = true;
+
+        const result = new Uint8Array(16);
+        const rv = new DataView(result.buffer);
+        rv.setUint32(0, a0, true);
+        rv.setUint32(4, b0, true);
+        rv.setUint32(8, c0, true);
+        rv.setUint32(12, d0, true);
+        return result;
+    }
+
+    return { update, digest };
+}
+
+/**
+ * MD5 hash (RFC 1321).
+ * @param input - Bytes to hash
+ * @returns 16-byte MD5 digest
+ */
+export function md5(input: Uint8Array): Uint8Array {
+    const h = createMd5();
+    h.update(input);
+    return h.digest();
 }
 
 // ── SHA-256 (FIPS 180-4) ────────────────────────────────────────────
@@ -663,10 +707,10 @@ function sha512Core(input: Uint8Array, ivH: Uint32Array, ivL: Uint32Array, outBy
             const s1l = ((xl >>> 19) | (xh << 13)) ^ ((xh >>> 29) | (xl << 3)) ^ ((xl >>> 6) | (xh << 26));
             // W[j] = W[j-16] + s0 + W[j-7] + s1  (64-bit add via lo carry)
             const l16 = wL[j - 16], h16 = wH[j - 16], l7 = wL[j - 7], h7 = wH[j - 7];
-            let lo = (l16 & 0xffff) + (s0l & 0xffff) + (l7 & 0xffff) + (s1l & 0xffff);
-            let mid = (l16 >>> 16) + (s0l >>> 16) + (l7 >>> 16) + (s1l >>> 16) + (lo >>> 16);
-            let hi = (h16 & 0xffff) + (s0h & 0xffff) + (h7 & 0xffff) + (s1h & 0xffff) + (mid >>> 16);
-            let top = (h16 >>> 16) + (s0h >>> 16) + (h7 >>> 16) + (s1h >>> 16) + (hi >>> 16);
+            const lo = (l16 & 0xffff) + (s0l & 0xffff) + (l7 & 0xffff) + (s1l & 0xffff);
+            const mid = (l16 >>> 16) + (s0l >>> 16) + (l7 >>> 16) + (s1l >>> 16) + (lo >>> 16);
+            const hi = (h16 & 0xffff) + (s0h & 0xffff) + (h7 & 0xffff) + (s1h & 0xffff) + (mid >>> 16);
+            const top = (h16 >>> 16) + (s0h >>> 16) + (h7 >>> 16) + (s1h >>> 16) + (hi >>> 16);
             wL[j] = ((mid & 0xffff) << 16) | (lo & 0xffff);
             wH[j] = ((top & 0xffff) << 16) | (hi & 0xffff);
         }

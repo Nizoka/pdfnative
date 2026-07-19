@@ -39,5 +39,8 @@ export type { PdfModifier } from './pdf-modifier.js';
 export { createModifier } from './pdf-modifier.js';
 
 // ── Page-tree manipulation (merge / split / extract) ────────────────
-export type { PageRange, MergeOptions, PdfSourceInput } from './pdf-pagetree.js';
-export { mergePdfs, splitPdf, extractPages } from './pdf-pagetree.js';
+export type { PageRange, MergeOptions, PdfSourceInput, StreamMergeOptions, SplitPdfStream } from './pdf-pagetree.js';
+export {
+    mergePdfs, splitPdf, extractPages,
+    streamMergedPdfs, streamExtractPages, streamSplitPdf,
+} from './pdf-pagetree.js';

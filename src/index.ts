@@ -288,8 +288,8 @@ export type { DecryptionContext, CryptFilterMethod } from './parser/pdf-decrypt.
 export { PdfPasswordError, PdfEncryptionUnsupportedError } from './parser/pdf-decrypt.js';
 export type { PdfModifier } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
-export type { PageRange, MergeOptions, PdfSourceInput } from './parser/pdf-pagetree.js';
-export { mergePdfs, splitPdf, extractPages } from './parser/pdf-pagetree.js';
+export type { PageRange, MergeOptions, PdfSourceInput, StreamMergeOptions, SplitPdfStream } from './parser/pdf-pagetree.js';
+export { mergePdfs, splitPdf, extractPages, streamMergedPdfs, streamExtractPages, streamSplitPdf } from './parser/pdf-pagetree.js';
 export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
 export { validatePdfUA } from './parser/pdf-ua-validator.js';
 export {
