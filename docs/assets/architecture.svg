@@ -118,8 +118,8 @@
     <ellipse cx="675" cy="149" rx="12" ry="4.6" transform="rotate(120 675 149)"/>
   </g>
   <text x="702" y="146" font-size="15.5" font-weight="700" fill="#0E7490">pdfnative-react</text>
-  <text x="702" y="164" font-size="11" font-weight="600" fill="#0891B2">React renderer · JSX</text>
-  <text x="702" y="181" font-size="10" fill="#06B6D4">on-device · live preview</text>
+  <text x="702" y="164" font-size="11" font-weight="600" fill="#0891B2">React 19 renderer · JSX · v1.0</text>
+  <text x="702" y="181" font-size="10" fill="#06B6D4">render · stream · hooks · DocSpec</text>
 
   <!-- ════════════ LIBRARY BAND ════════════ -->
   <rect x="28" y="238" width="904" height="304" rx="16" fill="url(#g-lib)" stroke="#E2E8F0" stroke-width="1.25"/>
@@ -139,8 +139,9 @@
   <text x="336" y="342" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1D4ED8">pdf-builder · pdf-document</text>
   <text x="336" y="362" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1D4ED8">pdf-encrypt · pdf-tags</text>
   <line x1="262" y1="376" x2="410" y2="376" stroke="#BFDBFE" stroke-width="1"/>
-  <text x="336" y="395" text-anchor="middle" font-size="10.5" fill="#3B82F6">outline · page labels · annotations</text>
-  <text x="336" y="412" text-anchor="middle" font-size="10.5" fill="#3B82F6">layout inspect · viewer-prefs · barcode</text>
+  <text x="336" y="393" text-anchor="middle" font-size="10.5" fill="#3B82F6">outline · page labels · annotations</text>
+  <text x="336" y="409" text-anchor="middle" font-size="10.5" fill="#3B82F6">layout inspect · viewer-prefs · barcode</text>
+  <text x="336" y="425" text-anchor="middle" font-size="10.5" fill="#3B82F6">charts · form fill / flatten</text>
 
   <!-- fonts -->
   <g filter="url(#soft-sm)"><rect x="500" y="286" width="150" height="66" rx="12" fill="url(#g-fonts)" stroke="#A78BFA" stroke-width="1.25"/></g>
@@ -166,7 +167,7 @@
   <!-- parser (standalone) -->
   <g filter="url(#soft-sm)"><rect x="500" y="462" width="196" height="62" rx="12" fill="url(#g-parser)" stroke="#FB923C" stroke-width="1.25"/></g>
   <text x="598" y="489" text-anchor="middle" font-size="14.5" font-weight="700" fill="#C2410C">parser</text>
-  <text x="598" y="508" text-anchor="middle" font-size="9.5" fill="#F97316">read · modify · annotate · merge · split</text>
+  <text x="598" y="508" text-anchor="middle" font-size="9" fill="#F97316">read · decrypt · modify · merge / split · stream</text>
 
   <!-- ─── Edges ─── -->
   <!-- consumers → core (npm) -->

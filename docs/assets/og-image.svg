@@ -58,7 +58,7 @@
 
   <!-- Subtitle -->
   <text x="80" y="446" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="27" font-weight="500" fill="#e2e8f0">Zero dependencies · ISO 32000-1 · PDF/A · TypeScript-first</text>
-  <text x="80" y="480" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="400" fill="#94a3b8">Bookmarks · Merge / Split · Signatures · Streaming · 22 Unicode scripts</text>
+  <text x="80" y="480" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="400" fill="#94a3b8">Charts · Forms · Merge / Split · Encryption · Signatures · 22 Unicode scripts</text>
 
   <!-- Capability pills -->
   <g font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="600">
