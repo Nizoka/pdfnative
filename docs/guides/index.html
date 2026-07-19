@@ -124,7 +124,15 @@
       </li>
       <li>
         <a href="pdf-manipulation.html">PDF manipulation →</a>
-        <span class="guide-toc-desc">v1.4.0 page-tree API — <code>mergePdfs()</code>, <code>splitPdf()</code>, <code>extractPages()</code>. Production-safe clean object-graph rebuild with resolved inherited attributes and optional signature/annotation stripping.</span>
+        <span class="guide-toc-desc">Page-tree API — <code>mergePdfs()</code>, <code>splitPdf()</code>, <code>extractPages()</code>. Production-safe clean object-graph rebuild. v1.6.0: decrypts encrypted sources (<code>{ bytes, password }</code>) and adds constant-memory streaming variants (<code>streamMergedPdfs</code> / <code>streamSplitPdf</code>).</span>
+      </li>
+      <li>
+        <a href="form-filling.html">Form filling &amp; flattening →</a>
+        <span class="guide-toc-desc">v1.6.0 read, fill, and flatten existing AcroForm PDFs — <code>readFormFields()</code>, <code>fillForm()</code> (regenerated appearances), <code>flattenForm()</code> — via non-destructive incremental update that preserves prior signatures.</span>
+      </li>
+      <li>
+        <a href="charts.html">Charts (native vector) →</a>
+        <span class="guide-toc-desc">v1.6.0 bar, horizontal-bar, line, pie, and donut <code>chart</code> blocks rendered as pure PDF path operators — zero dependencies, multi-series, "nice" axis ticks, negative values, tagged <code>/Figure</code> + alt text, PDF/A-safe.</span>
       </li>
       <li>
         <a href="viewer-preferences.html">Viewer preferences →</a>

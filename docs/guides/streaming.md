@@ -107,6 +107,29 @@ so importing it in a browser or Deno bundle adds no static Node dependency. In
 non-Node runtimes, drive the generator yourself with the Web Streams snippet
 above.
 
+## Streaming merge & split (v1.6.0)
+
+The page-tree API has constant-memory variants —
+`streamMergedPdfs` / `streamSplitPdf` / `streamExtractPages` — that emit the
+assembled document as fixed-size chunks while holding only the cross-reference
+offsets in memory. Each is byte-identical to its buffered counterpart and
+composes with `streamToFile`:
+
+```ts
+import { streamMergedPdfs, streamSplitPdf, streamToFile } from 'pdfnative';
+
+await streamToFile(streamMergedPdfs([a, b]), 'combined.pdf');
+
+for await (const part of streamSplitPdf(body, ranges)) {
+  await streamToFile(part.pdf, `part-${part.index}.pdf`);   // drain each fully, in order
+}
+```
+
+Note the honest memory profile: **output** bytes are never buffered, but the
+**source** PDFs are still in-memory `Uint8Array`s. See the
+[PDF manipulation guide](pdf-manipulation.html#streaming-merge--split) for the
+full API.
+
 ## Constraints
 
 Streaming is incompatible with two features that need a second pass over the

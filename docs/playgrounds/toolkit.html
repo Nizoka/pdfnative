@@ -71,6 +71,7 @@
     <a href="./extreme-scripts.html">Extreme scripts</a>
     <a href="./all-scripts.html">All 22 scripts</a>
     <a href="./toolkit.html" aria-current="page">PDF Toolkit</a>
+    <a href="./charts.html">Charts</a>
     <a href="./authoring-plus.html">Authoring+</a>
     <a href="./medical-800.html">Medical 800-page</a>
     <a href="./cli.html">CLI builder</a>
@@ -94,6 +95,7 @@
         <option value="bookmarks">Bookmarks · page labels · viewer preferences</option>
         <option value="layout">Nested lists · table cell borders &amp; vertical alignment</option>
         <option value="manipulation">Merge · split · extract pages</option>
+        <option value="formfill">Fill &amp; flatten an AcroForm (v1.6.0)</option>
       </select>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
       <span id="timer" style="font-size:13px;color:#64748b;"></span>
@@ -155,6 +157,7 @@ const DESCRIPTIONS = {
   bookmarks: 'Builds a six-section report. An auto-derived bookmark tree mirrors the headings, the front-matter pages use roman numerals (i, ii, iii) while the body uses decimals, and the viewer is asked to open with the bookmark panel showing. Open the result in a desktop reader to see the bookmarks panel.',
   layout: 'Renders a hierarchical (multi-level) list and a table whose cells have dashed borders and middle vertical alignment — the amount column is right-aligned with its own per-column styling.',
   manipulation: 'Generates a 2-page cover PDF and a 2-page appendix PDF in memory, merges them into one 4-page document, then extracts pages 1 and 3 into a third PDF. The merged document is downloaded; the status line reports the split/extract page counts.',
+  formfill: 'Builds a blank AcroForm (text, dropdown, checkbox), fills it with readFormFields()/fillForm() — regenerating the field appearances — then flattens it with flattenForm() so the values become static page content. The flattened PDF is downloaded.',
 };
 
 const CODE = {
@@ -238,6 +241,25 @@ const halves = splitPdf(merged, [{ start: 0, end: 1 }, { start: 2, end: 3 }]);
 const picked = extractPages(merged, [0, 2]);
 
 downloadBlob(merged, 'merged.pdf');`,
+  formfill: `import { buildDocumentPDFBytes, readFormFields, fillForm, flattenForm, downloadBlob } from 'pdfnative';
+
+// A blank interactive form.
+const blank = buildDocumentPDFBytes({
+  title: 'Membership application',
+  blocks: [
+    { type: 'heading', text: 'Membership application', level: 1 },
+    { type: 'formField', fieldType: 'text', name: 'fullName', label: 'Full name' },
+    { type: 'formField', fieldType: 'dropdown', name: 'plan', label: 'Plan', options: ['Basic', 'Pro', 'Enterprise'] },
+    { type: 'formField', fieldType: 'checkbox', name: 'newsletter', label: 'Subscribe' },
+  ],
+});
+
+// Discover, fill (appearances regenerated), then flatten.
+console.log(readFormFields(blank).map(f => f.name));   // ['fullName', 'plan', 'newsletter']
+const filled = fillForm(blank, { fullName: 'Ada Lovelace', plan: 'Pro', newsletter: true });
+const flat = flattenForm(filled);
+
+downloadBlob(flat, 'form-filled-flattened.pdf');`,
 };
 
 function applyPreset(id) {
@@ -348,7 +370,23 @@ function buildManipulation(mod) {
   };
 }
 
-const BUILDERS = { bookmarks: buildBookmarks, layout: buildLayout, manipulation: buildManipulation };
+function buildFormFill(mod) {
+  const blank = mod.buildDocumentPDFBytes({
+    title: 'Membership application',
+    blocks: [
+      { type: 'heading', text: 'Membership application', level: 1 },
+      { type: 'formField', fieldType: 'text', name: 'fullName', label: 'Full name' },
+      { type: 'formField', fieldType: 'dropdown', name: 'plan', label: 'Plan', options: ['Basic', 'Pro', 'Enterprise'] },
+      { type: 'formField', fieldType: 'checkbox', name: 'newsletter', label: 'Subscribe to the newsletter' },
+    ],
+  });
+  const fields = mod.readFormFields(blank).map(f => f.name).join(', ');
+  const filled = mod.fillForm(blank, { fullName: 'Ada Lovelace', plan: 'Pro', newsletter: true });
+  const flat = mod.flattenForm(filled);
+  return { bytes: flat, filename: 'form-filled-flattened.pdf', note: `fields: ${fields} · filled + flattened ${(flat.length / 1024).toFixed(1)} KB` };
+}
+
+const BUILDERS = { bookmarks: buildBookmarks, layout: buildLayout, manipulation: buildManipulation, formfill: buildFormFill };
 
 async function generate() {
   const id = $('preset').value;
