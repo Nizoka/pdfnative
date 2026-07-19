@@ -299,6 +299,8 @@ export type { PdfModifier } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
 export type { PageRange, MergeOptions, PdfSourceInput, StreamMergeOptions, SplitPdfStream } from './parser/pdf-pagetree.js';
 export { mergePdfs, splitPdf, extractPages, streamMergedPdfs, streamExtractPages, streamSplitPdf } from './parser/pdf-pagetree.js';
+export type { ExtractTextOptions, ExtractedTextRun, ExtractedPageText } from './parser/pdf-text-extract.js';
+export { extractText } from './parser/pdf-text-extract.js';
 export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
 export { validatePdfUA } from './parser/pdf-ua-validator.js';
 export {

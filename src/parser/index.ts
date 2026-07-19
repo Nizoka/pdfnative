@@ -38,6 +38,10 @@ export {
 export type { PdfModifier } from './pdf-modifier.js';
 export { createModifier } from './pdf-modifier.js';
 
+// ── Text extraction ─────────────────────────────────────────────────
+export type { ExtractTextOptions, ExtractedTextRun, ExtractedPageText } from './pdf-text-extract.js';
+export { extractText } from './pdf-text-extract.js';
+
 // ── Page-tree manipulation (merge / split / extract) ────────────────
 export type { PageRange, MergeOptions, PdfSourceInput, StreamMergeOptions, SplitPdfStream } from './pdf-pagetree.js';
 export {

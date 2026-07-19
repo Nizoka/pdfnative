@@ -55,6 +55,7 @@ import { generate as generateAnnotations } from './generators/annotations-showca
 import { generate as generateFontCompiler } from './generators/font-compiler-demo.js';
 import { generate as generateFormFill } from './generators/form-fill-showcase.js';
 import { generate as generateChart } from './generators/chart-showcase.js';
+import { generate as generateTextExtract } from './generators/text-extract-showcase.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -190,6 +191,9 @@ async function generateAll(): Promise<void> {
 
     // ── Native vector charts (v1.6.0) ────────────────────────────
     await generateChart(ctx);
+
+    // ── Text extraction (v1.6.0) ─────────────────────────────────
+    await generateTextExtract(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

@@ -51,6 +51,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments)
 - **PDF Encryption (round-trip)** — write **and read** encrypted PDFs: AES-128 (V4/R4), AES-256 (V5/R6), and legacy RC4 (V1–V4); owner + user passwords, granular permissions. **v1.6.0** adds a Standard Security Handler **decryptor** — `openPdf(bytes, { password })` decrypts transparently, and the merge/split API ingests encrypted sources. [Guide →](docs/guides/pdf-manipulation.md)
 - **Native vector charts** (v1.6.0) — bar, horizontal-bar, line, pie, and donut `chart` blocks rendered as pure PDF path operators (zero deps, no rasterisation); multi-series, legends, "nice" axis ticks, negative values, tagged `/Figure` + alt text. [Guide →](docs/guides/charts.md)
+- **Text extraction** (v1.6.0) — `extractText()` decodes page content streams into per-page reading-order Unicode text plus optional positioned runs; `/ToUnicode` CMap, `/Encoding /Differences`, and WinAnsi/MacRoman decoding; works on encrypted documents (`{ password }`); hard `maxTextLength` memory cap for untrusted input. [Guide →](docs/guides/text-extraction.md)
 - **Free-form document builder** — headings, paragraphs, lists (incl. **nested / hierarchical** bullet & numbered lists, v1.4.0), tables, images, barcodes, SVG paths, form fields, spacers, page breaks, table of contents. Configurable block limit via `layout.maxBlocks` (default 100 000) for very large reports (v1.3.0)
 - **Smart tables** — multi-page slicing with repeated headers, auto-wrap on column overflow, zebra striping, captions, and smart auto-fit columns (v1.2.0), plus per-cell **borders** (`cellBorders`) and **vertical alignment** (`cellVAlign` / `ColumnDef.vAlign`, v1.4.0). [Guide →](docs/guides/tables.md)
 - **Barcode & QR code generation** — Code 128, EAN-13, QR Code, Data Matrix, PDF417 — pure PDF path operators (no images)
@@ -875,6 +876,7 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 | `reader.getAnnotations(pageIndex)` | Read a page's annotations into `ParsedAnnotation[]` (v1.5.0) |
 | `reader.getPageRef(pageIndex)` | Get the indirect `PdfRef` for a page (v1.5.0) |
 | `modifier.addAnnotation(pageIndex, body)` | Inject a new annotation on a page via incremental update (v1.5.0) |
+| `extractText(bytes, opts?)` | Extract per-page reading-order Unicode text (+ optional positioned runs) from any PDF, incl. encrypted (`opts.password`); `ToUnicode`/`Differences`/WinAnsi/MacRoman decoding, hard `maxTextLength` memory cap (v1.6.0) |
 
 ### Document Block Types
 
