@@ -314,6 +314,59 @@ export interface FormFieldBlock {
     readonly checked?: boolean;
 }
 
+/** A single data series in a {@link ChartBlock}. */
+export interface ChartSeries {
+    /** Series label (shown in the legend). */
+    readonly label: string;
+    /** Numeric values, one per category. */
+    readonly values: readonly number[];
+    /** Optional colour override (hex, tuple, or PDF RGB). */
+    readonly color?: PdfColor;
+}
+
+/** Supported chart types (v1.6.0). */
+export type ChartType = 'bar' | 'barH' | 'line' | 'pie' | 'donut';
+
+/**
+ * Chart block — native vector charts rendered as pure PDF path operators
+ * (zero dependencies, no rasterisation). Bar/line charts support multiple
+ * series; pie/donut take a single series.
+ *
+ * @since 1.6.0
+ */
+export interface ChartBlock {
+    readonly type: 'chart';
+    /** Chart kind. */
+    readonly chartType: ChartType;
+    /** Data series. Pie/donut use exactly one series. */
+    readonly series: readonly ChartSeries[];
+    /** Category / slice labels (x-axis). Defaults to 1-based indices. */
+    readonly categories?: readonly string[];
+    /** Plot width in points (clamped to content width). Default `460`. */
+    readonly width?: number;
+    /** Plot-area height in points (title/legend add measured height). Default `240`. */
+    readonly height?: number;
+    /** Chart title. */
+    readonly title?: string;
+    /** Legend placement. Default `'bottom'` for multi-series/pie, else `'none'`. */
+    readonly legend?: 'bottom' | 'none';
+    /** Value-axis options (bar/line). */
+    readonly axis?: {
+        readonly yMin?: number;
+        readonly yMax?: number;
+        readonly ticks?: number;
+        readonly grid?: boolean;
+    };
+    /** Draw point markers on line series. Default `false`. */
+    readonly markers?: boolean;
+    /** Palette override (per-series or per-slice). */
+    readonly colors?: readonly PdfColor[];
+    /** Horizontal alignment. Default `'left'`. */
+    readonly align?: 'left' | 'center' | 'right';
+    /** Alt text for tagged PDF `/Figure /Alt`. Auto-generated when omitted. */
+    readonly altText?: string;
+}
+
 /** Union of all supported document blocks. */
 export type DocumentBlock =
     | HeadingBlock
@@ -327,7 +380,8 @@ export type DocumentBlock =
     | TocBlock
     | BarcodeBlock
     | SvgBlock
-    | FormFieldBlock;
+    | FormFieldBlock
+    | ChartBlock;
 
 // ── Document Parameters ──────────────────────────────────────────────
 

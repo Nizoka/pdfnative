@@ -170,6 +170,8 @@ export type { SvgSegment, SvgRenderOptions } from './core/pdf-svg.js';
 export { parseSvgPath, renderSvg } from './core/pdf-svg.js';
 
 // ── Core — AcroForm Fields ──────────────────────────────────────────
+export type { ChartBlock, ChartSeries, ChartType } from './types/pdf-document-types.js';
+export { renderChartBlock, estimateChartHeight, niceTicks } from './core/pdf-chart.js';
 export type { FormFieldType, FormField, FormWidgetResult, RadioGroupContext } from './core/pdf-form.js';
 export { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent, defaultFieldHeight } from './core/pdf-form.js';
 export type {
