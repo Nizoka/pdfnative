@@ -172,6 +172,13 @@ export { parseSvgPath, renderSvg } from './core/pdf-svg.js';
 // ── Core — AcroForm Fields ──────────────────────────────────────────
 export type { FormFieldType, FormField, FormWidgetResult, RadioGroupContext } from './core/pdf-form.js';
 export { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent, defaultFieldHeight } from './core/pdf-form.js';
+export type {
+    ParsedFormField, ParsedFieldType, FormFillValue, FillFormOptions, FlattenFormOptions,
+} from './core/pdf-form-fill.js';
+export {
+    readFormFields, fillForm, flattenForm,
+    FormFieldNotFoundError, FormValueTypeError, FormUnsupportedError,
+} from './core/pdf-form-fill.js';
 
 // ── Core — Digital Signatures ───────────────────────────────────────
 export type { PdfSignOptions, SigDictMetadata } from './core/pdf-signature.js';

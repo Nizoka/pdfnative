@@ -101,7 +101,7 @@ const FF_NO_TOGGLE_TO_OFF = 1 << 14;   // Btn field — no toggle to off for rad
 
 // ── Appearance Stream Builders ───────────────────────────────────────
 
-function buildTextAppearance(
+export function buildTextAppearance(
     value: string,
     rect: readonly [number, number, number, number],
     fontSize: number,
@@ -212,7 +212,7 @@ function buildRadioAppearance(
     return ops.join('\n');
 }
 
-function buildDropdownAppearance(
+export function buildDropdownAppearance(
     value: string,
     rect: readonly [number, number, number, number],
     fontSize: number,
@@ -263,7 +263,7 @@ function buildDropdownAppearance(
     return ops.join('\n');
 }
 
-function buildListboxAppearance(
+export function buildListboxAppearance(
     value: string,
     options: readonly string[],
     rect: readonly [number, number, number, number],
