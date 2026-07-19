@@ -8,16 +8,16 @@ Guidance for AI coding agents (Cursor, Aider, Claude Code, Continue, Zed, Cline,
 
 pdfnative is a **zero-runtime-dependency** TypeScript library that generates ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) compliant PDFs. Pure native — no Cairo, no PDFKit, no node-forge, no fontkit, no anything.
 
-Quality bar: GAFAM-grade. 2308+ tests, 95%+ coverage, blocking veraPDF validation in CI, SLSA provenance on npm.
+Quality bar: GAFAM-grade. 2309+ tests, 95%+ coverage, blocking veraPDF validation in CI, SLSA provenance on npm.
 
 ## Commands
 
 ```bash
 npm run build              # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test               # vitest run (2308+ tests)
+npm run test               # vitest run (2309+ tests)
 npm run typecheck:all      # src/ + tests/ + scripts/
 npm run lint               # eslint
-npm run test:generate      # produce 210 sample PDFs → test-output/
+npm run test:generate      # produce ~219 sample PDFs → test-output/
 npm run validate:pdfa      # local veraPDF run
 ```
 
@@ -96,7 +96,7 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) §Archite
 
 - [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) v1.2.0 — terminal wrapper (render, sign, inspect, verify, merge, split, extract, annotate, govern, batch, schema). Built on pdfnative 1.5.0. Coordinates via explicit pdfnative version pin in its `package.json`.
 - [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.4.0 — Model Context Protocol server exposing 19 AI tools (adds markup `annotate_pdf` and the network-free `draft_governance_issue` on top of the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`). Built on pdfnative 1.5.0. Same coordination model.
-- [pdfnative-react](https://github.com/Nizoka/pdfnative-react) v0.2.0 — React renderer: declarative JSX compiled on-device to pdfnative blocks via a custom reconciler. React 19 is a peer dependency of *that* package only — pdfnative itself stays zero-dependency. Same coordination model.
+- [pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.0.0 — React renderer: declarative JSX compiled on-device to pdfnative blocks via a custom reconciler. React 19 is a peer dependency of *that* package only — pdfnative itself stays zero-dependency. Same coordination model.
 
 Downstream-impacting changes (new public APIs, removed APIs, behaviour shifts) must be documented in the **Downstream integration notes** section of the relevant `release-notes/vX.Y.Z.md`.
 

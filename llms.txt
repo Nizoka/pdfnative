@@ -28,16 +28,16 @@
 - [AGENTS.md](https://github.com/Nizoka/pdfnative/blob/main/AGENTS.md): Editor-agnostic agent guidance (Cursor / Aider / Claude Code / Continue).
 - [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.4.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 19 structured tools (adds markup `annotate_pdf` and the network-free `draft_governance_issue` on top of the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`). Built on pdfnative 1.5.0.
 - [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.2.0 — render JSON to PDF, sign, inspect, verify, merge / split / extract, annotate, govern, batch, and emit JSON Schemas from the terminal; agent-native `--json`/`E_*`/`--dry-run` contract. Built on pdfnative 1.5.0.
-- [React](https://pdfnative.dev/guides/react.html): `pdfnative-react` v0.2.0 — declarative JSX components compiled on-device to pdfnative blocks; render hooks, client components, token-frugal DocSpec.
+- [React](https://pdfnative.dev/guides/react.html): `pdfnative-react` v1.0.0 — declarative JSX components compiled on-device to pdfnative blocks; render functions, client hooks, token-frugal DocSpec.
 
 ## Source
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
-- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 41 sample generators producing reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2308 tests across 100 files. 95%+ coverage.
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 43 sample generators producing reference PDFs.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2309 tests across 100 files. 95%+ coverage.
 
 ## Ecosystem
 
 - [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.2.0, built on pdfnative 1.5.0) — render, sign, inspect, verify, merge, split, extract, annotate, govern, batch, schema.
 - [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 19 AI tools (v1.4.0, built on pdfnative 1.5.0).
-- [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v0.2.0, React 19 peer).
+- [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v1.0.0, React 19 peer).
