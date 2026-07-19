@@ -167,7 +167,9 @@ describe('Compressed + Encrypted PDF', () => {
         expect(pdf).toContain('/Filter /FlateDecode');
     });
 
-    it('should produce valid structure with AES-256 + compression', () => {
+    // AES-256 (R6) key derivation is deliberately slow and exceeds the 5 s
+    // default under coverage instrumentation.
+    it('should produce valid structure with AES-256 + compression', { timeout: 60_000 }, () => {
         const pdf = buildPDF(makeParams(), {
             compress: true,
             encryption: {

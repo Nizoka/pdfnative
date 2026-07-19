@@ -9,6 +9,7 @@
 import { resolve } from 'path';
 import { buildDocumentPDFBytes } from '../../src/index.js';
 import type { DocumentParams, DocumentBlock } from '../../src/index.js';
+import { loadFontEntries } from '../helpers/fonts.js';
 import type { GenerateContext } from '../helpers/io.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
@@ -50,7 +51,10 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     const params: DocumentParams = { title: 'Charts showcase', blocks };
     ctx.writeSafe(resolve(ctx.outputDir, 'charts', 'charts-showcase.pdf'), 'charts/charts-showcase.pdf', buildDocumentPDFBytes(params));
 
-    // Tagged (accessible) variant with explicit alt text.
+    // Tagged (accessible) variant with explicit alt text. PDF/A requires all
+    // rendering fonts embedded (ISO 19005-2 §6.2.11.4.1), so the tagged
+    // variant embeds Noto Sans instead of relying on base-14 Helvetica.
+    const latinEntries = await loadFontEntries('latin', '/F3');
     const tagged: DocumentParams = {
         title: 'Accessible chart',
         blocks: [
@@ -62,6 +66,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 series: [{ label: 'Budget', values: [50, 30, 20] }],
             },
         ],
+        fontEntries: latinEntries,
     };
     ctx.writeSafe(resolve(ctx.outputDir, 'charts', 'charts-tagged.pdf'), 'charts/charts-tagged.pdf', buildDocumentPDFBytes(tagged, { tagged: true }));
 }

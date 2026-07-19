@@ -305,7 +305,9 @@ describe('initEncryption', () => {
         expect(state.docId.length).toBe(16);
     });
 
-    it('should initialize AES-256 (R6) state', () => {
+    // R6 key derivation (ISO 32000-2 Algorithm 2.A/2.B) is deliberately slow
+    // and exceeds the 5 s default under coverage instrumentation.
+    it('should initialize AES-256 (R6) state', { timeout: 60_000 }, () => {
         const state = initEncryption({
             ownerPassword: 'owner123',
             userPassword: 'user456',

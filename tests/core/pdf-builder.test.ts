@@ -357,7 +357,8 @@ describe('buildPDF input validation', () => {
         expect(() => buildPDF(makeMinimalParams({ rows }))).toThrow('exceeds safe limit');
     });
 
-    it('should accept 100,000 rows without throwing', () => {
+    // 100k rows exceed the 5 s default under coverage instrumentation.
+    it('should accept 100,000 rows without throwing', { timeout: 60_000 }, () => {
         const rows = Array.from({ length: 100_000 }, () => ({
             cells: ['x', 'y', 'z'], type: 'credit', pointed: false,
         }));

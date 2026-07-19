@@ -96,8 +96,12 @@ describe('buildDocumentPDFStreamPageByPage', () => {
 describe('buildPDFStreamPageByPage', () => {
     it('yields byte-identical output to buildPDFBytes', async () => {
         const params = makeTableParams();
-        const expected = buildPDFBytes(params);
-        const got = concatChunks(await collectChunks(buildPDFStreamPageByPage(params)));
+        // Pin the date so both builds embed the same /CreationDate — without
+        // this the comparison flakes when the two calls straddle a second
+        // boundary (same pattern as pdf-stream-true.test.ts).
+        const layout = { creationDate: new Date('2026-01-01T00:00:00.000Z') };
+        const expected = buildPDFBytes(params, layout);
+        const got = concatChunks(await collectChunks(buildPDFStreamPageByPage(params, layout)));
         expect(got.length).toBe(expected.length);
         for (let i = 0; i < expected.length; i++) expect(got[i]).toBe(expected[i]);
     });

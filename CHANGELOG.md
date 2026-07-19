@@ -20,7 +20,7 @@ incremental updates, both pulled forward from v1.7), and an **expanded
 colour-emoji subset** (221 → 1167). All additions are additive and opt-in;
 unchanged code paths remain **byte-identical** to v1.5.0 (guarded by the
 page-tree golden fixtures). Zero runtime dependencies preserved.
-104 test files / 2365 tests, all green.
+104 test files / 2379 tests, all green.
 
 ### Added
 
@@ -132,6 +132,10 @@ page-tree golden fixtures). Zero runtime dependencies preserved.
   asserts no `?` ever appears. The three `signature/digital-signature-*.pdf`
   samples also emitted a stray blank line inside their hand-assembled xref
   table; removed.
+- **fix(samples):** `charts/charts-tagged.pdf` claimed PDF/A-2b but rendered
+  its text with non-embedded base-14 Helvetica, failing veraPDF rule
+  6.2.11.4.1 (all rendering fonts must be embedded). The tagged chart sample
+  now embeds Noto Sans like every other PDF/A sample.
 
 ## [1.5.0] – 2026-07-05
 

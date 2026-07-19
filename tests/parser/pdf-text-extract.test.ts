@@ -187,6 +187,74 @@ describe('extractText positions and reading order', () => {
         expect(text).toContain('Outer');
         expect(text).toContain('Inner');
     });
+
+    it('handles the " operator (word/char spacing + newline + show)', () => {
+        const pdf = onePagePdf(
+            'BT /F1 12 Tf 14 TL 72 700 Td (One) Tj 2 1 (Two) " ET',
+            [HELVETICA],
+        );
+        expect(extractText(pdf)[0].text).toBe('One\nTwo');
+    });
+
+    it('handles TD (move + set leading) and Tc/Tw/Tz/Ts state operators', () => {
+        const pdf = onePagePdf(
+            'BT /F1 12 Tf 0.5 Tc 1 Tw 90 Tz 2 Ts 72 700 Td (Spaced) Tj 0 -14 TD (Below) Tj T* (Third) Tj ET',
+            [HELVETICA],
+        );
+        const text = extractText(pdf)[0].text;
+        expect(text).toContain('Spaced');
+        expect(text).toContain('Below');
+        expect(text).toContain('Third');
+    });
+
+    it('joins a /Contents array of streams', () => {
+        const pdf = assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
+                + '/Resources << /Font << /F1 6 0 R >> >> /Contents [4 0 R 5 0 R] >>',
+            streamObj('', 'BT /F1 12 Tf 72 700 Td (PartA'),
+            streamObj('', ') Tj ET'),
+            HELVETICA,
+        ]);
+        expect(extractText(pdf)[0].text).toContain('PartA');
+    });
+
+    it('inherits /Resources from the parent /Pages node (§7.7.3.4)', () => {
+        const pdf = assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 /Resources << /Font << /F1 5 0 R >> >> >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>',
+            streamObj('', 'BT /F1 12 Tf 72 700 Td (Inherited) Tj ET'),
+            HELVETICA,
+        ]);
+        expect(extractText(pdf)[0].text).toBe('Inherited');
+    });
+
+    it('yields empty text for a page whose /Contents is missing', () => {
+        const pdf = assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>',
+        ]);
+        const pages = extractText(pdf);
+        expect(pages).toHaveLength(1);
+        expect(pages[0].text).toBe('');
+    });
+
+    it('emits U+FFFD when the selected font is absent from /Font (null decoder)', () => {
+        // /F9 is selected but absent from the /Font dict — no decoder can be
+        // built, so every code degrades to U+FFFD (same contract as a font
+        // with no mapping anywhere).
+        const pdf = onePagePdf('BT /F9 12 Tf 72 700 Td (Fallback) Tj ET', [HELVETICA]);
+        const text = extractText(pdf)[0].text;
+        expect(text).toBe('�'.repeat('Fallback'.length));
+    });
+
+    it('accepts a password option on an unencrypted document', () => {
+        const pdf = onePagePdf('BT /F1 12 Tf 72 700 Td (Open) Tj ET', [HELVETICA]);
+        expect(extractText(pdf, { password: 'ignored' })[0].text).toBe('Open');
+    });
 });
 
 // ── Encrypted documents ──────────────────────────────────────────────

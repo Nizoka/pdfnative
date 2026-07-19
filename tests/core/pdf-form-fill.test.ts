@@ -183,3 +183,55 @@ describe('flattenForm', () => {
         expect(openPdf(flat).getCatalog().get('AcroForm')).toBeUndefined();
     });
 });
+
+describe('field-type coverage — multiline, listbox, maxLength, formless docs', () => {
+    function listboxDoc(): Uint8Array {
+        const params: DocumentParams = {
+            title: 'Survey',
+            blocks: [
+                { type: 'formField', fieldType: 'listbox', name: 'colors', label: 'Colours', options: ['Red', 'Green', 'Blue'], height: 60 },
+                { type: 'formField', fieldType: 'text', name: 'code', label: 'Code', maxLength: 8 },
+            ] as never,
+        };
+        return buildDocumentPDFBytes(params);
+    }
+
+    it('fills a multiline text field (FF_MULTILINE appearance)', () => {
+        const filled = fillForm(formDoc(), { address: '12 Grace Hopper Way\nParis' });
+        const field = readFormFields(filled).find(f => f.name === 'address')!;
+        expect(field.value).toBe('12 Grace Hopper Way\nParis');
+        expect(field.multiline).toBe(true);
+    });
+
+    it('reads a listbox field with its options and maxLen', () => {
+        const fields = readFormFields(listboxDoc());
+        const byName = new Map(fields.map(f => [f.name, f]));
+        expect(byName.get('colors')?.type).toBe('listbox');
+        expect(byName.get('colors')?.options?.map(o => o.label)).toEqual(['Red', 'Green', 'Blue']);
+        expect(byName.get('code')?.maxLen).toBe(8);
+    });
+
+    it('fills a listbox with a single value', () => {
+        const filled = fillForm(listboxDoc(), { colors: 'Green' });
+        expect(readFormFields(filled).find(f => f.name === 'colors')?.value).toBe('Green');
+    });
+
+    it('fills a listbox with multiple values (array /V)', () => {
+        const filled = fillForm(listboxDoc(), { colors: ['Red', 'Blue'] });
+        const value = readFormFields(filled).find(f => f.name === 'colors')?.value;
+        expect(value).toEqual(['Red', 'Blue']);
+    });
+
+    it('rejects a listbox value that is not an option', () => {
+        expect(() => fillForm(listboxDoc(), { colors: 'Magenta' })).toThrow(FormValueTypeError);
+    });
+
+    it('rejects multiple values for a dropdown', () => {
+        expect(() => fillForm(formDoc(), { country: ['France', 'Spain'] as never })).toThrow(FormValueTypeError);
+    });
+
+    it('readFormFields returns [] for a document without an AcroForm', () => {
+        const plain = buildDocumentPDFBytes({ title: 'P', blocks: [{ type: 'paragraph', text: 'hi' }] as never });
+        expect(readFormFields(plain)).toEqual([]);
+    });
+});
