@@ -75,7 +75,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ test coverage** — 2360+ tests across 104 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
+- **95%+ statement coverage** — 2360+ tests across 104 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1180,7 +1180,7 @@ npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test             # vitest run (2360+ tests)
-npm run test:coverage    # vitest with v8 coverage (95%+)
+npm run test:coverage    # vitest with v8 coverage (95%+ statements; CI gates: 88/80/85/90)
 npm run test:generate       # Generate ~227 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)

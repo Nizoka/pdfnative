@@ -499,6 +499,44 @@
         '',
         "downloadBlob(pdf, 'smart-tables.pdf');"
       ].join('\n')
+    },
+    {
+      id: 'extract-secure',
+      label: 'Extract text & re-encrypt (v1.6.0)',
+      description: 'The 1.6.0 parser round trip: build a PDF, extract its text with positions (open the browser console), then merge it with an AES-256 encrypted annex and re-encrypt the result with a new password.',
+      source: GENERATORS_BASE + 'text-extract-showcase.ts',
+      code: [
+        "import { buildDocumentPDFBytes, extractText, mergePdfs, downloadBlob } from 'pdfnative';",
+        '',
+        'const report = buildDocumentPDFBytes({',
+        "  title: 'Q3 Report',",
+        '  blocks: [',
+        "    { type: 'heading', text: 'Q3 Financial Summary', level: 1 },",
+        "    { type: 'paragraph', text: 'Revenue grew 14% year over year.' },",
+        '  ],',
+        '});',
+        '',
+        '// 1. Extract text with positions — check the browser console.',
+        'for (const page of extractText(report, { includeRuns: true })) {',
+        '  console.log(`page ${page.pageIndex + 1}:`, page.text);',
+        '  for (const run of page.runs ?? []) {',
+        '    console.log(`  "${run.text}" @ (${run.x.toFixed(1)}, ${run.y.toFixed(1)}) ${run.fontSize}pt`);',
+        '  }',
+        '}',
+        '',
+        '// 2. An AES-256 encrypted annex (password: boardroom).',
+        "const annex = buildDocumentPDFBytes({ title: 'Annex', blocks: [",
+        "  { type: 'heading', text: 'Confidential annex', level: 1 },",
+        "] }, { encryption: { ownerPassword: 'boardroom', algorithm: 'aes256' } });",
+        '',
+        '// 3. Decrypt on ingest, re-encrypt the merged output with a NEW password.',
+        'const secured = mergePdfs(',
+        "  [report, { bytes: annex, password: 'boardroom' }],",
+        "  { encrypt: { ownerPassword: 'rotated', userPassword: 'rotated', algorithm: 'aes256' } },",
+        ');',
+        '',
+        "downloadBlob(secured, 'report-reencrypted.pdf'); // opens with 'rotated'"
+      ].join('\n')
     }
   ];
 
@@ -591,6 +629,8 @@
           'buildDocumentPDFStream', 'buildPDFStream', 'concatChunks',
           'registerFonts', 'loadFontData',
           'initNodeCompression', 'signPdfBytes',
+          'extractText', 'mergePdfs', 'splitPdf', 'extractPages',
+          'openPdf', 'readFormFields', 'fillForm', 'flattenForm',
           wrapped
         );
 
@@ -607,7 +647,15 @@
           pdfnativeModule.registerFonts,
           pdfnativeModule.loadFontData,
           pdfnativeModule.initNodeCompression,
-          pdfnativeModule.signPdfBytes
+          pdfnativeModule.signPdfBytes,
+          pdfnativeModule.extractText,
+          pdfnativeModule.mergePdfs,
+          pdfnativeModule.splitPdf,
+          pdfnativeModule.extractPages,
+          pdfnativeModule.openPdf,
+          pdfnativeModule.readFormFields,
+          pdfnativeModule.fillForm,
+          pdfnativeModule.flattenForm
         );
 
         demoStatus.textContent = 'PDF generated!';

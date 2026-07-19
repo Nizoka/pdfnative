@@ -8,7 +8,9 @@ Guidance for AI coding agents (Cursor, Aider, Claude Code, Continue, Zed, Cline,
 
 pdfnative is a **zero-runtime-dependency** TypeScript library that generates ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) compliant PDFs. Pure native — no Cairo, no PDFKit, no node-forge, no fontkit, no anything.
 
-Quality bar: GAFAM-grade. 2360+ tests, 95%+ coverage, blocking veraPDF validation in CI, SLSA provenance on npm.
+Quality bar: GAFAM-grade. 2360+ tests, 95%+ statement coverage, blocking veraPDF validation in CI, SLSA provenance on npm.
+
+Since v1.6.0 the parser side also **decrypts** (Standard Security Handler, RC4 + AES-128/256), **streams** page-tree merge/split/extract, **fills & flattens** AcroForms — including encrypted sources via encrypted incremental update — **extracts text** with positions (`extractText`), renders native **vector charts**, and **re-encrypts** output (`MergeOptions.encrypt`). All exported from `src/index.ts` like everything else.
 
 ## Commands
 
@@ -30,7 +32,7 @@ npx pdfnative-build-emoji-font --download --all --out emoji-data.js  # full colo
 
 Always run `npm run typecheck:all && npm run test && npm run lint` before suggesting a commit.
 
-## AI-agent governance (v1.5.0)
+## AI-agent governance (since v1.5.0)
 
 This repository enforces a **human-in-the-loop** policy for AI agents. Before opening issues, PRs, or any GitHub write, read [.github/AGENT_RULES.md](.github/AGENT_RULES.md) and the machine-readable policy in [.github/ai-governance.json](.github/ai-governance.json). Key rules: no autonomous GitHub writes, no runtime dependencies, mandatory review of any generated issue report. Draft issue reports in `.github/drafts/` and validate them with `npm run verify:issue` before a human submits.
 
