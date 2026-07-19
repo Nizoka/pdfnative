@@ -68,6 +68,26 @@ describe('bar chart geometry', () => {
         // Category labels appear as text draws.
         expect(content).toMatch(/Q1|Q2|Q3|Q4/);
     });
+
+    it('clamps bars to the plot when an explicit axis window excludes data', () => {
+        // yMin above some values and yMax below others: every bar rect must stay
+        // within the plot band, never anchored below the axis or above the top.
+        const clamped: ChartBlock = {
+            type: 'chart', chartType: 'bar',
+            axis: { yMin: 50, yMax: 100 },
+            categories: ['a', 'b', 'c'],
+            series: [{ label: 's', values: [20, 75, 150] }],
+        };
+        const content = pageContent(chartDoc(clamped));
+        // Extract every "x y w h re f" bar rect and assert finite, in-range heights.
+        const rects = [...content.matchAll(/([\d.-]+) ([\d.-]+) ([\d.-]+) ([\d.-]+) re f/g)];
+        expect(rects.length).toBeGreaterThanOrEqual(3);
+        for (const m of rects) {
+            const h = Math.abs(parseFloat(m[4]));
+            expect(Number.isFinite(h)).toBe(true);
+            expect(h).toBeLessThanOrEqual(240 + 1); // within plot height
+        }
+    });
 });
 
 describe('line and horizontal bar', () => {

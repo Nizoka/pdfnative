@@ -241,7 +241,10 @@ function renderCartesian(
     ops.push(`${fmtNum(plotX)} ${fmtNum(plotBottom)} m ${fmtNum(plotX)} ${fmtNum(plotTop)} l S`);
     ops.push(`${fmtNum(plotX)} ${fmtNum(plotBottom)} m ${fmtNum(plotX + plotW)} ${fmtNum(plotBottom)} l S`);
 
-    const zeroFrac = (0 - lo) / span;
+    // Fraction of a value along the axis, clamped to [0, 1] so an explicit
+    // yMin/yMax that excludes part of the data never draws outside the plot.
+    const frac01 = (v: number): number => Math.max(0, Math.min(1, (v - lo) / span));
+    const zeroFrac = frac01(0);
 
     if (block.chartType === 'line') {
         // Category positions centred in equal slots.
@@ -252,7 +255,7 @@ function renderCartesian(
             let path = '';
             s.values.forEach((v, ci) => {
                 const x = plotX + slot * (ci + 0.5);
-                const yv = plotBottom + ((v - lo) / span) * plotH;
+                const yv = plotBottom + frac01(v) * plotH;
                 path += `${ci === 0 ? '' : ' '}${fmtNum(x)} ${fmtNum(yv)} ${ci === 0 ? 'm' : 'l'}`;
             });
             ops.push(`${path} S`);
@@ -260,7 +263,7 @@ function renderCartesian(
                 ops.push(`${color} rg`);
                 s.values.forEach((v, ci) => {
                     const x = plotX + slot * (ci + 0.5);
-                    const yv = plotBottom + ((v - lo) / span) * plotH;
+                    const yv = plotBottom + frac01(v) * plotH;
                     ops.push(circleFill(x, yv, 2.2));
                 });
             }
@@ -281,7 +284,7 @@ function renderCartesian(
             block.series.forEach((s, si) => {
                 const v = s.values[ci];
                 const x0 = plotX + zeroFrac * plotW;
-                const x1 = plotX + ((v - lo) / span) * plotW;
+                const x1 = plotX + frac01(v) * plotW;
                 const yb = slotTop - slot * 0.15 - barH * si;
                 ops.push(`${seriesColor(block, si, s)} rg`);
                 ops.push(`${fmtNum(Math.min(x0, x1))} ${fmtNum(yb - barH)} ${fmtNum(Math.abs(x1 - x0))} ${fmtNum(barH)} re f`);
@@ -298,7 +301,7 @@ function renderCartesian(
             const slotX = plotX + slot * ci;
             block.series.forEach((s, si) => {
                 const v = s.values[ci];
-                const yv = plotBottom + ((v - lo) / span) * plotH;
+                const yv = plotBottom + frac01(v) * plotH;
                 const xb = slotX + slot * 0.15 + barW * si;
                 ops.push(`${seriesColor(block, si, s)} rg`);
                 ops.push(`${fmtNum(xb)} ${fmtNum(Math.min(zeroY, yv))} ${fmtNum(barW)} ${fmtNum(Math.abs(yv - zeroY))} re f`);
