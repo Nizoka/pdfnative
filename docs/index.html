@@ -37,11 +37,13 @@
 
   <!-- Schema.org structured data -->
   <!--
-    RELEASE CHECKLIST: the "softwareVersion" values below are hand-maintained.
-    On every package release, bump them here to match the live npm versions
-    (pdfnative #library, pdfnative-cli #cli, pdfnative-mcp #mcp, pdfnative-react #react).
-    The visible version badges are driven live from the npm registry by assets/versions.js;
-    these JSON-LD values are the static SEO mirror and must be kept in sync manually.
+    The "softwareVersion" values below are checked against
+    docs/assets/ecosystem.json by `npm run verify:docs` (CI: .github/workflows/docs.yml).
+    On a package release, edit the manifest — not this block — then run the
+    verifier; it reports every file that still disagrees.
+    The visible version badges are fetched live from npm by assets/versions.js;
+    these JSON-LD values are the static mirror that crawlers and LLM indexers
+    read, and they never self-heal, which is why they are verified.
   -->
   <script type="application/ld+json">
   {
