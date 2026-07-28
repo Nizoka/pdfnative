@@ -107,7 +107,7 @@ For very large outputs, prefer the streaming builders (`buildDocumentPDFStream`,
 
 **Common causes:**
 
-1. **Encrypted PDF:** The parser does not decrypt — decrypt first with the appropriate tool.
+1. **Encrypted PDF opened without a password:** Since v1.6.0 the parser decrypts the Standard Security Handler (RC4 V1-V4, AES-128, AES-256 R6) — but it needs the password. Call `openPdf(bytes, { password })`. Without one you get `PdfPasswordError`; with an algorithm the handler does not cover, `PdfEncryptionUnsupportedError`.
 2. **Linearized PDF:** The parser follows standard xref/trailer. Linearized hint tables may cause offset issues.
 3. **Non-standard formatting:** Some PDF generators produce non-compliant output. The parser follows ISO 32000-1 strictly.
 

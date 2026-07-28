@@ -16,13 +16,15 @@ import { buildDocumentPDFBytes, registerFont } from 'pdfnative';
 // Optional: enable a non-Latin script
 registerFont('arabic', () => import('pdfnative/fonts/noto-arabic-data.js'));
 
-const bytes = await buildDocumentPDFBytes({
-  metadata: { title: 'Hello pdfnative', author: 'Me' },
+// Synchronous — returns a Uint8Array, not a Promise.
+const bytes = buildDocumentPDFBytes({
+  title: 'Hello pdfnative',              // top-level, not inside metadata
+  metadata: { author: 'Me' },            // author / subject / keywords only
   blocks: [
     { type: 'heading', text: 'Hello pdfnative', level: 1 },
     { type: 'paragraph', text: 'Pure native PDF, zero runtime dependencies.' },
   ],
-  layout: { tagged: 'pdfa2b' }, // optional PDF/A-2b
+  layout: { tagged: 'pdfa2b' },          // optional PDF/A-2b
 });
 
 // In Node: await fs.writeFile('out.pdf', bytes);
@@ -39,19 +41,31 @@ Next: [Quick Start →](quickstart.html) · [Architecture →](architecture.html
 npm install -g pdfnative-cli   # or: npx pdfnative-cli ...
 ```
 
+> The package is named `pdfnative-cli`, but the binary it puts on your PATH is
+> **`pdfnative`**. Under `npx`, either name works.
+
 ```bash
-# Render a JSON document → PDF
-pdfnative-cli render doc.json --output out.pdf --pdf-a 2b
+# Check the environment first — the fastest way to confirm the install worked
+pdfnative doctor
+
+# Render a JSON document → PDF. Input and output are flags, not positionals;
+# with neither, render reads stdin and writes stdout.
+pdfnative render --input doc.json --output out.pdf --tagged pdfa2b
 
 # Sign it (auto-injects a signature placeholder if needed)
-pdfnative-cli sign out.pdf signed.pdf \
+pdfnative sign --input out.pdf --output signed.pdf \
   --key signer.key --cert signer.crt --algorithm rsa-sha256
 
 # Verify the embedded CMS signature
-pdfnative-cli verify signed.pdf --json
+pdfnative verify --input signed.pdf --json
 ```
 
-Iteration helpers: `--watch` re-renders on save, `--template` injects variables, `--font` enables any of the 22 bundled scripts + colour emoji + the math font. v1.1.0 added `--stream-true` (constant-memory), `inspect --pdfua` (accessibility gate), and an agent-native `--json`/`E_*`/`--dry-run` contract; **v1.2.0** adds page-tree `merge` / `split` / `extract`, markup `annotate`, an AI-governance `govern` gate, and `render --outline` / `--font math` / `--inspect-layout`.
+Iteration helpers: `--watch` re-renders on save, `--template` injects variables, `--font` enables any of the 22 bundled scripts + colour emoji + the math font. v1.1.0 added `--stream-true`, `inspect --pdfua` (accessibility gate), and an agent-native `--json`/`E_*`/`--dry-run` contract; v1.2.0 added page-tree `merge` / `split` / `extract`, markup `annotate`, an AI-governance `govern` gate, and `render --outline` / `--font math` / `--inspect-layout`; **v1.3.0** adds `fill`, `encrypt`, `decrypt`, `extract-text` and `doctor`, native `chart` blocks in `render`, passwords on the page-tree commands, and PowerShell completion.
+
+> **Upgrading from v1.2.0?** `render --encrypt` was a silent no-op in that
+> release — documents you thought were encrypted were written in the clear.
+> v1.3.0 fixes it and unifies the flags under `--encrypt` / `--owner-password` /
+> `--user-password` / `--permissions`. Re-run any affected job.
 
 Next: [CLI guide →](cli.html) · [CLI playground →](../playgrounds/cli.html)
 

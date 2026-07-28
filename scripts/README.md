@@ -1,6 +1,6 @@
 # scripts/ – Sample PDF Generation
 
-Generates 210 sample PDFs (41 generators) for visual inspection across all supported languages, features, and edge cases.
+Generates 227 sample PDFs (44 generators) for visual inspection across all supported languages, features, and edge cases.
 
 ## Quick Start
 

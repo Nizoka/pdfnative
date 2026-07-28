@@ -50,7 +50,7 @@ A custom **React reconciler** compiles your component tree — synchronously, wi
 npm install pdfnative-react pdfnative react
 ```
 
-**Requirements:** **React 19** (peer dependency) · **Node.js ≥ 20**. Works in Node, browsers, and SSR frameworks (Next.js, Remix). Client modules carry `'use client'`.
+**Requirements:** **React 19** and **pdfnative ^1.6.0** (both peer dependencies) · **Node.js ≥ 22**. The package adds one runtime dependency of its own, `react-reconciler`. Works in Node, browsers, and SSR frameworks (Next.js, Remix). Client modules carry `'use client'`.
 
 The package ships **NPM provenance** — verify the published artifact with `npm audit signatures` or on [npmjs.com](https://www.npmjs.com/package/pdfnative-react).
 

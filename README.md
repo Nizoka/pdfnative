@@ -25,7 +25,7 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 | [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.6.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
 | [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.3.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256, native constant-time crypto by default), inspect, verify (PAdES-T + OCSP/CRL), **merge / split / extract** pages, **annotate** (markup annotations), **govern** (AI-governance / HITL gate), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.6.0: 22 scripts + COLRv1 emoji, `--font math`, PDF bookmarks (`--outline`), layout introspection (`--inspect-layout` / `--debug-layout`), and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
 | [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.5.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **24 production tools** including the page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, markup `annotate_pdf`, the network-free `draft_governance_issue` (AI-governance / HITL), plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), the explicit `math` script, an MCP `prompts` capability, a constant-time `node:crypto` signing provider, DNS-rebinding-protected HTTP transport, and per-tool `_meta.apiVersion`. Built on pdfnative 1.6.0. |
-| [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v1.1.0** | Write PDFs as declarative JSX — `<Document>`, `<Page>`, `<Table>`, `<Barcode>`, `<Svg>`, `<FormField>`… compiled on-device to pdfnative blocks by a custom React 19 reconciler. Render functions (`renderToBytes` / `renderToStream` / `renderToFile`), client hooks & components (`usePdf`, `PDFViewer`, `PDFDownloadLink`), and a versioned `DocSpec` grammar (`docSpecSchema()`) for AI agents. Peer: pdfnative ≥1.5 (pairs with 1.6.0), React 19, Node ≥20. |
+| [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v1.1.0** | Write PDFs as declarative JSX — `<Document>`, `<Page>`, `<Table>`, `<Barcode>`, `<Svg>`, `<FormField>`… compiled on-device to pdfnative blocks by a custom React 19 reconciler. Render functions (`renderToBytes` / `renderToStream` / `renderToFile`), client hooks & components (`usePdf`, `PDFViewer`, `PDFDownloadLink`), and a versioned `DocSpec` grammar (`docSpecSchema()`) for AI agents. Peer: pdfnative ^1.6.0, React ^19.0.0, Node ≥22. (A 1.5 engine would silently drop the new `<Chart>` block.) |
 
 ```bash
 npm install pdfnative                 # library
@@ -478,7 +478,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **~227 PDF files** in `test-output/` (git-ignored), organized in thirty-one categories (including `forms/` fill-&-flatten, `charts/` native vector charts, and `parser/` text-extraction reports added in v1.6.0).
+This creates **~227 PDF files** in `test-output/` (git-ignored), organized in 36 categories (including `forms/` fill-&-flatten, `charts/` native vector charts, and `parser/` text-extraction reports added in v1.6.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -858,7 +858,7 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 
 | Function | Description |
 |----------|-------------|
-| `openPdf(bytes)` | Parse a PDF `Uint8Array` and return a `PdfReader` |
+| `openPdf(bytes, opts?)` | Parse a PDF `Uint8Array` and return a `PdfReader`. Pass `{ password }` to open an encrypted document (RC4, AES-128, AES-256) |
 | `createModifier(reader)` | Create an incremental `PdfModifier` from a `PdfReader` |
 | `createTokenizer(data, offset?)` | Create a low-level PDF tokenizer |
 | `parseValue(tok)` | Parse a single PDF value from token stream |
@@ -904,11 +904,11 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 
 ### Encryption
 
-Encryption is configured via the `encryption` option in layout options. Internal encryption functions are not part of the public API.
+Encryption is configured via the `encryption` option in layout options. Since v1.6.0 the reader side is public too — `openPdf(bytes, { password })` plus the `PdfPasswordError`, `PdfEncryptionUnsupportedError` and `PdfEncryptionInfo` exports.
 
 ```typescript
 const pdf = buildPDFBytes(params, {
-  encryption: { userPassword: 'secret', ownerPassword: 'admin', permissions: { printing: true } }
+  encryption: { userPassword: 'secret', ownerPassword: 'admin', permissions: { print: true } }
 });
 ```
 
@@ -1083,7 +1083,7 @@ See the [MCP Integration Guide](https://pdfnative.dev/guides/mcp.html) and the [
 
 ### pdfnative-react — declarative JSX renderer
 
-[`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) v1.1.0 turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency pdfnative engine — no DOM, no headless browser, no SaaS round-trips. A custom React reconciler compiles your component tree synchronously into the pdfnative block model. Requires **React 19** and **Node.js ≥ 20** (React is a peer dependency; pdfnative itself stays zero-dependency).
+[`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) v1.1.0 turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency pdfnative engine — no DOM, no headless browser, no SaaS round-trips. A custom React reconciler compiles your component tree synchronously into the pdfnative block model. Requires **React 19**, **pdfnative ^1.6.0** and **Node.js ≥ 22**. React and pdfnative are peer dependencies; the package itself adds one runtime dependency, `react-reconciler`. The pdfnative engine remains dependency-free.
 
 ```tsx
 import { Document, Heading, Text, Table, renderToBytes } from 'pdfnative-react';
@@ -1168,7 +1168,7 @@ src/
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (44 generators, ~227 PDFs)
-tests/                    # 1726+ tests (48 files: unit + integration + fuzz + parser)
+tests/                    # 2379+ tests (104 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 

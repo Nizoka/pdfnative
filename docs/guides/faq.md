@@ -282,6 +282,6 @@ pdfnative is built from pure functions. State is passed explicitly. This makes t
 | `PDF/A and encryption are mutually exclusive` | `tagged: 'pdfa…'` combined with `encryption: …` | Pick one |
 | `Invalid color: …` | Unrecognized hex/rgb string passed to a layout option | Use `#rrggbb`, `[r, g, b]` (0–1), or `'r g b'` |
 | Boxes / blank glyphs | Font for that script is not loaded | See [Troubleshooting → Missing glyphs](troubleshooting.html) |
-| Parser throws on external PDF | PDF is encrypted or non-standard | Decrypt first; the parser does not implement decryption |
+| Parser throws on external PDF | Encrypted PDF opened without a password, or non-standard structure | Pass `openPdf(bytes, { password })` — the parser decrypts RC4, AES-128 and AES-256 since v1.6.0. A missing or wrong password throws `PdfPasswordError` |
 
 For more cases, see the [Troubleshooting guide](troubleshooting.html).
