@@ -1,6 +1,6 @@
 # pdfnative-mcp — AI Client Integration Guide
 
-> **Tracks the latest published `pdfnative-mcp`** (v1.4.0, built on pdfnative 1.5.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
+> **Tracks the latest published `pdfnative-mcp`** (v1.5.0, built on pdfnative 1.6.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
 
 [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is an **MCP server** that exposes the full pdfnative library to any AI client supporting the [Model Context Protocol](https://modelcontextprotocol.io) — Claude Desktop, Cursor, Continue, Zed, ChatGPT, and more.
 

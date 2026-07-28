@@ -34,9 +34,9 @@
     // visitor still sees a sensible value. Bumped at every release.
     var FALLBACK = {
         'pdfnative': { version: '1.6.0', pin: null },
-        'pdfnative-cli': { version: '1.2.0', pin: '^1.5.0' },
-        'pdfnative-mcp': { version: '1.4.0', pin: '^1.5.0' },
-        'pdfnative-react': { version: '1.0.0', pin: '^1.6.0' }
+        'pdfnative-cli': { version: '1.3.0', pin: '^1.6.0' },
+        'pdfnative-mcp': { version: '1.5.0', pin: '^1.6.0' },
+        'pdfnative-react': { version: '1.1.0', pin: '^1.6.0' }
     };
 
     function el(tag, attrs, kids) {
