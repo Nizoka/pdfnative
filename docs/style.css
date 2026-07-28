@@ -14,7 +14,7 @@
   --c-border:     #e2e8f0;
   --c-text:       #0f172a;
   --c-text-dim:   #64748b;
-  --c-text-muted: #94a3b8;
+  --c-text-muted: #475569;
   --c-primary:    #2563eb;
   --c-primary-fg: #ffffff;
   --c-primary-dim:#3b82f6;
@@ -40,7 +40,7 @@
   --c-border:     #334155;
   --c-text:       #f1f5f9;
   --c-text-dim:   #94a3b8;
-  --c-text-muted: #64748b;
+  --c-text-muted: #8b97a8;
   --c-primary:    #3b82f6;
   --c-primary-dim:#60a5fa;
   --c-accent:     #60a5fa;
@@ -61,7 +61,7 @@
     --c-border:     #334155;
     --c-text:       #f1f5f9;
     --c-text-dim:   #94a3b8;
-    --c-text-muted: #64748b;
+    --c-text-muted: #8b97a8;
     --c-primary:    #3b82f6;
     --c-primary-dim:#60a5fa;
     --c-accent:     #60a5fa;
@@ -772,3 +772,17 @@ textarea:focus-visible,
   text-decoration: none;
 }
 .star-cta .star-icon { font-size: 13px; }
+
+/* ── Reduced motion ──────────────────────────────────────────────────
+   The site animates benchmark bars, smooth-scrolls anchor navigation and
+   carries ~10 transition rules. Honour the OS-level preference for users
+   who experience motion sickness or distraction from movement. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
