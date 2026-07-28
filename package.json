@@ -63,6 +63,7 @@
     "test:visual": "vitest run tests/visual/",
     "test:generate": "npx tsx scripts/generate-samples.ts",
     "validate:pdfa": "npx tsx scripts/validate-pdfa.ts",
+    "verify:docs": "npx tsx scripts/verify-docs.ts",
     "fonts:download": "npx tsx scripts/download-fonts.ts",
     "verify:issue": "node scripts/verify-issue.mjs",
     "lint": "eslint src/",
