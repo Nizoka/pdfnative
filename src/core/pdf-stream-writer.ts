@@ -314,9 +314,16 @@ export async function* buildPDFStream(
  * Iterate an assembled `parts[]` array, encode each part to bytes, and
  * yield fixed-size `Uint8Array` chunks — freeing each consumed part
  * (`parts[i] = ''`) immediately so the fully-joined PDF binary never
- * materialises in memory. Peak memory is bounded by the chunk size plus
- * the single largest part (a content stream or embedded font subset),
- * rather than the whole document.
+ * materialises in memory.
+ *
+ * Memory profile, stated precisely: from the first yield onwards this
+ * generator holds only the chunk buffer plus the parts it has not reached
+ * yet, so memory falls monotonically as it drains. It does **not** make the
+ * whole pipeline constant-memory — the callers below build the complete
+ * `parts[]` array up front, so peak usage is still proportional to total
+ * output size (~2 bytes per output character, JS strings being UTF-16).
+ * What is avoided is the second full copy that joining would cost, and the
+ * ~512 MB per-string ceiling that `buildDocumentPDFStream` runs into.
  *
  * @param parts - Assembled PDF parts in emission order (mutated: freed)
  * @param chunkSize - Bytes per yielded chunk
@@ -328,7 +335,7 @@ function* streamPartsChunked(parts: string[], chunkSize: number): Generator<Uint
     let filled = 0;
     for (let p = 0; p < parts.length; p++) {
         const part = parts[p];
-        parts[p] = ''; // free as we go — constant-memory invariant
+        parts[p] = ''; // free as we go — memory falls monotonically once draining
         const len = part.length;
         for (let i = 0; i < len; i++) {
             buf[filled++] = part.charCodeAt(i) & 0xff;
@@ -345,13 +352,19 @@ function* streamPartsChunked(parts: string[], chunkSize: number): Generator<Uint
 }
 
 /**
- * Build a free-form PDF document with **true constant-memory streaming**.
+ * Build a free-form PDF document, streaming it out **without ever joining
+ * the binary**.
  *
  * Unlike {@link buildDocumentPDFStream} (which assembles the full binary
  * then chunks it), this variant assembles the PDF into its raw parts and
  * yields them progressively, freeing each part as it is emitted. The
- * fully-joined PDF binary never exists in memory at once. Byte output is
+ * fully-joined PDF binary never exists in memory at once, which lifts the
+ * ~512 MB JS string ceiling that caps the other variant. Byte output is
  * identical to {@link buildDocumentPDFBytes}.
+ *
+ * Note that `assembleDocumentParts` still runs to completion before the
+ * first chunk is yielded, so peak memory remains proportional to the total
+ * output size and no progress signal is available during assembly.
  *
  * Constraints (same as `buildDocumentPDFStream`):
  * - TOC blocks are not allowed (require multi-pass pagination)
@@ -374,9 +387,10 @@ export async function* buildDocumentPDFStreamTrue(
 }
 
 /**
- * Build a table-centric PDF with **true constant-memory streaming**.
- * See {@link buildDocumentPDFStreamTrue} for the full contract. Byte
- * output is identical to {@link buildPDFBytes}.
+ * Build a table-centric PDF, streaming it out **without ever joining the
+ * binary**. See {@link buildDocumentPDFStreamTrue} for the full contract,
+ * including its memory profile. Byte output is identical to
+ * {@link buildPDFBytes}.
  *
  * @param params - PDF content (title, rows, headers, etc.)
  * @param layoutOptions - Optional layout customization

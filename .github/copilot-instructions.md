@@ -197,8 +197,8 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Signature algorithms: RSA PKCS#1 v1.5 (SHA-256) and ECDSA P-256 (SHA-256)
 - Crypto module: standalone `src/crypto/` — sha.ts (SHA-384/512, HMAC-SHA-256), asn1.ts (DER), rsa.ts, ecdsa.ts, x509.ts, cms.ts
 - `signPdfBytes()`: takes PDF bytes + private key + certificate → signed PDF bytes with embedded CMS
-- Streaming output: `pdf-stream-writer.ts` provides `buildPdfStream()` AsyncGenerator yielding Uint8Array chunks
-- Streaming API: `streamPdf(params)` / `streamDocumentPdf(params)` — both return `AsyncGenerator<Uint8Array>`
+- Streaming output: `pdf-stream-writer.ts` provides AsyncGenerators yielding Uint8Array chunks
+- Streaming API: `buildPDFStream(params)` / `buildDocumentPDFStream(params)` assemble the full binary then chunk it; `buildPDFStreamTrue` / `buildDocumentPDFStreamTrue` never join the binary and are the ones to use at scale. All return `AsyncGenerator<Uint8Array>`
 - Streaming chunk size: configurable via `chunkSize` option (default: 65536 bytes)
 - Parser module: `src/parser/` — tokenizer → object parser → xref parser → reader → modifier
 - PDF tokenizer: `PdfTokenizer` class scans tokens one at a time (lazy, streaming-friendly)

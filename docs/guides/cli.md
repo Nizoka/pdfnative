@@ -10,7 +10,7 @@ The CLI is a **pure dispatch layer** over `pdfnative`. No PDF logic lives in the
 
 | CLI command | `pdfnative` API |
 |---|---|
-| `render` | `buildDocumentPDFBytes()` / `streamDocumentPdf()` / `buildDocumentPDFStreamTrue()` / `buildPDFBytes()` (table variant) |
+| `render` | `buildDocumentPDFBytes()` / `buildDocumentPDFStream()` / `buildDocumentPDFStreamTrue()` / `buildPDFBytes()` (table variant) |
 | `sign` | `signPdfBytes()` / `addSignaturePlaceholder()` / `createNativeCryptoProvider()` |
 | `inspect` | `PdfReader.open()` / `getMetadata()` / `getPageCount()` / `getPageLabels()` / `getAnnotations()` / `validatePdfUA()` |
 | `verify` | `PdfReader` + `verifyCertSignature()` (byte-range + chain + timestamp + revocation) |
@@ -281,7 +281,7 @@ Renders a JSON document into a PDF. Supports both renderer variants exposed by `
 | `--input <file>` | stdin | JSON file ([`DocumentParams`](https://pdfnative.dev/#api) for `--variant document`, `PdfParams` for `--variant table`) |
 | `--output <file>` | stdout | Output PDF path |
 | `--variant document\|table` | `document` | Selects `buildDocumentPDFBytes` (free-form) or `buildPDFBytes` (table-centric) |
-| `--stream` | off | Streaming output via `streamDocumentPdf` (`AsyncGenerator<Uint8Array>`) — recommended for >100-page documents |
+| `--stream` | off | Streaming output via `buildDocumentPDFStream` (`AsyncGenerator<Uint8Array>`) — recommended for >100-page documents |
 | `--stream-true` *(v1.1.0)* | off | **True constant-memory** streaming via `buildDocumentPDFStreamTrue` / `buildPDFStreamTrue` — PDF parts are emitted and freed as they go, so the joined binary never materialises. Byte-identical to the buffered builders. Same constraints as `--stream` (no TOC, no `{pages}`); mutually exclusive with the other `--stream*` flags |
 | `--max-blocks <n>` *(v1.1.0)* | `100000` | Exposes `layout.maxBlocks` so very large multi-thousand-page reports no longer hit a spurious ceiling |
 | `--layout <file.json>` | — | Load any subset of `PdfLayoutOptions` |
@@ -712,7 +712,7 @@ The CLI now covers nearly the full library surface; only Web Worker offloading r
 | Feature | CLI v1.2.0 | Library |
 |---|---|---|
 | Document rendering (13 block types) | ✅ | ✅ |
-| Streaming output | ✅ `--stream` / `--stream-true` | ✅ `streamDocumentPdf()` / `buildDocumentPDFStreamTrue()` |
+| Streaming output | ✅ `--stream` / `--stream-true` | ✅ `buildDocumentPDFStream()` / `buildDocumentPDFStreamTrue()` |
 | Configurable block cap | ✅ `--max-blocks` | ✅ `layout.maxBlocks` |
 | PDF/A conformance (1b, 2b, 2u, 3b) | ✅ `--tagged` | ✅ `tagged: '…'` |
 | Digital signatures (RSA-SHA256) | ✅ | ✅ `signPdfBytes()` |

@@ -670,7 +670,7 @@ const pdf = renderToBytes(
       </div>
       <div class="feature-card">
         <h3>Streaming output</h3>
-        <p><code>streamPdf()</code> yields <code>Uint8Array</code> chunks via <code>AsyncGenerator</code>, so even very large documents fit in bounded memory on edge runtimes and serverless platforms.</p>
+        <p><code>buildDocumentPDFStreamTrue()</code> yields <code>Uint8Array</code> chunks via <code>AsyncGenerator</code> and frees each part as it emits, so the fully-joined PDF binary never exists in memory. See the <a href="guides/streaming.html">streaming guide</a> for the exact memory profile.</p>
       </div>
       <div class="feature-card">
         <h3>External tooling stays external</h3>

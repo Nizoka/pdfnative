@@ -66,7 +66,7 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 
 - **`false`** (default) — no row fill.
 - **`true`** — alternating even data rows (1-indexed, so the second row, fourth row, …) are filled with `'0.969 0.973 0.984'` (a soft cool-grey tuned for accessibility contrast).
-- A [`PdfColor`](../api.md) — hex (`'#f7f8fa'`), tuple (`[0.97, 0.97, 0.98]`), or PDF-rgb string (`'0.97 0.97 0.98'`) — overrides the default.
+- A [`PdfColor`](https://github.com/Nizoka/pdfnative#api-reference) — hex (`'#f7f8fa'`), tuple (`[0.97, 0.97, 0.98]`), or PDF-rgb string (`'0.97 0.97 0.98'`) — overrides the default.
 
 ### `caption`
 

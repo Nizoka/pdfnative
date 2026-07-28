@@ -1,6 +1,6 @@
 # Streaming output
 
-> pdfnative emits PDFs as `AsyncGenerator<Uint8Array>` so you can pipe them to disk, an HTTP response, or a Web Stream without buffering the whole document. **New in v1.3.0:** *true constant-memory* streaming, where the fully-joined PDF binary never exists in memory.
+> pdfnative emits PDFs as `AsyncGenerator<Uint8Array>` so you can pipe them to disk, an HTTP response, or a Web Stream without buffering the whole document. **New in v1.3.0:** a mode in which the fully-joined PDF binary never exists in memory — see [what this does and does not buy you](#what-this-does-and-does-not-buy-you) for the exact profile.
 
 ## Three streaming modes
 
@@ -8,12 +8,12 @@
 |---|---|---|
 | `buildDocumentPDFStream` / `buildPDFStream` | Assembles full binary, then yields fixed-size chunks | Simple back-pressure-friendly piping |
 | `buildDocumentPDFStreamPageByPage` / `buildPDFStreamPageByPage` | Assembles full binary, yields one PDF object per chunk | Object-granular persistence / diagnostics |
-| **`buildDocumentPDFStreamTrue` / `buildPDFStreamTrue`** | **Never joins the binary — frees each part as it yields** | Large documents, constant memory |
+| **`buildDocumentPDFStreamTrue` / `buildPDFStreamTrue`** | **Never joins the binary — frees each part as it yields** | Large documents, and anything over ~512 MB of output |
 
 All three produce **byte-identical** output to `buildDocumentPDFBytes()` /
 `buildPDFBytes()`.
 
-## True constant-memory streaming (v1.3.0)
+## Streaming without joining the binary (v1.3.0)
 
 ```ts
 import { createWriteStream } from 'node:fs';
@@ -28,9 +28,37 @@ out.end();
 
 Internally, the builder assembles the PDF into an array of raw parts (objects,
 xref, trailer) and the generator walks that array, encoding each part to bytes
-and **freeing it (`parts[i] = ''`) as soon as it is emitted**. Peak memory is
-bounded by the chunk size plus the single largest part — typically the biggest
-content stream or embedded font subset — rather than the whole document.
+and **freeing it (`parts[i] = ''`) as soon as it is emitted**.
+
+### What this does and does not buy you
+
+Being precise here matters, because the two claims are often conflated.
+
+**What it avoids.** The joined PDF binary never exists. That removes a full
+second copy of the document, and it lifts the hard ceiling that
+`buildDocumentPDFStream` hits: that variant joins everything into one JavaScript
+string, and V8 caps a single string at roughly 512 MB. Past that point it throws
+regardless of how much RAM the machine has. `buildDocumentPDFStreamTrue` has no
+such ceiling.
+
+**What it does not avoid.** `assembleDocumentParts()` runs to completion before
+the first chunk is yielded, so every part is resident at that moment. Peak memory
+is therefore still proportional to total output size — roughly 2 bytes per output
+character, since JavaScript strings are UTF-16. From the first yield onwards
+memory falls monotonically as parts are freed, but the peak has already happened.
+
+Two practical consequences:
+
+- Budget for about twice your expected output size, not for a fixed ceiling.
+  A 300 MB PDF wants roughly 600 MB of headroom.
+- **There is no progress signal during assembly.** Most of the wall-clock time is
+  spent inside `assembleDocumentParts()`, which yields nothing, so a percentage
+  bar covering that phase would be invented rather than measured. Report an
+  indeterminate state until the first chunk arrives, then switch to a byte
+  counter. The scale playground does exactly this.
+
+True page-by-page assembly — where peak memory is bounded by one page rather than
+the whole document — is not implemented yet.
 
 ### HTTP response (Node)
 
@@ -80,11 +108,11 @@ the common "generate a large PDF to disk without buffering it" case.
 ```ts
 import { buildDocumentPDFStreamTrue, streamToFile } from 'pdfnative';
 
-const { bytesWritten, chunks } = await streamToFile(
+const { bytesWritten, path } = await streamToFile(
   buildDocumentPDFStreamTrue(params),
   'report.pdf',
 );
-console.log(`Wrote ${bytesWritten} bytes in ${chunks} chunks`);
+console.log(`Wrote ${bytesWritten} bytes to ${path}`);
 ```
 
 ### Cancellation

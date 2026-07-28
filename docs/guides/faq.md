@@ -220,9 +220,9 @@ const updated = mod.save();   // appends a new xref/trailer with /Prev chain
 Use the streaming API — it returns an `AsyncGenerator<Uint8Array>` that yields chunks as they're produced:
 
 ```typescript
-import { streamDocumentPdf } from 'pdfnative';
+import { buildDocumentPDFStream } from 'pdfnative';
 
-for await (const chunk of streamDocumentPdf(params, { chunkSize: 65536 })) {
+for await (const chunk of buildDocumentPDFStream(params, {}, { chunkSize: 65536 })) {
   await writeStream.write(chunk);
 }
 ```
