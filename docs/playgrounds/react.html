@@ -22,7 +22,7 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <style>
     .rx-presets { display: flex; gap: 8px; align-items: center; margin: 18px 0 0; flex-wrap: wrap; }
     .rx-presets select { padding: 6px 10px; border: 1px solid var(--c-border); border-radius: 6px; font-size: 13px; background: var(--c-bg); color: var(--c-text); }
@@ -177,15 +177,15 @@ const bytes = renderSpecToBytes({
     "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
     "pdfnative": "https://esm.sh/pdfnative@1.6.0",
     "pdfnative/": "https://esm.sh/pdfnative@1.6.0/",
-    "pdfnative-react": "https://esm.sh/pdfnative-react@1.0.0?external=react,pdfnative"
+    "pdfnative-react": "https://esm.sh/pdfnative-react@1.1.0?external=react,pdfnative"
   }
 }
 </script>
 
 <!-- Babel standalone: transpile the JSX the user types (demo only) -->
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js" integrity="sha384-EIcs2MbARRLcLs7Gv2wqqhhfMlcLeW9yuJsWki1r5iveN1F5gpzHOwAKycJqSQOI" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script src="../assets/versions.js" defer></script>
 
 <script>
@@ -217,7 +217,7 @@ const bytes = renderSpecToBytes({
 
   var PRESETS = {
     invoice: [
-      "<Document title=\"Invoice #1024\" author=\"Acme Inc\" footerText=\"Acme Inc · Thank you\">",
+      "<Document title=\"Invoice #1024\" metadata={{ author: 'Acme Inc' }} footerText=\"Acme Inc · Thank you\">",
       "  <Heading level={1}>Invoice #1024</Heading>",
       "  <Paragraph>Billed to: Globex Corporation — due in 30 days.</Paragraph>",
       "  <Spacer height={8} />",
@@ -254,7 +254,7 @@ const bytes = renderSpecToBytes({
       "    zebra",
       "  />",
       "  <Spacer height={10} />",
-      "  <Barcode format=\"qrcode\" data=\"https://pdfnative.dev\" />",
+      "  <Barcode format=\"qr\" data=\"https://pdfnative.dev\" />",
       "</Document>",
     ].join("\n"),
     multilingual: [
@@ -331,7 +331,7 @@ const bytes = renderSpecToBytes({
       var moduleSrc =
         "import React from 'react';\n" +
         "import { registerFont } from 'pdfnative';\n" +
-        "import { Document, Page, Heading, Paragraph, Text, List, Item, Table, Row, Cell, Image, Link, Spacer, PageBreak, Barcode, Svg, FormField, TableOfContents, Toc, renderToBytes } from 'pdfnative-react';\n" +
+        "import { Document, Page, Section, Heading, Paragraph, Text, List, Item, Table, Row, Cell, Image, Link, Spacer, PageBreak, Barcode, Chart, Svg, FormField, TableOfContents, Toc, renderToBytes } from 'pdfnative-react';\n" +
         "export default async function build() {\n" + body + "\n}\n";
 
       var out = Babel.transform(moduleSrc, {

@@ -155,7 +155,7 @@ worker.onmessage = (e) =&gt; {
 worker.postMessage({ pageCount: 800, tagged: true, seed: 42 });
 
 // Inside the worker
-import { buildDocumentPDFStream, concatChunks } from 'https://esm.sh/pdfnative';
+import { buildDocumentPDFStream, concatChunks } from 'https://esm.sh/pdfnative@1.6.0';
 const blocks = synthesizePatientReport(seed, pageCount);
 const chunks = [];
 for await (const chunk of buildDocumentPDFStream({ title, blocks }, {}, { chunkSize: 65536 })) {
@@ -220,7 +220,7 @@ function setProgress(pct, label) {
 // Worker source: imports pdfnative from CDN, synthesizes a medical report,
 // streams chunks back to main thread, posts progress + final PDF.
 const WORKER_SRC = `
-const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
 
 async function loadPdfnative() {
   let lastErr = null;
@@ -458,7 +458,7 @@ async function generateInWorker(pageCount, tagged) {
   });
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
 let mainMod = null;
 async function loadPdfnativeMain() {
   if (mainMod) return mainMod;

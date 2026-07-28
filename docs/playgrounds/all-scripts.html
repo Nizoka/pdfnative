@@ -21,7 +21,7 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -139,8 +139,8 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script type="module">
 // Canonical 22-script order (matches pdfnative's font registry) + Latin baseline.
 const ALL_LANGS = [
@@ -282,7 +282,7 @@ function updateCodeView(id) {
     '// 22 scripts + Latin + emoji — each lazy-loaded from the package fonts/ subpath.',
     `const langs = ${JSON.stringify(p.langs)};`,
     'registerFonts(Object.fromEntries(langs.map(l => [l,',
-    '  () => import(`https://esm.sh/pdfnative/fonts/${MODULE[l]}`)])));',
+    '  () => import(`https://esm.sh/pdfnative@1.6.0/fonts/${MODULE[l]}`)])));',
     '',
     'const fonts = await Promise.all(langs.map(loadFontData));',
     'const fontEntries = fonts',
@@ -306,7 +306,7 @@ function updateCodeView(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -335,7 +335,7 @@ async function generate() {
     const registry = {};
     for (const lang of p.langs) {
       const moduleName = moduleFor(lang, p.emojiColor);
-      registry[lang] = () => import(`https://esm.sh/pdfnative/fonts/${moduleName}`);
+      registry[lang] = () => import(`https://esm.sh/pdfnative@1.6.0/fonts/${moduleName}`);
     }
     mod.registerFonts(registry);
     const fonts = await Promise.all(p.langs.map(mod.loadFontData));

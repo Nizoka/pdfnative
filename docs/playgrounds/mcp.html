@@ -23,7 +23,7 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <style>
     .mcp-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; margin-top: 24px; }
     .mcp-card { border: 1px solid var(--c-border); border-radius: 10px; padding: 18px 20px 16px; background: var(--c-bg-card); display: flex; flex-direction: column; gap: 10px; }
@@ -317,9 +317,9 @@
         // resolved to a concrete FontEntry { fontData, fontRef, lang }, otherwise
         // the glyphs fall back to .notdef and render as ???? tofu.
         m.registerFonts({
-          th: () => import('https://esm.sh/pdfnative/fonts/noto-thai-data.js'),
-          ar: () => import('https://esm.sh/pdfnative/fonts/noto-arabic-data.js'),
-          emoji: () => import('https://esm.sh/pdfnative/fonts/noto-emoji-data.js'),
+          th: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-thai-data.js'),
+          ar: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-arabic-data.js'),
+          emoji: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-emoji-data.js'),
         });
         const langs = Array.isArray(p.lang) ? p.lang : (p.lang ? [p.lang] : []);
         const loaded = await Promise.all(langs.map((l) => m.loadFontData(l)));
@@ -586,7 +586,7 @@
   }
 
   // ─────────────────────────── pdfnative loader (mirrors app.js) ───────────────────────────
-  const CDN_URLS = ['https://esm.sh/pdfnative', 'https://unpkg.com/pdfnative?module'];
+  const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://unpkg.com/pdfnative@1.6.0?module'];
   let pdfnativeMod = null;
   let loadErr = null;
 
@@ -697,8 +697,8 @@
   });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js" integrity="sha384-RhrmFFMb0ZCHImjFMpR/UE3VEtIVTCtNrtKQqXCzqXZNJala02N3UbVhi+qzw3CY" crossorigin="anonymous" defer></script>
 <script src="../assets/versions.js" defer></script>
 </body>
 </html>
