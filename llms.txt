@@ -21,6 +21,23 @@
 - [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
 - [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
 - [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set; pinned download + SHA-256 verification.
+- [Charts](https://pdfnative.dev/guides/charts.html): Native vector `chart` blocks — bar, horizontal bar, line, pie, donut. Path operators, no rasterisation; `/Figure` tagging with alt text.
+- [Text extraction](https://pdfnative.dev/guides/text-extraction.html): `extractText()` — reading-order Unicode via `/ToUnicode`, optional positioned runs, works on encrypted PDFs with a password. The RAG / agent-ingestion entry point.
+- [Form filling](https://pdfnative.dev/guides/form-filling.html): `readFormFields()` / `fillForm()` / `flattenForm()` on existing AcroForms, including encrypted PDFs via incremental update.
+- [PDF manipulation](https://pdfnative.dev/guides/pdf-manipulation.html): `openPdf()` (with `{ password }`), merge / split / extract pages, re-encrypt on output, and their streaming variants.
+- [Streaming output](https://pdfnative.dev/guides/streaming.html): `buildDocumentPDFStream` vs `buildDocumentPDFStreamTrue`, `streamToFile`, and the exact memory profile of each.
+- [Smart tables](https://pdfnative.dev/guides/tables.html): Multi-page tables — auto-wrap, repeated headers, zebra striping, cell borders, vertical alignment, auto-fit columns.
+- [Annotations](https://pdfnative.dev/guides/annotations.html): Markup annotations (highlight, underline, note, shape, freetext) applied by incremental update so signatures stay valid.
+- [Outlines & page labels](https://pdfnative.dev/guides/outlines.html): Document bookmarks (`outline: 'auto'` or an explicit tree) and `/PageLabels` numbering.
+- [Viewer preferences](https://pdfnative.dev/guides/viewer-preferences.html): `/ViewerPreferences` — page layout, page mode, and display hints.
+- [Colour emoji](https://pdfnative.dev/guides/colour-emoji.html): COLRv1 rendering — solid, linear and radial gradient layers as native PDF Form XObjects.
+- [Layout debugging](https://pdfnative.dev/guides/debugging.html): `inspectDocumentLayout()` and the `debug: true` overlay for diagnosing pagination.
+- [Font validation](https://pdfnative.dev/guides/font-validation.html): `validateFontData()` — check a font module before registering it.
+- [Agentic workflows](https://pdfnative.dev/guides/agentic-workflows.html): Patterns for driving pdfnative from AI agents on public, validated APIs.
+- [AI governance](https://pdfnative.dev/guides/ai-governance.html): The human-in-the-loop contract — agents draft, humans review, approve and submit.
+- [Responsibility](https://pdfnative.dev/responsibility.html): Sustainability, supply-chain and accessibility position — every claim linked to its proof, plus an explicit list of what is deliberately not claimed.
+
+> Guide pages render their markdown client-side. For the full text without executing JavaScript, request the `.md` source at the same path — e.g. `https://pdfnative.dev/guides/charts.md`.
 
 ## Agent and AI integration
 

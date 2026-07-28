@@ -274,6 +274,30 @@
         <p>Author PDFs declaratively in <strong>JSX</strong> with <a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a>. A custom React reconciler compiles <code>&lt;Document&gt;</code> / <code>&lt;Table&gt;</code> / <code>&lt;Barcode&gt;</code> trees on-device — no DOM, no headless browser. Live-preview hooks (<code>usePdf</code>, <code>&lt;PDFViewer&gt;</code>), streaming, and a token-frugal <code>DocSpec</code> for AI agents. React is a peer dependency of this package only. <a href="guides/react.html">React guide →</a> &middot; <a href="playgrounds/react.html">Try the playground →</a></p>
       </div>
 
+      <div class="feature-card">
+        <div class="feature-icon fi-content"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg></div>
+        <h3>Native Vector Charts</h3>
+        <p>Bar, horizontal bar, line, pie and donut charts drawn as PDF path operators — no rasterisation, no image round-trip, so they stay sharp at any zoom and tag as <code>/Figure</code> with alt text. <a href="guides/charts.html">Charts guide →</a> &middot; <a href="playgrounds/charts.html">playground →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-unicode"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></div>
+        <h3>Text Extraction</h3>
+        <p><code>extractText()</code> returns reading-order Unicode via <code>/ToUnicode</code>, with optional positioned runs and support for encrypted sources. The ingestion primitive for RAG pipelines and agents. <a href="guides/text-extraction.html">Text-extraction guide →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10"/><path d="M7 13h6"/><path d="m15 16 2 2 4-4"/></svg></div>
+        <h3>Fill &amp; Flatten Forms</h3>
+        <p>Read an existing AcroForm’s fields, fill them, and optionally flatten them into static page content — including on encrypted documents, via incremental update. <a href="guides/form-filling.html">Form-filling guide →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-security"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg></div>
+        <h3>Decrypt &amp; Re-secure</h3>
+        <p>Open password-protected PDFs with <code>openPdf(bytes, { password })</code> — RC4, AES-128 and AES-256 — then merge, fill, annotate or re-encrypt the result. <a href="guides/pdf-manipulation.html">PDF-manipulation guide →</a></p>
+      </div>
+
     </div>
   </div>
 </section>
@@ -900,8 +924,19 @@ const bytes = renderToBytes(
           <li><a href="guides/cli.html">CLI Guide</a></li>
           <li><a href="guides/mcp.html">MCP Integration</a></li>
           <li><a href="guides/react.html">React</a></li>
+          <li><a href="guides/charts.html">Charts</a></li>
+          <li><a href="guides/text-extraction.html">Text extraction</a></li>
+          <li><a href="guides/form-filling.html">Form filling</a></li>
+          <li><a href="guides/pdf-manipulation.html">PDF manipulation</a></li>
+          <li><a href="guides/streaming.html">Streaming</a></li>
+          <li><a href="guides/tables.html">Smart tables</a></li>
+          <li><a href="guides/annotations.html">Annotations</a></li>
+          <li><a href="guides/outlines.html">Outlines &amp; page labels</a></li>
+          <li><a href="guides/signatures.html">Signatures</a></li>
+          <li><a href="guides/colour-emoji.html">Colour emoji</a></li>
           <li><a href="guides/faq.html">FAQ</a></li>
           <li><a href="guides/troubleshooting.html">Troubleshooting</a></li>
+          <li><a href="responsibility.html">Responsibility</a></li>
         </ul>
       </div>
       <div class="footer-col">
