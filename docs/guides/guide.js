@@ -70,8 +70,8 @@
       '<strong>Local preview requires a server.</strong><br>' +
       'Browsers block resource loading on <code>file://</code>. ' +
       'Run a local server from the repo root:<br><br>' +
-      '<code>cd docs &amp;&amp; npx serve .</code><br><br>' +
-      'Then open <a href="http://localhost:3000" target="_blank">localhost:3000</a> in your browser.<br>' +
+      '<code>npm run docs:serve</code><br><br>' +
+      'Then open <a href="http://localhost:5000/guides/" target="_blank">localhost:5000/guides/</a> in your browser.<br>' +
       '<a href="https://github.com/Nizoka/pdfnative/blob/main/docs/guides/' +
       encodeURIComponent(src) + '" target="_blank" rel="noopener">View this guide on GitHub \u2192</a>' +
       '</div>';

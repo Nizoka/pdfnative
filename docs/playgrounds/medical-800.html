@@ -89,8 +89,8 @@
       because <code>file:</code> origins are treated as unique security origins and cannot load cross-origin
       worker scripts (see <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=40487" target="_blank" rel="noopener">Chromium issue #40487</a>).<br>
       <strong>To use the Web Worker:</strong> serve this directory with a local HTTP server:
-      <pre style="background:#fef08a;border-radius:4px;padding:8px 10px;margin:8px 0 4px;font-size:13px;">npx serve docs/
-# or: python -m http.server 8080 --directory docs/
+      <pre style="background:#fef08a;border-radius:4px;padding:8px 10px;margin:8px 0 4px;font-size:13px;">npm run docs:serve
+# or: python -m http.server 5000 --directory docs/
 # then open http://localhost:5000/playgrounds/medical-800.html</pre>
       The page is fully functional on <a href="https://pdfnative.dev/playgrounds/medical-800.html" target="_blank" rel="noopener">pdfnative.dev</a>
       (served over HTTPS) where Web Workers work correctly.
