@@ -1,0 +1,42 @@
+{
+  "$comment": "Source data behind the 'How It Compares' table on the homepage. Regenerate by re-reading each package's published npm manifest and re-checking each capability against its current documentation. The table's caption must always name this file and its date.",
+  "comparedOn": "2026-07-28",
+  "method": {
+    "dependencyCount": "Number of keys in the `dependencies` field of the package's published npm manifest (registry.npmjs.org/<pkg>/latest). Peer and optional dependencies are excluded; transitive dependencies are not counted.",
+    "capabilities": "Checked against each project's own documentation for the version listed. A cross means the capability is not offered by the package itself — several are achievable by the user with additional work or third-party code, which is a different claim."
+  },
+  "packages": [
+    {
+      "name": "pdfnative",
+      "version": "1.6.0",
+      "npm": "https://www.npmjs.com/package/pdfnative",
+      "dependencyCount": 0
+    },
+    {
+      "name": "pdfkit",
+      "version": "0.19.1",
+      "npm": "https://www.npmjs.com/package/pdfkit",
+      "dependencyCount": 6
+    },
+    {
+      "name": "jspdf",
+      "version": "4.2.1",
+      "npm": "https://www.npmjs.com/package/jspdf",
+      "dependencyCount": 3,
+      "notes": "Built-in encryption is RC4-based. The table distinguishes AES-128/256 from RC4 rather than showing a single 'encryption' row."
+    },
+    {
+      "name": "pdfmake",
+      "version": "0.3.11",
+      "npm": "https://www.npmjs.com/package/pdfmake",
+      "dependencyCount": 3
+    },
+    {
+      "name": "pdf-lib",
+      "version": "1.17.1",
+      "npm": "https://www.npmjs.com/package/pdf-lib",
+      "dependencyCount": 4,
+      "notes": "PDF/A is marked as not built in. pdf-lib users can assemble the required XMP metadata and OutputIntent by hand; the cross records the absence of a built-in facility, not impossibility."
+    }
+  ]
+}

@@ -53,7 +53,7 @@
         "@type": "SoftwareSourceCode",
         "@id": "https://pdfnative.dev/#library",
         "name": "pdfnative",
-        "description": "Pure native PDF library — zero vendor dependencies, ISO 32000-1 compliant. Generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (AES-128/256), native vector charts.",
+        "description": "Pure native PDF library — no runtime dependencies in the engine, producing documents that conform to ISO 32000-1. Generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (AES-128/256), native vector charts.",
         "url": "https://pdfnative.dev",
         "codeRepository": "https://github.com/Nizoka/pdfnative",
         "programmingLanguage": "TypeScript",
@@ -70,7 +70,7 @@
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#cli",
         "name": "pdfnative-cli",
-        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA, native constant-time crypto), inspect, verify (PAdES-T + OCSP/CRL), merge / split / extract pages, annotate (markup), govern (AI-governance / HITL), batch, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
+        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA via node:crypto by default), inspect, verify (RFC 3161 timestamp validation + OCSP/CRL), merge / split / extract pages, annotate (markup), govern (AI-governance / HITL), batch, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
         "url": "https://github.com/Nizoka/pdfnative-cli",
         "softwareVersion": "1.3.0",
         "applicationCategory": "DeveloperApplication",
@@ -152,7 +152,7 @@
   <div class="container">
     <h1>Pure Native <span class="gradient">PDF Generation</span></h1>
     <p class="hero-sub">
-      Zero dependencies. ISO 32000-1 compliant. 22 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
+      No runtime dependencies. Conforms to ISO 32000-1. 22 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
     </p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="https://github.com/Nizoka/pdfnative#quick-start">Get Started →</a>
@@ -223,7 +223,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-zero"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
         <h3>Zero Dependencies</h3>
-        <p>Built from scratch in pure TypeScript — tree-shakeable, auditable, and free from supply-chain risk. Even the crypto is built in.</p>
+        <p>Built from scratch in pure TypeScript — tree-shakeable and auditable, with no transitive npm graph to install, audit or patch. Even the crypto is built in. The React and MCP packages add a small number of their own dependencies; see the <a href="responsibility.html">responsibility page</a> for the exact scope.</p>
       </div>
 
       <div class="feature-card">
@@ -234,8 +234,8 @@
 
       <div class="feature-card">
         <div class="feature-icon fi-iso"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-        <h3>ISO Compliant</h3>
-        <p>PDF 1.7 (ISO 32000-1), PDF/A-1b/2b/2u/3b (ISO 19005), PDF/UA tagged accessibility. Structure tree, XMP metadata, ICC profiles.</p>
+        <h3>Built to the ISO Specs</h3>
+        <p>Output conforming to PDF 1.7 (ISO 32000-1) and PDF/A-1b/2b/2u/3b (ISO 19005), the latter checked against the veraPDF reference validator in CI on every commit. PDF/UA structural validation, structure tree, XMP metadata, ICC profiles. Not an accredited conformance-tested product — <a href="responsibility.html">what that does and does not mean</a>.</p>
       </div>
 
       <div class="feature-card">
@@ -492,6 +492,12 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Feature-by-feature comparison with popular PDF libraries.</p>
     <div class="table-wrap">
       <table class="cmp-table">
+        <caption style="caption-side:bottom;text-align:left;font-size:12px;color:var(--c-text-dim);padding-top:12px;line-height:1.6;">
+          Compared on <strong>2026-07-28</strong> against pdfkit 0.19.1, jsPDF 4.2.1, pdfmake 0.3.11 and pdf-lib 1.17.1 as published on npm.
+          Dependency counts are the <code>dependencies</code> field of each published manifest; peer and transitive dependencies are excluded.
+          A cross means the package does not offer the capability itself — several are achievable with additional work, which is a different claim.
+          Source data: <a href="data/comparison-2026-07-28.json">comparison-2026-07-28.json</a>.
+        </caption>
         <thead>
           <tr>
             <th>Feature</th>
@@ -625,7 +631,7 @@ const pdf = renderToBytes(
 <section class="section" id="benchmarks">
   <div class="container">
     <h2 class="section-title">Performance</h2>
-    <p class="section-subtitle">Pure string assembly with zero allocations in hot paths. Measured with vitest bench.</p>
+    <p class="section-subtitle">Single-pass string assembly with no intermediate object graph. Measured with <code>vitest bench</code> — run it yourself with <code>npx vitest bench</code>.</p>
     <div class="bench-grid">
       <div class="bench-row">
         <span class="bench-label">100 rows (Latin)</span>
@@ -648,23 +654,26 @@ const pdf = renderToBytes(
         <span class="bench-value">~33 ms</span>
       </div>
       <div class="bench-row">
-        <span class="bench-label">100 rows (Unicode)</span>
+        <span class="bench-label">100 rows (embedded font)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:9%"></div></div>
         <span class="bench-value">~2.9 ms</span>
       </div>
       <div class="bench-row">
-        <span class="bench-label">500 rows (Unicode)</span>
+        <span class="bench-label">500 rows (embedded font)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:42%"></div></div>
         <span class="bench-value">~14 ms</span>
       </div>
       <div class="bench-row">
-        <span class="bench-label">1 000 rows (Unicode)</span>
+        <span class="bench-label">1 000 rows (embedded font)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:82%"></div></div>
         <span class="bench-value">~27 ms</span>
       </div>
     </div>
     <p class="bench-note">
-      Measured locally with <code>vitest bench</code> on an Intel Core i3 mini-PC (Node.js 22) — mean wall-clock time per document. Faster hardware (Apple M-series, desktop i7/i9) typically runs 2–4× quicker. Results may vary.
+      Measured 2026-07-28 with <code>vitest bench</code> on an Intel Core i3 mini-PC (Node.js 22.17.0) — mean wall-clock time per document.
+      Full run context, sample counts and relative error: <a href="https://github.com/Nizoka/pdfnative/blob/main/bench/RESULTS.md" target="_blank" rel="noopener">bench/RESULTS.md</a>.
+      The <em>embedded font</em> rows exercise the CID/embedded-font code path using a synthetic TTF on Latin text — they are <strong>not</strong> a measurement of OpenType shaping or BiDi, which are not currently benchmarked.
+      Faster hardware (Apple M-series, desktop i7/i9) typically runs 2–4× quicker. Results may vary.
       Run <code>npx vitest bench</code> to measure on your hardware.
     </p>
   </div>

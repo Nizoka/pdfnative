@@ -421,7 +421,7 @@
         </div>
         <div>
           <label><input type="checkbox" data-cmd="sign" data-flag="--pure-crypto"> --pure-crypto <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.2</span></label>
-          <span class="hint">Force the portable pure-JS CMS path. Default is native constant-time <code>node:crypto</code>.</span>
+          <span class="hint">Force the portable pure-JS CMS path. The default delegates to <code>node:crypto</code>, inheriting its side-channel hardening; the pure-JS path is <strong>not</strong> constant-time.</span>
         </div>
       </div>
     </section>
