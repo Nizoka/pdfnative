@@ -203,16 +203,31 @@ for (const [key, actual] of Object.entries(actualDerived)) {
 
 // ── Rule: stale-token / canonical-present ───────────────────────────
 
+/**
+ * Historical prose legitimately quotes superseded numbers ("v1.0.0: first
+ * stable release with 12 tools"). Rewriting those would falsify the changelog,
+ * so a line may opt out with `verify-docs:allow <rule>` on itself or on the
+ * line immediately above — a visible, greppable marker rather than a silent
+ * exclusion list that nobody maintains.
+ */
+function isSuppressed(lines: string[], lineNo: number, rule: string): boolean {
+    const marker = `verify-docs:allow ${rule}`;
+    return (lines[lineNo - 1]?.includes(marker) ?? false) || (lines[lineNo - 2]?.includes(marker) ?? false);
+}
+
 for (const assertion of manifest.assertions) {
     const forbid = new RegExp(assertion.forbid, 'g');
     for (const file of DOC_FILES) {
         const text = read(file);
+        const lines = text.split(/\r?\n/);
         forbid.lastIndex = 0;
         let m: RegExpExecArray | null;
         while ((m = forbid.exec(text)) !== null) {
+            const line = lineOf(text, m.index);
+            if (isSuppressed(lines, line, 'stale-token')) continue;
             fail(
                 rel(file),
-                lineOf(text, m.index),
+                line,
                 'stale-token',
                 `"${m[0].trim()}" contradicts the manifest — canonical value is "${assertion.canonical}"`,
             );

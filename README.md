@@ -24,7 +24,7 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 |---|:---:|---|
 | [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.6.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
 | [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.3.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256, native constant-time crypto by default), inspect, verify (PAdES-T + OCSP/CRL), **merge / split / extract** pages, **annotate** (markup annotations), **govern** (AI-governance / HITL gate), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.6.0: 22 scripts + COLRv1 emoji, `--font math`, PDF bookmarks (`--outline`), layout introspection (`--inspect-layout` / `--debug-layout`), and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
-| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.5.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **19 production tools** including the page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, markup `annotate_pdf`, the network-free `draft_governance_issue` (AI-governance / HITL), plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), the explicit `math` script, an MCP `prompts` capability, a constant-time `node:crypto` signing provider, DNS-rebinding-protected HTTP transport, and per-tool `_meta.apiVersion`. Built on pdfnative 1.6.0. |
+| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.5.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **24 production tools** including the page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, markup `annotate_pdf`, the network-free `draft_governance_issue` (AI-governance / HITL), plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), the explicit `math` script, an MCP `prompts` capability, a constant-time `node:crypto` signing provider, DNS-rebinding-protected HTTP transport, and per-tool `_meta.apiVersion`. Built on pdfnative 1.6.0. |
 | [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v1.1.0** | Write PDFs as declarative JSX — `<Document>`, `<Page>`, `<Table>`, `<Barcode>`, `<Svg>`, `<FormField>`… compiled on-device to pdfnative blocks by a custom React 19 reconciler. Render functions (`renderToBytes` / `renderToStream` / `renderToFile`), client hooks & components (`usePdf`, `PDFViewer`, `PDFDownloadLink`), and a versioned `DocSpec` grammar (`docSpecSchema()`) for AI agents. Peer: pdfnative ≥1.5 (pairs with 1.6.0), React 19, Node ≥20. |
 
 ```bash
@@ -79,7 +79,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
-- **AI client integration** — use pdfnative from Claude Desktop, Cursor, Continue, and Zed via [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) — **17 production tools** (generate, tables, barcodes, forms, sign, verify, validate, attachments, extraction, inspect, plus page-tree `merge_pdfs` / `split_pdf` / `extract_pages`)
+- **AI client integration** — use pdfnative from Claude Desktop, Cursor, Continue, and Zed via [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) — **24 production tools** (generate, tables, barcodes, forms, sign, verify, validate, attachments, extraction, inspect, plus page-tree `merge_pdfs` / `split_pdf` / `extract_pages`)
 - **Command-line interface** — render, sign, verify, inspect, and batch-render PDFs from the shell with [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) — zero-config, scriptable, agent-native (`--json`/`E_*`/`--dry-run`), ideal for CI/CD pipelines
 - **React renderer** — author PDFs as declarative JSX with [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react): `<Document>`/`<Table>`/`<Barcode>` components, `usePdf`/`PDFViewer` client hooks, on-device rendering with no DOM or headless browser
 
@@ -608,7 +608,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
 | `doc-report-multipage.pdf` | 3-page technical report (7 sections, 4 tables) |
 | `doc-contract-bilingual.pdf` | Bilingual EN/AR contract (legal sections, signatures) |
-| `doc-showcase-all-blocks.pdf` | All 12 block types in one PDF |
+| `doc-showcase-all-blocks.pdf` | All 13 block types in one PDF |
 
 ### Compressed PDFs (FlateDecode)
 
@@ -998,7 +998,7 @@ pdfnative ships as a library, but three official companion packages cover the mo
 
 ### pdfnative-cli — command-line interface
 
-[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v1.1.0 is the **official CLI**, built on `pdfnative` v1.3.0. It exposes six commands — `render`, `sign`, `inspect`, `verify`, `batch`, and `schema` (plus `completion`) — for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed, with a CycloneDX SBOM attached to every release.
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v1.3.0 is the **official CLI**, built on `pdfnative` v1.6.0. It exposes 17 commands in five groups — create & edit (`render`, `fill`, `annotate`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed, with a CycloneDX SBOM attached to every release.
 
 **New in v1.1.0:** **22 Unicode scripts + COLRv1 colour emoji** through the `--font`/`--lang` shortcuts, **true constant-memory streaming** (`--stream-true`), a `--max-blocks` cap for very large documents, and a **PDF/UA (ISO 14289-1) structural validator** (`inspect --pdfua` / `--check pdfua`). It also adds an **agent-native contract** — a global `--json` status/error envelope, stable `E_*` error codes, a `--dry-run` validation mode, the new **`schema`** command (Draft 2020-12), and token-economy output projection (`--summary` / `--fields` + compact JSON) that cuts agent output ~90 %. **100 % backward-compatible.**
 
@@ -1028,13 +1028,14 @@ See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v1.1.0 r
 
 [`pdfnative-mcp`](https://github.com/Nizoka/pdfnative-mcp) v1.3.0 is a **Model Context Protocol server** that bridges pdfnative to any MCP-compatible AI client. Once configured, your AI assistant can generate PDFs, embed barcodes, create forms, sign and verify documents, validate PDF/UA structure, embed and extract attachments, extract text, render international text, merge, split and extract pages, and inspect existing PDFs — all without writing code.
 
+<!-- verify-docs:allow stale-token (historical: MCP v1.0.0 shipped 12 tools) -->
 **v1.0.0:** first stable MCP release with 12 tools, `verify_pdf`, `add_attachment` (Factur-X / ZUGFeRD PDF/A-3), `extract_text`, smart-table options, auto-placeholder signing, and `_meta.apiVersion`.
 
 **v1.1.0:** adds `validate_pdf`, six additional scripts (Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic), and COLRv1 colour-emoji support via the pdfnative 1.3.0 engine.
 
 **v1.2.0:** adds `extract_attachments`, watermark options on document tools, Unicode `normalize` (NFC/NFD/NFKC/NFKD), token-frugal read modes (`verbosity`/`fields`), and returns base64 PDF bytes once via a `resource` block.
 
-**v1.3.0:** adds the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages` (**17 tools** total), enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), a constant-time `node:crypto` signing provider, and DNS-rebinding protection on the HTTP transport — all via the pdfnative 1.4.0 engine.
+**v1.3.0:** adds the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages` (**17 tools** total)<!-- verify-docs:allow stale-token (historical: MCP v1.3.0 total) -->, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), a constant-time `node:crypto` signing provider, and DNS-rebinding protection on the HTTP transport — all via the pdfnative 1.4.0 engine.
 
 ```bash
 npx -y pdfnative-mcp
@@ -1206,7 +1207,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 ## Known Limitations — Visual vs. Semantic PDF
 
-pdfnative generates **visually pixel-perfect** PDFs for all 16 supported scripts. However, PDF is fundamentally a *visual* format (a digital printer), not a *semantic* one. This distinction matters for **text extraction** (copy-paste, `pdftotext`, screen readers):
+pdfnative generates **visually pixel-perfect** PDFs for all 22 supported scripts. However, PDF is fundamentally a *visual* format (a digital printer), not a *semantic* one. This distinction matters for **text extraction** (copy-paste, `pdftotext`, screen readers):
 
 ### Complex Text Layout (CTL) scripts
 
@@ -1388,7 +1389,7 @@ pdfnative was born inside [**plika.app**](https://plika.app) — a personal fina
 
 The decision was then made to extract the engine into an independent open-source library so that everyone can benefit from production-grade PDF generation — not just plika.app users.
 
-> **Where it all started** — the PDF engine that became pdfnative was originally built inside [plika.app](https://plika.app), a personal finance app generating multi-language bank statements and financial summaries across 16 scripts.
+> **Where it all started** — the PDF engine that became pdfnative was originally built inside [plika.app](https://plika.app), a personal finance app generating multi-language bank statements and financial summaries across 16 scripts.<!-- verify-docs:allow stale-token (historical: origin story) -->
 
 ## Security
 

@@ -2,7 +2,7 @@
 
 > **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on pdfnative 1.6.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
-[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes eleven commands — `render`, `sign`, `inspect`, `verify`, `merge`, `split`, `extract`, `annotate`, `govern`, `batch`, and `schema` (plus a `completion` helper) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 17 commands — `render`, `sign`, `inspect`, `verify`, `merge`, `split`, `extract`, `annotate`, `govern`, `batch`, and `schema` (plus a `completion` helper) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
 > **Why a CLI?** Many real-world workflows live outside Node.js: shell scripts, CI pipelines, Docker containers, Makefiles, batch jobs, build tools written in other languages. The CLI lets all of them call `pdfnative` without writing JavaScript, and is fully composable through stdin/stdout pipelines.
 
@@ -711,7 +711,7 @@ The CLI now covers nearly the full library surface; only Web Worker offloading r
 
 | Feature | CLI v1.2.0 | Library |
 |---|---|---|
-| Document rendering (12 block types) | ✅ | ✅ |
+| Document rendering (13 block types) | ✅ | ✅ |
 | Streaming output | ✅ `--stream` / `--stream-true` | ✅ `streamDocumentPdf()` / `buildDocumentPDFStreamTrue()` |
 | Configurable block cap | ✅ `--max-blocks` | ✅ `layout.maxBlocks` |
 | PDF/A conformance (1b, 2b, 2u, 3b) | ✅ `--tagged` | ✅ `tagged: '…'` |

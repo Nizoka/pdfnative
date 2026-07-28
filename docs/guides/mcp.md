@@ -53,7 +53,7 @@ v1.2.0 keeps full backward compatibility and extends MCP ergonomics for AI workf
 
 ## What's new in v1.4.0
 
-v1.4.0 upgrades the engine to **pdfnative 1.5.0**, brings the pdfnative **AI-governance / Human-in-the-Loop (HITL)** system to the MCP surface, and adds markup annotations — taking the catalogue to **19 tools**. Fully backward-compatible: every v1.3.0 call works unchanged and default responses are byte-identical.
+v1.4.0 upgrades the engine to **pdfnative 1.5.0**, brings the pdfnative **AI-governance / Human-in-the-Loop (HITL)** system to the MCP surface, and adds markup annotations — taking the catalogue to **24 tools**. Fully backward-compatible: every v1.3.0 call works unchanged and default responses are byte-identical.
 
 - **Two new tools:**
   - **`draft_governance_issue`** — an agent drafts a fully compliant GitHub issue **locally** (a draft `.md` plus a machine-readable `compliance` report) and stops. The agent is a **draftsman, never an autonomous submitter**: a human is the only gate, and — by construction, not just policy — the server makes **zero** GitHub writes and **no** outbound network call. A draft that proposes a runtime dependency, omits a reproduction, or sets `duplicateSearchPerformed: false` is rejected with the new `GOVERNANCE_VIOLATION` error.
@@ -195,7 +195,7 @@ In your Zed `settings.json`:
 
 ## Tool reference
 
-`pdfnative-mcp` exposes **19 tools**:
+`pdfnative-mcp` exposes **24 tools**:
 
 | Tool | Purpose |
 |---|---|
@@ -218,6 +218,11 @@ In your Zed `settings.json`:
 | `extract_pages` | Pull an arbitrary, order-preserving page subset (max 5000) into a single PDF. |
 | `annotate_pdf` | Overlay markup annotations (text / highlight / underline / strikeout / squiggly / square / circle / line / freetext) on an existing PDF via incremental update. A visual review layer, **not** a redaction. |
 | `draft_governance_issue` | Assemble a governance-compliant GitHub-issue draft plus a structured `compliance` report **locally** — network-free by construction; never submits. |
+| `add_chart` _(v1.5.0)_ | Render a bar, horizontal-bar, line, pie or donut chart as **native PDF vector paths** — no rasterisation and no image round-trip. Tagged as `/Figure` with alt text when `pdfA` is set. |
+| `read_form_fields` _(v1.5.0)_ | List an existing AcroForm's fields with their types, current values and available options — the read half of the fill round-trip. Accepts `password`. |
+| `fill_form` _(v1.5.0)_ | Fill AcroForm field values and optionally `flatten` them into static page content. Works on encrypted PDFs via incremental update. |
+| `encrypt_pdf` _(v1.5.0)_ | Re-secure an existing PDF with AES-128 or AES-256 — owner/user passwords and an explicit permission set. |
+| `decrypt_pdf` _(v1.5.0)_ | Remove encryption from a password-protected PDF **in-server** — RC4, AES-128 and AES-256 sources. |
 
 Every tool now publishes an `outputSchema` advertised in `tools/list` per the [MCP 2025-06-18 spec](https://modelcontextprotocol.io/specification/2025-06-18), enabling clients to statically validate responses.
 

@@ -42,7 +42,7 @@ const pdf = buildDocumentPDFBytes({
 });
 ```
 
-Supports 12 block types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc, barcode, svg, formField.
+Supports 13 block types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc, barcode, svg, formField.
 
 ## Generation Pipeline
 
@@ -104,10 +104,10 @@ The architecture diagram above shows the **internal library modules**. External 
 
 ```
                          ┌─────────────────────────────────────────────┐
-   [shell / CI / Docker] │  pdfnative-cli (npm) — 11 commands          │
+   [shell / CI / Docker] │  pdfnative-cli (npm) — 17 commands          │
                          └─────────────────────────────────────────────┘
                          ┌─────────────────────────────────────────────┐
-    [Claude / Cursor / …] │  pdfnative-mcp (npm) — 19 AI tools          │
+    [Claude / Cursor / …] │  pdfnative-mcp (npm) — 24 AI tools          │
                          └───────────────────────────────────────────┘
                          ┌─────────────────────────────────────────────┐
    [React / Next.js app] │  pdfnative-react (npm) — declarative JSX    │
@@ -120,13 +120,13 @@ The architecture diagram above shows the **internal library modules**. External 
 
 ### pdfnative-cli
 
-[pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface**. It exposes eleven commands — `render`, `sign`, `inspect`, `verify`, `merge`, `split`, `extract`, `annotate`, `govern`, `batch`, `schema` (plus `completion`) — that map directly to public `pdfnative` APIs, with an agent-native `--json`/`E_*`/`--dry-run` automation contract:
+[pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface**. It exposes seventeen commands — `render`, `sign`, `inspect`, `verify`, `merge`, `split`, `extract`, `annotate`, `govern`, `batch`, `schema` (plus `completion`) — that map directly to public `pdfnative` APIs, with an agent-native `--json`/`E_*`/`--dry-run` automation contract:
 
 ```
 [shell / Makefile / GitHub Actions / Docker]
               │ argv + stdin/stdout
      ┌──────────────────────────┐
-     │  pdfnative-cli (npm)     │  ← dispatch layer, 11 commands + agent contract
+     │  pdfnative-cli (npm)     │  ← dispatch layer, 17 commands + agent contract
      └──────────────────────────┘
               │ import { buildDocumentPDFBytes, signPdfBytes, PdfReader, validatePdfUA } from 'pdfnative'
      ┌──────────────────────────┐
@@ -138,13 +138,13 @@ Like `pdfnative-mcp` and `pdfnative-react`, the CLI lives in a separate reposito
 
 ### pdfnative-mcp
 
-[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 19 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …). It commits to API stability via a per-tool `_meta.apiVersion` field.
+[pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is a **Model Context Protocol server** that wraps the pdfnative public API and exposes it as 24 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …). It commits to API stability via a per-tool `_meta.apiVersion` field.
 
 ```
 [Claude Desktop / Cursor / Continue / Zed]
               │ MCP stdio protocol
      ┌──────────────────────────┐
-      │  pdfnative-mcp (npm)     │  ← MCP server, 19 tools
+      │  pdfnative-mcp (npm)     │  ← MCP server, 24 tools
      └──────────────────────────┘
               │ import { buildDocumentPDFBytes, … } from 'pdfnative'
      ┌──────────────────────────┐

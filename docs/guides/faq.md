@@ -29,7 +29,7 @@ See the [Quick Start guide](quickstart.html) for Node.js, browser, and Web Worke
 | Builder | Best for | Key shape |
 |---------|----------|-----------|
 | `buildPDFBytes` | Tabular reports, bank statements, invoices with a single table | `{ title, headers, rows, infoItems, balanceText, ... }` |
-| `buildDocumentPDFBytes` | Mixed-content documents (manuals, articles, multi-section reports) | `{ title, blocks: [...] }` with 12 block types |
+| `buildDocumentPDFBytes` | Mixed-content documents (manuals, articles, multi-section reports) | `{ title, blocks: [...] }` with 13 block types |
 
 Both return `Uint8Array` and accept the same layout / encryption / compression / tagged-PDF options.
 

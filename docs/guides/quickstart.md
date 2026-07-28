@@ -107,7 +107,7 @@ const pdf = buildDocumentPDFBytes({
 });
 ```
 
-12 block types are available: `heading`, `paragraph`, `list`, `table`, `image`, `link`, `spacer`, `pageBreak`, `toc`, `barcode`, `svg`, `formField`.
+13 block types are available: `heading`, `paragraph`, `list`, `table`, `image`, `link`, `spacer`, `pageBreak`, `toc`, `barcode`, `svg`, `formField`, `chart`.
 
 ## Multi-language
 
@@ -183,7 +183,7 @@ Both interactive playgrounds on [pdfnative.dev](https://pdfnative.dev) run entir
 
 ## Command line — pdfnative-cli
 
-Prefer the terminal? [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) wraps the same library with three composable commands — `render`, `sign`, `inspect`:
+Prefer the terminal? [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) wraps the same library with 17 commands — including `render`, `fill`, `sign`, `verify`, `encrypt`, `decrypt`, `merge`, `split`, `extract` and `extract-text`:
 
 ```bash
 # Install once
