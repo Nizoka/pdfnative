@@ -33,10 +33,10 @@
     // the whole site; these mirror the latest published releases so an offline
     // visitor still sees a sensible value. Bumped at every release.
     var FALLBACK = {
-        'pdfnative': { version: '1.6.0', pin: null },
-        'pdfnative-cli': { version: '1.3.0', pin: '^1.6.0' },
-        'pdfnative-mcp': { version: '1.5.0', pin: '^1.6.0' },
-        'pdfnative-react': { version: '1.1.0', pin: '^1.6.0' }
+        'pdfnative': { version: '1.6.0', pin: null, pinField: null },
+        'pdfnative-cli': { version: '1.3.0', pin: '^1.6.0', pinField: 'dependencies' },
+        'pdfnative-mcp': { version: '1.5.0', pin: '^1.6.0', pinField: 'dependencies' },
+        'pdfnative-react': { version: '1.1.0', pin: '^1.6.0', pinField: 'peerDependencies' }
     };
 
     function el(tag, attrs, kids) {
@@ -57,11 +57,22 @@
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
                 if (!data) return FALLBACK[name];
+                // pdfnative-cli and pdfnative-mcp declare the engine in
+                // `dependencies`; pdfnative-react declares it in
+                // `peerDependencies`. Reading only the former silently dropped
+                // the pin annotation for React. Prefer a hard dependency when
+                // both are present, and record which field it came from so the
+                // tooltip can say so accurately.
                 var pin = null;
+                var pinField = null;
                 if (data.dependencies && typeof data.dependencies.pdfnative === 'string') {
                     pin = data.dependencies.pdfnative;
+                    pinField = 'dependencies';
+                } else if (data.peerDependencies && typeof data.peerDependencies.pdfnative === 'string') {
+                    pin = data.peerDependencies.pdfnative;
+                    pinField = 'peerDependencies';
                 }
-                return { version: data.version, pin: pin };
+                return { version: data.version, pin: pin, pinField: pinField };
             })
             .catch(function () { return FALLBACK[name]; });
     }
@@ -99,7 +110,7 @@
             if (info.pin) {
                 link.appendChild(el('span', {
                     class: 'pn-version-strip-pin',
-                    title: 'pdfnative pin declared in this package\'s dependencies',
+                    title: 'pdfnative pin declared in this package\'s ' + (info.pinField || 'dependencies'),
                     text: ' (\u2192 ' + info.pin + ')'
                 }));
             }
@@ -136,7 +147,7 @@
             if (info.pin) {
                 pinNote = el('span', {
                     class: 'pn-versions-pin',
-                    title: 'pdfnative pin declared in this package\'s dependencies',
+                    title: 'pdfnative pin declared in this package\'s ' + (info.pinField || 'dependencies'),
                     text: '\u2192 pdfnative ' + info.pin
                 });
             }
