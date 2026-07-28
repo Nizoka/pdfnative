@@ -16,11 +16,33 @@
       "binary": "pdfnative",
       "commandCount": 17,
       "commandGroups": {
-        "Create & edit": ["render", "fill", "annotate"],
-        "Page tree": ["merge", "split", "extract"],
-        "Security": ["sign", "verify", "encrypt", "decrypt"],
-        "Read & extract": ["inspect", "extract-text"],
-        "Automation & meta": ["batch", "doctor", "schema", "completion", "govern"]
+        "Create & edit": [
+          "render",
+          "fill",
+          "annotate"
+        ],
+        "Page tree": [
+          "merge",
+          "split",
+          "extract"
+        ],
+        "Security": [
+          "sign",
+          "verify",
+          "encrypt",
+          "decrypt"
+        ],
+        "Read & extract": [
+          "inspect",
+          "extract-text"
+        ],
+        "Automation & meta": [
+          "batch",
+          "doctor",
+          "schema",
+          "completion",
+          "govern"
+        ]
       }
     },
     "pdfnative-mcp": {
@@ -55,7 +77,10 @@
         "validate_pdf",
         "verify_pdf"
       ],
-      "prompts": ["governance_contract", "draft_issue_workflow"]
+      "prompts": [
+        "governance_contract",
+        "draft_issue_workflow"
+      ]
     },
     "pdfnative-react": {
       "version": "1.1.0",
@@ -63,12 +88,13 @@
       "pin": "^1.6.0",
       "repo": "https://github.com/Nizoka/pdfnative-react",
       "$comment": "pdfnative is declared as a PEER dependency here, not a dependency. versions.js must read both fields or the pin annotation silently never renders for this package.",
-      "runtimeDependencies": ["react-reconciler"],
+      "runtimeDependencies": [
+        "react-reconciler"
+      ],
       "nodeEngine": ">=22",
       "reactPeer": "^19.0.0"
     }
   },
-
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
     "testFiles": 104,
@@ -78,7 +104,6 @@
     "playgrounds": 9,
     "learnSteps": 0
   },
-
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
     "tests": 2379,
@@ -87,12 +112,26 @@
     "blockTypes": 13,
     "barcodeFormats": 5,
     "chartTypes": 5,
-    "pdfaLevels": ["pdfa1b", "pdfa2b", "pdfa2u", "pdfa3b"],
-    "signatureAlgorithms": ["rsa-sha256", "ecdsa-sha256"],
-    "writeEncryption": ["aes128", "aes256"],
-    "readEncryption": ["RC4 V1-V4", "AES-128 V4/R4", "AES-256 V5/R6"]
+    "pdfaLevels": [
+      "pdfa1b",
+      "pdfa2b",
+      "pdfa2u",
+      "pdfa3b"
+    ],
+    "signatureAlgorithms": [
+      "rsa-sha256",
+      "ecdsa-sha256"
+    ],
+    "writeEncryption": [
+      "aes128",
+      "aes256"
+    ],
+    "readEncryption": [
+      "RC4 V1-V4",
+      "AES-128 V4/R4",
+      "AES-256 V5/R6"
+    ]
   },
-
   "assertions": [
     {
       "id": "mcp-tool-count",
@@ -110,28 +149,35 @@
       "id": "cli-command-count",
       "canonical": "17 commands",
       "forbid": "\\b(?:three|six|nine|eleven|Eleven|3|6|9|11|13)\\s+(?:production\\s+|composable\\s+)?commands\\b",
-      "requireIn": ["docs/guides/cli.md", "docs/index.html", "llms.txt"]
+      "requireIn": [
+        "docs/guides/cli.md",
+        "docs/index.html",
+        "llms.txt"
+      ]
     },
     {
       "id": "block-type-count",
       "canonical": "13 block types",
       "forbid": "\\b(?:10|11|12)\\s+block\\s+types\\b",
-      "requireIn": ["docs/index.html"]
+      "requireIn": [
+        "docs/index.html"
+      ]
     },
     {
       "id": "script-count",
       "canonical": "22 scripts",
       "forbid": "\\b(?:16|18|20)\\s+(?:supported\\s+)?scripts\\b",
-      "requireIn": ["docs/index.html", "README.md"]
+      "requireIn": [
+        "docs/index.html",
+        "README.md"
+      ]
     }
   ],
-
   "apiDenylist": {
     "$comment": "Identifiers that have appeared in documentation but have never been exported. Any occurrence is a hard failure.",
     "streamDocumentPdf": "buildDocumentPDFStream / buildDocumentPDFStreamTrue",
     "streamPdf": "buildPDFStream / buildPDFStreamTrue",
     "buildPdfStream": "buildPDFStream"
   },
-
   "learnPath": []
 }

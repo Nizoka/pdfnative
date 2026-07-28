@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scale — generate up to 100,000 pages in your browser | pdfnative</title>
+  <meta name="description" content="Generate a 1,000 to 100,000-page PDF entirely in your browser with pdfnative. Streams without ever joining the binary, runs in a Web Worker, and reports measured pages, bytes and throughput — no estimates.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/scale.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/scale.html">
+  <meta property="og:title" content="Scale — generate up to 100,000 pages in your browser | pdfnative">
+  <meta property="og:description" content="A 100,000-page PDF, generated client-side in a Web Worker and streamed out without ever joining the binary. Measured pages, bytes and throughput — nothing estimated.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Scale — 100,000 pages in your browser | pdfnative">
+  <meta name="twitter:description" content="Generate up to 100,000 pages client-side in a Web Worker. Streamed without joining the binary. Measured throughput, no estimates.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <style>
+    .sc-controls { display: grid; gap: 16px; margin: 24px 0; padding: 18px; background: var(--c-surface); border-radius: var(--radius); }
+    .sc-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .sc-row > strong { min-width: 108px; }
+    .sc-controls select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--c-border); font-size: 14px; background: var(--c-bg); color: var(--c-text); }
+    .sc-sink { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+    .sc-sink input[disabled] + span { opacity: .5; }
+    .sc-reason { font-size: 12px; color: var(--c-text-dim); flex-basis: 100%; margin: -4px 0 0; }
+    .sc-estimate { font-size: 13px; color: var(--c-text-dim); }
+    .sc-confirm { display: none; align-items: flex-start; gap: 8px; font-size: 13px; padding: 12px 14px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; color: #78350f; }
+    [data-theme="dark"] .sc-confirm { background: #422006; border-color: #854d0e; color: #fde68a; }
+    .sc-phases { display: grid; gap: 10px; margin: 24px 0; }
+    .sc-phase { display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 14px; opacity: .45; }
+    .sc-phase[data-state="active"], .sc-phase[data-state="done"] { opacity: 1; }
+    .sc-phase[data-state="done"] .sc-dot { background: var(--c-success); }
+    .sc-phase[data-state="active"] .sc-dot { background: var(--c-primary); }
+    .sc-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c-border); }
+    .sc-phase-meta { font-variant-numeric: tabular-nums; color: var(--c-text-dim); font-size: 13px; }
+    .sc-bar { height: 8px; border-radius: 999px; background: var(--c-border); overflow: hidden; margin-top: 8px; }
+    .sc-bar > i { display: block; height: 100%; width: 0; background: var(--c-primary); transition: width .2s; }
+    .sc-bar.indeterminate > i { width: 100%; background: repeating-linear-gradient(115deg, var(--c-primary) 0 12px, transparent 12px 24px); animation: sc-slide 1s linear infinite; }
+    @keyframes sc-slide { to { background-position: 24px 0; } }
+    @media (prefers-reduced-motion: reduce) { .sc-bar.indeterminate > i { animation: none; } }
+    .sc-note { font-size: 13px; color: var(--c-text-dim); margin: 6px 0 0; line-height: 1.6; }
+    .sc-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 20px 0; }
+    .sc-tile { padding: 12px 14px; border: 1px solid var(--c-border); border-radius: 8px; }
+    .sc-tile-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--c-text-dim); }
+    .sc-tile-value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .sc-status { display: none; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; line-height: 1.6; }
+    .sc-status.err { display: block; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+    [data-theme="dark"] .sc-status.err { background: #450a0a; border-color: #7f1d1d; color: #fecaca; }
+    .sc-status.ok { display: block; background: #dcfce7; border: 1px solid #86efac; color: #166534; }
+    [data-theme="dark"] .sc-status.ok { background: #052e16; border-color: #166534; color: #bbf7d0; }
+    .sc-warn { background: #fef9c3; border: 1px solid #fde047; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; color: #713f12; }
+    [data-theme="dark"] .sc-warn { background: #422006; border-color: #854d0e; color: #fde68a; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "pdfnative Scale Playground",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any (browser-based)",
+        "browserRequirements": "Requires JavaScript, Web Workers and ES modules",
+        "url": "https://pdfnative.dev/playgrounds/scale.html",
+        "description": "Generate a 1,000 to 100,000-page PDF entirely client-side with pdfnative, streamed without ever joining the binary.",
+        "featureList": [
+          "Measure-only sink using streamByteLength semantics",
+          "Save straight to disk via the File System Access API",
+          "Download as a Blob",
+          "Measured page count parsed from the emitted bytes"
+        ],
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
+        "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://pdfnative.dev/" },
+          { "@type": "ListItem", "position": 2, "name": "Playgrounds", "item": "https://pdfnative.dev/playgrounds/" },
+          { "@type": "ListItem", "position": 3, "name": "Scale" }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="pn-version-strip" data-mode="compact" aria-label="Live published versions"></div>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Scale</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./charts.html">Charts</a>
+    <a href="./authoring-plus.html">Authoring+</a>
+    <a href="./scale.html" aria-current="page">Scale</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>How far does it go?</h1>
+    <p>Generate up to <strong>100,000 pages</strong> in this tab. No server, no upload, no install. The point is not that it is fast — it is that the document is <em>never fully assembled as one binary</em>, so the ceiling is your machine's memory rather than a hard limit in the library.</p>
+
+    <div id="localWarning" class="sc-warn" style="display:none;">
+      <strong>⚠️ Running from <code>file://</code> — Web Worker disabled</strong><br>
+      Browsers block ES-module Workers on <code>file:</code> origins, which are treated as unique
+      security origins and cannot load cross-origin worker scripts
+      (see <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=40487" target="_blank" rel="noopener">Chromium issue #40487</a>).
+      Generation falls back to the main thread and is capped at 1,000 pages so the tab stays responsive.<br>
+      <strong>To lift the cap:</strong>
+      <pre style="background:rgba(0,0,0,.06);border-radius:4px;padding:8px 10px;margin:8px 0 4px;font-size:13px;">npm run docs:serve
+# then open http://localhost:5000/playgrounds/scale.html</pre>
+      The page is fully functional on <a href="https://pdfnative.dev/playgrounds/scale.html" target="_blank" rel="noopener">pdfnative.dev</a>.
+    </div>
+
+    <div class="sc-controls">
+      <div class="sc-row">
+        <strong><label for="pageCount">Pages</label></strong>
+        <select id="pageCount">
+          <option value="1000">1,000 — warm-up</option>
+          <option value="10000" selected>10,000 — the usual "large document"</option>
+          <option value="50000">50,000 — past what most libraries attempt</option>
+          <option value="100000">100,000 — the headline</option>
+        </select>
+        <span class="sc-estimate" id="estimate"></span>
+      </div>
+
+      <div class="sc-row">
+        <strong>Output</strong>
+        <label class="sc-sink"><input type="radio" name="sink" value="measure" checked> <span>Measure only</span></label>
+        <label class="sc-sink"><input type="radio" name="sink" value="disk" id="sinkDisk"> <span>Save to disk</span></label>
+        <label class="sc-sink"><input type="radio" name="sink" value="download" id="sinkDownload"> <span>Download</span></label>
+        <p class="sc-reason" id="sinkReason"></p>
+      </div>
+
+      <div class="sc-row">
+        <strong>Chunk size</strong>
+        <select id="chunkSize">
+          <option value="65536">64 KB — library default</option>
+          <option value="262144" selected>256 KB</option>
+          <option value="1048576">1 MB</option>
+        </select>
+        <label class="sc-sink"><input type="checkbox" id="verifyPages" checked> <span>Count pages in the output bytes</span></label>
+      </div>
+
+      <label class="sc-confirm" id="confirmBox">
+        <input type="checkbox" id="confirmBig">
+        <span>I understand that 100,000 pages allocates roughly 160&nbsp;MB inside the worker and may be slow on a low-memory device.</span>
+      </label>
+
+      <div class="sc-row">
+        <button id="generate" class="btn btn-primary" style="padding:9px 20px;">Generate</button>
+        <button id="cancel" class="btn btn-secondary" style="padding:9px 20px;display:none;">Cancel</button>
+      </div>
+    </div>
+
+    <div id="status" class="sc-status" role="alert"></div>
+
+    <h2>Progress</h2>
+    <div class="sc-phases" aria-live="polite" id="phases">
+      <div class="sc-phase" data-phase="build" data-state="idle">
+        <span class="sc-dot"></span>
+        <span><strong>1 / 3 — Building the document model</strong><div class="sc-bar"><i id="barBuild"></i></div></span>
+        <span class="sc-phase-meta" id="metaBuild">—</span>
+      </div>
+      <div class="sc-phase" data-phase="assemble" data-state="idle">
+        <span class="sc-dot"></span>
+        <span><strong>2 / 3 — Assembling PDF objects</strong><div class="sc-bar indeterminate" id="barAssembleWrap" style="display:none;"><i></i></div></span>
+        <span class="sc-phase-meta" id="metaAssemble">—</span>
+      </div>
+      <div class="sc-phase" data-phase="stream" data-state="idle">
+        <span class="sc-dot"></span>
+        <span><strong>3 / 3 — Encoding and streaming</strong></span>
+        <span class="sc-phase-meta" id="metaStream">—</span>
+      </div>
+    </div>
+    <p class="sc-note"><strong>Why phase 2 has no percentage.</strong> pdfnative builds every PDF object before emitting the first byte, and that loop yields nothing while it runs. There is no progress signal to read, so drawing a bar there would mean inventing one. Phase 3 shows a byte counter rather than a percentage for the same reason — the total size is not known until the generator finishes. See the <a href="../guides/streaming.html#what-this-does-and-does-not-buy-you">streaming guide</a> for the exact memory profile.</p>
+
+    <h2>Result</h2>
+    <div class="sc-results">
+      <div class="sc-tile"><div class="sc-tile-label">Pages <span id="pagesQualifier">(measured)</span></div><div class="sc-tile-value" id="rPages">—</div></div>
+      <div class="sc-tile"><div class="sc-tile-label">Output</div><div class="sc-tile-value" id="rBytes">—</div></div>
+      <div class="sc-tile"><div class="sc-tile-label">Wall clock</div><div class="sc-tile-value" id="rTime">—</div></div>
+      <div class="sc-tile"><div class="sc-tile-label">Pages / second</div><div class="sc-tile-value" id="rRate">—</div></div>
+      <div class="sc-tile"><div class="sc-tile-label">Bytes / page</div><div class="sc-tile-value" id="rPerPage">—</div></div>
+      <div class="sc-tile" id="memTile" style="display:none;"><div class="sc-tile-label">Peak memory</div><div class="sc-tile-value" id="rMem">—</div></div>
+    </div>
+    <p class="sc-note" id="envNote"></p>
+
+    <h2>What this demonstrates</h2>
+    <ul>
+      <li><strong>No joined binary.</strong> <code>buildDocumentPDFStreamTrue</code> assembles the PDF as an array of parts and frees each one as it is emitted, so the fully-joined document never exists. Its sibling <code>buildDocumentPDFStream</code> joins everything into a single JavaScript string first, and V8 caps a string at roughly 512&nbsp;MB — that variant cannot reach this scale at any content density.</li>
+      <li><strong>Off the main thread.</strong> Generation runs in an ES-module Web Worker, so the page stays interactive and Cancel actually works. Cancelling terminates the worker; there is no cooperative abort point, because assembly is a synchronous loop.</li>
+      <li><strong>Nothing is uploaded.</strong> Every byte is produced in this tab. The measure-only sink never accumulates the output at all — it counts bytes as they arrive and discards them.</li>
+      <li><strong>The page count is measured, not assumed.</strong> With the checkbox on, the worker scans the emitted bytes for <code>/Type /Page</code> object headers and reports what it actually found. Turn it off and the tile is labelled <em>(requested)</em> instead.</li>
+    </ul>
+
+    <h2>The content is deliberately lean</h2>
+    <p>Each page carries a heading and a paragraph — about 815 bytes of output per page. That is a deliberate choice, not a flattering one: it makes the page count exact and known before generation starts, which is what lets the pages-per-second figure mean something instead of being derived from a byte estimate. Denser pages (tables, embedded fonts, images) produce proportionally more bytes and take proportionally longer.</p>
+    <p>If you want to see a realistic document instead of a scalability floor, the <a href="./toolkit.html">PDF Toolkit</a> and <a href="./charts.html">Charts</a> playgrounds build ordinary documents with real content.</p>
+
+    <h2>Code</h2>
+    <pre><code class="language-typescript">import { buildDocumentPDFStreamTrue } from 'pdfnative';
+
+// Exactly one page per iteration: a page break separates consecutive pages.
+function leanBlocks(pages) {
+  const blocks = [];
+  for (let i = 0; i &lt; pages; i++) {
+    if (i &gt; 0) blocks.push({ type: 'pageBreak' });
+    blocks.push({ type: 'heading', text: `Section ${i + 1}`, level: 2 });
+    blocks.push({ type: 'paragraph', text: `Page ${i + 1} of ${pages}. …` });
+  }
+  return blocks;
+}
+
+const blocks = leanBlocks(100_000);
+let bytes = 0;
+
+// `{pages}` is unavailable when streaming — the total is unknown up front.
+for await (const chunk of buildDocumentPDFStreamTrue(
+  { title: 'Scale', blocks, footerText: 'page {page}' },
+  { maxBlocks: blocks.length + 1024 },   // the default rail is 100,000
+  { chunkSize: 262_144 },
+)) {
+  bytes += chunk.length;                 // …or write it straight to disk
+}
+</code></pre>
+    <p class="sc-note">Two constraints are validated at the boundary and throw: streaming forbids <code>toc</code> blocks, and forbids the <code>{pages}</code> placeholder in header and footer templates. Both need a second pass over the whole document, which is exactly what streaming avoids.</p>
+
+    <p><a href="https://github.com/Nizoka/pdfnative/blob/main/docs/playgrounds/scale.html" target="_blank" rel="noopener">View this page&rsquo;s source on GitHub →</a></p>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="../guides/streaming.html">Streaming guide</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../assets/versions.js" defer></script>
+<script src="../app.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous"></script>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+
+// ── Environment detection ───────────────────────────────────────────
+const IS_FILE_ORIGIN = location.protocol === 'file:';
+const HAS_FS_ACCESS = typeof window.showSaveFilePicker === 'function';
+const MAIN_THREAD_CAP = 1000;
+
+// ~815 bytes of output per page for the lean profile, measured on the
+// generator below. Peak string memory is ~2 bytes per output character.
+const BYTES_PER_PAGE = 815;
+
+let activeWorker = null;
+
+if (IS_FILE_ORIGIN) $('localWarning').style.display = 'block';
+if (!HAS_FS_ACCESS) $('sinkDisk').disabled = true;
+
+// ── Worker source ───────────────────────────────────────────────────
+// One generator, stringified into a Blob-URL ES module worker. The
+// main-thread fallback imports the same text, so the two paths can never
+// drift apart.
+const WORKER_SRC = `
+const CDN_URLS = [
+  'https://esm.sh/pdfnative@1.6.0',
+  'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm',
+];
+
+async function loadEngine() {
+  let lastErr;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = m.buildDocumentPDFStreamTrue ? m : (m.default ?? m);
+      // Probe for the True variant specifically: a stale CDN cache serving an
+      // older build must fail loudly rather than silently fall back to the
+      // string-joining variant, which cannot reach this scale.
+      if (typeof mod.buildDocumentPDFStreamTrue !== 'function') {
+        throw new Error('buildDocumentPDFStreamTrue missing from ' + url);
+      }
+      return mod;
+    } catch (err) { lastErr = err; }
+  }
+  throw lastErr ?? new Error('Could not load pdfnative from any CDN');
+}
+
+function leanBlocks(pages, onProgress) {
+  const blocks = [];
+  const step = Math.max(1, Math.floor(pages / 50));
+  for (let i = 0; i < pages; i++) {
+    if (i > 0) blocks.push({ type: 'pageBreak' });
+    blocks.push({ type: 'heading', text: 'Section ' + (i + 1), level: 2 });
+    blocks.push({
+      type: 'paragraph',
+      text: 'Page ' + (i + 1) + ' of ' + pages + '. This document was generated ' +
+            'entirely in the browser and streamed out without ever joining the ' +
+            'PDF binary. Each page carries a heading and this paragraph, so the ' +
+            'page count is exact and known before generation starts.',
+    });
+    if (onProgress && i % step === 0) onProgress(i / pages);
+  }
+  return blocks;
+}
+
+// Count /Type /Page object headers across chunk boundaries. A match lying
+// wholly inside the carried tail was already counted on the previous chunk,
+// so only matches that reach new bytes increment the total.
+function makePageCounter() {
+  const OVERLAP = 16;
+  let carry = '';
+  let count = 0;
+  const RE = /\\/Type\\s*\\/Page(?![s\\w])/g;
+  return {
+    push(chunk) {
+      const carryLen = carry.length;
+      let s = carry;
+      for (let i = 0; i < chunk.length; i++) s += String.fromCharCode(chunk[i]);
+      RE.lastIndex = 0;
+      let m;
+      while ((m = RE.exec(s)) !== null) {
+        if (m.index + m[0].length > carryLen) count++;
+      }
+      carry = s.slice(-OVERLAP);
+    },
+    get value() { return count; },
+  };
+}
+
+self.onmessage = async (e) => {
+  const { pages, chunkSize, sink, verifyPages, handle } = e.data;
+  try {
+    const mod = await loadEngine();
+
+    const tBuild = performance.now();
+    const blocks = leanBlocks(pages, (f) => self.postMessage({ type: 'build', fraction: f }));
+    self.postMessage({ type: 'build', fraction: 1, ms: performance.now() - tBuild });
+
+    const tAssemble = performance.now();
+    self.postMessage({ type: 'assemble-start' });
+
+    const stream = mod.buildDocumentPDFStreamTrue(
+      { title: 'pdfnative scale test — ' + pages + ' pages', blocks, footerText: 'page {page}' },
+      { maxBlocks: blocks.length + 1024 },
+      { chunkSize },
+    );
+
+    let writable = null;
+    if (sink === 'disk' && handle) {
+      writable = await handle.createWritable();
+    }
+
+    const counter = verifyPages ? makePageCounter() : null;
+    const kept = sink === 'download' ? [] : null;
+    let bytes = 0, chunks = 0, first = true, tStream = 0;
+
+    for await (const chunk of stream) {
+      if (first) {
+        tStream = performance.now();
+        self.postMessage({ type: 'assemble-done', ms: tStream - tAssemble });
+        first = false;
+      }
+      bytes += chunk.length;
+      chunks++;
+      if (counter) counter.push(chunk);
+      if (writable) await writable.write(chunk);
+      else if (kept) kept.push(chunk);
+      if (chunks % 8 === 0) self.postMessage({ type: 'stream', bytes, chunks });
+    }
+    if (writable) await writable.close();
+
+    const done = {
+      type: 'done',
+      bytes,
+      chunks,
+      pages: counter ? counter.value : pages,
+      measured: !!counter,
+      msStream: performance.now() - tStream,
+      msTotal: performance.now() - tBuild,
+    };
+    if (kept) {
+      done.blob = new Blob(kept, { type: 'application/pdf' });
+    }
+    self.postMessage(done);
+  } catch (err) {
+    self.postMessage({ type: 'error', message: String(err && err.message || err) });
+  }
+};
+`;
+
+// ── UI helpers ──────────────────────────────────────────────────────
+const fmt = new Intl.NumberFormat('en-US');
+const mb = (b) => (b / 1048576).toFixed(b < 10485760 ? 2 : 1) + ' MB';
+
+function setPhase(name, state) {
+  document.querySelector(`.sc-phase[data-phase="${name}"]`).dataset.state = state;
+}
+function resetPhases() {
+  for (const name of ['build', 'assemble', 'stream']) setPhase(name, 'idle');
+  $('barBuild').style.width = '0';
+  $('barAssembleWrap').style.display = 'none';
+  $('metaBuild').textContent = '—';
+  $('metaAssemble').textContent = '—';
+  $('metaStream').textContent = '—';
+}
+function setStatus(msg, kind) {
+  const el = $('status');
+  el.className = 'sc-status ' + kind;
+  el.innerHTML = msg;
+}
+
+function currentPages() { return parseInt($('pageCount').value, 10); }
+
+function refreshConstraints() {
+  const pages = currentPages();
+  const peak = pages * BYTES_PER_PAGE * 2;
+  $('estimate').textContent =
+    `≈ ${mb(pages * BYTES_PER_PAGE)} of PDF, ≈ ${mb(peak)} peak memory (estimate, from the lean profile)`;
+
+  $('confirmBox').style.display = pages >= 100000 ? 'flex' : 'none';
+  if (pages < 100000) $('confirmBig').checked = false;
+
+  const reasons = [];
+  if (!HAS_FS_ACCESS) reasons.push('“Save to disk” needs the File System Access API (Chromium-based browsers).');
+  if (IS_FILE_ORIGIN) reasons.push(`Running from file:// — the Web Worker is unavailable, so generation is capped at ${fmt.format(MAIN_THREAD_CAP)} pages.`);
+  $('sinkReason').textContent = reasons.join(' ');
+
+  if (IS_FILE_ORIGIN && pages > MAIN_THREAD_CAP) {
+    $('generate').disabled = true;
+    setStatus(`Select ${fmt.format(MAIN_THREAD_CAP)} pages or fewer, or serve the site over HTTP to enable the worker.`, 'err');
+  } else {
+    $('generate').disabled = pages >= 100000 && !$('confirmBig').checked;
+    $('status').className = 'sc-status';
+  }
+}
+
+$('pageCount').addEventListener('change', refreshConstraints);
+$('confirmBig').addEventListener('change', refreshConstraints);
+refreshConstraints();
+
+// Only expose a memory tile when the browser can actually measure it.
+// performance.memory is Chrome-only, main-thread-scoped and quantised, so an
+// absent tile is preferable to a misleading one.
+const CAN_MEASURE_MEMORY =
+  self.crossOriginIsolated && typeof performance.measureUserAgentSpecificMemory === 'function';
+if (CAN_MEASURE_MEMORY) $('memTile').style.display = '';
+
+// ── Run ─────────────────────────────────────────────────────────────
+$('generate').addEventListener('click', async () => {
+  const pages = currentPages();
+  const chunkSize = parseInt($('chunkSize').value, 10);
+  const sink = document.querySelector('input[name="sink"]:checked').value;
+  const verifyPages = $('verifyPages').checked;
+
+  let handle = null;
+  if (sink === 'disk') {
+    try {
+      // Must be called inside the user gesture, before any await on our side.
+      handle = await window.showSaveFilePicker({
+        suggestedName: `pdfnative-${pages}-pages.pdf`,
+        types: [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }],
+      });
+    } catch {
+      setStatus('Save cancelled.', 'err');
+      return;
+    }
+  }
+
+  resetPhases();
+  $('status').className = 'sc-status';
+  $('generate').style.display = 'none';
+  $('cancel').style.display = '';
+  $('pagesQualifier').textContent = verifyPages ? '(measured)' : '(requested)';
+
+  const blobUrl = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' }));
+  const worker = new Worker(blobUrl, { type: 'module' });
+  activeWorker = worker;
+
+  const memBefore = CAN_MEASURE_MEMORY ? await performance.measureUserAgentSpecificMemory() : null;
+
+  const finish = () => {
+    worker.terminate();
+    URL.revokeObjectURL(blobUrl);
+    activeWorker = null;
+    $('generate').style.display = '';
+    $('cancel').style.display = 'none';
+  };
+
+  worker.onmessage = async (e) => {
+    const d = e.data;
+    if (d.type === 'build') {
+      setPhase('build', 'active');
+      $('barBuild').style.width = (d.fraction * 100).toFixed(0) + '%';
+      $('metaBuild').textContent = `${fmt.format(Math.round(d.fraction * pages))} / ${fmt.format(pages)} pages`;
+      if (d.ms !== undefined) {
+        setPhase('build', 'done');
+        $('metaBuild').textContent = `${fmt.format(pages)} pages · ${(d.ms / 1000).toFixed(2)} s`;
+      }
+    } else if (d.type === 'assemble-start') {
+      setPhase('assemble', 'active');
+      $('barAssembleWrap').style.display = '';
+      $('metaAssemble').textContent = 'no progress signal available';
+    } else if (d.type === 'assemble-done') {
+      setPhase('assemble', 'done');
+      $('barAssembleWrap').style.display = 'none';
+      $('metaAssemble').textContent = `${(d.ms / 1000).toFixed(2)} s`;
+      setPhase('stream', 'active');
+    } else if (d.type === 'stream') {
+      $('metaStream').textContent = `${d.chunks} chunks · ${mb(d.bytes)}`;
+    } else if (d.type === 'done') {
+      setPhase('stream', 'done');
+      $('metaStream').textContent = `${d.chunks} chunks · ${mb(d.bytes)} · ${(d.msStream / 1000).toFixed(2)} s`;
+      $('rPages').textContent = fmt.format(d.pages);
+      $('rBytes').textContent = mb(d.bytes);
+      $('rTime').textContent = (d.msTotal / 1000).toFixed(2) + ' s';
+      $('rRate').textContent = fmt.format(Math.round(d.pages / (d.msTotal / 1000)));
+      $('rPerPage').textContent = Math.round(d.bytes / d.pages) + ' B';
+
+      if (CAN_MEASURE_MEMORY) {
+        const after = await performance.measureUserAgentSpecificMemory();
+        $('rMem').textContent = mb(Math.max(0, after.bytes - (memBefore?.bytes ?? 0)));
+      }
+
+      $('envNote').textContent =
+        `Measured in this tab just now — ${navigator.userAgent}. ` +
+        `Pages-per-second covers the whole run (model building, assembly and streaming). ` +
+        `Your numbers will differ; that is the point of running it yourself.`;
+
+      if (d.blob) {
+        const url = URL.createObjectURL(d.blob);
+        setStatus(
+          `Generated ${fmt.format(d.pages)} pages. <a href="${url}" download="pdfnative-${pages}-pages.pdf">Download the PDF →</a>`,
+          'ok',
+        );
+      } else if (sink === 'disk') {
+        setStatus(`Generated ${fmt.format(d.pages)} pages and wrote them straight to disk — the output never passed through this page's memory.`, 'ok');
+      } else {
+        setStatus(`Generated and measured ${fmt.format(d.pages)} pages. The output was counted and discarded — nothing was accumulated.`, 'ok');
+      }
+      finish();
+    } else if (d.type === 'error') {
+      setStatus(`Generation failed: ${d.message}`, 'err');
+      finish();
+    }
+  };
+
+  worker.onerror = (err) => {
+    setStatus(`Worker failed: ${err.message || 'unknown error'}. If you are on file://, serve the site over HTTP.`, 'err');
+    finish();
+  };
+
+  worker.postMessage({ pages, chunkSize, sink, verifyPages, handle });
+});
+
+$('cancel').addEventListener('click', () => {
+  if (!activeWorker) return;
+  activeWorker.terminate();
+  activeWorker = null;
+  $('generate').style.display = '';
+  $('cancel').style.display = 'none';
+  resetPhases();
+  setStatus('Cancelled. Assembly is a synchronous loop with no abort point, so terminating the worker is the only way to stop it — work in progress is discarded.', 'err');
+});
+</script>
+
+</body>
+</html>

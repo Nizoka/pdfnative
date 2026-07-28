@@ -178,8 +178,14 @@ const actualDerived: Record<string, number> = {
     guides: existsSync(join(ROOT, 'docs', 'guides'))
         ? readdirSync(join(ROOT, 'docs', 'guides')).filter((f) => f.endsWith('.md')).length
         : 0,
+    // Live playgrounds only — retired ones survive as noindex redirect stubs.
     playgrounds: existsSync(join(ROOT, 'docs', 'playgrounds'))
-        ? readdirSync(join(ROOT, 'docs', 'playgrounds')).filter((f) => f.endsWith('.html') && f !== 'index.html').length
+        ? readdirSync(join(ROOT, 'docs', 'playgrounds')).filter(
+              (f) =>
+                  f.endsWith('.html') &&
+                  f !== 'index.html' &&
+                  !/name=["']robots["'][^>]*noindex/i.test(read(join(ROOT, 'docs', 'playgrounds', f))),
+          ).length
         : 0,
     learnSteps: manifest.learnPath.length,
 };
@@ -353,6 +359,9 @@ for (const file of HTML_FILES) {
     while ((m = HREF.exec(text)) !== null) {
         const href = m[1];
         if (/^(https?:|mailto:|data:|\/\/)/.test(href) || href === '') continue;
+        // Skip hrefs built at runtime — template placeholders (`${url}`) and
+        // handlebars-style tokens are not paths and cannot be resolved on disk.
+        if (href.includes('${') || href.includes('{{')) continue;
         const target = href.startsWith('/')
             ? join(ROOT, 'docs', href)
             : resolve(dirname(file), href);
@@ -449,8 +458,17 @@ for (const file of HTML_FILES) {
 
 // ── Rule: switcher-parity ───────────────────────────────────────────
 
+/**
+ * Retired playgrounds are kept as noindex redirect stubs so their indexed URLs
+ * stay served. They carry no switcher and must not be linked from one.
+ */
 const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
-    ? readdirSync(join(ROOT, 'docs', 'playgrounds')).filter((f) => f.endsWith('.html') && f !== 'index.html')
+    ? readdirSync(join(ROOT, 'docs', 'playgrounds')).filter(
+          (f) =>
+              f.endsWith('.html') &&
+              f !== 'index.html' &&
+              !/name=["']robots["'][^>]*noindex/i.test(read(join(ROOT, 'docs', 'playgrounds', f))),
+      )
     : [];
 
 const SWITCHER = /<nav class="playground-switcher"[\s\S]*?<\/nav>/;

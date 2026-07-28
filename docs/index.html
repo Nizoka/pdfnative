@@ -135,6 +135,7 @@
       <li><a href="#onboarding">Onboarding</a></li>
       <li><a href="guides/">Guides</a></li>
       <li><a href="playgrounds/">Playgrounds</a></li>
+      <li><a href="responsibility.html">Responsibility</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
     </ul>
@@ -657,26 +658,18 @@ const pdf = renderToBytes(
         <p>PDFs are assembled in the calling process — Node, browser, Worker, Deno, Bun. No SaaS round-trip; no document leaves the user's machine unless the application chooses to send it.</p>
       </div>
       <div class="feature-card">
-        <h3>Zero runtime dependencies</h3>
-        <p>An empty <code>dependencies</code> field in <code>package.json</code>. No transitive npm graph to install, audit, or patch.</p>
+        <h3>Zero runtime dependencies in the engine</h3>
+        <p>An empty <code>dependencies</code> field in <code>package.json</code>. No transitive npm graph to install, audit, or patch. The React and MCP packages each add a small number of their own — stated plainly rather than rounded down.</p>
       </div>
       <div class="feature-card">
         <h3>No telemetry, no network calls</h3>
         <p>The library never opens a socket. Verifiable by reading the source — there is no analytics endpoint, no auto-update channel, no remote font fetch.</p>
       </div>
-      <div class="feature-card">
-        <h3>Tree-shakeable ESM</h3>
-        <p><code>"sideEffects": false</code> with strict module boundaries. Only the features your build actually imports end up in production bundles.</p>
-      </div>
-      <div class="feature-card">
-        <h3>Streaming output</h3>
-        <p><code>buildDocumentPDFStreamTrue()</code> yields <code>Uint8Array</code> chunks via <code>AsyncGenerator</code> and frees each part as it emits, so the fully-joined PDF binary never exists in memory. See the <a href="guides/streaming.html">streaming guide</a> for the exact memory profile.</p>
-      </div>
-      <div class="feature-card">
-        <h3>External tooling stays external</h3>
-        <p>The optional veraPDF reference validator runs as a CI tool, downloaded once per workflow run. It is never bundled with the npm package or required by consumers.</p>
-      </div>
     </div>
+    <p style="text-align:center;margin-top:2rem;">
+      <a class="btn btn-secondary" href="responsibility.html">Read the full responsibility statement →</a>
+    </p>
+    <p class="bench-note">Every claim there links to the file that proves it — including an explicit list of what we deliberately do not measure or claim.</p>
   </div>
 </section>
 

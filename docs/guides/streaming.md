@@ -55,7 +55,7 @@ Two practical consequences:
   spent inside `assembleDocumentParts()`, which yields nothing, so a percentage
   bar covering that phase would be invented rather than measured. Report an
   indeterminate state until the first chunk arrives, then switch to a byte
-  counter. The scale playground does exactly this.
+  counter. The [scale playground](../playgrounds/scale.html) does exactly this.
 
 True page-by-page assembly — where peak memory is bounded by one page rather than
 the whole document — is not implemented yet.
