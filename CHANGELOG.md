@@ -7,7 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+Documentation-only release train alignment. No library behaviour changes; the
+only `src/` edits are JSDoc corrections.
+
+### Added
+
+- **`docs/assets/ecosystem.json`** — single source of truth for every version,
+  count and inventory quoted anywhere in the documentation, and
+  **`scripts/verify-docs.ts`** (`npm run verify:docs`) which fails the build when
+  a doc disagrees with it. Eleven rules: manifest shape, filesystem-derived
+  counts, stale tokens, canonical presence, phantom APIs, JSON-LD versions,
+  internal links, sitemap parity, CDN integrity and pinning, playground-switcher
+  parity, learn-path chain, and WCAG contrast. `--online` adds npm drift.
+- **`.github/workflows/docs.yml`** — runs the verifier on documentation changes.
+  `ci.yml` has `paths-ignore` for `docs/**` and `**.md`, so documentation
+  previously triggered no workflow at all.
+- **`docs/playgrounds/scale.html`** — generates 1 000 to 100 000 pages in the
+  browser via `buildDocumentPDFStreamTrue` in a Web Worker, with three output
+  sinks and a measured (not assumed) page count. Replaces `medical-800.html`,
+  which becomes a `noindex` redirect stub.
+- **`docs/learn/`** — an eight-step guided path for people who have never
+  generated a PDF programmatically. Static HTML with a crawlable, script-verified
+  prev/next chain.
+- **`docs/responsibility.html`** — sustainability, supply-chain and accessibility
+  position, every claim linked to the file that proves it, plus an explicit list
+  of what is deliberately not claimed.
+- **`bench/RESULTS.md`** — dated benchmark run with hardware, sample counts and
+  relative error, plus the 1k–100k streaming measurements.
+- Structured data for the index pages: `CollectionPage` + `ItemList` covering all
+  26 guides and all 9 playgrounds, and `WebSite` + `Organization` on the homepage.
+
+### Fixed
+
+- **Streaming APIs that were never exported** — `streamDocumentPdf`, `streamPdf`
+  and `buildPdfStream` appeared in the FAQ, the CLI guide, the homepage, `ROADMAP`
+  and `.github/copilot-instructions.md`. Readers copying the FAQ snippet got a
+  `TypeError`.
+- **`buildDocumentPDFStreamTrue` was documented as constant-memory.** It calls
+  `assembleDocumentParts()` to completion before the first yield, so peak memory
+  scales with output size. What it actually avoids is the joined binary, which
+  lifts V8's ~512 MB single-string ceiling. JSDoc and guide corrected.
+- **Package versions and inventories** — the site described cli 1.2.0 (17
+  commands shipped, 11 advertised), mcp 1.4.0 (24 tools shipped, 19 and 17
+  advertised in different places on the same URL) and react 1.0.0, including in
+  the JSON-LD that crawlers consume and which never self-heals.
+- **`docs/guides/onboarding.md`** — all four snippets were wrong: `title` nested
+  under `metadata` (emitting `/Title ()`), a spurious `await` on a synchronous
+  function, the wrong binary name, positional arguments where flags are required,
+  and a `--pdf-a` flag that has never existed.
+- **`README.md`** claimed 1726+ tests in 48 files twelve lines after stating the
+  real 2379+/104; used an invalid `printing` permission key; and stated the
+  encryption surface is private after v1.6.0 made it public.
+- **The FAQ and troubleshooting guides both said the parser cannot decrypt** — the
+  v1.6.0 headline feature.
+- **`versions.js`** read the pdfnative pin only from `dependencies`, so the
+  annotation silently never rendered for `pdfnative-react`, which declares it as a
+  peer.
+- **`--c-text-muted` failed WCAG AA** at 2.56:1 on white (3.75:1 dark), applied to
+  footer links. Now 7.58:1 and 6.03:1. Added the missing
+  `prefers-reduced-motion` block.
+- **190 CDN assets loaded without integrity hashes** on a site claiming freedom
+  from supply-chain risk — including `marked` and `DOMPurify`, the path that
+  renders every guide. 26 unpinned `pdfnative` CDN imports pinned to `@1.6.0`.
+- **`agentic-workflows.svg` told agents to rasterise charts to PNG** and route
+  them through `embed_image`; `add_chart` has drawn native vector paths since
+  mcp 1.5.0.
+- **`docs/guides/quickstart.md`** taught table rows as `{ cells: [...] }`, which
+  TypeScript rejects (`TS2739`).
+- Broken link `docs/guides/tables.md → ../api.md`; `streamToFile` destructured a
+  non-existent `chunks` field; `batch` documented with `--input`/`--output`
+  instead of `--input-dir`/`--output-dir`.
+
+### Changed
+
+- Compliance and security wording brought down to what the code supports:
+  "ISO 32000-1 compliant" → "conforms to"; "full veraPDF conformance" →
+  "validated against the veraPDF reference validator in CI"; "constant-time
+  crypto" → attributed to `node:crypto`, with the pure-JS path marked as not
+  constant-time; "zero dependencies" scoped to the engine; "zero allocations"
+  → "no intermediate object graph".
+- Homepage benchmark rows relabelled from "(Unicode)" to "(embedded font)" — the
+  fixture attaches a synthetic font to Latin text and exercises no non-Latin
+  codepoint. Shaped-script throughput is stated as not benchmarked.
+- The comparison table is dated, names the exact competitor versions, states the
+  dependency-count method, and links its source data.
+- Hero CTA points at `/learn/` instead of an off-site 85 KB README. The homepage
+  now links 21 of 26 guides and `llms.txt` all 26.
 
 ## [1.6.0] – 2026-07-19
 
