@@ -1,6 +1,6 @@
 # pdfnative
 
-> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) compliant. Works in Node.js, browsers, Deno, Bun, and Web Workers. 22 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. Current version: 1.6.0.
+> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 22 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. Current version: 1.6.0.
 
 ## Docs
 
@@ -12,6 +12,7 @@
 - [Release notes v1.4.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.4.0.md): document outline/bookmarks (`/Outlines`, `outline: 'auto'`), page labels (`/PageLabels`), page-tree manipulation (`mergePdfs`/`splitPdf`/`extractPages`, secure-by-default 256 MiB `maxOutputSize` cap), `streamToFile()`, COLRv1 sweep gradients + `PaintComposite` blend modes, pluggable signature crypto provider (`setCryptoProvider`), font-data validator (`validateFontData`), viewer preferences (`/ViewerPreferences`), nested lists, table cell borders + vertical alignment.
 - [Release notes v1.3.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.3.0.md): COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, pixel-diff visual regression, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, opt-in NFC normalization, CSPRNG-only crypto, configurable block limit, validatePdfUA, colour-emoji selector/BBox fixes, #48 CP-1252 fix.
 - [Release notes v1.2.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.2.0.md): `addSignaturePlaceholder()`, ASN.1 grandchild fix (#46), page-by-page streaming, UAX #9 embeddings, USE-lite classifier.
+- [Learn pdfnative](https://pdfnative.dev/learn/): Eight-step guided path from installing the package to generating 100,000 pages. Each step introduces one concept. Start here if you have never generated a PDF programmatically.
 - [Quick Start](https://pdfnative.dev/guides/quickstart.html): Install + first PDF in Node or browser.
 - [Architecture](https://pdfnative.dev/guides/architecture.html): Two builders, module dependency flow, design decisions.
 - [PDF/A conformance](https://pdfnative.dev/guides/pdfa.html): How `tagged: true` produces veraPDF-valid PDF/A-1b/2b/2u/3b.

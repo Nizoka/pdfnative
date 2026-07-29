@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tables that break across pages | Learn pdfnative</title>
+  <meta name="description" content="Headers repeat, rows wrap, and you do not manage any of it. Step 3 of 8 in the pdfnative learning path.">
+  <link rel="canonical" href="https://pdfnative.dev/learn/03-tables.html">
+  <link rel="prev" href="02-blocks.html">
+  <link rel="next" href="04-page-furniture.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/learn/03-tables.html">
+  <meta property="og:title" content="Tables that break across pages | Learn pdfnative">
+  <meta property="og:description" content="Headers repeat, rows wrap, and you do not manage any of it. Step 3 of 8 in the pdfnative learning path.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tables that break across pages | Learn pdfnative">
+  <meta name="twitter:description" content="Headers repeat, rows wrap, and you do not manage any of it. Step 3 of 8 in the pdfnative learning path.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <style>
+    .ln-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 36px 0 0; padding-top: 20px; border-top: 1px solid var(--c-border); font-size: 14px; }
+    .ln-pager a { font-weight: 600; }
+    .ln-step { color: var(--c-text-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .ln-prereq { font-size: 13px; color: var(--c-text-dim); margin: -8px 0 20px; }
+    .ln-check { margin: 28px 0 0; padding: 12px 16px; background: var(--c-surface); border-left: 3px solid var(--c-success); border-radius: 0 8px 8px 0; font-size: 14px; }
+    .ln-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 10px; }
+    .ln-list li { border: 1px solid var(--c-border); border-radius: 8px; padding: 14px 16px; }
+    .ln-list a { font-weight: 700; font-size: 15px; }
+    .ln-list p { margin: 4px 0 0; font-size: 13px; color: var(--c-text-dim); }
+    .ln-num { display: inline-block; min-width: 22px; color: var(--c-text-dim); font-variant-numeric: tabular-nums; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        "@id": "https://pdfnative.dev/learn/03-tables.html",
+        "name": "Tables that break across pages",
+        "description": "Headers repeat, rows wrap, and you do not manage any of it.",
+        "url": "https://pdfnative.dev/learn/03-tables.html",
+        "learningResourceType": "Tutorial",
+        "educationalLevel": "Beginner",
+        "position": 3,
+        "isPartOf": {
+          "@id": "https://pdfnative.dev/learn/#course"
+        },
+        "isAccessibleForFree": true,
+        "inLanguage": "en",
+        "author": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://pdfnative.dev"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Learn",
+            "item": "https://pdfnative.dev/learn/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Tables"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="./" aria-current="page">Learn</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Learn</a> &nbsp;›&nbsp; Tables</p>
+  <article class="guide-content">
+    <h1>3. Tables that break across pages</h1>
+    <p class="ln-prereq">Before this: You know that a document is an array of blocks.</p>
+
+    <pre><code class="language-javascript">{
+  type: 'table',
+  headers: ['Item', 'Qty', 'Price'],
+  rows: [
+    { cells: ['Widget', '2', '9.00'],  type: '', pointed: false },
+    { cells: ['Gadget', '1', '24.50'], type: '', pointed: false },
+  ],
+}</code></pre>
+
+    <p>Give it two hundred rows and it spans as many pages as it needs, <strong>repeating the header row on each one</strong>. Long cell text wraps rather than overflowing.</p>
+
+    <h2>About <code>type</code> and <code>pointed</code></h2>
+    <p>Both are required by the type definition, and both can be empty or <code>false</code> when you do not need them. They exist for row styling: <code>type: 'credit'</code> and <code>type: 'debit'</code> tint the row, and <code>pointed: true</code> highlights it. If you are writing plain JavaScript you can omit them and it will still render — but TypeScript will reject the object, so the examples here always include them.</p>
+
+    <h2>When you need more</h2>
+    <p>Zebra striping, per-cell borders, vertical alignment, captions, auto-fit columns and minimum row heights all exist. They are options on the same block, and they are documented in the <a href="../guides/tables.html">smart tables guide</a>. You do not need any of them to ship something useful.</p>
+
+    <div class="ln-check">
+      <strong>You should now be able to</strong> put tabular data in a document and let it paginate itself.
+    </div>
+
+    <nav class="ln-pager" aria-label="Tutorial navigation">
+      <a rel="prev" href="02-blocks.html">← 2. The block model</a>
+      <span class="ln-step">Step 3 of 8</span>
+      <a rel="next" href="04-page-furniture.html">4. Headers & footers →</a>
+    </nav>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="./">Learn</a></li>
+      <li><a href="../guides/">Guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../app.js" defer></script>
+<script src="learn.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous"></script>
+</body>
+</html>

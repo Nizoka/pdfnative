@@ -532,8 +532,16 @@ if (manifest.learnPath.length > 0) {
         if (expectedPrev && prevHref !== expectedPrev) {
             fail(`docs/learn/${name}`, 1, 'learn-chain', `rel="prev" is "${prevHref ?? 'missing'}", expected "${expectedPrev}"`);
         }
-        if (!expectedPrev && prevHref) {
-            fail(`docs/learn/${name}`, 1, 'learn-chain', 'first step must not declare rel="prev"');
+        // The first step may point back at the path overview, which is the entry
+        // page rather than a step and so is not part of learnPath. Any other
+        // target would mean the chain does not start where the manifest says.
+        if (!expectedPrev && prevHref && prevHref !== 'index.html') {
+            fail(
+                `docs/learn/${name}`,
+                1,
+                'learn-chain',
+                `first step may only link back to "index.html", not "${prevHref}"`,
+            );
         }
         if (expectedNext && nextHref !== expectedNext) {
             fail(`docs/learn/${name}`, 1, 'learn-chain', `rel="next" is "${nextHref ?? 'missing'}", expected "${expectedNext}"`);

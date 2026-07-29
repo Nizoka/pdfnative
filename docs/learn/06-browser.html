@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The same code in a browser | Learn pdfnative</title>
+  <meta name="description" content="One import change. No server involved. Step 6 of 8 in the pdfnative learning path.">
+  <link rel="canonical" href="https://pdfnative.dev/learn/06-browser.html">
+  <link rel="prev" href="05-fonts-and-scripts.html">
+  <link rel="next" href="07-going-big.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/learn/06-browser.html">
+  <meta property="og:title" content="The same code in a browser | Learn pdfnative">
+  <meta property="og:description" content="One import change. No server involved. Step 6 of 8 in the pdfnative learning path.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The same code in a browser | Learn pdfnative">
+  <meta name="twitter:description" content="One import change. No server involved. Step 6 of 8 in the pdfnative learning path.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <style>
+    .ln-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 36px 0 0; padding-top: 20px; border-top: 1px solid var(--c-border); font-size: 14px; }
+    .ln-pager a { font-weight: 600; }
+    .ln-step { color: var(--c-text-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .ln-prereq { font-size: 13px; color: var(--c-text-dim); margin: -8px 0 20px; }
+    .ln-check { margin: 28px 0 0; padding: 12px 16px; background: var(--c-surface); border-left: 3px solid var(--c-success); border-radius: 0 8px 8px 0; font-size: 14px; }
+    .ln-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 10px; }
+    .ln-list li { border: 1px solid var(--c-border); border-radius: 8px; padding: 14px 16px; }
+    .ln-list a { font-weight: 700; font-size: 15px; }
+    .ln-list p { margin: 4px 0 0; font-size: 13px; color: var(--c-text-dim); }
+    .ln-num { display: inline-block; min-width: 22px; color: var(--c-text-dim); font-variant-numeric: tabular-nums; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        "@id": "https://pdfnative.dev/learn/06-browser.html",
+        "name": "The same code in a browser",
+        "description": "One import change. No server involved.",
+        "url": "https://pdfnative.dev/learn/06-browser.html",
+        "learningResourceType": "Tutorial",
+        "educationalLevel": "Beginner",
+        "position": 6,
+        "isPartOf": {
+          "@id": "https://pdfnative.dev/learn/#course"
+        },
+        "isAccessibleForFree": true,
+        "inLanguage": "en",
+        "author": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://pdfnative.dev"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Learn",
+            "item": "https://pdfnative.dev/learn/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "In the browser"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="./" aria-current="page">Learn</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Learn</a> &nbsp;›&nbsp; In the browser</p>
+  <article class="guide-content">
+    <h1>6. The same code in a browser</h1>
+    <p class="ln-prereq">Before this: Your document builds in Node.</p>
+
+    <p>The content object you have been building is runtime-agnostic. Only two things differ in a browser: where the module comes from, and what you do with the bytes.</p>
+
+    <pre><code class="language-html">&lt;script type="module"&gt;
+  import { buildDocumentPDFBytes, downloadBlob } from 'https://esm.sh/pdfnative@1.6.0';
+
+  document.querySelector('#make').addEventListener('click', () =&gt; {
+    const bytes = buildDocumentPDFBytes({
+      title: 'Made in your browser',
+      blocks: [{ type: 'paragraph', text: 'Nothing was uploaded.' }],
+    });
+    downloadBlob(bytes, 'hello.pdf');
+  });
+&lt;/script&gt;</code></pre>
+
+    <p>Node used <code>writeFileSync</code>; the browser uses <code>downloadBlob</code>. That is the whole difference. Pick one — copying the Node snippet into a browser gives you an opaque error about <code>node:fs</code>.</p>
+
+    <h2>Nothing leaves the page</h2>
+    <p>Generation happens in the tab. There is no API call, no key, and no upload — which is why every playground on this site works with no account. If you are handling documents that must not travel, this is the property that matters.</p>
+
+    <p>For heavy documents, move generation to a Web Worker so the interface stays responsive. The <a href="../playgrounds/scale.html">scale playground</a> does exactly that.</p>
+
+    <div class="ln-check">
+      <strong>You should now be able to</strong> generate and download a PDF entirely client-side.
+    </div>
+
+    <nav class="ln-pager" aria-label="Tutorial navigation">
+      <a rel="prev" href="05-fonts-and-scripts.html">← 5. Other languages</a>
+      <span class="ln-step">Step 6 of 8</span>
+      <a rel="next" href="07-going-big.html">7. Large documents →</a>
+    </nav>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="./">Learn</a></li>
+      <li><a href="../guides/">Guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../app.js" defer></script>
+<script src="learn.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous"></script>
+</body>
+</html>

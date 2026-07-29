@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>When documents get large | Learn pdfnative</title>
+  <meta name="description" content="What streaming buys you, and its two constraints. Step 7 of 8 in the pdfnative learning path.">
+  <link rel="canonical" href="https://pdfnative.dev/learn/07-going-big.html">
+  <link rel="prev" href="06-browser.html">
+  <link rel="next" href="08-next-steps.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:url" content="https://pdfnative.dev/learn/07-going-big.html">
+  <meta property="og:title" content="When documents get large | Learn pdfnative">
+  <meta property="og:description" content="What streaming buys you, and its two constraints. Step 7 of 8 in the pdfnative learning path.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="When documents get large | Learn pdfnative">
+  <meta name="twitter:description" content="What streaming buys you, and its two constraints. Step 7 of 8 in the pdfnative learning path.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <style>
+    .ln-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 36px 0 0; padding-top: 20px; border-top: 1px solid var(--c-border); font-size: 14px; }
+    .ln-pager a { font-weight: 600; }
+    .ln-step { color: var(--c-text-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .ln-prereq { font-size: 13px; color: var(--c-text-dim); margin: -8px 0 20px; }
+    .ln-check { margin: 28px 0 0; padding: 12px 16px; background: var(--c-surface); border-left: 3px solid var(--c-success); border-radius: 0 8px 8px 0; font-size: 14px; }
+    .ln-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 10px; }
+    .ln-list li { border: 1px solid var(--c-border); border-radius: 8px; padding: 14px 16px; }
+    .ln-list a { font-weight: 700; font-size: 15px; }
+    .ln-list p { margin: 4px 0 0; font-size: 13px; color: var(--c-text-dim); }
+    .ln-num { display: inline-block; min-width: 22px; color: var(--c-text-dim); font-variant-numeric: tabular-nums; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LearningResource",
+        "@id": "https://pdfnative.dev/learn/07-going-big.html",
+        "name": "When documents get large",
+        "description": "What streaming buys you, and its two constraints.",
+        "url": "https://pdfnative.dev/learn/07-going-big.html",
+        "learningResourceType": "Tutorial",
+        "educationalLevel": "Beginner",
+        "position": 7,
+        "isPartOf": {
+          "@id": "https://pdfnative.dev/learn/#course"
+        },
+        "isAccessibleForFree": true,
+        "inLanguage": "en",
+        "author": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://pdfnative.dev"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Learn",
+            "item": "https://pdfnative.dev/learn/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Large documents"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="./" aria-current="page">Learn</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Learn</a> &nbsp;›&nbsp; Large documents</p>
+  <article class="guide-content">
+    <h1>7. When documents get large</h1>
+    <p class="ln-prereq">Before this: You can build documents in Node and the browser.</p>
+
+    <p><code>buildDocumentPDFBytes</code> returns the finished document as one array, which is right for almost everything. Past a few thousand pages you want the bytes to leave as they are produced instead.</p>
+
+    <pre><code class="language-javascript">import { buildDocumentPDFStreamTrue, streamToFile } from 'pdfnative';
+
+await streamToFile(
+  buildDocumentPDFStreamTrue({ title: 'Big', blocks }),
+  'big.pdf',
+);</code></pre>
+
+    <p>There are two streaming variants and the difference matters. <code>buildDocumentPDFStream</code> assembles the whole binary, then chunks it — simple, but it joins everything into one JavaScript string, and V8 caps a single string at roughly 512&nbsp;MB. <code>buildDocumentPDFStreamTrue</code> never joins, so it has no such ceiling. Prefer the second at scale.</p>
+
+    <h2>Two things streaming cannot do</h2>
+    <p>Both need a second pass over the finished document, which is what streaming exists to avoid. Both throw a clear error rather than misbehaving:</p>
+    <ul>
+      <li><strong><code>toc</code> blocks</strong> — a table of contents needs page numbers that are not known yet.</li>
+      <li><strong><code>{pages}</code></strong> in a header or footer template — same reason. Use <code>{page}</code> alone.</li>
+    </ul>
+
+    <h2>What it does not buy you</h2>
+    <p>Streaming is often described as constant-memory. That is not quite true here, and the difference is worth knowing before you rely on it: every PDF object is built before the first chunk is emitted, so peak memory still scales with output size. Budget for roughly twice your expected file size. The <a href="../guides/streaming.html#what-this-does-and-does-not-buy-you">streaming guide</a> states the profile precisely.</p>
+
+    <p>The <a href="../playgrounds/scale.html">scale playground</a> generates 100,000 pages in a browser tab and shows the measured throughput.</p>
+
+    <div class="ln-check">
+      <strong>You should now be able to</strong> choose between buffered and streamed output, and know which constraints come with streaming.
+    </div>
+
+    <nav class="ln-pager" aria-label="Tutorial navigation">
+      <a rel="prev" href="06-browser.html">← 6. In the browser</a>
+      <span class="ln-step">Step 7 of 8</span>
+      <a rel="next" href="08-next-steps.html">8. Where next →</a>
+    </nav>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="./">Learn</a></li>
+      <li><a href="../guides/">Guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../app.js" defer></script>
+<script src="learn.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous"></script>
+</body>
+</html>

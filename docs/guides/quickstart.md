@@ -99,8 +99,8 @@ const pdf = buildDocumentPDFBytes({
     { type: 'pageBreak' },
     { type: 'heading',   text: 'Details', level: 1 },
     { type: 'table', headers: ['Q', 'Revenue'], rows: [
-      { cells: ['Q1', '$1.2M'] },
-      { cells: ['Q2', '$1.4M'] },
+      { cells: ['Q1', '$1.2M'], type: '', pointed: false },
+      { cells: ['Q2', '$1.4M'], type: '', pointed: false },
     ] },
   ],
   footerText: 'Confidential',

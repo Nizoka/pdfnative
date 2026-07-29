@@ -102,7 +102,7 @@
     "samplePdfs": 227,
     "guides": 26,
     "playgrounds": 9,
-    "learnSteps": 0
+    "learnSteps": 8
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
@@ -179,5 +179,14 @@
     "streamPdf": "buildPDFStream / buildPDFStreamTrue",
     "buildPdfStream": "buildPDFStream"
   },
-  "learnPath": []
+  "learnPath": [
+    "01-install.html",
+    "02-blocks.html",
+    "03-tables.html",
+    "04-page-furniture.html",
+    "05-fonts-and-scripts.html",
+    "06-browser.html",
+    "07-going-big.html",
+    "08-next-steps.html"
+  ]
 }
