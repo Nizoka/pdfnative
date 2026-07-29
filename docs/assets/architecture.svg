@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="arch-title arch-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
   <title id="arch-title">pdfnative — module architecture</title>
-  <desc id="arch-desc">Layered dependency diagram for pdfnative 1.6.0. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (command-line interface: render, sign, inspect, verify, merge, split, extract, annotate, govern, batch), pdfnative-mcp (Model Context Protocol server exposing 24 tools to Claude, Cursor, Zed and any stdio MCP client), and pdfnative-react (on-device JSX-to-PDF renderer). Bottom band: the zero-dependency library. Strict unidirectional flow — types feeds core; fonts imports into core; shaping imports into fonts; worker imports into shaping. Core groups pdf-builder, pdf-document, pdf-encrypt, pdf-tags plus outline, page labels, annotations and layout inspection. fonts covers encoding, subsetting, CMap and the font-data tools sub-path. Shaping covers GSUB, GPOS, BiDi and 22 Unicode scripts. crypto is a standalone module (AES, RSA, ECDSA, SHA, CMS and a pluggable native signing provider). parser is standalone, imports the compression layer, and provides page-tree manipulation: read, decrypt, extract text, modify, annotate, merge, split and re-encrypt. A header badge notes the repository's AI-agent governance with a human-in-the-loop (HITL) contribution gate. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress.</desc>
+  <desc id="arch-desc">Layered dependency diagram for pdfnative 1.6.0. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (command-line interface, 17 commands: render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern), pdfnative-mcp (Model Context Protocol server exposing 24 tools to Claude, Cursor, Zed and any stdio MCP client), and pdfnative-react (on-device JSX-to-PDF renderer). Bottom band: the zero-dependency library. Strict unidirectional flow — types feeds core; fonts imports into core; shaping imports into fonts; worker imports into shaping. Core groups pdf-builder, pdf-document, pdf-encrypt, pdf-tags plus outline, page labels, annotations and layout inspection. fonts covers encoding, subsetting, CMap and the font-data tools sub-path. Shaping covers GSUB, GPOS, BiDi and 22 Unicode scripts. crypto is a standalone module (AES, RSA, ECDSA, SHA, CMS and a pluggable native signing provider). parser is standalone, imports the compression layer, and provides page-tree manipulation: read, decrypt, extract text, modify, annotate, merge, split and re-encrypt. A header badge notes the repository's AI-agent governance with a human-in-the-loop (HITL) contribution gate. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress.</desc>
 
   <defs>
     <!-- Directional arrowheads -->
@@ -87,7 +87,7 @@
   <path d="M87 143 l7 6 l-7 6 M96 155 h8" fill="none" stroke="#0E7490" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="124" y="146" font-size="15.5" font-weight="700" fill="#155E75">pdfnative-cli</text>
   <text x="124" y="164" font-size="11" font-weight="600" fill="#0E7490">Command-line interface</text>
-  <text x="124" y="181" font-size="10" fill="#0891B2">render · sign · merge · annotate · govern</text>
+  <text x="124" y="181" font-size="10" fill="#0891B2">render · fill · sign · encrypt · extract-text</text>
 
   <!-- pdfnative-mcp -->
   <g filter="url(#soft-sm)">
@@ -118,7 +118,7 @@
     <ellipse cx="675" cy="149" rx="12" ry="4.6" transform="rotate(120 675 149)"/>
   </g>
   <text x="702" y="146" font-size="15.5" font-weight="700" fill="#0E7490">pdfnative-react</text>
-  <text x="702" y="164" font-size="11" font-weight="600" fill="#0891B2">React 19 renderer · JSX · v1.0</text>
+  <text x="702" y="164" font-size="11" font-weight="600" fill="#0891B2">React 19 renderer · JSX · v1.1</text>
   <text x="702" y="181" font-size="10" fill="#06B6D4">render · stream · hooks · DocSpec</text>
 
   <!-- ════════════ LIBRARY BAND ════════════ -->
