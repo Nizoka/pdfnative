@@ -144,8 +144,8 @@
       Browsers block ES-module Workers on <code>file:</code> origins, which are treated as unique
       security origins and cannot load cross-origin worker scripts
       (see <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=40487" target="_blank" rel="noopener">Chromium issue #40487</a>).
-      Generation falls back to the main thread and is capped at 1,000 pages so the tab stays responsive.<br>
-      <strong>To lift the cap:</strong>
+      There is no main-thread fallback: generation needs the worker, so it is disabled here.<br>
+      <strong>To run it:</strong>
       <pre style="background:rgba(0,0,0,.06);border-radius:4px;padding:8px 10px;margin:8px 0 4px;font-size:13px;">npm run docs:serve
 # then open http://localhost:5000/playgrounds/scale.html</pre>
       The page is fully functional on <a href="https://pdfnative.dev/playgrounds/scale.html" target="_blank" rel="noopener">pdfnative.dev</a>.
@@ -183,7 +183,7 @@
 
       <label class="sc-confirm" id="confirmBox">
         <input type="checkbox" id="confirmBig">
-        <span>I understand that 100,000 pages allocates roughly 160&nbsp;MB inside the worker and may be slow on a low-memory device.</span>
+        <span>I understand that 100,000 pages allocates several hundred megabytes inside the worker — roughly 160&nbsp;MB of assembled PDF parts plus the 300,000 block objects that produce them — and may be slow or fail on a low-memory device.</span>
       </label>
 
       <div class="sc-row">
@@ -254,16 +254,17 @@ function leanBlocks(pages) {
 const blocks = leanBlocks(100_000);
 let bytes = 0;
 
-// `{pages}` is unavailable when streaming — the total is unknown up front.
+// Supply the footer template explicitly: relying on `footerText` also pulls in
+// the default template, which stamps `{page}/{pages}` on the right.
 for await (const chunk of buildDocumentPDFStreamTrue(
-  { title: 'Scale', blocks, footerText: 'page {page}' },
+  { title: 'Scale', blocks, layout: { footerTemplate: { center: 'page {page}' } } },
   { maxBlocks: blocks.length + 1024 },   // the default rail is 100,000
   { chunkSize: 262_144 },
 )) {
   bytes += chunk.length;                 // …or write it straight to disk
 }
 </code></pre>
-    <p class="sc-note">Two constraints are validated at the boundary and throw: streaming forbids <code>toc</code> blocks, and forbids the <code>{pages}</code> placeholder in header and footer templates. Both need a second pass over the whole document, which is exactly what streaming avoids.</p>
+    <p class="sc-note">Two constraints are validated at the boundary and throw: streaming rejects <code>toc</code> blocks, and rejects the <code>{pages}</code> placeholder in a header or footer template <em>you supply</em>. Worth being precise about the second one: <code>buildDocumentPDFStreamTrue</code> finishes assembling before it yields, so the total page count is in fact known — the rejection is a conservative rule that will matter once page-at-a-time assembly lands. Note also that it only inspects a template you pass; the built-in default does use <code>{pages}</code> and resolves it.</p>
 
     <p><a href="https://github.com/Nizoka/pdfnative/blob/main/docs/playgrounds/scale.html" target="_blank" rel="noopener">View this page&rsquo;s source on GitHub →</a></p>
   </article>
@@ -303,9 +304,10 @@ if (IS_FILE_ORIGIN) $('localWarning').style.display = 'block';
 if (!HAS_FS_ACCESS) $('sinkDisk').disabled = true;
 
 // ── Worker source ───────────────────────────────────────────────────
-// One generator, stringified into a Blob-URL ES module worker. The
-// main-thread fallback imports the same text, so the two paths can never
-// drift apart.
+// One generator, stringified into a Blob-URL ES module worker. There is
+// deliberately no main-thread variant: a second copy of this code would drift
+// from the first, and running it on the main thread would freeze the tab for
+// the whole assembly phase, which is exactly what this page exists to avoid.
 const WORKER_SRC = `
 const CDN_URLS = [
   'https://esm.sh/pdfnative@1.6.0',
@@ -356,11 +358,14 @@ function makePageCounter() {
   let carry = '';
   let count = 0;
   const RE = /\\/Type\\s*\\/Page(?![s\\w])/g;
+  // A per-byte String.fromCharCode loop ran ~80 million times for a 100k-page
+  // run and dominated the throughput this page reports. TextDecoder does the
+  // same work in native code.
+  const dec = new TextDecoder('latin1');
   return {
     push(chunk) {
       const carryLen = carry.length;
-      let s = carry;
-      for (let i = 0; i < chunk.length; i++) s += String.fromCharCode(chunk[i]);
+      const s = carry + dec.decode(chunk);
       RE.lastIndex = 0;
       let m;
       while ((m = RE.exec(s)) !== null) {
@@ -385,7 +390,14 @@ self.onmessage = async (e) => {
     self.postMessage({ type: 'assemble-start' });
 
     const stream = mod.buildDocumentPDFStreamTrue(
-      { title: 'pdfnative scale test — ' + pages + ' pages', blocks, footerText: 'page {page}' },
+      {
+        title: 'pdfnative scale test — ' + pages + ' pages',
+        blocks,
+        // An explicit template. Relying on footerText would also trigger the
+        // default one, which stamps {page}/{pages} on the right — printing the
+        // page number twice.
+        layout: { footerTemplate: { center: 'page {page}' } },
+      },
       { maxBlocks: blocks.length + 1024 },
       { chunkSize },
     );
@@ -470,9 +482,9 @@ function refreshConstraints() {
   if (IS_FILE_ORIGIN) reasons.push(`Running from file:// — the Web Worker is unavailable, so generation is capped at ${fmt.format(MAIN_THREAD_CAP)} pages.`);
   $('sinkReason').textContent = reasons.join(' ');
 
-  if (IS_FILE_ORIGIN && pages > MAIN_THREAD_CAP) {
+  if (IS_FILE_ORIGIN) {
     $('generate').disabled = true;
-    setStatus(`Select ${fmt.format(MAIN_THREAD_CAP)} pages or fewer, or serve the site over HTTP to enable the worker.`, 'err');
+    setStatus('Generation needs a Web Worker, which browsers block on file:// origins. Serve the site over HTTP — <code>npm run docs:serve</code> — and reload.', 'err');
   } else {
     $('generate').disabled = pages >= 100000 && !$('confirmBig').checked;
     $('status').className = 'sc-status';
@@ -518,7 +530,20 @@ $('generate').addEventListener('click', async () => {
   $('pagesQualifier').textContent = verifyPages ? '(measured)' : '(requested)';
 
   const blobUrl = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' }));
-  const worker = new Worker(blobUrl, { type: 'module' });
+
+  // A blob-URL module worker throws SecurityError synchronously on opaque
+  // origins. Without this the UI was left with Generate hidden, Cancel shown
+  // and no message.
+  let worker;
+  try {
+    worker = new Worker(blobUrl, { type: 'module' });
+  } catch (err) {
+    URL.revokeObjectURL(blobUrl);
+    $('generate').style.display = '';
+    $('cancel').style.display = 'none';
+    setStatus(`Could not start the Web Worker: ${err.message}. Serve the site over HTTP rather than opening the file directly.`, 'err');
+    return;
+  }
   activeWorker = worker;
 
   const memBefore = CAN_MEASURE_MEMORY ? await performance.measureUserAgentSpecificMemory() : null;
@@ -574,9 +599,11 @@ $('generate').addEventListener('click', async () => {
       if (d.blob) {
         const url = URL.createObjectURL(d.blob);
         setStatus(
-          `Generated ${fmt.format(d.pages)} pages. <a href="${url}" download="pdfnative-${pages}-pages.pdf">Download the PDF →</a>`,
+          `Generated ${fmt.format(d.pages)} pages. <a href="${url}" download="pdfnative-${pages}-pages.pdf" id="dl">Download the PDF →</a>`,
           'ok',
         );
+        // Up to ~80 MB is pinned until this is revoked.
+        $('dl')?.addEventListener('click', () => setTimeout(() => URL.revokeObjectURL(url), 30000));
       } else if (sink === 'disk') {
         setStatus(`Generated ${fmt.format(d.pages)} pages and wrote them straight to disk — the output never passed through this page's memory.`, 'ok');
       } else {
