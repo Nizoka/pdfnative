@@ -27,6 +27,9 @@
     .ln-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 36px 0 0; padding-top: 20px; border-top: 1px solid var(--c-border); font-size: 14px; }
     .ln-pager a { font-weight: 600; }
     .ln-step { color: var(--c-text-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .ln-hint { color: var(--c-text-dim); font-size: 13px; }
+    .ln-kbd { font-size: 12px; color: var(--c-text-dim); margin: 28px 0 -12px; }
+    .ln-kbd kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; padding: 1px 5px; border: 1px solid var(--c-border); border-radius: 4px; background: var(--c-surface); }
     .ln-prereq { font-size: 13px; color: var(--c-text-dim); margin: -8px 0 20px; }
     .ln-check { margin: 28px 0 0; padding: 12px 16px; background: var(--c-surface); border-left: 3px solid var(--c-success); border-radius: 0 8px 8px 0; font-size: 14px; }
     .ln-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 10px; }
@@ -135,12 +138,13 @@
     <h2>One thing to remember about <code>{pages}</code></h2>
     <p>It needs the total page count, which is only known once the whole document has been laid out. That is fine here, but it makes <code>{pages}</code> <strong>incompatible with streaming</strong> — see <a href="07-going-big.html">step 7</a>. If you might stream later, prefer <code>{page}</code> alone.</p>
 
-    <p>For a simple centred footer with no placeholders, there is a shortcut on the content object: <code>footerText: 'Confidential'</code>.</p>
+    <p>There is also a shortcut on the content object: <code>footerText: 'Confidential'</code>. It is not quite a plain string — it fills the <strong>left</strong> zone of the default footer, and that default also stamps <code>{page}/{pages}</code> on the <strong>right</strong>. Placeholders work there too. If you want full control of all three zones, use <code>footerTemplate</code> instead.</p>
 
     <div class="ln-check">
       <strong>You should now be able to</strong> put a running header and numbered footer on every page.
     </div>
 
+    <p class="ln-kbd">Tip: <kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> moves between steps.</p>
     <nav class="ln-pager" aria-label="Tutorial navigation">
       <a rel="prev" href="03-tables.html">← 3. Tables</a>
       <span class="ln-step">Step 4 of 8</span>

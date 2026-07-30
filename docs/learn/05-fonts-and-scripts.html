@@ -27,6 +27,9 @@
     .ln-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 36px 0 0; padding-top: 20px; border-top: 1px solid var(--c-border); font-size: 14px; }
     .ln-pager a { font-weight: 600; }
     .ln-step { color: var(--c-text-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .ln-hint { color: var(--c-text-dim); font-size: 13px; }
+    .ln-kbd { font-size: 12px; color: var(--c-text-dim); margin: 28px 0 -12px; }
+    .ln-kbd kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; padding: 1px 5px; border: 1px solid var(--c-border); border-radius: 4px; background: var(--c-surface); }
     .ln-prereq { font-size: 13px; color: var(--c-text-dim); margin: -8px 0 20px; }
     .ln-check { margin: 28px 0 0; padding: 12px 16px; background: var(--c-surface); border-left: 3px solid var(--c-success); border-radius: 0 8px 8px 0; font-size: 14px; }
     .ln-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 10px; }
@@ -117,20 +120,44 @@
 
     <p>Embedding a whole font would add megabytes, so pdfnative subsets it: it embeds only the glyphs you actually used. To do that it has to know which font to reach for, which is what registration is.</p>
 
-    <pre><code class="language-javascript">import { buildDocumentPDFBytes, registerFont } from 'pdfnative';
+    <pre><code class="language-javascript">import {
+  buildDocumentPDFBytes, registerFonts, loadFontData,
+} from 'pdfnative';
 
-registerFont('th', () => import('pdfnative/fonts/noto-thai-data.js'));
-registerFont('ar', () => import('pdfnative/fonts/noto-arabic-data.js'));
+// 1. Say which font handles which script. The loaders are functions, so
+//    nothing is downloaded yet.
+registerFonts({
+  latin: () =&gt; import('pdfnative/fonts/noto-sans-data.js'),
+  th:    () =&gt; import('pdfnative/fonts/noto-thai-data.js'),
+  ar:    () =&gt; import('pdfnative/fonts/noto-arabic-data.js'),
+});
 
+// 2. Actually load the ones you need. buildDocumentPDFBytes is synchronous,
+//    so it cannot await a loader for you — this step is not optional.
+const langs = ['latin', 'th', 'ar'];
+const loaded = await Promise.all(langs.map(loadFontData));
+const fontEntries = loaded.map((fontData, i) =&gt; ({
+  fontData, fontRef: `/F${i + 2}`, lang: langs[i],
+}));
+
+// 3. Hand them to the builder. You do not tag blocks with a language —
+//    pdfnative detects the script per character and picks the right font.
 const bytes = buildDocumentPDFBytes({
   title: 'Multilingual',
   blocks: [
-    { type: 'paragraph', text: 'สวัสดีครับ', lang: 'th' },
-    { type: 'paragraph', text: 'مرحبا بالعالم', lang: 'ar' },
+    { type: 'paragraph', text: 'English stays on the Latin font.' },
+    { type: 'paragraph', text: 'สวัสดีครับ' },
+    { type: 'paragraph', text: 'مرحبا بالعالم' },
   ],
+  fontEntries,
 });</code></pre>
 
-    <p>The loader is a function, so the font data is only fetched if a block actually uses that language. Registering ten scripts costs nothing until you use them.</p>
+    <p>Three things are worth pulling out of that.</p>
+    <ul>
+      <li><strong>Registration alone does nothing.</strong> <code>registerFonts</code> only records the loaders. Because <code>buildDocumentPDFBytes</code> is synchronous, it cannot await them, so you must <code>await loadFontData()</code> and pass the result as <code>fontEntries</code>. Skip that step and you get blank boxes with no error.</li>
+      <li><strong>Blocks have no <code>lang</code> field.</strong> Routing is per character, decided by the codepoint. Thai and Arabic in the same paragraph work without you saying anything.</li>
+      <li><strong>Include a Latin font whenever you include any other.</strong> Once <code>fontEntries</code> is present the builder stops using the viewer's built-in fonts, so without a Latin entry your English text is drawn with whichever font happens to cover it.</li>
+    </ul>
 
     <h2>Two words you will meet</h2>
     <ul>
@@ -144,6 +171,7 @@ const bytes = buildDocumentPDFBytes({
       <strong>You should now be able to</strong> produce a document in a non-Latin script, and explain why registration exists.
     </div>
 
+    <p class="ln-kbd">Tip: <kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> moves between steps.</p>
     <nav class="ln-pager" aria-label="Tutorial navigation">
       <a rel="prev" href="04-page-furniture.html">← 4. Headers & footers</a>
       <span class="ln-step">Step 5 of 8</span>
