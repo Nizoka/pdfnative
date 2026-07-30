@@ -287,7 +287,13 @@ const BUILDERS = {
   bar: (m) => m.buildDocumentPDFBytes({ title: 'Report', blocks: [{ type: 'chart', chartType: 'bar', title: 'Quarterly revenue vs cost', categories: ['Q1', 'Q2', 'Q3', 'Q4'], series: [{ label: 'Revenue', values: [120, 150, 170, 140] }, { label: 'Cost', values: [80, 90, 100, 95] }] }] }),
   line: (m) => m.buildDocumentPDFBytes({ title: 'Growth', blocks: [{ type: 'chart', chartType: 'line', title: 'Monthly active users', markers: true, categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], series: [{ label: 'Free', values: [10, 25, 22, 40, 55, 60] }, { label: 'Paid', values: [3, 8, 12, 18, 26, 34] }] }] }),
   pie: (m) => m.buildDocumentPDFBytes({ title: 'Traffic', blocks: [{ type: 'chart', chartType: 'pie', title: 'Traffic sources', categories: ['Organic', 'Referral', 'Direct', 'Social'], series: [{ label: 'Share', values: [55, 20, 15, 10] }] }] }),
-  donut: (m) => m.buildDocumentPDFBytes({ title: 'Budget', blocks: [{ type: 'chart', chartType: 'donut', title: 'Budget split', altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.', categories: ['Engineering', 'Sales', 'Operations'], series: [{ label: 'Budget', values: [50, 30, 20] }] }] }, { tagged: true }),
+  // PDF/A requires every font embedded, and tagged: true IS PDF/A-2b. Without
+  // this the file would declare a conformance it does not have.
+  donut: async (m) => {
+    m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-data.js') });
+    const fontData = await m.loadFontData('latin');
+    return m.buildDocumentPDFBytes({ fontEntries: [{ fontData, fontRef: 'latin', lang: 'latin' }], title: 'Budget', blocks: [{ type: 'chart', chartType: 'donut', title: 'Budget split', altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.', categories: ['Engineering', 'Sales', 'Operations'], series: [{ label: 'Budget', values: [50, 30, 20] }] }] }, { tagged: true });
+  },
   mixed: (m) => m.buildDocumentPDFBytes({ title: 'Dashboard', blocks: [
     { type: 'heading', text: 'Q4 dashboard', level: 1 },
     { type: 'chart', chartType: 'bar', title: 'Revenue vs cost', categories: ['Oct', 'Nov', 'Dec'], series: [{ label: 'Revenue', values: [50, 62, 70] }, { label: 'Cost', values: [30, 34, 38] }] },
@@ -303,7 +309,7 @@ async function generate() {
     setStatus('Loading pdfnative from CDN…', 'info');
     const mod = await loadPdfnative();
     setStatus('Generating chart PDF…', 'info');
-    const bytes = BUILDERS[id](mod);
+    const bytes = await BUILDERS[id](mod);
     mod.downloadBlob(bytes, `chart-${id}.pdf`);
     const ms = (performance.now() - t0).toFixed(0);
     $('timer').textContent = `${(bytes.length / 1024).toFixed(1)} KB · ${ms} ms`;

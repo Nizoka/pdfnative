@@ -16,6 +16,33 @@ const pdf2u = buildPDFBytes(params, { tagged: 'pdfa2u' });  // PDF/A-2u
 const pdf3b = buildPDFBytes(params, { tagged: 'pdfa3b' });  // PDF/A-3b + attachments
 ```
 
+> ### `tagged` alone is not enough: embed a font
+>
+> ISO 19005 requires **every** font in the file to be embedded. `tagged` writes the
+> XMP conformance declaration, the structure tree and the output intent — but it does
+> not embed a font for you. If your document uses only the viewer's built-in fonts
+> (which is what happens when you pass no `fontEntries`), pdfnative writes a file that
+> *claims* PDF/A while referencing non-embedded Helvetica, and veraPDF will reject it.
+>
+> Pass at least a Latin font whenever you set `tagged`:
+>
+> ```ts
+> import { buildDocumentPDFBytes, registerFonts, loadFontData } from 'pdfnative';
+>
+> registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+> const fontData = await loadFontData('latin');
+>
+> const pdf = buildDocumentPDFBytes(
+>   { title: 'Archival', blocks, fontEntries: [{ fontData, fontRef: 'latin', lang: 'latin' }] },
+>   { tagged: 'pdfa2b' },
+> );
+> ```
+>
+> The sample generators in `scripts/generators/` all do this, which is why the veraPDF
+> CI job passes — the trap only bites documents assembled by hand. `pdfnative-react`
+> ships a lint rule for exactly this case (`L_TAGGED_NO_FONTS`); run `lintDocument()`
+> if you author through that package.
+
 Every output written with `tagged` set ships:
 
 - A full structure tree (`/Document → /Table → /TR → /TH|/TD`, `/H1–H3`,

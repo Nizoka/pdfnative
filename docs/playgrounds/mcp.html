@@ -408,14 +408,22 @@
         check: ['pdfa', 'signed'],
       },
       noteHtml: 'In a real MCP call the server reads the file from disk. The button below generates a sample PDF/A-2b document so you can see what an inspect-able input looks like; the structured report itself is produced by <code>pdfnative-cli inspect --format json</code> or by the <code>inspect_pdf</code> MCP tool when you run it locally.',
-      build: (p, m) => m.buildDocumentPDFBytes({
-        title: 'Inspect target sample',
-        layout: { tagged: 'pdfa2b' },
-        blocks: [
-          { type: 'heading', text: 'Sample PDF/A-2b document', level: 1 },
-          { type: 'paragraph', text: 'This is the kind of file an AI assistant would hand to inspect_pdf. The tool returns metadata, page geometry, signature info, and PDF/A status as structured JSON — driven by the tool outputSchema.' },
-        ],
-      }),
+      // PDF/A-2b requires every font embedded (ISO 19005-2). Without a font
+      // entry this sample would declare a conformance it does not have — on
+      // the very page that demonstrates conformance inspection.
+      build: async (p, m) => {
+        m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-data.js') });
+        const fontData = await m.loadFontData('latin');
+        return m.buildDocumentPDFBytes({
+          title: 'Inspect target sample',
+          fontEntries: [{ fontData, fontRef: 'latin', lang: 'latin' }],
+          layout: { tagged: 'pdfa2b' },
+          blocks: [
+            { type: 'heading', text: 'Sample PDF/A-2b document', level: 1 },
+            { type: 'paragraph', text: 'This is the kind of file an AI assistant would hand to inspect_pdf. The tool returns metadata, page geometry, signature info, and PDF/A status as structured JSON — driven by the tool outputSchema.' },
+          ],
+        });
+      },
     },
     {
       id: 'merge_pdfs',
