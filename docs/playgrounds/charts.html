@@ -292,7 +292,7 @@ const BUILDERS = {
   donut: async (m) => {
     m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-data.js') });
     const fontData = await m.loadFontData('latin');
-    return m.buildDocumentPDFBytes({ fontEntries: [{ fontData, fontRef: 'latin', lang: 'latin' }], title: 'Budget', blocks: [{ type: 'chart', chartType: 'donut', title: 'Budget split', altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.', categories: ['Engineering', 'Sales', 'Operations'], series: [{ label: 'Budget', values: [50, 30, 20] }] }] }, { tagged: true });
+    return m.buildDocumentPDFBytes({ fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }], title: 'Budget', blocks: [{ type: 'chart', chartType: 'donut', title: 'Budget split', altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.', categories: ['Engineering', 'Sales', 'Operations'], series: [{ label: 'Budget', values: [50, 30, 20] }] }] }, { tagged: true });
   },
   mixed: (m) => m.buildDocumentPDFBytes({ title: 'Dashboard', blocks: [
     { type: 'heading', text: 'Q4 dashboard', level: 1 },

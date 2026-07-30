@@ -437,7 +437,7 @@
         const fontData = await m.loadFontData('latin');
         return m.buildDocumentPDFBytes({
           title: 'Inspect target sample',
-          fontEntries: [{ fontData, fontRef: 'latin', lang: 'latin' }],
+          fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }],
           layout: { tagged: 'pdfa2b' },
           blocks: [
             { type: 'heading', text: 'Sample PDF/A-2b document', level: 1 },

@@ -258,13 +258,21 @@ const bytes = renderSpecToBytes({
       "</Document>",
     ].join("\n"),
     multilingual: [
-      "// resolveFonts registers the loaders AND awaits the font data. Registering",
-      "// alone is not enough: rendering is synchronous and cannot await a loader.",
+      "// Registering alone is not enough: rendering is synchronous and cannot",
+      "// await a loader, so the font data must be resolved first.",
       "// Keys are the engine language codes — 'ar', not 'arabic'.",
-      "const fontEntries = await resolveFonts({",
+      "registerFonts({",
       "  latin: () => import('pdfnative/fonts/noto-sans-data.js'),",
       "  ar:    () => import('pdfnative/fonts/noto-arabic-data.js'),",
       "});",
+      "",
+      "// fontRef must be a PDF name, and /F1 and /F2 are reserved by the engine,",
+      "// so user fonts start at /F3.",
+      "const langs = ['latin', 'ar'];",
+      "const loaded = await Promise.all(langs.map(loadFontData));",
+      "const fontEntries = loaded.map((fontData, i) => ({",
+      "  fontData, fontRef: `/F${3 + i}`, lang: langs[i],",
+      "}));",
       "",
       "// With real fonts embedded, the PDF/A-2b claim is actually conformant.",
       "return (",
@@ -339,7 +347,7 @@ const bytes = renderSpecToBytes({
       var body = hasReturn ? src : 'return (\n' + src + '\n);';
       var moduleSrc =
         "import React from 'react';\n" +
-        "import { resolveFonts } from 'pdfnative-react';\n" +
+        "import { registerFonts, loadFontData } from 'pdfnative';\n" +
         "import { Document, Page, Section, Heading, Paragraph, Text, List, Item, Table, Row, Cell, Image, Link, Spacer, PageBreak, Barcode, Chart, Svg, FormField, TableOfContents, Toc, renderToBytes } from 'pdfnative-react';\n" +
         "export default async function build() {\n" + body + "\n}\n";
 

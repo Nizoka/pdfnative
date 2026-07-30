@@ -32,8 +32,11 @@ const pdf3b = buildPDFBytes(params, { tagged: 'pdfa3b' });  // PDF/A-3b + attach
 > registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
 > const fontData = await loadFontData('latin');
 >
+> // fontRef becomes a PDF resource name, so it needs the leading slash.
+> // /F1 and /F2 are reserved by the engine — start at /F3.
+>
 > const pdf = buildDocumentPDFBytes(
->   { title: 'Archival', blocks, fontEntries: [{ fontData, fontRef: 'latin', lang: 'latin' }] },
+>   { title: 'Archival', blocks, fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }] },
 >   { tagged: 'pdfa2b' },
 > );
 > ```
@@ -75,15 +78,22 @@ official veraPDF reference validator. The validator runs as a
 | ISO 19005-2 §6.2.11.4.1 — Type0 font references | ✅ | v1.1.0 |
 | veraPDF 6.2.3.3 — DeviceRGB OutputIntent | ✅ | v1.0.4 |
 
-To produce a strictly veraPDF-compliant PDF/A document, register the
-Latin font module (one line at app startup):
+To produce a strictly veraPDF-compliant PDF/A document, register the Latin
+font module **and resolve it**. Registering alone is not enough: the builders
+are synchronous and cannot await a loader, so the font never reaches the
+document and you get an unembedded Helvetica reference — verified: 0 embedded
+fonts.
 
 ```ts
-import { registerFont, buildPDFBytes } from 'pdfnative';
+import { registerFonts, loadFontData, buildPDFBytes } from 'pdfnative';
 
-registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'));
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin');
 
-const pdf = buildPDFBytes(params, { tagged: true });
+const pdf = buildPDFBytes(
+  { ...params, fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }] },
+  { tagged: true },
+);
 ```
 
 Without the `'latin'` font registered, pdfnative falls back to the
@@ -178,8 +188,9 @@ If you want a file to be validated, generate it with `tagged: true`
 
 **"My tagged file still fails rule 6.3.4 (font embedding)."**
 
-Register the Latin font module: `registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'))`.
-Without it, pdfnative emits Helvetica as an unembedded standard-14
+Register the Latin font module **and pass the resolved data as `fontEntries`**
+(see the TL;DR above). Registration on its own does nothing for the synchronous
+builders. Without it, pdfnative emits Helvetica as an unembedded standard-14
 reference for byte-stable v1.0.x output. With it, every glyph used
 in the document is embedded as `CIDFontType2` / `FontFile2` — see
 the v1.1.0 status table above.

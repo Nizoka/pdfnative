@@ -136,8 +136,11 @@ registerFonts({
 //    so it cannot await a loader for you — this step is not optional.
 const langs = ['latin', 'th', 'ar'];
 const loaded = await Promise.all(langs.map(loadFontData));
+// fontRef is written straight into the PDF as a resource name, so it must
+// start with a slash — and /F1 and /F2 are reserved by the engine, so your
+// fonts start at /F3. Get this wrong and viewers reject the file.
 const fontEntries = loaded.map((fontData, i) =&gt; ({
-  fontData, fontRef: `/F${i + 2}`, lang: langs[i],
+  fontData, fontRef: `/F${i + 3}`, lang: langs[i],
 }));
 
 // 3. Hand them to the builder. You do not tag blocks with a language —

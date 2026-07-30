@@ -172,6 +172,39 @@ import {
 
 `options` is `{ layout?: Partial<PdfLayoutOptions>; fontEntries?: FontEntry[]; fonts?: FontsMap }` and merges on top of anything set on `<Document>` — page size, margins, colors, PDF/A mode, encryption, and non-Latin fonts.
 
+> ### Build `fontEntries` yourself — `resolveFonts` produces an invalid `fontRef`
+>
+> `resolveFonts` (and the `fonts` option, which calls it) sets each entry's
+> `fontRef` to the bare language code. `fontRef` is written straight into the PDF
+> as a resource name, so it must be a **PDF name starting with `/`** — and `/F1`
+> and `/F2` are reserved by the engine. A bare code yields `latin 12 Tf` and a
+> `/Font` key of `latin 5 0 R`, neither of which is valid syntax: Acrobat refuses
+> the file with "an error occurred while reading this document (14)", and Chrome
+> falls back to a default encoding and draws raw glyph indices — *Multilingual*
+> renders as *0XOWLOLQJXDO*.
+>
+> Until that is fixed upstream, resolve the fonts by hand:
+>
+> ```ts
+> import { registerFonts, loadFontData } from 'pdfnative';
+>
+> registerFonts({
+>   latin: () => import('pdfnative/fonts/noto-sans-data.js'),
+>   ar:    () => import('pdfnative/fonts/noto-arabic-data.js'),
+> });
+>
+> const langs = ['latin', 'ar'];
+> const loaded = await Promise.all(langs.map(loadFontData));
+> const fontEntries = loaded.map((fontData, i) => ({
+>   fontData, fontRef: `/F${3 + i}`, lang: langs[i],   // /F3, /F4, …
+> }));
+>
+> const bytes = renderToBytes(<Doc />, { fontEntries });
+> ```
+>
+> Rendering is synchronous, so registering without awaiting `loadFontData` embeds
+> nothing at all and every non-Latin glyph comes out blank.
+
 ```ts
 const bytes = renderToBytes(<Invoice />, {
   layout: { tagged: 'pdfa2b', compress: true },
