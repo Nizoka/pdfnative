@@ -220,7 +220,7 @@ In your Zed `settings.json`:
 | `generate_basic_pdf` | Multi-page A4 documents from structured blocks (headings, paragraphs, lists, page breaks). Accepts optional `pdfA`. |
 | `add_table` | Tabular PDF reports from column headers and data rows. Optional `autoFitColumns` and `clipCells`. Accepts `pdfA`. |
 | `add_barcode` | QR Code, Code 128, EAN-13, Data Matrix, PDF417 — embedded in a single-page PDF. Accepts `pdfA`. |
-| `add_international_text` | 24 scripts (22 non-Latin plus `latin` and `emoji` font codes) with BiDi & OpenType shaping, plus the explicit `math` script (Noto Sans Math, on-demand). `lang` accepts `string`, `string[]`, or comma-separated. |
+| `add_international_text` | 24 `lang` font codes — the 22 writing systems plus `latin` and `emoji` — with BiDi & OpenType shaping, plus the explicit `math` script (Noto Sans Math, on-demand). `lang` accepts `string`, `string[]`, or comma-separated. |
 | `add_form` | Interactive AcroForm PDFs with text fields, checkboxes, radio buttons, and dropdowns. Accepts `pdfA`. |
 | `embed_image` | Embed a JPEG or PNG image (base64-encoded) into a titled PDF document. Accepts `pdfA`. |
 | `prepare_signature_placeholder` | Create a PDF with a `/Sig` AcroForm placeholder ready to be signed. Accepts `pdfA`. |

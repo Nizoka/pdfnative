@@ -97,7 +97,7 @@
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 104,
+    "testFiles": 105,
     "sampleGenerators": 44,
     "samplePdfs": 227,
     "guides": 26,
@@ -136,7 +136,8 @@
     {
       "id": "mcp-tool-count",
       "canonical": "24 tools",
-      "forbid": "\\b(?:9|12|14|17|19|21|23)\\s+(?:MCP\\s+|production\\s+|structured\\s+|AI\\s+)?tools\\b",
+      "match": "\\b(\\d+)\\s+(?:[A-Za-z][\\w-]*\\s+){0,2}tools\\b",
+      "expect": 24,
       "requireIn": [
         "docs/guides/mcp.md",
         "docs/index.html",
@@ -148,7 +149,8 @@
     {
       "id": "cli-command-count",
       "canonical": "17 commands",
-      "forbid": "\\b(?:three|six|nine|eleven|Eleven|3|6|9|11|13)\\s+(?:production\\s+|composable\\s+)?commands\\b",
+      "match": "\\b(\\d+)\\s+(?:[A-Za-z][\\w-]*\\s+){0,2}commands\\b",
+      "expect": 17,
       "requireIn": [
         "docs/guides/cli.md",
         "docs/index.html",
@@ -158,7 +160,8 @@
     {
       "id": "block-type-count",
       "canonical": "13 block types",
-      "forbid": "\\b(?:10|11|12)\\s+block\\s+types\\b",
+      "match": "\\b(\\d+)\\s+block\\s+types\\b",
+      "expect": 13,
       "requireIn": [
         "docs/index.html"
       ]
@@ -166,7 +169,8 @@
     {
       "id": "script-count",
       "canonical": "22 scripts",
-      "forbid": "\\b(?:16|18|20)\\s+(?:supported\\s+)?scripts\\b",
+      "match": "\\b(\\d+)\\s+(?:supported\\s+|Unicode\\s+|writing\\s+)?scripts\\b",
+      "expect": 22,
       "requireIn": [
         "docs/index.html",
         "README.md"

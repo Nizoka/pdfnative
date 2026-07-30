@@ -98,7 +98,18 @@ interface PackageEntry {
 interface Assertion {
     id: string;
     canonical: string;
-    forbid: string;
+    /**
+     * Regex whose first capture group is the number to compare against
+     * `expect`. Preferred over `forbid`, which could only list values already
+     * known to be wrong — it caught yesterday's drift and nothing else, and it
+     * is how "19 pdfnative-mcp tools" slipped through: the intervening word was
+     * not in the alternation.
+     */
+    match?: string;
+    /** The value the captured number must equal. */
+    expect?: number;
+    /** Legacy blocklist form, still honoured for un-migrated assertions. */
+    forbid?: string;
     requireIn: string[];
 }
 
@@ -222,21 +233,31 @@ function isSuppressed(lines: string[], lineNo: number, rule: string): boolean {
 }
 
 for (const assertion of manifest.assertions) {
-    const forbid = new RegExp(assertion.forbid, 'g');
-    for (const file of DOC_FILES) {
-        const text = read(file);
-        const lines = text.split(/\r?\n/);
-        forbid.lastIndex = 0;
-        let m: RegExpExecArray | null;
-        while ((m = forbid.exec(text)) !== null) {
-            const line = lineOf(text, m.index);
-            if (isSuppressed(lines, line, 'stale-token')) continue;
-            fail(
-                rel(file),
-                line,
-                'stale-token',
-                `"${m[0].trim()}" contradicts the manifest — canonical value is "${assertion.canonical}"`,
-            );
+    const pattern = assertion.match ?? assertion.forbid;
+    if (pattern) {
+        const re = new RegExp(pattern, 'g');
+        const isEquality = assertion.match !== undefined && assertion.expect !== undefined;
+        for (const file of DOC_FILES) {
+            const text = read(file);
+            const lines = text.split(/\r?\n/);
+            re.lastIndex = 0;
+            let m: RegExpExecArray | null;
+            while ((m = re.exec(text)) !== null) {
+                const line = lineOf(text, m.index);
+                if (isSuppressed(lines, line, 'stale-token')) continue;
+                if (isEquality) {
+                    const found = Number(m[1]);
+                    if (!Number.isFinite(found) || found === assertion.expect) continue;
+                    fail(rel(file), line, 'stale-token', `"${m[0].trim()}" — the manifest says ${assertion.expect} (${assertion.id})`);
+                } else {
+                    fail(
+                        rel(file),
+                        line,
+                        'stale-token',
+                        `"${m[0].trim()}" contradicts the manifest — canonical value is "${assertion.canonical}"`,
+                    );
+                }
+            }
         }
     }
     for (const required of assertion.requireIn) {
@@ -253,10 +274,15 @@ for (const assertion of manifest.assertions) {
 
 // ── Rule: api-exists ────────────────────────────────────────────────
 
+// The denylist scan spans src/ as well. JSDoc from src/ is emitted into
+// dist/index.d.ts, so a phantom identifier there reaches every consumer's
+// IntelliSense — which is exactly how two of them survived the first pass.
+const DENYLIST_FILES = [...DOC_FILES, ...walk(join(ROOT, 'src'), (f) => f.endsWith('.ts'))];
+
 for (const [phantom, replacement] of Object.entries(manifest.apiDenylist)) {
     if (phantom.startsWith('$')) continue;
     const re = new RegExp(`\\b${phantom}\\b`, 'g');
-    for (const file of DOC_FILES) {
+    for (const file of DENYLIST_FILES) {
         const text = read(file);
         re.lastIndex = 0;
         let m: RegExpExecArray | null;
@@ -499,6 +525,34 @@ for (const name of PLAYGROUNDS) {
     }
 }
 
+/*
+ * A page retired behind a noindex stub must not be linked from an indexable
+ * page. The rule comment above promised this and no code did it, which is how
+ * seven live links to the retired medical-800 playground survived a pass that
+ * updated every switcher.
+ */
+const NOINDEX_PAGES = HTML_FILES.filter((f) => /name=["']robots["'][^>]*noindex/i.test(read(f))).map((f) =>
+    posix.basename(f.replace(/\\/g, '/')),
+);
+
+for (const stub of NOINDEX_PAGES) {
+    const re = new RegExp(`href="[^"]*${stub.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'g');
+    for (const file of HTML_FILES) {
+        const text = read(file);
+        if (/name=["']robots["'][^>]*noindex/i.test(text)) continue; // stubs may reference each other
+        re.lastIndex = 0;
+        let hit: RegExpExecArray | null;
+        while ((hit = re.exec(text)) !== null) {
+            fail(
+                rel(file),
+                lineOf(text, hit.index),
+                'switcher-parity',
+                `links ${stub}, which is a noindex stub — point at its replacement instead`,
+            );
+        }
+    }
+}
+
 const shapes = [...new Set(switchers.values())];
 if (shapes.length > 1) {
     const majority = shapes
@@ -644,17 +698,28 @@ if (existsSync(STYLE)) {
     const blocks = [...css.matchAll(/(:root(?:\[[^\]]*\])?|@media[^{]*prefers-color-scheme:\s*dark[^{]*\{\s*:root[^{]*)\s*\{([\s\S]*?)\}/g)];
     for (const block of blocks) {
         const body = block[2];
-        const bg = /--c-bg:\s*(#[0-9a-fA-F]{3,6})/.exec(body)?.[1];
+        const pick = (token: string): string | undefined =>
+            new RegExp(`${token}:\\s*(#[0-9a-fA-F]{3,6})`).exec(body)?.[1];
+        // Every surface these tokens are actually placed on, not just --c-bg.
+        // Checking only the page background is why five real failures passed:
+        // .rs-verify sits on --c-surface, where the same token scored 4.34:1.
+        const surfaces: Array<[string, string | undefined]> = [
+            ['--c-bg', pick('--c-bg')],
+            ['--c-surface', pick('--c-surface')],
+            ['--c-bg-card', pick('--c-bg-card')],
+        ];
         for (const token of ['--c-text-muted', '--c-text-dim']) {
-            const fg = new RegExp(`${token}:\\s*(#[0-9a-fA-F]{3,6})`).exec(body)?.[1];
-            if (!bg || !fg) continue;
-            const ratio = contrastRatio(fg, bg);
-            if (ratio < 4.5) {
+            const fg = pick(token);
+            if (!fg) continue;
+            for (const [surfaceName, bg] of surfaces) {
+                if (!bg) continue;
+                const ratio = contrastRatio(fg, bg);
+                if (ratio >= 4.5) continue;
                 fail(
                     'docs/style.css',
                     lineOf(css, block.index! + block[0].indexOf(token)),
                     'contrast',
-                    `${token} (${fg}) on ${bg} is ${ratio.toFixed(2)}:1 — WCAG AA body text needs 4.5:1`,
+                    `${token} (${fg}) on ${surfaceName} (${bg}) is ${ratio.toFixed(2)}:1 — WCAG AA body text needs 4.5:1`,
                 );
             }
         }

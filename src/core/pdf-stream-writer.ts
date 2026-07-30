@@ -451,9 +451,10 @@ export interface StreamToFileResult {
 }
 
 /**
- * Write a streaming PDF (any of the `streamPdf`/`buildPDFStream*` generators)
- * directly to a file on disk in **constant memory**, honouring write
- * back-pressure. Node.js-only convenience wrapper.
+ * Write a streaming PDF — any of the `buildPDFStream*` /
+ * `buildDocumentPDFStream*` generators — directly to a file on disk, honouring
+ * write back-pressure so only one chunk is held at a time. Node.js-only
+ * convenience wrapper.
  *
  * The dependency on `node:fs` is loaded **dynamically** so this module stays
  * tree-shakeable and bundler-safe for the browser; calling `streamToFile` in
@@ -461,7 +462,7 @@ export interface StreamToFileResult {
  *
  * @example
  * ```ts
- * await streamToFile(streamDocumentPdf({ blocks }), './out.pdf');
+ * await streamToFile(buildDocumentPDFStreamTrue({ title, blocks }), './out.pdf');
  * ```
  *
  * @param stream   An async generator of PDF byte chunks.

@@ -100,7 +100,7 @@ src/
 fonts/            # Pre-built font data modules (22 scripts)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (44 generators, ~227 PDFs)
-tests/            # 2379+ tests (104 files: unit + integration + fuzz + parser), mirrors src/ structure
+tests/            # 2379+ tests (105 files: unit + integration + fuzz + parser), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
