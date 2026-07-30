@@ -141,7 +141,7 @@
 
     <h2 style="margin-top: 36px;">2. Try the tools</h2>
     <p id="loader-status" style="font-size: 13px; color: var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once per page load.</p>
-    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), and the v1.4.0 <code>annotate_pdf</code> — all of which build their own source PDFs in the browser and run the real pdfnative 1.6.0 API. <code>draft_governance_issue</code> produces no PDF (it validates a report locally, network-free) — use its <em>Copy args</em> button. Ten of the 24 tools have no card here, because they need a real PDF as input and run best from your own MCP client: <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code>, <code>decrypt_pdf</code> and <code>add_chart</code> — the last of which you can nonetheless see rendered in the <a href="./charts.html">charts playground</a>, since it draws the same native vector paths. See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
+    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), and the v1.4.0 <code>annotate_pdf</code> — all of which build their own source PDFs in the browser and run the real pdfnative 1.6.0 API. <code>draft_governance_issue</code> produces no PDF (it validates a report locally, network-free) — use its <em>Copy args</em> button. Nine of the 24 tools have no card here, because they need a real PDF as input and run best from your own MCP client: <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code> and <code>decrypt_pdf</code>. See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
 
     <div class="mcp-cards" id="cards"></div>
 
@@ -292,6 +292,27 @@
           { type: 'heading', text: 'Invoice INV-001', level: 1 },
           { type: 'paragraph', text: 'Scan the QR code below to settle this invoice.' },
           { type: 'barcode', format: 'qr', data: 'https://acme.example/pay/INV-001', width: 140, ecLevel: 'M', align: 'center' },
+        ],
+      },
+      build: (p, m) => m.buildDocumentPDFBytes(p),
+    },
+    {
+      id: 'add_chart',
+      purpose: 'Render a bar, horizontal-bar, line, pie or donut chart as native PDF vector paths — no rasterisation, no image round-trip.',
+      prompt: 'Chart our Q1-Q4 revenue against cost as a bar chart, and tag it for accessibility.',
+      args: {
+        title: 'FY2026 performance',
+        blocks: [
+          { type: 'heading', text: 'FY2026 performance', level: 1 },
+          {
+            type: 'chart', chartType: 'bar', title: 'Revenue vs cost',
+            categories: ['Q1', 'Q2', 'Q3', 'Q4'],
+            series: [
+              { label: 'Revenue', values: [50, 62, 70, 81] },
+              { label: 'Cost', values: [30, 34, 38, 41] },
+            ],
+            altText: 'Bar chart: revenue rises from 50 to 81 while cost rises from 30 to 41.',
+          },
         ],
       },
       build: (p, m) => m.buildDocumentPDFBytes(p),
@@ -688,13 +709,13 @@
   // ─────────────────────────── Theme + hamburger parity ───────────────────────────
   const themeBtn = document.querySelector('.theme-toggle');
   if (themeBtn) {
-    const stored = localStorage.getItem('pdfnative-theme');
+    const stored = localStorage.getItem('theme');
     if (stored) document.documentElement.setAttribute('data-theme', stored);
     themeBtn.addEventListener('click', () => {
       const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
       if (cur) document.documentElement.setAttribute('data-theme', cur);
       else     document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('pdfnative-theme', cur);
+      localStorage.setItem('theme', cur);
     });
   }
   const hb = document.querySelector('.nav-hamburger');

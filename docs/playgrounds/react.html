@@ -193,13 +193,13 @@ const bytes = renderSpecToBytes({
   (function () {
     var themeBtn = document.querySelector('.theme-toggle');
     if (themeBtn) {
-      var stored = localStorage.getItem('pdfnative-theme');
+      var stored = localStorage.getItem('theme');
       if (stored) document.documentElement.setAttribute('data-theme', stored);
       themeBtn.addEventListener('click', function () {
         var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
         if (cur) document.documentElement.setAttribute('data-theme', cur);
         else document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('pdfnative-theme', cur);
+        localStorage.setItem('theme', cur);
       });
     }
     var hb = document.querySelector('.nav-hamburger');

@@ -480,13 +480,13 @@ applyPreset('svgtext');
 // Theme + hamburger parity with the rest of the site.
 const themeBtn = document.querySelector('.theme-toggle');
 if (themeBtn) {
-  const stored = localStorage.getItem('pdfnative-theme');
+  const stored = localStorage.getItem('theme');
   if (stored) document.documentElement.setAttribute('data-theme', stored);
   themeBtn.addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
     if (cur) document.documentElement.setAttribute('data-theme', cur);
     else     document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('pdfnative-theme', cur);
+    localStorage.setItem('theme', cur);
   });
 }
 const hb = document.querySelector('.nav-hamburger');

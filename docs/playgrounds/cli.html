@@ -11,13 +11,13 @@
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/cli.html">
   <meta property="og:title" content="CLI Command Builder — pdfnative-cli playground">
-  <meta property="og:description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, batch, and schema invocations with full flag coverage. Live shell preview, copy-to-clipboard, validation. Zero install.">
+  <meta property="og:description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, merge, split, extract, annotate and govern invocations with full flag coverage. Live shell preview, copy-to-clipboard, validation. Zero install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="CLI Command Builder — pdfnative-cli playground">
-  <meta name="twitter:description" content="Assemble render, sign, inspect, verify, batch, and schema commands with full flag coverage. Live shell preview. Zero install.">
+  <meta name="twitter:description" content="Assemble render, sign, inspect, verify, merge, split, extract, annotate and govern commands with full flag coverage. Live shell preview. Zero install.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -67,7 +67,7 @@
     "operatingSystem": "Any (browser-based)",
     "browserRequirements": "Requires JavaScript and HTML5",
     "url": "https://pdfnative.dev/playgrounds/cli.html",
-    "description": "Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, batch, and schema invocations with a live shell preview.",
+    "description": "Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, merge, split, extract, annotate and govern invocations with a live shell preview.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
@@ -120,7 +120,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-cli command builder</h1>
-    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers the full <a href="../guides/cli.html">CLI surface</a>: <code>render</code> (with <code>--outline</code> / <code>--font math</code> / <code>--inspect-layout</code>), <code>sign</code> (RSA + ECDSA-SHA256, native constant-time crypto, <code>--pure-crypto</code> opt-out), <code>inspect</code> (with <code>--annotations</code>), <code>verify</code>, and the v1.2.0 page-tree / governance commands <code>merge</code>, <code>split</code>, <code>extract</code>, <code>annotate</code>, and <code>govern</code>. The builder runs entirely in your browser — nothing is uploaded.</p>
+    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers nine of the seventeen commands — see the <a href="../guides/cli.html">CLI guide</a> for the rest: <code>render</code> (with <code>--outline</code> / <code>--font math</code> / <code>--inspect-layout</code>), <code>sign</code> (RSA + ECDSA-SHA256, native constant-time crypto, <code>--pure-crypto</code> opt-out), <code>inspect</code> (with <code>--annotations</code>), <code>verify</code>, and the v1.2.0 page-tree / governance commands <code>merge</code>, <code>split</code>, <code>extract</code>, <code>annotate</code> and <code>govern</code>. The v1.3.0 additions — <code>fill</code>, <code>encrypt</code>, <code>decrypt</code>, <code>extract-text</code> and <code>doctor</code> — have no tab yet; their full flag reference is in the <a href="../guides/cli.html">CLI guide</a>. The builder runs entirely in your browser — nothing is uploaded.</p>
 
     <div class="cli-presets">
       <label for="preset"><strong>Quick preset:</strong></label>
@@ -963,13 +963,13 @@
   // ── Theme toggle (parity with main site) ──────────
   const themeBtn = document.querySelector('.theme-toggle');
   if (themeBtn) {
-    const stored = localStorage.getItem('pdfnative-theme');
+    const stored = localStorage.getItem('theme');
     if (stored) document.documentElement.setAttribute('data-theme', stored);
     themeBtn.addEventListener('click', () => {
       const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
       if (cur) document.documentElement.setAttribute('data-theme', cur);
       else     document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('pdfnative-theme', cur);
+      localStorage.setItem('theme', cur);
     });
   }
 
