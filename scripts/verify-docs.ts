@@ -552,6 +552,69 @@ if (manifest.learnPath.length > 0) {
     }
 }
 
+// ── Rule: bench-parity ──────────────────────────────────────────────
+
+/**
+ * The homepage benchmark bars and `bench/RESULTS.md` are two statements of the
+ * same measurement. They drifted apart by a factor of three to six, on a site
+ * whose whole argument is that its numbers are checked — so they are now tied
+ * together mechanically.
+ *
+ * `RESULTS.md` is the source. Each homepage `.bench-value` must round to the
+ * mean recorded there for the row its `.bench-label` names.
+ */
+const RESULTS = join(ROOT, 'bench', 'RESULTS.md');
+const HOMEPAGE = join(ROOT, 'docs', 'index.html');
+
+if (existsSync(RESULTS) && existsSync(HOMEPAGE)) {
+    const md = read(RESULTS);
+
+    // Collect "| 500 | 11.21 | …" rows under each measurement heading.
+    const means = new Map<string, number>();
+    let section: 'latin' | 'embedded' | null = null;
+    for (const line of md.split(/\r?\n/)) {
+        if (/^###\s+.*Latin/i.test(line)) section = 'latin';
+        else if (/^###\s+.*embedded-font/i.test(line)) section = 'embedded';
+        else if (/^###\s/.test(line)) section = null;
+        if (!section) continue;
+        const m = /^\|\s*([\d\s]+?)\s*\|\s*([\d.]+)\s*\|/.exec(line);
+        if (!m) continue;
+        const rows = m[1].replace(/\s/g, '');
+        means.set(`${rows}|${section}`, parseFloat(m[2]));
+    }
+
+    const html = read(HOMEPAGE);
+    const ROW =
+        /<span class="bench-label">([^<]+)<\/span>\s*<div class="bench-bar-bg">[\s\S]*?<\/div>\s*<span class="bench-value">~?([\d.]+)\s*ms<\/span>/g;
+    let m: RegExpExecArray | null;
+    let checked = 0;
+    while ((m = ROW.exec(html)) !== null) {
+        const label = m[1];
+        const shown = parseFloat(m[2]);
+        const rows = label.replace(/[^\d]/g, '');
+        const kind = /embedded/i.test(label) ? 'embedded' : 'latin';
+        const mean = means.get(`${rows}|${kind}`);
+        const line = lineOf(html, m.index);
+        if (mean === undefined) {
+            fail('docs/index.html', line, 'bench-parity', `no row for "${label}" in bench/RESULTS.md`);
+            continue;
+        }
+        checked++;
+        // The homepage rounds; accept anything within 10% of the recorded mean.
+        if (Math.abs(shown - mean) / mean > 0.1) {
+            fail(
+                'docs/index.html',
+                line,
+                'bench-parity',
+                `"${label}" shows ~${shown} ms but bench/RESULTS.md records ${mean} ms`,
+            );
+        }
+    }
+    if (checked === 0 && means.size > 0) {
+        fail('docs/index.html', 1, 'bench-parity', 'no .bench-value rows matched — has the markup changed?');
+    }
+}
+
 // ── Rule: contrast ──────────────────────────────────────────────────
 
 function srgbToLinear(c: number): number {

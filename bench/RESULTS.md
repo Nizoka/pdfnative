@@ -1,12 +1,13 @@
 # Benchmark results
 
 The figures published on [pdfnative.dev#benchmarks](https://pdfnative.dev/#benchmarks) come
-from this file. Regenerate it by running `npm run bench` and recording the `mean`
-column, the hardware, and the date.
+from this file, and `npm run verify:docs` fails the build if the two disagree.
+Regenerate by running `npm run bench` and recording the `mean` column, the
+hardware, and the date.
 
 Numbers with no run context are not evidence, so every table here carries one.
 
-## Run of 2026-07-28 — pdfnative 1.6.0
+## Run of 2026-07-30 — pdfnative 1.6.0
 
 | | |
 |---|---|
@@ -19,10 +20,10 @@ Numbers with no run context are not evidence, so every table here carries one.
 
 | Rows | mean (ms) | p75 (ms) | hz | rme | samples |
 |---|---|---|---|---|---|
-| 100 | 4.01 | 4.36 | 249.5 | ±20.3% | 125 |
-| 500 | 16.50 | 19.33 | 60.6 | ±23.4% | 31 |
-| 1 000 | 21.74 | 23.66 | 46.0 | ±7.0% | 23 |
-| 5 000 | 113.34 | 140.22 | 8.8 | ±17.5% | 10 |
+| 100 | 3.34 | 4.29 | 299.8 | ±7.5% | 151 |
+| 500 | 11.21 | 12.30 | 89.2 | ±6.0% | 45 |
+| 1 000 | 18.67 | 19.72 | 53.6 | ±3.8% | 27 |
+| 5 000 | 98.06 | 98.25 | 10.2 | ±8.6% | 10 |
 
 ### `buildPDF` — embedded-font path (mock TTF)
 
@@ -39,44 +40,50 @@ benchmarked**. Do not quote these rows as a shaping measurement.
 
 | Rows | mean (ms) | p75 (ms) | hz | rme | samples |
 |---|---|---|---|---|---|
-| 100 | 7.58 | 8.22 | 132.0 | ±3.1% | 66 |
-| 500 | 38.36 | 34.56 | 26.1 | ±27.9% | 14 |
-| 1 000 | 83.16 | 70.74 | 12.0 | ±34.2% | 10 |
+| 100 | 8.38 | 8.78 | 119.3 | ±4.1% | 60 |
+| 500 | 36.16 | 36.73 | 27.7 | ±4.1% | 14 |
+| 1 000 | 80.51 | 92.84 | 12.4 | ±13.1% | 10 |
 
 ### `buildPDFBytes` — full pipeline to `Uint8Array`
 
 | Case | mean (ms) | p75 (ms) | hz | rme | samples |
 |---|---|---|---|---|---|
-| 500 rows, Latin | 9.64 | 9.97 | 103.8 | ±3.2% | 53 |
-| 500 rows, embedded font | 35.17 | 36.65 | 28.4 | ±2.4% | 15 |
+| 500 rows, Latin | 10.31 | 10.86 | 97.0 | ±4.0% | 47 |
+| 500 rows, embedded font | 36.60 | 37.90 | 27.3 | ±3.6% | 14 |
 
 ### Reading these numbers
 
-- **The relative error is large on several rows** (up to ±34%), because the
-  sample counts are small and the machine is a low-power mini-PC. Treat them as
-  an order of magnitude, not a specification.
+- **The relative error reaches ±13%** on the smallest sample sets, on a
+  low-power mini-PC. Treat them as an order of magnitude, not a specification.
 - Faster hardware (Apple M-series, desktop i7/i9) typically runs 2–4× quicker.
 - Nothing here compares pdfnative to another library. No such benchmark exists
   in this repository, so no such claim is made anywhere on the site.
 
-## Large-document streaming — 2026-07-28
+## Large-document streaming — 2026-07-30
 
 Measured with the same generator the [scale playground](../docs/playgrounds/scale.html)
-uses: `buildDocumentPDFStreamTrue`, lean content of two blocks per page, 256 KB
-chunks, output counted and discarded. Page counts are parsed from the emitted
-bytes rather than assumed.
+uses: `buildDocumentPDFStreamTrue`, lean content of three blocks per page
+(`heading`, `paragraph`, and a `pageBreak` between consecutive pages), 256 KB
+chunks, an explicit `footerTemplate`, output counted and discarded. Page counts
+are parsed from the emitted bytes rather than assumed.
 
 | Pages requested | Pages measured | Output | Wall clock | Pages/s | Bytes/page |
 |---|---|---|---|---|---|
-| 1 000 | 1 000 | 781 KB | 0.17 s | 5 856 | 799 |
-| 10 000 | 10 000 | 7.9 MB | 1.23 s | 8 146 | 806 |
-| 50 000 | 50 000 | 39.6 MB | 6.33 s | 7 895 | 811 |
-| 100 000 | 100 000 | 79.6 MB | 12.66 s | 7 900 | 815 |
+| 1 000 | 1 000 | 484 KB | 0.08 s | 12 721 | 496 |
+| 10 000 | 10 000 | 4.9 MB | 0.41 s | 24 517 | 501 |
+| 50 000 | 50 000 | 24.7 MB | 2.09 s | 23 933 | 505 |
+| 100 000 | 100 000 | 49.8 MB | 3.72 s | 26 884 | 509 |
 
-Throughput is essentially flat from 10 000 pages upwards, which is the point of
-the measurement: the cost per page does not degrade with document length. Peak
+Throughput is flat from 10 000 pages upwards, which is the point of the
+measurement: the cost per page does not degrade with document length. Peak
 memory still scales with output size — see
 [the streaming guide](../docs/guides/streaming.md#what-this-does-and-does-not-buy-you).
+
+An earlier run of this table reported roughly a third of this throughput. That
+run counted pages with a per-byte `String.fromCharCode` loop, which cost more
+than the generation it was measuring; the counter now uses `TextDecoder`. The
+lesson is recorded here rather than quietly corrected: an instrument that
+perturbs its measurement is worse than no instrument.
 
 Denser pages cost proportionally more. This content is deliberately lean so that
 the page count is exact and known before generation, which is what makes the

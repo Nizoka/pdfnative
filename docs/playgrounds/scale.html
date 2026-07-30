@@ -183,7 +183,7 @@
 
       <label class="sc-confirm" id="confirmBox">
         <input type="checkbox" id="confirmBig">
-        <span>I understand that 100,000 pages allocates several hundred megabytes inside the worker — roughly 160&nbsp;MB of assembled PDF parts plus the 300,000 block objects that produce them — and may be slow or fail on a low-memory device.</span>
+        <span>I understand that 100,000 pages allocates several hundred megabytes inside the worker — roughly 100&nbsp;MB of assembled PDF parts plus the 300,000 block objects that produce them — and may be slow or fail on a low-memory device.</span>
       </label>
 
       <div class="sc-row">
@@ -235,7 +235,7 @@
     </ul>
 
     <h2>The content is deliberately lean</h2>
-    <p>Each page carries a heading and a paragraph — about 815 bytes of output per page. That is a deliberate choice, not a flattering one: it makes the page count exact and known before generation starts, which is what lets the pages-per-second figure mean something instead of being derived from a byte estimate. Denser pages (tables, embedded fonts, images) produce proportionally more bytes and take proportionally longer.</p>
+    <p>Each page carries a heading and a paragraph — about 509 bytes of output per page, measured across 1,000 to 100,000 pages. That is a deliberate choice, not a flattering one: it makes the page count exact and known before generation starts, which is what lets the pages-per-second figure mean something instead of being derived from a byte estimate. Denser pages (tables, embedded fonts, images) produce proportionally more bytes and take proportionally longer.</p>
     <p>If you want to see a realistic document instead of a scalability floor, the <a href="./toolkit.html">PDF Toolkit</a> and <a href="./charts.html">Charts</a> playgrounds build ordinary documents with real content.</p>
 
     <h2>Code</h2>
@@ -295,9 +295,9 @@ const IS_FILE_ORIGIN = location.protocol === 'file:';
 const HAS_FS_ACCESS = typeof window.showSaveFilePicker === 'function';
 const MAIN_THREAD_CAP = 1000;
 
-// ~815 bytes of output per page for the lean profile, measured on the
+// ~509 bytes of output per page for the lean profile, measured on the
 // generator below. Peak string memory is ~2 bytes per output character.
-const BYTES_PER_PAGE = 815;
+const BYTES_PER_PAGE = 509;
 
 let activeWorker = null;
 

@@ -653,42 +653,42 @@ const pdf = renderToBytes(
     <div class="bench-grid">
       <div class="bench-row">
         <span class="bench-label">100 rows (Latin)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:4%"></div></div>
-        <span class="bench-value">~0.7 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:3%"></div></div>
+        <span class="bench-value">~3.3 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">500 rows (Latin)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:11%"></div></div>
-        <span class="bench-value">~3.5 ms</span>
+        <span class="bench-value">~11 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">1 000 rows (Latin)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:21%"></div></div>
-        <span class="bench-value">~6.9 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:19%"></div></div>
+        <span class="bench-value">~19 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">5 000 rows (Latin)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:100%"></div></div>
-        <span class="bench-value">~33 ms</span>
+        <span class="bench-value">~98 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">100 rows (embedded font)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:9%"></div></div>
-        <span class="bench-value">~2.9 ms</span>
+        <span class="bench-value">~8.4 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">500 rows (embedded font)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:42%"></div></div>
-        <span class="bench-value">~14 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:37%"></div></div>
+        <span class="bench-value">~36 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">1 000 rows (embedded font)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:82%"></div></div>
-        <span class="bench-value">~27 ms</span>
+        <span class="bench-value">~81 ms</span>
       </div>
     </div>
     <p class="bench-note">
-      Measured 2026-07-28 with <code>vitest bench</code> on an Intel Core i3 mini-PC (Node.js 22.17.0) — mean wall-clock time per document.
+      Measured 2026-07-30 with <code>vitest bench</code> on an Intel Core i3 mini-PC (Node.js 22.17.0) — mean wall-clock time per document.
       Full run context, sample counts and relative error: <a href="https://github.com/Nizoka/pdfnative/blob/main/bench/RESULTS.md" target="_blank" rel="noopener">bench/RESULTS.md</a>.
       The <em>embedded font</em> rows exercise the CID/embedded-font code path using a synthetic TTF on Latin text — they are <strong>not</strong> a measurement of OpenType shaping or BiDi, which are not currently benchmarked.
       Faster hardware (Apple M-series, desktop i7/i9) typically runs 2–4× quicker. Results may vary.
