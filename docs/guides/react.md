@@ -50,7 +50,9 @@ A custom **React reconciler** compiles your component tree — synchronously, wi
 npm install pdfnative-react pdfnative react
 ```
 
-**Requirements:** **React 19** and **pdfnative ^1.6.0** (both peer dependencies) · **Node.js ≥ 22**. The package adds one runtime dependency of its own, `react-reconciler`. Works in Node, browsers, and SSR frameworks (Next.js, Remix). Client modules carry `'use client'`.
+**Requirements:** **React 19** and **pdfnative ^1.6.0** (both peer dependencies) · **Node.js ≥ 22**. The package adds one runtime dependency of its own, `react-reconciler`. Works in Node, browsers and SSR frameworks.
+
+> **Next.js and other React Server Component setups.** The root barrel is deliberately *not* marked `'use client'`, and importing it from a Server Component or a `'use server'` file **fails** — the reconciler needs `createContext`, which is unavailable under React's `react-server` condition. Render from a **Route Handler** instead (see [Server rendering](#server-rendering) below). The hooks and viewer components carry the directive and are published separately at `pdfnative-react/client`; import them from there in an app that mixes server and client components, because the directive does not survive bundling in the root barrel.
 
 The package ships **NPM provenance** — verify the published artifact with `npm audit signatures` or on [npmjs.com](https://www.npmjs.com/package/pdfnative-react).
 
@@ -92,19 +94,83 @@ Every component maps 1:1 onto a pdfnative block.
 
 ---
 
+## Server rendering
+
+`renderToResponse` returns a web-standard `Response`, so the same call works in a
+Next.js Route Handler, a Remix loader, Deno, Bun, Cloudflare Workers and any
+other runtime with the Fetch API. This is the supported way to render from a
+server framework.
+
+```tsx
+// app/invoice/route.tsx — Next.js Route Handler
+import { renderToResponse } from 'pdfnative-react';
+
+export async function GET() {
+  return renderToResponse(<Invoice />, {
+    filename: 'invoice.pdf',
+  });
+}
+```
+
+`renderSpecToResponse` does the same from a `DocSpec` object rather than JSX,
+which is the shape an AI agent is most likely to produce.
+
+## Charts
+
+`<Chart>` compiles to the engine's native `chart` block — vector path operators,
+no rasterisation, and `/Figure` tagging with alt text.
+
+```tsx
+<Chart
+  chartType="bar"            // bar | barH | line | pie | donut
+  title="Quarterly revenue"
+  categories={['Q1', 'Q2', 'Q3', 'Q4']}
+  series={[{ label: 'Revenue', values: [50, 62, 70, 81] }]}
+  altText="Bar chart of quarterly revenue, rising each quarter"
+/>
+```
+
+This is why the `pdfnative` peer floor is `^1.6.0`: a 1.5 engine receives an
+unknown block and drops it silently.
+
+## Linting
+
+`lintDocument` runs 18 deterministic rules over a compiled tree — no I/O, so it
+is safe in a test or a CI step. It catches the classes of mistake a type system
+cannot, including `L_TAGGED_NO_FONTS`: declaring PDF/A without embedding a font,
+which produces a file that claims conformance it does not have.
+
+```ts
+import { lintDocument, LINT_RULES } from 'pdfnative-react';
+
+const report = lintDocument(<Invoice />);
+if (report.errors.length) throw new Error(report.errors[0].message);
+```
+
+## Agent surface
+
+`capabilityManifest()` and `doctor()` return plain JSON describing what the
+package can do and whether the environment supports it — the discovery pair an
+autonomous agent should call before planning work. `validateSpec`, `schema(subject?)`
+and `SCHEMA_SUBJECTS` cover DocSpec validation; `aiGovernancePolicy()`,
+`agentRulesText()` and `validateIssueDraft()` expose the human-in-the-loop contract.
+
 ## Rendering
 
 ```ts
 import {
   renderToBytes,   // (node, options?) => Uint8Array
   renderToBlob,    // (node, options?) => Blob (application/pdf)
-  renderToStream,  // (node, options?) => AsyncGenerator<Uint8Array> (constant memory)
+  renderToStream,  // (node, options?) => AsyncGenerator<Uint8Array>
   renderToFile,    // (node, path, options?) => Promise<void> (Node only)
+  renderToResponse,// (node, options?) => Promise<Response> (web standard)
+  renderToFileStream, // (node, path, options?) => Promise<void> (Node only)
+  inspectDocument, // (node) => layout diagnostics, no render
   compileDocument, // (node) => DocumentParams (inspect the model, no render)
 } from 'pdfnative-react';
 ```
 
-`options` is `{ layout?: Partial<PdfLayoutOptions>; fontEntries?: FontEntry[] }` and merges on top of anything set on `<Document>` — page size, margins, colors, PDF/A mode, encryption, and non-Latin fonts.
+`options` is `{ layout?: Partial<PdfLayoutOptions>; fontEntries?: FontEntry[]; fonts?: FontsMap }` and merges on top of anything set on `<Document>` — page size, margins, colors, PDF/A mode, encryption, and non-Latin fonts.
 
 ```ts
 const bytes = renderToBytes(<Invoice />, {

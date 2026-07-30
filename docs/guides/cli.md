@@ -2,7 +2,7 @@
 
 > **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on pdfnative 1.6.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
-[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 17 commands — `render`, `sign`, `inspect`, `verify`, `merge`, `split`, `extract`, `annotate`, `govern`, `batch`, and `schema` (plus a `completion` helper) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 17 commands in five groups — create & edit (`render`, `fill`, `annotate`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
 > **Why a CLI?** Many real-world workflows live outside Node.js: shell scripts, CI pipelines, Docker containers, Makefiles, batch jobs, build tools written in other languages. The CLI lets all of them call `pdfnative` without writing JavaScript, and is fully composable through stdin/stdout pipelines.
 
@@ -11,6 +11,10 @@ The CLI is a **pure dispatch layer** over `pdfnative`. No PDF logic lives in the
 | CLI command | `pdfnative` API |
 |---|---|
 | `render` | `buildDocumentPDFBytes()` / `buildDocumentPDFStream()` / `buildDocumentPDFStreamTrue()` / `buildPDFBytes()` (table variant) |
+| `fill` | `readFormFields()` / `fillForm()` / `flattenForm()` |
+| `encrypt` / `decrypt` | `openPdf(bytes, { password })` + `MergeOptions.encrypt` |
+| `extract-text` | `extractText()` |
+| `doctor` | — (environment probe, no library equivalent) |
 | `sign` | `signPdfBytes()` / `addSignaturePlaceholder()` / `createNativeCryptoProvider()` |
 | `inspect` | `PdfReader.open()` / `getMetadata()` / `getPageCount()` / `getPageLabels()` / `getAnnotations()` / `validatePdfUA()` |
 | `verify` | `PdfReader` + `verifyCertSignature()` (byte-range + chain + timestamp + revocation) |
@@ -282,7 +286,7 @@ Renders a JSON document into a PDF. Supports both renderer variants exposed by `
 | `--output <file>` | stdout | Output PDF path |
 | `--variant document\|table` | `document` | Selects `buildDocumentPDFBytes` (free-form) or `buildPDFBytes` (table-centric) |
 | `--stream` | off | Streaming output via `buildDocumentPDFStream` (`AsyncGenerator<Uint8Array>`) — recommended for >100-page documents |
-| `--stream-true` *(v1.1.0)* | off | **True constant-memory** streaming via `buildDocumentPDFStreamTrue` / `buildPDFStreamTrue` — PDF parts are emitted and freed as they go, so the joined binary never materialises. Byte-identical to the buffered builders. Same constraints as `--stream` (no TOC, no `{pages}`); mutually exclusive with the other `--stream*` flags |
+| `--stream-true` *(v1.1.0)* | off | Streaming via `buildDocumentPDFStreamTrue` / `buildPDFStreamTrue` — PDF parts are emitted and freed as they go, so the joined binary never materialises. Byte-identical to the buffered builders. Same constraints as `--stream` (no TOC, no `{pages}`); mutually exclusive with the other `--stream*` flags |
 | `--max-blocks <n>` *(v1.1.0)* | `100000` | Exposes `layout.maxBlocks` so very large multi-thousand-page reports no longer hit a spurious ceiling |
 | `--layout <file.json>` | — | Load any subset of `PdfLayoutOptions` |
 
@@ -560,6 +564,109 @@ pdfnative govern verify-issue draft.md  # gate a draft (exit 1 / E_POLICY)
 
 > `verify-issue` is a pure, **fully offline** validator — no GitHub or network access. A passing check is *necessary but not sufficient*: the human review gate always applies.
 
+### `pdfnative fill` _(v1.3.0)_
+
+Fill, flatten or export an AcroForm. The three modes compose into a round trip:
+export the current values, edit the JSON, feed it back.
+
+```bash
+pdfnative fill --input form.pdf --export --output values.json   # read
+pdfnative fill --input form.pdf --data values.json --output filled.pdf
+pdfnative fill --input filled.pdf --flatten --output flat.pdf   # freeze
+```
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--data <file>` | — | Values JSON. Required unless `--flatten` or `--export` |
+| `--flatten` | off | Flatten after filling, or flatten the existing values |
+| `--export` | off | Read-only: emit current values in `--data` shape |
+| `--force` | off | Flatten even when a signed signature field is present |
+| `--on-unknown <mode>` | `throw` | `throw` or `ignore` for unknown field names |
+| `--need-appearances` | off | Set `/NeedAppearances` to allow non-WinAnsi values |
+| `--password <pass>` | — | Open an encrypted form (env `PDFNATIVE_PASSWORD`) |
+| `--dry-run` | off | Validate and enumerate fields without writing |
+
+Flattening a signed document invalidates the signature, which is why `--force`
+exists rather than it being silent.
+
+### `pdfnative encrypt` _(v1.3.0)_
+
+Re-secure an existing PDF. `--owner-password` is required; without a
+`--user-password` the document **opens with no prompt** and the owner password
+only governs permissions.
+
+```bash
+pdfnative encrypt --input report.pdf --output secure.pdf \
+  --owner-password "$OWNER" --user-password "$USER" \
+  --algorithm aes-256 --permissions print,extract
+```
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--owner-password <pass>` | — | **Required.** Env `PDFNATIVE_ENCRYPT_OWNER_PASS` |
+| `--user-password <pass>` | — | Password needed to open. Env `PDFNATIVE_ENCRYPT_USER_PASS` |
+| `--algorithm <alg>` | `aes-128` | `aes-128` or `aes-256` |
+| `--permissions <list>` | all | Comma-separated: `print`, `copy`, `modify`, `extract` |
+| `--password <pass>` | — | Open an already-encrypted source (password rotation) |
+| `--drop-annotations` | off | Drop all annotations; the default keeps URI links |
+| `--max-output-size <n>` | 256 MiB | Cap on the assembled size |
+| `--stream` | off | Stream the output (`--chunk-size N`) |
+
+### `pdfnative decrypt` _(v1.3.0)_
+
+Remove encryption, given the password. Reads RC4, AES-128 and AES-256 sources.
+
+```bash
+pdfnative decrypt --input secure.pdf --password "$PASS" --output plain.pdf
+```
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--password <pass>` | — | Document password. Env `PDFNATIVE_PASSWORD` |
+| `--drop-annotations` | off | Drop all annotations; the default keeps URI links |
+| `--max-output-size <n>` | 256 MiB | Cap on the assembled size |
+| `--stream` | off | Stream the output (`--chunk-size N`) |
+| `--dry-run` | off | Validate without writing |
+
+### `pdfnative extract-text` _(v1.3.0)_
+
+Reading-order Unicode text from an existing PDF. `ndjson` emits one JSON object
+per page, which makes it a natural feed for a RAG ingestion pipeline.
+
+```bash
+pdfnative extract-text --input paper.pdf --format ndjson --runs > pages.ndjson
+pdfnative extract-text --input paper.pdf --pages 1,3,5-7 --format text
+```
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--format, -f <fmt>` | `text` | `text`, `json`, or `ndjson` (one object per page) |
+| `--pages <selector>` | all | 1-based selector, e.g. `1,3,5-7` |
+| `--runs` | off | Include positioned runs `{ text, x, y, fontSize, fontName }` |
+| `--password <pass>` | — | Extract from an encrypted PDF |
+| `--max-length <n>` | 16000000 | Hard cap on total characters; `0` disables |
+| `--summary` | off | (json) Emit only `{ pages, characters }` |
+| `--fields <paths>` | — | (json) Comma-separated dot-paths to keep |
+
+Text comes from the `/ToUnicode` mapping, so it is real Unicode rather than
+glyph indices. A page whose content decodes entirely to U+FFFD is reported as
+not extractable rather than returning noise.
+
+### `pdfnative doctor` _(v1.3.0)_
+
+Environment and capability preflight. The first thing to run in a new
+environment, and the first thing an agent should call before planning work.
+
+```bash
+pdfnative doctor              # human-readable
+pdfnative doctor --format json --pretty
+```
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--format, -f <fmt>` | `text` | `text` or `json` |
+| `--pretty` | off | Indented JSON even under the global `--json` |
+
 ### `pdfnative batch`
 
 Renders every JSON file in a directory to PDF **in parallel**, reusing the full `render` pipeline.
@@ -591,7 +698,7 @@ Subjects: `render`, `inspect`, `verify`, `batch`, `annotate` *(v1.2.0)*, `govern
 
 ### `pdfnative completion`
 
-Emits a shell-completion script: `pdfnative completion bash|zsh|fish`.
+Emits a shell-completion script: `pdfnative completion bash|zsh|fish|powershell` *(PowerShell added in v1.3.0)*.
 
 ---
 
@@ -709,7 +816,7 @@ The CLI **does not** open network connections, write to system directories outsi
 
 The CLI now covers nearly the full library surface; only Web Worker offloading remains library-only.
 
-| Feature | CLI v1.2.0 | Library |
+| Feature | CLI v1.3.0 | Library |
 |---|---|---|
 | Document rendering (13 block types) | ✅ | ✅ |
 | Streaming output | ✅ `--stream` / `--stream-true` | ✅ `buildDocumentPDFStream()` / `buildDocumentPDFStreamTrue()` |
