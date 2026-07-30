@@ -258,11 +258,17 @@ const bytes = renderSpecToBytes({
       "</Document>",
     ].join("\n"),
     multilingual: [
-      "// registerFont is re-exported from pdfnative-react for convenience.",
-      "registerFont('arabic', () => import('pdfnative/fonts/noto-arabic-data.js'));",
+      "// resolveFonts registers the loaders AND awaits the font data. Registering",
+      "// alone is not enough: rendering is synchronous and cannot await a loader.",
+      "// Keys are the engine language codes — 'ar', not 'arabic'.",
+      "const fontEntries = await resolveFonts({",
+      "  latin: () => import('pdfnative/fonts/noto-sans-data.js'),",
+      "  ar:    () => import('pdfnative/fonts/noto-arabic-data.js'),",
+      "});",
       "",
+      "// With real fonts embedded, the PDF/A-2b claim is actually conformant.",
       "return (",
-      "  <Document title=\"Multilingual\" layout={{ tagged: 'pdfa2b' }}>",
+      "  <Document title=\"Multilingual\" fontEntries={fontEntries} tagged=\"pdfa2b\">",
       "    <Heading level={1}>Multilingual demo</Heading>",
       "    <Paragraph>English paragraph rendered with the base font.</Paragraph>",
       "    <Paragraph>مرحبا بكم في pdfnative — نص عربي مع تشكيل.</Paragraph>",
@@ -326,11 +332,14 @@ const bytes = renderSpecToBytes({
       // Wrap the user's JSX into a default-exported async function. If the user
       // wrote an explicit `return`, respect it; otherwise treat the whole body
       // as a single JSX expression to return.
-      var hasReturn = /\breturn\b/.test(src);
+      // Match a `return` STATEMENT at the start of a line, not the word
+      // appearing inside JSX text — <Paragraph>Free return shipping</Paragraph>
+      // used to suppress the wrapper and produce a syntax error.
+      var hasReturn = /^[ \t]*return[\s(]/m.test(src);
       var body = hasReturn ? src : 'return (\n' + src + '\n);';
       var moduleSrc =
         "import React from 'react';\n" +
-        "import { registerFont } from 'pdfnative';\n" +
+        "import { resolveFonts } from 'pdfnative-react';\n" +
         "import { Document, Page, Section, Heading, Paragraph, Text, List, Item, Table, Row, Cell, Image, Link, Spacer, PageBreak, Barcode, Chart, Svg, FormField, TableOfContents, Toc, renderToBytes } from 'pdfnative-react';\n" +
         "export default async function build() {\n" + body + "\n}\n";
 

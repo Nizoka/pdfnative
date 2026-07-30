@@ -99,8 +99,8 @@
     </div>
 
     <div class="rs-claim">
-      <p><strong>The library never opens a socket.</strong> No telemetry endpoint, no auto-update channel, no remote font fetch. Searching the engine source for <code>fetch(</code>, <code>XMLHttpRequest</code>, <code>WebSocket</code>, <code>node:http</code> and <code>sendBeacon</code> returns nothing.</p>
-      <p>One scoped exception, stated because it is real: <code>pdfnative-cli verify</code> performs OCSP, CRL and RFC 3161 timestamp lookups when checking signature revocation. That is network access by design, and it is opt-in behaviour of one command — not something the engine does on its own.</p>
+      <p><strong>The library never opens a socket.</strong> No telemetry endpoint, no auto-update channel, no remote font fetch. Searching the engine source for any of the ways JavaScript can reach the network — <code>fetch</code>, <code>XMLHttpRequest</code>, <code>WebSocket</code>, <code>node:http</code>, <code>sendBeacon</code> — returns no matches at all.</p>
+      <p>One scoped exception, stated because it is real: <code>pdfnative-cli verify</code> can fetch OCSP and CRL responses when checking whether a signing certificate has been revoked. It does not do so by default — the default reads only the revocation data already embedded in the document, and network checks require <code>--revocation online</code>. RFC 3161 timestamps are <em>validated</em> from the embedded token; the CLI does not contact a timestamp authority, and <code>sign --timestamp</code> reports that it is not yet implemented.</p>
       <p class="rs-verify">Verify it: <code>grep -rE "fetch\(|XMLHttpRequest|WebSocket|node:http" src/</code> · <a href="https://github.com/Nizoka/pdfnative/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a></p>
     </div>
 
