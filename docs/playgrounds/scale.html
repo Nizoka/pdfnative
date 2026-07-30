@@ -33,13 +33,13 @@
     .sc-confirm { display: none; align-items: flex-start; gap: 8px; font-size: 13px; padding: 12px 14px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; color: #78350f; }
     [data-theme="dark"] .sc-confirm { background: #422006; border-color: #854d0e; color: #fde68a; }
     .sc-phases { display: grid; gap: 10px; margin: 24px 0; }
-    .sc-phase { display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 14px; opacity: .45; }
+    .sc-phase { display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 14px; opacity: .65; }
     .sc-phase[data-state="active"], .sc-phase[data-state="done"] { opacity: 1; }
     .sc-phase[data-state="done"] .sc-dot { background: var(--c-success); }
     .sc-phase[data-state="active"] .sc-dot { background: var(--c-primary); }
     .sc-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c-border); }
     .sc-phase-meta { font-variant-numeric: tabular-nums; color: var(--c-text-dim); font-size: 13px; }
-    .sc-bar { height: 8px; border-radius: 999px; background: var(--c-border); overflow: hidden; margin-top: 8px; }
+    .sc-bar { display: block; height: 8px; border-radius: 999px; background: var(--c-border); overflow: hidden; margin-top: 8px; }
     .sc-bar > i { display: block; height: 100%; width: 0; background: var(--c-primary); transition: width .2s; }
     .sc-bar.indeterminate > i { width: 100%; background: repeating-linear-gradient(115deg, var(--c-primary) 0 12px, transparent 12px 24px); animation: sc-slide 1s linear infinite; }
     @keyframes sc-slide { to { background-position: 24px 0; } }
@@ -163,13 +163,13 @@
         <span class="sc-estimate" id="estimate"></span>
       </div>
 
-      <div class="sc-row">
-        <strong>Output</strong>
+      <fieldset class="sc-row" style="border:0;padding:0;margin:0;">
+        <legend style="float:left;min-width:108px;font-weight:700;padding:0;">Output</legend>
         <label class="sc-sink"><input type="radio" name="sink" value="measure" checked> <span>Measure only</span></label>
         <label class="sc-sink"><input type="radio" name="sink" value="disk" id="sinkDisk"> <span>Save to disk</span></label>
         <label class="sc-sink"><input type="radio" name="sink" value="download" id="sinkDownload"> <span>Download</span></label>
         <p class="sc-reason" id="sinkReason"></p>
-      </div>
+      </fieldset>
 
       <div class="sc-row">
         <strong>Chunk size</strong>
@@ -192,18 +192,19 @@
       </div>
     </div>
 
-    <div id="status" class="sc-status" role="alert"></div>
+    <div id="status" class="sc-status" role="status"></div>
 
     <h2>Progress</h2>
-    <div class="sc-phases" aria-live="polite" id="phases">
+    <p id="phaseAnnounce" role="status" class="sr-only"></p>
+    <div class="sc-phases" id="phases">
       <div class="sc-phase" data-phase="build" data-state="idle">
         <span class="sc-dot"></span>
-        <span><strong>1 / 3 — Building the document model</strong><div class="sc-bar"><i id="barBuild"></i></div></span>
+        <span><strong>1 / 3 — Building the document model</strong><span class="sc-bar" role="progressbar" aria-label="Building the document model" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="barBuildBar"><i id="barBuild"></i></span></span>
         <span class="sc-phase-meta" id="metaBuild">—</span>
       </div>
       <div class="sc-phase" data-phase="assemble" data-state="idle">
         <span class="sc-dot"></span>
-        <span><strong>2 / 3 — Assembling PDF objects</strong><div class="sc-bar indeterminate" id="barAssembleWrap" style="display:none;"><i></i></div></span>
+        <span><strong>2 / 3 — Assembling PDF objects</strong><span class="sc-bar indeterminate" role="progressbar" aria-label="Assembling PDF objects" aria-valuetext="No progress signal is available during assembly" id="barAssembleWrap" style="display:none;"><i></i></span></span>
         <span class="sc-phase-meta" id="metaAssemble">—</span>
       </div>
       <div class="sc-phase" data-phase="stream" data-state="idle">
@@ -449,8 +450,14 @@ self.onmessage = async (e) => {
 const fmt = new Intl.NumberFormat('en-US');
 const mb = (b) => (b / 1048576).toFixed(b < 10485760 ? 2 : 1) + ' MB';
 
+const PHASE_LABEL = { build: 'Building the document model', assemble: 'Assembling PDF objects', stream: 'Encoding and streaming' };
+
 function setPhase(name, state) {
   document.querySelector(`.sc-phase[data-phase="${name}"]`).dataset.state = state;
+  // One announcement per transition. The per-chunk counters are deliberately
+  // outside any live region — they update dozens of times per run.
+  if (state === 'active') $('phaseAnnounce').textContent = PHASE_LABEL[name] + '…';
+  if (state === 'done' && name === 'stream') $('phaseAnnounce').textContent = 'Generation complete.';
 }
 function resetPhases() {
   for (const name of ['build', 'assemble', 'stream']) setPhase(name, 'idle');
@@ -527,6 +534,7 @@ $('generate').addEventListener('click', async () => {
   $('status').className = 'sc-status';
   $('generate').style.display = 'none';
   $('cancel').style.display = '';
+  $('cancel').focus();
   $('pagesQualifier').textContent = verifyPages ? '(measured)' : '(requested)';
 
   const blobUrl = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' }));
@@ -554,13 +562,16 @@ $('generate').addEventListener('click', async () => {
     activeWorker = null;
     $('generate').style.display = '';
     $('cancel').style.display = 'none';
+    $('generate').focus();
   };
 
   worker.onmessage = async (e) => {
     const d = e.data;
     if (d.type === 'build') {
       setPhase('build', 'active');
-      $('barBuild').style.width = (d.fraction * 100).toFixed(0) + '%';
+      const pct = (d.fraction * 100).toFixed(0);
+      $('barBuild').style.width = pct + '%';
+      $('barBuildBar').setAttribute('aria-valuenow', pct);
       $('metaBuild').textContent = `${fmt.format(Math.round(d.fraction * pages))} / ${fmt.format(pages)} pages`;
       if (d.ms !== undefined) {
         setPhase('build', 'done');
