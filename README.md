@@ -75,7 +75,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **95%+ statement coverage** — 2379+ tests across 105 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
+- **95%+ statement coverage** — 2388+ tests across 105 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1168,7 +1168,7 @@ src/
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (44 generators, ~227 PDFs)
-tests/                    # 2379+ tests (105 files: unit + integration + fuzz + parser)
+tests/                    # 2388+ tests (105 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1180,7 +1180,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (2379+ tests)
+npm run test             # vitest run (2388+ tests)
 npm run test:coverage    # vitest with v8 coverage (95%+ statements; CI gates: 88/80/85/90)
 npm run test:generate       # Generate ~227 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1195,7 +1195,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 2379+ (105 files) |
+| Tests | 2388+ (105 files) |
 | Statement coverage | 95.41% |
 | Branch coverage | 87.79% |
 | Function coverage | 98.5% |

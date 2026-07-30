@@ -106,7 +106,7 @@
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 2379,
+    "tests": 2388,
     "scripts": 22,
     "bundledFontModules": 26,
     "blockTypes": 13,

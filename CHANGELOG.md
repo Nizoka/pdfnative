@@ -78,6 +78,66 @@ only `src/` edits are JSDoc corrections.
   non-existent `chunks` field; `batch` documented with `--input`/`--output`
   instead of `--input-dir`/`--output-dir`.
 
+### Fixed — hardening pass
+
+A review of the branch against the four package sources found defects in the
+work above, several of them introduced by it. Recorded because the pass exists
+to make the documentation trustworthy, and hiding its own misses would defeat
+that.
+
+- **`docs/learn/` taught three snippets that do not work** — on pages whose
+  stated argument was that every snippet had been executed. A `lang` field on a
+  paragraph block (no block type has one, so Thai and Arabic rendered as tofu),
+  a `list` without its required `style`, and `level (1–6)` where `HeadingBlock`
+  accepts 1–3. All rewritten and verified by running the published text.
+- **`registerFont` alone never reaches the builder.** `buildDocumentPDFBytes` is
+  synchronous and cannot await a loader; the working pattern is
+  `registerFonts` → `await loadFontData` → `fontEntries`. This was the root
+  cause of Arabic rendering as `????` in the React playground, compounded by the
+  preset registering under `'arabic'` where the engine looks up `'ar'`.
+- **Three playgrounds declared PDF/A conformance they did not have.** `tagged`
+  writes the XMP declaration but embeds no font, and ISO 19005 requires every
+  font embedded — so those files would fail veraPDF. Fixed by embedding a font,
+  which makes the claim true; the trap is now documented in
+  `docs/guides/pdfa.md`.
+- **`scale.html` documented a main-thread fallback that does not exist**, and
+  left the UI permanently stuck when the Worker constructor threw on `file://`.
+  Its page counter also dominated the throughput it reported — replaced with
+  `TextDecoder`, which moved the measured figure from 8,146 to 22,950 pages/s
+  at 10,000 pages.
+- **The homepage benchmark figures contradicted `bench/RESULTS.md` by three to
+  six times** — the file this branch added as their source. Both re-measured
+  from one run, and a new `bench-parity` rule now fails the build if they
+  diverge again.
+- **Two denylisted phantom APIs survived in `src/` JSDoc** and were being
+  published into `dist/index.d.ts`. The verifier had never scanned `src/`.
+- **Nineteen references to the retired medical-800 playground** survived a pass
+  that updated every switcher, including a full card on the playground hub and
+  the URL contributors are told to open in `CONTRIBUTING.md`. The stub is now
+  deleted outright.
+- **Guides had drifted from their packages**: `cli.md` announced 17 commands and
+  listed 12, with no reference section for the five v1.3.0 ones; `mcp.md` had no
+  v1.5.0 section and attributed 24 tools to a release that shipped 19;
+  `react.md` had a 1.1.0 header over a 1.0.0 body and implied that importing the
+  root barrel from a Server Component works, when it fails.
+- **Five contrast pairs failed WCAG AA** in exactly the place the new contrast
+  rule could not look — it compared tokens only against the page background,
+  while `.rs-verify` sits on `--c-surface` at 4.34:1.
+- **`scale.html` had no `role="progressbar"` anywhere**, an `aria-live` region
+  streaming counters dozens of times per run, and its download link inside a
+  `role="alert"`.
+- The `architecture.svg` badge overflowed its pill by ~40 px and the parser
+  subtitle overflowed its box by ~150 px. The React version label is removed —
+  a version does not belong in an architecture diagram.
+
+`scripts/verify-docs.ts` is hardened accordingly: assertions compare captured
+numbers for equality instead of listing values already known to be wrong (which
+is how "19 pdfnative-mcp tools" passed), the denylist scans `src/`, contrast is
+checked per token-surface pair, links to `noindex` stubs are rejected, and
+`tests/docs/verify-docs.test.ts` proves each rule by introducing the defect it
+exists for — a regex rule that matches nothing is indistinguishable from one
+that passes.
+
 ### Changed
 
 - Compliance and security wording brought down to what the code supports:
