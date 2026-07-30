@@ -130,7 +130,7 @@ const pdf = buildDocumentPDFBytes({
 });
 ```
 
-The `lang` property is what triggers BiDi resolution and OpenType shaping. See the [FAQ → Fonts and Unicode](faq.html#fonts-and-unicode) for the full list.
+Note that `lang` is a property of each **font entry**, not of a block: pdfnative detects the script per character and routes to the matching font, so a single paragraph can mix Thai, Arabic and Latin. BiDi resolution and OpenType shaping follow from that routing. See the [FAQ → Fonts and Unicode](faq.html#fonts-and-unicode) for the full list of codes.
 
 ## Web Worker
 
@@ -169,10 +169,10 @@ The async iterable yields `Uint8Array` chunks as the PDF is produced — no full
 
 ## Playgrounds
 
-Both interactive playgrounds on [pdfnative.dev](https://pdfnative.dev) run entirely in the browser:
+The interactive playgrounds on [pdfnative.dev](https://pdfnative.dev) run entirely in the browser:
 
 - [Extreme scripts](../playgrounds/extreme-scripts.html) — live BiDi, Tamil, Bengali + Devanagari, Arabic harakat
-- [Medical 800-page](../playgrounds/medical-800.html) — Web Worker + streaming showcase
+- [Scale](../playgrounds/scale.html) — 1,000 to 100,000 pages, Web Worker + true streaming
 
 > **Local testing:** opening the playgrounds as `file://` disables the Web Worker
 > (browsers block cross-origin Worker imports from `file:` origins).
@@ -216,4 +216,4 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 - [Accessibility](accessibility.html) — tagged PDF, PDF/UA, PDF/A.
 - [FAQ](faq.html) — fonts, encryption, signatures, comparisons.
 - [Troubleshooting](troubleshooting.html) — common pitfalls and fixes.
-- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — ~187 PDFs across 32 categories.
+- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — ~227 PDFs across 36 categories.

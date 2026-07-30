@@ -63,7 +63,7 @@ test-output/extreme/  # Visual regression baselines for extreme scripts (extreme
 tests/            # 2379+ tests (104 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
-  └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, medical-800.html)
+  └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, scale.html)
 ```
 
 - **Single entry point**: `src/index.ts` re-exports everything. All public API surfaces live there.

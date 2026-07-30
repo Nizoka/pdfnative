@@ -48,7 +48,7 @@ python -m http.server 5000 --directory docs/   # Python stdlib, no install
 Then open:
 - `http://localhost:5000/` — landing page
 - `http://localhost:5000/playgrounds/extreme-scripts.html` — extreme-scripts playground
-- `http://localhost:5000/playgrounds/medical-800.html` — medical 800-page playground
+- `http://localhost:5000/playgrounds/scale.html` — scale playground (1k-100k pages)
 - `http://localhost:5000/guides/` — guides index
 
 ## Test
