@@ -49,7 +49,7 @@ function runVerifier(root: string): Run {
  */
 function makeSandbox(): string {
     const dir = mkdtempSync(join(tmpdir(), 'pdfnative-verify-'));
-    for (const entry of ['docs', 'src', 'tests', 'scripts', 'bench']) {
+    for (const entry of ['docs', 'src', 'tests', 'scripts', 'bench', '.github']) {
         const from = join(ROOT, entry);
         if (existsSync(from)) cpSync(from, join(dir, entry), { recursive: true });
     }
@@ -160,6 +160,69 @@ describe('verify-docs', () => {
                 writeFileSync(p, text.replace(/ integrity="sha384-[^"]+"/, ''));
                 const run = runVerifier(dir);
                 expect(run.output).toContain('cdn-sri');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('version-token rejects a package name paired with a version the manifest contradicts', () => {
+            withSandbox((dir) => {
+                // The exact drift that survived two releases: a prose sentence
+                // pairing a package name with a superseded version. stale-token
+                // never matched it because no counted noun follows.
+                const p = join(dir, 'README.md');
+                writeFileSync(p, readFileSync(p, 'utf8') + '\nThe pdfnative-mcp v9.9.9 server does things.\n');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('version-token');
+                expect(run.output).toContain('pdfnative-mcp is');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('cdn pinning is enforced in .js and .md files, not only in HTML', () => {
+            withSandbox((dir) => {
+                // The homepage demo runner imported the registry `latest` for a
+                // full release train because the pin scan stopped at HTML.
+                const p = join(dir, 'docs', 'app.js');
+                const text = readFileSync(p, 'utf8');
+                expect(text).toMatch(/https:\/\/esm\.sh\/pdfnative@\d+\.\d+\.\d+/);
+                writeFileSync(p, text.replace(/(https:\/\/esm\.sh\/pdfnative)@\d+\.\d+\.\d+/, '$1'));
+                const run = runVerifier(dir);
+                expect(run.output).toContain('cdn-sri');
+                expect(run.output).toContain('unpinned');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('api-exists rejects a denylisted identifier in .github/instructions/', () => {
+            withSandbox((dir) => {
+                // Instruction files teach agents what to write; a phantom API
+                // there propagates into every future contribution.
+                const p = join(dir, '.github', 'instructions', 'api-design.instructions.md');
+                writeFileSync(p, readFileSync(p, 'utf8') + '\nCall streamPdf(params) for streaming.\n');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('api-exists');
+                expect(run.output).toContain('streamPdf');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('llms-sync requires the served docs/llms.txt to match the root llms.txt', () => {
+            withSandbox((dir) => {
+                const p = join(dir, 'docs', 'llms.txt');
+                writeFileSync(p, readFileSync(p, 'utf8') + '\nDrifted line.\n');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('llms-sync');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('llms-sync requires docs/llms-full.txt to be regenerated when a guide changes', () => {
+            withSandbox((dir) => {
+                const p = join(dir, 'docs', 'guides', 'quickstart.md');
+                writeFileSync(p, readFileSync(p, 'utf8') + '\nA new paragraph the concatenation does not have.\n');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('llms-sync');
+                expect(run.output).toContain('stale');
                 expect(run.status).toBe(1);
             });
         }, 120_000);

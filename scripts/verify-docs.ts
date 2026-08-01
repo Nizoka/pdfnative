@@ -141,11 +141,21 @@ const MANIFEST_REL = rel(MANIFEST_PATH);
 // ── The documentation corpus ────────────────────────────────────────
 
 const DOC_FILES: string[] = [
-    ...walk(join(ROOT, 'docs'), (p) => /\.(html|md|js|svg|xml|txt)$/.test(p) && !p.includes('ecosystem.json')),
+    // llms-full.txt is generated from files already in the corpus; scanning the
+    // concatenation would double-report every finding at useless line numbers.
+    ...walk(
+        join(ROOT, 'docs'),
+        (p) => /\.(html|md|js|svg|xml|txt)$/.test(p) && !p.includes('ecosystem.json') && !p.endsWith('llms-full.txt'),
+    ),
     ...['README.md', 'ROADMAP.md', 'AGENTS.md', 'CONTRIBUTING.md', 'SECURITY.md', 'llms.txt']
         .map((f) => join(ROOT, f))
         .filter(existsSync),
     ...['.github/copilot-instructions.md'].map((f) => join(ROOT, f)).filter(existsSync),
+    // Agent-facing instruction files are documentation too — three of them
+    // taught denylisted phantom APIs for a full release train because they
+    // were outside the corpus.
+    ...walk(join(ROOT, '.github', 'instructions'), (p) => p.endsWith('.md')),
+    ...walk(join(ROOT, '.github', 'prompts'), (p) => p.endsWith('.md')),
 ];
 
 const HTML_FILES = walk(join(ROOT, 'docs'), (p) => p.endsWith('.html'));
@@ -202,9 +212,29 @@ const actualDerived: Record<string, number> = {
 };
 
 // samplePdfs only counts when the samples have actually been generated;
-// test-output/ is git-ignored, so an empty tree is not a failure.
+// test-output/ is git-ignored, so an empty tree is not a failure. A partially
+// generated tree is not one either — it is the normal local state after a
+// single generator run — so a shortfall only warns. Overcounting still fails:
+// more PDFs on disk than the manifest declares means the manifest is stale.
 const samplePdfs = walk(join(ROOT, 'test-output'), (p) => p.endsWith('.pdf')).length;
-if (samplePdfs > 0) actualDerived.samplePdfs = samplePdfs;
+const declaredSamplePdfs = manifest.derived['samplePdfs'];
+if (samplePdfs > 0 && declaredSamplePdfs !== undefined) {
+    if (samplePdfs > declaredSamplePdfs) {
+        fail(
+            MANIFEST_REL,
+            1,
+            'derived-counts',
+            `derived.samplePdfs says ${declaredSamplePdfs} but the tree has ${samplePdfs} — update the manifest, not the docs`,
+        );
+    } else if (samplePdfs < declaredSamplePdfs) {
+        warn(
+            MANIFEST_REL,
+            1,
+            'derived-counts',
+            `test-output/ holds ${samplePdfs} of ${declaredSamplePdfs} declared sample PDFs — run \`npm run test:generate\` for a full check`,
+        );
+    }
+}
 
 for (const [key, actual] of Object.entries(actualDerived)) {
     const declared = manifest.derived[key];
@@ -246,7 +276,8 @@ for (const assertion of manifest.assertions) {
                 const line = lineOf(text, m.index);
                 if (isSuppressed(lines, line, 'stale-token')) continue;
                 if (isEquality) {
-                    const found = Number(m[1]);
+                    // "2 388" and "2,388" are the same number as 2388.
+                    const found = Number(m[1].replace(/[\s  ,]/g, ''));
                     if (!Number.isFinite(found) || found === assertion.expect) continue;
                     fail(rel(file), line, 'stale-token', `"${m[0].trim()}" — the manifest says ${assertion.expect} (${assertion.id})`);
                 } else {
@@ -272,22 +303,76 @@ for (const assertion of manifest.assertions) {
     }
 }
 
+// ── Rule: version-token ─────────────────────────────────────────────
+
+/**
+ * A package name with a nearby semver that disagrees with the manifest is the
+ * most damaging drift a doc can carry — "pdfnative-mcp v1.3.0 is a Model
+ * Context Protocol server" survived two releases because stale-token only
+ * matches counted nouns ("24 tools"), never version strings. Historical prose
+ * ("v1.4.0 upgraded the engine to pdfnative 1.5.0") opts out with the same
+ * `verify-docs:allow` marker; `stale-token` allows are honoured too, since
+ * every existing historical annotation predates this rule.
+ *
+ * Range specifiers (`^1.29.0`, `~4.0.0`) are dependency pins and API floors
+ * (`pdfnative ≥ 1.5.0`) are minimums, not claims about the package's current
+ * version — both are skipped via lookbehind, as are ISO clause numbers
+ * (`§6.3.2`). The gap between name and version must not cross a quote, a
+ * slash, a paren or a sentence boundary: a GitHub URL segment
+ * (`pdfnative/blob/main/release-notes/v1.5.0`), a parenthesised historical
+ * aside, or the next sentence's feature tag is not a claim about the
+ * package's current version. What remains is exactly the prose form that
+ * drifted: `pdfnative-mcp v1.3.0 is a …`.
+ */
+for (const [name, pkg] of Object.entries(manifest.packages)) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // "pdfnative" must not match inside "pdfnative-cli" / "pdfnative-react.js".
+    const re = new RegExp(
+        `\\b${escaped}(?![\\w-])[^\\n'"\`/().]{0,60}?(?<![\\^~\\d.§])(?<![<>≥≤=]\\s{0,3})\\bv?(\\d+\\.\\d+\\.\\d+)\\b`,
+        'g',
+    );
+    for (const file of DOC_FILES) {
+        const text = read(file);
+        const lines = text.split(/\r?\n/);
+        re.lastIndex = 0;
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(text)) !== null) {
+            if (m[1] === pkg.version) continue;
+            const line = lineOf(text, m.index);
+            if (isSuppressed(lines, line, 'version-token') || isSuppressed(lines, line, 'stale-token')) continue;
+            fail(rel(file), line, 'version-token', `"${m[0].trim()}" — the manifest says ${name} is ${pkg.version}`);
+        }
+    }
+}
+
 // ── Rule: api-exists ────────────────────────────────────────────────
 
 // The denylist scan spans src/ as well. JSDoc from src/ is emitted into
 // dist/index.d.ts, so a phantom identifier there reaches every consumer's
 // IntelliSense — which is exactly how two of them survived the first pass.
-const DENYLIST_FILES = [...DOC_FILES, ...walk(join(ROOT, 'src'), (f) => f.endsWith('.ts'))];
+// CHANGELOG.md joins the scan here (but not the full corpus: its historical
+// prose legitimately quotes superseded counts). Phantom API names are never
+// legitimate, even in history — v1.0.0 already exported the real ones.
+const DENYLIST_FILES = [
+    ...DOC_FILES,
+    ...walk(join(ROOT, 'src'), (f) => f.endsWith('.ts')),
+    ...['CHANGELOG.md'].map((f) => join(ROOT, f)).filter(existsSync),
+];
 
 for (const [phantom, replacement] of Object.entries(manifest.apiDenylist)) {
     if (phantom.startsWith('$')) continue;
     const re = new RegExp(`\\b${phantom}\\b`, 'g');
     for (const file of DENYLIST_FILES) {
         const text = read(file);
+        const lines = text.split(/\r?\n/);
         re.lastIndex = 0;
         let m: RegExpExecArray | null;
         while ((m = re.exec(text)) !== null) {
-            fail(rel(file), lineOf(text, m.index), 'api-exists', `${phantom}() is not exported by pdfnative — use ${replacement}`);
+            const line = lineOf(text, m.index);
+            // The only legitimate mention of a phantom is the one that bans it
+            // (e.g. the changelog entry describing this very denylist).
+            if (isSuppressed(lines, line, 'api-exists')) continue;
+            fail(rel(file), line, 'api-exists', `${phantom}() is not exported by pdfnative — use ${replacement}`);
         }
     }
 }
@@ -470,10 +555,13 @@ for (const file of HTML_FILES) {
     }
 }
 
-// Playground pdfnative imports must be pinned to the manifest version.
+// pdfnative CDN imports must be pinned to the manifest version — everywhere,
+// not just in HTML. The homepage demo runner (docs/app.js) and the quickstart
+// guide both imported the registry's `latest` for a full release train because
+// this scan used to stop at HTML_FILES.
 const CORE_VERSION = manifest.packages['pdfnative'].version;
 const UNPINNED = /['"]https:\/\/(?:esm\.sh|cdn\.jsdelivr\.net\/npm|unpkg\.com)\/(pdfnative(?:-cli|-mcp|-react)?)(?![@\w-])/g;
-for (const file of HTML_FILES) {
+for (const file of DOC_FILES) {
     const text = read(file);
     UNPINNED.lastIndex = 0;
     let m: RegExpExecArray | null;
@@ -726,6 +814,34 @@ if (existsSync(STYLE)) {
     }
 }
 
+// ── Rule: llms-sync ─────────────────────────────────────────────────
+
+/**
+ * The site is served from docs/ (CNAME lives there), so the repo-root
+ * `llms.txt` is invisible to any agent probing https://pdfnative.dev/llms.txt
+ * unless an identical copy sits in docs/. Same story for `llms-full.txt`,
+ * which is generated — a stale copy would quietly serve last release's guides.
+ */
+const { buildLlmsFull } = await import('./build-llms-full.ts');
+
+const LLMS_ROOT = join(ROOT, 'llms.txt');
+const LLMS_SITE = join(ROOT, 'docs', 'llms.txt');
+if (existsSync(LLMS_ROOT)) {
+    if (!existsSync(LLMS_SITE)) {
+        fail('docs/llms.txt', 1, 'llms-sync', 'missing — the site is served from docs/, so llms.txt must be copied there');
+    } else if (read(LLMS_ROOT).replace(/\r\n/g, '\n') !== read(LLMS_SITE).replace(/\r\n/g, '\n')) {
+        fail('docs/llms.txt', 1, 'llms-sync', 'differs from the root llms.txt — the two copies must stay identical');
+    }
+}
+
+const LLMS_FULL = join(ROOT, 'docs', 'llms-full.txt');
+const expectedFull = buildLlmsFull(ROOT);
+if (!existsSync(LLMS_FULL)) {
+    fail('docs/llms-full.txt', 1, 'llms-sync', 'missing — generate it with `npx tsx scripts/build-llms-full.ts`');
+} else if (read(LLMS_FULL).replace(/\r\n/g, '\n') !== expectedFull) {
+    fail('docs/llms-full.txt', 1, 'llms-sync', 'stale — regenerate with `npx tsx scripts/build-llms-full.ts`');
+}
+
 // ── Rule: npm-drift (--online only) ─────────────────────────────────
 
 if (ONLINE) {
@@ -766,9 +882,26 @@ if (JSON_OUT) {
     process.exit(errors.length > 0 ? 1 : 0);
 }
 
+const OFFLINE_RULES = [
+    'manifest-shape',
+    'derived-counts',
+    'stale-token',
+    'canonical-present',
+    'version-token',
+    'api-exists',
+    'jsonld-version',
+    'internal-links',
+    'sitemap-parity',
+    'cdn-sri',
+    'switcher-parity',
+    'learn-chain',
+    'bench-parity',
+    'contrast',
+    'llms-sync',
+] as const;
+
 if (problems.length === 0) {
-    const ruleCount = 11;
-    console.log(`verify-docs: ${ruleCount} rules passed across ${DOC_FILES.length} files.`);
+    console.log(`verify-docs: ${OFFLINE_RULES.length} rules passed across ${DOC_FILES.length} files.`);
     console.log(`             source of truth: ${MANIFEST_REL} (verified ${manifest.verifiedOn})`);
     process.exit(0);
 }

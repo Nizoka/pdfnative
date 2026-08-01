@@ -25,6 +25,7 @@ on:
       - '**.md'
       - 'llms.txt'
       - 'scripts/verify-docs.ts'
+      - 'scripts/build-llms-full.ts'
       - '.github/workflows/docs.yml'
   push:
     branches: [main, master]
@@ -33,6 +34,7 @@ on:
       - '**.md'
       - 'llms.txt'
       - 'scripts/verify-docs.ts'
+      - 'scripts/build-llms-full.ts'
       - '.github/workflows/docs.yml'
   schedule:
     # Mondays 06:00 UTC — catch npm drift without blocking anyone's PR.

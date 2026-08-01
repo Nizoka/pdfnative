@@ -1,7 +1,7 @@
 {
   "name": "pdfnative",
   "version": "1.6.0",
-  "description": "Zero-dependency native PDF library: generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (RC4, AES-128/256), and draw native vector charts. 22 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Telugu, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic, Cyrillic, Greek, Georgian, Armenian, Latin), BiDi, PDF/A-1b/2b/3b, digital signatures, barcodes, SVG (with text), markup annotations, COLRv1 colour emoji. Pure TypeScript ISO 32000-1 implementation, built under a human-in-the-loop AI-agent governance policy.",
+  "description": "Zero-dependency native PDF library: generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (RC4, AES-128/256), and draw native vector charts. 22 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Telugu, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic, Cyrillic, Greek, Georgian, Armenian, Latin), BiDi, PDF/A-1b/2b/2u/3b, digital signatures, barcodes, SVG (with text), markup annotations, COLRv1 colour emoji. Pure TypeScript ISO 32000-1 implementation, built under a human-in-the-loop AI-agent governance policy.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -64,6 +64,7 @@
     "test:generate": "npx tsx scripts/generate-samples.ts",
     "validate:pdfa": "npx tsx scripts/validate-pdfa.ts",
     "verify:docs": "npx tsx scripts/verify-docs.ts",
+    "docs:llms": "npx tsx scripts/build-llms-full.ts",
     "fonts:download": "npx tsx scripts/download-fonts.ts",
     "verify:issue": "node scripts/verify-issue.mjs",
     "lint": "eslint src/",
