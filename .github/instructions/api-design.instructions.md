@@ -37,18 +37,18 @@ applyTo: "src/index.ts"
 6. Core — Color Utilities (`parseColor`, `isValidPdfRgb`, `normalizeColors`)
 7. Core — Watermark (`WatermarkState`, `validateWatermark`, `buildWatermarkState`)
 8. Core — Layout (`PG_W`, `PG_H`, `HEADER_H`, `PAGE_SIZES`, `resolveTemplate`, `resolveLayout`, `computeColumnPositions`)
-9. Core — Tagged PDF & PDF/A (`StructElement`, `MCRef`, `wrapSpan`, `buildStructureTree`, `buildXMPMetadata`, etc.)
-10. Core — Stream Compression (`initNodeCompression`, `setDeflateImpl`, `deflateSync`, `deflateStored`, `compressStream`, `adler32`, `uint8ToBinaryString`)
+9. Core — Tagged PDF & PDF/A (`resolvePdfAConfig`, `buildEmbeddedFiles`, `validateAttachments`, `PDF_A_CONFORMANCE_TARGETS`, `PdfAConfig`, `PdfAConformanceTarget`) — structure-tree/XMP internals (`buildStructureTree`, `buildXMPMetadata`, `wrapSpan`, `StructElement`, `MCRef`) are private, never re-export them
+10. Core — Stream Compression (`initNodeCompression`, `setDeflateImpl`) — `deflateSync`/`deflateStored`/`compressStream`/`adler32`/`uint8ToBinaryString` are private
 11. Fonts — Encoding & Loading
 12. Shaping — Thai & Multi-Script (`detectCharLang`, `detectFallbackLangs`, `splitTextByFont`, `needsUnicodeFont`)
-13. Shaping — BiDi & Arabic/Hebrew (`resolveBidiRuns`, `containsRTL`, `shapeArabicText`, `containsArabic`, `containsHebrew`, `BidiType`, `BidiRun`)
+13. Shaping — BiDi & Arabic/Hebrew (`resolveBidiRuns`, `containsRTL`, `normalizeBidiEmbeddings`, `stripBidiControls`, `shapeArabicText`, `containsArabic`, `containsHebrew`, `BidiRun`) — `BidiType` is private
 14. Worker — Off-Thread Generation
-15. Core — SVG Rendering (`parseSvg`, `renderSvgToPdf`, `SvgSegment`)
-16. Core — AcroForm (`buildAcroFormDict`, `buildFormField`, `buildAppearanceStream`, `buildRadioGroupParent`, `RadioGroupContext`, `FormFieldBlock`)
-17. Core — Digital Signatures (`buildSignatureField`, `signPdfBytes`)
-18. Core — Streaming (`streamPdf`, `streamDocumentPdf`, `buildPdfStream`, `StreamOptions`)
-19. Crypto — Primitives (`sha384`, `sha512`, `hmacSha256`, `rsaSign`, `ecdsaSign`, `parseX509`, `buildCmsSignedData`)
-20. Parser — Read & Modify (`PdfReader`, `PdfModifier`, `PdfTokenizer`, `parseObject`, `parseXref`, `PdfValue`, `PdfDict`, `PdfRef`, `extractText`, `mergePdfs`/`splitPdf`/`extractPages` + streaming variants)
+15. Core — SVG Rendering (`parseSvgPath`, `renderSvg`, `SvgSegment`, `SvgRenderOptions`)
+16. Core — AcroForm & Charts (`buildFormWidget`, `buildAcroFormDict`, `buildAppearanceStreamDict`, `buildRadioGroupParent`, `defaultFieldHeight`, `RadioGroupContext`, `FormFieldType`, `FormField`; form fill: `readFormFields`, `fillForm`, `flattenForm`; charts: `renderChartBlock`, `estimateChartHeight`, `niceTicks`, `ChartBlock`)
+17. Core — Digital Signatures (`buildSigDict`, `signPdfBytes`, `estimateContentsSize`, `addSignaturePlaceholder`, `PdfSignOptions`, `SigDictMetadata`)
+18. Core — Streaming (`buildPDFStream`, `buildDocumentPDFStream`, `buildPDFStreamTrue`, `buildDocumentPDFStreamTrue`, `buildPDFStreamPageByPage`, `buildDocumentPDFStreamPageByPage`, `streamToFile`, `StreamOptions`)
+19. Crypto — Primitives (`sha384`, `sha512`, `hmacSha256`, `rsaSign`, `ecdsaSign`, `parseCertificate`, `buildCmsSignedData`, `setCryptoProvider`)
+20. Parser — Read & Modify (`openPdf`/`PdfReader`, `createModifier`/`PdfModifier`, `createTokenizer`/`PdfTokenizer`, `parseValue`, `parseIndirectObject`, `parseXrefTable`, `PdfValue`, `ParsedDict`, `PdfRef`, `extractText`, `readFormFields`-family lives in core, `mergePdfs`/`splitPdf`/`extractPages` + streaming variants, `validatePdfUA`, decode filters)
 
 ## Parser Option-Type Precedent
 - Parser-module option/result types live in the module itself (`MergeOptions`,

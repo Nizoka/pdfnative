@@ -25,5 +25,5 @@ Add support for a new Unicode script in pdfnative.
 - See `src/shaping/script-detect.ts` for existing Unicode range patterns
 - See `src/shaping/bengali-shaper.ts` and `src/shaping/tamil-shaper.ts` for OpenType shaping examples
 - See `src/fonts/encoding.ts` for CIDFont encoding logic
-- See `fonts/` directory for existing font data module examples (22 scripts)
+- See `fonts/` directory for existing font data module examples — 26 font-data modules (22 scripts + Latin + math + mono and colour emoji)
 - See `tools/build-font-data.cjs` for the font data generation tool

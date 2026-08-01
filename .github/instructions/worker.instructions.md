@@ -18,7 +18,7 @@ applyTo: "src/worker/**"
 
 ## Error Handling
 - Worker errors: catch both `onerror` and `onmessageerror`
-- Timeout: configurable via `WORKER_TIMEOUT_MS` (default: 30s)
+- Timeout: configurable via `WORKER_TIMEOUT_MS` (default: 60s / 60000 ms)
 - Fallback: if Worker creation fails, generate on main thread
 - Never swallow errors — always propagate to caller
 
