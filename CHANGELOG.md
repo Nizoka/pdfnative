@@ -177,7 +177,7 @@ had fixed instances while their classes survived elsewhere:
   streaming in `ROADMAP.md`, and a `file://` message in `scale.html` still
   promising a 1,000-page cap for a main-thread path that was removed.
 - **Counts unified against the tree**: 228 sample PDFs across 37 categories
-  (44 generators), 2 393 tests in 105 files on the homepage (was 2 379+/104 —
+  (44 generators), 2 396 tests in 105 files on the homepage (was 2 379+/104 —
   the count includes the five verifier fixtures this audit adds),
   89 fuzz tests in 5 files (was "48"), 26 bundled font modules, and coverage
   figures dated to their v1.6.0 measurement with the CI gates (88/80/85/90)
@@ -190,6 +190,38 @@ had fixed instances while their classes survived elsewhere:
   Markdown fallbacks and `rel="alternate"` links for non-JS readers, and the
   Learn/Guides/Playgrounds/Responsibility navigation is now uniform across
   page families.
+- **The homepage "PDF/A archival" demo failed veraPDF** (ISO 19005-2
+  §6.2.11.4.1) — the only executable PDF/A demo on the site with no
+  `fontEntries`, so the engine fell back to unembedded standard-14
+  Helvetica/Helvetica-Bold while `tagged: 'pdfa2b'` still wrote the XMP
+  conformance claim. The demo now embeds Noto Sans like every other PDF/A
+  sample. Two adjacent bugs fixed in the same pass: the multilang demo and
+  two static homepage snippets placed `tagged` in the params object instead
+  of layoutOptions, where it is silently ignored — the flag never did
+  anything there, so removing/relocating it changes no output.
+- **The 7 page-tree golden fixtures were corrupted at checkout on Windows** —
+  `core.autocrlf=true` (a common system-git default) classified the small
+  PDFs as text and rewrote their line endings, while `git status` stayed
+  clean; the blobs in git were always intact and CI (Linux) was always
+  green, which is why the corruption looked like flaky tests. A root
+  `.gitattributes` now declares every binary extension, closing the class.
+- **International SEO** — every indexable page now self-references with
+  `hreflang="en"` + `hreflang="x-default"` (the signal that makes a
+  monolingual site the default result for every locale), carries
+  `og:locale` and JSON-LD `inLanguage`, and the sitemap mirrors the
+  alternates via `xhtml:link`. The 22-script greeting table in the
+  all-scripts playground moved out of a `<script>` block into crawlable
+  HTML with per-cell `lang`/`dir` — the demo now reads the visible table,
+  so indexed content and rendered content are the same data. A new
+  `seo-head` rule (with fixtures) keeps all of it enforced.
+- **`docs.yml` was the only workflow not pinned by SHA** — actions are now
+  pinned like every other workflow (plus the two residual `@v4` floats in
+  verapdf.yml and visual-regression.yml), `persist-credentials: false` set,
+  and `src/**` added to its path filters: the `api-exists` rule cross-checks
+  documented identifiers against `src/`, so a rename there could break the
+  docs without triggering the workflow. `npm-drift` became directional —
+  docs behind npm still fails `--strict`, a manifest ahead of npm (the
+  normal pre-publication window) only warns.
 
 ### Changed
 
