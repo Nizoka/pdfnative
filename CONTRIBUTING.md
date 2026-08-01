@@ -54,14 +54,14 @@ Then open:
 ## Test
 
 ```bash
-npm run test           # vitest run (2388+ tests)
+npm run test           # vitest run (2393+ tests)
 npm run test:watch     # vitest (watch mode)
-npm run test:coverage  # vitest with v8 coverage (95%+ stmts)
-npm run test:generate  # Generate ~227 sample PDFs → test-output/
+npm run test:coverage  # vitest with v8 coverage (95%+ stmts measured at the v1.6.0 release; CI enforces ≥88%)
+npm run test:generate  # Generate ~228 sample PDFs → test-output/
 npm run bench          # Performance benchmarks (vitest bench)
 ```
 
-All new code must include tests. Coverage thresholds: statements 90%, branches 80%, functions 85%, lines 90%.
+All new code must include tests. Coverage thresholds (vitest.config.ts): statements 88%, branches 80%, functions 85%, lines 90%.
 
 ## Lint & Type Check
 
@@ -90,17 +90,17 @@ All must pass before opening a PR.
 
 ```
 src/
-├── core/         # PDF assembly, document builder, shared assembler, encoding context, text rendering, binary stream, layout, tagged PDF, images, annotations, encryption, barcodes, SVG, forms, signatures, streaming
+├── core/         # PDF assembly, document builder, shared assembler, encoding context, text rendering, binary stream, layout, tagged PDF, images, annotations, encryption, barcodes, SVG, forms, form fill & flatten (pdf-form-fill.ts), native vector charts (pdf-chart.ts), signatures, streaming
 ├── crypto/       # Zero-dependency cryptographic primitives (SHA, AES, RSA, ECDSA, X.509, CMS)
-├── parser/       # PDF reading & incremental modification (tokenizer, object parser, xref, reader, modifier)
+├── parser/       # PDF reading & incremental modification (tokenizer, object parser, xref, reader, modifier, decode filters (pdf-decode-filters.ts), decryption (pdf-decrypt.ts), page-tree merge/split/extract (pdf-pagetree.ts), text extraction (pdf-text-extract.ts))
 ├── fonts/        # WinAnsi + CIDFont pure encoding, font loader, TTF subsetter (buffer guards), CMap
 ├── shaping/      # Script registry, Thai/Devanagari/Bengali/Tamil GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
-fonts/            # Pre-built font data modules (22 scripts)
+fonts/            # 26 pre-built font-data modules (22 scripts + Latin + math + mono and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (44 generators, ~227 PDFs)
-tests/            # 2388+ tests (105 files: unit + integration + fuzz + parser), mirrors src/ structure
+scripts/          # Modular sample PDF generation (44 generators, ~228 PDFs)
+tests/            # 2393+ tests (105 files: unit + integration + fuzz + parser), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 

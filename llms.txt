@@ -37,6 +37,7 @@
 - [Agentic workflows](https://pdfnative.dev/guides/agentic-workflows.html): Patterns for driving pdfnative from AI agents on public, validated APIs.
 - [AI governance](https://pdfnative.dev/guides/ai-governance.html): The human-in-the-loop contract — agents draft, humans review, approve and submit.
 - [Responsibility](https://pdfnative.dev/responsibility.html): Sustainability, supply-chain and accessibility position — every claim linked to its proof, plus an explicit list of what is deliberately not claimed.
+- [Ecosystem manifest](https://pdfnative.dev/assets/ecosystem.json): Machine-readable versions and counts for the whole ecosystem (canonical, enforced by `npm run verify:docs`).
 
 > Guide pages render their markdown client-side. For the full text without executing JavaScript, request the `.md` source at the same path — e.g. `https://pdfnative.dev/guides/charts.md`.
 
@@ -52,10 +53,10 @@
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 44 sample generators producing reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2388 tests across 105 files. 95%+ coverage.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2393 tests across 105 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
 
 ## Ecosystem
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.6.0) — render, sign, inspect, verify, merge, split, extract, annotate, govern, batch, schema.
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.6.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
 - [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 24 AI tools (v1.5.0, built on pdfnative 1.6.0).
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v1.1.0, React 19 + pdfnative ^1.6.0 peers).

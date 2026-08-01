@@ -15,10 +15,11 @@ only `src/` edits are JSDoc corrections.
 - **`docs/assets/ecosystem.json`** — single source of truth for every version,
   count and inventory quoted anywhere in the documentation, and
   **`scripts/verify-docs.ts`** (`npm run verify:docs`) which fails the build when
-  a doc disagrees with it. Eleven rules: manifest shape, filesystem-derived
-  counts, stale tokens, canonical presence, phantom APIs, JSON-LD versions,
-  internal links, sitemap parity, CDN integrity and pinning, playground-switcher
-  parity, learn-path chain, and WCAG contrast. `--online` adds npm drift.
+  a doc disagrees with it. Fifteen rules: manifest shape, filesystem-derived
+  counts, stale tokens, canonical presence, version tokens, phantom APIs,
+  JSON-LD versions, internal links, sitemap parity, CDN integrity and pinning,
+  playground-switcher parity, learn-path chain, WCAG contrast, and llms.txt
+  sync. `--online` adds npm drift.
 - **`.github/workflows/docs.yml`** — runs the verifier on documentation changes.
   `ci.yml` has `paths-ignore` for `docs/**` and `**.md`, so documentation
   previously triggered no workflow at all.
@@ -39,8 +40,10 @@ only `src/` edits are JSDoc corrections.
 
 ### Fixed
 
-- **Streaming APIs that were never exported** — `streamDocumentPdf`, `streamPdf`
-  and `buildPdfStream` appeared in the FAQ, the CLI guide, the homepage, `ROADMAP`
+- **Streaming APIs that were never exported** — <!-- verify-docs:allow api-exists (the entry that bans these names) -->
+  `streamDocumentPdf`, `streamPdf`
+  and `buildPdfStream` <!-- verify-docs:allow api-exists (the entry that bans these names) -->
+  appeared in the FAQ, the CLI guide, the homepage, `ROADMAP`
   and `.github/copilot-instructions.md`. Readers copying the FAQ snippet got a
   `TypeError`.
 - **`buildDocumentPDFStreamTrue` was documented as constant-memory.** It calls
@@ -104,7 +107,7 @@ that.
   left the UI permanently stuck when the Worker constructor threw on `file://`.
   Its page counter also dominated the throughput it reported — replaced with
   `TextDecoder`, which moved the measured figure from 8,146 to 22,950 pages/s
-  at 10,000 pages.
+  at 10,000 pages (run since superseded by bench/RESULTS.md).
 - **The homepage benchmark figures contradicted `bench/RESULTS.md` by three to
   six times** — the file this branch added as their source. Both re-measured
   from one run, and a new `bench-parity` rule now fails the build if they
@@ -137,6 +140,56 @@ checked per token-surface pair, links to `noindex` stubs are rejected, and
 `tests/docs/verify-docs.test.ts` proves each rule by introducing the defect it
 exists for — a regex rule that matches nothing is indistinguishable from one
 that passes.
+
+### Fixed — final ecosystem audit
+
+A second full audit of the branch against the four package sources
+(pdfnative 1.6.0, pdfnative-cli 1.3.0, pdfnative-mcp 1.5.0,
+pdfnative-react 1.1.0), one reviewer per package plus one for the playgrounds
+and benchmarks and one for reading experience. It found that the passes above
+had fixed instances while their classes survived elsewhere:
+
+- **The README's MCP section was two releases stale** — "pdfnative-mcp v1.3.0"
+  with a 17-row tool table, eleven lines below a header that said v1.5.0 and
+  24. No rule matched a version string in prose; a new `version-token` rule
+  now fails any package name paired with a semver the manifest contradicts.
+- **Phantom or wrong APIs in the guides**: `verifyPdfSignature` (never existed —
+  verification lives in the CLI), `registerFontLoader` (real name:
+  `registerFont`, in a wrapper recipe that also could not work across a
+  process boundary), `rsa-sha384/512` signature options, `report.errors` on a
+  lint report that exposes `findings`, `filename` for `fileName`,
+  `PdfReader.open()/getMetadata()/getPageCount()` for
+  `openPdf()/getInfo()/pageCount`, a `pageLabels` example that was 1-based
+  where the API is 0-based, and CLI `batch` examples using `--input`/`--output`
+  where the binary requires `--input-dir`/`--output-dir`.
+- **`.github/instructions/` taught agents the denylisted streaming phantoms**
+  and a parser/forms API surface that never existed — those files were outside
+  the verifier corpus. They are inside it now, and the denylist also scans
+  `CHANGELOG.md`.
+- **The homepage demo runner and the quickstart imported `pdfnative` unpinned**
+  from the CDN while the changelog above claimed every import was pinned — the
+  pin rule only scanned HTML. It now scans the whole corpus, with a fixture.
+- **Stale claims contradicted by the packages**: merge/split/extract "reject
+  encrypted sources" (supported via `--password`/`password` since
+  cli 1.3.0 / mcp 1.5.0), MCP fonts "downloaded lazily" (they ship bundled —
+  the same guide's security model says no network), RFC 3161 timestamp
+  detection attributed to the MCP server (CLI-only), "constant-memory"
+  streaming in `ROADMAP.md`, and a `file://` message in `scale.html` still
+  promising a 1,000-page cap for a main-thread path that was removed.
+- **Counts unified against the tree**: 228 sample PDFs across 37 categories
+  (44 generators), 2 393 tests in 105 files on the homepage (was 2 379+/104 —
+  the count includes the five verifier fixtures this audit adds),
+  89 fuzz tests in 5 files (was "48"), 26 bundled font modules, and coverage
+  figures dated to their v1.6.0 measurement with the CI gates (88/80/85/90)
+  stated alongside.
+- **`llms.txt` returned 404 on the published site** — the file lived only at
+  the repo root while the site serves `docs/`. A synced copy now ships in
+  `docs/`, plus a generated `docs/llms-full.txt` (`npm run docs:llms`)
+  concatenating all 26 guides for single-request agent ingestion; a new
+  `llms-sync` rule keeps both honest. Guide shells gained `<noscript>`
+  Markdown fallbacks and `rel="alternate"` links for non-JS readers, and the
+  Learn/Guides/Playgrounds/Responsibility navigation is now uniform across
+  page families.
 
 ### Changed
 
@@ -212,7 +265,7 @@ page-tree golden fixtures). Zero runtime dependencies preserved.
   hasher (which also lifts the internal one-shot MD5 512 MB length ceiling)
   and AES-CBC / AES-ECB decryption routines powering `openPdf` and the
   Standard Security Handler. These stay internal to the parser; the public
-  crypto surface (`sha256`, `sha384`, `sha512`, `hmacSha256`, …) is unchanged.
+  crypto surface (`sha384`, `sha512`, `hmacSha256`, …) is unchanged.
 - **feat(parser):** **text extraction**. `extractText(bytes, options?)` decodes
   page content streams into per-page reading-order Unicode text plus optional
   positioned runs (`{ text, x, y, fontSize, fontName }` in device space).
@@ -340,7 +393,7 @@ paths remain **byte-identical** to v1.4.0. Zero runtime dependencies preserved.
   allocates row height using the actual `cellPadding` instead of the hardcoded
   bottom-pad constant. Byte-identical at the default padding (3).
 
-## [1.4.0] – 2026-06-28
+## [1.4.0] – 2026-06-29
 
 Delivers the full v1.4.0 roadmap (document outline / bookmarks, page labels,
 `streamToFile()` Node helper) plus two pulled-forward items: a **page-tree
@@ -444,7 +497,7 @@ full notes in [release-notes/v1.4.0.md](release-notes/v1.4.0.md).
 
 - Sample count 178 → 201; test suite 1982 → 2165 (71 → 83 files).
 
-## [1.3.0] – 2026-06-30
+## [1.3.0] – 2026-06-08
 
 Closes issue [#48](https://github.com/Nizoka/pdfnative/issues/48) (CP-1252
 extended characters not extractable under base-14 Helvetica) and delivers the
@@ -1233,7 +1286,7 @@ multi-file object-graph rewrites:
   Forms, PDF/A, Multi-language with lazy fonts, Streaming) with a picker,
   reset button, and a "View source" link to the matching generator under
   `scripts/generators/`. The runtime now supports top-level `await`,
-  dynamic `import(…)`, and exposes `streamDocumentPdf`, `registerFonts`,
+  dynamic `import(…)`, and exposes `buildDocumentPDFStream`, `registerFonts`,
   `loadFontData`, and `signPdfBytes`.
 - **docs(landing):** synced the test counter to 1 588+ tests (matches
   `tests/` and `package.json`).
@@ -1466,7 +1519,7 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 #### Streaming Output
 
-- **AsyncGenerator streaming** — `streamPdf()` / `streamDocumentPdf()` yield `Uint8Array` chunks progressively
+- **AsyncGenerator streaming** — `buildPDFStream()` / `buildDocumentPDFStream()` yield `Uint8Array` chunks progressively
 - **Configurable chunk size** — `chunkSize` option (default: 65536 bytes)
 - **`concatChunks()` utility** — concatenate streaming chunks into a single `Uint8Array`
 - **Streaming + compression/encryption** — full feature compatibility in streaming mode
