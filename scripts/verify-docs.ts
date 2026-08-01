@@ -461,8 +461,17 @@ for (const file of HTML_FILES) {
     let m: RegExpExecArray | null;
     while ((m = LD_BLOCK.exec(text)) !== null) {
         const line = lineOf(text, m.index);
-        // Strip HTML comments — the release-checklist notes live inside these blocks.
-        const body = m[1].replace(/<!--[\s\S]*?-->/g, '').trim();
+        // Strip HTML comments — the release-checklist notes live inside these
+        // blocks. Looped to a fixed point: a single pass over nested or
+        // overlapping comment markers can leave a residual "<!--" behind, so
+        // repeat until nothing changes regardless of how they are nested.
+        let body = m[1];
+        let strippedPrevious: string;
+        do {
+            strippedPrevious = body;
+            body = body.replace(/<!--[\s\S]*?-->/g, '');
+        } while (body !== strippedPrevious);
+        body = body.trim();
         if (!body) continue;
         try {
             walkJsonLd(JSON.parse(body), rel(file), line);
