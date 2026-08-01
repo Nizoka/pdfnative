@@ -115,11 +115,12 @@ For very large outputs, prefer the streaming builders (`buildDocumentPDFStream`,
 
 **ESM import paths:**
 ```typescript
-// Correct — .js extension required for ESM
+// Bare package import — no extension involved
 import { buildPDFBytes } from 'pdfnative';
 
-// Font data modules
-import thaiData from 'pdfnative/fonts/noto-thai-data.js';
+// Font data modules — the .js extension IS required here (ESM subpath),
+// and the modules only have named exports, so use a namespace import:
+import * as thaiData from 'pdfnative/fonts/noto-thai-data.js';
 ```
 
 **Browser vs Node.js:** The library works in both environments. For compression in Node.js, call `initNodeCompression()` once at startup.

@@ -11,10 +11,13 @@ npm install pdfnative
 ```
 
 ```ts
-import { buildDocumentPDFBytes, registerFont } from 'pdfnative';
+import { buildDocumentPDFBytes, registerFont, loadFontData } from 'pdfnative';
 
-// Optional: enable a non-Latin script
-registerFont('arabic', () => import('pdfnative/fonts/noto-arabic-data.js'));
+// Optional: enable a non-Latin script — register under the script code ('ar'),
+// then load the data and pass it via fontEntries (registration alone is a no-op):
+registerFont('ar', () => import('pdfnative/fonts/noto-arabic-data.js'));
+const ar = await loadFontData('ar');
+if (!ar) throw new Error('Arabic font failed to load');
 
 // Synchronous — returns a Uint8Array, not a Promise.
 const bytes = buildDocumentPDFBytes({
@@ -24,6 +27,7 @@ const bytes = buildDocumentPDFBytes({
     { type: 'heading', text: 'Hello pdfnative', level: 1 },
     { type: 'paragraph', text: 'Pure native PDF, zero runtime dependencies.' },
   ],
+  fontEntries: [{ fontData: ar, fontRef: '/F3', lang: 'ar' }], // /F1 and /F2 are reserved
   layout: { tagged: 'pdfa2b' },          // optional PDF/A-2b
 });
 

@@ -14,8 +14,8 @@ const bytes = buildDocumentPDFBytes({
   title: 'Annual Report',
   outline: 'auto',                       // bookmarks derived from headings
   pageLabels: [
-    { startPage: 1, style: 'roman' },    // i, ii, iii … (front matter)
-    { startPage: 4, style: 'decimal' },  // 1, 2, 3 … (body)
+    { startPage: 0, style: 'roman' },    // startPage is 0-based — i, ii, iii … (front matter)
+    { startPage: 3, style: 'decimal' },  // 1, 2, 3 … (body, from the 4th page)
   ],
   blocks: [
     { type: 'heading', level: 1, text: 'Overview' },

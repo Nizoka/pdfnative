@@ -73,7 +73,7 @@ The packages are **complementary** and all sit on the same engine, so a PDF auth
 
 ## Components
 
-Every component maps 1:1 onto a pdfnative block.
+Every component maps 1:1 onto a pdfnative block (`Section` being the one intentional composite).
 
 | Component | Renders |
 |---|---|
@@ -91,6 +91,8 @@ Every component maps 1:1 onto a pdfnative block.
 | `Barcode` | QR, Code 128, EAN-13, PDF417, Data Matrix (`format`, `data`). |
 | `Svg` | Inline vector graphics (path data or markup). |
 | `FormField` | Interactive AcroForm widgets (`fieldType`, `name`). |
+| `Chart` | A native vector chart (`chartType`, `series`, `categories`, `altText`, …) — see [Charts](#charts). |
+| `Section` | *Composite* (the one exception to the 1:1 mapping): expands to an optional `PageBreak` + a `Heading` + its children before the reconciler runs. Props: `title`, `level` (default `2`), `color`, `break`. |
 
 ---
 
@@ -107,7 +109,7 @@ import { renderToResponse } from 'pdfnative-react';
 
 export async function GET() {
   return renderToResponse(<Invoice />, {
-    filename: 'invoice.pdf',
+    fileName: 'invoice.pdf',
   });
 }
 ```
@@ -144,7 +146,10 @@ which produces a file that claims conformance it does not have.
 import { lintDocument, LINT_RULES } from 'pdfnative-react';
 
 const report = lintDocument(<Invoice />);
-if (report.errors.length) throw new Error(report.errors[0].message);
+if (!report.ok) {
+  const first = report.findings.find((f) => f.severity === 'error');
+  throw new Error(first?.message ?? 'lint failed');
+}
 ```
 
 ## Agent surface
@@ -164,13 +169,13 @@ import {
   renderToStream,  // (node, options?) => AsyncGenerator<Uint8Array>
   renderToFile,    // (node, path, options?) => Promise<void> (Node only)
   renderToResponse,// (node, options?) => Promise<Response> (web standard)
-  renderToFileStream, // (node, path, options?) => Promise<void> (Node only)
+  renderToFileStream, // (node, path, options?) => Promise<StreamToFileResult> — { bytesWritten, path } (Node only)
   inspectDocument, // (node) => layout diagnostics, no render
   compileDocument, // (node) => DocumentParams (inspect the model, no render)
 } from 'pdfnative-react';
 ```
 
-`options` is `{ layout?: Partial<PdfLayoutOptions>; fontEntries?: FontEntry[]; fonts?: FontsMap }` and merges on top of anything set on `<Document>` — page size, margins, colors, PDF/A mode, encryption, and non-Latin fonts.
+`options` is `{ layout?: Partial<PdfLayoutOptions>; fontEntries?: FontEntry[]; fonts?: FontsMap }` and merges on top of anything set on `<Document>` — page size, margins, colors, PDF/A mode, encryption, and non-Latin fonts. Note that `fonts` is only honored by the **async** entry points (`renderToFile`, `renderToFileStream`, `renderToResponse`, `usePdf`, `usePdfStream`) — font loading is asynchronous, so the synchronous entries (`renderToBytes`, `renderToBlob`, `renderToStream`) ignore it; resolve manually first (`fontEntries: await resolveFonts(fonts)` — but see the `fontRef` caveat below).
 
 > ### Build `fontEntries` yourself — `resolveFonts` produces an invalid `fontRef`
 >
@@ -194,10 +199,15 @@ import {
 > });
 >
 > const langs = ['latin', 'ar'];
-> const loaded = await Promise.all(langs.map(loadFontData));
-> const fontEntries = loaded.map((fontData, i) => ({
->   fontData, fontRef: `/F${3 + i}`, lang: langs[i],   // /F3, /F4, …
-> }));
+> const fontEntries = await Promise.all(
+>   langs.map(async (lang, i) => {
+>     const fontData = await loadFontData(lang);
+>     // loadFontData resolves to null (it does not throw) when the code has no
+>     // registered loader — fail loudly instead of embedding nothing:
+>     if (!fontData) throw new Error(`font "${lang}" failed to load — did you call registerFonts first?`);
+>     return { fontData, fontRef: `/F${3 + i}`, lang };   // /F3, /F4, …
+>   }),
+> );
 >
 > const bytes = renderToBytes(<Doc />, { fontEntries });
 > ```
@@ -215,7 +225,7 @@ const bytes = renderToBytes(<Invoice />, {
 
 ## Hooks & client components
 
-Client modules carry `'use client'`.
+The published root bundle does **not** carry `'use client'` (a directive in an internal module does not survive single-file bundling); import hooks and viewer components from `pdfnative-react/client` in a React Server Components app, or add the directive to your own file as below.
 
 ```tsx
 'use client';
@@ -264,20 +274,25 @@ The equivalent JSX is several times more tokens for a typical document, because 
 - `renderSpecToBytes` / `renderSpecToBlob` / `renderSpecToStream` / `renderSpecToFile`
 - `docSpecSchema()` → a Draft 2020-12 JSON Schema whose `$id` embeds the package version, so agents can self-validate a spec before rendering; `docSpecSchemaId()` returns the `$id`.
 
-**Block tuples:** `['h1'|'h2'|'h3', text, opts?]`, `['p', text, opts?]`, `['ul'|'ol', items, opts?]`, `['table', { h?, r }]`, `['img', { data }]`, `['link', text, { url }]`, `['sp', height?]`, `['br']`, `['page', blocks]`, `['toc', opts?]`, `['qr'|'code128'|'ean13'|'pdf417'|'datamatrix', data, opts?]`, `['svg', data, opts?]`, `['field', { fieldType, name, … }]`.
+**Block tuples:** `['h1'|'h2'|'h3', text, opts?]`, `['p', text, opts?]`, `['ul'|'ol', items, opts?]`, `['table', { h?, r }]`, `['img', { data }]`, `['link', text, { url }]`, `['sp', height?]`, `['br']`, `['page', blocks]`, `['toc', opts?]`, `['qr'|'code128'|'ean13'|'pdf417'|'datamatrix', data, opts?]`, `['svg', data, opts?]`, `['chart', { chartType, series, … }]`, `['field', { fieldType, name, … }]`.
 
 ---
 
 ## Fonts & environment
 
-Re-exported from the engine: `registerFonts`, `registerFont`, `loadFontData` (Node), `downloadBlob` (browser), `initNodeCompression` (Node). Pass non-Latin fonts via the `fontEntries` render option (or on `<Document fontEntries={…}>`), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.
+Re-exported from the engine: `registerFonts`, `registerFont`, `loadFontData`, `validateFontData`, `downloadBlob` (browser), `initNodeCompression` (Node). (`loadFontData` is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the `fontEntries` render option (or on `<Document fontEntries={…}>`), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.
 
 ```tsx
-import { Document, Text, renderToBytes, loadFontData } from 'pdfnative-react';
+import { Document, Text, renderToBytes, registerFont, loadFontData } from 'pdfnative-react';
 
-const thai = await loadFontData('th');
+registerFont('th', () => import('pdfnative/fonts/noto-thai-data.js'));
+const th = await loadFontData('th');
+if (!th) throw new Error('Thai font failed to load');
 const bytes = renderToBytes(
-  <Document title="สวัสดี" fontEntries={[thai]}>
+  <Document
+    title="สวัสดี"
+    fontEntries={[{ fontData: th, fontRef: '/F3', lang: 'th' }]} // /F1 and /F2 are reserved
+  >
     <Text>สวัสดีชาวโลก</Text>
   </Document>,
 );

@@ -59,7 +59,7 @@ Yes. The library is standard ESM with no Node.js-specific imports in the core. B
 Yes. Build a font data module from any TTF file:
 
 ```bash
-node tools/build-font-data.cjs path/to/MyFont.ttf my-font-data
+npx pdfnative-build-font path/to/MyFont.ttf my-font-data.js
 ```
 
 Then register it:
@@ -94,8 +94,8 @@ registerFonts({
 
 const langs = ['ar', 'he', 'th', 'hi'];
 const fontEntries = (await Promise.all(langs.map(loadFontData)))
-  .map((fd, i) => fd ? { fontData: fd, fontRef: `/F${3 + i}`, lang: langs[i] } : null)
-  .filter(Boolean);
+  .map((fd, i) => (fd ? { fontData: fd, fontRef: `/F${3 + i}`, lang: langs[i] } : null))
+  .filter((e): e is NonNullable<typeof e> => e !== null); // .filter(Boolean) alone does not narrow the type
 
 const pdf = buildDocumentPDFBytes({
   blocks: [
@@ -113,7 +113,7 @@ The most common cause: missing `lang: 'ar'` on the font entry. Without it, BiDi 
 
 ### Which scripts are supported out of the box?
 
-22 Noto scripts ship as separate font modules: Amharic/Ethiopic, Arabic, Armenian, Bengali, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Myanmar, Polish, Simplified Chinese, Sinhala, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese.
+26 Noto font-data modules ship with the package: the 22 scripts — Amharic/Ethiopic, Arabic, Armenian, Bengali, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Myanmar, Polish, Simplified Chinese, Sinhala, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese — plus Latin (Noto Sans), math (Noto Sans Math), and monochrome + COLRv1 colour emoji.
 
 ---
 
@@ -157,10 +157,10 @@ const pdf = buildPDFBytes(params, {
     userPassword: 'reader',
     ownerPassword: 'editor',
     permissions: {
-      print: true,
-      modify: false,
-      copy: false,
-      annotate: false,
+      print: true,        // default: true
+      copy: false,        // default: false
+      modify: false,      // default: false
+      extractText: true,  // accessibility text extraction — default: true
     },
   },
 });
@@ -171,17 +171,23 @@ const pdf = buildPDFBytes(params, {
 ### How do I sign a PDF digitally?
 
 ```typescript
-import { signPdfBytes } from 'pdfnative';
+import { addSignaturePlaceholder, signPdfBytes, parseCertificate, parseRsaPrivateKey } from 'pdfnative';
 
-const signed = signPdfBytes(pdfBytes, {
-  privateKey: keyDer,    // DER-encoded RSA or ECDSA private key
-  certificate: certDer,  // DER-encoded X.509 certificate
+// 1. The PDF must contain a /Sig placeholder — add one if it doesn't
+//    (skipping this throws "No /Contents placeholder found"):
+const prepared = addSignaturePlaceholder(pdfBytes);
+
+// 2. Sign it
+const signed = signPdfBytes(prepared, {
+  signerCert: parseCertificate(certDer),   // DER-encoded X.509 certificate
+  rsaKey: parseRsaPrivateKey(keyDer),      // DER-encoded RSA key (or `ecKey` for ECDSA P-256)
+  algorithm: 'rsa-sha256',                 // or 'ecdsa-sha256'
   reason: 'Approved',
   name: 'Jane Doe',
 });
 ```
 
-pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256), SHA-256/384/512. The crypto stack is implemented in pure TypeScript inside `src/crypto/` — no native modules, no `node:crypto`.
+pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256), both with SHA-256 digests. The crypto stack is implemented in pure TypeScript inside `src/crypto/` — no native modules, no `node:crypto` (an optional constant-time native provider can be plugged in via `setCryptoProvider`).
 
 ### Is the build supply-chain safe?
 
@@ -213,7 +219,7 @@ const updated = mod.save();   // appends a new xref/trailer with /Prev chain
 
 ### What's the maximum document size?
 
-`buildPDFBytes` enforces a 100 000 row limit on tables. `buildDocumentPDFBytes` paginates automatically and has no hard limit — the practical ceiling is your available memory. For very large documents, see the streaming question below.
+`buildPDFBytes` enforces a 100 000 row limit on tables. `buildDocumentPDFBytes` paginates automatically, with a default cap of **100 000 blocks** (`DEFAULT_MAX_BLOCKS`) that you can raise via `layout.maxBlocks`; past that, the practical ceiling is your available memory. For very large documents, see the streaming question below.
 
 ### How do I avoid loading the whole PDF into memory?
 
@@ -240,15 +246,18 @@ for await (const chunk of buildDocumentPDFStream(params, {}, { chunkSize: 65536 
 
 ### Can I generate PDFs in a Web Worker?
 
-Yes. For large datasets pdfnative ships a built-in worker pipeline:
+Yes. For large datasets pdfnative ships a built-in worker pipeline — use `createPDF`, which routes to a worker or the main thread for you:
 
 ```typescript
-import { generatePDFInWorker } from 'pdfnative';
+import { createPDF } from 'pdfnative';
 
-const pdf = await generatePDFInWorker(params, { workerThreshold: 500 });
+const pdf = await createPDF(params, {
+  workerUrl: new URL('./pdf-worker.js', import.meta.url),
+  threshold: 500, // default WORKER_THRESHOLD = 500 rows
+});
 ```
 
-Tables above the threshold automatically run off the main thread.
+Tables above the threshold run off the main thread (with an automatic main-thread fallback); smaller ones render synchronously. The lower-level `generatePDFInWorker(workerUrl, params, { timeout, onProgress })` drives a worker directly — the worker URL is its first argument, and it has no threshold logic.
 
 ---
 
@@ -278,9 +287,9 @@ pdfnative is built from pure functions. State is passed explicitly. This makes t
 
 | Error | Likely cause | Fix |
 |-------|--------------|-----|
-| `Font 'xx' not registered` | `fontEntries[].lang` references a script you didn't `registerFonts()` for | Register the loader and `await loadFontData('xx')` |
+| Blank / missing glyphs for a script (no error is thrown) | `loadFontData('xx')` resolved to `null` because no loader was registered for that code — it returns `null` rather than throwing | Call `registerFonts({ xx: … })` (or `registerFont`) first, then check the `loadFontData` result for `null` before building `fontEntries` |
 | `PDF/A and encryption are mutually exclusive` | `tagged: 'pdfa…'` combined with `encryption: …` | Pick one |
-| `Invalid color: …` | Unrecognized hex/rgb string passed to a layout option | Use `#rrggbb`, `[r, g, b]` (0–1), or `'r g b'` |
+| `Invalid color format: …` / `Invalid color tuple …` | Unrecognized color value passed to a layout option | Use `#rrggbb`, an `[r, g, b]` tuple with channels **0–255**, or a PDF RGB string `'r g b'` with channels 0.0–1.0 |
 | Boxes / blank glyphs | Font for that script is not loaded | See [Troubleshooting → Missing glyphs](troubleshooting.html) |
 | Parser throws on external PDF | Encrypted PDF opened without a password, or non-standard structure | Pass `openPdf(bytes, { password })` — the parser decrypts RC4, AES-128 and AES-256 since v1.6.0. A missing or wrong password throws `PdfPasswordError` |
 

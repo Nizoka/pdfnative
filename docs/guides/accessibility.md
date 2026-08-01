@@ -48,15 +48,14 @@ When `tagged` is enabled, the document gets:
 
 ## Block-level accessibility hints
 
-### Images, barcodes, SVG → require `alt`
+### Images and SVG → require `alt`
 
 ```typescript
 { type: 'image',  data: pngBytes, width: 300, alt: 'Q1 revenue chart, $1.2M peak in March' }
 { type: 'svg',    data: logoSvg, width: 200, alt: 'Company logo' }   // note: property is `data`
-{ type: 'barcode', format: 'qr', data: 'https://example.com', alt: 'QR code linking to product page' }
 ```
 
-Every `/Figure` in the structure tree gets an `/Alt` entry from the `alt` property. **Always provide alt text** for non-decorative images — empty strings are treated as decorative and may be skipped by screen readers.
+Only `image` and `svg` blocks accept an `alt` property (and `chart` accepts `altText`, auto-generated when omitted); a `barcode` block has **no** `alt` field — its accessible description cannot currently be customised. Every `/Figure` in the structure tree gets an `/Alt` entry from the `alt` property. **Always provide alt text** for non-decorative images — empty strings are treated as decorative and may be skipped by screen readers.
 
 ### Links → meaningful link text
 
@@ -76,18 +75,19 @@ When you pass a `headers` array, those cells are tagged `/TH` and the data rows 
 { type: 'formField', fieldType: 'text', name: 'email', label: 'Email address', width: 400 }
 ```
 
-The `label` becomes the field's `/TU` (tooltip / accessible name) and is consumed by screen readers when focus enters the field.
+The `label` is drawn as a visible text label next to the widget. pdfnative does not emit a `/TU` (tooltip) entry, so the visible label is the field's only accessible name — keep it present and descriptive.
 
 ## Verifying conformance
 
 ### veraPDF (PDF/A)
 
 ```bash
-npm install -g verapdf
-verapdf --format text my-document.pdf
+# veraPDF is a Java application, not an npm package — install it from
+# https://verapdf.org/software/ (installer) or run it via Docker:
+docker run --rm -v "$PWD:/data" verapdf/cli --format text /data/my-document.pdf
 ```
 
-veraPDF is the reference PDF/A validator. The pdfnative test suite generates ~227 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
+veraPDF is the reference PDF/A validator. The pdfnative test suite generates ~228 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
 
 ### PAC 2024 (PDF/UA)
 

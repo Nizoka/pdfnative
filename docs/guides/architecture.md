@@ -42,7 +42,7 @@ const pdf = buildDocumentPDFBytes({
 });
 ```
 
-Supports 13 block types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc, barcode, svg, formField.
+Supports 13 block types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc, barcode, svg, formField, chart.
 
 ## Generation Pipeline
 
@@ -77,12 +77,12 @@ Input (params + options)
 ```
 types/ → core/ ← fonts/ ← shaping/ ← worker/
               ↑
-          crypto/ (standalone)
+          crypto/ (near-standalone, imports core/pdf-encrypt for sha256)
           parser/ (standalone, imports core/compress for inflate)
 ```
 
 - **No circular dependencies** — strict unidirectional flow
-- **crypto/** is fully standalone — zero imports from other src/ modules
+- **crypto/** is near-standalone — its only cross-module import is `sha256` from `core/pdf-encrypt.ts` (re-exported by `crypto/sha.ts`)
 - **parser/** imports only from `core/pdf-compress.ts` for FlateDecode inflate
 - **fonts/** imports from `shaping/` for script detection
 - **shaping/** imports from `fonts/` encoding context (via `core/encoding-context.ts` to break cycle)
@@ -120,7 +120,7 @@ The architecture diagram above shows the **internal library modules**. External 
 
 ### pdfnative-cli
 
-[pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface**. It exposes seventeen commands — `render`, `sign`, `inspect`, `verify`, `merge`, `split`, `extract`, `annotate`, `govern`, `batch`, `schema` (plus `completion`) — that map directly to public `pdfnative` APIs, with an agent-native `--json`/`E_*`/`--dry-run` automation contract:
+[pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface**. It exposes seventeen commands — `render`, `fill`, `annotate`, `merge`, `split`, `extract`, `sign`, `verify`, `encrypt`, `decrypt`, `inspect`, `extract-text`, `batch`, `doctor`, `schema`, `completion`, `govern` — that map directly to public `pdfnative` APIs, with an agent-native `--json`/`E_*`/`--dry-run` automation contract:
 
 ```
 [shell / Makefile / GitHub Actions / Docker]
@@ -128,7 +128,7 @@ The architecture diagram above shows the **internal library modules**. External 
      ┌──────────────────────────┐
      │  pdfnative-cli (npm)     │  ← dispatch layer, 17 commands + agent contract
      └──────────────────────────┘
-              │ import { buildDocumentPDFBytes, signPdfBytes, PdfReader, validatePdfUA } from 'pdfnative'
+              │ import { buildDocumentPDFBytes, signPdfBytes, openPdf, validatePdfUA } from 'pdfnative'
      ┌──────────────────────────┐
      │      pdfnative (npm)     │  ← core library (this repo)
      └──────────────────────────┘
