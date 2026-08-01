@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Authoring+ Playground (v1.5.0) — pdfnative</title>
-  <meta name="description" content="Try pdfnative 1.5.0 in your browser: SVG <text> labels, the layout debug overlay, and markup annotations (highlight, underline, sticky notes) — all client-side, zero install.">
+  <meta name="description" content="Try pdfnative's 1.5.0 authoring features in your browser: SVG <text> labels, the layout debug overlay, and markup annotations (highlight, underline, sticky notes) — all client-side, zero install.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/authoring-plus.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
@@ -31,7 +31,7 @@
     "operatingSystem": "Any (browser-based)",
     "browserRequirements": "Requires JavaScript and HTML5",
     "url": "https://pdfnative.dev/playgrounds/authoring-plus.html",
-    "description": "Try pdfnative 1.5.0 in your browser: SVG <text> labels, the layout debug overlay, and markup annotations.",
+    "description": "Try pdfnative's 1.5.0 authoring features in your browser: SVG <text> labels, the layout debug overlay, and markup annotations.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
@@ -81,6 +81,7 @@
   </nav>
   <article class="guide-content">
     <h1>Authoring+ — what's new in 1.5.0</h1>
+    <!-- verify-docs:allow version-token (feature-era page: documents the 1.5.0 additions) -->
     <p>pdfnative 1.5.0 adds <strong>SVG <code>&lt;text&gt;</code> rendering</strong>, an opt-in <strong>layout debug overlay</strong>, and a typed <strong>markup annotation</strong> model. The <em>Edge case</em> demos exercise the math font, the page-labels reader and control-character hardening. Every demo below runs entirely in your browser and downloads a real PDF.</p>
 
     <div class="callout" style="margin:16px 0;padding:12px 16px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-size:14px;">
@@ -162,6 +163,7 @@ const DESCRIPTIONS = {
   annotations: 'Builds a contract PDF, injects a highlight annotation onto it with addAnnotation(), and reads every annotation back out with getAnnotations(). The annotated PDF is downloaded and the status line lists what was read back.',
   math: 'Edge case — a document full of mathematical operators (∑ ∫ √ ≠ ≤ ⇒), arrows and letterlike symbols (ℝ ℕ). The bundled math font is registered from the CDN; script detection routes every math code point to it automatically while Latin words stay on the base font.',
   pagelabels: 'Edge case — writes a three-range page-label tree (front-matter in lowercase Roman, body in decimal, appendix with an "A-" prefix) then reads it straight back with getPageLabels() to prove the writer↔reader round-trip.',
+  // verify-docs:allow version-token (feature-era demo copy)
   controlchars: 'Edge case — a paragraph deliberately seeded with NUL, BEL, form-feed and DEL control characters. pdfnative 1.5.0 neutralises them (drops or escapes) so no .notdef tofu reaches the page, in both base-14 and CIDFont modes.',
 };
 
@@ -292,6 +294,7 @@ const pdf = buildDocumentPDFBytes({
   blocks: [
     { type: 'heading', text: 'Control-character hardening', level: 1 },
     { type: 'paragraph', text: seeded },
+    // verify-docs:allow version-token (feature-era demo copy)
     { type: 'paragraph', text: 'pdfnative 1.5.0 drops or escapes control chars instead of emitting .notdef tofu.' },
   ],
 });
@@ -447,6 +450,7 @@ function buildControlChars(mod) {
     blocks: [
       { type: 'heading', text: 'Control-character hardening', level: 1 },
       { type: 'paragraph', text: seeded },
+      // verify-docs:allow version-token (feature-era demo copy)
       { type: 'paragraph', text: 'The paragraph above embeds NUL (U+0000), BEL (U+0007), form-feed (U+000C) and DEL (U+007F). pdfnative 1.5.0 drops or escapes them instead of emitting .notdef tofu.' },
     ],
   });

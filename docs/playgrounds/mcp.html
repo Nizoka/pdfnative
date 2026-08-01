@@ -122,7 +122,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
-    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>24 tools</strong> — including the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, plus <code>validate_pdf</code>, <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code> (Factur-X / ZUGFeRD PDF/A-3), and <code>extract_text</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, token-frugal read modes (<code>verbosity</code> / <code>fields</code>), and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
+    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>24 tools</strong> — including the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, plus <code>validate_pdf</code>, <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code> (Factur-X / ZUGFeRD PDF/A-3), and <code>extract_text</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, token-frugal read modes (<code>verbosity</code> / <code>fields</code>), and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the pdfnative library payload this browser demo executes (the MCP tool schemas differ — see the <a href="../guides/mcp.html">MCP guide</a> for the exact schemas), and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
 
     <p style="font-size: 14px; color: var(--c-text-dim);">For the full integration story (config, security model, signed-document workflow), see the <a href="../guides/mcp.html">MCP guide</a>.</p>
 
@@ -240,8 +240,10 @@
 
   // ─────────────────────────── Tool catalogue ───────────────────────────
   // Each tool maps to a real pdfnative entry-point so the playground can produce the
-  // PDF the AI assistant would receive. The `args` is the canonical MCP tool-call
-  // payload; `build(p, m)` returns Uint8Array bytes given those args + loaded module.
+  // PDF the AI assistant would receive. For cards with a `build`, `args` is the
+  // pdfnative LIBRARY payload this browser demo executes; the MCP tool schemas
+  // differ — see ../guides/mcp.html for the exact schemas. `build(p, m)` returns
+  // Uint8Array bytes given those args + the loaded module.
   const TOOLS = [
     {
       id: 'generate_basic_pdf',
@@ -319,7 +321,7 @@
     },
     {
       id: 'add_international_text',
-      purpose: 'Render text in any of 22 scripts with BiDi & OpenType shaping. You can pass several scripts in one call.',
+      purpose: 'Render text in any of 24 lang codes — 22 scripts plus latin and emoji, with explicit math on top — with BiDi & OpenType shaping. You can pass several in one call.',
       prompt: 'Create a multilingual greeting card with English, Thai, Arabic, and a smiling-face emoji.',
       args: {
         title: 'Multilingual greeting',
@@ -454,7 +456,7 @@
         pdfsBase64: ['<base64 PDF 1>', '<base64 PDF 2>'],
         outputMode: 'base64',
       },
-      noteHtml: 'In a real MCP call the AI assistant supplies each source as base64. To keep this page binary-free, the playground builds two small source PDFs in the browser, then runs the <em>real</em> pdfnative 1.5.0 <code>mergePdfs()</code> the tool calls. Encrypted sources are rejected and signatures/AcroForms are dropped, matching the tool contract. Caps: 50 MiB/part, 200 MiB aggregate.',
+      noteHtml: 'In a real MCP call the AI assistant supplies each source as base64. To keep this page binary-free, the playground builds two small source PDFs in the browser, then runs the <em>real</em> pdfnative 1.6.0 <code>mergePdfs()</code> the tool calls. Signatures/AcroForms are dropped, matching the tool contract; since v1.5.0 the tool opens encrypted sources with a password and can re-encrypt the merged output. Caps: 50 MiB/part, 200 MiB aggregate.',
       build: (p, m) => {
         requirePageTree(m, 'mergePdfs');
         const a = m.buildDocumentPDFBytes({ title: 'Cover letter', blocks: [
@@ -535,7 +537,7 @@
         ],
         outputMode: 'base64',
       },
-      noteHtml: 'The tool never rasterises: it reads the source, appends real annotation objects, and rewrites the page <code>/Annots</code> with an incremental update — the original bytes are preserved. This demo builds a one-page source PDF, then runs the <em>real</em> pdfnative 1.5.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>buildAnnotationBody()</code> → <code>addAnnotation()</code> pipeline the tool calls. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
+      noteHtml: 'The tool never rasterises: it reads the source, appends real annotation objects, and rewrites the page <code>/Annots</code> with an incremental update — the original bytes are preserved. This demo builds a one-page source PDF, then runs the <em>real</em> pdfnative 1.6.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>buildAnnotationBody()</code> → <code>addAnnotation()</code> pipeline the tool calls. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
       build: (p, m) => {
         requireFn(m, 'openPdf');
         requireFn(m, 'createModifier');
@@ -563,10 +565,16 @@
       prompt: 'Draft a governance issue for the layout regression I just described, following the repo contract.',
       args: {
         title: 'Table descenders clipped under cellVAlign: bottom',
-        summary: 'Cell glyph descenders (g, j, p, q, y) are clipped when cellVAlign is set to bottom.',
-        repro: '1. Build a table with cellVAlign: "bottom"\n2. Include a cell whose text ends in "y"\n3. Render — the descender is cut off',
-        expected: 'Descenders render fully within the cell band.',
-        environment: 'pdfnative 1.5.0, Node 22, macOS',
+        summary: 'Cell glyph descenders (g, j, p, q, y) are clipped when cellVAlign is set to "bottom" — the last text line sits below the visible cell band.',
+        issueType: 'bug',
+        targetRepo: 'pdfnative',
+        reproduction: {
+          command: 'Build a table block with cellVAlign: "bottom" and a cell whose text ends in "y", then render with buildDocumentPDFBytes (pdfnative 1.6.0, Node 22).',
+          result: 'The descender of the final "y" is cut off at the bottom cell border.',
+        },
+        expectedBehavior: 'Descenders render fully within the cell band.',
+        affectedPackages: ['pdfnative'],
+        duplicateSearchPerformed: true,
       },
       noteHtml: 'This is the one tool that produces <strong>no PDF</strong>: it validates your report against <code>.github/ai-governance.json</code> and returns Markdown for a human to submit. It performs <strong>no GitHub write and no network I/O</strong> (human-in-the-loop by design). A malformed report — e.g. one proposing a runtime dependency — is rejected with <code>GOVERNANCE_VIOLATION</code>. Use <em>Copy args</em> to grab the tool payload.',
     },
@@ -579,6 +587,7 @@
     }
   }
 
+  // verify-docs:allow version-token (API floor note)
   // The page-tree API landed in pdfnative 1.4.0. If the CDN happens to serve an
   // older build, fail with a clear message instead of an opaque "not a function".
   function requirePageTree(m, fn) {
@@ -598,8 +607,11 @@
       <div class="prompt">${t.prompt}</div>
       ${t.noteHtml ? `<p class="purpose">${t.noteHtml}</p>` : ''}
       <details>
-        <summary>MCP tool-call payload</summary>
-        <div><pre><code class="language-json">${escapeHtml(JSON.stringify(t.args, null, 2))}</code></pre></div>
+        <summary>${t.build ? 'Payload (pdfnative library form)' : 'MCP tool-call payload (schema example)'}</summary>
+        <div>
+          ${t.build ? '<p class="purpose" style="margin:0 0 6px;">This is the pdfnative library payload the browser demo executes; the MCP tool schema differs — see the <a href="../guides/mcp.html">MCP guide</a>.</p>' : ''}
+          <pre><code class="language-json">${escapeHtml(JSON.stringify(t.args, null, 2))}</code></pre>
+        </div>
       </details>
       <div class="actions">
         ${t.build ? `<button class="primary" data-action="run" data-tool="${idx}" disabled>Generate PDF</button>` : ''}

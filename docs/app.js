@@ -19,7 +19,10 @@
   function applyTheme(theme) {
     root.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
-    if (toggle) toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    if (toggle) {
+      toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+      toggle.setAttribute('aria-pressed', String(theme === 'dark'));
+    }
   }
 
   applyTheme(getPreferred());
@@ -71,18 +74,32 @@
   var tabBtns = document.querySelectorAll('.tab-btn');
   var tabPanels = document.querySelectorAll('.tab-panel');
 
-  tabBtns.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var id = btn.getAttribute('data-tab');
-      tabBtns.forEach(function (b) {
-        b.classList.remove('active');
-        b.setAttribute('aria-selected', 'false');
-      });
-      tabPanels.forEach(function (p) { p.classList.remove('active'); });
-      btn.classList.add('active');
-      btn.setAttribute('aria-selected', 'true');
-      var panel = document.getElementById('tab-' + id);
-      if (panel) panel.classList.add('active');
+  function activateTab(btn) {
+    var id = btn.getAttribute('data-tab');
+    tabBtns.forEach(function (b) {
+      b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false');
+    });
+    tabPanels.forEach(function (p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    var panel = document.getElementById('tab-' + id);
+    if (panel) panel.classList.add('active');
+  }
+
+  tabBtns.forEach(function (btn, i) {
+    btn.addEventListener('click', function () { activateTab(btn); });
+    // Arrow-key navigation between tabs (WAI-ARIA tabs pattern, activation on focus)
+    btn.addEventListener('keydown', function (e) {
+      var next = null;
+      if (e.key === 'ArrowRight') next = (i + 1) % tabBtns.length;
+      else if (e.key === 'ArrowLeft') next = (i - 1 + tabBtns.length) % tabBtns.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = tabBtns.length - 1;
+      if (next === null) return;
+      e.preventDefault();
+      tabBtns[next].focus();
+      activateTab(tabBtns[next]);
     });
   });
 
@@ -403,9 +420,9 @@
         '',
         '// Lazy font registration — only loaded when needed',
         'registerFonts({',
-        "  th: () => import('https://esm.sh/pdfnative/fonts/noto-thai-data.js'),",
-        "  ar: () => import('https://esm.sh/pdfnative/fonts/noto-arabic-data.js'),",
-        "  ja: () => import('https://esm.sh/pdfnative/fonts/noto-jp-data.js'),",
+        "  th: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-thai-data.js'),",
+        "  ar: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-arabic-data.js'),",
+        "  ja: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-jp-data.js'),",
         '});',
         '',
         "const langs = ['th', 'ar', 'ja'];",
@@ -542,8 +559,8 @@
 
   // CDN URLs to try in order (esm.sh, then unpkg as fallback)
   var CDN_URLS = [
-    'https://esm.sh/pdfnative',
-    'https://cdn.jsdelivr.net/npm/pdfnative/+esm'
+    'https://esm.sh/pdfnative@1.6.0',
+    'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'
   ];
 
   async function loadPdfnative() {

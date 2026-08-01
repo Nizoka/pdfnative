@@ -67,7 +67,7 @@
         "sameAs": ["https://github.com/Nizoka", "https://www.npmjs.com/package/pdfnative"]
       },
       {
-        "@type": "SoftwareSourceCode",
+        "@type": ["SoftwareSourceCode", "SoftwareApplication"],
         "@id": "https://pdfnative.dev/#library",
         "name": "pdfnative",
         "description": "Pure native PDF library — no runtime dependencies in the engine, producing documents that conform to ISO 32000-1. Generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (AES-128/256), native vector charts.",
@@ -108,7 +108,7 @@
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       },
       {
-        "@type": "SoftwareSourceCode",
+        "@type": ["SoftwareSourceCode", "SoftwareApplication"],
         "@id": "https://pdfnative.dev/#react",
         "name": "pdfnative-react",
         "description": "React renderer for pdfnative — declarative JSX components compiled on-device to PDF by a custom React reconciler. Live preview hooks, streaming, 22 Unicode scripts, token-frugal DocSpec for AI agents.",
@@ -206,7 +206,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">2 379+</div>
+    <div class="metric-value">2 393+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -271,7 +271,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 379+ tests across 104 files, 95%+ statement coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 393+ tests across 105 files, 95%+ statement coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -327,11 +327,11 @@
     <p class="section-subtitle">Two builders for every use case — table-centric financial reports or free-form documents.</p>
     <div class="code-tabs">
       <div class="tab-bar" role="tablist">
-        <button class="tab-btn active" role="tab" data-tab="quick" aria-selected="true">Quick Start</button>
-        <button class="tab-btn" role="tab" data-tab="document" aria-selected="false">Document Builder</button>
-        <button class="tab-btn" role="tab" data-tab="multilang" aria-selected="false">Multi-Language</button>
+        <button class="tab-btn active" role="tab" id="tab-btn-quick" data-tab="quick" aria-selected="true" aria-controls="tab-quick">Quick Start</button>
+        <button class="tab-btn" role="tab" id="tab-btn-document" data-tab="document" aria-selected="false" aria-controls="tab-document">Document Builder</button>
+        <button class="tab-btn" role="tab" id="tab-btn-multilang" data-tab="multilang" aria-selected="false" aria-controls="tab-multilang">Multi-Language</button>
       </div>
-      <div class="tab-panel active" id="tab-quick" role="tabpanel">
+      <div class="tab-panel active" id="tab-quick" role="tabpanel" aria-labelledby="tab-btn-quick">
 <pre><code class="language-typescript">import { buildPDFBytes, downloadBlob } from 'pdfnative';
 
 const pdf = buildPDFBytes({
@@ -354,7 +354,7 @@ const pdf = buildPDFBytes({
 
 downloadBlob(pdf, 'report.pdf');</code></pre>
       </div>
-      <div class="tab-panel" id="tab-document" role="tabpanel">
+      <div class="tab-panel" id="tab-document" role="tabpanel" aria-labelledby="tab-btn-document">
 <pre><code class="language-typescript">import { buildDocumentPDFBytes } from 'pdfnative';
 
 const pdf = buildDocumentPDFBytes({
@@ -378,7 +378,7 @@ const pdf = buildDocumentPDFBytes({
   compress: true,        // FlateDecode compression
 });</code></pre>
       </div>
-      <div class="tab-panel" id="tab-multilang" role="tabpanel">
+      <div class="tab-panel" id="tab-multilang" role="tabpanel" aria-labelledby="tab-btn-multilang">
 <pre><code class="language-typescript">import { registerFonts, loadFontData, buildDocumentPDFBytes }
   from 'pdfnative';
 
@@ -436,7 +436,7 @@ const pdf = buildDocumentPDFBytes({
       <div class="demo-error" id="demo-error" role="alert"></div>
       <p class="demo-note">
         Need more? Browse all
-        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">44 generator categories (~227 sample PDFs)</a>
+        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">44 generators (~228 sample PDFs)</a>
         on GitHub.
       </p>
     </div>
@@ -766,7 +766,7 @@ const pdf = renderToBytes(
           <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
           <tbody>
             <tr><td><code>generate_basic_pdf</code></td><td>Multi-page documents (headings, paragraphs, lists). Optional <code>pdfA</code> flag.</td></tr>
-            <tr><td><code>add_table</code></td><td>Tabular reports — now with optional <code>autoFitColumns</code> and <code>clipCells</code> (pdfnative v1.1 <code>TableBlock</code>).</td></tr>
+            <tr><td><code>add_table</code></td><td>Tabular reports — now with optional <code>autoFitColumns</code> and <code>clipCells</code> (pdfnative v1.2 <code>TableBlock</code>).</td></tr>
             <tr><td><code>add_barcode</code></td><td>QR Code, Code 128, EAN-13, Data Matrix, PDF417</td></tr>
             <tr><td><code>add_international_text</code></td><td>22 scripts with BiDi &amp; OpenType shaping. <code>lang</code> now accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
             <tr><td><code>add_form</code></td><td>Interactive AcroForm fields</td></tr>
@@ -775,7 +775,7 @@ const pdf = renderToBytes(
             <tr><td><code>sign_pdf</code></td><td>CMS/PKCS#7 signatures (RSA &amp; ECDSA)</td></tr>
             <tr><td><code>inspect_pdf</code></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; optional CI-style <code>check: ('pdfa'|'signed'|'encrypted'|'placeholder'|'attachments')[]</code>.</td></tr>
             <tr><td><code>validate_pdf</code></td><td>Read-only PDF/UA structural validation (<code>valid</code>, <code>errors</code>, <code>warnings</code>).</td></tr>
-            <tr><td><code>verify_pdf</code></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain, RFC 3161 timestamp detection (v1.0.0).</td></tr>
+            <tr><td><code>verify_pdf</code></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain (v1.0.0).</td></tr>
             <tr><td><code>add_attachment</code></td><td>Embed files (Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output (v1.0.0).</td></tr>
             <tr><td><code>extract_attachments</code></td><td>Extract embedded files from existing PDFs (metadata-only mode available, v1.2.0).</td></tr>
             <tr><td><code>extract_text</code></td><td>Extract text content from an existing PDF via the native parser (v1.0.0).</td></tr>
@@ -897,7 +897,7 @@ const bytes = renderToBytes(
   &lt;Document title="Invoice #1024" footerText="Acme Inc"&gt;
     &lt;Heading level={1}&gt;Invoice #1024&lt;/Heading&gt;
     &lt;Text&gt;Thank you for your business.&lt;/Text&gt;
-    &lt;Table headers={['Item', 'Total']} rows={[{ cells: ['Pro plan', '$49.00'] }]} zebra /&gt;
+    &lt;Table headers={['Item', 'Total']} rows={[{ cells: ['Pro plan', '$49.00'], type: 'default', pointed: false }]} zebra /&gt;
   &lt;/Document&gt;,
 ); // → Uint8Array, a valid PDF</code></pre>
         <p>Compiles on-device — no SaaS round-trip, no Chromium. See the <a href="guides/react.html">React guide →</a> &middot; <a href="playgrounds/react.html">Try the React playground →</a></p>

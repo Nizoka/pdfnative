@@ -4,19 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playgrounds — pdfnative</title>
-  <meta name="description" content="Nine zero-install pdfnative playgrounds: extreme scripts, all 22 scripts + emoji, a document toolkit, native charts, authoring+, an 100k-page scale test stress test, CLI, MCP, and React.">
+  <meta name="description" content="Nine zero-install pdfnative playgrounds: extreme scripts, all 22 scripts + emoji, a document toolkit, native charts, authoring+, a 100,000-page scale test, CLI, MCP, and React.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/">
   <meta property="og:title" content="Playgrounds — pdfnative">
-  <meta property="og:description" content="Nine interactive playgrounds for pdfnative: extreme-script shaping, an all-22-scripts + colour-emoji showcase, a 1.4.0 document toolkit, 1.6.0 native charts, a 1.5.0 authoring+ showcase, a 100,000-page scale test, a CLI command builder, an MCP tool explorer, and a declarative React (JSX) renderer. All zero-install, in your browser.">
+  <meta property="og:description" content="Nine interactive playgrounds for pdfnative 1.6.0: extreme-script shaping, an all-22-scripts + colour-emoji showcase, a document toolkit (engine features from v1.4.0 through v1.6.0), native vector charts (new in v1.6.0), an authoring showcase (v1.5.0 features), a 100,000-page scale test, a CLI command builder, an MCP tool explorer, and a declarative React (JSX) renderer. All zero-install, in your browser.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Playgrounds — pdfnative">
-  <meta name="twitter:description" content="Nine interactive, zero-install playgrounds: extreme scripts, all-22-scripts + emoji, 1.4.0 toolkit, 1.6.0 charts, 1.5.0 authoring+, 100k-page scale test, CLI builder, MCP explorer, React renderer.">
+  <meta name="twitter:description" content="Nine zero-install playgrounds: extreme scripts, all-22-scripts + emoji, document toolkit, native charts, authoring showcase, 100k-page scale test, CLI builder, MCP explorer, React renderer.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -154,7 +154,9 @@
       <li><a href="../#cli">CLI</a></li>
       <li><a href="../#react">React</a></li>
       <li><a href="../guides/">Guides</a></li>
+      <li><a href="../learn/">Learn</a></li>
       <li><a href="./" aria-current="page">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
     </ul>
@@ -190,7 +192,7 @@
 
       <a class="pg-card" href="./toolkit.html">
         <div class="pg-icon" aria-hidden="true">🧰</div>
-        <h3>PDF Toolkit <span class="badge">Library</span> <span class="badge alt">1.4.0 → 1.6.0</span></h3>
+        <h3>PDF Toolkit <span class="badge">Library</span> <span class="badge alt">engine 1.4.0 → 1.6.0</span></h3>
         <p>Outline <strong>bookmarks</strong>, <strong>page labels</strong>, <strong>viewer preferences</strong>, <strong>nested lists</strong>, cell borders, <strong>merge / split / extract</strong> — plus the 1.6.0 round trip: fill &amp; flatten an <strong>encrypted AcroForm</strong>, <strong>re-encrypt</strong> a merged document (AES-256 password rotation), and <strong>extract text</strong> with positions. Each a one-click downloadable PDF.</p>
         <div class="pg-tags">
           <span class="pg-tag">Bookmarks</span><span class="pg-tag">Merge/split</span><span class="pg-tag">Re-encrypt</span><span class="pg-tag">Form fill</span><span class="pg-tag">Extract text</span>
@@ -231,7 +233,7 @@
       <a class="pg-card" href="./cli.html">
         <div class="pg-icon" aria-hidden="true">⌨️</div>
         <h3>CLI builder <span class="badge alt">CLI</span></h3>
-        <p>Compose <code>pdfnative-cli</code> commands (<code>render</code> · <code>sign</code> · <code>inspect</code> · <code>verify</code> · <code>merge</code> · <code>split</code> · <code>extract</code> · <code>annotate</code> · <code>govern</code>) interactively. Live shell preview, validation rules, copy-to-clipboard, and ready presets covering every common workflow.</p>
+        <p>Compose <code>pdfnative-cli</code> commands (<code>render</code> · <code>sign</code> · <code>inspect</code> · <code>verify</code> · <code>merge</code> · <code>split</code> · <code>extract</code> · <code>annotate</code> · <code>govern</code>) interactively. Live shell preview, validation rules, copy-to-clipboard, and presets for the nine most-used commands.</p>
         <div class="pg-tags">
           <span class="pg-tag">render</span><span class="pg-tag">sign</span><span class="pg-tag">merge/split/extract</span><span class="pg-tag">annotate</span><span class="pg-tag">govern</span>
         </div>
@@ -260,7 +262,7 @@
     </div>
 
     <h2 style="margin-top: 44px;">What about non-interactive examples?</h2>
-    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">44 generator categories producing ~227 sample PDFs</a> covering financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, charts, and stress tests. Run <code>npm run test:generate</code> after cloning.</p>
+    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">44 generators producing ~228 sample PDFs across 37 categories</a> covering financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, charts, and stress tests. Run <code>npm run test:generate</code> after cloning.</p>
 
     <h2>Resources</h2>
     <ul>

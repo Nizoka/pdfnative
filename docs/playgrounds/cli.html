@@ -226,7 +226,7 @@
         <div class="full">
           <label for="r-lang">--lang</label>
           <input id="r-lang" type="text" data-cmd="render" data-flag="--lang" placeholder="th,ja,ar">
-          <span class="hint">Comma-separated language codes. Non-Latin requires a <code>registerFontLoader()</code> wrapper.</span>
+          <span class="hint">Comma-separated language codes. Non-Latin scripts need their font registered — pass the same code to <code>--font</code> (22 bundled scripts).</span>
         </div>
 
         <fieldset>
@@ -234,12 +234,12 @@
           <div class="grid">
             <div>
               <label><input type="checkbox" data-cmd="render" data-flag="--watch"> --watch</label>
-              <span class="hint">Re-render on input/layout/template change. Requires <code>--input</code> + <code>--output</code>.</span>
+              <span class="hint">Re-render when the <code>--input</code> file changes (only that file is watched). Requires <code>--input</code> + a file <code>--output</code>.</span>
             </div>
             <div>
               <label for="r-template">--template</label>
               <input id="r-template" type="text" data-cmd="render" data-flag="--template" placeholder="vars.json">
-              <span class="hint">JSON file with <code>{ "key": "value" }</code> pairs substituted into the document.</span>
+              <span class="hint">Base document JSON: the input (stdin or <code>--input</code>) is deep-merged on top — caller wins, arrays replace. Not variable substitution.</span>
             </div>
             <div>
               <label for="r-font">--font</label>
@@ -251,7 +251,7 @@
                 <option value="latin,emoji">latin,emoji</option>
                 <option value="latin,math">latin,math</option>
               </select>
-              <span class="hint">Bundled font codes. For other scripts use <code>--lang</code>.</span>
+              <span class="hint">Bundled font codes — besides these, any of the 22 script codes (<code>ar</code>, <code>th</code>, <code>ja</code>…) works and doubles as the <code>--lang</code> code.</span>
             </div>
           </div>
         </fieldset>
@@ -352,6 +352,7 @@
               <input id="r-enc-perm" type="text" data-cmd="render" data-flag="--encrypt-permissions" placeholder="print,copy">
             </div>
           </div>
+          <span class="hint" style="margin-top: 8px; display: block;">Since v1.3.0 the CLI also has a unified encryption vocabulary shared by <code>render</code> / <code>merge</code> / <code>split</code> / <code>extract</code> — <code>--encrypt aes-128|aes-256</code>, <code>--owner-password</code>, <code>--user-password</code>, <code>--permissions</code>. See the <a href="../guides/cli.html">CLI guide</a>.</span>
         </fieldset>
 
         <fieldset>
@@ -490,7 +491,7 @@
           <span class="hint">Trust-anchor PEMs. Repeatable.</span>
         </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Scope (v1.1.0): full CMS/PKCS#7 verification (RSA + ECDSA-SHA256), byte-range integrity (SHA-256), certificate chain, trust evaluation against <code>--trust</code> roots, RFC 3161 timestamp validation (<strong>PAdES-T</strong>), and OCSP/CRL revocation checking via <code>--revocation</code> / <code>--revocation-policy</code>. See the <a href="../guides/cli.html">CLI guide</a>.</p>
+      <p class="hint" style="margin-top: 14px;">Scope (since v1.0.0): full CMS/PKCS#7 verification (RSA + ECDSA-SHA256), byte-range integrity (SHA-256), certificate chain, trust evaluation against <code>--trust</code> roots, RFC 3161 timestamp validation (<strong>PAdES-T</strong>), and OCSP/CRL revocation checking via <code>--revocation</code> / <code>--revocation-policy</code>. See the <a href="../guides/cli.html">CLI guide</a>.</p>
     </section>
 
     <!-- ─────────────── MERGE (v1.2) ─────────────── -->
@@ -517,7 +518,7 @@
           <label><input type="checkbox" data-cmd="merge" data-flag="--dry-run"> --dry-run</label>
         </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Encrypted sources are rejected; signatures and <code>/AcroForm</code> are dropped (page edits invalidate <code>/ByteRange</code>); URI <code>/Link</code> annotations are preserved. Every path is validated against traversal.</p>
+      <p class="hint" style="margin-top: 14px;">Encrypted sources are supported since v1.3.0 — decrypt them on ingest with <code>--password</code>, and re-encrypt the merged output with <code>--encrypt</code>. Signatures and <code>/AcroForm</code> are dropped (page edits invalidate <code>/ByteRange</code>); URI <code>/Link</code> annotations are preserved. Every path is validated against traversal.</p>
     </section>
 
     <!-- ─────────────── SPLIT (v1.2) ─────────────── -->
@@ -759,9 +760,9 @@
 
     if (activeCmd === 'sign') {
       const s = state.sign;
-      if (!s['--input']) warns.push('`sign` requires `--input` (no stdin sentinel for binary signing).');
+      if (!s['--input']) warns.push('No `--input` — `sign` will read the PDF from stdin.');
       if (s['--algorithm'] === 'ecdsa-sha256') {
-        warns.push('`--algorithm ecdsa-sha256` requires a P-256 (secp256r1) private key. Fully wired in v1.1.0.');
+        warns.push('`--algorithm ecdsa-sha256` requires a P-256 (secp256r1) private key. Supported since v0.3.0.');
       }
       if (s['--signing-time'] && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s['--signing-time'])) {
         errors.push('`--signing-time` must be ISO 8601 (e.g. `2026-04-28T10:00:00Z`).');

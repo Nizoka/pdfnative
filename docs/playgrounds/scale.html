@@ -144,7 +144,9 @@
       Browsers block ES-module Workers on <code>file:</code> origins, which are treated as unique
       security origins and cannot load cross-origin worker scripts
       (see <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=40487" target="_blank" rel="noopener">Chromium issue #40487</a>).
-      There is no main-thread fallback: generation needs the worker, so it is disabled here.<br>
+      There is no main-thread fallback: generating on the main thread would freeze this tab for the
+      whole assembly phase and could not be cancelled (Cancel relies on <code>worker.terminate()</code>),
+      so generation is disabled here.<br>
       <strong>To run it:</strong>
       <pre style="background:rgba(0,0,0,.06);border-radius:4px;padding:8px 10px;margin:8px 0 4px;font-size:13px;">npm run docs:serve
 # then open http://localhost:5000/playgrounds/scale.html</pre>
@@ -235,7 +237,7 @@
     </ul>
 
     <h2>The content is deliberately lean</h2>
-    <p>Each page carries a heading and a paragraph — about 509 bytes of output per page, measured across 1,000 to 100,000 pages. That is a deliberate choice, not a flattering one: it makes the page count exact and known before generation starts, which is what lets the pages-per-second figure mean something instead of being derived from a byte estimate. Denser pages (tables, embedded fonts, images) produce proportionally more bytes and take proportionally longer.</p>
+    <p>Each page carries a heading and a paragraph — between 496 and 509 bytes of output per page depending on document length (509 at 100,000 pages). That is a deliberate choice, not a flattering one: it makes the page count exact and known before generation starts, which is what lets the pages-per-second figure mean something instead of being derived from a byte estimate. Denser pages (tables, embedded fonts, images) produce proportionally more bytes and take proportionally longer.</p>
     <p>If you want to see a realistic document instead of a scalability floor, the <a href="./toolkit.html">PDF Toolkit</a> and <a href="./charts.html">Charts</a> playgrounds build ordinary documents with real content.</p>
 
     <h2>Code</h2>
@@ -293,7 +295,6 @@ const $ = (id) => document.getElementById(id);
 // ── Environment detection ───────────────────────────────────────────
 const IS_FILE_ORIGIN = location.protocol === 'file:';
 const HAS_FS_ACCESS = typeof window.showSaveFilePicker === 'function';
-const MAIN_THREAD_CAP = 1000;
 
 // ~509 bytes of output per page for the lean profile, measured on the
 // generator below. Peak string memory is ~2 bytes per output character.
@@ -479,14 +480,14 @@ function refreshConstraints() {
   const pages = currentPages();
   const peak = pages * BYTES_PER_PAGE * 2;
   $('estimate').textContent =
-    `≈ ${mb(pages * BYTES_PER_PAGE)} of PDF, ≈ ${mb(peak)} peak memory (estimate, from the lean profile)`;
+    `≈ ${mb(pages * BYTES_PER_PAGE)} of PDF, ≈ ${mb(peak)} of assembled string parts (block objects and runtime overhead add more; estimated from the lean profile)`;
 
   $('confirmBox').style.display = pages >= 100000 ? 'flex' : 'none';
   if (pages < 100000) $('confirmBig').checked = false;
 
   const reasons = [];
   if (!HAS_FS_ACCESS) reasons.push('“Save to disk” needs the File System Access API (Chromium-based browsers).');
-  if (IS_FILE_ORIGIN) reasons.push(`Running from file:// — the Web Worker is unavailable, so generation is capped at ${fmt.format(MAIN_THREAD_CAP)} pages.`);
+  if (IS_FILE_ORIGIN) reasons.push('Running from file:// — the Web Worker is unavailable, so generation is disabled. Serve the docs over HTTP (npm run docs:serve).');
   $('sinkReason').textContent = reasons.join(' ');
 
   if (IS_FILE_ORIGIN) {
