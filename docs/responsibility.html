@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Responsibility — what pdfnative claims, and what it does not | pdfnative</title>
+  <meta name="description" content="pdfnative's sustainability, supply-chain and accessibility position — every claim linked to the file in the repository that proves it, and an explicit list of what we deliberately do not measure or claim.">
+  <link rel="canonical" href="https://pdfnative.dev/responsibility.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/responsibility.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/responsibility.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/responsibility.html">
+  <meta property="og:title" content="Responsibility — what pdfnative claims, and what it does not">
+  <meta property="og:description" content="No carbon figures, no offsets, no certifications. Architectural choices that are verifiable from the source tree — each one linked to the file that proves it.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Responsibility — what pdfnative claims, and what it does not">
+  <meta name="twitter:description" content="No carbon figures, no offsets, no certifications. Verifiable architectural choices, each linked to its proof in the repository.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="guides/guide.css">
+  <style>
+    .rs-claim { border-left: 3px solid var(--c-primary); background: var(--c-surface); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 14px 0; }
+    .rs-claim > p:first-child { margin-top: 0; }
+    .rs-claim > p:last-child { margin-bottom: 0; }
+    .rs-verify { font-size: 13px; color: var(--c-text-dim); margin-top: 8px; }
+    .rs-verify a { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .rs-not { border-left-color: #dc2626; }
+    .rs-not ul { margin-bottom: 0; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": ["WebPage", "AboutPage"],
+        "inLanguage": "en",
+        "name": "Responsibility — what pdfnative claims, and what it does not",
+        "url": "https://pdfnative.dev/responsibility.html",
+        "description": "pdfnative's sustainability, supply-chain and accessibility position, with every claim linked to its proof in the repository.",
+        "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
+        "author": { "@type": "Organization", "name": "Nizoka", "url": "https://pdfnative.dev" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://pdfnative.dev/" },
+          { "@type": "ListItem", "position": 2, "name": "Responsibility" }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="./">
+      <img src="assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="./#features">Features</a></li>
+      <li><a href="./#demo">Demo</a></li>
+      <li><a href="./#mcp">MCP</a></li>
+      <li><a href="./#cli">CLI</a></li>
+      <li><a href="guides/">Guides</a></li>
+      <li><a href="playgrounds/">Playgrounds</a></li>
+      <li><a href="responsibility.html" aria-current="page">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="./">Home</a> &nbsp;›&nbsp; Responsibility</p>
+  <article class="guide-content">
+    <h1>Responsibility</h1>
+    <p><strong>No carbon claims, no offsets, no badges.</strong> Just architectural choices that keep the runtime small, local, and verifiable from the source tree.</p>
+    <p>Every claim on this page carries a <em>verify it</em> link to the file in the repository that supports it. If a claim cannot be checked that way, it is in the <a href="#not-claimed">what we do not claim</a> section instead — which is the part of this page worth reading first.</p>
+
+    <h2 id="efficiency">Efficiency by architecture</h2>
+
+    <div class="rs-claim">
+      <p><strong>Generation happens on the device that asked for it.</strong> PDFs are assembled in the calling process — Node, a browser tab, a Worker, Deno, Bun, an edge runtime. There is no SaaS round-trip, so a document does not leave the user's machine unless the application chooses to send it. Every playground on this site is a demonstration: they generate real PDFs with nothing but the page you already loaded.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/tree/main/src" target="_blank" rel="noopener">src/</a> · <a href="playgrounds/scale.html">the scale playground generates 100,000 pages client-side</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>The engine has no runtime dependencies.</strong> <code>pdfnative</code> ships with no <code>dependencies</code> field at all: nothing transitive to install, audit, or patch.</p>
+      <p>Scoped honestly, because the ecosystem is not uniform: <code>pdfnative-cli</code> depends only on <code>pdfnative</code> itself. <code>pdfnative-react</code> adds one real runtime dependency, <code>react-reconciler</code>, with React and pdfnative as peers. <code>pdfnative-mcp</code> adds two, <code>@modelcontextprotocol/sdk</code> and <code>zod</code>. And this documentation site itself loads Prism, marked and DOMPurify from a CDN — pinned, with subresource-integrity hashes.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/package.json" target="_blank" rel="noopener">package.json</a> (no dependencies key) · <a href="https://github.com/Nizoka/pdfnative-react/blob/main/package.json" target="_blank" rel="noopener">pdfnative-react/package.json</a> · <a href="https://github.com/Nizoka/pdfnative-mcp/blob/main/package.json" target="_blank" rel="noopener">pdfnative-mcp/package.json</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>The library never opens a socket.</strong> No telemetry endpoint, no auto-update channel, no remote font fetch. Searching the engine source for any of the ways JavaScript can reach the network — <code>fetch</code>, <code>XMLHttpRequest</code>, <code>WebSocket</code>, <code>node:http</code>, <code>sendBeacon</code> — returns no matches at all.</p>
+      <p>One scoped exception, stated because it is real: <code>pdfnative-cli verify</code> can fetch OCSP and CRL responses when checking whether a signing certificate has been revoked. It does not do so by default — the default reads only the revocation data already embedded in the document, and network checks require <code>--revocation online</code>. RFC 3161 timestamps are <em>validated</em> from the embedded token; the CLI does not contact a timestamp authority, and <code>sign --timestamp</code> reports that it is not yet implemented.</p>
+      <p class="rs-verify">Verify it: <code>grep -rE "fetch\(|XMLHttpRequest|WebSocket|node:http" src/</code> · <a href="https://github.com/Nizoka/pdfnative/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>Only what you import is shipped.</strong> All four packages declare <code>"sideEffects": false</code>, so bundlers can drop unused features. Fonts are separate modules loaded on demand — a Latin-only invoice never pays for the CJK or emoji data.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/package.json" target="_blank" rel="noopener">package.json</a> · <a href="guides/quickstart.html">font registration in the quick start</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>Large documents do not need proportionally large machines — up to a point.</strong> <code>buildDocumentPDFStreamTrue</code> emits the PDF as chunks and frees each part as it goes, so the fully-joined binary never exists. That lifts the ~512&nbsp;MB single-string ceiling the simpler streaming variant hits. It does <em>not</em> make generation constant-memory: every part is built before the first chunk is emitted, so peak usage still scales with output size. The <a href="guides/streaming.html#what-this-does-and-does-not-buy-you">streaming guide</a> states the exact profile.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-stream-writer.ts" target="_blank" rel="noopener">src/core/pdf-stream-writer.ts</a></p>
+    </div>
+
+    <h2 id="supply-chain">Supply chain</h2>
+
+    <div class="rs-claim">
+      <p><strong>Published builds are signed and attributable.</strong> All four packages publish with npm provenance through GitHub Actions OIDC, producing a Sigstore attestation that ties each tarball to the commit and workflow that built it.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/publish.yml" target="_blank" rel="noopener">.github/workflows/publish.yml</a> · the provenance badge on <a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>A CycloneDX SBOM is attached to releases — for two of the four packages.</strong> <code>pdfnative-cli</code> and <code>pdfnative-react</code> generate and upload one. <code>pdfnative</code> and <code>pdfnative-mcp</code> currently do not. Saying "SBOM for every package" would be easier and would be false.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative-cli/blob/main/.github/workflows/publish.yml" target="_blank" rel="noopener">pdfnative-cli publish.yml</a> · <a href="https://github.com/Nizoka/pdfnative-react/blob/main/.github/workflows/publish.yml" target="_blank" rel="noopener">pdfnative-react publish.yml</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>Static analysis and dependency hygiene run on every repository.</strong> CodeQL scanning, OSSF Scorecard, and Dependabot on a weekly grouped schedule with major upgrades pinned. The engine's own <code>npm audit --audit-level=high</code> gate runs in CI.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/codeql.yml" target="_blank" rel="noopener">codeql.yml</a> · <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/scorecard.yml" target="_blank" rel="noopener">scorecard.yml</a> · <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/dependabot.yml" target="_blank" rel="noopener">dependabot.yml</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>The documentation checks itself.</strong> Version numbers, tool counts and command counts are declared once in a manifest, and a CI rule fails the build when any page disagrees with it — or references an API that is not declared anywhere in the source. That rule exists because these numbers had drifted a full release apart across some forty files.</p>
+      <p class="rs-verify">Verify it: <a href="assets/ecosystem.json">assets/ecosystem.json</a> · <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/verify-docs.ts" target="_blank" rel="noopener">scripts/verify-docs.ts</a></p>
+    </div>
+
+    <h2 id="inclusion">Digital inclusion and longevity</h2>
+
+    <div class="rs-claim">
+      <p><strong>22 writing systems with real shaping, in the box.</strong> Arabic and Hebrew bidirectional text (UAX #9), Devanagari, Bengali, Tamil, Telugu, Sinhala, Thai, Khmer, Myanmar, Tibetan, Ethiopic, CJK and more — with GSUB/GPOS OpenType shaping, not just codepoint mapping. Most PDF tooling in this ecosystem handles Latin well and degrades from there. Documents that people can actually read in their own script is an accessibility argument before it is a feature list.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/tree/main/src/shaping" target="_blank" rel="noopener">src/shaping/</a> · <a href="playgrounds/all-scripts.html">all-scripts playground</a> · <a href="playgrounds/extreme-scripts.html">extreme-scripts playground</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>Accessible output is a first-class API, not an afterthought.</strong> Tagged PDF with a real structure tree, <code>/ActualText</code>, language tagging, and a <code>validatePdfUA()</code> function that checks the structural requirements of PDF/UA-1 (ISO 14289-1): MarkInfo, StructTreeRoot, ParentTree, <code>/Lang</code>, per-page MCID uniqueness.</p>
+      <p>What that function does not do — and cannot — is judge whether your reading order makes sense or your alt text is meaningful. Those remain the author's responsibility, and no validator substitutes for them.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/parser/pdf-ua-validator.ts" target="_blank" rel="noopener">src/parser/pdf-ua-validator.ts</a> · <a href="guides/accessibility.html">accessibility guide</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>Documents meant to outlive their software.</strong> PDF/A-1b, 2b, 2u and 3b output, checked against the <a href="https://verapdf.org" target="_blank" rel="noopener">veraPDF</a> reference validator in CI on every commit — not merely asserted. veraPDF is a Java tool invoked by the workflow; it is never bundled with the package, so the zero-dependency property survives.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml" target="_blank" rel="noopener">.github/workflows/verapdf.yml</a> · <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/validate-pdfa.ts" target="_blank" rel="noopener">scripts/validate-pdfa.ts</a> · <a href="guides/pdfa.html">PDF/A guide</a></p>
+    </div>
+
+    <h2 id="governance">Governance</h2>
+
+    <div class="rs-claim">
+      <p><strong>AI agents draft; humans decide.</strong> pdfnative is built with AI coding assistants and governs them explicitly. A machine-readable contract keeps agents in a draftsman role: they may propose changes into <code>.github/drafts/</code>, but a human reviews, approves and submits everything under their own identity. Nothing reaches GitHub autonomously, and agents may not add a runtime dependency.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/ai-governance.json" target="_blank" rel="noopener">.github/ai-governance.json</a> · <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/AGENT_RULES.md" target="_blank" rel="noopener">.github/AGENT_RULES.md</a> · <a href="guides/ai-governance.html">AI governance guide</a></p>
+    </div>
+
+    <div class="rs-claim">
+      <p><strong>MIT licensed, citable, with a published security policy.</strong> All four packages are MIT. A <code>CITATION.cff</code> makes the project citable in academic work, and <code>SECURITY.md</code> documents the disclosure process and the threat model the parser is hardened against.</p>
+      <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a> · <a href="https://github.com/Nizoka/pdfnative/blob/main/CITATION.cff" target="_blank" rel="noopener">CITATION.cff</a> · <a href="https://github.com/Nizoka/pdfnative/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a> · <a href="https://github.com/Nizoka/pdfnative/blob/main/CODE_OF_CONDUCT.md" target="_blank" rel="noopener">CODE_OF_CONDUCT.md</a></p>
+    </div>
+
+    <h2 id="not-claimed">What we deliberately do not claim</h2>
+
+    <div class="rs-claim rs-not">
+      <p>Publishing this list is the most useful thing this page can do. Each item is something we could plausibly assert and cannot substantiate.</p>
+      <ul>
+        <li><strong>Any energy, kWh or CO₂e figure.</strong> Nothing in any of the four repositories measures power draw. The only performance data that exists is wall-clock timing. Converting that into a carbon number would require assumptions about hardware, grid mix and workload that we have not made and could not defend.</li>
+        <li><strong>"Lighter than <em>library X</em>" as an environmental argument.</strong> The <a href="./#comparison">feature comparison</a> compares capabilities. There is no committed benchmark comparing runtime or bundle size against other libraries, so there is no basis for an efficiency claim relative to them.</li>
+        <li><strong>A single headline bundle size.</strong> The built artefacts in <code>dist/</code> are unminified and ship with sourcemaps, so quoting their raw byte count would overstate the cost as badly as quoting a gzipped figure would understate it. Measure it for your own bundle.</li>
+        <li><strong>"Zero dependencies" across the ecosystem.</strong> True for the engine. Not true for <code>pdfnative-react</code> or <code>pdfnative-mcp</code>, as stated above.</li>
+        <li><strong>"Never touches the network" across the ecosystem.</strong> True for the engine. The CLI's <code>verify</code> command makes OCSP, CRL and timestamp requests by design.</li>
+        <li><strong>Certification of any kind.</strong> PDF/A output is validated by the veraPDF reference validator in CI, which is meaningful evidence — but pdfnative is not an accredited conformance-tested product, and there is no ISO 14001, SOC 2, HIPAA or GDPR certification behind it. Software architecture is not a compliance certificate.</li>
+        <li><strong>WCAG conformance of this website.</strong> The site has a skip link, visible focus indicators, reduced-motion support and contrast ratios checked in CI. It has not been through a formal accessibility audit, so we describe the measures rather than claim the outcome.</li>
+      </ul>
+    </div>
+
+    <p style="margin-top:2rem;">Found something on this page that does not hold up? <a href="https://github.com/Nizoka/pdfnative/issues/new" target="_blank" rel="noopener">Open an issue</a> — a claim we cannot defend is a bug.</p>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="guides/">Guides</a></li>
+      <li><a href="playgrounds/">Playgrounds</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

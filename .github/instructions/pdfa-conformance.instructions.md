@@ -62,16 +62,17 @@ applyTo: 'src/core/pdf-tags.ts,src/core/pdf-builder.ts,src/core/pdf-document.ts,
 - ISO 19005-1 §6.3.2: mutually exclusive. Validated at the build
   boundary; never relax this check.
 
-## v1.0.4 known gap — Latin font embedding (rule 6.3.4)
+## Latin font embedding (rule 6.3.4) — resolved in v1.1.0 (#28)
 
-- pdfnative still emits `/Helvetica` and `/Helvetica-Bold` as unembedded
-  Type 1 references.
-- This is invalid under any PDF/A mode (rule 6.3.4 `isFontEmbedded`).
-- Tracked for v1.0.5 — see
-  [release-notes/draft-issue-v1.0.5-latin-embedding.md](../../release-notes/draft-issue-v1.0.5-latin-embedding.md).
-- Until then the `pdfaid:part` claim in XMP is **aspirational** for any
-  document containing Latin runs; the project ships the metadata fixes
-  honestly and signals the gap in README + CHANGELOG.
+- Historical note: through v1.0.4, pdfnative emitted `/Helvetica` and
+  `/Helvetica-Bold` as unembedded Type 1 references — invalid under any
+  PDF/A mode (rule 6.3.4 `isFontEmbedded`), which made the `pdfaid:part`
+  claim aspirational for documents containing Latin runs.
+- Since v1.1.0, Noto Sans VF (OFL-1.1, bundled as
+  `fonts/noto-sans-data.{js,d.ts}` under lang `'latin'`) is auto-embedded
+  for Latin text in tagged/PDF-A mode, so PDF/A output carries only
+  embedded fonts. Do not reintroduce unembedded base-14 references in any
+  PDF/A code path.
 
 ## Validator workflow
 

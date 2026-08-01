@@ -6,8 +6,12 @@
   <title>Font-data validation — pdfnative</title>
   <meta name="description" content="Validate custom font-data modules before rendering with pdfnative's opt-in validateFontData() — SFNT magic, base64 integrity, cmap coverage, glyph-id range, width array, finite metrics. New in v1.4.0.">
   <link rel="canonical" href="https://pdfnative.dev/guides/font-validation.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/font-validation.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/font-validation.html">
+  <link rel="alternate" type="text/markdown" href="font-validation.md">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/font-validation.html">
   <meta property="og:title" content="Font-data validation — pdfnative">
   <meta property="og:description" content="Opt-in validateFontData() structurally checks custom font modules and returns { valid, errors, warnings }. New in v1.4.0.">
@@ -21,7 +25,7 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
 </head>
 <body>
 
@@ -41,8 +45,10 @@
       <li><a href="../#mcp">MCP</a></li>
       <li><a href="../#cli">CLI</a></li>
       <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
       <li><a href="./">Guides</a></li>
       <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
     </ul>
@@ -53,6 +59,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Font-data validation</p>
   <article id="guide-content" class="guide-content" data-md="font-validation.md">
     <p class="guide-loading">Loading…</p>
+    <noscript><p>This guide is written in Markdown: <a href="font-validation.md">read font-validation.md</a>.</p></noscript>
   </article>
 </main>
 
@@ -68,11 +75,11 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
 <script src="guide.js" defer></script>
 </body>
 </html>

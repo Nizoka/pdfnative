@@ -8,7 +8,7 @@ To report a security vulnerability, please use [GitHub's private vulnerability r
 
 Alternatively, contact us at: **security@pdfnative.dev**
 
-We will acknowledge receipt within 48 hours and aim to provide a fix within 7 days for critical issues.
+We will acknowledge receipt within 48 hours and target a fix within 7 days for Critical severity and within 14 days for High severity.
 
 ## Supported Versions
 
@@ -25,6 +25,7 @@ pdfnative is a pure TypeScript library with **zero runtime dependencies**. This 
 ### Encryption
 
 - AES-128 (V4/R4/AESV2) and AES-256 (V5/R6/AESV3) — pure TypeScript implementations
+- Since v1.6.0 the parser also **reads/decrypts** RC4 V1–V4, AES-128, and AES-256 documents (`openPdf(bytes, { password })`); on the **write** side only AES-128/AES-256 are emitted — RC4 is never produced
 - Per-object encryption keys with random initialization vectors (AES-CBC)
 - No ECB mode — all encryption uses CBC with PKCS7 padding
 - Key derivation follows ISO 32000-1 (PDF 1.7) specification

@@ -83,6 +83,15 @@
   border-bottom: 1px solid var(--c-border);
 }
 
+/* Wide tables scroll inside themselves on narrow viewports instead of
+   overflowing the page. style.css only covers ≤480px; guides need it sooner. */
+@media (max-width: 768px) {
+  .guide-content table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
 .guide-content th {
   background: var(--c-bg-alt);
   font-weight: 700;

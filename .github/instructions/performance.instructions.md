@@ -44,6 +44,6 @@ description: "Use when optimizing performance, profiling hot paths, reducing all
 - Font subsetting: only embed glyphs actually used (dramatic size reduction)
 - Avoid importing font data modules unless the script is detected in content
 - Worker bundle: `noExternal: [/.*/]` — self-contained, no runtime imports
-- FlateDecode compression: `compress: true` reduces output size by 70–90% for text-heavy PDFs
+- FlateDecode compression: `compress: true` reduces output size by 50–90% for text-heavy PDFs
 - Native zlib (`initNodeCompression()`) gives best compression ratio; stored-block fallback adds ~0.3% overhead
 - Compression and encryption can be combined — compress first for optimal ratio (ISO 32000-1 §7.3.8)

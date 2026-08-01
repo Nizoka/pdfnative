@@ -16,6 +16,36 @@ const pdf2u = buildPDFBytes(params, { tagged: 'pdfa2u' });  // PDF/A-2u
 const pdf3b = buildPDFBytes(params, { tagged: 'pdfa3b' });  // PDF/A-3b + attachments
 ```
 
+> ### `tagged` alone is not enough: embed a font
+>
+> ISO 19005 requires **every** font in the file to be embedded. `tagged` writes the
+> XMP conformance declaration, the structure tree and the output intent — but it does
+> not embed a font for you. If your document uses only the viewer's built-in fonts
+> (which is what happens when you pass no `fontEntries`), pdfnative writes a file that
+> *claims* PDF/A while referencing non-embedded Helvetica, and veraPDF will reject it.
+>
+> Pass at least a Latin font whenever you set `tagged`:
+>
+> ```ts
+> import { buildDocumentPDFBytes, registerFonts, loadFontData } from 'pdfnative';
+>
+> registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+> const fontData = await loadFontData('latin');
+>
+> // fontRef becomes a PDF resource name, so it needs the leading slash.
+> // /F1 and /F2 are reserved by the engine — start at /F3.
+>
+> const pdf = buildDocumentPDFBytes(
+>   { title: 'Archival', blocks, fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }] },
+>   { tagged: 'pdfa2b' },
+> );
+> ```
+>
+> The sample generators in `scripts/generators/` all do this, which is why the veraPDF
+> CI job passes — the trap only bites documents assembled by hand. `pdfnative-react`
+> ships a lint rule for exactly this case (`L_TAGGED_NO_FONTS`); run `lintDocument()`
+> if you author through that package.
+
 Every output written with `tagged` set ships:
 
 - A full structure tree (`/Document → /Table → /TR → /TH|/TD`, `/H1–H3`,
@@ -48,15 +78,22 @@ official veraPDF reference validator. The validator runs as a
 | ISO 19005-2 §6.2.11.4.1 — Type0 font references | ✅ | v1.1.0 |
 | veraPDF 6.2.3.3 — DeviceRGB OutputIntent | ✅ | v1.0.4 |
 
-To produce a strictly veraPDF-compliant PDF/A document, register the
-Latin font module (one line at app startup):
+To produce a strictly veraPDF-compliant PDF/A document, register the Latin
+font module **and resolve it**. Registering alone is not enough: the builders
+are synchronous and cannot await a loader, so the font never reaches the
+document and you get an unembedded Helvetica reference — verified: 0 embedded
+fonts.
 
 ```ts
-import { registerFont, buildPDFBytes } from 'pdfnative';
+import { registerFonts, loadFontData, buildPDFBytes } from 'pdfnative';
 
-registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'));
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin');
 
-const pdf = buildPDFBytes(params, { tagged: true });
+const pdf = buildPDFBytes(
+  { ...params, fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }] },
+  { tagged: true },
+);
 ```
 
 Without the `'latin'` font registered, pdfnative falls back to the
@@ -151,8 +188,9 @@ If you want a file to be validated, generate it with `tagged: true`
 
 **"My tagged file still fails rule 6.3.4 (font embedding)."**
 
-Register the Latin font module: `registerFont('latin', () => import('pdfnative/fonts/noto-sans-data.js'))`.
-Without it, pdfnative emits Helvetica as an unembedded standard-14
+Register the Latin font module **and pass the resolved data as `fontEntries`**
+(see the TL;DR above). Registration on its own does nothing for the synchronous
+builders. Without it, pdfnative emits Helvetica as an unembedded standard-14
 reference for byte-stable v1.0.x output. With it, every glyph used
 in the document is embedded as `CIDFontType2` / `FontFile2` — see
 the v1.1.0 status table above.

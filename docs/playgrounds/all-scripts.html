@@ -6,8 +6,11 @@
   <title>All 22 Scripts + Emoji Playground — pdfnative</title>
   <meta name="description" content="Generate one PDF with all 22 Unicode scripts pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji, in your browser.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/all-scripts.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/all-scripts.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/all-scripts.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/all-scripts.html">
   <meta property="og:title" content="All 22 Scripts + Emoji Playground — pdfnative">
   <meta property="og:description" content="The ultimate stress test: generate a single PDF containing all 22 Unicode scripts pdfnative supports — plus native COLRv1 colour emoji, all in your browser with zero install.">
@@ -21,11 +24,12 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
+    "inLanguage": "en",
     "name": "All 22 Scripts + Emoji Playground",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
@@ -73,7 +77,7 @@
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./charts.html">Charts</a>
     <a href="./authoring-plus.html">Authoring+</a>
-    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./scale.html">Scale</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html">React renderer</a>
@@ -114,6 +118,39 @@
       <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
     </details>
 
+    <h2 style="margin-top:32px;">The 22 scripts at a glance</h2>
+    <p>Every writing system below ships as a bundled Noto font module and renders through the same shaping engine. The demo reads this table directly — what you see here is what lands in the PDF.</p>
+    <table id="greetings-table">
+      <thead>
+        <tr><th scope="col">Script (autonym)</th><th scope="col">Greeting</th></tr>
+      </thead>
+      <tbody>
+        <tr><td lang="en">English</td><td lang="en">Hello</td></tr>
+        <tr><td lang="el">Ελληνικά</td><td lang="el">Γειά σου</td></tr>
+        <tr><td lang="ru">Русский</td><td lang="ru">Здравствуйте</td></tr>
+        <tr><td lang="ka">ქართული</td><td lang="ka">გამარჯობა</td></tr>
+        <tr><td lang="hy">Հայերեն</td><td lang="hy">Բարև</td></tr>
+        <tr><td lang="tr">Türkçe</td><td lang="tr">Merhaba</td></tr>
+        <tr><td lang="vi">Tiếng Việt</td><td lang="vi">Xin chào</td></tr>
+        <tr><td lang="pl">Polski</td><td lang="pl">Dzień dobry</td></tr>
+        <tr><td lang="ar" dir="rtl">العربية</td><td lang="ar" dir="rtl">السلام عليكم</td></tr>
+        <tr><td lang="he" dir="rtl">עברית</td><td lang="he" dir="rtl">שלום</td></tr>
+        <tr><td lang="am">አማርኛ</td><td lang="am">ሰላም</td></tr>
+        <tr><td lang="hi">हिन्दी</td><td lang="hi">नमस्ते</td></tr>
+        <tr><td lang="bn">বাংলা</td><td lang="bn">নমস্কার</td></tr>
+        <tr><td lang="ta">தமிழ்</td><td lang="ta">வணக்கம்</td></tr>
+        <tr><td lang="te">తెలుగు</td><td lang="te">నమస్తే</td></tr>
+        <tr><td lang="si">සිංහල</td><td lang="si">ආයුබෝවන්</td></tr>
+        <tr><td lang="th">ไทย</td><td lang="th">สวัสดี</td></tr>
+        <tr><td lang="km">ខ្មែរ</td><td lang="km">សួស្តី</td></tr>
+        <tr><td lang="my">မြန်မာ</td><td lang="my">မင်္ဂလာပါ</td></tr>
+        <tr><td lang="bo">བོད་ཡིག</td><td lang="bo">བཀྲ་ཤིས་བདེ་ལེགས།</td></tr>
+        <tr><td lang="zh">中文</td><td lang="zh">你好</td></tr>
+        <tr><td lang="ja">日本語</td><td lang="ja">こんにちは</td></tr>
+        <tr><td lang="ko">한국어</td><td lang="ko">안녕하세요</td></tr>
+      </tbody>
+    </table>
+
     <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
       <strong style="color:#065f46;">What this exercises:</strong>
       <ul style="margin-top:8px;color:#065f46;">
@@ -139,8 +176,8 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script type="module">
 // Canonical 22-script order (matches pdfnative's font registry) + Latin baseline.
 const ALL_LANGS = [
@@ -149,31 +186,12 @@ const ALL_LANGS = [
 ];
 
 // Autonym (script name in its own script) + a native greeting, routed automatically.
-const GREETINGS = [
-  ['English',     'Hello'],
-  ['Ελληνικά',    'Γειά σου'],
-  ['Русский',     'Здравствуйте'],
-  ['ქართული',     'გამარჯობა'],
-  ['Հայերեն',     'Բարև'],
-  ['Türkçe',      'Merhaba'],
-  ['Tiếng Việt',  'Xin chào'],
-  ['Polski',      'Dzień dobry'],
-  ['العربية',     'السلام عليكم'],
-  ['עברית',       'שלום'],
-  ['አማርኛ',        'ሰላም'],
-  ['हिन्दी',       'नमस्ते'],
-  ['বাংলা',        'নমস্কার'],
-  ['தமிழ்',        'வணக்கம்'],
-  ['తెలుగు',       'నమస్తే'],
-  ['සිංහල',        'ආයුබෝවන්'],
-  ['ไทย',         'สวัสดี'],
-  ['ខ្មែរ',         'សួស្តី'],
-  ['မြန်မာ',        'မင်္ဂလာပါ'],
-  ['བོད་ཡིག',       'བཀྲ་ཤིས་བདེ་ལེགས།'],
-  ['中文',         '你好'],
-  ['日本語',       'こんにちは'],
-  ['한국어',       '안녕하세요'],
-];
+// Single source of truth is the visible (crawlable) #greetings-table above —
+// what search engines index and what the demo renders are the same data.
+const GREETINGS = [...document.querySelectorAll('#greetings-table tbody tr')].map((tr) => {
+  const [autonym, greeting] = tr.querySelectorAll('td');
+  return [autonym.textContent.trim(), greeting.textContent.trim()];
+});
 
 // Region groupings for the "world tour" body — each paragraph mixes several scripts
 // on one line to demonstrate the per-code-point routing engine.
@@ -282,7 +300,7 @@ function updateCodeView(id) {
     '// 22 scripts + Latin + emoji — each lazy-loaded from the package fonts/ subpath.',
     `const langs = ${JSON.stringify(p.langs)};`,
     'registerFonts(Object.fromEntries(langs.map(l => [l,',
-    '  () => import(`https://esm.sh/pdfnative/fonts/${MODULE[l]}`)])));',
+    '  () => import(`https://esm.sh/pdfnative@1.6.0/fonts/${MODULE[l]}`)])));',
     '',
     'const fonts = await Promise.all(langs.map(loadFontData));',
     'const fontEntries = fonts',
@@ -306,7 +324,7 @@ function updateCodeView(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -335,7 +353,7 @@ async function generate() {
     const registry = {};
     for (const lang of p.langs) {
       const moduleName = moduleFor(lang, p.emojiColor);
-      registry[lang] = () => import(`https://esm.sh/pdfnative/fonts/${moduleName}`);
+      registry[lang] = () => import(`https://esm.sh/pdfnative@1.6.0/fonts/${moduleName}`);
     }
     mod.registerFonts(registry);
     const fonts = await Promise.all(p.langs.map(mod.loadFontData));
@@ -371,13 +389,13 @@ applyPreset('world-color');
 // Theme + hamburger parity with the rest of the site.
 const themeBtn = document.querySelector('.theme-toggle');
 if (themeBtn) {
-  const stored = localStorage.getItem('pdfnative-theme');
+  const stored = localStorage.getItem('theme');
   if (stored) document.documentElement.setAttribute('data-theme', stored);
   themeBtn.addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
     if (cur) document.documentElement.setAttribute('data-theme', cur);
     else     document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('pdfnative-theme', cur);
+    localStorage.setItem('theme', cur);
   });
 }
 const hb = document.querySelector('.nav-hamburger');

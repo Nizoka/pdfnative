@@ -28,13 +28,13 @@ tests/
 └── fixtures/       # test data, sample fonts, expected outputs
 scripts/
 ├── generate-samples.ts  # Orchestrator for modular PDF sample generation
-├── generators/          # Per-category sample generators (18 modules)
+├── generators/          # Per-category sample generators (44 modules)
 └── helpers/             # Shared utilities (fonts, images, I/O)
 ```
 
 ## Current State (maintain these thresholds)
-- **1563+ tests** across 37 test files + 1 benchmark file
-- Statements: ~95% (threshold: 90%)
+- **2396+ tests** across 105 test files + 1 benchmark file
+- Statements: ~95% (threshold: 88%)
 - Branches: ~88% (threshold: 80%)
 - Functions: ~98% (threshold: 85%)
 - Lines: 90% threshold
@@ -55,7 +55,7 @@ scripts/
 - **Multi-font**: test font switching at script boundaries, continuation bias behavior
 
 ## Coverage Targets
-- Statements: ≥90% overall (currently 98.96%)
+- Statements: CI threshold 88% (95%+ measured at the v1.6.0 release; full CI thresholds 88/80/85/90)
 - Core modules (`src/core/`): >95% (currently >99%)
 - Font modules (`src/fonts/`): >90% (currently >99%)
 - Shaping modules (`src/shaping/`): >90% (currently >95%)
@@ -108,7 +108,7 @@ scripts/
 - No-image documents: verify `/XObject` is NOT in page resources
 
 ## Document Builder Testing
-- Test each block type (12 types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc, barcode, svg, formField) renders correct PDF operators
+- Test each block type (13 types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc, barcode, svg, formField, chart) renders correct PDF operators
 - Test pagination: blocks split across pages when exceeding available height
 - Test `pageBreak` block forces new page
 - Test title rendering on first page only
@@ -232,22 +232,22 @@ scripts/
 - ESM init: `beforeAll(async () => { await initNodeCompression(); })` required for native zlib in vitest
 
 ## SVG Testing
-- Test `parseSvg()`: path, rect, circle, ellipse, line, polyline, polygon → `SvgSegment[]`
-- Test `renderSvgToPdf()`: correct PDF path operators (m, l, c, re, h, S, f)
+- Test `parseSvgPath()`: `<path d="...">` command data (M, L, C, Q, A, Z…) → `SvgSegment[]`
+- Test `renderSvg()`: path, rect, circle, ellipse, line, polyline, polygon → correct PDF path operators (m, l, c, re, h, S, f)
 - Test SVG viewBox scaling: coordinates mapped to PDF points
 - Test `SvgBlock` in document builder: `/Figure` structure element in tagged mode
 - Integration: verify SVG content renders as PDF path operators in content stream
 
 ## AcroForm Testing
 - Test `buildAcroFormDict()`: `/AcroForm << /Fields [...] /DR << /Font << >> >> >>`
-- Test field types: text, checkbox, radio, dropdown, button — each with correct `/FT`
-- Test `buildAppearanceStream()`: `/AP << /N stream >>` for each field type
+- Test field types: text, multilineText, checkbox, radio, dropdown, listbox — each with correct `/FT`
+- Test `buildFormWidget()` / `buildAppearanceStreamDict()`: `/AP << /N stream >>` for each field type
 - Test field properties: `/T`, `/V`, `/DA`, `/Rect`, `/Ff` flags
 - Test `FormFieldBlock` in document builder: `/Form` structure element in tagged mode
 - Integration: verify `/AcroForm` in catalog and field objects in PDF output
 
 ## Digital Signature Testing
-- Test `buildSignatureField()`: `/Sig` field with `/ByteRange` placeholder
+- Test `buildSigDict()`: `/Sig` dictionary with `/ByteRange` placeholder
 - Test CMS SignedData structure: signed attributes, certificate embedding
 - Test `signPdfBytes()`: round-trip sign + verify
 - Test RSA PKCS#1 v1.5 signing against known vectors
@@ -257,22 +257,22 @@ scripts/
 - Test SHA-384, SHA-512, HMAC-SHA-256 against NIST test vectors
 
 ## Streaming Testing
-- Test `buildPdfStream()`: yields Uint8Array chunks that concatenate to valid PDF
-- Test `streamPdf()`: table PDF streaming with configurable chunk size
-- Test `streamDocumentPdf()`: document PDF streaming end-to-end
+- Test `buildPDFStream()`: yields Uint8Array chunks that concatenate to valid PDF
+- Test `buildPDFStream()` / `buildPDFStreamTrue()`: table PDF streaming with configurable chunk size
+- Test `buildDocumentPDFStream()` / `buildDocumentPDFStreamTrue()`: document PDF streaming end-to-end (True variants byte-identical to buffered builders)
 - Test chunk boundaries: verify no data loss at chunk splits
 - Test streaming + compression: compressed streams via AsyncGenerator
 - Test streaming + encryption: encrypted streams via AsyncGenerator
 
 ## Parser Testing
-- Test `PdfTokenizer`: number, string, name, boolean, null, array, dict, stream tokens
-- Test `parseObject()`: all PDF object types including nested structures
-- Test `parseDictionary()`: simple, nested, with references
-- Test type guards: `isDict()`, `isArray()`, `isStream()`, `isRef()`
-- Test `parseXref()`: table format, stream format, `/Prev` chain following
-- Test `PdfReader.open()`: page count, page tree traversal, metadata extraction
+- Test `createTokenizer()`: number, string, name, boolean, null, array, dict, stream tokens
+- Test `parseValue()`: all PDF object types including nested structures (simple, nested, with references)
+- Test `parseIndirectObject()`: `N G obj ... endobj` parsing
+- Test type guards: `isDict()`, `isArray()`, `isStream()`, `isRef()`, `isName()`
+- Test `parseXrefTable()`: table format, stream format, `/Prev` chain following
+- Test `openPdf()`: `pageCount`, page tree traversal, `getInfo()` metadata extraction
 - Test `PdfReader.decodeStream()`: FlateDecode decompression
-- Test `PdfModifier`: add/remove pages, set metadata, incremental save with `/Prev`
+- Test `createModifier()`: `setObject`/`addRawObject`/`addAnnotation`, incremental `save()` with `/Prev`
 - Integration: generate PDF → parse → verify round-trip structural integrity
 
 ## Bengali/Tamil Shaping Testing

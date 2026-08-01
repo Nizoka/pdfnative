@@ -7,7 +7,237 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+Documentation-only release train alignment. No library behaviour changes; the
+only `src/` edits are JSDoc corrections.
+
+### Added
+
+- **`docs/assets/ecosystem.json`** — single source of truth for every version,
+  count and inventory quoted anywhere in the documentation, and
+  **`scripts/verify-docs.ts`** (`npm run verify:docs`) which fails the build when
+  a doc disagrees with it. Fifteen rules: manifest shape, filesystem-derived
+  counts, stale tokens, canonical presence, version tokens, phantom APIs,
+  JSON-LD versions, internal links, sitemap parity, CDN integrity and pinning,
+  playground-switcher parity, learn-path chain, WCAG contrast, and llms.txt
+  sync. `--online` adds npm drift.
+- **`.github/workflows/docs.yml`** — runs the verifier on documentation changes.
+  `ci.yml` has `paths-ignore` for `docs/**` and `**.md`, so documentation
+  previously triggered no workflow at all.
+- **`docs/playgrounds/scale.html`** — generates 1 000 to 100 000 pages in the
+  browser via `buildDocumentPDFStreamTrue` in a Web Worker, with three output
+  sinks and a measured (not assumed) page count. Replaces `medical-800.html`,
+  which becomes a `noindex` redirect stub.
+- **`docs/learn/`** — an eight-step guided path for people who have never
+  generated a PDF programmatically. Static HTML with a crawlable, script-verified
+  prev/next chain.
+- **`docs/responsibility.html`** — sustainability, supply-chain and accessibility
+  position, every claim linked to the file that proves it, plus an explicit list
+  of what is deliberately not claimed.
+- **`bench/RESULTS.md`** — dated benchmark run with hardware, sample counts and
+  relative error, plus the 1k–100k streaming measurements.
+- Structured data for the index pages: `CollectionPage` + `ItemList` covering all
+  26 guides and all 9 playgrounds, and `WebSite` + `Organization` on the homepage.
+
+### Fixed
+
+- **Streaming APIs that were never exported** — <!-- verify-docs:allow api-exists (the entry that bans these names) -->
+  `streamDocumentPdf`, `streamPdf`
+  and `buildPdfStream` <!-- verify-docs:allow api-exists (the entry that bans these names) -->
+  appeared in the FAQ, the CLI guide, the homepage, `ROADMAP`
+  and `.github/copilot-instructions.md`. Readers copying the FAQ snippet got a
+  `TypeError`.
+- **`buildDocumentPDFStreamTrue` was documented as constant-memory.** It calls
+  `assembleDocumentParts()` to completion before the first yield, so peak memory
+  scales with output size. What it actually avoids is the joined binary, which
+  lifts V8's ~512 MB single-string ceiling. JSDoc and guide corrected.
+- **Package versions and inventories** — the site described cli 1.2.0 (17
+  commands shipped, 11 advertised), mcp 1.4.0 (24 tools shipped, 19 and 17
+  advertised in different places on the same URL) and react 1.0.0, including in
+  the JSON-LD that crawlers consume and which never self-heals.
+- **`docs/guides/onboarding.md`** — all four snippets were wrong: `title` nested
+  under `metadata` (emitting `/Title ()`), a spurious `await` on a synchronous
+  function, the wrong binary name, positional arguments where flags are required,
+  and a `--pdf-a` flag that has never existed.
+- **`README.md`** claimed 1726+ tests in 48 files twelve lines after stating the
+  real 2379+/104; used an invalid `printing` permission key; and stated the
+  encryption surface is private after v1.6.0 made it public.
+- **The FAQ and troubleshooting guides both said the parser cannot decrypt** — the
+  v1.6.0 headline feature.
+- **`versions.js`** read the pdfnative pin only from `dependencies`, so the
+  annotation silently never rendered for `pdfnative-react`, which declares it as a
+  peer.
+- **`--c-text-muted` failed WCAG AA** at 2.56:1 on white (3.75:1 dark), applied to
+  footer links. Now 7.58:1 and 6.03:1. Added the missing
+  `prefers-reduced-motion` block.
+- **190 CDN assets loaded without integrity hashes** on a site claiming freedom
+  from supply-chain risk — including `marked` and `DOMPurify`, the path that
+  renders every guide. 26 unpinned `pdfnative` CDN imports pinned to `@1.6.0`.
+- **`agentic-workflows.svg` told agents to rasterise charts to PNG** and route
+  them through `embed_image`; `add_chart` has drawn native vector paths since
+  mcp 1.5.0.
+- **`docs/guides/quickstart.md`** taught table rows as `{ cells: [...] }`, which
+  TypeScript rejects (`TS2739`).
+- Broken link `docs/guides/tables.md → ../api.md`; `streamToFile` destructured a
+  non-existent `chunks` field; `batch` documented with `--input`/`--output`
+  instead of `--input-dir`/`--output-dir`.
+
+### Fixed — hardening pass
+
+A review of the branch against the four package sources found defects in the
+work above, several of them introduced by it. Recorded because the pass exists
+to make the documentation trustworthy, and hiding its own misses would defeat
+that.
+
+- **`docs/learn/` taught three snippets that do not work** — on pages whose
+  stated argument was that every snippet had been executed. A `lang` field on a
+  paragraph block (no block type has one, so Thai and Arabic rendered as tofu),
+  a `list` without its required `style`, and `level (1–6)` where `HeadingBlock`
+  accepts 1–3. All rewritten and verified by running the published text.
+- **`registerFont` alone never reaches the builder.** `buildDocumentPDFBytes` is
+  synchronous and cannot await a loader; the working pattern is
+  `registerFonts` → `await loadFontData` → `fontEntries`. This was the root
+  cause of Arabic rendering as `????` in the React playground, compounded by the
+  preset registering under `'arabic'` where the engine looks up `'ar'`.
+- **Three playgrounds declared PDF/A conformance they did not have.** `tagged`
+  writes the XMP declaration but embeds no font, and ISO 19005 requires every
+  font embedded — so those files would fail veraPDF. Fixed by embedding a font,
+  which makes the claim true; the trap is now documented in
+  `docs/guides/pdfa.md`.
+- **`scale.html` documented a main-thread fallback that does not exist**, and
+  left the UI permanently stuck when the Worker constructor threw on `file://`.
+  Its page counter also dominated the throughput it reported — replaced with
+  `TextDecoder`, which moved the measured figure from 8,146 to 22,950 pages/s
+  at 10,000 pages (run since superseded by bench/RESULTS.md).
+- **The homepage benchmark figures contradicted `bench/RESULTS.md` by three to
+  six times** — the file this branch added as their source. Both re-measured
+  from one run, and a new `bench-parity` rule now fails the build if they
+  diverge again.
+- **Two denylisted phantom APIs survived in `src/` JSDoc** and were being
+  published into `dist/index.d.ts`. The verifier had never scanned `src/`.
+- **Nineteen references to the retired medical-800 playground** survived a pass
+  that updated every switcher, including a full card on the playground hub and
+  the URL contributors are told to open in `CONTRIBUTING.md`. The stub is now
+  deleted outright.
+- **Guides had drifted from their packages**: `cli.md` announced 17 commands and
+  listed 12, with no reference section for the five v1.3.0 ones; `mcp.md` had no
+  v1.5.0 section and attributed 24 tools to a release that shipped 19;
+  `react.md` had a 1.1.0 header over a 1.0.0 body and implied that importing the
+  root barrel from a Server Component works, when it fails.
+- **Five contrast pairs failed WCAG AA** in exactly the place the new contrast
+  rule could not look — it compared tokens only against the page background,
+  while `.rs-verify` sits on `--c-surface` at 4.34:1.
+- **`scale.html` had no `role="progressbar"` anywhere**, an `aria-live` region
+  streaming counters dozens of times per run, and its download link inside a
+  `role="alert"`.
+- The `architecture.svg` badge overflowed its pill by ~40 px and the parser
+  subtitle overflowed its box by ~150 px. The React version label is removed —
+  a version does not belong in an architecture diagram.
+
+`scripts/verify-docs.ts` is hardened accordingly: assertions compare captured
+numbers for equality instead of listing values already known to be wrong (which
+is how "19 pdfnative-mcp tools" passed), the denylist scans `src/`, contrast is
+checked per token-surface pair, links to `noindex` stubs are rejected, and
+`tests/docs/verify-docs.test.ts` proves each rule by introducing the defect it
+exists for — a regex rule that matches nothing is indistinguishable from one
+that passes.
+
+### Fixed — final ecosystem audit
+
+A second full audit of the branch against the four package sources
+(pdfnative 1.6.0, pdfnative-cli 1.3.0, pdfnative-mcp 1.5.0,
+pdfnative-react 1.1.0), one reviewer per package plus one for the playgrounds
+and benchmarks and one for reading experience. It found that the passes above
+had fixed instances while their classes survived elsewhere:
+
+- **The README's MCP section was two releases stale** — "pdfnative-mcp v1.3.0"
+  with a 17-row tool table, eleven lines below a header that said v1.5.0 and
+  24. No rule matched a version string in prose; a new `version-token` rule
+  now fails any package name paired with a semver the manifest contradicts.
+- **Phantom or wrong APIs in the guides**: `verifyPdfSignature` (never existed —
+  verification lives in the CLI), `registerFontLoader` (real name:
+  `registerFont`, in a wrapper recipe that also could not work across a
+  process boundary), `rsa-sha384/512` signature options, `report.errors` on a
+  lint report that exposes `findings`, `filename` for `fileName`,
+  `PdfReader.open()/getMetadata()/getPageCount()` for
+  `openPdf()/getInfo()/pageCount`, a `pageLabels` example that was 1-based
+  where the API is 0-based, and CLI `batch` examples using `--input`/`--output`
+  where the binary requires `--input-dir`/`--output-dir`.
+- **`.github/instructions/` taught agents the denylisted streaming phantoms**
+  and a parser/forms API surface that never existed — those files were outside
+  the verifier corpus. They are inside it now, and the denylist also scans
+  `CHANGELOG.md`.
+- **The homepage demo runner and the quickstart imported `pdfnative` unpinned**
+  from the CDN while the changelog above claimed every import was pinned — the
+  pin rule only scanned HTML. It now scans the whole corpus, with a fixture.
+- **Stale claims contradicted by the packages**: merge/split/extract "reject
+  encrypted sources" (supported via `--password`/`password` since
+  cli 1.3.0 / mcp 1.5.0), MCP fonts "downloaded lazily" (they ship bundled —
+  the same guide's security model says no network), RFC 3161 timestamp
+  detection attributed to the MCP server (CLI-only), "constant-memory"
+  streaming in `ROADMAP.md`, and a `file://` message in `scale.html` still
+  promising a 1,000-page cap for a main-thread path that was removed.
+- **Counts unified against the tree**: 228 sample PDFs across 37 categories
+  (44 generators), 2 396 tests in 105 files on the homepage (was 2 379+/104 —
+  the count includes the five verifier fixtures this audit adds),
+  89 fuzz tests in 5 files (was "48"), 26 bundled font modules, and coverage
+  figures dated to their v1.6.0 measurement with the CI gates (88/80/85/90)
+  stated alongside.
+- **`llms.txt` returned 404 on the published site** — the file lived only at
+  the repo root while the site serves `docs/`. A synced copy now ships in
+  `docs/`, plus a generated `docs/llms-full.txt` (`npm run docs:llms`)
+  concatenating all 26 guides for single-request agent ingestion; a new
+  `llms-sync` rule keeps both honest. Guide shells gained `<noscript>`
+  Markdown fallbacks and `rel="alternate"` links for non-JS readers, and the
+  Learn/Guides/Playgrounds/Responsibility navigation is now uniform across
+  page families.
+- **The homepage "PDF/A archival" demo failed veraPDF** (ISO 19005-2
+  §6.2.11.4.1) — the only executable PDF/A demo on the site with no
+  `fontEntries`, so the engine fell back to unembedded standard-14
+  Helvetica/Helvetica-Bold while `tagged: 'pdfa2b'` still wrote the XMP
+  conformance claim. The demo now embeds Noto Sans like every other PDF/A
+  sample. Two adjacent bugs fixed in the same pass: the multilang demo and
+  two static homepage snippets placed `tagged` in the params object instead
+  of layoutOptions, where it is silently ignored — the flag never did
+  anything there, so removing/relocating it changes no output.
+- **The 7 page-tree golden fixtures were corrupted at checkout on Windows** —
+  `core.autocrlf=true` (a common system-git default) classified the small
+  PDFs as text and rewrote their line endings, while `git status` stayed
+  clean; the blobs in git were always intact and CI (Linux) was always
+  green, which is why the corruption looked like flaky tests. A root
+  `.gitattributes` now declares every binary extension, closing the class.
+- **International SEO** — every indexable page now self-references with
+  `hreflang="en"` + `hreflang="x-default"` (the signal that makes a
+  monolingual site the default result for every locale), carries
+  `og:locale` and JSON-LD `inLanguage`, and the sitemap mirrors the
+  alternates via `xhtml:link`. The 22-script greeting table in the
+  all-scripts playground moved out of a `<script>` block into crawlable
+  HTML with per-cell `lang`/`dir` — the demo now reads the visible table,
+  so indexed content and rendered content are the same data. A new
+  `seo-head` rule (with fixtures) keeps all of it enforced.
+- **`docs.yml` was the only workflow not pinned by SHA** — actions are now
+  pinned like every other workflow (plus the two residual `@v4` floats in
+  verapdf.yml and visual-regression.yml), `persist-credentials: false` set,
+  and `src/**` added to its path filters: the `api-exists` rule cross-checks
+  documented identifiers against `src/`, so a rename there could break the
+  docs without triggering the workflow. `npm-drift` became directional —
+  docs behind npm still fails `--strict`, a manifest ahead of npm (the
+  normal pre-publication window) only warns.
+
+### Changed
+
+- Compliance and security wording brought down to what the code supports:
+  "ISO 32000-1 compliant" → "conforms to"; "full veraPDF conformance" →
+  "validated against the veraPDF reference validator in CI"; "constant-time
+  crypto" → attributed to `node:crypto`, with the pure-JS path marked as not
+  constant-time; "zero dependencies" scoped to the engine; "zero allocations"
+  → "no intermediate object graph".
+- Homepage benchmark rows relabelled from "(Unicode)" to "(embedded font)" — the
+  fixture attaches a synthetic font to Latin text and exercises no non-Latin
+  codepoint. Shaped-script throughput is stated as not benchmarked.
+- The comparison table is dated, names the exact competitor versions, states the
+  dependency-count method, and links its source data.
+- Hero CTA points at `/learn/` instead of an off-site 85 KB README. The homepage
+  now links 21 of 26 guides and `llms.txt` all 26.
 
 ## [1.6.0] – 2026-07-19
 
@@ -67,7 +297,7 @@ page-tree golden fixtures). Zero runtime dependencies preserved.
   hasher (which also lifts the internal one-shot MD5 512 MB length ceiling)
   and AES-CBC / AES-ECB decryption routines powering `openPdf` and the
   Standard Security Handler. These stay internal to the parser; the public
-  crypto surface (`sha256`, `sha384`, `sha512`, `hmacSha256`, …) is unchanged.
+  crypto surface (`sha384`, `sha512`, `hmacSha256`, …) is unchanged.
 - **feat(parser):** **text extraction**. `extractText(bytes, options?)` decodes
   page content streams into per-page reading-order Unicode text plus optional
   positioned runs (`{ text, x, y, fontSize, fontName }` in device space).
@@ -195,7 +425,7 @@ paths remain **byte-identical** to v1.4.0. Zero runtime dependencies preserved.
   allocates row height using the actual `cellPadding` instead of the hardcoded
   bottom-pad constant. Byte-identical at the default padding (3).
 
-## [1.4.0] – 2026-06-28
+## [1.4.0] – 2026-06-29
 
 Delivers the full v1.4.0 roadmap (document outline / bookmarks, page labels,
 `streamToFile()` Node helper) plus two pulled-forward items: a **page-tree
@@ -299,7 +529,7 @@ full notes in [release-notes/v1.4.0.md](release-notes/v1.4.0.md).
 
 - Sample count 178 → 201; test suite 1982 → 2165 (71 → 83 files).
 
-## [1.3.0] – 2026-06-30
+## [1.3.0] – 2026-06-08
 
 Closes issue [#48](https://github.com/Nizoka/pdfnative/issues/48) (CP-1252
 extended characters not extractable under base-14 Helvetica) and delivers the
@@ -1088,7 +1318,7 @@ multi-file object-graph rewrites:
   Forms, PDF/A, Multi-language with lazy fonts, Streaming) with a picker,
   reset button, and a "View source" link to the matching generator under
   `scripts/generators/`. The runtime now supports top-level `await`,
-  dynamic `import(…)`, and exposes `streamDocumentPdf`, `registerFonts`,
+  dynamic `import(…)`, and exposes `buildDocumentPDFStream`, `registerFonts`,
   `loadFontData`, and `signPdfBytes`.
 - **docs(landing):** synced the test counter to 1 588+ tests (matches
   `tests/` and `package.json`).
@@ -1321,7 +1551,7 @@ Initial release. Pure native PDF generation library with zero runtime dependenci
 
 #### Streaming Output
 
-- **AsyncGenerator streaming** — `streamPdf()` / `streamDocumentPdf()` yield `Uint8Array` chunks progressively
+- **AsyncGenerator streaming** — `buildPDFStream()` / `buildDocumentPDFStream()` yield `Uint8Array` chunks progressively
 - **Configurable chunk size** — `chunkSize` option (default: 65536 bytes)
 - **`concatChunks()` utility** — concatenate streaming chunks into a single `Uint8Array`
 - **Streaming + compression/encryption** — full feature compatibility in streaming mode

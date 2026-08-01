@@ -29,29 +29,50 @@
 
   <link rel="canonical" href="https://pdfnative.dev">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
 
   <!-- Prism.js for syntax highlighting (CDN, site-only dependency) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
 
   <!-- Schema.org structured data -->
   <!--
-    RELEASE CHECKLIST: the "softwareVersion" values below are hand-maintained.
-    On every package release, bump them here to match the live npm versions
-    (pdfnative #library, pdfnative-cli #cli, pdfnative-mcp #mcp, pdfnative-react #react).
-    The visible version badges are driven live from the npm registry by assets/versions.js;
-    these JSON-LD values are the static SEO mirror and must be kept in sync manually.
+    The "softwareVersion" values below are checked against
+    docs/assets/ecosystem.json by `npm run verify:docs` (CI: .github/workflows/docs.yml).
+    On a package release, edit the manifest — not this block — then run the
+    verifier; it reports every file that still disagrees.
+    The visible version badges are fetched live from npm by assets/versions.js;
+    these JSON-LD values are the static mirror that crawlers and LLM indexers
+    read, and they never self-heal, which is why they are verified.
   -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "SoftwareSourceCode",
-        "@id": "https://pdfnative.dev/#library",
+        "@type": "WebSite",
+        "@id": "https://pdfnative.dev/#website",
         "name": "pdfnative",
-        "description": "Pure native PDF library — zero vendor dependencies, ISO 32000-1 compliant. Generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (AES-128/256), native vector charts.",
+        "url": "https://pdfnative.dev/",
+        "description": "Zero-dependency PDF generation for TypeScript — the library, CLI, MCP server and React renderer.",
+        "inLanguage": "en",
+        "publisher": { "@id": "https://pdfnative.dev/#org" }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://pdfnative.dev/#org",
+        "name": "Nizoka",
+        "url": "https://pdfnative.dev/",
+        "logo": "https://pdfnative.dev/assets/logo.svg",
+        "sameAs": ["https://github.com/Nizoka", "https://www.npmjs.com/package/pdfnative"]
+      },
+      {
+        "@type": ["SoftwareSourceCode", "SoftwareApplication"],
+        "@id": "https://pdfnative.dev/#library",
+        "inLanguage": "en",
+        "name": "pdfnative",
+        "description": "Pure native PDF library — no runtime dependencies in the engine, producing documents that conform to ISO 32000-1. Generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (AES-128/256), native vector charts.",
         "url": "https://pdfnative.dev",
         "codeRepository": "https://github.com/Nizoka/pdfnative",
         "programmingLanguage": "TypeScript",
@@ -67,10 +88,11 @@
       {
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#cli",
+        "inLanguage": "en",
         "name": "pdfnative-cli",
-        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA, native constant-time crypto), inspect, verify (PAdES-T + OCSP/CRL), merge / split / extract pages, annotate (markup), govern (AI-governance / HITL), batch, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
+        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA via node:crypto by default), inspect, verify (RFC 3161 timestamp validation + OCSP/CRL), merge / split / extract pages, annotate (markup), govern (AI-governance / HITL), batch, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
         "url": "https://github.com/Nizoka/pdfnative-cli",
-        "softwareVersion": "1.2.0",
+        "softwareVersion": "1.3.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -79,18 +101,20 @@
       {
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#mcp",
+        "inLanguage": "en",
         "name": "pdfnative-mcp",
-        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 19 tools (incl. page-tree merge/split/extract, markup annotate_pdf, and the network-free draft_governance_issue), per-tool apiVersion, PDF/A flag.",
+        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 24 tools (incl. native vector add_chart, fill_form / read_form_fields, encrypt_pdf / decrypt_pdf, page-tree merge/split/extract, markup annotate_pdf, and the network-free draft_governance_issue), per-tool apiVersion, PDF/A flag.",
         "url": "https://github.com/Nizoka/pdfnative-mcp",
-        "softwareVersion": "1.4.0",
+        "softwareVersion": "1.5.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       },
       {
-        "@type": "SoftwareSourceCode",
+        "@type": ["SoftwareSourceCode", "SoftwareApplication"],
         "@id": "https://pdfnative.dev/#react",
+        "inLanguage": "en",
         "name": "pdfnative-react",
         "description": "React renderer for pdfnative — declarative JSX components compiled on-device to PDF by a custom React reconciler. Live preview hooks, streaming, 22 Unicode scripts, token-frugal DocSpec for AI agents.",
         "url": "https://github.com/Nizoka/pdfnative-react",
@@ -98,7 +122,7 @@
         "programmingLanguage": "TypeScript",
         "license": "https://opensource.org/licenses/MIT",
         "runtimePlatform": ["Node.js", "Browser"],
-        "softwareVersion": "1.0.0",
+        "softwareVersion": "1.1.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -134,7 +158,9 @@
       <li><a href="#react">React</a></li>
       <li><a href="#onboarding">Onboarding</a></li>
       <li><a href="guides/">Guides</a></li>
+      <li><a href="learn/">Learn</a></li>
       <li><a href="playgrounds/">Playgrounds</a></li>
+      <li><a href="responsibility.html">Responsibility</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
     </ul>
@@ -149,10 +175,10 @@
   <div class="container">
     <h1>Pure Native <span class="gradient">PDF Generation</span></h1>
     <p class="hero-sub">
-      Zero dependencies. ISO 32000-1 compliant. 22 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
+      No runtime dependencies. Conforms to ISO 32000-1. 22 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
     </p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="https://github.com/Nizoka/pdfnative#quick-start">Get Started →</a>
+      <a class="btn btn-primary" href="learn/">Get Started →</a>
       <a class="btn btn-secondary" href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
         GitHub
@@ -185,7 +211,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">2 379+</div>
+    <div class="metric-value">2 396+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -220,7 +246,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-zero"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
         <h3>Zero Dependencies</h3>
-        <p>Built from scratch in pure TypeScript — tree-shakeable, auditable, and free from supply-chain risk. Even the crypto is built in.</p>
+        <p>Built from scratch in pure TypeScript — tree-shakeable and auditable, with no transitive npm graph to install, audit or patch. Even the crypto is built in. The React and MCP packages add a small number of their own dependencies; see the <a href="responsibility.html">responsibility page</a> for the exact scope.</p>
       </div>
 
       <div class="feature-card">
@@ -231,8 +257,8 @@
 
       <div class="feature-card">
         <div class="feature-icon fi-iso"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-        <h3>ISO Compliant</h3>
-        <p>PDF 1.7 (ISO 32000-1), PDF/A-1b/2b/2u/3b (ISO 19005), PDF/UA tagged accessibility. Structure tree, XMP metadata, ICC profiles.</p>
+        <h3>Built to the ISO Specs</h3>
+        <p>Output conforming to PDF 1.7 (ISO 32000-1) and PDF/A-1b/2b/2u/3b (ISO 19005), the latter checked against the veraPDF reference validator in CI on every commit. PDF/UA structural validation, structure tree, XMP metadata, ICC profiles. Not an accredited conformance-tested product — <a href="responsibility.html">what that does and does not mean</a>.</p>
       </div>
 
       <div class="feature-card">
@@ -244,19 +270,19 @@
       <div class="feature-card">
         <div class="feature-icon fi-content"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
         <h3>Rich Content</h3>
-        <p>12 block types: tables, images, barcodes (5 ISO formats), SVG, AcroForm fields, TOC, watermarks, hyperlinks. Pure PDF vector ops — no rasterization. <strong>Smart tables</strong>: multi-page slicing with repeated headers, auto-wrap, zebra striping, captions, and per-cell borders. <strong>Document tools</strong>: bookmarks (<code>/Outlines</code>), page labels, viewer preferences, nested lists, and a <strong>merge / split / extract</strong> page-tree API. <a href="guides/tables.html">Tables guide →</a> &middot; <a href="guides/pdf-manipulation.html">Manipulation guide →</a></p>
+        <p>13 block types: tables, images, barcodes (5 ISO formats), native vector charts, SVG, AcroForm fields, TOC, watermarks, hyperlinks. Pure PDF vector ops — no rasterization. <strong>Smart tables</strong>: multi-page slicing with repeated headers, auto-wrap, zebra striping, captions, and per-cell borders. <strong>Document tools</strong>: bookmarks (<code>/Outlines</code>), page labels, viewer preferences, nested lists, and a <strong>merge / split / extract</strong> page-tree API. <a href="guides/tables.html">Tables guide →</a> &middot; <a href="guides/pdf-manipulation.html">Manipulation guide →</a></p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 379+ tests across 104 files, 95%+ statement coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 396+ tests across 105 files, 95%+ statement coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon fi-mcp"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M15 8h2M11 8h2"/></svg></div>
         <h3>AI Integration — MCP</h3>
-        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. <strong>19 production tools</strong> incl. page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, <code>pdfA</code> flag everywhere, and token-frugal read modes. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
+        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. <strong>24 production tools</strong> incl. page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, <code>pdfA</code> flag everywhere, and token-frugal read modes. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
       </div>
 
       <div class="feature-card">
@@ -271,6 +297,30 @@
         <p>Author PDFs declaratively in <strong>JSX</strong> with <a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a>. A custom React reconciler compiles <code>&lt;Document&gt;</code> / <code>&lt;Table&gt;</code> / <code>&lt;Barcode&gt;</code> trees on-device — no DOM, no headless browser. Live-preview hooks (<code>usePdf</code>, <code>&lt;PDFViewer&gt;</code>), streaming, and a token-frugal <code>DocSpec</code> for AI agents. React is a peer dependency of this package only. <a href="guides/react.html">React guide →</a> &middot; <a href="playgrounds/react.html">Try the playground →</a></p>
       </div>
 
+      <div class="feature-card">
+        <div class="feature-icon fi-content"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg></div>
+        <h3>Native Vector Charts</h3>
+        <p>Bar, horizontal bar, line, pie and donut charts drawn as PDF path operators — no rasterisation, no image round-trip, so they stay sharp at any zoom and tag as <code>/Figure</code> with alt text. <a href="guides/charts.html">Charts guide →</a> &middot; <a href="playgrounds/charts.html">playground →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-unicode"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></div>
+        <h3>Text Extraction</h3>
+        <p><code>extractText()</code> returns reading-order Unicode via <code>/ToUnicode</code>, with optional positioned runs and support for encrypted sources. The ingestion primitive for RAG pipelines and agents. <a href="guides/text-extraction.html">Text-extraction guide →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10"/><path d="M7 13h6"/><path d="m15 16 2 2 4-4"/></svg></div>
+        <h3>Fill &amp; Flatten Forms</h3>
+        <p>Read an existing AcroForm’s fields, fill them, and optionally flatten them into static page content — including on encrypted documents, via incremental update. <a href="guides/form-filling.html">Form-filling guide →</a></p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-security"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg></div>
+        <h3>Decrypt &amp; Re-secure</h3>
+        <p>Open password-protected PDFs with <code>openPdf(bytes, { password })</code> — RC4, AES-128 and AES-256 — then merge, fill, annotate or re-encrypt the result. <a href="guides/pdf-manipulation.html">PDF-manipulation guide →</a></p>
+      </div>
+
     </div>
   </div>
 </section>
@@ -282,11 +332,11 @@
     <p class="section-subtitle">Two builders for every use case — table-centric financial reports or free-form documents.</p>
     <div class="code-tabs">
       <div class="tab-bar" role="tablist">
-        <button class="tab-btn active" role="tab" data-tab="quick" aria-selected="true">Quick Start</button>
-        <button class="tab-btn" role="tab" data-tab="document" aria-selected="false">Document Builder</button>
-        <button class="tab-btn" role="tab" data-tab="multilang" aria-selected="false">Multi-Language</button>
+        <button class="tab-btn active" role="tab" id="tab-btn-quick" data-tab="quick" aria-selected="true" aria-controls="tab-quick">Quick Start</button>
+        <button class="tab-btn" role="tab" id="tab-btn-document" data-tab="document" aria-selected="false" aria-controls="tab-document">Document Builder</button>
+        <button class="tab-btn" role="tab" id="tab-btn-multilang" data-tab="multilang" aria-selected="false" aria-controls="tab-multilang">Multi-Language</button>
       </div>
-      <div class="tab-panel active" id="tab-quick" role="tabpanel">
+      <div class="tab-panel active" id="tab-quick" role="tabpanel" aria-labelledby="tab-btn-quick">
 <pre><code class="language-typescript">import { buildPDFBytes, downloadBlob } from 'pdfnative';
 
 const pdf = buildPDFBytes({
@@ -309,7 +359,7 @@ const pdf = buildPDFBytes({
 
 downloadBlob(pdf, 'report.pdf');</code></pre>
       </div>
-      <div class="tab-panel" id="tab-document" role="tabpanel">
+      <div class="tab-panel" id="tab-document" role="tabpanel" aria-labelledby="tab-btn-document">
 <pre><code class="language-typescript">import { buildDocumentPDFBytes } from 'pdfnative';
 
 const pdf = buildDocumentPDFBytes({
@@ -329,11 +379,13 @@ const pdf = buildDocumentPDFBytes({
       label: 'Notes', width: 400 },
   ],
   footerText: 'Confidential',
-  tagged: 'pdfa2b',     // PDF/A-2b compliance
-  compress: true,        // FlateDecode compression
+}, {
+  compress: true,        // FlateDecode compression (layoutOptions — 2nd argument)
+  // For PDF/A output, add tagged: 'pdfa2b' here AND embed a font via
+  // fontEntries — see the PDF/A archival demo below.
 });</code></pre>
       </div>
-      <div class="tab-panel" id="tab-multilang" role="tabpanel">
+      <div class="tab-panel" id="tab-multilang" role="tabpanel" aria-labelledby="tab-btn-multilang">
 <pre><code class="language-typescript">import { registerFonts, loadFontData, buildDocumentPDFBytes }
   from 'pdfnative';
 
@@ -363,7 +415,6 @@ const pdf = buildDocumentPDFBytes({
             'and Japanese — all from a single API call.' },
   ],
   fontEntries,
-  tagged: true,  // PDF/A-2b with structure tree
 });</code></pre>
       </div>
     </div>
@@ -391,7 +442,7 @@ const pdf = buildDocumentPDFBytes({
       <div class="demo-error" id="demo-error" role="alert"></div>
       <p class="demo-note">
         Need more? Browse all
-        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">44 generator categories (~227 sample PDFs)</a>
+        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">44 generators (~228 sample PDFs)</a>
         on GitHub.
       </p>
     </div>
@@ -417,7 +468,7 @@ extractText(pdf)[0].text; // 'Hello, world.' — parse any PDF back</code></pre>
         <a class="ob-link" href="guides/quickstart.html">Quick Start guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>CLI <span class="ob-badge" data-pn-badge="pdfnative-cli">v1.2.0</span></h3>
+        <h3>CLI <span class="ob-badge" data-pn-badge="pdfnative-cli">v1.3.0</span></h3>
         <p class="ob-tag">For shells, CI, and Makefiles.</p>
 <pre><code class="language-bash">echo '{"blocks":[{"type":"paragraph","text":"Hi"}]}' \
   | npx pdfnative-cli render -o out.pdf</code></pre>
@@ -428,7 +479,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
         <a class="ob-link" href="guides/cli.html">CLI guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>MCP <span class="ob-badge" data-pn-badge="pdfnative-mcp">v1.4.0</span></h3>
+        <h3>MCP <span class="ob-badge" data-pn-badge="pdfnative-mcp">v1.5.0</span></h3>
         <p class="ob-tag">For Claude Desktop, Cursor, Continue, Zed, …</p>
 <pre><code class="language-json">{
   "mcpServers": {
@@ -442,7 +493,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
         <a class="ob-link" href="guides/mcp.html">MCP guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>React <span class="ob-badge" data-pn-badge="pdfnative-react">v1.0.0</span></h3>
+        <h3>React <span class="ob-badge" data-pn-badge="pdfnative-react">v1.1.0</span></h3>
         <p class="ob-tag">For React, Next.js, and Remix apps.</p>
 <pre><code class="language-bash">npm install pdfnative-react pdfnative react</code></pre>
 <pre><code class="language-typescript">import { Document, Heading, renderToBytes } from 'pdfnative-react';
@@ -465,6 +516,12 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Feature-by-feature comparison with popular PDF libraries.</p>
     <div class="table-wrap">
       <table class="cmp-table">
+        <caption style="caption-side:bottom;text-align:left;font-size:12px;color:var(--c-text-dim);padding-top:12px;line-height:1.6;">
+          Compared on <strong>2026-07-28</strong> against pdfkit 0.19.1, jsPDF 4.2.1, pdfmake 0.3.11 and pdf-lib 1.17.1 as published on npm.
+          Dependency counts are the <code>dependencies</code> field of each published manifest; peer and transitive dependencies are excluded.
+          A cross means the package does not offer the capability itself — several are achievable with additional work, which is a different claim.
+          Source data: <a href="data/comparison-2026-07-28.json">comparison-2026-07-28.json</a>.
+        </caption>
         <thead>
           <tr>
             <th>Feature</th>
@@ -598,46 +655,49 @@ const pdf = renderToBytes(
 <section class="section" id="benchmarks">
   <div class="container">
     <h2 class="section-title">Performance</h2>
-    <p class="section-subtitle">Pure string assembly with zero allocations in hot paths. Measured with vitest bench.</p>
+    <p class="section-subtitle">Single-pass string assembly with no intermediate object graph. Measured with <code>vitest bench</code> — run it yourself with <code>npx vitest bench</code>.</p>
     <div class="bench-grid">
       <div class="bench-row">
         <span class="bench-label">100 rows (Latin)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:4%"></div></div>
-        <span class="bench-value">~0.7 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:3%"></div></div>
+        <span class="bench-value">~3.3 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">500 rows (Latin)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:11%"></div></div>
-        <span class="bench-value">~3.5 ms</span>
+        <span class="bench-value">~11 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">1 000 rows (Latin)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:21%"></div></div>
-        <span class="bench-value">~6.9 ms</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:19%"></div></div>
+        <span class="bench-value">~19 ms</span>
       </div>
       <div class="bench-row">
         <span class="bench-label">5 000 rows (Latin)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:100%"></div></div>
-        <span class="bench-value">~33 ms</span>
+        <span class="bench-value">~98 ms</span>
       </div>
       <div class="bench-row">
-        <span class="bench-label">100 rows (Unicode)</span>
+        <span class="bench-label">100 rows (embedded font)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:9%"></div></div>
-        <span class="bench-value">~2.9 ms</span>
+        <span class="bench-value">~8.4 ms</span>
       </div>
       <div class="bench-row">
-        <span class="bench-label">500 rows (Unicode)</span>
-        <div class="bench-bar-bg"><div class="bench-bar" style="width:42%"></div></div>
-        <span class="bench-value">~14 ms</span>
+        <span class="bench-label">500 rows (embedded font)</span>
+        <div class="bench-bar-bg"><div class="bench-bar" style="width:37%"></div></div>
+        <span class="bench-value">~36 ms</span>
       </div>
       <div class="bench-row">
-        <span class="bench-label">1 000 rows (Unicode)</span>
+        <span class="bench-label">1 000 rows (embedded font)</span>
         <div class="bench-bar-bg"><div class="bench-bar" style="width:82%"></div></div>
-        <span class="bench-value">~27 ms</span>
+        <span class="bench-value">~81 ms</span>
       </div>
     </div>
     <p class="bench-note">
-      Measured locally with <code>vitest bench</code> on an Intel Core i3 mini-PC (Node.js 22) — mean wall-clock time per document. Faster hardware (Apple M-series, desktop i7/i9) typically runs 2–4× quicker. Results may vary.
+      Measured 2026-07-30 with <code>vitest bench</code> on an Intel Core i3 mini-PC (Node.js 22.17.0) — mean wall-clock time per document.
+      Full run context, sample counts and relative error: <a href="https://github.com/Nizoka/pdfnative/blob/main/bench/RESULTS.md" target="_blank" rel="noopener">bench/RESULTS.md</a>.
+      The <em>embedded font</em> rows exercise the CID/embedded-font code path using a synthetic TTF on Latin text — they are <strong>not</strong> a measurement of OpenType shaping or BiDi, which are not currently benchmarked.
+      Faster hardware (Apple M-series, desktop i7/i9) typically runs 2–4× quicker. Results may vary.
       Run <code>npx vitest bench</code> to measure on your hardware.
     </p>
   </div>
@@ -657,26 +717,18 @@ const pdf = renderToBytes(
         <p>PDFs are assembled in the calling process — Node, browser, Worker, Deno, Bun. No SaaS round-trip; no document leaves the user's machine unless the application chooses to send it.</p>
       </div>
       <div class="feature-card">
-        <h3>Zero runtime dependencies</h3>
-        <p>An empty <code>dependencies</code> field in <code>package.json</code>. No transitive npm graph to install, audit, or patch.</p>
+        <h3>Zero runtime dependencies in the engine</h3>
+        <p>An empty <code>dependencies</code> field in <code>package.json</code>. No transitive npm graph to install, audit, or patch. The React and MCP packages each add a small number of their own — stated plainly rather than rounded down.</p>
       </div>
       <div class="feature-card">
         <h3>No telemetry, no network calls</h3>
         <p>The library never opens a socket. Verifiable by reading the source — there is no analytics endpoint, no auto-update channel, no remote font fetch.</p>
       </div>
-      <div class="feature-card">
-        <h3>Tree-shakeable ESM</h3>
-        <p><code>"sideEffects": false</code> with strict module boundaries. Only the features your build actually imports end up in production bundles.</p>
-      </div>
-      <div class="feature-card">
-        <h3>Streaming output</h3>
-        <p><code>streamPdf()</code> yields <code>Uint8Array</code> chunks via <code>AsyncGenerator</code>, so even very large documents fit in bounded memory on edge runtimes and serverless platforms.</p>
-      </div>
-      <div class="feature-card">
-        <h3>External tooling stays external</h3>
-        <p>The optional veraPDF reference validator runs as a CI tool, downloaded once per workflow run. It is never bundled with the npm package or required by consumers.</p>
-      </div>
     </div>
+    <p style="text-align:center;margin-top:2rem;">
+      <a class="btn btn-secondary" href="responsibility.html">Read the full responsibility statement →</a>
+    </p>
+    <p class="bench-note">Every claim there links to the file that proves it — including an explicit list of what we deliberately do not measure or claim.</p>
   </div>
 </section>
 
@@ -687,7 +739,7 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/main/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative 1.6.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (render · sign · merge · annotate · govern), pdfnative-mcp (MCP server, 19 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative 1.6.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (17 commands: render · fill · sign · encrypt · extract-text and more), pdfnative-mcp (MCP server, 24 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
   </div>
@@ -714,22 +766,22 @@ const pdf = renderToBytes(
     <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and token-frugal read modes.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>19 Production Tools</h3>
+        <h3>24 Production Tools</h3>
         <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
           <tbody>
             <tr><td><code>generate_basic_pdf</code></td><td>Multi-page documents (headings, paragraphs, lists). Optional <code>pdfA</code> flag.</td></tr>
-            <tr><td><code>add_table</code></td><td>Tabular reports — now with optional <code>autoFitColumns</code> and <code>clipCells</code> (pdfnative v1.1 <code>TableBlock</code>).</td></tr>
+            <tr><td><code>add_table</code></td><td>Tabular reports — now with optional <code>autoFitColumns</code> and <code>clipCells</code> (pdfnative v1.2 <code>TableBlock</code>).</td></tr>
             <tr><td><code>add_barcode</code></td><td>QR Code, Code 128, EAN-13, Data Matrix, PDF417</td></tr>
             <tr><td><code>add_international_text</code></td><td>22 scripts with BiDi &amp; OpenType shaping. <code>lang</code> now accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
             <tr><td><code>add_form</code></td><td>Interactive AcroForm fields</td></tr>
             <tr><td><code>embed_image</code></td><td>JPEG / PNG image embedding</td></tr>
             <tr><td><code>prepare_signature_placeholder</code></td><td>PDF with <code>/Sig</code> field ready to sign</td></tr>
             <tr><td><code>sign_pdf</code></td><td>CMS/PKCS#7 signatures (RSA &amp; ECDSA)</td></tr>
-            <tr><td><code>inspect_pdf</code></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; optional CI-style <code>check: ('pdfa'|'signed'|'encrypted')[]</code>.</td></tr>
+            <tr><td><code>inspect_pdf</code></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; optional CI-style <code>check: ('pdfa'|'signed'|'encrypted'|'placeholder'|'attachments')[]</code>.</td></tr>
             <tr><td><code>validate_pdf</code></td><td>Read-only PDF/UA structural validation (<code>valid</code>, <code>errors</code>, <code>warnings</code>).</td></tr>
-            <tr><td><code>verify_pdf</code></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain, RFC 3161 timestamp detection (v1.0.0).</td></tr>
+            <tr><td><code>verify_pdf</code></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain (v1.0.0).</td></tr>
             <tr><td><code>add_attachment</code></td><td>Embed files (Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output (v1.0.0).</td></tr>
             <tr><td><code>extract_attachments</code></td><td>Extract embedded files from existing PDFs (metadata-only mode available, v1.2.0).</td></tr>
             <tr><td><code>extract_text</code></td><td>Extract text content from an existing PDF via the native parser (v1.0.0).</td></tr>
@@ -738,6 +790,11 @@ const pdf = renderToBytes(
             <tr><td><code>extract_pages</code></td><td>Pull an arbitrary, order-preserving page subset (max 5000) into a new PDF (v1.3.0).</td></tr>
             <tr><td><code>annotate_pdf</code></td><td>Overlay markup annotations (highlight / underline / note / shape) on an existing PDF via incremental update. A visual review layer, not a redaction (v1.4.0).</td></tr>
             <tr><td><code>draft_governance_issue</code></td><td>Assemble a governance-compliant GitHub-issue draft locally — network-free by construction; never submits (v1.4.0).</td></tr>
+            <tr><td><code>add_chart</code></td><td>Render bar / horizontal-bar / line / pie / donut charts as native PDF vector paths — no rasterisation, no image round-trip (v1.5.0).</td></tr>
+            <tr><td><code>read_form_fields</code></td><td>List an existing AcroForm's fields with their types, current values and options — the read half of the fill round-trip (v1.5.0).</td></tr>
+            <tr><td><code>fill_form</code></td><td>Fill AcroForm field values and optionally flatten them into static page content (v1.5.0).</td></tr>
+            <tr><td><code>encrypt_pdf</code></td><td>Re-secure an existing PDF with AES-128 or AES-256, setting owner/user passwords and permissions (v1.5.0).</td></tr>
+            <tr><td><code>decrypt_pdf</code></td><td>Remove encryption from a password-protected PDF, in-server — RC4, AES-128 and AES-256 sources (v1.5.0).</td></tr>
           </tbody>
         </table>
         </div>
@@ -763,25 +820,36 @@ const pdf = renderToBytes(
 <section class="section" id="cli">
   <div class="container">
     <h2 class="section-title">Use pdfnative from your shell, CI, or Makefile</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. Eleven commands, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. It completes the digital-signature story with end-to-end signing (RSA + ECDSA-SHA256, native constant-time crypto), full CMS/PKCS#7 verification, RFC 3161 timestamp detection, a fast <code>render --watch / --template / --font math / --outline</code> loop, page-tree <code>merge</code> / <code>split</code> / <code>extract</code>, markup <code>annotate</code>, an AI-governance <code>govern</code> gate, plus <code>batch</code> and shell <code>completion</code> commands.</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. 17 commands in five groups, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. It covers the whole document lifecycle: author with <code>render</code> and <code>fill</code>, restructure with <code>merge</code> / <code>split</code> / <code>extract</code>, secure with <code>sign</code> / <code>verify</code> / <code>encrypt</code> / <code>decrypt</code>, read back with <code>inspect</code> and <code>extract-text</code>, and automate with <code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code> and the AI-governance <code>govern</code> gate. Installing the package puts a <code>pdfnative</code> binary on your PATH.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>11 Production Commands</h3>
+        <h3>17 Production Commands</h3>
         <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
           <tbody>
-            <tr><td><code>render</code></td><td>JSON → PDF with hybrid <code>flags + --layout</code>. <code>--watch</code> (re-render on change), <code>--template &lt;file.json&gt;</code> (deep-merge base), <code>--font {latin,emoji,math}</code>, <code>--outline auto</code> (bookmarks), <code>--inspect-layout</code> / <code>--debug-layout</code>.</td></tr>
-            <tr><td><code>sign</code></td><td>End-to-end CMS/PKCS#7 signing. <strong>ECDSA-SHA256</strong> fully wired, native constant-time <code>node:crypto</code> by default (<code>--pure-crypto</code> opts out). Auto-injects the AcroForm signature placeholder when missing.</td></tr>
-            <tr><td><code>inspect</code></td><td>Read-only PDF analysis. <code>--verbose</code>, <code>--pages</code>, <code>--annotations</code>, page labels, and <code>--check pdfa|signed|encrypted|pdfua</code> for CI assertions.</td></tr>
-            <tr><td><code>verify</code></td><td>Real CMS/PKCS#7 verification — signature value (RSA + ECDSA-SHA256), message digest, certificate chain, trust roots, RFC 3161 timestamp token detection. JSON report.</td></tr>
-            <tr><td><code>merge</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Concatenate 2–50 PDFs into one via the page-tree API.</td></tr>
-            <tr><td><code>split</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Split one PDF into many — one output per page or per range.</td></tr>
-            <tr><td><code>extract</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Pull a selected, order-preserving page subset into a single PDF.</td></tr>
+            <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Create &amp; edit</th></tr>
+            <tr><td><code>render</code></td><td>JSON → PDF with hybrid <code>flags + --layout</code>. <code>--watch</code> (re-render on change), <code>--template &lt;file.json&gt;</code> (deep-merge base), <code>--font {latin,emoji,math}</code>, <code>--outline auto</code> (bookmarks), native <code>chart</code> blocks, <code>--encrypt aes-128|aes-256</code>, <code>--inspect-layout</code> / <code>--debug-layout</code>.</td></tr>
+            <tr><td><code>fill</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Fill, flatten or export an AcroForm. <code>--export</code> dumps current values as JSON; feed the edited file back with <code>--data</code>.</td></tr>
             <tr><td><code>annotate</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Attach markup annotations via an incremental save — signatures stay valid.</td></tr>
+            <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Page tree</th></tr>
+            <tr><td><code>merge</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Concatenate 2–50 PDFs into one via the page-tree API. Reads encrypted sources with <code>--password</code> and can re-encrypt the result.</td></tr>
+            <tr><td><code>split</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Split one PDF into many — one output per page or per range. Supports <code>--stream</code> for large inputs.</td></tr>
+            <tr><td><code>extract</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Pull a selected, order-preserving page subset into a single PDF.</td></tr>
+            <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Security</th></tr>
+            <tr><td><code>sign</code></td><td>End-to-end CMS/PKCS#7 signing. <strong>ECDSA-SHA256</strong> fully wired, delegating to <code>node:crypto</code> by default (<code>--pure-crypto</code> opts out). Auto-injects the AcroForm signature placeholder when missing.</td></tr>
+            <tr><td><code>verify</code></td><td>Real CMS/PKCS#7 verification — signature value (RSA + ECDSA-SHA256), message digest, certificate chain, trust roots, RFC 3161 timestamp-token validation (PAdES-T) and OCSP/CRL revocation checking. JSON report.</td></tr>
+            <tr><td><code>encrypt</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Re-secure a PDF with AES-128 or AES-256, setting owner/user passwords and a permission set.</td></tr>
+            <tr><td><code>decrypt</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Remove encryption with <code>--password</code> — RC4, AES-128 and AES-256 sources.</td></tr>
+            <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Read &amp; extract</th></tr>
+            <tr><td><code>inspect</code></td><td>Read-only PDF analysis. <code>--verbose</code>, <code>--pages</code>, <code>--annotations</code>, <code>--form-fields</code>, <code>--encryption</code>, page labels, and <code>--check pdfa|signed|encrypted|pdfua</code> for CI assertions.</td></tr>
+            <tr><td><code>extract-text</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Reading-order Unicode text as <code>text</code>, <code>json</code> or <code>ndjson</code>, with optional positioned runs — a RAG/agent ingestion primitive.</td></tr>
+            <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Automation &amp; meta</th></tr>
+            <tr><td><code>batch</code></td><td>Render every JSON file in a directory (<code>--input-dir</code> / <code>--output-dir</code>) — bounded parallelism, per-file status.</td></tr>
+            <tr><td><code>doctor</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Environment and capability preflight, text or <code>--json</code>. The first command to run in a new environment.</td></tr>
+            <tr><td><code>schema</code></td><td>Print a JSON Schema or the full <code>manifest</code> capability document for agent tool-discovery.</td></tr>
+            <tr><td><code>completion</code></td><td>Generate shell completion scripts (bash / zsh / fish / powershell).</td></tr>
             <tr><td><code>govern</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Surface the AI-governance / HITL contract — <code>rules</code>, <code>policy</code>, <code>verify-issue</code>.</td></tr>
-            <tr><td><code>batch</code></td><td>Render many JSON inputs to PDFs in one invocation — glob input, parallelism, per-file status.</td></tr>
-            <tr><td><code>completion</code></td><td>Generate shell completion scripts (bash / zsh / fish).</td></tr>
           </tbody>
         </table>
         </div>
@@ -835,7 +903,7 @@ const bytes = renderToBytes(
   &lt;Document title="Invoice #1024" footerText="Acme Inc"&gt;
     &lt;Heading level={1}&gt;Invoice #1024&lt;/Heading&gt;
     &lt;Text&gt;Thank you for your business.&lt;/Text&gt;
-    &lt;Table headers={['Item', 'Total']} rows={[{ cells: ['Pro plan', '$49.00'] }]} zebra /&gt;
+    &lt;Table headers={['Item', 'Total']} rows={[{ cells: ['Pro plan', '$49.00'], type: 'default', pointed: false }]} zebra /&gt;
   &lt;/Document&gt;,
 ); // → Uint8Array, a valid PDF</code></pre>
         <p>Compiles on-device — no SaaS round-trip, no Chromium. See the <a href="guides/react.html">React guide →</a> &middot; <a href="playgrounds/react.html">Try the React playground →</a></p>
@@ -880,6 +948,7 @@ const bytes = renderToBytes(
       <div class="footer-col">
         <h4>Guides</h4>
         <ul>
+          <li><a href="learn/">Learn pdfnative</a></li>
           <li><a href="guides/">All guides</a></li>
           <li><a href="guides/onboarding.html">Onboarding</a></li>
           <li><a href="guides/quickstart.html">Quick Start</a></li>
@@ -889,8 +958,19 @@ const bytes = renderToBytes(
           <li><a href="guides/cli.html">CLI Guide</a></li>
           <li><a href="guides/mcp.html">MCP Integration</a></li>
           <li><a href="guides/react.html">React</a></li>
+          <li><a href="guides/charts.html">Charts</a></li>
+          <li><a href="guides/text-extraction.html">Text extraction</a></li>
+          <li><a href="guides/form-filling.html">Form filling</a></li>
+          <li><a href="guides/pdf-manipulation.html">PDF manipulation</a></li>
+          <li><a href="guides/streaming.html">Streaming</a></li>
+          <li><a href="guides/tables.html">Smart tables</a></li>
+          <li><a href="guides/annotations.html">Annotations</a></li>
+          <li><a href="guides/outlines.html">Outlines &amp; page labels</a></li>
+          <li><a href="guides/signatures.html">Signatures</a></li>
+          <li><a href="guides/colour-emoji.html">Colour emoji</a></li>
           <li><a href="guides/faq.html">FAQ</a></li>
           <li><a href="guides/troubleshooting.html">Troubleshooting</a></li>
+          <li><a href="responsibility.html">Responsibility</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -902,7 +982,7 @@ const bytes = renderToBytes(
           <li><a href="playgrounds/toolkit.html">PDF Toolkit</a></li>
           <li><a href="playgrounds/charts.html">Charts</a></li>
           <li><a href="playgrounds/authoring-plus.html">Authoring+</a></li>
-          <li><a href="playgrounds/medical-800.html">Medical 800-page</a></li>
+          <li><a href="playgrounds/scale.html">Scale</a></li>
           <li><a href="playgrounds/cli.html">CLI builder</a></li>
           <li><a href="playgrounds/mcp.html">MCP tool explorer</a></li>
           <li><a href="playgrounds/react.html">React renderer</a></li>
@@ -917,8 +997,8 @@ const bytes = renderToBytes(
 </footer>
 
 <!-- Prism.js for syntax highlighting -->
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script src="app.js" defer></script>
 <script src="assets/versions.js" defer></script>
 </body>

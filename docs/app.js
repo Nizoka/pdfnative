@@ -19,7 +19,10 @@
   function applyTheme(theme) {
     root.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
-    if (toggle) toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    if (toggle) {
+      toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+      toggle.setAttribute('aria-pressed', String(theme === 'dark'));
+    }
   }
 
   applyTheme(getPreferred());
@@ -71,18 +74,32 @@
   var tabBtns = document.querySelectorAll('.tab-btn');
   var tabPanels = document.querySelectorAll('.tab-panel');
 
-  tabBtns.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var id = btn.getAttribute('data-tab');
-      tabBtns.forEach(function (b) {
-        b.classList.remove('active');
-        b.setAttribute('aria-selected', 'false');
-      });
-      tabPanels.forEach(function (p) { p.classList.remove('active'); });
-      btn.classList.add('active');
-      btn.setAttribute('aria-selected', 'true');
-      var panel = document.getElementById('tab-' + id);
-      if (panel) panel.classList.add('active');
+  function activateTab(btn) {
+    var id = btn.getAttribute('data-tab');
+    tabBtns.forEach(function (b) {
+      b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false');
+    });
+    tabPanels.forEach(function (p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    var panel = document.getElementById('tab-' + id);
+    if (panel) panel.classList.add('active');
+  }
+
+  tabBtns.forEach(function (btn, i) {
+    btn.addEventListener('click', function () { activateTab(btn); });
+    // Arrow-key navigation between tabs (WAI-ARIA tabs pattern, activation on focus)
+    btn.addEventListener('keydown', function (e) {
+      var next = null;
+      if (e.key === 'ArrowRight') next = (i + 1) % tabBtns.length;
+      else if (e.key === 'ArrowLeft') next = (i - 1 + tabBtns.length) % tabBtns.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = tabBtns.length - 1;
+      if (next === null) return;
+      e.preventDefault();
+      tabBtns[next].focus();
+      activateTab(tabBtns[next]);
     });
   });
 
@@ -366,12 +383,20 @@
       description: 'PDF/A-2b compliance with structure tree, XMP metadata, and sRGB ICC OutputIntent — passes veraPDF.',
       source: GENERATORS_BASE + 'pdfa-variants.ts',
       code: [
-        "import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
+        "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
+        '',
+        '// PDF/A requires EVERY font embedded (ISO 19005-2 §6.2.11.4.1). `tagged` writes',
+        '// the XMP claim but embeds nothing by itself — without fontEntries the document',
+        '// falls back to unembedded Helvetica and veraPDF rejects it.',
+        "registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-data.js') });",
+        "const fontData = await loadFontData('latin');",
+        "if (!fontData) throw new Error('latin font failed to load');",
         '',
         '// tagged + compress are layoutOptions → 2nd argument of buildDocumentPDFBytes',
         'const pdf = buildDocumentPDFBytes(',
         '  {',
         "    title: 'Archival Document — PDF/A-2b',",
+        "    fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }], // /F1 & /F2 are reserved",
         '    blocks: [',
         "      { type: 'heading', text: 'Archival-grade PDF', level: 1 },",
         "      { type: 'paragraph', text: 'This document validates as PDF/A-2b (ISO 19005-2).' },",
@@ -403,9 +428,9 @@
         '',
         '// Lazy font registration — only loaded when needed',
         'registerFonts({',
-        "  th: () => import('https://esm.sh/pdfnative/fonts/noto-thai-data.js'),",
-        "  ar: () => import('https://esm.sh/pdfnative/fonts/noto-arabic-data.js'),",
-        "  ja: () => import('https://esm.sh/pdfnative/fonts/noto-jp-data.js'),",
+        "  th: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-thai-data.js'),",
+        "  ar: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-arabic-data.js'),",
+        "  ja: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-jp-data.js'),",
         '});',
         '',
         "const langs = ['th', 'ar', 'ja'];",
@@ -421,7 +446,6 @@
         "    { type: 'paragraph', text: 'pdfnative renders Thai, Arabic (with BiDi & shaping), and Japanese — all from a single API call.' },",
         '  ],',
         '  fontEntries,',
-        '  tagged: true,',
         '});',
         '',
         "downloadBlob(pdf, 'multilang.pdf');"
@@ -542,8 +566,8 @@
 
   // CDN URLs to try in order (esm.sh, then unpkg as fallback)
   var CDN_URLS = [
-    'https://esm.sh/pdfnative',
-    'https://cdn.jsdelivr.net/npm/pdfnative/+esm'
+    'https://esm.sh/pdfnative@1.6.0',
+    'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'
   ];
 
   async function loadPdfnative() {

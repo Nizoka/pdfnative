@@ -4,7 +4,7 @@
 
 pdfnative's table renderer is **planner-driven** and **multi-page-safe** by default. Long tables wrap on column overflow, slice cleanly across pages, and reprint their header on every continuation page — matching the behaviour readers expect from commercial PDF libraries.
 
-This guide documents the six `TableBlock` fields, the planner architecture, the tagged-mode contract, and migration tips.
+This guide documents the `TableBlock` fields, the planner architecture, the tagged-mode contract, and migration tips.
 
 ---
 
@@ -14,15 +14,20 @@ This guide documents the six `TableBlock` fields, the planner architecture, the 
 import { buildDocumentPDFBytes } from 'pdfnative';
 
 const bytes = buildDocumentPDFBytes({
+    title: 'Invoice',
     blocks: [
         {
             type: 'table',
-            columns: [
-                { key: 'item', label: 'Item', width: 0.6, autoFit: true },
-                { key: 'qty', label: 'Qty', width: 0.2, align: 'right' },
-                { key: 'price', label: 'Price', width: 0.2, align: 'right' },
-            ],
+            headers: ['Item', 'Qty', 'Price'],
+            // PdfRow[]: e.g. { cells: ['Pro plan', '1', '$49.00'], type: 'default', pointed: false }
             rows: bigInvoiceRows, // any length
+            columns: [            // optional ColumnDef[]: f = width fraction, a = align,
+                                  // mx / mxH = char caps (data / header), plus minWidth? / maxWidth?
+                { f: 0.6, a: 'l', mx: 40, mxH: 20 },
+                { f: 0.2, a: 'r', mx: 10, mxH: 8 },
+                { f: 0.2, a: 'r', mx: 10, mxH: 8 },
+            ],
+            autoFitColumns: true,  // content-aware widths (respects minWidth/maxWidth)
             wrap: 'auto',          // ← new (default)
             repeatHeader: true,    // ← new (default)
             zebra: true,           // ← new (opt-in)
@@ -66,7 +71,7 @@ Existing v1.1.0 code with no new fields continues to work and produces **byte-id
 
 - **`false`** (default) — no row fill.
 - **`true`** — alternating even data rows (1-indexed, so the second row, fourth row, …) are filled with `'0.969 0.973 0.984'` (a soft cool-grey tuned for accessibility contrast).
-- A [`PdfColor`](../api.md) — hex (`'#f7f8fa'`), tuple (`[0.97, 0.97, 0.98]`), or PDF-rgb string (`'0.97 0.97 0.98'`) — overrides the default.
+- A [`PdfColor`](https://github.com/Nizoka/pdfnative#api-reference) — hex (`'#f7f8fa'`), tuple (`[247, 248, 250]`, channels **0–255**), or PDF-rgb string (`'0.97 0.97 0.98'`, channels 0.0–1.0) — overrides the default.
 
 ### `caption`
 

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learn pdfnative — a guided path from zero | Learn pdfnative</title>
+  <meta name="description" content="Eight short steps from installing pdfnative to generating a hundred thousand pages. Each step introduces one idea. About thirty minutes, no account needed.">
+  <link rel="canonical" href="https://pdfnative.dev/learn/">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/">
+  <link rel="next" href="01-install.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/learn/">
+  <meta property="og:title" content="Learn pdfnative — a guided path from zero | Learn pdfnative">
+  <meta property="og:description" content="Eight short steps from installing pdfnative to generating a hundred thousand pages. Each step introduces one idea. About thirty minutes, no account needed.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Learn pdfnative — a guided path from zero | Learn pdfnative">
+  <meta name="twitter:description" content="Eight short steps from installing pdfnative to generating a hundred thousand pages. Each step introduces one idea. About thirty minutes, no account needed.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <style>
+    .ln-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 36px 0 0; padding-top: 20px; border-top: 1px solid var(--c-border); font-size: 14px; }
+    .ln-pager a { font-weight: 600; }
+    .ln-step { color: var(--c-text-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .ln-hint { color: var(--c-text-dim); font-size: 13px; }
+    .ln-prereq { font-size: 13px; color: var(--c-text-dim); margin: -8px 0 20px; }
+    .ln-check { margin: 28px 0 0; padding: 12px 16px; background: var(--c-surface); border-left: 3px solid var(--c-success); border-radius: 0 8px 8px 0; font-size: 14px; }
+    .ln-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 10px; }
+    .ln-list li { border: 1px solid var(--c-border); border-radius: 8px; padding: 14px 16px; }
+    .ln-list a { font-weight: 700; font-size: 15px; }
+    .ln-list p { margin: 4px 0 0; font-size: 13px; color: var(--c-text-dim); }
+    .ln-num { display: inline-block; min-width: 22px; color: var(--c-text-dim); font-variant-numeric: tabular-nums; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Course",
+        "@id": "https://pdfnative.dev/learn/#course",
+        "name": "Learn pdfnative",
+        "description": "A guided path from installing pdfnative to generating large documents.",
+        "url": "https://pdfnative.dev/learn/",
+        "provider": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://pdfnative.dev"
+        },
+        "educationalLevel": "Beginner",
+        "timeRequired": "PT30M",
+        "isAccessibleForFree": true,
+        "inLanguage": "en",
+        "hasCourseInstance": {
+          "@type": "CourseInstance",
+          "courseMode": "online",
+          "courseWorkload": "PT30M"
+        },
+        "hasPart": [
+          {
+            "@type": "LearningResource",
+            "position": 1,
+            "name": "Install pdfnative and make one PDF",
+            "url": "https://pdfnative.dev/learn/01-install.html"
+          },
+          {
+            "@type": "LearningResource",
+            "position": 2,
+            "name": "A document is an array of blocks",
+            "url": "https://pdfnative.dev/learn/02-blocks.html"
+          },
+          {
+            "@type": "LearningResource",
+            "position": 3,
+            "name": "Tables that break across pages",
+            "url": "https://pdfnative.dev/learn/03-tables.html"
+          },
+          {
+            "@type": "LearningResource",
+            "position": 4,
+            "name": "Headers, footers and page numbers",
+            "url": "https://pdfnative.dev/learn/04-page-furniture.html"
+          },
+          {
+            "@type": "LearningResource",
+            "position": 5,
+            "name": "Text beyond Latin",
+            "url": "https://pdfnative.dev/learn/05-fonts-and-scripts.html"
+          },
+          {
+            "@type": "LearningResource",
+            "position": 6,
+            "name": "The same code in a browser",
+            "url": "https://pdfnative.dev/learn/06-browser.html"
+          },
+          {
+            "@type": "LearningResource",
+            "position": 7,
+            "name": "When documents get large",
+            "url": "https://pdfnative.dev/learn/07-going-big.html"
+          },
+          {
+            "@type": "LearningResource",
+            "position": 8,
+            "name": "Where to go from here",
+            "url": "https://pdfnative.dev/learn/08-next-steps.html"
+          }
+        ]
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Learn"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="./" aria-current="page">Learn</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Learn</p>
+  <article class="guide-content">
+    <h1>Learn pdfnative</h1>
+    <p>Eight short steps, in order, from installing the package to shipping a hundred-thousand-page document. Each one introduces exactly one idea and says what you should be able to do at the end of it.</p>
+    <p>About thirty minutes, start to finish. You need <strong>Node.js 22 or newer</strong> and nothing else — no account, no key, no service.</p>
+
+    <p class="ln-prereq">Already know what you want? The <a href="../guides/">26 reference guides</a> are the shelf; this is the path.</p>
+
+    <ol class="ln-list">
+      <li><span class="ln-num">1.</span> <a href="01-install.html">Install pdfnative and make one PDF</a><p>Ten lines, one file on disk. Nothing else.</p></li>
+      <li><span class="ln-num">2.</span> <a href="02-blocks.html">A document is an array of blocks</a><p>The one idea that makes the rest of the API obvious.</p></li>
+      <li><span class="ln-num">3.</span> <a href="03-tables.html">Tables that break across pages</a><p>Headers repeat, rows wrap, and you do not manage any of it.</p></li>
+      <li><span class="ln-num">4.</span> <a href="04-page-furniture.html">Headers, footers and page numbers</a><p>The second argument, and four placeholders.</p></li>
+      <li><span class="ln-num">5.</span> <a href="05-fonts-and-scripts.html">Text beyond Latin</a><p>Why fonts must be registered, and how.</p></li>
+      <li><span class="ln-num">6.</span> <a href="06-browser.html">The same code in a browser</a><p>One import change. No server involved.</p></li>
+      <li><span class="ln-num">7.</span> <a href="07-going-big.html">When documents get large</a><p>What streaming buys you, and its two constraints.</p></li>
+      <li><span class="ln-num">8.</span> <a href="08-next-steps.html">Where to go from here</a><p>The map, now that the territory makes sense.</p></li>
+    </ol>
+
+    <h2>Never generated a PDF from code before?</h2>
+    <p>Then start at step 1 and do not skip. The single thing that makes pdfnative click is in <a href="02-blocks.html">step 2</a>: a document is an ordered array of blocks, and the library handles page geometry. Everything else follows from that.</p>
+
+    <h2>Want to see output before you install anything?</h2>
+    <p>The <a href="../#demo">live editor on the homepage</a> generates real PDFs in your browser, and the <a href="../playgrounds/">nine playgrounds</a> cover charts, 22 writing systems, the full toolkit and more. Nothing is uploaded in any of them.</p>
+
+    <div class="ln-pager">
+      <span></span>
+      <span class="ln-hint">8 steps · about 30 min</span>
+      <a rel="next" href="01-install.html">Install →</a>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="./">Learn</a></li>
+      <li><a href="../guides/">Guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="../app.js" defer></script>
+<script src="learn.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous"></script>
+</body>
+</html>

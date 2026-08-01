@@ -7,22 +7,25 @@
   <meta name="description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, merge, split, extract, annotate, and govern invocations with a live shell preview. Zero install.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/cli.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/cli.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/cli.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/cli.html">
   <meta property="og:title" content="CLI Command Builder — pdfnative-cli playground">
-  <meta property="og:description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, batch, and schema invocations with full flag coverage. Live shell preview, copy-to-clipboard, validation. Zero install.">
+  <meta property="og:description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, merge, split, extract, annotate and govern invocations with full flag coverage. Live shell preview, copy-to-clipboard, validation. Zero install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="CLI Command Builder — pdfnative-cli playground">
-  <meta name="twitter:description" content="Assemble render, sign, inspect, verify, batch, and schema commands with full flag coverage. Live shell preview. Zero install.">
+  <meta name="twitter:description" content="Assemble render, sign, inspect, verify, merge, split, extract, annotate and govern commands with full flag coverage. Live shell preview. Zero install.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <style>
     .cli-tabs { display: flex; gap: 4px; margin: 24px 0 0; border-bottom: 1px solid var(--c-border); flex-wrap: wrap; }
     .cli-tab { padding: 10px 18px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--c-text-dim); cursor: pointer; font-size: 14px; font-weight: 600; }
@@ -62,12 +65,13 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
+    "inLanguage": "en",
     "name": "pdfnative-cli Command Builder",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
     "browserRequirements": "Requires JavaScript and HTML5",
     "url": "https://pdfnative.dev/playgrounds/cli.html",
-    "description": "Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, batch, and schema invocations with a live shell preview.",
+    "description": "Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, merge, split, extract, annotate and govern invocations with a live shell preview.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
@@ -112,7 +116,7 @@
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./charts.html">Charts</a>
     <a href="./authoring-plus.html">Authoring+</a>
-    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./scale.html">Scale</a>
     <a href="./cli.html" aria-current="page">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html">React renderer</a>
@@ -120,7 +124,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-cli command builder</h1>
-    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers the full <a href="../guides/cli.html">CLI surface</a>: <code>render</code> (with <code>--outline</code> / <code>--font math</code> / <code>--inspect-layout</code>), <code>sign</code> (RSA + ECDSA-SHA256, native constant-time crypto, <code>--pure-crypto</code> opt-out), <code>inspect</code> (with <code>--annotations</code>), <code>verify</code>, and the v1.2.0 page-tree / governance commands <code>merge</code>, <code>split</code>, <code>extract</code>, <code>annotate</code>, and <code>govern</code>. The builder runs entirely in your browser — nothing is uploaded.</p>
+    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers nine of the seventeen commands — see the <a href="../guides/cli.html">CLI guide</a> for the rest: <code>render</code> (with <code>--outline</code> / <code>--font math</code> / <code>--inspect-layout</code>), <code>sign</code> (RSA + ECDSA-SHA256, native constant-time crypto, <code>--pure-crypto</code> opt-out), <code>inspect</code> (with <code>--annotations</code>), <code>verify</code>, and the v1.2.0 page-tree / governance commands <code>merge</code>, <code>split</code>, <code>extract</code>, <code>annotate</code> and <code>govern</code>. The v1.3.0 additions — <code>fill</code>, <code>encrypt</code>, <code>decrypt</code>, <code>extract-text</code> and <code>doctor</code> — have no tab yet; their full flag reference is in the <a href="../guides/cli.html">CLI guide</a>. The builder runs entirely in your browser — nothing is uploaded.</p>
 
     <div class="cli-presets">
       <label for="preset"><strong>Quick preset:</strong></label>
@@ -226,7 +230,7 @@
         <div class="full">
           <label for="r-lang">--lang</label>
           <input id="r-lang" type="text" data-cmd="render" data-flag="--lang" placeholder="th,ja,ar">
-          <span class="hint">Comma-separated language codes. Non-Latin requires a <code>registerFontLoader()</code> wrapper.</span>
+          <span class="hint">Comma-separated language codes. Non-Latin scripts need their font registered — pass the same code to <code>--font</code> (22 bundled scripts).</span>
         </div>
 
         <fieldset>
@@ -234,12 +238,12 @@
           <div class="grid">
             <div>
               <label><input type="checkbox" data-cmd="render" data-flag="--watch"> --watch</label>
-              <span class="hint">Re-render on input/layout/template change. Requires <code>--input</code> + <code>--output</code>.</span>
+              <span class="hint">Re-render when the <code>--input</code> file changes (only that file is watched). Requires <code>--input</code> + a file <code>--output</code>.</span>
             </div>
             <div>
               <label for="r-template">--template</label>
               <input id="r-template" type="text" data-cmd="render" data-flag="--template" placeholder="vars.json">
-              <span class="hint">JSON file with <code>{ "key": "value" }</code> pairs substituted into the document.</span>
+              <span class="hint">Base document JSON: the input (stdin or <code>--input</code>) is deep-merged on top — caller wins, arrays replace. Not variable substitution.</span>
             </div>
             <div>
               <label for="r-font">--font</label>
@@ -251,7 +255,7 @@
                 <option value="latin,emoji">latin,emoji</option>
                 <option value="latin,math">latin,math</option>
               </select>
-              <span class="hint">Bundled font codes. For other scripts use <code>--lang</code>.</span>
+              <span class="hint">Bundled font codes — besides these, any of the 22 script codes (<code>ar</code>, <code>th</code>, <code>ja</code>…) works and doubles as the <code>--lang</code> code.</span>
             </div>
           </div>
         </fieldset>
@@ -352,6 +356,7 @@
               <input id="r-enc-perm" type="text" data-cmd="render" data-flag="--encrypt-permissions" placeholder="print,copy">
             </div>
           </div>
+          <span class="hint" style="margin-top: 8px; display: block;">Since v1.3.0 the CLI also has a unified encryption vocabulary shared by <code>render</code> / <code>merge</code> / <code>split</code> / <code>extract</code> — <code>--encrypt aes-128|aes-256</code>, <code>--owner-password</code>, <code>--user-password</code>, <code>--permissions</code>. See the <a href="../guides/cli.html">CLI guide</a>.</span>
         </fieldset>
 
         <fieldset>
@@ -421,7 +426,7 @@
         </div>
         <div>
           <label><input type="checkbox" data-cmd="sign" data-flag="--pure-crypto"> --pure-crypto <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.2</span></label>
-          <span class="hint">Force the portable pure-JS CMS path. Default is native constant-time <code>node:crypto</code>.</span>
+          <span class="hint">Force the portable pure-JS CMS path. The default delegates to <code>node:crypto</code>, inheriting its side-channel hardening; the pure-JS path is <strong>not</strong> constant-time.</span>
         </div>
       </div>
     </section>
@@ -490,7 +495,7 @@
           <span class="hint">Trust-anchor PEMs. Repeatable.</span>
         </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Scope (v1.1.0): full CMS/PKCS#7 verification (RSA + ECDSA-SHA256), byte-range integrity (SHA-256), certificate chain, trust evaluation against <code>--trust</code> roots, RFC 3161 timestamp validation (<strong>PAdES-T</strong>), and OCSP/CRL revocation checking via <code>--revocation</code> / <code>--revocation-policy</code>. See the <a href="../guides/cli.html">CLI guide</a>.</p>
+      <p class="hint" style="margin-top: 14px;">Scope (since v1.0.0): full CMS/PKCS#7 verification (RSA + ECDSA-SHA256), byte-range integrity (SHA-256), certificate chain, trust evaluation against <code>--trust</code> roots, RFC 3161 timestamp validation (<strong>PAdES-T</strong>), and OCSP/CRL revocation checking via <code>--revocation</code> / <code>--revocation-policy</code>. See the <a href="../guides/cli.html">CLI guide</a>.</p>
     </section>
 
     <!-- ─────────────── MERGE (v1.2) ─────────────── -->
@@ -517,7 +522,7 @@
           <label><input type="checkbox" data-cmd="merge" data-flag="--dry-run"> --dry-run</label>
         </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Encrypted sources are rejected; signatures and <code>/AcroForm</code> are dropped (page edits invalidate <code>/ByteRange</code>); URI <code>/Link</code> annotations are preserved. Every path is validated against traversal.</p>
+      <p class="hint" style="margin-top: 14px;">Encrypted sources are supported since v1.3.0 — decrypt them on ingest with <code>--password</code>, and re-encrypt the merged output with <code>--encrypt</code>. Signatures and <code>/AcroForm</code> are dropped (page edits invalidate <code>/ByteRange</code>); URI <code>/Link</code> annotations are preserved. Every path is validated against traversal.</p>
     </section>
 
     <!-- ─────────────── SPLIT (v1.2) ─────────────── -->
@@ -646,7 +651,7 @@
       <li><a href="../guides/">Guides</a></li>
       <li><a href="../guides/cli.html">CLI guide</a></li>
       <li><a href="./extreme-scripts.html">Extreme scripts playground</a></li>
-      <li><a href="./medical-800.html">Medical 800-page playground</a></li>
+      <li><a href="./scale.html">Scale playground</a></li>
       <li><a href="./mcp.html">MCP playground</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a></li>
     </ul>
@@ -759,9 +764,9 @@
 
     if (activeCmd === 'sign') {
       const s = state.sign;
-      if (!s['--input']) warns.push('`sign` requires `--input` (no stdin sentinel for binary signing).');
+      if (!s['--input']) warns.push('No `--input` — `sign` will read the PDF from stdin.');
       if (s['--algorithm'] === 'ecdsa-sha256') {
-        warns.push('`--algorithm ecdsa-sha256` requires a P-256 (secp256r1) private key. Fully wired in v1.1.0.');
+        warns.push('`--algorithm ecdsa-sha256` requires a P-256 (secp256r1) private key. Supported since v0.3.0.');
       }
       if (s['--signing-time'] && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s['--signing-time'])) {
         errors.push('`--signing-time` must be ISO 8601 (e.g. `2026-04-28T10:00:00Z`).');
@@ -963,13 +968,13 @@
   // ── Theme toggle (parity with main site) ──────────
   const themeBtn = document.querySelector('.theme-toggle');
   if (themeBtn) {
-    const stored = localStorage.getItem('pdfnative-theme');
+    const stored = localStorage.getItem('theme');
     if (stored) document.documentElement.setAttribute('data-theme', stored);
     themeBtn.addEventListener('click', () => {
       const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
       if (cur) document.documentElement.setAttribute('data-theme', cur);
       else     document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('pdfnative-theme', cur);
+      localStorage.setItem('theme', cur);
     });
   }
 
@@ -985,8 +990,8 @@
 })();
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
 <script src="../assets/versions.js" defer></script>
 </body>
 </html>

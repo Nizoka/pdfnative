@@ -6,8 +6,11 @@
   <title>Extreme Scripts Playground — pdfnative</title>
   <meta name="description" content="Interactive playground for extreme-script shaping: Arabic + Hebrew + Thai BiDi, Tamil deep conjuncts, Bengali + Devanagari reph and ligatures, Arabic isolated harakat. Edit the inputs and generate a PDF in your browser.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/extreme-scripts.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/extreme-scripts.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/extreme-scripts.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/extreme-scripts.html">
   <meta property="og:title" content="Extreme Scripts Playground — pdfnative">
   <meta property="og:description" content="Interactive playground for extreme-script shaping: Arabic + Hebrew + Thai BiDi, Tamil deep conjuncts, Bengali + Devanagari reph and ligatures. Edit the inputs and generate a PDF in your browser.">
@@ -21,11 +24,12 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
+    "inLanguage": "en",
     "name": "Extreme Scripts Playground",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
@@ -73,7 +77,7 @@
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./charts.html">Charts</a>
     <a href="./authoring-plus.html">Authoring+</a>
-    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./scale.html">Scale</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html">React renderer</a>
@@ -116,7 +120,7 @@
     <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
       <strong style="color:#065f46;">Shaping &amp; BiDi coverage:</strong>
       <ul style="margin-top:8px;color:#065f46;">
-        <li>Arabic harakat (تشكيل — fatha, kasra, damma, sukun, shadda…) now anchor on the preceding base glyph using font-provided GPOS MarkBasePos data, with fallback to (0, 0) when anchors are missing. Closes the visual half of <a href="https://github.com/Nizoka/pdfnative/issues/25" target="_blank" rel="noopener">#25</a>.</li>
+        <li>Arabic harakat (<span lang="ar" dir="rtl">تشكيل</span> — fatha, kasra, damma, sukun, shadda…) now anchor on the preceding base glyph using font-provided GPOS MarkBasePos data, with fallback to (0, 0) when anchors are missing. Closes the visual half of <a href="https://github.com/Nizoka/pdfnative/issues/25" target="_blank" rel="noopener">#25</a>.</li>
         <li>UAX #9 isolates (LRI / RLI / FSI / PDI, U+2066–U+2069) handled via three-tier dispatcher with full recursion. Nested and unmatched isolates supported.</li>
         <li>Shared GSUB / GPOS drivers — Bengali / Tamil / Devanagari / Arabic shapers route through a single ligature lookup and a single mark-base anchor helper.</li>
       </ul>
@@ -131,13 +135,13 @@
     <ul class="footer-links" role="list">
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><a href="../guides/">All guides</a></li>
-      <li><a href="./medical-800.html">Medical 800-page playground →</a></li>
+      <li><a href="./scale.html">Scale playground →</a></li>
     </ul>
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script type="module">
 const PRESETS = {
   bidi: {
@@ -272,7 +276,7 @@ function updateCodeView(id) {
     "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
     '',
     'registerFonts({',
-    ...p.langs.map(l => `  ${l}: () => import('https://esm.sh/pdfnative/fonts/${FONT_MODULE_BY_LANG[l]}'),`),
+    ...p.langs.map(l => `  ${l}: () => import('https://esm.sh/pdfnative@1.6.0/fonts/${FONT_MODULE_BY_LANG[l]}'),`),
     '});',
     '',
     `const langs = ${JSON.stringify(p.langs)};`,
@@ -294,7 +298,7 @@ function updateCodeView(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -322,7 +326,7 @@ async function generate() {
     setStatus('Loading fonts: ' + p.langs.join(', ') + '…', 'info');
     const registry = {};
     for (const lang of p.langs) {
-      registry[lang] = () => import(`https://esm.sh/pdfnative/fonts/${FONT_MODULE_BY_LANG[lang]}`);
+      registry[lang] = () => import(`https://esm.sh/pdfnative@1.6.0/fonts/${FONT_MODULE_BY_LANG[lang]}`);
     }
     mod.registerFonts(registry);
     const fonts = await Promise.all(p.langs.map(mod.loadFontData));
@@ -352,5 +356,6 @@ $('preset').addEventListener('change', e => applyPreset(e.target.value));
 $('generate').addEventListener('click', generate);
 applyPreset('bidi');
 </script>
+<script src="../app.js" defer></script>
 </body>
 </html>

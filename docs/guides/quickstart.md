@@ -42,7 +42,7 @@ const pdf = buildDocumentPDFBytes(params, { compress: true });
 
 ```html
 <script type="module">
-  import { buildDocumentPDFBytes, downloadBlob } from 'https://esm.sh/pdfnative';
+  import { buildDocumentPDFBytes, downloadBlob } from 'https://esm.sh/pdfnative@1.6.0';
 
   document.getElementById('go').addEventListener('click', () => {
     const pdf = buildDocumentPDFBytes({
@@ -99,15 +99,15 @@ const pdf = buildDocumentPDFBytes({
     { type: 'pageBreak' },
     { type: 'heading',   text: 'Details', level: 1 },
     { type: 'table', headers: ['Q', 'Revenue'], rows: [
-      { cells: ['Q1', '$1.2M'] },
-      { cells: ['Q2', '$1.4M'] },
+      { cells: ['Q1', '$1.2M'], type: '', pointed: false },
+      { cells: ['Q2', '$1.4M'], type: '', pointed: false },
     ] },
   ],
   footerText: 'Confidential',
 });
 ```
 
-12 block types are available: `heading`, `paragraph`, `list`, `table`, `image`, `link`, `spacer`, `pageBreak`, `toc`, `barcode`, `svg`, `formField`.
+13 block types are available: `heading`, `paragraph`, `list`, `table`, `image`, `link`, `spacer`, `pageBreak`, `toc`, `barcode`, `svg`, `formField`, `chart`.
 
 ## Multi-language
 
@@ -130,20 +130,25 @@ const pdf = buildDocumentPDFBytes({
 });
 ```
 
-The `lang` property is what triggers BiDi resolution and OpenType shaping. See the [FAQ → Fonts and Unicode](faq.html#fonts-and-unicode) for the full list.
+Note that `lang` is a property of each **font entry**, not of a block: pdfnative detects the script per character and routes to the matching font, so a single paragraph can mix Thai, Arabic and Latin. BiDi resolution and OpenType shaping follow from that routing. See the [FAQ → Fonts and Unicode](faq.html#fonts-and-unicode) for the full list of codes.
 
 ## Web Worker
 
-```typescript
-import { generatePDFInWorker } from 'pdfnative';
+`createPDF` is the recommended entry point — it decides between the main thread and a worker for you:
 
-const pdf = await generatePDFInWorker(params, {
-  workerThreshold: 500,
+```typescript
+import { createPDF } from 'pdfnative';
+
+const pdf = await createPDF(params, {
+  workerUrl: new URL('./pdf-worker.js', import.meta.url), // your worker script
+  threshold: 500,   // rows above this go to the worker (default WORKER_THRESHOLD = 500)
   onProgress: (p) => console.log(`${p}%`),
 });
 ```
 
-Below the threshold the PDF is generated on the main thread; above, an off-thread worker is spawned automatically.
+At or below the `threshold` (or when `Worker` / `workerUrl` is unavailable) the PDF is generated on the main thread; above it, the worker at `workerUrl` is spawned, with an automatic main-thread fallback if the worker fails.
+
+To drive a worker directly, use `generatePDFInWorker(workerUrl, params, { timeout, onProgress })` — note the worker URL is the **first** argument, and the options are `timeout` (ms, default 60 000) and `onProgress` (there is no threshold at this level).
 
 ## Streaming
 
@@ -169,10 +174,10 @@ The async iterable yields `Uint8Array` chunks as the PDF is produced — no full
 
 ## Playgrounds
 
-Both interactive playgrounds on [pdfnative.dev](https://pdfnative.dev) run entirely in the browser:
+The interactive playgrounds on [pdfnative.dev](https://pdfnative.dev) run entirely in the browser:
 
 - [Extreme scripts](../playgrounds/extreme-scripts.html) — live BiDi, Tamil, Bengali + Devanagari, Arabic harakat
-- [Medical 800-page](../playgrounds/medical-800.html) — Web Worker + streaming showcase
+- [Scale](../playgrounds/scale.html) — 1,000 to 100,000 pages, Web Worker + true streaming
 
 > **Local testing:** opening the playgrounds as `file://` disables the Web Worker
 > (browsers block cross-origin Worker imports from `file:` origins).
@@ -183,7 +188,7 @@ Both interactive playgrounds on [pdfnative.dev](https://pdfnative.dev) run entir
 
 ## Command line — pdfnative-cli
 
-Prefer the terminal? [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) wraps the same library with three composable commands — `render`, `sign`, `inspect`:
+Prefer the terminal? [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) wraps the same library with 17 commands — including `render`, `fill`, `sign`, `verify`, `encrypt`, `decrypt`, `merge`, `split`, `extract` and `extract-text`:
 
 ```bash
 # Install once
@@ -216,4 +221,4 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 - [Accessibility](accessibility.html) — tagged PDF, PDF/UA, PDF/A.
 - [FAQ](faq.html) — fonts, encryption, signatures, comparisons.
 - [Troubleshooting](troubleshooting.html) — common pitfalls and fixes.
-- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — ~187 PDFs across 32 categories.
+- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — ~228 PDFs across 37 categories (44 generators).

@@ -12,7 +12,7 @@ Thanks for using **pdfnative**! Here is where to get help depending on what you 
 
 ## :question: Questions & discussions
 
-- **GitHub Discussions** — [github.com/N1zoka/pdfnative/discussions](https://github.com/N1zoka/pdfnative/discussions)
+- **GitHub Discussions** — [github.com/Nizoka/pdfnative/discussions](https://github.com/Nizoka/pdfnative/discussions)
   Use this for:
   - How-to questions
   - Design ideas and feature requests to gauge community interest
@@ -21,7 +21,7 @@ Thanks for using **pdfnative**! Here is where to get help depending on what you 
 
 ## :bug: Bugs & feature requests
 
-- **GitHub Issues** — [github.com/N1zoka/pdfnative/issues](https://github.com/N1zoka/pdfnative/issues)
+- **GitHub Issues** — [github.com/Nizoka/pdfnative/issues](https://github.com/Nizoka/pdfnative/issues)
   Before opening an issue, please:
   1. Search existing issues — it may already be reported or resolved.
   2. Reproduce on the latest published version.
@@ -35,7 +35,7 @@ Templates are provided for bug reports and feature requests.
 **Do not open public issues for security problems.**
 
 See [SECURITY.md](./SECURITY.md) for the private disclosure procedure (GitHub Security Advisories).
-We acknowledge reports within 48 hours and target a fix within 14 days for High/Critical severity.
+We acknowledge reports within 48 hours and target a fix within 7 days for Critical severity and within 14 days for High severity.
 
 ## :handshake: Contributing
 
@@ -51,5 +51,5 @@ Interested in contributing? Start with [CONTRIBUTING.md](./CONTRIBUTING.md) and 
 ## :sparkles: Sponsor
 
 If pdfnative saves you time or money, consider starring the repo or
-[sponsoring via GitHub Sponsors](https://github.com/sponsors/N1zoka). Every bit helps
+[sponsoring via GitHub Sponsors](https://github.com/sponsors/Nizoka). Every bit helps
 keep development sustainable.

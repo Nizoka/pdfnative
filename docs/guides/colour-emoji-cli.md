@@ -30,16 +30,19 @@ npx pdfnative-build-emoji-font --download \
 npx pdfnative-build-emoji-font --ttf ./NotoColorEmoji-Regular.ttf --all
 ```
 
-Then register the module you generated and use emoji as usual:
+Then register the module you generated, load it, and pass it via `fontEntries`:
 
 ```ts
-import { registerFont, buildDocumentPDFBytes } from 'pdfnative';
+import { registerFont, loadFontData, buildDocumentPDFBytes } from 'pdfnative';
 
 registerFont('emoji', () => import('./emoji-full.js'));
+const emoji = await loadFontData('emoji');
+if (!emoji) throw new Error('emoji font failed to load');
 
 const bytes = buildDocumentPDFBytes({
   title: 'Emoji',
   blocks: [{ type: 'paragraph', text: 'Ship it 🚀🎉🥳🦄🌈' }],
+  fontEntries: [{ fontData: emoji, fontRef: '/F3', lang: 'emoji' }], // /F1 and /F2 are reserved
 });
 ```
 

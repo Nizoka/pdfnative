@@ -22,7 +22,7 @@ shaped so agents can use them autonomously, under the project's
 
 ## Pattern 1 — extend the engine at runtime, without a release
 
-pdfnative ships 24 script fonts, colour emoji, and a math font. But its font
+pdfnative ships 26 bundled font-data modules (22 scripts plus Latin, math, and monochrome + colour emoji). But its font
 system is **open**: any TrueType/OpenType font becomes a first-class,
 CIDFont-embedded, subset-on-use font once it is *registered*. Registration is a
 runtime call — it does not require rebuilding or republishing pdfnative.
@@ -32,7 +32,7 @@ previous iteration of this project, an agent using the MCP server needed
 mathematical symbols before the bundled **Noto Sans Math** font existed as a
 release. Because the font registry is a public runtime API, the agent was able to
 compile the font data and register it on the spot; the same font later shipped as
-`registerFont('math', …)` in pdfnative 1.5.0. The library did not need to change
+`registerFont('math', …)` in pdfnative 1.5.0. <!-- verify-docs:allow version-token (historical) --> The library did not need to change
 for the document to render — the release simply promoted an already-working
 runtime pattern into a bundled default.
 
@@ -47,7 +47,7 @@ runtime pattern into a bundled default.
 ### An agent registers a font at runtime
 
 ```ts
-import { buildDocumentPDFBytes, registerFont } from 'pdfnative';
+import { buildDocumentPDFBytes, registerFont, loadFontData } from 'pdfnative';
 import { parseFontData } from 'pdfnative/tools';
 
 // The agent obtained the TTF bytes however it likes — a bundled asset,
@@ -60,10 +60,16 @@ const fontData = parseFontData(ttfBytes);
 // Register it under a lang code. No release, no rebuild.
 registerFont('custom', () => Promise.resolve(fontData));
 
+// The registry is only consulted through loadFontData + fontEntries —
+// load the data and pass it explicitly (fontRef must be a PDF name; /F1 and /F2 are reserved):
+const custom = await loadFontData('custom');
+if (!custom) throw new Error('custom font failed to load');
+
 // It is now a first-class font: pdfnative subsets and embeds it on use.
 const pdf = buildDocumentPDFBytes({
   title: 'Runtime font',
-  blocks: [{ type: 'paragraph', text: 'Rendered with an agent-registered font.', lang: 'custom' }],
+  blocks: [{ type: 'paragraph', text: 'Rendered with an agent-registered font.' }],
+  fontEntries: [{ fontData: custom, fontRef: '/F3', lang: 'custom' }],
 });
 ```
 
@@ -115,6 +121,7 @@ An agent that produced an image returns it as base64 and calls `embed_image`:
   "input": {
     "title": "Quarterly trend",
     "imageBase64": "<base64 PNG/JPEG the agent just generated>",
+    "mimeType": "image/png",
     "outputMode": "base64"
   }
 }
@@ -171,7 +178,7 @@ under the [AI-governance / human-in-the-loop contract](ai-governance.md).
 
 - [AI governance & human-in-the-loop](ai-governance.md) — the contract that keeps
   repository changes human-gated.
-- [MCP integration](mcp.md) — the 19 MCP tools, including `embed_image` and
+- [MCP integration](mcp.md) — the 24 MCP tools, including `embed_image` and
   `draft_governance_issue`.
 - [CLI guide](cli.md) — driving pdfnative from the shell.
 - [Font validation](font-validation.md) — `validateFontData()` for sanity-checking

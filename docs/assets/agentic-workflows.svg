@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="agw-title agw-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
   <title id="agw-title">pdfnative — agentic workflows</title>
-  <desc id="agw-desc">Diagram of two agentic workflows for pdfnative. An AI agent (an MCP client or a CLI driver) feeds the zero-dependency pdfnative engine through public, validated APIs. Left branch: the agent generates a raster image and embeds it via the image document block or the embed_image MCP tool. Right branch: the agent compiles a TrueType or OpenType font in memory with parseFontData or compileFontData from the pdfnative/tools sub-path and registers it at runtime with registerFont, extending the engine without a library release. Both branches converge on pdfnative, which subsets fonts, embeds images, lays out content and writes an ISO 32000-1 PDF. A side note states that runtime extension is in-process only: any change to the repository itself stays human-gated under the AI-governance human-in-the-loop contract.</desc>
+  <desc id="agw-desc">Diagram of two agentic workflows for pdfnative. An AI agent (an MCP client or a CLI driver) feeds the zero-dependency pdfnative engine through public, validated APIs. Left branch: the agent generates a visual. Charts go through the chart document block or the add_chart MCP tool, which draw native PDF vector paths with no rasterisation; photographs and other raster content go through the image block or the embed_image MCP tool. Right branch: the agent compiles a TrueType or OpenType font in memory with parseFontData or compileFontData from the pdfnative/tools sub-path and registers it at runtime with registerFont, extending the engine without a library release. Both branches converge on pdfnative, which subsets fonts, embeds images, lays out content and writes an ISO 32000-1 PDF. A side note states that runtime extension is in-process only: any change to the repository itself stays human-gated under the AI-governance human-in-the-loop contract.</desc>
 
   <defs>
     <marker id="agw-ah" viewBox="0 0 10 8" refX="8.5" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
@@ -53,7 +53,7 @@
   <text x="480" y="147" text-anchor="middle" font-size="10.5" fill="#6366F1">MCP client (Claude · Cursor · Zed …) or CLI driver</text>
 
   <!-- Branch labels -->
-  <text x="252" y="196" text-anchor="middle" font-size="11" font-weight="700" fill="#0E7490" letter-spacing="0.3">PATTERN 2 — GENERATED IMAGES</text>
+  <text x="252" y="196" text-anchor="middle" font-size="11" font-weight="700" fill="#0E7490" letter-spacing="0.3">PATTERN 2 — GENERATED VISUALS</text>
   <text x="708" y="196" text-anchor="middle" font-size="11" font-weight="700" fill="#7C3AED" letter-spacing="0.3">PATTERN 1 — RUNTIME FONT EXTENSION</text>
 
   <!-- Left branch: generate image -->
@@ -61,15 +61,15 @@
     <rect x="72" y="212" width="360" height="60" rx="12" fill="url(#agw-img)" stroke="#5EBECF" stroke-width="1.25"/>
   </g>
   <rect x="72" y="212" width="5" height="60" rx="2.5" fill="#0E7490"/>
-  <text x="94" y="238" font-size="13.5" font-weight="700" fill="#155E75">Generate a raster image</text>
-  <text x="94" y="257" font-size="10.5" fill="#0891B2">chart · diagram · illustration · photo (PNG / JPEG)</text>
+  <text x="94" y="238" font-size="13.5" font-weight="700" fill="#155E75">Generate a visual</text>
+  <text x="94" y="257" font-size="10.5" fill="#0891B2">charts: native vectors · photos: PNG / JPEG</text>
 
   <g filter="url(#agw-soft-sm)">
     <rect x="72" y="296" width="360" height="60" rx="12" fill="#FFFFFF" stroke="#5EBECF" stroke-width="1.25"/>
   </g>
   <rect x="72" y="296" width="5" height="60" rx="2.5" fill="#0891B2"/>
-  <text x="94" y="322" font-size="13" font-weight="700" fill="#155E75">image block · embed_image (MCP)</text>
-  <text x="94" y="341" font-size="10.5" fill="#0891B2">native JPEG/PNG embed — no rasterization, validated</text>
+  <text x="94" y="322" font-size="13" font-weight="700" fill="#155E75">chart block · add_chart · image block · embed_image</text>
+  <text x="94" y="341" font-size="10.5" fill="#0891B2">charts drawn as path operators; images embedded natively</text>
 
   <!-- Right branch: font -->
   <g filter="url(#agw-soft-sm)">

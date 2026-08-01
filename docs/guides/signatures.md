@@ -2,7 +2,7 @@
 
 pdfnative ships a zero-dependency CMS/PKCS#7 detached signature
 implementation (ISO 32000-1 §12.8) with full crypto in pure TypeScript —
-RSA PKCS#1 v1.5 and ECDSA P-256, SHA-256/384/512, X.509 DER parsing,
+RSA PKCS#1 v1.5 and ECDSA P-256, both with SHA-256, X.509 DER parsing,
 and ASN.1 DER encoding. No OpenSSL, no node-forge, no external crypto.
 
 ## TL;DR — sign any PDF in 3 lines
@@ -12,13 +12,15 @@ import {
     buildDocumentPDFBytes,
     addSignaturePlaceholder,
     signPdfBytes,
+    parseCertificate,
+    parseRsaPrivateKey,
 } from 'pdfnative';
 
 const unsigned = buildDocumentPDFBytes(params);
 const placeheld = addSignaturePlaceholder(unsigned, { fieldName: 'Author' });
 const signed = signPdfBytes(placeheld, {
-    signerCert,           // PEM or DER bytes
-    rsaKey,               // RSA PKCS#8 private key
+    signerCert: parseCertificate(certDer),  // X509Certificate (from DER bytes)
+    rsaKey: parseRsaPrivateKey(keyDer),     // RsaPrivateKey (from DER bytes)
     algorithm: 'rsa-sha256',
 });
 ```
@@ -54,16 +56,16 @@ returns the input unchanged. Throws on encrypted input.
 
 Options:
 
-| Option            | Default          | Notes                                           |
-|-------------------|------------------|-------------------------------------------------|
-| `placeholderBytes`| `16384`          | Size of the `/Contents` hex placeholder         |
-| `fieldName`       | `'Signature1'`   | AcroForm field name                             |
-| `pageIndex`       | `0`              | Page to attach the (invisible) widget to        |
-| `signingTime`     | _omitted_        | `Date` — forwarded to `/M` in the `/Sig` dict   |
-| `name`            | _omitted_        | Signer name (`/Name`)                           |
-| `reason`          | _omitted_        | Signing reason (`/Reason`)                      |
-| `location`        | _omitted_        | Signing location (`/Location`)                  |
-| `contactInfo`     | _omitted_        | Contact info (`/ContactInfo`)                   |
+| Option            | Default          | Notes                                             |
+|-------------------|------------------|---------------------------------------------------|
+| `placeholderBytes`| `16384`          | Size of the `/Contents` hex placeholder           |
+| `fieldName`       | `'Signature1'`   | AcroForm field name                               |
+| `pageIndex`       | `0`              | Page to attach the (invisible) widget to          |
+| `rect`            | `[0, 0, 0, 0]`   | Widget rectangle (invisible by default)           |
+
+Signer metadata (`name`, `reason`, `location`, `contactInfo`, `signingTime`)
+is **not** set here — the placeholder writes an empty `/Sig` dictionary; pass
+the metadata to `signPdfBytes`, which writes it at signing time.
 
 ### 2. `signPdfBytes(pdfBytes, options)`
 
@@ -75,17 +77,25 @@ signs the `signedAttrs` digest, and writes the DER-encoded CMS into
 
 Options:
 
-- `signerCert` — PEM string or DER bytes (X.509 v3).
-- `rsaKey` _or_ `ecdsaKey` — PKCS#8 private key.
-- `algorithm` — `'rsa-sha256' | 'rsa-sha384' | 'rsa-sha512' | 'ecdsa-sha256'`.
-- `extraCerts?` — additional certificates for the chain.
-- `signingTime?` — `Date` to embed in `signedAttrs`.
+- `signerCert` — `X509Certificate` (parse DER bytes with `parseCertificate`).
+- `rsaKey` _or_ `ecKey` — the private key. Parse RSA keys from DER with
+  `parseRsaPrivateKey`; for ECDSA there is no DER parser in the engine — supply
+  the `EcPrivateKey` scalar directly, or install a crypto provider
+  (`setCryptoProvider` / per-call `provider`) and omit the raw key entirely.
+- `algorithm` — `'rsa-sha256' | 'ecdsa-sha256'` (default `'rsa-sha256'`).
+- `certChain?` — additional intermediate-CA certificates for the chain.
+- `signingTime?` — forwarded to `signedAttrs`.
 
-### 3. `verifyPdfSignature(pdfBytes)` _(optional)_
+### 3. Verifying
 
-Round-trip helper that re-parses the `/ByteRange`, recomputes the
-hash, parses the CMS, and verifies the signature against the embedded
-certificate. Returns `{ valid, signerSubject, signingTime, algorithm }`.
+The library does **not** ship a PDF-signature verifier — its
+verification surface is limited to `openPdf()` plus
+`verifyCertSignature()` (an X.509 certificate-signature check). To
+verify a signed PDF end to end (byte-range digest, CMS signature value,
+chain, trust, timestamps, revocation), use
+[`pdfnative-cli verify`](cli.html#pdfnative-verify) or the
+[`verify_pdf` MCP tool](mcp.html) — the CMS verification logic lives
+there.
 
 ## Why a separate placeholder step?
 
@@ -105,9 +115,10 @@ tooling (notably `pdfnative-cli`'s `sign` command and `pdfnative-mcp`'s
 | Algorithm        | Hash      | Curve / Modulus     | Notes                          |
 |------------------|-----------|---------------------|--------------------------------|
 | `rsa-sha256`     | SHA-256   | 2048 / 3072 / 4096  | PKCS#1 v1.5                    |
-| `rsa-sha384`     | SHA-384   | 2048 / 3072 / 4096  | PKCS#1 v1.5                    |
-| `rsa-sha512`     | SHA-512   | 2048 / 3072 / 4096  | PKCS#1 v1.5                    |
 | `ecdsa-sha256`   | SHA-256   | P-256 (secp256r1)   | DER-encoded ECDSA signature    |
+
+These two are the complete `SignatureAlgorithm` union — SHA-384/512
+signing variants are not offered.
 
 All primitives live under [src/crypto/](https://github.com/Nizoka/pdfnative/tree/main/src/crypto):
 SHA-256/384/512 in `sha.ts`, ASN.1 DER in `asn1.ts`, RSA modular
@@ -123,10 +134,9 @@ openssl pkcs7 -in signed.pdf -inform DER -print_certs
 # Adobe Reader — open signed.pdf; signatures panel shows the field name,
 # signing time, signer subject, and a green check if the chain validates.
 
-# pdfnative itself
-import { verifyPdfSignature } from 'pdfnative';
-const result = verifyPdfSignature(await fs.readFile('signed.pdf'));
-// → { valid: true, signerSubject: 'CN=...', signingTime: Date, algorithm: 'rsa-sha256' }
+# pdfnative-cli — full CMS verification (the library itself has no PDF-signature verifier)
+npx pdfnative-cli verify --input signed.pdf --strict
+# → { "signatures": [ { "integrity": true, "signatureValid": true, ... } ] }
 ```
 
 ## Reading the validator output

@@ -4,10 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Authoring+ Playground (v1.5.0) — pdfnative</title>
-  <meta name="description" content="Try pdfnative 1.5.0 in your browser: SVG <text> labels, the layout debug overlay, and markup annotations (highlight, underline, sticky notes) — all client-side, zero install.">
+  <meta name="description" content="Try pdfnative's 1.5.0 authoring features in your browser: SVG <text> labels, the layout debug overlay, and markup annotations (highlight, underline, sticky notes) — all client-side, zero install.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/authoring-plus.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/authoring-plus.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/authoring-plus.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/authoring-plus.html">
   <meta property="og:title" content="Authoring+ Playground (v1.5.0) — pdfnative">
   <meta property="og:description" content="SVG text labels, layout debug overlay, and markup annotations — all in your browser.">
@@ -21,17 +24,18 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
+    "inLanguage": "en",
     "name": "Authoring+ Playground (v1.5.0)",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
     "browserRequirements": "Requires JavaScript and HTML5",
     "url": "https://pdfnative.dev/playgrounds/authoring-plus.html",
-    "description": "Try pdfnative 1.5.0 in your browser: SVG <text> labels, the layout debug overlay, and markup annotations.",
+    "description": "Try pdfnative's 1.5.0 authoring features in your browser: SVG <text> labels, the layout debug overlay, and markup annotations.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
@@ -73,7 +77,7 @@
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./charts.html">Charts</a>
     <a href="./authoring-plus.html" aria-current="page">Authoring+</a>
-    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./scale.html">Scale</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html">React renderer</a>
@@ -81,6 +85,7 @@
   </nav>
   <article class="guide-content">
     <h1>Authoring+ — what's new in 1.5.0</h1>
+    <!-- verify-docs:allow version-token (feature-era page: documents the 1.5.0 additions) -->
     <p>pdfnative 1.5.0 adds <strong>SVG <code>&lt;text&gt;</code> rendering</strong>, an opt-in <strong>layout debug overlay</strong>, and a typed <strong>markup annotation</strong> model. The <em>Edge case</em> demos exercise the math font, the page-labels reader and control-character hardening. Every demo below runs entirely in your browser and downloads a real PDF.</p>
 
     <div class="callout" style="margin:16px 0;padding:12px 16px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-size:14px;">
@@ -136,8 +141,8 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 
 <script type="module">
 const $ = (id) => document.getElementById(id);
@@ -162,6 +167,7 @@ const DESCRIPTIONS = {
   annotations: 'Builds a contract PDF, injects a highlight annotation onto it with addAnnotation(), and reads every annotation back out with getAnnotations(). The annotated PDF is downloaded and the status line lists what was read back.',
   math: 'Edge case — a document full of mathematical operators (∑ ∫ √ ≠ ≤ ⇒), arrows and letterlike symbols (ℝ ℕ). The bundled math font is registered from the CDN; script detection routes every math code point to it automatically while Latin words stay on the base font.',
   pagelabels: 'Edge case — writes a three-range page-label tree (front-matter in lowercase Roman, body in decimal, appendix with an "A-" prefix) then reads it straight back with getPageLabels() to prove the writer↔reader round-trip.',
+  // verify-docs:allow version-token (feature-era demo copy)
   controlchars: 'Edge case — a paragraph deliberately seeded with NUL, BEL, form-feed and DEL control characters. pdfnative 1.5.0 neutralises them (drops or escapes) so no .notdef tofu reaches the page, in both base-14 and CIDFont modes.',
 };
 
@@ -238,7 +244,7 @@ downloadBlob(annotated, 'annotated-contract.pdf');`,
   math: `import { registerFont, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
 
 // The bundled math font is opt-in — register it once, lazily.
-registerFont('math', () => import('https://esm.sh/pdfnative/fonts/noto-sans-math-data.js'));
+registerFont('math', () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-math-data.js'));
 const mathFont = await loadFontData('math');
 
 const pdf = buildDocumentPDFBytes({
@@ -292,6 +298,7 @@ const pdf = buildDocumentPDFBytes({
   blocks: [
     { type: 'heading', text: 'Control-character hardening', level: 1 },
     { type: 'paragraph', text: seeded },
+    // verify-docs:allow version-token (feature-era demo copy)
     { type: 'paragraph', text: 'pdfnative 1.5.0 drops or escapes control chars instead of emitting .notdef tofu.' },
   ],
 });
@@ -305,7 +312,7 @@ function applyPreset(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -394,7 +401,7 @@ function buildAnnotations(mod) {
 async function buildMath(mod) {
   let mathFont = null;
   if (typeof mod.registerFont === 'function' && typeof mod.loadFontData === 'function') {
-    mod.registerFont('math', () => import('https://esm.sh/pdfnative/fonts/noto-sans-math-data.js'));
+    mod.registerFont('math', () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-math-data.js'));
     try { mathFont = await mod.loadFontData('math'); } catch (_) { mathFont = null; }
   }
   const pdf = mod.buildDocumentPDFBytes({
@@ -447,6 +454,7 @@ function buildControlChars(mod) {
     blocks: [
       { type: 'heading', text: 'Control-character hardening', level: 1 },
       { type: 'paragraph', text: seeded },
+      // verify-docs:allow version-token (feature-era demo copy)
       { type: 'paragraph', text: 'The paragraph above embeds NUL (U+0000), BEL (U+0007), form-feed (U+000C) and DEL (U+007F). pdfnative 1.5.0 drops or escapes them instead of emitting .notdef tofu.' },
     ],
   });
@@ -480,13 +488,13 @@ applyPreset('svgtext');
 // Theme + hamburger parity with the rest of the site.
 const themeBtn = document.querySelector('.theme-toggle');
 if (themeBtn) {
-  const stored = localStorage.getItem('pdfnative-theme');
+  const stored = localStorage.getItem('theme');
   if (stored) document.documentElement.setAttribute('data-theme', stored);
   themeBtn.addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
     if (cur) document.documentElement.setAttribute('data-theme', cur);
     else     document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('pdfnative-theme', cur);
+    localStorage.setItem('theme', cur);
   });
 }
 const hb = document.querySelector('.nav-hamburger');

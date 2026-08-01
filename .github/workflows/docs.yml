@@ -1,0 +1,108 @@
+# Documentation consistency
+# =========================
+# ci.yml deliberately ignores `docs/**` and `**.md`, so a documentation-only
+# pull request triggers no workflow at all. That is how the site came to
+# advertise 19 MCP tools against a server registering 24, three stale package
+# versions in its JSON-LD, and three streaming functions that were never
+# exported.
+#
+# This workflow closes that gap: it runs scripts/verify-docs.ts against
+# docs/assets/ecosystem.json, the single source of truth for every version,
+# count and inventory quoted anywhere in the documentation.
+#
+# The PR job is hermetic (no network). A weekly scheduled job adds --online,
+# which compares the manifest against the npm registry, so a published release
+# that the docs have not caught up with surfaces on its own rather than at the
+# next audit.
+
+name: Docs
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'docs/**'
+      - '**.md'
+      - 'llms.txt'
+      - 'scripts/verify-docs.ts'
+      - 'scripts/build-llms-full.ts'
+      - '.github/workflows/docs.yml'
+      # The api-exists rule cross-checks documented identifiers against src/,
+      # so a rename there can break the docs without touching them.
+      - 'src/**'
+      - 'package.json'
+  push:
+    branches: [main, master]
+    paths:
+      - 'docs/**'
+      - '**.md'
+      - 'llms.txt'
+      - 'scripts/verify-docs.ts'
+      - 'scripts/build-llms-full.ts'
+      - '.github/workflows/docs.yml'
+      - 'src/**'
+      - 'package.json'
+  schedule:
+    # Mondays 06:00 UTC — catch npm drift without blocking anyone's PR.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify documentation consistency
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check scripts
+        run: npm run typecheck:scripts
+
+      - name: Verify documentation
+        run: npm run verify:docs
+
+  npm-drift:
+    name: Check the manifest against npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only on the schedule and on manual runs: a package published between a
+    # PR opening and merging should not turn someone else's docs change red.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify documentation against the npm registry
+        run: npm run verify:docs -- --online --strict

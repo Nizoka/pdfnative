@@ -19,6 +19,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "exactOptionalPropertyTypes": false
   },
   "include": ["scripts/**/*.ts", "src/**/*.ts"],

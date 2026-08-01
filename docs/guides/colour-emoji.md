@@ -5,22 +5,28 @@
 ## TL;DR
 
 ```ts
-import { registerFont, buildDocumentPDFBytes } from 'pdfnative';
+import { registerFont, loadFontData, buildDocumentPDFBytes } from 'pdfnative';
 
 // Opt in to the curated colour-emoji subset (1167 glyphs, ~4.0 MB).
 registerFont('emoji', () => import('pdfnative/fonts/noto-color-emoji-data.js'));
+
+const emoji = await loadFontData('emoji');
+if (!emoji) throw new Error('emoji font failed to load');
 
 const bytes = buildDocumentPDFBytes({
   title: 'Colour emoji',
   blocks: [
     { type: 'paragraph', text: 'Status: 🟢 online · 🔴 offline · 🎉 launch day!' },
   ],
+  fontEntries: [{ fontData: emoji, fontRef: '/F3', lang: 'emoji' }], // /F1 and /F2 are reserved
 });
 ```
 
-That single `registerFont('emoji', …)` call swaps the monochrome Noto Emoji
-font for the COLR/CPAL colour build. Everything else — detection, multi-font
-run splitting, line breaking — is automatic.
+The `registerFont('emoji', …)` call swaps the monochrome Noto Emoji font for
+the COLR/CPAL colour build — but registration alone embeds nothing: you must
+`await loadFontData('emoji')` and pass the result in `fontEntries` (as above)
+or the emoji render as tofu. With the entry in place, everything else —
+detection, multi-font run splitting, line breaking — is automatic.
 
 ## How it works
 
@@ -144,8 +150,9 @@ Text such as `❤️` carries an invisible **VS-16** variation selector
 v1.3.0 these zero-width formatting characters could route to the Latin font and
 render as `.notdef` tofu (the  box). As of v1.3.0 they are **dropped during
 run-splitting** when no registered font covers them, so the base emoji renders
-cleanly. The `isZeroWidthFormat(cp)` predicate is exported for callers who want
-to detect them. Joiners are still preserved when an Indic shaper font maps them.
+cleanly. (Internally this is the `isZeroWidthFormat(cp)` predicate in the
+shaping engine — it is not part of the published API surface.) Joiners are
+still preserved when an Indic shaper font maps them.
 
 Colour-glyph Form `/BBox` is also now computed from the glyph's transformed
 contour bounds (v1.3.0), so emoji that dip below the baseline are no longer

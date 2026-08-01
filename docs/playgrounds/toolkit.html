@@ -6,8 +6,11 @@
   <title>PDF Toolkit Playground — pdfnative</title>
   <meta name="description" content="Try pdfnative's document toolkit in your browser: outline bookmarks, page labels, merge / split / extract, AES re-encryption, encrypted form filling, and text extraction with positions.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/toolkit.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/toolkit.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/toolkit.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/toolkit.html">
   <meta property="og:title" content="PDF Toolkit Playground — pdfnative">
   <meta property="og:description" content="Outline bookmarks, page labels, merge / split / extract, AES-256 re-encryption, encrypted AcroForm fill &amp; flatten, and text extraction with positions — all in your browser.">
@@ -21,11 +24,12 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
+    "inLanguage": "en",
     "name": "PDF Toolkit Playground",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
@@ -73,7 +77,7 @@
     <a href="./toolkit.html" aria-current="page">PDF Toolkit</a>
     <a href="./charts.html">Charts</a>
     <a href="./authoring-plus.html">Authoring+</a>
-    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./scale.html">Scale</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html">React renderer</a>
@@ -144,8 +148,8 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script type="module">
 const $ = (id) => document.getElementById(id);
 const status = $('status');
@@ -168,7 +172,7 @@ const DESCRIPTIONS = {
   layout: 'Renders a hierarchical (multi-level) list and a table whose cells have dashed borders and middle vertical alignment — the amount column is right-aligned with its own per-column styling.',
   manipulation: 'Generates a 2-page cover PDF and a 2-page appendix PDF in memory, merges them into one 4-page document, then extracts pages 1 and 3 into a third PDF. The merged document is downloaded; the status line reports the split/extract page counts.',
   formfill: 'Builds a blank AcroForm (text, dropdown, checkbox) that is AES-128 encrypted, fills it with fillForm() — the appended field values and appearance streams are encrypted under the document’s existing scheme (encrypted incremental update) — then flattens it with flattenForm(). The flattened, still-encrypted PDF is downloaded (password: pdfnative).',
-  secure: 'Generates two documents, encrypts one with AES-256 (password: boardroom), then merges them: the encrypted source is decrypted on ingest and the rebuilt 4-page document is re-encrypted with a NEW AES-256 password (rotated) via MergeOptions.encrypt — the full open-encrypted → edit → re-secure round trip. The re-encrypted PDF is downloaded (password: rotated). AES-256 key derivation is deliberately slow, so this preset can take a moment.',
+  secure: 'Generates two documents, encrypts one with AES-256 (owner password: boardroom — no user password, so it opens without a prompt and only permissions are restricted), then merges them: the encrypted source is decrypted on ingest and the rebuilt 4-page document is re-encrypted with a NEW AES-256 password (rotated) via MergeOptions.encrypt — the full open-encrypted → edit → re-secure round trip. The re-encrypted PDF is downloaded (password: rotated). AES-256 key derivation is deliberately slow, so this preset can take a moment.',
   extract: 'Builds a two-page source document (headings, paragraphs, a table row), then reads it back with extractText(): per-page reading-order text plus positioned runs (x/y in points, font size). The extracted text is shown below and the source PDF is downloaded so you can compare.',
 };
 
@@ -332,7 +336,7 @@ function applyPreset(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -355,6 +359,7 @@ function buildBookmarks(mod) {
     title: 'Quarterly Report',
     blocks: [
       { type: 'heading', text: 'Cover', level: 1 },
+      // verify-docs:allow version-token (feature-era demo copy)
       { type: 'paragraph', text: 'pdfnative 1.4.0 — bookmarks, page labels and viewer preferences.' },
       { type: 'pageBreak' },
       { type: 'heading', text: 'Table of Contents', level: 1 },
@@ -525,13 +530,13 @@ applyPreset('bookmarks');
 // Theme + hamburger parity with the rest of the site.
 const themeBtn = document.querySelector('.theme-toggle');
 if (themeBtn) {
-  const stored = localStorage.getItem('pdfnative-theme');
+  const stored = localStorage.getItem('theme');
   if (stored) document.documentElement.setAttribute('data-theme', stored);
   themeBtn.addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
     if (cur) document.documentElement.setAttribute('data-theme', cur);
     else     document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('pdfnative-theme', cur);
+    localStorage.setItem('theme', cur);
   });
 }
 const hb = document.querySelector('.nav-hamburger');

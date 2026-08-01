@@ -4,26 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCP Tool Explorer — pdfnative</title>
-  <meta name="description" content="Browse all 19 pdfnative-mcp tools, read example prompts and JSON payloads, and generate the exact PDFs an AI assistant receives — in your browser.">
+  <meta name="description" content="Browse all 24 pdfnative-mcp tools, read example prompts and JSON payloads, and generate the exact PDFs an AI assistant receives — in your browser.">
   <meta name="keywords" content="pdfnative-mcp, Model Context Protocol, MCP server, AI PDF generation, Claude Desktop, Cursor, PDF tools, generate PDF, merge PDF, split PDF, PDF/A, digital signature">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/mcp.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/mcp.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/mcp.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/mcp.html">
-  <meta property="og:title" content="pdfnative-mcp Tool Explorer — 19 AI PDF tools">
-  <meta property="og:description" content="Browse the 19 pdfnative-mcp tool schemas, see example prompts, and generate the exact PDFs an AI assistant receives — directly in your browser. No keys, no install.">
+  <meta property="og:title" content="pdfnative-mcp Tool Explorer — 24 AI PDF tools">
+  <meta property="og:description" content="Browse the 24 pdfnative-mcp tool schemas, see example prompts, and generate the exact PDFs an AI assistant receives — directly in your browser. No keys, no install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="pdfnative-mcp Tool Explorer — 19 AI PDF tools">
-  <meta name="twitter:description" content="Browse the 19 pdfnative-mcp tool schemas, see example prompts, and generate real PDFs in your browser. No keys, no install, no LLM cost.">
+  <meta name="twitter:title" content="pdfnative-mcp Tool Explorer — 24 AI PDF tools">
+  <meta name="twitter:description" content="Browse the 24 pdfnative-mcp tool schemas, see example prompts, and generate real PDFs in your browser. No keys, no install, no LLM cost.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <style>
     .mcp-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; margin-top: 24px; }
     .mcp-card { border: 1px solid var(--c-border); border-radius: 10px; padding: 18px 20px 16px; background: var(--c-bg-card); display: flex; flex-direction: column; gap: 10px; }
@@ -58,17 +61,19 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
+    "inLanguage": "en",
     "name": "pdfnative-mcp Tool Explorer",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
     "url": "https://pdfnative.dev/playgrounds/mcp.html",
-    "description": "Interactive explorer for the 19 pdfnative-mcp tools. Browse JSON schemas, see example prompts, and generate the exact PDFs an AI assistant receives — directly in the browser.",
+    "description": "Interactive explorer for the 24 pdfnative-mcp tools. Browse JSON schemas, see example prompts, and generate the exact PDFs an AI assistant receives — directly in the browser.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "about": {
       "@type": "SoftwareApplication",
+      "inLanguage": "en",
       "name": "pdfnative-mcp",
-      "softwareVersion": "1.4.0",
+      "softwareVersion": "1.5.0",
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "Node.js",
       "url": "https://github.com/Nizoka/pdfnative-mcp"
@@ -114,7 +119,7 @@
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./charts.html">Charts</a>
     <a href="./authoring-plus.html">Authoring+</a>
-    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./scale.html">Scale</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html" aria-current="page">MCP explorer</a>
     <a href="./react.html">React renderer</a>
@@ -122,7 +127,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
-    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>19 tools</strong> — including the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, plus <code>validate_pdf</code>, <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code> (Factur-X / ZUGFeRD PDF/A-3), and <code>extract_text</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, token-frugal read modes (<code>verbosity</code> / <code>fields</code>), and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the tool-call payload your client emits, and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
+    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>24 tools</strong> — including the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, plus <code>validate_pdf</code>, <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code> (Factur-X / ZUGFeRD PDF/A-3), and <code>extract_text</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, token-frugal read modes (<code>verbosity</code> / <code>fields</code>), and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the pdfnative library payload this browser demo executes (the MCP tool schemas differ — see the <a href="../guides/mcp.html">MCP guide</a> for the exact schemas), and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
 
     <p style="font-size: 14px; color: var(--c-text-dim);">For the full integration story (config, security model, signed-document workflow), see the <a href="../guides/mcp.html">MCP guide</a>.</p>
 
@@ -141,7 +146,7 @@
 
     <h2 style="margin-top: 36px;">2. Try the tools</h2>
     <p id="loader-status" style="font-size: 13px; color: var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once per page load.</p>
-    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), and the v1.4.0 <code>annotate_pdf</code> — all of which build their own source PDFs in the browser and run the real pdfnative 1.5.0 API. <code>draft_governance_issue</code> produces no PDF (it validates a report locally, network-free) — use its <em>Copy args</em> button. The remaining read/file tools — <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, and <code>extract_text</code> — run best from your own MCP client with real PDF inputs. See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
+    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), and the v1.4.0 <code>annotate_pdf</code> — all of which build their own source PDFs in the browser and run the real pdfnative 1.6.0 API. <code>draft_governance_issue</code> produces no PDF (it validates a report locally, network-free) — use its <em>Copy args</em> button. Nine of the 24 tools have no card here, because they need a real PDF as input and run best from your own MCP client: <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code> and <code>decrypt_pdf</code>. See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
 
     <div class="mcp-cards" id="cards"></div>
 
@@ -172,7 +177,7 @@
       <li><a href="../guides/">Guides</a></li>
       <li><a href="../guides/mcp.html">MCP guide</a></li>
       <li><a href="./extreme-scripts.html">Extreme scripts playground</a></li>
-      <li><a href="./medical-800.html">Medical 800-page playground</a></li>
+      <li><a href="./scale.html">Scale playground</a></li>
       <li><a href="./cli.html">CLI playground</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a></li>
     </ul>
@@ -240,8 +245,10 @@
 
   // ─────────────────────────── Tool catalogue ───────────────────────────
   // Each tool maps to a real pdfnative entry-point so the playground can produce the
-  // PDF the AI assistant would receive. The `args` is the canonical MCP tool-call
-  // payload; `build(p, m)` returns Uint8Array bytes given those args + loaded module.
+  // PDF the AI assistant would receive. For cards with a `build`, `args` is the
+  // pdfnative LIBRARY payload this browser demo executes; the MCP tool schemas
+  // differ — see ../guides/mcp.html for the exact schemas. `build(p, m)` returns
+  // Uint8Array bytes given those args + the loaded module.
   const TOOLS = [
     {
       id: 'generate_basic_pdf',
@@ -297,8 +304,29 @@
       build: (p, m) => m.buildDocumentPDFBytes(p),
     },
     {
+      id: 'add_chart',
+      purpose: 'Render a bar, horizontal-bar, line, pie or donut chart as native PDF vector paths — no rasterisation, no image round-trip.',
+      prompt: 'Chart our Q1-Q4 revenue against cost as a bar chart, and tag it for accessibility.',
+      args: {
+        title: 'FY2026 performance',
+        blocks: [
+          { type: 'heading', text: 'FY2026 performance', level: 1 },
+          {
+            type: 'chart', chartType: 'bar', title: 'Revenue vs cost',
+            categories: ['Q1', 'Q2', 'Q3', 'Q4'],
+            series: [
+              { label: 'Revenue', values: [50, 62, 70, 81] },
+              { label: 'Cost', values: [30, 34, 38, 41] },
+            ],
+            altText: 'Bar chart: revenue rises from 50 to 81 while cost rises from 30 to 41.',
+          },
+        ],
+      },
+      build: (p, m) => m.buildDocumentPDFBytes(p),
+    },
+    {
       id: 'add_international_text',
-      purpose: 'Render text in any of 22 scripts with BiDi & OpenType shaping. You can pass several scripts in one call.',
+      purpose: 'Render text in any of 24 lang codes — 22 scripts plus latin and emoji, with explicit math on top — with BiDi & OpenType shaping. You can pass several in one call.',
       prompt: 'Create a multilingual greeting card with English, Thai, Arabic, and a smiling-face emoji.',
       args: {
         title: 'Multilingual greeting',
@@ -317,9 +345,9 @@
         // resolved to a concrete FontEntry { fontData, fontRef, lang }, otherwise
         // the glyphs fall back to .notdef and render as ???? tofu.
         m.registerFonts({
-          th: () => import('https://esm.sh/pdfnative/fonts/noto-thai-data.js'),
-          ar: () => import('https://esm.sh/pdfnative/fonts/noto-arabic-data.js'),
-          emoji: () => import('https://esm.sh/pdfnative/fonts/noto-emoji-data.js'),
+          th: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-thai-data.js'),
+          ar: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-arabic-data.js'),
+          emoji: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-emoji-data.js'),
         });
         const langs = Array.isArray(p.lang) ? p.lang : (p.lang ? [p.lang] : []);
         const loaded = await Promise.all(langs.map((l) => m.loadFontData(l)));
@@ -408,14 +436,22 @@
         check: ['pdfa', 'signed'],
       },
       noteHtml: 'In a real MCP call the server reads the file from disk. The button below generates a sample PDF/A-2b document so you can see what an inspect-able input looks like; the structured report itself is produced by <code>pdfnative-cli inspect --format json</code> or by the <code>inspect_pdf</code> MCP tool when you run it locally.',
-      build: (p, m) => m.buildDocumentPDFBytes({
-        title: 'Inspect target sample',
-        layout: { tagged: 'pdfa2b' },
-        blocks: [
-          { type: 'heading', text: 'Sample PDF/A-2b document', level: 1 },
-          { type: 'paragraph', text: 'This is the kind of file an AI assistant would hand to inspect_pdf. The tool returns metadata, page geometry, signature info, and PDF/A status as structured JSON — driven by the tool outputSchema.' },
-        ],
-      }),
+      // PDF/A-2b requires every font embedded (ISO 19005-2). Without a font
+      // entry this sample would declare a conformance it does not have — on
+      // the very page that demonstrates conformance inspection.
+      build: async (p, m) => {
+        m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-data.js') });
+        const fontData = await m.loadFontData('latin');
+        return m.buildDocumentPDFBytes({
+          title: 'Inspect target sample',
+          fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }],
+          layout: { tagged: 'pdfa2b' },
+          blocks: [
+            { type: 'heading', text: 'Sample PDF/A-2b document', level: 1 },
+            { type: 'paragraph', text: 'This is the kind of file an AI assistant would hand to inspect_pdf. The tool returns metadata, page geometry, signature info, and PDF/A status as structured JSON — driven by the tool outputSchema.' },
+          ],
+        });
+      },
     },
     {
       id: 'merge_pdfs',
@@ -425,7 +461,7 @@
         pdfsBase64: ['<base64 PDF 1>', '<base64 PDF 2>'],
         outputMode: 'base64',
       },
-      noteHtml: 'In a real MCP call the AI assistant supplies each source as base64. To keep this page binary-free, the playground builds two small source PDFs in the browser, then runs the <em>real</em> pdfnative 1.5.0 <code>mergePdfs()</code> the tool calls. Encrypted sources are rejected and signatures/AcroForms are dropped, matching the tool contract. Caps: 50 MiB/part, 200 MiB aggregate.',
+      noteHtml: 'In a real MCP call the AI assistant supplies each source as base64. To keep this page binary-free, the playground builds two small source PDFs in the browser, then runs the <em>real</em> pdfnative 1.6.0 <code>mergePdfs()</code> the tool calls. Signatures/AcroForms are dropped, matching the tool contract; since v1.5.0 the tool opens encrypted sources with a password and can re-encrypt the merged output. Caps: 50 MiB/part, 200 MiB aggregate.',
       build: (p, m) => {
         requirePageTree(m, 'mergePdfs');
         const a = m.buildDocumentPDFBytes({ title: 'Cover letter', blocks: [
@@ -506,7 +542,7 @@
         ],
         outputMode: 'base64',
       },
-      noteHtml: 'The tool never rasterises: it reads the source, appends real annotation objects, and rewrites the page <code>/Annots</code> with an incremental update — the original bytes are preserved. This demo builds a one-page source PDF, then runs the <em>real</em> pdfnative 1.5.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>buildAnnotationBody()</code> → <code>addAnnotation()</code> pipeline the tool calls. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
+      noteHtml: 'The tool never rasterises: it reads the source, appends real annotation objects, and rewrites the page <code>/Annots</code> with an incremental update — the original bytes are preserved. This demo builds a one-page source PDF, then runs the <em>real</em> pdfnative 1.6.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>buildAnnotationBody()</code> → <code>addAnnotation()</code> pipeline the tool calls. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
       build: (p, m) => {
         requireFn(m, 'openPdf');
         requireFn(m, 'createModifier');
@@ -534,10 +570,16 @@
       prompt: 'Draft a governance issue for the layout regression I just described, following the repo contract.',
       args: {
         title: 'Table descenders clipped under cellVAlign: bottom',
-        summary: 'Cell glyph descenders (g, j, p, q, y) are clipped when cellVAlign is set to bottom.',
-        repro: '1. Build a table with cellVAlign: "bottom"\n2. Include a cell whose text ends in "y"\n3. Render — the descender is cut off',
-        expected: 'Descenders render fully within the cell band.',
-        environment: 'pdfnative 1.5.0, Node 22, macOS',
+        summary: 'Cell glyph descenders (g, j, p, q, y) are clipped when cellVAlign is set to "bottom" — the last text line sits below the visible cell band.',
+        issueType: 'bug',
+        targetRepo: 'pdfnative',
+        reproduction: {
+          command: 'Build a table block with cellVAlign: "bottom" and a cell whose text ends in "y", then render with buildDocumentPDFBytes (pdfnative 1.6.0, Node 22).',
+          result: 'The descender of the final "y" is cut off at the bottom cell border.',
+        },
+        expectedBehavior: 'Descenders render fully within the cell band.',
+        affectedPackages: ['pdfnative'],
+        duplicateSearchPerformed: true,
       },
       noteHtml: 'This is the one tool that produces <strong>no PDF</strong>: it validates your report against <code>.github/ai-governance.json</code> and returns Markdown for a human to submit. It performs <strong>no GitHub write and no network I/O</strong> (human-in-the-loop by design). A malformed report — e.g. one proposing a runtime dependency — is rejected with <code>GOVERNANCE_VIOLATION</code>. Use <em>Copy args</em> to grab the tool payload.',
     },
@@ -550,6 +592,7 @@
     }
   }
 
+  // verify-docs:allow version-token (API floor note)
   // The page-tree API landed in pdfnative 1.4.0. If the CDN happens to serve an
   // older build, fail with a clear message instead of an opaque "not a function".
   function requirePageTree(m, fn) {
@@ -569,8 +612,11 @@
       <div class="prompt">${t.prompt}</div>
       ${t.noteHtml ? `<p class="purpose">${t.noteHtml}</p>` : ''}
       <details>
-        <summary>MCP tool-call payload</summary>
-        <div><pre><code class="language-json">${escapeHtml(JSON.stringify(t.args, null, 2))}</code></pre></div>
+        <summary>${t.build ? 'Payload (pdfnative library form)' : 'MCP tool-call payload (schema example)'}</summary>
+        <div>
+          ${t.build ? '<p class="purpose" style="margin:0 0 6px;">This is the pdfnative library payload the browser demo executes; the MCP tool schema differs — see the <a href="../guides/mcp.html">MCP guide</a>.</p>' : ''}
+          <pre><code class="language-json">${escapeHtml(JSON.stringify(t.args, null, 2))}</code></pre>
+        </div>
       </details>
       <div class="actions">
         ${t.build ? `<button class="primary" data-action="run" data-tool="${idx}" disabled>Generate PDF</button>` : ''}
@@ -586,7 +632,7 @@
   }
 
   // ─────────────────────────── pdfnative loader (mirrors app.js) ───────────────────────────
-  const CDN_URLS = ['https://esm.sh/pdfnative', 'https://unpkg.com/pdfnative?module'];
+  const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://unpkg.com/pdfnative@1.6.0?module'];
   let pdfnativeMod = null;
   let loadErr = null;
 
@@ -680,13 +726,13 @@
   // ─────────────────────────── Theme + hamburger parity ───────────────────────────
   const themeBtn = document.querySelector('.theme-toggle');
   if (themeBtn) {
-    const stored = localStorage.getItem('pdfnative-theme');
+    const stored = localStorage.getItem('theme');
     if (stored) document.documentElement.setAttribute('data-theme', stored);
     themeBtn.addEventListener('click', () => {
       const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
       if (cur) document.documentElement.setAttribute('data-theme', cur);
       else     document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('pdfnative-theme', cur);
+      localStorage.setItem('theme', cur);
     });
   }
   const hb = document.querySelector('.nav-hamburger');
@@ -697,8 +743,8 @@
   });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js" integrity="sha384-RhrmFFMb0ZCHImjFMpR/UE3VEtIVTCtNrtKQqXCzqXZNJala02N3UbVhi+qzw3CY" crossorigin="anonymous" defer></script>
 <script src="../assets/versions.js" defer></script>
 </body>
 </html>

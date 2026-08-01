@@ -6,8 +6,11 @@
   <title>Charts Playground — pdfnative</title>
   <meta name="description" content="Generate native vector charts (bar, line, pie, donut) as pure PDF path operators in your browser with pdfnative — zero dependencies, no rasterisation. New in v1.6.0.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/charts.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/charts.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/charts.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/charts.html">
   <meta property="og:title" content="Charts Playground — pdfnative">
   <meta property="og:description" content="Bar, line, pie, and donut charts rendered as pure PDF path operators — zero install, right in your browser.">
@@ -19,6 +22,61 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "inLanguage": "en",
+        "name": "pdfnative Charts Playground",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any (browser-based)",
+        "browserRequirements": "Requires JavaScript and ES modules",
+        "url": "https://pdfnative.dev/playgrounds/charts.html",
+        "description": "Render bar, horizontal-bar, line, pie and donut charts as native PDF vector paths, entirely in your browser.",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "pdfnative",
+          "url": "https://pdfnative.dev"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://github.com/Nizoka"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Playgrounds",
+            "item": "https://pdfnative.dev/playgrounds/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Charts"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
@@ -55,7 +113,7 @@
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./charts.html" aria-current="page">Charts</a>
     <a href="./authoring-plus.html">Authoring+</a>
-    <a href="./medical-800.html">Medical 800-page</a>
+    <a href="./scale.html">Scale</a>
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html">React renderer</a>
@@ -113,8 +171,8 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script type="module">
 const $ = (id) => document.getElementById(id);
 const status = $('status');
@@ -212,7 +270,7 @@ function applyPreset(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative', 'https://cdn.jsdelivr.net/npm/pdfnative/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
 let pdfMod = null;
 async function loadPdfnative() {
   if (pdfMod) return pdfMod;
@@ -233,7 +291,13 @@ const BUILDERS = {
   bar: (m) => m.buildDocumentPDFBytes({ title: 'Report', blocks: [{ type: 'chart', chartType: 'bar', title: 'Quarterly revenue vs cost', categories: ['Q1', 'Q2', 'Q3', 'Q4'], series: [{ label: 'Revenue', values: [120, 150, 170, 140] }, { label: 'Cost', values: [80, 90, 100, 95] }] }] }),
   line: (m) => m.buildDocumentPDFBytes({ title: 'Growth', blocks: [{ type: 'chart', chartType: 'line', title: 'Monthly active users', markers: true, categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], series: [{ label: 'Free', values: [10, 25, 22, 40, 55, 60] }, { label: 'Paid', values: [3, 8, 12, 18, 26, 34] }] }] }),
   pie: (m) => m.buildDocumentPDFBytes({ title: 'Traffic', blocks: [{ type: 'chart', chartType: 'pie', title: 'Traffic sources', categories: ['Organic', 'Referral', 'Direct', 'Social'], series: [{ label: 'Share', values: [55, 20, 15, 10] }] }] }),
-  donut: (m) => m.buildDocumentPDFBytes({ title: 'Budget', blocks: [{ type: 'chart', chartType: 'donut', title: 'Budget split', altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.', categories: ['Engineering', 'Sales', 'Operations'], series: [{ label: 'Budget', values: [50, 30, 20] }] }] }, { tagged: true }),
+  // PDF/A requires every font embedded, and tagged: true IS PDF/A-2b. Without
+  // this the file would declare a conformance it does not have.
+  donut: async (m) => {
+    m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-data.js') });
+    const fontData = await m.loadFontData('latin');
+    return m.buildDocumentPDFBytes({ fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }], title: 'Budget', blocks: [{ type: 'chart', chartType: 'donut', title: 'Budget split', altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.', categories: ['Engineering', 'Sales', 'Operations'], series: [{ label: 'Budget', values: [50, 30, 20] }] }] }, { tagged: true });
+  },
   mixed: (m) => m.buildDocumentPDFBytes({ title: 'Dashboard', blocks: [
     { type: 'heading', text: 'Q4 dashboard', level: 1 },
     { type: 'chart', chartType: 'bar', title: 'Revenue vs cost', categories: ['Oct', 'Nov', 'Dec'], series: [{ label: 'Revenue', values: [50, 62, 70] }, { label: 'Cost', values: [30, 34, 38] }] },
@@ -249,7 +313,7 @@ async function generate() {
     setStatus('Loading pdfnative from CDN…', 'info');
     const mod = await loadPdfnative();
     setStatus('Generating chart PDF…', 'info');
-    const bytes = BUILDERS[id](mod);
+    const bytes = await BUILDERS[id](mod);
     mod.downloadBlob(bytes, `chart-${id}.pdf`);
     const ms = (performance.now() - t0).toFixed(0);
     $('timer').textContent = `${(bytes.length / 1024).toFixed(1)} KB · ${ms} ms`;
@@ -266,13 +330,13 @@ applyPreset('bar');
 
 const themeBtn = document.querySelector('.theme-toggle');
 if (themeBtn) {
-  const stored = localStorage.getItem('pdfnative-theme');
+  const stored = localStorage.getItem('theme');
   if (stored) document.documentElement.setAttribute('data-theme', stored);
   themeBtn.addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
     if (cur) document.documentElement.setAttribute('data-theme', cur);
     else     document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('pdfnative-theme', cur);
+    localStorage.setItem('theme', cur);
   });
 }
 const hb = document.querySelector('.nav-hamburger');
