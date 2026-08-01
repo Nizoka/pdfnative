@@ -1,0 +1,17 @@
+# Binary files must never go through EOL conversion. Without this file,
+# core.autocrlf=true (a common system-level default on Windows) classifies
+# small PDFs as text and rewrites their line endings at checkout — the golden
+# page-tree fixtures grew by 305-616 bytes each while `git status` stayed
+# clean, which is how the corruption went unnoticed. The blobs in git were
+# always intact; only the working copy was damaged.
+* text=auto
+
+*.pdf   binary
+*.ttf   binary
+*.otf   binary
+*.woff  binary
+*.woff2 binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
