@@ -1,0 +1,62 @@
+# pdfnative
+
+> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 22 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. Current version: 1.6.0.
+
+## Docs
+
+- [README](https://github.com/Nizoka/pdfnative/blob/main/README.md): Full feature list, install, quick start, API surface, examples.
+- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.6; v1.5: math/technical-symbols font, `pdfnative/tools` font compiler/parser, SVG `<text>`, page-labels reader, layout debug overlay + `inspectDocumentLayout`, markup annotation read/write, AI-agent governance; v1.4: document outline/bookmarks, page labels, page-tree manipulation (merge/split/extract), streamToFile, COLRv1 advanced compositing; v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, validatePdfUA) + long-term (WASM, full USE).
+- [CHANGELOG](https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md): Per-version changes.
+- [Release notes v1.6.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.6.0.md): Standard Security Handler reader/decryptor (`openPdf(bytes, { password })`, RC4/AES-128/AES-256; `PdfSourceInput`/`MergeOptions.password` for encrypted merge/split sources), streaming page-tree manipulation (`streamMergedPdfs`/`streamSplitPdf`/`streamExtractPages`), fill & flatten existing AcroForm PDFs (`readFormFields`/`fillForm`/`flattenForm`) — encrypted documents included (encrypted incremental update), native vector charts (`chart` block: bar/barH/line/pie/donut), text extraction (`extractText`: per-page reading-order text + positioned runs, encrypted PDFs supported), re-encrypt merge/split output (`MergeOptions.encrypt`, AES-128/256), expanded colour-emoji subset (221 → 1167 incl. complete Transport & Map). Fixes: spec-compliant R6 hash + all-strings encryption on the writer; incremental trailer carries `/Encrypt` forward.
+- [Release notes v1.5.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.5.0.md): math/technical-symbols font (lang `'math'`, `registerFont`), `pdfnative/tools` (`compileFontData`/`parseFontData`), SVG `<text>` rendering, page-labels reader (`getPageLabels()`), layout debug overlay (`layout: { debug: true }`) + `inspectDocumentLayout()`, markup annotation read/write (`buildAnnotation`/`getAnnotations`/`addAnnotation`), control-character hardening (#58), table descender fix (#59), AI-agent governance (#56).
+- [Release notes v1.4.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.4.0.md): document outline/bookmarks (`/Outlines`, `outline: 'auto'`), page labels (`/PageLabels`), page-tree manipulation (`mergePdfs`/`splitPdf`/`extractPages`, secure-by-default 256 MiB `maxOutputSize` cap), `streamToFile()`, COLRv1 sweep gradients + `PaintComposite` blend modes, pluggable signature crypto provider (`setCryptoProvider`), font-data validator (`validateFontData`), viewer preferences (`/ViewerPreferences`), nested lists, table cell borders + vertical alignment.
+- [Release notes v1.3.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.3.0.md): COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, pixel-diff visual regression, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, opt-in NFC normalization, CSPRNG-only crypto, configurable block limit, validatePdfUA, colour-emoji selector/BBox fixes, #48 CP-1252 fix.
+- [Release notes v1.2.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.2.0.md): `addSignaturePlaceholder()`, ASN.1 grandchild fix (#46), page-by-page streaming, UAX #9 embeddings, USE-lite classifier.
+- [Learn pdfnative](https://pdfnative.dev/learn/): Eight-step guided path from installing the package to generating 100,000 pages. Each step introduces one concept. Start here if you have never generated a PDF programmatically.
+- [Quick Start](https://pdfnative.dev/guides/quickstart.html): Install + first PDF in Node or browser.
+- [Architecture](https://pdfnative.dev/guides/architecture.html): Two builders, module dependency flow, design decisions.
+- [PDF/A conformance](https://pdfnative.dev/guides/pdfa.html): How `tagged: true` produces veraPDF-valid PDF/A-1b/2b/2u/3b.
+- [Digital signatures](https://pdfnative.dev/guides/signatures.html): CMS/PKCS#7 + `addSignaturePlaceholder()` three-line workflow.
+- [Accessibility](https://pdfnative.dev/guides/accessibility.html): Tagged PDF, /ActualText, PDF/UA structure tree.
+- [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
+- [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
+- [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
+- [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set; pinned download + SHA-256 verification.
+- [Charts](https://pdfnative.dev/guides/charts.html): Native vector `chart` blocks — bar, horizontal bar, line, pie, donut. Path operators, no rasterisation; `/Figure` tagging with alt text.
+- [Text extraction](https://pdfnative.dev/guides/text-extraction.html): `extractText()` — reading-order Unicode via `/ToUnicode`, optional positioned runs, works on encrypted PDFs with a password. The RAG / agent-ingestion entry point.
+- [Form filling](https://pdfnative.dev/guides/form-filling.html): `readFormFields()` / `fillForm()` / `flattenForm()` on existing AcroForms, including encrypted PDFs via incremental update.
+- [PDF manipulation](https://pdfnative.dev/guides/pdf-manipulation.html): `openPdf()` (with `{ password }`), merge / split / extract pages, re-encrypt on output, and their streaming variants.
+- [Streaming output](https://pdfnative.dev/guides/streaming.html): `buildDocumentPDFStream` vs `buildDocumentPDFStreamTrue`, `streamToFile`, and the exact memory profile of each.
+- [Smart tables](https://pdfnative.dev/guides/tables.html): Multi-page tables — auto-wrap, repeated headers, zebra striping, cell borders, vertical alignment, auto-fit columns.
+- [Annotations](https://pdfnative.dev/guides/annotations.html): Markup annotations (highlight, underline, note, shape, freetext) applied by incremental update so signatures stay valid.
+- [Outlines & page labels](https://pdfnative.dev/guides/outlines.html): Document bookmarks (`outline: 'auto'` or an explicit tree) and `/PageLabels` numbering.
+- [Viewer preferences](https://pdfnative.dev/guides/viewer-preferences.html): `/ViewerPreferences` — page layout, page mode, and display hints.
+- [Colour emoji](https://pdfnative.dev/guides/colour-emoji.html): COLRv1 rendering — solid, linear and radial gradient layers as native PDF Form XObjects.
+- [Layout debugging](https://pdfnative.dev/guides/debugging.html): `inspectDocumentLayout()` and the `debug: true` overlay for diagnosing pagination.
+- [Font validation](https://pdfnative.dev/guides/font-validation.html): `validateFontData()` — check a font module before registering it.
+- [Agentic workflows](https://pdfnative.dev/guides/agentic-workflows.html): Patterns for driving pdfnative from AI agents on public, validated APIs.
+- [AI governance](https://pdfnative.dev/guides/ai-governance.html): The human-in-the-loop contract — agents draft, humans review, approve and submit.
+- [Responsibility](https://pdfnative.dev/responsibility.html): Sustainability, supply-chain and accessibility position — every claim linked to its proof, plus an explicit list of what is deliberately not claimed.
+- [Ecosystem manifest](https://pdfnative.dev/assets/ecosystem.json): Machine-readable versions and counts for the whole ecosystem (canonical, enforced by `npm run verify:docs`).
+
+> Guide pages render their markdown client-side. For the full text without executing JavaScript, request the `.md` source at the same path — e.g. `https://pdfnative.dev/guides/charts.md`.
+
+## Agent and AI integration
+
+- [Copilot instructions](https://github.com/Nizoka/pdfnative/blob/main/.github/copilot-instructions.md): Canonical project conventions — architecture, code style, build/test, PDF-specific invariants.
+- [AGENTS.md](https://github.com/Nizoka/pdfnative/blob/main/AGENTS.md): Editor-agnostic agent guidance (Cursor / Aider / Claude Code / Continue).
+- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.5.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 24 tools — native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. Built on pdfnative 1.6.0.
+- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.3.0 — 17 commands from the terminal — render, fill, annotate, merge / split / extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract. Built on pdfnative 1.6.0.
+- [React](https://pdfnative.dev/guides/react.html): `pdfnative-react` v1.1.0 — declarative JSX components compiled on-device to pdfnative blocks; render functions, client hooks, token-frugal DocSpec.
+
+## Source
+
+- [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 44 sample generators producing reference PDFs.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2393 tests across 105 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
+
+## Ecosystem
+
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.6.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 24 AI tools (v1.5.0, built on pdfnative 1.6.0).
+- [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v1.1.0, React 19 + pdfnative ^1.6.0 peers).
