@@ -54,7 +54,7 @@ Then open:
 ## Test
 
 ```bash
-npm run test           # vitest run (2393+ tests)
+npm run test           # vitest run (2396+ tests)
 npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (95%+ stmts measured at the v1.6.0 release; CI enforces ≥88%)
 npm run test:generate  # Generate ~228 sample PDFs → test-output/
@@ -100,7 +100,7 @@ src/
 fonts/            # 26 pre-built font-data modules (22 scripts + Latin + math + mono and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (44 generators, ~228 PDFs)
-tests/            # 2393+ tests (105 files: unit + integration + fuzz + parser), mirrors src/ structure
+tests/            # 2396+ tests (105 files: unit + integration + fuzz + parser), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 

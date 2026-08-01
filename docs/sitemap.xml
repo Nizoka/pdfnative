@@ -6,10 +6,12 @@
   file on disk, and no <lastmod> may be malformed or in the future.
   Pages retired behind a noindex stub must be REMOVED from this list.
 -->
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://pdfnative.dev/</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -17,163 +19,217 @@
   <!-- Guides -->
   <url>
     <loc>https://pdfnative.dev/guides/</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/onboarding.html</loc>
-    <lastmod>2026-07-02</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/onboarding.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/onboarding.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/quickstart.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/quickstart.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/quickstart.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/architecture.html</loc>
-    <lastmod>2026-07-05</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/architecture.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/architecture.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/ai-governance.html</loc>
-    <lastmod>2026-07-05</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/ai-governance.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/ai-governance.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/agentic-workflows.html</loc>
-    <lastmod>2026-07-16</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/agentic-workflows.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/agentic-workflows.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/tables.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/tables.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/tables.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/pdfa.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/pdfa.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/pdfa.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/accessibility.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/accessibility.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/accessibility.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/signatures.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/signatures.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/signatures.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/streaming.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/streaming.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/streaming.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/colour-emoji.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/colour-emoji.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/colour-emoji.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/colour-emoji-cli.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/colour-emoji-cli.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/colour-emoji-cli.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/outlines.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/outlines.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/outlines.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/pdf-manipulation.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/pdf-manipulation.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/pdf-manipulation.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/form-filling.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/form-filling.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/form-filling.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/charts.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/charts.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/charts.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/text-extraction.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/text-extraction.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/text-extraction.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/viewer-preferences.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/viewer-preferences.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/viewer-preferences.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/font-validation.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/font-validation.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/font-validation.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/debugging.html</loc>
-    <lastmod>2026-07-05</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/debugging.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/debugging.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/annotations.html</loc>
-    <lastmod>2026-07-05</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/annotations.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/annotations.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/cli.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/cli.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/cli.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/mcp.html</loc>
-    <lastmod>2026-07-02</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/mcp.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/mcp.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/react.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/react.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/react.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/troubleshooting.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/troubleshooting.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/troubleshooting.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/guides/faq.html</loc>
-    <lastmod>2026-06-29</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/faq.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/faq.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -181,121 +237,161 @@
   <!-- Playgrounds -->
   <url>
     <loc>https://pdfnative.dev/playgrounds/</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/all-scripts.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/all-scripts.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/all-scripts.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/toolkit.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/toolkit.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/toolkit.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/charts.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/charts.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/charts.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/authoring-plus.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/authoring-plus.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/authoring-plus.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/extreme-scripts.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/extreme-scripts.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/extreme-scripts.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/learn/</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/learn/01-install.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/01-install.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/01-install.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/learn/02-blocks.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/02-blocks.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/02-blocks.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/learn/03-tables.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/03-tables.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/03-tables.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/learn/04-page-furniture.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/04-page-furniture.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/04-page-furniture.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/learn/05-fonts-and-scripts.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/05-fonts-and-scripts.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/05-fonts-and-scripts.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/learn/06-browser.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/06-browser.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/06-browser.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/learn/07-going-big.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/07-going-big.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/07-going-big.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/learn/08-next-steps.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/08-next-steps.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/08-next-steps.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/responsibility.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/responsibility.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/responsibility.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/scale.html</loc>
-    <lastmod>2026-07-28</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/scale.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/scale.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/cli.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/cli.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/cli.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/mcp.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/mcp.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/mcp.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://pdfnative.dev/playgrounds/react.html</loc>
-    <lastmod>2026-07-19</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/react.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/react.html"/>
+    <lastmod>2026-08-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

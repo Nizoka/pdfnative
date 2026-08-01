@@ -29,6 +29,7 @@
 
   <link rel="canonical" href="https://pdfnative.dev">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
 
@@ -69,6 +70,7 @@
       {
         "@type": ["SoftwareSourceCode", "SoftwareApplication"],
         "@id": "https://pdfnative.dev/#library",
+        "inLanguage": "en",
         "name": "pdfnative",
         "description": "Pure native PDF library — no runtime dependencies in the engine, producing documents that conform to ISO 32000-1. Generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (AES-128/256), native vector charts.",
         "url": "https://pdfnative.dev",
@@ -86,6 +88,7 @@
       {
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#cli",
+        "inLanguage": "en",
         "name": "pdfnative-cli",
         "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA via node:crypto by default), inspect, verify (RFC 3161 timestamp validation + OCSP/CRL), merge / split / extract pages, annotate (markup), govern (AI-governance / HITL), batch, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
         "url": "https://github.com/Nizoka/pdfnative-cli",
@@ -98,6 +101,7 @@
       {
         "@type": "SoftwareApplication",
         "@id": "https://pdfnative.dev/#mcp",
+        "inLanguage": "en",
         "name": "pdfnative-mcp",
         "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 24 tools (incl. native vector add_chart, fill_form / read_form_fields, encrypt_pdf / decrypt_pdf, page-tree merge/split/extract, markup annotate_pdf, and the network-free draft_governance_issue), per-tool apiVersion, PDF/A flag.",
         "url": "https://github.com/Nizoka/pdfnative-mcp",
@@ -110,6 +114,7 @@
       {
         "@type": ["SoftwareSourceCode", "SoftwareApplication"],
         "@id": "https://pdfnative.dev/#react",
+        "inLanguage": "en",
         "name": "pdfnative-react",
         "description": "React renderer for pdfnative — declarative JSX components compiled on-device to PDF by a custom React reconciler. Live preview hooks, streaming, 22 Unicode scripts, token-frugal DocSpec for AI agents.",
         "url": "https://github.com/Nizoka/pdfnative-react",
@@ -206,7 +211,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">2 393+</div>
+    <div class="metric-value">2 396+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -271,7 +276,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 393+ tests across 105 files, 95%+ statement coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 396+ tests across 105 files, 95%+ statement coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -374,8 +379,10 @@ const pdf = buildDocumentPDFBytes({
       label: 'Notes', width: 400 },
   ],
   footerText: 'Confidential',
-  tagged: 'pdfa2b',     // PDF/A-2b compliance
-  compress: true,        // FlateDecode compression
+}, {
+  compress: true,        // FlateDecode compression (layoutOptions — 2nd argument)
+  // For PDF/A output, add tagged: 'pdfa2b' here AND embed a font via
+  // fontEntries — see the PDF/A archival demo below.
 });</code></pre>
       </div>
       <div class="tab-panel" id="tab-multilang" role="tabpanel" aria-labelledby="tab-btn-multilang">
@@ -408,7 +415,6 @@ const pdf = buildDocumentPDFBytes({
             'and Japanese — all from a single API call.' },
   ],
   fontEntries,
-  tagged: true,  // PDF/A-2b with structure tree
 });</code></pre>
       </div>
     </div>

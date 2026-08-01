@@ -6,8 +6,11 @@
   <title>Extreme Scripts Playground — pdfnative</title>
   <meta name="description" content="Interactive playground for extreme-script shaping: Arabic + Hebrew + Thai BiDi, Tamil deep conjuncts, Bengali + Devanagari reph and ligatures, Arabic isolated harakat. Edit the inputs and generate a PDF in your browser.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/extreme-scripts.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/extreme-scripts.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/extreme-scripts.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/extreme-scripts.html">
   <meta property="og:title" content="Extreme Scripts Playground — pdfnative">
   <meta property="og:description" content="Interactive playground for extreme-script shaping: Arabic + Hebrew + Thai BiDi, Tamil deep conjuncts, Bengali + Devanagari reph and ligatures. Edit the inputs and generate a PDF in your browser.">
@@ -26,6 +29,7 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
+    "inLanguage": "en",
     "name": "Extreme Scripts Playground",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
@@ -116,7 +120,7 @@
     <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
       <strong style="color:#065f46;">Shaping &amp; BiDi coverage:</strong>
       <ul style="margin-top:8px;color:#065f46;">
-        <li>Arabic harakat (تشكيل — fatha, kasra, damma, sukun, shadda…) now anchor on the preceding base glyph using font-provided GPOS MarkBasePos data, with fallback to (0, 0) when anchors are missing. Closes the visual half of <a href="https://github.com/Nizoka/pdfnative/issues/25" target="_blank" rel="noopener">#25</a>.</li>
+        <li>Arabic harakat (<span lang="ar" dir="rtl">تشكيل</span> — fatha, kasra, damma, sukun, shadda…) now anchor on the preceding base glyph using font-provided GPOS MarkBasePos data, with fallback to (0, 0) when anchors are missing. Closes the visual half of <a href="https://github.com/Nizoka/pdfnative/issues/25" target="_blank" rel="noopener">#25</a>.</li>
         <li>UAX #9 isolates (LRI / RLI / FSI / PDI, U+2066–U+2069) handled via three-tier dispatcher with full recursion. Nested and unmatched isolates supported.</li>
         <li>Shared GSUB / GPOS drivers — Bengali / Tamil / Devanagari / Arabic shapers route through a single ligature lookup and a single mark-base anchor helper.</li>
       </ul>

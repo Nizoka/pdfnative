@@ -6,8 +6,11 @@
   <title>All 22 Scripts + Emoji Playground — pdfnative</title>
   <meta name="description" content="Generate one PDF with all 22 Unicode scripts pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji, in your browser.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/all-scripts.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/all-scripts.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/all-scripts.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/all-scripts.html">
   <meta property="og:title" content="All 22 Scripts + Emoji Playground — pdfnative">
   <meta property="og:description" content="The ultimate stress test: generate a single PDF containing all 22 Unicode scripts pdfnative supports — plus native COLRv1 colour emoji, all in your browser with zero install.">
@@ -26,6 +29,7 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
+    "inLanguage": "en",
     "name": "All 22 Scripts + Emoji Playground",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
@@ -114,6 +118,39 @@
       <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
     </details>
 
+    <h2 style="margin-top:32px;">The 22 scripts at a glance</h2>
+    <p>Every writing system below ships as a bundled Noto font module and renders through the same shaping engine. The demo reads this table directly — what you see here is what lands in the PDF.</p>
+    <table id="greetings-table">
+      <thead>
+        <tr><th scope="col">Script (autonym)</th><th scope="col">Greeting</th></tr>
+      </thead>
+      <tbody>
+        <tr><td lang="en">English</td><td lang="en">Hello</td></tr>
+        <tr><td lang="el">Ελληνικά</td><td lang="el">Γειά σου</td></tr>
+        <tr><td lang="ru">Русский</td><td lang="ru">Здравствуйте</td></tr>
+        <tr><td lang="ka">ქართული</td><td lang="ka">გამარჯობა</td></tr>
+        <tr><td lang="hy">Հայերեն</td><td lang="hy">Բարև</td></tr>
+        <tr><td lang="tr">Türkçe</td><td lang="tr">Merhaba</td></tr>
+        <tr><td lang="vi">Tiếng Việt</td><td lang="vi">Xin chào</td></tr>
+        <tr><td lang="pl">Polski</td><td lang="pl">Dzień dobry</td></tr>
+        <tr><td lang="ar" dir="rtl">العربية</td><td lang="ar" dir="rtl">السلام عليكم</td></tr>
+        <tr><td lang="he" dir="rtl">עברית</td><td lang="he" dir="rtl">שלום</td></tr>
+        <tr><td lang="am">አማርኛ</td><td lang="am">ሰላም</td></tr>
+        <tr><td lang="hi">हिन्दी</td><td lang="hi">नमस्ते</td></tr>
+        <tr><td lang="bn">বাংলা</td><td lang="bn">নমস্কার</td></tr>
+        <tr><td lang="ta">தமிழ்</td><td lang="ta">வணக்கம்</td></tr>
+        <tr><td lang="te">తెలుగు</td><td lang="te">నమస్తే</td></tr>
+        <tr><td lang="si">සිංහල</td><td lang="si">ආයුබෝවන්</td></tr>
+        <tr><td lang="th">ไทย</td><td lang="th">สวัสดี</td></tr>
+        <tr><td lang="km">ខ្មែរ</td><td lang="km">សួស្តី</td></tr>
+        <tr><td lang="my">မြန်မာ</td><td lang="my">မင်္ဂလာပါ</td></tr>
+        <tr><td lang="bo">བོད་ཡིག</td><td lang="bo">བཀྲ་ཤིས་བདེ་ལེགས།</td></tr>
+        <tr><td lang="zh">中文</td><td lang="zh">你好</td></tr>
+        <tr><td lang="ja">日本語</td><td lang="ja">こんにちは</td></tr>
+        <tr><td lang="ko">한국어</td><td lang="ko">안녕하세요</td></tr>
+      </tbody>
+    </table>
+
     <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
       <strong style="color:#065f46;">What this exercises:</strong>
       <ul style="margin-top:8px;color:#065f46;">
@@ -149,31 +186,12 @@ const ALL_LANGS = [
 ];
 
 // Autonym (script name in its own script) + a native greeting, routed automatically.
-const GREETINGS = [
-  ['English',     'Hello'],
-  ['Ελληνικά',    'Γειά σου'],
-  ['Русский',     'Здравствуйте'],
-  ['ქართული',     'გამარჯობა'],
-  ['Հայերեն',     'Բարև'],
-  ['Türkçe',      'Merhaba'],
-  ['Tiếng Việt',  'Xin chào'],
-  ['Polski',      'Dzień dobry'],
-  ['العربية',     'السلام عليكم'],
-  ['עברית',       'שלום'],
-  ['አማርኛ',        'ሰላም'],
-  ['हिन्दी',       'नमस्ते'],
-  ['বাংলা',        'নমস্কার'],
-  ['தமிழ்',        'வணக்கம்'],
-  ['తెలుగు',       'నమస్తే'],
-  ['සිංහල',        'ආයුබෝවන්'],
-  ['ไทย',         'สวัสดี'],
-  ['ខ្មែរ',         'សួស្តី'],
-  ['မြန်မာ',        'မင်္ဂလာပါ'],
-  ['བོད་ཡིག',       'བཀྲ་ཤིས་བདེ་ལེགས།'],
-  ['中文',         '你好'],
-  ['日本語',       'こんにちは'],
-  ['한국어',       '안녕하세요'],
-];
+// Single source of truth is the visible (crawlable) #greetings-table above —
+// what search engines index and what the demo renders are the same data.
+const GREETINGS = [...document.querySelectorAll('#greetings-table tbody tr')].map((tr) => {
+  const [autonym, greeting] = tr.querySelectorAll('td');
+  return [autonym.textContent.trim(), greeting.textContent.trim()];
+});
 
 // Region groupings for the "world tour" body — each paragraph mixes several scripts
 // on one line to demonstrate the per-code-point routing engine.

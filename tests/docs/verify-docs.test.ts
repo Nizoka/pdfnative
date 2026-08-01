@@ -227,6 +227,48 @@ describe('verify-docs', () => {
             });
         }, 120_000);
 
+        it('seo-head requires the x-default hreflang self-reference', () => {
+            withSandbox((dir) => {
+                // x-default is the only hreflang signal that matters on a
+                // monolingual site; a page that loses it silently drops out of
+                // international URL selection.
+                const p = join(dir, 'docs', 'index.html');
+                const text = readFileSync(p, 'utf8');
+                expect(text).toMatch(/hreflang="x-default"/);
+                writeFileSync(p, text.replace(/^[ \t]*<link rel="alternate" hreflang="x-default"[^\n]*\n/m, ''));
+                const run = runVerifier(dir);
+                expect(run.output).toContain('seo-head');
+                expect(run.output).toContain('x-default');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('sitemap-parity requires each <url> to carry its hreflang alternates', () => {
+            withSandbox((dir) => {
+                const p = join(dir, 'docs', 'sitemap.xml');
+                const text = readFileSync(p, 'utf8');
+                expect(text).toMatch(/<xhtml:link/);
+                writeFileSync(p, text.replace(/^[ \t]*<xhtml:link rel="alternate" hreflang="x-default"[^\n]*\n/m, ''));
+                const run = runVerifier(dir);
+                expect(run.output).toContain('sitemap-parity');
+                expect(run.output).toContain('x-default');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('seo-head requires page-level JSON-LD nodes to declare inLanguage', () => {
+            withSandbox((dir) => {
+                const p = join(dir, 'docs', 'playgrounds', 'charts.html');
+                const text = readFileSync(p, 'utf8');
+                expect(text).toMatch(/"inLanguage": "en",/);
+                writeFileSync(p, text.replace(/^[ \t]*"inLanguage": "en",\r?\n/m, ''));
+                const run = runVerifier(dir);
+                expect(run.output).toContain('seo-head');
+                expect(run.output).toContain('inLanguage');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
         it('learn-chain rejects a broken prev/next link', () => {
             withSandbox((dir) => {
                 patch(dir, 'docs/learn/03-tables.html', 'rel="next" href="04-page-furniture.html"', 'rel="next" href="08-next-steps.html"');

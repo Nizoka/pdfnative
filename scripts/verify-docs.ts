@@ -420,6 +420,15 @@ const PKG_BY_ANCHOR: Record<string, string> = {
     '#react': 'pdfnative-react',
 };
 
+/**
+ * Page-level JSON-LD types must declare their language — crawlers use
+ * `inLanguage` for locale selection, and a graph that states it on one node
+ * but not its siblings reads as an oversight, not a choice. `WebSite` is
+ * deliberately excluded: it appears as a bare `isPartOf` reference on most
+ * pages, where repeating `inLanguage` would be noise.
+ */
+const LANGUAGE_BEARING_TYPES = new Set(['WebApplication', 'CollectionPage', 'AboutPage', 'SoftwareApplication']);
+
 function walkJsonLd(node: unknown, file: string, line: number): void {
     if (Array.isArray(node)) {
         for (const child of node) walkJsonLd(child, file, line);
@@ -427,6 +436,10 @@ function walkJsonLd(node: unknown, file: string, line: number): void {
     }
     if (!node || typeof node !== 'object') return;
     const obj = node as Record<string, unknown>;
+    const types = Array.isArray(obj['@type']) ? obj['@type'] : [obj['@type']];
+    if (types.some((t) => typeof t === 'string' && LANGUAGE_BEARING_TYPES.has(t)) && obj['inLanguage'] === undefined) {
+        fail(file, line, 'seo-head', `JSON-LD ${types.filter(Boolean).join('/')} node does not declare "inLanguage"`);
+    }
     const id = typeof obj['@id'] === 'string' ? obj['@id'] : null;
     if (id) {
         for (const [anchor, pkgName] of Object.entries(PKG_BY_ANCHOR)) {
@@ -500,6 +513,49 @@ for (const file of MD_DOCS) {
     }
 }
 
+// ── Rule: seo-head ──────────────────────────────────────────────────
+
+/**
+ * International discoverability for a monolingual site: every indexable page
+ * must self-reference with hreflang "en" AND "x-default" (the x-default is
+ * what tells search engines this URL serves every locale), carry og:locale,
+ * and keep those hrefs strictly equal to the canonical — the classic failure
+ * mode is a self-reference that points somewhere else, which search engines
+ * silently discard.
+ */
+for (const file of HTML_FILES) {
+    const text = read(file);
+    if (/name=["']robots["'][^>]*noindex/i.test(text)) continue;
+    const relFile = rel(file);
+    if (!/<html\b[^>]*\blang=["'][A-Za-z-]+["']/.test(text)) {
+        fail(relFile, 1, 'seo-head', '<html> has no lang attribute');
+    }
+    const canons = [...text.matchAll(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/g)];
+    if (canons.length !== 1) {
+        fail(relFile, 1, 'seo-head', `expected exactly one <link rel="canonical">, found ${canons.length}`);
+        continue;
+    }
+    const canon = canons[0][1];
+    if (!/^https:\/\//.test(canon)) {
+        fail(relFile, lineOf(text, canons[0].index!), 'seo-head', `canonical "${canon}" must be an absolute https URL`);
+    }
+    for (const variant of ['en', 'x-default']) {
+        const re = new RegExp(`<link\\s+rel=["']alternate["']\\s+hreflang=["']${variant}["']\\s+href=["']([^"']+)["']`);
+        const m = re.exec(text);
+        if (!m) {
+            fail(relFile, 1, 'seo-head', `missing <link rel="alternate" hreflang="${variant}"> self-reference`);
+        } else if (m[1] !== canon) {
+            fail(relFile, lineOf(text, m.index), 'seo-head', `hreflang="${variant}" href "${m[1]}" must equal the canonical "${canon}"`);
+        }
+    }
+    if (!/<meta\s+property=["']og:locale["']\s+content=["']en_US["']/.test(text)) {
+        fail(relFile, 1, 'seo-head', 'missing <meta property="og:locale" content="en_US">');
+    }
+    if (!/<meta\s+name=["']description["']\s+content=["'][^"']+["']/.test(text)) {
+        fail(relFile, 1, 'seo-head', 'missing or empty <meta name="description">');
+    }
+}
+
 // ── Rule: sitemap-parity ────────────────────────────────────────────
 
 const SITEMAP = join(ROOT, 'docs', 'sitemap.xml');
@@ -533,6 +589,28 @@ if (existsSync(SITEMAP)) {
         const candidate = key === '' ? join(ROOT, 'docs', 'index.html') : join(ROOT, 'docs', key.endsWith('/') ? join(key, 'index.html') : key);
         if (!existsSync(candidate)) {
             fail('docs/sitemap.xml', 1, 'sitemap-parity', `<loc>${loc}</loc> has no file on disk`);
+        }
+    }
+
+    // Every <url> must carry the same en + x-default alternates the pages
+    // declare in HTML — the sitemap form is the signal search engines process
+    // most reliably, and a missing xmlns makes them ignore all of it.
+    if (!/xmlns:xhtml=["']http:\/\/www\.w3\.org\/1999\/xhtml["']/.test(xml)) {
+        fail('docs/sitemap.xml', 1, 'sitemap-parity', '<urlset> must declare xmlns:xhtml for the hreflang alternates');
+    }
+    for (const urlBlock of xml.matchAll(/<url>([\s\S]*?)<\/url>/g)) {
+        const body = urlBlock[1];
+        const loc = /<loc>\s*([^<]+?)\s*<\/loc>/.exec(body)?.[1];
+        if (!loc) continue;
+        const line = lineOf(xml, urlBlock.index!);
+        for (const variant of ['en', 'x-default']) {
+            const re = new RegExp(`<xhtml:link\\s+rel=["']alternate["']\\s+hreflang=["']${variant}["']\\s+href=["']([^"']+)["']\\s*/>`);
+            const m = re.exec(body);
+            if (!m) {
+                fail('docs/sitemap.xml', line, 'sitemap-parity', `<url> for ${loc} lacks its hreflang="${variant}" alternate`);
+            } else if (m[1] !== loc) {
+                fail('docs/sitemap.xml', line, 'sitemap-parity', `hreflang="${variant}" alternate "${m[1]}" must equal its <loc> ${loc}`);
+            }
         }
     }
 }
@@ -844,6 +922,16 @@ if (!existsSync(LLMS_FULL)) {
 
 // ── Rule: npm-drift (--online only) ─────────────────────────────────
 
+/** True when semver a is strictly lower than b (plain x.y.z triples only). */
+function semverLess(a: string, b: string): boolean {
+    const pa = a.split('.').map(Number);
+    const pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+        if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) < (pb[i] ?? 0);
+    }
+    return false;
+}
+
 if (ONLINE) {
     for (const [name, pkg] of Object.entries(manifest.packages)) {
         try {
@@ -855,7 +943,12 @@ if (ONLINE) {
             const data = (await res.json()) as Record<string, Record<string, string> | string>;
             const published = data['version'] as string;
             if (published !== pkg.version) {
-                const report = STRICT ? fail : warn;
+                // Direction matters: docs behind npm is the drift this rule
+                // exists to catch; a manifest *ahead* of npm is the normal
+                // pre-publication window of a release train and must not turn
+                // the weekly cron red.
+                const docsBehind = semverLess(pkg.version, published);
+                const report = STRICT && docsBehind ? fail : warn;
                 report(MANIFEST_REL, 1, 'npm-drift', `${name} is ${published} on npm but the manifest says ${pkg.version}`);
             }
             if (pkg.pinField) {
@@ -891,6 +984,7 @@ const OFFLINE_RULES = [
     'api-exists',
     'jsonld-version',
     'internal-links',
+    'seo-head',
     'sitemap-parity',
     'cdn-sri',
     'switcher-parity',
