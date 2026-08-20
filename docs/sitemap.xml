@@ -93,7 +93,15 @@
     <loc>https://pdfnative.dev/guides/signatures.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/signatures.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/signatures.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/ltv.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/ltv.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/ltv.html"/>
+    <lastmod>2026-08-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

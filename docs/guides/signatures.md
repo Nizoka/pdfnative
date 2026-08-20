@@ -62,6 +62,14 @@ Options:
 | `fieldName`       | `'Signature1'`   | AcroForm field name                               |
 | `pageIndex`       | `0`              | Page to attach the (invisible) widget to          |
 | `rect`            | `[0, 0, 0, 0]`   | Widget rectangle (invisible by default)           |
+| `allowMultiple`   | `false`          | Append a placeholder even when signature fields already exist — the multi-signature flow (v1.7.0, see below) |
+
+To size `placeholderBytes` from your actual certificate chain instead of
+relying on the 16 KiB default, use `estimateContentsSize(certSizes, algorithm)`.
+Since v1.7.0 it takes an options object: `estimateContentsSize(certSizes,
+'rsa-sha256', { timestamp: true })` reserves ~8 KiB of extra headroom for an
+RFC 3161 timestamp token (covering the TSA's own certificate chain) when an
+external signer will add one to the CMS.
 
 Signer metadata (`name`, `reason`, `location`, `contactInfo`, `signingTime`)
 is **not** set here — the placeholder writes an empty `/Sig` dictionary; pass
@@ -85,6 +93,10 @@ Options:
 - `algorithm` — `'rsa-sha256' | 'ecdsa-sha256'` (default `'rsa-sha256'`).
 - `certChain?` — additional intermediate-CA certificates for the chain.
 - `signingTime?` — forwarded to `signedAttrs`.
+- `fieldName?` — with several unsigned placeholders in the file (the
+  `allowMultiple` flow below), selects which one to sign by its AcroForm field
+  name. With a single placeholder — the only case prior to v1.7.0 — the option
+  is unnecessary and behaviour is unchanged. (v1.7.0)
 
 ### 3. Verifying
 
@@ -109,6 +121,82 @@ layout — including the placeholder reserved bytes — before we sign.
 layout. It replaces the ad-hoc reimplementations that downstream
 tooling (notably `pdfnative-cli`'s `sign` command and `pdfnative-mcp`'s
 `prepare_signature_placeholder` workaround) previously had to ship.
+
+## Multiple signatures (v1.7.0)
+
+Simply repeating the placeholder + sign pass does **not** add a second
+signature: `addSignaturePlaceholder()` is idempotent by contract, so on a PDF
+that already carries any `/FT /Sig` field it returns the input unchanged. To
+add further signatures, opt in with `allowMultiple` and give each signature its
+own field name:
+
+```ts
+// First signer.
+let pdf = addSignaturePlaceholder(unsigned, { fieldName: 'Author' });
+pdf = signPdfBytes(pdf, {
+    signerCert: authorCert, rsaKey: authorKey, algorithm: 'rsa-sha256',
+});
+
+// Second signer — appended as a fresh incremental update.
+pdf = addSignaturePlaceholder(pdf, { fieldName: 'Reviewer', allowMultiple: true });
+pdf = signPdfBytes(pdf, {
+    signerCert: reviewerCert, rsaKey: reviewerKey, algorithm: 'rsa-sha256',
+    fieldName: 'Reviewer', // selects which unsigned placeholder to fill
+});
+```
+
+The exact semantics:
+
+- **`allowMultiple: false`** (default) preserves the 1.x idempotent
+  short-circuit: any existing signature field returns the input unchanged.
+- **`allowMultiple: true`** — an existing *unsigned* placeholder with the same
+  `fieldName` returns the input unchanged (per-name idempotence); a *signed*
+  field with the same name throws (pass a fresh `fieldName`); other signature
+  fields are left alone and a new placeholder is appended via incremental
+  update, so `/Prev` chains compose naturally.
+- **`signPdfBytes` with several unsigned placeholders** requires the
+  `fieldName` selector — without it, the call throws and lists the unsigned
+  field names. Already-signed signatures are never modified.
+
+## Inspecting signatures — `listSignatures()` (v1.7.0)
+
+`listSignatures(pdfBytes)` enumerates every signature field in a PDF, in
+AcroForm `/Fields` order — signed signatures, document timestamps, and
+still-unsigned placeholders:
+
+```ts
+import { listSignatures } from 'pdfnative';
+
+for (const sig of listSignatures(signedPdf)) {
+    console.log(sig.fieldName, sig.subFilter, sig.isPlaceholder);
+}
+// → 'Author'   'adbe.pkcs7.detached' false
+// → 'Reviewer' 'adbe.pkcs7.detached' false
+```
+
+Each entry is a `PdfSignatureInfo`:
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `fieldName?` | `string` | The widget's `/T` field name, when present |
+| `subFilter` | `string` | `/SubFilter` — e.g. `'adbe.pkcs7.detached'`, `'ETSI.CAdES.detached'`, `'ETSI.RFC3161'` (`''` when absent) |
+| `byteRange` | `readonly number[]` | `/ByteRange` offsets |
+| `contents` | `Uint8Array` | The full decoded `/Contents` value, trailing zero padding included |
+| `isDocTimestamp` | `boolean` | `true` for `/Type /DocTimeStamp` entries (ISO 32000-2 §12.8.5) |
+| `isPlaceholder` | `boolean` | `true` for an unsigned placeholder (all-zero `/ByteRange`) |
+| `sigObjNum` | `number` | Object number of the `/Sig` dictionary |
+
+`listSignatures()` is a read-only inspection API — it never **verifies**
+anything (see *Verifying* above for the verification story).
+
+Related v1.7.0 addition: `SigDictMetadata` — the metadata subset shared by
+`buildSigDict()` and the signing options — gains a `subFilter` field,
+`'adbe.pkcs7.detached'` (default, unchanged legacy behaviour) or
+`'ETSI.CAdES.detached'` to declare a PAdES (ETSI EN 319 142) signature.
+`buildSigDict()` writes it into the `/Sig` dictionary, and `listSignatures()`
+reports it back on each entry. When declaring `'ETSI.CAdES.detached'`, pair it
+with the `profile: 'pades'` signing option so the CMS carries the matching
+ESS `signing-certificate-v2` attribute.
 
 ## Algorithms
 
@@ -189,12 +277,18 @@ the placeholder bytes — that's the pipeline shown in the TL;DR above.
 
 - **Encrypted PDFs.** `addSignaturePlaceholder()` throws on encrypted
   input — sign before encrypting, or decrypt first.
-- **Timestamping (RFC 3161).** Not currently supported. The
-  `pdfnative-cli` may detect RFC 3161 timestamp tokens for display
-  purposes; embedding a TSA token requires a future API.
-- **Multiple signatures.** Each signature requires its own
-  `addSignaturePlaceholder()` + `signPdfBytes()` pass (incremental
-  updates compose naturally because `/Prev` chains accumulate).
+- **Timestamping (RFC 3161).** Supported since v1.7.0 —
+  `signPdfBytesWithTimestamp()` embeds a verified TSA token as the
+  `id-aa-signatureTimeStampToken` unsigned attribute, and
+  `addDocumentTimestamp()` appends `/DocTimeStamp` revisions. See the
+  [Long-term validation guide](ltv.html) for the full PAdES B-B → B-LTA
+  pipeline (timestamps, `/DSS` + `/VRI`, injected providers).
+- **Multiple signatures.** Supported since v1.7.0, but **not** by naively
+  repeating the placeholder + sign pass — `addSignaturePlaceholder()` is
+  idempotent and returns an already-signed PDF unchanged. Pass
+  `allowMultiple: true` with a fresh `fieldName`, then select that field in
+  `signPdfBytes` — see [Multiple signatures](#multiple-signatures-v170)
+  above.
 - **PDF/A + signatures.** PDF/A-2b/3b allow signatures; ISO 19005-2
   §6.3.5 forbids certain `/Sig` dictionary fields (`/Reference`,
   `/Changes`). pdfnative emits only the conformant subset.

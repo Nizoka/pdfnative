@@ -41,10 +41,16 @@ const pdf3b = buildPDFBytes(params, { tagged: 'pdfa3b' });  // PDF/A-3b + attach
 > );
 > ```
 >
+> Since **v1.7.0** the builders guard this declaration themselves: requesting any
+> `'pdfa*'` level (or `tagged: true`) with no `fontEntries` emits the
+> `PDFA_NO_FONT_ENTRIES` diagnostic — a `console.warn` by default, or a thrown
+> `Error` under `strict: true`, before any output bytes are produced. See
+> *Conformance diagnostics* below.
+>
 > The sample generators in `scripts/generators/` all do this, which is why the veraPDF
-> CI job passes — the trap only bites documents assembled by hand. `pdfnative-react`
-> ships a lint rule for exactly this case (`L_TAGGED_NO_FONTS`); run `lintDocument()`
-> if you author through that package.
+> CI job passes. If you author through `pdfnative-react`, its `lintDocument()` rule
+> `L_TAGGED_NO_FONTS` still catches the same trap earlier, at the document-model
+> level — a complementary check to the core diagnostic.
 
 Every output written with `tagged` set ships:
 
@@ -58,6 +64,41 @@ Every output written with `tagged` set ships:
   creation timestamp.
 - `/Info CreationDate` byte-equivalent to `xmp:CreateDate`, both with
   timezone offsets.
+
+## Conformance diagnostics (v1.7.0)
+
+Configurations that produce a PDF/A claim veraPDF would reject no longer fail
+silently. Both builders (`buildPDFBytes` and `buildDocumentPDFBytes`) surface
+them through a single diagnostics channel:
+
+| Code | Trigger |
+|------|---------|
+| `PDFA_NO_FONT_ENTRIES` | A `'pdfa*'` level (or `tagged: true`) requested with no `fontEntries` — the file would claim PDF/A while referencing unembedded standard-14 Helvetica (ISO 19005 §6.2.11.4.1). |
+| `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim with an sRGB `OutputIntent` (ISO 19005-2 §6.2.4.3). |
+
+By default each diagnostic is a `console.warn`, deduplicated **once per code
+per build**. Two layout options change that:
+
+```ts
+import { buildPDFBytes, type PdfDiagnostic } from 'pdfnative';
+
+// CI / tests: escalate to a thrown Error, before any bytes are produced.
+buildPDFBytes(params, { tagged: 'pdfa2b', strict: true });
+
+// Custom sink — receives every diagnostic (no deduplication).
+// Pass () => {} to silence entirely.
+const diagnostics: PdfDiagnostic[] = [];
+const pdf = buildPDFBytes(params, {
+  tagged: 'pdfa2b',
+  onDiagnostic: (d) => diagnostics.push(d),
+});
+```
+
+Each `PdfDiagnostic` carries a machine-readable `code`, a `severity`
+(`'warning'`), and an actionable `message` that includes the remedy.
+`onDiagnostic` is ignored when `strict` is set — diagnostics throw instead.
+The code list is a stable, additions-only union (`PdfDiagnosticCode`), so a
+sink written today keeps compiling as future codes are added.
 
 ## v1.1.0 status — fully validated
 
@@ -193,7 +234,9 @@ Register the Latin font module **and pass the resolved data as `fontEntries`**
 builders. Without it, pdfnative emits Helvetica as an unembedded standard-14
 reference for byte-stable v1.0.x output. With it, every glyph used
 in the document is embedded as `CIDFontType2` / `FontFile2` — see
-the v1.1.0 status table above.
+the v1.1.0 status table above. Since v1.7.0 this configuration also emits the
+`PDFA_NO_FONT_ENTRIES` diagnostic at build time (a thrown error under
+`strict: true`), so the failure surfaces before veraPDF ever runs.
 
 ### Output bytes change in v1.0.4
 

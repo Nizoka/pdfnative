@@ -70,7 +70,7 @@ Source font (one of):
 
 Glyph selection (combine freely; default: --preset curated):
   --all                   Every colour glyph in the font (large module).
-  --preset <curated|all>  Named selection ('curated' = pdfnative's lean 221-glyph set).
+  --preset <curated|all>  Named selection ('curated' = pdfnative's 1167-glyph curated set).
   --codepoints <list>     Comma-separated hex scalars, e.g. 1F600,1F680,2764.
   --ranges <list>         Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
 
