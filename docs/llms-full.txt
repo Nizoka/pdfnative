@@ -45,8 +45,8 @@
 
 - [Copilot instructions](https://github.com/Nizoka/pdfnative/blob/main/.github/copilot-instructions.md): Canonical project conventions — architecture, code style, build/test, PDF-specific invariants.
 - [AGENTS.md](https://github.com/Nizoka/pdfnative/blob/main/AGENTS.md): Editor-agnostic agent guidance (Cursor / Aider / Claude Code / Continue).
-- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.5.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 24 tools — native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. Built on pdfnative 1.6.0.
-- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.3.0 — 17 commands from the terminal — render, fill, annotate, merge / split / extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract. Built on pdfnative 1.6.0.
+- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.5.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 24 tools — native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. Built on pdfnative 1.7.0.
+- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.3.0 — 17 commands from the terminal — render, fill, annotate, merge / split / extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract. Built on pdfnative 1.7.0.
 - [React](https://pdfnative.dev/guides/react.html): `pdfnative-react` v1.1.0 — declarative JSX components compiled on-device to pdfnative blocks; render functions, client hooks, token-frugal DocSpec.
 
 ## Source
@@ -57,8 +57,8 @@
 
 ## Ecosystem
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.6.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
-- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 24 AI tools (v1.5.0, built on pdfnative 1.6.0).
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.7.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 24 AI tools (v1.5.0, built on pdfnative 1.7.0).
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v1.1.0, React 19 + pdfnative ^1.6.0 peers).
 
 ---
@@ -1107,7 +1107,7 @@ labels shape correctly when the matching font is registered — no extra work.
 <!-- source: docs/guides/cli.md -->
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on pdfnative 1.6.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
+> **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on pdfnative 1.7.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
 [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 17 commands in five groups — create & edit (`render`, `fill`, `annotate`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
@@ -1980,12 +1980,12 @@ node samples/run-all.js
 
 ### What's new in v1.3.0
 
-v1.3.0 is built on **pdfnative 1.6.0** and surfaces its engine additions as five new commands (`extract-text`, `fill`, `encrypt`, `decrypt`, `doctor`), native vector charts in `render`, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent `render --encrypt` no-op. **100 % backward-compatible** with v1.2.0.
+v1.3.0 is built on **pdfnative 1.7.0** and surfaces its engine additions as five new commands (`extract-text`, `fill`, `encrypt`, `decrypt`, `doctor`), native vector charts in `render`, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent `render --encrypt` no-op. **100 % backward-compatible** with v1.2.0.
 
 | Area | v1.2.0 | v1.3.0 |
 |---|---|---|
 | Commands | 12 commands <!-- verify-docs:allow stale-token (v1.2.0-era count) --> | adds **`fill`** (fill / flatten / **export** AcroForms via an incremental save), **`encrypt`**, **`decrypt`**, **`extract-text`** (reading-order Unicode text: `text` \| `json` \| `ndjson`), and **`doctor`** (offline environment / capability preflight) |
-| Charts | — | the pdfnative 1.6.0 `chart` document block (bar, barH, line, pie, donut) renders as pure vector path operators through `render` |
+| Charts | — | the pdfnative 1.7.0 `chart` document block (bar, barH, line, pie, donut) renders as pure vector path operators through `render` |
 | Encryption vocabulary | `--encrypt-*` flags on `render` only | **unified vocabulary** — `--encrypt [aes-128\|aes-256]`, `--owner-password`, `--user-password`, `--permissions print,copy,modify,extract` — shared by `render`, `merge`, `split` and `extract` (legacy `--encrypt-*` flags kept as aliases) |
 | Page-tree commands | plaintext sources only | **`--password`** reads encrypted sources; **`--encrypt`** re-encrypts the output; **`--stream`** (+ `--chunk-size`) streams the output with constant memory |
 | Inspection | metadata, PDF/UA, annotations | adds `inspect --form-fields`, `--encryption` and `--password` |
@@ -3332,7 +3332,7 @@ The repository ships a deterministic offline mock PKI (`scripts/helpers/mock-pki
 <!-- source: docs/guides/mcp.md -->
 # pdfnative-mcp — AI Client Integration Guide
 
-> **Tracks the latest published `pdfnative-mcp`** (v1.5.0, built on pdfnative 1.6.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
+> **Tracks the latest published `pdfnative-mcp`** (v1.5.0, built on pdfnative 1.7.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
 
 [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is an **MCP server** that exposes the full pdfnative library to any AI client supporting the [Model Context Protocol](https://modelcontextprotocol.io) — Claude Desktop, Cursor, Continue, Zed, ChatGPT, and more.
 
@@ -3983,7 +3983,7 @@ Split the content across multiple tool calls or reduce image/barcode count.
 
 ## Release history
 
-The current release is **v1.5.0** (24 tools, built on pdfnative 1.6.0 — see the header note). Per-release notes, oldest first:
+The current release is **v1.5.0** (24 tools, built on pdfnative 1.7.0 — see the header note). Per-release notes, oldest first:
 
 ### What's new in v1.0.0
 
@@ -4058,7 +4058,7 @@ v1.4.0 upgrades the engine to **pdfnative 1.5.0**, brings the pdfnative **AI-gov
 
 ### What's new in v1.5.0
 
-v1.5.0 upgrades the engine to **pdfnative 1.6.0** and takes the catalogue to **24 tools**, closing the read/modify loop on documents the assistant did not create.
+v1.5.0 upgrades the engine to **pdfnative 1.7.0** and takes the catalogue to **24 tools**, closing the read/modify loop on documents the assistant did not create.
 
 - **Five new tools:**
   - `add_chart` — bar, horizontal-bar, line, pie and donut charts drawn as **native PDF vector paths**. No rasterisation and no image round-trip, so the output stays sharp at any zoom and tags as `/Figure` with alt text. If you were previously asking an agent to render a chart to PNG and push it through `embed_image`, stop — this replaces that.
@@ -5016,7 +5016,7 @@ const pdf = buildDocumentPDFBytes(params, { compress: true });
 
 ```html
 <script type="module">
-  import { buildDocumentPDFBytes, downloadBlob } from 'https://esm.sh/pdfnative@1.6.0';
+  import { buildDocumentPDFBytes, downloadBlob } from 'https://esm.sh/pdfnative@1.7.0';
 
   document.getElementById('go').addEventListener('click', () => {
     const pdf = buildDocumentPDFBytes({
@@ -5201,7 +5201,7 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 <!-- source: docs/guides/react.md -->
 # pdfnative-react — Declarative JSX Renderer Guide
 
-> **Tracks the latest published `pdfnative-react`** (v1.1.0, built on pdfnative 1.6.0), with **React 19** and `pdfnative` ^1.6.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
+> **Tracks the latest published `pdfnative-react`** (v1.1.0, built on pdfnative 1.7.0), with **React 19** and `pdfnative` ^1.6.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
 
 [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency [`pdfnative`](https://github.com/Nizoka/pdfnative) engine — no DOM, no headless browser, no SaaS round-trips. Your documents never leave the process.
 

@@ -45,8 +45,8 @@
 
 - [Copilot instructions](https://github.com/Nizoka/pdfnative/blob/main/.github/copilot-instructions.md): Canonical project conventions — architecture, code style, build/test, PDF-specific invariants.
 - [AGENTS.md](https://github.com/Nizoka/pdfnative/blob/main/AGENTS.md): Editor-agnostic agent guidance (Cursor / Aider / Claude Code / Continue).
-- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.5.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 24 tools — native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. Built on pdfnative 1.6.0.
-- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.3.0 — 17 commands from the terminal — render, fill, annotate, merge / split / extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract. Built on pdfnative 1.6.0.
+- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.5.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 24 tools — native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. Built on pdfnative 1.7.0.
+- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.3.0 — 17 commands from the terminal — render, fill, annotate, merge / split / extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract. Built on pdfnative 1.7.0.
 - [React](https://pdfnative.dev/guides/react.html): `pdfnative-react` v1.1.0 — declarative JSX components compiled on-device to pdfnative blocks; render functions, client hooks, token-frugal DocSpec.
 
 ## Source
@@ -57,6 +57,6 @@
 
 ## Ecosystem
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.6.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
-- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 24 AI tools (v1.5.0, built on pdfnative 1.6.0).
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.7.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 24 AI tools (v1.5.0, built on pdfnative 1.7.0).
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v1.1.0, React 19 + pdfnative ^1.6.0 peers).

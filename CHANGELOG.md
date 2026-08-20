@@ -5,13 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.7.0] – 2026-08-21
 
-Documentation-only release train alignment. No library behaviour changes; the
-only `src/` edits are JSDoc corrections.
+The long-term-validation release: complete PAdES LTV signing (B-B → B-LTA)
+with injected network providers, charts v2, colour-emoji flag & ZWJ
+sequences, UAX #9 digit-order and glyph-mirroring conformance, PDF/A
+declaration guards, and an incremental-writer hardening pass — plus the
+documentation-alignment train (ecosystem manifest + hardened verifier)
+staged since v1.6.0. Zero runtime dependencies, no breaking changes:
+every new capability is a new API or an additive option, and existing
+inputs render byte-identically except where the fixed behaviour was
+outright wrong (reversed RTL digits, unmirrored delimiters, per-revision
+`/ID` reuse). 2621 tests across 120 files; veraPDF-validated.
 
 ### Added
 
+- **feat(core): PAdES LTV signing (B-B → B-LTA)** — [`signPdfBytesWithTimestamp()`](src/core/pdf-sign-timestamp.ts)
+  embeds a verified RFC 3161 signature timestamp (`id-aa-signatureTimeStampToken`);
+  [`collectValidationInfo()` / `embedValidationInfo()` / `addValidationInfo()`](src/core/pdf-dss.ts)
+  gather certificate chains + OCSP (RFC 6960) / CRL (RFC 5280) material through an
+  injected `RevocationProvider` and write `/DSS` with per-signature `/VRI`
+  (uppercase-hex SHA-1 keys, existing `/DSS` merged);
+  [`addDocumentTimestamp()`](src/core/pdf-doc-timestamp.ts) appends
+  `/DocTimeStamp` revisions (ISO 32000-2 §12.8.5). Network transport lives in
+  user land via `setTimestampProvider` / `setRevocationProvider` — the engine
+  never opens a socket, and rejected or tampered TSA tokens are never embedded.
+  New guide: [docs/guides/ltv.md](docs/guides/ltv.md).
+- **feat(crypto): LTV building blocks** — canonical DER `SET OF`
+  ([`derSetOf`](src/crypto/asn1.ts), X.690 §11.6), `derGeneralizedTime`, SHA-1
+  (identification only), RSA SHA-384/512 digest agility, X.509 extension parsing
+  (SKI/AKI, EKU, AIA, CRL DP, ocsp-nocheck), CMS `profile: 'pades'` with the ESS
+  signing-certificate-v2 attribute (RFC 5035), CMS unsigned-attribute surgery
+  ([`addUnsignedAttribute`](src/crypto/cms-utils.ts) — signed bytes untouched),
+  and full RFC 3161 / OCSP / CRL builders + parsers
+  ([rfc3161.ts](src/crypto/rfc3161.ts), [ocsp.ts](src/crypto/ocsp.ts), [crl.ts](src/crypto/crl.ts)).
+- **feat(core): multiple signatures** — `addSignaturePlaceholder({ allowMultiple })`,
+  the `fieldName` selector on `signPdfBytes`, placeholder-baked `/Sig` metadata,
+  and [`listSignatures()`](src/core/pdf-sig-utils.ts) enumeration; signed
+  signatures are located by their real ByteRange values and can never be
+  overwritten.
+- **feat(chart): charts v2** — `stackedBar` / `stackedBarH` / `area` / `scatter`
+  kinds, secondary right axis (`axis2` + `ChartSeries.yAxis`), log and
+  UTC-deterministic time scales, per-point `dataLabels`, and x-label collision
+  handling: automatic stride plus `labelStride` / `labelRotation`
+  ([#67](https://github.com/Nizoka/pdfnative/issues/67)). Chart kinds 5 → 9.
+  ([src/core/pdf-chart.ts](src/core/pdf-chart.ts))
+- **feat(shaping): colour-emoji flag & ZWJ sequences** — 51 flags + 22 ZWJ
+  sequences resolved through the source font's GSUB into single COLR ligature
+  glyphs, longest-match pre-pass, VS-16-tolerant matching, per-codepoint
+  fallback (never worse than v1.6.0), CLI `--sequences` / `--sequence-list`;
+  module budget 4096 → 5120 KB.
+  ([src/shaping/emoji-sequences.ts](src/shaping/emoji-sequences.ts))
+- **feat(core): PDF/A declaration guards** — conformance diagnostics channel
+  ([src/core/pdf-diagnostics.ts](src/core/pdf-diagnostics.ts)) with additive
+  `strict` / `onDiagnostic` layout options: `PDFA_NO_FONT_ENTRIES`
+  ([#69](https://github.com/Nizoka/pdfnative/issues/69)) and
+  `PDFA_DEVICE_CMYK_IMAGE` surface instead of silently stamping a `pdfaid`
+  claim veraPDF would reject.
+- **feat(parser): incremental metadata updates** — `PdfModifier.updateMetadata()`
+  re-issues `/Info` (adding `/ModDate`) and keeps the XMP packet in sync
+  (`xmp:ModifyDate` = `xmp:MetadataDate`, CreateDate + `pdfaid:*` preserved)
+  per ISO 19005 §6.7.3 parity; `PdfParams.metadata` forwards
+  author/subject/keywords to both `/Info` and XMP in `buildPDF`.
 - **`docs/assets/ecosystem.json`** — single source of truth for every version,
   count and inventory quoted anywhere in the documentation, and
   **`scripts/verify-docs.ts`** (`npm run verify:docs`) which fails the build when
@@ -40,6 +95,34 @@ only `src/` edits are JSDoc corrections.
 
 ### Fixed
 
+- **fix(shaping): RTL digit runs no longer reverse** — `assignLevels` now
+  implements UAX #9 I1/I2: AN/EN digit runs resolve to even embedding levels
+  in both paragraph directions, so `۱۴۰۵` can never render `۵۰۴۱` again;
+  U+06F0–U+06F9 corrected from AN to EN per DerivedBidiClass; L2 rewritten
+  run-based ([#70](https://github.com/Nizoka/pdfnative/issues/70)).
+  Silently-wrong financial figures, dates and reference numbers in Persian,
+  Arabic and Hebrew documents are the affected class.
+- **fix(shaping): UAX #9 rule L4 glyph mirroring** — odd-level runs substitute
+  paired delimiters through the full 428-pair `BidiMirroring.txt` table
+  (generated module, Unicode 17.0.0), replacing the ~40-pair curated map and
+  the incorrect comment that declined L4: logical `(X)` no longer renders
+  `)X(` around RTL content ([#71](https://github.com/Nizoka/pdfnative/issues/71)).
+- **fix(parser): incremental writer & xref reader conformance hardening** —
+  per-revision trailer `/ID`: ID[0] preserved byte-exact (it seeds encryption
+  key derivation), ID[1] regenerated deterministically per ISO 32000-1 §14.4;
+  a present-but-invalid `/Prev` now raises an explicit integrity error instead
+  of silently truncating the revision chain; xref streams honour
+  `/DecodeParms /Predictor`; appended revisions start on a fresh line after a
+  bare `%%EOF`; an absent or corrupt `/Size` recovers from the xref's highest
+  entry instead of silently allocating colliding object numbers.
+- **fix(core): complete base-14 `/ToUnicode` coverage** — base-14 dicts reached
+  under a PDF/A claim and the AcroForm `/Helv` dict now carry the shared
+  WinAnsi CMap; cmap inversion keeps a legitimately-mapped U+0000
+  ([src/fonts/font-embedder.ts](src/fonts/font-embedder.ts)).
+- **fix(fonts): COLRv1 composite degradation** — a `PaintComposite` whose
+  SOURCE subtree is unsupported now renders its backdrop alone instead of
+  dropping the whole glyph — Noto's flags (SRC_IN-masked wave shading over a
+  flat backdrop) render as flat flags instead of tofu.
 - **Streaming APIs that were never exported** — <!-- verify-docs:allow api-exists (the entry that bans these names) -->
   `streamDocumentPdf`, `streamPdf`
   and `buildPdfStream` <!-- verify-docs:allow api-exists (the entry that bans these names) -->

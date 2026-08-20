@@ -78,7 +78,7 @@
         "programmingLanguage": "TypeScript",
         "license": "https://opensource.org/licenses/MIT",
         "runtimePlatform": ["Node.js", "Browser", "Deno", "Bun"],
-        "softwareVersion": "1.6.0",
+        "softwareVersion": "1.7.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -211,7 +211,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">2 396+</div>
+    <div class="metric-value">2 621+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -276,7 +276,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 396+ tests across 105 files, 95%+ statement coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2 621+ tests across 120 files, 95%+ statement coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -739,7 +739,7 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/main/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative 1.6.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (17 commands: render · fill · sign · encrypt · extract-text and more), pdfnative-mcp (MCP server, 24 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative 1.7.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (17 commands: render · fill · sign · encrypt · extract-text and more), pdfnative-mcp (MCP server, 24 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
   </div>

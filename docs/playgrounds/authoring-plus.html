@@ -244,7 +244,7 @@ downloadBlob(annotated, 'annotated-contract.pdf');`,
   math: `import { registerFont, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
 
 // The bundled math font is opt-in — register it once, lazily.
-registerFont('math', () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-math-data.js'));
+registerFont('math', () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-sans-math-data.js'));
 const mathFont = await loadFontData('math');
 
 const pdf = buildDocumentPDFBytes({
@@ -312,7 +312,7 @@ function applyPreset(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.7.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.7.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -401,7 +401,7 @@ function buildAnnotations(mod) {
 async function buildMath(mod) {
   let mathFont = null;
   if (typeof mod.registerFont === 'function' && typeof mod.loadFontData === 'function') {
-    mod.registerFont('math', () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-math-data.js'));
+    mod.registerFont('math', () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-sans-math-data.js'));
     try { mathFont = await mod.loadFontData('math'); } catch (_) { mathFont = null; }
   }
   const pdf = mod.buildDocumentPDFBytes({

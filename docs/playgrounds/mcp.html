@@ -146,7 +146,7 @@
 
     <h2 style="margin-top: 36px;">2. Try the tools</h2>
     <p id="loader-status" style="font-size: 13px; color: var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once per page load.</p>
-    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), and the v1.4.0 <code>annotate_pdf</code> — all of which build their own source PDFs in the browser and run the real pdfnative 1.6.0 API. <code>draft_governance_issue</code> produces no PDF (it validates a report locally, network-free) — use its <em>Copy args</em> button. Nine of the 24 tools have no card here, because they need a real PDF as input and run best from your own MCP client: <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code> and <code>decrypt_pdf</code>. See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
+    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), and the v1.4.0 <code>annotate_pdf</code> — all of which build their own source PDFs in the browser and run the real pdfnative 1.7.0 API. <code>draft_governance_issue</code> produces no PDF (it validates a report locally, network-free) — use its <em>Copy args</em> button. Nine of the 24 tools have no card here, because they need a real PDF as input and run best from your own MCP client: <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code> and <code>decrypt_pdf</code>. See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
 
     <div class="mcp-cards" id="cards"></div>
 
@@ -345,9 +345,9 @@
         // resolved to a concrete FontEntry { fontData, fontRef, lang }, otherwise
         // the glyphs fall back to .notdef and render as ???? tofu.
         m.registerFonts({
-          th: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-thai-data.js'),
-          ar: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-arabic-data.js'),
-          emoji: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-emoji-data.js'),
+          th: () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-thai-data.js'),
+          ar: () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-arabic-data.js'),
+          emoji: () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-emoji-data.js'),
         });
         const langs = Array.isArray(p.lang) ? p.lang : (p.lang ? [p.lang] : []);
         const loaded = await Promise.all(langs.map((l) => m.loadFontData(l)));
@@ -440,7 +440,7 @@
       // entry this sample would declare a conformance it does not have — on
       // the very page that demonstrates conformance inspection.
       build: async (p, m) => {
-        m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-data.js') });
+        m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-sans-data.js') });
         const fontData = await m.loadFontData('latin');
         return m.buildDocumentPDFBytes({
           title: 'Inspect target sample',
@@ -461,7 +461,7 @@
         pdfsBase64: ['<base64 PDF 1>', '<base64 PDF 2>'],
         outputMode: 'base64',
       },
-      noteHtml: 'In a real MCP call the AI assistant supplies each source as base64. To keep this page binary-free, the playground builds two small source PDFs in the browser, then runs the <em>real</em> pdfnative 1.6.0 <code>mergePdfs()</code> the tool calls. Signatures/AcroForms are dropped, matching the tool contract; since v1.5.0 the tool opens encrypted sources with a password and can re-encrypt the merged output. Caps: 50 MiB/part, 200 MiB aggregate.',
+      noteHtml: 'In a real MCP call the AI assistant supplies each source as base64. To keep this page binary-free, the playground builds two small source PDFs in the browser, then runs the <em>real</em> pdfnative 1.7.0 <code>mergePdfs()</code> the tool calls. Signatures/AcroForms are dropped, matching the tool contract; since v1.5.0 the tool opens encrypted sources with a password and can re-encrypt the merged output. Caps: 50 MiB/part, 200 MiB aggregate.',
       build: (p, m) => {
         requirePageTree(m, 'mergePdfs');
         const a = m.buildDocumentPDFBytes({ title: 'Cover letter', blocks: [
@@ -542,7 +542,7 @@
         ],
         outputMode: 'base64',
       },
-      noteHtml: 'The tool never rasterises: it reads the source, appends real annotation objects, and rewrites the page <code>/Annots</code> with an incremental update — the original bytes are preserved. This demo builds a one-page source PDF, then runs the <em>real</em> pdfnative 1.6.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>buildAnnotationBody()</code> → <code>addAnnotation()</code> pipeline the tool calls. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
+      noteHtml: 'The tool never rasterises: it reads the source, appends real annotation objects, and rewrites the page <code>/Annots</code> with an incremental update — the original bytes are preserved. This demo builds a one-page source PDF, then runs the <em>real</em> pdfnative 1.7.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>buildAnnotationBody()</code> → <code>addAnnotation()</code> pipeline the tool calls. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
       build: (p, m) => {
         requireFn(m, 'openPdf');
         requireFn(m, 'createModifier');
@@ -574,7 +574,7 @@
         issueType: 'bug',
         targetRepo: 'pdfnative',
         reproduction: {
-          command: 'Build a table block with cellVAlign: "bottom" and a cell whose text ends in "y", then render with buildDocumentPDFBytes (pdfnative 1.6.0, Node 22).',
+          command: 'Build a table block with cellVAlign: "bottom" and a cell whose text ends in "y", then render with buildDocumentPDFBytes (pdfnative 1.7.0, Node 22).',
           result: 'The descender of the final "y" is cut off at the bottom cell border.',
         },
         expectedBehavior: 'Descenders render fully within the cell band.',
@@ -632,7 +632,7 @@
   }
 
   // ─────────────────────────── pdfnative loader (mirrors app.js) ───────────────────────────
-  const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://unpkg.com/pdfnative@1.6.0?module'];
+  const CDN_URLS = ['https://esm.sh/pdfnative@1.7.0', 'https://unpkg.com/pdfnative@1.7.0?module'];
   let pdfnativeMod = null;
   let loadErr = null;
 

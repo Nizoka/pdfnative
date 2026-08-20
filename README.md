@@ -23,8 +23,8 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 | Package | Latest | Use it for |
 |---|:---:|---|
 | [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.6.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
-| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.3.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256, native constant-time crypto by default), inspect, verify (PAdES-T + OCSP/CRL), **merge / split / extract** pages, **annotate** (markup annotations), **govern** (AI-governance / HITL gate), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.6.0: 22 scripts + COLRv1 emoji, `--font math`, PDF bookmarks (`--outline`), layout introspection (`--inspect-layout` / `--debug-layout`), and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
-| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.5.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **24 production tools** including the page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, markup `annotate_pdf`, the network-free `draft_governance_issue` (AI-governance / HITL), plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), the explicit `math` script, an MCP `prompts` capability, a constant-time `node:crypto` signing provider, DNS-rebinding-protected HTTP transport, and per-tool `_meta.apiVersion`. Built on pdfnative 1.6.0. |
+| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.3.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256, native constant-time crypto by default), inspect, verify (PAdES-T + OCSP/CRL), **merge / split / extract** pages, **annotate** (markup annotations), **govern** (AI-governance / HITL gate), batch, and emit JSON Schemas from the shell. Built on pdfnative 1.7.0: 22 scripts + COLRv1 emoji, `--font math`, PDF bookmarks (`--outline`), layout introspection (`--inspect-layout` / `--debug-layout`), and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
+| [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.5.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any stdio MCP client) — **24 production tools** including the page-tree trio `merge_pdfs`, `split_pdf`, `extract_pages`, markup `annotate_pdf`, the network-free `draft_governance_issue` (AI-governance / HITL), plus `validate_pdf`, `verify_pdf`, `add_attachment`, `extract_attachments`, and `extract_text`; watermark support, Unicode `normalize`, token-frugal read modes (`verbosity` / `fields`), `pdfA` flags, enriched authoring options (`outline`, `pageLabels`, nested lists, `viewerPreferences`, `cellBorders`, `cellVAlign`), the explicit `math` script, an MCP `prompts` capability, a constant-time `node:crypto` signing provider, DNS-rebinding-protected HTTP transport, and per-tool `_meta.apiVersion`. Built on pdfnative 1.7.0. |
 | [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v1.1.0** | Write PDFs as declarative JSX — `<Document>`, `<Page>`, `<Table>`, `<Barcode>`, `<Svg>`, `<FormField>`… compiled on-device to pdfnative blocks by a custom React 19 reconciler. Render functions (`renderToBytes` / `renderToStream` / `renderToFile`), client hooks & components (`usePdf`, `PDFViewer`, `PDFDownloadLink`), and a versioned `DocSpec` grammar (`docSpecSchema()`) for AI agents. Peer: pdfnative ^1.6.0, React ^19.0.0, Node ≥22. (A 1.5 engine would silently drop the new `<Chart>` block.) |
 
 ```bash
@@ -43,21 +43,22 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **22 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Telugu, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
 - **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
-- **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with glyph mirroring, isolates (LRI/RLI/FSI/PDI), and explicit embeddings (LRE/RLE/LRO/RLO/PDF) including character-level X4–X5 overrides (v1.3.0)
+- **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with isolates (LRI/RLI/FSI/PDI) and explicit embeddings (LRE/RLE/LRO/RLO/PDF) including character-level X4–X5 overrides (v1.3.0). **v1.7.0** implements I1/I2 even embedding levels so digit runs (European, Arabic-Indic, Extended Arabic-Indic) keep logical order in RTL text, and full rule-L4 glyph mirroring through the complete 428-pair `BidiMirroring.txt` table
 - **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` drive joiner classification across the Devanagari, Bengali, and Tamil shapers, fixing nukta+virama, half-form, eyelash-ra, and ya-phalaa edge cases (v1.3.0)
-- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.0 MB, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. [Guide →](docs/guides/colour-emoji.md)
+- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.0 MB, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). [Guide →](docs/guides/colour-emoji.md)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
-- **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments)
+- **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments). **Conformance guards** (v1.7.0): configurations that would break the declared PDF/A level (no embedded fonts, DeviceCMYK images) surface a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`. [Guide →](docs/guides/pdfa.md)
 - **PDF Encryption (round-trip)** — **write** AES-128 (V4/R4) and AES-256 (V5/R6) encrypted PDFs (RC4 is never emitted), and **read** all of AES-128, AES-256, and legacy RC4 (V1–V4); owner + user passwords, granular permissions. **v1.6.0** adds a Standard Security Handler **decryptor** — `openPdf(bytes, { password })` decrypts transparently, the merge/split API ingests encrypted sources **and re-encrypts its output** (`MergeOptions.encrypt`, AES only, fresh keys) — closing the full *open → edit → re-secure* round trip. [Guide →](docs/guides/pdf-manipulation.md)
-- **Native vector charts** (v1.6.0) — bar, horizontal-bar, line, pie, and donut `chart` blocks rendered as pure PDF path operators (zero deps, no rasterisation); multi-series, legends, "nice" axis ticks, negative values, tagged `/Figure` + alt text. [Guide →](docs/guides/charts.md)
+- **Native vector charts** (v1.6.0, **charts v2 in v1.7.0**) — bar, horizontal-bar, line, pie, donut, **stacked bars, area, and scatter** `chart` blocks rendered as pure PDF path operators (zero deps, no rasterisation); multi-series, legends, "nice" axis ticks, negative values, tagged `/Figure` + alt text. v1.7.0 adds a **secondary right axis**, **log and UTC-deterministic time scales**, **per-point data labels**, and x-label collision handling (automatic stride + `labelStride` / `labelRotation`). [Guide →](docs/guides/charts.md)
 - **Text extraction** (v1.6.0) — `extractText()` decodes page content streams into per-page reading-order Unicode text plus optional positioned runs; `/ToUnicode` CMap, `/Encoding /Differences`, and WinAnsi/MacRoman decoding; works on encrypted documents (`{ password }`); hard `maxTextLength` memory cap for untrusted input. [Guide →](docs/guides/text-extraction.md)
 - **Free-form document builder** — headings, paragraphs, lists (incl. **nested / hierarchical** bullet & numbered lists, v1.4.0), tables, images, barcodes, SVG paths, form fields, spacers, page breaks, table of contents. Configurable block limit via `layout.maxBlocks` (default 100 000) for very large reports (v1.3.0)
 - **Smart tables** — multi-page slicing with repeated headers, auto-wrap on column overflow, zebra striping, captions, and smart auto-fit columns (v1.2.0), plus per-cell **borders** (`cellBorders`) and **vertical alignment** (`cellVAlign` / `ColumnDef.vAlign`, v1.4.0). [Guide →](docs/guides/tables.md)
 - **Barcode & QR code generation** — Code 128, EAN-13, QR Code, Data Matrix, PDF417 — pure PDF path operators (no images)
 - **SVG rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators, plus `<text>` elements rendered as upright PDF text with `x`/`y` positioning and `text-anchor` (start/middle/end) support (v1.5.0)
 - **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7). **v1.6.0** adds **fill & flatten of existing forms**: `readFormFields()`, `fillForm()` (regenerates appearances), and `flattenForm()` — non-destructive incremental update that preserves prior signatures, **including on encrypted documents** (appended objects are encrypted under the document's existing scheme). [Guide →](docs/guides/form-filling.md)
-- **Digital signatures** — CMS/PKCS#7 detached signatures with RSA-SHA256 + ECDSA-SHA256 (P-256) — the two selectable signature algorithms; SHA-384/512 ship as standalone hash exports — and X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0). Pluggable **native crypto provider** (`setCryptoProvider()` / `PdfSignOptions.provider`, v1.4.0) for constant-time, hardware-backed signing (`node:crypto` / Web Crypto / HSM)
+- **Digital signatures** — CMS/PKCS#7 detached signatures with RSA (SHA-256/384/512, v1.7.0) + ECDSA-SHA256 (P-256) and X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0). Pluggable **native crypto provider** (`setCryptoProvider()` / `PdfSignOptions.provider`, v1.4.0) for constant-time, hardware-backed signing (`node:crypto` / Web Crypto / HSM). **v1.7.0**: PAdES baseline profile (`profile: 'pades'` — ESS signing-certificate-v2, `ETSI.CAdES.detached`), **multiple signatures** (`allowMultiple` + `fieldName` selector), and `listSignatures()` inspection. [Guide →](docs/guides/signatures.md)
+- **Long-term validation (LTV, PAdES B-B → B-LTA)** (v1.7.0) — RFC 3161 **signature timestamps** (`signPdfBytesWithTimestamp()`), embedded revocation material in `/DSS` + per-signature `/VRI` (`addValidationInfo()` — OCSP RFC 6960 + CRL RFC 5280), and **document timestamps** (`addDocumentTimestamp()`). Network transport is injected (`TimestampProvider` / `RevocationProvider`) — the engine stays offline and zero-dependency; rejected or tampered TSA tokens are never embedded. [Guide →](docs/guides/ltv.md)
 - **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. One-call `streamToFile()` drains any stream to disk with back-pressure and `AbortSignal` support (v1.4.0). [Guide →](docs/guides/streaming.md)
 - **Document outline & page labels** — nested bookmarks (`/Outlines` tree, with bold/italic/colour, collapsible nodes via `open: false`, explicit or `outline: 'auto'` from headings) and logical page numbering (`/PageLabels`: decimal, roman, alpha, prefixes, custom start) (v1.4.0). [Guide →](docs/guides/outlines.md)
 - **Viewer preferences** — `PdfLayoutOptions.viewerPreferences` controls initial `/PageLayout` & `/PageMode` plus the `/ViewerPreferences` dict (hide toolbar/menubar, fit/center window, display doc title, non-full-screen mode, reading direction, print scaling) — PDF/A-safe (v1.4.0). [Guide →](docs/guides/viewer-preferences.md)
@@ -75,7 +76,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 2396+ tests across 105 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 95.41% statement coverage measured at the v1.6.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 2621+ tests across 120 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 95.41% statement coverage measured at the v1.6.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -120,8 +121,9 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | BiDi (RTL) layout | ✅ | — | — | — | — |
 | Modify existing PDFs | ✅ (incremental) | — | — | ✅ | — |
 | Forms (create + fill + flatten) | ✅ all three | create | create | create + fill | — |
-| Native charts (vector) | ✅ bar/line/pie/donut | — | — | — | — |
-| Digital signatures | ✅ (RSA + ECDSA) | — | — | — | — |
+| Native charts (vector) | ✅ 9 kinds incl. stacked/area/scatter | — | — | — | — |
+| Digital signatures | ✅ (RSA + ECDSA, PAdES) | — | — | — | — |
+| LTV / timestamps (PAdES B-LTA) | ✅ RFC 3161 + /DSS | — | — | — | — |
 | Barcode / QR code (native) | ✅ 5 formats | — | — | — | QR |
 | SVG path rendering | ✅ | Plugin | ✅ | Paths only | ✅ |
 | Streaming output | ✅ | — | ✅ | — | ✅ |
@@ -819,11 +821,20 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 
 | Function | Description |
 |----------|-------------|
-| `buildSigDict(options)` | Build `/Sig` dictionary with ByteRange/Contents placeholders |
-| `signPdfBytes(pdf, options)` | Sign a PDF with CMS/PKCS#7 detached signature |
-| `estimateContentsSize(options)` | Estimate hex-encoded `/Contents` size for pre-allocation |
+| `buildSigDict(options)` | Build `/Sig` dictionary with ByteRange/Contents placeholders (`subFilter: 'ETSI.CAdES.detached'` for PAdES, v1.7.0) |
+| `buildDocTimeStampDict(contentsSize?)` | Build a `/DocTimeStamp` dictionary variant (ISO 32000-2 §12.8.5, v1.7.0) |
+| `signPdfBytes(pdf, options)` | Sign a PDF with CMS/PKCS#7 detached signature (`profile: 'pades'`, `digestAlgorithm`, multi-signature `fieldName` selector, v1.7.0) |
+| `signPdfBytesWithTimestamp(pdf, options)` | Sign + embed a verified RFC 3161 signature timestamp (PAdES B-T, v1.7.0) |
+| `listSignatures(pdf)` | Enumerate signature fields — SubFilter, ByteRange, /Contents, placeholder/timestamp flags (v1.7.0) |
+| `collectValidationInfo(pdf, opts?)` | Gather certificates + OCSP/CRL material for every signature via the injected `RevocationProvider` (v1.7.0) |
+| `embedValidationInfo(pdf, data)` | Write pre-collected LTV material as `/DSS` + `/VRI` — sync, offline, deterministic (v1.7.0) |
+| `addValidationInfo(pdf, opts?)` | Collect + embed in one call (PAdES B-LT, v1.7.0) |
+| `addDocumentTimestamp(pdf, opts?)` | Append a `/DocTimeStamp` revision (PAdES B-LTA, v1.7.0) |
+| `estimateContentsSize(certSizes, algorithm?, opts?)` | Estimate `/Contents` size (`{ timestamp: true }` adds RFC 3161 headroom, v1.7.0) |
 | `setCryptoProvider(provider)` | Install (or clear with `null`) a global native signature provider (v1.4.0) |
 | `getCryptoProvider()` | Return the current global `CryptoProvider`, or `null` (v1.4.0) |
+| `setTimestampProvider(provider)` / `getTimestampProvider()` | Global RFC 3161 transport — TimeStampReq bytes in, TimeStampResp bytes out (v1.7.0) |
+| `setRevocationProvider(provider)` / `getRevocationProvider()` | Global OCSP/CRL transport (v1.7.0) |
 
 ### Streaming Output
 
@@ -846,13 +857,20 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 
 | Function | Description |
 |----------|-------------|
+| `sha1(data)` | SHA-1 — `/VRI` keying and OCSP CertID identification only, never a security digest (v1.7.0) |
 | `sha384(data)` / `sha512(data)` | SHA-384 / SHA-512 hash (FIPS 180-4) |
 | `hmacSha256(key, data)` | HMAC-SHA-256 (RFC 2104) |
 | `derDecode(data)` | Decode DER-encoded ASN.1 |
-| `rsaSign(msg, key)` / `rsaVerify(msg, sig, key)` | RSA PKCS#1 v1.5 sign/verify |
+| `derSetOf(...values)` / `derGeneralizedTime(date)` | Canonical DER SET OF (X.690 §11.6) / GeneralizedTime encoder (v1.7.0) |
+| `rsaSign(msg, key, digest?)` / `rsaVerify(msg, sig, key, digest?)` | RSA PKCS#1 v1.5 sign/verify — SHA-256/384/512 (digest param v1.7.0) |
 | `ecdsaSign(hash, key)` / `ecdsaVerify(hash, sig, key)` | ECDSA P-256 sign/verify |
-| `parseCertificate(der)` | Parse X.509 DER certificate |
-| `buildCmsSignedData(options)` | Build CMS SignedData (PKCS#7) |
+| `parseCertificate(der)` | Parse X.509 DER certificate — incl. SKI/AKI, EKU, AIA (OCSP/caIssuers URLs), CRL distribution points (v1.7.0) |
+| `certHasEku(cert, oid)` | Check an extended-key-usage OID (v1.7.0) |
+| `buildCmsSignedData(options)` | Build CMS SignedData — PKCS#7 or PAdES profile, SHA-256/384/512 (v1.7.0) |
+| `parseCmsSignedData(der)` / `addUnsignedAttribute(cms, attr)` / `buildAttribute(oid, ...v)` | CMS inspection + unsigned-attribute surgery, signed bytes untouched (v1.7.0) |
+| `buildTimestampRequest(imprint, opts?)` / `parseTimestampResponse(der)` / `parseTimestampToken(der)` / `verifyTimestampImprint(info, hash)` | RFC 3161 timestamp protocol (v1.7.0) |
+| `buildOcspRequest(cert, issuer, opts?)` / `parseOcspResponse(der)` | OCSP RFC 6960 (v1.7.0) |
+| `parseCrl(der)` / `isSerialRevoked(crl, serial)` | CRL RFC 5280 (v1.7.0) |
 | `initCrypto()` | Initialize crypto module (lazy load) |
 
 ### PDF Parser & Modifier
@@ -1006,7 +1024,7 @@ pdfnative ships as a library, but three official companion packages cover the mo
 <!-- verify-docs:allow version-token (historical: CLI v1.2.0 shipped on the pdfnative 1.5.0 engine) -->
 **New in v1.2.0:** five new commands — **`merge`**, **`split`**, **`extract`** (page-tree manipulation via pdfnative 1.5.0), **`annotate`** (markup annotations via incremental save, so existing signatures stay intact), and **`govern`** (the AI-governance / Human-in-the-Loop contract: `govern rules` / `govern policy` / `govern verify-issue`, with a stable `E_POLICY` error code). Plus PDF bookmarks (`--outline auto` or an explicit tree), the bundled math font (`--font math`), layout introspection (`--inspect-layout` / `--debug-layout`), and native constant-time crypto by default in `sign` (opt out with `--pure-crypto`).
 
-**New in v1.3.0:** five more commands on the pdfnative 1.6.0 engine — **`fill`** (fill, flatten, and export existing AcroForms via incremental save, encrypted PDFs included), **`encrypt`** / **`decrypt`** (AES-128/256 re-securing and password removal; RC4 never emitted), **`extract-text`** (reading-order Unicode text as text/JSON/NDJSON, `--runs`, `--password`), and **`doctor`** (offline environment preflight). Also native vector charts in `render`, `--password` + `--encrypt` re-encryption on merge/split/extract, an agent capability manifest (`schema manifest` + `llms.txt`), and PowerShell completion.
+**New in v1.3.0:** five more commands on the pdfnative 1.7.0 engine — **`fill`** (fill, flatten, and export existing AcroForms via incremental save, encrypted PDFs included), **`encrypt`** / **`decrypt`** (AES-128/256 re-securing and password removal; RC4 never emitted), **`extract-text`** (reading-order Unicode text as text/JSON/NDJSON, `--runs`, `--password`), and **`doctor`** (offline environment preflight). Also native vector charts in `render`, `--password` + `--encrypt` re-encryption on merge/split/extract, an agent capability manifest (`schema manifest` + `llms.txt`), and PowerShell completion.
 
 ```bash
 # render with full layout coverage (encryption + watermark + PDF/A-2b)
@@ -1046,7 +1064,7 @@ See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v1.3.0 r
 
 **v1.4.0:** adds `annotate_pdf` (markup via incremental update) and the network-free `draft_governance_issue` (**19 tools**)<!-- verify-docs:allow stale-token (historical: MCP v1.4.0 total, on the pdfnative 1.5.0 engine) -->, the MCP `prompts` capability (`governance_contract`, `draft_issue_workflow`), `pageLabels[]` in `inspect_pdf`, and the explicit `math` script — via the pdfnative 1.5.0 engine.
 
-**v1.5.0:** adds `add_chart`, `read_form_fields`, `fill_form`, `encrypt_pdf`, `decrypt_pdf` (**24 tools**), `password` support on the read-only and page-tree tools, MCP resources (`pdfnative://output/…`), and tool annotations — via the pdfnative 1.6.0 engine.
+**v1.5.0:** adds `add_chart`, `read_form_fields`, `fill_form`, `encrypt_pdf`, `decrypt_pdf` (**24 tools**), `password` support on the read-only and page-tree tools, MCP resources (`pdfnative://output/…`), and tool annotations — via the pdfnative 1.7.0 engine.
 
 ```bash
 npx -y pdfnative-mcp
@@ -1186,7 +1204,7 @@ src/
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (44 generators, ~228 PDFs)
-tests/                    # 2396+ tests (105 files: unit + integration + fuzz + parser)
+tests/                    # 2621+ tests (120 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1198,7 +1216,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (2396+ tests)
+npm run test             # vitest run (2621+ tests)
 npm run test:coverage    # vitest with v8 coverage (95.41% statements at the v1.6.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate ~228 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1213,7 +1231,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 2396+ (105 files) |
+| Tests | 2621+ (120 files) |
 | Statement coverage | 95.41% (measured at the v1.6.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 87.79% (measured at the v1.6.0 release; CI enforces ≥80%) |
 | Function coverage | 98.5% (measured at the v1.6.0 release; CI enforces ≥85%; lines gate: ≥90%) |

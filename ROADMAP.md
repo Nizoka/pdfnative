@@ -108,9 +108,11 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **PDF/A declaration guards** (v1.7.0, [#69](https://github.com/Nizoka/pdfnative/issues/69)) — conformance diagnostics channel (`onDiagnostic`, `strict`) guarding the PDF/A claim: unembedded-font and DeviceCMYK-image configurations surface a warning or throw instead of silently stamping `pdfaid`; complete base-14 `/ToUnicode` coverage under tagged mode. ([src/core/pdf-diagnostics.ts](src/core/pdf-diagnostics.ts))
 - [x] **Incremental-update conformance hardening** (v1.7.0) — per-revision `/ID` regeneration (ID[0] preserved byte-exact), explicit errors on invalid `/Prev` chains, xref-stream `/Predictor` support, EOL framing between revisions, xref-derived `/Size` recovery, and `PdfModifier.updateMetadata()` keeping `/Info` and XMP in sync (`/ModDate`, `xmp:ModifyDate`). ([src/parser/pdf-modifier.ts](src/parser/pdf-modifier.ts), [src/parser/pdf-xref-parser.ts](src/parser/pdf-xref-parser.ts))
 
+- [x] **LTV signatures (PAdES B-B → B-LTA)** (v1.7.0) — ESS signing-certificate-v2 + canonical DER SET OF, RFC 3161 signature timestamps via injected `TimestampProvider` (`signPdfBytesWithTimestamp`), OCSP/CRL revocation collection via injected `RevocationProvider`, `/DSS` + `/VRI` embedding (`addValidationInfo`), document timestamps (`addDocumentTimestamp`), and multi-signature flows (`allowMultiple`, `fieldName` selector, `listSignatures`). Network transport stays in user land — the engine is offline by default. ([src/core/pdf-dss.ts](src/core/pdf-dss.ts), [docs/guides/ltv.md](docs/guides/ltv.md))
+
 ## In Progress
 
-- [ ] **LTV signatures (PAdES B-B → B-LTA)** (v1.7.0) — ESS signing-certificate-v2 + canonical DER SET OF, RFC 3161 signature timestamps via injected `TimestampProvider`, OCSP/CRL revocation collection via injected `RevocationProvider`, `/DSS` + `/VRI` embedding, document timestamps, and multi-signature flows (`allowMultiple`, `fieldName` selector). Network transport stays in user land — the engine is offline by default.
+_All v1.7.0 items have been merged. See Released above._
 
 ## Planned
 

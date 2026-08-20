@@ -1,6 +1,6 @@
 # pdfnative-react — Declarative JSX Renderer Guide
 
-> **Tracks the latest published `pdfnative-react`** (v1.1.0, built on pdfnative 1.6.0), with **React 19** and `pdfnative` ^1.6.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
+> **Tracks the latest published `pdfnative-react`** (v1.1.0, built on pdfnative 1.7.0), with **React 19** and `pdfnative` ^1.6.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
 
 [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency [`pdfnative`](https://github.com/Nizoka/pdfnative) engine — no DOM, no headless browser, no SaaS round-trips. Your documents never leave the process.
 
