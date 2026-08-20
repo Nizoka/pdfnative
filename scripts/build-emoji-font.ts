@@ -24,6 +24,11 @@
  *   --codepoints <list>   Comma-separated hex scalars, e.g. 1F600,1F680,2764.
  *   --ranges <list>       Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
  *
+ * Sequence selection (v1.7.0; default: none):
+ *   --sequences <preset>  flags | zwj | all | none — curated flag/ZWJ sets.
+ *   --sequence-list <list>  Country codes and/or hyphen-joined hex sequences,
+ *                         e.g. FR,DE,1F468-200D-1F680 (skin-tone forms welcome).
+ *
  * Output:
  *   --out <path>          Output .js path (a sibling .d.ts is written too).
  *                         Default: ./noto-color-emoji-data.js
@@ -45,7 +50,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { buildEmojiFontModule, allColorCodepoints } from './lib/emoji-font-core.js';
-import { parseArgs, resolveCodepoints } from './lib/emoji-cli.js';
+import { parseArgs, resolveCodepoints, resolveSequences } from './lib/emoji-cli.js';
 
 /** Official Google Fonts source for Noto Color Emoji (COLRv1/CPAL, OFL-1.1). */
 const DOWNLOAD_URL =
@@ -68,6 +73,13 @@ Glyph selection (combine freely; default: --preset curated):
   --preset <curated|all>  Named selection ('curated' = pdfnative's lean 221-glyph set).
   --codepoints <list>     Comma-separated hex scalars, e.g. 1F600,1F680,2764.
   --ranges <list>         Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
+
+Sequence selection (v1.7.0; default: none):
+  --sequences <preset>    flags | zwj | all | none — bundle the curated flag
+                          and/or ZWJ sequence sets (GSUB-resolved ligatures).
+  --sequence-list <list>  Comma-separated country codes and/or hyphen-joined
+                          hex sequences, e.g. FR,DE,1F468-200D-1F680,
+                          1F469-1F3FD-200D-2695-FE0F (skin tones welcome).
 
 Output:
   --out <path>            Output .js path (a sibling .d.ts is written). Default ./noto-color-emoji-data.js
@@ -125,6 +137,8 @@ async function main(): Promise<void> {
     const outDts = outJs.replace(/\.js$/i, '') + '.d.ts';
     const fontName = opts.fontName ?? 'NotoColorEmoji-Regular';
 
+    const sequences = resolveSequences(opts);
+
     const { js, dts, stats } = buildEmojiFontModule(ttf, codepoints, {
         fontName,
         dtsTypeImport: opts.types,
@@ -137,7 +151,7 @@ async function main(): Promise<void> {
  *   import { registerFont } from 'pdfnative';
  *   registerFont('emoji', () => import('./${outJs.split(/[\\/]/).pop()}'));
  */`,
-    });
+    }, sequences);
 
     writeFileSync(outJs, js);
     writeFileSync(outDts, dts);
@@ -145,6 +159,12 @@ async function main(): Promise<void> {
     console.log(`Colour-emoji data module written:`);
     console.log(`  requested codepoints: ${codepoints.length}`);
     console.log(`  colour glyphs kept:   ${stats.kept}  (missing: ${stats.missing})`);
+    if (sequences.length > 0) {
+        console.log(`  sequences kept:       ${stats.keptSequences}  (missing: ${stats.missingSequences})`);
+        for (const seq of stats.missingSequenceList) {
+            console.log(`    unresolved: ${seq.map(c => c.toString(16).toUpperCase()).join('-')}`);
+        }
+    }
     console.log(`  embedded glyph ids:   ${stats.usedGids}`);
     console.log(`  module size:          ${stats.sizeKb} KB`);
     console.log(`  ${outJs}`);

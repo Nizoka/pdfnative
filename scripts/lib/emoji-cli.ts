@@ -7,6 +7,7 @@
  */
 
 import { CURATED_EMOJI } from './curated-emoji.js';
+import { CURATED_FLAGS, CURATED_ZWJ, CURATED_SEQUENCES, flagSequence } from './curated-emoji-sequences.js';
 
 export interface CliOptions {
     ttf?: string;
@@ -15,6 +16,10 @@ export interface CliOptions {
     preset?: string;
     codepoints?: string;
     ranges?: string;
+    /** Named sequence preset: 'flags' | 'zwj' | 'all' | 'none'. (v1.7.0) */
+    sequences?: string;
+    /** Explicit sequences: country codes and/or hyphen-joined hex scalars. (v1.7.0) */
+    sequenceList?: string;
     out: string;
     fontName?: string;
     types: string;
@@ -47,6 +52,8 @@ export function parseArgs(argv: readonly string[]): CliOptions {
             case '--preset': opts.preset = next(); break;
             case '--codepoints': opts.codepoints = next(); break;
             case '--ranges': opts.ranges = next(); break;
+            case '--sequences': opts.sequences = next(); break;
+            case '--sequence-list': opts.sequenceList = next(); break;
             case '--out': opts.out = next(); break;
             case '--font-name': opts.fontName = next(); break;
             case '--types': opts.types = next(); break;
@@ -103,4 +110,44 @@ export function resolveCodepoints(opts: CliOptions, allColor: () => number[]): n
     // Default to the curated set when nothing was selected.
     if (!explicit) for (const cp of CURATED_EMOJI) set.add(cp);
     return [...set].sort((a, b) => a - b);
+}
+
+/**
+ * Resolve the multi-codepoint sequence selection (v1.7.0). Backward
+ * compatible: with neither `--sequences` nor `--sequence-list`, no sequence
+ * is bundled and the generated module is shaped exactly like pre-1.7 output
+ * (plus an inert `sequences = null` export).
+ *
+ * `--sequences`: `flags` (curated flag set), `zwj` (curated ZWJ set),
+ * `all` (both), `none`.
+ * `--sequence-list`: comma-separated entries — a 2-letter country code
+ * (`FR`, `DE`) or hyphen-joined hex scalars (`1F468-200D-1F680`,
+ * `1F3F4-200D-2620-FE0F`).
+ */
+export function resolveSequences(opts: CliOptions): number[][] {
+    const out: number[][] = [];
+    if (opts.sequences) {
+        switch (opts.sequences) {
+            case 'flags': out.push(...CURATED_FLAGS.map(c => [...flagSequence(c)])); break;
+            case 'zwj': out.push(...CURATED_ZWJ.map(s => [...s])); break;
+            case 'all': out.push(...CURATED_SEQUENCES.map(s => [...s])); break;
+            case 'none': break;
+            default:
+                throw new Error(`Unknown --sequences preset: "${opts.sequences}" (use flags, zwj, all or none)`);
+        }
+    }
+    if (opts.sequenceList) {
+        for (const tok of opts.sequenceList.split(',')) {
+            const t = tok.trim();
+            if (!t) continue;
+            if (/^[A-Za-z]{2}$/.test(t)) {
+                out.push([...flagSequence(t)]);
+            } else {
+                const cps = t.split('-').map(parseHex);
+                if (cps.length < 2) throw new Error(`Sequence needs at least 2 codepoints: "${tok}"`);
+                out.push(cps);
+            }
+        }
+    }
+    return out;
 }

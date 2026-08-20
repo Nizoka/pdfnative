@@ -214,6 +214,7 @@ export const EMOJI_RANGES: ReadonlyArray<readonly [number, number]> = [
     [0x2700,  0x27BF],  // Dingbats
     [0x1F000, 0x1F02F], // Mahjong Tiles
     [0x1F0A0, 0x1F0FF], // Playing Cards
+    [0x1F1E6, 0x1F1FF], // Regional Indicators (flag pairs) — v1.7.0
 ];
 
 /** Skin-tone modifiers (Fitzpatrick scale). */
