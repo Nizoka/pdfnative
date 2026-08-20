@@ -99,7 +99,7 @@
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
     "testFiles": 106,
     "sampleGenerators": 44,
-    "samplePdfs": 228,
+    "samplePdfs": 229,
     "guides": 26,
     "playgrounds": 9,
     "learnSteps": 8
@@ -111,7 +111,7 @@
     "bundledFontModules": 26,
     "blockTypes": 13,
     "barcodeFormats": 5,
-    "chartTypes": 5,
+    "chartTypes": 9,
     "pdfaLevels": [
       "pdfa1b",
       "pdfa2b",
