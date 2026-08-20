@@ -209,6 +209,116 @@ describe('resolveBidiRuns', () => {
     });
 });
 
+// \u2500\u2500 Digit ordering in RTL context (UAX #9 I1/I2, issue #70) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+describe('resolveBidiRuns \u2014 digit ordering (issue #70)', () => {
+    it('should keep Extended Arabic-Indic digit runs in logical order inside Persian text', () => {
+        // "\u0633\u0627\u0644 \u06F1\u06F4\u06F0\u06F5" \u2014 Persian year 1405; \u06F1=U+06F1 \u06F4=U+06F4 \u06F0=U+06F0 \u06F5=U+06F5
+        const runs = resolveBidiRuns('\u0633\u0627\u0644 \u06F1\u06F4\u06F0\u06F5');
+        const digitRun = runs.find(r => r.text.includes('\u06F1'));
+        expect(digitRun).toBeDefined();
+        // Logical order preserved: most significant digit first, never \u06F5\u06F0\u06F4\u06F1.
+        expect(digitRun!.text).toBe('\u06F1\u06F4\u06F0\u06F5');
+        // Digits sit at an even embedding level (I2), so they are not reversed.
+        expect(digitRun!.level % 2).toBe(0);
+    });
+
+    it('should keep Arabic-Indic digit runs in logical order inside Arabic text', () => {
+        // "\u0627\u0644\u0642\u064A\u0645\u0629 \u0664\u0665\u0666" \u2014 \u0664=U+0664 \u0665=U+0665 \u0666=U+0666
+        const runs = resolveBidiRuns('\u0627\u0644\u0642\u064A\u0645\u0629 \u0664\u0665\u0666');
+        const digitRun = runs.find(r => r.text.includes('\u0664'));
+        expect(digitRun).toBeDefined();
+        expect(digitRun!.text).toBe('\u0664\u0665\u0666');
+        expect(digitRun!.level % 2).toBe(0);
+    });
+
+    it('should not reverse Arabic-Indic digits in an LTR paragraph', () => {
+        // "Total: \u0664\u0665 USD" \u2014 AN digits inside a Latin sentence.
+        const runs = resolveBidiRuns('Total: \u0664\u0665 USD');
+        const digitRun = runs.find(r => r.text.includes('\u0664'));
+        expect(digitRun).toBeDefined();
+        expect(digitRun!.text).toContain('\u0664\u0665');
+    });
+
+    it('should keep ASCII digit runs in logical order inside Hebrew text', () => {
+        // "\u05DE\u05D7\u05D9\u05E8 123 \u05E9\u05E7\u05DC" \u2014 price 123 between two Hebrew words.
+        const runs = resolveBidiRuns('\u05DE\u05D7\u05D9\u05E8 123 \u05E9\u05E7\u05DC');
+        const digitRun = runs.find(r => r.text.includes('1'));
+        expect(digitRun).toBeDefined();
+        expect(digitRun!.text).toContain('123');
+        expect(digitRun!.level % 2).toBe(0);
+        // L2: the whole RTL paragraph reverses run order \u2014 the second Hebrew
+        // word must come out before the digits, the first one after them.
+        const firstHebrew = runs.findIndex(r => r.text.includes('\u05E9\u05E7\u05DC'.split('').reverse().join('')));
+        const lastHebrew = runs.findIndex(r => r.text.includes('\u05E8\u05D9\u05D7\u05DE'));
+        const digitIdx = runs.findIndex(r => r.text.includes('123'));
+        expect(firstHebrew).toBeGreaterThanOrEqual(0);
+        expect(lastHebrew).toBeGreaterThanOrEqual(0);
+        expect(digitIdx).toBeGreaterThan(firstHebrew);
+        expect(digitIdx).toBeLessThan(lastHebrew);
+    });
+
+    it('should treat Extended Arabic-Indic digits after Latin as EN (W7 \u2192 L)', () => {
+        // "ISO \u06F1\u06F2\u06F3" \u2014 EN after L becomes L; single LTR run, order untouched.
+        const runs = resolveBidiRuns('ISO \u06F1\u06F2\u06F3');
+        expect(runs.length).toBe(1);
+        expect(runs[0].level).toBe(0);
+        expect(runs[0].text).toBe('ISO \u06F1\u06F2\u06F3');
+    });
+
+    it('should classify Extended Arabic-Indic digits as EN', () => {
+        expect(classifyBidiType(0x06F0)).toBe('EN'); // Persian 0
+        expect(classifyBidiType(0x06F9)).toBe('EN'); // Persian 9
+    });
+});
+
+// \u2500\u2500 Glyph mirroring in odd-level runs (UAX #9 L4, issue #71) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+describe('resolveBidiRuns \u2014 L4 glyph mirroring (issue #71)', () => {
+    it('should mirror parentheses around RTL-enclosed content', () => {
+        // Logical "(\u05E9\u05DC\u05D5\u05DD)" \u2014 visual output must open toward the content:
+        // leftmost glyph '(' and rightmost ')'.
+        const runs = resolveBidiRuns('(\u05E9\u05DC\u05D5\u05DD)');
+        expect(runs.length).toBe(1);
+        expect(runs[0].text).toBe('(\u05DD\u05D5\u05DC\u05E9)');
+    });
+
+    it('should mirror guillemets around Arabic content', () => {
+        const runs = resolveBidiRuns('\u00AB\u0645\u0631\u062D\u0628\u0627\u00BB');
+        expect(runs.length).toBe(1);
+        expect(runs[0].text.startsWith('\u00AB')).toBe(true);
+        expect(runs[0].text.endsWith('\u00BB')).toBe(true);
+    });
+
+    it('should mirror nested bracket pairs symmetrically', () => {
+        // "[(\u05D0)]" is mirror-symmetric: reversal + mirroring reproduces it.
+        const runs = resolveBidiRuns('[(\u05D0)]');
+        expect(runs.length).toBe(1);
+        expect(runs[0].text).toBe('[(\u05D0)]');
+    });
+
+    it('should not mirror LTR-enclosed brackets in an RTL paragraph', () => {
+        // fixBracketPairing keeps "(English)" at an even level \u2014 no L4 pass.
+        const runs = resolveBidiRuns('\u05E9\u05DC\u05D5\u05DD (English) \u05E9\u05DC\u05D5\u05DD');
+        const ltrRun = runs.find(r => r.text.includes('English'));
+        expect(ltrRun).toBeDefined();
+        expect(ltrRun!.text).toContain('(English)');
+    });
+
+    it('should leave pure-LTR bracketed text untouched', () => {
+        const runs = resolveBidiRuns('(abc) [def]');
+        expect(runs.length).toBe(1);
+        expect(runs[0].text).toBe('(abc) [def]');
+    });
+
+    it('should mirror delimiters inside RLO override scopes', () => {
+        // RLO forces the scope to level 1: "(ab)" reverses and mirrors to "(ba)".
+        const runs = resolveBidiRuns('\u202E(ab)\u202C');
+        expect(runs.length).toBe(1);
+        expect(runs[0].text).toBe('(ba)');
+    });
+});
+
 // ── containsRTL ─────────────────────────────────────────────────────
 
 describe('containsRTL', () => {

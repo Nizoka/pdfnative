@@ -15,6 +15,9 @@
  *   - Explicit embeddings (LRE/RLE) via sealed-isolate normalization — v1.2.0
  *   - Explicit overrides (LRO/RLO) with UAX #9 X4/X5 character-level type
  *     forcing — every inner code point is forced to L (LRO) or R (RLO) — v1.3.0
+ *   - Even embedding levels for numbers (I1/I2) so digit runs keep logical
+ *     order in RTL context, and glyph mirroring for paired delimiters in
+ *     odd-level runs (L4, full BidiMirroring.txt table) — v1.7.0
  *
  * Not supported (lite simplifications):
  *   - Strict per-character override interleaving with nested isolates /
@@ -28,6 +31,8 @@
  *   - Unicode Standard Annex #9: https://unicode.org/reports/tr9/
  *   - ISO 32000-1 §14.8.2.3 (logical structure and reading order)
  */
+
+import { BIDI_MIRRORING_PAIRS } from './bidi-mirroring-data.js';
 
 // ── Bidi Character Types ─────────────────────────────────────────────
 
@@ -81,8 +86,11 @@ export function classifyBidiType(cp: number): BidiType {
 
     // Arabic-Indic digits (must be before Arabic block)
     if (cp >= 0x0660 && cp <= 0x0669) return 'AN';
-    // Extended Arabic-Indic digits
-    if (cp >= 0x06F0 && cp <= 0x06F9) return 'AN';
+    // Extended Arabic-Indic digits — EN per DerivedBidiClass.txt, not AN.
+    // W2 converts them to AN when the last strong type is AL (Arabic/Persian
+    // context), which is the correct UAX #9 pipeline; pre-baking AN here
+    // would misplace them after Latin text (e.g. "ISO ۱۲۳").
+    if (cp >= 0x06F0 && cp <= 0x06F9) return 'EN';
 
     // European digits 0-9
     if (cp >= 0x0030 && cp <= 0x0039) return 'EN';
@@ -300,66 +308,50 @@ function resolveNeutralTypes(types: BidiType[], paraLevel: number): void {
 
 /**
  * Assign embedding levels based on resolved types and paragraph level.
+ *
+ * Implements UAX #9 I1/I2 within the 0/1/2-level model:
+ * - I1 (even paragraph level): R → 1, AN/EN → 2
+ * - I2 (odd paragraph level):  L/EN/AN → 2
+ *
+ * Numbers always land on an EVEN level, so the odd-run reversal in step 6
+ * never character-reverses a digit sequence — digits keep logical order
+ * (most significant digit first) in both paragraph directions.
  */
 function assignLevels(types: BidiType[], paraLevel: number): number[] {
     const levels: number[] = [];
     for (const t of types) {
         if (paraLevel === 0) {
-            // LTR paragraph: R/AL/AN → level 1, EN → level 2 (but we simplify to 1)
-            levels.push((t === 'R' || t === 'AN') ? 1 : 0);
+            // I1: R → 1; AN, and EN in an R context (W7 already converted
+            // L-context EN to L), → 2.
+            if (t === 'R') levels.push(1);
+            else if (t === 'AN' || t === 'EN') levels.push(2);
+            else levels.push(0);
         } else {
-            // RTL paragraph: L/EN → level 2 (but we simplify to 0 for L)
-            levels.push((t === 'L') ? 2 : 1);
+            // I2: L, EN and AN → 2; everything else stays at the RTL base 1.
+            levels.push((t === 'L' || t === 'EN' || t === 'AN') ? 2 : 1);
         }
     }
     return levels;
 }
 
-// ── Glyph Mirroring ──────────────────────────────────────────────────
+// ── Glyph Mirroring (UAX #9 L4) ──────────────────────────────────────
 
-/** Mirroring pairs for bidirectional text. ~40 common pairs. */
-const MIRROR_MAP: Record<number, number> = {
-    0x0028: 0x0029, // ( → )
-    0x0029: 0x0028, // ) → (
-    0x003C: 0x003E, // < → >
-    0x003E: 0x003C, // > → <
-    0x005B: 0x005D, // [ → ]
-    0x005D: 0x005B, // ] → [
-    0x007B: 0x007D, // { → }
-    0x007D: 0x007B, // } → {
-    0x00AB: 0x00BB, // « → »
-    0x00BB: 0x00AB, // » → «
-    0x2039: 0x203A, // ‹ → ›
-    0x203A: 0x2039, // › → ‹
-    0x2045: 0x2046, // ⁅ → ⁆
-    0x2046: 0x2045, // ⁆ → ⁅
-    0x207D: 0x207E, // ⁽ → ⁾
-    0x207E: 0x207D, // ⁾ → ⁽
-    0x208D: 0x208E, // ₍ → ₎
-    0x208E: 0x208D, // ₎ → ₍
-    0x2329: 0x232A, // 〈 → 〉
-    0x232A: 0x2329, // 〉 → 〈
-    0x27E6: 0x27E7, // ⟦ → ⟧
-    0x27E7: 0x27E6, // ⟧ → ⟦
-    0x27E8: 0x27E9, // ⟨ → ⟩
-    0x27E9: 0x27E8, // ⟩ → ⟨
-    0x27EA: 0x27EB, // ⟪ → ⟫
-    0x27EB: 0x27EA, // ⟫ → ⟪
-    0x2983: 0x2984, // ⦃ → ⦄
-    0x2984: 0x2983, // ⦄ → ⦃
-    0x2985: 0x2986, // ⦅ → ⦆
-    0x2986: 0x2985, // ⦆ → ⦅
-    0x2987: 0x2988, // ⦇ → ⦈
-    0x2988: 0x2987, // ⦈ → ⦇
-    0x2989: 0x298A, // ⦉ → ⦊
-    0x298A: 0x2989, // ⦊ → ⦉
-    0x298B: 0x298C, // ⦋ → ⦌
-    0x298C: 0x298B, // ⦌ → ⦋
-    0x3008: 0x3009, // 〈 → 〉
-    0x3009: 0x3008, // 〉 → 〈
-    0x300A: 0x300B, // 《 → 》
-    0x300B: 0x300A, // 》 → 《
-};
+/**
+ * Lazily-built Bidi_Mirroring_Glyph lookup, populated from the full
+ * generated UCD table on first use (v1.7.0 — replaces the former ~40-pair
+ * curated map with all BidiMirroring.txt mappings).
+ */
+let mirrorMap: Map<number, number> | null = null;
+
+function getMirrorMap(): Map<number, number> {
+    if (mirrorMap === null) {
+        mirrorMap = new Map<number, number>();
+        for (let i = 0; i < BIDI_MIRRORING_PAIRS.length; i += 2) {
+            mirrorMap.set(BIDI_MIRRORING_PAIRS[i], BIDI_MIRRORING_PAIRS[i + 1]);
+        }
+    }
+    return mirrorMap;
+}
 
 /**
  * Apply glyph mirroring for a code point in RTL context.
@@ -369,7 +361,7 @@ const MIRROR_MAP: Record<number, number> = {
  * @returns Mirrored code point (e.g. '(' → ')') or the original
  */
 export function mirrorCodePoint(cp: number): number {
-    return MIRROR_MAP[cp] ?? cp;
+    return getMirrorMap().get(cp) ?? cp;
 }
 
 // ── Practical Fixups ─────────────────────────────────────────────────
@@ -693,7 +685,9 @@ function tryResolveOverrides(text: string, forcedLevel?: number): BidiRun[] | nu
         const inner = stripBidiControls(innerRaw);
         if (inner) {
             const level = span.rtl ? 1 : 0;
-            const runText = span.rtl ? reverseString(inner) : inner;
+            // RLO scopes resolve to level 1 — reverse and apply L4 mirroring,
+            // exactly as for naturally-resolved odd-level runs.
+            const runText = span.rtl ? reverseAndMirror(inner) : inner;
             out.push({ text: runText, level, start: cpToStr[span.open + 1] });
         }
         cursor = span.close + 1;
@@ -923,14 +917,17 @@ function resolveBidiCore(
             const start = cpToStr[runStart];
             const end = cpToStr[i];
             let runText = text.substring(start, end);
-            // Reverse RTL runs for visual order.
-            // Note: do NOT apply glyph mirroring (UAX #9 L4) here — our rendering
-            // model pre-reverses text for a left-to-right PDF engine. The reversal
-            // itself swaps bracket/paren positions correctly: logical "(X)" becomes
-            // visual ")X(" → PDF renders L→R as ")X(" → reader reads R→L as "(X)".
-            // Applying mirrorCodePoint would double-swap and produce wrong output.
+            // Reverse odd-level (RTL) runs for visual order, applying UAX #9 L4
+            // glyph mirroring in the same pass: reversal swaps the *positions*
+            // of paired delimiters, but each glyph must still be replaced by
+            // its Bidi_Mirroring_Glyph so it faces its content. Logical "(X)"
+            // with RTL X reverses to ")X̄(" positionally; without L4 the
+            // rightmost glyph would be "(" opening away from the content —
+            // mirroring yields the correct visual "(X̄)". Even-level runs
+            // (including digit runs, which I1/I2 place at level 2) are
+            // untouched — L4 applies only at odd embedding levels.
             if (runLevel % 2 === 1) {
-                runText = reverseString(runText);
+                runText = reverseAndMirror(runText);
             }
             runs.push({ text: runText, level: runLevel, start });
             if (i < len) {
@@ -940,12 +937,27 @@ function resolveBidiCore(
         }
     }
 
-    // L2 reordering: for RTL paragraphs, reverse run order so that
-    // the first logical run (rightmost visually) appears last in the
-    // array — txt() renders runs left-to-right, so English text must
-    // come first and Hebrew/Arabic text last.
-    if (paraLevel === 1 && runs.length > 1) {
-        runs.reverse();
+    // L2 reordering, run-based: within every maximal contiguous sequence of
+    // runs at level >= 1, reverse the *order* of the runs (character reversal
+    // inside odd runs already happened above). For an RTL paragraph every run
+    // is at level >= 1, so the whole array reverses — English text renders
+    // first (leftmost) and Hebrew/Arabic last, as txt() draws left-to-right.
+    // For an LTR paragraph this reorders R/AN/EN sub-sequences (e.g. Arabic
+    // words followed by Arabic-Indic digits) without touching L runs.
+    let blockStart = 0;
+    while (blockStart < runs.length) {
+        if (runs[blockStart].level >= 1) {
+            let blockEnd = blockStart;
+            while (blockEnd < runs.length && runs[blockEnd].level >= 1) blockEnd++;
+            for (let a = blockStart, b = blockEnd - 1; a < b; a++, b--) {
+                const tmp = runs[a];
+                runs[a] = runs[b];
+                runs[b] = tmp;
+            }
+            blockStart = blockEnd;
+        } else {
+            blockStart++;
+        }
     }
 
     return runs;
@@ -1029,6 +1041,27 @@ export function reverseString(str: string): string {
     for (let i = 0; i < str.length;) {
         const cp = str.codePointAt(i) ?? 0;
         cps.push(cp);
+        i += cp > 0xFFFF ? 2 : 1;
+    }
+    cps.reverse();
+    return String.fromCodePoint(...cps);
+}
+
+/**
+ * Reverse a string and substitute each code point with its
+ * Bidi_Mirroring_Glyph (UAX #9 rule L4). Used for odd-level (RTL) runs,
+ * where the positional swap from reversal must be paired with glyph
+ * mirroring so delimiters keep facing their content.
+ *
+ * @param str - Input string in logical order
+ * @returns Visually-ordered string with mirrored delimiters
+ * @since 1.7.0
+ */
+function reverseAndMirror(str: string): string {
+    const cps: number[] = [];
+    for (let i = 0; i < str.length;) {
+        const cp = str.codePointAt(i) ?? 0;
+        cps.push(mirrorCodePoint(cp));
         i += cp > 0xFFFF ? 2 : 1;
     }
     cps.reverse();

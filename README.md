@@ -1452,4 +1452,4 @@ If you use pdfnative in academic, governmental, or compliance work, please cite 
 
 MIT — see [LICENSE](LICENSE).
 
-Font data files in `fonts/` are licensed under [SIL Open Font License 1.1](https://scripts.sil.org/OFL).
+Font data files in `fonts/` are licensed under [SIL Open Font License 1.1](https://scripts.sil.org/OFL). Unicode Character Database source files in `scripts/data/` are © Unicode, Inc., used under the [Unicode License v3](https://www.unicode.org/license.txt).
