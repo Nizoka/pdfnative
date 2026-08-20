@@ -62,6 +62,18 @@ export function pdfaNoFontEntriesDiagnostic(level: string): PdfDiagnostic {
     };
 }
 
+/** Diagnostic payload for AcroForm fields under a PDF/A claim. */
+export function pdfaUnembeddedFormFontDiagnostic(): PdfDiagnostic {
+    return {
+        code: 'PDFA_UNEMBEDDED_FORM_FONT',
+        severity: 'warning',
+        message: 'AcroForm field appearances render through an unembedded base-14 /Helv font, '
+            + 'which breaks the requested PDF/A conformance level (ISO 19005 §6.2.11.4.1; '
+            + 'veraPDF rejects the file). Drop the PDF/A level for form documents, or flatten '
+            + 'the form before claiming conformance.',
+    };
+}
+
 /** Diagnostic payload for a DeviceCMYK image under a PDF/A claim. */
 export function pdfaDeviceCmykDiagnostic(): PdfDiagnostic {
     return {

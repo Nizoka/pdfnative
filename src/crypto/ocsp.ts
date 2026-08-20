@@ -139,6 +139,9 @@ export function parseOcspResponse(der: Uint8Array): OcspResponse {
     }
 
     // responseBytes [0] EXPLICIT SEQUENCE { responseType OID, response OCTET STRING }
+    if (root.children[1].tag !== 0xa0) {
+        throw new Error('OCSP: responseBytes is not the [0] EXPLICIT wrapper');
+    }
     const responseBytes = root.children[1].children[0];
     if (responseBytes === undefined || responseBytes.tag !== ASN1_SEQUENCE || responseBytes.children.length < 2) {
         throw new Error('OCSP: malformed responseBytes');

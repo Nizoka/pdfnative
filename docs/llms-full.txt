@@ -4730,6 +4730,7 @@ them through a single diagnostics channel:
 |------|---------|
 | `PDFA_NO_FONT_ENTRIES` | A `'pdfa*'` level (or `tagged: true`) requested with no `fontEntries` — the file would claim PDF/A while referencing unembedded standard-14 Helvetica (ISO 19005 §6.2.11.4.1). |
 | `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim with an sRGB `OutputIntent` (ISO 19005-2 §6.2.4.3). |
+| `PDFA_UNEMBEDDED_FORM_FONT` | AcroForm fields under a PDF/A claim — form appearances render through an unembedded base-14 `/Helv` font (same §6.2.11.4.1 rule). Flatten the form or drop the level. |
 
 By default each diagnostic is a `console.warn`, deduplicated **once per code
 per build**. Two layout options change that:

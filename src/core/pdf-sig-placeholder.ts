@@ -107,7 +107,7 @@ export interface AddSignaturePlaceholderOptions {
  *
  * const unsigned   = buildDocumentPDFBytes(params);
  * const placeheld  = addSignaturePlaceholder(unsigned, { fieldName: 'Author' });
- * const signed     = await signPdfBytes(placeheld, { privateKey, certificate });
+ * const signed     = signPdfBytes(placeheld, { signerCert, rsaKey });
  * ```
  */
 export function addSignaturePlaceholder(

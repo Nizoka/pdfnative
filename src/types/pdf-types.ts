@@ -391,7 +391,9 @@ export type PdfDiagnosticCode =
     /** PDF/A level requested with no `fontEntries` — unembedded standard-14 fonts (ISO 19005 §6.2.11.4.1). (#69) */
     | 'PDFA_NO_FONT_ENTRIES'
     /** DeviceCMYK image under a PDF/A claim with an sRGB OutputIntent (ISO 19005-2 §6.2.4.3). */
-    | 'PDFA_DEVICE_CMYK_IMAGE';
+    | 'PDFA_DEVICE_CMYK_IMAGE'
+    /** AcroForm fields under a PDF/A claim — form appearances use an unembedded base-14 /Helv font (ISO 19005 §6.2.11.4.1). */
+    | 'PDFA_UNEMBEDDED_FORM_FONT';
 
 /** A single conformance diagnostic surfaced by the builders. */
 export interface PdfDiagnostic {

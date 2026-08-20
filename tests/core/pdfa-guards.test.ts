@@ -101,6 +101,35 @@ describe('PDFA_NO_FONT_ENTRIES (#69)', () => {
     });
 });
 
+describe('PDFA_UNEMBEDDED_FORM_FONT', () => {
+    const formDoc: DocumentParams = {
+        title: 'Form',
+        blocks: [
+            { type: 'paragraph', text: 'form' },
+            { type: 'formField', fieldType: 'text', name: 'f1', label: 'Field' },
+        ],
+        fontEntries: [latinEntry],
+    };
+
+    it('flags AcroForm fields under a PDF/A claim (unembedded /Helv)', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(formDoc, { tagged: 'pdfa2b', onDiagnostic: d => seen.push(d) });
+        expect(seen.some(d => d.code === 'PDFA_UNEMBEDDED_FORM_FONT')).toBe(true);
+    });
+
+    it('throws under strict', () => {
+        expect(() => buildDocumentPDFBytes(formDoc, { tagged: 'pdfa2b', strict: true }))
+            .toThrow(/Helv/);
+    });
+
+    it('stays silent without a PDF/A claim or without form fields', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(formDoc, { onDiagnostic: d => seen.push(d) });
+        buildDocumentPDFBytes({ ...formDoc, blocks: [{ type: 'paragraph', text: 'x' }] }, { tagged: 'pdfa2b', onDiagnostic: d => seen.push(d) });
+        expect(seen).toEqual([]);
+    });
+});
+
 describe('PDFA_DEVICE_CMYK_IMAGE', () => {
     const cmykDoc: DocumentParams = {
         title: 'CMYK',

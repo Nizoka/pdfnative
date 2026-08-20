@@ -186,6 +186,11 @@ export function parseTimestampToken(tokenDer: Uint8Array): TstInfo {
     if (tst.tag !== ASN1_SEQUENCE || tst.children.length < 5) {
         throw new Error('RFC 3161: malformed TSTInfo');
     }
+    // RFC 3161 §2.4.2 defines only version 1; a future-versioned token
+    // could rearrange fields, so refuse rather than misread.
+    if (asn1Integer(tst.children[0]) !== 1n) {
+        throw new Error('RFC 3161: unsupported TSTInfo version (expected 1)');
+    }
 
     const policyOid = asn1OidBytes(tst.children[1]);
 

@@ -149,10 +149,9 @@ describe('addSignaturePlaceholder() — issue #45', () => {
         const unsigned = buildDocumentPDFBytes(makeDocParams());
         const first = addSignaturePlaceholder(unsigned);
         const second = addSignaturePlaceholder(first);
-        expect(second.length).toBe(first.length);
-        for (let i = 0; i < first.length; i++) {
-            expect(second[i]).toBe(first[i]);
-        }
+        // Single whole-buffer comparison: a per-byte expect() loop was slow
+        // enough to breach the 5 s default under full-suite load.
+        expect(Buffer.compare(Buffer.from(second), Buffer.from(first))).toBe(0);
     });
 
     it('works on table-centric PDFs from buildPDFBytes()', () => {

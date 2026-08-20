@@ -70,11 +70,12 @@ outright wrong (reversed RTL digits, unmirrored delimiters, per-revision
 - **`docs/assets/ecosystem.json`** — single source of truth for every version,
   count and inventory quoted anywhere in the documentation, and
   **`scripts/verify-docs.ts`** (`npm run verify:docs`) which fails the build when
-  a doc disagrees with it. Fifteen rules: manifest shape, filesystem-derived
+  a doc disagrees with it. Sixteen rules: manifest shape, filesystem-derived
   counts, stale tokens, canonical presence, version tokens, phantom APIs,
-  JSON-LD versions, internal links, sitemap parity, CDN integrity and pinning,
-  playground-switcher parity, learn-path chain, WCAG contrast, and llms.txt
-  sync. `--online` adds npm drift.
+  JSON-LD versions, internal links, SEO head block, sitemap parity, CDN
+  integrity and pinning, playground-switcher parity, learn-path chain,
+  benchmark parity, WCAG contrast, and llms.txt sync. `--online` adds npm
+  drift.
 - **`.github/workflows/docs.yml`** — runs the verifier on documentation changes.
   `ci.yml` has `paths-ignore` for `docs/**` and `**.md`, so documentation
   previously triggered no workflow at all.
@@ -91,7 +92,7 @@ outright wrong (reversed RTL digits, unmirrored delimiters, per-revision
 - **`bench/RESULTS.md`** — dated benchmark run with hardware, sample counts and
   relative error, plus the 1k–100k streaming measurements.
 - Structured data for the index pages: `CollectionPage` + `ItemList` covering all
-  26 guides and all 9 playgrounds, and `WebSite` + `Organization` on the homepage.
+  27 guides and all 9 playgrounds, and `WebSite` + `Organization` on the homepage.
 
 ### Fixed
 
@@ -116,8 +117,10 @@ outright wrong (reversed RTL digits, unmirrored delimiters, per-revision
   bare `%%EOF`; an absent or corrupt `/Size` recovers from the xref's highest
   entry instead of silently allocating colliding object numbers.
 - **fix(core): complete base-14 `/ToUnicode` coverage** — base-14 dicts reached
-  under a PDF/A claim and the AcroForm `/Helv` dict now carry the shared
-  WinAnsi CMap; cmap inversion keeps a legitimately-mapped U+0000
+  under a PDF/A claim, and the AcroForm `/Helv` dict in EVERY mode (all
+  form-carrying documents change bytes; form text becomes
+  searchable/extractable), now carry the shared WinAnsi CMap; cmap inversion
+  keeps a legitimately-mapped U+0000
   ([src/fonts/font-embedder.ts](src/fonts/font-embedder.ts)).
 - **fix(fonts): COLRv1 composite degradation** — a `PaintComposite` whose
   SOURCE subtree is unsupported now renders its backdrop alone instead of
@@ -268,7 +271,7 @@ had fixed instances while their classes survived elsewhere:
 - **`llms.txt` returned 404 on the published site** — the file lived only at
   the repo root while the site serves `docs/`. A synced copy now ships in
   `docs/`, plus a generated `docs/llms-full.txt` (`npm run docs:llms`)
-  concatenating all 26 guides for single-request agent ingestion; a new
+  concatenating all 27 guides for single-request agent ingestion; a new
   `llms-sync` rule keeps both honest. Guide shells gained `<noscript>`
   Markdown fallbacks and `rel="alternate"` links for non-JS readers, and the
   Learn/Guides/Playgrounds/Responsibility navigation is now uniform across
@@ -320,7 +323,7 @@ had fixed instances while their classes survived elsewhere:
 - The comparison table is dated, names the exact competitor versions, states the
   dependency-count method, and links its source data.
 - Hero CTA points at `/learn/` instead of an off-site 85 KB README. The homepage
-  now links 21 of 26 guides and `llms.txt` all 26.
+  now links 21 of the guides and `llms.txt` all 27.
 
 ## [1.6.0] – 2026-07-19
 

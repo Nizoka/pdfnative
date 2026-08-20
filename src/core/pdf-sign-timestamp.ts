@@ -124,8 +124,9 @@ export async function signPdfBytesWithTimestamp(
     if (!verifyTimestampImprint(tstInfo, imprint)) {
         throw new Error('signPdfBytesWithTimestamp: TSA token message imprint does not match the signature');
     }
-    if (options.timestampNonce !== undefined && tstInfo.nonce !== undefined
-        && tstInfo.nonce !== options.timestampNonce) {
+    // RFC 3161 §2.4.2: the token nonce MUST be present (and equal) when the
+    // request carried one — an absent nonce is a mismatch, not a pass.
+    if (options.timestampNonce !== undefined && tstInfo.nonce !== options.timestampNonce) {
         throw new Error('signPdfBytesWithTimestamp: TSA token nonce mismatch');
     }
 

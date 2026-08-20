@@ -124,8 +124,9 @@ export async function addDocumentTimestamp(
     if (!verifyTimestampImprint(tstInfo, imprint)) {
         throw new Error('addDocumentTimestamp: TSA token message imprint does not match the document');
     }
-    if (options.timestampNonce !== undefined && tstInfo.nonce !== undefined
-        && tstInfo.nonce !== options.timestampNonce) {
+    // RFC 3161 §2.4.2: the token nonce MUST be present (and equal) when the
+    // request carried one — an absent nonce is a mismatch, not a pass.
+    if (options.timestampNonce !== undefined && tstInfo.nonce !== options.timestampNonce) {
         throw new Error('addDocumentTimestamp: TSA token nonce mismatch');
     }
 

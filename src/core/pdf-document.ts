@@ -25,7 +25,7 @@ import type {
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaUnembeddedFormFontDiagnostic } from './pdf-diagnostics.js';
 import { createEncodingContext } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
@@ -661,6 +661,12 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         formFieldsByPage.set(pf.page, list);
     }
     const totalFormFields = pageFormFields.length;
+    // Form appearances render through a dedicated UNEMBEDDED base-14 /Helv
+    // font — under a PDF/A claim that violates the same ISO 19005
+    // §6.2.11.4.1 rule the no-fonts guard covers (#69), so surface it.
+    if (tagged && totalFormFields > 0) {
+        emitDiagnostic(pdfaUnembeddedFormFontDiagnostic());
+    }
     // Each form field: button types (checkbox/radio) = 3 objects (widget + Yes AP + Off AP)
     // Other types = 2 objects (widget + AP XObject)
     // Plus 1 dedicated Helvetica font object for form field rendering

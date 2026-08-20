@@ -166,7 +166,12 @@ function parseXValue(x: number | string, xType: string, seriesLabel: string): nu
         if (!Number.isFinite(x)) throw new Error(`chart: series "${seriesLabel}" contains a non-finite x value`);
         return x;
     }
-    const t = Date.parse(x);
+    // Determinism: ECMA-262 parses an offset-less date-TIME form in the host
+    // local time zone (date-only forms are UTC). Normalize such strings to
+    // UTC so output bytes are identical across machines, as the module
+    // header promises.
+    const normalized = /T\d{2}/.test(x) && !/(?:Z|[+-]\d{2}:?\d{2})$/.test(x) ? `${x}Z` : x;
+    const t = Date.parse(normalized);
     if (Number.isNaN(t)) {
         throw new Error(`chart: series "${seriesLabel}" x value "${x}" is not a parseable ISO-8601 date`);
     }

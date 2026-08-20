@@ -82,10 +82,18 @@ describe('PAdES B-T (signature timestamp)', () => {
         expect(sigs.length).toBe(1);
         const cms = parseCmsSignedData(sigs[0].contents);
         expect(cms.unsignedAttrs.length).toBe(1);
-        // The signature itself still verifies structurally: the token's
-        // imprint covers the CMS signature value.
-        const tokenCms = cms.unsignedAttrs[0];
-        expect(tokenCms.length).toBeGreaterThan(100);
+        // Extract the embedded TimeStampToken from the unsigned attribute
+        // (SEQUENCE { OID, SET { token } }) and verify its imprint really
+        // covers this signature's CMS signature value, and that the
+        // requested nonce echoed back.
+        const attr = cms.unsignedAttrs[0];
+        const setIdx = attr.indexOf(0x31, 13); // after SEQ hdr + 11-byte OID TLV
+        expect(setIdx).toBeGreaterThan(0);
+        const lenByte = attr[setIdx + 1];
+        const tokenStart = lenByte & 0x80 ? setIdx + 2 + (lenByte & 0x7f) : setIdx + 2;
+        const info = parseTimestampToken(attr.subarray(tokenStart));
+        expect(verifyTimestampImprint(info, sha256(cms.signatureValue))).toBe(true);
+        expect(info.nonce).toBe(42n);
         expect(openPdf(signed).pageCount).toBe(1);
     });
 
