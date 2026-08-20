@@ -97,9 +97,9 @@
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 109,
-    "sampleGenerators": 45,
-    "samplePdfs": 232,
+    "testFiles": 120,
+    "sampleGenerators": 46,
+    "samplePdfs": 237,
     "guides": 26,
     "playgrounds": 9,
     "learnSteps": 8

@@ -417,9 +417,10 @@ export interface ChartBlock {
      */
     readonly labelStride?: number;
     /**
-     * Rotate category labels clockwise by this many degrees (0–90, typical
-     * 45) — labels read upward toward their tick. Disables auto-stride
-     * unless `labelStride` is also set. @since 1.7.0
+     * Rotate category labels counter-clockwise by this many degrees (0–90,
+     * typical 45) — labels are right-aligned to their tick and read upward
+     * toward it. Disables auto-stride unless `labelStride` is also set.
+     * @since 1.7.0
      */
     readonly labelRotation?: number;
     /** Draw point markers on line series. Default `false`. */

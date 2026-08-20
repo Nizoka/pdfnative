@@ -28,6 +28,9 @@ const tableParams: PdfParams = {
     infoItems: [],
     headers: ['A', 'B', 'C', 'D', 'E'],
     rows: [{ cells: ['a', 'b', 'c', 'd', 'e'], type: '', pointed: false }],
+    balanceText: '',
+    countText: '',
+    footerText: '',
 };
 
 /** Minimal 4-component (CMYK) baseline JPEG — SOF0 declares 4 components. */

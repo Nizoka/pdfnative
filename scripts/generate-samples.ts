@@ -29,6 +29,7 @@ import { generate as generateSvgShowcase } from './generators/svg-showcase.js';
 import { generate as generateFormShowcase } from './generators/form-showcase.js';
 import { generate as generateDigitalSignature } from './generators/digital-signature.js';
 import { generate as generateSignaturePlaceholder } from './generators/signature-placeholder.js';
+import { generate as generateSignatureLtv } from './generators/signature-ltv.js';
 import { generate as generateBidiEmbeddings } from './generators/bidi-embeddings-showcase.js';
 import { generate as generateTableParity } from './generators/document-table-parity.js';
 import { generate as generateStreaming } from './generators/streaming-showcase.js';
@@ -114,6 +115,7 @@ async function generateAll(): Promise<void> {
 
     // ── Signature placeholder workflow (v1.2 — issue #45) ────────
     await generateSignaturePlaceholder(ctx);
+    await generateSignatureLtv(ctx);
 
     // ── BiDi embeddings showcase (v1.2 — UAX #9 LRE/RLE/LRO/RLO) ─
     await generateBidiEmbeddings(ctx);
