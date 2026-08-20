@@ -56,6 +56,7 @@ import { generate as generateFontCompiler } from './generators/font-compiler-dem
 import { generate as generateFormFill } from './generators/form-fill-showcase.js';
 import { generate as generateChart } from './generators/chart-showcase.js';
 import { generate as generateTextExtract } from './generators/text-extract-showcase.js';
+import { generate as generateIncrementalMetadata } from './generators/incremental-metadata.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -194,6 +195,9 @@ async function generateAll(): Promise<void> {
 
     // ── Text extraction (v1.6.0) ─────────────────────────────────
     await generateTextExtract(ctx);
+
+    // ── Incremental metadata update (v1.7.0) ─────────────────────
+    await generateIncrementalMetadata(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

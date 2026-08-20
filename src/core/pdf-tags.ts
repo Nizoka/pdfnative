@@ -304,6 +304,11 @@ export function buildPdfMetadata(now: Date = new Date()): PdfMetadata {
  * @param author - Optional document author (matches /Info /Author).
  * @param subject - Optional document subject (matches /Info /Subject → dc:description['x-default']).
  * @param keywords - Optional document keywords (matches /Info /Keywords → pdf:Keywords).
+ * @param modifyDate - Optional xmp:ModifyDate override (ISO 8601, must equal
+ *   /Info /ModDate same instant). Defaults to `createDate` — correct at
+ *   creation time, where ModifyDate = CreateDate.
+ * @param metadataDate - Optional xmp:MetadataDate override. Defaults to
+ *   `createDate` for the same reason.
  * @returns XMP metadata XML string
  */
 export function buildXMPMetadata(
@@ -314,6 +319,8 @@ export function buildXMPMetadata(
     author?: string,
     subject?: string,
     keywords?: string,
+    modifyDate?: string,
+    metadataDate?: string,
 ): string {
     const escapedTitle = escapeXml(title);
     // dc:creator describes the document author (per Dublin Core),
@@ -341,8 +348,8 @@ export function buildXMPMetadata(
     lines.push(
         '   <pdf:Producer>pdfnative</pdf:Producer>',
         `   <xmp:CreateDate>${createDate}</xmp:CreateDate>`,
-        `   <xmp:ModifyDate>${createDate}</xmp:ModifyDate>`,
-        `   <xmp:MetadataDate>${createDate}</xmp:MetadataDate>`,
+        `   <xmp:ModifyDate>${modifyDate ?? createDate}</xmp:ModifyDate>`,
+        `   <xmp:MetadataDate>${metadataDate ?? createDate}</xmp:MetadataDate>`,
         `   <pdfaid:part>${pdfaPart}</pdfaid:part>`,
         `   <pdfaid:conformance>${pdfaConformance}</pdfaid:conformance>`,
     );

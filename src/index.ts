@@ -295,7 +295,7 @@ export type { ParsedAnnotation } from './parser/pdf-reader.js';
 export { openPdf } from './parser/pdf-reader.js';
 export type { DecryptionContext, CryptFilterMethod } from './parser/pdf-decrypt.js';
 export { PdfPasswordError, PdfEncryptionUnsupportedError } from './parser/pdf-decrypt.js';
-export type { PdfModifier } from './parser/pdf-modifier.js';
+export type { PdfModifier, PdfMetadataUpdate } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
 export type { PageRange, MergeOptions, PdfSourceInput, StreamMergeOptions, SplitPdfStream } from './parser/pdf-pagetree.js';
 export { mergePdfs, splitPdf, extractPages, streamMergedPdfs, streamExtractPages, streamSplitPdf } from './parser/pdf-pagetree.js';

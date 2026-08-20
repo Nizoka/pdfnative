@@ -940,3 +940,247 @@ describe('round-trip integration', () => {
         expect(info!.get('Title')).toBe('Complex Document');
     });
 });
+
+// ═════════════════════════════════════════════════════════════════════
+// INCREMENTAL-WRITER CONFORMANCE HARDENING (v1.7.0)
+// ═════════════════════════════════════════════════════════════════════
+
+/** Tiny classic-xref PDF (3 objects) with a caller-supplied trailer dict. */
+function buildTinyClassicPdf(trailerDict: string): Uint8Array {
+    const objs = [
+        '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+        '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+        '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>\nendobj\n',
+    ];
+    let body = '%PDF-1.4\n';
+    const offsets: number[] = [];
+    for (const o of objs) { offsets.push(body.length); body += o; }
+    const xrefPos = body.length;
+    body += 'xref\n0 4\n0000000000 65535 f \n';
+    for (const off of offsets) body += `${String(off).padStart(10, '0')} 00000 n \n`;
+    body += `trailer\n${trailerDict}\nstartxref\n${xrefPos}\n%%EOF`;
+    return textEncoder(body);
+}
+
+/**
+ * Tiny xref-STREAM PDF (3 objects + the /XRef stream as object 4).
+ * `predictor` 12 applies PNG Up pre-filtering before deflate, mirroring
+ * what mainstream producers emit.
+ */
+function buildXrefStreamPdf(predictor?: number): { bytes: Uint8Array; offsets: number[] } {
+    const objs = [
+        '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+        '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+        '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>\nendobj\n',
+    ];
+    let body = '%PDF-1.5\n';
+    const offsets: number[] = [0];
+    for (const o of objs) { offsets.push(body.length); body += o; }
+    const xrefPos = body.length;
+    offsets.push(xrefPos); // object 4 = the xref stream itself
+
+    // Rows for objects 0..4, /W [1 2 1]: type, offset (2 bytes BE), gen
+    const rowBytes = 4;
+    const rows: number[][] = [[0, 0, 0]];
+    for (let n = 1; n <= 4; n++) rows.push([1, offsets[n], 0]);
+    const raw = new Uint8Array(rows.length * rowBytes);
+    for (let r = 0; r < rows.length; r++) {
+        raw[r * rowBytes] = rows[r][0];
+        raw[r * rowBytes + 1] = (rows[r][1] >> 8) & 0xFF;
+        raw[r * rowBytes + 2] = rows[r][1] & 0xFF;
+        raw[r * rowBytes + 3] = rows[r][2];
+    }
+
+    let payload = raw;
+    let parmsStr = '';
+    if (predictor === 12) {
+        // PNG Up filter: each row prefixed with filter byte 2, bytes are
+        // deltas against the previous row.
+        const out = new Uint8Array(rows.length * (rowBytes + 1));
+        const prev = new Uint8Array(rowBytes);
+        for (let r = 0; r < rows.length; r++) {
+            out[r * (rowBytes + 1)] = 2;
+            for (let i = 0; i < rowBytes; i++) {
+                out[r * (rowBytes + 1) + 1 + i] = (raw[r * rowBytes + i] - prev[i]) & 0xFF;
+            }
+            prev.set(raw.subarray(r * rowBytes, (r + 1) * rowBytes));
+        }
+        payload = out;
+        parmsStr = ' /DecodeParms << /Predictor 12 /Columns 4 >>';
+    }
+    const data = deflateSync(payload);
+
+    body += `4 0 obj\n<< /Type /XRef /Size 5 /W [1 2 1] /Root 1 0 R /Filter /FlateDecode${parmsStr} /Length ${data.length} >>\nstream\n`;
+    for (let i = 0; i < data.length; i++) body += String.fromCharCode(data[i]);
+    body += `\nendstream\nendobj\nstartxref\n${xrefPos}\n%%EOF`;
+    return { bytes: textEncoder(body), offsets };
+}
+
+describe('pdf-xref-parser — /Prev validation', () => {
+    it('absent /Prev ends the chain normally', () => {
+        const pdf = buildTinyClassicPdf('<< /Size 4 /Root 1 0 R >>');
+        const xref = parseXrefTable(pdf);
+        expect(xref.entries.size).toBe(4);
+    });
+
+    it('throws on non-numeric /Prev', () => {
+        const pdf = buildTinyClassicPdf('<< /Size 4 /Root 1 0 R /Prev (garbage) >>');
+        expect(() => parseXrefTable(pdf)).toThrow('invalid /Prev');
+    });
+
+    it('throws on negative /Prev', () => {
+        const pdf = buildTinyClassicPdf('<< /Size 4 /Root 1 0 R /Prev -5 >>');
+        expect(() => parseXrefTable(pdf)).toThrow('invalid /Prev');
+    });
+
+    it('throws on out-of-bounds /Prev', () => {
+        const pdf = buildTinyClassicPdf('<< /Size 4 /Root 1 0 R /Prev 99999999 >>');
+        expect(() => parseXrefTable(pdf)).toThrow('invalid /Prev');
+    });
+});
+
+describe('pdf-xref-parser — xref-stream predictor', () => {
+    it('parses an unpredicted xref stream (baseline)', () => {
+        const { bytes, offsets } = buildXrefStreamPdf();
+        const xref = parseXrefTable(bytes);
+        expect(xref.entries.get(1)!.offset).toBe(offsets[1]);
+        expect(xref.entries.get(3)!.offset).toBe(offsets[3]);
+    });
+
+    it('parses a /Predictor 12 (PNG Up) xref stream to correct offsets', () => {
+        const { bytes, offsets } = buildXrefStreamPdf(12);
+        const xref = parseXrefTable(bytes);
+        expect(xref.entries.size).toBe(5);
+        for (let n = 1; n <= 4; n++) {
+            expect(xref.entries.get(n)!.offset).toBe(offsets[n]);
+        }
+        const reader = openPdf(bytes);
+        expect(dictGetName(reader.getCatalog(), 'Type')).toBe('Catalog');
+        expect(reader.pageCount).toBe(1);
+    });
+});
+
+describe('pdf-modifier — conformance hardening', () => {
+    it('preserves /ID[0] byte-exact and regenerates /ID[1] on save', () => {
+        const original = buildPDFBytes(minimalTableParams(), { compress: false });
+        const reader = openPdf(original);
+        const idBefore = reader.trailer.get('ID') as string[];
+        expect(Array.isArray(idBefore)).toBe(true);
+
+        const mod = createModifier(reader);
+        mod.addObject('x');
+        const saved = mod.save();
+
+        const reader2 = openPdf(saved);
+        const idAfter = reader2.trailer.get('ID') as string[];
+        expect(idAfter[0]).toBe(idBefore[0]);        // permanent id untouched
+        expect(idAfter[1]).not.toBe(idBefore[1]);    // revision id regenerated
+        expect(idAfter[1].length).toBe(16);          // md5 → 16 bytes
+    });
+
+    it('emits a fresh /ID pair when the source has none', () => {
+        const original = buildTinyClassicPdf('<< /Size 4 /Root 1 0 R >>');
+        const reader = openPdf(original);
+        expect(reader.trailer.get('ID')).toBeUndefined();
+
+        const mod = createModifier(reader);
+        mod.addObject('x');
+        const saved = mod.save();
+
+        const tail = new TextDecoder('latin1').decode(saved.subarray(original.length));
+        expect(tail).toMatch(/\/ID \[<[0-9A-F]{32}> <[0-9A-F]{32}>\]/);
+        const reader2 = openPdf(saved);
+        expect((reader2.trailer.get('ID') as string[]).length).toBe(2);
+    });
+
+    it('is deterministic: same input + same modifications → identical bytes', () => {
+        const original = buildPDFBytes(minimalTableParams(), { compress: false });
+        const run = (): Uint8Array => {
+            const mod = createModifier(openPdf(original));
+            const d: PdfDict = new Map();
+            d.set('Marker', 'deterministic');
+            mod.addObject(d);
+            return mod.save();
+        };
+        const a = run();
+        const b = run();
+        expect(Buffer.from(a).equals(Buffer.from(b))).toBe(true);
+    });
+
+    it('starts the appended revision on a fresh line when base lacks a trailing EOL', () => {
+        const original = buildPDFBytes(minimalTableParams(), { compress: false });
+        expect(original[original.length - 1]).not.toBe(0x0A); // base writer ends with %%EOF
+
+        const mod = createModifier(openPdf(original));
+        mod.addObject('x');
+        const saved = mod.save();
+
+        const boundary = new TextDecoder('latin1').decode(
+            saved.subarray(original.length - 5, original.length + 1),
+        );
+        expect(boundary).toBe('%%EOF\n');
+        const tail = new TextDecoder('latin1').decode(saved.subarray(original.length + 1, original.length + 20));
+        expect(tail).toMatch(/^\d+ 0 obj/);
+    });
+
+    it('does not double the newline when the base already ends with one', () => {
+        const original = buildPDFBytes(minimalTableParams(), { compress: false });
+        const padded = new Uint8Array(original.length + 1);
+        padded.set(original, 0);
+        padded[original.length] = 0x0A;
+
+        const mod = createModifier(openPdf(padded));
+        mod.addObject('x');
+        const saved = mod.save();
+
+        const tail = new TextDecoder('latin1').decode(saved.subarray(padded.length, padded.length + 20));
+        expect(tail).toMatch(/^\d+ 0 obj/); // no extra blank line
+    });
+
+    it('derives the next object number from the xref when /Size is absent', () => {
+        const original = buildTinyClassicPdf('<< /Root 1 0 R >>');
+        const reader = openPdf(original);
+        const mod = createModifier(reader);
+        expect(mod.nextObjNum).toBe(4); // max object number (3) + 1
+
+        const d: PdfDict = new Map();
+        d.set('Custom', 'no-size');
+        const num = mod.addObject(d);
+        expect(num).toBe(4);
+
+        const saved = mod.save();
+        const reader2 = openPdf(saved);
+        // No collision: object 3 is still the page, object 4 is the new dict
+        expect(dictGetName(reader2.getObject(3) as PdfDict, 'Type')).toBe('Page');
+        expect((reader2.getObject(4) as PdfDict).get('Custom')).toBe('no-size');
+    });
+
+    it('derives the next object number when /Size is corrupt (non-numeric)', () => {
+        const original = buildTinyClassicPdf('<< /Size /Bogus /Root 1 0 R >>');
+        const mod = createModifier(openPdf(original));
+        expect(mod.nextObjNum).toBe(4);
+    });
+
+    it('throws when /Size is invalid and the xref is empty', () => {
+        const pdf = textEncoder('%PDF-1.4\nxref\n0 0\ntrailer\n<< >>\nstartxref\n9\n%%EOF');
+        const reader = openPdf(pdf);
+        expect(() => createModifier(reader)).toThrow('cannot determine next object number');
+    });
+
+    it('xref-stream source → modify → reopen resolves every object', () => {
+        const { bytes } = buildXrefStreamPdf(12);
+        const reader = openPdf(bytes);
+        const mod = createModifier(reader);
+        const d: PdfDict = new Map();
+        d.set('Custom', 'mixed-chain');
+        const num = mod.addObject(d);
+        const saved = mod.save();
+
+        const reader2 = openPdf(saved);
+        expect(dictGetName(reader2.getCatalog(), 'Type')).toBe('Catalog');
+        expect(reader2.pageCount).toBe(1);
+        expect(dictGetName(reader2.getObject(2) as PdfDict, 'Type')).toBe('Pages');
+        expect(dictGetName(reader2.getObject(3) as PdfDict, 'Type')).toBe('Page');
+        expect((reader2.getObject(num) as PdfDict).get('Custom')).toBe('mixed-chain');
+    });
+});

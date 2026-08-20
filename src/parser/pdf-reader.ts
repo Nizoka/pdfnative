@@ -596,7 +596,14 @@ function parseObjectAt(buf: Uint8Array, offset: number): PdfValue {
 
 // ── PNG Predictor Decoder ────────────────────────────────────────────
 
-function decodePNGPredictor(data: Uint8Array, parms: PdfDict): Uint8Array {
+/**
+ * Undo a PNG predictor (ISO 32000-1 §7.4.4.4) applied before FlateDecode.
+ * Reads `/Columns`, `/Colors` and `/BitsPerComponent` from `parms`
+ * (defaults 1 / 1 / 8). Shared with the xref-stream parser (same layer).
+ *
+ * @internal
+ */
+export function decodePNGPredictor(data: Uint8Array, parms: PdfDict): Uint8Array {
     const columns = dictGetNum(parms, 'Columns') ?? 1;
     const colors = dictGetNum(parms, 'Colors') ?? 1;
     const bpc = dictGetNum(parms, 'BitsPerComponent') ?? 8;

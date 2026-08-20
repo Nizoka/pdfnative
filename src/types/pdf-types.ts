@@ -45,6 +45,17 @@ export interface FontData {
      * `undefined`/`null` for ordinary monochrome fonts. (v1.3.0)
      */
     readonly colorGlyphs?: Record<number, ColorGlyph> | null;
+    /**
+     * Multi-codepoint emoji sequences (flags via regional-indicator pairs,
+     * ZWJ families/professions, …) resolved at font-build time from the
+     * source font's GSUB ligature lookups. Keyed by the sequence's FIRST
+     * codepoint; each entry is `[resultGid, cp2, cp3, …]` with entries
+     * sorted longest-first so the runtime longest-match pre-pass can take
+     * the first hit. Joiner codepoints (ZWJ, VS-16, regional indicators)
+     * deliberately stay out of `cmap` — a font without this table keeps
+     * the historical per-codepoint behaviour. (v1.7.0)
+     */
+    readonly sequences?: Record<number, number[][]> | null;
 }
 
 // ── Colour Glyph Types (COLR/CPAL — v1.3.0) ──────────────────────────
@@ -234,6 +245,16 @@ export interface PdfInfoItem {
 }
 
 /**
+ * Optional metadata for the PDF /Info dictionary (ISO 32000-1 §14.3.3),
+ * mirrored into the XMP packet for tagged/PDF-A output.
+ */
+export interface DocumentMetadata {
+    readonly author?: string;
+    readonly subject?: string;
+    readonly keywords?: string;
+}
+
+/**
  * Parameters for PDF generation.
  * This is the main input interface for table-centric PDF generation.
  * The consumer builds these params from their own data model.
@@ -259,6 +280,13 @@ export interface PdfParams {
     readonly fontData?: FontData | null;
     /** Array of font entries for multi-font support (primary first). */
     readonly fontEntries?: FontEntry[];
+    /**
+     * Document metadata written to /Info (/Author /Subject /Keywords) and
+     * mirrored into the XMP packet under tagged/PDF-A modes. Omitted →
+     * byte-identical output to previous releases.
+     * @since 1.7.0
+     */
+    readonly metadata?: DocumentMetadata;
 }
 
 // ── Theme / Style Types ──────────────────────────────────────────────

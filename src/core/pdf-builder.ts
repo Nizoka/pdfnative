@@ -720,8 +720,17 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
     const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(layoutOptions?.creationDate);
     const infoTitle = params.docTitle || title || '';
-    emitObj(infoObjNum,
-        `<< /Title ${encodePdfTextString(infoTitle)} /Producer (pdfnative) /CreationDate (${pdfDate}) >>`);
+    const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];
+    if (params.metadata?.author) {
+        metaParts.push(`/Author ${encodePdfTextString(params.metadata.author)}`);
+    }
+    if (params.metadata?.subject) {
+        metaParts.push(`/Subject ${encodePdfTextString(params.metadata.subject)}`);
+    }
+    if (params.metadata?.keywords) {
+        metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
+    }
+    emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
     let totalObjs = infoObjNum;
 
@@ -753,7 +762,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
         // XMP metadata stream (skip compression for PDF/A validator compatibility)
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance));
+        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;

@@ -11,9 +11,10 @@
  */
 
 import { createTokenizer } from './pdf-tokenizer.js';
-import { parseValue, isDict, dictGetName } from './pdf-object-parser.js';
+import { parseValue, isDict, isArray, dictGetName, dictGetNum } from './pdf-object-parser.js';
 import type { PdfDict, PdfValue, PdfRef } from './pdf-object-parser.js';
 import { inflateSync } from './pdf-inflate.js';
+import { decodePNGPredictor } from './pdf-reader.js';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -159,17 +160,34 @@ function parseXrefStream(buf: Uint8Array, offset: number): { entries: Map<number
     const typeVal = dictGetName(dict, 'Type');
     if (typeVal !== 'XRef') throw new Error('xref stream: /Type must be /XRef');
 
+    // Parse /W array (field widths)
+    const wArr = dict.get('W');
+    if (!Array.isArray(wArr) || wArr.length < 3) throw new Error('xref stream: invalid /W array');
+    const w = wArr.map(Number);
+
     // Decode stream data
     let streamData = val.data;
     const filterName = dictGetName(dict, 'Filter');
     if (filterName === 'FlateDecode') {
         streamData = inflateSync(streamData);
+        // /DecodeParms (or its /DP alias) may declare a predictor
+        // (ISO 32000-1 §7.4.4.4). Xref streams in the wild almost always
+        // use PNG Up (/Predictor 12); undo it before reading fields.
+        const parms = getXrefDecodeParms(dict);
+        if (parms !== null) {
+            const predictor = dictGetNum(parms, 'Predictor') ?? 1;
+            if (predictor >= 2) {
+                // /Columns defaults to the row width (= sum of /W widths)
+                // for xref streams; /Colors 1 and /BitsPerComponent 8 are
+                // the decoder's own defaults.
+                const effective: PdfDict = new Map(parms);
+                if (dictGetNum(parms, 'Columns') === undefined) {
+                    effective.set('Columns', w[0] + w[1] + w[2]);
+                }
+                streamData = decodePNGPredictor(streamData, effective);
+            }
+        }
     }
-
-    // Parse /W array (field widths)
-    const wArr = dict.get('W');
-    if (!Array.isArray(wArr) || wArr.length < 3) throw new Error('xref stream: invalid /W array');
-    const w = wArr.map(Number);
 
     // Parse /Size
     const size = Number(dict.get('Size'));
@@ -207,6 +225,23 @@ function parseXrefStream(buf: Uint8Array, offset: number): { entries: Map<number
     }
 
     return { entries, trailer: dict };
+}
+
+/**
+ * Extract the direct /DecodeParms (or /DP alias) dictionary of an xref
+ * stream. Array form (parallel to a /Filter array) takes the first
+ * dictionary element. Returns `null` when absent or not a dictionary.
+ */
+function getXrefDecodeParms(dict: PdfDict): PdfDict | null {
+    const raw = dict.get('DecodeParms') ?? dict.get('DP');
+    if (raw === undefined) return null;
+    if (isDict(raw)) return raw;
+    if (isArray(raw)) {
+        for (const el of raw) {
+            if (isDict(el)) return el;
+        }
+    }
+    return null;
 }
 
 function readFieldValue(data: Uint8Array, offset: number, width: number): number {
@@ -281,9 +316,18 @@ function parseXrefChain(buf: Uint8Array, startOffset: number): XrefTable {
             }
         }
 
-        // Follow /Prev chain
+        // Follow /Prev chain. Absent /Prev ends the chain (normal for the
+        // oldest revision); a present-but-malformed /Prev must NOT silently
+        // truncate the revision chain (ISO 32000-1 §7.5.5 requires a direct
+        // non-negative integer byte offset).
         const prev = result.trailer.get('Prev');
-        offset = typeof prev === 'number' ? prev : undefined;
+        if (prev === undefined) {
+            offset = undefined;
+        } else if (typeof prev !== 'number' || !Number.isInteger(prev) || prev < 0 || prev >= buf.length) {
+            throw new Error('xref: invalid /Prev entry (expected direct non-negative integer offset)');
+        } else {
+            offset = prev;
+        }
     }
 
     // Merge trailers (first/newest wins for each key)
