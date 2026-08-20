@@ -384,6 +384,26 @@ export interface WorkerGenerationOptions {
     readonly onProgress?: (percent: number) => void;
 }
 
+// ── Conformance Diagnostics (v1.7.0) ─────────────────────────────────
+
+/** Machine-readable conformance diagnostic codes (stable API — additions only). */
+export type PdfDiagnosticCode =
+    /** PDF/A level requested with no `fontEntries` — unembedded standard-14 fonts (ISO 19005 §6.2.11.4.1). (#69) */
+    | 'PDFA_NO_FONT_ENTRIES'
+    /** DeviceCMYK image under a PDF/A claim with an sRGB OutputIntent (ISO 19005-2 §6.2.4.3). */
+    | 'PDFA_DEVICE_CMYK_IMAGE';
+
+/** A single conformance diagnostic surfaced by the builders. */
+export interface PdfDiagnostic {
+    readonly code: PdfDiagnosticCode;
+    /** Human-readable, actionable message (includes the remedy). */
+    readonly message: string;
+    readonly severity: 'warning';
+}
+
+/** Sink for conformance diagnostics. Pass `() => {}` to silence. */
+export type PdfDiagnosticHandler = (diagnostic: PdfDiagnostic) => void;
+
 /** Layout options (all optional, A4 defaults applied). */
 export interface PdfLayoutOptions {
     /** Page width in points (default: 595.28 = A4). */
@@ -416,6 +436,18 @@ export interface PdfLayoutOptions {
      * Default: false (backward compatible).
      */
     readonly tagged?: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u' | 'pdfa3b';
+    /**
+     * Escalate conformance diagnostics (e.g. a PDF/A level requested with
+     * no embedded fonts) to thrown errors instead of warnings, before any
+     * output bytes are produced. Default `false`. @since 1.7.0
+     */
+    readonly strict?: boolean;
+    /**
+     * Sink for conformance diagnostics. Default: `console.warn`, once per
+     * diagnostic code per build. Pass `() => {}` to silence. Ignored when
+     * `strict` is set (diagnostics throw instead). @since 1.7.0
+     */
+    readonly onDiagnostic?: PdfDiagnosticHandler;
     /**
      * Enable PDF encryption (password protection).
      * Uses AES-128 or AES-256 only — no RC4.

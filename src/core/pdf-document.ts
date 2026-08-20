@@ -25,6 +25,7 @@ import type {
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic } from './pdf-diagnostics.js';
 import { createEncodingContext } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
@@ -160,6 +161,15 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // ── Tagged mode setup ────────────────────────────────────────────
     const pdfaConfig = resolvePdfAConfig(layout?.tagged);
     const tagged = pdfaConfig.enabled;
+
+    // ── Conformance diagnostics (v1.7.0) ─────────────────────────────
+    // Guard the PDF/A declaration: a conformance claim must not be stamped
+    // silently when the configuration is known to fail validation (#69).
+    const emitDiagnostic = createDiagnosticEmitter(layout?.strict, layout?.onDiagnostic);
+    if (tagged && fontEntries.length === 0) {
+        const level = typeof layout?.tagged === 'string' ? layout.tagged : 'pdfa2b';
+        emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
+    }
 
     const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false);
 
@@ -408,7 +418,13 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             if (block.type === 'image') {
                 const idx = resolvedImages.length;
                 imageBlockMap.set(block, idx);
-                resolvedImages.push(resolveImage(block, cw));
+                const resolved = resolveImage(block, cw);
+                if (tagged && resolved.parsed.colorSpace === '/DeviceCMYK') {
+                    // The document's OutputIntent is sRGB — a DeviceCMYK
+                    // image breaks the PDF/A claim (ISO 19005-2 §6.2.4.3).
+                    emitDiagnostic(pdfaDeviceCmykDiagnostic());
+                }
+                resolvedImages.push(resolved);
             }
         }
     }
@@ -672,15 +688,22 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const totalFormObjs = totalFieldObjs + numRadioGroups;
     const formFontObjs = totalFormFields > 0 ? 1 : 0; // dedicated /Helv font object for forms
 
-    // Base-14 /ToUnicode CMap (issue #48): non-tagged Helvetica/Helvetica-Bold
-    // carry no ToUnicode by default, so the CP1252 0x80–0x9F band (Euro, curly
+    // Base-14 /ToUnicode CMap (issue #48): Helvetica/Helvetica-Bold carry no
+    // ToUnicode by default, so the CP1252 0x80–0x9F band (Euro, curly
     // quotes, …) is not selectable/searchable and renders as `?` in minimal
     // viewers. Emit one shared CMap as the trailing object (forward reference
-    // from the font dicts). Tagged mode embeds CIDFonts with their own ToUnicode.
+    // from the font dicts). v1.7.0: also emitted in tagged mode whenever a
+    // base-14 dict is actually reached under the PDF/A claim (Latin branch,
+    // AcroForm /Helv) — those dicts need complete ToUnicode coverage. Tagged
+    // CIDFont-only documents carry no base-14 dict and stay byte-identical.
+    // The tagged tail (struct tree, XMP, ICC) chains after `totalObjs`,
+    // which accounts for this object.
     const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
         ? 4 + fontEntries.length * 5 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs
         : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
-    const latinToUniObjNum = tagged ? 0 : preBaseObjCount + 2; // infoObjNum + 1
+    const latinToUniObjNum = (!tagged || !enc.isUnicode || formFontObjs > 0)
+        ? preBaseObjCount + 2 // infoObjNum + 1
+        : 0;
     const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
 
     // Colour-emoji Form XObjects (v1.3.0) — collected during the page-stream
@@ -923,7 +946,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
             const radioGroupParentStart = formObjStart + totalFieldObjs;
             const formFontObjNum = formObjStart + totalFormObjs;
-            emitObj(formFontObjNum, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
 
             // Build radio group parent object map: group name → parent obj num + selected value
             const radioGroupObjNums = new Map<string, number>();
@@ -1084,7 +1107,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
             const radioGroupParentStart = formObjStart + totalFieldObjs;
             const formFontObjNum = formObjStart + totalFormObjs;
-            emitObj(formFontObjNum, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
 
             // Build radio group parent object map
             const radioGroupObjNums = new Map<string, number>();

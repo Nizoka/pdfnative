@@ -33,11 +33,13 @@ export function base64ToByteString(b64: string): string {
  * @param usedGids - Only include these glyph IDs (subset optimization)
  */
 export function buildToUnicodeCMap(cmap: Record<number, number>, usedGids: Set<number>): string {
-    // Invert cmap: glyphId → unicode codepoint (keep lowest codepoint)
+    // Invert cmap: glyphId → unicode codepoint (keep lowest codepoint).
+    // Strict undefined check: a legitimately-mapped U+0000 must not be
+    // overwritten by a later (higher) codepoint sharing the glyph.
     const glyphToUnicode: Record<number, number> = {};
     for (const [cp, gid] of Object.entries(cmap)) {
         const cpNum = Number(cp);
-        if (!glyphToUnicode[gid] || cpNum < glyphToUnicode[gid]) {
+        if (glyphToUnicode[gid] === undefined || cpNum < glyphToUnicode[gid]) {
             glyphToUnicode[gid] = cpNum;
         }
     }
@@ -92,6 +94,10 @@ export function buildToUnicodeCMap(cmap: Record<number, number>, usedGids: Set<n
  */
 export function buildSubsetWidthArray(widths: Record<number, number>, usedGids: Set<number>): string | null {
     if (!usedGids || usedGids.size === 0) return null;
+    // GIDs without a width entry are omitted here on purpose: the CIDFont
+    // dictionary always carries /DW (the font's defaultWidth), which is
+    // exactly the advance the layout engine used for those glyphs — the
+    // viewer's /DW fallback therefore matches layout (ISO 32000-1 §9.7.4.3).
     const sorted = [...usedGids].filter(g => widths[g] !== undefined).sort((a, b) => a - b);
     if (sorted.length === 0) return null;
 

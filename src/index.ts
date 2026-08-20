@@ -82,6 +82,9 @@ export type {
     WorkerInputMessage,
     WorkerOutputMessage,
     WorkerGenerationOptions,
+    PdfDiagnostic,
+    PdfDiagnosticCode,
+    PdfDiagnosticHandler,
 } from './types/pdf-types.js';
 
 export type {

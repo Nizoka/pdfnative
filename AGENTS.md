@@ -42,7 +42,7 @@ This repository enforces a **human-in-the-loop** policy for AI agents. Before op
 - **Zero deps.** Never add a runtime dependency to `package.json`. Dev deps require justification.
 - **Single entry point.** All public API surfaces are re-exported from `src/index.ts`.
 - **Types-first.** Domain types live in `src/types/`.
-- **No `console.log`** in library code (only in `tools/` and `scripts/`).
+- **No `console.log`** in library code (only in `tools/` and `scripts/`). `console.warn` is allowed **only** inside `src/core/pdf-diagnostics.ts` — the single sanctioned sink for conformance diagnostics (silence or redirect via `onDiagnostic`, escalate via `strict`).
 - **No `eval` / `Function()` / dynamic code execution.**
 - **Commit style:** Conventional Commits (`feat(scope):`, `fix(scope):`, `chore:`, `docs:`, `test:`, `refactor:`).
 

@@ -24,6 +24,7 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext } from './encoding-context.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic } from './pdf-diagnostics.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
@@ -299,6 +300,13 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     // Resolve PDF/A config early (required by encoding context)
     const pdfaConfig = resolvePdfAConfig(layoutOptions?.tagged);
     const tagged = pdfaConfig.enabled;
+
+    // Conformance diagnostics (v1.7.0): guard the PDF/A declaration (#69).
+    const emitDiagnostic = createDiagnosticEmitter(layoutOptions?.strict, layoutOptions?.onDiagnostic);
+    if (tagged && fontEntries.length === 0) {
+        const level = typeof layoutOptions?.tagged === 'string' ? layoutOptions.tagged : 'pdfa2b';
+        emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
+    }
 
     const enc = createEncodingContext(fontEntries, tagged, layoutOptions?.normalize ?? false);
 
