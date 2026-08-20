@@ -4,8 +4,8 @@
  * Re-exports all cryptographic primitives for PDF digital signatures.
  */
 
-// ── SHA-2 Hashing ────────────────────────────────────────────────────
-export { sha256, sha384, sha512, hmacSha256 } from './sha.js';
+// ── SHA-2 Hashing (+ SHA-1 for /VRI keying & OCSP CertID) ───────────
+export { sha1, sha256, sha384, sha512, hmacSha256 } from './sha.js';
 
 // ── ASN.1 DER Codec ─────────────────────────────────────────────────
 export type { Asn1Node } from './asn1.js';
@@ -17,15 +17,16 @@ export {
     ASN1_CONTEXT_0, ASN1_CONTEXT_1, ASN1_CONTEXT_2, ASN1_CONTEXT_3,
     ASN1_IMPLICIT_0,
     derDecode, derDecodeAll,
-    derWrap, derSequence, derSet, derInteger, derOid, derNull,
+    derWrap, derSequence, derSet, derSetOf, derInteger, derOid, derNull,
     derOctetString, derBitString, derUtf8String, derPrintableString,
-    derUtcTime, derContextExplicit, derContextImplicit, derEncodeLength,
-    asn1Integer, asn1OidBytes, asn1String, oidEquals, derRawBytes,
+    derUtcTime, derGeneralizedTime, derBoolean, derIA5String,
+    derContextExplicit, derContextImplicit, derEncodeLength,
+    asn1Integer, asn1OidBytes, asn1String, asn1Time, oidEquals, derRawBytes,
     concatUint8Arrays,
 } from './asn1.js';
 
 // ── RSA PKCS#1 v1.5 ─────────────────────────────────────────────────
-export type { RsaPublicKey, RsaPrivateKey } from './rsa.js';
+export type { RsaPublicKey, RsaPrivateKey, RsaDigest } from './rsa.js';
 export {
     modPow, modInverse, bytesToBigInt, bigIntToBytes,
     rsaSign, rsaSignHash, rsaVerify, rsaVerifyHash,
@@ -45,16 +46,30 @@ export {
 export type { X509Name, X509Certificate } from './x509.js';
 export {
     parseCertificate, verifyCertSignature, isSelfSigned,
-    certRsaPublicKey, certEcPublicKey,
+    certRsaPublicKey, certEcPublicKey, certHasEku,
 } from './x509.js';
 
 // ── CMS/PKCS#7 SignedData ───────────────────────────────────────────
-export type { SignatureAlgorithm, CmsSignOptions } from './cms.js';
+export type { SignatureAlgorithm, CmsSignOptions, CmsDigestAlgorithm, CmsProfile } from './cms.js';
 export { buildCmsSignedData, estimateCmsSize } from './cms.js';
 
-// ── Pluggable Signature Provider ────────────────────────────────────
+// ── CMS surgery, RFC 3161, OCSP, CRL (LTV, v1.7.0) ─────────────────
+export type { ParsedCms } from './cms-utils.js';
+export { parseCmsSignedData, addUnsignedAttribute, buildAttribute } from './cms-utils.js';
+export type { TimestampRequestOptions, TimestampResponse, TstInfo } from './rfc3161.js';
+export { buildTimestampRequest, parseTimestampResponse, parseTimestampToken, verifyTimestampImprint } from './rfc3161.js';
+export type { OcspRequestOptions, OcspCertStatus, OcspResponse } from './ocsp.js';
+export { buildOcspRequest, parseOcspResponse } from './ocsp.js';
+export type { CrlRevokedEntry, ParsedCrl } from './crl.js';
+export { parseCrl, isSerialRevoked } from './crl.js';
+
+// ── Pluggable Providers (signature, timestamp, revocation) ──────────
 export type { CryptoProvider } from './crypto-provider.js';
 export { setCryptoProvider, getCryptoProvider } from './crypto-provider.js';
+export type { TimestampProvider } from './timestamp-provider.js';
+export { setTimestampProvider, getTimestampProvider } from './timestamp-provider.js';
+export type { RevocationProvider } from './revocation-provider.js';
+export { setRevocationProvider, getRevocationProvider } from './revocation-provider.js';
 
 /**
  * Initialize all crypto module cross-dependencies.

@@ -6,7 +6,7 @@
  * Zero external dependencies.
  */
 
-import { sha256 } from './sha.js';
+import { sha256, sha384, sha512 } from './sha.js';
 import type * as Asn1Module from './asn1.js';
 
 // ── DigestInfo prefixes (RFC 8017 §9.2) ─────────────────────────────
@@ -17,6 +17,42 @@ const DIGESTINFO_SHA256 = new Uint8Array([
     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
     0x05, 0x00, 0x04, 0x20,
 ]);
+
+/** SHA-384 DigestInfo prefix — prepend to 48-byte hash before PKCS#1 padding. */
+const DIGESTINFO_SHA384 = new Uint8Array([
+    0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
+    0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
+    0x05, 0x00, 0x04, 0x30,
+]);
+
+/** SHA-512 DigestInfo prefix — prepend to 64-byte hash before PKCS#1 padding. */
+const DIGESTINFO_SHA512 = new Uint8Array([
+    0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
+    0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
+    0x05, 0x00, 0x04, 0x40,
+]);
+
+/**
+ * Digest algorithm selector for the RSA PKCS#1 v1.5 entry points.
+ * Defaults to `'sha256'` everywhere, keeping pre-1.7.0 call sites
+ * source- and byte-compatible.
+ *
+ * @since 1.7.0
+ */
+export type RsaDigest = 'sha256' | 'sha384' | 'sha512';
+
+interface RsaDigestSpec {
+    readonly length: number;
+    readonly label: string;
+    readonly prefix: Uint8Array;
+    readonly hash: (input: Uint8Array) => Uint8Array;
+}
+
+const RSA_DIGESTS: Record<RsaDigest, RsaDigestSpec> = {
+    sha256: { length: 32, label: 'SHA-256', prefix: DIGESTINFO_SHA256, hash: sha256 },
+    sha384: { length: 48, label: 'SHA-384', prefix: DIGESTINFO_SHA384, hash: sha384 },
+    sha512: { length: 64, label: 'SHA-512', prefix: DIGESTINFO_SHA512, hash: sha512 },
+};
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -93,10 +129,11 @@ function rsaPrivateOp(msg: bigint, key: RsaPrivateKey): bigint {
  * PKCS#1 v1.5 signature padding (RFC 8017 §8.2.1).
  * Constructs: 0x00 0x01 [0xFF padding] 0x00 [DigestInfo + hash]
  */
-function pkcs1v15Pad(hash: Uint8Array, keyLen: number): Uint8Array {
-    const digestInfo = new Uint8Array(DIGESTINFO_SHA256.length + hash.length);
-    digestInfo.set(DIGESTINFO_SHA256);
-    digestInfo.set(hash, DIGESTINFO_SHA256.length);
+function pkcs1v15Pad(hash: Uint8Array, keyLen: number, digest: RsaDigest): Uint8Array {
+    const prefix = RSA_DIGESTS[digest].prefix;
+    const digestInfo = new Uint8Array(prefix.length + hash.length);
+    digestInfo.set(prefix);
+    digestInfo.set(hash, prefix.length);
 
     const padLen = keyLen - 3 - digestInfo.length;
     if (padLen < 8) throw new Error('RSA key too short for PKCS#1 v1.5 signature');
@@ -140,82 +177,69 @@ function keyByteLen(n: bigint): number {
 // ── Public API ───────────────────────────────────────────────────────
 
 /**
- * Sign a message with RSA PKCS#1 v1.5 + SHA-256.
+ * Sign a message with RSA PKCS#1 v1.5.
  *
  * @param message - Raw message bytes to sign.
  * @param privateKey - RSA private key (CRT form).
+ * @param digest - Hash algorithm (defaults to `'sha256'` — pre-1.7.0 behaviour).
  * @returns DER-encoded signature bytes.
  */
-export function rsaSign(message: Uint8Array, privateKey: RsaPrivateKey): Uint8Array {
-    const hash = sha256(message);
-    const kLen = keyByteLen(privateKey.n);
-    const em = pkcs1v15Pad(hash, kLen);
-    const m = bytesToBigInt(em);
-    const s = rsaPrivateOp(m, privateKey);
-    return bigIntToBytes(s, kLen);
+export function rsaSign(message: Uint8Array, privateKey: RsaPrivateKey, digest: RsaDigest = 'sha256'): Uint8Array {
+    return rsaSignHash(RSA_DIGESTS[digest].hash(message), privateKey, digest);
 }
 
 /**
  * Sign a pre-computed hash with RSA PKCS#1 v1.5.
  *
- * @param hash - SHA-256 hash (32 bytes).
+ * @param hash - Message digest (32/48/64 bytes for SHA-256/384/512).
  * @param privateKey - RSA private key (CRT form).
+ * @param digest - Hash algorithm the digest was computed with (defaults to `'sha256'`).
  * @returns Signature bytes (same length as modulus).
  */
-export function rsaSignHash(hash: Uint8Array, privateKey: RsaPrivateKey): Uint8Array {
-    if (hash.length !== 32) throw new Error('Expected 32-byte SHA-256 hash');
+export function rsaSignHash(hash: Uint8Array, privateKey: RsaPrivateKey, digest: RsaDigest = 'sha256'): Uint8Array {
+    const spec = RSA_DIGESTS[digest];
+    if (hash.length !== spec.length) throw new Error(`Expected ${spec.length}-byte ${spec.label} hash`);
     const kLen = keyByteLen(privateKey.n);
-    const em = pkcs1v15Pad(hash, kLen);
+    const em = pkcs1v15Pad(hash, kLen, digest);
     const m = bytesToBigInt(em);
     const s = rsaPrivateOp(m, privateKey);
     return bigIntToBytes(s, kLen);
 }
 
 /**
- * Verify an RSA PKCS#1 v1.5 + SHA-256 signature.
+ * Verify an RSA PKCS#1 v1.5 signature over a message.
  *
  * @param message - Raw message bytes.
  * @param signature - Signature bytes.
  * @param publicKey - RSA public key.
+ * @param digest - Hash algorithm (defaults to `'sha256'`).
  * @returns true if signature is valid.
  */
-export function rsaVerify(message: Uint8Array, signature: Uint8Array, publicKey: RsaPublicKey): boolean {
-    const hash = sha256(message);
-    const kLen = keyByteLen(publicKey.n);
-
-    const s = bytesToBigInt(signature);
-    const m = rsaPublicOp(s, publicKey);
-    const em = bigIntToBytes(m, kLen);
-
-    const expected = pkcs1v15Pad(hash, kLen);
-
-    // Constant-time comparison
-    if (em.length !== expected.length) return false;
-    let diff = 0;
-    for (let i = 0; i < em.length; i++) {
-        diff |= em[i] ^ expected[i];
-    }
-    return diff === 0;
+export function rsaVerify(message: Uint8Array, signature: Uint8Array, publicKey: RsaPublicKey, digest: RsaDigest = 'sha256'): boolean {
+    return rsaVerifyHash(RSA_DIGESTS[digest].hash(message), signature, publicKey, digest);
 }
 
 /**
  * Verify an RSA PKCS#1 v1.5 signature against a pre-computed hash.
  *
- * @param hash - SHA-256 hash (32 bytes).
+ * @param hash - Message digest (32/48/64 bytes for SHA-256/384/512).
  * @param signature - Signature bytes.
  * @param publicKey - RSA public key.
+ * @param digest - Hash algorithm the digest was computed with (defaults to `'sha256'`).
  * @returns true if signature is valid.
  */
-export function rsaVerifyHash(hash: Uint8Array, signature: Uint8Array, publicKey: RsaPublicKey): boolean {
-    if (hash.length !== 32) return false;
+export function rsaVerifyHash(hash: Uint8Array, signature: Uint8Array, publicKey: RsaPublicKey, digest: RsaDigest = 'sha256'): boolean {
+    const spec = RSA_DIGESTS[digest];
+    if (hash.length !== spec.length) return false;
     const kLen = keyByteLen(publicKey.n);
 
     const s = bytesToBigInt(signature);
     const m = rsaPublicOp(s, publicKey);
     const em = bigIntToBytes(m, kLen);
 
-    const expected = pkcs1v15Pad(hash, kLen);
+    const expected = pkcs1v15Pad(hash, kLen, digest);
 
+    // Constant-time comparison
     if (em.length !== expected.length) return false;
     let diff = 0;
     for (let i = 0; i < em.length; i++) {

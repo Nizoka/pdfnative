@@ -1,8 +1,9 @@
 /**
- * pdfnative — SHA-384, SHA-512, HMAC-SHA256
- * ==========================================
+ * pdfnative — SHA-1, SHA-384, SHA-512, HMAC-SHA256
+ * =================================================
  * SHA-2 64-bit variants using paired 32-bit words (FIPS 180-4 §6.4).
  * HMAC-SHA256 per RFC 2104 wrapping the existing sha256() from pdf-encrypt.
+ * SHA-1 (FIPS 180-4 §6.1) for identification-only uses (see `sha1` docblock).
  *
  * SHA-384/512 use 64-bit words. JavaScript lacks native uint64, so we
  * represent each 64-bit word as [hi: number, lo: number] (both uint32).
@@ -225,6 +226,76 @@ export function sha512(input: Uint8Array): Uint8Array {
 /** SHA-384 hash (FIPS 180-4). Returns 48-byte digest. */
 export function sha384(input: Uint8Array): Uint8Array {
     return sha512Core(input, SHA384_IV, 48);
+}
+
+// ── SHA-1 (FIPS 180-4 §6.1) ─────────────────────────────────────────
+
+/**
+ * SHA-1 hash (FIPS 180-4). Returns a 20-byte digest.
+ *
+ * SECURITY NOTE: SHA-1 is cryptographically broken (practical collisions
+ * since 2017) and is **never** used as a security digest in pdfnative. It
+ * exists solely because two LTV-related identifiers are *specified* over
+ * SHA-1:
+ *  - the PDF /DSS `/VRI` dictionary key (uppercase SHA-1 hex of the full
+ *    signature /Contents, ISO 32000-2 §12.8.4.3), and
+ *  - the OCSP `CertID` issuerNameHash / issuerKeyHash fields
+ *    (RFC 6960 §4.1.1, conventional SHA-1 CertID).
+ * Both are lookup/identification values, not integrity guarantees. Do not
+ * use this function for message digests, signatures, or key derivation.
+ *
+ * @since 1.7.0
+ */
+export function sha1(input: Uint8Array): Uint8Array {
+    const len = input.length;
+    const totalBits = len * 8;
+    // Padding: 0x80 + zeros so that (len + 1 + padLen) ≡ 56 (mod 64), then
+    // a 64-bit big-endian bit length.
+    const padLen = ((55 - (len % 64)) + 64) % 64;
+    const padded = new Uint8Array(len + 1 + padLen + 8);
+    padded.set(input);
+    padded[len] = 0x80;
+    const dv = new DataView(padded.buffer);
+    dv.setUint32(padded.length - 4, totalBits >>> 0, false);
+    if (totalBits > 0xFFFFFFFF) {
+        dv.setUint32(padded.length - 8, Math.floor(totalBits / 0x100000000) >>> 0, false);
+    }
+
+    let h0 = 0x67452301, h1 = 0xefcdab89, h2 = 0x98badcfe, h3 = 0x10325476, h4 = 0xc3d2e1f0;
+    const w = new Uint32Array(80);
+
+    for (let off = 0; off < padded.length; off += 64) {
+        for (let j = 0; j < 16; j++) w[j] = dv.getUint32(off + j * 4, false);
+        for (let j = 16; j < 80; j++) {
+            const x = w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16];
+            w[j] = ((x << 1) | (x >>> 31)) >>> 0;
+        }
+
+        let a = h0, b = h1, c = h2, d = h3, e = h4;
+        for (let j = 0; j < 80; j++) {
+            let f: number;
+            let k: number;
+            if (j < 20) { f = (b & c) | (~b & d); k = 0x5a827999; }
+            else if (j < 40) { f = b ^ c ^ d; k = 0x6ed9eba1; }
+            else if (j < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8f1bbcdc; }
+            else { f = b ^ c ^ d; k = 0xca62c1d6; }
+
+            const temp = ((((a << 5) | (a >>> 27)) >>> 0) + (f >>> 0) + e + k + w[j]) >>> 0;
+            e = d;
+            d = c;
+            c = ((b << 30) | (b >>> 2)) >>> 0;
+            b = a;
+            a = temp;
+        }
+
+        h0 = (h0 + a) >>> 0;
+        h1 = (h1 + b) >>> 0;
+        h2 = (h2 + c) >>> 0;
+        h3 = (h3 + d) >>> 0;
+        h4 = (h4 + e) >>> 0;
+    }
+
+    return packState([h0, h1, h2, h3, h4]);
 }
 
 // ── HMAC-SHA256 (RFC 2104) ───────────────────────────────────────────
