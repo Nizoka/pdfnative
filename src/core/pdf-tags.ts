@@ -309,6 +309,9 @@ export function buildPdfMetadata(now: Date = new Date()): PdfMetadata {
  *   creation time, where ModifyDate = CreateDate.
  * @param metadataDate - Optional xmp:MetadataDate override. Defaults to
  *   `createDate` for the same reason.
+ * @param trapped - Optional /Info /Trapped mirror. 'True'/'False' emit
+ *   pdf:Trapped plus the PDF/A extension schema declaring it; 'Unknown'
+ *   emits nothing (ISO 32000-1 Table 317: Unknown maps to absence).
  * @returns XMP metadata XML string
  */
 export function buildXMPMetadata(
@@ -358,12 +361,49 @@ export function buildXMPMetadata(
     if (keywords !== undefined && keywords !== '') {
         lines.push(`   <pdf:Keywords>${escapeXml(keywords)}</pdf:Keywords>`);
     }
-    // pdf:Trapped mirrors /Info /Trapped (ISO 19005 §6.7.3 parity; v1.7.0).
-    if (trapped !== undefined) {
+    // pdf:Trapped mirrors /Info /Trapped (v1.7.0). Two conformance rules
+    // apply (ISO 32000-1 Table 317 + ISO 19005 §6.6.2.3):
+    //  - /Trapped /Unknown maps to the ABSENCE of pdf:Trapped in XMP — the
+    //    /Info entry alone carries the unknown state.
+    //  - pdf:Trapped is not part of the Adobe PDF schema in the XMP 2005
+    //    specification that PDF/A pins (only Keywords, PDFVersion and
+    //    Producer are), so emitting it in a PDF/A file requires declaring
+    //    the property through a PDF/A extension schema (§6.6.2.3.2) —
+    //    appended below as its own rdf:Description.
+    const emitTrapped = trapped === 'True' || trapped === 'False';
+    if (emitTrapped) {
         lines.push(`   <pdf:Trapped>${trapped}</pdf:Trapped>`);
     }
+    lines.push('  </rdf:Description>');
+    if (emitTrapped) {
+        lines.push(
+            '  <rdf:Description rdf:about=""',
+            '    xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"',
+            '    xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"',
+            '    xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#">',
+            '   <pdfaExtension:schemas>',
+            '    <rdf:Bag>',
+            '     <rdf:li rdf:parseType="Resource">',
+            '      <pdfaSchema:schema>Adobe PDF Schema</pdfaSchema:schema>',
+            '      <pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI>',
+            '      <pdfaSchema:prefix>pdf</pdfaSchema:prefix>',
+            '      <pdfaSchema:property>',
+            '       <rdf:Seq>',
+            '        <rdf:li rdf:parseType="Resource">',
+            '         <pdfaProperty:name>Trapped</pdfaProperty:name>',
+            '         <pdfaProperty:valueType>Text</pdfaProperty:valueType>',
+            '         <pdfaProperty:category>internal</pdfaProperty:category>',
+            '         <pdfaProperty:description>Indicates whether the document has been trapped</pdfaProperty:description>',
+            '        </rdf:li>',
+            '       </rdf:Seq>',
+            '      </pdfaSchema:property>',
+            '     </rdf:li>',
+            '    </rdf:Bag>',
+            '   </pdfaExtension:schemas>',
+            '  </rdf:Description>',
+        );
+    }
     lines.push(
-        '  </rdf:Description>',
         ' </rdf:RDF>',
         '</x:xmpmeta>',
         '<?xpacket end="w"?>',

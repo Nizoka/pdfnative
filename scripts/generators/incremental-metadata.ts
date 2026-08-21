@@ -13,6 +13,7 @@ import { resolve } from 'path';
 import { buildDocumentPDFBytes, openPdf, createModifier } from '../../src/index.js';
 import type { DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
+import { loadSelectedFontEntries } from '../helpers/fonts.js';
 
 function buildBaseDoc(): DocumentParams {
     return {
@@ -45,7 +46,11 @@ function buildBaseDoc(): DocumentParams {
 }
 
 export async function generate(ctx: GenerateContext): Promise<void> {
-    const original = buildDocumentPDFBytes(buildBaseDoc(), { tagged: 'pdfa2b' });
+    // PDF/A-2b requires embedded fonts (ISO 19005-2 §6.2.11.4.1) — base-14
+    // Helvetica alone would make the claim non-conformant.
+    const fontEntries = await loadSelectedFontEntries(['latin']);
+    if (fontEntries.length !== 1) return;
+    const original = buildDocumentPDFBytes({ ...buildBaseDoc(), fontEntries }, { tagged: 'pdfa2b' });
     ctx.writeSafe(
         resolve(ctx.outputDir, 'manipulation', 'incremental-metadata-original.pdf'),
         'manipulation/incremental-metadata-original.pdf',

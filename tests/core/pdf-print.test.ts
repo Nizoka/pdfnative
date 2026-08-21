@@ -201,6 +201,20 @@ describe('/Trapped and XMP parity', () => {
             { tagged: 'pdfa2b', onDiagnostic: () => {} },
         ));
         expect(doc).toContain('<pdf:Trapped>True</pdf:Trapped>');
+        // pdf:Trapped is not in the XMP-2005 Adobe PDF schema that PDF/A
+        // pins, so its presence requires the PDF/A extension schema
+        // declaration (ISO 19005-2 §6.6.2.3.2).
+        expect(doc).toContain('<pdfaExtension:schemas>');
+        expect(doc).toContain('<pdfaProperty:name>Trapped</pdfaProperty:name>');
+        // ISO 32000-1 Table 317: /Trapped /Unknown maps to the ABSENCE of
+        // pdf:Trapped in XMP — /Info carries it alone, no extension schema.
+        const unknown = latin1(buildDocumentPDFBytes(
+            { ...docParams, metadata: { trapped: 'Unknown' } },
+            { tagged: 'pdfa2b', onDiagnostic: () => {} },
+        ));
+        expect(unknown).toContain('/Trapped /Unknown');
+        expect(unknown).not.toContain('<pdf:Trapped>');
+        expect(unknown).not.toContain('pdfaExtension');
     });
 });
 

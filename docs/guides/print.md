@@ -64,7 +64,7 @@ Fine-tune with an object: `marks: { crop, registration, length, offset, weight }
 buildDocumentPDFBytes({ ...params, metadata: { trapped: 'False' } }, { tagged: 'pdfa2b' });
 ```
 
-Writes `/Info /Trapped /False` and mirrors it as `pdf:Trapped` in the XMP packet (ISO 19005 parity), telling the RIP whether trapping has been applied.
+Writes `/Info /Trapped /False` and mirrors it as `pdf:Trapped` in the XMP packet, telling the RIP whether trapping has been applied. Because `pdf:Trapped` is not part of the XMP-2005 Adobe PDF schema that PDF/A pins, pdfnative also emits the required PDF/A extension schema declaring the property (ISO 19005 §6.6.2.3.2) — the document stays veraPDF-compliant. Per ISO 32000-1 Table 317, `trapped: 'Unknown'` is written to `/Info` only: unknown maps to the *absence* of `pdf:Trapped` in XMP.
 
 ## Print-dialog defaults (`viewerPreferences`)
 

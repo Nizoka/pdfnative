@@ -98,11 +98,17 @@ interface ValidationResult {
 function validateFile(verapdf: string, file: string, profile: string): ValidationResult {
     // veraPDF prints XML to stdout; non-zero exit codes happen on infra failure,
     // not on validation failure. Always parse XML.
+    // Windows: a .bat/.cmd cannot be spawned without a shell (Node throws
+    // EINVAL since the CVE-2024-27980 hardening) — quote every argument
+    // ourselves because shell mode performs no escaping.
+    const isBatch = /\.(bat|cmd)$/i.test(verapdf);
+    const quote = (s: string): string => (isBatch ? `"${s}"` : s);
     let xml: string;
     try {
-        xml = execFileSync(verapdf, ['--format', 'xml', '--flavour', profile, file], {
+        xml = execFileSync(quote(verapdf), ['--format', 'xml', '--flavour', profile, quote(file)], {
             encoding: 'utf8',
             stdio: ['ignore', 'pipe', 'pipe'],
+            shell: isBatch,
         });
     } catch (err) {
         const e = err as { stdout?: string };

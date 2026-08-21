@@ -67,7 +67,10 @@ reuse). 2664 tests across 122 files; veraPDF-validated.
 - **feat(core): print production** — bleed/trim/art/crop page boxes
   (`layout.print`, ISO 32000-1 §14.11.2, with a one-line `bleed` shorthand),
   crop + registration marks drawn as pure vector operators outside the
-  TrimBox (§14.11.3), `/Trapped` metadata with `pdf:Trapped` XMP parity,
+  TrimBox (§14.11.3), `/Trapped` metadata with `pdf:Trapped` XMP parity
+  (declared through a PDF/A extension schema per ISO 19005 §6.6.2.3.2, since
+  the property is absent from the XMP-2005 Adobe PDF schema; `Unknown` maps
+  to XMP absence per ISO 32000-1 Table 317),
   print-dialog viewer preferences (`duplex`, `pickTrayByPDFSize`,
   `printPageRange`, `numCopies`), a caller-supplied OutputIntent ICC
   profile for tagged output (RGB, validated), large-format `/UserUnit`
@@ -110,6 +113,12 @@ reuse). 2664 tests across 122 files; veraPDF-validated.
 
 ### Fixed
 
+- **fix(scripts): `validate:pdfa` on Windows** — the veraPDF launcher is a
+  `.bat` there, which Node refuses to spawn without a shell since the
+  CVE-2024-27980 hardening; the swallowed `EINVAL` made every sample read
+  as non-compliant with an empty report. The runner now shell-quotes and
+  spawns batch launchers correctly — 18/18 PDF/A-claiming samples validate
+  locally on Windows exactly as in CI.
 - **fix(shaping): Arabic ALEF joining and Persian letter forms** — ALEF was
   swept into the dual-joining class by a `0x0626–0x0628` range, so every
   word with a non-final alef rendered wrongly (سال collapsed toward سل,
