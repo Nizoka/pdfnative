@@ -23,8 +23,10 @@
  * The script never writes. It is safe to run against a dirty tree.
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join, relative, resolve, dirname, posix } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const MANIFEST_PATH = join(ROOT, 'docs', 'assets', 'ecosystem.json');
@@ -929,6 +931,52 @@ if (!existsSync(LLMS_FULL)) {
     fail('docs/llms-full.txt', 1, 'llms-sync', 'stale — regenerate with `npx tsx scripts/build-llms-full.ts`');
 }
 
+// ── Rule: playground-syntax ─────────────────────────────────────────
+
+/**
+ * The playgrounds and the homepage demo are the only pages whose inline
+ * `<script type="module">` code executes in visitors' browsers — a syntax
+ * error there ships a silently dead page (the CDN import never even fires).
+ * No headless browser (zero-dependency policy): each module block is
+ * extracted to a temp `.mjs` and parsed with `node --check`, which validates
+ * full ESM syntax without executing anything or resolving CDN imports.
+ */
+const SYNTAX_PAGES = [
+    ...PLAYGROUNDS.map((name) => join(ROOT, 'docs', 'playgrounds', name)),
+    join(ROOT, 'docs', 'index.html'),
+].filter(existsSync);
+
+const syntaxTmp = mkdtempSync(join(tmpdir(), 'pdfnative-playground-syntax-'));
+try {
+    const MODULE_SCRIPT = /<script\s+type=["']module["'][^>]*>([\s\S]*?)<\/script>/gi;
+    for (const file of SYNTAX_PAGES) {
+        const text = read(file);
+        let m: RegExpExecArray | null;
+        let blockIdx = 0;
+        MODULE_SCRIPT.lastIndex = 0;
+        while ((m = MODULE_SCRIPT.exec(text)) !== null) {
+            const code = m[1];
+            if (code.trim() === '') continue;
+            const blockLine = lineOf(text, m.index);
+            const tmpFile = join(syntaxTmp, `block-${blockIdx++}.mjs`);
+            writeFileSync(tmpFile, code);
+            const check = spawnSync(process.execPath, ['--check', tmpFile], { encoding: 'utf8' });
+            if (check.status !== 0) {
+                const detail = (check.stderr || '').split(/\r?\n/).find((l) => l.trim() !== '') ?? 'syntax error';
+                const tmpLine = Number.parseInt(detail.match(/\.mjs:(\d+)/)?.[1] ?? '1', 10);
+                fail(
+                    rel(file),
+                    blockLine + tmpLine - 1,
+                    'playground-syntax',
+                    `inline module script fails \`node --check\`: ${detail.replace(tmpFile, '<script>').trim()}`,
+                );
+            }
+        }
+    }
+} finally {
+    rmSync(syntaxTmp, { recursive: true, force: true });
+}
+
 // ── Rule: npm-drift (--online only) ─────────────────────────────────
 
 /** True when semver a is strictly lower than b (plain x.y.z triples only). */
@@ -1001,6 +1049,7 @@ const OFFLINE_RULES = [
     'bench-parity',
     'contrast',
     'llms-sync',
+    'playground-syntax',
 ] as const;
 
 if (problems.length === 0) {

@@ -106,12 +106,13 @@
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 2664,
+    "tests": 2665,
     "scripts": 22,
     "bundledFontModules": 26,
     "blockTypes": 13,
     "barcodeFormats": 5,
     "chartTypes": 9,
+    "pdfaSamples": 18,
     "pdfaLevels": [
       "pdfa1b",
       "pdfa2b",
@@ -135,6 +136,16 @@
     ]
   },
   "assertions": [
+    {
+      "id": "pdfa-sample-count",
+      "canonical": "18 PDF/A-claiming samples",
+      "match": "\\b(\\d+)\\s+PDF/A-claiming samples\\b",
+      "expect": 18,
+      "requireIn": [
+        "docs/guides/pdfa.md",
+        "CONTRIBUTING.md"
+      ]
+    },
     {
       "id": "mcp-tool-count",
       "canonical": "24 tools",
@@ -171,7 +182,7 @@
     {
       "id": "test-count-homepage",
       "$comment": "The homepage quoted a stale test count for a full release train; no assertion covered it. canonical-present pins the current figure where it is displayed.",
-      "canonical": "664+ tests across 122 files",
+      "canonical": "665+ tests across 122 files",
       "requireIn": [
         "docs/index.html"
       ]

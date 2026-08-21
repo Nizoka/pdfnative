@@ -41,6 +41,9 @@ jobs:
       - name: Test with coverage
         run: npm run test:coverage
 
+      - name: Verify docs, playgrounds and demos
+        run: npm run verify:docs
+
       - name: Build
         run: npm run build
 
@@ -49,6 +52,47 @@ jobs:
           test -f dist/index.js
           test -f dist/index.cjs
           test -f dist/index.d.ts
+
+      # PDF/A gate: the release must never publish samples/claims that the
+      # reference validator rejects. Same pinned veraPDF as verapdf.yml.
+      - name: Setup Java (Temurin 17 LTS)
+        uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4.9.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install veraPDF CLI
+        env:
+          VERAPDF_INSTALL_URL: 'https://software.verapdf.org/rel/1.30/verapdf-greenfield-1.30.2-installer.zip'
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/verapdf-installer"
+          curl -fsSL -o "$HOME/verapdf-installer/installer.zip" "${VERAPDF_INSTALL_URL}"
+          unzip -q "$HOME/verapdf-installer/installer.zip" -d "$HOME/verapdf-installer"
+          INSTALLER_JAR=$(find "$HOME/verapdf-installer" -name 'verapdf-izpack-installer-*.jar' | head -n1)
+          if [ -z "${INSTALLER_JAR}" ]; then
+            echo "veraPDF installer jar not found"; exit 1
+          fi
+          mkdir -p "$HOME/verapdf"
+          # Auto-install via izpack XML descriptor (headless).
+          cat > "$HOME/verapdf/auto-install.xml" <<XML
+          <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+          <AutomatedInstallation langpack="eng">
+            <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
+            <com.izforge.izpack.panels.target.TargetPanel id="install_dir"><installpath>$HOME/verapdf</installpath></com.izforge.izpack.panels.target.TargetPanel>
+            <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select"><pack index="0" name="veraPDF GUI" selected="true"/><pack index="1" name="veraPDF Mac and *nix Scripts" selected="true"/><pack index="2" name="veraPDF Documentation" selected="false"/><pack index="3" name="veraPDF Sample Plugins" selected="false"/></com.izforge.izpack.panels.packs.PacksPanel>
+            <com.izforge.izpack.panels.install.InstallPanel id="install"/>
+            <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
+          </AutomatedInstallation>
+          XML
+          java -jar "${INSTALLER_JAR}" "$HOME/verapdf/auto-install.xml"
+          echo "VERAPDF_HOME=$HOME/verapdf" >> "$GITHUB_ENV"
+
+      - name: Generate sample PDFs
+        run: npm run test:generate
+
+      - name: Validate PDF/A claims (blocking)
+        run: npm run validate:pdfa
 
       - name: Publish
         run: npm publish --access public

@@ -14,7 +14,11 @@
  *
  * Exit codes:
  *   0 — all PDF/A-claiming files pass; or veraPDF is not available (skip).
- *   1 — one or more files claim PDF/A in XMP but fail validation.
+ *   1 — one or more files claim PDF/A in XMP but fail validation, or the
+ *       number of detected PDF/A-claiming samples does not match
+ *       `declared.pdfaSamples` in docs/assets/ecosystem.json (coverage
+ *       canary: a silent drop in claim detection or sample generation must
+ *       fail loudly, and a new PDF/A-claiming sample must bump the counter).
  *
  * Skipping veraPDF locally:
  *   If `verapdf` is missing this script prints install instructions and exits
@@ -162,20 +166,32 @@ function main(): number {
         if (claim) claimed.push([f, claim]);
     }
     const skipped = totalSeen - claimed.length;
-    if (claimed.length === 0) {
-        process.stderr.write('No PDF/A-claiming files found in test-output/.\n');
-        if (totalSeen === 0) {
-            process.stderr.write('Run `npm run test:generate` first.\n');
-        } else {
-            process.stderr.write(`Scanned ${totalSeen} PDF(s); none declared pdfaid:part in XMP.\n`);
-            process.stderr.write('This is expected for plain ISO 32000-1 documents — they are not\n');
-            process.stderr.write('PDF/A and validating them under a PDF/A profile would surface\n');
-            process.stderr.write('false positives. See docs/guides/pdfa.html#troubleshooting.\n');
-        }
+    if (totalSeen === 0) {
+        process.stderr.write('No PDFs found in test-output/. Run `npm run test:generate` first.\n');
         return 0;
     }
 
     process.stderr.write(`Scanned ${totalSeen} PDF(s); ${claimed.length} claim PDF/A, ${skipped} skipped (not PDF/A).\n`);
+
+    // Coverage canary: the ecosystem manifest declares how many samples
+    // claim PDF/A. A mismatch means either a new claiming sample was added
+    // (bump `declared.pdfaSamples`) or claim detection / sample generation
+    // silently regressed — both must fail loudly rather than shrink the
+    // validated corpus unnoticed.
+    const manifest = JSON.parse(
+        readFileSync(resolve(process.cwd(), 'docs', 'assets', 'ecosystem.json'), 'utf8'),
+    ) as { declared?: { pdfaSamples?: number } };
+    const expected = manifest.declared?.pdfaSamples;
+    if (typeof expected === 'number' && claimed.length !== expected) {
+        process.stderr.write(
+            `\nCoverage canary: detected ${claimed.length} PDF/A-claiming sample(s) but `
+            + `docs/assets/ecosystem.json declares pdfaSamples: ${expected}.\n`
+            + 'Added or removed a PDF/A-claiming sample? Update declared.pdfaSamples.\n'
+            + 'Neither added nor removed one? Claim detection or sample generation regressed.\n',
+        );
+        return 1;
+    }
+
     process.stderr.write(`Validating ${claimed.length} PDF/A-claiming file(s)…\n`);
 
     let failed = 0;

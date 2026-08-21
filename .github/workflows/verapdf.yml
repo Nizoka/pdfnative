@@ -45,12 +45,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      # Download the latest stable veraPDF release from the official mirror.
-      # The top-level URL always resolves to the latest even-numbered minor
-      # release (stable series). To pin a specific minor, change to e.g.
-      # https://software.verapdf.org/rel/1.28/verapdf-installer.zip
-      # Release index: https://software.verapdf.org/rel/
-      VERAPDF_INSTALL_URL: 'https://software.verapdf.org/rel/verapdf-installer.zip'
+      # Pinned veraPDF release (greenfield) so CI and the documented local
+      # setup validate against the same validator version — a floating
+      # "latest" URL can silently change the rule set between two runs of
+      # the same commit. Bump deliberately, with the release index:
+      # https://software.verapdf.org/rel/
+      VERAPDF_INSTALL_URL: 'https://software.verapdf.org/rel/1.30/verapdf-greenfield-1.30.2-installer.zip'
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
