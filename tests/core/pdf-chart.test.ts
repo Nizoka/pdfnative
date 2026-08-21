@@ -149,6 +149,18 @@ describe('validation', () => {
     });
     it('rejects negative pie values', () => {
         expect(() => chartDoc({ type: 'chart', chartType: 'pie', series: [{ label: 'a', values: [1, -2] }] })).toThrow(/non-negative/);
+        // Scatter is positional by definition — a category x-axis is refused
+        // at validation instead of failing later inside parseXValue.
+        expect(() => chartDoc({
+            type: 'chart', chartType: 'scatter', xAxis: { type: 'category' },
+            series: [{ label: 'p', values: [1, 2], xValues: [1, 2] }],
+        })).toThrow(/positional x-axis/);
+        // Degenerate log axis: every series on the right leaves the left
+        // axis with no positive data — clean error, not NaN geometry.
+        expect(() => chartDoc({
+            type: 'chart', chartType: 'line', axis: { scale: 'log' }, axis2: {},
+            series: [{ label: 'r', values: [1, 10], yAxis: 'right' }],
+        })).toThrow(/log-scale axis requires positive data/);
     });
 });
 

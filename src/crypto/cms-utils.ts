@@ -85,7 +85,7 @@ export function parseCmsSignedData(der: Uint8Array): ParsedCms {
     let eContent: Uint8Array | undefined;
     if (encap.children.length > 1 && encap.children[1].tag === TAG_CONTEXT_0_CONSTRUCTED) {
         const inner = encap.children[1].children[0];
-        if (inner.tag !== ASN1_OCTET_STRING) throw new Error('CMS: eContent is not an OCTET STRING');
+        if (inner === undefined || inner.tag !== ASN1_OCTET_STRING) throw new Error('CMS: eContent is not an OCTET STRING');
         eContent = inner.value;
     }
 

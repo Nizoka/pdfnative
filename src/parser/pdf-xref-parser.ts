@@ -14,7 +14,7 @@ import { createTokenizer } from './pdf-tokenizer.js';
 import { parseValue, isDict, isArray, dictGetName, dictGetNum } from './pdf-object-parser.js';
 import type { PdfDict, PdfValue, PdfRef } from './pdf-object-parser.js';
 import { inflateSync } from './pdf-inflate.js';
-import { decodePNGPredictor } from './pdf-reader.js';
+import { decodePNGPredictor } from './pdf-predictor.js';
 
 // ── Types ────────────────────────────────────────────────────────────
 

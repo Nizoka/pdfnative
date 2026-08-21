@@ -99,7 +99,7 @@
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
     "testFiles": 122,
     "sampleGenerators": 48,
-    "samplePdfs": 241,
+    "samplePdfs": 242,
     "guides": 28,
     "playgrounds": 9,
     "learnSteps": 8

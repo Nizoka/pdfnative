@@ -165,7 +165,7 @@ export async function collectValidationInfo(
 
     const signatures = listSignatures(pdfBytes).filter(s => !s.isPlaceholder);
     if (signatures.length === 0) {
-        throw new Error('addValidationInfo: the document has no signed signature to enable LTV for');
+        throw new Error('collectValidationInfo: the document has no signed signature to enable LTV for');
     }
 
     // Revocation cache so shared chain certificates are fetched once.
@@ -188,7 +188,7 @@ export async function collectValidationInfo(
                 } catch { /* malformed token — covered by the outer certs */ }
             }
         } catch {
-            throw new Error(`addValidationInfo: signature ${entry.key.slice(0, 8)}… does not parse as CMS SignedData`);
+            throw new Error(`collectValidationInfo: signature ${entry.key.slice(0, 8)}… does not parse as CMS SignedData`);
         }
         for (const der of cmsDers) entry.certs.push(internCert(der));
 

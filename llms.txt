@@ -55,7 +55,7 @@
 ## Source
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
-- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 48 sample generators producing 241 reference PDFs.
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 48 sample generators producing 242 reference PDFs.
 - [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2664+ tests across 122 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
 
 ## Ecosystem

@@ -195,7 +195,8 @@ export function parseTimestampToken(tokenDer: Uint8Array): TstInfo {
     const policyOid = asn1OidBytes(tst.children[1]);
 
     const imprint = tst.children[2];
-    if (imprint.tag !== ASN1_SEQUENCE || imprint.children.length < 2) {
+    if (imprint.tag !== ASN1_SEQUENCE || imprint.children.length < 2
+        || imprint.children[0].children.length < 1) {
         throw new Error('RFC 3161: malformed MessageImprint');
     }
     const hashAlgorithmOid = asn1OidBytes(imprint.children[0].children[0]);

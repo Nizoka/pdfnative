@@ -105,7 +105,11 @@ export interface CmsSignOptions {
     readonly rsaKey?: RsaPrivateKey;
     /** ECDSA private key (for ecdsa-sha256). */
     readonly ecKey?: EcPrivateKey;
-    /** Signing time (defaults to now). */
+    /**
+     * Signing time (defaults to now). Ignored under `profile: 'pades'` —
+     * ETSI EN 319 142-1 omits the CMS signing-time attribute (the trusted
+     * time assertion is the RFC 3161 signature timestamp instead).
+     */
     readonly signingTime?: Date;
     /** Signature algorithm. */
     readonly algorithm: SignatureAlgorithm;

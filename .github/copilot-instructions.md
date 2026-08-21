@@ -106,7 +106,7 @@ npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test            # vitest run (2664+ tests, 122 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 88/80/85/90)
-npm run test:generate   # Generate ~241 sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/, forms/, charts/, parser/ baselines)
+npm run test:generate   # Generate ~242 sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/, forms/, charts/, parser/ baselines)
 npm run typecheck       # tsc --noEmit
 npm run typecheck:tests # tsc --project tsconfig.test.json --noEmit
 npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit

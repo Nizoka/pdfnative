@@ -14,7 +14,9 @@
 import { resolve } from 'path';
 import { buildDocumentPDFBytes, PAGE_SIZES } from '../../src/index.js';
 import type { DocumentParams } from '../../src/index.js';
+import { buildMinimalSRGBProfile } from '../../src/core/pdf-tags.js';
 import type { GenerateContext } from '../helpers/io.js';
+import { loadSelectedFontEntries } from '../helpers/fonts.js';
 
 const BLEED = 8.5; // 3 mm
 
@@ -40,6 +42,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         viewerPreferences: {
             duplex: 'duplexFlipLongEdge',
             pickTrayByPDFSize: true,
+            printPageRange: [[1, 1]],
             numCopies: 1,
         },
     });
@@ -80,4 +83,35 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         print: { userUnit: 10 },
     });
     ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-large-format.pdf'), 'print/print-large-format.pdf', banner);
+
+    // ── 4. Custom OutputIntent (tagged PDF/A-2b) ────────────────────
+    // A characterised print condition: the caller supplies the RGB ICC
+    // profile and names the output condition instead of the built-in
+    // sRGB defaults. Here the engine's own sRGB profile stands in for a
+    // press-supplied one — swap in your printer's profile bytes.
+    const fontEntries = await loadSelectedFontEntries(['latin']);
+    if (fontEntries.length === 1) {
+        const iccProfile = Uint8Array.from(buildMinimalSRGBProfile(), c => c.charCodeAt(0));
+        const intent = buildDocumentPDFBytes({
+            title: 'Print Production — Custom OutputIntent',
+            blocks: [
+                { type: 'heading', text: 'Custom OutputIntent', level: 1 },
+                { type: 'paragraph', text: 'This tagged PDF/A-2b document carries a caller-supplied RGB ICC profile as its OutputIntent, with a named output condition - the characterised print condition prepress workflows expect.' },
+                { type: 'paragraph', text: 'The /Info dictionary declares /Trapped /True, mirrored as pdf:Trapped in XMP.' },
+            ],
+            metadata: { trapped: 'True' },
+            footerText: 'pdfnative - print production',
+            fontEntries,
+        }, {
+            tagged: 'pdfa2b',
+            print: { bleed: BLEED },
+            outputIntent: {
+                iccProfile,
+                outputConditionIdentifier: 'sRGB IEC61966-2.1',
+                outputCondition: 'sRGB characterised display/print condition',
+                info: 'Caller-supplied RGB profile (engine sRGB used as stand-in)',
+            },
+        });
+        ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-output-intent.pdf'), 'print/print-output-intent.pdf', intent);
+    }
 }

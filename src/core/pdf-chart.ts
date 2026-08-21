@@ -98,6 +98,9 @@ function validate(block: ChartBlock): void {
     if (positional && !(isScatter || block.chartType === 'line' || block.chartType === 'area')) {
         throw new Error(`chart: xAxis.type '${xType}' applies only to line/area/scatter charts`);
     }
+    if (isScatter && !positional) {
+        throw new Error("chart: scatter charts need a positional x-axis ('linear' or 'time') — xAxis.type 'category' is not supported");
+    }
     if (isScatter && (block.labelStride !== undefined || block.labelRotation !== undefined)) {
         throw new Error('chart: labelStride/labelRotation apply to category axes only');
     }
@@ -249,6 +252,9 @@ function makeLinearScale(dataMin: number, dataMax: number, axis?: ValueAxisOptio
 function makeLogScale(dataMin: number, dataMax: number, axis?: ValueAxisOptions): ValueScale {
     const lo = axis?.yMin ?? Math.pow(10, Math.floor(Math.log10(dataMin)));
     const hi = axis?.yMax ?? Math.pow(10, Math.ceil(Math.log10(Math.max(dataMax, dataMin))));
+    if (!(lo > 0) || !Number.isFinite(lo) || !Number.isFinite(hi)) {
+        throw new Error('chart: log-scale axis requires positive data — bind a series with positive values to this axis or set yMin/yMax > 0');
+    }
     const llo = Math.log10(lo);
     const lhi = Math.log10(hi);
     const span = lhi - llo || 1;
