@@ -96,6 +96,18 @@ outright wrong (reversed RTL digits, unmirrored delimiters, per-revision
 
 ### Fixed
 
+- **fix(shaping): Arabic ALEF joining and Persian letter forms** — ALEF was
+  swept into the dual-joining class by a `0x0626–0x0628` range, so every
+  word with a non-final alef rendered wrongly (سال collapsed toward سل,
+  كتاب/باب mis-joined, السلام drew a medial lam); ALEF is now right-joining
+  per UCD ArabicShaping. The presentation-form table also gains the
+  Presentation Forms-A entries for the Persian and Urdu letters
+  (پ چ ژ ک گ ی، ٹ ڈ ڑ ں ھ ہ ے ۓ), which previously fell back to their
+  isolated glyph in every position (قیمت/ریال rendered with joining gaps).
+  The bundled Noto Naskh Arabic font always contained every form — the
+  shaper never requested them. Arabic visual baselines regenerated; fonts
+  without Forms-A keep the previous fallback.
+  ([src/shaping/arabic-shaper.ts](src/shaping/arabic-shaper.ts))
 - **fix(shaping): RTL digit runs no longer reverse** — `assignLevels` now
   implements UAX #9 I1/I2: AN/EN digit runs resolve to even embedding levels
   in both paragraph directions, so `۱۴۰۵` can never render `۵۰۴۱` again;

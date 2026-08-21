@@ -47,6 +47,7 @@
     "fonts/LICENSE",
     "tools",
     "LICENSE",
+    "THIRD-PARTY-NOTICES.md",
     "README.md"
   ],
   "sideEffects": false,

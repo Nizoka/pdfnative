@@ -40,7 +40,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { type: 'paragraph', text: 'Matching brackets () [] {} enclosing LTR content are kept together as a single LTR run, preventing visual break-up of parenthesized expressions.' },
 
                 { type: 'heading', text: 'Glyph Mirroring', level: 2 },
-                { type: 'paragraph', text: 'RTL runs mirror bracket characters: ( → ), [ → ], « → ». This ensures visual consistency when direction changes.' },
+                { type: 'paragraph', text: 'RTL runs mirror bracket characters: ( becomes ), [ becomes ], « becomes ». This ensures visual consistency when direction changes.' },
             ],
             fontEntries,
             footerText: 'pdfnative – BiDi Algorithm Walkthrough',

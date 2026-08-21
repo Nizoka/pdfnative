@@ -37,6 +37,7 @@ import { generate as generateParser } from './generators/parser-showcase.js';
 import { generate as generateTextShaping } from './generators/text-shaping-deep.js';
 import { generate as generateUseLite } from './generators/use-lite-showcase.js';
 import { generate as generateBidi } from './generators/bidi-algorithm.js';
+import { generate as generatePersian } from './generators/persian-showcase.js';
 import { generate as generateCrypto } from './generators/crypto-showcase.js';
 import { generate as generateFontSubsetting } from './generators/font-subsetting-deep.js';
 import { generate as generateParserDeep } from './generators/parser-deep.js';
@@ -137,6 +138,7 @@ async function generateAll(): Promise<void> {
 
     // ── BiDi algorithm walkthrough (UAX #9, Arabic, Hebrew) ─────
     await generateBidi(ctx);
+    await generatePersian(ctx);
 
     // ── Crypto primitives showcase (SHA, RSA, ECDSA) ────────────
     await generateCrypto(ctx);

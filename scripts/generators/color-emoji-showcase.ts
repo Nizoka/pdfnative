@@ -122,7 +122,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             { type: 'paragraph', text: 'Families: 👨‍👩‍👧 👨‍👩‍👧‍👦 👩‍👩‍👦 👨‍👦 👩‍👧' },
             { type: 'paragraph', text: 'Hearts & flags: ❤‍🔥 🏳‍🌈 🏳‍⚧ 🏴‍☠' },
             { type: 'paragraph', text: 'Faces & animals: 😮‍💨 😵‍💫 🐻‍❄ 🐈‍⬛' },
-            { type: 'paragraph', text: 'Fallback: an uncurated flag pair (🇿🇼) degrades to the historical per-codepoint behaviour - never worse than v1.6.0.' },
+            { type: 'paragraph', text: 'Fallback demonstration: the uncurated flag pair that follows intentionally renders as two placeholder boxes (🇿🇼) - regional indicators outside the curated set degrade to the historical per-codepoint behaviour, identical to v1.6.0, never worse. Bundle any flag with the CLI: npx pdfnative-build-emoji-font --sequence-list ZW.' },
         ],
         footerText: 'pdfnative - emoji sequences (GSUB ligatures)',
         fontEntries,

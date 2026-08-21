@@ -4816,6 +4816,16 @@ instructions — local development never blocks. CI installs veraPDF
 deterministically (pinned version) and runs the same script on every
 PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml).
 
+> **Which samples are subject to PDF/A validation?** Only files that
+> *declare* a conformance level in their XMP (`pdfaid:part`) — the ones
+> built with `tagged: 'pdfa…'`, e.g. the `pdfa/` and `pdfa-latin/` sample
+> categories. The script skips everything else. Most showcase samples
+> (`bidi/`, `alphabet/`, `charts/`, …) intentionally make **no** PDF/A
+> claim: they have no XMP packet at all, so force-validating one against a
+> PDF/A profile in the veraPDF GUI fails by construction (missing
+> `/Metadata`, uncalibrated DeviceRGB, …) — that is expected and not a
+> defect.
+
 veraPDF is invoked as an **external** Java tool. pdfnative remains a
 zero-runtime-dependency library; veraPDF is never bundled, linked, or
 required by consumers of the npm package.

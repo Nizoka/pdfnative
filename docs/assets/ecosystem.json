@@ -97,16 +97,16 @@
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 120,
-    "sampleGenerators": 46,
-    "samplePdfs": 237,
+    "testFiles": 121,
+    "sampleGenerators": 47,
+    "samplePdfs": 238,
     "guides": 27,
     "playgrounds": 9,
     "learnSteps": 8
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 2624,
+    "tests": 2639,
     "scripts": 22,
     "bundledFontModules": 26,
     "blockTypes": 13,
@@ -171,7 +171,7 @@
     {
       "id": "test-count-homepage",
       "$comment": "The homepage quoted a stale test count for a full release train; no assertion covered it. canonical-present pins the current figure where it is displayed.",
-      "canonical": "624+ tests across 120 files",
+      "canonical": "639+ tests across 121 files",
       "requireIn": [
         "docs/index.html"
       ]

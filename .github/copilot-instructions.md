@@ -63,9 +63,9 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (.js/.d.ts) — 22 scripts + math (noto-sans-math-data, v1.5.0) + TTF source files
 tools/            # CLI tools: build-font-data.cjs (TTF → data module); build-emoji-font (bundled via tsup from scripts/build-emoji-font.ts → dist/tools/, npx pdfnative-build-emoji-font — generates colour-emoji data modules up to the full ~3,600-glyph set)
-scripts/          # Modular sample PDF generation (46 generators; signature-ltv.ts + incremental-metadata.ts added in v1.7.0; text-extract-showcase.ts added in v1.6.0; math-symbols.ts + svg-text-labels.ts + layout-debug-overlay.ts + annotations-showcase.ts + font-compiler-demo.ts added in v1.5.0; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0). scripts/lib/ holds the shared deterministic emoji-build core (emoji-font-core.ts, curated-emoji.ts, emoji-cli.ts) used by both build-color-emoji-data.ts and the bundled build-emoji-font CLI
+scripts/          # Modular sample PDF generation (47 generators; persian-showcase.ts, signature-ltv.ts + incremental-metadata.ts added in v1.7.0; text-extract-showcase.ts added in v1.6.0; math-symbols.ts + svg-text-labels.ts + layout-debug-overlay.ts + annotations-showcase.ts + font-compiler-demo.ts added in v1.5.0; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0). scripts/lib/ holds the shared deterministic emoji-build core (emoji-font-core.ts, curated-emoji.ts, emoji-cli.ts) used by both build-color-emoji-data.ts and the bundled build-emoji-font CLI
 test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf, extreme-bidi-isolates.pdf)
-tests/            # 2624+ tests (120 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
+tests/            # 2639+ tests (121 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
   └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, scale.html)
@@ -91,10 +91,10 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (2624+ tests, 120 files)
+npm run test            # vitest run (2639+ tests, 121 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 88/80/85/90)
-npm run test:generate   # Generate ~237 sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/, forms/, charts/, parser/ baselines)
+npm run test:generate   # Generate ~238 sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/, forms/, charts/, parser/ baselines)
 npm run typecheck       # tsc --noEmit
 npm run typecheck:tests # tsc --project tsconfig.test.json --noEmit
 npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit
@@ -106,7 +106,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC Trusted Publishing (`npm publish --access public`; provenance is attached automatically via the workflow's `id-token: write`)
-- All new code must have tests. 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90. 2624+ tests (120 files)
+- All new code must have tests. 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90. 2639+ tests (121 files)
 
 ## Conventions
 
@@ -289,7 +289,7 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **Test coverage** — 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90 (statements/branches/functions/lines). 2624+ tests (120 files), 89 fuzz tests across 5 files (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
+- **Test coverage** — 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90 (statements/branches/functions/lines). 2639+ tests (121 files), 89 fuzz tests across 5 files (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/)
