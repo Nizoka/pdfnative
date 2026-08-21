@@ -186,22 +186,39 @@ export function buildPrinterMarksOps(
 
     if (drawReg) {
         // Registration targets (circle + cross) on the four edge midpoints,
-        // centred in the strip between the trim edge and the media edge.
-        const r = Math.min(4, Math.max(2, length / 4));
+        // in the strip between the trim edge and the media edge. Nominal
+        // placement is `offset` past the trim edge; in tighter strips the
+        // target is re-centred and shrunk (never below a 2pt radius) so the
+        // whole circle + cross stays on the sheet — a target clipped by the
+        // media edge cannot serve registration, so one that cannot fit is
+        // dropped for that edge.
+        const ARM = 1.4; // cross arms extend ARM × r from the centre
+        const rNominal = Math.min(4, Math.max(2, length / 4));
         const midX = (tx0 + tx1) / 2;
         const midY = (ty0 + ty1) / 2;
-        const targets: Array<readonly [number, number] | null> = [
-            ty0 - offset - r >= 0 ? [midX, ty0 - offset - r] : null,          // bottom
-            ty1 + offset + r <= pgH ? [midX, ty1 + offset + r] : null,        // top
-            tx0 - offset - r >= 0 ? [tx0 - offset - r, midY] : null,          // left
-            tx1 + offset + r <= pgW ? [tx1 + offset + r, midY] : null,        // right
+        /** Centre distance from the trim edge + radius for a strip, or null. */
+        const fit = (strip: number): readonly [number, number] | null => {
+            const r = Math.min(rNominal, strip / (2 * ARM));
+            if (r < 2) return null;
+            const c = Math.max(ARM * r, Math.min(strip - ARM * r, offset + r));
+            return [c, r];
+        };
+        const bottom = fit(ty0);
+        const top = fit(pgH - ty1);
+        const left = fit(tx0);
+        const right = fit(pgW - tx1);
+        const targets: Array<readonly [number, number, number] | null> = [
+            bottom ? [midX, ty0 - bottom[0], bottom[1]] : null,
+            top ? [midX, ty1 + top[0], top[1]] : null,
+            left ? [tx0 - left[0], midY, left[1]] : null,
+            right ? [tx1 + right[0], midY, right[1]] : null,
         ];
         for (const target of targets) {
             if (!target) continue;
-            const [cx, cy] = target;
+            const [cx, cy, r] = target;
             ops.push(circleOps(cx, cy, r));
-            line(cx - r * 1.4, cy, cx + r * 1.4, cy);
-            line(cx, cy - r * 1.4, cx, cy + r * 1.4);
+            line(cx - r * ARM, cy, cx + r * ARM, cy);
+            line(cx, cy - r * ARM, cx, cy + r * ARM);
         }
     }
 

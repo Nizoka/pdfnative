@@ -126,6 +126,11 @@ describe('buildPrinterMarksOps', () => {
         }
         expect(ops.startsWith('q')).toBe(true);
         expect(ops.endsWith('Q')).toBe(true);
+        // Tight strip (8.5pt bleed): the whole circle + cross must stay on
+        // the sheet — no negative coordinates (nothing past the media edge).
+        const tight = buildPrinterMarksOps([8.5, 8.5, 591.5, 833.39], 600, 841.89, { crop: false });
+        expect(tight).toContain(' c ');
+        expect(tight).not.toContain('-');
     });
 
     it('honours crop/registration toggles and custom geometry', () => {

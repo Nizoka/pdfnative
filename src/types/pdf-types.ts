@@ -702,7 +702,7 @@ export interface ViewerPreferences {
      * @since 1.7.0
      */
     readonly printPageRange?: readonly (readonly [number, number])[];
-    /** Default number of copies for the Print dialog (`/NumCopies`, 1–5 per spec). @since 1.7.0 */
+    /** Default number of copies for the Print dialog (`/NumCopies`; viewers honour 2–5 per ISO 32000 Table 150, other values are ignored). @since 1.7.0 */
     readonly numCopies?: number;
 }
 

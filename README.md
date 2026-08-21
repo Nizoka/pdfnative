@@ -1233,7 +1233,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 2639+ (122 files) |
+| Tests | 2664+ (122 files) |
 | Statement coverage | 95.41% (measured at the v1.6.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 87.79% (measured at the v1.6.0 release; CI enforces ≥80%) |
 | Function coverage | 98.5% (measured at the v1.6.0 release; CI enforces ≥85%; lines gate: ≥90%) |

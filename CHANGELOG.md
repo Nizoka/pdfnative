@@ -9,15 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 The long-term-validation release: complete PAdES LTV signing (B-B → B-LTA)
 with injected network providers, charts v2, colour-emoji flag & ZWJ
-sequences, UAX #9 digit-order and glyph-mirroring conformance, PDF/A
-declaration guards, and an incremental-writer hardening pass — plus the
-documentation-alignment train (ecosystem manifest + hardened verifier)
-staged since v1.6.0. Zero runtime dependencies, no breaking changes:
-every new capability is a new API or an additive option, and existing
-inputs render byte-identically except where the fixed behaviour was
-outright wrong (reversed RTL digits, unmirrored delimiters, mis-joined
-Arabic letterforms, per-revision `/ID` reuse). 2639 tests across
-121 files; veraPDF-validated.
+sequences, print production (bleed/trim boxes, printer's marks,
+`/Trapped`, `/UserUnit`), UAX #9 digit-order and glyph-mirroring
+conformance, PDF/A declaration guards, and an incremental-writer
+hardening pass — plus the documentation-alignment train (ecosystem
+manifest + hardened verifier) staged since v1.6.0. Zero runtime
+dependencies, no breaking changes: every new capability is a new API or
+an additive option, and existing inputs render byte-identically except
+where the fixed behaviour was outright wrong (reversed RTL digits,
+unmirrored delimiters, mis-joined Arabic letterforms, per-revision `/ID`
+reuse). 2664 tests across 122 files; veraPDF-validated.
 
 ### Added
 
