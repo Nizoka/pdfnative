@@ -93,6 +93,15 @@ describe('PDFA_NO_FONT_ENTRIES (#69)', () => {
             .toThrow(/fontEntries/);
     });
 
+    it('emits the base-14 /ToUnicode CMap in tagged table-builder output', () => {
+        // C10 parity with the document builder: the tagged Latin branch must
+        // reference and emit the shared WinAnsi CMap.
+        const bytes = buildPDFBytes(tableParams, { tagged: 'pdfa2b', onDiagnostic: () => {} });
+        const pdf = Buffer.from(bytes).toString('latin1');
+        expect(pdf).toContain('/ToUnicode');
+        expect(pdf).toContain('beginbfchar');
+    });
+
     it('defaults to a single deduplicated console.warn', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         buildDocumentPDFBytes(docParams, { tagged: 'pdfa2b' });

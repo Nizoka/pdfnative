@@ -384,16 +384,19 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         ? 5 + fontEntries.length * 5 + wmExtraObjs
         : 5 + wmExtraObjs;
 
-    // Base-14 /ToUnicode CMap (issue #48): non-tagged Helvetica/Helvetica-Bold
-    // declare /WinAnsiEncoding but carry no ToUnicode by default, so the CP1252
+    // Base-14 /ToUnicode CMap (issue #48): Helvetica/Helvetica-Bold declare
+    // /WinAnsiEncoding but carry no ToUnicode by default, so the CP1252
     // 0x80–0x9F band (Euro, curly quotes, …) is not selectable/searchable and is
     // shown as `?` by minimal viewers. We emit one shared CMap as the trailing
     // object (a forward reference from the font dicts) so existing object numbers
-    // are unaffected. Tagged mode embeds CIDFonts with their own ToUnicode.
+    // are unaffected. v1.7.0: also emitted in tagged mode when the Latin branch
+    // is taken — base-14 dicts reached under a PDF/A claim need complete
+    // ToUnicode coverage (parity with the document builder); tagged CIDFont
+    // documents carry no base-14 dict and stay byte-identical.
     const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
         ? 4 + fontEntries.length * 5 + wmExtraObjs + totalPages * 2
         : 4 + wmExtraObjs + totalPages * 2;
-    const latinToUniObjNum = tagged ? 0 : preBaseObjCount + 2; // infoObjNum + 1
+    const latinToUniObjNum = (!tagged || !enc.isUnicode) ? preBaseObjCount + 2 : 0; // infoObjNum + 1
     const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
 
     // Map page object numbers to /StructParents values for ParentTree (ISO 32000-1 §14.7.4.4)

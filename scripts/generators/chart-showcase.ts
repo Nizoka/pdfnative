@@ -90,6 +90,15 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             dataLabels: true,
         },
         {
+            type: 'chart', chartType: 'stackedBarH', title: 'Team capacity by quarter (horizontal stacked)',
+            categories: ['Platform', 'Apps', 'Infra'],
+            series: [
+                { label: 'Build', values: [12, 18, 9] },
+                { label: 'Run', values: [6, 8, 11] },
+                { label: 'Support', values: [4, 5, 3] },
+            ],
+        },
+        {
             type: 'chart', chartType: 'area', title: 'Server load (area)',
             categories: ['00h', '04h', '08h', '12h', '16h', '20h'],
             series: [{ label: 'CPU %', values: [12, 8, 45, 72, 66, 30] }],

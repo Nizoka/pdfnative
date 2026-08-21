@@ -15,8 +15,9 @@ documentation-alignment train (ecosystem manifest + hardened verifier)
 staged since v1.6.0. Zero runtime dependencies, no breaking changes:
 every new capability is a new API or an additive option, and existing
 inputs render byte-identically except where the fixed behaviour was
-outright wrong (reversed RTL digits, unmirrored delimiters, per-revision
-`/ID` reuse). 2621 tests across 120 files; veraPDF-validated.
+outright wrong (reversed RTL digits, unmirrored delimiters, mis-joined
+Arabic letterforms, per-revision `/ID` reuse). 2639 tests across
+121 files; veraPDF-validated.
 
 ### Added
 
@@ -59,9 +60,9 @@ outright wrong (reversed RTL digits, unmirrored delimiters, per-revision
 - **feat(core): PDF/A declaration guards** — conformance diagnostics channel
   ([src/core/pdf-diagnostics.ts](src/core/pdf-diagnostics.ts)) with additive
   `strict` / `onDiagnostic` layout options: `PDFA_NO_FONT_ENTRIES`
-  ([#69](https://github.com/Nizoka/pdfnative/issues/69)) and
-  `PDFA_DEVICE_CMYK_IMAGE` surface instead of silently stamping a `pdfaid`
-  claim veraPDF would reject.
+  ([#69](https://github.com/Nizoka/pdfnative/issues/69)),
+  `PDFA_UNEMBEDDED_FORM_FONT` and `PDFA_DEVICE_CMYK_IMAGE` surface instead
+  of silently stamping a `pdfaid` claim veraPDF would reject.
 - **feat(parser): incremental metadata updates** — `PdfModifier.updateMetadata()`
   re-issues `/Info` (adding `/ModDate`) and keeps the XMP packet in sync
   (`xmp:ModifyDate` = `xmp:MetadataDate`, CreateDate + `pdfaid:*` preserved)
@@ -128,11 +129,11 @@ outright wrong (reversed RTL digits, unmirrored delimiters, per-revision
   `/DecodeParms /Predictor`; appended revisions start on a fresh line after a
   bare `%%EOF`; an absent or corrupt `/Size` recovers from the xref's highest
   entry instead of silently allocating colliding object numbers.
-- **fix(core): complete base-14 `/ToUnicode` coverage** — base-14 dicts reached
-  under a PDF/A claim, and the AcroForm `/Helv` dict in EVERY mode (all
-  form-carrying documents change bytes; form text becomes
-  searchable/extractable), now carry the shared WinAnsi CMap; cmap inversion
-  keeps a legitimately-mapped U+0000
+- **fix(core): complete base-14 `/ToUnicode` coverage** — in BOTH builders,
+  base-14 dicts reached under a PDF/A claim, and the AcroForm `/Helv` dict
+  in EVERY mode (all form-carrying documents change bytes; form text
+  becomes searchable/extractable), now carry the shared WinAnsi CMap; cmap
+  inversion keeps a legitimately-mapped U+0000
   ([src/fonts/font-embedder.ts](src/fonts/font-embedder.ts)).
 - **fix(fonts): COLRv1 composite degradation** — a `PaintComposite` whose
   SOURCE subtree is unsupported now renders its backdrop alone instead of
@@ -335,7 +336,7 @@ had fixed instances while their classes survived elsewhere:
 - The comparison table is dated, names the exact competitor versions, states the
   dependency-count method, and links its source data.
 - Hero CTA points at `/learn/` instead of an off-site 85 KB README. The homepage
-  now links 21 of the guides and `llms.txt` all 27.
+  now links 22 of the guides and `llms.txt` all 27.
 
 ## [1.6.0] – 2026-07-19
 
