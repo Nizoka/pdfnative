@@ -30,7 +30,7 @@ npx pdfnative-build-font fonts/ttf/MyFont.ttf fonts/my-font-data.js  # TTF → d
 npx pdfnative-build-emoji-font --download --all --out emoji-data.js  # full colour-emoji coverage
 ```
 
-Always run `npm run typecheck:all && npm run test && npm run lint` before suggesting a commit.
+Always run `npm run typecheck:all && npm run test && npm run lint` before suggesting a commit. When samples or PDF/A behaviour changed, also run `npm run test:generate && npm run validate:pdfa` (veraPDF auto-detects every `pdfaid:part`-claiming sample; a coverage canary enforces `declared.pdfaSamples` in `docs/assets/ecosystem.json`). When docs/, playgrounds, README or llms files changed, also run `npm run verify:docs`.
 
 ## AI-agent governance (since v1.5.0)
 

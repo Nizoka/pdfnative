@@ -158,8 +158,17 @@ npm run validate:pdfa
 The script auto-detects veraPDF on `$PATH` or via the `VERAPDF_HOME`
 env var. If veraPDF is not installed it exits 0 with install
 instructions — local development never blocks. CI installs veraPDF
-deterministically (pinned version) and runs the same script on every
-PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml).
+deterministically (pinned to 1.30.2) and runs the same script on every
+engine PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml) —
+and again as a blocking gate before every npm publish.
+
+Detection is automatic and guarded: every sample declaring
+`pdfaid:part` — currently the 18 PDF/A-claiming samples — is validated
+without any registration, and a **coverage canary** fails the run if the
+detected count drifts from `declared.pdfaSamples` in
+`docs/assets/ecosystem.json` (bump it when adding or removing a
+claiming sample; a mismatch with no sample change means detection or
+generation regressed).
 
 > **Which samples are subject to PDF/A validation?** Only files that
 > *declare* a conformance level in their XMP (`pdfaid:part`) — the ones
@@ -199,15 +208,22 @@ export VERAPDF_HOME="$HOME/verapdf"
 export PATH="$VERAPDF_HOME:$PATH"
 ```
 
-**Windows** — official installer from
-<https://docs.verapdf.org/install/>. After install, either add the
-install directory to `PATH` or:
+**Windows** — official GUI installer from
+<https://docs.verapdf.org/install/>, or the same headless install CI
+uses (download the pinned zip, run
+`java -jar verapdf-izpack-installer-*.jar auto-install.xml` — the
+descriptor is shown in [CONTRIBUTING](https://github.com/Nizoka/pdfnative/blob/main/CONTRIBUTING.md)).
+After install, either add the install directory to `PATH` or:
 
 ```powershell
 $env:VERAPDF_HOME = "C:\Program Files\verapdf"
 $env:Path += ";$env:VERAPDF_HOME"
 verapdf.bat --version
 ```
+
+The `.bat` launcher is fully supported by `npm run validate:pdfa`
+since v1.7.0 (it is spawned through a shell, as recent Node versions
+require for batch files).
 
 **No install at all?** Drop the file into the official online demo
 at <https://demo.verapdf.org>. It validates against the same engine,
@@ -232,7 +248,7 @@ files that don't claim PDF/A. The summary line reports how many were
 skipped:
 
 ```
-Scanned 146 PDF(s); 7 claim PDF/A, 139 skipped (not PDF/A).
+Scanned 242 PDF(s); 18 claim PDF/A, 224 skipped (not PDF/A).
 ```
 
 If you want a file to be validated, generate it with `tagged: true`

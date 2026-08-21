@@ -18,7 +18,7 @@ dependencies, no breaking changes: every new capability is a new API or
 an additive option, and existing inputs render byte-identically except
 where the fixed behaviour was outright wrong (reversed RTL digits,
 unmirrored delimiters, mis-joined Arabic letterforms, per-revision `/ID`
-reuse). 2664 tests across 122 files; veraPDF-validated.
+reuse). 2665 tests across 122 files; veraPDF-validated.
 
 ### Added
 
@@ -64,6 +64,20 @@ reuse). 2664 tests across 122 files; veraPDF-validated.
   ([#69](https://github.com/Nizoka/pdfnative/issues/69)),
   `PDFA_UNEMBEDDED_FORM_FONT` and `PDFA_DEVICE_CMYK_IMAGE` surface instead
   of silently stamping a `pdfaid` claim veraPDF would reject.
+- **feat(validation): PDF/A validation hardening** — `validate:pdfa` gains a
+  coverage canary against `declared.pdfaSamples` in the ecosystem manifest
+  (a silent drop in claim detection or sample generation fails loudly; a new
+  PDF/A-claiming sample bumps the counter — detection itself stays
+  automatic); CI installs a **pinned** veraPDF (1.30.2 greenfield) instead
+  of the floating latest; the publish workflow re-runs `verify:docs`,
+  `test:generate` and the blocking `validate:pdfa` before `npm publish`;
+  and `verify:docs` gains a 17th rule, `playground-syntax` — every inline
+  `<script type="module">` in the nine playgrounds and the homepage demo
+  must parse under `node --check` (no headless browser: zero-dependency
+  policy), so a hand-edit can no longer ship a silently dead playground.
+  CONTRIBUTING gains the veraPDF install-and-run guide (macOS/Linux/Windows,
+  including the headless CI mechanism) and the PR checklist gains the
+  `validate:pdfa` / `verify:docs` gates.
 - **feat(core): print production** — bleed/trim/art/crop page boxes
   (`layout.print`, ISO 32000-1 §14.11.2, with a one-line `bleed` shorthand),
   crop + registration marks drawn as pure vector operators outside the
