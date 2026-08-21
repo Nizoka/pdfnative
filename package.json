@@ -1,7 +1,7 @@
 {
   "name": "pdfnative",
   "version": "1.7.0",
-  "description": "Zero-dependency native PDF library: generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (RC4, AES-128/256), and draw native vector charts (stacked/area/scatter, log & time axes). 22 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Telugu, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic, Cyrillic, Greek, Georgian, Armenian, Latin), BiDi, PDF/A-1b/2b/2u/3b, digital signatures with LTV (PAdES B-B to B-LTA: RFC 3161 timestamps, /DSS + /VRI, document timestamps), barcodes, SVG (with text), markup annotations, COLRv1 colour emoji incl. flag & ZWJ sequences. Pure TypeScript ISO 32000-1 implementation, built under a human-in-the-loop AI-agent governance policy.",
+  "description": "Zero-dependency native PDF library: generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (RC4, AES-128/256), and draw native vector charts (stacked/area/scatter, log & time axes). 22 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Telugu, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic, Cyrillic, Greek, Georgian, Armenian, Latin), BiDi, PDF/A-1b/2b/2u/3b, digital signatures with LTV (PAdES B-B to B-LTA: RFC 3161 timestamps, /DSS + /VRI, document timestamps), barcodes, SVG (with text), markup annotations, COLRv1 colour emoji incl. flag & ZWJ sequences, print production (bleed/trim boxes, printer's marks, /Trapped). Pure TypeScript ISO 32000-1 implementation, built under a human-in-the-loop AI-agent governance policy.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -111,6 +111,7 @@
     "pades",
     "ltv",
     "long-term-validation",
+    "dss",
     "rfc3161",
     "document-timestamp",
     "ocsp",

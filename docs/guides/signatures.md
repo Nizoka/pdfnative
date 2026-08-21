@@ -90,7 +90,8 @@ Options:
   `parseRsaPrivateKey`; for ECDSA there is no DER parser in the engine — supply
   the `EcPrivateKey` scalar directly, or install a crypto provider
   (`setCryptoProvider` / per-call `provider`) and omit the raw key entirely.
-- `algorithm` — `'rsa-sha256' | 'ecdsa-sha256'` (default `'rsa-sha256'`).
+- `algorithm` — `'rsa-sha256' | 'rsa-sha384' | 'rsa-sha512' | 'ecdsa-sha256'`
+  (default `'rsa-sha256'`; the SHA-384/512 RSA variants are new in v1.7.0).
 - `certChain?` — additional intermediate-CA certificates for the chain.
 - `signingTime?` — forwarded to `signedAttrs`.
 - `fieldName?` — with several unsigned placeholders in the file (the
@@ -202,11 +203,13 @@ ESS `signing-certificate-v2` attribute.
 
 | Algorithm        | Hash      | Curve / Modulus     | Notes                          |
 |------------------|-----------|---------------------|--------------------------------|
-| `rsa-sha256`     | SHA-256   | 2048 / 3072 / 4096  | PKCS#1 v1.5                    |
+| `rsa-sha256`     | SHA-256   | 2048 / 3072 / 4096  | PKCS#1 v1.5 (default)          |
+| `rsa-sha384`     | SHA-384   | 2048 / 3072 / 4096  | PKCS#1 v1.5 (v1.7.0)           |
+| `rsa-sha512`     | SHA-512   | 2048 / 3072 / 4096  | PKCS#1 v1.5 (v1.7.0)           |
 | `ecdsa-sha256`   | SHA-256   | P-256 (secp256r1)   | DER-encoded ECDSA signature    |
 
-These two are the complete `SignatureAlgorithm` union — SHA-384/512
-signing variants are not offered.
+That is the complete `SignatureAlgorithm` union — the RSA variants widened
+to SHA-384/512 in v1.7.0; ECDSA is offered with SHA-256 only.
 
 All primitives live under [src/crypto/](https://github.com/Nizoka/pdfnative/tree/main/src/crypto):
 SHA-256/384/512 in `sha.ts`, ASN.1 DER in `asn1.ts`, RSA modular

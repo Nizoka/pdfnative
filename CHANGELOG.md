@@ -106,7 +106,7 @@ reuse). 2664 tests across 122 files; veraPDF-validated.
 - **`bench/RESULTS.md`** — dated benchmark run with hardware, sample counts and
   relative error, plus the 1k–100k streaming measurements.
 - Structured data for the index pages: `CollectionPage` + `ItemList` covering all
-  27 guides and all 9 playgrounds, and `WebSite` + `Organization` on the homepage.
+  28 guides and all 9 playgrounds, and `WebSite` + `Organization` on the homepage.
 
 ### Fixed
 
@@ -253,9 +253,9 @@ checked per token-surface pair, links to `noindex` stubs are rejected, and
 exists for — a regex rule that matches nothing is indistinguishable from one
 that passes.
 
-### Fixed — final ecosystem audit
+### Fixed — final ecosystem review
 
-A second full audit of the branch against the four package sources
+A second full review pass over the branch against the four package sources
 (pdfnative 1.6.0, pdfnative-cli 1.3.0, pdfnative-mcp 1.5.0,
 pdfnative-react 1.1.0), one reviewer per package plus one for the playgrounds
 and benchmarks and one for reading experience. It found that the passes above
@@ -290,14 +290,14 @@ had fixed instances while their classes survived elsewhere:
   promising a 1,000-page cap for a main-thread path that was removed.
 - **Counts unified against the tree**: 228 sample PDFs across 37 categories
   (44 generators), 2 396 tests in 105 files on the homepage (was 2 379+/104 —
-  the count includes the five verifier fixtures this audit adds),
+  the count includes the five verifier fixtures this review adds),
   89 fuzz tests in 5 files (was "48"), 26 bundled font modules, and coverage
   figures dated to their v1.6.0 measurement with the CI gates (88/80/85/90)
   stated alongside.
 - **`llms.txt` returned 404 on the published site** — the file lived only at
   the repo root while the site serves `docs/`. A synced copy now ships in
   `docs/`, plus a generated `docs/llms-full.txt` (`npm run docs:llms`)
-  concatenating all 27 guides for single-request agent ingestion; a new
+  concatenating all 28 guides for single-request agent ingestion; a new
   `llms-sync` rule keeps both honest. Guide shells gained `<noscript>`
   Markdown fallbacks and `rel="alternate"` links for non-JS readers, and the
   Learn/Guides/Playgrounds/Responsibility navigation is now uniform across
@@ -349,7 +349,7 @@ had fixed instances while their classes survived elsewhere:
 - The comparison table is dated, names the exact competitor versions, states the
   dependency-count method, and links its source data.
 - Hero CTA points at `/learn/` instead of an off-site 85 KB README. The homepage
-  now links 22 of the guides and `llms.txt` all 27.
+  now links 22 of the guides and `llms.txt` all 28.
 
 ## [1.6.0] – 2026-07-19
 

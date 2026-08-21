@@ -45,7 +45,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
 - **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with isolates (LRI/RLI/FSI/PDI) and explicit embeddings (LRE/RLE/LRO/RLO/PDF) including character-level X4–X5 overrides (v1.3.0). **v1.7.0** implements I1/I2 even embedding levels so digit runs (European, Arabic-Indic, Extended Arabic-Indic) keep logical order in RTL text, and full rule-L4 glyph mirroring through the complete 428-pair `BidiMirroring.txt` table
 - **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` drive joiner classification across the Devanagari, Bengali, and Tamil shapers, fixing nukta+virama, half-form, eyelash-ra, and ya-phalaa edge cases (v1.3.0)
-- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.0 MB, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). [Guide →](docs/guides/colour-emoji.md)
+- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.5 MB with the v1.7.0 sequence ligatures, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). [Guide →](docs/guides/colour-emoji.md)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
 - **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments). **Conformance guards** (v1.7.0): configurations that would break the declared PDF/A level (no embedded fonts, DeviceCMYK images) surface a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`. [Guide →](docs/guides/pdfa.md)
@@ -102,8 +102,8 @@ npm install pdfnative
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
-- 🎮 **Playgrounds:** nine interactive demos at [docs/playgrounds/](docs/playgrounds/) — [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (v1.6.0 native vector charts), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — ~228 sample PDFs across 37 categories (44 generators) (see [Sample PDFs](#sample-pdfs) below).
+- 🎮 **Playgrounds:** nine interactive demos at [docs/playgrounds/](docs/playgrounds/) — [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 241 sample PDFs across 37 categories (48 generators) (see [Sample PDFs](#sample-pdfs) below).
 - 🎓 **Learn:** [docs/learn/](docs/learn/) — an eight-step guided path from installing the package to generating 100,000 pages, live at [pdfnative.dev/learn/](https://pdfnative.dev/learn/).
 - 🤖 **Machine-readable:** [llms.txt](llms.txt) (doc index for LLMs), [AGENTS.md](AGENTS.md) (agent guidance), and [docs/assets/ecosystem.json](docs/assets/ecosystem.json) — the canonical manifest of ecosystem versions and counts, enforced by `npm run verify:docs`.
 
@@ -483,7 +483,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **~228 sample PDFs** in `test-output/` (git-ignored), organized in 37 categories produced by 44 generators (including `forms/` fill-&-flatten, `charts/` native vector charts, and `parser/` text-extraction reports added in v1.6.0).
+This creates **241 sample PDFs** in `test-output/` (git-ignored), organized in 37 categories produced by 48 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -1205,7 +1205,7 @@ src/
 
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (44 generators, ~228 PDFs)
+scripts/                  # Modular sample PDF generation (48 generators, 241 PDFs)
 tests/                    # 2664+ tests (122 files: unit + integration + fuzz + parser)
 bench/                    # Performance benchmarks (vitest bench)
 ```
@@ -1220,7 +1220,7 @@ npm install
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test             # vitest run (2664+ tests)
 npm run test:coverage    # vitest with v8 coverage (95.41% statements at the v1.6.0 release; CI gates: 88/80/85/90)
-npm run test:generate       # Generate ~228 sample PDFs → test-output/
+npm run test:generate       # Generate 241 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json

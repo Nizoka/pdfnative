@@ -155,7 +155,7 @@ The `label` is drawn as a visible text label next to the widget. pdfnative does 
 docker run --rm -v "$PWD:/data" verapdf/cli --format text /data/my-document.pdf
 ```
 
-veraPDF is the reference PDF/A validator. The pdfnative test suite generates ~228 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
+veraPDF is the reference PDF/A validator. The pdfnative test suite generates 241 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
 
 ### PAC 2024 (PDF/UA)
 
@@ -745,12 +745,16 @@ Input (params + options)
 types/ → core/ ← fonts/ ← shaping/ ← worker/
               ↑
           crypto/ (near-standalone, imports core/pdf-encrypt for sha256)
-          parser/ (standalone, imports core/compress for inflate)
+          parser/ (imports core/pdf-compress, pdf-encrypt, pdf-tags)
 ```
 
-- **No circular dependencies** — strict unidirectional flow
+- **No circular dependencies** — strict unidirectional flow, with **one
+  sanctioned, documented reverse edge**: the signature-workflow core modules
+  (`pdf-dss`, `pdf-sig-utils`, `pdf-doc-timestamp`, `pdf-sig-placeholder`,
+  `pdf-form-fill`) import the parser to read existing documents before
+  appending incremental revisions
 - **crypto/** is near-standalone — its only cross-module import is `sha256` from `core/pdf-encrypt.ts` (re-exported by `crypto/sha.ts`)
-- **parser/** imports only from `core/pdf-compress.ts` for FlateDecode inflate
+- **parser/** imports from `core/pdf-compress.ts` (FlateDecode), `core/pdf-encrypt.ts` (decryption, incremental `/ID`) and `core/pdf-tags.ts` (XMP resync in `updateMetadata`)
 - **fonts/** imports from `shaping/` for script detection
 - **shaping/** imports from `fonts/` encoding context (via `core/encoding-context.ts` to break cycle)
 
@@ -2860,7 +2864,25 @@ const signed = signPdfBytes(prepared, {
 });
 ```
 
-pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256), both with SHA-256 digests. The crypto stack is implemented in pure TypeScript inside `src/crypto/` — no native modules, no `node:crypto` (an optional constant-time native provider can be plugged in via `setCryptoProvider`).
+pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256); RSA also offers SHA-384/512 since v1.7.0. The crypto stack is implemented in pure TypeScript inside `src/crypto/` — no native modules, no `node:crypto` (an optional constant-time native provider can be plugged in via `setCryptoProvider`).
+
+### How do I make a signature "LTV enabled" (valid for years)?
+
+Since v1.7.0 pdfnative covers the full PAdES baseline (ETSI EN 319 142-1):
+sign with `profile: 'pades'`, add an RFC 3161 timestamp with
+`signPdfBytesWithTimestamp`, embed revocation material with
+`addValidationInfo` (`/DSS` + `/VRI`), and cap with `addDocumentTimestamp`.
+The engine never opens sockets — you inject the TSA/OCSP/CRL transport via
+`setTimestampProvider` / `setRevocationProvider`. Full pipeline in the
+[LTV guide](ltv.html).
+
+### Can a PDF carry several signatures?
+
+Yes (v1.7.0): create each placeholder with `allowMultiple: true` and target
+it by `fieldName` when signing. Each signature is appended as a
+non-destructive incremental revision, so earlier signatures remain valid;
+inspect any file with `listSignatures(bytes)`. See
+[signatures — multiple signatures](signatures.html).
 
 ### Is the build supply-chain safe?
 
@@ -3195,7 +3217,7 @@ setTimestampProvider({
     const res = await fetch('https://freetsa.org/tsr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/timestamp-query' },
-      body: request,
+      body: request.slice(),
     });
     return new Uint8Array(await res.arrayBuffer());  // …DER TimeStampResp out
   },
@@ -3205,7 +3227,7 @@ setRevocationProvider({
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/ocsp-request' },
-      body: request,
+      body: request.slice(),
     });
     return new Uint8Array(await res.arrayBuffer());
   },
@@ -4612,6 +4634,32 @@ import { buildDocumentPDFStreamTrue, streamToFile } from 'pdfnative';
 await streamToFile(buildDocumentPDFStreamTrue(params), 'report.pdf');
 ```
 
+## Updating metadata in place
+
+> **New in v1.7.0.** `PdfModifier.updateMetadata()` rewrites a document's
+> metadata as a non-destructive incremental revision — no re-serialisation,
+> existing signatures over earlier revisions stay intact.
+
+```ts
+import { openPdf, createModifier } from 'pdfnative';
+
+const modifier = createModifier(openPdf(bytes));
+modifier.updateMetadata({
+  title: 'Q3 report (final)',
+  author: 'Finance',
+  keywords: 'quarterly, revenue',
+  // modDate: new Date('2026-08-21T00:00:00Z'),  // pin for reproducible bytes
+});
+const updated = modifier.save();
+```
+
+Only the fields you pass change; the rest of `/Info` is preserved. `/ModDate`
+is always refreshed (pass `modDate` to pin it). When the document carries an
+XMP packet, it is resynchronised in the same revision — `dc:title`,
+`dc:creator`, `dc:description`, `pdf:Keywords`, `xmp:ModifyDate` and
+`xmp:MetadataDate` — while `xmp:CreateDate` and any `pdfaid:*` conformance
+claim are preserved, so Info↔XMP parity holds for PDF/A documents.
+
 ## Safety & limits
 
 - **Encrypted input is decrypted on ingest** (v1.6.0) when a valid password is
@@ -5329,7 +5377,7 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 - [Accessibility](accessibility.html) — tagged PDF, PDF/UA, PDF/A.
 - [FAQ](faq.html) — fonts, encryption, signatures, comparisons.
 - [Troubleshooting](troubleshooting.html) — common pitfalls and fixes.
-- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — ~228 PDFs across 37 categories (44 generators).
+- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — 241 PDFs across 37 categories (48 generators).
 
 ---
 <!-- source: docs/guides/react.md -->
@@ -5772,7 +5820,8 @@ Options:
   `parseRsaPrivateKey`; for ECDSA there is no DER parser in the engine — supply
   the `EcPrivateKey` scalar directly, or install a crypto provider
   (`setCryptoProvider` / per-call `provider`) and omit the raw key entirely.
-- `algorithm` — `'rsa-sha256' | 'ecdsa-sha256'` (default `'rsa-sha256'`).
+- `algorithm` — `'rsa-sha256' | 'rsa-sha384' | 'rsa-sha512' | 'ecdsa-sha256'`
+  (default `'rsa-sha256'`; the SHA-384/512 RSA variants are new in v1.7.0).
 - `certChain?` — additional intermediate-CA certificates for the chain.
 - `signingTime?` — forwarded to `signedAttrs`.
 - `fieldName?` — with several unsigned placeholders in the file (the
@@ -5884,11 +5933,13 @@ ESS `signing-certificate-v2` attribute.
 
 | Algorithm        | Hash      | Curve / Modulus     | Notes                          |
 |------------------|-----------|---------------------|--------------------------------|
-| `rsa-sha256`     | SHA-256   | 2048 / 3072 / 4096  | PKCS#1 v1.5                    |
+| `rsa-sha256`     | SHA-256   | 2048 / 3072 / 4096  | PKCS#1 v1.5 (default)          |
+| `rsa-sha384`     | SHA-384   | 2048 / 3072 / 4096  | PKCS#1 v1.5 (v1.7.0)           |
+| `rsa-sha512`     | SHA-512   | 2048 / 3072 / 4096  | PKCS#1 v1.5 (v1.7.0)           |
 | `ecdsa-sha256`   | SHA-256   | P-256 (secp256r1)   | DER-encoded ECDSA signature    |
 
-These two are the complete `SignatureAlgorithm` union — SHA-384/512
-signing variants are not offered.
+That is the complete `SignatureAlgorithm` union — the RSA variants widened
+to SHA-384/512 in v1.7.0; ECDSA is offered with SHA-256 only.
 
 All primitives live under [src/crypto/](https://github.com/Nizoka/pdfnative/tree/main/src/crypto):
 SHA-256/384/512 in `sha.ts`, ASN.1 DER in `asn1.ts`, RSA modular
@@ -6826,6 +6877,14 @@ automatically gets when it has an `outline`.
 | `nonFullScreenPageMode` | Mode to use after exiting full-screen |
 | `direction` | `'l2r'` (default) or `'r2l'` reading order |
 | `printScaling` | `'none'` or `'appDefault'` print-dialog default |
+| `duplex` | `'simplex'`, `'duplexFlipShortEdge'` or `'duplexFlipLongEdge'` print-dialog default (v1.7.0) |
+| `pickTrayByPDFSize` | Select the paper tray from the PDF page size (v1.7.0) |
+| `printPageRange` | Default print range as 1-based `[from, to]` pairs (v1.7.0) |
+| `numCopies` | Default copy count in the print dialog (v1.7.0) |
+
+The four print-dialog defaults ship with v1.7.0's print-production support —
+see the [print production guide](print.html) for bleed/trim boxes, printer's
+marks and `/Trapped`.
 
 ## Full-screen kiosk
 

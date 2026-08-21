@@ -87,7 +87,7 @@ The `label` is drawn as a visible text label next to the widget. pdfnative does 
 docker run --rm -v "$PWD:/data" verapdf/cli --format text /data/my-document.pdf
 ```
 
-veraPDF is the reference PDF/A validator. The pdfnative test suite generates ~228 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
+veraPDF is the reference PDF/A validator. The pdfnative test suite generates 241 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
 
 ### PAC 2024 (PDF/UA)
 

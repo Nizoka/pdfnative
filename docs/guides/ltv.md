@@ -17,7 +17,7 @@ setTimestampProvider({
     const res = await fetch('https://freetsa.org/tsr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/timestamp-query' },
-      body: request,
+      body: request.slice(),
     });
     return new Uint8Array(await res.arrayBuffer());  // …DER TimeStampResp out
   },
@@ -27,7 +27,7 @@ setRevocationProvider({
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/ocsp-request' },
-      body: request,
+      body: request.slice(),
     });
     return new Uint8Array(await res.arrayBuffer());
   },

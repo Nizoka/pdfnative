@@ -187,7 +187,25 @@ const signed = signPdfBytes(prepared, {
 });
 ```
 
-pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256), both with SHA-256 digests. The crypto stack is implemented in pure TypeScript inside `src/crypto/` — no native modules, no `node:crypto` (an optional constant-time native provider can be plugged in via `setCryptoProvider`).
+pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256); RSA also offers SHA-384/512 since v1.7.0. The crypto stack is implemented in pure TypeScript inside `src/crypto/` — no native modules, no `node:crypto` (an optional constant-time native provider can be plugged in via `setCryptoProvider`).
+
+### How do I make a signature "LTV enabled" (valid for years)?
+
+Since v1.7.0 pdfnative covers the full PAdES baseline (ETSI EN 319 142-1):
+sign with `profile: 'pades'`, add an RFC 3161 timestamp with
+`signPdfBytesWithTimestamp`, embed revocation material with
+`addValidationInfo` (`/DSS` + `/VRI`), and cap with `addDocumentTimestamp`.
+The engine never opens sockets — you inject the TSA/OCSP/CRL transport via
+`setTimestampProvider` / `setRevocationProvider`. Full pipeline in the
+[LTV guide](ltv.html).
+
+### Can a PDF carry several signatures?
+
+Yes (v1.7.0): create each placeholder with `allowMultiple: true` and target
+it by `fieldName` when signing. Each signature is appended as a
+non-destructive incremental revision, so earlier signatures remain valid;
+inspect any file with `listSignatures(bytes)`. See
+[signatures — multiple signatures](signatures.html).
 
 ### Is the build supply-chain safe?
 
