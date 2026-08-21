@@ -109,6 +109,7 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Incremental-update conformance hardening** (v1.7.0) — per-revision `/ID` regeneration (ID[0] preserved byte-exact), explicit errors on invalid `/Prev` chains, xref-stream `/Predictor` support, EOL framing between revisions, xref-derived `/Size` recovery, and `PdfModifier.updateMetadata()` keeping `/Info` and XMP in sync (`/ModDate`, `xmp:ModifyDate`). ([src/parser/pdf-modifier.ts](src/parser/pdf-modifier.ts), [src/parser/pdf-xref-parser.ts](src/parser/pdf-xref-parser.ts))
 
 - [x] **LTV signatures (PAdES B-B → B-LTA)** (v1.7.0) — ESS signing-certificate-v2 + canonical DER SET OF, RFC 3161 signature timestamps via injected `TimestampProvider` (`signPdfBytesWithTimestamp`), OCSP/CRL revocation collection via injected `RevocationProvider`, `/DSS` + `/VRI` embedding (`addValidationInfo`), document timestamps (`addDocumentTimestamp`), and multi-signature flows (`allowMultiple`, `fieldName` selector, `listSignatures`). Network transport stays in user land — the engine is offline by default. ([src/core/pdf-dss.ts](src/core/pdf-dss.ts), [docs/guides/ltv.md](docs/guides/ltv.md))
+- [x] **Print production** (v1.7.0) — bleed/trim/art/crop page boxes (`layout.print` with a `bleed` shorthand, ISO 32000-1 §14.11.2), crop + registration marks as pure vector operators (§14.11.3), `/Trapped` with XMP parity, print-dialog viewer preferences (duplex, tray, page range, copies), caller-supplied OutputIntent ICC (tagged), large-format `/UserUnit`, and box preservation through merge/split. Byte-identical when unused. ([src/core/pdf-print.ts](src/core/pdf-print.ts), [docs/guides/print.md](docs/guides/print.md))
 
 ## In Progress
 
@@ -122,6 +123,7 @@ _All v1.7.0 items have been merged. See Released above._
 - [ ] **Full Universal Shaping Engine** — Khmer, Myanmar, complex Sinhala
 - [ ] **COLRv1 PaintMask / variable paints** — soft-mask groups (`PaintComposite` luminosity masks) and variable-font COLR. v1.4.0 ships solid + linear + radial + sweep gradients and blend-mode compositing; v1.7.0 adds a best-effort degradation (unsupported composite sources render their backdrop, so Noto's flags come out flat); full masks and variable paints still fall back to monochrome.
 - [ ] **Bundled skin-tone emoji sequences** — the combinatorial Fitzpatrick ZWJ forms stay CLI-generated (`--sequence-list`); evaluate a curated bundled subset if adoption demands it.
+- [ ] **CMYK & PDF/X** — CMYK content colours (`k`/`K` operators), spot colours/Separation, colour bars in the printer's-marks set, all-separation registration colour, CMYK OutputIntents and a PDF/X conformance claim with a validation story. One coherent workstream on top of the v1.7.0 print-production foundation (boxes, marks, `/Trapped`, custom ICC).
 
 ## How to Influence the Roadmap
 

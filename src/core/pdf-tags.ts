@@ -321,6 +321,7 @@ export function buildXMPMetadata(
     keywords?: string,
     modifyDate?: string,
     metadataDate?: string,
+    trapped?: 'True' | 'False' | 'Unknown',
 ): string {
     const escapedTitle = escapeXml(title);
     // dc:creator describes the document author (per Dublin Core),
@@ -356,6 +357,10 @@ export function buildXMPMetadata(
     // pdf:Keywords must equal /Info /Keywords when present (ISO 19005-1 §6.7.3 t5)
     if (keywords !== undefined && keywords !== '') {
         lines.push(`   <pdf:Keywords>${escapeXml(keywords)}</pdf:Keywords>`);
+    }
+    // pdf:Trapped mirrors /Info /Trapped (ISO 19005 §6.7.3 parity; v1.7.0).
+    if (trapped !== undefined) {
+        lines.push(`   <pdf:Trapped>${trapped}</pdf:Trapped>`);
     }
     lines.push(
         '  </rdf:Description>',
@@ -407,19 +412,64 @@ export function utf8EncodeBinaryString(str: string): string {
     return out;
 }
 
+/** Escape a string for a PDF literal string context. */
+const pdfLiteral = (s: string): string => s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+
 /**
- * Build the sRGB OutputIntent dictionary content for PDF/A.
+ * Build the OutputIntent dictionary content for PDF/A.
  * ISO 19005-1 §6.2.2: at least one OutputIntent required.
  *
  * @param iccStreamObjNum - Object number of the ICC profile stream
  * @param subtype - OutputIntent subtype (default: 'GTS_PDFA1')
+ * @param custom - Optional caller-supplied condition strings (v1.7.0);
+ *   omitted → the historical sRGB identifiers, byte-identical.
  * @returns OutputIntent dictionary string
  */
-export function buildOutputIntentDict(iccStreamObjNum: number, subtype: string = 'GTS_PDFA1'): string {
-    return `<< /Type /OutputIntent /S /${subtype} ` +
-        `/OutputConditionIdentifier (sRGB IEC61966-2.1) ` +
-        `/RegistryName (http://www.color.org) ` +
-        `/DestOutputProfile ${iccStreamObjNum} 0 R >>`;
+export function buildOutputIntentDict(
+    iccStreamObjNum: number,
+    subtype: string = 'GTS_PDFA1',
+    custom?: {
+        readonly outputConditionIdentifier: string;
+        readonly registryName?: string;
+        readonly outputCondition?: string;
+        readonly info?: string;
+    },
+): string {
+    const identifier = custom?.outputConditionIdentifier ?? 'sRGB IEC61966-2.1';
+    const registry = custom?.registryName ?? 'http://www.color.org';
+    let dict = `<< /Type /OutputIntent /S /${subtype} `
+        + `/OutputConditionIdentifier (${pdfLiteral(identifier)}) `
+        + `/RegistryName (${pdfLiteral(registry)}) `;
+    if (custom?.outputCondition) dict += `/OutputCondition (${pdfLiteral(custom.outputCondition)}) `;
+    if (custom?.info) dict += `/Info (${pdfLiteral(custom.info)}) `;
+    dict += `/DestOutputProfile ${iccStreamObjNum} 0 R >>`;
+    return dict;
+}
+
+/**
+ * Resolve the OutputIntent ICC profile: the caller-supplied RGB profile
+ * (v1.7.0) or the built-in minimal sRGB one. A custom profile must declare
+ * the `RGB ` data colour space in its ICC header (bytes 16–19) — pdfnative
+ * emits RGB content, and a mismatched intent fails PDF/A validation.
+ *
+ * @returns The profile as a binary string (1 char = 1 byte).
+ */
+export function resolveOutputIntentProfile(custom?: { readonly iccProfile: Uint8Array }): string {
+    if (!custom) return buildMinimalSRGBProfile();
+    const icc = custom.iccProfile;
+    if (icc.length < 128) {
+        throw new Error('outputIntent.iccProfile is too short to be an ICC profile (128-byte header required)');
+    }
+    const space = String.fromCharCode(icc[16], icc[17], icc[18], icc[19]);
+    if (space !== 'RGB ') {
+        throw new Error(
+            `outputIntent.iccProfile declares data colour space '${space.trim()}' — only RGB profiles are `
+            + 'supported (pdfnative emits RGB content; CMYK output intents require CMYK content, deferred)',
+        );
+    }
+    let s = '';
+    for (let i = 0; i < icc.length; i++) s += String.fromCharCode(icc[i]);
+    return s;
 }
 
 /**

@@ -19,6 +19,7 @@
 - [PDF/A conformance](https://pdfnative.dev/guides/pdfa.html): How `tagged: true` produces veraPDF-valid PDF/A-1b/2b/2u/3b.
 - [Digital signatures](https://pdfnative.dev/guides/signatures.html): CMS/PKCS#7 and PAdES + `addSignaturePlaceholder()` three-line workflow; multiple signatures, signature metadata, RSA SHA-256/384/512 + ECDSA P-256.
 - [Long-term validation](https://pdfnative.dev/guides/ltv.html): PAdES B-B → B-LTA — RFC 3161 signature timestamps, `/DSS` + `/VRI` revocation material, document timestamps, injected `TimestampProvider`/`RevocationProvider` (no built-in networking).
+- [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`.
 - [Accessibility](https://pdfnative.dev/guides/accessibility.html): Tagged PDF, /ActualText, PDF/UA structure tree.
 - [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
 - [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
@@ -55,7 +56,7 @@
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 47 sample generators producing 238 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2640+ tests across 121 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2664+ tests across 122 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
 
 ## Ecosystem
 

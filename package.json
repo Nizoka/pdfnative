@@ -161,7 +161,11 @@
     "puppeteer-alternative",
     "serverless-pdf",
     "invoice",
-    "factur-x"
+    "factur-x",
+    "print-ready",
+    "bleed",
+    "crop-marks",
+    "prepress"
   ],
   "author": "Nizoka <hello@pdfnative.dev> (https://pdfnative.dev)",
   "license": "MIT",

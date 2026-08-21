@@ -26,6 +26,7 @@ import type {
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
 import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaUnembeddedFormFontDiagnostic } from './pdf-diagnostics.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
 import { createEncodingContext } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
@@ -48,7 +49,7 @@ import {
     buildStructureTree,
     buildXMPMetadata,
     buildOutputIntentDict,
-    buildMinimalSRGBProfile,
+    resolveOutputIntentProfile,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -191,6 +192,15 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
     // ── Layout debug overlay setup (development aid; off → byte-identical) ──
     const debugOpts = resolveDebugOptions(layout?.debug);
+
+    // ── Print production setup (v1.7.0; off → byte-identical) ─────────
+    const printOpts = layout?.print;
+    if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layout?.tagged);
+    const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
+    const printBoxesStr = printResolved?.boxesStr ?? '';
+    const printMarksOps = printOpts?.marks && printResolved?.trim
+        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
+        : '';
 
     // ── Attachments setup (PDF/A-3 only) ─────────────────────────────
     const attachments = layout?.attachments;
@@ -636,6 +646,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         );
         ops.push(...ftOps);
 
+        // Printer's marks (v1.7.0) — outside the TrimBox, above content.
+        if (printMarksOps) {
+            ops.push(printMarksOps);
+        }
+
         // Layout debug overlay — drawn last so guide rectangles sit on top.
         if (debugOps.length > 0) {
             ops.push(...debugOps);
@@ -728,8 +743,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // ── Assemble PDF binary ──────────────────────────────────────────
     const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
 
-    // PDF Header
-    emit(`%PDF-${pdfaConfig.pdfVersion}\n`);
+    // PDF Header. /UserUnit requires PDF 1.6+ — raise the declared version
+    // only when the option is present (bytes unchanged otherwise).
+    const pdfVersion = printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
+        ? '1.7' : pdfaConfig.pdfVersion;
+    emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 
     // Catalog placeholder
@@ -909,7 +927,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
             );
@@ -1070,7 +1088,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
             );
@@ -1182,6 +1200,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     if (params.metadata?.keywords) {
         metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
     }
+    if (params.metadata?.trapped) {
+        metaParts.push(`/Trapped /${params.metadata.trapped}`);
+    }
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
     let totalObjs = infoObjNum;
@@ -1229,19 +1250,21 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         totalObjs = treeStart + tree.totalObjects - 1;
 
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords));
+        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
 
+        // ICC profile stream — the built-in minimal sRGB profile, or the
+        // caller-supplied RGB profile (layout.outputIntent, v1.7.0).
         const iccObjNum = totalObjs + 1;
-        const iccProfile = buildMinimalSRGBProfile();
+        const iccProfile = resolveOutputIntentProfile(layout?.outputIntent);
         emitStreamObj(iccObjNum,
             `<< /N 3 /Length ${iccProfile.length}`, iccProfile);
         totalObjs = iccObjNum;
 
         outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype));
+        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layout?.outputIntent));
         totalObjs = outputIntentObjNum;
 
         // Embedded file attachments (PDF/A-3 only)

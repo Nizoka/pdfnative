@@ -63,6 +63,18 @@ Arabic letterforms, per-revision `/ID` reuse). 2639 tests across
   ([#69](https://github.com/Nizoka/pdfnative/issues/69)),
   `PDFA_UNEMBEDDED_FORM_FONT` and `PDFA_DEVICE_CMYK_IMAGE` surface instead
   of silently stamping a `pdfaid` claim veraPDF would reject.
+- **feat(core): print production** — bleed/trim/art/crop page boxes
+  (`layout.print`, ISO 32000-1 §14.11.2, with a one-line `bleed` shorthand),
+  crop + registration marks drawn as pure vector operators outside the
+  TrimBox (§14.11.3), `/Trapped` metadata with `pdf:Trapped` XMP parity,
+  print-dialog viewer preferences (`duplex`, `pickTrayByPDFSize`,
+  `printPageRange`, `numCopies`), a caller-supplied OutputIntent ICC
+  profile for tagged output (RGB, validated), large-format `/UserUnit`
+  (header raised to PDF 1.7 when set; rejected under PDF/A-1), and
+  BleedBox/TrimBox/ArtBox/UserUnit preservation through
+  `mergePdfs`/`splitPdf`/`extractPages` (previously dropped). Byte-identical
+  output when unused. New guide: [docs/guides/print.md](docs/guides/print.md).
+  ([src/core/pdf-print.ts](src/core/pdf-print.ts))
 - **feat(parser): incremental metadata updates** — `PdfModifier.updateMetadata()`
   re-issues `/Info` (adding `/ModDate`) and keeps the XMP packet in sync
   (`xmp:ModifyDate` = `xmp:MetadataDate`, CreateDate + `pdfaid:*` preserved)

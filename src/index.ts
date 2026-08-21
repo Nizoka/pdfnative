@@ -85,7 +85,15 @@ export type {
     PdfDiagnostic,
     PdfDiagnosticCode,
     PdfDiagnosticHandler,
+    PageBox,
+    PrintOptions,
+    PrinterMarksOptions,
+    CustomOutputIntent,
 } from './types/pdf-types.js';
+
+// ── Core — Print Production (v1.7.0) ────────────────────────────────
+export { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './core/pdf-print.js';
+export type { ResolvedPrintBoxes } from './core/pdf-print.js';
 
 export type {
     HeadingBlock,

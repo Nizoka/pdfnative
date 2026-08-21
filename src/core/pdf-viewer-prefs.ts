@@ -92,6 +92,33 @@ export function buildViewerPreferences(prefs: ViewerPreferences): ViewerPreferen
         entries.push(`/PrintScaling /${prefs.printScaling === 'none' ? 'None' : 'AppDefault'}`);
     }
 
+    // Print-dialog defaults (ISO 32000-1 §12.2, Table 150; v1.7.0).
+    if (prefs.duplex) {
+        const DUPLEX: Record<NonNullable<ViewerPreferences['duplex']>, string> = {
+            simplex: 'Simplex',
+            duplexFlipShortEdge: 'DuplexFlipShortEdge',
+            duplexFlipLongEdge: 'DuplexFlipLongEdge',
+        };
+        entries.push(`/Duplex /${DUPLEX[prefs.duplex]}`);
+    }
+    bool('PickTrayByPDFSize', prefs.pickTrayByPDFSize);
+    if (prefs.printPageRange && prefs.printPageRange.length > 0) {
+        for (const [first, last] of prefs.printPageRange) {
+            if (!Number.isInteger(first) || !Number.isInteger(last) || first < 1 || last < first) {
+                throw new Error('viewerPreferences.printPageRange entries must be 1-based [first, last] pairs with last >= first');
+            }
+        }
+        // The API is 1-based; /PrintPageRange holds 0-based page indices.
+        const flat = prefs.printPageRange.map(([first, last]) => `${first - 1} ${last - 1}`).join(' ');
+        entries.push(`/PrintPageRange [${flat}]`);
+    }
+    if (prefs.numCopies !== undefined) {
+        if (!Number.isInteger(prefs.numCopies) || prefs.numCopies < 1) {
+            throw new Error('viewerPreferences.numCopies must be a positive integer');
+        }
+        entries.push(`/NumCopies ${prefs.numCopies}`);
+    }
+
     const dict = entries.length > 0 ? ` /ViewerPreferences << ${entries.join(' ')} >>` : '';
     return { pageLayout, pageMode, dict };
 }

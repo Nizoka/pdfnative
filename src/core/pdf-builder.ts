@@ -45,7 +45,7 @@ import {
     buildStructureTree,
     buildXMPMetadata,
     buildOutputIntentDict,
-    buildMinimalSRGBProfile,
+    resolveOutputIntentProfile,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -57,6 +57,7 @@ import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
 
 // ── Tagged Mode Helper Types ─────────────────────────────────────────
 
@@ -367,6 +368,15 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         ? wmState.extGStates.size + (wmState.imageXObj ? 1 : 0)
         : 0;
 
+    // ── Print production setup (v1.7.0; off → byte-identical) ─────────
+    const printOpts = layoutOptions?.print;
+    if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layoutOptions?.tagged);
+    const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
+    const printBoxesStr = printResolved?.boxesStr ?? '';
+    const printMarksOps = printOpts?.marks && printResolved?.trim
+        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
+        : '';
+
     const mcidAlloc = tagged ? createMCIDAllocator() : undefined;
 
     // Structure elements collected during page building (only when tagged)
@@ -529,6 +539,11 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         ops.push(...ft.ops);
         if (tagged) documentChildren.push(...ft.structEls);
 
+        // Printer's marks (v1.7.0) — outside the TrimBox, above content.
+        if (printMarksOps) {
+            ops.push(printMarksOps);
+        }
+
         pageStreams.push(ops.join('\n'));
     }
 
@@ -544,8 +559,11 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     // ── Assemble PDF binary ──────────────────────────────────────────
     const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
 
-    // PDF Header
-    emit(`%PDF-${pdfaConfig.pdfVersion}\n`);
+    // PDF Header. /UserUnit requires PDF 1.6+ — raise the declared version
+    // only when the option is present (bytes unchanged otherwise).
+    const pdfVersion = printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
+        ? '1.7' : pdfaConfig.pdfVersion;
+    emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 
     // Catalog — placeholder, will be rewritten after we know tagged obj nums
@@ -670,7 +688,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const structParents = tagged ? ` /StructParents ${p}` : '';
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes} >>${structParents} >>`
             );
@@ -715,7 +733,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const structParents = tagged ? ` /StructParents ${p}` : '';
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin} >>${structParents} >>`
             );
@@ -740,6 +758,9 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     }
     if (params.metadata?.keywords) {
         metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
+    }
+    if (params.metadata?.trapped) {
+        metaParts.push(`/Trapped /${params.metadata.trapped}`);
     }
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
@@ -773,21 +794,22 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
         // XMP metadata stream (skip compression for PDF/A validator compatibility)
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords));
+        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
 
-        // ICC profile stream
+        // ICC profile stream — the built-in minimal sRGB profile, or the
+        // caller-supplied RGB profile (layout.outputIntent, v1.7.0).
         const iccObjNum = totalObjs + 1;
-        const iccProfile = buildMinimalSRGBProfile();
+        const iccProfile = resolveOutputIntentProfile(layoutOptions?.outputIntent);
         emitStreamObj(iccObjNum,
             `<< /N 3 /Length ${iccProfile.length}`, iccProfile);
         totalObjs = iccObjNum;
 
         // OutputIntent
         outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype));
+        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
         totalObjs = outputIntentObjNum;
 
         // Embedded file attachments (PDF/A-3 only)
