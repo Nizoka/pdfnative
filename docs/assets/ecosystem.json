@@ -1,9 +1,9 @@
 {
   "$comment": "Single source of truth for every version, count and inventory quoted anywhere in the documentation. Edit THIS file, then run `npm run verify:docs` — it reports every doc that disagrees. Never hand-edit a number in a doc without updating this manifest first.",
-  "verifiedOn": "2026-08-01",
+  "verifiedOn": "2026-08-21",
   "packages": {
     "pdfnative": {
-      "version": "1.6.0",
+      "version": "1.7.0",
       "pinField": null,
       "pin": null,
       "repo": "https://github.com/Nizoka/pdfnative"
@@ -97,21 +97,22 @@
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 105,
-    "sampleGenerators": 44,
-    "samplePdfs": 228,
-    "guides": 26,
+    "testFiles": 122,
+    "sampleGenerators": 48,
+    "samplePdfs": 242,
+    "guides": 28,
     "playgrounds": 9,
     "learnSteps": 8
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 2396,
+    "tests": 2665,
     "scripts": 22,
     "bundledFontModules": 26,
     "blockTypes": 13,
     "barcodeFormats": 5,
-    "chartTypes": 5,
+    "chartTypes": 9,
+    "pdfaSamples": 18,
     "pdfaLevels": [
       "pdfa1b",
       "pdfa2b",
@@ -120,6 +121,8 @@
     ],
     "signatureAlgorithms": [
       "rsa-sha256",
+      "rsa-sha384",
+      "rsa-sha512",
       "ecdsa-sha256"
     ],
     "writeEncryption": [
@@ -133,6 +136,16 @@
     ]
   },
   "assertions": [
+    {
+      "id": "pdfa-sample-count",
+      "canonical": "18 PDF/A-claiming samples",
+      "match": "\\b(\\d+)\\s+PDF/A-claiming samples\\b",
+      "expect": 18,
+      "requireIn": [
+        "docs/guides/pdfa.md",
+        "CONTRIBUTING.md"
+      ]
+    },
     {
       "id": "mcp-tool-count",
       "canonical": "24 tools",
@@ -169,7 +182,7 @@
     {
       "id": "test-count-homepage",
       "$comment": "The homepage quoted a stale test count for a full release train; no assertion covered it. canonical-present pins the current figure where it is displayed.",
-      "canonical": "396+ tests across 105 files",
+      "canonical": "665+ tests across 122 files",
       "requireIn": [
         "docs/index.html"
       ]

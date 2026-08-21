@@ -33,7 +33,7 @@
         "inLanguage": "en",
         "@id": "https://pdfnative.dev/guides/#collection",
         "name": "pdfnative documentation guides",
-        "description": "All 26 reference guides for the pdfnative ecosystem.",
+        "description": "All 28 reference guides for the pdfnative ecosystem.",
         "url": "https://pdfnative.dev/guides/",
         "isPartOf": {
           "@type": "WebSite",
@@ -42,7 +42,7 @@
         },
         "mainEntity": {
           "@type": "ItemList",
-          "numberOfItems": 26,
+          "numberOfItems": 28,
           "itemListOrder": "https://schema.org/ItemListUnordered",
           "itemListElement": [
             {
@@ -156,48 +156,60 @@
             {
               "@type": "ListItem",
               "position": 19,
+              "name": "Print production",
+              "url": "https://pdfnative.dev/guides/print.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 20,
               "name": "Quick start — your first PDF",
               "url": "https://pdfnative.dev/guides/quickstart.html"
             },
             {
               "@type": "ListItem",
-              "position": 20,
+              "position": 21,
               "name": "pdfnative-react",
               "url": "https://pdfnative.dev/guides/react.html"
             },
             {
               "@type": "ListItem",
-              "position": 21,
+              "position": 22,
               "name": "Digital signatures",
               "url": "https://pdfnative.dev/guides/signatures.html"
             },
             {
               "@type": "ListItem",
-              "position": 22,
+              "position": 23,
+              "name": "Long-term validation (LTV)",
+              "url": "https://pdfnative.dev/guides/ltv.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 24,
               "name": "Streaming output",
               "url": "https://pdfnative.dev/guides/streaming.html"
             },
             {
               "@type": "ListItem",
-              "position": 23,
+              "position": 25,
               "name": "Smart tables",
               "url": "https://pdfnative.dev/guides/tables.html"
             },
             {
               "@type": "ListItem",
-              "position": 24,
+              "position": 26,
               "name": "Text extraction",
               "url": "https://pdfnative.dev/guides/text-extraction.html"
             },
             {
               "@type": "ListItem",
-              "position": 25,
+              "position": 27,
               "name": "Troubleshooting",
               "url": "https://pdfnative.dev/guides/troubleshooting.html"
             },
             {
               "@type": "ListItem",
-              "position": 26,
+              "position": 28,
               "name": "Viewer preferences",
               "url": "https://pdfnative.dev/guides/viewer-preferences.html"
             }
@@ -306,8 +318,16 @@
         <span class="guide-toc-desc">PDF/A-1b, 2b, 2u, 3b — validated against the veraPDF reference validator in CI on every commit.</span>
       </li>
       <li>
+        <a href="print.html">Print production →</a>
+        <span class="guide-toc-desc">Bleed, trim, art &amp; crop boxes, crop and registration marks, <code>/Trapped</code>, duplex print defaults, custom OutputIntent ICC, large-format <code>/UserUnit</code> — print-ready PDFs with zero dependencies.</span>
+      </li>
+      <li>
         <a href="signatures.html">Digital signatures →</a>
         <span class="guide-toc-desc">CMS/PKCS#7 detached signatures — RSA + ECDSA P-256, one-call <code>addSignaturePlaceholder()</code> workflow, Adobe Reader / openssl-cms validation.</span>
+      </li>
+      <li>
+        <a href="ltv.html">Long-term validation (LTV) →</a>
+        <span class="guide-toc-desc">PAdES B-B → B-LTA — RFC 3161 signature timestamps, <code>/DSS</code> + <code>/VRI</code> validation material, document timestamps, injected providers (zero network in the engine).</span>
       </li>
       <li>
         <a href="tables.html">Smart tables →</a>
@@ -376,7 +396,7 @@
     </ul>
 
     <h2>Looking for samples?</h2>
-    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">44 generator categories producing ~228 sample PDFs</a> covering every feature: financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, smart tables, outlines &amp; page labels, PDF manipulation, viewer preferences, font validation, math symbols, layout debugging, annotations, form fill/flatten, charts, and stress tests.</p>
+    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">48 generators producing 242 sample PDFs</a> covering every feature: financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, smart tables, outlines &amp; page labels, PDF manipulation, viewer preferences, font validation, math symbols, layout debugging, annotations, form fill/flatten, charts, and stress tests.</p>
 
     <h2>Interactive playgrounds</h2>
     <ul class="guide-toc-list">

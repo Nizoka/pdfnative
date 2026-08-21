@@ -16,7 +16,10 @@
  * modes Clear/Src/Dest/Xor/…) cause the affected glyph to be skipped so the
  * caller can fall back to the monochrome emoji font. This keeps output
  * correct (never garbled) while covering the overwhelming majority of
- * Noto Color Emoji glyphs.
+ * Noto Color Emoji glyphs. One best-effort degradation (v1.7.0): a
+ * PaintComposite whose SOURCE subtree is unsupported renders its backdrop
+ * alone — Noto's flags are exactly this shape (flat artwork backdrop +
+ * SRC_IN-masked wave-shading source), so they render as flat flags.
  *
  * Zero external dependency.
  *
@@ -297,7 +300,7 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
             collectLayers(ctx, offset + subOffset, compose(m, [sx, 0, 0, sy, 0, 0]), out, depth + 1, blendMode);
             return;
         }
-        case 32: { // PaintComposite — v1.4.0
+        case 32: { // PaintComposite — v1.4.0, source-degradation v1.7.0
             const sourceOffset = getUint24(view, offset + 1);
             const mode = view.getUint8(offset + 4);
             const backdropOffset = getUint24(view, offset + 5);
@@ -307,7 +310,20 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
             // source composited over it with the mapped blend mode. SRC_OVER
             // maps to 'Normal' → no per-layer /BM beyond the inherited one.
             collectLayers(ctx, offset + backdropOffset, m, out, depth + 1, blendMode);
-            collectLayers(ctx, offset + sourceOffset, m, out, depth + 1, bm === 'Normal' ? blendMode : bm);
+            // Degradation (v1.7.0): when the SOURCE subtree is unsupported —
+            // e.g. Noto Color Emoji flags overlay a SRC_IN-masked wave
+            // gradient on top of a fully-painted flat backdrop — drop only
+            // the effect layer and keep the backdrop, instead of discarding
+            // the whole glyph. Partial layers pushed by the failed subtree
+            // are rolled back so the output stays consistent. An unsupported
+            // BACKDROP still fails the glyph (nothing sensible to show).
+            const mark = out.length;
+            try {
+                collectLayers(ctx, offset + sourceOffset, m, out, depth + 1, bm === 'Normal' ? blendMode : bm);
+            } catch (e) {
+                if (!(e instanceof UnsupportedPaint)) throw e;
+                out.length = mark;
+            }
             return;
         }
         default:

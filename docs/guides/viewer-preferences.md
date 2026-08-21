@@ -68,6 +68,14 @@ automatically gets when it has an `outline`.
 | `nonFullScreenPageMode` | Mode to use after exiting full-screen |
 | `direction` | `'l2r'` (default) or `'r2l'` reading order |
 | `printScaling` | `'none'` or `'appDefault'` print-dialog default |
+| `duplex` | `'simplex'`, `'duplexFlipShortEdge'` or `'duplexFlipLongEdge'` print-dialog default (v1.7.0) |
+| `pickTrayByPDFSize` | Select the paper tray from the PDF page size (v1.7.0) |
+| `printPageRange` | Default print range as 1-based `[from, to]` pairs (v1.7.0) |
+| `numCopies` | Default copy count in the print dialog (v1.7.0) |
+
+The four print-dialog defaults ship with v1.7.0's print-production support —
+see the [print production guide](print.html) for bleed/trim boxes, printer's
+marks and `/Trapped`.
 
 ## Full-screen kiosk
 

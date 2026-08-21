@@ -18,8 +18,34 @@ import { findStartxref } from './pdf-xref-parser.js';
 import { createTokenizer } from './pdf-tokenizer.js';
 import type { DecryptionContext } from './pdf-decrypt.js';
 import { encryptStringData, encryptStreamData, isSignatureDict, isExemptStream } from './pdf-decrypt.js';
+import { md5 } from '../core/pdf-encrypt.js';
+import { buildPdfMetadata, buildXMPMetadata, utf8EncodeBinaryString } from '../core/pdf-tags.js';
 
 // ── Types ────────────────────────────────────────────────────────────
+
+/**
+ * Metadata fields applied by {@link PdfModifier.updateMetadata}.
+ * Only the provided fields are changed; existing /Info entries are kept.
+ *
+ * @since 1.7.0
+ */
+export interface PdfMetadataUpdate {
+    /** New /Info /Title (mirrored to XMP dc:title when the doc carries XMP). */
+    readonly title?: string;
+    /** New /Info /Author (mirrored to XMP dc:creator). */
+    readonly author?: string;
+    /** New /Info /Subject (mirrored to XMP dc:description). */
+    readonly subject?: string;
+    /** New /Info /Keywords (mirrored to XMP pdf:Keywords). */
+    readonly keywords?: string;
+    /**
+     * Modification instant written to /Info /ModDate (and mirrored to
+     * xmp:ModifyDate / xmp:MetadataDate when the doc carries XMP).
+     * Defaults to `new Date()` — note that the default makes the output
+     * non-deterministic; pass a fixed date for reproducible bytes.
+     */
+    readonly modDate?: Date;
+}
 
 export interface PdfModifier {
     /** The underlying reader. */
@@ -71,8 +97,32 @@ export interface PdfModifier {
     getObject(num: number): PdfValue | null;
 
     /**
+     * Update the document information dictionary (and, when present, the
+     * XMP metadata packet) via the incremental update.
+     *
+     * The /Info dictionary is re-issued with the provided fields plus a
+     * /ModDate for the modification instant (ISO 32000-1 §14.3.3); when no
+     * /Info exists one is created and referenced from the appended trailer.
+     * When the catalog carries an XMP `/Metadata` stream, it is re-issued
+     * with the same values: `xmp:CreateDate` and the `pdfaid` claim are
+     * preserved from the existing packet, `xmp:ModifyDate` /
+     * `xmp:MetadataDate` are set to the modification instant so Info↔XMP
+     * parity holds (ISO 19005 §6.7.3-style equivalence).
+     *
+     * @param meta - Fields to set; omitted fields keep their current value.
+     */
+    updateMetadata(meta: PdfMetadataUpdate): void;
+
+    /**
      * Serialize the modified PDF as Uint8Array.
      * Appends incremental update after the original content.
+     *
+     * Conformance note: the appended revision always uses a classic xref
+     * *table* section, even when the source document's last revision uses a
+     * cross-reference *stream*. The resulting mixed chain is valid for
+     * readers that dispatch per-offset on the section type (as pdfnative's
+     * own parser does, alongside desktop viewers); emitting an `/XRefStm`
+     * hybrid section is out of scope.
      */
     save(): Uint8Array;
 
@@ -101,9 +151,29 @@ export function createModifier(reader: PdfReader): PdfModifier {
     // upgrade is possible by construction).
     const encCtx = getDecryptionContext(reader);
 
-    // Track next object number (from trailer /Size)
+    // Track next object number. Primary source: trailer /Size (ISO 32000-1
+    // §7.5.5 — one greater than the highest object number). When /Size is
+    // absent, indirect or malformed, fall back to the highest object number
+    // present in the parsed xref, so newly allocated numbers never collide
+    // with existing objects.
     const size = reader.trailer.get('Size');
-    let nextNum = typeof size === 'number' ? size : 1;
+    let nextNum: number;
+    if (typeof size === 'number' && Number.isInteger(size) && size > 0) {
+        nextNum = size;
+    } else {
+        let maxNum = -1;
+        for (const num of reader.xref.entries.keys()) {
+            if (num > maxNum) maxNum = num;
+        }
+        if (maxNum < 0) {
+            throw new Error('pdfnative: cannot determine next object number — trailer /Size invalid and xref empty');
+        }
+        nextNum = maxNum + 1;
+    }
+
+    // Object number of an /Info dictionary created by updateMetadata() when
+    // the source document has none — referenced from the appended trailer.
+    let createdInfoNum: number | null = null;
 
     function setObject(num: number, value: PdfValue): void {
         modified.set(num, value);
@@ -169,6 +239,71 @@ export function createModifier(reader: PdfReader): PdfModifier {
         return objNum;
     }
 
+    function updateMetadata(meta: PdfMetadataUpdate): void {
+        const modDate = meta.modDate ?? new Date();
+        const { pdfDate, xmpDate } = buildPdfMetadata(modDate);
+
+        // ── /Info dictionary (ISO 32000-1 §14.3.3) ───────────────────
+        const infoVal = reader.trailer.get('Info');
+        const infoRef = isRef(infoVal) ? infoVal : undefined;
+        const existing = infoRef !== undefined ? reader.resolveValue(infoRef) : (infoVal ?? null);
+        const info: PdfDict = isDict(existing) ? new Map(existing) : new Map();
+
+        if (meta.title !== undefined) info.set('Title', encodeTextValue(meta.title));
+        if (meta.author !== undefined) info.set('Author', encodeTextValue(meta.author));
+        if (meta.subject !== undefined) info.set('Subject', encodeTextValue(meta.subject));
+        if (meta.keywords !== undefined) info.set('Keywords', encodeTextValue(meta.keywords));
+        info.set('ModDate', pdfDate);
+
+        if (infoRef !== undefined) {
+            setObject(infoRef.num, info);
+        } else {
+            // No /Info (or a direct dict in the trailer): issue a fresh
+            // object and reference it from the appended trailer.
+            createdInfoNum = addObject(info);
+        }
+
+        // ── XMP resync (keep Info ↔ XMP parity) ──────────────────────
+        const mdRef = reader.getCatalog().get('Metadata');
+        if (!isRef(mdRef)) return;
+        const mdObj = reader.resolveValue(mdRef);
+        if (!isStream(mdObj)) return;
+
+        // Preserve the creation instant and the PDF/A claim from the
+        // existing packet (pdfnative's own buildXMPMetadata shape, matched
+        // tolerantly so foreign packets degrade gracefully).
+        const xml = bytesToBinString(reader.decodeStream(mdObj));
+        const createMatch = /<xmp:CreateDate>([^<]*)<\/xmp:CreateDate>/.exec(xml);
+        const partMatch = /<pdfaid:part>\s*(\d+)\s*<\/pdfaid:part>/.exec(xml);
+        const confMatch = /<pdfaid:conformance>\s*([A-Za-z]+)\s*<\/pdfaid:conformance>/.exec(xml);
+
+        const createDate = createMatch !== null ? createMatch[1] : xmpDate;
+        const pdfaPart = partMatch !== null ? parseInt(partMatch[1], 10) : 2;
+        const pdfaConformance = confMatch !== null ? confMatch[1] : 'B';
+
+        // The rebuilt packet mirrors the FINAL /Info values, whether they
+        // came from this call or from the pre-existing dictionary.
+        const title = decodeTextValue(info.get('Title')) ?? '';
+        const author = decodeTextValue(info.get('Author'));
+        const subject = decodeTextValue(info.get('Subject'));
+        const keywords = decodeTextValue(info.get('Keywords'));
+
+        const packet = utf8EncodeBinaryString(buildXMPMetadata(
+            title, createDate, pdfaPart, pdfaConformance,
+            author, subject, keywords,
+            xmpDate, xmpDate,
+        ));
+
+        // Re-issue the stream uncompressed (PDF/A validator friendliness,
+        // same policy as the builders). /Length is set by the serializer;
+        // stale /Filter or /DecodeParms entries must not survive.
+        const dict: PdfDict = new Map(mdObj.dict);
+        dict.delete('Filter');
+        dict.delete('DecodeParms');
+        dict.delete('DP');
+        setObject(mdRef.num, { type: 'stream', dict, data: stringToBytes(packet) });
+    }
+
     function save(): Uint8Array {
         if (modified.size === 0) {
             // No modifications — return original bytes
@@ -179,8 +314,15 @@ export function createModifier(reader: PdfReader): PdfModifier {
         const parts: string[] = [];
         let offset = original.length;
 
-        // Ensure original ends cleanly
-        parts.push('');
+        // §7.5.6: the appended revision must start on its own line. The
+        // base writer ends files with `%%EOF` and no trailing EOL, so emit
+        // one conditionally; the +1 shift is reflected in `offset`, which
+        // seeds every appended object's xref entry below.
+        const lastByte = original.length > 0 ? original[original.length - 1] : 0x0A;
+        if (lastByte !== 0x0A && lastByte !== 0x0D) {
+            parts.push('\n');
+            offset += 1;
+        }
 
         // New xref entries
         const newEntries = new Map<number, XrefEntry>();
@@ -205,9 +347,12 @@ export function createModifier(reader: PdfReader): PdfModifier {
         parts.push(xrefStr);
         offset += byteLength(xrefStr);
 
-        // Build trailer
+        // Build trailer — the appended content so far (objects + xref)
+        // seeds the regenerated second /ID element.
         const startxref = findStartxref(original);
-        const trailerStr = buildIncrementalTrailer(reader.trailer, newEntries, nextNum, startxref);
+        const trailerStr = buildIncrementalTrailer(
+            reader.trailer, nextNum, startxref, parts.join(''), original, createdInfoNum,
+        );
         parts.push(trailerStr);
         offset += byteLength(trailerStr);
 
@@ -232,6 +377,7 @@ export function createModifier(reader: PdfReader): PdfModifier {
         addRawObject,
         addAnnotation,
         getObject,
+        updateMetadata,
         save,
         get nextObjNum() { return nextNum; },
     };
@@ -369,9 +515,11 @@ function buildIncrementalXref(entries: Map<number, XrefEntry>, _size: number): s
 
 function buildIncrementalTrailer(
     originalTrailer: PdfDict,
-    _newEntries: Map<number, XrefEntry>,
     newSize: number,
     prevXref: number,
+    appendedContent: string,
+    originalBytes: Uint8Array,
+    createdInfoNum: number | null,
 ): string {
     let result = 'trailer\n<<';
 
@@ -379,11 +527,26 @@ function buildIncrementalTrailer(
     const rootRef = originalTrailer.get('Root');
     if (rootRef) result += ` /Root ${serializeValue(rootRef)}`;
 
-    const infoRef = originalTrailer.get('Info');
-    if (infoRef) result += ` /Info ${serializeValue(infoRef)}`;
+    if (createdInfoNum !== null) {
+        result += ` /Info ${createdInfoNum} 0 R`;
+    } else {
+        const infoRef = originalTrailer.get('Info');
+        if (infoRef) result += ` /Info ${serializeValue(infoRef)}`;
+    }
 
+    // /ID (ISO 32000-1 §14.4): the first element identifies the document
+    // permanently and is preserved BYTE-EXACT — it seeds the encryption key
+    // derivation, so regenerating it would break decryption. The second
+    // element identifies the revision and is regenerated deterministically
+    // from the appended content + the original byte length. When the source
+    // has no /ID at all, a fresh pair is emitted: md5 of the original bytes
+    // as the permanent element, the revision id as the second.
+    const revisionId = md5(stringToBytes(appendedContent + String(originalBytes.length)));
     const idArr = originalTrailer.get('ID');
-    if (idArr) result += ` /ID ${serializeValue(idArr)}`;
+    const id0Hex = isArray(idArr) && typeof idArr[0] === 'string'
+        ? binToHex(idArr[0])
+        : bytesToHex(md5(originalBytes));
+    result += ` /ID [<${id0Hex}> <${bytesToHex(revisionId)}>]`;
 
     // Carry /Encrypt forward: the appended revision is read under the same
     // scheme as the original (required for encrypted incremental updates;
@@ -411,4 +574,54 @@ function stringToBytes(str: string): Uint8Array {
         bytes[i] = str.charCodeAt(i) & 0xFF;
     }
     return bytes;
+}
+
+function bytesToBinString(bytes: Uint8Array): string {
+    let s = '';
+    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return s;
+}
+
+/** Uppercase hex of raw bytes (same style as the base writer's /ID). */
+function bytesToHex(bytes: Uint8Array): string {
+    let h = '';
+    for (let i = 0; i < bytes.length; i++) h += bytes[i].toString(16).padStart(2, '0');
+    return h.toUpperCase();
+}
+
+/**
+ * Encode a JS string as a PDF text-string VALUE (raw bytes, one char per
+ * byte — ISO 32000-1 §7.9.2): ASCII stays as-is (PDFDocEncoding-compatible),
+ * anything else becomes UTF-16BE with a BOM. The serializer handles literal
+ * escaping / encryption downstream.
+ */
+function encodeTextValue(text: string): string {
+    let ascii = true;
+    for (let i = 0; i < text.length; i++) {
+        if (text.charCodeAt(i) > 0x7E || text.charCodeAt(i) < 0x20) { ascii = false; break; }
+    }
+    if (ascii) return text;
+    let out = '\xFE\xFF';
+    for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i);
+        out += String.fromCharCode(c >> 8) + String.fromCharCode(c & 0xFF);
+    }
+    return out;
+}
+
+/**
+ * Decode a PDF text-string VALUE back to JS text: UTF-16BE when it carries
+ * the `FE FF` BOM, otherwise as-is (PDFDocEncoding ≈ Latin-1 for the common
+ * ASCII case). Non-strings yield `undefined`.
+ */
+function decodeTextValue(val: PdfValue | undefined): string | undefined {
+    if (typeof val !== 'string') return undefined;
+    if (val.length >= 2 && val.charCodeAt(0) === 0xFE && val.charCodeAt(1) === 0xFF) {
+        let out = '';
+        for (let i = 2; i + 1 < val.length; i += 2) {
+            out += String.fromCharCode((val.charCodeAt(i) << 8) | val.charCodeAt(i + 1));
+        }
+        return out;
+    }
+    return val;
 }

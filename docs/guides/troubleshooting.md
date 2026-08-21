@@ -66,7 +66,14 @@ const fontEntries = [
 The `lang` property triggers:
 - BiDi run detection (`containsRTL()`)
 - Arabic positional shaping (GSUB forms)
-- Glyph mirroring for brackets
+- Glyph mirroring for brackets and other paired delimiters (the full 428-pair
+  Unicode BidiMirroring table since v1.7.0, per UAX #9 rule L4)
+
+**Reversed digits or backwards parentheses in RTL text?** Fixed in v1.7.0 with
+no API change: digit runs now take even embedding levels (UAX #9 rules I1/I2),
+so a number like `1405` keeps its digit order instead of rendering `5041`, and
+rule L4 mirrors delimiters during reversal, so a logical `(X)` no longer
+renders `)X(`. If you see either symptom, upgrade pdfnative.
 
 ## PDF/A Validation Fails
 

@@ -7,8 +7,8 @@
  */
 
 import {
-    derDecode, asn1Integer, asn1OidBytes, asn1String, oidEquals,
-    ASN1_SEQUENCE, ASN1_SET, ASN1_OID, ASN1_UTC_TIME, ASN1_GENERALIZED_TIME,
+    derDecode, asn1Integer, asn1OidBytes, asn1String, asn1Time, oidEquals,
+    ASN1_SEQUENCE, ASN1_SET, ASN1_OID,
     ASN1_CONTEXT_0, ASN1_CONTEXT_3,
     type Asn1Node,
 } from './asn1.js';
@@ -35,6 +35,17 @@ const OID_OU = new Uint8Array([0x55, 0x04, 0x0b]);   // Organizational Unit
 // Extension OIDs
 const OID_BASIC_CONSTRAINTS = new Uint8Array([0x55, 0x1d, 0x13]);
 const OID_KEY_USAGE = new Uint8Array([0x55, 0x1d, 0x0f]);
+const OID_SUBJECT_KEY_ID = new Uint8Array([0x55, 0x1d, 0x0e]);           // 2.5.29.14
+const OID_AUTHORITY_KEY_ID = new Uint8Array([0x55, 0x1d, 0x23]);         // 2.5.29.35
+const OID_CRL_DISTRIBUTION_POINTS = new Uint8Array([0x55, 0x1d, 0x1f]);  // 2.5.29.31
+const OID_EXT_KEY_USAGE = new Uint8Array([0x55, 0x1d, 0x25]);            // 2.5.29.37
+const OID_AUTHORITY_INFO_ACCESS = new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x01, 0x01]);  // 1.3.6.1.5.5.7.1.1
+const OID_AD_OCSP = new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01]);                // 1.3.6.1.5.5.7.48.1
+const OID_AD_CA_ISSUERS = new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x02]);          // 1.3.6.1.5.5.7.48.2
+const OID_OCSP_NOCHECK = new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x05]);     // 1.3.6.1.5.5.7.48.1.5
+
+// GeneralName context tag for uniformResourceIdentifier ([6] IMPLICIT IA5String, primitive)
+const TAG_GENERAL_NAME_URI = 0x86;
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -61,6 +72,25 @@ export interface X509Certificate {
     readonly tbsCertificateBytes: Uint8Array;  // raw DER of tbsCertificate (for verification)
     readonly signatureBytes: Uint8Array;       // raw signature value
     readonly raw: Uint8Array;                  // complete certificate DER
+
+    // ── LTV extension fields (all optional so that hand-built demo/test
+    //    certificate literals predating 1.7.0 keep compiling; the parser
+    //    always populates them) ─────────────────────────────────────────
+
+    /** Subject Key Identifier (2.5.29.14) — keyIdentifier bytes. @since 1.7.0 */
+    readonly subjectKeyId?: Uint8Array;
+    /** Authority Key Identifier (2.5.29.35) — keyIdentifier [0] bytes. @since 1.7.0 */
+    readonly authorityKeyId?: Uint8Array;
+    /** Extended Key Usage (2.5.29.37) — list of KeyPurposeId OID byte arrays. @since 1.7.0 */
+    readonly extKeyUsage?: readonly Uint8Array[];
+    /** OCSP responder URLs from Authority Information Access (1.3.6.1.5.5.7.48.1). @since 1.7.0 */
+    readonly ocspUrls?: readonly string[];
+    /** CA-issuers URLs from Authority Information Access (1.3.6.1.5.5.7.48.2). @since 1.7.0 */
+    readonly caIssuersUrls?: readonly string[];
+    /** CRL URLs from CRL Distribution Points (2.5.29.31, fullName URI form). @since 1.7.0 */
+    readonly crlUrls?: readonly string[];
+    /** true when the id-pkix-ocsp-nocheck extension (1.3.6.1.5.5.7.48.1.5) is present. @since 1.7.0 */
+    readonly hasOcspNoCheck?: boolean;
 }
 
 // ── Parsing ──────────────────────────────────────────────────────────
@@ -118,6 +148,13 @@ export function parseCertificate(der: Uint8Array): X509Certificate {
     // Extensions [3]
     let isCA = false;
     let keyUsage = 0;
+    let subjectKeyId: Uint8Array | undefined;
+    let authorityKeyId: Uint8Array | undefined;
+    const extKeyUsage: Uint8Array[] = [];
+    const ocspUrls: string[] = [];
+    const caIssuersUrls: string[] = [];
+    const crlUrls: string[] = [];
+    let hasOcspNoCheck = false;
     if (idx < tbs.children.length && tbs.children[idx].tag === ASN1_CONTEXT_3) {
         const extsSeq = tbs.children[idx].children[0];
         for (const ext of extsSeq.children) {
@@ -136,6 +173,56 @@ export function parseCertificate(der: Uint8Array): X509Certificate {
                 if (ku.value.length >= 2) {
                     keyUsage = ku.value[1]; // First byte is unused bits
                 }
+            } else if (oidEquals(oid, OID_SUBJECT_KEY_ID)) {
+                // SubjectKeyIdentifier ::= KeyIdentifier (OCTET STRING)
+                const ski = derDecode(extValue);
+                if (ski.tag === 0x04) subjectKeyId = ski.value;
+            } else if (oidEquals(oid, OID_AUTHORITY_KEY_ID)) {
+                // AuthorityKeyIdentifier ::= SEQUENCE { keyIdentifier [0] IMPLICIT OCTET STRING OPTIONAL, … }
+                const aki = derDecode(extValue);
+                for (const child of aki.children) {
+                    if (child.tag === 0x80) { authorityKeyId = child.value; break; }
+                }
+            } else if (oidEquals(oid, OID_EXT_KEY_USAGE)) {
+                // ExtKeyUsageSyntax ::= SEQUENCE OF KeyPurposeId (OID)
+                const eku = derDecode(extValue);
+                for (const child of eku.children) {
+                    if (child.tag === ASN1_OID) extKeyUsage.push(child.value);
+                }
+            } else if (oidEquals(oid, OID_AUTHORITY_INFO_ACCESS)) {
+                // AuthorityInfoAccessSyntax ::= SEQUENCE OF AccessDescription
+                //   AccessDescription ::= SEQUENCE { accessMethod OID, accessLocation GeneralName }
+                // Only GeneralName uniformResourceIdentifier ([6] IMPLICIT IA5String) is extracted.
+                const aia = derDecode(extValue);
+                for (const ad of aia.children) {
+                    if (ad.tag !== ASN1_SEQUENCE || ad.children.length < 2) continue;
+                    const method = ad.children[0];
+                    const location = ad.children[1];
+                    if (method.tag !== ASN1_OID || location.tag !== TAG_GENERAL_NAME_URI) continue;
+                    const url = asn1String(location);
+                    if (oidEquals(method.value, OID_AD_OCSP)) ocspUrls.push(url);
+                    else if (oidEquals(method.value, OID_AD_CA_ISSUERS)) caIssuersUrls.push(url);
+                }
+            } else if (oidEquals(oid, OID_CRL_DISTRIBUTION_POINTS)) {
+                // CRLDistributionPoints ::= SEQUENCE OF DistributionPoint
+                //   DistributionPoint ::= SEQUENCE { distributionPoint [0] DistributionPointName OPTIONAL, … }
+                //   DistributionPointName ::= CHOICE { fullName [0] GeneralNames, … }
+                // Only fullName ([0]) GeneralNames URI entries ([6]) are extracted.
+                const cdp = derDecode(extValue);
+                for (const dp of cdp.children) {
+                    if (dp.tag !== ASN1_SEQUENCE) continue;
+                    for (const dpn of dp.children) {
+                        if (dpn.tag !== 0xa0) continue;      // distributionPoint [0]
+                        for (const fullName of dpn.children) {
+                            if (fullName.tag !== 0xa0) continue;  // fullName [0] GeneralNames
+                            for (const gn of fullName.children) {
+                                if (gn.tag === TAG_GENERAL_NAME_URI) crlUrls.push(asn1String(gn));
+                            }
+                        }
+                    }
+                }
+            } else if (oidEquals(oid, OID_OCSP_NOCHECK)) {
+                hasOcspNoCheck = true;
             }
         }
     }
@@ -161,6 +248,13 @@ export function parseCertificate(der: Uint8Array): X509Certificate {
         tbsCertificateBytes: tbsBytes,
         signatureBytes,
         raw: der,
+        subjectKeyId,
+        authorityKeyId,
+        extKeyUsage,
+        ocspUrls,
+        caIssuersUrls,
+        crlUrls,
+        hasOcspNoCheck,
     };
 }
 
@@ -207,32 +301,11 @@ function parseName(node: Asn1Node, fullDer: Uint8Array): X509Name {
 }
 
 function parseTime(node: Asn1Node): Date {
-    const str = new TextDecoder().decode(node.value);
-    if (node.tag === ASN1_UTC_TIME) {
-        // YYMMDDHHmmssZ
-        const yy = parseInt(str.substring(0, 2), 10);
-        const year = yy >= 50 ? 1900 + yy : 2000 + yy;
-        return new Date(Date.UTC(
-            year,
-            parseInt(str.substring(2, 4), 10) - 1,
-            parseInt(str.substring(4, 6), 10),
-            parseInt(str.substring(6, 8), 10),
-            parseInt(str.substring(8, 10), 10),
-            parseInt(str.substring(10, 12), 10),
-        ));
-    }
-    if (node.tag === ASN1_GENERALIZED_TIME) {
-        // YYYYMMDDHHmmssZ
-        return new Date(Date.UTC(
-            parseInt(str.substring(0, 4), 10),
-            parseInt(str.substring(4, 6), 10) - 1,
-            parseInt(str.substring(6, 8), 10),
-            parseInt(str.substring(8, 10), 10),
-            parseInt(str.substring(10, 12), 10),
-            parseInt(str.substring(12, 14), 10),
-        ));
-    }
-    throw new Error(`Unexpected time tag: 0x${node.tag.toString(16)}`);
+    // Time decoding (UTCTime 2-digit-year pivot + GeneralizedTime) was
+    // lifted into asn1Time() in 1.7.0 so that CRL/OCSP/RFC 3161 parsers
+    // share it. Behaviour is byte-for-byte identical to the pre-1.7.0
+    // private implementation.
+    return asn1Time(node);
 }
 
 // ── Verification ─────────────────────────────────────────────────────
@@ -255,14 +328,13 @@ export function verifyCertSignature(cert: X509Certificate, issuerCert: X509Certi
     }
     if (oidEquals(cert.signatureAlgorithm, OID_SHA384_RSA)) {
         const hash = sha384(tbs);
-        // SHA-384 + RSA not implemented (would need rsaVerifyHash for SHA-384)
-        void hash;
-        return false;
+        const pubKey = extractRsaPublicKey(issuerCert.publicKeyBytes);
+        return rsaVerifyHash(hash, cert.signatureBytes, pubKey, 'sha384');
     }
     if (oidEquals(cert.signatureAlgorithm, OID_SHA512_RSA)) {
         const hash = sha512(tbs);
-        void hash;
-        return false;
+        const pubKey = extractRsaPublicKey(issuerCert.publicKeyBytes);
+        return rsaVerifyHash(hash, cert.signatureBytes, pubKey, 'sha512');
     }
     if (oidEquals(cert.signatureAlgorithm, OID_ECDSA_SHA256)) {
         const hash = sha256(tbs);
@@ -321,4 +393,20 @@ export function certRsaPublicKey(cert: X509Certificate): RsaPublicKey | null {
 export function certEcPublicKey(cert: X509Certificate): EcPublicKey | null {
     if (!oidEquals(cert.publicKeyAlgorithm, OID_EC_PUBKEY)) return null;
     return decodeEcPublicKey(cert.publicKeyBytes);
+}
+
+/**
+ * Check whether a certificate carries a given Extended Key Usage purpose
+ * (2.5.29.37), e.g. id-kp-timeStamping (1.3.6.1.5.5.7.3.8) for RFC 3161 TSA
+ * certificates or id-kp-OCSPSigning (1.3.6.1.5.5.7.3.9) for delegated OCSP
+ * responders.
+ *
+ * @param cert - Parsed certificate.
+ * @param oidBytes - KeyPurposeId OID content bytes (without tag/length).
+ * @returns true when the EKU extension lists the purpose.
+ * @since 1.7.0
+ */
+export function certHasEku(cert: X509Certificate, oidBytes: Uint8Array): boolean {
+    if (!cert.extKeyUsage) return false;
+    return cert.extKeyUsage.some((oid) => oidEquals(oid, oidBytes));
 }

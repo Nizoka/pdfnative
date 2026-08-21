@@ -25,6 +25,8 @@ import type {
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaUnembeddedFormFontDiagnostic } from './pdf-diagnostics.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
 import { createEncodingContext } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
@@ -47,7 +49,7 @@ import {
     buildStructureTree,
     buildXMPMetadata,
     buildOutputIntentDict,
-    buildMinimalSRGBProfile,
+    resolveOutputIntentProfile,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -161,6 +163,15 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const pdfaConfig = resolvePdfAConfig(layout?.tagged);
     const tagged = pdfaConfig.enabled;
 
+    // ── Conformance diagnostics (v1.7.0) ─────────────────────────────
+    // Guard the PDF/A declaration: a conformance claim must not be stamped
+    // silently when the configuration is known to fail validation (#69).
+    const emitDiagnostic = createDiagnosticEmitter(layout?.strict, layout?.onDiagnostic);
+    if (tagged && fontEntries.length === 0) {
+        const level = typeof layout?.tagged === 'string' ? layout.tagged : 'pdfa2b';
+        emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
+    }
+
     const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false);
 
     // ── Encryption setup ──────────────────────
@@ -181,6 +192,15 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
     // ── Layout debug overlay setup (development aid; off → byte-identical) ──
     const debugOpts = resolveDebugOptions(layout?.debug);
+
+    // ── Print production setup (v1.7.0; off → byte-identical) ─────────
+    const printOpts = layout?.print;
+    if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layout?.tagged);
+    const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
+    const printBoxesStr = printResolved?.boxesStr ?? '';
+    const printMarksOps = printOpts?.marks && printResolved?.trim
+        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
+        : '';
 
     // ── Attachments setup (PDF/A-3 only) ─────────────────────────────
     const attachments = layout?.attachments;
@@ -408,7 +428,13 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             if (block.type === 'image') {
                 const idx = resolvedImages.length;
                 imageBlockMap.set(block, idx);
-                resolvedImages.push(resolveImage(block, cw));
+                const resolved = resolveImage(block, cw);
+                if (tagged && resolved.parsed.colorSpace === '/DeviceCMYK') {
+                    // The document's OutputIntent is sRGB — a DeviceCMYK
+                    // image breaks the PDF/A claim (ISO 19005-2 §6.2.4.3).
+                    emitDiagnostic(pdfaDeviceCmykDiagnostic());
+                }
+                resolvedImages.push(resolved);
             }
         }
     }
@@ -620,6 +646,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         );
         ops.push(...ftOps);
 
+        // Printer's marks (v1.7.0) — outside the TrimBox, above content.
+        if (printMarksOps) {
+            ops.push(printMarksOps);
+        }
+
         // Layout debug overlay — drawn last so guide rectangles sit on top.
         if (debugOps.length > 0) {
             ops.push(...debugOps);
@@ -645,6 +676,12 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         formFieldsByPage.set(pf.page, list);
     }
     const totalFormFields = pageFormFields.length;
+    // Form appearances render through a dedicated UNEMBEDDED base-14 /Helv
+    // font — under a PDF/A claim that violates the same ISO 19005
+    // §6.2.11.4.1 rule the no-fonts guard covers (#69), so surface it.
+    if (tagged && totalFormFields > 0) {
+        emitDiagnostic(pdfaUnembeddedFormFontDiagnostic());
+    }
     // Each form field: button types (checkbox/radio) = 3 objects (widget + Yes AP + Off AP)
     // Other types = 2 objects (widget + AP XObject)
     // Plus 1 dedicated Helvetica font object for form field rendering
@@ -672,15 +709,22 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const totalFormObjs = totalFieldObjs + numRadioGroups;
     const formFontObjs = totalFormFields > 0 ? 1 : 0; // dedicated /Helv font object for forms
 
-    // Base-14 /ToUnicode CMap (issue #48): non-tagged Helvetica/Helvetica-Bold
-    // carry no ToUnicode by default, so the CP1252 0x80–0x9F band (Euro, curly
+    // Base-14 /ToUnicode CMap (issue #48): Helvetica/Helvetica-Bold carry no
+    // ToUnicode by default, so the CP1252 0x80–0x9F band (Euro, curly
     // quotes, …) is not selectable/searchable and renders as `?` in minimal
     // viewers. Emit one shared CMap as the trailing object (forward reference
-    // from the font dicts). Tagged mode embeds CIDFonts with their own ToUnicode.
+    // from the font dicts). v1.7.0: also emitted in tagged mode whenever a
+    // base-14 dict is actually reached under the PDF/A claim (Latin branch,
+    // AcroForm /Helv) — those dicts need complete ToUnicode coverage. Tagged
+    // CIDFont-only documents carry no base-14 dict and stay byte-identical.
+    // The tagged tail (struct tree, XMP, ICC) chains after `totalObjs`,
+    // which accounts for this object.
     const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
         ? 4 + fontEntries.length * 5 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs
         : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
-    const latinToUniObjNum = tagged ? 0 : preBaseObjCount + 2; // infoObjNum + 1
+    const latinToUniObjNum = (!tagged || !enc.isUnicode || formFontObjs > 0)
+        ? preBaseObjCount + 2 // infoObjNum + 1
+        : 0;
     const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
 
     // Colour-emoji Form XObjects (v1.3.0) — collected during the page-stream
@@ -699,8 +743,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // ── Assemble PDF binary ──────────────────────────────────────────
     const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
 
-    // PDF Header
-    emit(`%PDF-${pdfaConfig.pdfVersion}\n`);
+    // PDF Header. /UserUnit requires PDF 1.6+ — raise the declared version
+    // only when the option is present (bytes unchanged otherwise).
+    const pdfVersion = printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
+        ? '1.7' : pdfaConfig.pdfVersion;
+    emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 
     // Catalog placeholder
@@ -880,7 +927,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
             );
@@ -923,7 +970,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
             const radioGroupParentStart = formObjStart + totalFieldObjs;
             const formFontObjNum = formObjStart + totalFormObjs;
-            emitObj(formFontObjNum, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
 
             // Build radio group parent object map: group name → parent obj num + selected value
             const radioGroupObjNums = new Map<string, number>();
@@ -1041,7 +1088,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
             );
@@ -1084,7 +1131,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
             const radioGroupParentStart = formObjStart + totalFieldObjs;
             const formFontObjNum = formObjStart + totalFormObjs;
-            emitObj(formFontObjNum, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
 
             // Build radio group parent object map
             const radioGroupObjNums = new Map<string, number>();
@@ -1153,6 +1200,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     if (params.metadata?.keywords) {
         metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
     }
+    if (params.metadata?.trapped) {
+        metaParts.push(`/Trapped /${params.metadata.trapped}`);
+    }
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
     let totalObjs = infoObjNum;
@@ -1200,19 +1250,21 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         totalObjs = treeStart + tree.totalObjects - 1;
 
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords));
+        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
 
+        // ICC profile stream — the built-in minimal sRGB profile, or the
+        // caller-supplied RGB profile (layout.outputIntent, v1.7.0).
         const iccObjNum = totalObjs + 1;
-        const iccProfile = buildMinimalSRGBProfile();
+        const iccProfile = resolveOutputIntentProfile(layout?.outputIntent);
         emitStreamObj(iccObjNum,
             `<< /N 3 /Length ${iccProfile.length}`, iccProfile);
         totalObjs = iccObjNum;
 
         outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype));
+        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layout?.outputIntent));
         totalObjs = outputIntentObjNum;
 
         // Embedded file attachments (PDF/A-3 only)

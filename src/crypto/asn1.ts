@@ -193,6 +193,38 @@ export function derSet(...children: Uint8Array[]): Uint8Array {
     return derWrap(ASN1_SET, concatBytes(children));
 }
 
+/**
+ * Encode a DER SET OF (0x31) from child TLVs with the canonical X.690 §11.6
+ * ordering: the encodings are sorted as octet strings in ascending
+ * lexicographic order, and when one encoding is a prefix of another the
+ * shorter one sorts first. DER *requires* this ordering for SET OF values —
+ * CMS SignedAttributes encoded in an arbitrary order are technically invalid
+ * DER even when most validators tolerate them.
+ *
+ * Use {@link derSet} only for single-element sets or SET (not SET OF) types
+ * where the schema fixes the component order.
+ *
+ * @since 1.7.0
+ */
+export function derSetOf(...children: Uint8Array[]): Uint8Array {
+    const sorted = [...children].sort(compareOctetStrings);
+    return derWrap(ASN1_SET, concatBytes(sorted));
+}
+
+/**
+ * Lexicographic octet-string comparison (X.690 §11.6): byte-by-byte, with a
+ * shorter string that is a prefix of a longer one ordering first.
+ *
+ * @internal
+ */
+function compareOctetStrings(a: Uint8Array, b: Uint8Array): number {
+    const min = Math.min(a.length, b.length);
+    for (let i = 0; i < min; i++) {
+        if (a[i] !== b[i]) return a[i] - b[i];
+    }
+    return a.length - b.length;
+}
+
 /** Encode an INTEGER from a BigInt or Uint8Array (big-endian). */
 export function derInteger(value: bigint | Uint8Array): Uint8Array {
     let bytes: Uint8Array;
@@ -285,6 +317,41 @@ export function derUtcTime(date: Date): Uint8Array {
     return derWrap(ASN1_UTC_TIME, bytes);
 }
 
+/**
+ * Encode a GeneralizedTime from a Date. Format: YYYYMMDDHHMMSSZ (UTC,
+ * seconds always present, no fractional seconds — the DER-restricted form
+ * required by RFC 5280 §4.1.2.5.2 and RFC 3161 TSTInfo genTime).
+ *
+ * @since 1.7.0
+ */
+export function derGeneralizedTime(date: Date): Uint8Array {
+    const s = date.toISOString().replace(/[-:T]/g, '').substring(0, 14) + 'Z';
+    const bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
+    return derWrap(ASN1_GENERALIZED_TIME, bytes);
+}
+
+/**
+ * Encode a BOOLEAN. DER requires TRUE to be encoded as 0xFF (X.690 §11.1).
+ *
+ * @since 1.7.0
+ */
+export function derBoolean(value: boolean): Uint8Array {
+    return derWrap(ASN1_BOOLEAN, new Uint8Array([value ? 0xff : 0x00]));
+}
+
+/**
+ * Encode an IA5String (7-bit ASCII — used for URIs in GeneralName and
+ * X.509 AIA / CRL Distribution Point extensions).
+ *
+ * @since 1.7.0
+ */
+export function derIA5String(text: string): Uint8Array {
+    const bytes = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i);
+    return derWrap(ASN1_IA5_STRING, bytes);
+}
+
 /** Encode context-specific explicit tag. */
 export function derContextExplicit(tagNum: number, inner: Uint8Array): Uint8Array {
     return derWrap(0xa0 | tagNum, inner);
@@ -320,6 +387,48 @@ export function asn1OidBytes(node: Asn1Node): Uint8Array {
 /** Get string value from a string-type ASN.1 node. */
 export function asn1String(node: Asn1Node): string {
     return new TextDecoder().decode(node.value);
+}
+
+/**
+ * Decode an ASN.1 Time node (UTCTime or GeneralizedTime) into a `Date`.
+ *
+ * UTCTime uses a two-digit year with the RFC 5280 §4.1.2.5.1 pivot: values
+ * 50–99 map to 1950–1999, values 00–49 map to 2000–2049. GeneralizedTime
+ * carries a four-digit year; trailing fractional seconds, if present, are
+ * ignored. Both forms are interpreted as UTC ("Z").
+ *
+ * Shared by the X.509 validity parser, CRL thisUpdate/nextUpdate, OCSP
+ * producedAt/thisUpdate and RFC 3161 genTime decoding.
+ *
+ * @since 1.7.0
+ */
+export function asn1Time(node: Asn1Node): Date {
+    const str = new TextDecoder().decode(node.value);
+    if (node.tag === ASN1_UTC_TIME) {
+        // YYMMDDHHmmssZ
+        const yy = parseInt(str.substring(0, 2), 10);
+        const year = yy >= 50 ? 1900 + yy : 2000 + yy;
+        return new Date(Date.UTC(
+            year,
+            parseInt(str.substring(2, 4), 10) - 1,
+            parseInt(str.substring(4, 6), 10),
+            parseInt(str.substring(6, 8), 10),
+            parseInt(str.substring(8, 10), 10),
+            parseInt(str.substring(10, 12), 10),
+        ));
+    }
+    if (node.tag === ASN1_GENERALIZED_TIME) {
+        // YYYYMMDDHHmmssZ
+        return new Date(Date.UTC(
+            parseInt(str.substring(0, 4), 10),
+            parseInt(str.substring(4, 6), 10) - 1,
+            parseInt(str.substring(6, 8), 10),
+            parseInt(str.substring(8, 10), 10),
+            parseInt(str.substring(10, 12), 10),
+            parseInt(str.substring(12, 14), 10),
+        ));
+    }
+    throw new Error(`Unexpected time tag: 0x${node.tag.toString(16)}`);
 }
 
 /** Check if two OID byte arrays are equal. */

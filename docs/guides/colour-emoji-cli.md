@@ -1,11 +1,12 @@
 # Colour-emoji font CLI (`pdfnative-build-emoji-font`)
 
-> **New in v1.4.0, expanded in v1.6.0.** pdfnative ships a curated 1167-glyph
-> colour-emoji module by default. When you need **more emoji — up to the full
-> ~3 600-glyph set** — the
+> **New in v1.4.0, expanded in v1.6.0 and v1.7.0.** pdfnative ships a curated
+> 1167-glyph colour-emoji module by default (plus 73 flag/ZWJ sequences since
+> v1.7.0). When you need **more emoji — up to the full ~3 600-glyph set, or
+> skin-tone sequence variants** — the
 > `pdfnative-build-emoji-font` CLI generates a data module containing exactly the
-> glyphs you choose. It's bundled with the `pdfnative` package, so any user can
-> run it with `npx` — no extra install, no editing library source.
+> glyphs and sequences you choose. It's bundled with the `pdfnative` package, so
+> any user can run it with `npx` — no extra install, no editing library source.
 
 ## Why a CLI instead of bundling everything?
 
@@ -28,6 +29,10 @@ npx pdfnative-build-emoji-font --download \
 
 # Offline: point at a font you already have on disk:
 npx pdfnative-build-emoji-font --ttf ./NotoColorEmoji-Regular.ttf --all
+
+# Flag/ZWJ sequences (v1.7.0) — the curated sets plus any skin-tone form you need:
+npx pdfnative-build-emoji-font --download --sequences all \
+  --sequence-list 1F468-1F3FB-200D-1F4BB,1F469-1F3FD-200D-2695-FE0F --out ./emoji.js
 ```
 
 Then register the module you generated, load it, and pass it via `fontEntries`:
@@ -73,6 +78,27 @@ pass none, the curated set is used.
 | `--codepoints <list>` | Comma-separated hex scalars: `1F600,1F680,2764`. `U+`, `0x`, `#` prefixes are tolerated. |
 | `--ranges <list>` | Comma-separated **inclusive** hex ranges: `1F600-1F64F,2600-27BF`. |
 
+## Selecting sequences (v1.7.0)
+
+Multi-codepoint emoji — flags (regional-indicator pairs) and ZWJ sequences —
+are selected separately from single glyphs. Each requested sequence is
+resolved through the font's GSUB ligature lookups to a **single colour glyph**
+and emitted in the module's `sequences` table; both the VS-16 and the
+VS-16-free spelling register to the same glyph. Default: **none** (the
+pre-1.7 output shape, plus an inert `sequences = null` export).
+
+| Flag | Meaning |
+|---|---|
+| `--sequences <preset>` | `flags` (the curated 51-flag set), `zwj` (the curated 22-sequence ZWJ set), `all` (both), or `none`. |
+| `--sequence-list <list>` | Comma-separated entries: a 2-letter country code (`FR`, `DE`) and/or hyphen-joined hex scalars (`1F468-200D-1F680`, `1F469-1F3FD-200D-2695-FE0F`). Skin-tone forms welcome. |
+
+Selections merge and de-duplicate, so `--sequences flags --sequence-list
+1F469-1F3FB-200D-2695-FE0F` is valid. The bundled npm module already carries
+the curated 51 + 22 set — reach for the CLI when you need skin-tone variants
+or sequences beyond it. Note that flags render **flat** (Noto's wave-shading
+overlay uses a COLRv1 compositing mask with no PDF equivalent — see the
+[colour-emoji guide](colour-emoji.html)).
+
 ## Output options
 
 | Flag | Default | Meaning |
@@ -82,8 +108,9 @@ pass none, the curated set is used.
 | `--types <path>` | `pdfnative` | The type import used in the generated `.d.ts` (e.g. `'pdfnative'` or a relative path). |
 
 The generated module exports the same shape as the bundled one
-(`metrics`, `cmap`, `widths`, `pdfWidthArray`, `colorGlyphs`, `ttfBase64`, …),
-so it drops straight into `registerFont('emoji', () => import('…'))`.
+(`metrics`, `cmap`, `widths`, `pdfWidthArray`, `colorGlyphs`, `sequences`,
+`ttfBase64`, …), so it drops straight into
+`registerFont('emoji', () => import('…'))`.
 
 ## Verifying the result
 
@@ -112,6 +139,13 @@ Glyph selection (combine freely; default: --preset curated):
   --preset <curated|all>  Named selection.
   --codepoints <list>     Comma-separated hex scalars, e.g. 1F600,1F680,2764.
   --ranges <list>         Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
+
+Sequence selection (v1.7.0; default: none):
+  --sequences <preset>    flags | zwj | all | none — bundle the curated flag
+                          and/or ZWJ sequence sets (GSUB-resolved ligatures).
+  --sequence-list <list>  Comma-separated country codes and/or hyphen-joined
+                          hex sequences, e.g. FR,DE,1F468-200D-1F680,
+                          1F469-1F3FD-200D-2695-FE0F (skin tones welcome).
 
 Output:
   --out <path>            Output .js path (a sibling .d.ts is written).

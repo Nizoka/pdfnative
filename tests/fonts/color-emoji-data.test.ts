@@ -28,9 +28,10 @@ describe('noto-color-emoji-data module', () => {
         expect(CURATED_EMOJI.length).toBeLessThanOrEqual(1250);
         // No duplicates.
         expect(new Set(CURATED_EMOJI).size).toBe(CURATED_EMOJI.length);
-        // Module stays within the ~4 MB npm-tarball budget.
+        // Module stays within the npm-tarball budget (raised 4096 → 5120 KB
+        // in v1.7.0 for the curated flag/ZWJ sequence set).
         const sizeKb = Buffer.byteLength(colorEmoji.ttfBase64) / 1024;
-        expect(sizeKb).toBeLessThan(4096);
+        expect(sizeKb).toBeLessThan(5120);
     });
 
     it('every curated codepoint maps to a colour glyph', () => {
@@ -89,9 +90,23 @@ describe('noto-color-emoji-data module', () => {
             if (isEmojiBlock(cp)) used.add(cp);
         }
         expect(used.size).toBeGreaterThan(50);
+        // A codepoint is covered when the cmap maps it directly OR it only
+        // ever appears as a component of a bundled sequence (flags/ZWJ, whose
+        // ligature glyph renders the whole run — v1.7.0).
+        const sequenceComponents = new Set<number>();
+        const seqs = colorEmoji.sequences as NonNullable<FontData['sequences']> | null;
+        if (seqs) {
+            for (const [first, entries] of Object.entries(seqs)) {
+                sequenceComponents.add(Number(first));
+                for (const entry of entries) for (let k = 1; k < entry.length; k++) sequenceComponents.add(entry[k]);
+            }
+        }
         for (const cp of used) {
             const gid = colorEmoji.cmap[cp];
-            expect(gid, `showcase uses U+${cp.toString(16).toUpperCase()} but it is not in the bundled cmap`).toBeDefined();
+            if (gid === undefined) {
+                expect(sequenceComponents.has(cp), `showcase uses U+${cp.toString(16).toUpperCase()} but it is neither in the bundled cmap nor part of a bundled sequence`).toBe(true);
+                continue;
+            }
             expect(colorEmoji.colorGlyphs[gid as number]).toBeDefined();
         }
     });
@@ -117,5 +132,74 @@ describe('noto-color-emoji-data module', () => {
         expect(pdf).toMatch(/\/CEm\d+ Do/);
         const doc = openPdf(bytes);
         expect(doc.pageCount).toBe(1);
+    });
+
+    // ── v1.7.0: bundled flag / ZWJ sequences ─────────────────────────
+
+    describe('sequences table', () => {
+        it('exports a codepoint-keyed sequences table', () => {
+            expect(colorEmoji.sequences).toBeTruthy();
+            const seqs = colorEmoji.sequences as NonNullable<FontData['sequences']>;
+            expect(Object.keys(seqs).length).toBeGreaterThan(20);
+        });
+
+        it('every sequence entry resolves to a colour ligature glyph with a width', () => {
+            const seqs = colorEmoji.sequences as NonNullable<FontData['sequences']>;
+            for (const [firstCp, entries] of Object.entries(seqs)) {
+                for (const entry of entries) {
+                    const gid = entry[0];
+                    expect(entry.length, `sequence at U+${Number(firstCp).toString(16)}`).toBeGreaterThanOrEqual(2);
+                    expect(colorEmoji.colorGlyphs[gid], `lig gid ${gid} has no colour glyph`).toBeDefined();
+                    expect(colorEmoji.widths[gid], `lig gid ${gid} has no width`).toBeDefined();
+                }
+            }
+        });
+
+        it('keeps entries longest-first per first-codepoint bucket', () => {
+            const seqs = colorEmoji.sequences as NonNullable<FontData['sequences']>;
+            for (const entries of Object.values(seqs)) {
+                for (let i = 1; i < entries.length; i++) {
+                    expect(entries[i - 1].length).toBeGreaterThanOrEqual(entries[i].length);
+                }
+            }
+        });
+
+        it('bundles the curated flags (FR, DE, JP, EU…) and ZWJ sets', () => {
+            const seqs = colorEmoji.sequences as NonNullable<FontData['sequences']>;
+            const has = (cps: readonly number[]): boolean => {
+                const bucket = seqs[cps[0]];
+                return Boolean(bucket?.some(e =>
+                    e.length - 1 === cps.length - 1 && cps.slice(1).every((c, k) => e[1 + k] === c)));
+            };
+            expect(has([0x1F1EB, 0x1F1F7])).toBe(true); // 🇫🇷
+            expect(has([0x1F1E9, 0x1F1EA])).toBe(true); // 🇩🇪
+            expect(has([0x1F1EF, 0x1F1F5])).toBe(true); // 🇯🇵
+            expect(has([0x1F1EA, 0x1F1FA])).toBe(true); // 🇪🇺
+            expect(has([0x1F468, 0x200D, 0x1F4BB])).toBe(true); // 👨‍💻
+            expect(has([0x1F3F4, 0x200D, 0x2620, 0xFE0F])).toBe(true); // 🏴‍☠️
+        });
+
+        it('keeps joiners and regional indicators OUT of the cmap', () => {
+            // The "every cmap entry → colour glyph" invariant depends on it.
+            expect(colorEmoji.cmap[0x200D]).toBeUndefined();
+            expect(colorEmoji.cmap[0xFE0F]).toBeUndefined();
+            expect(colorEmoji.cmap[0x1F1EB]).toBeUndefined();
+        });
+
+        it('renders a flag and a ZWJ sequence as single colour glyphs', () => {
+            const fontData = colorEmoji as unknown as FontData;
+            const entry: FontEntry = { fontData, fontRef: '/F3', lang: 'emoji' };
+            const params: DocumentParams = {
+                title: 'Sequences',
+                blocks: [{ type: 'paragraph', text: 'Flags \u{1F1EB}\u{1F1F7} \u{1F1E9}\u{1F1EA} and \u{1F468}\u{200D}\u{1F4BB}' }],
+                fontEntries: [entry],
+            };
+            const bytes = buildDocumentPDFBytes(params);
+            const pdf = Buffer.from(bytes).toString('latin1');
+            const doOps = pdf.match(/\/CEm\d+ Do/g) ?? [];
+            // 2 flags + 1 technologist = 3 colour form draws.
+            expect(doOps.length).toBeGreaterThanOrEqual(3);
+            expect(openPdf(bytes).pageCount).toBe(1);
+        });
     });
 });

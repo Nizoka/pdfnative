@@ -552,3 +552,47 @@ describe('buildPDF Unicode/CIDFont path', () => {
         expect(() => buildPDF(makeMinimalParams(), { attachments: att })).toThrow('pdfa3b');
     });
 });
+
+// ═════════════════════════════════════════════════════════════════════
+// INFO / XMP METADATA PARITY (params.metadata — v1.7.0)
+// ═════════════════════════════════════════════════════════════════════
+
+describe('buildPDF — params.metadata Info/XMP parity', () => {
+    const fixedDate = new Date(2026, 0, 15, 10, 30, 0);
+
+    it('writes /Author /Subject /Keywords to the Info dict', () => {
+        const result = buildPDF(makeMinimalParams({
+            metadata: { author: 'Jane Doe', subject: 'Quarterly report', keywords: 'finance, q1' },
+        }));
+        expect(result).toContain('/Author (Jane Doe)');
+        expect(result).toContain('/Subject (Quarterly report)');
+        expect(result).toContain('/Keywords (finance, q1)');
+    });
+
+    it('mirrors metadata into the XMP packet under tagged mode', () => {
+        const result = buildPDF(makeMinimalParams({
+            metadata: { author: 'Jane Doe', subject: 'Quarterly report', keywords: 'finance, q1' },
+        }), { tagged: 'pdfa2b' });
+        expect(result).toContain('<dc:creator><rdf:Seq><rdf:li>Jane Doe</rdf:li></rdf:Seq></dc:creator>');
+        expect(result).toContain('Quarterly report</rdf:li></rdf:Alt></dc:description>');
+        expect(result).toContain('<pdf:Keywords>finance, q1</pdf:Keywords>');
+        // Info dict parity (ISO 19005-1 §6.7.3 t4/t5)
+        expect(result).toContain('/Author (Jane Doe)');
+    });
+
+    it('omitted metadata → byte-identical to a params object without the field', () => {
+        const withUndefined = buildPDFBytes({ ...makeMinimalParams(), metadata: undefined }, { creationDate: fixedDate });
+        const withoutField = buildPDFBytes(makeMinimalParams(), { creationDate: fixedDate });
+        expect(Buffer.from(withUndefined).equals(Buffer.from(withoutField))).toBe(true);
+        // No metadata → no /Author, no dc:creator anywhere
+        const text = buildPDF(makeMinimalParams(), { tagged: 'pdfa2b', creationDate: fixedDate });
+        expect(text).not.toContain('/Author');
+        expect(text).not.toContain('dc:creator');
+    });
+
+    it('empty metadata object → byte-identical to no metadata', () => {
+        const a = buildPDFBytes({ ...makeMinimalParams(), metadata: {} }, { creationDate: fixedDate });
+        const b = buildPDFBytes(makeMinimalParams(), { creationDate: fixedDate });
+        expect(Buffer.from(a).equals(Buffer.from(b))).toBe(true);
+    });
+});

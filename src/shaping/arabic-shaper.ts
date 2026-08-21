@@ -60,16 +60,21 @@ function getJoiningType(cp: number): JoiningType {
 
     // Dual-joining letters (most Arabic letters)
     // Note: This is a simplified classification. Full UCD has per-character data.
-    if ((cp >= 0x0626 && cp <= 0x0628) || // YEH HAMZA, BA series
-        (cp >= 0x062A && cp <= 0x062E) || // TA through KHA  
+    // ALEF (0x0627) is deliberately NOT in this list — it is right-joining
+    // (see below). A former 0x0626–0x0628 range swept it into dual-joining,
+    // which broke every word with a non-final alef (كتاب، سال، السلام…):
+    // the alef lost its final form and the following letter connected to it.
+    if (cp === 0x0626 || cp === 0x0628 ||  // YEH HAMZA, BEH
+        (cp >= 0x062A && cp <= 0x062E) || // TA through KHA
         (cp >= 0x0633 && cp <= 0x063A) || // SEEN through GHAIN
         (cp >= 0x0641 && cp <= 0x0647) || // FA through HA
         cp === 0x0649 ||                   // ALEF MAKSURA
         cp === 0x064A ||                   // YA
         cp === 0x0678 ||                   // HIGH HAMZA YEH
+        (cp >= 0x0679 && cp <= 0x0687) ||  // TTEH…TCHEHEH (incl. Persian PEH 067E, TCHEH 0686)
         (cp >= 0x069A && cp <= 0x06BF) ||  // Extended Arabic
         (cp >= 0x06C1 && cp <= 0x06C3) ||
-        (cp >= 0x06CC && cp <= 0x06CE) ||
+        (cp >= 0x06CC && cp <= 0x06CE) ||  // incl. FARSI YEH 06CC
         (cp >= 0x06D0 && cp <= 0x06D3) ||
         cp === 0x06D5 ||
         cp === 0x06FA ||
@@ -150,6 +155,25 @@ const ARABIC_PRES_FORMS: ReadonlyMap<number, ArabicPresForm> = new Map([
     [0x0648, { isol: 0xFEED, fina: 0xFEEE }],
     [0x0649, { isol: 0xFEEF, fina: 0xFEF0 }],
     [0x064A, { isol: 0xFEF1, fina: 0xFEF2, init: 0xFEF3, medi: 0xFEF4 }],
+    // ── Presentation Forms-A (U+FB50–FDFF): Persian + Urdu letters ──
+    // (v1.7.0) Without these entries the extended letters fell back to
+    // their nominal (isolated) glyph in every position, breaking joining
+    // in Persian words (قیمت، ریال، پدر، گفتگو…). Fonts lacking a form
+    // keep today's fallback via the `if (presGid)` guard in the resolver.
+    [0x0679, { isol: 0xFB66, fina: 0xFB67, init: 0xFB68, medi: 0xFB69 }], // TTEH
+    [0x067E, { isol: 0xFB56, fina: 0xFB57, init: 0xFB58, medi: 0xFB59 }], // PEH
+    [0x0686, { isol: 0xFB7A, fina: 0xFB7B, init: 0xFB7C, medi: 0xFB7D }], // TCHEH
+    [0x0688, { isol: 0xFB88, fina: 0xFB89 }],                             // DDAL
+    [0x0691, { isol: 0xFB8C, fina: 0xFB8D }],                             // RREH
+    [0x0698, { isol: 0xFB8A, fina: 0xFB8B }],                             // JEH
+    [0x06A9, { isol: 0xFB8E, fina: 0xFB8F, init: 0xFB90, medi: 0xFB91 }], // KEHEH
+    [0x06AF, { isol: 0xFB92, fina: 0xFB93, init: 0xFB94, medi: 0xFB95 }], // GAF
+    [0x06BA, { isol: 0xFB9E, fina: 0xFB9F }],                             // NOON GHUNNA
+    [0x06BE, { isol: 0xFBAA, fina: 0xFBAB, init: 0xFBAC, medi: 0xFBAD }], // HEH DOACHASHMEE
+    [0x06C1, { isol: 0xFBA6, fina: 0xFBA7, init: 0xFBA8, medi: 0xFBA9 }], // HEH GOAL
+    [0x06CC, { isol: 0xFBFC, fina: 0xFBFD, init: 0xFBFE, medi: 0xFBFF }], // FARSI YEH
+    [0x06D2, { isol: 0xFBAE, fina: 0xFBAF }],                             // YEH BARREE
+    [0x06D3, { isol: 0xFBB0, fina: 0xFBB1 }],                             // YEH BARREE + HAMZA
 ]);
 
 /** Lam-Alef ligature presentation forms: [isolatedCP, finalCP]. */

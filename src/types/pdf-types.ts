@@ -45,6 +45,17 @@ export interface FontData {
      * `undefined`/`null` for ordinary monochrome fonts. (v1.3.0)
      */
     readonly colorGlyphs?: Record<number, ColorGlyph> | null;
+    /**
+     * Multi-codepoint emoji sequences (flags via regional-indicator pairs,
+     * ZWJ families/professions, …) resolved at font-build time from the
+     * source font's GSUB ligature lookups. Keyed by the sequence's FIRST
+     * codepoint; each entry is `[resultGid, cp2, cp3, …]` with entries
+     * sorted longest-first so the runtime longest-match pre-pass can take
+     * the first hit. Joiner codepoints (ZWJ, VS-16, regional indicators)
+     * deliberately stay out of `cmap` — a font without this table keeps
+     * the historical per-codepoint behaviour. (v1.7.0)
+     */
+    readonly sequences?: Record<number, number[][]> | null;
 }
 
 // ── Colour Glyph Types (COLR/CPAL — v1.3.0) ──────────────────────────
@@ -234,6 +245,22 @@ export interface PdfInfoItem {
 }
 
 /**
+ * Optional metadata for the PDF /Info dictionary (ISO 32000-1 §14.3.3),
+ * mirrored into the XMP packet for tagged/PDF-A output.
+ */
+export interface DocumentMetadata {
+    readonly author?: string;
+    readonly subject?: string;
+    readonly keywords?: string;
+    /**
+     * `/Info /Trapped` (ISO 32000-1 §14.11.6): whether the document has
+     * been trapped for high-end colour printing. Mirrored to XMP as
+     * `pdf:Trapped`. @since 1.7.0
+     */
+    readonly trapped?: 'True' | 'False' | 'Unknown';
+}
+
+/**
  * Parameters for PDF generation.
  * This is the main input interface for table-centric PDF generation.
  * The consumer builds these params from their own data model.
@@ -259,6 +286,13 @@ export interface PdfParams {
     readonly fontData?: FontData | null;
     /** Array of font entries for multi-font support (primary first). */
     readonly fontEntries?: FontEntry[];
+    /**
+     * Document metadata written to /Info (/Author /Subject /Keywords) and
+     * mirrored into the XMP packet under tagged/PDF-A modes. Omitted →
+     * byte-identical output to previous releases.
+     * @since 1.7.0
+     */
+    readonly metadata?: DocumentMetadata;
 }
 
 // ── Theme / Style Types ──────────────────────────────────────────────
@@ -356,6 +390,28 @@ export interface WorkerGenerationOptions {
     readonly onProgress?: (percent: number) => void;
 }
 
+// ── Conformance Diagnostics (v1.7.0) ─────────────────────────────────
+
+/** Machine-readable conformance diagnostic codes (stable API — additions only). */
+export type PdfDiagnosticCode =
+    /** PDF/A level requested with no `fontEntries` — unembedded standard-14 fonts (ISO 19005 §6.2.11.4.1). (#69) */
+    | 'PDFA_NO_FONT_ENTRIES'
+    /** DeviceCMYK image under a PDF/A claim with an sRGB OutputIntent (ISO 19005-2 §6.2.4.3). */
+    | 'PDFA_DEVICE_CMYK_IMAGE'
+    /** AcroForm fields under a PDF/A claim — form appearances use an unembedded base-14 /Helv font (ISO 19005 §6.2.11.4.1). */
+    | 'PDFA_UNEMBEDDED_FORM_FONT';
+
+/** A single conformance diagnostic surfaced by the builders. */
+export interface PdfDiagnostic {
+    readonly code: PdfDiagnosticCode;
+    /** Human-readable, actionable message (includes the remedy). */
+    readonly message: string;
+    readonly severity: 'warning';
+}
+
+/** Sink for conformance diagnostics. Pass `() => {}` to silence. */
+export type PdfDiagnosticHandler = (diagnostic: PdfDiagnostic) => void;
+
 /** Layout options (all optional, A4 defaults applied). */
 export interface PdfLayoutOptions {
     /** Page width in points (default: 595.28 = A4). */
@@ -388,6 +444,31 @@ export interface PdfLayoutOptions {
      * Default: false (backward compatible).
      */
     readonly tagged?: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u' | 'pdfa3b';
+    /**
+     * Escalate conformance diagnostics (e.g. a PDF/A level requested with
+     * no embedded fonts) to thrown errors instead of warnings, before any
+     * output bytes are produced. Default `false`. @since 1.7.0
+     */
+    readonly strict?: boolean;
+    /**
+     * Sink for conformance diagnostics. Default: `console.warn`, once per
+     * diagnostic code per build. Pass `() => {}` to silence. Ignored when
+     * `strict` is set (diagnostics throw instead). @since 1.7.0
+     */
+    readonly onDiagnostic?: PdfDiagnosticHandler;
+    /**
+     * Professional print-production options: bleed/trim/art/crop page
+     * boxes, printer's marks, and `/UserUnit`. Byte-identical output when
+     * omitted. See {@link PrintOptions}. @since 1.7.0
+     */
+    readonly print?: PrintOptions;
+    /**
+     * Caller-supplied OutputIntent ICC profile for tagged/PDF-A output —
+     * replaces the built-in minimal sRGB profile. RGB profiles only.
+     * Ignored when `tagged` is off (no OutputIntent is emitted there).
+     * See {@link CustomOutputIntent}. @since 1.7.0
+     */
+    readonly outputIntent?: CustomOutputIntent;
     /**
      * Enable PDF encryption (password protection).
      * Uses AES-128 or AES-256 only — no RC4.
@@ -604,6 +685,104 @@ export interface ViewerPreferences {
     readonly direction?: 'l2r' | 'r2l';
     /** Page-scaling default for the Print dialog (`/PrintScaling`). */
     readonly printScaling?: 'none' | 'appDefault';
+    /**
+     * Paper-handling default for the Print dialog (`/Duplex`):
+     * single-sided, or double-sided flipping on the short/long edge.
+     * @since 1.7.0
+     */
+    readonly duplex?: 'simplex' | 'duplexFlipShortEdge' | 'duplexFlipLongEdge';
+    /**
+     * Ask the printer to pick the input tray from the PDF page size
+     * (`/PickTrayByPDFSize`, Windows viewers). @since 1.7.0
+     */
+    readonly pickTrayByPDFSize?: boolean;
+    /**
+     * Default page ranges for the Print dialog (`/PrintPageRange`), as
+     * inclusive 1-based `[first, last]` pairs — e.g. `[[1, 4], [7, 7]]`.
+     * @since 1.7.0
+     */
+    readonly printPageRange?: readonly (readonly [number, number])[];
+    /** Default number of copies for the Print dialog (`/NumCopies`; viewers honour 2–5 per ISO 32000 Table 150, other values are ignored). @since 1.7.0 */
+    readonly numCopies?: number;
+}
+
+// ── Print Production Types (v1.7.0) ──────────────────────────────────
+
+/** A page box rectangle `[x0, y0, x1, y1]` in points, PDF user space. */
+export type PageBox = readonly [number, number, number, number];
+
+/** Printer's-marks options for {@link PrintOptions.marks}. */
+export interface PrinterMarksOptions {
+    /** Draw corner crop (trim) marks. Default `true`. */
+    readonly crop?: boolean;
+    /** Draw registration targets on the four edge midpoints. Default `true`. */
+    readonly registration?: boolean;
+    /** Mark stroke length in points. Default `14`. */
+    readonly length?: number;
+    /** Gap between the TrimBox edge and the mark start, in points. Default `5`. */
+    readonly offset?: number;
+    /** Mark stroke weight in points. Default `0.25` (hairline). */
+    readonly weight?: number;
+}
+
+/**
+ * Professional print-production options (`layout.print`, v1.7.0): page
+ * geometry boxes (ISO 32000-1 §14.11.2), printer's marks (§14.11.3) and
+ * large-format `/UserUnit`. Purely additive — output is byte-identical
+ * when the option is absent. Marks are drawn in RGB black; true
+ * all-separation registration colour arrives with CMYK content support.
+ */
+export interface PrintOptions {
+    /**
+     * Bleed shorthand in points: sets `TrimBox` = MediaBox inset by this
+     * amount on every side and `BleedBox` = MediaBox. Design the page with
+     * `pageWidth`/`pageHeight` = trim size + 2×bleed and let backgrounds
+     * run to the page edge. Mutually exclusive with an explicit `trimBox`.
+     * (3&nbsp;mm ≈ 8.5&nbsp;pt.)
+     */
+    readonly bleed?: number;
+    /** Explicit `/TrimBox` — the finished page size after cutting. */
+    readonly trimBox?: PageBox;
+    /** Explicit `/BleedBox` — content clipped in production. Defaults sensibly with `bleed`. */
+    readonly bleedBox?: PageBox;
+    /** Explicit `/ArtBox` — meaningful-content extent. */
+    readonly artBox?: PageBox;
+    /** Explicit `/CropBox` — the region displayed/printed by viewers. */
+    readonly cropBox?: PageBox;
+    /**
+     * Printer's marks drawn OUTSIDE the TrimBox on every page: `true` for
+     * crop + registration marks with professional defaults, or a
+     * {@link PrinterMarksOptions} object. Requires a TrimBox (explicit or
+     * via `bleed`).
+     */
+    readonly marks?: boolean | PrinterMarksOptions;
+    /**
+     * `/UserUnit`: size of one user-space unit in multiples of 1/72 inch
+     * (1–75 000), for pages larger than the 14 400-unit limit (banners,
+     * plans). Requires PDF 1.6+ — the header is raised to `%PDF-1.7` when
+     * needed; forbidden under `tagged: 'pdfa1b'` (PDF/A-1 is PDF 1.4).
+     */
+    readonly userUnit?: number;
+}
+
+/**
+ * Caller-supplied OutputIntent for tagged/PDF-A documents (v1.7.0):
+ * replaces the built-in minimal sRGB profile with a real ICC profile
+ * (e.g. sRGB IEC61966-2.1 v4, Adobe RGB). RGB profiles only — pdfnative
+ * emits RGB content; a CMYK intent would contradict it (veraPDF rejects
+ * mismatches). Omitted → the historical built-in profile, byte-identical.
+ */
+export interface CustomOutputIntent {
+    /** Raw ICC profile bytes (must declare an RGB data colour space). */
+    readonly iccProfile: Uint8Array;
+    /** `/OutputConditionIdentifier` — e.g. `"sRGB IEC61966-2.1"`. */
+    readonly outputConditionIdentifier: string;
+    /** `/RegistryName` — default `"http://www.color.org"`. */
+    readonly registryName?: string;
+    /** `/OutputCondition` — human-readable condition name. */
+    readonly outputCondition?: string;
+    /** `/Info` — additional human-readable information. */
+    readonly info?: string;
 }
 
 // ── Layout Inspection Types ──────────────────────────────────────────

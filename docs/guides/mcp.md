@@ -1,6 +1,6 @@
 # pdfnative-mcp — AI Client Integration Guide
 
-> **Tracks the latest published `pdfnative-mcp`** (v1.5.0, built on pdfnative 1.6.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
+> **Tracks the latest published `pdfnative-mcp`** (v1.5.0, built on pdfnative 1.7.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
 
 [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is an **MCP server** that exposes the full pdfnative library to any AI client supporting the [Model Context Protocol](https://modelcontextprotocol.io) — Claude Desktop, Cursor, Continue, Zed, ChatGPT, and more.
 
@@ -651,7 +651,7 @@ Split the content across multiple tool calls or reduce image/barcode count.
 
 ## Release history
 
-The current release is **v1.5.0** (24 tools, built on pdfnative 1.6.0 — see the header note). Per-release notes, oldest first:
+The current release is **v1.5.0** (24 tools, built on pdfnative 1.7.0 — see the header note). Per-release notes, oldest first:
 
 ### What's new in v1.0.0
 
@@ -726,7 +726,7 @@ v1.4.0 upgrades the engine to **pdfnative 1.5.0**, brings the pdfnative **AI-gov
 
 ### What's new in v1.5.0
 
-v1.5.0 upgrades the engine to **pdfnative 1.6.0** and takes the catalogue to **24 tools**, closing the read/modify loop on documents the assistant did not create.
+v1.5.0 upgrades the engine to **pdfnative 1.7.0** and takes the catalogue to **24 tools**, closing the read/modify loop on documents the assistant did not create.
 
 - **Five new tools:**
   - `add_chart` — bar, horizontal-bar, line, pie and donut charts drawn as **native PDF vector paths**. No rasterisation and no image round-trip, so the output stays sharp at any zoom and tags as `/Figure` with alt text. If you were previously asking an agent to render a chart to PNG and push it through `embed_image`, stop — this replaces that.

@@ -23,6 +23,7 @@ import { shapeDevanagariText } from '../shaping/devanagari-shaper.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
 import { resolveBidiRuns, containsRTL, reverseString, stripBidiControls } from '../shaping/bidi.js';
+import { hasSequenceTriggers, matchEmojiSequences } from '../shaping/emoji-sequences.js';
 import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil, containsTelugu, containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsDevanagari } from '../shaping/script-registry.js';
 import { createColorEmojiCollector } from './color-emoji.js';
 
@@ -89,6 +90,39 @@ function splitArabicNonArabic(text: string, fd: FontData): ArabicSegment[] {
  *   to ensure full WinAnsi range is covered.
  */
 function buildTextRunsWithFallback(
+    text: string,
+    fontRef: string,
+    fd: FontData,
+    sz: number,
+    trackGid: (ref: string, gid: number) => void,
+    pdfA: boolean = false,
+): TextRun[] {
+    // Emoji-sequence pre-pass (v1.7.0): fonts carrying a `sequences` table
+    // resolve flag / ZWJ sequences to a single colour ligature glyph before
+    // the per-codepoint loop. Text without triggers — and every font
+    // without the table — takes the historical path byte-identically.
+    if (fd.sequences && hasSequenceTriggers(text)) {
+        const upm = fd.metrics.unitsPerEm;
+        const result: TextRun[] = [];
+        for (const piece of matchEmojiSequences(text, fd)) {
+            if (piece.gid !== null) {
+                trackGid(fontRef, piece.gid);
+                const gw = fd.widths[piece.gid] !== undefined ? fd.widths[piece.gid] : fd.defaultWidth;
+                result.push({
+                    text: piece.text, fontRef, fontData: fd, shaped: null,
+                    hexStr: `<${piece.gid.toString(16).toUpperCase().padStart(4, '0')}>`,
+                    widthPt: gw * sz / upm,
+                });
+            } else {
+                result.push(...buildTextRunsCore(piece.text, fontRef, fd, sz, trackGid, pdfA));
+            }
+        }
+        return result;
+    }
+    return buildTextRunsCore(text, fontRef, fd, sz, trackGid, pdfA);
+}
+
+function buildTextRunsCore(
     text: string,
     fontRef: string,
     fd: FontData,

@@ -78,12 +78,16 @@ Input (params + options)
 types/ → core/ ← fonts/ ← shaping/ ← worker/
               ↑
           crypto/ (near-standalone, imports core/pdf-encrypt for sha256)
-          parser/ (standalone, imports core/compress for inflate)
+          parser/ (imports core/pdf-compress, pdf-encrypt, pdf-tags)
 ```
 
-- **No circular dependencies** — strict unidirectional flow
+- **No circular dependencies** — strict unidirectional flow, with **one
+  sanctioned, documented reverse edge**: the signature-workflow core modules
+  (`pdf-dss`, `pdf-sig-utils`, `pdf-doc-timestamp`, `pdf-sig-placeholder`,
+  `pdf-form-fill`) import the parser to read existing documents before
+  appending incremental revisions
 - **crypto/** is near-standalone — its only cross-module import is `sha256` from `core/pdf-encrypt.ts` (re-exported by `crypto/sha.ts`)
-- **parser/** imports only from `core/pdf-compress.ts` for FlateDecode inflate
+- **parser/** imports from `core/pdf-compress.ts` (FlateDecode), `core/pdf-encrypt.ts` (decryption, incremental `/ID`) and `core/pdf-tags.ts` (XMP resync in `updateMetadata`)
 - **fonts/** imports from `shaping/` for script detection
 - **shaping/** imports from `fonts/` encoding context (via `core/encoding-context.ts` to break cycle)
 

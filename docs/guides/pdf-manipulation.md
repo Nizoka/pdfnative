@@ -218,6 +218,32 @@ import { buildDocumentPDFStreamTrue, streamToFile } from 'pdfnative';
 await streamToFile(buildDocumentPDFStreamTrue(params), 'report.pdf');
 ```
 
+## Updating metadata in place
+
+> **New in v1.7.0.** `PdfModifier.updateMetadata()` rewrites a document's
+> metadata as a non-destructive incremental revision — no re-serialisation,
+> existing signatures over earlier revisions stay intact.
+
+```ts
+import { openPdf, createModifier } from 'pdfnative';
+
+const modifier = createModifier(openPdf(bytes));
+modifier.updateMetadata({
+  title: 'Q3 report (final)',
+  author: 'Finance',
+  keywords: 'quarterly, revenue',
+  // modDate: new Date('2026-08-21T00:00:00Z'),  // pin for reproducible bytes
+});
+const updated = modifier.save();
+```
+
+Only the fields you pass change; the rest of `/Info` is preserved. `/ModDate`
+is always refreshed (pass `modDate` to pin it). When the document carries an
+XMP packet, it is resynchronised in the same revision — `dc:title`,
+`dc:creator`, `dc:description`, `pdf:Keywords`, `xmp:ModifyDate` and
+`xmp:MetadataDate` — while `xmp:CreateDate` and any `pdfaid:*` conformance
+claim are preserved, so Info↔XMP parity holds for PDF/A documents.
+
 ## Safety & limits
 
 - **Encrypted input is decrypted on ingest** (v1.6.0) when a valid password is

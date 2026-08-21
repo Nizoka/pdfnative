@@ -277,5 +277,19 @@ describe('verify-docs', () => {
                 expect(run.status).toBe(1);
             });
         }, 120_000);
+
+        it('playground-syntax rejects an inline module script that does not parse', () => {
+            withSandbox((dir) => {
+                // A truncated statement is the classic hand-edit accident: the
+                // page still serves, the switcher still renders, but the module
+                // never executes — a silently dead playground.
+                const p = join(dir, 'docs', 'playgrounds', 'charts.html');
+                const text = readFileSync(p, 'utf8');
+                writeFileSync(p, text.replace(/<script type="module">/, '<script type="module">\nconst broken = {;\n'));
+                const run = runVerifier(dir);
+                expect(run.output).toContain('playground-syntax');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
     });
 });

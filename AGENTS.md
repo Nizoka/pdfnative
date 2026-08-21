@@ -8,7 +8,7 @@ Guidance for AI coding agents (Cursor, Aider, Claude Code, Continue, Zed, Cline,
 
 pdfnative is a **zero-runtime-dependency** TypeScript library that generates ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) compliant PDFs. Pure native — no Cairo, no PDFKit, no node-forge, no fontkit, no anything.
 
-Quality bar: GAFAM-grade. 2396+ tests, 95%+ statement coverage measured at v1.6.0 (CI enforces ≥88%), blocking veraPDF validation in CI, SLSA provenance on npm.
+Quality bar: GAFAM-grade. 2664+ tests, 95%+ statement coverage measured at v1.6.0 (CI enforces ≥88%), blocking veraPDF validation in CI, SLSA provenance on npm.
 
 Since v1.6.0 the parser side also **decrypts** (Standard Security Handler, RC4 + AES-128/256), **streams** page-tree merge/split/extract, **fills & flattens** AcroForms — including encrypted sources via encrypted incremental update — **extracts text** with positions (`extractText`), renders native **vector charts**, and **re-encrypts** output (`MergeOptions.encrypt`). All exported from `src/index.ts` like everything else.
 
@@ -16,10 +16,10 @@ Since v1.6.0 the parser side also **decrypts** (Standard Security Handler, RC4 +
 
 ```bash
 npm run build              # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test               # vitest run (2396+ tests)
+npm run test               # vitest run (2664+ tests)
 npm run typecheck:all      # src/ + tests/ + scripts/
 npm run lint               # eslint
-npm run test:generate      # produce ~228 sample PDFs → test-output/
+npm run test:generate      # produce ~241 sample PDFs → test-output/
 npm run validate:pdfa      # local veraPDF run
 ```
 
@@ -30,7 +30,7 @@ npx pdfnative-build-font fonts/ttf/MyFont.ttf fonts/my-font-data.js  # TTF → d
 npx pdfnative-build-emoji-font --download --all --out emoji-data.js  # full colour-emoji coverage
 ```
 
-Always run `npm run typecheck:all && npm run test && npm run lint` before suggesting a commit.
+Always run `npm run typecheck:all && npm run test && npm run lint` before suggesting a commit. When samples or PDF/A behaviour changed, also run `npm run test:generate && npm run validate:pdfa` (veraPDF auto-detects every `pdfaid:part`-claiming sample; a coverage canary enforces `declared.pdfaSamples` in `docs/assets/ecosystem.json`). When docs/, playgrounds, README or llms files changed, also run `npm run verify:docs`.
 
 ## AI-agent governance (since v1.5.0)
 
@@ -42,7 +42,7 @@ This repository enforces a **human-in-the-loop** policy for AI agents. Before op
 - **Zero deps.** Never add a runtime dependency to `package.json`. Dev deps require justification.
 - **Single entry point.** All public API surfaces are re-exported from `src/index.ts`.
 - **Types-first.** Domain types live in `src/types/`.
-- **No `console.log`** in library code (only in `tools/` and `scripts/`).
+- **No `console.log`** in library code (only in `tools/` and `scripts/`). `console.warn` is allowed **only** inside `src/core/pdf-diagnostics.ts` — the single sanctioned sink for conformance diagnostics (silence or redirect via `onDiagnostic`, escalate via `strict`).
 - **No `eval` / `Function()` / dynamic code execution.**
 - **Commit style:** Conventional Commits (`feat(scope):`, `fix(scope):`, `chore:`, `docs:`, `test:`, `refactor:`).
 
@@ -55,6 +55,11 @@ types → core ← fonts ← shaping ← worker
 crypto is standalone
 parser depends on core/compress for inflate
 ```
+
+One sanctioned reverse edge: incremental-update features in `core/`
+(`pdf-sig-placeholder`, `pdf-form-fill`, `pdf-dss`, `pdf-sig-utils`,
+`pdf-doc-timestamp`) import the `parser/` reader/modifier — they operate on
+existing PDFs by design. Keep new reverse edges to that feature family.
 
 See [.github/copilot-instructions.md](.github/copilot-instructions.md) §Architecture for the full module map.
 
@@ -96,8 +101,8 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) §Archite
 
 ## Ecosystem context
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) v1.3.0 — terminal wrapper (render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern). Built on pdfnative 1.6.0. Coordinates via explicit pdfnative version pin in its `package.json`.
-- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.5.0 — Model Context Protocol server exposing 24 AI tools (adds `add_chart`, `read_form_fields`/`fill_form` and `encrypt_pdf`/`decrypt_pdf` on top of the v1.4.0 annotation and governance tools). Built on pdfnative 1.6.0. Same coordination model.
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) v1.3.0 — terminal wrapper (render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern). Pins pdfnative `^1.6.0` in its `package.json` (semver-accepts 1.7.0); coordinates via that explicit pin.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.5.0 — Model Context Protocol server exposing 24 AI tools (adds `add_chart`, `read_form_fields`/`fill_form` and `encrypt_pdf`/`decrypt_pdf` on top of the v1.4.0 annotation and governance tools). Pins pdfnative `^1.6.0` (semver-accepts 1.7.0). Same coordination model.
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.1.0 — React renderer: declarative JSX compiled on-device to pdfnative blocks via a custom reconciler. React 19 is a peer dependency of *that* package only — pdfnative itself stays zero-dependency. Same coordination model.
 
 Downstream-impacting changes (new public APIs, removed APIs, behaviour shifts) must be documented in the **Downstream integration notes** section of the relevant `release-notes/vX.Y.Z.md`.

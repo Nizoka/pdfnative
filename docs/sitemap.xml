@@ -77,7 +77,7 @@
     <loc>https://pdfnative.dev/guides/pdfa.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/pdfa.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/pdfa.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -93,7 +93,23 @@
     <loc>https://pdfnative.dev/guides/signatures.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/signatures.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/signatures.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/ltv.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/ltv.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/ltv.html"/>
+    <lastmod>2026-08-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/print.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/print.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/print.html"/>
+    <lastmod>2026-08-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -109,7 +125,7 @@
     <loc>https://pdfnative.dev/guides/colour-emoji.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/colour-emoji.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/colour-emoji.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -117,7 +133,7 @@
     <loc>https://pdfnative.dev/guides/colour-emoji-cli.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/colour-emoji-cli.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/colour-emoji-cli.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -149,7 +165,7 @@
     <loc>https://pdfnative.dev/guides/charts.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/charts.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/charts.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -221,7 +237,7 @@
     <loc>https://pdfnative.dev/guides/troubleshooting.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/troubleshooting.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/troubleshooting.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

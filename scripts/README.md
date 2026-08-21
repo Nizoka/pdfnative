@@ -1,6 +1,12 @@
 # scripts/ – Sample PDF Generation
 
-Generates 228 sample PDFs (44 generators) for visual inspection across all supported languages, features, and edge cases.
+Generates 242 sample PDFs (48 generators) for visual inspection across all supported languages, features, and edge cases.
+
+Every sample that declares PDF/A conformance (`pdfaid:part` in XMP) is
+automatically validated by `npm run validate:pdfa` (veraPDF) — no
+registration needed. When adding or removing a PDF/A-claiming sample, bump
+`declared.pdfaSamples` in `docs/assets/ecosystem.json`; a coverage canary
+fails the validation run on any drift.
 
 ## Quick Start
 

@@ -54,14 +54,60 @@ Then open:
 ## Test
 
 ```bash
-npm run test           # vitest run (2396+ tests)
+npm run test           # vitest run (2665+ tests)
 npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (95%+ stmts measured at the v1.6.0 release; CI enforces ≥88%)
-npm run test:generate  # Generate ~228 sample PDFs → test-output/
+npm run test:generate  # Generate 242 sample PDFs → test-output/
+npm run validate:pdfa  # veraPDF validation of every PDF/A-claiming sample (see below)
+npm run verify:docs    # 17 offline rules over docs/, playgrounds, README, llms files
 npm run bench          # Performance benchmarks (vitest bench)
 ```
 
 All new code must include tests. Coverage thresholds (vitest.config.ts): statements 88%, branches 80%, functions 85%, lines 90%.
+
+## PDF/A validation (veraPDF)
+
+pdfnative's PDF/A claims are backed by the official reference validator,
+[veraPDF](https://verapdf.org). `npm run validate:pdfa` scans `test-output/`
+(run `npm run test:generate` first), **auto-detects** every PDF that declares
+`pdfaid:part` in its XMP — currently the 18 PDF/A-claiming samples — and
+validates each against its declared profile (1b/2b/2u/3b). Detection is
+automatic: a new sample that claims PDF/A is validated without registering
+anything, and a coverage canary fails the run if the detected count drifts
+from `declared.pdfaSamples` in `docs/assets/ecosystem.json` (bump it when
+adding or removing a claiming sample).
+
+Without veraPDF installed the script skips with exit 0 and prints install
+hints — local development never blocks. **CI is blocking**: the same script
+runs with a pinned veraPDF (1.30.2) on every PR touching the engine
+(`.github/workflows/verapdf.yml`) and again before every npm publish
+(`.github/workflows/publish.yml`).
+
+Installing veraPDF locally (any OS, Java 8+ required):
+
+```bash
+# macOS
+brew install --cask verapdf
+
+# Linux / Windows (headless, no GUI — same mechanism as CI)
+curl -fsSL -o installer.zip https://software.verapdf.org/rel/1.30/verapdf-greenfield-1.30.2-installer.zip
+unzip installer.zip && cd verapdf-greenfield-*
+cat > auto-install.xml <<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<AutomatedInstallation langpack="eng">
+  <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
+  <com.izforge.izpack.panels.target.TargetPanel id="install_dir"><installpath>/opt/verapdf</installpath></com.izforge.izpack.panels.target.TargetPanel>
+  <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select"><pack index="0" name="veraPDF GUI" selected="true"/><pack index="1" name="veraPDF Mac and *nix Scripts" selected="true"/><pack index="2" name="veraPDF Documentation" selected="false"/><pack index="3" name="veraPDF Sample Plugins" selected="false"/></com.izforge.izpack.panels.packs.PacksPanel>
+  <com.izforge.izpack.panels.install.InstallPanel id="install"/>
+  <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
+</AutomatedInstallation>
+XML
+java -jar verapdf-izpack-installer-*.jar auto-install.xml
+```
+
+Then expose it: add the install dir to `PATH`, or set `VERAPDF_HOME` to it
+(`verapdf`/`verapdf.bat` is picked up from the dir root or its `bin/`).
+Windows note: the `.bat` launcher is fully supported since v1.7.0.
 
 ## Lint & Type Check
 
@@ -99,8 +145,8 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # 26 pre-built font-data modules (22 scripts + Latin + math + mono and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (44 generators, ~228 PDFs)
-tests/            # 2396+ tests (105 files: unit + integration + fuzz + parser), mirrors src/ structure
+scripts/          # Modular sample PDF generation (48 generators, 242 PDFs)
+tests/            # 2665+ tests (122 files: unit + integration + fuzz + parser), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -123,8 +169,10 @@ bench/            # Performance benchmarks (vitest bench)
 - [ ] New code has tests
 - [ ] No `any` types introduced
 - [ ] No new runtime dependencies added
+- [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A validation](#pdfa-validation-verapdf); new PDF/A-claiming samples bump `declared.pdfaSamples`)
+- [ ] If docs/, playgrounds, README or llms files changed: `npm run verify:docs` passes
 - [ ] CHANGELOG.md updated if user-facing changes
-- [ ] For releases: `release-notes/vX.Y.Z.md` created from [release-notes/TEMPLATE.md](release-notes/TEMPLATE.md)
+- [ ] For releases: `release-notes/vX.Y.Z.md` created from [release-notes/TEMPLATE.md](release-notes/TEMPLATE.md), and the full gate suite passes locally: `typecheck:all`, `lint`, `test:coverage`, `build`, `test:generate`, `validate:pdfa` (all PDF/A-claiming samples compliant), `verify:docs`
 
 ## Commit Messages
 

@@ -82,7 +82,18 @@ export type {
     WorkerInputMessage,
     WorkerOutputMessage,
     WorkerGenerationOptions,
+    PdfDiagnostic,
+    PdfDiagnosticCode,
+    PdfDiagnosticHandler,
+    PageBox,
+    PrintOptions,
+    PrinterMarksOptions,
+    CustomOutputIntent,
 } from './types/pdf-types.js';
+
+// ── Core — Print Production (v1.7.0) ────────────────────────────────
+export { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './core/pdf-print.js';
+export type { ResolvedPrintBoxes } from './core/pdf-print.js';
 
 export type {
     HeadingBlock,
@@ -184,9 +195,19 @@ export {
 
 // ── Core — Digital Signatures ───────────────────────────────────────
 export type { PdfSignOptions, SigDictMetadata } from './core/pdf-signature.js';
-export { buildSigDict, signPdfBytes, estimateContentsSize } from './core/pdf-signature.js';
+export { buildSigDict, buildDocTimeStampDict, signPdfBytes, estimateContentsSize } from './core/pdf-signature.js';
 export type { AddSignaturePlaceholderOptions } from './core/pdf-sig-placeholder.js';
 export { addSignaturePlaceholder } from './core/pdf-sig-placeholder.js';
+
+// ── Core — LTV / PAdES (v1.7.0) ─────────────────────────────────────
+export type { PdfSignTimestampOptions } from './core/pdf-sign-timestamp.js';
+export { signPdfBytesWithTimestamp } from './core/pdf-sign-timestamp.js';
+export type { PdfSignatureInfo } from './core/pdf-sig-utils.js';
+export { listSignatures } from './core/pdf-sig-utils.js';
+export type { LtvData, CollectLtvOptions } from './core/pdf-dss.js';
+export { collectValidationInfo, embedValidationInfo, addValidationInfo, vriKeyForContents } from './core/pdf-dss.js';
+export type { AddDocumentTimestampOptions } from './core/pdf-doc-timestamp.js';
+export { addDocumentTimestamp } from './core/pdf-doc-timestamp.js';
 
 // ── Core — Streaming Output ─────────────────────────────────────────
 export type { StreamOptions, StreamToFileResult } from './core/pdf-stream-writer.js';
@@ -200,20 +221,34 @@ export {
 } from './core/pdf-stream-writer.js';
 
 // ── Crypto — Hashing, ASN.1, RSA, ECDSA, X.509, CMS ────────────────
-export { sha384, sha512, hmacSha256 } from './crypto/sha.js';
+export { sha1, sha384, sha512, hmacSha256 } from './crypto/sha.js';
 export type { Asn1Node } from './crypto/asn1.js';
-export { derDecode, derSequence, derInteger, derOid, derOctetString, derBitString } from './crypto/asn1.js';
-export type { RsaPublicKey, RsaPrivateKey } from './crypto/rsa.js';
+export { derDecode, derSequence, derInteger, derOid, derOctetString, derBitString, derSetOf, derGeneralizedTime } from './crypto/asn1.js';
+export type { RsaPublicKey, RsaPrivateKey, RsaDigest } from './crypto/rsa.js';
 export { rsaSign, rsaVerify, rsaSignHash, rsaVerifyHash, parseRsaPrivateKey, parseRsaPublicKey } from './crypto/rsa.js';
 export type { EcPublicKey, EcPrivateKey } from './crypto/ecdsa.js';
 export { ecdsaSign, ecdsaVerify, ecPublicKeyFromPrivate, encodeEcPublicKey, decodeEcPublicKey } from './crypto/ecdsa.js';
 export type { X509Name, X509Certificate } from './crypto/x509.js';
-export { parseCertificate, verifyCertSignature, isSelfSigned } from './crypto/x509.js';
-export type { SignatureAlgorithm, CmsSignOptions } from './crypto/cms.js';
+export { parseCertificate, verifyCertSignature, isSelfSigned, certHasEku } from './crypto/x509.js';
+export type { SignatureAlgorithm, CmsSignOptions, CmsDigestAlgorithm, CmsProfile } from './crypto/cms.js';
 export { buildCmsSignedData, estimateCmsSize } from './crypto/cms.js';
 export type { CryptoProvider } from './crypto/crypto-provider.js';
 export { setCryptoProvider, getCryptoProvider } from './crypto/crypto-provider.js';
 export { initCrypto } from './crypto/index.js';
+
+// ── Crypto — LTV building blocks (v1.7.0) ───────────────────────────
+export type { ParsedCms } from './crypto/cms-utils.js';
+export { parseCmsSignedData, addUnsignedAttribute, buildAttribute } from './crypto/cms-utils.js';
+export type { TimestampRequestOptions, TimestampResponse, TstInfo } from './crypto/rfc3161.js';
+export { buildTimestampRequest, parseTimestampResponse, parseTimestampToken, verifyTimestampImprint } from './crypto/rfc3161.js';
+export type { OcspRequestOptions, OcspCertStatus, OcspResponse } from './crypto/ocsp.js';
+export { buildOcspRequest, parseOcspResponse } from './crypto/ocsp.js';
+export type { CrlRevokedEntry, ParsedCrl } from './crypto/crl.js';
+export { parseCrl, isSerialRevoked } from './crypto/crl.js';
+export type { TimestampProvider } from './crypto/timestamp-provider.js';
+export { setTimestampProvider, getTimestampProvider } from './crypto/timestamp-provider.js';
+export type { RevocationProvider } from './crypto/revocation-provider.js';
+export { setRevocationProvider, getRevocationProvider } from './crypto/revocation-provider.js';
 
 export { downloadBlob, toBytes, slugify } from './core/pdf-stream.js';
 
@@ -295,7 +330,7 @@ export type { ParsedAnnotation } from './parser/pdf-reader.js';
 export { openPdf } from './parser/pdf-reader.js';
 export type { DecryptionContext, CryptFilterMethod } from './parser/pdf-decrypt.js';
 export { PdfPasswordError, PdfEncryptionUnsupportedError } from './parser/pdf-decrypt.js';
-export type { PdfModifier } from './parser/pdf-modifier.js';
+export type { PdfModifier, PdfMetadataUpdate } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
 export type { PageRange, MergeOptions, PdfSourceInput, StreamMergeOptions, SplitPdfStream } from './parser/pdf-pagetree.js';
 export { mergePdfs, splitPdf, extractPages, streamMergedPdfs, streamExtractPages, streamSplitPdf } from './parser/pdf-pagetree.js';

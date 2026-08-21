@@ -5,7 +5,7 @@
  * Supports headings, paragraphs, lists, tables, spacers, and page breaks.
  */
 
-import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor } from './pdf-types.js';
+import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor, DocumentMetadata } from './pdf-types.js';
 import type { BarcodeFormat, QRErrorLevel } from '../core/pdf-barcode.js';
 import type { SvgRenderOptions } from '../core/pdf-svg.js';
 import type { FormFieldType } from '../core/pdf-form.js';
@@ -322,10 +322,26 @@ export interface ChartSeries {
     readonly values: readonly number[];
     /** Optional colour override (hex, tuple, or PDF RGB). */
     readonly color?: PdfColor;
+    /**
+     * X positions for `scatter` charts (and `line`/`area` on a non-category
+     * x-axis): one entry per value. Numbers are used as-is (epoch
+     * milliseconds when `xAxis.type` is `'time'`); strings are parsed as
+     * ISO-8601 dates. Ignored on category axes.
+     * @since 1.7.0
+     */
+    readonly xValues?: readonly (number | string)[];
+    /**
+     * Bind this series to the left (default) or right value axis. A right
+     * axis appears only when at least one series selects it; configure its
+     * range with {@link ChartBlock.axis2}. Cartesian charts only.
+     * @since 1.7.0
+     */
+    readonly yAxis?: 'left' | 'right';
 }
 
-/** Supported chart types (v1.6.0). */
-export type ChartType = 'bar' | 'barH' | 'line' | 'pie' | 'donut';
+/** Supported chart types (v1.6.0; `stackedBar`/`stackedBarH`/`area`/`scatter` since v1.7.0). */
+export type ChartType = 'bar' | 'barH' | 'line' | 'pie' | 'donut'
+    | 'stackedBar' | 'stackedBarH' | 'area' | 'scatter';
 
 /**
  * Chart block — native vector charts rendered as pure PDF path operators
@@ -350,13 +366,63 @@ export interface ChartBlock {
     readonly title?: string;
     /** Legend placement. Default `'bottom'` for multi-series/pie, else `'none'`. */
     readonly legend?: 'bottom' | 'none';
-    /** Value-axis options (bar/line). */
+    /** Value-axis options (bar/line). `scale` since v1.7.0. */
     readonly axis?: {
         readonly yMin?: number;
         readonly yMax?: number;
         readonly ticks?: number;
         readonly grid?: boolean;
+        /** Value-axis scale. `'log'` requires strictly positive values. Default `'linear'`. @since 1.7.0 */
+        readonly scale?: 'linear' | 'log';
     };
+    /**
+     * Secondary (right) value axis, used by series with `yAxis: 'right'`.
+     * Rendered only when at least one series binds to it. @since 1.7.0
+     */
+    readonly axis2?: {
+        readonly yMin?: number;
+        readonly yMax?: number;
+        readonly ticks?: number;
+        readonly scale?: 'linear' | 'log';
+    };
+    /**
+     * X-axis configuration. Default `'category'` (equal slots). `'linear'`
+     * and `'time'` position points by {@link ChartSeries.xValues} — `'time'`
+     * parses ISO-8601 strings / epoch milliseconds and formats tick labels
+     * in UTC. Applies to `scatter` (required) and `line`/`area` (optional).
+     * @since 1.7.0
+     */
+    readonly xAxis?: {
+        readonly type?: 'category' | 'linear' | 'time';
+        readonly min?: number | string;
+        readonly max?: number | string;
+        readonly ticks?: number;
+        readonly grid?: boolean;
+    };
+    /**
+     * Per-point value labels. `true` uses the tick formatter; an object
+     * customises decimals and adds a prefix/suffix (e.g. `{ suffix: '%' }`).
+     * @since 1.7.0
+     */
+    readonly dataLabels?: boolean | {
+        readonly decimals?: number;
+        readonly prefix?: string;
+        readonly suffix?: string;
+    };
+    /**
+     * Draw every Nth category label. Default: automatic — the smallest
+     * stride at which measured labels no longer overlap; `1` forces every
+     * label. Applies to `bar`/`stackedBar`/`line`/`area` x-axis labels.
+     * @since 1.7.0
+     */
+    readonly labelStride?: number;
+    /**
+     * Rotate category labels counter-clockwise by this many degrees (0–90,
+     * typical 45) — labels are right-aligned to their tick and read upward
+     * toward it. Disables auto-stride unless `labelStride` is also set.
+     * @since 1.7.0
+     */
+    readonly labelRotation?: number;
     /** Draw point markers on line series. Default `false`. */
     readonly markers?: boolean;
     /** Palette override (per-series or per-slice). */
@@ -385,12 +451,12 @@ export type DocumentBlock =
 
 // ── Document Parameters ──────────────────────────────────────────────
 
-/** Metadata for the PDF /Info dictionary. */
-export interface DocumentMetadata {
-    readonly author?: string;
-    readonly subject?: string;
-    readonly keywords?: string;
-}
+/**
+ * Metadata for the PDF /Info dictionary.
+ * Defined in pdf-types (shared with {@link PdfParams}); re-exported here
+ * for backwards compatibility.
+ */
+export type { DocumentMetadata } from './pdf-types.js';
 
 /**
  * A document outline (bookmark) entry — ISO 32000-1 §12.3.3.

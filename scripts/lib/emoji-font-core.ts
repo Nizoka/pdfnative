@@ -30,6 +30,12 @@ export interface EmojiModuleStats {
     readonly sizeKb: number;
     /** The codepoints that had no colour glyph (for diagnostics). */
     readonly missingCodepoints: readonly number[];
+    /** Multi-codepoint sequences resolved to a colour ligature glyph. (v1.7.0) */
+    readonly keptSequences: number;
+    /** Requested sequences the font's GSUB could not resolve. (v1.7.0) */
+    readonly missingSequences: number;
+    /** The unresolved sequences (for diagnostics). (v1.7.0) */
+    readonly missingSequenceList: readonly (readonly number[])[];
 }
 
 export interface EmojiModuleResult {
@@ -119,14 +125,214 @@ export function parseCmap(view: DataView, base: number): Map<number, number> {
     return cmap;
 }
 
+// ── GSUB LigatureSubst (LookupType 4 + Extension 7) ──────────────────
+
+/** Read a coverage table (format 1 glyph list or format 2 ranges). */
+function readCoverage(view: DataView, offset: number): number[] {
+    const format = view.getUint16(offset);
+    const glyphs: number[] = [];
+    if (format === 1) {
+        const count = view.getUint16(offset + 2);
+        for (let i = 0; i < count; i++) glyphs.push(view.getUint16(offset + 4 + i * 2));
+    } else if (format === 2) {
+        const rangeCount = view.getUint16(offset + 2);
+        for (let i = 0; i < rangeCount; i++) {
+            const rec = offset + 4 + i * 6;
+            const start = view.getUint16(rec);
+            const end = view.getUint16(rec + 2);
+            for (let g = start; g <= end; g++) glyphs.push(g);
+        }
+    }
+    return glyphs;
+}
+
+/** An ordered GSUB substitution lookup usable for sequence resolution. */
+export type GsubSequenceLookup =
+    | { readonly kind: 'single'; readonly map: Map<number, number> }
+    | { readonly kind: 'multiple'; readonly map: Map<number, readonly number[]> }
+    | { readonly kind: 'ligature'; readonly ligs: Map<number, number[][]> };
+
+/**
+ * Parse the GSUB lookups relevant to emoji sequence composition — Single
+ * (type 1), Multiple (type 2), and Ligature (type 4), each possibly wrapped
+ * in a type-7 Extension — preserving lookup order. Colour-emoji fonts chain
+ * them: e.g. Noto Color Emoji first maps regional indicators through a
+ * single substitution, then ligates the substituted pair into the flag.
+ */
+export function parseSequenceLookups(ttf: Uint8Array): GsubSequenceLookup[] {
+    const view = new DataView(ttf.buffer, ttf.byteOffset, ttf.byteLength);
+    const tables = readTables(view);
+    const lookups: GsubSequenceLookup[] = [];
+    const gsubRec = tables['GSUB'];
+    if (!gsubRec) return lookups;
+    const base = gsubRec.offset;
+    const lookupListBase = base + view.getUint16(base + 8);
+    const lookupCount = view.getUint16(lookupListBase);
+
+    const parseSingle = (stBase: number, map: Map<number, number>): void => {
+        const format = view.getUint16(stBase);
+        const coverage = readCoverage(view, stBase + view.getUint16(stBase + 2));
+        if (format === 1) {
+            const delta = view.getInt16(stBase + 4);
+            for (const gid of coverage) map.set(gid, (gid + delta) & 0xFFFF);
+        } else if (format === 2) {
+            const glyphCount = view.getUint16(stBase + 4);
+            for (let gi = 0; gi < glyphCount && gi < coverage.length; gi++) {
+                map.set(coverage[gi], view.getUint16(stBase + 6 + gi * 2));
+            }
+        }
+    };
+
+    const parseMultiple = (stBase: number, map: Map<number, readonly number[]>): void => {
+        if (view.getUint16(stBase) !== 1) return;
+        const coverage = readCoverage(view, stBase + view.getUint16(stBase + 2));
+        const seqCount = view.getUint16(stBase + 4);
+        for (let si = 0; si < seqCount && si < coverage.length; si++) {
+            const seqBase = stBase + view.getUint16(stBase + 6 + si * 2);
+            const glyphCount = view.getUint16(seqBase);
+            const out: number[] = [];
+            for (let gi = 0; gi < glyphCount; gi++) out.push(view.getUint16(seqBase + 2 + gi * 2));
+            map.set(coverage[si], out);
+        }
+    };
+
+    const parseLig = (stBase: number, ligs: Map<number, number[][]>): void => {
+        if (view.getUint16(stBase) !== 1) return;
+        const coverage = readCoverage(view, stBase + view.getUint16(stBase + 2));
+        const ligSetCount = view.getUint16(stBase + 4);
+        for (let lsi = 0; lsi < ligSetCount && lsi < coverage.length; lsi++) {
+            const firstGid = coverage[lsi];
+            const ligSetBase = stBase + view.getUint16(stBase + 6 + lsi * 2);
+            const ligCount = view.getUint16(ligSetBase);
+            for (let lgi = 0; lgi < ligCount; lgi++) {
+                const ligBase = ligSetBase + view.getUint16(ligSetBase + 2 + lgi * 2);
+                const ligatureGlyph = view.getUint16(ligBase);
+                const componentCount = view.getUint16(ligBase + 2);
+                const entry: number[] = [ligatureGlyph];
+                for (let ci = 0; ci < componentCount - 1; ci++) {
+                    entry.push(view.getUint16(ligBase + 4 + ci * 2));
+                }
+                const list = ligs.get(firstGid);
+                if (list) list.push(entry); else ligs.set(firstGid, [entry]);
+            }
+        }
+    };
+
+    for (let li = 0; li < lookupCount; li++) {
+        const lookupBase = lookupListBase + view.getUint16(lookupListBase + 2 + li * 2);
+        let lookupType = view.getUint16(lookupBase);
+        const subtableCount = view.getUint16(lookupBase + 4);
+        const stBases: number[] = [];
+        for (let si = 0; si < subtableCount; si++) {
+            let stBase = lookupBase + view.getUint16(lookupBase + 6 + si * 2);
+            if (lookupType === 7 || view.getUint16(lookupBase) === 7) {
+                if (view.getUint16(stBase) !== 1) continue;
+                lookupType = view.getUint16(stBase + 2);
+                stBase = stBase + view.getUint32(stBase + 4);
+            }
+            stBases.push(stBase);
+        }
+        if (lookupType === 1) {
+            const map = new Map<number, number>();
+            for (const stBase of stBases) parseSingle(stBase, map);
+            if (map.size) lookups.push({ kind: 'single', map });
+        } else if (lookupType === 2) {
+            const map = new Map<number, readonly number[]>();
+            for (const stBase of stBases) parseMultiple(stBase, map);
+            if (map.size) lookups.push({ kind: 'multiple', map });
+        } else if (lookupType === 4) {
+            const ligs = new Map<number, number[][]>();
+            for (const stBase of stBases) parseLig(stBase, ligs);
+            for (const list of ligs.values()) list.sort((a, b) => b.length - a.length);
+            if (ligs.size) lookups.push({ kind: 'ligature', ligs });
+        }
+    }
+    return lookups;
+}
+
+/** Apply one GSUB lookup left-to-right over a glyph sequence. */
+function applyLookup(gids: readonly number[], lookup: GsubSequenceLookup): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < gids.length;) {
+        if (lookup.kind === 'single') {
+            out.push(lookup.map.get(gids[i]) ?? gids[i]);
+            i++;
+        } else if (lookup.kind === 'multiple') {
+            const exp = lookup.map.get(gids[i]);
+            if (exp) out.push(...exp); else out.push(gids[i]);
+            i++;
+        } else {
+            const candidates = lookup.ligs.get(gids[i]);
+            let matched = false;
+            if (candidates) {
+                for (const entry of candidates) {
+                    const compCount = entry.length - 1;
+                    if (i + 1 + compCount > gids.length) continue;
+                    let ok = true;
+                    for (let c = 0; c < compCount; c++) {
+                        if (gids[i + 1 + c] !== entry[1 + c]) { ok = false; break; }
+                    }
+                    if (ok) {
+                        out.push(entry[0]);
+                        i += 1 + compCount;
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            if (!matched) { out.push(gids[i]); i++; }
+        }
+    }
+    return out;
+}
+
+/**
+ * Resolve a codepoint sequence to a single glyph id by mapping each scalar
+ * through the full cmap, then applying the font's Single/Multiple/Ligature
+ * GSUB lookups in table order (repeated until stable). Returns 0 when the
+ * font cannot compose the sequence into exactly one glyph.
+ */
+export function resolveSequenceGid(
+    cps: readonly number[],
+    cmap: Map<number, number>,
+    lookups: readonly GsubSequenceLookup[],
+): number {
+    let gids: number[] = [];
+    for (const cp of cps) {
+        const gid = cmap.get(cp);
+        if (gid === undefined) {
+            // A missing VS-16 is droppable (presentation-only); anything else
+            // unmapped makes the sequence unresolvable.
+            if (cp === 0xFE0F) continue;
+            return 0;
+        }
+        gids.push(gid);
+    }
+    for (let pass = 0; pass < 4 && gids.length > 1; pass++) {
+        const before = gids.join(',');
+        for (const lookup of lookups) {
+            gids = applyLookup(gids, lookup);
+            if (gids.length === 1) break;
+        }
+        if (gids.join(',') === before) break;
+    }
+    return gids.length === 1 ? gids[0] : 0;
+}
+
 /**
  * Build a colour-emoji ES data module from a COLR/CPAL font and a codepoint set.
- * Deterministic: identical (ttf, codepoints, opts) always yield identical output.
+ * Deterministic: identical (ttf, codepoints, sequences, opts) always yield
+ * identical output.
+ *
+ * @param sequences - Optional multi-codepoint sequences (flags, ZWJ) to
+ *   resolve through the font's GSUB ligature lookups and bundle as a
+ *   codepoint-keyed `sequences` export. (v1.7.0)
  */
 export function buildEmojiFontModule(
     ttf: Uint8Array,
     codepoints: readonly number[],
     opts: BuildEmojiOptions,
+    sequences?: readonly (readonly number[])[],
 ): EmojiModuleResult {
     const view = new DataView(ttf.buffer, ttf.byteOffset, ttf.byteLength);
     const tables = readTables(view);
@@ -178,6 +384,56 @@ export function buildEmojiFontModule(
         kept++;
     }
 
+    // ── Resolve multi-codepoint sequences (v1.7.0) ───────────────────
+    const subSequences: Record<number, number[][]> = {};
+    let keptSequences = 0; let missingSequences = 0;
+    const missingSequenceList: number[][] = [];
+    if (sequences && sequences.length > 0) {
+        const lookups = parseSequenceLookups(ttf);
+        const seenSeq = new Set<string>();
+        const registerVariant = (variant: readonly number[], ligGid: number): void => {
+            const vKey = variant.join(',');
+            if (variant.length < 2 || seenSeq.has(vKey)) return;
+            seenSeq.add(vKey);
+            const first = variant[0];
+            if (!subSequences[first]) subSequences[first] = [];
+            subSequences[first].push([ligGid, ...variant.slice(1)]);
+        };
+        for (const seq of sequences) {
+            const key = seq.join(',');
+            if (seq.length < 2 || seenSeq.has(key)) continue;
+            const ligGid = resolveSequenceGid(seq, cmap, lookups);
+            if (ligGid === 0 || !colorGlyphs[ligGid]) {
+                seenSeq.add(key);
+                missingSequences++;
+                missingSequenceList.push([...seq]);
+                continue;
+            }
+            registerVariant(seq, ligGid);
+            // Register the VS-16-stripped variant too: real-world text is
+            // inconsistent about emoji-presentation selectors, and both
+            // spellings must resolve to the same ligature glyph.
+            const stripped = seq.filter(cp => cp !== 0xFE0F);
+            if (stripped.length !== seq.length) registerVariant(stripped, ligGid);
+            subWidths[ligGid] = widthsAll[ligGid];
+            subColor[ligGid] = colorGlyphs[ligGid];
+            usedGids.add(ligGid);
+            for (const layer of colorGlyphs[ligGid].layers) usedGids.add(layer.glyphId);
+            keptSequences++;
+        }
+        // Longest-first so the runtime longest-match takes the first hit;
+        // ties break lexicographically for byte-stable output.
+        for (const first of Object.keys(subSequences)) {
+            subSequences[first as unknown as number].sort((a, b) => {
+                if (b.length !== a.length) return b.length - a.length;
+                for (let i = 1; i < a.length; i++) {
+                    if (a[i] !== b[i]) return a[i] - b[i];
+                }
+                return 0;
+            });
+        }
+    }
+
     // Subset the glyf table (subsetTTF expands composites + keeps gids stable).
     const subBinary = subsetTTF(ttf, usedGids);
     const ttfBase64 = Buffer.from(subBinary, 'latin1').toString('base64');
@@ -211,6 +467,7 @@ export const gsub = {};
 export const ligatures = null;
 export const markAnchors = null;
 export const mark2mark = null;
+export const sequences = ${sequences && sequences.length > 0 ? JSON.stringify(subSequences) : 'null'};
 export const colorGlyphs = ${JSON.stringify(subColor)};
 export const ttfBase64 = ${JSON.stringify(ttfBase64)};
 `;
@@ -229,12 +486,19 @@ export declare const gsub: Record<number, number>;
 export declare const ligatures: null;
 export declare const markAnchors: null;
 export declare const mark2mark: null;
+export declare const sequences: FontData['sequences'];
 export declare const colorGlyphs: NonNullable<FontData['colorGlyphs']>;
 export declare const ttfBase64: string;
 `;
 
     const sizeKb = Math.round(Buffer.byteLength(js) / 1024);
-    return { js, dts, stats: { kept, missing, usedGids: usedGids.size, sizeKb, missingCodepoints } };
+    return {
+        js, dts,
+        stats: {
+            kept, missing, usedGids: usedGids.size, sizeKb, missingCodepoints,
+            keptSequences, missingSequences, missingSequenceList,
+        },
+    };
 }
 
 /**

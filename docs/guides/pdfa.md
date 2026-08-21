@@ -41,10 +41,16 @@ const pdf3b = buildPDFBytes(params, { tagged: 'pdfa3b' });  // PDF/A-3b + attach
 > );
 > ```
 >
+> Since **v1.7.0** the builders guard this declaration themselves: requesting any
+> `'pdfa*'` level (or `tagged: true`) with no `fontEntries` emits the
+> `PDFA_NO_FONT_ENTRIES` diagnostic — a `console.warn` by default, or a thrown
+> `Error` under `strict: true`, before any output bytes are produced. See
+> *Conformance diagnostics* below.
+>
 > The sample generators in `scripts/generators/` all do this, which is why the veraPDF
-> CI job passes — the trap only bites documents assembled by hand. `pdfnative-react`
-> ships a lint rule for exactly this case (`L_TAGGED_NO_FONTS`); run `lintDocument()`
-> if you author through that package.
+> CI job passes. If you author through `pdfnative-react`, its `lintDocument()` rule
+> `L_TAGGED_NO_FONTS` still catches the same trap earlier, at the document-model
+> level — a complementary check to the core diagnostic.
 
 Every output written with `tagged` set ships:
 
@@ -58,6 +64,42 @@ Every output written with `tagged` set ships:
   creation timestamp.
 - `/Info CreationDate` byte-equivalent to `xmp:CreateDate`, both with
   timezone offsets.
+
+## Conformance diagnostics (v1.7.0)
+
+Configurations that produce a PDF/A claim veraPDF would reject no longer fail
+silently. Both builders (`buildPDFBytes` and `buildDocumentPDFBytes`) surface
+them through a single diagnostics channel:
+
+| Code | Trigger |
+|------|---------|
+| `PDFA_NO_FONT_ENTRIES` | A `'pdfa*'` level (or `tagged: true`) requested with no `fontEntries` — the file would claim PDF/A while referencing unembedded standard-14 Helvetica (ISO 19005 §6.2.11.4.1). |
+| `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim with an sRGB `OutputIntent` (ISO 19005-2 §6.2.4.3). |
+| `PDFA_UNEMBEDDED_FORM_FONT` | AcroForm fields under a PDF/A claim — form appearances render through an unembedded base-14 `/Helv` font (same §6.2.11.4.1 rule). Flatten the form or drop the level. |
+
+By default each diagnostic is a `console.warn`, deduplicated **once per code
+per build**. Two layout options change that:
+
+```ts
+import { buildPDFBytes, type PdfDiagnostic } from 'pdfnative';
+
+// CI / tests: escalate to a thrown Error, before any bytes are produced.
+buildPDFBytes(params, { tagged: 'pdfa2b', strict: true });
+
+// Custom sink — receives every diagnostic (no deduplication).
+// Pass () => {} to silence entirely.
+const diagnostics: PdfDiagnostic[] = [];
+const pdf = buildPDFBytes(params, {
+  tagged: 'pdfa2b',
+  onDiagnostic: (d) => diagnostics.push(d),
+});
+```
+
+Each `PdfDiagnostic` carries a machine-readable `code`, a `severity`
+(`'warning'`), and an actionable `message` that includes the remedy.
+`onDiagnostic` is ignored when `strict` is set — diagnostics throw instead.
+The code list is a stable, additions-only union (`PdfDiagnosticCode`), so a
+sink written today keeps compiling as future codes are added.
 
 ## v1.1.0 status — fully validated
 
@@ -116,8 +158,27 @@ npm run validate:pdfa
 The script auto-detects veraPDF on `$PATH` or via the `VERAPDF_HOME`
 env var. If veraPDF is not installed it exits 0 with install
 instructions — local development never blocks. CI installs veraPDF
-deterministically (pinned version) and runs the same script on every
-PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml).
+deterministically (pinned to 1.30.2) and runs the same script on every
+engine PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml) —
+and again as a blocking gate before every npm publish.
+
+Detection is automatic and guarded: every sample declaring
+`pdfaid:part` — currently the 18 PDF/A-claiming samples — is validated
+without any registration, and a **coverage canary** fails the run if the
+detected count drifts from `declared.pdfaSamples` in
+`docs/assets/ecosystem.json` (bump it when adding or removing a
+claiming sample; a mismatch with no sample change means detection or
+generation regressed).
+
+> **Which samples are subject to PDF/A validation?** Only files that
+> *declare* a conformance level in their XMP (`pdfaid:part`) — the ones
+> built with `tagged: 'pdfa…'`, e.g. the `pdfa/` and `pdfa-latin/` sample
+> categories. The script skips everything else. Most showcase samples
+> (`bidi/`, `alphabet/`, `charts/`, …) intentionally make **no** PDF/A
+> claim: they have no XMP packet at all, so force-validating one against a
+> PDF/A profile in the veraPDF GUI fails by construction (missing
+> `/Metadata`, uncalibrated DeviceRGB, …) — that is expected and not a
+> defect.
 
 veraPDF is invoked as an **external** Java tool. pdfnative remains a
 zero-runtime-dependency library; veraPDF is never bundled, linked, or
@@ -147,15 +208,22 @@ export VERAPDF_HOME="$HOME/verapdf"
 export PATH="$VERAPDF_HOME:$PATH"
 ```
 
-**Windows** — official installer from
-<https://docs.verapdf.org/install/>. After install, either add the
-install directory to `PATH` or:
+**Windows** — official GUI installer from
+<https://docs.verapdf.org/install/>, or the same headless install CI
+uses (download the pinned zip, run
+`java -jar verapdf-izpack-installer-*.jar auto-install.xml` — the
+descriptor is shown in [CONTRIBUTING](https://github.com/Nizoka/pdfnative/blob/main/CONTRIBUTING.md)).
+After install, either add the install directory to `PATH` or:
 
 ```powershell
 $env:VERAPDF_HOME = "C:\Program Files\verapdf"
 $env:Path += ";$env:VERAPDF_HOME"
 verapdf.bat --version
 ```
+
+The `.bat` launcher is fully supported by `npm run validate:pdfa`
+since v1.7.0 (it is spawned through a shell, as recent Node versions
+require for batch files).
 
 **No install at all?** Drop the file into the official online demo
 at <https://demo.verapdf.org>. It validates against the same engine,
@@ -180,7 +248,7 @@ files that don't claim PDF/A. The summary line reports how many were
 skipped:
 
 ```
-Scanned 146 PDF(s); 7 claim PDF/A, 139 skipped (not PDF/A).
+Scanned 242 PDF(s); 18 claim PDF/A, 224 skipped (not PDF/A).
 ```
 
 If you want a file to be validated, generate it with `tagged: true`
@@ -193,7 +261,9 @@ Register the Latin font module **and pass the resolved data as `fontEntries`**
 builders. Without it, pdfnative emits Helvetica as an unembedded standard-14
 reference for byte-stable v1.0.x output. With it, every glyph used
 in the document is embedded as `CIDFontType2` / `FontFile2` — see
-the v1.1.0 status table above.
+the v1.1.0 status table above. Since v1.7.0 this configuration also emits the
+`PDFA_NO_FONT_ENTRIES` diagnostic at build time (a thrown error under
+`strict: true`), so the failure surfaces before veraPDF ever runs.
 
 ### Output bytes change in v1.0.4
 

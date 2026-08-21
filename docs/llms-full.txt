@@ -1,12 +1,13 @@
 # pdfnative
 
-> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 22 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. Current version: 1.6.0.
+> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 22 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. PAdES digital signatures with long-term validation (B-B → B-LTA). Current version: 1.7.0.
 
 ## Docs
 
 - [README](https://github.com/Nizoka/pdfnative/blob/main/README.md): Full feature list, install, quick start, API surface, examples.
-- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.6; v1.5: math/technical-symbols font, `pdfnative/tools` font compiler/parser, SVG `<text>`, page-labels reader, layout debug overlay + `inspectDocumentLayout`, markup annotation read/write, AI-agent governance; v1.4: document outline/bookmarks, page labels, page-tree manipulation (merge/split/extract), streamToFile, COLRv1 advanced compositing; v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, validatePdfUA) + long-term (WASM, full USE).
+- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.7; v1.5: math/technical-symbols font, `pdfnative/tools` font compiler/parser, SVG `<text>`, page-labels reader, layout debug overlay + `inspectDocumentLayout`, markup annotation read/write, AI-agent governance; v1.4: document outline/bookmarks, page labels, page-tree manipulation (merge/split/extract), streamToFile, COLRv1 advanced compositing; v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, validatePdfUA) + long-term (WASM, full USE).
 - [CHANGELOG](https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md): Per-version changes.
+- [Release notes v1.7.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.7.0.md): PAdES LTV signing B-B → B-LTA (`signPdfBytesWithTimestamp` RFC 3161 timestamps, `addValidationInfo` `/DSS` + `/VRI` OCSP/CRL material, `addDocumentTimestamp`, `listSignatures`, multi-signature via `addSignaturePlaceholder({ allowMultiple })` — network transport injected through `setTimestampProvider`/`setRevocationProvider`, the engine never opens a socket), charts v2 (stackedBar/stackedBarH/area/scatter, secondary right axis, log + UTC time scales, data labels, x-label collision handling), colour-emoji flag & ZWJ sequences (51 flags + 22 ZWJ as COLR ligatures), UAX #9 conformance fixes (RTL digit order, glyph mirroring, ALEF joining, Persian presentation forms), PDF/A declaration guards (`strict`/`onDiagnostic`), incremental writer/xref hardening, `PdfModifier.updateMetadata()`.
 - [Release notes v1.6.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.6.0.md): Standard Security Handler reader/decryptor (`openPdf(bytes, { password })`, RC4/AES-128/AES-256; `PdfSourceInput`/`MergeOptions.password` for encrypted merge/split sources), streaming page-tree manipulation (`streamMergedPdfs`/`streamSplitPdf`/`streamExtractPages`), fill & flatten existing AcroForm PDFs (`readFormFields`/`fillForm`/`flattenForm`) — encrypted documents included (encrypted incremental update), native vector charts (`chart` block: bar/barH/line/pie/donut), text extraction (`extractText`: per-page reading-order text + positioned runs, encrypted PDFs supported), re-encrypt merge/split output (`MergeOptions.encrypt`, AES-128/256), expanded colour-emoji subset (221 → 1167 incl. complete Transport & Map). Fixes: spec-compliant R6 hash + all-strings encryption on the writer; incremental trailer carries `/Encrypt` forward.
 - [Release notes v1.5.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.5.0.md): math/technical-symbols font (lang `'math'`, `registerFont`), `pdfnative/tools` (`compileFontData`/`parseFontData`), SVG `<text>` rendering, page-labels reader (`getPageLabels()`), layout debug overlay (`layout: { debug: true }`) + `inspectDocumentLayout()`, markup annotation read/write (`buildAnnotation`/`getAnnotations`/`addAnnotation`), control-character hardening (#58), table descender fix (#59), AI-agent governance (#56).
 - [Release notes v1.4.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.4.0.md): document outline/bookmarks (`/Outlines`, `outline: 'auto'`), page labels (`/PageLabels`), page-tree manipulation (`mergePdfs`/`splitPdf`/`extractPages`, secure-by-default 256 MiB `maxOutputSize` cap), `streamToFile()`, COLRv1 sweep gradients + `PaintComposite` blend modes, pluggable signature crypto provider (`setCryptoProvider`), font-data validator (`validateFontData`), viewer preferences (`/ViewerPreferences`), nested lists, table cell borders + vertical alignment.
@@ -16,13 +17,15 @@
 - [Quick Start](https://pdfnative.dev/guides/quickstart.html): Install + first PDF in Node or browser.
 - [Architecture](https://pdfnative.dev/guides/architecture.html): Two builders, module dependency flow, design decisions.
 - [PDF/A conformance](https://pdfnative.dev/guides/pdfa.html): How `tagged: true` produces veraPDF-valid PDF/A-1b/2b/2u/3b.
-- [Digital signatures](https://pdfnative.dev/guides/signatures.html): CMS/PKCS#7 + `addSignaturePlaceholder()` three-line workflow.
+- [Digital signatures](https://pdfnative.dev/guides/signatures.html): CMS/PKCS#7 and PAdES + `addSignaturePlaceholder()` three-line workflow; multiple signatures, signature metadata, RSA SHA-256/384/512 + ECDSA P-256.
+- [Long-term validation](https://pdfnative.dev/guides/ltv.html): PAdES B-B → B-LTA — RFC 3161 signature timestamps, `/DSS` + `/VRI` revocation material, document timestamps, injected `TimestampProvider`/`RevocationProvider` (no built-in networking).
+- [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`.
 - [Accessibility](https://pdfnative.dev/guides/accessibility.html): Tagged PDF, /ActualText, PDF/UA structure tree.
 - [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
 - [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
 - [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
-- [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set; pinned download + SHA-256 verification.
-- [Charts](https://pdfnative.dev/guides/charts.html): Native vector `chart` blocks — bar, horizontal bar, line, pie, donut. Path operators, no rasterisation; `/Figure` tagging with alt text.
+- [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set, plus flag & ZWJ sequences via `--sequences` / `--sequence-list`; pinned download + SHA-256 verification.
+- [Charts](https://pdfnative.dev/guides/charts.html): Native vector `chart` blocks — 9 kinds (bar, horizontal bar, stacked bars, line, area, scatter, pie, donut) with secondary right axis, log and time scales, data labels, x-label collision handling. Path operators, no rasterisation; `/Figure` tagging with alt text.
 - [Text extraction](https://pdfnative.dev/guides/text-extraction.html): `extractText()` — reading-order Unicode via `/ToUnicode`, optional positioned runs, works on encrypted PDFs with a password. The RAG / agent-ingestion entry point.
 - [Form filling](https://pdfnative.dev/guides/form-filling.html): `readFormFields()` / `fillForm()` / `flattenForm()` on existing AcroForms, including encrypted PDFs via incremental update.
 - [PDF manipulation](https://pdfnative.dev/guides/pdf-manipulation.html): `openPdf()` (with `{ password }`), merge / split / extract pages, re-encrypt on output, and their streaming variants.
@@ -31,7 +34,7 @@
 - [Annotations](https://pdfnative.dev/guides/annotations.html): Markup annotations (highlight, underline, note, shape, freetext) applied by incremental update so signatures stay valid.
 - [Outlines & page labels](https://pdfnative.dev/guides/outlines.html): Document bookmarks (`outline: 'auto'` or an explicit tree) and `/PageLabels` numbering.
 - [Viewer preferences](https://pdfnative.dev/guides/viewer-preferences.html): `/ViewerPreferences` — page layout, page mode, and display hints.
-- [Colour emoji](https://pdfnative.dev/guides/colour-emoji.html): COLRv1 rendering — solid, linear and radial gradient layers as native PDF Form XObjects.
+- [Colour emoji](https://pdfnative.dev/guides/colour-emoji.html): COLRv1 rendering — solid, linear and radial gradient layers as native PDF Form XObjects; flag & ZWJ sequences (51 flags + 22 ZWJ bundled) render as single ligature glyphs.
 - [Layout debugging](https://pdfnative.dev/guides/debugging.html): `inspectDocumentLayout()` and the `debug: true` overlay for diagnosing pagination.
 - [Font validation](https://pdfnative.dev/guides/font-validation.html): `validateFontData()` — check a font module before registering it.
 - [Agentic workflows](https://pdfnative.dev/guides/agentic-workflows.html): Patterns for driving pdfnative from AI agents on public, validated APIs.
@@ -45,20 +48,20 @@
 
 - [Copilot instructions](https://github.com/Nizoka/pdfnative/blob/main/.github/copilot-instructions.md): Canonical project conventions — architecture, code style, build/test, PDF-specific invariants.
 - [AGENTS.md](https://github.com/Nizoka/pdfnative/blob/main/AGENTS.md): Editor-agnostic agent guidance (Cursor / Aider / Claude Code / Continue).
-- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.5.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 24 tools — native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. Built on pdfnative 1.6.0.
-- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.3.0 — 17 commands from the terminal — render, fill, annotate, merge / split / extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract. Built on pdfnative 1.6.0.
+- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.5.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 24 tools — native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. Built on pdfnative 1.7.0.
+- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.3.0 — 17 commands from the terminal — render, fill, annotate, merge / split / extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract. Built on pdfnative 1.7.0.
 - [React](https://pdfnative.dev/guides/react.html): `pdfnative-react` v1.1.0 — declarative JSX components compiled on-device to pdfnative blocks; render functions, client hooks, token-frugal DocSpec.
 
 ## Source
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
-- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 44 sample generators producing reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2396 tests across 105 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 48 sample generators producing 242 reference PDFs.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2665+ tests across 122 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
 
 ## Ecosystem
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.6.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
-- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 24 AI tools (v1.5.0, built on pdfnative 1.6.0).
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.7.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 24 AI tools (v1.5.0, built on pdfnative 1.7.0).
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v1.1.0, React 19 + pdfnative ^1.6.0 peers).
 
 ---
@@ -152,7 +155,7 @@ The `label` is drawn as a visible text label next to the widget. pdfnative does 
 docker run --rm -v "$PWD:/data" verapdf/cli --format text /data/my-document.pdf
 ```
 
-veraPDF is the reference PDF/A validator. The pdfnative test suite generates ~228 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
+veraPDF is the reference PDF/A validator. The pdfnative test suite generates 242 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
 
 ### PAC 2024 (PDF/UA)
 
@@ -742,12 +745,16 @@ Input (params + options)
 types/ → core/ ← fonts/ ← shaping/ ← worker/
               ↑
           crypto/ (near-standalone, imports core/pdf-encrypt for sha256)
-          parser/ (standalone, imports core/compress for inflate)
+          parser/ (imports core/pdf-compress, pdf-encrypt, pdf-tags)
 ```
 
-- **No circular dependencies** — strict unidirectional flow
+- **No circular dependencies** — strict unidirectional flow, with **one
+  sanctioned, documented reverse edge**: the signature-workflow core modules
+  (`pdf-dss`, `pdf-sig-utils`, `pdf-doc-timestamp`, `pdf-sig-placeholder`,
+  `pdf-form-fill`) import the parser to read existing documents before
+  appending incremental revisions
 - **crypto/** is near-standalone — its only cross-module import is `sha256` from `core/pdf-encrypt.ts` (re-exported by `crypto/sha.ts`)
-- **parser/** imports only from `core/pdf-compress.ts` for FlateDecode inflate
+- **parser/** imports from `core/pdf-compress.ts` (FlateDecode), `core/pdf-encrypt.ts` (decryption, incremental `/ID`) and `core/pdf-tags.ts` (XMP resync in `updateMetadata`)
 - **fonts/** imports from `shaping/` for script detection
 - **shaping/** imports from `fonts/` encoding context (via `core/encoding-context.ts` to break cycle)
 
@@ -842,10 +849,11 @@ For setup instructions, tool reference, and per-client configuration, see the [M
 <!-- source: docs/guides/charts.md -->
 # Charts (native vector)
 
-> **New in v1.6.0.** Render bar, horizontal-bar, line, pie, and donut charts as
-> **pure PDF path operators** — rectangles, line segments, and cubic-Bézier
-> arcs. Zero dependencies, no rasterisation, no image embedding. Charts are
-> crisp at any zoom, searchable (labels are real text), and PDF/A-safe.
+> **New in v1.6.0, extended in v1.7.0.** Render bar, horizontal-bar, stacked-bar,
+> line, area, scatter, pie, and donut charts as **pure PDF path operators** —
+> rectangles, line segments, and cubic-Bézier arcs. Zero dependencies, no
+> rasterisation, no image embedding. Charts are crisp at any zoom, searchable
+> (labels are real text), and PDF/A-safe.
 
 ## TL;DR
 
@@ -881,20 +889,41 @@ paragraph, or table.
 | `'line'`    | Multi-series line, optional markers | 1+ |
 | `'pie'`     | Pie | exactly 1 |
 | `'donut'`   | Donut (pie with a hole) | exactly 1 |
+| `'stackedBar'` (v1.7.0) | Vertical stacked bars (positive and negative running totals stack separately) | 1+ |
+| `'stackedBarH'` (v1.7.0) | Horizontal stacked bars | 1+ |
+| `'area'` (v1.7.0) | Line closed to the zero baseline, opaque tinted fill | 1+ |
+| `'scatter'` (v1.7.0) | X/Y point markers positioned by `xValues` | 1+ |
 
 ## The `ChartBlock`
 
 ```ts
 interface ChartBlock {
   type: 'chart';
-  chartType: 'bar' | 'barH' | 'line' | 'pie' | 'donut';
-  series: { label: string; values: number[]; color?: PdfColor }[];
+  chartType: 'bar' | 'barH' | 'line' | 'pie' | 'donut'
+    | 'stackedBar' | 'stackedBarH' | 'area' | 'scatter';    // last four: v1.7.0
+  series: {
+    label: string;
+    values: number[];
+    color?: PdfColor;
+    xValues?: (number | string)[]; // x positions for scatter / linear / time x-axes (v1.7.0)
+    yAxis?: 'left' | 'right';      // bind the series to the secondary right axis (v1.7.0)
+  }[];
   categories?: string[];        // x-axis / slice labels; defaults to 1-based indices
   width?: number;               // plot width in pt (clamped to content width). Default 460
   height?: number;              // plot-area height in pt. Default 240
   title?: string;
   legend?: 'bottom' | 'none';   // default: shown for multi-series / pie
-  axis?: { yMin?: number; yMax?: number; ticks?: number; grid?: boolean };
+  axis?: { yMin?: number; yMax?: number; ticks?: number; grid?: boolean;
+           scale?: 'linear' | 'log' };                      // scale: v1.7.0
+  axis2?: { yMin?: number; yMax?: number; ticks?: number;
+            scale?: 'linear' | 'log' };                     // right value axis (v1.7.0)
+  xAxis?: { type?: 'category' | 'linear' | 'time';          // v1.7.0
+            min?: number | string; max?: number | string;
+            ticks?: number; grid?: boolean };
+  dataLabels?: boolean                                      // v1.7.0
+    | { decimals?: number; prefix?: string; suffix?: string };
+  labelStride?: number;         // draw every Nth category label. Default: auto (v1.7.0)
+  labelRotation?: number;       // rotate category labels 0–90 degrees (v1.7.0)
   markers?: boolean;            // line only. Default false
   colors?: PdfColor[];          // palette override (per series / per slice)
   align?: 'left' | 'center' | 'right';
@@ -942,13 +971,113 @@ the axis automatically:
   series: [{ label: 'Net flow', values: [30, -15, 20] }] }
 ```
 
+### Stacked bars (v1.7.0)
+
+Positive and negative values stack in separate running totals per category, so
+mixed-sign data reads correctly:
+
+```ts
+{
+  type: 'chart', chartType: 'stackedBar',
+  categories: ['Q1', 'Q2', 'Q3', 'Q4'],
+  series: [
+    { label: 'EMEA', values: [40, 55, 60, 52] },
+    { label: 'APAC', values: [25, 30, 35, 41] },
+    { label: 'AMER', values: [50, 48, 62, 70] },
+  ],
+}
+```
+
+### Area with data labels (v1.7.0)
+
+The area fill is the series colour mixed 35 % toward white — an **opaque
+tint**, not transparency, so area charts remain PDF/A-safe (PDF/A-1b forbids
+`/ExtGState` alpha):
+
+```ts
+{
+  type: 'chart', chartType: 'area',
+  categories: ['Jan', 'Feb', 'Mar', 'Apr'],
+  dataLabels: { suffix: ' k€', decimals: 1 },
+  series: [{ label: 'ARR', values: [10.4, 12.1, 13.8, 16.2] }],
+}
+```
+
+`dataLabels: true` reuses the axis tick formatter; the object form controls
+`decimals` and adds a `prefix`/`suffix`.
+
+### Scatter on a time axis (v1.7.0)
+
+`scatter` positions each point by `xValues` (required). On `xAxis.type: 'time'`,
+`xValues` accepts ISO-8601 strings or epoch milliseconds; tick positions and
+labels are computed with **UTC getters only** — never `Intl` or the host time
+zone — so output bytes are identical on every machine:
+
+```ts
+{
+  type: 'chart', chartType: 'scatter',
+  xAxis: { type: 'time', grid: true },
+  series: [{
+    label: 'Deploys',
+    xValues: ['2026-01-05', '2026-02-14', '2026-03-02', '2026-04-20'],
+    values: [3, 7, 5, 11],
+  }],
+}
+```
+
+`line` and `area` charts may also opt into a `'linear'` or `'time'` x-axis;
+`bar` variants stay categorical.
+
+### Dual value axes & log scale (v1.7.0)
+
+Bind a series to a secondary right axis with `yAxis: 'right'` and configure its
+range with `axis2`. The right axis (and its gutter) appears only when at least
+one series binds to it. Either axis can switch to `scale: 'log'` (decade
+ticks); log scales require strictly positive values and cannot be combined
+with stacked charts:
+
+```ts
+{
+  type: 'chart', chartType: 'line', markers: true,
+  categories: ['2023', '2024', '2025', '2026'],
+  axis2: { scale: 'log' },
+  series: [
+    { label: 'Revenue (k€)', values: [120, 150, 170, 140] },
+    { label: 'Requests/day', values: [900, 8000, 65000, 400000], yAxis: 'right' },
+  ],
+}
+```
+
+### Crowded category labels (v1.7.0)
+
+Long or numerous x-labels no longer collide (issue #67). By default the engine
+measures every label and draws every *N*th one — the smallest stride at which
+labels no longer overlap (`1` when everything fits, so existing charts are
+unchanged). Override with `labelStride` (`1` forces every label), or rotate
+instead:
+
+```ts
+{
+  type: 'chart', chartType: 'bar',
+  categories: ['January', 'February', 'March', 'April', 'May', 'June'],
+  labelRotation: 45,   // 0–90° counter-clockwise, right-aligned to the tick
+  series: [{ label: 'Signups', values: [12, 18, 14, 22, 19, 27] }],
+}
+```
+
+Rotated labels read upward toward their tick; setting `labelRotation` disables
+the automatic stride (rotation defeats horizontal overlap on its own) unless
+`labelStride` is also set. Both options apply to category axes only —
+`scatter` charts reject them.
+
 ## Accessibility (tagged PDF)
 
 In tagged mode (`{ tagged: true }` or a PDF/A profile), each chart is emitted as
 a `/Figure` structure element with an `/Alt` description. Provide `altText` for a
 meaningful summary; otherwise a deterministic one is generated
 (`"bar chart: 2 series, 4 categories"`). Charts use solid fills only — no
-transparency — so they are **PDF/A-safe**.
+transparency — so they are **PDF/A-safe**. That includes area charts: the fill
+is an opaque tint (series colour mixed toward white), never `/ExtGState` alpha.
 
 ## Internationalised labels
 
@@ -956,15 +1085,23 @@ All chart text (title, axis ticks, category labels, legend, slice percentages)
 flows through pdfnative's standard text pipeline, so CJK, Arabic/RTL, and emoji
 labels shape correctly when the matching font is registered — no extra work.
 
-## Limits & scope (v1.6.0)
+## Limits & scope (v1.7.0)
 
-- **In:** bar, horizontal bar, multi-series line (straight segments + optional
-  markers), pie, donut; linear value axis with "nice" ticks; category axis;
-  gridlines; legend; negative values.
-- **Out (planned):** stacked bars, area, scatter, secondary/log/time axes,
-  rotated axis labels (long labels are middle-truncated with `…`), per-point
-  data labels.
+- **In:** bar, horizontal bar, stacked bar (both orientations), multi-series
+  line (straight segments + optional markers), area, scatter, pie, donut;
+  linear and log value axes with "nice"/decade ticks; secondary right value
+  axis; category, linear, and time (UTC-deterministic) x-axes; gridlines;
+  legend; negative values; per-point data labels; automatic label stride and
+  0–90° label rotation.
+- **Out (planned):** curved (spline) line interpolation, error bars, bubble
+  sizing, combined chart types in one plot.
 - A hard guard rejects charts with more than **10,000** total data points.
+- Validation is strict and throws before any bytes are produced: log scales
+  reject non-positive values (and stacked charts), `scatter` requires
+  `xValues` on every series, `xValues` lengths must match `values`,
+  `'linear'`/`'time'` x-axes apply only to line/area/scatter, date strings in
+  `xValues` require `xAxis.type: 'time'`, `yAxis: 'right'` is cartesian-only,
+  and `labelStride`/`labelRotation` apply to category axes only.
 
 ## See also
 
@@ -977,7 +1114,7 @@ labels shape correctly when the matching font is registered — no extra work.
 <!-- source: docs/guides/cli.md -->
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on pdfnative 1.6.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
+> **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on pdfnative 1.7.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
 [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 17 commands in five groups — create & edit (`render`, `fill`, `annotate`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
@@ -1850,12 +1987,12 @@ node samples/run-all.js
 
 ### What's new in v1.3.0
 
-v1.3.0 is built on **pdfnative 1.6.0** and surfaces its engine additions as five new commands (`extract-text`, `fill`, `encrypt`, `decrypt`, `doctor`), native vector charts in `render`, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent `render --encrypt` no-op. **100 % backward-compatible** with v1.2.0.
+v1.3.0 is built on **pdfnative 1.7.0** and surfaces its engine additions as five new commands (`extract-text`, `fill`, `encrypt`, `decrypt`, `doctor`), native vector charts in `render`, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent `render --encrypt` no-op. **100 % backward-compatible** with v1.2.0.
 
 | Area | v1.2.0 | v1.3.0 |
 |---|---|---|
 | Commands | 12 commands <!-- verify-docs:allow stale-token (v1.2.0-era count) --> | adds **`fill`** (fill / flatten / **export** AcroForms via an incremental save), **`encrypt`**, **`decrypt`**, **`extract-text`** (reading-order Unicode text: `text` \| `json` \| `ndjson`), and **`doctor`** (offline environment / capability preflight) |
-| Charts | — | the pdfnative 1.6.0 `chart` document block (bar, barH, line, pie, donut) renders as pure vector path operators through `render` |
+| Charts | — | the pdfnative 1.7.0 `chart` document block (bar, barH, line, pie, donut) renders as pure vector path operators through `render` |
 | Encryption vocabulary | `--encrypt-*` flags on `render` only | **unified vocabulary** — `--encrypt [aes-128\|aes-256]`, `--owner-password`, `--user-password`, `--permissions print,copy,modify,extract` — shared by `render`, `merge`, `split` and `extract` (legacy `--encrypt-*` flags kept as aliases) |
 | Page-tree commands | plaintext sources only | **`--password`** reads encrypted sources; **`--encrypt`** re-encrypts the output; **`--stream`** (+ `--chunk-size`) streams the output with constant memory |
 | Inspection | metadata, PDF/UA, annotations | adds `inspect --form-fields`, `--encryption` and `--password` |
@@ -2044,12 +2181,13 @@ If you use the CLI in research or academic pipelines, cite both repositories:
 <!-- source: docs/guides/colour-emoji-cli.md -->
 # Colour-emoji font CLI (`pdfnative-build-emoji-font`)
 
-> **New in v1.4.0, expanded in v1.6.0.** pdfnative ships a curated 1167-glyph
-> colour-emoji module by default. When you need **more emoji — up to the full
-> ~3 600-glyph set** — the
+> **New in v1.4.0, expanded in v1.6.0 and v1.7.0.** pdfnative ships a curated
+> 1167-glyph colour-emoji module by default (plus 73 flag/ZWJ sequences since
+> v1.7.0). When you need **more emoji — up to the full ~3 600-glyph set, or
+> skin-tone sequence variants** — the
 > `pdfnative-build-emoji-font` CLI generates a data module containing exactly the
-> glyphs you choose. It's bundled with the `pdfnative` package, so any user can
-> run it with `npx` — no extra install, no editing library source.
+> glyphs and sequences you choose. It's bundled with the `pdfnative` package, so
+> any user can run it with `npx` — no extra install, no editing library source.
 
 ## Why a CLI instead of bundling everything?
 
@@ -2072,6 +2210,10 @@ npx pdfnative-build-emoji-font --download \
 
 # Offline: point at a font you already have on disk:
 npx pdfnative-build-emoji-font --ttf ./NotoColorEmoji-Regular.ttf --all
+
+# Flag/ZWJ sequences (v1.7.0) — the curated sets plus any skin-tone form you need:
+npx pdfnative-build-emoji-font --download --sequences all \
+  --sequence-list 1F468-1F3FB-200D-1F4BB,1F469-1F3FD-200D-2695-FE0F --out ./emoji.js
 ```
 
 Then register the module you generated, load it, and pass it via `fontEntries`:
@@ -2117,6 +2259,27 @@ pass none, the curated set is used.
 | `--codepoints <list>` | Comma-separated hex scalars: `1F600,1F680,2764`. `U+`, `0x`, `#` prefixes are tolerated. |
 | `--ranges <list>` | Comma-separated **inclusive** hex ranges: `1F600-1F64F,2600-27BF`. |
 
+## Selecting sequences (v1.7.0)
+
+Multi-codepoint emoji — flags (regional-indicator pairs) and ZWJ sequences —
+are selected separately from single glyphs. Each requested sequence is
+resolved through the font's GSUB ligature lookups to a **single colour glyph**
+and emitted in the module's `sequences` table; both the VS-16 and the
+VS-16-free spelling register to the same glyph. Default: **none** (the
+pre-1.7 output shape, plus an inert `sequences = null` export).
+
+| Flag | Meaning |
+|---|---|
+| `--sequences <preset>` | `flags` (the curated 51-flag set), `zwj` (the curated 22-sequence ZWJ set), `all` (both), or `none`. |
+| `--sequence-list <list>` | Comma-separated entries: a 2-letter country code (`FR`, `DE`) and/or hyphen-joined hex scalars (`1F468-200D-1F680`, `1F469-1F3FD-200D-2695-FE0F`). Skin-tone forms welcome. |
+
+Selections merge and de-duplicate, so `--sequences flags --sequence-list
+1F469-1F3FB-200D-2695-FE0F` is valid. The bundled npm module already carries
+the curated 51 + 22 set — reach for the CLI when you need skin-tone variants
+or sequences beyond it. Note that flags render **flat** (Noto's wave-shading
+overlay uses a COLRv1 compositing mask with no PDF equivalent — see the
+[colour-emoji guide](colour-emoji.html)).
+
 ## Output options
 
 | Flag | Default | Meaning |
@@ -2126,8 +2289,9 @@ pass none, the curated set is used.
 | `--types <path>` | `pdfnative` | The type import used in the generated `.d.ts` (e.g. `'pdfnative'` or a relative path). |
 
 The generated module exports the same shape as the bundled one
-(`metrics`, `cmap`, `widths`, `pdfWidthArray`, `colorGlyphs`, `ttfBase64`, …),
-so it drops straight into `registerFont('emoji', () => import('…'))`.
+(`metrics`, `cmap`, `widths`, `pdfWidthArray`, `colorGlyphs`, `sequences`,
+`ttfBase64`, …), so it drops straight into
+`registerFont('emoji', () => import('…'))`.
 
 ## Verifying the result
 
@@ -2156,6 +2320,13 @@ Glyph selection (combine freely; default: --preset curated):
   --preset <curated|all>  Named selection.
   --codepoints <list>     Comma-separated hex scalars, e.g. 1F600,1F680,2764.
   --ranges <list>         Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
+
+Sequence selection (v1.7.0; default: none):
+  --sequences <preset>    flags | zwj | all | none — bundle the curated flag
+                          and/or ZWJ sequence sets (GSUB-resolved ligatures).
+  --sequence-list <list>  Comma-separated country codes and/or hyphen-joined
+                          hex sequences, e.g. FR,DE,1F468-200D-1F680,
+                          1F469-1F3FD-200D-2695-FE0F (skin tones welcome).
 
 Output:
   --out <path>            Output .js path (a sibling .d.ts is written).
@@ -2191,7 +2362,7 @@ pdfnative ships.
 ```ts
 import { registerFont, loadFontData, buildDocumentPDFBytes } from 'pdfnative';
 
-// Opt in to the curated colour-emoji subset (1167 glyphs, ~4.0 MB).
+// Opt in to the curated colour-emoji subset (1167 glyphs + 73 sequences, ~4.5 MB).
 registerFont('emoji', () => import('pdfnative/fonts/noto-color-emoji-data.js'));
 
 const emoji = await loadFontData('emoji');
@@ -2237,15 +2408,18 @@ run emits `q s 0 0 s x y cm /CEm0 Do Q` to place the glyph.
 > **Advanced compositing (v1.4.0).** COLRv1 **sweep (conic) gradients** render as
 > native flat-shaded wedges, and `PaintComposite` **separable blend modes** map to
 > PDF `/BM` ExtGState operators. Structural Porter-Duff modes (Clear / Src / Dest /
-> Xor / …) and `PaintMask` fall back to the documented monochrome path.
+> Xor / …) and `PaintMask` fall back to the documented monochrome path — except
+> that since **v1.7.0**, a composite whose *source* subtree alone is unsupported
+> keeps its backdrop layers (this is what makes flags render flat instead of
+> monochrome).
 
 ## Opt-in, not default
 
 Colour emoji is **opt-in** for two reasons:
 
-1. **Module size.** The curated subset is ~4.0 MB (expanded to 1167 glyphs in
-   v1.6.0); bundling it by default would bloat every consumer. Register it only
-   when you need colour.
+1. **Module size.** The curated subset is ~4.5 MB (expanded to 1167 glyphs in
+   v1.6.0, plus 73 flag/ZWJ sequences in v1.7.0); bundling it by default would
+   bloat every consumer. Register it only when you need colour.
 2. **Byte stability.** When no colour-emoji font is registered, documents are
   byte-identical to the pre-colour-emoji path — the colour path is fully gated.
 
@@ -2262,19 +2436,22 @@ emoji** (expanded from 221 in v1.6.0): the complete Emoticons and Supplemental
 Symbols & Pictographs blocks, Miscellaneous Symbols & Pictographs through
 U+1F53D (nature, food, objects, hearts, office, av/ui symbols) plus clocks and
 the emoji-presentation stragglers, and the **complete assigned Transport & Map
-block** (U+1F680–1F6FF). Symbols & Pictographs Extended-A (U+1FA70–1FAFF) is
+block** (U+1F680–1F6FF). Since v1.7.0 it also carries **73 multi-codepoint
+sequences** — 51 flags and 22 ZWJ sequences (see the next section). Symbols &
+Pictographs Extended-A (U+1FA70–1FAFF) is
 not bundled — use the CLI below. It ships pre-built because every file under the package
 `files` allowlist is included in the npm tarball regardless of tree-shaking — the
 full Noto Color Emoji build (thousands of glyphs, ~32 MB) would weigh down
 *every* `npm install`, even for consumers who never touch emoji. The subset keeps
-the install within a ~4 MB budget while the lazy `() => import(...)` keeps it
-out of bundles that don't reference it.
+the install within a 5120 KB budget (actual: ~4.5 MB) while the lazy
+`() => import(...)` keeps it out of bundles that don't reference it.
 
-> **Out of scope for the bundled subset:** flag sequences (regional-indicator
-> pairs), ZWJ sequences (families, professions, etc.), and skin-tone-modified
-> forms. These are multi-codepoint emoji that require GSUB ligature lookups the
-> single-codepoint module does not carry, so they render as monochrome/tofu.
-> Build a full module with the CLI below to cover them.
+> **Out of scope for the bundled subset:** skin-tone-modified forms
+> (`👍🏽`, `👩🏻‍🚀`, …) and any flag or ZWJ sequence beyond the curated 73. The
+> combinatorial skin-tone set is deliberately CLI territory — build a module
+> with `--sequences` / `--sequence-list` below to cover exactly the forms you
+> need. An uncovered sequence degrades to the per-codepoint behaviour
+> described further down (base emoji render, joiners drop) — never worse.
 
 To cover the **full** Noto Color Emoji set — or any custom selection — pdfnative
 ships an official generator CLI, `pdfnative-build-emoji-font`, so you never have
@@ -2298,6 +2475,41 @@ registerFont('emoji', () => import('./emoji-full.js'));
 See the [colour-emoji CLI guide](colour-emoji-cli.html) for every flag, offline
 usage with `--ttf`, and the checksum/licensing details.
 
+## Flag & ZWJ sequences (v1.7.0)
+
+Multi-codepoint emoji now render as **single colour glyphs**. The bundled
+module resolves the font's GSUB ligature lookups at build time into a
+`sequences` table (first codepoint → resolved ligature glyph), and the text
+pipeline runs a longest-match pre-pass over it, so a flag pair or a ZWJ
+sequence produces exactly one COLR Form XObject:
+
+- **51 flags** — 🇪🇺 EU, 🇺🇳 UN, the G20 members, and other widely used
+  locales (regional-indicator pairs).
+- **22 ZWJ sequences** — families (`👨‍👩‍👧`), professions (`👩‍🚀`, `👨‍💻`),
+  `❤️‍🔥`, `🏳️‍🌈`, `🏳️‍⚧️`, `🏴‍☠️`, `🐻‍❄️`, `😮‍💨`, and friends —
+  in their skin-tone-free RGI forms.
+
+No API change is required: register the bundled colour-emoji module as usual
+and write the sequences in your text. Three behaviours worth knowing:
+
+- **VS-16 tolerance.** Both the VS-16 spelling and the VS-16-free spelling of
+  a sequence match the same glyph — real-world text is inconsistent about
+  presentation selectors, so `❤️‍🔥` works with or without the invisible
+  U+FE0F.
+- **Fallback is never worse.** A sequence absent from the table degrades to
+  exactly the historical per-codepoint behaviour: unmatched joiners,
+  variation selectors, and skin-tone modifiers are dropped, and unmatched
+  regional indicators pass through the normal cmap lookup. A module without a
+  `sequences` table renders byte-identically to v1.6.0.
+- **Flags render flat.** Noto's flag glyphs stack a wave-shading overlay on
+  the flat artwork via a COLRv1 `PaintComposite` SRC_IN mask that has no PDF
+  equivalent. pdfnative degrades the composite to its supported backdrop, so
+  every flag renders as its flat (unwaved) artwork rather than falling back
+  to monochrome.
+
+Skin-tone-modified sequences stay CLI-only — generate a module with
+`--sequences` / `--sequence-list` (see the [CLI guide](colour-emoji-cli.html)).
+
 ## Advanced compositing (v1.4.0)
 
 COLRv1 includes two paint types beyond solid + axial/radial gradients, and
@@ -2307,7 +2519,7 @@ pdfnative now maps both where a faithful PDF translation exists:
 |---|---|
 | Sweep / conic gradient (`PaintSweepGradient`, format 8) | Flat-shaded triangular **wedges** fanned around the centre — no `/Shading` resource, pure path fills. Matrix rotation is folded into the start/end angles via `Math.atan2`. |
 | Composite (`PaintComposite`, format 32) — *separable* blend modes | Backdrop + source layers, with the source tagged via a `/BM` (blend mode) `/ExtGState`: Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference, Exclusion, Hue, Saturation, Color, Luminosity. |
-| Composite — *structural* Porter-Duff modes (`SrcOver`, `DestIn`, clipping masks, …) | No exact PDF equivalent → the glyph falls back to the **monochrome** outline. |
+| Composite — *structural* Porter-Duff modes (`SrcOver`, `DestIn`, clipping masks, …) | No exact PDF equivalent → the glyph falls back to the **monochrome** outline. Since v1.7.0, when only the composite's *source* subtree is unsupported, its partial layers roll back and the **backdrop renders alone** (best-effort) — Noto's flags degrade to their flat artwork this way. |
 
 Sweep wedges approximate the smooth conic sweep with a fan of flat-colour
 triangles whose count scales with the angular span — close enough for emoji at
@@ -2321,8 +2533,9 @@ faithfully in any conformant viewer.
 ## Limitations
 
 - **`PaintMask`** and COLRv1 variable (animated) paints are not yet rendered;
-  glyphs using them fall back gracefully to the monochrome outline. Tracked for
-  a future release.
+  glyphs using them fall back gracefully — to the backdrop layers when the
+  unsupported paint sits inside a composite's source subtree (v1.7.0), to the
+  monochrome outline otherwise. Tracked for a future release.
 - **PDF/A:** gradient transparency uses `/ExtGState` alpha, which PDF/A-1b
   forbids. Use solid-layer emoji or a non-PDF/A document for colour gradients.
 
@@ -2337,6 +2550,12 @@ run-splitting** when no registered font covers them, so the base emoji renders
 cleanly. (Internally this is the `isZeroWidthFormat(cp)` predicate in the
 shaping engine — it is not part of the published API surface.) Joiners are
 still preserved when an Indic shaper font maps them.
+
+Since **v1.7.0**, sequences covered by the registered font's `sequences` table
+take a different path entirely: the whole sequence — joiners, selectors and
+all — resolves to a single colour ligature glyph before run-splitting (see
+[Flag & ZWJ sequences](#flag--zwj-sequences-v170) above). The drop-during-run-splitting
+behaviour described here remains the fallback for uncovered sequences.
 
 Colour-glyph Form `/BBox` is also now computed from the glyph's transformed
 contour bounds (v1.3.0), so emoji that dip below the baseline are no longer
@@ -2645,7 +2864,25 @@ const signed = signPdfBytes(prepared, {
 });
 ```
 
-pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256), both with SHA-256 digests. The crypto stack is implemented in pure TypeScript inside `src/crypto/` — no native modules, no `node:crypto` (an optional constant-time native provider can be plugged in via `setCryptoProvider`).
+pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256); RSA also offers SHA-384/512 since v1.7.0. The crypto stack is implemented in pure TypeScript inside `src/crypto/` — no native modules, no `node:crypto` (an optional constant-time native provider can be plugged in via `setCryptoProvider`).
+
+### How do I make a signature "LTV enabled" (valid for years)?
+
+Since v1.7.0 pdfnative covers the full PAdES baseline (ETSI EN 319 142-1):
+sign with `profile: 'pades'`, add an RFC 3161 timestamp with
+`signPdfBytesWithTimestamp`, embed revocation material with
+`addValidationInfo` (`/DSS` + `/VRI`), and cap with `addDocumentTimestamp`.
+The engine never opens sockets — you inject the TSA/OCSP/CRL transport via
+`setTimestampProvider` / `setRevocationProvider`. Full pipeline in the
+[LTV guide](ltv.html).
+
+### Can a PDF carry several signatures?
+
+Yes (v1.7.0): create each placeholder with `allowMultiple: true` and target
+it by `fieldName` when signing. Each signature is appended as a
+non-destructive incremental revision, so earlier signatures remain valid;
+inspect any file with `listSignatures(bytes)`. See
+[signatures — multiple signatures](signatures.html).
 
 ### Is the build supply-chain safe?
 
@@ -2960,10 +3197,167 @@ rewritten — the update is appended after the existing body with a new xref and
 - [CHANGELOG](https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md)
 
 ---
+<!-- source: docs/guides/ltv.md -->
+# Long-term validation (LTV) — PAdES B-B to B-LTA
+
+> **New in v1.7.0.** pdfnative signs PDFs that stay verifiable for decades: PAdES baseline signatures (ETSI EN 319 142-1), RFC 3161 signature timestamps, embedded revocation material (`/DSS` + `/VRI`), and document timestamps — all with **zero runtime dependencies** and **zero network access in the engine**. Transport is injected by your code.
+
+## TL;DR
+
+```ts
+import {
+  buildDocumentPDFBytes, addSignaturePlaceholder, estimateContentsSize,
+  signPdfBytesWithTimestamp, addValidationInfo, addDocumentTimestamp,
+  setTimestampProvider, setRevocationProvider,
+} from 'pdfnative';
+
+// 1. Your transports (the engine never fetches on its own).
+setTimestampProvider({
+  async getTimestamp(request) {           // DER TimeStampReq in…
+    const res = await fetch('https://freetsa.org/tsr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/timestamp-query' },
+      body: request.slice(),
+    });
+    return new Uint8Array(await res.arrayBuffer());  // …DER TimeStampResp out
+  },
+});
+setRevocationProvider({
+  async fetchOcsp(url, request) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/ocsp-request' },
+      body: request.slice(),
+    });
+    return new Uint8Array(await res.arrayBuffer());
+  },
+  async fetchCrl(url) {
+    const res = await fetch(url);
+    return new Uint8Array(await res.arrayBuffer());
+  },
+});
+
+// 2. Build → placeholder → sign+timestamp → embed validation → archive.
+const unsigned = addSignaturePlaceholder(buildDocumentPDFBytes(params), {
+  metadata: { subFilter: 'ETSI.CAdES.detached', reason: 'Contract v2' },
+  placeholderBytes: estimateContentsSize([certDer.length], 'rsa-sha256', { timestamp: true }),
+});
+const signed  = await signPdfBytesWithTimestamp(unsigned, {
+  signerCert, certChain: [intermediateCert], rsaKey,
+  profile: 'pades',                       // ESS signing-certificate-v2, no CMS signing-time
+});
+const ltv     = await addValidationInfo(signed);       // /DSS + /VRI (B-LT)
+const archive = await addDocumentTimestamp(ltv);       // DocTimeStamp (B-LTA)
+```
+
+Every step appends a non-destructive incremental revision — earlier bytes are never modified, so prior signatures stay intact.
+
+## Why LTV
+
+A plain signature proves *who* signed, but its verifiability decays: certificates expire, CAs go offline, revocation servers disappear. The PAdES baseline levels fix each failure mode in turn:
+
+| Level | Adds | Protects against |
+|---|---|---|
+| **B-B** | CAdES signature with the ESS `signing-certificate-v2` attribute | Certificate substitution |
+| **B-T** | RFC 3161 signature timestamp (`id-aa-signatureTimeStampToken`) | "Was the signature made while the certificate was valid?" |
+| **B-LT** | `/DSS`: embedded certificates + OCSP/CRL responses, per-signature `/VRI` | Revocation servers disappearing |
+| **B-LTA** | `/DocTimeStamp` covering the whole document | Algorithm/key aging — re-timestamp before the TSA certificate expires to extend the chain |
+
+Adobe Reader shows a B-LT/B-LTA document as **"LTV enabled"** (with the chain's root trusted).
+
+## The provider architecture
+
+pdfnative **never opens a socket**. Two small interfaces move bytes; you own transport, proxies, retries and trust decisions:
+
+```ts
+interface TimestampProvider {
+  getTimestamp(request: Uint8Array): Promise<Uint8Array>;   // TimeStampReq → TimeStampResp
+}
+interface RevocationProvider {
+  fetchOcsp?(url: string, request: Uint8Array): Promise<Uint8Array>; // OCSPRequest → OCSPResponse
+  fetchCrl?(url: string): Promise<Uint8Array>;                      // → CertificateList
+}
+```
+
+Install globally (`setTimestampProvider` / `setRevocationProvider`) or pass per call (`timestampProvider:` / `revocationProvider:` options — per-call wins). pdfnative builds and parses every RFC 3161 / RFC 6960 / RFC 5280 structure itself, verifies the token's message imprint and nonce echo, and **refuses to embed** a rejected or tampered response.
+
+## Step by step
+
+### B-B — a PAdES baseline signature
+
+```ts
+const signed = signPdfBytes(placeheld, {
+  signerCert, certChain, rsaKey,
+  profile: 'pades',          // adds ESS signing-certificate-v2 (RFC 5035)
+});
+```
+
+Pair `profile: 'pades'` with the placeholder's `metadata: { subFilter: 'ETSI.CAdES.detached' }` so the `/Sig` dictionary declares the PAdES SubFilter. The legacy default (`adbe.pkcs7.detached`, `profile: 'pkcs7'`) is unchanged. `digestAlgorithm: 'sha384' | 'sha512'` upgrades the whole CMS digest chain.
+
+### B-T — the signature timestamp
+
+`signPdfBytesWithTimestamp` (async) signs, hashes the CMS signature value, asks your `TimestampProvider` for a token, verifies it, and attaches it as an unsigned attribute — the signed bytes are untouched, so the signature stays valid. Reserve room for the token when creating the placeholder:
+
+```ts
+placeholderBytes: estimateContentsSize(certSizes, 'rsa-sha256', { timestamp: true })  // +8 KiB
+```
+
+### B-LT — the Document Security Store
+
+```ts
+const data = await collectValidationInfo(signed);   // async: chains + OCSP/CRL via provider
+const ltv  = embedValidationInfo(signed, data);     // sync, offline, deterministic
+// …or in one call: await addValidationInfo(signed)
+```
+
+`collectValidationInfo` walks every signed signature (and the TSA certificates inside embedded timestamp tokens), deduplicates the certificate pool, and requests OCSP (preferred) or CRL data for every certificate that advertises a source via its AIA / CRL-distribution-point extensions — skipping self-signed roots and `id-pkix-ocsp-nocheck` responders. Missing intermediates can be supplied with `extraCertificates`.
+
+`embedValidationInfo` writes the `/DSS` dictionary — `/Certs`, `/OCSPs`, `/CRLs` stream arrays plus a `/VRI` entry per signature keyed by the uppercase-hex SHA-1 of its full `/Contents` value (the Adobe convention; `vriKeyForContents` exposes the computation). An existing `/DSS` is merged, never replaced. The split matters: collect once online, embed deterministically offline (or in tests).
+
+### B-LTA — the document timestamp
+
+```ts
+const archive = await addDocumentTimestamp(ltv);
+```
+
+Appends a signature field whose dictionary is `/Type /DocTimeStamp /SubFilter /ETSI.RFC3161` with a **bare** TimeStampToken as `/Contents` (ISO 32000-2 §12.8.5 — no `/M`: the token's genTime is the time assertion). Field names auto-suffix (`DocTimeStamp1`, `DocTimeStamp2`, …) so periodic re-timestamping chains naturally.
+
+## Multiple signatures
+
+```ts
+const a = signPdfBytes(addSignaturePlaceholder(pdf, { fieldName: 'Author' }), opts);
+const b = signPdfBytes(
+  addSignaturePlaceholder(a, { fieldName: 'Reviewer', allowMultiple: true }),
+  { ...opts, fieldName: 'Reviewer' },
+);
+```
+
+`allowMultiple: true` opts out of the historical one-signature short-circuit; the `fieldName` selector on `signPdfBytes` targets the right placeholder. Signed signatures are located by their real ByteRange values and can never be overwritten. Inspect any document with `listSignatures(bytes)`.
+
+## Testing without a real TSA or CA
+
+The repository ships a deterministic offline mock PKI (`scripts/helpers/mock-pki.ts`): a root CA, a signer with AIA/CRL-DP extensions, a TSA with the critical `id-kp-timeStamping` EKU and an OCSP responder with `ocsp-nocheck` — plus providers that produce **real, signed** TimeStampTokens, BasicOCSPResponses and CRLs. The `signature/signature-pades-*.pdf` samples and the `ltv-pipeline` integration suite run the full B-LTA chain with zero network. Public TSAs for manual testing include `https://freetsa.org/tsr`.
+
+## Verification checklist
+
+- `listSignatures(bytes)` — every entry, its SubFilter, ByteRange, placeholder/timestamp status.
+- Adobe Reader: *Signature Panel → Certificate Details* — trust the mock/company root, then look for **"LTV enabled"** on B-LT documents and a valid document timestamp on B-LTA.
+- `openssl ts -reply -in token.der -text` inspects extracted timestamp tokens.
+- pdfnative itself ships **no signature verifier** — validation belongs to dedicated tooling (veraPDF for PDF/A, Adobe/DSS for signatures, `pdfnative-cli verify` for structural checks).
+
+## Limits & scope (v1.7.0)
+
+- ECDSA stays P-256 with SHA-256; RSA supports SHA-256/384/512.
+- Chain building uses exact issuer-name matching over the embedded pool; cross-certification and bridge PKIs are out of scope.
+- `collectValidationInfo` fetches from the **first** advertised OCSP/CRL URL; provider-side failover is your transport's business.
+- Encrypted documents cannot take signature placeholders (unchanged from v1.2).
+- PDF 2.0 `/Extensions` declarations are not emitted; the ISO 32000-2 constructs used here are accepted by all mainstream validators.
+
+---
 <!-- source: docs/guides/mcp.md -->
 # pdfnative-mcp — AI Client Integration Guide
 
-> **Tracks the latest published `pdfnative-mcp`** (v1.5.0, built on pdfnative 1.6.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
+> **Tracks the latest published `pdfnative-mcp`** (v1.5.0, built on pdfnative 1.7.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
 
 [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is an **MCP server** that exposes the full pdfnative library to any AI client supporting the [Model Context Protocol](https://modelcontextprotocol.io) — Claude Desktop, Cursor, Continue, Zed, ChatGPT, and more.
 
@@ -3614,7 +4008,7 @@ Split the content across multiple tool calls or reduce image/barcode count.
 
 ## Release history
 
-The current release is **v1.5.0** (24 tools, built on pdfnative 1.6.0 — see the header note). Per-release notes, oldest first:
+The current release is **v1.5.0** (24 tools, built on pdfnative 1.7.0 — see the header note). Per-release notes, oldest first:
 
 ### What's new in v1.0.0
 
@@ -3689,7 +4083,7 @@ v1.4.0 upgrades the engine to **pdfnative 1.5.0**, brings the pdfnative **AI-gov
 
 ### What's new in v1.5.0
 
-v1.5.0 upgrades the engine to **pdfnative 1.6.0** and takes the catalogue to **24 tools**, closing the read/modify loop on documents the assistant did not create.
+v1.5.0 upgrades the engine to **pdfnative 1.7.0** and takes the catalogue to **24 tools**, closing the read/modify loop on documents the assistant did not create.
 
 - **Five new tools:**
   - `add_chart` — bar, horizontal-bar, line, pie and donut charts drawn as **native PDF vector paths**. No rasterisation and no image round-trip, so the output stays sharp at any zoom and tags as `/Figure` with alt text. If you were previously asking an agent to render a chart to PNG and push it through `embed_image`, stop — this replaces that.
@@ -4240,6 +4634,32 @@ import { buildDocumentPDFStreamTrue, streamToFile } from 'pdfnative';
 await streamToFile(buildDocumentPDFStreamTrue(params), 'report.pdf');
 ```
 
+## Updating metadata in place
+
+> **New in v1.7.0.** `PdfModifier.updateMetadata()` rewrites a document's
+> metadata as a non-destructive incremental revision — no re-serialisation,
+> existing signatures over earlier revisions stay intact.
+
+```ts
+import { openPdf, createModifier } from 'pdfnative';
+
+const modifier = createModifier(openPdf(bytes));
+modifier.updateMetadata({
+  title: 'Q3 report (final)',
+  author: 'Finance',
+  keywords: 'quarterly, revenue',
+  // modDate: new Date('2026-08-21T00:00:00Z'),  // pin for reproducible bytes
+});
+const updated = modifier.save();
+```
+
+Only the fields you pass change; the rest of `/Info` is preserved. `/ModDate`
+is always refreshed (pass `modDate` to pin it). When the document carries an
+XMP packet, it is resynchronised in the same revision — `dc:title`,
+`dc:creator`, `dc:description`, `pdf:Keywords`, `xmp:ModifyDate` and
+`xmp:MetadataDate` — while `xmp:CreateDate` and any `pdfaid:*` conformance
+claim are preserved, so Info↔XMP parity holds for PDF/A documents.
+
 ## Safety & limits
 
 - **Encrypted input is decrypted on ingest** (v1.6.0) when a valid password is
@@ -4327,10 +4747,16 @@ const pdf3b = buildPDFBytes(params, { tagged: 'pdfa3b' });  // PDF/A-3b + attach
 > );
 > ```
 >
+> Since **v1.7.0** the builders guard this declaration themselves: requesting any
+> `'pdfa*'` level (or `tagged: true`) with no `fontEntries` emits the
+> `PDFA_NO_FONT_ENTRIES` diagnostic — a `console.warn` by default, or a thrown
+> `Error` under `strict: true`, before any output bytes are produced. See
+> *Conformance diagnostics* below.
+>
 > The sample generators in `scripts/generators/` all do this, which is why the veraPDF
-> CI job passes — the trap only bites documents assembled by hand. `pdfnative-react`
-> ships a lint rule for exactly this case (`L_TAGGED_NO_FONTS`); run `lintDocument()`
-> if you author through that package.
+> CI job passes. If you author through `pdfnative-react`, its `lintDocument()` rule
+> `L_TAGGED_NO_FONTS` still catches the same trap earlier, at the document-model
+> level — a complementary check to the core diagnostic.
 
 Every output written with `tagged` set ships:
 
@@ -4344,6 +4770,42 @@ Every output written with `tagged` set ships:
   creation timestamp.
 - `/Info CreationDate` byte-equivalent to `xmp:CreateDate`, both with
   timezone offsets.
+
+## Conformance diagnostics (v1.7.0)
+
+Configurations that produce a PDF/A claim veraPDF would reject no longer fail
+silently. Both builders (`buildPDFBytes` and `buildDocumentPDFBytes`) surface
+them through a single diagnostics channel:
+
+| Code | Trigger |
+|------|---------|
+| `PDFA_NO_FONT_ENTRIES` | A `'pdfa*'` level (or `tagged: true`) requested with no `fontEntries` — the file would claim PDF/A while referencing unembedded standard-14 Helvetica (ISO 19005 §6.2.11.4.1). |
+| `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim with an sRGB `OutputIntent` (ISO 19005-2 §6.2.4.3). |
+| `PDFA_UNEMBEDDED_FORM_FONT` | AcroForm fields under a PDF/A claim — form appearances render through an unembedded base-14 `/Helv` font (same §6.2.11.4.1 rule). Flatten the form or drop the level. |
+
+By default each diagnostic is a `console.warn`, deduplicated **once per code
+per build**. Two layout options change that:
+
+```ts
+import { buildPDFBytes, type PdfDiagnostic } from 'pdfnative';
+
+// CI / tests: escalate to a thrown Error, before any bytes are produced.
+buildPDFBytes(params, { tagged: 'pdfa2b', strict: true });
+
+// Custom sink — receives every diagnostic (no deduplication).
+// Pass () => {} to silence entirely.
+const diagnostics: PdfDiagnostic[] = [];
+const pdf = buildPDFBytes(params, {
+  tagged: 'pdfa2b',
+  onDiagnostic: (d) => diagnostics.push(d),
+});
+```
+
+Each `PdfDiagnostic` carries a machine-readable `code`, a `severity`
+(`'warning'`), and an actionable `message` that includes the remedy.
+`onDiagnostic` is ignored when `strict` is set — diagnostics throw instead.
+The code list is a stable, additions-only union (`PdfDiagnosticCode`), so a
+sink written today keeps compiling as future codes are added.
 
 ## v1.1.0 status — fully validated
 
@@ -4402,8 +4864,27 @@ npm run validate:pdfa
 The script auto-detects veraPDF on `$PATH` or via the `VERAPDF_HOME`
 env var. If veraPDF is not installed it exits 0 with install
 instructions — local development never blocks. CI installs veraPDF
-deterministically (pinned version) and runs the same script on every
-PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml).
+deterministically (pinned to 1.30.2) and runs the same script on every
+engine PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml) —
+and again as a blocking gate before every npm publish.
+
+Detection is automatic and guarded: every sample declaring
+`pdfaid:part` — currently the 18 PDF/A-claiming samples — is validated
+without any registration, and a **coverage canary** fails the run if the
+detected count drifts from `declared.pdfaSamples` in
+`docs/assets/ecosystem.json` (bump it when adding or removing a
+claiming sample; a mismatch with no sample change means detection or
+generation regressed).
+
+> **Which samples are subject to PDF/A validation?** Only files that
+> *declare* a conformance level in their XMP (`pdfaid:part`) — the ones
+> built with `tagged: 'pdfa…'`, e.g. the `pdfa/` and `pdfa-latin/` sample
+> categories. The script skips everything else. Most showcase samples
+> (`bidi/`, `alphabet/`, `charts/`, …) intentionally make **no** PDF/A
+> claim: they have no XMP packet at all, so force-validating one against a
+> PDF/A profile in the veraPDF GUI fails by construction (missing
+> `/Metadata`, uncalibrated DeviceRGB, …) — that is expected and not a
+> defect.
 
 veraPDF is invoked as an **external** Java tool. pdfnative remains a
 zero-runtime-dependency library; veraPDF is never bundled, linked, or
@@ -4433,15 +4914,22 @@ export VERAPDF_HOME="$HOME/verapdf"
 export PATH="$VERAPDF_HOME:$PATH"
 ```
 
-**Windows** — official installer from
-<https://docs.verapdf.org/install/>. After install, either add the
-install directory to `PATH` or:
+**Windows** — official GUI installer from
+<https://docs.verapdf.org/install/>, or the same headless install CI
+uses (download the pinned zip, run
+`java -jar verapdf-izpack-installer-*.jar auto-install.xml` — the
+descriptor is shown in [CONTRIBUTING](https://github.com/Nizoka/pdfnative/blob/main/CONTRIBUTING.md)).
+After install, either add the install directory to `PATH` or:
 
 ```powershell
 $env:VERAPDF_HOME = "C:\Program Files\verapdf"
 $env:Path += ";$env:VERAPDF_HOME"
 verapdf.bat --version
 ```
+
+The `.bat` launcher is fully supported by `npm run validate:pdfa`
+since v1.7.0 (it is spawned through a shell, as recent Node versions
+require for batch files).
 
 **No install at all?** Drop the file into the official online demo
 at <https://demo.verapdf.org>. It validates against the same engine,
@@ -4466,7 +4954,7 @@ files that don't claim PDF/A. The summary line reports how many were
 skipped:
 
 ```
-Scanned 146 PDF(s); 7 claim PDF/A, 139 skipped (not PDF/A).
+Scanned 242 PDF(s); 18 claim PDF/A, 224 skipped (not PDF/A).
 ```
 
 If you want a file to be validated, generate it with `tagged: true`
@@ -4479,7 +4967,9 @@ Register the Latin font module **and pass the resolved data as `fontEntries`**
 builders. Without it, pdfnative emits Helvetica as an unembedded standard-14
 reference for byte-stable v1.0.x output. With it, every glyph used
 in the document is embedded as `CIDFontType2` / `FontFile2` — see
-the v1.1.0 status table above.
+the v1.1.0 status table above. Since v1.7.0 this configuration also emits the
+`PDFA_NO_FONT_ENTRIES` diagnostic at build time (a thrown error under
+`strict: true`), so the failure surfaces before veraPDF ever runs.
 
 ### Output bytes change in v1.0.4
 
@@ -4559,6 +5049,126 @@ These rules are documented in the contributor instruction file
   [ISO 19005-3](https://www.iso.org/standard/57229.html).
 
 ---
+<!-- source: docs/guides/print.md -->
+# Print production — bleed, trim & printer's marks
+
+> **New in v1.7.0.** Print-ready PDFs with zero dependencies: page geometry boxes (`/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`), crop and registration marks drawn as pure vector operators, `/Trapped` metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format `/UserUnit`. Everything is opt-in — output is byte-identical when unused.
+
+## TL;DR
+
+```ts
+import { buildDocumentPDFBytes, PAGE_SIZES } from 'pdfnative';
+
+const BLEED = 8.5; // 3 mm in points
+
+const pdf = buildDocumentPDFBytes(params, {
+  // Design the page at trim size + bleed on every side…
+  pageWidth:  PAGE_SIZES.A4.width  + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
+  // …declare the geometry and draw the marks:
+  print: { bleed: BLEED, marks: true },
+  viewerPreferences: { duplex: 'duplexFlipLongEdge', pickTrayByPDFSize: true },
+});
+```
+
+Open the result in Acrobat with *Preferences → Page Display → Show art, trim & bleed boxes* to see the geometry.
+
+## The box model (ISO 32000-1 §14.11.2)
+
+```
+┌─────────────────────────────┐  MediaBox — the physical page (sheet)
+│  ┌───────────────────────┐  │  BleedBox — content clipped in production
+│  │ ┌───────────────────┐ │  │  TrimBox — the finished page after cutting
+│  │ │      ArtBox       │ │  │  ArtBox — meaningful-content extent
+│  │ └───────────────────┘ │  │
+│  │  backgrounds run here │  │  ← bleed zone: extend backgrounds into it
+│  └───────────────────────┘  │
+└─────────────────────────────┘
+```
+
+| Option | PDF key | Meaning |
+|---|---|---|
+| `print.bleed` | derives both | Shorthand: `TrimBox` = MediaBox inset by the bleed, `BleedBox` = MediaBox |
+| `print.trimBox` | `/TrimBox` | Finished page size after cutting |
+| `print.bleedBox` | `/BleedBox` | Clipping extent in production |
+| `print.artBox` | `/ArtBox` | Meaningful-content extent |
+| `print.cropBox` | `/CropBox` | Region viewers display/print |
+
+Boxes are validated (within the MediaBox, trim within bleed) and are pure page-dictionary metadata — the layout engine is untouched, so design the page at *trim + 2×bleed* and enlarge the margins by the bleed, letting backgrounds run to the page edge.
+
+`mergePdfs` / `splitPdf` / `extractPages` preserve all four boxes (and `/UserUnit`).
+
+## Printer's marks (§14.11.3)
+
+`print.marks: true` draws, on every page, strictly **outside** the TrimBox:
+
+- **Crop marks** — 8 corner hairlines (default 0.25 pt, 14 pt long, 5 pt clear of the trim edge) showing where to cut.
+- **Registration targets** — circle-and-cross targets on the four edge midpoints, used to align separations.
+
+Fine-tune with an object: `marks: { crop, registration, length, offset, weight }`.
+
+> Marks are stroked in RGB black. A true all-separation *registration colour* requires CMYK content support, which is on the roadmap together with PDF/X — see below.
+
+## /Trapped and prepress metadata
+
+```ts
+buildDocumentPDFBytes({ ...params, metadata: { trapped: 'False' } }, { tagged: 'pdfa2b' });
+```
+
+Writes `/Info /Trapped /False` and mirrors it as `pdf:Trapped` in the XMP packet, telling the RIP whether trapping has been applied. Because `pdf:Trapped` is not part of the XMP-2005 Adobe PDF schema that PDF/A pins, pdfnative also emits the required PDF/A extension schema declaring the property (ISO 19005 §6.6.2.3.2) — the document stays veraPDF-compliant. Per ISO 32000-1 Table 317, `trapped: 'Unknown'` is written to `/Info` only: unknown maps to the *absence* of `pdf:Trapped` in XMP.
+
+## Print-dialog defaults (`viewerPreferences`)
+
+| Option | PDF key | Values |
+|---|---|---|
+| `duplex` | `/Duplex` | `'simplex'`, `'duplexFlipShortEdge'`, `'duplexFlipLongEdge'` |
+| `pickTrayByPDFSize` | `/PickTrayByPDFSize` | boolean (Windows viewers) |
+| `printPageRange` | `/PrintPageRange` | 1-based `[first, last]` pairs, e.g. `[[1, 4], [7, 7]]` |
+| `numCopies` | `/NumCopies` | positive integer |
+
+These join the existing v1.4.0 viewer preferences and remain PDF/A-safe metadata.
+
+## Custom OutputIntent (tagged/PDF-A)
+
+Replace the built-in minimal sRGB profile with a real ICC profile:
+
+```ts
+import { readFileSync } from 'node:fs';
+
+buildDocumentPDFBytes(params, {
+  tagged: 'pdfa2b',
+  outputIntent: {
+    iccProfile: new Uint8Array(readFileSync('sRGB-IEC61966-2.1.icc')),
+    outputConditionIdentifier: 'sRGB IEC61966-2.1',
+    outputCondition: 'sRGB display',
+    info: 'IEC 61966-2.1 reference profile',
+  },
+});
+```
+
+RGB profiles only — pdfnative emits RGB content, and a mismatched intent fails PDF/A validation (a CMYK profile throws with an actionable message). Omitted, the historical built-in profile is used byte-identically.
+
+## Large formats — `/UserUnit`
+
+PDF user space caps pages at 14 400 units (200 in). For banners and plans, `print.userUnit` scales the unit (1 unit = `userUnit`/72 inch, up to 75 000):
+
+```ts
+// A 5 m × 1 m banner: 1417 × 283 units at 10/72 inch per unit.
+buildDocumentPDFBytes(params, { pageWidth: 1417, pageHeight: 283, print: { userUnit: 10 } });
+```
+
+`/UserUnit` needs PDF 1.6+, so the header is raised to `%PDF-1.7` when the option is set — and it is rejected under `tagged: 'pdfa1b'` (PDF/A-1 is PDF 1.4; use `pdfa2b` or later).
+
+## Limits & scope (v1.7.0)
+
+- Marks are RGB black; **no CMYK content**, spot colours, colour bars or **PDF/X** conformance claims yet — all on the roadmap as one coherent CMYK workstream.
+- One geometry per document (pages share the same boxes), matching the single-page-size layout model.
+- The OutputIntent (custom or built-in) is emitted under `tagged` modes only.
+
+See the [print samples](https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/print-showcase.ts): `print/print-bleed-marks.pdf`, `print/print-explicit-boxes.pdf`, `print/print-large-format.pdf`.
+
+---
 <!-- source: docs/guides/quickstart.md -->
 # Quick Start
 
@@ -4604,7 +5214,7 @@ const pdf = buildDocumentPDFBytes(params, { compress: true });
 
 ```html
 <script type="module">
-  import { buildDocumentPDFBytes, downloadBlob } from 'https://esm.sh/pdfnative@1.6.0';
+  import { buildDocumentPDFBytes, downloadBlob } from 'https://esm.sh/pdfnative@1.7.0';
 
   document.getElementById('go').addEventListener('click', () => {
     const pdf = buildDocumentPDFBytes({
@@ -4783,13 +5393,13 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 - [Accessibility](accessibility.html) — tagged PDF, PDF/UA, PDF/A.
 - [FAQ](faq.html) — fonts, encryption, signatures, comparisons.
 - [Troubleshooting](troubleshooting.html) — common pitfalls and fixes.
-- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — ~228 PDFs across 37 categories (44 generators).
+- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — 242 PDFs across 37 categories (48 generators).
 
 ---
 <!-- source: docs/guides/react.md -->
 # pdfnative-react — Declarative JSX Renderer Guide
 
-> **Tracks the latest published `pdfnative-react`** (v1.1.0, built on pdfnative 1.6.0), with **React 19** and `pdfnative` ^1.6.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
+> **Tracks the latest published `pdfnative-react`** (v1.1.0, built on pdfnative 1.7.0), with **React 19** and `pdfnative` ^1.6.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
 
 [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency [`pdfnative`](https://github.com/Nizoka/pdfnative) engine — no DOM, no headless browser, no SaaS round-trips. Your documents never leave the process.
 
@@ -5198,6 +5808,14 @@ Options:
 | `fieldName`       | `'Signature1'`   | AcroForm field name                               |
 | `pageIndex`       | `0`              | Page to attach the (invisible) widget to          |
 | `rect`            | `[0, 0, 0, 0]`   | Widget rectangle (invisible by default)           |
+| `allowMultiple`   | `false`          | Append a placeholder even when signature fields already exist — the multi-signature flow (v1.7.0, see below) |
+
+To size `placeholderBytes` from your actual certificate chain instead of
+relying on the 16 KiB default, use `estimateContentsSize(certSizes, algorithm)`.
+Since v1.7.0 it takes an options object: `estimateContentsSize(certSizes,
+'rsa-sha256', { timestamp: true })` reserves ~8 KiB of extra headroom for an
+RFC 3161 timestamp token (covering the TSA's own certificate chain) when an
+external signer will add one to the CMS.
 
 Signer metadata (`name`, `reason`, `location`, `contactInfo`, `signingTime`)
 is **not** set here — the placeholder writes an empty `/Sig` dictionary; pass
@@ -5218,9 +5836,14 @@ Options:
   `parseRsaPrivateKey`; for ECDSA there is no DER parser in the engine — supply
   the `EcPrivateKey` scalar directly, or install a crypto provider
   (`setCryptoProvider` / per-call `provider`) and omit the raw key entirely.
-- `algorithm` — `'rsa-sha256' | 'ecdsa-sha256'` (default `'rsa-sha256'`).
+- `algorithm` — `'rsa-sha256' | 'rsa-sha384' | 'rsa-sha512' | 'ecdsa-sha256'`
+  (default `'rsa-sha256'`; the SHA-384/512 RSA variants are new in v1.7.0).
 - `certChain?` — additional intermediate-CA certificates for the chain.
 - `signingTime?` — forwarded to `signedAttrs`.
+- `fieldName?` — with several unsigned placeholders in the file (the
+  `allowMultiple` flow below), selects which one to sign by its AcroForm field
+  name. With a single placeholder — the only case prior to v1.7.0 — the option
+  is unnecessary and behaviour is unchanged. (v1.7.0)
 
 ### 3. Verifying
 
@@ -5246,15 +5869,93 @@ layout. It replaces the ad-hoc reimplementations that downstream
 tooling (notably `pdfnative-cli`'s `sign` command and `pdfnative-mcp`'s
 `prepare_signature_placeholder` workaround) previously had to ship.
 
+## Multiple signatures (v1.7.0)
+
+Simply repeating the placeholder + sign pass does **not** add a second
+signature: `addSignaturePlaceholder()` is idempotent by contract, so on a PDF
+that already carries any `/FT /Sig` field it returns the input unchanged. To
+add further signatures, opt in with `allowMultiple` and give each signature its
+own field name:
+
+```ts
+// First signer.
+let pdf = addSignaturePlaceholder(unsigned, { fieldName: 'Author' });
+pdf = signPdfBytes(pdf, {
+    signerCert: authorCert, rsaKey: authorKey, algorithm: 'rsa-sha256',
+});
+
+// Second signer — appended as a fresh incremental update.
+pdf = addSignaturePlaceholder(pdf, { fieldName: 'Reviewer', allowMultiple: true });
+pdf = signPdfBytes(pdf, {
+    signerCert: reviewerCert, rsaKey: reviewerKey, algorithm: 'rsa-sha256',
+    fieldName: 'Reviewer', // selects which unsigned placeholder to fill
+});
+```
+
+The exact semantics:
+
+- **`allowMultiple: false`** (default) preserves the 1.x idempotent
+  short-circuit: any existing signature field returns the input unchanged.
+- **`allowMultiple: true`** — an existing *unsigned* placeholder with the same
+  `fieldName` returns the input unchanged (per-name idempotence); a *signed*
+  field with the same name throws (pass a fresh `fieldName`); other signature
+  fields are left alone and a new placeholder is appended via incremental
+  update, so `/Prev` chains compose naturally.
+- **`signPdfBytes` with several unsigned placeholders** requires the
+  `fieldName` selector — without it, the call throws and lists the unsigned
+  field names. Already-signed signatures are never modified.
+
+## Inspecting signatures — `listSignatures()` (v1.7.0)
+
+`listSignatures(pdfBytes)` enumerates every signature field in a PDF, in
+AcroForm `/Fields` order — signed signatures, document timestamps, and
+still-unsigned placeholders:
+
+```ts
+import { listSignatures } from 'pdfnative';
+
+for (const sig of listSignatures(signedPdf)) {
+    console.log(sig.fieldName, sig.subFilter, sig.isPlaceholder);
+}
+// → 'Author'   'adbe.pkcs7.detached' false
+// → 'Reviewer' 'adbe.pkcs7.detached' false
+```
+
+Each entry is a `PdfSignatureInfo`:
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `fieldName?` | `string` | The widget's `/T` field name, when present |
+| `subFilter` | `string` | `/SubFilter` — e.g. `'adbe.pkcs7.detached'`, `'ETSI.CAdES.detached'`, `'ETSI.RFC3161'` (`''` when absent) |
+| `byteRange` | `readonly number[]` | `/ByteRange` offsets |
+| `contents` | `Uint8Array` | The full decoded `/Contents` value, trailing zero padding included |
+| `isDocTimestamp` | `boolean` | `true` for `/Type /DocTimeStamp` entries (ISO 32000-2 §12.8.5) |
+| `isPlaceholder` | `boolean` | `true` for an unsigned placeholder (all-zero `/ByteRange`) |
+| `sigObjNum` | `number` | Object number of the `/Sig` dictionary |
+
+`listSignatures()` is a read-only inspection API — it never **verifies**
+anything (see *Verifying* above for the verification story).
+
+Related v1.7.0 addition: `SigDictMetadata` — the metadata subset shared by
+`buildSigDict()` and the signing options — gains a `subFilter` field,
+`'adbe.pkcs7.detached'` (default, unchanged legacy behaviour) or
+`'ETSI.CAdES.detached'` to declare a PAdES (ETSI EN 319 142) signature.
+`buildSigDict()` writes it into the `/Sig` dictionary, and `listSignatures()`
+reports it back on each entry. When declaring `'ETSI.CAdES.detached'`, pair it
+with the `profile: 'pades'` signing option so the CMS carries the matching
+ESS `signing-certificate-v2` attribute.
+
 ## Algorithms
 
 | Algorithm        | Hash      | Curve / Modulus     | Notes                          |
 |------------------|-----------|---------------------|--------------------------------|
-| `rsa-sha256`     | SHA-256   | 2048 / 3072 / 4096  | PKCS#1 v1.5                    |
+| `rsa-sha256`     | SHA-256   | 2048 / 3072 / 4096  | PKCS#1 v1.5 (default)          |
+| `rsa-sha384`     | SHA-384   | 2048 / 3072 / 4096  | PKCS#1 v1.5 (v1.7.0)           |
+| `rsa-sha512`     | SHA-512   | 2048 / 3072 / 4096  | PKCS#1 v1.5 (v1.7.0)           |
 | `ecdsa-sha256`   | SHA-256   | P-256 (secp256r1)   | DER-encoded ECDSA signature    |
 
-These two are the complete `SignatureAlgorithm` union — SHA-384/512
-signing variants are not offered.
+That is the complete `SignatureAlgorithm` union — the RSA variants widened
+to SHA-384/512 in v1.7.0; ECDSA is offered with SHA-256 only.
 
 All primitives live under [src/crypto/](https://github.com/Nizoka/pdfnative/tree/main/src/crypto):
 SHA-256/384/512 in `sha.ts`, ASN.1 DER in `asn1.ts`, RSA modular
@@ -5325,12 +6026,18 @@ the placeholder bytes — that's the pipeline shown in the TL;DR above.
 
 - **Encrypted PDFs.** `addSignaturePlaceholder()` throws on encrypted
   input — sign before encrypting, or decrypt first.
-- **Timestamping (RFC 3161).** Not currently supported. The
-  `pdfnative-cli` may detect RFC 3161 timestamp tokens for display
-  purposes; embedding a TSA token requires a future API.
-- **Multiple signatures.** Each signature requires its own
-  `addSignaturePlaceholder()` + `signPdfBytes()` pass (incremental
-  updates compose naturally because `/Prev` chains accumulate).
+- **Timestamping (RFC 3161).** Supported since v1.7.0 —
+  `signPdfBytesWithTimestamp()` embeds a verified TSA token as the
+  `id-aa-signatureTimeStampToken` unsigned attribute, and
+  `addDocumentTimestamp()` appends `/DocTimeStamp` revisions. See the
+  [Long-term validation guide](ltv.html) for the full PAdES B-B → B-LTA
+  pipeline (timestamps, `/DSS` + `/VRI`, injected providers).
+- **Multiple signatures.** Supported since v1.7.0, but **not** by naively
+  repeating the placeholder + sign pass — `addSignaturePlaceholder()` is
+  idempotent and returns an already-signed PDF unchanged. Pass
+  `allowMultiple: true` with a fresh `fieldName`, then select that field in
+  `signPdfBytes` — see [Multiple signatures](#multiple-signatures-v170)
+  above.
 - **PDF/A + signatures.** PDF/A-2b/3b allow signatures; ISO 19005-2
   §6.3.5 forbids certain `/Sig` dictionary fields (`/Reference`,
   `/Changes`). pdfnative emits only the conformant subset.
@@ -6048,7 +6755,14 @@ const fontEntries = [
 The `lang` property triggers:
 - BiDi run detection (`containsRTL()`)
 - Arabic positional shaping (GSUB forms)
-- Glyph mirroring for brackets
+- Glyph mirroring for brackets and other paired delimiters (the full 428-pair
+  Unicode BidiMirroring table since v1.7.0, per UAX #9 rule L4)
+
+**Reversed digits or backwards parentheses in RTL text?** Fixed in v1.7.0 with
+no API change: digit runs now take even embedding levels (UAX #9 rules I1/I2),
+so a number like `1405` keeps its digit order instead of rendering `5041`, and
+rule L4 mirrors delimiters during reversal, so a logical `(X)` no longer
+renders `)X(`. If you see either symptom, upgrade pdfnative.
 
 ## PDF/A Validation Fails
 
@@ -6179,6 +6893,14 @@ automatically gets when it has an `outline`.
 | `nonFullScreenPageMode` | Mode to use after exiting full-screen |
 | `direction` | `'l2r'` (default) or `'r2l'` reading order |
 | `printScaling` | `'none'` or `'appDefault'` print-dialog default |
+| `duplex` | `'simplex'`, `'duplexFlipShortEdge'` or `'duplexFlipLongEdge'` print-dialog default (v1.7.0) |
+| `pickTrayByPDFSize` | Select the paper tray from the PDF page size (v1.7.0) |
+| `printPageRange` | Default print range as 1-based `[from, to]` pairs (v1.7.0) |
+| `numCopies` | Default copy count in the print dialog (v1.7.0) |
+
+The four print-dialog defaults ship with v1.7.0's print-production support —
+see the [print production guide](print.html) for bleed/trim boxes, printer's
+marks and `/Trapped`.
 
 ## Full-screen kiosk
 

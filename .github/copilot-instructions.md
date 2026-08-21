@@ -30,7 +30,13 @@ src/
 │   ├── pdf-form-fill.ts  # Read/fill/flatten existing AcroForms: readFormFields/fillForm/flattenForm (v1.6.0)
 │   ├── pdf-chart.ts      # Vector chart rendering: renderChartBlock/estimateChartHeight/niceTicks (ChartBlock, v1.6.0)
 │   ├── pdf-signature.ts  # CMS/PKCS#7 digital signatures (RSA + ECDSA, ISO 32000-1 §12.8)
-│   ├── pdf-sig-placeholder.ts # addSignaturePlaceholder: AcroForm + /Sig injection via incremental update (v1.2.0)
+│   ├── pdf-sig-placeholder.ts # addSignaturePlaceholder: AcroForm + /Sig injection via incremental update (v1.2.0; allowMultiple v1.7.0)
+│   ├── pdf-sign-timestamp.ts # signPdfBytesWithTimestamp: PAdES B-T via injected TimestampProvider (v1.7.0)
+│   ├── pdf-dss.ts        # /DSS + /VRI validation-info embedding: collectValidationInfo/embedValidationInfo/addValidationInfo (v1.7.0)
+│   ├── pdf-doc-timestamp.ts # addDocumentTimestamp: /DocTimeStamp incremental revision, PAdES B-LTA (v1.7.0)
+│   ├── pdf-sig-utils.ts  # listSignatures: signature/timestamp inventory + vriKeyForContents (v1.7.0)
+│   ├── pdf-print.ts      # Print production: page boxes (Trim/Bleed/Art/Crop), printer's marks, /UserUnit (v1.7.0)
+│   ├── pdf-diagnostics.ts # PDF/A declaration guards — the ONLY sanctioned console.warn sink; strict/onDiagnostic (v1.7.0)
 │   ├── pdf-stream-writer.ts # AsyncGenerator streaming output with configurable chunk size + streamToFile (v1.4.0)
 │   ├── pdf-outline.ts    # Document outline/bookmarks: /Outlines tree (/First /Last /Next /Prev /Parent /Count, /F flags, /C color, /Dest) (v1.4.0)
 │   ├── pdf-page-labels.ts # /PageLabels number tree (decimal/roman/Roman/alpha/Alpha/none + prefix + start) (v1.4.0)
@@ -38,34 +44,40 @@ src/
 │   └── pdf-encrypt.ts    # AES-128/256 encryption, MD5, SHA-256, key derivation, permissions
 ├── crypto/       # Zero-dependency cryptographic primitives
 │   ├── crypto-provider.ts # Pluggable native signature provider (setCryptoProvider) (v1.4.0)
-│   ├── sha.ts            # SHA-384, SHA-512, HMAC-SHA-256
+│   ├── sha.ts            # SHA-1 (VRI/CertID identification only), SHA-384, SHA-512, HMAC-SHA-256
 │   ├── asn1.ts           # ASN.1 DER encoding/decoding
 │   ├── rsa.ts            # RSA PKCS#1 v1.5 sign/verify (modular arithmetic)
 │   ├── ecdsa.ts          # ECDSA P-256 sign/verify (secp256r1)
-│   ├── x509.ts           # X.509 DER certificate parsing
-│   └── cms.ts            # CMS SignedData (PKCS#7) builder
+│   ├── x509.ts           # X.509 DER certificate parsing + SKI/AKI/EKU/AIA/CRL-DP extensions (v1.7.0)
+│   ├── cms.ts            # CMS SignedData builder: pkcs7 + pades profiles, ESS signing-certificate-v2, canonical DER SET OF (v1.7.0)
+│   ├── cms-utils.ts      # CMS parsing + unsigned-attribute surgery (addUnsignedAttribute) (v1.7.0)
+│   ├── rfc3161.ts        # RFC 3161 TimeStampReq/Resp/Token build+parse+verify (v1.7.0)
+│   ├── ocsp.ts           # RFC 6960 OCSP request builder + response parser (v1.7.0)
+│   ├── crl.ts            # RFC 5280 CRL parser + revocation lookup (v1.7.0)
+│   ├── timestamp-provider.ts # Injected TSA transport registry — the engine NEVER opens sockets (v1.7.0)
+│   └── revocation-provider.ts # Injected OCSP/CRL transport registry (v1.7.0)
 ├── parser/       # PDF reading & modification (ISO 32000-1 §7)
 │   ├── pdf-inflate.ts    # DEFLATE decompression (zlib inflate, pure JS + native fallback, zip-bomb cap via MAX_INFLATE_OUTPUT)
 │   ├── pdf-tokenizer.ts  # PDF lexical scanner (ISO 32000-1 §7.2)
 │   ├── pdf-object-parser.ts # PDF object parser with type guards and dict helpers (MAX_PARSE_DEPTH=1000 recursion cap)
 │   ├── pdf-xref-parser.ts # Cross-reference table/stream parser with /Prev chain (MAX_XREF_CHAIN=100 + cycle detection)
 │   ├── pdf-reader.ts     # High-level PDF reader (page tree, stream decode, caching) + getPageLabels/getAnnotations/getPageRef (v1.5.0)
-│   ├── pdf-modifier.ts   # Incremental modification (non-destructive save with /Prev) + addAnnotation (v1.5.0)
+│   ├── pdf-modifier.ts   # Incremental modification (non-destructive save with /Prev) + addAnnotation (v1.5.0) + updateMetadata with Info↔XMP resync (v1.7.0)
 │   ├── pdf-decrypt.ts    # Parser-side decryption (RC4/AES-128/AES-256): DecryptionContext, PdfPasswordError, PdfEncryptionUnsupportedError (v1.6.0)
 │   ├── pdf-text-extract.ts # extractText(): content-stream text extraction (ToUnicode CMap → /Differences → base encodings) (v1.6.0)
 │   ├── pdf-decode-filters.ts # ASCIIHex/ASCII85/LZW/RunLength stream decode filters + applyDecodeFilter (v1.6.0)
 │   ├── pdf-ua-validator.ts # Read-only PDF/UA (ISO 14289-1) structural checker (v1.3.0)
 │   └── pdf-pagetree.ts   # Page-tree manipulation: mergePdfs/splitPdf/extractPages — clean object-graph rebuild (v1.4.0)
 ├── fonts/        # WinAnsi + CIDFont pure encoding functions, lazy font loader, TTF subsetter (with buffer guards), CMap builder, font-data validator (validateFontData, v1.4.0)
-├── shaping/      # Thai/Devanagari/Telugu/Bengali/Tamil GSUB+GPOS shaping, Arabic positional shaping, BiDi resolution, Unicode script detection, multi-font run splitting, centralized script registry
+├── shaping/      # Thai/Devanagari/Telugu/Bengali/Tamil GSUB+GPOS shaping, Arabic positional shaping, BiDi resolution (UAX #9 I1/I2 digit levels + full L4 mirroring via bidi-mirroring-data.ts, v1.7.0), colour-emoji sequence matching (emoji-sequences.ts, v1.7.0), Unicode script detection, multi-font run splitting, centralized script registry
 ├── tools/        # Font-data compiler/parser: compileFontData/parseFontData (pdfnative/tools entry) (v1.5.0)
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # Pre-built font data modules (.js/.d.ts) — 22 scripts + math (noto-sans-math-data, v1.5.0) + TTF source files
 tools/            # CLI tools: build-font-data.cjs (TTF → data module); build-emoji-font (bundled via tsup from scripts/build-emoji-font.ts → dist/tools/, npx pdfnative-build-emoji-font — generates colour-emoji data modules up to the full ~3,600-glyph set)
-scripts/          # Modular sample PDF generation (44 generators; text-extract-showcase.ts added in v1.6.0; math-symbols.ts + svg-text-labels.ts + layout-debug-overlay.ts + annotations-showcase.ts + font-compiler-demo.ts added in v1.5.0; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0). scripts/lib/ holds the shared deterministic emoji-build core (emoji-font-core.ts, curated-emoji.ts, emoji-cli.ts) used by both build-color-emoji-data.ts and the bundled build-emoji-font CLI
+scripts/          # Modular sample PDF generation (48 generators; persian-showcase.ts + print-showcase.ts, signature-ltv.ts + incremental-metadata.ts added in v1.7.0; text-extract-showcase.ts added in v1.6.0; math-symbols.ts + svg-text-labels.ts + layout-debug-overlay.ts + annotations-showcase.ts + font-compiler-demo.ts added in v1.5.0; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0). scripts/lib/ holds the shared deterministic emoji-build core (emoji-font-core.ts, curated-emoji.ts, emoji-cli.ts) used by both build-color-emoji-data.ts and the bundled build-emoji-font CLI
 test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf, extreme-bidi-isolates.pdf)
-tests/            # 2396+ tests (105 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
+tests/            # 2665+ tests (122 files: unit/integration/fuzz/parser/visual) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
   └── playgrounds/  # Interactive browser playgrounds (extreme-scripts.html, scale.html)
@@ -73,7 +85,7 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 - **Single entry point**: `src/index.ts` re-exports everything. All public API surfaces live there.
 - **Type-first**: All domain types in `src/types/pdf-types.ts` and `src/types/pdf-document-types.ts`. Consumers import types from root.
-- **No circular deps**: strict unidirectional dependency flow: types → core ← fonts ← shaping ← worker; crypto is standalone; parser imports from core/compress for inflate.
+- **No circular deps**: strict unidirectional dependency flow: types → core ← fonts ← shaping ← worker; crypto is near-standalone (imports sha256 from core/pdf-encrypt); parser imports from core (pdf-compress, pdf-encrypt, pdf-tags). One sanctioned, documented reverse edge: the signature-workflow core modules (pdf-dss, pdf-sig-utils, pdf-doc-timestamp, pdf-sig-placeholder, pdf-form-fill) import the parser to read existing documents before appending incremental revisions.
 
 ## Code Style
 
@@ -91,22 +103,24 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (2396+ tests, 105 files)
+npm run test            # vitest run (2665+ tests, 122 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 88/80/85/90)
-npm run test:generate   # Generate ~228 sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/, forms/, charts/, parser/ baselines)
+npm run test:generate   # Generate ~242 sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/, forms/, charts/, parser/ baselines)
 npm run typecheck       # tsc --noEmit
 npm run typecheck:tests # tsc --project tsconfig.test.json --noEmit
 npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit
 npm run typecheck:all   # typecheck src/ + tests/ + scripts/
 npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
+npm run validate:pdfa   # veraPDF over every PDF/A-claiming sample (auto-detected; coverage canary vs declared.pdfaSamples; skips with exit 0 when veraPDF is absent, blocking in CI)
+npm run verify:docs     # 17 offline rules over docs/, playgrounds, README, llms files (ecosystem.json is the source of truth)
 ```
 
 - Build tool: **tsup** (dual ESM/CJS, tree-shakeable, sourcemaps)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC Trusted Publishing (`npm publish --access public`; provenance is attached automatically via the workflow's `id-token: write`)
-- All new code must have tests. 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90. 2396+ tests (105 files)
+- All new code must have tests. 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90. 2665+ tests (122 files)
 
 ## Conventions
 
@@ -162,7 +176,9 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - Arabic shaping: GSUB positional forms (isol/init/medi/fina) with joining type analysis + lam-alef ligatures
 - RTL Arabic pipeline: BiDi reverse → un-reverse to logical → shape → reverse shaped glyphs for visual order
 - RTL Hebrew pipeline: BiDi reverse provides visual order directly — encode without additional shaping
-- Glyph mirroring: parentheses, brackets, guillemets reversed for RTL runs
+- Glyph mirroring (UAX #9 L4, v1.7.0): the full 428-pair BidiMirroring.txt table (generated `bidi-mirroring-data.ts`) is applied as codepoint substitution during odd-run reversal — BEFORE any cmap lookup, so font data modules are unaffected by mirroring changes
+- BiDi digit order (UAX #9 I1/I2, v1.7.0): AN/EN runs get even level 2 so digits keep logical order in RTL paragraphs; Extended Arabic-Indic digits are EN (W2 derives AN in AL context)
+- Colour-emoji sequences (v1.7.0): `FontData.sequences` is optional (older modules stay valid), keyed by first codepoint, longest-match pre-pass in `emoji-sequences.ts`; unmatched sequences fall back per-codepoint — never worse than v1.6.0
 - Multi-font splitting: `splitTextByFont()` uses script-aware preference via `detectCharLang()` — characters in specific Unicode blocks prefer the font entry with matching `lang`, Latin/common chars use continuation bias
 - CJK line breaking: `wrapText()` uses `tokenizeForWrap()` with `isCJKBreakable()` — CJK codepoints (U+2E80–U+9FFF, U+AC00–U+D7AF, U+F900–U+FAFF, U+FE30–U+FFEF, U+20000–U+2FA1F) break individually; Latin words stay grouped; spaces attach to preceding segment
 - Typography convention: use en-dash `–` (U+2013) with surrounding spaces as title/footer separator, not em-dash `—` (U+2014) — en-dash is 44% narrower (556 vs 1000 units), WinAnsi-encodable, ISO/international standard, and avoids disproportionate visual gaps in cursive scripts (Arabic)
@@ -199,9 +215,10 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - `FormFieldBlock`: `{ type: 'formField', fieldType, name, ... }` — document block type
 - AcroForm tagged mode: form fields wrapped in `/Form` structure element with MCID
 - Digital signatures: `pdf-signature.ts` builds `/Sig` field with `/ByteRange` placeholder, CMS SignedData via `crypto/cms.ts`
-- Signature algorithms: RSA PKCS#1 v1.5 (SHA-256) and ECDSA P-256 (SHA-256)
-- Crypto module: standalone `src/crypto/` — sha.ts (SHA-384/512, HMAC-SHA-256), asn1.ts (DER), rsa.ts, ecdsa.ts, x509.ts, cms.ts
-- `signPdfBytes()`: takes PDF bytes + private key + certificate → signed PDF bytes with embedded CMS
+- Signature algorithms: RSA PKCS#1 v1.5 (SHA-256/384/512, digest agility v1.7.0) and ECDSA P-256 (SHA-256)
+- Crypto module: standalone `src/crypto/` — sha.ts (SHA-1 identification-only, SHA-384/512, HMAC-SHA-256), asn1.ts (DER incl. canonical `derSetOf`), rsa.ts, ecdsa.ts, x509.ts (+SKI/AKI/EKU/AIA/CRL-DP extensions), cms.ts (PKCS#7 + PAdES profiles), cms-utils.ts (unsigned-attribute surgery), rfc3161.ts (timestamps), ocsp.ts, crl.ts, timestamp-provider.ts + revocation-provider.ts (injected transports — the engine never opens a socket)
+- `signPdfBytes()`: takes PDF bytes + private key + certificate → signed PDF bytes with embedded CMS. v1.7.0: `profile: 'pades'` (ESS signing-certificate-v2), `digestAlgorithm`, multi-signature `fieldName` selector
+- LTV (v1.7.0): `signPdfBytesWithTimestamp()` (RFC 3161 B-T), `collectValidationInfo()`/`embedValidationInfo()`/`addValidationInfo()` (`/DSS` + `/VRI`, B-LT), `addDocumentTimestamp()` (B-LTA), `listSignatures()`; placeholders support `allowMultiple`/`metadata`/`docTimeStamp`. Network only via injected `TimestampProvider`/`RevocationProvider`
 - Streaming output: `pdf-stream-writer.ts` provides AsyncGenerators yielding Uint8Array chunks
 - Streaming API: `buildPDFStream(params)` / `buildDocumentPDFStream(params)` assemble the full binary then chunk it; `buildPDFStreamTrue` / `buildDocumentPDFStreamTrue` never join the binary and are the ones to use at scale. All return `AsyncGenerator<Uint8Array>`
 - Streaming chunk size: configurable via `chunkSize` option (default: 65536 bytes)
@@ -288,7 +305,8 @@ npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **Test coverage** — 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90 (statements/branches/functions/lines). 2396+ tests (105 files), 89 fuzz tests across 5 files (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
+- **Test coverage** — 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90 (statements/branches/functions/lines). 2665+ tests (122 files), 89 fuzz tests across 5 files (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
-- No `console.log` in library code (only in tools/ and scripts/)
+- No `console.log` in library code (only in tools/ and scripts/). `console.warn` is allowed **only** inside `src/core/pdf-diagnostics.ts` — the single sanctioned sink for conformance diagnostics (silence or redirect via `onDiagnostic`, escalate via `strict`)
+- The signing/LTV engine never opens sockets: TSA/OCSP/CRL transport is injected via `TimestampProvider`/`RevocationProvider`; every opt-in feature must produce byte-identical output when unused (tested convention)

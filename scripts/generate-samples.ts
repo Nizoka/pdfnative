@@ -29,6 +29,7 @@ import { generate as generateSvgShowcase } from './generators/svg-showcase.js';
 import { generate as generateFormShowcase } from './generators/form-showcase.js';
 import { generate as generateDigitalSignature } from './generators/digital-signature.js';
 import { generate as generateSignaturePlaceholder } from './generators/signature-placeholder.js';
+import { generate as generateSignatureLtv } from './generators/signature-ltv.js';
 import { generate as generateBidiEmbeddings } from './generators/bidi-embeddings-showcase.js';
 import { generate as generateTableParity } from './generators/document-table-parity.js';
 import { generate as generateStreaming } from './generators/streaming-showcase.js';
@@ -36,6 +37,8 @@ import { generate as generateParser } from './generators/parser-showcase.js';
 import { generate as generateTextShaping } from './generators/text-shaping-deep.js';
 import { generate as generateUseLite } from './generators/use-lite-showcase.js';
 import { generate as generateBidi } from './generators/bidi-algorithm.js';
+import { generate as generatePersian } from './generators/persian-showcase.js';
+import { generate as generatePrint } from './generators/print-showcase.js';
 import { generate as generateCrypto } from './generators/crypto-showcase.js';
 import { generate as generateFontSubsetting } from './generators/font-subsetting-deep.js';
 import { generate as generateParserDeep } from './generators/parser-deep.js';
@@ -56,6 +59,7 @@ import { generate as generateFontCompiler } from './generators/font-compiler-dem
 import { generate as generateFormFill } from './generators/form-fill-showcase.js';
 import { generate as generateChart } from './generators/chart-showcase.js';
 import { generate as generateTextExtract } from './generators/text-extract-showcase.js';
+import { generate as generateIncrementalMetadata } from './generators/incremental-metadata.js';
 
 async function generateAll(): Promise<void> {
     registerAllFonts();
@@ -113,6 +117,7 @@ async function generateAll(): Promise<void> {
 
     // ── Signature placeholder workflow (v1.2 — issue #45) ────────
     await generateSignaturePlaceholder(ctx);
+    await generateSignatureLtv(ctx);
 
     // ── BiDi embeddings showcase (v1.2 — UAX #9 LRE/RLE/LRO/RLO) ─
     await generateBidiEmbeddings(ctx);
@@ -134,6 +139,8 @@ async function generateAll(): Promise<void> {
 
     // ── BiDi algorithm walkthrough (UAX #9, Arabic, Hebrew) ─────
     await generateBidi(ctx);
+    await generatePersian(ctx);
+    await generatePrint(ctx);
 
     // ── Crypto primitives showcase (SHA, RSA, ECDSA) ────────────
     await generateCrypto(ctx);
@@ -194,6 +201,9 @@ async function generateAll(): Promise<void> {
 
     // ── Text extraction (v1.6.0) ─────────────────────────────────
     await generateTextExtract(ctx);
+
+    // ── Incremental metadata update (v1.7.0) ─────────────────────
+    await generateIncrementalMetadata(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);

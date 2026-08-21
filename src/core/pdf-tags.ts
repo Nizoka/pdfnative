@@ -304,6 +304,14 @@ export function buildPdfMetadata(now: Date = new Date()): PdfMetadata {
  * @param author - Optional document author (matches /Info /Author).
  * @param subject - Optional document subject (matches /Info /Subject → dc:description['x-default']).
  * @param keywords - Optional document keywords (matches /Info /Keywords → pdf:Keywords).
+ * @param modifyDate - Optional xmp:ModifyDate override (ISO 8601, must equal
+ *   /Info /ModDate same instant). Defaults to `createDate` — correct at
+ *   creation time, where ModifyDate = CreateDate.
+ * @param metadataDate - Optional xmp:MetadataDate override. Defaults to
+ *   `createDate` for the same reason.
+ * @param trapped - Optional /Info /Trapped mirror. 'True'/'False' emit
+ *   pdf:Trapped plus the PDF/A extension schema declaring it; 'Unknown'
+ *   emits nothing (ISO 32000-1 Table 317: Unknown maps to absence).
  * @returns XMP metadata XML string
  */
 export function buildXMPMetadata(
@@ -314,6 +322,9 @@ export function buildXMPMetadata(
     author?: string,
     subject?: string,
     keywords?: string,
+    modifyDate?: string,
+    metadataDate?: string,
+    trapped?: 'True' | 'False' | 'Unknown',
 ): string {
     const escapedTitle = escapeXml(title);
     // dc:creator describes the document author (per Dublin Core),
@@ -341,8 +352,8 @@ export function buildXMPMetadata(
     lines.push(
         '   <pdf:Producer>pdfnative</pdf:Producer>',
         `   <xmp:CreateDate>${createDate}</xmp:CreateDate>`,
-        `   <xmp:ModifyDate>${createDate}</xmp:ModifyDate>`,
-        `   <xmp:MetadataDate>${createDate}</xmp:MetadataDate>`,
+        `   <xmp:ModifyDate>${modifyDate ?? createDate}</xmp:ModifyDate>`,
+        `   <xmp:MetadataDate>${metadataDate ?? createDate}</xmp:MetadataDate>`,
         `   <pdfaid:part>${pdfaPart}</pdfaid:part>`,
         `   <pdfaid:conformance>${pdfaConformance}</pdfaid:conformance>`,
     );
@@ -350,8 +361,49 @@ export function buildXMPMetadata(
     if (keywords !== undefined && keywords !== '') {
         lines.push(`   <pdf:Keywords>${escapeXml(keywords)}</pdf:Keywords>`);
     }
+    // pdf:Trapped mirrors /Info /Trapped (v1.7.0). Two conformance rules
+    // apply (ISO 32000-1 Table 317 + ISO 19005 §6.6.2.3):
+    //  - /Trapped /Unknown maps to the ABSENCE of pdf:Trapped in XMP — the
+    //    /Info entry alone carries the unknown state.
+    //  - pdf:Trapped is not part of the Adobe PDF schema in the XMP 2005
+    //    specification that PDF/A pins (only Keywords, PDFVersion and
+    //    Producer are), so emitting it in a PDF/A file requires declaring
+    //    the property through a PDF/A extension schema (§6.6.2.3.2) —
+    //    appended below as its own rdf:Description.
+    const emitTrapped = trapped === 'True' || trapped === 'False';
+    if (emitTrapped) {
+        lines.push(`   <pdf:Trapped>${trapped}</pdf:Trapped>`);
+    }
+    lines.push('  </rdf:Description>');
+    if (emitTrapped) {
+        lines.push(
+            '  <rdf:Description rdf:about=""',
+            '    xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"',
+            '    xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"',
+            '    xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#">',
+            '   <pdfaExtension:schemas>',
+            '    <rdf:Bag>',
+            '     <rdf:li rdf:parseType="Resource">',
+            '      <pdfaSchema:schema>Adobe PDF Schema</pdfaSchema:schema>',
+            '      <pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI>',
+            '      <pdfaSchema:prefix>pdf</pdfaSchema:prefix>',
+            '      <pdfaSchema:property>',
+            '       <rdf:Seq>',
+            '        <rdf:li rdf:parseType="Resource">',
+            '         <pdfaProperty:name>Trapped</pdfaProperty:name>',
+            '         <pdfaProperty:valueType>Text</pdfaProperty:valueType>',
+            '         <pdfaProperty:category>internal</pdfaProperty:category>',
+            '         <pdfaProperty:description>Indicates whether the document has been trapped</pdfaProperty:description>',
+            '        </rdf:li>',
+            '       </rdf:Seq>',
+            '      </pdfaSchema:property>',
+            '     </rdf:li>',
+            '    </rdf:Bag>',
+            '   </pdfaExtension:schemas>',
+            '  </rdf:Description>',
+        );
+    }
     lines.push(
-        '  </rdf:Description>',
         ' </rdf:RDF>',
         '</x:xmpmeta>',
         '<?xpacket end="w"?>',
@@ -400,19 +452,64 @@ export function utf8EncodeBinaryString(str: string): string {
     return out;
 }
 
+/** Escape a string for a PDF literal string context. */
+const pdfLiteral = (s: string): string => s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+
 /**
- * Build the sRGB OutputIntent dictionary content for PDF/A.
+ * Build the OutputIntent dictionary content for PDF/A.
  * ISO 19005-1 §6.2.2: at least one OutputIntent required.
  *
  * @param iccStreamObjNum - Object number of the ICC profile stream
  * @param subtype - OutputIntent subtype (default: 'GTS_PDFA1')
+ * @param custom - Optional caller-supplied condition strings (v1.7.0);
+ *   omitted → the historical sRGB identifiers, byte-identical.
  * @returns OutputIntent dictionary string
  */
-export function buildOutputIntentDict(iccStreamObjNum: number, subtype: string = 'GTS_PDFA1'): string {
-    return `<< /Type /OutputIntent /S /${subtype} ` +
-        `/OutputConditionIdentifier (sRGB IEC61966-2.1) ` +
-        `/RegistryName (http://www.color.org) ` +
-        `/DestOutputProfile ${iccStreamObjNum} 0 R >>`;
+export function buildOutputIntentDict(
+    iccStreamObjNum: number,
+    subtype: string = 'GTS_PDFA1',
+    custom?: {
+        readonly outputConditionIdentifier: string;
+        readonly registryName?: string;
+        readonly outputCondition?: string;
+        readonly info?: string;
+    },
+): string {
+    const identifier = custom?.outputConditionIdentifier ?? 'sRGB IEC61966-2.1';
+    const registry = custom?.registryName ?? 'http://www.color.org';
+    let dict = `<< /Type /OutputIntent /S /${subtype} `
+        + `/OutputConditionIdentifier (${pdfLiteral(identifier)}) `
+        + `/RegistryName (${pdfLiteral(registry)}) `;
+    if (custom?.outputCondition) dict += `/OutputCondition (${pdfLiteral(custom.outputCondition)}) `;
+    if (custom?.info) dict += `/Info (${pdfLiteral(custom.info)}) `;
+    dict += `/DestOutputProfile ${iccStreamObjNum} 0 R >>`;
+    return dict;
+}
+
+/**
+ * Resolve the OutputIntent ICC profile: the caller-supplied RGB profile
+ * (v1.7.0) or the built-in minimal sRGB one. A custom profile must declare
+ * the `RGB ` data colour space in its ICC header (bytes 16–19) — pdfnative
+ * emits RGB content, and a mismatched intent fails PDF/A validation.
+ *
+ * @returns The profile as a binary string (1 char = 1 byte).
+ */
+export function resolveOutputIntentProfile(custom?: { readonly iccProfile: Uint8Array }): string {
+    if (!custom) return buildMinimalSRGBProfile();
+    const icc = custom.iccProfile;
+    if (icc.length < 128) {
+        throw new Error('outputIntent.iccProfile is too short to be an ICC profile (128-byte header required)');
+    }
+    const space = String.fromCharCode(icc[16], icc[17], icc[18], icc[19]);
+    if (space !== 'RGB ') {
+        throw new Error(
+            `outputIntent.iccProfile declares data colour space '${space.trim()}' — only RGB profiles are `
+            + 'supported (pdfnative emits RGB content; CMYK output intents require CMYK content, deferred)',
+        );
+    }
+    let s = '';
+    for (let i = 0; i < icc.length; i++) s += String.fromCharCode(icc[i]);
+    return s;
 }
 
 /**

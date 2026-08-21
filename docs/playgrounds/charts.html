@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Charts Playground — pdfnative</title>
-  <meta name="description" content="Generate native vector charts (bar, line, pie, donut) as pure PDF path operators in your browser with pdfnative — zero dependencies, no rasterisation. New in v1.6.0.">
+  <meta name="description" content="Generate native vector charts (bar, line, pie, donut — plus stacked, area and scatter since v1.7.0) as pure PDF path operators in your browser with pdfnative — zero dependencies, no rasterisation.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/charts.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/charts.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/charts.html">
@@ -13,7 +13,7 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/charts.html">
   <meta property="og:title" content="Charts Playground — pdfnative">
-  <meta property="og:description" content="Bar, line, pie, and donut charts rendered as pure PDF path operators — zero install, right in your browser.">
+  <meta property="og:description" content="Nine chart types — bar, stacked, line, area, scatter, pie, donut — rendered as pure PDF path operators, zero install, right in your browser.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Charts Playground — pdfnative">
@@ -34,7 +34,7 @@
         "operatingSystem": "Any (browser-based)",
         "browserRequirements": "Requires JavaScript and ES modules",
         "url": "https://pdfnative.dev/playgrounds/charts.html",
-        "description": "Render bar, horizontal-bar, line, pie and donut charts as native PDF vector paths, entirely in your browser.",
+        "description": "Render all nine chart types — bar, horizontal-bar, stacked, line, area, scatter, pie, donut — as native PDF vector paths with log and time axes, entirely in your browser.",
         "isAccessibleForFree": true,
         "offers": {
           "@type": "Offer",
@@ -121,7 +121,7 @@
   </nav>
   <article class="guide-content">
     <h1>Native vector charts — new in 1.6.0</h1>
-    <p>pdfnative 1.6.0 adds a <code>chart</code> block that renders <strong>bar, horizontal-bar, line, pie, and donut</strong> charts as <strong>pure PDF path operators</strong> — rectangles, line segments, and cubic-Bézier arcs. Zero dependencies, no rasterisation, crisp at any zoom, and PDF/A-safe. Pick a preset, generate, and open the downloaded PDF in any viewer.</p>
+    <p>pdfnative's <code>chart</code> block renders <strong>bar, horizontal-bar, line, pie, and donut</strong> charts — and, since 1.7.0, <strong>stacked bars, area, and scatter</strong> — as <strong>pure PDF path operators</strong>: rectangles, line segments, and cubic-Bézier arcs. Zero dependencies, no rasterisation, crisp at any zoom, and PDF/A-safe. Pick a preset, generate, and open the downloaded PDF in any viewer.</p>
 
     <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
 
@@ -133,6 +133,7 @@
         <option value="pie">Pie — traffic sources</option>
         <option value="donut">Donut — budget split (tagged + alt text)</option>
         <option value="mixed">Dashboard — several charts on one page</option>
+        <option value="v2">Charts v2 — stacked, area, scatter (1.7.0)</option>
       </select>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
       <span id="timer" style="font-size:13px;color:#64748b;"></span>
@@ -146,7 +147,7 @@
     </details>
 
     <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
-      <strong style="color:#065f46;">v1.6.0 chart features:</strong>
+      <strong style="color:#065f46;">Chart features:</strong>
       <ul style="margin-top:8px;color:#065f46;">
         <li><strong>Types</strong> — <code>bar</code>, <code>barH</code>, <code>line</code> (optional markers), <code>pie</code>, <code>donut</code>.</li>
         <li><strong>Multi-series</strong> grouped bars and lines with an auto-generated legend and "nice" 1/2/5×10ⁿ axis ticks.</li>
@@ -154,6 +155,7 @@
         <li><strong>Colours</strong> validated (injection-safe); per-series/per-slice palette override.</li>
         <li><strong>Accessible</strong> — tagged mode emits a <code>/Figure</code> with <code>/Alt</code>; solid fills only, so PDF/A-safe.</li>
         <li><strong>International labels</strong> shape correctly (CJK/RTL/emoji) via the standard text pipeline.</li>
+        <li><strong>New in v1.7.0</strong> — <code>stackedBar</code> / <code>stackedBarH</code> / <code>area</code> / <code>scatter</code>, secondary right axis, log &amp; time scales, per-point data labels, and x-label collision handling (<code>labelStride</code> / <code>labelRotation</code>).</li>
       </ul>
       <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/charts.html">Charts guide</a> for the full <code>ChartBlock</code> API.</p>
     </div>
@@ -192,6 +194,7 @@ const DESCRIPTIONS = {
   pie: 'A pie chart of traffic sources with per-slice percentage labels.',
   donut: 'A donut chart of a budget split, rendered in tagged mode with an /Alt description for accessibility.',
   mixed: 'A one-page dashboard combining a grouped bar, a horizontal bar, and a donut chart.',
+  v2: 'New in 1.7.0 — a stacked bar with per-point data labels, an area chart, and a scatter plot with numeric x-values, all on one page.',
 };
 
 const CODE = {
@@ -262,6 +265,30 @@ const pdf = buildDocumentPDFBytes({
   ],
 });
 downloadBlob(pdf, 'chart-dashboard.pdf');`,
+  v2: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Charts v2',
+  blocks: [
+    { type: 'heading', text: 'Charts v2 — stacked, area, scatter', level: 1 },
+    { type: 'chart', chartType: 'stackedBar', title: 'Revenue composition (stacked)',
+      categories: ['Q1', 'Q2', 'Q3', 'Q4'],
+      series: [
+        { label: 'Licences', values: [60, 75, 82, 70] },
+        { label: 'Services', values: [30, 35, 44, 41] },
+        { label: 'Support',  values: [18, 20, 22, 25] },
+      ],
+      dataLabels: true },
+    { type: 'chart', chartType: 'area', title: 'Server load (area)',
+      categories: ['00h', '04h', '08h', '12h', '16h', '20h'],
+      series: [{ label: 'CPU %', values: [12, 8, 45, 72, 66, 30] }],
+      dataLabels: { suffix: '%' } },
+    { type: 'chart', chartType: 'scatter', title: 'Defects vs module size (scatter)',
+      series: [{ label: 'Modules', values: [2, 5, 3, 9, 6, 12, 4],
+                 xValues: [120, 340, 200, 890, 560, 1200, 260] }] },
+  ],
+});
+downloadBlob(pdf, 'charts-v2.pdf');`,
 };
 
 function applyPreset(id) {
@@ -270,7 +297,7 @@ function applyPreset(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.7.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.7.0/+esm'];
 let pdfMod = null;
 async function loadPdfnative() {
   if (pdfMod) return pdfMod;
@@ -294,7 +321,7 @@ const BUILDERS = {
   // PDF/A requires every font embedded, and tagged: true IS PDF/A-2b. Without
   // this the file would declare a conformance it does not have.
   donut: async (m) => {
-    m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.6.0/fonts/noto-sans-data.js') });
+    m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-sans-data.js') });
     const fontData = await m.loadFontData('latin');
     return m.buildDocumentPDFBytes({ fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }], title: 'Budget', blocks: [{ type: 'chart', chartType: 'donut', title: 'Budget split', altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.', categories: ['Engineering', 'Sales', 'Operations'], series: [{ label: 'Budget', values: [50, 30, 20] }] }] }, { tagged: true });
   },
@@ -303,6 +330,12 @@ const BUILDERS = {
     { type: 'chart', chartType: 'bar', title: 'Revenue vs cost', categories: ['Oct', 'Nov', 'Dec'], series: [{ label: 'Revenue', values: [50, 62, 70] }, { label: 'Cost', values: [30, 34, 38] }] },
     { type: 'chart', chartType: 'barH', title: 'Sales by region', categories: ['N', 'S', 'E', 'W'], series: [{ label: 'Units', values: [40, 65, 30, 52] }] },
     { type: 'chart', chartType: 'donut', title: 'Traffic', categories: ['Organic', 'Direct', 'Social'], series: [{ label: 'Share', values: [60, 25, 15] }] },
+  ] }),
+  v2: (m) => m.buildDocumentPDFBytes({ title: 'Charts v2', blocks: [
+    { type: 'heading', text: 'Charts v2 — stacked, area, scatter', level: 1 },
+    { type: 'chart', chartType: 'stackedBar', title: 'Revenue composition (stacked)', categories: ['Q1', 'Q2', 'Q3', 'Q4'], series: [{ label: 'Licences', values: [60, 75, 82, 70] }, { label: 'Services', values: [30, 35, 44, 41] }, { label: 'Support', values: [18, 20, 22, 25] }], dataLabels: true },
+    { type: 'chart', chartType: 'area', title: 'Server load (area)', categories: ['00h', '04h', '08h', '12h', '16h', '20h'], series: [{ label: 'CPU %', values: [12, 8, 45, 72, 66, 30] }], dataLabels: { suffix: '%' } },
+    { type: 'chart', chartType: 'scatter', title: 'Defects vs module size (scatter)', series: [{ label: 'Modules', values: [2, 5, 3, 9, 6, 12, 4], xValues: [120, 340, 200, 890, 560, 1200, 260] }] },
   ] }),
 };
 

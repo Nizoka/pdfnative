@@ -24,6 +24,7 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext } from './encoding-context.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic } from './pdf-diagnostics.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
@@ -44,7 +45,7 @@ import {
     buildStructureTree,
     buildXMPMetadata,
     buildOutputIntentDict,
-    buildMinimalSRGBProfile,
+    resolveOutputIntentProfile,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -56,6 +57,7 @@ import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
 
 // ── Tagged Mode Helper Types ─────────────────────────────────────────
 
@@ -300,6 +302,13 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const pdfaConfig = resolvePdfAConfig(layoutOptions?.tagged);
     const tagged = pdfaConfig.enabled;
 
+    // Conformance diagnostics (v1.7.0): guard the PDF/A declaration (#69).
+    const emitDiagnostic = createDiagnosticEmitter(layoutOptions?.strict, layoutOptions?.onDiagnostic);
+    if (tagged && fontEntries.length === 0) {
+        const level = typeof layoutOptions?.tagged === 'string' ? layoutOptions.tagged : 'pdfa2b';
+        emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
+    }
+
     const enc = createEncodingContext(fontEntries, tagged, layoutOptions?.normalize ?? false);
 
     // ── Resolve header/footer templates ──────────────
@@ -359,6 +368,15 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         ? wmState.extGStates.size + (wmState.imageXObj ? 1 : 0)
         : 0;
 
+    // ── Print production setup (v1.7.0; off → byte-identical) ─────────
+    const printOpts = layoutOptions?.print;
+    if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layoutOptions?.tagged);
+    const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
+    const printBoxesStr = printResolved?.boxesStr ?? '';
+    const printMarksOps = printOpts?.marks && printResolved?.trim
+        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
+        : '';
+
     const mcidAlloc = tagged ? createMCIDAllocator() : undefined;
 
     // Structure elements collected during page building (only when tagged)
@@ -376,16 +394,19 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         ? 5 + fontEntries.length * 5 + wmExtraObjs
         : 5 + wmExtraObjs;
 
-    // Base-14 /ToUnicode CMap (issue #48): non-tagged Helvetica/Helvetica-Bold
-    // declare /WinAnsiEncoding but carry no ToUnicode by default, so the CP1252
+    // Base-14 /ToUnicode CMap (issue #48): Helvetica/Helvetica-Bold declare
+    // /WinAnsiEncoding but carry no ToUnicode by default, so the CP1252
     // 0x80–0x9F band (Euro, curly quotes, …) is not selectable/searchable and is
     // shown as `?` by minimal viewers. We emit one shared CMap as the trailing
     // object (a forward reference from the font dicts) so existing object numbers
-    // are unaffected. Tagged mode embeds CIDFonts with their own ToUnicode.
+    // are unaffected. v1.7.0: also emitted in tagged mode when the Latin branch
+    // is taken — base-14 dicts reached under a PDF/A claim need complete
+    // ToUnicode coverage (parity with the document builder); tagged CIDFont
+    // documents carry no base-14 dict and stay byte-identical.
     const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
         ? 4 + fontEntries.length * 5 + wmExtraObjs + totalPages * 2
         : 4 + wmExtraObjs + totalPages * 2;
-    const latinToUniObjNum = tagged ? 0 : preBaseObjCount + 2; // infoObjNum + 1
+    const latinToUniObjNum = (!tagged || !enc.isUnicode) ? preBaseObjCount + 2 : 0; // infoObjNum + 1
     const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
 
     // Map page object numbers to /StructParents values for ParentTree (ISO 32000-1 §14.7.4.4)
@@ -518,6 +539,11 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         ops.push(...ft.ops);
         if (tagged) documentChildren.push(...ft.structEls);
 
+        // Printer's marks (v1.7.0) — outside the TrimBox, above content.
+        if (printMarksOps) {
+            ops.push(printMarksOps);
+        }
+
         pageStreams.push(ops.join('\n'));
     }
 
@@ -533,8 +559,11 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     // ── Assemble PDF binary ──────────────────────────────────────────
     const { emit, emitObj, emitStreamObj, offset: getOffset, adjustOffset, objOffsets, parts } = createPdfWriter(compress, encState);
 
-    // PDF Header
-    emit(`%PDF-${pdfaConfig.pdfVersion}\n`);
+    // PDF Header. /UserUnit requires PDF 1.6+ — raise the declared version
+    // only when the option is present (bytes unchanged otherwise).
+    const pdfVersion = printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
+        ? '1.7' : pdfaConfig.pdfVersion;
+    emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 
     // Catalog — placeholder, will be rewritten after we know tagged obj nums
@@ -659,7 +688,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const structParents = tagged ? ` /StructParents ${p}` : '';
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes} >>${structParents} >>`
             );
@@ -704,7 +733,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const structParents = tagged ? ` /StructParents ${p}` : '';
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}] ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin} >>${structParents} >>`
             );
@@ -720,8 +749,20 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
     const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(layoutOptions?.creationDate);
     const infoTitle = params.docTitle || title || '';
-    emitObj(infoObjNum,
-        `<< /Title ${encodePdfTextString(infoTitle)} /Producer (pdfnative) /CreationDate (${pdfDate}) >>`);
+    const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];
+    if (params.metadata?.author) {
+        metaParts.push(`/Author ${encodePdfTextString(params.metadata.author)}`);
+    }
+    if (params.metadata?.subject) {
+        metaParts.push(`/Subject ${encodePdfTextString(params.metadata.subject)}`);
+    }
+    if (params.metadata?.keywords) {
+        metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
+    }
+    if (params.metadata?.trapped) {
+        metaParts.push(`/Trapped /${params.metadata.trapped}`);
+    }
+    emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
     let totalObjs = infoObjNum;
 
@@ -753,21 +794,22 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
         // XMP metadata stream (skip compression for PDF/A validator compatibility)
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance));
+        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
 
-        // ICC profile stream
+        // ICC profile stream — the built-in minimal sRGB profile, or the
+        // caller-supplied RGB profile (layout.outputIntent, v1.7.0).
         const iccObjNum = totalObjs + 1;
-        const iccProfile = buildMinimalSRGBProfile();
+        const iccProfile = resolveOutputIntentProfile(layoutOptions?.outputIntent);
         emitStreamObj(iccObjNum,
             `<< /N 3 /Length ${iccProfile.length}`, iccProfile);
         totalObjs = iccObjNum;
 
         // OutputIntent
         outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype));
+        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
         totalObjs = outputIntentObjNum;
 
         // Embedded file attachments (PDF/A-3 only)

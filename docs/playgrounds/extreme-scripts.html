@@ -276,7 +276,7 @@ function updateCodeView(id) {
     "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
     '',
     'registerFonts({',
-    ...p.langs.map(l => `  ${l}: () => import('https://esm.sh/pdfnative@1.6.0/fonts/${FONT_MODULE_BY_LANG[l]}'),`),
+    ...p.langs.map(l => `  ${l}: () => import('https://esm.sh/pdfnative@1.7.0/fonts/${FONT_MODULE_BY_LANG[l]}'),`),
     '});',
     '',
     `const langs = ${JSON.stringify(p.langs)};`,
@@ -298,7 +298,7 @@ function updateCodeView(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.6.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.6.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.7.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.7.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -326,7 +326,7 @@ async function generate() {
     setStatus('Loading fonts: ' + p.langs.join(', ') + '…', 'info');
     const registry = {};
     for (const lang of p.langs) {
-      registry[lang] = () => import(`https://esm.sh/pdfnative@1.6.0/fonts/${FONT_MODULE_BY_LANG[lang]}`);
+      registry[lang] = () => import(`https://esm.sh/pdfnative@1.7.0/fonts/${FONT_MODULE_BY_LANG[lang]}`);
     }
     mod.registerFonts(registry);
     const fonts = await Promise.all(p.langs.map(mod.loadFontData));

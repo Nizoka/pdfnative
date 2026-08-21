@@ -107,5 +107,26 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         fontEntries,
     };
     ctx.writeSafe(resolve(ctx.outputDir, 'emoji', 'color-emoji-real.pdf'), 'emoji/color-emoji-real.pdf', buildDocumentPDFBytes(params3));
+
+    // ── 4. Multi-codepoint sequences: flags + ZWJ (v1.7.0) ──────────
+    // Each sequence renders as ONE colour ligature glyph resolved from the
+    // font's GSUB at build time — flags are flat (the wave-shading overlay
+    // uses a COLRv1 SRC_IN mask, approximated by its flat backdrop).
+    const params4: DocumentParams = {
+        title: 'Colour Emoji - Flag & ZWJ Sequences',
+        blocks: [
+            { type: 'heading', level: 1, text: 'Emoji sequences - flags & ZWJ' },
+            { type: 'paragraph', text: 'Flag pairs (regional indicators): 🇫🇷 🇩🇪 🇯🇵 🇺🇸 🇬🇧 🇮🇹 🇪🇸 🇧🇷 🇨🇦 🇦🇺 🇰🇷 🇮🇳 🇪🇺 🇺🇳' },
+            { type: 'paragraph', text: 'More locales: 🇳🇱 🇨🇭 🇸🇪 🇵🇱 🇵🇹 🇬🇷 🇧🇪 🇦🇹 🇮🇪 🇮🇱 🇺🇦 🇸🇬 🇹🇼 🇹🇭 🇻🇳 🇳🇿' },
+            { type: 'paragraph', text: 'Professions: 👨‍💻 👩‍💻 👨‍⚕ 👩‍⚕ 👨‍🍳 👩‍🍳 👨‍🚀 👩‍🚀' },
+            { type: 'paragraph', text: 'Families: 👨‍👩‍👧 👨‍👩‍👧‍👦 👩‍👩‍👦 👨‍👦 👩‍👧' },
+            { type: 'paragraph', text: 'Hearts & flags: ❤‍🔥 🏳‍🌈 🏳‍⚧ 🏴‍☠' },
+            { type: 'paragraph', text: 'Faces & animals: 😮‍💨 😵‍💫 🐻‍❄ 🐈‍⬛' },
+            { type: 'paragraph', text: 'Fallback demonstration: the uncurated flag pair that follows intentionally renders as two placeholder boxes (🇿🇼) - regional indicators outside the curated set degrade to the historical per-codepoint behaviour, identical to v1.6.0, never worse. Bundle any flag with the CLI: npx pdfnative-build-emoji-font --sequence-list ZW.' },
+        ],
+        footerText: 'pdfnative - emoji sequences (GSUB ligatures)',
+        fontEntries,
+    };
+    ctx.writeSafe(resolve(ctx.outputDir, 'emoji', 'color-emoji-sequences.pdf'), 'emoji/color-emoji-sequences.pdf', buildDocumentPDFBytes(params4));
 }
 

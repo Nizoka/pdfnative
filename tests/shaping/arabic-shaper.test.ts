@@ -216,4 +216,118 @@ describe('shapeArabicText', () => {
         expect(glyphs[1].gid).toBe(27); // LAM medial
         expect(glyphs[2].gid).toBe(25); // TA final
     });
+
+    it('should treat mid-word ALEF as right-joining: final form, then a break', () => {
+        // BA + ALEF + TA: ALEF joins the preceding BA (fina) but never the
+        // following TA, so TA must be ISOLATED, not final. A former
+        // 0x0626-0x0628 joining range swept ALEF into dual-joining, which
+        // broke every word with a non-final alef.
+        const glyphs = shapeArabicText('بات', fd);
+        expect(glyphs.length).toBe(3);
+        expect(glyphs[0].gid).toBe(20); // BA initial
+        expect(glyphs[1].gid).toBe(11); // ALEF FINAL (FE8E) - joined to BA
+        expect(glyphs[2].gid).toBe(3);  // TA ISOLATED - alef does not join left
+    });
+
+    it('should give the letter after a word-initial ALEF an initial form', () => {
+        // ALEF + LAM + TA: ALEF isolated, LAM INITIAL (not medial), TA final
+        // - the definite-article shape.
+        const glyphs = shapeArabicText('الت', fd);
+        expect(glyphs.length).toBe(3);
+        expect(glyphs[0].gid).toBe(1);  // ALEF isolated (nothing precedes)
+        expect(glyphs[1].gid).toBe(26); // LAM INITIAL - alef never joins left
+        expect(glyphs[2].gid).toBe(25); // TA final
+    });
+});
+
+// ── Persian / extended-Arabic joining (real bundled font, v1.7.0) ────
+
+describe('Persian shaping with the bundled Noto Naskh Arabic font', async () => {
+    const notoArabic = (await import('../../fonts/noto-arabic-data.js')) as unknown as FontData;
+    const cmap = notoArabic.cmap;
+
+    /** Presentation-form gid helper: the form's gid straight from the cmap. */
+    const form = (cp: number): number => cmap[cp];
+
+    it('bundles all Persian presentation forms', () => {
+        for (const cp of [
+            0xFB56, 0xFB57, 0xFB58, 0xFB59, // peh
+            0xFB7A, 0xFB7B, 0xFB7C, 0xFB7D, // tcheh
+            0xFB8A, 0xFB8B,                 // jeh
+            0xFB8E, 0xFB8F, 0xFB90, 0xFB91, // keheh
+            0xFB92, 0xFB93, 0xFB94, 0xFB95, // gaf
+            0xFBFC, 0xFBFD, 0xFBFE, 0xFBFF, // farsi yeh
+        ]) {
+            expect(cmap[cp], `U+${cp.toString(16).toUpperCase()} missing from font`).toBeDefined();
+        }
+    });
+
+    it('joins FARSI YEH inside "qymt" (price)', () => {
+        // QAF + FARSI YEH + MEEM + TEH -> init, MEDIAL yeh, medi, fina.
+        const glyphs = shapeArabicText('قیمت', notoArabic);
+        expect(glyphs.map(g => g.gid)).toEqual([
+            form(0xFED7), // qaf initial
+            form(0xFBFF), // farsi yeh MEDIAL - was isolated before v1.7.0
+            form(0xFEE4), // meem medial
+            form(0xFE96), // teh final
+        ]);
+    });
+
+    it('joins FARSI YEH inside "rial"', () => {
+        // REH + FARSI YEH + ALEF + LAM: reh isolated (right-joiner at word
+        // start), yeh INITIAL, alef FINAL, lam isolated after the alef break.
+        const glyphs = shapeArabicText('ریال', notoArabic);
+        expect(glyphs.map(g => g.gid)).toEqual([
+            form(0xFEAD), // reh isolated
+            form(0xFBFE), // farsi yeh INITIAL
+            form(0xFE8E), // alef FINAL - joined to the yeh
+            form(0xFEDD), // lam ISOLATED - alef never joins left
+        ]);
+    });
+
+    it('shapes "sal" (year) with a final alef and isolated lam', () => {
+        const glyphs = shapeArabicText('سال', notoArabic);
+        expect(glyphs.map(g => g.gid)).toEqual([
+            form(0xFEB3), // seen initial
+            form(0xFE8E), // alef FINAL - rendered bare before v1.7.0
+            form(0xFEDD), // lam ISOLATED
+        ]);
+    });
+
+    it('joins PEH and GAF: "pedar" (father) and "gol" (flower)', () => {
+        const pedar = shapeArabicText('پدر', notoArabic);
+        expect(pedar.map(g => g.gid)).toEqual([
+            form(0xFB58), // peh INITIAL - was isolated (class U) before v1.7.0
+            form(0xFEAA), // dal final
+            form(0xFEAD), // reh isolated
+        ]);
+        const gol = shapeArabicText('گل', notoArabic);
+        expect(gol.map(g => g.gid)).toEqual([
+            form(0xFB94), // gaf initial
+            form(0xFEDE), // lam final
+        ]);
+    });
+
+    it('joins TCHEH: "chai" (tea)', () => {
+        const glyphs = shapeArabicText('چای', notoArabic);
+        expect(glyphs.map(g => g.gid)).toEqual([
+            form(0xFB7C), // tcheh INITIAL
+            form(0xFE8E), // alef final
+            form(0xFBFC), // farsi yeh isolated (after the alef break)
+        ]);
+    });
+
+    it('shapes "assalam" with an initial lam after the article alef', () => {
+        // ALEF + LAM + SEEN + LAM + ALEF + MEEM: the second LAM + ALEF pair
+        // ligates (lam-alef final), the first LAM must be INITIAL, and the
+        // final MEEM stands isolated after the ligature's alef break.
+        const glyphs = shapeArabicText('السلام', notoArabic);
+        expect(glyphs.map(g => g.gid)).toEqual([
+            form(0xFE8D), // alef isolated
+            form(0xFEDF), // lam INITIAL - was medial before v1.7.0
+            form(0xFEB4), // seen medial
+            form(0xFEFC), // lam-alef FINAL ligature
+            form(0xFEE1), // meem isolated
+        ]);
+    });
 });

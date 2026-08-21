@@ -5,21 +5,108 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.7.0] – 2026-08-21
 
-Documentation-only release train alignment. No library behaviour changes; the
-only `src/` edits are JSDoc corrections.
+The long-term-validation release: complete PAdES LTV signing (B-B → B-LTA)
+with injected network providers, charts v2, colour-emoji flag & ZWJ
+sequences, print production (bleed/trim boxes, printer's marks,
+`/Trapped`, `/UserUnit`), UAX #9 digit-order and glyph-mirroring
+conformance, PDF/A declaration guards, and an incremental-writer
+hardening pass — plus the documentation-alignment train (ecosystem
+manifest + hardened verifier) staged since v1.6.0. Zero runtime
+dependencies, no breaking changes: every new capability is a new API or
+an additive option, and existing inputs render byte-identically except
+where the fixed behaviour was outright wrong (reversed RTL digits,
+unmirrored delimiters, mis-joined Arabic letterforms, per-revision `/ID`
+reuse). 2665 tests across 122 files; veraPDF-validated.
 
 ### Added
 
+- **feat(core): PAdES LTV signing (B-B → B-LTA)** — [`signPdfBytesWithTimestamp()`](src/core/pdf-sign-timestamp.ts)
+  embeds a verified RFC 3161 signature timestamp (`id-aa-signatureTimeStampToken`);
+  [`collectValidationInfo()` / `embedValidationInfo()` / `addValidationInfo()`](src/core/pdf-dss.ts)
+  gather certificate chains + OCSP (RFC 6960) / CRL (RFC 5280) material through an
+  injected `RevocationProvider` and write `/DSS` with per-signature `/VRI`
+  (uppercase-hex SHA-1 keys, existing `/DSS` merged);
+  [`addDocumentTimestamp()`](src/core/pdf-doc-timestamp.ts) appends
+  `/DocTimeStamp` revisions (ISO 32000-2 §12.8.5). Network transport lives in
+  user land via `setTimestampProvider` / `setRevocationProvider` — the engine
+  never opens a socket, and rejected or tampered TSA tokens are never embedded.
+  New guide: [docs/guides/ltv.md](docs/guides/ltv.md).
+- **feat(crypto): LTV building blocks** — canonical DER `SET OF`
+  ([`derSetOf`](src/crypto/asn1.ts), X.690 §11.6), `derGeneralizedTime`, SHA-1
+  (identification only), RSA SHA-384/512 digest agility, X.509 extension parsing
+  (SKI/AKI, EKU, AIA, CRL DP, ocsp-nocheck), CMS `profile: 'pades'` with the ESS
+  signing-certificate-v2 attribute (RFC 5035), CMS unsigned-attribute surgery
+  ([`addUnsignedAttribute`](src/crypto/cms-utils.ts) — signed bytes untouched),
+  and full RFC 3161 / OCSP / CRL builders + parsers
+  ([rfc3161.ts](src/crypto/rfc3161.ts), [ocsp.ts](src/crypto/ocsp.ts), [crl.ts](src/crypto/crl.ts)).
+- **feat(core): multiple signatures** — `addSignaturePlaceholder({ allowMultiple })`,
+  the `fieldName` selector on `signPdfBytes`, placeholder-baked `/Sig` metadata,
+  and [`listSignatures()`](src/core/pdf-sig-utils.ts) enumeration; signed
+  signatures are located by their real ByteRange values and can never be
+  overwritten.
+- **feat(chart): charts v2** — `stackedBar` / `stackedBarH` / `area` / `scatter`
+  kinds, secondary right axis (`axis2` + `ChartSeries.yAxis`), log and
+  UTC-deterministic time scales, per-point `dataLabels`, and x-label collision
+  handling: automatic stride plus `labelStride` / `labelRotation`
+  ([#67](https://github.com/Nizoka/pdfnative/issues/67)). Chart kinds 5 → 9.
+  ([src/core/pdf-chart.ts](src/core/pdf-chart.ts))
+- **feat(shaping): colour-emoji flag & ZWJ sequences** — 51 flags + 22 ZWJ
+  sequences resolved through the source font's GSUB into single COLR ligature
+  glyphs, longest-match pre-pass, VS-16-tolerant matching, per-codepoint
+  fallback (never worse than v1.6.0), CLI `--sequences` / `--sequence-list`;
+  module budget 4096 → 5120 KB.
+  ([src/shaping/emoji-sequences.ts](src/shaping/emoji-sequences.ts))
+- **feat(core): PDF/A declaration guards** — conformance diagnostics channel
+  ([src/core/pdf-diagnostics.ts](src/core/pdf-diagnostics.ts)) with additive
+  `strict` / `onDiagnostic` layout options: `PDFA_NO_FONT_ENTRIES`
+  ([#69](https://github.com/Nizoka/pdfnative/issues/69)),
+  `PDFA_UNEMBEDDED_FORM_FONT` and `PDFA_DEVICE_CMYK_IMAGE` surface instead
+  of silently stamping a `pdfaid` claim veraPDF would reject.
+- **feat(validation): PDF/A validation hardening** — `validate:pdfa` gains a
+  coverage canary against `declared.pdfaSamples` in the ecosystem manifest
+  (a silent drop in claim detection or sample generation fails loudly; a new
+  PDF/A-claiming sample bumps the counter — detection itself stays
+  automatic); CI installs a **pinned** veraPDF (1.30.2 greenfield) instead
+  of the floating latest; the publish workflow re-runs `verify:docs`,
+  `test:generate` and the blocking `validate:pdfa` before `npm publish`;
+  and `verify:docs` gains a 17th rule, `playground-syntax` — every inline
+  `<script type="module">` in the nine playgrounds and the homepage demo
+  must parse under `node --check` (no headless browser: zero-dependency
+  policy), so a hand-edit can no longer ship a silently dead playground.
+  CONTRIBUTING gains the veraPDF install-and-run guide (macOS/Linux/Windows,
+  including the headless CI mechanism) and the PR checklist gains the
+  `validate:pdfa` / `verify:docs` gates.
+- **feat(core): print production** — bleed/trim/art/crop page boxes
+  (`layout.print`, ISO 32000-1 §14.11.2, with a one-line `bleed` shorthand),
+  crop + registration marks drawn as pure vector operators outside the
+  TrimBox (§14.11.3), `/Trapped` metadata with `pdf:Trapped` XMP parity
+  (declared through a PDF/A extension schema per ISO 19005 §6.6.2.3.2, since
+  the property is absent from the XMP-2005 Adobe PDF schema; `Unknown` maps
+  to XMP absence per ISO 32000-1 Table 317),
+  print-dialog viewer preferences (`duplex`, `pickTrayByPDFSize`,
+  `printPageRange`, `numCopies`), a caller-supplied OutputIntent ICC
+  profile for tagged output (RGB, validated), large-format `/UserUnit`
+  (header raised to PDF 1.7 when set; rejected under PDF/A-1), and
+  BleedBox/TrimBox/ArtBox/UserUnit preservation through
+  `mergePdfs`/`splitPdf`/`extractPages` (previously dropped). Byte-identical
+  output when unused. New guide: [docs/guides/print.md](docs/guides/print.md).
+  ([src/core/pdf-print.ts](src/core/pdf-print.ts))
+- **feat(parser): incremental metadata updates** — `PdfModifier.updateMetadata()`
+  re-issues `/Info` (adding `/ModDate`) and keeps the XMP packet in sync
+  (`xmp:ModifyDate` = `xmp:MetadataDate`, CreateDate + `pdfaid:*` preserved)
+  per ISO 19005 §6.7.3 parity; `PdfParams.metadata` forwards
+  author/subject/keywords to both `/Info` and XMP in `buildPDF`.
 - **`docs/assets/ecosystem.json`** — single source of truth for every version,
   count and inventory quoted anywhere in the documentation, and
   **`scripts/verify-docs.ts`** (`npm run verify:docs`) which fails the build when
-  a doc disagrees with it. Fifteen rules: manifest shape, filesystem-derived
+  a doc disagrees with it. Sixteen rules: manifest shape, filesystem-derived
   counts, stale tokens, canonical presence, version tokens, phantom APIs,
-  JSON-LD versions, internal links, sitemap parity, CDN integrity and pinning,
-  playground-switcher parity, learn-path chain, WCAG contrast, and llms.txt
-  sync. `--online` adds npm drift.
+  JSON-LD versions, internal links, SEO head block, sitemap parity, CDN
+  integrity and pinning, playground-switcher parity, learn-path chain,
+  benchmark parity, WCAG contrast, and llms.txt sync. `--online` adds npm
+  drift.
 - **`.github/workflows/docs.yml`** — runs the verifier on documentation changes.
   `ci.yml` has `paths-ignore` for `docs/**` and `**.md`, so documentation
   previously triggered no workflow at all.
@@ -36,10 +123,58 @@ only `src/` edits are JSDoc corrections.
 - **`bench/RESULTS.md`** — dated benchmark run with hardware, sample counts and
   relative error, plus the 1k–100k streaming measurements.
 - Structured data for the index pages: `CollectionPage` + `ItemList` covering all
-  26 guides and all 9 playgrounds, and `WebSite` + `Organization` on the homepage.
+  28 guides and all 9 playgrounds, and `WebSite` + `Organization` on the homepage.
 
 ### Fixed
 
+- **fix(scripts): `validate:pdfa` on Windows** — the veraPDF launcher is a
+  `.bat` there, which Node refuses to spawn without a shell since the
+  CVE-2024-27980 hardening; the swallowed `EINVAL` made every sample read
+  as non-compliant with an empty report. The runner now shell-quotes and
+  spawns batch launchers correctly — 18/18 PDF/A-claiming samples validate
+  locally on Windows exactly as in CI.
+- **fix(shaping): Arabic ALEF joining and Persian letter forms** — ALEF was
+  swept into the dual-joining class by a `0x0626–0x0628` range, so every
+  word with a non-final alef rendered wrongly (سال collapsed toward سل,
+  كتاب/باب mis-joined, السلام drew a medial lam); ALEF is now right-joining
+  per UCD ArabicShaping. The presentation-form table also gains the
+  Presentation Forms-A entries for the Persian and Urdu letters
+  (پ چ ژ ک گ ی، ٹ ڈ ڑ ں ھ ہ ے ۓ), which previously fell back to their
+  isolated glyph in every position (قیمت/ریال rendered with joining gaps).
+  The bundled Noto Naskh Arabic font always contained every form — the
+  shaper never requested them. Arabic visual baselines regenerated; fonts
+  without Forms-A keep the previous fallback.
+  ([src/shaping/arabic-shaper.ts](src/shaping/arabic-shaper.ts))
+- **fix(shaping): RTL digit runs no longer reverse** — `assignLevels` now
+  implements UAX #9 I1/I2: AN/EN digit runs resolve to even embedding levels
+  in both paragraph directions, so `۱۴۰۵` can never render `۵۰۴۱` again;
+  U+06F0–U+06F9 corrected from AN to EN per DerivedBidiClass; L2 rewritten
+  run-based ([#70](https://github.com/Nizoka/pdfnative/issues/70)).
+  Silently-wrong financial figures, dates and reference numbers in Persian,
+  Arabic and Hebrew documents are the affected class.
+- **fix(shaping): UAX #9 rule L4 glyph mirroring** — odd-level runs substitute
+  paired delimiters through the full 428-pair `BidiMirroring.txt` table
+  (generated module, Unicode 17.0.0), replacing the ~40-pair curated map and
+  the incorrect comment that declined L4: logical `(X)` no longer renders
+  `)X(` around RTL content ([#71](https://github.com/Nizoka/pdfnative/issues/71)).
+- **fix(parser): incremental writer & xref reader conformance hardening** —
+  per-revision trailer `/ID`: ID[0] preserved byte-exact (it seeds encryption
+  key derivation), ID[1] regenerated deterministically per ISO 32000-1 §14.4;
+  a present-but-invalid `/Prev` now raises an explicit integrity error instead
+  of silently truncating the revision chain; xref streams honour
+  `/DecodeParms /Predictor`; appended revisions start on a fresh line after a
+  bare `%%EOF`; an absent or corrupt `/Size` recovers from the xref's highest
+  entry instead of silently allocating colliding object numbers.
+- **fix(core): complete base-14 `/ToUnicode` coverage** — in BOTH builders,
+  base-14 dicts reached under a PDF/A claim, and the AcroForm `/Helv` dict
+  in EVERY mode (all form-carrying documents change bytes; form text
+  becomes searchable/extractable), now carry the shared WinAnsi CMap; cmap
+  inversion keeps a legitimately-mapped U+0000
+  ([src/fonts/font-embedder.ts](src/fonts/font-embedder.ts)).
+- **fix(fonts): COLRv1 composite degradation** — a `PaintComposite` whose
+  SOURCE subtree is unsupported now renders its backdrop alone instead of
+  dropping the whole glyph — Noto's flags (SRC_IN-masked wave shading over a
+  flat backdrop) render as flat flags instead of tofu.
 - **Streaming APIs that were never exported** — <!-- verify-docs:allow api-exists (the entry that bans these names) -->
   `streamDocumentPdf`, `streamPdf`
   and `buildPdfStream` <!-- verify-docs:allow api-exists (the entry that bans these names) -->
@@ -141,9 +276,9 @@ checked per token-surface pair, links to `noindex` stubs are rejected, and
 exists for — a regex rule that matches nothing is indistinguishable from one
 that passes.
 
-### Fixed — final ecosystem audit
+### Fixed — final ecosystem review
 
-A second full audit of the branch against the four package sources
+A second full review pass over the branch against the four package sources
 (pdfnative 1.6.0, pdfnative-cli 1.3.0, pdfnative-mcp 1.5.0,
 pdfnative-react 1.1.0), one reviewer per package plus one for the playgrounds
 and benchmarks and one for reading experience. It found that the passes above
@@ -178,14 +313,14 @@ had fixed instances while their classes survived elsewhere:
   promising a 1,000-page cap for a main-thread path that was removed.
 - **Counts unified against the tree**: 228 sample PDFs across 37 categories
   (44 generators), 2 396 tests in 105 files on the homepage (was 2 379+/104 —
-  the count includes the five verifier fixtures this audit adds),
+  the count includes the five verifier fixtures this review adds),
   89 fuzz tests in 5 files (was "48"), 26 bundled font modules, and coverage
   figures dated to their v1.6.0 measurement with the CI gates (88/80/85/90)
   stated alongside.
 - **`llms.txt` returned 404 on the published site** — the file lived only at
   the repo root while the site serves `docs/`. A synced copy now ships in
   `docs/`, plus a generated `docs/llms-full.txt` (`npm run docs:llms`)
-  concatenating all 26 guides for single-request agent ingestion; a new
+  concatenating all 28 guides for single-request agent ingestion; a new
   `llms-sync` rule keeps both honest. Guide shells gained `<noscript>`
   Markdown fallbacks and `rel="alternate"` links for non-JS readers, and the
   Learn/Guides/Playgrounds/Responsibility navigation is now uniform across
@@ -237,7 +372,7 @@ had fixed instances while their classes survived elsewhere:
 - The comparison table is dated, names the exact competitor versions, states the
   dependency-count method, and links its source data.
 - Hero CTA points at `/learn/` instead of an off-site 85 KB README. The homepage
-  now links 21 of 26 guides and `llms.txt` all 26.
+  now links 22 of the guides and `llms.txt` all 28.
 
 ## [1.6.0] – 2026-07-19
 

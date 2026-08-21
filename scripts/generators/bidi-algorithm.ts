@@ -40,7 +40,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { type: 'paragraph', text: 'Matching brackets () [] {} enclosing LTR content are kept together as a single LTR run, preventing visual break-up of parenthesized expressions.' },
 
                 { type: 'heading', text: 'Glyph Mirroring', level: 2 },
-                { type: 'paragraph', text: 'RTL runs mirror bracket characters: ( → ), [ → ], « → ». This ensures visual consistency when direction changes.' },
+                { type: 'paragraph', text: 'RTL runs mirror bracket characters: ( becomes ), [ becomes ], « becomes ». This ensures visual consistency when direction changes.' },
             ],
             fontEntries,
             footerText: 'pdfnative – BiDi Algorithm Walkthrough',
@@ -76,5 +76,42 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             footerText: 'pdfnative – Arabic Shaping + BiDi',
         };
         ctx.writeSafe(resolve(ctx.outputDir, 'bidi', 'bidi-arabic-shaping.pdf'), 'bidi/bidi-arabic-shaping.pdf', buildDocumentPDFBytes(params));
+    }
+
+    // ── 3. Digit ordering + glyph mirroring (v1.7.0) ────────────
+    {
+        const params: DocumentParams = {
+            title: 'BiDi Digits & Mirroring — UAX #9 I1/I2 + L4',
+            blocks: [
+                { type: 'heading', text: 'Native Digits in RTL Text (UAX #9 I1/I2)', level: 1 },
+                { type: 'paragraph', text: 'Digit runs always resolve to an even embedding level, so multi-digit numbers keep their logical order — most significant digit first — in both paragraph directions.' },
+
+                { type: 'heading', text: 'Extended Arabic-Indic (Persian) Digits', level: 2 },
+                { type: 'paragraph', text: 'سال ۱۴۰۵ هجری خورشیدی — قیمت: ۱۲۳۴۵ ریال' },
+                { type: 'paragraph', text: 'The Persian year ۱۴۰۵ must read 1-4-0-5, never reversed. Extended Arabic-Indic digits (U+06F0–U+06F9) are classified EN and converted to AN by W2 in Arabic-letter context.' },
+
+                { type: 'heading', text: 'Arabic-Indic Digits', level: 2 },
+                { type: 'paragraph', text: 'الفاتورة رقم ٤٥٦٧ — المبلغ ١٢٣٫٤٥ دينار' },
+                { type: 'paragraph', text: 'Invoice and amount figures in Arabic-Indic digits (U+0660–U+0669) keep logical order inside the RTL sentence.' },
+
+                { type: 'heading', text: 'ASCII Digits Between RTL Words', level: 2 },
+                { type: 'paragraph', text: 'מחיר 123 שקל — טלפון 0501234567' },
+                { type: 'paragraph', text: 'European digits between Hebrew words behave identically: an even-level island in the RTL flow.' },
+
+                { type: 'heading', text: 'Glyph Mirroring (UAX #9 L4)', level: 1 },
+                { type: 'paragraph', text: 'Paired delimiters in odd-level runs are replaced by their Bidi_Mirroring_Glyph so they keep facing their content.' },
+
+                { type: 'heading', text: 'Parentheses Around RTL Content', level: 2 },
+                { type: 'paragraph', text: 'این کتابخانه (بدون وابستگی) است' },
+                { type: 'paragraph', text: 'הספרייה (ללא תלות) לחלוטין' },
+
+                { type: 'heading', text: 'Brackets and Guillemets', level: 2 },
+                { type: 'paragraph', text: 'القائمة [العنصر الأول] والاقتباس «مرحبا» هنا' },
+                { type: 'paragraph', text: 'The full BidiMirroring.txt table (428 mappings) covers parentheses, brackets, braces, guillemets, and mathematical delimiters.' },
+            ],
+            fontEntries,
+            footerText: 'pdfnative – BiDi Digits & Mirroring',
+        };
+        ctx.writeSafe(resolve(ctx.outputDir, 'bidi', 'bidi-digits-mirroring.pdf'), 'bidi/bidi-digits-mirroring.pdf', buildDocumentPDFBytes(params));
     }
 }

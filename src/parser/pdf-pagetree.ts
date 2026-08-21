@@ -557,6 +557,16 @@ function copyPage(ctx: CopyCtx, spec: PageSpec, opts: MergeOptions): number {
         }
     }
 
+    // Print-production page keys (v1.7.0) — NOT inheritable per ISO 32000-1
+    // §7.7.3.3 (only MediaBox/CropBox/Rotate/Resources inherit), so they are
+    // copied verbatim when present on the page itself. Previously dropped.
+    for (const key of ['BleedBox', 'TrimBox', 'ArtBox', 'UserUnit'] as const) {
+        const v = page.get(key);
+        if (v !== undefined) {
+            parts.push(`/${key} ${serializeValue(rewrite(ctx, reader, v), enc)}`);
+        }
+    }
+
     // Resources — inheritable; default to an empty dict.
     const res = resolveInherited(reader, page, 'Resources');
     parts.push(`/Resources ${res !== undefined ? serializeValue(rewrite(ctx, reader, res), enc) : '<< >>'}`);

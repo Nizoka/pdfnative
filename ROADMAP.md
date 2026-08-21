@@ -102,9 +102,18 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **Re-encrypt page-tree output** (v1.6.0, pulled forward from Long-Term) — `MergeOptions.encrypt` re-encrypts `mergePdfs` / `splitPdf` / `extractPages` (and streaming) output with AES-128/AES-256 under fresh passwords/permissions, closing the encrypted round trip (incl. one-call password rotation). CSPRNG-gated; RC4 never emitted. ([src/parser/pdf-pagetree.ts](src/parser/pdf-pagetree.ts))
 - [x] **Encrypted incremental update** (v1.6.0, pulled forward from Long-Term) — `fillForm` / `flattenForm` / `PdfModifier.addAnnotation` operate on encrypted PDFs by encrypting appended objects under the document's existing scheme (RC4/AES-128/AES-256); incremental trailer carries `/Encrypt` forward. ([src/parser/pdf-modifier.ts](src/parser/pdf-modifier.ts), [src/core/pdf-form-fill.ts](src/core/pdf-form-fill.ts))
 
+- [x] **UAX #9 digit levels + L4 glyph mirroring** (v1.7.0, [#70](https://github.com/Nizoka/pdfnative/issues/70), [#71](https://github.com/Nizoka/pdfnative/issues/71)) — digit runs resolve to even embedding levels (I1/I2) so Arabic-Indic / Extended Arabic-Indic / European numbers keep logical order in RTL text, and odd-level runs substitute paired delimiters through the full 428-pair `BidiMirroring.txt` table. ([src/shaping/bidi.ts](src/shaping/bidi.ts), [src/shaping/bidi-mirroring-data.ts](src/shaping/bidi-mirroring-data.ts))
+- [x] **Charts v2** (v1.7.0, [#67](https://github.com/Nizoka/pdfnative/issues/67)) — stacked bars (`stackedBar` / `stackedBarH`), `area`, `scatter`, secondary right axis, log and UTC-deterministic time scales, per-point data labels, and x-label collision handling (auto stride + `labelStride` / `labelRotation`). ([src/core/pdf-chart.ts](src/core/pdf-chart.ts))
+- [x] **Colour-emoji sequences** (v1.7.0) — flag (regional-indicator) and ZWJ sequences resolved through the source font's GSUB into single COLR ligature glyphs: 51 flags + 22 ZWJ sequences bundled (budget 5120 KB), longest-match pre-pass in the text pipeline, `--sequences` / `--sequence-list` CLI selection, graceful per-codepoint fallback. ([src/shaping/emoji-sequences.ts](src/shaping/emoji-sequences.ts), [scripts/lib/curated-emoji-sequences.ts](scripts/lib/curated-emoji-sequences.ts))
+- [x] **PDF/A declaration guards** (v1.7.0, [#69](https://github.com/Nizoka/pdfnative/issues/69)) — conformance diagnostics channel (`onDiagnostic`, `strict`) guarding the PDF/A claim: unembedded-font and DeviceCMYK-image configurations surface a warning or throw instead of silently stamping `pdfaid`; complete base-14 `/ToUnicode` coverage under tagged mode. ([src/core/pdf-diagnostics.ts](src/core/pdf-diagnostics.ts))
+- [x] **Incremental-update conformance hardening** (v1.7.0) — per-revision `/ID` regeneration (ID[0] preserved byte-exact), explicit errors on invalid `/Prev` chains, xref-stream `/Predictor` support, EOL framing between revisions, xref-derived `/Size` recovery, and `PdfModifier.updateMetadata()` keeping `/Info` and XMP in sync (`/ModDate`, `xmp:ModifyDate`). ([src/parser/pdf-modifier.ts](src/parser/pdf-modifier.ts), [src/parser/pdf-xref-parser.ts](src/parser/pdf-xref-parser.ts))
+
+- [x] **LTV signatures (PAdES B-B → B-LTA)** (v1.7.0) — ESS signing-certificate-v2 + canonical DER SET OF, RFC 3161 signature timestamps via injected `TimestampProvider` (`signPdfBytesWithTimestamp`), OCSP/CRL revocation collection via injected `RevocationProvider`, `/DSS` + `/VRI` embedding (`addValidationInfo`), document timestamps (`addDocumentTimestamp`), and multi-signature flows (`allowMultiple`, `fieldName` selector, `listSignatures`). Network transport stays in user land — the engine is offline by default. ([src/core/pdf-dss.ts](src/core/pdf-dss.ts), [docs/guides/ltv.md](docs/guides/ltv.md))
+- [x] **Print production** (v1.7.0) — bleed/trim/art/crop page boxes (`layout.print` with a `bleed` shorthand, ISO 32000-1 §14.11.2), crop + registration marks as pure vector operators (§14.11.3), `/Trapped` with XMP parity, print-dialog viewer preferences (duplex, tray, page range, copies), caller-supplied OutputIntent ICC (tagged), large-format `/UserUnit`, and box preservation through merge/split. Byte-identical when unused. ([src/core/pdf-print.ts](src/core/pdf-print.ts), [docs/guides/print.md](docs/guides/print.md))
+
 ## In Progress
 
-_All v1.6.0 items have been merged into the v1.6.0 release. See Released above._
+_All v1.7.0 items have been merged. See Released above._
 
 ## Planned
 
@@ -112,9 +121,9 @@ _All v1.6.0 items have been merged into the v1.6.0 release. See Released above._
 
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression
 - [ ] **Full Universal Shaping Engine** — Khmer, Myanmar, complex Sinhala
-- [ ] **COLRv1 PaintMask / variable paints** — soft-mask groups (`PaintComposite` luminosity masks) and variable-font COLR. v1.4.0 ships solid + linear + radial + sweep gradients and blend-mode compositing; masks and variable paints fall back to monochrome.
-- [ ] **Colour-emoji sequences** — flag (regional-indicator) and ZWJ sequences via a GSUB-ligature table in the generated module plus a longest-match pre-pass, so the bundled subset can cover multi-codepoint emoji (currently single-codepoint only).
-- [ ] **Charts v2** — stacked bars, area, scatter, secondary/log/time axes, and per-point data labels (v1.6.0 ships bar / barH / line / pie / donut on a linear axis).
+- [ ] **COLRv1 PaintMask / variable paints** — soft-mask groups (`PaintComposite` luminosity masks) and variable-font COLR. v1.4.0 ships solid + linear + radial + sweep gradients and blend-mode compositing; v1.7.0 adds a best-effort degradation (unsupported composite sources render their backdrop, so Noto's flags come out flat); full masks and variable paints still fall back to monochrome.
+- [ ] **Bundled skin-tone emoji sequences** — the combinatorial Fitzpatrick ZWJ forms stay CLI-generated (`--sequence-list`); evaluate a curated bundled subset if adoption demands it.
+- [ ] **CMYK & PDF/X** — CMYK content colours (`k`/`K` operators), spot colours/Separation, colour bars in the printer's-marks set, all-separation registration colour, CMYK OutputIntents and a PDF/X conformance claim with a validation story. One coherent workstream on top of the v1.7.0 print-production foundation (boxes, marks, `/Trapped`, custom ICC).
 
 ## How to Influence the Roadmap
 

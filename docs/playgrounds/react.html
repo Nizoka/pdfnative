@@ -179,8 +179,8 @@ const bytes = renderSpecToBytes({
   "imports": {
     "react": "https://esm.sh/react@19",
     "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
-    "pdfnative": "https://esm.sh/pdfnative@1.6.0",
-    "pdfnative/": "https://esm.sh/pdfnative@1.6.0/",
+    "pdfnative": "https://esm.sh/pdfnative@1.7.0",
+    "pdfnative/": "https://esm.sh/pdfnative@1.7.0/",
     "pdfnative-react": "https://esm.sh/pdfnative-react@1.1.0?external=react,pdfnative"
   }
 }
@@ -265,7 +265,7 @@ const bytes = renderSpecToBytes({
       "// Rendering is synchronous and cannot await a loader, so the font data",
       "// must be resolved BEFORE rendering. Keys are engine language codes:",
       "// 'ar', not 'arabic' — the engine looks up the code it detects.",
-      "const CDN = 'https://esm.sh/pdfnative@1.6.0/fonts';",
+      "const CDN = 'https://esm.sh/pdfnative@1.7.0/fonts';",
       "registerFonts({",
       "  latin: () => import(`${CDN}/noto-sans-data.js`),",
       "  ar:    () => import(`${CDN}/noto-arabic-data.js`),",

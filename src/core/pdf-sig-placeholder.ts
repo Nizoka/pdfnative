@@ -19,7 +19,7 @@ import {
     isDict, isArray, isRef, isName, dictGetDict, dictGetArray, dictGetRef,
     type PdfDict, type PdfValue, type PdfRef,
 } from '../parser/pdf-object-parser.js';
-import { buildSigDict } from './pdf-signature.js';
+import { buildSigDict, buildDocTimeStampDict, type SigDictMetadata } from './pdf-signature.js';
 
 /**
  * Options for {@link addSignaturePlaceholder}.
@@ -57,6 +57,42 @@ export interface AddSignaturePlaceholderOptions {
      * @default [0, 0, 0, 0]
      */
     readonly rect?: readonly [number, number, number, number];
+
+    /**
+     * Emit a `/Type /DocTimeStamp /SubFilter /ETSI.RFC3161` dictionary
+     * (ISO 32000-2 §12.8.5) instead of an ordinary `/Sig` — used by
+     * `addDocumentTimestamp`. Implies the same byte-patchable placeholders.
+     * @since 1.7.0
+     */
+    readonly docTimeStamp?: boolean;
+
+    /**
+     * Descriptive `/Sig` entries baked into the placeholder dictionary:
+     * `name` (/Name), `reason`, `location`, `contactInfo`, `signingTime`
+     * (/M) and `subFilter`. The dictionary's byte layout is frozen at
+     * placeholder time, so metadata must be provided HERE — the matching
+     * options on `signPdfBytes` only affect the CMS (signingTime) and
+     * cannot rewrite the /Sig dictionary. @since 1.7.0
+     */
+    readonly metadata?: SigDictMetadata;
+
+    /**
+     * Allow adding a placeholder even when the document already carries
+     * signature fields (signed or not) — the multi-signature flow: sign
+     * the first placeholder, add a second with `allowMultiple: true` and a
+     * fresh `fieldName`, sign it via `signPdfBytes`'s `fieldName` selector.
+     *
+     * `false` (default) preserves the 1.x idempotent short-circuit exactly:
+     * any existing `/FT /Sig` field returns the input unchanged.
+     *
+     * With `true`: an existing UNSIGNED placeholder with the same
+     * `fieldName` returns the input unchanged (per-name idempotence); a
+     * SIGNED field with the same name throws; other signature fields are
+     * left alone and a new placeholder is appended.
+     *
+     * @since 1.7.0
+     */
+    readonly allowMultiple?: boolean;
 }
 
 /**
@@ -71,7 +107,7 @@ export interface AddSignaturePlaceholderOptions {
  *
  * const unsigned   = buildDocumentPDFBytes(params);
  * const placeheld  = addSignaturePlaceholder(unsigned, { fieldName: 'Author' });
- * const signed     = await signPdfBytes(placeheld, { privateKey, certificate });
+ * const signed     = signPdfBytes(placeheld, { signerCert, rsaKey });
  * ```
  */
 export function addSignaturePlaceholder(
@@ -104,6 +140,7 @@ export function addSignaturePlaceholder(
     }
 
     // Idempotency + name-collision detection.
+    const allowMultiple = options.allowMultiple ?? false;
     const catalog = reader.getCatalog();
     const existingAcroForm = resolveDict(reader, catalog, 'AcroForm');
     if (existingAcroForm) {
@@ -113,11 +150,27 @@ export function addSignaturePlaceholder(
                 const field = resolveValue(reader, fieldRef);
                 if (!field || !isDict(field)) continue;
                 const ft = field.get('FT');
-                if (isName(ft) && ft.value === 'Sig') {
-                    return pdfBytes;
-                }
                 const t = field.get('T');
-                if (typeof t === 'string' && t === fieldName) {
+                const sameName = typeof t === 'string' && t === fieldName;
+                if (isName(ft) && ft.value === 'Sig') {
+                    if (!allowMultiple) {
+                        // 1.x behaviour: any signature field short-circuits.
+                        return pdfBytes;
+                    }
+                    if (sameName) {
+                        if (isUnsignedSigField(reader, field)) {
+                            // Per-name idempotence: the requested placeholder
+                            // already exists and is still unsigned.
+                            return pdfBytes;
+                        }
+                        throw new Error(
+                            `addSignaturePlaceholder: fieldName "${fieldName}" is already a SIGNED ` +
+                            'signature field. Pass a fresh fieldName for the additional signature.',
+                        );
+                    }
+                    continue; // other signature fields are left alone
+                }
+                if (sameName) {
                     throw new Error(
                         `addSignaturePlaceholder: fieldName "${fieldName}" collides with an existing ` +
                         'non-signature AcroForm field. Pass a different fieldName option.',
@@ -144,7 +197,9 @@ export function addSignaturePlaceholder(
     // 1) Sig dictionary — emitted verbatim so the /Contents <00…> and
     //    /ByteRange [0 …] placeholders are byte-identical to what
     //    signPdfBytes() expects to patch.
-    const sigBody = buildSigDict({}, placeholderBytes);
+    const sigBody = options.docTimeStamp
+        ? buildDocTimeStampDict(placeholderBytes)
+        : buildSigDict(options.metadata ?? {}, placeholderBytes);
     const sigObjNum = modifier.addRawObject(sigBody);
     const sigRef: PdfRef = { type: 'ref', num: sigObjNum, gen: 0 };
 
@@ -205,6 +260,17 @@ export function addSignaturePlaceholder(
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+/** True when the field's /V sig dict is a never-signed placeholder. */
+function isUnsignedSigField(reader: PdfReader, field: PdfDict): boolean {
+    const vRef = field.get('V');
+    const sig = resolveValue(reader, vRef);
+    if (!sig || !isDict(sig)) return false;
+    const br = sig.get('ByteRange');
+    if (!isArray(br) || br.length !== 4) return false;
+    return br.every(v => typeof v === 'number') && (br as number[])[1] === 0
+        && (br as number[])[2] === 0 && (br as number[])[3] === 0;
+}
 
 function mkName(value: string): PdfValue {
     return { type: 'name', value };
