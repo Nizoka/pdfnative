@@ -190,7 +190,7 @@
     {
       "id": "test-count-homepage",
       "$comment": "The homepage quoted a stale test count for a full release train; no assertion covered it. canonical-present pins the current figure where it is displayed.",
-      "canonical": "665+ tests across 122 files",
+      "canonical": "2665+ tests across 122 files",
       "requireIn": [
         "docs/index.html"
       ]
