@@ -152,9 +152,9 @@ tolerates them.
 
 ## Verifier 4 — `listSignatures()` + `openPdf()`: signatures, encryption, metadata
 
-_(v1.7.0)_ `listSignatures()` inventories every signature field in the
-document; `openPdf()` exposes page count, encryption state and the `/Info`
-dictionary.
+`listSignatures()` _(v1.7.0)_ inventories every signature field in the
+document; `openPdf()` (available since v1.0.0) exposes page count, encryption
+state and the `/Info` dictionary.
 
 ```ts
 import { openPdf, listSignatures } from 'pdfnative';

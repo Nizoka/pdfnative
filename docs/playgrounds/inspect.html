@@ -120,7 +120,7 @@
     <p>Drop any PDF below and read a full report — document metadata, extracted text, PDF/UA structure, a signature inventory, and form fields — produced by the same pdfnative reader APIs that run in Node, Deno and Bun. Open your browser's Network panel before dropping a file: the only requests this page ever makes happen while it loads — its stylesheets, the Prism highlighter, and the pdfnative engine from the CDN — before you drop anything. The file is read with the standard FileReader API and never leaves this tab. Nothing is stored either: reload the page and the report is gone.</p>
     <p style="font-size:14px;color:var(--c-text-dim);">In the spirit of the <a href="../responsibility.html">responsibility page</a>, every card below links the source file in the repository that produced it — the report is only as trustworthy as the code you can read.</p>
 
-    <p id="loader-status" style="font-size:13px;color:var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once, at page load.</p>
+    <p id="loader-status" role="status" aria-live="polite" style="font-size:13px;color:var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once, at page load.</p>
 
     <div id="dropzone" class="insp-drop">
       <p><strong>Drop a PDF anywhere in this box</strong> — or pick one:</p>
@@ -140,7 +140,7 @@
       <p class="insp-pwnote">This document is encrypted. The password is handed to <code>openPdf()</code> in this tab only — it is never stored and never sent anywhere.</p>
     </div>
 
-    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0 0;font-size:14px;"></div>
+    <div id="status" role="status" aria-live="polite" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0 0;font-size:14px;"></div>
     <p id="file-meta" class="insp-meta" hidden></p>
 
     <div id="report" hidden>
@@ -219,7 +219,9 @@ function kv(dl, key, value) {
   dl.appendChild(el('dt', '', key));
   dl.appendChild(el('dd', '', value));
 }
+let sectionFailures = 0; // reset per inspection; feeds the honest final status
 function sectionError(bodyId, err) {
+  sectionFailures++;
   const p = el('p', 'insp-error', 'Could not run on this file: ' + (err && err.message ? err.message : String(err)));
   $(bodyId).replaceChildren(p);
 }
@@ -456,6 +458,7 @@ function inspect(password) {
   const mod = pdfnativeMod;
   if (!mod || !current) return;
   const t0 = performance.now();
+  sectionFailures = 0;
 
   // Overview drives the password flow: a wrong or missing password surfaces here first.
   let encryption = null;
@@ -499,7 +502,12 @@ function inspect(password) {
   const meta = $('file-meta');
   meta.hidden = false;
   meta.textContent = current.name + ' · ' + (current.bytes.length / 1024).toFixed(1) + ' KB · inspected in ' + ms + ' ms, entirely in this tab.';
-  setStatus('Report ready.', 'success');
+  // Honest tally: a green "ready" banner over five failed cards would lie.
+  if (sectionFailures === 0) {
+    setStatus('Report ready.', 'success');
+  } else {
+    setStatus('Report ready — ' + sectionFailures + ' of 5 sections could not run on this file (details in the cards below).', 'error');
+  }
 }
 
 function readFileBytes(file) {
@@ -577,15 +585,22 @@ $('sample-btn').addEventListener('click', () => {
 });
 
 // ── Theme + hamburger parity with the rest of the site ──
+// Same semantics as app.js: the attribute is always explicit ('light' or
+// 'dark') and localStorage stores the same value — removing the attribute
+// would fall back to prefers-color-scheme, so "light" on a dark-OS machine
+// would do nothing, and an empty stored value breaks every other page.
 const themeBtn = document.querySelector('.theme-toggle');
 if (themeBtn) {
   const stored = localStorage.getItem('theme');
-  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  const preferred = stored || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const applyTheme = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  };
+  applyTheme(preferred);
   themeBtn.addEventListener('click', () => {
-    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
-    if (cur) document.documentElement.setAttribute('data-theme', cur);
-    else     document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('theme', cur);
+    applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
 }
 const hb = document.querySelector('.nav-hamburger');

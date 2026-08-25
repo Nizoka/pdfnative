@@ -127,7 +127,16 @@ function tokenText(tokens: Array<Record<string, unknown>> | undefined): string {
     if (!tokens) return '';
     const parts: string[] = [];
     for (const t of tokens) {
-        if (typeof t['text'] === 'string' && !t['tokens'] && !t['items']) {
+        if (t['type'] === 'table') {
+            // A table-only answer is still an answer: serialise header and
+            // body cells (each cell is { text, tokens }).
+            const header = t['header'] as Array<Record<string, unknown>> | undefined;
+            const rows = t['rows'] as Array<Array<Record<string, unknown>>> | undefined;
+            if (header) parts.push(header.map((c) => String(c['text'] ?? '')).join(' — '));
+            for (const row of rows ?? []) {
+                parts.push(row.map((c) => String(c['text'] ?? '')).join(' — '));
+            }
+        } else if (typeof t['text'] === 'string' && !t['tokens'] && !t['items']) {
             parts.push(t['text'] as string);
         } else if (Array.isArray(t['items'])) {
             parts.push(tokenText(t['items'] as Array<Record<string, unknown>>));
@@ -174,9 +183,6 @@ function buildFaqEntities(md: string): JsonLdNode[] {
 
 /** The JSON-LD graph for one guide, serialised for the committed shell. */
 export function buildGuideJsonLd(root: string, mdName: string, shell: string, articleHtml: string): string {
-    const manifest = JSON.parse(readFileSync(join(root, 'docs', 'assets', 'ecosystem.json'), 'utf8')) as {
-        verifiedOn: string;
-    };
     const canonical = canonicalOf(shell);
     const headline = firstHeadline(articleHtml) || metaContent(shell, 'description');
     const graph: JsonLdNode[] = [];
@@ -190,12 +196,16 @@ export function buildGuideJsonLd(root: string, mdName: string, shell: string, ar
         ],
     });
 
+    // No dateModified: schema.org defines it as the date the WORK was last
+    // modified, and the only honest per-guide source (git history) is not
+    // available to the CI verifier's shallow checkout. Stamping the manifest's
+    // verifiedOn here claimed a modification date for guides whose Markdown
+    // had not changed — a false date is worse than no date.
     graph.push({
         '@type': 'TechArticle',
         headline,
         description: metaContent(shell, 'description'),
         inLanguage: 'en',
-        dateModified: manifest.verifiedOn,
         author: { '@type': 'Organization', name: 'Nizoka', url: 'https://github.com/Nizoka' },
         publisher: {
             '@type': 'Organization',

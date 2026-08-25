@@ -37,12 +37,15 @@ interface ApiEntry {
 /** First sentence of the JSDoc block immediately above `index` in `text`. */
 function docSummaryAbove(text: string, index: number): string | null {
     const before = text.slice(0, index);
-    const m = before.match(/\/\*\*([\s\S]*?)\*\/\s*$/);
+    // Tempered body — cannot cross a `*/` — so this can only match the block
+    // IMMEDIATELY above the declaration; a lazy [\s\S]*? here would match from
+    // the file's banner comment and attribute it to every symbol.
+    const m = before.match(/\/\*\*((?:[^*]|\*(?!\/))*)\*\/\s*$/);
     if (!m) return null;
     const body = m[1]
         .split('\n')
         .map((l) => l.replace(/^\s*\*\s?/, '').trim())
-        .filter((l) => l && !l.startsWith('@'))
+        .filter((l) => l && !l.startsWith('@') && !/^[=\-─═]{3,}$/.test(l))
         .join(' ');
     const sentence = body.match(/^(.*?[.!?])(\s|$)/);
     const summary = (sentence ? sentence[1] : body).replace(/\{@link\s+([^}|]+)(?:\|[^}]*)?\}/g, '$1').trim();

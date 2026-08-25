@@ -49,7 +49,7 @@ function runVerifier(root: string): Run {
  */
 function makeSandbox(): string {
     const dir = mkdtempSync(join(tmpdir(), 'pdfnative-verify-'));
-    for (const entry of ['docs', 'src', 'tests', 'scripts', 'bench', '.github']) {
+    for (const entry of ['docs', 'src', 'tests', 'scripts', 'bench', 'recipes', '.github']) {
         const from = join(ROOT, entry);
         if (existsSync(from)) cpSync(from, join(dir, entry), { recursive: true });
     }
@@ -81,6 +81,19 @@ describe('verify-docs', () => {
 
     describe('each rule reports the defect it exists for', () => {
         let sandbox: string;
+
+        // The control every perturbation test depends on: a sandbox that has
+        // NOT been perturbed must be clean, otherwise the `status === 1`
+        // assertions below are satisfied by pre-existing noise instead of by
+        // the rule under test (which is exactly how a missing `recipes/` copy
+        // once made every negative test vacuous).
+        it('an unperturbed sandbox is clean', () => {
+            withSandbox((dir) => {
+                const run = runVerifier(dir);
+                expect(run.output).toContain('rules passed');
+                expect(run.status).toBe(0);
+            });
+        }, 120_000);
 
         function withSandbox(fn: (dir: string) => void): void {
             sandbox = makeSandbox();

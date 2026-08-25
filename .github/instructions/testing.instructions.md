@@ -36,7 +36,7 @@ scripts/
 ```
 
 ## Current State (maintain these thresholds)
-- **2665+ tests** across 122 test files + 1 benchmark file
+- **2686+ tests** across 123 test files + 1 benchmark file
 - Statements: ~95% (threshold: 88%)
 - Branches: ~88% (threshold: 80%)
 - Functions: ~98% (threshold: 85%)

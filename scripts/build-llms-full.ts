@@ -23,7 +23,7 @@
  *   npx tsx scripts/build-llms-full.ts    # rewrite both artefacts
  */
 
-import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 function lf(text: string): string {
@@ -162,7 +162,11 @@ export function buildLlmsIndex(root: string): string {
     ];
     for (const [url, path, description] of artefactSources) {
         if (!existsSync(path)) continue;
-        const bytes = statSync(path).size;
+        // Byte size of the LF-normalised content — the size of the committed
+        // blob GitHub Pages serves. statSync().size would measure the working
+        // tree, which is CRLF-inflated on autocrlf Windows clones and would
+        // make llms-index-sync fail on a pristine checkout.
+        const bytes = Buffer.byteLength(lf(readFileSync(path, 'utf8')), 'utf8');
         artefactList.push({ url, description, bytes, approxTokens: approxTokens(bytes) });
     }
 

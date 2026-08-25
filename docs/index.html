@@ -212,7 +212,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">2665+</div>
+    <div class="metric-value">2686+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -277,7 +277,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2665+ tests across 122 files, 95%+ statement coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2686+ tests across 123 files, 95%+ statement coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -429,9 +429,9 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Pick an example, edit the code, and watch the PDF render beside it — everything runs in your browser via the npm CDN. Nothing is uploaded anywhere.</p>
     <div class="demo-container">
       <div class="demo-toolbar">
-        <div class="demo-mode" role="tablist" aria-label="Editor mode">
-          <button class="tab-btn active" id="demo-mode-code" role="tab" aria-selected="true" type="button">Code</button>
-          <button class="tab-btn" id="demo-mode-json" role="tab" aria-selected="false" type="button">JSON</button>
+        <div class="demo-mode" role="group" aria-label="Editor mode">
+          <button class="demo-mode-btn active" id="demo-mode-code" aria-pressed="true" type="button">Code</button>
+          <button class="demo-mode-btn" id="demo-mode-json" aria-pressed="false" type="button">JSON</button>
         </div>
         <label class="demo-picker-label" for="demo-picker">Example:</label>
         <select id="demo-picker" class="demo-picker" aria-label="Choose an example"></select>

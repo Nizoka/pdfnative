@@ -254,3 +254,23 @@
 .guide-source-btn:hover { border-color: var(--c-primary); }
 
 .guide-source-link { color: var(--c-text-dim); }
+
+/* Touch devices have no reliable :hover — the copy buttons and heading
+   anchors must be visible there, with WCAG 2.5.8-sized targets. */
+@media (hover: none), (pointer: coarse) {
+  .guide-content pre .copy-btn,
+  .heading-anchor {
+    opacity: 1;
+  }
+  .heading-anchor {
+    min-width: 24px;
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .guide-shell { padding: 48px 14px; }
+}

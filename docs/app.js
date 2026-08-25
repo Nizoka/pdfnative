@@ -54,14 +54,43 @@
   }
 
   // ── Copy to clipboard ─────────────────────────────────────
+  // Single helper for every copy affordance: the Clipboard API only exists
+  // in secure contexts, so guard it and fall back to execCommand on a
+  // temporary textarea instead of throwing synchronously in the handler.
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (res, rej) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) { /* fall through */ }
+      ta.remove();
+      if (ok) res(); else rej(new Error('Clipboard unavailable'));
+    });
+  }
+
   document.querySelectorAll('.copy-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var text = btn.getAttribute('data-copy');
       if (!text) return;
-      navigator.clipboard.writeText(text).then(function () {
+      copyText(text).then(function () {
         btn.classList.add('copied');
         var prev = btn.innerHTML;
         btn.innerHTML = '✓';
+        setTimeout(function () {
+          btn.innerHTML = prev;
+          btn.classList.remove('copied');
+        }, 1500);
+      }, function () {
+        btn.classList.add('copied');
+        var prev = btn.innerHTML;
+        btn.innerHTML = '✗';
         setTimeout(function () {
           btn.innerHTML = prev;
           btn.classList.remove('copied');
@@ -76,7 +105,7 @@
       var url = btn.getAttribute('data-copy-url');
       fetch(url, { cache: 'no-cache' })
         .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-        .then(function (text) { return navigator.clipboard.writeText(text); })
+        .then(function (text) { return copyText(text); })
         .then(function () {
           var prev = btn.textContent;
           btn.textContent = '✓ Copied';
@@ -126,7 +155,10 @@
   }
 
   // ── Code tabs ─────────────────────────────────────────────
-  var tabBtns = document.querySelectorAll('.tab-btn');
+  // Scoped to the Examples section: other page controls (e.g. the demo's
+  // Code/JSON mode switch) must never be captured by this tablist.
+  var exampleTabBar = document.querySelector('#examples .tab-bar');
+  var tabBtns = exampleTabBar ? exampleTabBar.querySelectorAll('.tab-btn') : [];
   var tabPanels = document.querySelectorAll('.tab-panel');
 
   function activateTab(btn) {
@@ -594,6 +626,8 @@
       label: 'Extract text & re-encrypt (v1.6.0)',
       description: 'The 1.6.0 parser round trip: build a PDF, extract its text with positions (open the browser console), then merge it with an AES-256 encrypted annex and re-encrypt the result with a new password.',
       source: GENERATORS_BASE + 'text-extract-showcase.ts',
+      encryptedOutput: true,
+      previewNote: 'This example produces an AES-256 encrypted PDF (password: rotated). The inline preview is skipped — the browser viewer would ask for the password inside a cramped frame. Use Download and open the file in your PDF reader.',
       code: [
         "import { buildDocumentPDFBytes, extractText, mergePdfs, downloadBlob } from 'pdfnative';",
         '',
@@ -696,7 +730,10 @@
     // Same Blob → object-URL pattern as the React playground. Some browsers
     // (most mobile ones) cannot render PDFs in an iframe; when the engine
     // says so, be honest about it instead of showing an empty frame.
-    var canPreview = navigator.pdfViewerEnabled !== false;
+    // Explicit opt-in: on browsers that predate the API the property is
+    // undefined, and most of those cannot render a PDF in an iframe anyway —
+    // an honest note beats an empty grey frame.
+    var canPreview = navigator.pdfViewerEnabled === true;
     if (!canPreview && demoPreview && demoPreviewNote) {
       demoPreview.hidden = true;
       demoPreviewNote.hidden = false;
@@ -710,11 +747,35 @@
       demoPreview.src = lastPreviewUrl;
     }
 
+    // An encrypted PDF in the preview iframe makes the browser's viewer ask
+    // for the password inside a cramped frame. Primary signal: the example's
+    // own declaration; safety net for user-authored code: the /Encrypt token
+    // in the byte tail (trailer region).
+    function looksEncrypted(bytes) {
+      var tail = bytes.subarray(Math.max(0, bytes.length - 2048));
+      var text = '';
+      for (var i = 0; i < tail.length; i++) text += String.fromCharCode(tail[i]);
+      return text.indexOf('/Encrypt') !== -1;
+    }
+
     // The demo module calls `downloadBlob` like real pdfnative code; the demo
     // routes those bytes to the preview pane and only downloads on request.
     function captureSink(bytes, name) {
       lastPdf = { bytes: bytes, name: name || 'document.pdf' };
-      showPreview(bytes);
+      var ex = EXAMPLES.find(function (e) { return e.id === currentId; });
+      var encrypted = (demoMode === 'code' && ex && ex.encryptedOutput) || looksEncrypted(bytes);
+      if (encrypted) {
+        if (demoPreview) { demoPreview.hidden = true; demoPreview.removeAttribute('src'); }
+        if (demoPreviewNote) {
+          demoPreviewNote.textContent = (ex && ex.previewNote) ||
+            'This PDF is encrypted — the inline viewer would prompt for its password in a cramped frame. Use Download and open it in your PDF reader.';
+          demoPreviewNote.hidden = false;
+        }
+      } else {
+        if (demoPreview && canPreview) demoPreview.hidden = false;
+        if (demoPreviewNote && canPreview) demoPreviewNote.hidden = true;
+        showPreview(bytes);
+      }
       if (demoDownload) demoDownload.disabled = false;
     }
 
@@ -743,6 +804,8 @@
     function setMode(mode) {
       demoMode = mode;
       var json = mode === 'json';
+      if (demoModeCode) demoModeCode.setAttribute('aria-pressed', String(!json));
+      if (demoModeJson) demoModeJson.setAttribute('aria-pressed', String(json));
       if (demoCode) demoCode.hidden = json;
       if (demoJson) {
         demoJson.hidden = !json;
@@ -753,14 +816,8 @@
       if (demoJsonNote) demoJsonNote.hidden = !json;
       if (demoCopyCli) demoCopyCli.hidden = !json;
       if (demoCopyMcp) demoCopyMcp.hidden = !json;
-      if (demoModeCode) {
-        demoModeCode.classList.toggle('active', !json);
-        demoModeCode.setAttribute('aria-selected', String(!json));
-      }
-      if (demoModeJson) {
-        demoModeJson.classList.toggle('active', json);
-        demoModeJson.setAttribute('aria-selected', String(json));
-      }
+      if (demoModeCode) demoModeCode.classList.toggle('active', !json);
+      if (demoModeJson) demoModeJson.classList.toggle('active', json);
     }
     if (demoModeCode) demoModeCode.addEventListener('click', function () { setMode('code'); });
     if (demoModeJson) demoModeJson.addEventListener('click', function () { setMode('json'); });
@@ -830,7 +887,7 @@
           } else {
             url = base + '#preset=' + (currentId || DEFAULT_ID);
           }
-          await navigator.clipboard.writeText(url);
+          await copyText(url);
           var prev = demoShare.textContent;
           demoShare.textContent = '✓ Copied';
           setTimeout(function () { demoShare.textContent = prev; }, 1500);
@@ -842,7 +899,7 @@
     }
 
     function copyWithFeedback(btn, text) {
-      navigator.clipboard.writeText(text).then(function () {
+      copyText(text).then(function () {
         var prev = btn.textContent;
         btn.textContent = '✓ Copied';
         setTimeout(function () { btn.textContent = prev; }, 1500);
@@ -871,14 +928,20 @@
       });
     }
 
-    // Restore a shared document from the URL hash.
+    // Restore a shared document from the URL hash. `hashReady` lets the
+    // autorun observer wait for the (async) decode instead of racing it and
+    // rendering the default example over the shared one; #doc= is not an
+    // element id, so we also bring the visitor to the demo ourselves.
+    var hashReady = Promise.resolve();
     var docMatch = /(?:^|[#&])doc=([\w.~-]+)/.exec(location.hash);
     if (docMatch && demoJson) {
-      decodeDocHash(docMatch[1])
+      hashReady = decodeDocHash(docMatch[1])
         .then(function (text) {
           var doc = parseDocJson(text);
           setMode('json');
           demoJson.value = JSON.stringify(doc, null, 2);
+          var demoSection = document.getElementById('demo');
+          if (demoSection) demoSection.scrollIntoView();
         })
         .catch(function () { /* off-shape payloads are silently ignored */ });
     }
@@ -960,7 +1023,17 @@
             for (var i = 0; i < n; i++) {
               rows.push({ cells: ['2026-08-' + ((i % 28) + 1), 'Line item ' + i, '$' + (i * 3.5).toFixed(2)] });
             }
-            return { title: 'Benchmark ' + n, headers: ['Date', 'Description', 'Amount'], rows: rows };
+            // PdfParams requires infoItems/balanceText/countText/footerText —
+            // the engine's boundary validation does not (yet) guard them.
+            return {
+              title: 'Benchmark ' + n,
+              infoItems: [{ label: 'Rows', value: String(n) }],
+              balanceText: 'Synthetic dataset',
+              countText: n + ' rows',
+              headers: ['Date', 'Description', 'Amount'],
+              rows: rows,
+              footerText: 'pdfnative.dev live benchmark'
+            };
           };
           pdfnativeModule.buildPDFBytes(makeParams(50)); // warm-up
           var sizes = [100, 500, 1000];
@@ -982,18 +1055,23 @@
           }).join('');
           rowsEl.hidden = false;
           noteEl.hidden = false;
-          benchBtn.textContent = '↺ Run again';
         } catch (e) {
-          benchBtn.textContent = 'Failed — ' + (e.message || e);
+          // Never destroy the button label with an error message.
+          noteEl.textContent = 'Benchmark failed: ' + (e.message || e);
+          noteEl.setAttribute('role', 'alert');
+          noteEl.hidden = false;
         } finally {
+          benchBtn.textContent = '↺ Run again';
           benchBtn.disabled = false;
         }
       });
     }
 
     // First render without a click, once the demo scrolls into view — the
-    // visitor sees a real PDF instead of an empty pane. One shot only.
-    if ('IntersectionObserver' in window && canPreview) {
+    // visitor sees a real PDF instead of an empty pane. One shot only, and
+    // desktop only: auto-loading the CDN engine on mobile data without a
+    // click would be presumptuous.
+    if ('IntersectionObserver' in window && canPreview && matchMedia('(min-width: 901px)').matches) {
       var demoSection = document.getElementById('demo');
       if (demoSection) {
         var ran = false;
@@ -1002,7 +1080,13 @@
             if (entry.isIntersecting && !ran) {
               ran = true;
               io.disconnect();
-              runDemo();
+              // Never auto-run an example whose output is encrypted — the
+              // visitor would face a password prompt without having clicked.
+              var ex = EXAMPLES.find(function (e) { return e.id === DEFAULT_ID; });
+              if (ex && ex.encryptedOutput) return;
+              // A shared #doc= link may still be decoding: wait for it so the
+              // first render shows the shared document, not the default.
+              hashReady.then(runDemo);
             }
           });
         }, { rootMargin: '200px' });

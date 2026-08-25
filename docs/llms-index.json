@@ -11,26 +11,26 @@
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
-      "bytes": 6959,
-      "approxTokens": 1740
+      "bytes": 7114,
+      "approxTokens": 1779
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 485843,
-      "approxTokens": 121461
+      "bytes": 486009,
+      "approxTokens": 121502
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
       "description": "Executable recipes: CI-verified, copy-ready code for the most common tasks.",
-      "bytes": 24351,
-      "approxTokens": 6088
+      "bytes": 24446,
+      "approxTokens": 6112
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 97538,
-      "approxTokens": 24385
+      "bytes": 97646,
+      "approxTokens": 24412
     }
   ],
   "guides": [
@@ -144,8 +144,8 @@
         "you-can-switch-later",
         "further-reading"
       ],
-      "bytes": 7177,
-      "approxTokens": 1794
+      "bytes": 7210,
+      "approxTokens": 1803
     },
     {
       "title": "pdfnative-cli — Command-Line Interface Guide",
@@ -467,8 +467,8 @@
         "wire-it-into-ci-and-agent-loops",
         "further-reading"
       ],
-      "bytes": 13802,
-      "approxTokens": 3451
+      "bytes": 13827,
+      "approxTokens": 3457
     },
     {
       "title": "Digital signatures in pdfnative",

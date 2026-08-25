@@ -24,12 +24,12 @@
       "library": { "supported": true, "call": "chart block in buildDocumentPDFBytes", "since": "1.6.0" },
       "cli": { "supported": true, "command": "render", "since": "1.3.0", "notes": "chart blocks in the document JSON." },
       "mcp": { "supported": true, "tool": "add_chart", "since": "1.5.0", "notes": "Also as a chart block inside generate_basic_pdf." },
-      "react": { "supported": true, "call": "<Chart>" }
+      "react": { "supported": true, "call": "<Chart>", "since": "1.1.0" }
     },
     {
       "id": "sign",
       "label": "Digital signatures (PAdES CMS)",
-      "library": { "supported": true, "call": "addSignaturePlaceholder + signPdfBytes" },
+      "library": { "supported": true, "call": "addSignaturePlaceholder + signPdfBytes", "since": "1.2.0" },
       "cli": { "supported": true, "command": "sign" },
       "mcp": { "supported": true, "tool": "sign_pdf", "notes": "prepare_signature_placeholder creates the /Sig placeholder; sign_pdf auto-injects one when absent." },
       "react": { "supported": false, "notes": "Sign the rendered bytes with the library or the CLI." }
@@ -93,7 +93,7 @@
     {
       "id": "validate-pdfua",
       "label": "Validate PDF/UA",
-      "library": { "supported": true, "call": "validatePdfUA" },
+      "library": { "supported": true, "call": "validatePdfUA", "since": "1.3.0" },
       "cli": { "supported": true, "command": "inspect", "since": "1.1.0", "notes": "inspect --pdfua, and --check pdfua as a CI assertion." },
       "mcp": { "supported": true, "tool": "validate_pdf", "since": "1.1.0" },
       "react": { "supported": false, "notes": "lintDocument checks the authoring model before rendering; it is not a validation of the emitted PDF." }

@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Self-verifying generation","item":"https://pdfnative.dev/guides/self-verify.html"}]},{"@type":"TechArticle","headline":"Self-verifying generation","description":"Close the loop on PDF generation: plan with inspectDocumentLayout(), then verify the emitted bytes with extractText(), validatePdfUA() and listSignatures()/openPdf() — the same generate → inspect → assert → correct pattern on the library, CLI (inspect --check) and MCP (inspect_pdf).","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/self-verify.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Self-verifying generation","item":"https://pdfnative.dev/guides/self-verify.html"}]},{"@type":"TechArticle","headline":"Self-verifying generation","description":"Close the loop on PDF generation: plan with inspectDocumentLayout(), then verify the emitted bytes with extractText(), validatePdfUA() and listSignatures()/openPdf() — the same generate → inspect → assert → correct pattern on the library, CLI (inspect --check) and MCP (inspect_pdf).","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/self-verify.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -199,9 +199,9 @@ adequate. And it is not a PDF/A validator: for archival conformance, run
 veraPDF as described in <a href="pdfa.html">PDF/A conformance</a>.</p>
 </blockquote>
 <h2 id="verifier-4--listsignatures--openpdf-signatures-encryption-metadata">Verifier 4 — <code>listSignatures()</code> + <code>openPdf()</code>: signatures, encryption, metadata<a class="heading-anchor" href="#verifier-4--listsignatures--openpdf-signatures-encryption-metadata" aria-label="Link to this section">#</a></h2>
-<p><em>(v1.7.0)</em> <code>listSignatures()</code> inventories every signature field in the
-document; <code>openPdf()</code> exposes page count, encryption state and the <code>/Info</code>
-dictionary.</p>
+<p><code>listSignatures()</code> <em>(v1.7.0)</em> inventories every signature field in the
+document; <code>openPdf()</code> (available since v1.0.0) exposes page count, encryption
+state and the <code>/Info</code> dictionary.</p>
 <pre><code class="language-ts">import { openPdf, listSignatures } from &#39;pdfnative&#39;;
 
 const sigs = listSignatures(signedBytes);

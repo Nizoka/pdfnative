@@ -1093,7 +1093,9 @@ if (!existsSync(LLMS_RECIPES)) {
         anchorCache.set(absPath, ids);
         return ids;
     };
-    const LINK_WITH_FRAG = /(?:\]\(|href=["'])([^)"'#\s]*)#([\p{L}][\p{L}\p{N}_-]*)/gu;
+    // Fragment may start with a digit: numbered headings ("## 1. Render…")
+    // slug to ids like "1-render-a-document".
+    const LINK_WITH_FRAG = /(?:\]\(|href=["'])([^)"'#\s]*)#([\p{L}\p{N}][\p{L}\p{N}_-]*)/gu;
     for (const file of DOC_FILES) {
         if (!file.endsWith('.md') && !file.endsWith('.html')) continue;
         const text = read(file);

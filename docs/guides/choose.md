@@ -49,8 +49,8 @@ means the surface does not offer it.
 |---|---|---|---|---|
 | Generate documents | `buildDocumentPDFBytes` / `buildPDFBytes` | `render` | `generate_basic_pdf` (+ the dedicated document tools) | `renderToBytes` and friends, `<Document>` tree |
 | Smart tables | `table` block | `render` (`table` block, or `--variant table`) | `add_table` | `<Table>` |
-| Native vector charts | `chart` block _(v1.6.0)_ | `render` (`chart` block) _(v1.3.0)_ | `add_chart` _(v1.5.0)_ | `<Chart>` |
-| Digital signatures (PAdES CMS) | `addSignaturePlaceholder` + `signPdfBytes` | `sign` | `sign_pdf` (+ `prepare_signature_placeholder`) | — |
+| Native vector charts | `chart` block _(v1.6.0)_ | `render` (`chart` block) _(v1.3.0)_ | `add_chart` _(v1.5.0)_ | `<Chart>` _(v1.1.0)_ |
+| Digital signatures (PAdES CMS) | `addSignaturePlaceholder` _(v1.2.0)_ + `signPdfBytes` | `sign` | `sign_pdf` (+ `prepare_signature_placeholder`) | — |
 | LTV ladder (B-T → B-LTA) | `signPdfBytesWithTimestamp`, `addValidationInfo`, `addDocumentTimestamp` _(v1.7.0)_ | — (verification only: `verify --revocation`) | `add_ltv`, `timestamp_pdf` _(v1.6.0)_ | — |
 | Encrypt / decrypt | build-time `encryption` layout option; existing PDFs via the page-tree `encrypt` option and `openPdf` with a password | `encrypt` / `decrypt` _(v1.3.0)_ | `encrypt_pdf` / `decrypt_pdf` _(v1.5.0)_ | build-time only, via the `layout` render option |
 | Fill / flatten forms | `readFormFields`, `fillForm`, `flattenForm` _(v1.6.0)_ | `fill` _(v1.3.0)_ | `read_form_fields`, `fill_form` _(v1.5.0)_ | — |
@@ -58,7 +58,7 @@ means the surface does not offer it.
 | Merge / split / extract pages | `mergePdfs`, `splitPdf`, `extractPages` _(v1.4.0)_ | `merge` / `split` / `extract` _(v1.2.0)_ | `merge_pdfs` / `split_pdf` / `extract_pages` _(v1.3.0)_ | — |
 | Markup annotations | `buildAnnotation` + `PdfModifier.addAnnotation` _(v1.5.0)_ | `annotate` _(v1.2.0)_ | `annotate_pdf` _(v1.4.0)_ | — |
 | Inspect layout (pagination dry run) | `inspectDocumentLayout` _(v1.5.0)_ | `render --inspect-layout` _(v1.2.0)_ | `inspect_layout` _(v1.6.0)_ | `inspectDocument` |
-| Validate PDF/UA | `validatePdfUA` | `inspect --pdfua` _(v1.1.0)_ | `validate_pdf` _(v1.1.0)_ | — (`lintDocument` checks the authoring model before rendering, not the emitted PDF) |
+| Validate PDF/UA | `validatePdfUA` _(v1.3.0)_ | `inspect --pdfua` _(v1.1.0)_ | `validate_pdf` _(v1.1.0)_ | — (`lintDocument` checks the authoring model before rendering, not the emitted PDF) |
 
 ## Honest notes
 

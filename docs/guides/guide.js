@@ -105,14 +105,20 @@
 
   // ── Pre-rendered path ─────────────────────────────────────
   // build-guides.ts bakes the rendered article and its JSON-LD into the
-  // shell (rule guide-render-sync keeps it fresh). Nothing to fetch: just
-  // enhance in place. Prism loads with `defer` after this script, so wait
-  // for it briefly instead of highlighting a not-yet-loaded page.
+  // shell (rule guide-render-sync keeps it fresh). Nothing to fetch. The
+  // layout-affecting enhancements (source bar, copy buttons) run at once —
+  // deferring them behind the Prism wait used to shift the whole article
+  // down up to 2s after render. Only the highlighting waits for Prism.
   if (container.getAttribute('data-prerendered') === 'true') {
+    addSourceBar(container);
+    addCopyButtons(container);
     var tries = 20;
-    (function enhanceWhenReady() {
-      if (window.Prism || tries-- <= 0) { enhance(container); return; }
-      setTimeout(enhanceWhenReady, 100);
+    (function highlightWhenReady() {
+      if (window.Prism && typeof window.Prism.highlightAllUnder === 'function') {
+        window.Prism.highlightAllUnder(container);
+        return;
+      }
+      if (tries-- > 0) setTimeout(highlightWhenReady, 100);
     })();
     return;
   }

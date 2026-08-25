@@ -15,8 +15,9 @@ Node ≥ 22, browsers, Deno, Bun, Web Workers. No SaaS round-trip, no telemetry,
 no sockets. Current version: 1.7.0. It writes (documents, tables, charts,
 barcodes, SVG, forms, watermarks, signatures with long-term validation, print
 production) and reads (parse, decrypt, extract text, read/fill/flatten forms,
-merge/split/extract pages, verify structure) — 22 Unicode scripts with real
-OpenType shaping and UAX #9 BiDi.
+merge/split/extract pages, verify structure) — 22 Unicode scripts, with
+OpenType GSUB/GPOS shaping for the complex ones (Thai, Arabic, Devanagari,
+Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar) and full UAX #9 BiDi.
 
 ## Choose your surface
 
@@ -35,7 +36,7 @@ import { buildDocumentPDFBytes } from 'pdfnative';
 // Synchronous — returns a Uint8Array, not a Promise.
 const bytes = buildDocumentPDFBytes({
   title: 'Invoice 42',                    // top-level, not inside metadata
-  metadata: { author: 'Me' },             // author / subject / keywords only
+  metadata: { author: 'Me' },             // author / subject / keywords / trapped (v1.7.0)
   blocks: [
     { type: 'heading', text: 'Invoice 42', level: 1 },
     { type: 'paragraph', text: 'Thank you for your order.' },
@@ -72,8 +73,8 @@ Functions an agent reaches for most, all exported from `'pdfnative'`:
 
 1. **`buildDocumentPDFBytes` is synchronous.** It returns a `Uint8Array`, not a
    Promise — do not `await` it (harmless) and do not `.then()` it (breaks).
-2. **`title` is top-level**, not inside `metadata` (`metadata` takes only
-   `author` / `subject` / `keywords`).
+2. **`title` is top-level**, not inside `metadata` (`metadata` takes
+   `author` / `subject` / `keywords`, plus `trapped` since v1.7.0).
 3. **`registerFont` alone is a no-op.** You must also `await loadFontData(lang)`
    and pass the result in `fontEntries: [{ fontData, fontRef, lang }]`.
 4. **`/F1` and `/F2` are reserved font refs** — start custom `fontRef` at `/F3`.

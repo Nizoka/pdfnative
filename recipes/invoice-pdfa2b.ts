@@ -16,8 +16,10 @@ import * as notoSans from 'pdfnative/fonts/noto-sans-data.js';
 
 // PDF/A requires every rendered glyph to come from an embedded font
 // (ISO 19005 §6.2.11.4.1); the bundled Noto Sans data module covers Latin.
+// /F1 and /F2 are reserved by the engine — custom fontRefs start at /F3.
 const latinFont: FontEntry = {
-    fontRef: '/F1',
+    fontRef: '/F3',
+    lang: 'latin',
     fontData: notoSans as unknown as FontData,
 };
 

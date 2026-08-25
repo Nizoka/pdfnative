@@ -28,10 +28,10 @@
   <link rel="stylesheet" href="../guides/guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <style>
-    .mcp-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; margin-top: 24px; }
+    .mcp-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 18px; margin-top: 24px; }
     .mcp-card { border: 1px solid var(--c-border); border-radius: 10px; padding: 18px 20px 16px; background: var(--c-bg-card); display: flex; flex-direction: column; gap: 10px; }
-    .mcp-card h3 { font-size: 16px; font-weight: 700; margin: 0; color: var(--c-text); display: flex; align-items: center; gap: 8px; }
-    .mcp-card h3 code { background: var(--c-surface); padding: 2px 8px; border-radius: 4px; font-size: 13px; color: var(--c-primary); }
+    .mcp-card h3 { font-size: 16px; font-weight: 700; margin: 0; color: var(--c-text); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .mcp-card h3 code { background: var(--c-surface); padding: 2px 8px; border-radius: 4px; font-size: 13px; color: var(--c-primary); overflow-wrap: anywhere; }
     .mcp-card .purpose { font-size: 13px; color: var(--c-text-dim); line-height: 1.5; margin: 0; }
     .mcp-card details { font-size: 13px; }
     .mcp-card details summary { cursor: pointer; font-weight: 600; color: var(--c-text); padding: 4px 0; }
