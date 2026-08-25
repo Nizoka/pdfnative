@@ -10,6 +10,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/mcp.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/mcp.html">
   <link rel="alternate" type="text/markdown" href="mcp.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -27,6 +28,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"pdfnative-mcp — AI Client Integration Guide","item":"https://pdfnative.dev/guides/mcp.html"}]},{"@type":"TechArticle","headline":"pdfnative-mcp — AI Client Integration Guide","description":"Use pdfnative from any AI client (Claude, Cursor, Continue, Zed) via pdfnative-mcp — 28 MCP tools: render, sign with the full PAdES ladder (LTV, timestamps), validate, verify, attach, extract, merge, split, extract pages, update metadata, and preview pagination.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/mcp.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -58,9 +62,1007 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; MCP Integration</p>
-  <article id="guide-content" class="guide-content" data-md="mcp.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="mcp.md">read mcp.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="mcp.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="pdfnative-mcp-ai-client-integration-guide">pdfnative-mcp — AI Client Integration Guide</h1>
+<blockquote>
+<p><strong>Tracks the latest published <code>pdfnative-mcp</code></strong> (v1.6.0, built on pdfnative 1.7.0). Full release notes: <a href="https://github.com/Nizoka/pdfnative-mcp/releases" target="_blank" rel="noopener">pdfnative-mcp releases</a>. Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>.</p>
+</blockquote>
+<p><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is an <strong>MCP server</strong> that exposes the full pdfnative library to any AI client supporting the <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> — Claude Desktop, Cursor, Continue, Zed, ChatGPT, and more.</p>
+<blockquote>
+<p><strong>What is MCP?</strong> The Model Context Protocol is an open standard (originally developed by Anthropic) that lets AI assistants call external tools in a structured, safe way. An MCP server declares a set of tools with typed inputs and outputs; the AI client invokes those tools on your behalf during a conversation.</p>
+</blockquote>
+<p>With <code>pdfnative-mcp</code> installed, you can say to your AI assistant:</p>
+<blockquote>
+<p><em>&quot;Generate a Q1 2026 financial report as PDF/A-2b with a QR code pointing to our dashboard, then inspect the result to confirm it&#39;s archive-grade.&quot;</em></p>
+</blockquote>
+<p>…and the AI will call the right combination of <code>generate_basic_pdf</code>, <code>add_barcode</code>, <code>add_table</code>, and <code>inspect_pdf</code> tools, returning a ready-to-download PDF.</p>
+<hr>
+<h2 id="installation">Installation<a class="heading-anchor" href="#installation" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash"># Run directly with npx — no global install required (recommended)
+npx -y pdfnative-mcp
+
+# Or install globally
+npm install -g pdfnative-mcp
+pdfnative-mcp
+</code></pre>
+<p><strong>Requirements:</strong> Node.js ≥ 22.</p>
+<hr>
+<h2 id="configuration-by-client">Configuration by client<a class="heading-anchor" href="#configuration-by-client" aria-label="Link to this section">#</a></h2>
+<h3 id="claude-desktop">Claude Desktop<a class="heading-anchor" href="#claude-desktop" aria-label="Link to this section">#</a></h3>
+<p>Edit the config file for your OS:</p>
+<ul>
+<li><strong>macOS:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
+<li><strong>Windows:</strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
+</ul>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;pdfnative&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;pdfnative-mcp&quot;],
+      &quot;env&quot;: {
+        &quot;PDFNATIVE_MCP_OUTPUT_DIR&quot;: &quot;/Users/you/Documents/mcp-pdfs&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<p>Restart Claude Desktop after saving. The <code>pdfnative</code> server will appear in the tools panel.</p>
+<h3 id="cursor">Cursor<a class="heading-anchor" href="#cursor" aria-label="Link to this section">#</a></h3>
+<p>In your project <code>.cursor/mcp.json</code> (or global <code>~/.cursor/mcp.json</code>):</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;pdfnative&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;pdfnative-mcp&quot;],
+      &quot;env&quot;: {
+        &quot;PDFNATIVE_MCP_OUTPUT_DIR&quot;: &quot;/path/to/pdf-output&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<h3 id="continue">Continue<a class="heading-anchor" href="#continue" aria-label="Link to this section">#</a></h3>
+<p>In your <code>~/.continue/config.json</code>:</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: [
+    {
+      &quot;name&quot;: &quot;pdfnative&quot;,
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;pdfnative-mcp&quot;],
+      &quot;env&quot;: {
+        &quot;PDFNATIVE_MCP_OUTPUT_DIR&quot;: &quot;/path/to/pdf-output&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<h3 id="zed">Zed<a class="heading-anchor" href="#zed" aria-label="Link to this section">#</a></h3>
+<p>In your Zed <code>settings.json</code>:</p>
+<pre><code class="language-json">{
+  &quot;context_servers&quot;: {
+    &quot;pdfnative&quot;: {
+      &quot;command&quot;: {
+        &quot;path&quot;: &quot;npx&quot;,
+        &quot;args&quot;: [&quot;-y&quot;, &quot;pdfnative-mcp&quot;],
+        &quot;env&quot;: {
+          &quot;PDFNATIVE_MCP_OUTPUT_DIR&quot;: &quot;/path/to/pdf-output&quot;
+        }
+      }
+    }
+  }
+}
+</code></pre>
+<hr>
+<h2 id="environment-variables">Environment variables<a class="heading-anchor" href="#environment-variables" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PDFNATIVE_MCP_OUTPUT_DIR</code></td>
+<td>Absolute path to the sandbox directory. <strong>Required to enable <code>outputMode: &quot;file&quot;</code></strong>. When unset, only <code>base64</code> output is available. (The misspelt <code>PDFNATIVE_MPC_OUTPUT_DIR</code> still works as a deprecated alias.)</td>
+</tr>
+<tr>
+<td><code>PDFNATIVE_MCP_CACHE_DIR</code></td>
+<td>Absolute path to enable the persistent SHA-256-keyed result cache (1 h TTL, 256 MiB LRU). When unset, the cache is disabled.</td>
+</tr>
+<tr>
+<td><code>PDFNATIVE_MCP_PORT</code></td>
+<td>When set to a valid port (1–65535), starts an HTTP server on <code>http://127.0.0.1:&lt;port&gt;/mcp</code> instead of stdio.</td>
+</tr>
+<tr>
+<td><code>PDFNATIVE_MCP_HTTP_TOKEN</code> <em>(v1.6.0)</em></td>
+<td>Opt-in bearer token for the HTTP transport (≥ 16 characters, no whitespace — a weaker value aborts startup). When set, <code>/mcp</code> requires <code>Authorization: Bearer &lt;token&gt;</code>; otherwise requests get <code>401</code> + <code>WWW-Authenticate</code>. Without it the loopback endpoint has <strong>no authentication</strong>. Never logged.</td>
+</tr>
+<tr>
+<td><code>PDFNATIVE_MCP_MAX_INFLATE_BYTES</code> <em>(v1.6.0)</em></td>
+<td>Operator override of the engine&#39;s 100 MiB per-stream decompression cap (integer ≥ 1024, read once at startup; an invalid value refuses to start with one clean <code>fatal:</code> line).</td>
+</tr>
+<tr>
+<td><code>PDFNATIVE_MCP_TSA_URL</code> <em>(v1.6.0)</em></td>
+<td>RFC 3161 timestamp authority endpoint. Required by <code>sign_pdf timestamp: true</code> and <code>timestamp_pdf</code> (<code>TSA_NOT_CONFIGURED</code> otherwise).</td>
+</tr>
+<tr>
+<td><code>PDFNATIVE_MCP_TSA_AUTH</code> <em>(v1.6.0)</em></td>
+<td>Optional <code>Authorization</code> header value sent to the TSA. Treated as a secret; never logged.</td>
+</tr>
+<tr>
+<td><code>PDFNATIVE_MCP_REVOCATION</code> <em>(v1.6.0)</em></td>
+<td>Revocation sources for <code>add_ltv mode: &#39;online&#39;</code> — <code>ocsp</code>, <code>crl</code>, or <code>ocsp,crl</code> (<code>REVOCATION_NOT_CONFIGURED</code> otherwise).</td>
+</tr>
+<tr>
+<td><code>PDFNATIVE_MCP_NETWORK_ALLOWED_HOSTS</code> <em>(v1.6.0)</em></td>
+<td>Mandatory allow-list of hosts the OCSP/CRL fetcher may contact. A certificate-supplied URL outside the list fails with <code>NETWORK_HOST_NOT_ALLOWED</code>.</td>
+</tr>
+<tr>
+<td><code>PDFNATIVE_MCP_NETWORK_TIMEOUT_MS</code> <em>(v1.6.0)</em></td>
+<td>Network timeout for TSA/OCSP/CRL requests (1000–120000 ms, default 10000).</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Network charter</strong> <em>(v1.6.0)</em>. The server still makes <strong>no outbound request by default</strong>. The only egress it can ever perform goes to the TSA / OCSP / CRL endpoints the <strong>operator</strong> configures via the variables above — URLs never come from tool arguments, and certificate-supplied OCSP/CRL URLs pass an SSRF guard (allow-list, http(s) only, no credentials, no redirects, internal address literals rejected, size caps, timeouts).</p>
+</blockquote>
+<hr>
+<h2 id="tool-reference">Tool reference<a class="heading-anchor" href="#tool-reference" aria-label="Link to this section">#</a></h2>
+<p><code>pdfnative-mcp</code> exposes <strong>28 tools</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>generate_basic_pdf</code></td>
+<td>Multi-page documents from structured blocks — all <strong>13 block kinds</strong> since v1.6.0 (headings, paragraphs, lists, tables, images, links, TOC, barcodes, SVG, form fields, charts, page breaks, spacers). Accepts optional <code>pdfA</code>, layout options, build-time <code>encrypt</code>, and print-production fields.</td>
+</tr>
+<tr>
+<td><code>add_table</code></td>
+<td>Tabular PDF reports from column headers and data rows. Optional <code>autoFitColumns</code> and <code>clipCells</code>. Accepts <code>pdfA</code>.</td>
+</tr>
+<tr>
+<td><code>add_barcode</code></td>
+<td>QR Code, Code 128, EAN-13, Data Matrix, PDF417 — embedded in a single-page PDF. Accepts <code>pdfA</code>.</td>
+</tr>
+<tr>
+<td><code>add_international_text</code></td>
+<td>25 <code>lang</code> font codes — the 22 writing systems plus <code>latin</code>, <code>emoji</code> and the explicit <code>math</code> script (Noto Sans Math, on-demand) — with BiDi &amp; OpenType shaping. <code>lang</code> accepts <code>string</code>, <code>string[]</code>, or comma-separated.</td>
+</tr>
+<tr>
+<td><code>add_form</code></td>
+<td>Interactive AcroForm PDFs with text fields, text areas, checkboxes, radio buttons, dropdowns, and list boxes <em>(v1.6.0)</em>. Accepts <code>pdfA</code>.</td>
+</tr>
+<tr>
+<td><code>embed_image</code></td>
+<td>Embed a JPEG or PNG image (base64-encoded) into a titled PDF document, with <code>align</code> and <code>alt</code> <em>(v1.6.0)</em>. Accepts <code>pdfA</code>.</td>
+</tr>
+<tr>
+<td><code>prepare_signature_placeholder</code></td>
+<td>Create a PDF with a <code>/Sig</code> AcroForm placeholder ready to be signed; <code>subFilter</code>, <code>reserveTimestamp</code> and frozen signer metadata <em>(v1.6.0)</em>. Accepts <code>pdfA</code>.</td>
+</tr>
+<tr>
+<td><code>sign_pdf</code></td>
+<td>PAdES CMS digital signatures — RSA-SHA256/384/512 and ECDSA-SHA256 P-256, <code>profile: &#39;pades&#39;</code>, RFC 3161 <code>timestamp</code> (B-T), certificate chains, named fields and multiple signatures <em>(v1.6.0)</em>.</td>
+</tr>
+<tr>
+<td><code>add_ltv</code> <em>(v1.6.0)</em></td>
+<td>Embed long-term-validation material (<code>/DSS</code> + <code>/VRI</code>) into a signed PDF — PAdES <strong>B-LT</strong> — online through the operator-configured revocation provider or offline from caller-supplied material.</td>
+</tr>
+<tr>
+<td><code>timestamp_pdf</code> <em>(v1.6.0)</em></td>
+<td>Append a <code>/DocTimeStamp</code> (ETSI.RFC3161) through the operator TSA — PAdES <strong>B-LTA</strong> — with auto-suffixed field names for periodic re-timestamping.</td>
+</tr>
+<tr>
+<td><code>inspect_pdf</code></td>
+<td>Read-only inspection. Returns <code>version</code>, <code>pageCount</code>, <code>encryption</code>, <code>pdfA</code>, <code>signatureCount</code>, <code>info</code>, optional <code>perPage</code>, optional <code>pageLabels[]</code>, and — <em>(v1.6.0)</em> — an optional <code>signatures[]</code> inventory, <code>annotations[]</code>, page boxes + <code>userUnit</code>, <code>dss</code> / <code>docTimestampCount</code> / <code>trapped</code>, plus <code>checks</code> + <code>checksPassed</code>.</td>
+</tr>
+<tr>
+<td><code>inspect_layout</code> <em>(v1.6.0)</em></td>
+<td>Read-only pagination <strong>dry run</strong> — page count, page geometry and each block&#39;s position for a prospective document, with no PDF produced.</td>
+</tr>
+<tr>
+<td><code>validate_pdf</code></td>
+<td>Read-only PDF/UA structural validation (<code>valid</code>, <code>errors</code>, <code>warnings</code>).</td>
+</tr>
+<tr>
+<td><code>verify_pdf</code></td>
+<td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, message digest, certificate chain. Since v1.6.0, <code>/DocTimeStamp</code> entries are verified as RFC 3161 tokens and <code>ltv: true</code> reports the achieved PAdES level (B-B → B-LTA).</td>
+</tr>
+<tr>
+<td><code>add_attachment</code></td>
+<td>Embed files (e.g. Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output.</td>
+</tr>
+<tr>
+<td><code>extract_attachments</code></td>
+<td>Extract embedded files from an existing PDF (optionally metadata-only).</td>
+</tr>
+<tr>
+<td><code>extract_text</code></td>
+<td>Extract text content from an existing PDF via the native parser.</td>
+</tr>
+<tr>
+<td><code>merge_pdfs</code></td>
+<td>Concatenate 2–50 PDFs into one document via the page-tree API (drops signatures/<code>/AcroForm</code>, keeps URI links).</td>
+</tr>
+<tr>
+<td><code>split_pdf</code></td>
+<td>Split one PDF into one document per page range — multi-output <code>{ mode, count, totalBytes, parts[] }</code>. In-memory assembly is capped by <code>maxOutputSizeBytes</code>, default <strong>256 MiB</strong>; each emitted PDF is separately capped at 50 MiB.</td>
+</tr>
+<tr>
+<td><code>extract_pages</code></td>
+<td>Pull an arbitrary, order-preserving page subset (max 5000) into a single PDF.</td>
+</tr>
+<tr>
+<td><code>annotate_pdf</code></td>
+<td>Overlay markup annotations (text / highlight / underline / strikeout / squiggly / square / circle / line / freetext) on an existing PDF via incremental update. A visual review layer, <strong>not</strong> a redaction.</td>
+</tr>
+<tr>
+<td><code>draft_governance_issue</code></td>
+<td>Assemble a governance-compliant GitHub-issue draft plus a structured <code>compliance</code> report <strong>locally</strong> — network-free by construction; never submits.</td>
+</tr>
+<tr>
+<td><code>add_chart</code> <em>(v1.5.0)</em></td>
+<td>Render a chart as <strong>native PDF vector paths</strong> — nine types since v1.6.0 (<code>bar</code>, <code>barH</code>, <code>stackedBar</code>, <code>stackedBarH</code>, <code>line</code>, <code>area</code>, <code>scatter</code>, <code>pie</code>, <code>donut</code>), with a secondary axis, log and time scales, and data labels. Tagged as <code>/Figure</code> with alt text when <code>pdfA</code> is set.</td>
+</tr>
+<tr>
+<td><code>read_form_fields</code> <em>(v1.5.0)</em></td>
+<td>List an existing AcroForm&#39;s fields with their types, current values and available options — the read half of the fill round-trip. Accepts <code>password</code>.</td>
+</tr>
+<tr>
+<td><code>fill_form</code> <em>(v1.5.0)</em></td>
+<td>Fill AcroForm field values and optionally <code>flatten</code> them into static page content. Works on encrypted PDFs via incremental update.</td>
+</tr>
+<tr>
+<td><code>encrypt_pdf</code> <em>(v1.5.0)</em></td>
+<td>Re-secure an existing PDF with AES-128 or AES-256 — owner/user passwords and an explicit permission set.</td>
+</tr>
+<tr>
+<td><code>decrypt_pdf</code> <em>(v1.5.0)</em></td>
+<td>Remove encryption from a password-protected PDF <strong>in-server</strong> — RC4, AES-128 and AES-256 sources.</td>
+</tr>
+<tr>
+<td><code>update_metadata</code> <em>(v1.6.0)</em></td>
+<td>Rewrite an existing PDF&#39;s <code>/Info</code> dictionary (+ XMP) — title, author, subject, keywords, pinned <code>modDate</code> — as a non-destructive incremental update.</td>
+</tr>
+</tbody></table>
+<p>Every tool publishes an <code>outputSchema</code> advertised in <code>tools/list</code>. Since v1.6.0 the server speaks the <a href="https://modelcontextprotocol.io/specification/2026-07-28" target="_blank" rel="noopener">MCP 2026-07-28 spec</a> (stateless envelope, <code>server/discover</code>, <code>resultType</code>, cache hints) on SDK v2, while 2025-era clients (2025-11-25 / 2025-06-18 / 2025-03-26) keep working through the automatic legacy fallback.</p>
+<hr>
+<h3 id="generate_basic_pdf"><code>generate_basic_pdf</code><a class="heading-anchor" href="#generate_basic_pdf" aria-label="Link to this section">#</a></h3>
+<p>Produces a multi-page document from a list of content blocks.</p>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;: &quot;Q1 2026 Report&quot;,
+  &quot;blocks&quot;: [
+    { &quot;type&quot;: &quot;heading&quot;,   &quot;text&quot;: &quot;Executive Summary&quot;, &quot;level&quot;: 1 },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Revenue grew 24 % year over year.&quot; },
+    { &quot;type&quot;: &quot;list&quot;,      &quot;style&quot;: &quot;bullet&quot;, &quot;items&quot;: [&quot;Strong APAC&quot;, &quot;Stable EU&quot;, &quot;Soft NA&quot;] },
+    { &quot;type&quot;: &quot;pageBreak&quot; },
+    { &quot;type&quot;: &quot;heading&quot;,   &quot;text&quot;: &quot;Details&quot;, &quot;level&quot;: 2 }
+  ],
+  &quot;footerText&quot;: &quot;Confidential — Internal use only&quot;,
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p><strong>Block types supported:</strong> all <strong>13 engine block kinds</strong> since v1.6.0 — <code>heading</code> (levels 1–3), <code>paragraph</code>, <code>list</code> (<code>bullet</code> / <code>numbered</code>, nested items to depth 6), <code>table</code>, <code>image</code>, <code>link</code> (<code>http:</code> / <code>https:</code> / <code>mailto:</code> only), <code>toc</code> (a contents page with internal <code>/GoTo</code> links, pairs with <code>outline: &#39;auto&#39;</code>), <code>barcode</code>, <code>svg</code> (a safe subset: paths, shapes and text — no XML parser, no external reference ever fetched), <code>formField</code>, <code>chart</code> (same body as <code>add_chart</code>), <code>pageBreak</code>, and <code>spacer</code> (<code>height</code> in points). The <code>table</code> / <code>image</code> / <code>barcode</code> / <code>formField</code> blocks share their body with the dedicated tools, so a standalone artefact and an inline block validate and render identically.</p>
+<p><strong>Layout options</strong> <em>(v1.6.0)</em>, available on all nine document tools: <code>pageSize</code> (<code>A4</code> default, <code>Letter</code>, <code>Legal</code>, <code>A3</code>, <code>Tabloid</code>), <code>margins</code> (all four sides, 0–200 pt), running <code>headerTemplate</code> / <code>footerTemplate</code> (<code>left</code> / <code>center</code> / <code>right</code> zones with <code>{page}</code> <code>{pages}</code> <code>{title}</code> <code>{date}</code> placeholders — a <code>footerTemplate</code> replaces the default footer, so <code>footerText</code> is then ignored), <code>compress</code>, and <code>debug</code>.</p>
+<p><strong>Build-time <code>encrypt</code></strong> <em>(v1.6.0)</em>, on <code>generate_basic_pdf</code>, <code>add_table</code>, <code>add_form</code>, <code>add_international_text</code>, <code>embed_image</code>, <code>add_barcode</code> and <code>add_chart</code>: AES-128 (default) or AES-256 with owner/user passwords and permissions — and unlike <code>encrypt_pdf</code>, it <strong>keeps the AcroForm</strong>, making encrypted fillable forms reachable. Exclusive with <code>pdfA</code> (ISO 19005-1 §6.3.2); never cached.</p>
+<p><strong>Print production</strong> <em>(v1.6.0)</em>, on the nine document tools: <code>print</code> (TrimBox / BleedBox / ArtBox / CropBox, a <code>bleed</code> shorthand, crop + registration <code>marks</code>, <code>/UserUnit</code>), <code>metadata</code> (<code>/Author</code>, <code>/Subject</code>, <code>/Keywords</code>, <code>/Trapped</code> with XMP parity), and <code>outputIntent</code> (custom RGB ICC profile). <code>viewerPreferences</code> gains <code>duplex</code>, <code>pickTrayByPDFSize</code>, <code>printPageRange</code> (1-based), <code>numCopies</code>. Boxes survive <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code> and are reported by <code>inspect_pdf</code>.</p>
+<p><strong>Honest PDF/A</strong> <em>(v1.6.0)</em>: text rendered through the viewer&#39;s base-14 Helvetica is not embedded, so a PDF/A claim on such a file is rejected by veraPDF. <code>embedFonts: true</code> embeds Noto Sans Latin for a valid claim; <code>strict: true</code> fails instead of producing a non-conformant file; <code>includeDiagnostics: true</code> echoes the engine&#39;s diagnostics (<code>PDFA_NO_FONT_ENTRIES</code>, <code>PDFA_UNEMBEDDED_FORM_FONT</code>, <code>PDFA_DEVICE_CMYK_IMAGE</code>).</p>
+<p><strong>Reproducible output</strong> <em>(v1.6.0)</em>: <code>creationDate</code> (ISO-8601) on all nine document tools pins <code>/Info /CreationDate</code>, the XMP dates and therefore the trailer <code>/ID</code> — byte-identical output on the same host time zone.</p>
+<hr>
+<h3 id="add_table"><code>add_table</code><a class="heading-anchor" href="#add_table" aria-label="Link to this section">#</a></h3>
+<p>Generates a tabular report from column headers and rows.</p>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;: &quot;Monthly Sales&quot;,
+  &quot;headers&quot;: [&quot;Region&quot;, &quot;Units&quot;, &quot;Revenue&quot;],
+  &quot;rows&quot;: [
+    [&quot;APAC&quot;, &quot;1 200&quot;, &quot;$240,000&quot;],
+    [&quot;EMEA&quot;, &quot;800&quot;,   &quot;$160,000&quot;]
+  ],
+  &quot;infoItems&quot;:      [{ &quot;label&quot;: &quot;Period&quot;, &quot;value&quot;: &quot;January 2026&quot; }],
+  &quot;footerText&quot;:     &quot;Internal use only&quot;,
+  &quot;autoFitColumns&quot;: true,
+  &quot;clipCells&quot;:      true,
+  &quot;pdfA&quot;:           &quot;pdfa2b&quot;,
+  &quot;outputMode&quot;:     &quot;base64&quot;
+}
+</code></pre>
+<p><code>autoFitColumns</code> and <code>clipCells</code> transparently switch to the document-block backend so cell content fits its column or is clipped at the boundary, leveraging pdfnative&#39;s <code>TableBlock</code> props. Optional <code>pdfA</code> produces an archive-grade variant.</p>
+<blockquote>
+<p><strong>Smart-table fields (v1.0.0).</strong> <code>add_table</code> exposes the six pdfnative 1.2 <code>TableBlock</code> fields: <code>wrap</code> (<code>&#39;auto&#39;</code> | <code>&#39;always&#39;</code> | <code>&#39;never&#39;</code>, default <code>&#39;auto&#39;</code>), <code>repeatHeader</code> (default <code>true</code>), <code>zebra</code>, <code>caption</code>, <code>minRowHeight</code>, <code>cellPadding</code>. Multi-page tables reprint headers and wrap on overflow by default — agent-driven invoice/report workflows get multi-page-safe output out of the box. See the <a href="tables.md">Smart tables guide</a> for full semantics.</p>
+</blockquote>
+<hr>
+<h3 id="add_barcode"><code>add_barcode</code><a class="heading-anchor" href="#add_barcode" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-jsonc">{
+  &quot;format&quot;:     &quot;qr&quot;,
+  &quot;data&quot;:       &quot;https://pdfnative.dev&quot;,
+  &quot;caption&quot;:    &quot;Scan to learn more&quot;,
+  &quot;ecLevel&quot;:    &quot;H&quot;,
+  &quot;outputMode&quot;: &quot;file&quot;,
+  &quot;outputPath&quot;: &quot;tickets/event-42.pdf&quot;
+}
+</code></pre>
+<p><strong>Supported formats:</strong> <code>qr</code>, <code>code128</code>, <code>ean13</code>, <code>datamatrix</code>, <code>pdf417</code>.<br><strong>Error correction levels</strong> (QR only): <code>L</code>, <code>M</code>, <code>Q</code>, <code>H</code>.</p>
+<hr>
+<h3 id="add_international_text"><code>add_international_text</code><a class="heading-anchor" href="#add_international_text" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;:      &quot;مرحبا بالعالم 👋&quot;,
+  &quot;lang&quot;:       [&quot;ar&quot;, &quot;emoji&quot;],
+  &quot;paragraphs&quot;: [
+    &quot;هذا اختبار للنص العربي مع تشكيل OpenType ومحارف ثنائية الاتجاه.&quot;,
+    &quot;Mixed content: العربية + English + emoji 🚀 ✓&quot;
+  ]
+}
+</code></pre>
+<p><strong>Supported <code>lang</code> codes:</strong> <code>ar</code> (Arabic), <code>he</code> (Hebrew), <code>th</code> (Thai), <code>ja</code> (Japanese), <code>zh</code> (Chinese Simplified), <code>ko</code> (Korean), <code>el</code> (Greek), <code>hi</code> (Devanagari/Hindi), <code>bn</code> (Bengali), <code>ta</code> (Tamil), <code>te</code> (Telugu), <code>si</code> (Sinhala), <code>bo</code> (Tibetan), <code>km</code> (Khmer), <code>my</code> (Myanmar), <code>am</code> (Ethiopic), <code>ru</code> (Cyrillic/Russian), <code>ka</code> (Georgian), <code>hy</code> (Armenian), <code>tr</code> (Turkish), <code>vi</code> (Vietnamese), <code>pl</code> (Polish), plus <strong><code>latin</code></strong> (Noto Sans VF), <strong><code>emoji</code></strong> (Noto Emoji/COLRv1) and the explicit <strong><code>math</code></strong> symbols font <em>(v1.4.0)</em>.</p>
+<p><code>lang</code> accepts <code>string</code>, <code>string[]</code>, or a comma-separated value — e.g. <code>&quot;ar,emoji&quot;</code> or <code>[&quot;ar&quot;, &quot;emoji&quot;]</code>. When <code>pdfA</code> is set on this tool, the <code>latin</code> font is auto-registered so curly quotes, em-dashes, and ellipses validate cleanly under PDF/A.</p>
+<hr>
+<h3 id="add_form"><code>add_form</code><a class="heading-anchor" href="#add_form" aria-label="Link to this section">#</a></h3>
+<p>Creates an interactive AcroForm PDF.</p>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;: &quot;Employee Onboarding&quot;,
+  &quot;fields&quot;: [
+    { &quot;fieldType&quot;: &quot;text&quot;,     &quot;name&quot;: &quot;fullName&quot;, &quot;label&quot;: &quot;Full Name&quot;,   &quot;required&quot;: true },
+    { &quot;fieldType&quot;: &quot;dropdown&quot;, &quot;name&quot;: &quot;dept&quot;,     &quot;label&quot;: &quot;Department&quot;,  &quot;options&quot;: [&quot;Engineering&quot;, &quot;Sales&quot;, &quot;HR&quot;] },
+    { &quot;fieldType&quot;: &quot;checkbox&quot;, &quot;name&quot;: &quot;agree&quot;,    &quot;label&quot;: &quot;I agree to the terms&quot;, &quot;checked&quot;: false }
+  ],
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p><strong>Field types:</strong> <code>text</code>, <code>textarea</code>, <code>checkbox</code>, <code>radio</code>, <code>dropdown</code>, and <code>listbox</code> <em>(v1.6.0)</em>. Text fields accept an optional <code>placeholder</code> <em>(v1.6.0)</em>. Since v1.6.0, <code>textarea</code> maps to the engine&#39;s true multi-line field (<code>/Ff 4096</code>) — in v1.5.0 it rendered as a single-line widget.</p>
+<hr>
+<h3 id="embed_image"><code>embed_image</code><a class="heading-anchor" href="#embed_image" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;:       &quot;Product Photo&quot;,
+  &quot;imageBase64&quot;: &quot;&lt;base64-encoded JPEG bytes&gt;&quot;,
+  &quot;mimeType&quot;:    &quot;image/jpeg&quot;,
+  &quot;caption&quot;:     &quot;Front view of Model X&quot;,
+  &quot;width&quot;:       400,
+  &quot;outputMode&quot;:  &quot;base64&quot;
+}
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> Alpha-channel PNGs (color type 6) are not supported. Pre-process such images to remove the alpha channel before embedding.</p>
+</blockquote>
+<p>Since v1.6.0 the tool also accepts <code>align</code> (horizontal placement) and <code>alt</code> (accessibility text written as <code>/Figure /Alt</code> in tagged output).</p>
+<hr>
+<h3 id="prepare_signature_placeholder"><code>prepare_signature_placeholder</code><a class="heading-anchor" href="#prepare_signature_placeholder" aria-label="Link to this section">#</a></h3>
+<p>Creates a PDF pre-wired with an AcroForm <code>/Sig</code> field, ready to be signed by <code>sign_pdf</code>.</p>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;:      &quot;Service Agreement&quot;,
+  &quot;signerName&quot;: &quot;Alice Dupont&quot;,
+  &quot;reason&quot;:     &quot;Approved&quot;,
+  &quot;location&quot;:   &quot;Paris, FR&quot;,
+  &quot;blocks&quot;: [
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;By signing below, I accept the terms and conditions.&quot; }
+  ],
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p>Since v1.6.0 the placeholder also takes <code>subFilter</code>, <code>reserveTimestamp</code> (extra <code>/Contents</code> room for a later RFC 3161 token), <code>placeholderBytes</code>, and <code>signingTime</code> — and the signer metadata (<code>signerName</code>, <code>reason</code>, <code>location</code>, <code>contactInfo</code>, <code>signingTime</code>) is <strong>baked into the <code>/Sig</code> dictionary at placeholder time</strong>, fixing a pre-1.7 engine bug where those values never reached the signed document.</p>
+<hr>
+<h3 id="sign_pdf"><code>sign_pdf</code><a class="heading-anchor" href="#sign_pdf" aria-label="Link to this section">#</a></h3>
+<p>Signs any PDF. When the input already contains a <code>/Sig</code> placeholder (e.g. produced by <code>prepare_signature_placeholder</code>) it is signed in place; otherwise the placeholder is auto-injected first (<code>autoInjectPlaceholder</code> defaults to <code>true</code>; set it to <code>false</code> to require an existing placeholder).</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;:           &quot;&lt;base64 PDF bytes&gt;&quot;,
+  &quot;algorithm&quot;:           &quot;rsa-sha256&quot;,
+  &quot;certDerBase64&quot;:       &quot;&lt;base64 X.509 certificate in DER format&gt;&quot;,
+  &quot;rsaKeyPkcs1DerBase64&quot;:&quot;&lt;base64 PKCS#1 RSAPrivateKey in DER format&gt;&quot;,
+  &quot;signerName&quot;:          &quot;Alice&quot;,
+  &quot;reason&quot;:              &quot;Approval&quot;,
+  &quot;location&quot;:            &quot;Paris, FR&quot;,
+  &quot;signingTime&quot;:         &quot;2026-01-15T10:30:00Z&quot;
+}
+</code></pre>
+<p>For ECDSA P-256: use <code>&quot;algorithm&quot;: &quot;ecdsa-sha256&quot;</code> and supply either <code>ecPrivateScalarHex</code> (64 hex chars, raw scalar <code>d</code>) or <code>ecPrivateKeyDerBase64</code> (SEC1 / PKCS#8 DER, base64 — signed through the constant-time <code>node:crypto</code> path) instead of <code>rsaKeyPkcs1DerBase64</code>. The two EC inputs are mutually exclusive.</p>
+<p><strong>PAdES and timestamps</strong> <em>(v1.6.0)</em>:</p>
+<ul>
+<li><code>algorithm</code> also accepts <code>rsa-sha384</code> and <code>rsa-sha512</code>.</li>
+<li><code>profile: &#39;pades&#39;</code> produces an ETSI.CAdES.detached signature (PAdES <strong>B-B</strong>).</li>
+<li><code>timestamp: true</code> requests an RFC 3161 timestamp from the operator-configured TSA (<code>PDFNATIVE_MCP_TSA_URL</code>) and embeds it in the CMS — PAdES <strong>B-T</strong>. Fails with <code>TSA_NOT_CONFIGURED</code> when no TSA is set, <code>TSA_REJECTED</code> when the authority declines.</li>
+<li><code>certChainDerBase64</code> embeds intermediate certificates alongside the signer certificate.</li>
+<li><code>fieldName</code> targets a specific <code>/Sig</code> field (<code>SIGNATURE_FIELD_NOT_FOUND</code> when absent, <code>PLACEHOLDER_AMBIGUOUS</code> when several placeholders exist and none is named); <code>allowMultiple: true</code> adds a signature next to existing ones instead of rejecting.</li>
+<li>The default placeholder reservation is now <code>max(16384, estimated CMS size)</code> — plus 8192 bytes when <code>timestamp: true</code> — instead of a flat 16384 bytes. To pin it exactly, build the placeholder with <code>prepare_signature_placeholder</code> and its <code>placeholderBytes</code> input.</li>
+</ul>
+<p>To climb the rest of the PAdES ladder, follow with <a href="#add_ltv-v160"><code>add_ltv</code></a> (B-LT) and <a href="#timestamp_pdf-v160"><code>timestamp_pdf</code></a> (B-LTA), then check the achieved level with <code>verify_pdf ltv: true</code>. The server&#39;s <code>pades_ladder</code> prompt walks through the full recipe.</p>
+<hr>
+<h3 id="inspect_pdf"><code>inspect_pdf</code><a class="heading-anchor" href="#inspect_pdf" aria-label="Link to this section">#</a></h3>
+<p>Read-only PDF inspection over <code>openPdf()</code>. Never modifies the input.</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;: &quot;&lt;base64 PDF bytes&gt;&quot;,
+  &quot;pages&quot;:     true,
+  &quot;check&quot;:     [&quot;pdfa&quot;, &quot;signed&quot;]
+}
+</code></pre>
+<p><strong>Inputs:</strong></p>
+<ul>
+<li><code>pdfBase64</code> — base64 PDF bytes (required).</li>
+<li><code>password</code> — password for an encrypted PDF <em>(v1.5.0)</em>.</li>
+<li><code>pages</code> — when <code>true</code>, includes per-page <code>index</code>, <code>width</code>, <code>height</code> — and, since v1.6.0, the declared page boxes and <code>userUnit</code>.</li>
+<li><code>signatures</code> <em>(v1.6.0)</em> — when <code>true</code>, a per-signature inventory: <code>subFilter</code>, <code>isDocTimestamp</code>, <code>isPlaceholder</code>, <code>byteRange</code>, <code>vriKey</code>.</li>
+<li><code>annotations</code> <em>(v1.6.0)</em> — when <code>true</code>, an <code>annotations[]</code> list (0-based <code>page</code>, <code>subtype</code>, <code>rect</code>, and when present <code>contents</code>, <code>title</code>, <code>color</code>, <code>quadPoints</code>, link <code>url</code>) plus <code>annotationCount</code>.</li>
+<li><code>check</code> — array of CI assertions. Allowed values: <code>pdfa</code>, <code>signed</code>, <code>encrypted</code>, <code>placeholder</code>, <code>attachments</code>, and — <em>(v1.6.0)</em> — <code>dss</code>, <code>docTimestamp</code>, <code>trapped</code>, <code>annotations</code>. The response includes <code>checks</code> (per-assertion result) and <code>checksPassed</code> (boolean AND). Since v1.6.0, <code>checks</code> contains <strong>only the requested keys</strong>.</li>
+<li><code>verbosity</code> — <code>&#39;full&#39;</code> (default) or <code>&#39;summary&#39;</code> (token-frugal scalar subset).</li>
+<li><code>fields</code> — optional dot-path projection of the result.</li>
+</ul>
+<p><strong>Outputs:</strong> <code>version</code>, <code>pageCount</code>, <code>encryption</code> (<code>&#39;none&#39;</code> / <code>&#39;aes-128&#39;</code> / <code>&#39;aes-256&#39;</code> / <code>&#39;rc4&#39;</code> / <code>&#39;unknown&#39;</code>), optional <code>encryptionInfo</code> (<code>{ algorithm, revision, authenticatedAs }</code>, present when the document is encrypted and opened successfully), <code>pdfA</code> (<code>null</code> or the detected claim string), <code>signatureCount</code>, <code>hasSignaturePlaceholder</code>, <code>attachments[]</code> (embedded-file summaries), <code>info</code> (decoded <code>/Info</code> entries), optional <code>perPage[]</code>, optional <code>pageLabels[]</code> (when <code>/PageLabels</code> is declared), optional <code>checks</code> + <code>checksPassed</code> — plus, presence-gated since v1.6.0, <code>dss</code>, <code>docTimestampCount</code> and <code>trapped</code>.</p>
+<p>Useful in CI as a final assertion step before publishing a PDF artifact:</p>
+<pre><code class="language-jsonc">{ &quot;tool&quot;: &quot;inspect_pdf&quot;,
+  &quot;input&quot;: { &quot;pdfBase64&quot;: &quot;&lt;...&gt;&quot;, &quot;check&quot;: [&quot;pdfa&quot;, &quot;signed&quot;] } }
+// → { ..., &quot;checks&quot;: { &quot;pdfa&quot;: true, &quot;signed&quot;: true }, &quot;checksPassed&quot;: true }
+</code></pre>
+<hr>
+<h3 id="merge_pdfs"><code>merge_pdfs</code><a class="heading-anchor" href="#merge_pdfs" aria-label="Link to this section">#</a></h3>
+<p>Concatenates <strong>2–50</strong> PDFs into a single document via pdfnative&#39;s page-tree API. Encrypted sources are supported since v1.5.0 via <code>password</code> (a single password applied to every encrypted source), and the output can be re-encrypted via <code>encrypt</code>. Signatures and <code>/AcroForm</code> are dropped because page edits invalidate <code>/ByteRange</code>; self-contained URI <code>/Link</code> annotations are kept.</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfsBase64&quot;: [&quot;&lt;base64 PDF 1&gt;&quot;, &quot;&lt;base64 PDF 2&gt;&quot;, &quot;&lt;base64 PDF 3&gt;&quot;],
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p><strong>Errors:</strong> <code>PASSWORD_REQUIRED</code> / <code>PASSWORD_INVALID</code> (encrypted source without / with the wrong <code>password</code>), <code>OUTPUT_TOO_LARGE</code> (50 MiB per emitted PDF; assembly capped by <code>maxOutputSizeBytes</code>, default 256 MiB), <code>PDF_PARSE_FAILED</code>.</p>
+<hr>
+<h3 id="split_pdf"><code>split_pdf</code><a class="heading-anchor" href="#split_pdf" aria-label="Link to this section">#</a></h3>
+<p>Splits one PDF into one document per page range, returning a <strong>multi-output</strong> shape. Ranges are <strong>0-based and inclusive</strong>; <code>end</code> defaults to <code>start</code> (a single page).</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;: &quot;&lt;base64 PDF bytes&gt;&quot;,
+  &quot;ranges&quot;: [{ &quot;start&quot;: 0, &quot;end&quot;: 2 }, { &quot;start&quot;: 3, &quot;end&quot;: 9 }],
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+// → { &quot;mode&quot;: &quot;base64&quot;, &quot;count&quot;: 2, &quot;totalBytes&quot;: 123456, &quot;parts&quot;: [ { &quot;index&quot;: 0, &quot;sizeBytes&quot;: 61000, &quot;base64&quot;: &quot;...&quot; }, ... ] }
+</code></pre>
+<p>Each part is capped at <strong>50 MiB</strong>; the aggregate output is capped at <strong>200 MiB</strong>.</p>
+<hr>
+<h3 id="extract_pages"><code>extract_pages</code><a class="heading-anchor" href="#extract_pages" aria-label="Link to this section">#</a></h3>
+<p>Pulls an arbitrary, order-preserving page subset (<strong>max 5000</strong> pages) into a single PDF.</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;: &quot;&lt;base64 PDF bytes&gt;&quot;,
+  &quot;pages&quot;: [0, 2, 4, 1],
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p>Page indices are <strong>0-based</strong>; the output preserves the order you request.</p>
+<h3 id="annotate_pdf"><code>annotate_pdf</code><a class="heading-anchor" href="#annotate_pdf" aria-label="Link to this section">#</a></h3>
+<p>Overlays markup annotations on an existing PDF via <strong>incremental update</strong>, so the original bytes — and any existing signature — stay intact.</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;: &quot;&lt;base64 PDF bytes&gt;&quot;,
+  &quot;annotations&quot;: [
+    { &quot;type&quot;: &quot;highlight&quot;, &quot;page&quot;: 0, &quot;rect&quot;: [72, 700, 520, 715], &quot;color&quot;: &quot;#ffe066&quot;, &quot;contents&quot;: &quot;Review this clause&quot; },
+    { &quot;type&quot;: &quot;text&quot;,      &quot;page&quot;: 1, &quot;rect&quot;: [80, 640, 100, 660], &quot;contents&quot;: &quot;Sticky note&quot; }
+  ],
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p>Types: <code>text</code>, <code>highlight</code>, <code>underline</code>, <code>strikeout</code>, <code>squiggly</code>, <code>square</code>, <code>circle</code>, <code>line</code>, <code>freetext</code>. Each takes a <strong>0-based</strong> <code>page</code>, a <code>rect: [x1, y1, x2, y2]</code>, and optional <code>color</code> / <code>contents</code>. Encrypted sources → <code>ENCRYPTED_SOURCE</code>; an out-of-range <code>page</code> → a validation error.</p>
+<blockquote>
+<p><strong>Overlay, not redaction.</strong> <code>annotate_pdf</code> is a <em>visual review layer</em>; the underlying bytes remain. It does <strong>not</strong> remove or obscure content — see the deferred <code>redact_pdf</code> note under <em>What&#39;s new in v1.4.0</em>.</p>
+</blockquote>
+<h3 id="draft_governance_issue"><code>draft_governance_issue</code><a class="heading-anchor" href="#draft_governance_issue" aria-label="Link to this section">#</a></h3>
+<p>Assembles a governance-compliant GitHub-issue draft plus a structured <code>compliance</code> report <strong>locally</strong> and returns them. It <strong>never submits</strong> and makes <strong>no</strong> network call — there is no HTTP client, no GitHub SDK, and no <code>fetch</code> anywhere in the server.</p>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;: &quot;SVG &lt;text&gt; word-wrap not supported&quot;,
+  &quot;issueType&quot;: &quot;feature&quot;,
+  &quot;summary&quot;: &quot;renderSvg() emits &lt;text&gt; on a single line with no automatic wrapping.&quot;,
+  &quot;reproduction&quot;: {
+    &quot;command&quot;: &quot;node repro.mjs&quot;,
+    &quot;result&quot;: &quot;Long &lt;text&gt; overflows the viewport instead of wrapping.&quot;
+  },
+  &quot;expectedBehavior&quot;: &quot;Optional word-wrap for SVG &lt;text&gt;.&quot;,
+  &quot;targetRepo&quot;: &quot;pdfnative&quot;,
+  &quot;affectedPackages&quot;: [&quot;pdfnative&quot;],
+  &quot;duplicateSearchPerformed&quot;: true,
+  &quot;outputMode&quot;: &quot;inline&quot;
+}
+</code></pre>
+<p><code>duplicateSearchPerformed</code> <strong>must be <code>true</code></strong>. A draft that proposes a runtime dependency, omits a reproduction, or sets it to <code>false</code> is rejected with <code>GOVERNANCE_VIOLATION</code>. Present the returned <code>draftMarkdown</code> + <code>compliance</code> to the user; a <strong>human</strong> submits it. Read the <code>governance_contract</code> / <code>draft_issue_workflow</code> prompts first.</p>
+<h3 id="add_chart-v150"><code>add_chart</code> <em>(v1.5.0)</em><a class="heading-anchor" href="#add_chart-v150" aria-label="Link to this section">#</a></h3>
+<p>Renders a chart as <strong>native PDF vector paths</strong> — no rasterisation, no image round-trip. Multi-series bar/line, legends, gridlines and negative values are supported; the chart is tagged <code>/Figure</code> with <code>/Alt</code> (auto-generated when <code>altText</code> is omitted).</p>
+<pre><code class="language-jsonc">{
+  &quot;chartType&quot;: &quot;bar&quot;,
+  &quot;title&quot;: &quot;Revenue by quarter&quot;,
+  &quot;series&quot;: [{ &quot;label&quot;: &quot;2026&quot;, &quot;values&quot;: [1.2, 1.5, 1.4, 1.9] }],
+  &quot;intro&quot;: &quot;Quarterly revenue in $M.&quot;,
+  &quot;pdfA&quot;: &quot;pdfa2b&quot;,
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p><strong>Inputs:</strong> <code>chartType</code> (<code>bar</code> / <code>barH</code> / <code>line</code> / <code>pie</code> / <code>donut</code>, plus — <em>(v1.6.0)</em> — <code>stackedBar</code> / <code>stackedBarH</code> / <code>area</code> / <code>scatter</code>) and <code>series</code> (required; pie/donut take exactly one series), plus <code>title</code>, <code>legend</code> (<code>&#39;bottom&#39;</code> / <code>&#39;none&#39;</code>), <code>markers</code> (line series), <code>colors</code> (hex palette override), <code>altText</code>, <code>intro</code> (paragraph above the chart), <code>pdfA</code>, <code>outputMode</code> / <code>outputPath</code>. For a chart amongst headings/paragraphs/tables, use a <code>chart</code> block inside <code>generate_basic_pdf</code> — both build identical pdfnative blocks.</p>
+<p><strong>Charts v2</strong> <em>(v1.6.0)</em>: per-series <code>xValues</code> with <code>xAxis.type: &#39;linear&#39; | &#39;time&#39;</code> (UTC-deterministic time axes), a secondary right axis (<code>axis2</code>), <code>axis.scale: &#39;log&#39;</code>, <code>dataLabels</code>, and <code>labelStride</code> / <code>labelRotation</code> for crowded x labels. Engine cross-field rules surface as <code>CHART_ERROR</code> with a remedy.</p>
+<h3 id="read_form_fields-v150"><code>read_form_fields</code> <em>(v1.5.0)</em><a class="heading-anchor" href="#read_form_fields-v150" aria-label="Link to this section">#</a></h3>
+<p>Read-only enumeration of an existing PDF&#39;s AcroForm — the discovery half of the fill round-trip.</p>
+<pre><code class="language-jsonc">{ &quot;pdfBase64&quot;: &quot;&lt;base64 PDF bytes&gt;&quot;, &quot;verbosity&quot;: &quot;full&quot; }
+</code></pre>
+<p><strong>Inputs:</strong> <code>pdfBase64</code> (required), <code>password</code> (encrypted sources), <code>verbosity</code> (<code>&#39;full&#39;</code> default / <code>&#39;summary&#39;</code> = <code>{ fieldCount }</code> only), <code>fields</code> (dot-path projection).<br><strong>Outputs:</strong> <code>fieldCount</code> and <code>fields[]</code> — each with <code>name</code> (fully-qualified), <code>type</code> (<code>text</code> / <code>checkbox</code> / <code>radio</code> / <code>dropdown</code> / <code>listbox</code> / <code>button</code> / <code>signature</code> / <code>unknown</code>), current <code>value</code>, <code>readOnly</code> / <code>required</code> / <code>multiline</code> flags, <code>options[]</code> (<code>{ export, label }</code> for choice fields), <code>maxLen</code>, <code>onState</code>, and <code>widgets[]</code> (0-based page + rect).</p>
+<h3 id="fill_form-v150"><code>fill_form</code> <em>(v1.5.0)</em><a class="heading-anchor" href="#fill_form-v150" aria-label="Link to this section">#</a></h3>
+<p>Fills (and optionally flattens) the AcroForm of an <em>existing</em> PDF via a non-destructive <strong>incremental update</strong>, so a prior signature stays valid for its revision. Works on encrypted documents via <code>password</code> (appended objects are encrypted under the document&#39;s existing scheme).</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;: &quot;&lt;base64 PDF bytes&gt;&quot;,
+  &quot;values&quot;: { &quot;fullName&quot;: &quot;Alice Dupont&quot;, &quot;agree&quot;: true },
+  &quot;flatten&quot;: false,
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p><strong>Inputs:</strong> <code>pdfBase64</code> (required), <code>values</code> (name → string | boolean | string[]; omit with <code>flatten: true</code> for a pure flatten), <code>flatten</code> (default <code>false</code>), <code>onUnknownField</code> (<code>&#39;throw&#39;</code> default / <code>&#39;ignore&#39;</code>), <code>nonWinAnsi</code> (<code>&#39;throw&#39;</code> default / <code>&#39;needAppearances&#39;</code>), <code>password</code>, <code>outputMode</code> / <code>outputPath</code>.<br><strong>Errors:</strong> <code>FORM_FIELD_NOT_FOUND</code>, <code>FORM_VALUE_TYPE_ERROR</code>, <code>FORM_UNSUPPORTED</code> (signature fields cannot be filled/flattened), <code>PASSWORD_REQUIRED</code> / <code>PASSWORD_INVALID</code>.</p>
+<h3 id="encrypt_pdf-v150"><code>encrypt_pdf</code> <em>(v1.5.0)</em><a class="heading-anchor" href="#encrypt_pdf-v150" aria-label="Link to this section">#</a></h3>
+<p>Re-secures an existing PDF with AES-128 (default, widest compatibility) or AES-256 via the page-tree re-encryption path. An already-encrypted source can be rotated to a new password by supplying its current <code>password</code>.</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;: &quot;&lt;base64 PDF bytes&gt;&quot;,
+  &quot;ownerPassword&quot;: &quot;s3cret-owner&quot;,
+  &quot;userPassword&quot;: &quot;open-me&quot;,
+  &quot;algorithm&quot;: &quot;aes256&quot;,
+  &quot;permissions&quot;: { &quot;print&quot;: true, &quot;copy&quot;: false, &quot;modify&quot;: false, &quot;extractText&quot;: false },
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p><strong>Inputs:</strong> <code>pdfBase64</code> and <code>ownerPassword</code> (required), <code>userPassword</code> (omitted/empty = opens without a prompt), <code>algorithm</code> (<code>&#39;aes128&#39;</code> default / <code>&#39;aes256&#39;</code>), <code>permissions</code> (<code>{ print?, copy?, modify?, extractText? }</code>, each allowed when omitted), <code>password</code> (current password of an encrypted source), <code>outputMode</code> / <code>outputPath</code>.</p>
+<blockquote>
+<p>Like merge/split/extract, encryption rebuilds the page tree: existing signatures and <code>/AcroForm</code> are <strong>dropped</strong>, and only self-contained URI link annotations are kept. Encrypt <strong>before</strong> signing, not after. Excluded from the response cache.</p>
+</blockquote>
+<h3 id="decrypt_pdf-v150"><code>decrypt_pdf</code> <em>(v1.5.0)</em><a class="heading-anchor" href="#decrypt_pdf-v150" aria-label="Link to this section">#</a></h3>
+<p>Opens an encrypted PDF (RC4, AES-128 or AES-256) and emits an unencrypted copy <strong>in-server</strong> — no external tool needed.</p>
+<pre><code class="language-jsonc">{ &quot;pdfBase64&quot;: &quot;&lt;base64 encrypted PDF&gt;&quot;, &quot;password&quot;: &quot;open-me&quot;, &quot;outputMode&quot;: &quot;base64&quot; }
+</code></pre>
+<p><strong>Inputs:</strong> <code>pdfBase64</code> (required), <code>password</code> (user or owner; omit only for documents with an empty user password), <code>outputMode</code> / <code>outputPath</code>.</p>
+<blockquote>
+<p>The rebuild drops signatures and <code>/AcroForm</code>. To <em>read</em> an encrypted PDF without rebuilding it, pass <code>password</code> to <code>inspect_pdf</code> / <code>extract_text</code> / <code>extract_attachments</code> instead. Excluded from the response cache.</p>
+</blockquote>
+<h3 id="add_ltv-v160"><code>add_ltv</code> <em>(v1.6.0)</em><a class="heading-anchor" href="#add_ltv-v160" aria-label="Link to this section">#</a></h3>
+<p>Embeds long-term-validation material — a <code>/DSS</code> (Document Security Store) with <code>/VRI</code> entries — into an already-signed PDF via incremental update, taking a PAdES B-T document to <strong>B-LT</strong>.</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;: &quot;&lt;base64 signed PDF&gt;&quot;,
+  &quot;mode&quot;: &quot;online&quot;,
+  &quot;preferOcsp&quot;: true,
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p><strong>Inputs:</strong> <code>pdfBase64</code> (required), <code>mode</code> (<code>&#39;online&#39;</code> default — fetches OCSP responses / CRLs through the operator-configured revocation provider; <code>&#39;offline&#39;</code> — embeds parse-validated caller-supplied material), <code>preferOcsp</code>, <code>certificatesDerBase64[]</code> / <code>ocspResponsesDerBase64[]</code> / <code>crlsDerBase64[]</code> (offline material), <code>outputMode</code> / <code>outputPath</code>. The structured result includes a <code>summary</code> of what was embedded.</p>
+<p><strong>Errors:</strong> <code>LTV_NO_SIGNATURE</code> (nothing to validate), <code>LTV_EMPTY</code> (no material gathered), <code>LTV_MATERIAL_INVALID</code>, <code>LTV_ERROR</code>, <code>REVOCATION_NOT_CONFIGURED</code> (online mode without <code>PDFNATIVE_MCP_REVOCATION</code>), <code>NETWORK_HOST_NOT_ALLOWED</code>, <code>NETWORK_ERROR</code>, <code>ENCRYPTED_SOURCE</code> (decrypting would destroy the signatures — sign before encrypting).</p>
+<blockquote>
+<p>Online mode is the <strong>only</strong> network-touching path in the server besides the TSA, and it only ever contacts operator-allow-listed hosts. See <em>Environment variables</em> above.</p>
+</blockquote>
+<h3 id="timestamp_pdf-v160"><code>timestamp_pdf</code> <em>(v1.6.0)</em><a class="heading-anchor" href="#timestamp_pdf-v160" aria-label="Link to this section">#</a></h3>
+<p>Appends a <code>/DocTimeStamp</code> signature field (ETSI.RFC3161) through the operator-configured TSA, taking a B-LT document to <strong>B-LTA</strong>. The token&#39;s status, message imprint and nonce are checked before embedding; its own CMS signature is verified by <code>verify_pdf</code>.</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;: &quot;&lt;base64 signed PDF&gt;&quot;,
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p><strong>Inputs:</strong> <code>pdfBase64</code> (required), <code>fieldName</code> (auto-suffixed <code>DocTimeStamp1</code>, <code>DocTimeStamp2</code>, … when omitted — supporting periodic re-timestamping), <code>placeholderBytes</code> (4096–65536), <code>outputMode</code> / <code>outputPath</code>.</p>
+<p><strong>Errors:</strong> <code>TSA_NOT_CONFIGURED</code>, <code>TSA_REJECTED</code>, <code>NETWORK_ERROR</code>, <code>ENCRYPTED_SOURCE</code>.</p>
+<h3 id="update_metadata-v160"><code>update_metadata</code> <em>(v1.6.0)</em><a class="heading-anchor" href="#update_metadata-v160" aria-label="Link to this section">#</a></h3>
+<p>Rewrites an existing PDF&#39;s <code>/Info</code> dictionary — and its XMP packet when present — via a non-destructive <strong>incremental update</strong>, so earlier revisions stay a byte-exact prefix.</p>
+<pre><code class="language-jsonc">{
+  &quot;pdfBase64&quot;: &quot;&lt;base64 PDF bytes&gt;&quot;,
+  &quot;title&quot;: &quot;Quarterly Report — Final&quot;,
+  &quot;author&quot;: &quot;Finance Team&quot;,
+  &quot;keywords&quot;: &quot;finance, Q1, 2026&quot;,
+  &quot;modDate&quot;: &quot;2026-08-25T09:00:00+02:00&quot;,
+  &quot;outputMode&quot;: &quot;base64&quot;
+}
+</code></pre>
+<p><strong>Inputs:</strong> <code>pdfBase64</code> (required), <code>title</code>, <code>author</code>, <code>subject</code>, <code>keywords</code> (≤ 1000 characters), <code>modDate</code> (ISO-8601 with offset — pinned for reproducible bytes), <code>outputMode</code> / <code>outputPath</code>.</p>
+<p><strong>Errors:</strong> <code>ENCRYPTED_SOURCE</code> (use <code>decrypt_pdf</code> → <code>update_metadata</code> → <code>encrypt_pdf</code>), <code>METADATA_ERROR</code>, <code>PDF_PARSE_FAILED</code>.</p>
+<h3 id="inspect_layout-v160"><code>inspect_layout</code> <em>(v1.6.0)</em><a class="heading-anchor" href="#inspect_layout-v160" aria-label="Link to this section">#</a></h3>
+<p>A read-only pagination <strong>dry run</strong>: measures how a prospective document would paginate — without producing a PDF and without consuming output tokens on base64 bytes. The seventh read tool with <code>verbosity</code> / <code>fields</code>.</p>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;: &quot;Q1 2026 Report&quot;,
+  &quot;blocks&quot;: [
+    { &quot;type&quot;: &quot;heading&quot;, &quot;text&quot;: &quot;Executive Summary&quot;, &quot;level&quot;: 1 },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Revenue grew 24 % year over year.&quot; }
+  ],
+  &quot;verbosity&quot;: &quot;summary&quot;
+}
+// → { &quot;pageWidth&quot;: 595.28, &quot;pageHeight&quot;: 841.89, &quot;totalPages&quot;: 1, &quot;blockCount&quot;: 2 }
+</code></pre>
+<p><strong>Inputs:</strong> <code>title</code> and <code>blocks</code> (required), plus every input that moves a block — <code>footerText</code>, <code>pdfA</code>, <code>normalize</code>, <code>embedFonts</code>, <code>pageSize</code>, <code>margins</code>, <code>headerTemplate</code>, <code>footerTemplate</code> — and <code>verbosity</code> / <code>fields</code>.</p>
+<p><strong>Outputs (full):</strong> <code>pageWidth</code>, <code>pageHeight</code>, <code>margins</code>, <code>totalPages</code>, and <code>pages[].blocks[]</code> with each block&#39;s <code>type</code>, <code>page</code>, <code>x</code>, <code>top</code>, <code>width</code>, <code>height</code> (2-decimal points).</p>
+<blockquote>
+<p><strong>Known engine gap:</strong> a <code>toc</code> block is measured as 0 pt, so a document with a printed contents page may paginate one page later than previewed.</p>
+</blockquote>
+<hr>
+<h2 id="mcp-prompts">MCP prompts<a class="heading-anchor" href="#mcp-prompts" aria-label="Link to this section">#</a></h2>
+<p>Since v1.4.0 the server advertises the MCP <strong><code>prompts</code></strong> capability; v1.6.0 grows it to <strong>six prompts</strong> — the two governance prompts plus four recipe prompts:</p>
+<table>
+<thead>
+<tr>
+<th>Prompt</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>governance_contract</code></td>
+<td>The full AI-governance / Human-in-the-Loop contract.</td>
+</tr>
+<tr>
+<td><code>draft_issue_workflow</code></td>
+<td>The step-by-step recipe for producing a compliant issue draft with <code>draft_governance_issue</code>.</td>
+</tr>
+<tr>
+<td><code>pades_ladder</code> <em>(v1.6.0)</em></td>
+<td>The B-B → B-T → B-LT → B-LTA recipe: <code>sign_pdf</code> → <code>add_ltv</code> → <code>timestamp_pdf</code>, verified with <code>verify_pdf ltv: true</code>.</td>
+</tr>
+<tr>
+<td><code>print_ready</code> <em>(v1.6.0)</em></td>
+<td>Producing press-ready output: bleed, printer&#39;s marks, custom OutputIntent.</td>
+</tr>
+<tr>
+<td><code>reproducible_output</code> <em>(v1.6.0)</em></td>
+<td>Byte-stable output via pinned <code>creationDate</code> / <code>signingTime</code> / <code>modDate</code>.</td>
+</tr>
+<tr>
+<td><code>pdfa_valid</code> <em>(v1.6.0)</em></td>
+<td>Producing a PDF/A file that veraPDF actually accepts (<code>embedFonts</code>, <code>strict</code>, diagnostics).</td>
+</tr>
+</tbody></table>
+<h2 id="error-codes">Error codes<a class="heading-anchor" href="#error-codes" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th><code>code</code></th>
+<th>Raised by</th>
+<th>Meaning / fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ENCRYPTED_SOURCE</code></td>
+<td><code>annotate_pdf</code>, <code>update_metadata</code>, <code>add_ltv</code>, <code>timestamp_pdf</code></td>
+<td>The source PDF is encrypted and the tool has no <code>password</code> parameter. Remedies are tool-specific since v1.6.0: for <code>annotate_pdf</code> / <code>update_metadata</code>, <code>decrypt_pdf</code> → edit → <code>encrypt_pdf</code>; for <code>add_ltv</code> / <code>timestamp_pdf</code>, decrypting would destroy the signatures — sign before encrypting.</td>
+</tr>
+<tr>
+<td><code>PASSWORD_REQUIRED</code> <em>(v1.5.0)</em></td>
+<td>password-aware tools (<code>inspect_pdf</code>, <code>verify_pdf</code>, <code>extract_text</code>, <code>extract_attachments</code>, <code>read_form_fields</code>, <code>fill_form</code>, page-tree trio, <code>encrypt_pdf</code>, <code>decrypt_pdf</code>)</td>
+<td>The source is encrypted and no <code>password</code> was supplied.</td>
+</tr>
+<tr>
+<td><code>PASSWORD_INVALID</code> <em>(v1.5.0)</em></td>
+<td>password-aware tools</td>
+<td>The supplied <code>password</code> does not open the document.</td>
+</tr>
+<tr>
+<td><code>ENCRYPTION_UNSUPPORTED</code> <em>(v1.5.0)</em></td>
+<td>password-aware tools</td>
+<td>The document uses an encryption scheme the reader does not support.</td>
+</tr>
+<tr>
+<td><code>FORM_FIELD_NOT_FOUND</code> <em>(v1.5.0)</em></td>
+<td><code>fill_form</code></td>
+<td>A <code>values</code> key matches no field (with <code>onUnknownField: &#39;throw&#39;</code>, the default).</td>
+</tr>
+<tr>
+<td><code>FORM_VALUE_TYPE_ERROR</code> <em>(v1.5.0)</em></td>
+<td><code>fill_form</code></td>
+<td>A value&#39;s type does not match the field (e.g. a boolean for a text field).</td>
+</tr>
+<tr>
+<td><code>FORM_UNSUPPORTED</code> <em>(v1.5.0)</em></td>
+<td><code>fill_form</code></td>
+<td>The field cannot be filled/flattened (e.g. a signature field).</td>
+</tr>
+<tr>
+<td><code>OUTPUT_TOO_LARGE</code></td>
+<td>PDF-emitting tools</td>
+<td>An emitted PDF exceeds 50 MiB (for <code>split_pdf</code>, also the 200 MiB aggregate), or assembly exceeds <code>maxOutputSizeBytes</code> (default 256 MiB).</td>
+</tr>
+<tr>
+<td><code>PDF_PARSE_FAILED</code></td>
+<td>page-tree tools</td>
+<td>The source bytes are not a parseable PDF.</td>
+</tr>
+<tr>
+<td><code>GOVERNANCE_VIOLATION</code></td>
+<td><code>draft_governance_issue</code></td>
+<td>The draft breaks the AI-governance contract (proposes a runtime dependency, omits a reproduction, or <code>duplicateSearchPerformed: false</code>). Fix the draft and retry.</td>
+</tr>
+<tr>
+<td><code>TSA_NOT_CONFIGURED</code> <em>(v1.6.0)</em></td>
+<td><code>sign_pdf</code> (<code>timestamp: true</code>), <code>timestamp_pdf</code></td>
+<td>No <code>PDFNATIVE_MCP_TSA_URL</code> is set. Configure the TSA in the server environment.</td>
+</tr>
+<tr>
+<td><code>TSA_REJECTED</code> <em>(v1.6.0)</em></td>
+<td><code>sign_pdf</code>, <code>timestamp_pdf</code></td>
+<td>The timestamp authority declined the request.</td>
+</tr>
+<tr>
+<td><code>REVOCATION_NOT_CONFIGURED</code> <em>(v1.6.0)</em></td>
+<td><code>add_ltv</code> (<code>mode: &#39;online&#39;</code>)</td>
+<td>No <code>PDFNATIVE_MCP_REVOCATION</code> sources are set. Configure them, or use <code>mode: &#39;offline&#39;</code> with caller-supplied material.</td>
+</tr>
+<tr>
+<td><code>NETWORK_HOST_NOT_ALLOWED</code> <em>(v1.6.0)</em></td>
+<td><code>add_ltv</code></td>
+<td>A certificate-supplied OCSP/CRL URL points outside <code>PDFNATIVE_MCP_NETWORK_ALLOWED_HOSTS</code>.</td>
+</tr>
+<tr>
+<td><code>NETWORK_ERROR</code> <em>(v1.6.0)</em></td>
+<td>TSA/LTV tools</td>
+<td>The TSA/OCSP/CRL request failed (timeout, refusal, size cap).</td>
+</tr>
+<tr>
+<td><code>LTV_NO_SIGNATURE</code> / <code>LTV_EMPTY</code> / <code>LTV_MATERIAL_INVALID</code> / <code>LTV_ERROR</code> <em>(v1.6.0)</em></td>
+<td><code>add_ltv</code></td>
+<td>No signature to validate / no material gathered / supplied DER material does not parse / embedding failed.</td>
+</tr>
+<tr>
+<td><code>METADATA_ERROR</code> <em>(v1.6.0)</em></td>
+<td><code>update_metadata</code></td>
+<td>The incremental <code>/Info</code> + XMP rewrite failed.</td>
+</tr>
+<tr>
+<td><code>PRINT_ERROR</code> <em>(v1.6.0)</em></td>
+<td>document tools with <code>print</code></td>
+<td>The requested page boxes are inconsistent (e.g. do not fit <code>pageSize</code>).</td>
+</tr>
+<tr>
+<td><code>CHART_ERROR</code> <em>(v1.6.0)</em></td>
+<td><code>add_chart</code>, <code>chart</code> blocks</td>
+<td>An engine cross-field chart rule failed (the message carries the remedy).</td>
+</tr>
+<tr>
+<td><code>PLACEHOLDER_AMBIGUOUS</code> <em>(v1.6.0)</em></td>
+<td><code>sign_pdf</code></td>
+<td>Several unsigned placeholders exist and no <code>fieldName</code> was given.</td>
+</tr>
+<tr>
+<td><code>SIGNATURE_FIELD_NOT_FOUND</code> <em>(v1.6.0)</em></td>
+<td><code>sign_pdf</code></td>
+<td>The named <code>fieldName</code> does not exist.</td>
+</tr>
+<tr>
+<td><code>CMS_PARSE_FAILED</code> <em>(v1.6.0)</em></td>
+<td><code>verify_pdf</code></td>
+<td>A CMS structure is shorter or more malformed than the parser expects.</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Protocol errors</strong> <em>(v1.6.0)</em>: calling an unknown tool or prompt name is now a JSON-RPC <code>-32602</code> error (<code>[UNKNOWN_TOOL]</code> / <code>[UNKNOWN_PROMPT]</code>), not an <code>isError</code> result. Likewise, an unknown or misspelt input key — top-level or nested — fails with <code>VALIDATION_ERROR</code> (&quot;Unrecognized key&quot;) instead of being silently stripped.</p>
+</blockquote>
+<hr>
+<h2 id="the-pdfa-flag">The <code>pdfA</code> flag<a class="heading-anchor" href="#the-pdfa-flag" aria-label="Link to this section">#</a></h2>
+<p>Every document tool (<code>generate_basic_pdf</code>, <code>add_table</code>, <code>add_form</code>, <code>embed_image</code>, <code>add_barcode</code>, <code>prepare_signature_placeholder</code>, <code>add_international_text</code>, <code>add_chart</code> <em>(v1.5.0)</em>) accepts an optional <code>pdfA</code> field. <code>add_attachment</code> is the special case: it always produces <strong>PDF/A-3b</strong> (the only conformance level that allows arbitrary embedded files), so it has no <code>pdfA</code> input.</p>
+<table>
+<thead>
+<tr>
+<th><code>pdfA</code> value</th>
+<th>PDF version</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&quot;pdfa1b&quot;</code></td>
+<td>1.4</td>
+<td>Most conservative — no transparency, no AES</td>
+</tr>
+<tr>
+<td><code>&quot;pdfa2b&quot;</code></td>
+<td>1.7</td>
+<td>Default archive target</td>
+</tr>
+<tr>
+<td><code>&quot;pdfa2u&quot;</code></td>
+<td>1.7</td>
+<td>2b + Unicode mapping for every glyph</td>
+</tr>
+<tr>
+<td><code>&quot;pdfa3b&quot;</code></td>
+<td>1.7</td>
+<td>2b + arbitrary <code>/EmbeddedFile</code> attachments</td>
+</tr>
+</tbody></table>
+<p>When set on <code>add_international_text</code>, the <code>latin</code> font auto-registers so non-WinAnsi Latin characters validate cleanly. Mutually exclusive with the underlying pdfnative encryption layer (ISO 19005-1 §6.3.2).</p>
+<hr>
+<h2 id="output-modes">Output modes<a class="heading-anchor" href="#output-modes" aria-label="Link to this section">#</a></h2>
+<p>Every document-producing tool accepts an <code>outputMode</code> field. The seven read-only
+tools (<code>inspect_pdf</code>, <code>inspect_layout</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>extract_text</code>,
+<code>extract_attachments</code>, <code>read_form_fields</code>) return JSON only and have no
+<code>outputMode</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&quot;base64&quot;</code> <em>(default)</em></td>
+<td>The PDF bytes are returned inline in the MCP response as a base64 string. Suitable for pipelines that immediately consume or display the bytes.</td>
+</tr>
+<tr>
+<td><code>&quot;file&quot;</code></td>
+<td>The PDF is written to the sandbox directory configured via <code>PDFNATIVE_MCP_OUTPUT_DIR</code>. An <code>outputPath</code> (relative, <code>.pdf</code> extension) is required. <strong>Disabled unless the environment variable is set.</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Exception:</strong> <code>draft_governance_issue</code> uses <code>outputMode: &quot;inline&quot; | &quot;file&quot;</code> (not <code>base64</code>) and writes a <strong><code>.md</code></strong> draft — not a PDF — when <code>file</code> mode is selected.</p>
+</blockquote>
+<hr>
+<h2 id="end-to-end-example-signed-document">End-to-end example: signed document<a class="heading-anchor" href="#end-to-end-example-signed-document" aria-label="Link to this section">#</a></h2>
+<p>This workflow uses two tools in sequence:</p>
+<pre><code class="language-jsonc">// Step 1 — create the placeholder
+{
+  &quot;tool&quot;: &quot;prepare_signature_placeholder&quot;,
+  &quot;input&quot;: {
+    &quot;title&quot;:      &quot;Purchase Order #42&quot;,
+    &quot;signerName&quot;: &quot;Jane Smith&quot;,
+    &quot;reason&quot;:     &quot;CFO approval&quot;,
+    &quot;location&quot;:   &quot;London, UK&quot;,
+    &quot;blocks&quot;: [
+      { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Total amount: $128,000&quot; }
+    ],
+    &quot;outputMode&quot;: &quot;base64&quot;
+  }
+}
+
+// Step 2 — sign the returned PDF
+{
+  &quot;tool&quot;: &quot;sign_pdf&quot;,
+  &quot;input&quot;: {
+    &quot;pdfBase64&quot;:            &quot;&lt;result from step 1&gt;&quot;,
+    &quot;algorithm&quot;:            &quot;rsa-sha256&quot;,
+    &quot;certDerBase64&quot;:        &quot;&lt;your DER certificate&gt;&quot;,
+    &quot;rsaKeyPkcs1DerBase64&quot;: &quot;&lt;your PKCS#1 private key&gt;&quot;,
+    &quot;signerName&quot;:           &quot;Jane Smith&quot;,
+    &quot;reason&quot;:               &quot;CFO approval&quot;,
+    &quot;location&quot;:             &quot;London, UK&quot;,
+    &quot;signingTime&quot;:          &quot;2026-04-26T09:00:00Z&quot;,
+    &quot;outputMode&quot;:           &quot;base64&quot;
+  }
+}
+</code></pre>
+<hr>
+<h2 id="security-model">Security model<a class="heading-anchor" href="#security-model" aria-label="Link to this section">#</a></h2>
+<p><code>pdfnative-mcp</code> is designed to run safely inside your AI client:</p>
+<ul>
+<li><strong>No network access by default</strong> — the server opens no outbound connection unless the <strong>operator</strong> configures TSA/OCSP/CRL endpoints for the PAdES tools (see the network charter under <em>Environment variables</em>). URLs never come from tool arguments, and certificate-supplied OCSP/CRL URLs pass an SSRF guard.</li>
+<li><strong>Sandboxed file writes</strong> — <code>file</code> output mode is gated by <code>PDFNATIVE_MCP_OUTPUT_DIR</code>. When unset, file writes are rejected with a <code>SecurityError</code>.</li>
+<li><strong>Path traversal protection</strong> — absolute paths, <code>..</code> sequences, NUL bytes, and non-<code>.pdf</code> extensions are all rejected.</li>
+<li><strong>Output size cap</strong> — PDF output is capped at <strong>50 MiB</strong> per call. <code>split_pdf</code> additionally enforces <strong>50 MiB per part</strong> and a <strong>200 MiB aggregate</strong> ceiling across its parts, returning <code>OUTPUT_TOO_LARGE</code> when exceeded.</li>
+<li><strong>HTTP transport hardening</strong> — when bound to <code>PDFNATIVE_MCP_PORT</code>, the HTTP transport is loopback-only and rejects foreign <code>Host</code> / <code>Origin</code> headers with <strong>403</strong> (DNS-rebinding protection). An opt-in bearer token (<code>PDFNATIVE_MCP_HTTP_TOKEN</code>) adds authentication <em>(v1.6.0)</em> — without it, the loopback endpoint has none.</li>
+<li><strong>Input validation</strong> — every tool validates inputs against strict JSON Schemas and Zod runtime checks at the boundary. Since v1.6.0 every schema is <code>.strict()</code> at every nesting level, so an unknown or misspelt key is a <code>VALIDATION_ERROR</code> instead of being silently stripped, and PEM armour where DER base64 is expected fails with the exact <code>openssl … -outform DER</code> remedy.</li>
+<li><strong>Decompression cap</strong> — the engine&#39;s 100 MiB per-stream inflate cap is operator-tunable via <code>PDFNATIVE_MCP_MAX_INFLATE_BYTES</code> <em>(v1.6.0)</em>.</li>
+</ul>
+<p>See <a href="https://github.com/Nizoka/pdfnative-mcp/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a> for responsible disclosure.</p>
+<hr>
+<h2 id="troubleshooting">Troubleshooting<a class="heading-anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
+<p><strong>The server does not appear in my AI client.</strong><br>Verify that Node.js ≥ 22 is installed (<code>node --version</code>) and that the config file path is correct for your OS. Restart the client after any config change.</p>
+<p><strong><code>file</code> output mode returns a SecurityError.</strong><br>Set the <code>PDFNATIVE_MCP_OUTPUT_DIR</code> environment variable to an existing absolute path in the client config.</p>
+<p><strong><code>add_international_text</code> produces blank text.</strong><br>The Noto fonts ship bundled with <code>pdfnative</code> — no network access is needed. Blank text usually means an unsupported <code>lang</code> code or a corrupted install; check the <code>lang</code> value against the supported list and reinstall <code>pdfnative</code> if needed.</p>
+<p><strong><code>sign_pdf</code> fails with &quot;invalid placeholder&quot;.</strong><br>By default <code>sign_pdf</code> auto-injects a <code>/Sig</code> placeholder when the input has none (<code>autoInjectPlaceholder: true</code>), so this error normally only appears when <code>autoInjectPlaceholder</code> was set to <code>false</code> — either drop that flag or call <code>prepare_signature_placeholder</code> first, and make sure the placeholder PDF was not modified between creation and signing.</p>
+<p><strong>Output PDF exceeds 50 MB.</strong><br>Split the content across multiple tool calls or reduce image/barcode count.</p>
+<hr>
+<h2 id="release-history">Release history<a class="heading-anchor" href="#release-history" aria-label="Link to this section">#</a></h2>
+<p>The current release is <strong>v1.6.0</strong> (28 tools, built on pdfnative 1.7.0 — see the header note). Per-release notes, oldest first:</p>
+<h3 id="whats-new-in-v100">What&#39;s new in v1.0.0<a class="heading-anchor" href="#whats-new-in-v100" aria-label="Link to this section">#</a></h3>
+<p>v1.0.0 is the <strong>first stable release</strong>, built on <code>pdfnative</code> 1.2.0, and commits to API stability via a per-tool <code>_meta.apiVersion</code> field. New fields are optional and backward-compatible — omitting them produces byte-identical output. Tool count: <strong>12</strong> (was 9).</p>
+<ul>
+<li><strong>Three new tools:</strong><ul>
+<li><strong><code>verify_pdf</code></strong> — read-only verification of every PAdES Baseline / <code>adbe.pkcs7.detached</code> signature: recomputes the <code>ByteRange</code> SHA-256, validates the CMS <code>messageDigest</code>, and verifies the <code>signatureValue</code> with the embedded signer certificate (RSA-SHA256 + ECDSA-SHA256 P-256). Optional <code>trustedRootsDerBase64</code> enables chain trust.</li>
+<li><strong><code>add_attachment</code></strong> — generate a <strong>PDF/A-3 (ISO 19005-3)</strong> document with one or more embedded files. Primary use case: <strong>Factur-X / ZUGFeRD</strong> electronic invoices (XML payload with <code>relationship: &#39;Source&#39;</code>). 8 MiB per-file cap.</li>
+<li><strong><code>extract_text</code></strong> — best-effort plain-text extraction from a non-encrypted PDF (operands of <code>Tj</code> / <code>&#39;</code> / <code>&quot;</code> / <code>TJ</code>). Reports <code>extractable: false</code> when a page yields no text; encrypted PDFs are rejected.</li>
+</ul>
+</li>
+<li><strong>Smart-table fields on <code>add_table</code></strong> — <code>wrap</code>, <code>repeatHeader</code>, <code>zebra</code>, <code>caption</code>, <code>minRowHeight</code>, <code>cellPadding</code> (pdfnative 1.2 <code>TableBlock</code> props). Multi-page tables reprint headers and wrap on overflow by default.</li>
+<li><strong>Signing ergonomics</strong> — <code>sign_pdf</code> accepts ECDSA SEC1 / PKCS#8 DER keys and <code>autoInjectPlaceholder: true</code> (default) transparently calls <code>addSignaturePlaceholder()</code> when the input lacks a <code>/Sig</code> widget (one-call signing of any PDF).</li>
+<li><strong><code>inspect_pdf</code></strong> now reports <code>hasSignaturePlaceholder</code> and an <code>attachments[]</code> summary; two new <code>check</code> values: <code>placeholder</code>, <code>attachments</code>. The <code>signed</code> check is now <code>signatureCount &gt; 0 &amp;&amp; !hasSignaturePlaceholder</code>.</li>
+<li><strong>Opt-in result cache</strong> (<code>PDFNATIVE_MCP_CACHE_DIR</code>) — SHA-256 keyed over canonical JSON of <code>{tool, apiVersion, input}</code>, 1 h TTL, 256 MiB LRU. Skips <code>outputMode: &#39;file&#39;</code> calls.</li>
+<li><strong><code>_meta.apiVersion = &#39;1.0.0&#39;</code></strong> and per-tool <strong><code>_meta.examples</code></strong> on every tool listing for AI-agent discovery — anchored to <a href="https://github.com/Nizoka/pdfnative-mcp/blob/main/docs/API_STABILITY.md" target="_blank" rel="noopener"><code>docs/API_STABILITY.md</code></a>.</li>
+<li><strong><code>pdfA</code> flag on every document tool</strong> — values <code>pdfa1b</code>, <code>pdfa2b</code>, <code>pdfa2u</code>, <code>pdfa3b</code>, mapping to pdfnative&#39;s <code>tagged</code> option (spread straight from pdfnative&#39;s exported <code>PDF_A_CONFORMANCE_TARGETS</code>).</li>
+<li><strong>Env-var rename:</strong> the canonical name is <code>PDFNATIVE_MCP_OUTPUT_DIR</code> (was the misspelt <code>PDFNATIVE_MPC_OUTPUT_DIR</code>, which still works as a deprecated alias with a one-shot stderr warning, scheduled for removal in v2.0.0).</li>
+</ul>
+<p><strong>Deferred to v1.1:</strong> <code>merge_pdfs</code>, <code>split_pdf</code>, <code>redact_pdf</code> — require pdfnative page-tree primitives not yet exported.</p>
+<h3 id="whats-new-in-v110">What&#39;s new in v1.1.0<a class="heading-anchor" href="#whats-new-in-v110" aria-label="Link to this section">#</a></h3>
+<p>v1.1.0 upgrades the server to the <code>pdfnative</code> 1.3.0 engine and adds accessibility-first read tooling:</p>
+<ul>
+<li><strong>New tool: <code>validate_pdf</code></strong> — read-only PDF/UA structural conformance checks (ISO 14289-1).</li>
+<li><strong>Six additional scripts</strong> in <code>add_international_text</code>: Telugu (<code>te</code>), Sinhala (<code>si</code>), Tibetan (<code>bo</code>), Khmer (<code>km</code>), Myanmar (<code>my</code>), Ethiopic (<code>am</code>).</li>
+<li><strong>COLRv1 colour emoji support</strong> through the upgraded engine.</li>
+<li><strong>Paragraph newline sanitization</strong> to avoid malformed text blocks when callers send embedded <code>\n</code>.</li>
+</ul>
+<h3 id="whats-new-in-v120">What&#39;s new in v1.2.0<a class="heading-anchor" href="#whats-new-in-v120" aria-label="Link to this section">#</a></h3>
+<p>v1.2.0 keeps full backward compatibility and extends MCP ergonomics for AI workflows:</p>
+<ul>
+<li><strong>New tool: <code>extract_attachments</code></strong> — read embedded files from PDF/A-3 documents (Factur-X / ZUGFeRD round-trip).</li>
+<li><strong>Watermark support</strong> on <code>generate_basic_pdf</code> and <code>add_table</code> (text, opacity, angle, color, position).</li>
+<li><strong>Opt-in Unicode normalization</strong> (<code>normalize</code>: <code>NFC</code> / <code>NFD</code> / <code>NFKC</code> / <code>NFKD</code>) on international/document flows.</li>
+<li><strong>Token-frugal read modes</strong> on read-only tools via <code>verbosity: &#39;summary&#39;</code> and selective <code>fields</code> projection.</li>
+<li><strong>Base64 payload deduplication</strong>: generated bytes are returned once via <code>resource</code> in base64 mode.</li>
+</ul>
+<h3 id="whats-new-in-v130">What&#39;s new in v1.3.0<a class="heading-anchor" href="#whats-new-in-v130" aria-label="Link to this section">#</a></h3>
+<!-- verify-docs:allow version-token (historical release entry) -->
+<p>v1.3.0 upgrades the engine to <strong>pdfnative 1.4.0</strong>, adds a page-tree tool trio, and stays fully backward-compatible — tool count rises to <strong>17</strong>:</p>
+<ul>
+<li><strong>Three new page-tree tools:</strong><ul>
+<li><strong><code>merge_pdfs</code></strong> — concatenate <strong>2–50</strong> source PDFs into one document via pdfnative&#39;s page-tree API. Encrypted sources are rejected; signatures and <code>/AcroForm</code> are dropped (page edits invalidate <code>/ByteRange</code>); self-contained URI <code>/Link</code> annotations are preserved.</li>
+<li><strong><code>split_pdf</code></strong> — split one PDF into one document per page range, returning a <strong>multi-output</strong> shape <code>{ mode, count, totalBytes, parts[] }</code>. Caps: <strong>50 MiB per part</strong>, <strong>200 MiB aggregate</strong>.</li>
+<li><strong><code>extract_pages</code></strong> — pull an arbitrary, order-preserving page subset (<strong>max 5000</strong> pages) into a single PDF.</li>
+</ul>
+</li>
+<li><strong>Enriched authoring options</strong> (from pdfnative 1.4.0): <!-- verify-docs:allow version-token (historical) --><ul>
+<li><code>generate_basic_pdf</code> gains <code>outline</code> (<code>&#39;auto&#39;</code> or an explicit nested tree), <code>pageLabels</code>, <strong>nested <code>list</code> items</strong> (max depth 6), and <code>viewerPreferences</code>.</li>
+<li><code>add_table</code> gains <code>cellBorders</code> (top/right/bottom/left, color, width, style), <code>cellVAlign</code> (<code>&#39;top&#39;</code> / <code>&#39;middle&#39;</code> / <code>&#39;bottom&#39;</code>), and <code>viewerPreferences</code>.</li>
+<li><code>add_international_text</code> gains <code>viewerPreferences</code>.</li>
+</ul>
+</li>
+<li><strong>Constant-time signing</strong> — <code>sign_pdf</code> now signs RSA and EC-DER keys through a per-call <code>node:crypto</code> provider (constant-time) with a transparent pure-JS fallback; pure-scalar <code>ecPrivateScalarHex</code> remains pure-JS.</li>
+<li><strong>HTTP transport hardening</strong> — the <code>PDFNATIVE_MCP_PORT</code> Streamable HTTP transport now rejects foreign <code>Host</code> / <code>Origin</code> headers with <strong>403</strong> (DNS-rebinding protection). <code>serverInfo</code> advertises a human-readable <code>title</code> + <code>description</code> (MCP 2025-11-25 alignment).</li>
+<li><strong>New error codes</strong> on the page-tree tools: <code>ENCRYPTED_SOURCE</code>, <code>OUTPUT_TOO_LARGE</code>, <code>PDF_PARSE_FAILED</code>.</li>
+<li><strong>Spec alignment</strong> — MCP SDK <code>^1.29</code> (2025-11-25 revision), JSON Schema 2020-12, and <code>_meta.apiVersion</code> bumped to <code>1.3.0</code> on every tool.</li>
+</ul>
+<hr>
+<h3 id="whats-new-in-v140">What&#39;s new in v1.4.0<a class="heading-anchor" href="#whats-new-in-v140" aria-label="Link to this section">#</a></h3>
+<p>v1.4.0 upgrades the engine to <strong>pdfnative 1.5.0</strong>, brings the pdfnative <strong>AI-governance / Human-in-the-Loop (HITL)</strong> system to the MCP surface, and adds markup annotations — taking the catalogue to <strong>19 tools</strong> at that release.<!-- verify-docs:allow stale-token (historical: v1.4.0 total) --> Fully backward-compatible: every v1.3.0 call works unchanged and default responses are byte-identical.</p>
+<ul>
+<li><strong>Two new tools:</strong><ul>
+<li><strong><code>draft_governance_issue</code></strong> — an agent drafts a fully compliant GitHub issue <strong>locally</strong> (a draft <code>.md</code> plus a machine-readable <code>compliance</code> report) and stops. The agent is a <strong>draftsman, never an autonomous submitter</strong>: a human is the only gate, and — by construction, not just policy — the server makes <strong>zero</strong> GitHub writes and <strong>no</strong> outbound network call. A draft that proposes a runtime dependency, omits a reproduction, or sets <code>duplicateSearchPerformed: false</code> is rejected with the new <code>GOVERNANCE_VIOLATION</code> error.</li>
+<li><strong><code>annotate_pdf</code></strong> — overlay <code>text</code>, <code>highlight</code>, <code>underline</code>, <code>strikeout</code>, <code>squiggly</code>, <code>square</code>, <code>circle</code>, <code>line</code>, and <code>freetext</code> annotations on an existing PDF via incremental update. A <strong>visual review layer, not a redaction</strong> — the underlying bytes remain. Encrypted sources → <code>ENCRYPTED_SOURCE</code>.</li>
+</ul>
+</li>
+<li><strong>MCP <code>prompts</code> capability</strong> — the server now advertises two prompts: <code>governance_contract</code> (the full HITL contract) and <code>draft_issue_workflow</code> (the step-by-step recipe).</li>
+<li><strong>Page labels in <code>inspect_pdf</code></strong> — read-only surfacing of <code>/PageLabels</code> ranges via a new optional <code>pageLabels[]</code> output field (present only when the PDF declares them).</li>
+<li><strong>Math / scientific script</strong> — <code>add_international_text</code> accepts the explicit <code>math</code> lang (Noto Sans Math), embedded on demand only (e.g. <code>lang: [&#39;latin&#39;, &#39;math&#39;]</code>); there is <strong>no</strong> global auto-routing.</li>
+<li><strong>Engine upgrade</strong> — pdfnative <code>^1.4.0</code> → <code>^1.5.0</code> (additive, no breaking changes); <code>_meta.apiVersion</code> bumped to <code>1.4.0</code> on every tool.</li>
+</ul>
+<blockquote>
+<p><strong><code>redact_pdf</code> is deferred by design.</strong> pdfnative&#39;s annotation writer can only <em>overlay</em> content; an overlay-only “redaction” would leave the original bytes intact and create <strong>false security</strong>. It is intentionally <strong>not</strong> shipped and is tracked as an upstream true content-removal request — a fitting first use of <code>draft_governance_issue</code>.</p>
+</blockquote>
+<h3 id="whats-new-in-v150">What&#39;s new in v1.5.0<a class="heading-anchor" href="#whats-new-in-v150" aria-label="Link to this section">#</a></h3>
+<p>v1.5.0 upgrades the engine to <strong>pdfnative 1.6.0</strong> and takes the catalogue to <strong>24 tools</strong> at that release,<!-- verify-docs:allow stale-token (historical: v1.5.0 total) --> closing the read/modify loop on documents the assistant did not create.</p>
+<ul>
+<li><strong>Five new tools:</strong><ul>
+<li><code>add_chart</code> — bar, horizontal-bar, line, pie and donut charts drawn as <strong>native PDF vector paths</strong>. No rasterisation and no image round-trip, so the output stays sharp at any zoom and tags as <code>/Figure</code> with alt text. If you were previously asking an agent to render a chart to PNG and push it through <code>embed_image</code>, stop — this replaces that.</li>
+<li><code>read_form_fields</code> — list an AcroForm&#39;s fields with types, current values and options.</li>
+<li><code>fill_form</code> — fill values and optionally <code>flatten</code> them into static page content. Works on encrypted documents via incremental update.</li>
+<li><code>encrypt_pdf</code> — re-secure with AES-128 or AES-256, setting owner/user passwords and a permission set.</li>
+<li><code>decrypt_pdf</code> — remove encryption <strong>in-server</strong>, for RC4, AES-128 and AES-256 sources.</li>
+</ul>
+</li>
+<li><strong>Passwords on the read tools.</strong> <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>extract_text</code> and <code>extract_attachments</code> accept a <code>password</code>, as do the page-tree trio. Encrypted sources are no longer rejected outright.</li>
+<li><strong>New error codes:</strong> <code>PASSWORD_REQUIRED</code>, <code>PASSWORD_INVALID</code>, <code>ENCRYPTION_UNSUPPORTED</code>, <code>FORM_FIELD_NOT_FOUND</code>, <code>FORM_VALUE_TYPE_ERROR</code>, <code>FORM_UNSUPPORTED</code>.</li>
+<li><strong>Generated PDFs are exposed as MCP resources</strong> (<code>pdfnative://output/{path}</code>), so a client can list and re-read them without a second tool call. File-mode results carry a <code>resource_link</code>.</li>
+<li><strong>Tool annotations</strong> (<code>readOnlyHint</code>, <code>destructiveHint</code>, <code>idempotentHint</code>, <code>openWorldHint</code>) are published in <code>tools/list</code>, letting a client reason about which calls are safe to retry.</li>
+<li>The encryption tools are deliberately <strong>excluded from the response cache</strong>.</li>
+</ul>
+<h3 id="whats-new-in-v160">What&#39;s new in v1.6.0<a class="heading-anchor" href="#whats-new-in-v160" aria-label="Link to this section">#</a></h3>
+<p>v1.6.0 aligns the server with the <strong>MCP 2026-07-28</strong> specification and grows the catalogue to <strong>28 tools</strong>, exposing the engine&#39;s full document model and completing the PAdES baseline ladder. No breaking changes: every v1.5.0 call keeps its inputs, error codes and response shape, and a superset gate against the published 1.5.0 catalogue proves it.</p>
+<ul>
+<li><strong>Four new tools:</strong><ul>
+<li><code>add_ltv</code> — embed <code>/DSS</code> + <code>/VRI</code> long-term-validation material (PAdES <strong>B-LT</strong>), online through the operator-configured revocation provider or offline from caller-supplied material.</li>
+<li><code>timestamp_pdf</code> — append a <code>/DocTimeStamp</code> through the operator TSA (PAdES <strong>B-LTA</strong>), with auto-suffixed field names for periodic re-timestamping.</li>
+<li><code>update_metadata</code> — rewrite <code>/Info</code> (+ XMP) of an existing PDF as an incremental update.</li>
+<li><code>inspect_layout</code> — a read-only pagination dry run: page count and block positions with no PDF produced.</li>
+</ul>
+</li>
+<li><strong>Full engine coverage</strong> — <code>generate_basic_pdf</code> composes all <strong>13 block kinds</strong> (<code>table</code>, <code>image</code>, <code>link</code>, <code>toc</code>, <code>barcode</code>, <code>svg</code>, <code>formField</code> join the six existing ones); <code>pageSize</code>, <code>margins</code>, running <code>headerTemplate</code> / <code>footerTemplate</code>, <code>compress</code> and <code>debug</code> on the nine document tools; build-time <code>encrypt</code> that <strong>keeps the AcroForm</strong>; image watermarks with <code>position</code>.</li>
+<li><strong>PAdES signing</strong> — <code>sign_pdf</code> gains <code>profile: &#39;pades&#39;</code>, <code>timestamp: true</code> (RFC 3161, B-T), RSA-SHA384/512, <code>certChainDerBase64</code>, <code>fieldName</code> / <code>allowMultiple</code>; <code>verify_pdf ltv: true</code> reports profile, timestamp, embedded revocation status and the achieved level; <code>prepare_signature_placeholder</code> gains <code>subFilter</code> / <code>reserveTimestamp</code> and freezes signer metadata into the <code>/Sig</code> dictionary (fixing a pre-1.7 engine bug where those values were silently dropped).</li>
+<li><strong>Network charter</strong> — still <strong>no outbound request by default</strong>; the single permitted egress class is the operator-configured TSA / OCSP / CRL endpoints, never a URL from a tool argument, behind an SSRF guard. Seven new environment variables configure the HTTP bearer token, the inflate cap and the network providers.</li>
+<li><strong>Print production</strong> — <code>print</code> page boxes, <code>bleed</code>, printer&#39;s <code>marks</code>, <code>/UserUnit</code>, <code>metadata</code> with <code>/Trapped</code>, custom <code>outputIntent</code>; boxes survive the page-tree tools and are reported by <code>inspect_pdf</code>.</li>
+<li><strong>Charts v2</strong> — <code>stackedBar</code> / <code>stackedBarH</code> / <code>area</code> / <code>scatter</code>, per-series <code>xValues</code> with linear or time axes, secondary <code>axis2</code>, <code>axis.scale: &#39;log&#39;</code>, <code>dataLabels</code>, <code>labelStride</code> / <code>labelRotation</code>.</li>
+<li><strong>Honest PDF/A</strong> — <code>embedFonts: true</code> (embed Noto Sans Latin for a claim veraPDF accepts), <code>strict: true</code> (fail instead of emitting a non-conformant file), <code>includeDiagnostics: true</code>; two new diagnostics; an advisory veraPDF corpus runs locally and in CI.</li>
+<li><strong>MCP 2026-07-28 transport</strong> — SDK v2 (<code>@modelcontextprotocol/server</code>), <code>server/discover</code>, <code>resultType</code>, cache hints, per-result <code>serverInfo</code>, deterministic <code>tools/list</code>; 2025-era clients keep working via the automatic legacy fallback.</li>
+<li><strong>Four new recipe prompts</strong> — <code>pades_ladder</code>, <code>print_ready</code>, <code>reproducible_output</code>, <code>pdfa_valid</code> — taking the prompt catalogue to six.</li>
+<li><strong>Reproducible output</strong> — <code>creationDate</code> on all nine document tools, <code>signingTime</code> on the placeholder, <code>modDate</code> on <code>update_metadata</code>.</li>
+</ul>
+<p><strong>Migrating from v1.5.0</strong> — six behaviour changes, all on error paths or on inputs the published schema already declared invalid:</p>
+<ol>
+<li><strong>Stray keys fail.</strong> An unknown or misspelt key, top-level or nested, is now <code>VALIDATION_ERROR</code> (&quot;Unrecognized key&quot;) instead of being silently stripped — the schemas always declared <code>additionalProperties: false</code>.</li>
+<li><strong>Page-index mistakes are <code>VALIDATION_ERROR</code>.</strong> Out-of-range pages / ranges on <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code> were <code>PDF_PARSE_FAILED</code>; the message now carries a 0-based hint.</li>
+<li><strong><code>validate_pdf</code> on unparsable bytes is an error, not a verdict.</strong> v1.5.0 returned <code>{ valid: false }</code>; v1.6.0 returns <code>isError: true</code> <code>[PDF_PARSE_FAILED]</code> — a parse failure is not a PDF/UA verdict.</li>
+<li><strong>Unknown tool or prompt names are protocol errors</strong> — JSON-RPC <code>-32602</code> (<code>[UNKNOWN_TOOL]</code> / <code>[UNKNOWN_PROMPT]</code>), no <code>isError</code> result.</li>
+<li><strong><code>inspect_pdf.checks</code> holds only the keys you asked for</strong> — read <code>checksPassed</code> or the requested key, never an absent one.</li>
+<li><strong><code>add_form</code> text areas change bytes.</strong> <code>fieldType: &#39;textarea&#39;</code> now produces a real multi-line field (<code>/Ff 4096</code>).</li>
+</ol>
+<hr>
+<h2 id="further-reading">Further reading<a class="heading-anchor" href="#further-reading" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp on GitHub</a> — source, issues, CHANGELOG</li>
+<li><a href="https://www.npmjs.com/package/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp on npm</a> — version history, install stats</li>
+<li><a href="quickstart.html">pdfnative Quick Start</a> — pdfnative library directly in Node.js / browser</li>
+<li><a href="architecture.html">Architecture guide</a> — how pdfnative-mcp sits in the ecosystem</li>
+<li><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol specification</a> — MCP standard reference</li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

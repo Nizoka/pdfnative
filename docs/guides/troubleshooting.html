@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/troubleshooting.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/troubleshooting.html">
   <link rel="alternate" type="text/markdown" href="troubleshooting.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Troubleshooting","item":"https://pdfnative.dev/guides/troubleshooting.html"}]},{"@type":"TechArticle","headline":"Troubleshooting","description":"Common pdfnative issues and fixes — missing glyphs and font registration, PDF/A conformance, encryption, BiDi/RTL, browser usage, and signature validation.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/troubleshooting.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,114 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Troubleshooting</p>
-  <article id="guide-content" class="guide-content" data-md="troubleshooting.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="troubleshooting.md">read troubleshooting.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="troubleshooting.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="troubleshooting">Troubleshooting</h1>
+<h2 id="font-not-rendering-boxes-or-blank">Font Not Rendering (Boxes or Blank)<a class="heading-anchor" href="#font-not-rendering-boxes-or-blank" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> Non-Latin text shows as empty rectangles or missing glyphs.</p>
+<p><strong>Cause:</strong> The font for that script is not registered or not loaded.</p>
+<p><strong>Fix:</strong></p>
+<pre><code class="language-typescript">import { registerFonts, loadFontData } from &#39;pdfnative&#39;;
+
+// 1. Register font loaders (lazy — no data loaded yet)
+registerFonts({
+  th: () =&gt; import(&#39;pdfnative/fonts/noto-thai-data.js&#39;),
+  ar: () =&gt; import(&#39;pdfnative/fonts/noto-arabic-data.js&#39;),
+});
+
+// 2. Load font data when needed
+const thaiFont = await loadFontData(&#39;th&#39;);
+
+// 3. Pass fontEntries to your builder
+const pdf = buildDocumentPDFBytes({
+  blocks: [{ type: &#39;paragraph&#39;, text: &#39;สวัสดี&#39; }],
+  fontEntries: [{ fontData: thaiFont!, fontRef: &#39;/F3&#39;, lang: &#39;th&#39; }],
+});
+</code></pre>
+<h2 id="pdf-file-too-large">PDF File Too Large<a class="heading-anchor" href="#pdf-file-too-large" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> Output PDF is unexpectedly large (&gt;1 MB for text content).</p>
+<p><strong>Causes &amp; fixes:</strong></p>
+<ol>
+<li><p><strong>Enable compression:</strong></p>
+<pre><code class="language-typescript">buildPDFBytes(params, { compress: true });
+</code></pre>
+<p>FlateDecode typically reduces size by 50–90%.</p>
+</li>
+<li><p><strong>Initialize native compression (Node.js):</strong></p>
+<pre><code class="language-typescript">import { initNodeCompression } from &#39;pdfnative&#39;;
+await initNodeCompression();
+</code></pre>
+<p>Without this, a stored-block fallback is used (minimal compression).</p>
+</li>
+<li><p><strong>Large images:</strong> JPEG is already compressed (DCTDecode). For PNG, the raw pixels are FlateDecode-compressed. Use JPEG for photos.</p>
+</li>
+<li><p><strong>Font subsetting:</strong> Automatic — only used glyphs are embedded. If you&#39;re embedding many scripts, each adds a font subset.</p>
+</li>
+</ol>
+<h2 id="rtl-text-backwards">RTL Text Backwards<a class="heading-anchor" href="#rtl-text-backwards" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> Arabic or Hebrew text appears in logical order instead of visual (right-to-left) order.</p>
+<p><strong>Cause:</strong> Font entries must include the correct <code>lang</code> property for BiDi detection.</p>
+<p><strong>Fix:</strong></p>
+<pre><code class="language-typescript">const fontEntries = [
+  { fontData: arabicFont, fontRef: &#39;/F3&#39;, lang: &#39;ar&#39; },
+  { fontData: hebrewFont, fontRef: &#39;/F4&#39;, lang: &#39;he&#39; },
+];
+</code></pre>
+<p>The <code>lang</code> property triggers:</p>
+<ul>
+<li>BiDi run detection (<code>containsRTL()</code>)</li>
+<li>Arabic positional shaping (GSUB forms)</li>
+<li>Glyph mirroring for brackets and other paired delimiters (the full 428-pair
+Unicode BidiMirroring table since v1.7.0, per UAX #9 rule L4)</li>
+</ul>
+<p><strong>Reversed digits or backwards parentheses in RTL text?</strong> Fixed in v1.7.0 with
+no API change: digit runs now take even embedding levels (UAX #9 rules I1/I2),
+so a number like <code>1405</code> keeps its digit order instead of rendering <code>5041</code>, and
+rule L4 mirrors delimiters during reversal, so a logical <code>(X)</code> no longer
+renders <code>)X(</code>. If you see either symptom, upgrade pdfnative.</p>
+<h2 id="pdfa-validation-fails">PDF/A Validation Fails<a class="heading-anchor" href="#pdfa-validation-fails" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> veraPDF reports non-conformance.</p>
+<p><strong>Common issues:</strong></p>
+<ol>
+<li><p><strong>Missing tagged mode:</strong></p>
+<pre><code class="language-typescript">buildPDFBytes(params, { tagged: true }); // PDF/A-2b
+// or
+buildPDFBytes(params, { tagged: &#39;pdfa1b&#39; }); // PDF/A-1b
+</code></pre>
+</li>
+<li><p><strong>PDF/A + encryption conflict:</strong> ISO 19005-1 §6.3.2 forbids encryption in PDF/A. Use one or the other.</p>
+</li>
+<li><p><strong>Transparency in PDF/A-1b:</strong> Watermarks with opacity &lt; 1.0 are blocked in PDF/A-1b (ISO 19005-1 §6.4). Use PDF/A-2b or remove transparency.</p>
+</li>
+</ol>
+<h2 id="document-has-too-many-blocks-very-large-documents">&quot;Document has too many blocks&quot; / Very Large Documents<a class="heading-anchor" href="#document-has-too-many-blocks-very-large-documents" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> Generating a multi-thousand-page report throws a &quot;too many blocks&quot; error.</p>
+<p><strong>Cause:</strong> The document builder caps the number of content blocks as a safety rail. Before v1.3.0 this was a hard-coded 10 000. As of <strong>v1.3.0</strong> the default is <strong>100 000</strong> and is configurable.</p>
+<p><strong>Fix:</strong> raise the limit via the layout option:</p>
+<pre><code class="language-typescript">buildDocumentPDFBytes(params, { maxBlocks: 500000 });
+// also honoured by the streaming builders:
+buildDocumentPDFStream(params, { maxBlocks: 500000 }, { chunkSize: 65536 });
+</code></pre>
+<p>For very large outputs, prefer the streaming builders (<code>buildDocumentPDFStream</code>, or <code>buildDocumentPDFStreamTrue</code> for constant memory) so the full binary never has to sit in memory at once.</p>
+<h2 id="parser-fails-on-external-pdf">Parser Fails on External PDF<a class="heading-anchor" href="#parser-fails-on-external-pdf" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> <code>openPdf()</code> throws on a PDF file not generated by pdfnative.</p>
+<p><strong>Common causes:</strong></p>
+<ol>
+<li><strong>Encrypted PDF opened without a password:</strong> Since v1.6.0 the parser decrypts the Standard Security Handler (RC4 V1-V4, AES-128, AES-256 R6) — but it needs the password. Call <code>openPdf(bytes, { password })</code>. Without one you get <code>PdfPasswordError</code>; with an algorithm the handler does not cover, <code>PdfEncryptionUnsupportedError</code>.</li>
+<li><strong>Linearized PDF:</strong> The parser follows standard xref/trailer. Linearized hint tables may cause offset issues.</li>
+<li><strong>Non-standard formatting:</strong> Some PDF generators produce non-compliant output. The parser follows ISO 32000-1 strictly.</li>
+</ol>
+<h2 id="build-import-issues">Build / Import Issues<a class="heading-anchor" href="#build-import-issues" aria-label="Link to this section">#</a></h2>
+<p><strong>ESM import paths:</strong></p>
+<pre><code class="language-typescript">// Bare package import — no extension involved
+import { buildPDFBytes } from &#39;pdfnative&#39;;
+
+// Font data modules — the .js extension IS required here (ESM subpath),
+// and the modules only have named exports, so use a namespace import:
+import * as thaiData from &#39;pdfnative/fonts/noto-thai-data.js&#39;;
+</code></pre>
+<p><strong>Browser vs Node.js:</strong> The library works in both environments. For compression in Node.js, call <code>initNodeCompression()</code> once at startup.</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

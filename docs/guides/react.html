@@ -10,6 +10,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/react.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/react.html">
   <link rel="alternate" type="text/markdown" href="react.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -27,6 +28,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"pdfnative-react — Declarative JSX Renderer Guide","item":"https://pdfnative.dev/guides/react.html"}]},{"@type":"TechArticle","headline":"pdfnative-react — Declarative JSX Renderer Guide","description":"Render PDFs from declarative JSX with pdfnative-react — Document/Page/Table/Barcode components compiled on-device, live preview hooks, 22 Unicode scripts. React 19.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/react.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -58,9 +62,380 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; React</p>
-  <article id="guide-content" class="guide-content" data-md="react.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="react.md">read react.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="react.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="pdfnative-react-declarative-jsx-renderer-guide">pdfnative-react — Declarative JSX Renderer Guide</h1>
+<blockquote>
+<p><strong>Tracks the latest published <code>pdfnative-react</code></strong> (v1.1.0, built on the pdfnative 1.6 engine), with <strong>React 19</strong> and <code>pdfnative</code> ^1.6.0 as peer dependencies (semver-accepts 1.7.0). Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>. Full history: <a href="https://github.com/Nizoka/pdfnative-react/releases" target="_blank" rel="noopener">pdfnative-react releases</a>.</p>
+</blockquote>
+<p><a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener"><code>pdfnative-react</code></a> turns declarative <strong>JSX</strong> into real, on-device PDFs powered by the zero-dependency <a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><code>pdfnative</code></a> engine — no DOM, no headless browser, no SaaS round-trips. Your documents never leave the process.</p>
+<blockquote>
+<p><strong>Why a React renderer?</strong> Front-end teams already think in components. <code>pdfnative-react</code> lets you author a PDF the same way you author a UI — with familiar <code>@react-pdf/renderer</code>-style ergonomics (<code>Document</code>, <code>Page</code>, <code>Text</code>, <code>usePdf</code>, <code>PDFViewer</code>) — while the actual bytes are produced locally by pdfnative. It is the <strong>frontend gateway</strong> to the pdfnative ecosystem.</p>
+</blockquote>
+<pre><code class="language-tsx">import { Document, Heading, Text, Table, renderToBytes } from &#39;pdfnative-react&#39;;
+
+const bytes = renderToBytes(
+  &lt;Document title=&quot;Invoice #1024&quot; footerText=&quot;Acme Inc&quot;&gt;
+    &lt;Heading level={1}&gt;Invoice #1024&lt;/Heading&gt;
+    &lt;Text&gt;Thank you for your business.&lt;/Text&gt;
+    &lt;Table
+      headers={[&#39;Item&#39;, &#39;Qty&#39;, &#39;Total&#39;]}
+      rows={[{ cells: [&#39;Pro plan&#39;, &#39;1&#39;, &#39;$49.00&#39;], type: &#39;default&#39;, pointed: false }]}
+      zebra
+    /&gt;
+  &lt;/Document&gt;,
+); // → Uint8Array, a valid PDF (%PDF-… …%%EOF)
+</code></pre>
+<hr>
+<h2 id="how-it-works">How it works<a class="heading-anchor" href="#how-it-works" aria-label="Link to this section">#</a></h2>
+<p>A custom <strong>React reconciler</strong> compiles your component tree — synchronously, with no DOM — into the <code>pdfnative</code> <code>DocumentParams</code> model, which the engine then renders to bytes. There is <strong>no CSS/flexbox engine</strong> and no <code>&lt;View&gt;</code>: it is an honest, declarative <strong>block flow</strong> where every component maps 1:1 onto a pdfnative block.</p>
+<pre><code>[your JSX tree]
+      │ custom react-reconciler (synchronous, no DOM)
+┌──────────────────────────┐
+│   pdfnative-react (npm)  │  ← components compile to pdfnative blocks
+└──────────────────────────┘
+      │ import { buildDocumentPDFBytes, … } from &#39;pdfnative&#39;
+┌──────────────────────────┐
+│      pdfnative (npm)     │  ← zero-dependency PDF engine
+└──────────────────────────┘
+</code></pre>
+<blockquote>
+<p><strong>Zero-dependency invariant preserved.</strong> React 19 is a <strong>peer dependency of <code>pdfnative-react</code> only</strong>. The core <code>pdfnative</code> library remains zero-dependency — adding the React renderer to your app never adds a dependency to the engine itself.</p>
+</blockquote>
+<hr>
+<h2 id="installation">Installation<a class="heading-anchor" href="#installation" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">npm install pdfnative-react pdfnative react
+</code></pre>
+<p><strong>Requirements:</strong> <strong>React 19</strong> and <strong>pdfnative ^1.6.0</strong> (both peer dependencies) · <strong>Node.js ≥ 22</strong>. The package adds one runtime dependency of its own, <code>react-reconciler</code>. Works in Node, browsers and SSR frameworks.</p>
+<blockquote>
+<p><strong>Next.js and other React Server Component setups.</strong> The root barrel is deliberately <em>not</em> marked <code>&#39;use client&#39;</code>, and importing it from a Server Component or a <code>&#39;use server&#39;</code> file <strong>fails</strong> — the reconciler needs <code>createContext</code>, which is unavailable under React&#39;s <code>react-server</code> condition. Render from a <strong>Route Handler</strong> instead (see <a href="#server-rendering">Server rendering</a> below). The hooks and viewer components carry the directive and are published separately at <code>pdfnative-react/client</code>; import them from there in an app that mixes server and client components, because the directive does not survive bundling in the root barrel.</p>
+</blockquote>
+<p>The package ships <strong>NPM provenance</strong> — verify the published artifact with <code>npm audit signatures</code> or on <a href="https://www.npmjs.com/package/pdfnative-react" target="_blank" rel="noopener">npmjs.com</a>.</p>
+<hr>
+<h2 id="when-to-use-the-react-renderer">When to use the React renderer<a class="heading-anchor" href="#when-to-use-the-react-renderer" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Use <strong>pdfnative-react</strong> when…</th>
+<th>Use the <strong>library</strong> / <strong>CLI</strong> when…</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>You already build UIs in React and want PDFs the same way</td>
+<td>You write a non-React Node service → use <code>pdfnative</code> directly</td>
+</tr>
+<tr>
+<td>You want a live <code>&lt;iframe&gt;</code> preview in the browser (<code>usePdf</code> / <code>PDFViewer</code>)</td>
+<td>You operate from shell scripts or CI → use <a href="cli.html"><code>pdfnative-cli</code></a></td>
+</tr>
+<tr>
+<td>You are migrating from <code>@react-pdf/renderer</code></td>
+<td>You drive PDFs from an AI assistant → use <a href="mcp.html"><code>pdfnative-mcp</code></a></td>
+</tr>
+<tr>
+<td>You want AI agents to author with the token-frugal <code>DocSpec</code></td>
+<td>You need Web Worker offloading or 100 % programmatic control</td>
+</tr>
+</tbody></table>
+<p>The packages are <strong>complementary</strong> and all sit on the same engine, so a PDF authored in any of them is byte-compatible with the others.</p>
+<hr>
+<h2 id="components">Components<a class="heading-anchor" href="#components" aria-label="Link to this section">#</a></h2>
+<p>Every component maps 1:1 onto a pdfnative block (<code>Section</code> being the one intentional composite).</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Renders</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Document</code></td>
+<td>The required root (<code>title</code>, <code>footerText</code>, <code>metadata</code>, <code>fontEntries</code>, <code>layout</code>).</td>
+</tr>
+<tr>
+<td><code>Page</code></td>
+<td>An explicit page boundary (content auto-paginates otherwise).</td>
+</tr>
+<tr>
+<td><code>Heading</code></td>
+<td>A section heading (<code>level</code> 1–3); feeds the auto <code>TableOfContents</code>.</td>
+</tr>
+<tr>
+<td><code>Paragraph</code> / <code>Text</code></td>
+<td>A wrapping paragraph (<code>fontSize</code>, <code>lineHeight</code>, <code>align</code>, <code>indent</code>, <code>color</code>).</td>
+</tr>
+<tr>
+<td><code>List</code> / <code>Item</code></td>
+<td>A bullet or numbered (<code>ordered</code>) list.</td>
+</tr>
+<tr>
+<td><code>Table</code> / <code>Row</code> / <code>Cell</code></td>
+<td>A data table (data-driven <code>headers</code>/<code>rows</code>, or JSX <code>&lt;Row&gt;</code>/<code>&lt;Cell&gt;</code>).</td>
+</tr>
+<tr>
+<td><code>Image</code></td>
+<td>An embedded JPEG/PNG (<code>data: Uint8Array</code>).</td>
+</tr>
+<tr>
+<td><code>Link</code></td>
+<td>A clickable hyperlink (<code>url</code>/<code>href</code>).</td>
+</tr>
+<tr>
+<td><code>Spacer</code></td>
+<td>Vertical whitespace (<code>height</code>).</td>
+</tr>
+<tr>
+<td><code>PageBreak</code></td>
+<td>A hard page break.</td>
+</tr>
+<tr>
+<td><code>TableOfContents</code> / <code>Toc</code></td>
+<td>An auto-generated TOC built from headings.</td>
+</tr>
+<tr>
+<td><code>Barcode</code></td>
+<td>QR, Code 128, EAN-13, PDF417, Data Matrix (<code>format</code>, <code>data</code>).</td>
+</tr>
+<tr>
+<td><code>Svg</code></td>
+<td>Inline vector graphics (path data or markup).</td>
+</tr>
+<tr>
+<td><code>FormField</code></td>
+<td>Interactive AcroForm widgets (<code>fieldType</code>, <code>name</code>).</td>
+</tr>
+<tr>
+<td><code>Chart</code></td>
+<td>A native vector chart (<code>chartType</code>, <code>series</code>, <code>categories</code>, <code>altText</code>, …) — see <a href="#charts">Charts</a>.</td>
+</tr>
+<tr>
+<td><code>Section</code></td>
+<td><em>Composite</em> (the one exception to the 1:1 mapping): expands to an optional <code>PageBreak</code> + a <code>Heading</code> + its children before the reconciler runs. Props: <code>title</code>, <code>level</code> (default <code>2</code>), <code>color</code>, <code>break</code>.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="server-rendering">Server rendering<a class="heading-anchor" href="#server-rendering" aria-label="Link to this section">#</a></h2>
+<p><code>renderToResponse</code> returns a web-standard <code>Response</code>, so the same call works in a
+Next.js Route Handler, a Remix loader, Deno, Bun, Cloudflare Workers and any
+other runtime with the Fetch API. This is the supported way to render from a
+server framework.</p>
+<pre><code class="language-tsx">// app/invoice/route.tsx — Next.js Route Handler
+import { renderToResponse } from &#39;pdfnative-react&#39;;
+
+export async function GET() {
+  return renderToResponse(&lt;Invoice /&gt;, {
+    fileName: &#39;invoice.pdf&#39;,
+  });
+}
+</code></pre>
+<p><code>renderSpecToResponse</code> does the same from a <code>DocSpec</code> object rather than JSX,
+which is the shape an AI agent is most likely to produce.</p>
+<h2 id="charts">Charts<a class="heading-anchor" href="#charts" aria-label="Link to this section">#</a></h2>
+<p><code>&lt;Chart&gt;</code> compiles to the engine&#39;s native <code>chart</code> block — vector path operators,
+no rasterisation, and <code>/Figure</code> tagging with alt text.</p>
+<pre><code class="language-tsx">&lt;Chart
+  chartType=&quot;bar&quot;            // bar | barH | line | pie | donut
+  title=&quot;Quarterly revenue&quot;
+  categories={[&#39;Q1&#39;, &#39;Q2&#39;, &#39;Q3&#39;, &#39;Q4&#39;]}
+  series={[{ label: &#39;Revenue&#39;, values: [50, 62, 70, 81] }]}
+  altText=&quot;Bar chart of quarterly revenue, rising each quarter&quot;
+/&gt;
+</code></pre>
+<p>This is why the <code>pdfnative</code> peer floor is <code>^1.6.0</code>: a 1.5 engine receives an
+unknown block and drops it silently.</p>
+<h2 id="linting">Linting<a class="heading-anchor" href="#linting" aria-label="Link to this section">#</a></h2>
+<p><code>lintDocument</code> runs 18 deterministic rules over a compiled tree — no I/O, so it
+is safe in a test or a CI step. It catches the classes of mistake a type system
+cannot, including <code>L_TAGGED_NO_FONTS</code>: declaring PDF/A without embedding a font,
+which produces a file that claims conformance it does not have.</p>
+<pre><code class="language-ts">import { lintDocument, LINT_RULES } from &#39;pdfnative-react&#39;;
+
+const report = lintDocument(&lt;Invoice /&gt;);
+if (!report.ok) {
+  const first = report.findings.find((f) =&gt; f.severity === &#39;error&#39;);
+  throw new Error(first?.message ?? &#39;lint failed&#39;);
+}
+</code></pre>
+<h2 id="agent-surface">Agent surface<a class="heading-anchor" href="#agent-surface" aria-label="Link to this section">#</a></h2>
+<p><code>capabilityManifest()</code> and <code>doctor()</code> return plain JSON describing what the
+package can do and whether the environment supports it — the discovery pair an
+autonomous agent should call before planning work. <code>validateSpec</code>, <code>schema(subject?)</code>
+and <code>SCHEMA_SUBJECTS</code> cover DocSpec validation; <code>aiGovernancePolicy()</code>,
+<code>agentRulesText()</code> and <code>validateIssueDraft()</code> expose the human-in-the-loop contract.</p>
+<h2 id="rendering">Rendering<a class="heading-anchor" href="#rendering" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import {
+  renderToBytes,   // (node, options?) =&gt; Uint8Array
+  renderToBlob,    // (node, options?) =&gt; Blob (application/pdf)
+  renderToStream,  // (node, options?) =&gt; AsyncGenerator&lt;Uint8Array&gt;
+  renderToFile,    // (node, path, options?) =&gt; Promise&lt;void&gt; (Node only)
+  renderToResponse,// (node, options?) =&gt; Promise&lt;Response&gt; (web standard)
+  renderToFileStream, // (node, path, options?) =&gt; Promise&lt;StreamToFileResult&gt; — { bytesWritten, path } (Node only)
+  inspectDocument, // (node) =&gt; layout diagnostics, no render
+  compileDocument, // (node) =&gt; DocumentParams (inspect the model, no render)
+} from &#39;pdfnative-react&#39;;
+</code></pre>
+<p><code>options</code> is <code>{ layout?: Partial&lt;PdfLayoutOptions&gt;; fontEntries?: FontEntry[]; fonts?: FontsMap }</code> and merges on top of anything set on <code>&lt;Document&gt;</code> — page size, margins, colors, PDF/A mode, encryption, and non-Latin fonts. Note that <code>fonts</code> is only honored by the <strong>async</strong> entry points (<code>renderToFile</code>, <code>renderToFileStream</code>, <code>renderToResponse</code>, <code>usePdf</code>, <code>usePdfStream</code>) — font loading is asynchronous, so the synchronous entries (<code>renderToBytes</code>, <code>renderToBlob</code>, <code>renderToStream</code>) ignore it; resolve manually first (<code>fontEntries: await resolveFonts(fonts)</code> — but see the <code>fontRef</code> caveat below).</p>
+<blockquote>
+<h3 id="build-fontentries-yourself-resolvefonts-produces-an-invalid-fontref">Build <code>fontEntries</code> yourself — <code>resolveFonts</code> produces an invalid <code>fontRef</code><a class="heading-anchor" href="#build-fontentries-yourself-resolvefonts-produces-an-invalid-fontref" aria-label="Link to this section">#</a></h3>
+<p><code>resolveFonts</code> (and the <code>fonts</code> option, which calls it) sets each entry&#39;s
+<code>fontRef</code> to the bare language code. <code>fontRef</code> is written straight into the PDF
+as a resource name, so it must be a <strong>PDF name starting with <code>/</code></strong> — and <code>/F1</code>
+and <code>/F2</code> are reserved by the engine. A bare code yields <code>latin 12 Tf</code> and a
+<code>/Font</code> key of <code>latin 5 0 R</code>, neither of which is valid syntax: Acrobat refuses
+the file with &quot;an error occurred while reading this document (14)&quot;, and Chrome
+falls back to a default encoding and draws raw glyph indices — <em>Multilingual</em>
+renders as <em>0XOWLOLQJXDO</em>.</p>
+<p>Until that is fixed upstream, resolve the fonts by hand:</p>
+<pre><code class="language-ts">import { registerFonts, loadFontData } from &#39;pdfnative&#39;;
+
+registerFonts({
+  latin: () =&gt; import(&#39;pdfnative/fonts/noto-sans-data.js&#39;),
+  ar:    () =&gt; import(&#39;pdfnative/fonts/noto-arabic-data.js&#39;),
+});
+
+const langs = [&#39;latin&#39;, &#39;ar&#39;];
+const fontEntries = await Promise.all(
+  langs.map(async (lang, i) =&gt; {
+    const fontData = await loadFontData(lang);
+    // loadFontData resolves to null (it does not throw) when the code has no
+    // registered loader — fail loudly instead of embedding nothing:
+    if (!fontData) throw new Error(`font &quot;${lang}&quot; failed to load — did you call registerFonts first?`);
+    return { fontData, fontRef: `/F${3 + i}`, lang };   // /F3, /F4, …
+  }),
+);
+
+const bytes = renderToBytes(&lt;Doc /&gt;, { fontEntries });
+</code></pre>
+<p>Rendering is synchronous, so registering without awaiting <code>loadFontData</code> embeds
+nothing at all and every non-Latin glyph comes out blank.</p>
+</blockquote>
+<pre><code class="language-ts">const bytes = renderToBytes(&lt;Invoice /&gt;, {
+  layout: { tagged: &#39;pdfa2b&#39;, compress: true },
+});
+</code></pre>
+<hr>
+<h2 id="hooks-client-components">Hooks &amp; client components<a class="heading-anchor" href="#hooks-client-components" aria-label="Link to this section">#</a></h2>
+<p>The published root bundle does <strong>not</strong> carry <code>&#39;use client&#39;</code> (a directive in an internal module does not survive single-file bundling); import hooks and viewer components from <code>pdfnative-react/client</code> in a React Server Components app, or add the directive to your own file as below.</p>
+<pre><code class="language-tsx">&#39;use client&#39;;
+import { usePdf } from &#39;pdfnative-react&#39;;
+
+function Preview({ doc }: { doc: React.ReactElement }) {
+  const { url, loading } = usePdf(doc);
+  return loading ? &lt;p&gt;Rendering…&lt;/p&gt; : &lt;iframe title=&quot;preview&quot; src={url} /&gt;;
+}
+</code></pre>
+<ul>
+<li><code>usePdf(element, options?)</code> → <code>{ url, blob, bytes, loading, error, update }</code></li>
+<li><code>usePdfStream(element, options?)</code> → <code>{ getStream() }</code></li>
+<li><code>PDFViewer</code> — live <code>&lt;iframe&gt;</code> preview.</li>
+<li><code>PDFDownloadLink</code> — one-click download (supports a render-prop child).</li>
+<li><code>BlobProvider</code> — render-prop access to the raw <code>Blob</code>.</li>
+</ul>
+<blockquote>
+<p>Try it live in the <a href="../playgrounds/react.html">React playground</a> — edit JSX or a <code>DocSpec</code> and see the PDF render in your browser.</p>
+</blockquote>
+<hr>
+<h2 id="agent-authoring-the-token-frugal-docspec">Agent authoring — the token-frugal <code>DocSpec</code><a class="heading-anchor" href="#agent-authoring-the-token-frugal-docspec" aria-label="Link to this section">#</a></h2>
+<p><code>pdfnative-react</code> is a <em>library</em>, so the place LLM agents spend tokens is <strong>authoring</strong> documents. The compact <code>DocSpec</code> expresses the same document as terse, JSON-serializable tuples — and compiles to the <strong>exact same</strong> PDF as the JSX, because it is built on the very same components.</p>
+<pre><code class="language-ts">import { renderSpecToBytes, type DocSpec } from &#39;pdfnative-react&#39;;
+
+const spec: DocSpec = {
+  title: &#39;Invoice #1024&#39;,
+  footerText: &#39;Acme Inc&#39;,
+  blocks: [
+    [&#39;h1&#39;, &#39;Invoice #1024&#39;],
+    [&#39;p&#39;, &#39;Thank you for your business.&#39;, { align: &#39;right&#39; }],
+    [&#39;table&#39;, { h: [&#39;Item&#39;, &#39;Total&#39;], r: [[&#39;Pro plan&#39;, &#39;$49.00&#39;]], zebra: true }],
+    [&#39;qr&#39;, &#39;https://acme.example/pay/1024&#39;, { align: &#39;right&#39; }],
+  ],
+};
+
+const bytes = renderSpecToBytes(spec);
+</code></pre>
+<p>The equivalent JSX is several times more tokens for a typical document, because every block carries opening/closing tags and prop names. Same bytes out, far fewer tokens in.</p>
+<ul>
+<li><code>compileSpec(spec)</code> → <code>DocumentParams</code> · <code>specToElement(spec)</code> → <code>&lt;Document&gt;</code> element</li>
+<li><code>renderSpecToBytes</code> / <code>renderSpecToBlob</code> / <code>renderSpecToStream</code> / <code>renderSpecToFile</code></li>
+<li><code>docSpecSchema()</code> → a Draft 2020-12 JSON Schema whose <code>$id</code> embeds the package version, so agents can self-validate a spec before rendering; <code>docSpecSchemaId()</code> returns the <code>$id</code>.</li>
+</ul>
+<p><strong>Block tuples:</strong> <code>[&#39;h1&#39;|&#39;h2&#39;|&#39;h3&#39;, text, opts?]</code>, <code>[&#39;p&#39;, text, opts?]</code>, <code>[&#39;ul&#39;|&#39;ol&#39;, items, opts?]</code>, <code>[&#39;table&#39;, { h?, r }]</code>, <code>[&#39;img&#39;, { data }]</code>, <code>[&#39;link&#39;, text, { url }]</code>, <code>[&#39;sp&#39;, height?]</code>, <code>[&#39;br&#39;]</code>, <code>[&#39;page&#39;, blocks]</code>, <code>[&#39;toc&#39;, opts?]</code>, <code>[&#39;qr&#39;|&#39;code128&#39;|&#39;ean13&#39;|&#39;pdf417&#39;|&#39;datamatrix&#39;, data, opts?]</code>, <code>[&#39;svg&#39;, data, opts?]</code>, <code>[&#39;chart&#39;, { chartType, series, … }]</code>, <code>[&#39;field&#39;, { fieldType, name, … }]</code>.</p>
+<hr>
+<h2 id="fonts-environment">Fonts &amp; environment<a class="heading-anchor" href="#fonts-environment" aria-label="Link to this section">#</a></h2>
+<p>Re-exported from the engine: <code>registerFonts</code>, <code>registerFont</code>, <code>loadFontData</code>, <code>validateFontData</code>, <code>downloadBlob</code> (browser), <code>initNodeCompression</code> (Node). (<code>loadFontData</code> is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the <code>fontEntries</code> render option (or on <code>&lt;Document fontEntries={…}&gt;</code>), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.</p>
+<pre><code class="language-tsx">import { Document, Text, renderToBytes, registerFont, loadFontData } from &#39;pdfnative-react&#39;;
+
+registerFont(&#39;th&#39;, () =&gt; import(&#39;pdfnative/fonts/noto-thai-data.js&#39;));
+const th = await loadFontData(&#39;th&#39;);
+if (!th) throw new Error(&#39;Thai font failed to load&#39;);
+const bytes = renderToBytes(
+  &lt;Document
+    title=&quot;สวัสดี&quot;
+    fontEntries={[{ fontData: th, fontRef: &#39;/F3&#39;, lang: &#39;th&#39; }]} // /F1 and /F2 are reserved
+  &gt;
+    &lt;Text&gt;สวัสดีชาวโลก&lt;/Text&gt;
+  &lt;/Document&gt;,
+);
+</code></pre>
+<hr>
+<h2 id="migrating-from-react-pdfrenderer">Migrating from <code>@react-pdf/renderer</code><a class="heading-anchor" href="#migrating-from-react-pdfrenderer" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th><code>@react-pdf/renderer</code></th>
+<th>pdfnative-react</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&lt;Document&gt;</code> / <code>&lt;Page&gt;</code></td>
+<td><code>&lt;Document&gt;</code> / <code>&lt;Page&gt;</code></td>
+</tr>
+<tr>
+<td><code>&lt;Text&gt;</code></td>
+<td><code>&lt;Text&gt;</code> (alias of <code>&lt;Paragraph&gt;</code>)</td>
+</tr>
+<tr>
+<td><code>&lt;View&gt;</code> + flexbox styles</td>
+<td><em>(none — declarative block flow; use blocks + <code>&lt;Spacer&gt;</code>)</em></td>
+</tr>
+<tr>
+<td><code>StyleSheet</code></td>
+<td>per-component props (<code>align</code>, <code>color</code>, <code>fontSize</code>, …)</td>
+</tr>
+<tr>
+<td><code>&lt;PDFViewer&gt;</code> / <code>&lt;PDFDownloadLink&gt;</code> / <code>&lt;BlobProvider&gt;</code></td>
+<td>same names, same shape</td>
+</tr>
+<tr>
+<td><code>usePDF()</code></td>
+<td><code>usePdf()</code></td>
+</tr>
+</tbody></table>
+<p>The biggest mental shift: there is <strong>no flexbox layout engine</strong>. Documents are a top-to-bottom block flow. Use <code>&lt;Spacer&gt;</code>, <code>&lt;PageBreak&gt;</code>, tables, and per-component alignment props instead of <code>&lt;View&gt;</code> containers.</p>
+<hr>
+<h2 id="diagnostics">Diagnostics<a class="heading-anchor" href="#diagnostics" aria-label="Link to this section">#</a></h2>
+<p><code>PdfStructureError</code> is thrown with an actionable message when a tree cannot be mapped onto the document model (for example, a <code>&lt;Cell&gt;</code> outside a <code>&lt;Row&gt;</code>, or an unsupported child of <code>&lt;Document&gt;</code>). Catch it to surface authoring mistakes early:</p>
+<pre><code class="language-ts">import { PdfStructureError, renderToBytes } from &#39;pdfnative-react&#39;;
+
+try {
+  const bytes = renderToBytes(&lt;MyDoc /&gt;);
+} catch (e) {
+  if (e instanceof PdfStructureError) console.error(&#39;Invalid document tree:&#39;, e.message);
+  else throw e;
+}
+</code></pre>
+<hr>
+<h2 id="resources">Resources<a class="heading-anchor" href="#resources" aria-label="Link to this section">#</a></h2>
+<ul>
+<li>📦 <strong>npm:</strong> <a href="https://www.npmjs.com/package/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a></li>
+<li>🏛️ <strong>Repo:</strong> <a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">Nizoka/pdfnative-react</a></li>
+<li>📚 <strong>Knowledge base:</strong> <a href="https://github.com/Nizoka/pdfnative-react/blob/main/docs/KNOWLEDGE_BASE.md" target="_blank" rel="noopener">pdfnative-react/docs/KNOWLEDGE_BASE.md</a> — the compile pipeline, the react-reconciler version contract, and the agent authoring contract</li>
+<li>📁 <strong>Samples:</strong> <a href="https://github.com/Nizoka/pdfnative-react/tree/main/samples" target="_blank" rel="noopener">pdfnative-react/samples</a></li>
+<li>🧪 <strong>Try it interactively:</strong> <a href="../playgrounds/react.html">React playground</a> — render JSX to PDF in your browser</li>
+<li>🔧 <strong>Underlying library:</strong> <a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><code>pdfnative</code></a></li>
+<li>🤖 <strong>AI integration:</strong> <a href="mcp.html">pdfnative-mcp guide</a> · 💻 <strong>Terminal:</strong> <a href="cli.html">pdfnative-cli guide</a></li>
+<li>🐛 <strong>Report a bug:</strong> <a href="https://github.com/Nizoka/pdfnative-react/issues" target="_blank" rel="noopener">Nizoka/pdfnative-react/issues</a></li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

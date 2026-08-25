@@ -58,6 +58,12 @@
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 48 sample generators producing 242 reference PDFs.
 - [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2665+ tests across 122 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
 
+## Machine-readable artefacts
+
+- [llms-full.txt](https://pdfnative.dev/llms-full.txt): This index plus the README and the full Markdown source of every guide, in one request.
+- [llms-index.json](https://pdfnative.dev/llms-index.json): Per-page machine index — HTML and raw-Markdown URL, title, summary, section anchors, and exact byte / approximate token sizes for every artefact, so you can decide what to fetch before spending the tokens.
+- Every guide serves its raw Markdown at the same URL with `.md` instead of `.html`, declared via `<link rel="alternate" type="text/markdown">` in each page head. All of these URLs are listed in the sitemap.
+
 ## Ecosystem
 
 - [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on the pdfnative 1.6 engine — pins `^1.6.0`, semver-accepts 1.7.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.

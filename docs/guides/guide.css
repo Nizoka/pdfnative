@@ -189,3 +189,68 @@
   font-weight: 400;
   color: var(--c-text-dim);
 }
+
+/* ── Pre-rendered guide enhancements (build-guides.ts + guide.js) ── */
+
+.heading-anchor {
+  margin-left: 8px;
+  font-size: 0.75em;
+  font-weight: 400;
+  color: var(--c-text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+  text-decoration: none;
+}
+
+.guide-content h2:hover .heading-anchor,
+.guide-content h3:hover .heading-anchor,
+.guide-content h4:hover .heading-anchor,
+.heading-anchor:focus-visible {
+  opacity: 1;
+}
+
+.guide-content pre { position: relative; }
+
+.guide-content pre .copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.guide-content pre:hover .copy-btn,
+.guide-content pre .copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.guide-source-bar {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 0 0 18px;
+  font-size: 13px;
+}
+
+.guide-source-btn {
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  cursor: pointer;
+}
+
+.guide-source-btn:hover { border-color: var(--c-primary); }
+
+.guide-source-link { color: var(--c-text-dim); }

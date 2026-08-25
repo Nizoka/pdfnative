@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdtempSync, rmSync, cpSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync, cpSync, existsSync, symlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -59,6 +59,9 @@ function makeSandbox(): string {
         const from = join(ROOT, file);
         if (existsSync(from)) cpSync(from, join(dir, file));
     }
+    // scripts/build-guides.ts imports `marked` from node_modules; link the real
+    // install into the sandbox (junction: no admin rights needed on Windows).
+    symlinkSync(join(ROOT, 'node_modules'), join(dir, 'node_modules'), 'junction');
     return dir;
 }
 
@@ -121,6 +124,26 @@ describe('verify-docs', () => {
                 const run = runVerifier(dir);
                 expect(run.output).toContain('contrast');
                 expect(run.output).toContain('--c-surface');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('guide-render-sync catches a shell whose Markdown source moved on', () => {
+            withSandbox((dir) => {
+                // Edit the .md without regenerating the pre-rendered shell.
+                patch(dir, 'docs/guides/charts.md', '# Charts (native vector)', '# Charts (native vector, perturbed)');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('guide-render-sync');
+                expect(run.output).toContain('docs/guides/charts.html');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('llms-index-sync catches a stale machine index', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/llms-index.json', '"site": "https://pdfnative.dev"', '"site": "https://perturbed.example"');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('llms-index-sync');
                 expect(run.status).toBe(1);
             });
         }, 120_000);

@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/font-validation.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/font-validation.html">
   <link rel="alternate" type="text/markdown" href="font-validation.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Font-data validation","item":"https://pdfnative.dev/guides/font-validation.html"}]},{"@type":"TechArticle","headline":"Font-data validation","description":"Validate custom font-data modules before rendering with pdfnative's opt-in validateFontData() — SFNT magic, base64 integrity, cmap coverage, glyph-id range, width array, finite metrics. New in v1.4.0.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/font-validation.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,76 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Font-data validation</p>
-  <article id="guide-content" class="guide-content" data-md="font-validation.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="font-validation.md">read font-validation.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="font-validation.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="font-data-validation">Font-data validation</h1>
+<blockquote>
+<p><strong>New in v1.4.0.</strong> <code>validateFontData()</code> is an opt-in, read-only structural
+sanity check for <strong>custom</strong> font-data modules built from an untrusted or
+unfamiliar TTF/OTF. It catches the common failure modes early and returns
+<code>{ valid, errors, warnings }</code> instead of letting a cryptic <code>.notdef</code>/<code>NaN</code>
+surface deep inside the encoding/subsetting pipeline. The bundled
+<code>pdfnative/fonts/*</code> modules are already trusted — this is for fonts <strong>you</strong>
+build via <code>tools/build-font-data.cjs</code> or by hand.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { validateFontData } from &#39;pdfnative&#39;;
+import type { FontValidationResult } from &#39;pdfnative&#39;;
+
+const result: FontValidationResult = validateFontData(myFontData);
+if (!result.valid) {
+  console.error(&#39;Font rejected:&#39;, result.errors);
+}
+for (const w of result.warnings) console.warn(&#39;Font warning:&#39;, w);
+</code></pre>
+<h2 id="what-it-checks">What it checks<a class="heading-anchor" href="#what-it-checks" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Metrics</td>
+<td><code>unitsPerEm &gt; 0</code>, finite; <code>bbox</code> is 4 finite numbers</td>
+</tr>
+<tr>
+<td>Identity</td>
+<td><code>fontName</code> non-empty</td>
+</tr>
+<tr>
+<td>Coverage</td>
+<td><code>cmap</code> non-empty; every glyph id is an integer in <code>[0, numGlyphs)</code></td>
+</tr>
+<tr>
+<td>Widths</td>
+<td><code>widths</code> present (missing → <strong>warning</strong>); <code>pdfWidthArray</code> non-empty</td>
+</tr>
+<tr>
+<td>Binary</td>
+<td><code>ttfBase64</code> decodes as valid base64 and begins with an SFNT magic (<code>0x00010000</code>, <code>OTTO</code>, <code>true</code>, <code>ttcf</code>)</td>
+</tr>
+</tbody></table>
+<p>Blocking problems land in <code>errors</code>; suspicious-but-survivable ones land in
+<code>warnings</code>. It <strong>never throws</strong> — even on completely malformed input.</p>
+<h2 id="it-is-opt-in-by-design">It is opt-in by design<a class="heading-anchor" href="#it-is-opt-in-by-design" aria-label="Link to this section">#</a></h2>
+<p><code>validateFontData()</code> is <strong>not</strong> invoked automatically by <code>registerFont()</code>:
+running it on every load would add cost and risk false-rejecting edge-valid
+fonts. Call it yourself once when ingesting third-party font data, e.g. in a
+build step or a test:</p>
+<pre><code class="language-ts">import { validateFontData, registerFont } from &#39;pdfnative&#39;;
+import myFont from &#39;./my-font-data.js&#39;;
+
+const { valid, errors } = validateFontData(myFont);
+if (!valid) throw new Error(`Bad font data: ${errors.join(&#39;; &#39;)}`);
+registerFont(&#39;mylang&#39;, () =&gt; Promise.resolve(myFont));
+</code></pre>
+<h2 id="sample">Sample<a class="heading-anchor" href="#sample" aria-label="Link to this section">#</a></h2>
+<p><a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/font-validation-showcase.ts" target="_blank" rel="noopener">font-validation-showcase.ts</a>
+validates a bundled font plus deliberately broken payloads and renders the
+verdicts into a report PDF.</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

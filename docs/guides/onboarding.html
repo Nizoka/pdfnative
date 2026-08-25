@@ -10,6 +10,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/onboarding.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/onboarding.html">
   <link rel="alternate" type="text/markdown" href="onboarding.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -27,6 +28,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Onboarding — the pdfnative ecosystem in 90 seconds","item":"https://pdfnative.dev/guides/onboarding.html"}]},{"@type":"TechArticle","headline":"Onboarding — the pdfnative ecosystem in 90 seconds","description":"30-second start for the full pdfnative ecosystem — the library, pdfnative-cli, pdfnative-mcp, and pdfnative-react. Install, first call, and where to go next.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/onboarding.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -58,9 +62,116 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Onboarding</p>
-  <article id="guide-content" class="guide-content" data-md="onboarding.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="onboarding.md">read onboarding.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="onboarding.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="onboarding-the-pdfnative-ecosystem-in-90-seconds">Onboarding — the pdfnative ecosystem in 90 seconds</h1>
+<blockquote>
+<p><strong>Pick your entry point:</strong> the library for code, the CLI for shell scripts, MCP for AI assistants, and React for declarative JSX. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs from the same zero-dependency engine. Live versions for every package are shown at the top of the <a href="../index.html">documentation home</a>.</p>
+</blockquote>
+<hr>
+<h2 id="1-library-node-browser-deno-bun-30-seconds">1. Library (Node, browser, Deno, Bun) — 30 seconds<a class="heading-anchor" href="#1-library-node-browser-deno-bun-30-seconds" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">npm install pdfnative
+</code></pre>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, registerFont, loadFontData } from &#39;pdfnative&#39;;
+
+// Optional: enable a non-Latin script — register under the script code (&#39;ar&#39;),
+// then load the data and pass it via fontEntries (registration alone is a no-op):
+registerFont(&#39;ar&#39;, () =&gt; import(&#39;pdfnative/fonts/noto-arabic-data.js&#39;));
+const ar = await loadFontData(&#39;ar&#39;);
+if (!ar) throw new Error(&#39;Arabic font failed to load&#39;);
+
+// Synchronous — returns a Uint8Array, not a Promise.
+const bytes = buildDocumentPDFBytes({
+  title: &#39;Hello pdfnative&#39;,              // top-level, not inside metadata
+  metadata: { author: &#39;Me&#39; },            // author / subject / keywords only
+  blocks: [
+    { type: &#39;heading&#39;, text: &#39;Hello pdfnative&#39;, level: 1 },
+    { type: &#39;paragraph&#39;, text: &#39;Pure native PDF, zero runtime dependencies.&#39; },
+  ],
+  fontEntries: [{ fontData: ar, fontRef: &#39;/F3&#39;, lang: &#39;ar&#39; }], // /F1 and /F2 are reserved
+  layout: { tagged: &#39;pdfa2b&#39; },          // optional PDF/A-2b
+});
+
+// In Node: await fs.writeFile(&#39;out.pdf&#39;, bytes);
+// In browser: new Blob([bytes], { type: &#39;application/pdf&#39; });
+</code></pre>
+<p>Next: <a href="quickstart.html">Quick Start →</a> · <a href="architecture.html">Architecture →</a> · <a href="pdfa.html">PDF/A conformance →</a></p>
+<hr>
+<h2 id="2-cli-30-seconds">2. CLI — 30 seconds<a class="heading-anchor" href="#2-cli-30-seconds" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">npm install -g pdfnative-cli   # or: npx pdfnative-cli ...
+</code></pre>
+<blockquote>
+<p>The package is named <code>pdfnative-cli</code>, but the binary it puts on your PATH is
+<strong><code>pdfnative</code></strong>. Under <code>npx</code>, either name works.</p>
+</blockquote>
+<pre><code class="language-bash"># Check the environment first — the fastest way to confirm the install worked
+pdfnative doctor
+
+# Render a JSON document → PDF. Input and output are flags, not positionals;
+# with neither, render reads stdin and writes stdout.
+pdfnative render --input doc.json --output out.pdf --tagged pdfa2b
+
+# Sign it (auto-injects a signature placeholder if needed)
+pdfnative sign --input out.pdf --output signed.pdf \
+  --key signer.key --cert signer.crt --algorithm rsa-sha256
+
+# Verify the embedded CMS signature
+pdfnative verify --input signed.pdf --json
+</code></pre>
+<p>Iteration helpers: <code>--watch</code> re-renders on save, <code>--template</code> injects variables, <code>--font</code> enables any of the 22 bundled scripts + colour emoji + the math font. v1.1.0 added <code>--stream-true</code>, <code>inspect --pdfua</code> (accessibility gate), and an agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code> contract; v1.2.0 added page-tree <code>merge</code> / <code>split</code> / <code>extract</code>, markup <code>annotate</code>, an AI-governance <code>govern</code> gate, and <code>render --outline</code> / <code>--font math</code> / <code>--inspect-layout</code>; <strong>v1.3.0</strong> adds <code>fill</code>, <code>encrypt</code>, <code>decrypt</code>, <code>extract-text</code> and <code>doctor</code>, native <code>chart</code> blocks in <code>render</code>, passwords on the page-tree commands, and PowerShell completion.</p>
+<blockquote>
+<p><strong>Upgrading from v1.2.0?</strong> <code>render --encrypt</code> was a silent no-op in that
+release — documents you thought were encrypted were written in the clear.
+v1.3.0 fixes it and unifies the flags under <code>--encrypt</code> / <code>--owner-password</code> /
+<code>--user-password</code> / <code>--permissions</code>. Re-run any affected job.</p>
+</blockquote>
+<p>Next: <a href="cli.html">CLI guide →</a> · <a href="../playgrounds/cli.html">CLI playground →</a></p>
+<hr>
+<h2 id="3-mcp-claude-desktop-cursor-continue-zed-30-seconds">3. MCP (Claude Desktop, Cursor, Continue, Zed) — 30 seconds<a class="heading-anchor" href="#3-mcp-claude-desktop-cursor-continue-zed-30-seconds" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">npm install -g pdfnative-mcp
+</code></pre>
+<p>Add the server to your client config — Claude Desktop example (<code>~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS):</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;pdfnative&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;pdfnative-mcp&quot;]
+    }
+  }
+}
+</code></pre>
+<p>Then prompt your assistant:</p>
+<blockquote>
+<p><em>Create a PDF/A-2b invoice for ACME Inc, add a multilingual paragraph in Arabic, and sign it with my key.</em></p>
+</blockquote>
+<p>The assistant calls <code>generate_basic_pdf</code> (with <code>pdfA: &quot;pdfa2b&quot;</code>), then <code>add_international_text</code> (with <code>lang: [&quot;ar&quot;, &quot;emoji&quot;]</code>), <code>add_table</code>, <code>sign_pdf</code>, and finally <code>inspect_pdf</code> — confirming the result. v1.6.0 ships <strong>28 tools</strong>, including the complete PAdES ladder (<code>sign_pdf</code> with RFC 3161 timestamps, <code>add_ltv</code>, <code>timestamp_pdf</code>), the page-tree trio <code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>, markup <code>annotate_pdf</code>, <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, the network-free <code>draft_governance_issue</code>, plus <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, and <code>extract_text</code>.</p>
+<p>Next: <a href="mcp.html">MCP guide →</a> · <a href="../playgrounds/mcp.html">MCP playground →</a></p>
+<hr>
+<h2 id="4-react-nextjs-remix-any-react-19-app-30-seconds">4. React (Next.js, Remix, any React 19 app) — 30 seconds<a class="heading-anchor" href="#4-react-nextjs-remix-any-react-19-app-30-seconds" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">npm install pdfnative-react pdfnative react
+</code></pre>
+<pre><code class="language-tsx">import { Document, Heading, Text, Table, renderToBytes } from &#39;pdfnative-react&#39;;
+
+const bytes = renderToBytes(
+  &lt;Document title=&quot;Invoice #1024&quot; footerText=&quot;Acme Inc&quot;&gt;
+    &lt;Heading level={1}&gt;Invoice #1024&lt;/Heading&gt;
+    &lt;Text&gt;Thank you for your business.&lt;/Text&gt;
+    &lt;Table headers={[&#39;Item&#39;, &#39;Total&#39;]} rows={[{ cells: [&#39;Pro plan&#39;, &#39;$49.00&#39;], type: &#39;default&#39;, pointed: false }]} zebra /&gt;
+  &lt;/Document&gt;,
+); // → Uint8Array, a valid PDF
+</code></pre>
+<p>A custom React reconciler compiles your JSX to pdfnative blocks on-device — no DOM, no headless browser. Preview live with the <code>usePdf</code> hook / <code>PDFViewer</code>, or let AI agents author with the token-frugal <code>DocSpec</code>. <strong>React 19 is a peer dependency of <code>pdfnative-react</code> only</strong> — the engine stays zero-dependency.</p>
+<p>Next: <a href="react.html">React guide →</a> · <a href="../playgrounds/react.html">React playground →</a></p>
+<hr>
+<h2 id="what-to-read-next">What to read next<a class="heading-anchor" href="#what-to-read-next" aria-label="Link to this section">#</a></h2>
+<ul>
+<li>New to PDFs in code? Start with <a href="quickstart.html">Quick Start</a> and <a href="architecture.html">Architecture</a>.</li>
+<li>Need accessible / archive-grade output? Read <a href="accessibility.html">Accessibility</a> and <a href="pdfa.html">PDF/A conformance</a>.</li>
+<li>Hit a snag? See <a href="troubleshooting.html">Troubleshooting</a> and the <a href="faq.html">FAQ</a>.</li>
+<li>Curious about the trade-offs? The <a href="faq.html">FAQ</a> compares pdfnative with pdfkit, jsPDF, and pdf-lib.</li>
+</ul>
+<p>If pdfnative saved you time, a ⭐ on <a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a> helps others find it. Thanks!</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

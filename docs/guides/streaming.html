@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/streaming.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/streaming.html">
   <link rel="alternate" type="text/markdown" href="streaming.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Streaming output","item":"https://pdfnative.dev/guides/streaming.html"}]},{"@type":"TechArticle","headline":"Streaming output","description":"Stream PDFs from pdfnative as AsyncGenerator<Uint8Array> — fixed-size, object-boundary, and true constant-memory modes. Pipe to disk, HTTP, or Web Streams.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/streaming.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,172 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Streaming output</p>
-  <article id="guide-content" class="guide-content" data-md="streaming.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="streaming.md">read streaming.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="streaming.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="streaming-output">Streaming output</h1>
+<blockquote>
+<p>pdfnative emits PDFs as <code>AsyncGenerator&lt;Uint8Array&gt;</code> so you can pipe them to disk, an HTTP response, or a Web Stream without buffering the whole document. <strong>New in v1.3.0:</strong> a mode in which the fully-joined PDF binary never exists in memory — see <a href="#what-this-does-and-does-not-buy-you">what this does and does not buy you</a> for the exact profile.</p>
+</blockquote>
+<h2 id="three-streaming-modes">Three streaming modes<a class="heading-anchor" href="#three-streaming-modes" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Memory profile</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>buildDocumentPDFStream</code> / <code>buildPDFStream</code></td>
+<td>Assembles full binary, then yields fixed-size chunks</td>
+<td>Simple back-pressure-friendly piping</td>
+</tr>
+<tr>
+<td><code>buildDocumentPDFStreamPageByPage</code> / <code>buildPDFStreamPageByPage</code></td>
+<td>Assembles full binary, yields one PDF object per chunk</td>
+<td>Object-granular persistence / diagnostics</td>
+</tr>
+<tr>
+<td><strong><code>buildDocumentPDFStreamTrue</code> / <code>buildPDFStreamTrue</code></strong></td>
+<td><strong>Never joins the binary — frees each part as it yields</strong></td>
+<td>Large documents, and anything over ~512 MB of output</td>
+</tr>
+</tbody></table>
+<p>All three produce <strong>byte-identical</strong> output to <code>buildDocumentPDFBytes()</code> /
+<code>buildPDFBytes()</code>.</p>
+<h2 id="streaming-without-joining-the-binary-v130">Streaming without joining the binary (v1.3.0)<a class="heading-anchor" href="#streaming-without-joining-the-binary-v130" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { createWriteStream } from &#39;node:fs&#39;;
+import { buildDocumentPDFStreamTrue } from &#39;pdfnative&#39;;
+
+const out = createWriteStream(&#39;report.pdf&#39;);
+for await (const chunk of buildDocumentPDFStreamTrue(params, layout, { chunkSize: 65536 })) {
+  out.write(chunk);
+}
+out.end();
+</code></pre>
+<p>Internally, the builder assembles the PDF into an array of raw parts (objects,
+xref, trailer) and the generator walks that array, encoding each part to bytes
+and <strong>freeing it (<code>parts[i] = &#39;&#39;</code>) as soon as it is emitted</strong>.</p>
+<h3 id="what-this-does-and-does-not-buy-you">What this does and does not buy you<a class="heading-anchor" href="#what-this-does-and-does-not-buy-you" aria-label="Link to this section">#</a></h3>
+<p>Being precise here matters, because the two claims are often conflated.</p>
+<p><strong>What it avoids.</strong> The joined PDF binary never exists. That removes a full
+second copy of the document, and it lifts the hard ceiling that
+<code>buildDocumentPDFStream</code> hits: that variant joins everything into one JavaScript
+string, and V8 caps a single string at roughly 512 MB. Past that point it throws
+regardless of how much RAM the machine has. <code>buildDocumentPDFStreamTrue</code> has no
+such ceiling.</p>
+<p><strong>What it does not avoid.</strong> <code>assembleDocumentParts()</code> runs to completion before
+the first chunk is yielded, so every part is resident at that moment. Peak memory
+is therefore still proportional to total output size — roughly 2 bytes per output
+character, since JavaScript strings are UTF-16. From the first yield onwards
+memory falls monotonically as parts are freed, but the peak has already happened.</p>
+<p>Two practical consequences:</p>
+<ul>
+<li>Budget for about twice your expected output size, not for a fixed ceiling.
+A 300 MB PDF wants roughly 600 MB of headroom.</li>
+<li><strong>There is no progress signal during assembly.</strong> Most of the wall-clock time is
+spent inside <code>assembleDocumentParts()</code>, which yields nothing, so a percentage
+bar covering that phase would be invented rather than measured. Report an
+indeterminate state until the first chunk arrives, then switch to a byte
+counter. The <a href="../playgrounds/scale.html">scale playground</a> does exactly this.</li>
+</ul>
+<p>True page-by-page assembly — where peak memory is bounded by one page rather than
+the whole document — is not implemented yet.</p>
+<h3 id="http-response-node">HTTP response (Node)<a class="heading-anchor" href="#http-response-node" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">import { buildDocumentPDFStreamTrue } from &#39;pdfnative&#39;;
+
+app.get(&#39;/report.pdf&#39;, async (req, res) =&gt; {
+  res.setHeader(&#39;Content-Type&#39;, &#39;application/pdf&#39;);
+  for await (const chunk of buildDocumentPDFStreamTrue(params)) {
+    res.write(chunk);
+  }
+  res.end();
+});
+</code></pre>
+<h3 id="web-streams-browser-deno-edge">Web Streams (browser / Deno / edge)<a class="heading-anchor" href="#web-streams-browser-deno-edge" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">const stream = new ReadableStream({
+  async pull(controller) {
+    for await (const chunk of buildDocumentPDFStreamTrue(params)) {
+      controller.enqueue(chunk);
+    }
+    controller.close();
+  },
+});
+return new Response(stream, { headers: { &#39;Content-Type&#39;: &#39;application/pdf&#39; } });
+</code></pre>
+<h2 id="options">Options<a class="heading-anchor" href="#options" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">interface StreamOptions {
+  /** Bytes per yielded chunk. Default 65536 (64 KB). Clamped to 1 KB–16 MB. */
+  chunkSize?: number;
+}
+</code></pre>
+<h2 id="draining-to-a-file-streamtofile-v140">Draining to a file: <code>streamToFile</code> (v1.4.0)<a class="heading-anchor" href="#draining-to-a-file-streamtofile-v140" aria-label="Link to this section">#</a></h2>
+<p><code>streamToFile()</code> drains <strong>any</strong> <code>AsyncGenerator&lt;Uint8Array&gt;</code> — including all
+three streaming modes above — straight to a file on disk in Node.js. It honours
+the OS write back-pressure (awaiting the <code>&#39;drain&#39;</code> event when the kernel buffer
+fills) and supports cancellation via an <code>AbortSignal</code>, so a single call covers
+the common &quot;generate a large PDF to disk without buffering it&quot; case.</p>
+<pre><code class="language-ts">import { buildDocumentPDFStreamTrue, streamToFile } from &#39;pdfnative&#39;;
+
+const { bytesWritten, path } = await streamToFile(
+  buildDocumentPDFStreamTrue(params),
+  &#39;report.pdf&#39;,
+);
+console.log(`Wrote ${bytesWritten} bytes to ${path}`);
+</code></pre>
+<h3 id="cancellation">Cancellation<a class="heading-anchor" href="#cancellation" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">const ac = new AbortController();
+setTimeout(() =&gt; ac.abort(), 5000); // give up after 5s
+
+await streamToFile(buildDocumentPDFStreamTrue(params), &#39;report.pdf&#39;, {
+  signal: ac.signal,
+}); // rejects with the abort reason; the partial file is closed
+</code></pre>
+<p>On abort — or on any write error — <code>streamToFile</code> releases the file descriptor
+and <strong>removes the partially-written file</strong> (best-effort), so a cancelled or
+failed run never leaves an orphaned half-written PDF on disk.</p>
+<p><code>streamToFile</code> is Node-only — it loads <code>node:fs</code> lazily via a dynamic import,
+so importing it in a browser or Deno bundle adds no static Node dependency. In
+non-Node runtimes, drive the generator yourself with the Web Streams snippet
+above.</p>
+<h2 id="streaming-merge-split-v160">Streaming merge &amp; split (v1.6.0)<a class="heading-anchor" href="#streaming-merge-split-v160" aria-label="Link to this section">#</a></h2>
+<p>The page-tree API has constant-memory variants —
+<code>streamMergedPdfs</code> / <code>streamSplitPdf</code> / <code>streamExtractPages</code> — that emit the
+assembled document as fixed-size chunks while holding only the cross-reference
+offsets in memory. Each is byte-identical to its buffered counterpart and
+composes with <code>streamToFile</code>. (Exception: with <code>MergeOptions.encrypt</code> the
+output is AES-encrypted with fresh random IVs/salts, so repeated invocations
+are structurally — not byte — identical.)</p>
+<pre><code class="language-ts">import { streamMergedPdfs, streamSplitPdf, streamToFile } from &#39;pdfnative&#39;;
+
+await streamToFile(streamMergedPdfs([a, b]), &#39;combined.pdf&#39;);
+
+for await (const part of streamSplitPdf(body, ranges)) {
+  await streamToFile(part.pdf, `part-${part.index}.pdf`);   // drain each fully, in order
+}
+</code></pre>
+<p>Note the honest memory profile: <strong>output</strong> bytes are never buffered, but the
+<strong>source</strong> PDFs are still in-memory <code>Uint8Array</code>s. See the
+<a href="pdf-manipulation.html#streaming-merge--split">PDF manipulation guide</a> for the
+full API.</p>
+<h2 id="constraints">Constraints<a class="heading-anchor" href="#constraints" aria-label="Link to this section">#</a></h2>
+<p>Streaming is incompatible with two features that need a second pass over the
+whole document. Both are validated at the boundary and throw a descriptive
+error:</p>
+<ul>
+<li><strong>TOC blocks</strong> — the table of contents requires multi-pass pagination to
+resolve page numbers.</li>
+<li><strong><code>{pages}</code> placeholder</strong> in header/footer templates — the total page count
+is unknown during progressive emission. Use <code>{page}</code> instead, or fall back to
+<code>buildDocumentPDFBytes()</code>.</li>
+</ul>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="quickstart.html">Quick start</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG</a></li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

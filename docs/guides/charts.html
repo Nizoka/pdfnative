@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/charts.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/charts.html">
   <link rel="alternate" type="text/markdown" href="charts.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Charts (native vector)","item":"https://pdfnative.dev/guides/charts.html"}]},{"@type":"TechArticle","headline":"Charts (native vector)","description":"Native vector charts in pdfnative — nine chart kinds (bar, horizontal-bar, stacked bars, line, area, scatter, pie, donut) rendered as pure PDF path operators, with a secondary axis, log & time scales and data labels since v1.7.0. Zero dependencies, no rasterisation, tagged /Figure alt text.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/charts.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,267 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Charts</p>
-  <article id="guide-content" class="guide-content" data-md="charts.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="charts.md">read charts.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="charts.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="charts-native-vector">Charts (native vector)</h1>
+<blockquote>
+<p><strong>New in v1.6.0, extended in v1.7.0.</strong> Render bar, horizontal-bar, stacked-bar,
+line, area, scatter, pie, and donut charts as <strong>pure PDF path operators</strong> —
+rectangles, line segments, and cubic-Bézier arcs. Zero dependencies, no
+rasterisation, no image embedding. Charts are crisp at any zoom, searchable
+(labels are real text), and PDF/A-safe.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+const pdf = buildDocumentPDFBytes({
+  title: &#39;Report&#39;,
+  blocks: [
+    {
+      type: &#39;chart&#39;,
+      chartType: &#39;bar&#39;,
+      title: &#39;Quarterly revenue vs cost&#39;,
+      categories: [&#39;Q1&#39;, &#39;Q2&#39;, &#39;Q3&#39;, &#39;Q4&#39;],
+      series: [
+        { label: &#39;Revenue&#39;, values: [120, 150, 170, 140] },
+        { label: &#39;Cost&#39;,    values: [80, 90, 100, 95] },
+      ],
+    },
+  ],
+});
+</code></pre>
+<p>Add a <code>chart</code> block anywhere in a document&#39;s <code>blocks</code> array, like a heading,
+paragraph, or table.</p>
+<h2 id="chart-types">Chart types<a class="heading-anchor" href="#chart-types" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th><code>chartType</code></th>
+<th>Shape</th>
+<th>Series</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&#39;bar&#39;</code></td>
+<td>Vertical grouped bars</td>
+<td>1+</td>
+</tr>
+<tr>
+<td><code>&#39;barH&#39;</code></td>
+<td>Horizontal grouped bars</td>
+<td>1+</td>
+</tr>
+<tr>
+<td><code>&#39;line&#39;</code></td>
+<td>Multi-series line, optional markers</td>
+<td>1+</td>
+</tr>
+<tr>
+<td><code>&#39;pie&#39;</code></td>
+<td>Pie</td>
+<td>exactly 1</td>
+</tr>
+<tr>
+<td><code>&#39;donut&#39;</code></td>
+<td>Donut (pie with a hole)</td>
+<td>exactly 1</td>
+</tr>
+<tr>
+<td><code>&#39;stackedBar&#39;</code> (v1.7.0)</td>
+<td>Vertical stacked bars (positive and negative running totals stack separately)</td>
+<td>1+</td>
+</tr>
+<tr>
+<td><code>&#39;stackedBarH&#39;</code> (v1.7.0)</td>
+<td>Horizontal stacked bars</td>
+<td>1+</td>
+</tr>
+<tr>
+<td><code>&#39;area&#39;</code> (v1.7.0)</td>
+<td>Line closed to the zero baseline, opaque tinted fill</td>
+<td>1+</td>
+</tr>
+<tr>
+<td><code>&#39;scatter&#39;</code> (v1.7.0)</td>
+<td>X/Y point markers positioned by <code>xValues</code></td>
+<td>1+</td>
+</tr>
+</tbody></table>
+<h2 id="the-chartblock">The <code>ChartBlock</code><a class="heading-anchor" href="#the-chartblock" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">interface ChartBlock {
+  type: &#39;chart&#39;;
+  chartType: &#39;bar&#39; | &#39;barH&#39; | &#39;line&#39; | &#39;pie&#39; | &#39;donut&#39;
+    | &#39;stackedBar&#39; | &#39;stackedBarH&#39; | &#39;area&#39; | &#39;scatter&#39;;    // last four: v1.7.0
+  series: {
+    label: string;
+    values: number[];
+    color?: PdfColor;
+    xValues?: (number | string)[]; // x positions for scatter / linear / time x-axes (v1.7.0)
+    yAxis?: &#39;left&#39; | &#39;right&#39;;      // bind the series to the secondary right axis (v1.7.0)
+  }[];
+  categories?: string[];        // x-axis / slice labels; defaults to 1-based indices
+  width?: number;               // plot width in pt (clamped to content width). Default 460
+  height?: number;              // plot-area height in pt. Default 240
+  title?: string;
+  legend?: &#39;bottom&#39; | &#39;none&#39;;   // default: shown for multi-series / pie
+  axis?: { yMin?: number; yMax?: number; ticks?: number; grid?: boolean;
+           scale?: &#39;linear&#39; | &#39;log&#39; };                      // scale: v1.7.0
+  axis2?: { yMin?: number; yMax?: number; ticks?: number;
+            scale?: &#39;linear&#39; | &#39;log&#39; };                     // right value axis (v1.7.0)
+  xAxis?: { type?: &#39;category&#39; | &#39;linear&#39; | &#39;time&#39;;          // v1.7.0
+            min?: number | string; max?: number | string;
+            ticks?: number; grid?: boolean };
+  dataLabels?: boolean                                      // v1.7.0
+    | { decimals?: number; prefix?: string; suffix?: string };
+  labelStride?: number;         // draw every Nth category label. Default: auto (v1.7.0)
+  labelRotation?: number;       // rotate category labels 0–90 degrees (v1.7.0)
+  markers?: boolean;            // line only. Default false
+  colors?: PdfColor[];          // palette override (per series / per slice)
+  align?: &#39;left&#39; | &#39;center&#39; | &#39;right&#39;;
+  altText?: string;             // tagged-PDF /Figure /Alt (auto-generated if omitted)
+}
+</code></pre>
+<p>Colours accept the same forms as the rest of pdfnative — <code>&#39;#4e79a7&#39;</code>,
+<code>[78, 121, 167]</code>, or a PDF RGB string — and are validated (injection-safe). When
+omitted, a built-in 8-colour categorical palette is used deterministically.</p>
+<h2 id="examples">Examples<a class="heading-anchor" href="#examples" aria-label="Link to this section">#</a></h2>
+<h3 id="multi-series-line-with-markers">Multi-series line with markers<a class="heading-anchor" href="#multi-series-line-with-markers" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">{
+  type: &#39;chart&#39;, chartType: &#39;line&#39;, markers: true,
+  categories: [&#39;Jan&#39;, &#39;Feb&#39;, &#39;Mar&#39;, &#39;Apr&#39;],
+  series: [
+    { label: &#39;Free&#39;, values: [10, 25, 22, 40] },
+    { label: &#39;Paid&#39;, values: [3, 8, 12, 18] },
+  ],
+}
+</code></pre>
+<h3 id="donut-with-a-custom-palette">Donut with a custom palette<a class="heading-anchor" href="#donut-with-a-custom-palette" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">{
+  type: &#39;chart&#39;, chartType: &#39;donut&#39;, title: &#39;Traffic sources&#39;,
+  categories: [&#39;Organic&#39;, &#39;Referral&#39;, &#39;Direct&#39;, &#39;Social&#39;],
+  colors: [&#39;#59a14f&#39;, &#39;#4e79a7&#39;, &#39;#f28e2b&#39;, &#39;#e15759&#39;],
+  series: [{ label: &#39;Share&#39;, values: [55, 20, 15, 10] }],
+}
+</code></pre>
+<h3 id="negative-values">Negative values<a class="heading-anchor" href="#negative-values" aria-label="Link to this section">#</a></h3>
+<p>Bar and line charts anchor at a zero baseline, so negative values render below
+the axis automatically:</p>
+<pre><code class="language-ts">{ type: &#39;chart&#39;, chartType: &#39;bar&#39;, categories: [&#39;Jan&#39;, &#39;Feb&#39;, &#39;Mar&#39;],
+  series: [{ label: &#39;Net flow&#39;, values: [30, -15, 20] }] }
+</code></pre>
+<h3 id="stacked-bars-v170">Stacked bars (v1.7.0)<a class="heading-anchor" href="#stacked-bars-v170" aria-label="Link to this section">#</a></h3>
+<p>Positive and negative values stack in separate running totals per category, so
+mixed-sign data reads correctly:</p>
+<pre><code class="language-ts">{
+  type: &#39;chart&#39;, chartType: &#39;stackedBar&#39;,
+  categories: [&#39;Q1&#39;, &#39;Q2&#39;, &#39;Q3&#39;, &#39;Q4&#39;],
+  series: [
+    { label: &#39;EMEA&#39;, values: [40, 55, 60, 52] },
+    { label: &#39;APAC&#39;, values: [25, 30, 35, 41] },
+    { label: &#39;AMER&#39;, values: [50, 48, 62, 70] },
+  ],
+}
+</code></pre>
+<h3 id="area-with-data-labels-v170">Area with data labels (v1.7.0)<a class="heading-anchor" href="#area-with-data-labels-v170" aria-label="Link to this section">#</a></h3>
+<p>The area fill is the series colour mixed 35 % toward white — an <strong>opaque
+tint</strong>, not transparency, so area charts remain PDF/A-safe (PDF/A-1b forbids
+<code>/ExtGState</code> alpha):</p>
+<pre><code class="language-ts">{
+  type: &#39;chart&#39;, chartType: &#39;area&#39;,
+  categories: [&#39;Jan&#39;, &#39;Feb&#39;, &#39;Mar&#39;, &#39;Apr&#39;],
+  dataLabels: { suffix: &#39; k€&#39;, decimals: 1 },
+  series: [{ label: &#39;ARR&#39;, values: [10.4, 12.1, 13.8, 16.2] }],
+}
+</code></pre>
+<p><code>dataLabels: true</code> reuses the axis tick formatter; the object form controls
+<code>decimals</code> and adds a <code>prefix</code>/<code>suffix</code>.</p>
+<h3 id="scatter-on-a-time-axis-v170">Scatter on a time axis (v1.7.0)<a class="heading-anchor" href="#scatter-on-a-time-axis-v170" aria-label="Link to this section">#</a></h3>
+<p><code>scatter</code> positions each point by <code>xValues</code> (required). On <code>xAxis.type: &#39;time&#39;</code>,
+<code>xValues</code> accepts ISO-8601 strings or epoch milliseconds; tick positions and
+labels are computed with <strong>UTC getters only</strong> — never <code>Intl</code> or the host time
+zone — so output bytes are identical on every machine:</p>
+<pre><code class="language-ts">{
+  type: &#39;chart&#39;, chartType: &#39;scatter&#39;,
+  xAxis: { type: &#39;time&#39;, grid: true },
+  series: [{
+    label: &#39;Deploys&#39;,
+    xValues: [&#39;2026-01-05&#39;, &#39;2026-02-14&#39;, &#39;2026-03-02&#39;, &#39;2026-04-20&#39;],
+    values: [3, 7, 5, 11],
+  }],
+}
+</code></pre>
+<p><code>line</code> and <code>area</code> charts may also opt into a <code>&#39;linear&#39;</code> or <code>&#39;time&#39;</code> x-axis;
+<code>bar</code> variants stay categorical.</p>
+<h3 id="dual-value-axes-log-scale-v170">Dual value axes &amp; log scale (v1.7.0)<a class="heading-anchor" href="#dual-value-axes-log-scale-v170" aria-label="Link to this section">#</a></h3>
+<p>Bind a series to a secondary right axis with <code>yAxis: &#39;right&#39;</code> and configure its
+range with <code>axis2</code>. The right axis (and its gutter) appears only when at least
+one series binds to it. Either axis can switch to <code>scale: &#39;log&#39;</code> (decade
+ticks); log scales require strictly positive values and cannot be combined
+with stacked charts:</p>
+<pre><code class="language-ts">{
+  type: &#39;chart&#39;, chartType: &#39;line&#39;, markers: true,
+  categories: [&#39;2023&#39;, &#39;2024&#39;, &#39;2025&#39;, &#39;2026&#39;],
+  axis2: { scale: &#39;log&#39; },
+  series: [
+    { label: &#39;Revenue (k€)&#39;, values: [120, 150, 170, 140] },
+    { label: &#39;Requests/day&#39;, values: [900, 8000, 65000, 400000], yAxis: &#39;right&#39; },
+  ],
+}
+</code></pre>
+<h3 id="crowded-category-labels-v170">Crowded category labels (v1.7.0)<a class="heading-anchor" href="#crowded-category-labels-v170" aria-label="Link to this section">#</a></h3>
+<p>Long or numerous x-labels no longer collide (issue #67). By default the engine
+measures every label and draws every <em>N</em>th one — the smallest stride at which
+labels no longer overlap (<code>1</code> when everything fits, so existing charts are
+unchanged). Override with <code>labelStride</code> (<code>1</code> forces every label), or rotate
+instead:</p>
+<pre><code class="language-ts">{
+  type: &#39;chart&#39;, chartType: &#39;bar&#39;,
+  categories: [&#39;January&#39;, &#39;February&#39;, &#39;March&#39;, &#39;April&#39;, &#39;May&#39;, &#39;June&#39;],
+  labelRotation: 45,   // 0–90° counter-clockwise, right-aligned to the tick
+  series: [{ label: &#39;Signups&#39;, values: [12, 18, 14, 22, 19, 27] }],
+}
+</code></pre>
+<p>Rotated labels read upward toward their tick; setting <code>labelRotation</code> disables
+the automatic stride (rotation defeats horizontal overlap on its own) unless
+<code>labelStride</code> is also set. Both options apply to category axes only —
+<code>scatter</code> charts reject them.</p>
+<h2 id="accessibility-tagged-pdf">Accessibility (tagged PDF)<a class="heading-anchor" href="#accessibility-tagged-pdf" aria-label="Link to this section">#</a></h2>
+<p>In tagged mode (<code>{ tagged: true }</code> or a PDF/A profile), each chart is emitted as
+a <code>/Figure</code> structure element with an <code>/Alt</code> description. Provide <code>altText</code> for a
+meaningful summary; otherwise a deterministic one is generated
+(<code>&quot;bar chart: 2 series, 4 categories&quot;</code>). Charts use solid fills only — no
+transparency — so they are <strong>PDF/A-safe</strong>. That includes area charts: the fill
+is an opaque tint (series colour mixed toward white), never <code>/ExtGState</code> alpha.</p>
+<h2 id="internationalised-labels">Internationalised labels<a class="heading-anchor" href="#internationalised-labels" aria-label="Link to this section">#</a></h2>
+<p>All chart text (title, axis ticks, category labels, legend, slice percentages)
+flows through pdfnative&#39;s standard text pipeline, so CJK, Arabic/RTL, and emoji
+labels shape correctly when the matching font is registered — no extra work.</p>
+<h2 id="limits-scope-v170">Limits &amp; scope (v1.7.0)<a class="heading-anchor" href="#limits-scope-v170" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><strong>In:</strong> bar, horizontal bar, stacked bar (both orientations), multi-series
+line (straight segments + optional markers), area, scatter, pie, donut;
+linear and log value axes with &quot;nice&quot;/decade ticks; secondary right value
+axis; category, linear, and time (UTC-deterministic) x-axes; gridlines;
+legend; negative values; per-point data labels; automatic label stride and
+0–90° label rotation.</li>
+<li><strong>Out (planned):</strong> curved (spline) line interpolation, error bars, bubble
+sizing, combined chart types in one plot.</li>
+<li>A hard guard rejects charts with more than <strong>10,000</strong> total data points.</li>
+<li>Validation is strict and throws before any bytes are produced: log scales
+reject non-positive values (and stacked charts), <code>scatter</code> requires
+<code>xValues</code> on every series, <code>xValues</code> lengths must match <code>values</code>,
+<code>&#39;linear&#39;</code>/<code>&#39;time&#39;</code> x-axes apply only to line/area/scatter, date strings in
+<code>xValues</code> require <code>xAxis.type: &#39;time&#39;</code>, <code>yAxis: &#39;right&#39;</code> is cartesian-only,
+and <code>labelStride</code>/<code>labelRotation</code> apply to category axes only.</li>
+</ul>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="tables.html">Tables</a> — tabular data blocks</li>
+<li><a href="../guides/architecture.html">SVG rendering</a> — arbitrary vector paths</li>
+<li><a href="accessibility.html">Accessibility</a> — tagged PDF / PDF-UA</li>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG</a></li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

@@ -47,6 +47,76 @@
   var src = container.getAttribute('data-md');
   if (!src) return;
 
+  // ── Progressive enhancements shared by both paths ─────────
+  // (pre-rendered shells and the runtime-rendered fallback)
+
+  function addCopyButtons(scope) {
+    scope.querySelectorAll('pre').forEach(function (pre) {
+      if (pre.querySelector('.copy-btn')) return;
+      var btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.type = 'button';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', function () {
+        var code = pre.querySelector('code');
+        navigator.clipboard.writeText(code ? code.textContent : pre.textContent).then(function () {
+          btn.textContent = 'Copied!';
+          setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+        }, function () { btn.textContent = 'Failed'; });
+      });
+      pre.appendChild(btn);
+    });
+  }
+
+  function addSourceBar(scope) {
+    if (document.querySelector('.guide-source-bar')) return;
+    var bar = document.createElement('div');
+    bar.className = 'guide-source-bar';
+    var copyMd = document.createElement('button');
+    copyMd.type = 'button';
+    copyMd.className = 'guide-source-btn';
+    copyMd.textContent = 'Copy page as Markdown';
+    copyMd.addEventListener('click', function () {
+      fetch(src, { cache: 'no-cache' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (md) { return navigator.clipboard.writeText(md); })
+        .then(function () {
+          copyMd.textContent = 'Copied!';
+          setTimeout(function () { copyMd.textContent = 'Copy page as Markdown'; }, 1500);
+        })
+        .catch(function () { copyMd.textContent = 'Copy failed'; });
+    });
+    var view = document.createElement('a');
+    view.className = 'guide-source-link';
+    view.href = src;
+    view.textContent = 'View Markdown source';
+    bar.appendChild(copyMd);
+    bar.appendChild(view);
+    scope.parentNode.insertBefore(bar, scope);
+  }
+
+  function enhance(scope) {
+    addSourceBar(scope);
+    addCopyButtons(scope);
+    if (window.Prism && typeof window.Prism.highlightAllUnder === 'function') {
+      window.Prism.highlightAllUnder(scope);
+    }
+  }
+
+  // ── Pre-rendered path ─────────────────────────────────────
+  // build-guides.ts bakes the rendered article and its JSON-LD into the
+  // shell (rule guide-render-sync keeps it fresh). Nothing to fetch: just
+  // enhance in place. Prism loads with `defer` after this script, so wait
+  // for it briefly instead of highlighting a not-yet-loaded page.
+  if (container.getAttribute('data-prerendered') === 'true') {
+    var tries = 20;
+    (function enhanceWhenReady() {
+      if (window.Prism || tries-- <= 0) { enhance(container); return; }
+      setTimeout(enhanceWhenReady, 100);
+    })();
+    return;
+  }
+
   function showError(msg) {
     container.innerHTML = '<div class="guide-error">' +
       'Failed to load this guide. ' +
@@ -123,10 +193,8 @@
           if (el) el.scrollIntoView();
         }
 
-        // Trigger Prism if loaded
-        if (window.Prism && typeof window.Prism.highlightAllUnder === 'function') {
-          window.Prism.highlightAllUnder(container);
-        }
+        // Copy buttons, source bar, Prism
+        enhance(container);
 
         // Update document title from first <h1>
         var h1 = container.querySelector('h1');

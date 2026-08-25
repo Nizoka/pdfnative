@@ -931,6 +931,51 @@ if (!existsSync(LLMS_FULL)) {
     fail('docs/llms-full.txt', 1, 'llms-sync', 'stale — regenerate with `npx tsx scripts/build-llms-full.ts`');
 }
 
+// ── Rule: llms-index-sync ───────────────────────────────────────────
+
+/**
+ * `docs/llms-index.json` tells an agent what every page costs before it
+ * spends the tokens (URLs, anchors, exact bytes). A stale index quietly
+ * advertises last release's sizes and anchors, so it is policed exactly like
+ * `llms-full.txt`. Runs after llms-sync: the index reports the on-disk size
+ * of llms-full.txt, which the previous rule has just proven fresh.
+ */
+const { buildLlmsIndex } = await import('./build-llms-full.ts');
+
+const LLMS_INDEX = join(ROOT, 'docs', 'llms-index.json');
+if (!existsSync(LLMS_INDEX)) {
+    fail('docs/llms-index.json', 1, 'llms-index-sync', 'missing — generate it with `npm run docs:llms`');
+} else if (read(LLMS_INDEX).replace(/\r\n/g, '\n') !== buildLlmsIndex(ROOT)) {
+    fail('docs/llms-index.json', 1, 'llms-index-sync', 'stale — regenerate with `npm run docs:llms`');
+}
+
+// ── Rule: guide-render-sync ─────────────────────────────────────────
+
+/**
+ * Guide shells carry the pre-rendered HTML of their Markdown source (between
+ * `guide:render` markers) plus server-side JSON-LD, so crawlers that do not
+ * execute JavaScript — most AI fetchers — receive the full guide instead of
+ * "Loading…". The renderer is `scripts/build-guides.ts`; this rule rebuilds
+ * every shell in memory and fails when a committed copy is stale, exactly as
+ * `llms-sync` polices `llms-full.txt`. A shell whose article has never been
+ * generated (no marker) fails too: an empty article is the defect this whole
+ * mechanism exists to remove.
+ */
+const { applyGuideRender, listGuideShells } = await import('./build-guides.ts');
+
+for (const htmlName of listGuideShells(ROOT)) {
+    const relPath = `docs/guides/${htmlName}`;
+    const committed = read(join(ROOT, 'docs', 'guides', htmlName)).replace(/\r\n/g, '\n');
+    if (!committed.includes('<!-- guide:render:start -->')) {
+        fail(relPath, 1, 'guide-render-sync', 'article is not pre-rendered — run `npm run docs:guides`');
+        continue;
+    }
+    const expected = applyGuideRender(ROOT, htmlName);
+    if (committed !== expected) {
+        fail(relPath, 1, 'guide-render-sync', 'stale — the committed render differs from its Markdown source; run `npm run docs:guides`');
+    }
+}
+
 // ── Rule: playground-syntax ─────────────────────────────────────────
 
 /**
@@ -1049,6 +1094,8 @@ const OFFLINE_RULES = [
     'bench-parity',
     'contrast',
     'llms-sync',
+    'llms-index-sync',
+    'guide-render-sync',
     'playground-syntax',
 ] as const;
 

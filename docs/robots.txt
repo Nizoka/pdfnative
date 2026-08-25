@@ -1,5 +1,10 @@
 # robots.txt for pdfnative.dev
 # Allow all well-behaved crawlers full access to the documentation site.
+#
+# Machine-readable documentation for AI agents and LLM pipelines:
+#   https://pdfnative.dev/llms.txt        — index (llmstxt.org convention)
+#   https://pdfnative.dev/llms-full.txt   — full documentation corpus
+# Every guide also serves its raw Markdown at the same path with .md.
 
 User-agent: *
 Allow: /

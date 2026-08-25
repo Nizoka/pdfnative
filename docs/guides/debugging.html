@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/debugging.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/debugging.html">
   <link rel="alternate" type="text/markdown" href="debugging.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Layout debugging & inspection","item":"https://pdfnative.dev/guides/debugging.html"}]},{"@type":"TechArticle","headline":"Layout debugging & inspection","description":"Debug pdfnative document layout with an opt-in visual overlay (layout: { debug: true }) that draws margin / content / cell boxes, plus the inspectDocumentLayout() programmatic geometry API. New in v1.5.0.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/debugging.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,129 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Layout debugging</p>
-  <article id="guide-content" class="guide-content" data-md="debugging.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="debugging.md">read debugging.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="debugging.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="layout-debugging-inspection">Layout debugging &amp; inspection</h1>
+<blockquote>
+<p><strong>New in v1.5.0.</strong> Two complementary tools help you understand <em>where</em>
+pdfnative places every block on the page: an <strong>opt-in visual overlay</strong>
+(<code>layout: { debug: true }</code>) that draws margin / content / cell boxes straight
+onto the PDF, and a <strong>programmatic inspection</strong> API
+(<code>inspectDocumentLayout()</code>) that returns the per-page block geometry as plain
+data. Both are byte-neutral: when debug is off, output is <strong>byte-identical</strong>
+to previous releases.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, inspectDocumentLayout } from &#39;pdfnative&#39;;
+
+const params = {
+  title: &#39;Invoice&#39;,
+  blocks: [
+    { type: &#39;heading&#39;, level: 1, text: &#39;Invoice #42&#39; },
+    { type: &#39;paragraph&#39;, text: &#39;Thanks for your business.&#39; },
+  ],
+};
+
+// 1. Visual overlay — margin / content / cell boxes drawn on the PDF
+const pdf = buildDocumentPDFBytes(params, { debug: true });
+
+// 2. Programmatic geometry — no rendering, just data
+const layout = inspectDocumentLayout(params);
+for (const page of layout.pages) {
+  for (const block of page.blocks) {
+    console.log(page.index, block.type, block.x, block.top, block.width, block.height);
+  }
+}
+</code></pre>
+<h2 id="visual-overlay">Visual overlay<a class="heading-anchor" href="#visual-overlay" aria-label="Link to this section">#</a></h2>
+<p>Pass <code>debug: true</code> (or a granular object) in the layout options:</p>
+<pre><code class="language-ts">buildDocumentPDFBytes(params, { debug: true });
+
+// or select exactly what you want to see:
+buildDocumentPDFBytes(params, {
+  debug: { showMargins: true, showContentBounds: true, showCells: false },
+});
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Colour</th>
+<th>Draws</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>showMargins</code></td>
+<td>blue</td>
+<td>the page margin box (content area boundary)</td>
+</tr>
+<tr>
+<td><code>showContentBounds</code></td>
+<td>red</td>
+<td>a rectangle around every rendered block</td>
+</tr>
+<tr>
+<td><code>showCells</code></td>
+<td>green</td>
+<td>per-cell rectangles for tables</td>
+</tr>
+</tbody></table>
+<p><code>debug: true</code> is shorthand for enabling all three. The overlay is drawn <strong>last</strong>,
+on top of the content, each shape wrapped in its own graphics state (<code>q … Q</code>) so
+it never leaks colour or line-width into your document. Turn it off (or omit it)
+and the bytes are exactly what you&#39;d get without the option.</p>
+<h2 id="programmatic-inspection">Programmatic inspection<a class="heading-anchor" href="#programmatic-inspection" aria-label="Link to this section">#</a></h2>
+<p><code>inspectDocumentLayout(params, layout?)</code> runs the <strong>same pagination engine</strong> as
+the builder but produces data instead of PDF bytes — no rendering, no font
+embedding:</p>
+<pre><code class="language-ts">import { inspectDocumentLayout } from &#39;pdfnative&#39;;
+import type { LayoutInspection } from &#39;pdfnative&#39;;
+
+const report: LayoutInspection = inspectDocumentLayout(params);
+
+report.pages.forEach((page) =&gt; {
+  console.log(`Page ${page.index + 1}: ${page.blocks.length} blocks`);
+  page.blocks.forEach((b) =&gt; {
+    console.log(`  ${b.type} @ (${b.x}, ${b.top}) ${b.width}×${b.height}`);
+  });
+});
+</code></pre>
+<h3 id="shape">Shape<a class="heading-anchor" href="#shape" aria-label="Link to this section">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>LayoutInspection</code></td>
+<td><code>{ pageWidth, pageHeight, margins, totalPages, pages: InspectedPage[] }</code></td>
+</tr>
+<tr>
+<td><code>InspectedPage</code></td>
+<td><code>{ index, blocks: InspectedBlock[] }</code></td>
+</tr>
+<tr>
+<td><code>InspectedBlock</code></td>
+<td><code>{ type, page, x, top, width, height }</code> (PDF user-space points, origin bottom-left; <code>top</code> is the block&#39;s upper edge, <code>height</code> extends downward)</td>
+</tr>
+</tbody></table>
+<p>Because it shares the builder&#39;s <code>estimateBlockHeight</code> / <code>planTable</code> logic and
+constants, the reported geometry matches where the real renderer places each
+block — including table slicing across page breaks.</p>
+<h2 id="when-to-use-which">When to use which<a class="heading-anchor" href="#when-to-use-which" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><strong>Overlay</strong> — eyeball a single document: &quot;why is this paragraph clipped?&quot;,
+&quot;is my table overflowing the margin?&quot; Open the PDF and <em>see</em> the boxes.</li>
+<li><strong>Inspection</strong> — automate it: assert block positions in a test, drive a
+layout linter, or feed geometry to another tool.</li>
+</ul>
+<h2 id="sample">Sample<a class="heading-anchor" href="#sample" aria-label="Link to this section">#</a></h2>
+<p><a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/layout-debug-overlay.ts" target="_blank" rel="noopener">layout-debug-overlay.ts</a>
+renders the same document twice — once clean, once with the overlay — and prints
+the <code>inspectDocumentLayout()</code> report.</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

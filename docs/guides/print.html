@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/print.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/print.html">
   <link rel="alternate" type="text/markdown" href="print.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Print production — bleed, trim & printer's marks","item":"https://pdfnative.dev/guides/print.html"}]},{"@type":"TechArticle","headline":"Print production — bleed, trim & printer's marks","description":"Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, duplex print defaults, custom OutputIntent ICC, and large-format /UserUnit.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/print.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,148 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Print production</p>
-  <article id="guide-content" class="guide-content" data-md="print.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="print.md">read print.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="print.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="print-production-bleed-trim-printers-marks">Print production — bleed, trim &amp; printer&#39;s marks</h1>
+<blockquote>
+<p><strong>New in v1.7.0.</strong> Print-ready PDFs with zero dependencies: page geometry boxes (<code>/TrimBox</code>, <code>/BleedBox</code>, <code>/ArtBox</code>, <code>/CropBox</code>), crop and registration marks drawn as pure vector operators, <code>/Trapped</code> metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format <code>/UserUnit</code>. Everything is opt-in — output is byte-identical when unused.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, PAGE_SIZES } from &#39;pdfnative&#39;;
+
+const BLEED = 8.5; // 3 mm in points
+
+const pdf = buildDocumentPDFBytes(params, {
+  // Design the page at trim size + bleed on every side…
+  pageWidth:  PAGE_SIZES.A4.width  + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
+  // …declare the geometry and draw the marks:
+  print: { bleed: BLEED, marks: true },
+  viewerPreferences: { duplex: &#39;duplexFlipLongEdge&#39;, pickTrayByPDFSize: true },
+});
+</code></pre>
+<p>Open the result in Acrobat with <em>Preferences → Page Display → Show art, trim &amp; bleed boxes</em> to see the geometry.</p>
+<h2 id="the-box-model-iso-32000-1-14112">The box model (ISO 32000-1 §14.11.2)<a class="heading-anchor" href="#the-box-model-iso-32000-1-14112" aria-label="Link to this section">#</a></h2>
+<pre><code>┌─────────────────────────────┐  MediaBox — the physical page (sheet)
+│  ┌───────────────────────┐  │  BleedBox — content clipped in production
+│  │ ┌───────────────────┐ │  │  TrimBox — the finished page after cutting
+│  │ │      ArtBox       │ │  │  ArtBox — meaningful-content extent
+│  │ └───────────────────┘ │  │
+│  │  backgrounds run here │  │  ← bleed zone: extend backgrounds into it
+│  └───────────────────────┘  │
+└─────────────────────────────┘
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>PDF key</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>print.bleed</code></td>
+<td>derives both</td>
+<td>Shorthand: <code>TrimBox</code> = MediaBox inset by the bleed, <code>BleedBox</code> = MediaBox</td>
+</tr>
+<tr>
+<td><code>print.trimBox</code></td>
+<td><code>/TrimBox</code></td>
+<td>Finished page size after cutting</td>
+</tr>
+<tr>
+<td><code>print.bleedBox</code></td>
+<td><code>/BleedBox</code></td>
+<td>Clipping extent in production</td>
+</tr>
+<tr>
+<td><code>print.artBox</code></td>
+<td><code>/ArtBox</code></td>
+<td>Meaningful-content extent</td>
+</tr>
+<tr>
+<td><code>print.cropBox</code></td>
+<td><code>/CropBox</code></td>
+<td>Region viewers display/print</td>
+</tr>
+</tbody></table>
+<p>Boxes are validated (within the MediaBox, trim within bleed) and are pure page-dictionary metadata — the layout engine is untouched, so design the page at <em>trim + 2×bleed</em> and enlarge the margins by the bleed, letting backgrounds run to the page edge.</p>
+<p><code>mergePdfs</code> / <code>splitPdf</code> / <code>extractPages</code> preserve all four boxes (and <code>/UserUnit</code>).</p>
+<h2 id="printers-marks-14113">Printer&#39;s marks (§14.11.3)<a class="heading-anchor" href="#printers-marks-14113" aria-label="Link to this section">#</a></h2>
+<p><code>print.marks: true</code> draws, on every page, strictly <strong>outside</strong> the TrimBox:</p>
+<ul>
+<li><strong>Crop marks</strong> — 8 corner hairlines (default 0.25 pt, 14 pt long, 5 pt clear of the trim edge) showing where to cut.</li>
+<li><strong>Registration targets</strong> — circle-and-cross targets on the four edge midpoints, used to align separations.</li>
+</ul>
+<p>Fine-tune with an object: <code>marks: { crop, registration, length, offset, weight }</code>.</p>
+<blockquote>
+<p>Marks are stroked in RGB black. A true all-separation <em>registration colour</em> requires CMYK content support, which is on the roadmap together with PDF/X — see below.</p>
+</blockquote>
+<h2 id="trapped-and-prepress-metadata">/Trapped and prepress metadata<a class="heading-anchor" href="#trapped-and-prepress-metadata" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">buildDocumentPDFBytes({ ...params, metadata: { trapped: &#39;False&#39; } }, { tagged: &#39;pdfa2b&#39; });
+</code></pre>
+<p>Writes <code>/Info /Trapped /False</code> and mirrors it as <code>pdf:Trapped</code> in the XMP packet, telling the RIP whether trapping has been applied. Because <code>pdf:Trapped</code> is not part of the XMP-2005 Adobe PDF schema that PDF/A pins, pdfnative also emits the required PDF/A extension schema declaring the property (ISO 19005 §6.6.2.3.2) — the document stays veraPDF-compliant. Per ISO 32000-1 Table 317, <code>trapped: &#39;Unknown&#39;</code> is written to <code>/Info</code> only: unknown maps to the <em>absence</em> of <code>pdf:Trapped</code> in XMP.</p>
+<h2 id="print-dialog-defaults-viewerpreferences">Print-dialog defaults (<code>viewerPreferences</code>)<a class="heading-anchor" href="#print-dialog-defaults-viewerpreferences" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>PDF key</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>duplex</code></td>
+<td><code>/Duplex</code></td>
+<td><code>&#39;simplex&#39;</code>, <code>&#39;duplexFlipShortEdge&#39;</code>, <code>&#39;duplexFlipLongEdge&#39;</code></td>
+</tr>
+<tr>
+<td><code>pickTrayByPDFSize</code></td>
+<td><code>/PickTrayByPDFSize</code></td>
+<td>boolean (Windows viewers)</td>
+</tr>
+<tr>
+<td><code>printPageRange</code></td>
+<td><code>/PrintPageRange</code></td>
+<td>1-based <code>[first, last]</code> pairs, e.g. <code>[[1, 4], [7, 7]]</code></td>
+</tr>
+<tr>
+<td><code>numCopies</code></td>
+<td><code>/NumCopies</code></td>
+<td>positive integer</td>
+</tr>
+</tbody></table>
+<p>These join the existing v1.4.0 viewer preferences and remain PDF/A-safe metadata.</p>
+<h2 id="custom-outputintent-taggedpdf-a">Custom OutputIntent (tagged/PDF-A)<a class="heading-anchor" href="#custom-outputintent-taggedpdf-a" aria-label="Link to this section">#</a></h2>
+<p>Replace the built-in minimal sRGB profile with a real ICC profile:</p>
+<pre><code class="language-ts">import { readFileSync } from &#39;node:fs&#39;;
+
+buildDocumentPDFBytes(params, {
+  tagged: &#39;pdfa2b&#39;,
+  outputIntent: {
+    iccProfile: new Uint8Array(readFileSync(&#39;sRGB-IEC61966-2.1.icc&#39;)),
+    outputConditionIdentifier: &#39;sRGB IEC61966-2.1&#39;,
+    outputCondition: &#39;sRGB display&#39;,
+    info: &#39;IEC 61966-2.1 reference profile&#39;,
+  },
+});
+</code></pre>
+<p>RGB profiles only — pdfnative emits RGB content, and a mismatched intent fails PDF/A validation (a CMYK profile throws with an actionable message). Omitted, the historical built-in profile is used byte-identically.</p>
+<h2 id="large-formats-userunit">Large formats — <code>/UserUnit</code><a class="heading-anchor" href="#large-formats-userunit" aria-label="Link to this section">#</a></h2>
+<p>PDF user space caps pages at 14 400 units (200 in). For banners and plans, <code>print.userUnit</code> scales the unit (1 unit = <code>userUnit</code>/72 inch, up to 75 000):</p>
+<pre><code class="language-ts">// A 5 m × 1 m banner: 1417 × 283 units at 10/72 inch per unit.
+buildDocumentPDFBytes(params, { pageWidth: 1417, pageHeight: 283, print: { userUnit: 10 } });
+</code></pre>
+<p><code>/UserUnit</code> needs PDF 1.6+, so the header is raised to <code>%PDF-1.7</code> when the option is set — and it is rejected under <code>tagged: &#39;pdfa1b&#39;</code> (PDF/A-1 is PDF 1.4; use <code>pdfa2b</code> or later).</p>
+<h2 id="limits-scope-v170">Limits &amp; scope (v1.7.0)<a class="heading-anchor" href="#limits-scope-v170" aria-label="Link to this section">#</a></h2>
+<ul>
+<li>Marks are RGB black; <strong>no CMYK content</strong>, spot colours, colour bars or <strong>PDF/X</strong> conformance claims yet — all on the roadmap as one coherent CMYK workstream.</li>
+<li>One geometry per document (pages share the same boxes), matching the single-page-size layout model.</li>
+<li>The OutputIntent (custom or built-in) is emitted under <code>tagged</code> modes only.</li>
+</ul>
+<p>See the <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/print-showcase.ts" target="_blank" rel="noopener">print samples</a>: <code>print/print-bleed-marks.pdf</code>, <code>print/print-explicit-boxes.pdf</code>, <code>print/print-large-format.pdf</code>.</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

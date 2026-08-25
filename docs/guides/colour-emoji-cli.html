@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/colour-emoji-cli.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/colour-emoji-cli.html">
   <link rel="alternate" type="text/markdown" href="colour-emoji-cli.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Colour-emoji font CLI (pdfnative-build-emoji-font)","item":"https://pdfnative.dev/guides/colour-emoji-cli.html"}]},{"@type":"TechArticle","headline":"Colour-emoji font CLI (pdfnative-build-emoji-font)","description":"Generate a colour-emoji data module with exactly the glyphs you need using pdfnative's bundled pdfnative-build-emoji-font CLI — from a few codepoints to the full ~3,600-glyph Noto Color Emoji set. New in v1.4.0.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/colour-emoji-cli.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,205 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Colour-emoji font CLI</p>
-  <article id="guide-content" class="guide-content" data-md="colour-emoji-cli.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="colour-emoji-cli.md">read colour-emoji-cli.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="colour-emoji-cli.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="colour-emoji-font-cli-pdfnative-build-emoji-font">Colour-emoji font CLI (<code>pdfnative-build-emoji-font</code>)</h1>
+<blockquote>
+<p><strong>New in v1.4.0, expanded in v1.6.0 and v1.7.0.</strong> pdfnative ships a curated
+1167-glyph colour-emoji module by default (plus 73 flag/ZWJ sequences since
+v1.7.0). When you need <strong>more emoji — up to the full ~3 600-glyph set, or
+skin-tone sequence variants</strong> — the
+<code>pdfnative-build-emoji-font</code> CLI generates a data module containing exactly the
+glyphs and sequences you choose. It&#39;s bundled with the <code>pdfnative</code> package, so
+any user can run it with <code>npx</code> — no extra install, no editing library source.</p>
+</blockquote>
+<h2 id="why-a-cli-instead-of-bundling-everything">Why a CLI instead of bundling everything?<a class="heading-anchor" href="#why-a-cli-instead-of-bundling-everything" aria-label="Link to this section">#</a></h2>
+<p>The complete Noto Color Emoji font is ~24 MB and resolves to a ~32 MB data
+module. Bundling that into the npm package would penalise <strong>every</strong> install,
+including the vast majority of users who only ever need a handful of emoji. The
+lean curated subset stays the default; the CLI lets you opt into precisely the
+coverage you need, when you need it. This is the same deterministic build core
+that produces the bundled module — you get identical, reproducible output.</p>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash"># Full coverage — download + checksum-verify the font, then build every glyph:
+npx pdfnative-build-emoji-font --download --all --out ./emoji-full.js
+
+# Exactly the emoji you need (hex scalars and/or inclusive ranges):
+npx pdfnative-build-emoji-font --download \
+  --ranges 1F600-1F64F,2600-27BF --codepoints 2764,1F680 --out ./emoji.js
+
+# Offline: point at a font you already have on disk:
+npx pdfnative-build-emoji-font --ttf ./NotoColorEmoji-Regular.ttf --all
+
+# Flag/ZWJ sequences (v1.7.0) — the curated sets plus any skin-tone form you need:
+npx pdfnative-build-emoji-font --download --sequences all \
+  --sequence-list 1F468-1F3FB-200D-1F4BB,1F469-1F3FD-200D-2695-FE0F --out ./emoji.js
+</code></pre>
+<p>Then register the module you generated, load it, and pass it via <code>fontEntries</code>:</p>
+<pre><code class="language-ts">import { registerFont, loadFontData, buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+registerFont(&#39;emoji&#39;, () =&gt; import(&#39;./emoji-full.js&#39;));
+const emoji = await loadFontData(&#39;emoji&#39;);
+if (!emoji) throw new Error(&#39;emoji font failed to load&#39;);
+
+const bytes = buildDocumentPDFBytes({
+  title: &#39;Emoji&#39;,
+  blocks: [{ type: &#39;paragraph&#39;, text: &#39;Ship it 🚀🎉🥳🦄🌈&#39; }],
+  fontEntries: [{ fontData: emoji, fontRef: &#39;/F3&#39;, lang: &#39;emoji&#39; }], // /F1 and /F2 are reserved
+});
+</code></pre>
+<h2 id="getting-the-source-font">Getting the source font<a class="heading-anchor" href="#getting-the-source-font" aria-label="Link to this section">#</a></h2>
+<p>The CLI needs a COLRv1/CPAL colour font — the canonical one is
+<strong>NotoColorEmoji-Regular.ttf</strong> (OFL-1.1). Two ways to provide it:</p>
+<ul>
+<li><strong><code>--download</code></strong> fetches it from the official Google Fonts repository and
+verifies its SHA-256 against the build pdfnative was tested with. A mismatch is
+a transparent <strong>warning</strong> (Google periodically ships newer Unicode revisions),
+not a hard failure — the download is still used.</li>
+<li><strong><code>--ttf &lt;path&gt;</code></strong> uses a font already on disk (fully offline, no network).</li>
+</ul>
+<blockquote>
+<p>Only the pinned official Google Fonts URL is ever contacted; the CLI never
+fetches arbitrary user-supplied URLs.</p>
+</blockquote>
+<h2 id="selecting-glyphs">Selecting glyphs<a class="heading-anchor" href="#selecting-glyphs" aria-label="Link to this section">#</a></h2>
+<p>Combine these freely; selections are merged, de-duplicated and sorted. If you
+pass none, the curated set is used.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--all</code></td>
+<td>Every colour glyph in the font (large module).</td>
+</tr>
+<tr>
+<td><code>--preset curated</code></td>
+<td>pdfnative&#39;s lean 1167-glyph default set.</td>
+</tr>
+<tr>
+<td><code>--preset all</code></td>
+<td>Same as <code>--all</code>.</td>
+</tr>
+<tr>
+<td><code>--codepoints &lt;list&gt;</code></td>
+<td>Comma-separated hex scalars: <code>1F600,1F680,2764</code>. <code>U+</code>, <code>0x</code>, <code>#</code> prefixes are tolerated.</td>
+</tr>
+<tr>
+<td><code>--ranges &lt;list&gt;</code></td>
+<td>Comma-separated <strong>inclusive</strong> hex ranges: <code>1F600-1F64F,2600-27BF</code>.</td>
+</tr>
+</tbody></table>
+<h2 id="selecting-sequences-v170">Selecting sequences (v1.7.0)<a class="heading-anchor" href="#selecting-sequences-v170" aria-label="Link to this section">#</a></h2>
+<p>Multi-codepoint emoji — flags (regional-indicator pairs) and ZWJ sequences —
+are selected separately from single glyphs. Each requested sequence is
+resolved through the font&#39;s GSUB ligature lookups to a <strong>single colour glyph</strong>
+and emitted in the module&#39;s <code>sequences</code> table; both the VS-16 and the
+VS-16-free spelling register to the same glyph. Default: <strong>none</strong> (the
+pre-1.7 output shape, plus an inert <code>sequences = null</code> export).</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--sequences &lt;preset&gt;</code></td>
+<td><code>flags</code> (the curated 51-flag set), <code>zwj</code> (the curated 22-sequence ZWJ set), <code>all</code> (both), or <code>none</code>.</td>
+</tr>
+<tr>
+<td><code>--sequence-list &lt;list&gt;</code></td>
+<td>Comma-separated entries: a 2-letter country code (<code>FR</code>, <code>DE</code>) and/or hyphen-joined hex scalars (<code>1F468-200D-1F680</code>, <code>1F469-1F3FD-200D-2695-FE0F</code>). Skin-tone forms welcome.</td>
+</tr>
+</tbody></table>
+<p>Selections merge and de-duplicate, so <code>--sequences flags --sequence-list 1F469-1F3FB-200D-2695-FE0F</code> is valid. The bundled npm module already carries
+the curated 51 + 22 set — reach for the CLI when you need skin-tone variants
+or sequences beyond it. Note that flags render <strong>flat</strong> (Noto&#39;s wave-shading
+overlay uses a COLRv1 compositing mask with no PDF equivalent — see the
+<a href="colour-emoji.html">colour-emoji guide</a>).</p>
+<h2 id="output-options">Output options<a class="heading-anchor" href="#output-options" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--out &lt;path&gt;</code></td>
+<td><code>./noto-color-emoji-data.js</code></td>
+<td>Output <code>.js</code> path. A sibling <code>.d.ts</code> is written next to it.</td>
+</tr>
+<tr>
+<td><code>--font-name &lt;name&gt;</code></td>
+<td><code>NotoColorEmoji-Regular</code></td>
+<td>Embedded PostScript font name.</td>
+</tr>
+<tr>
+<td><code>--types &lt;path&gt;</code></td>
+<td><code>pdfnative</code></td>
+<td>The type import used in the generated <code>.d.ts</code> (e.g. <code>&#39;pdfnative&#39;</code> or a relative path).</td>
+</tr>
+</tbody></table>
+<p>The generated module exports the same shape as the bundled one
+(<code>metrics</code>, <code>cmap</code>, <code>widths</code>, <code>pdfWidthArray</code>, <code>colorGlyphs</code>, <code>sequences</code>,
+<code>ttfBase64</code>, …), so it drops straight into
+<code>registerFont(&#39;emoji&#39;, () =&gt; import(&#39;…&#39;))</code>.</p>
+<h2 id="verifying-the-result">Verifying the result<a class="heading-anchor" href="#verifying-the-result" aria-label="Link to this section">#</a></h2>
+<p>Pair the CLI with <a href="font-validation.html"><code>validateFontData()</code></a> to sanity-check a
+freshly generated module before shipping it:</p>
+<pre><code class="language-ts">import { validateFontData } from &#39;pdfnative&#39;;
+import * as emoji from &#39;./emoji-full.js&#39;;
+
+const report = validateFontData(emoji);
+if (!report.valid) console.error(report.errors);
+</code></pre>
+<h2 id="full-option-reference">Full option reference<a class="heading-anchor" href="#full-option-reference" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-text">pdfnative-build-emoji-font — colour-emoji font data module generator
+
+Source font (one of):
+  --ttf &lt;path&gt;            Path to a COLRv1/CPAL colour font.
+  --download              Fetch the official Noto Color Emoji (OFL-1.1) and verify checksum.
+
+Glyph selection (combine freely; default: --preset curated):
+  --all                   Every colour glyph in the font.
+  --preset &lt;curated|all&gt;  Named selection.
+  --codepoints &lt;list&gt;     Comma-separated hex scalars, e.g. 1F600,1F680,2764.
+  --ranges &lt;list&gt;         Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
+
+Sequence selection (v1.7.0; default: none):
+  --sequences &lt;preset&gt;    flags | zwj | all | none — bundle the curated flag
+                          and/or ZWJ sequence sets (GSUB-resolved ligatures).
+  --sequence-list &lt;list&gt;  Comma-separated country codes and/or hyphen-joined
+                          hex sequences, e.g. FR,DE,1F468-200D-1F680,
+                          1F469-1F3FD-200D-2695-FE0F (skin tones welcome).
+
+Output:
+  --out &lt;path&gt;            Output .js path (a sibling .d.ts is written).
+  --font-name &lt;name&gt;      Embedded PostScript font name.
+  --types &lt;path&gt;          Type import used in the generated .d.ts.
+
+Other:
+  -h, --help              Show this help.
+</code></pre>
+<h2 id="licensing">Licensing<a class="heading-anchor" href="#licensing" aria-label="Link to this section">#</a></h2>
+<p>Noto Color Emoji is licensed under the <strong>SIL Open Font License 1.1 (OFL-1.1)</strong>.
+Generated modules embed a subset of that font; keep the OFL notice with any
+redistributed module, exactly as you would for any other Noto data module that
+pdfnative ships.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="colour-emoji.html">Colour emoji (COLRv1)</a> — how colour glyphs render to PDF</li>
+<li><a href="font-validation.html">Font-data validation</a> — <code>validateFontData()</code></li>
+<li><a href="../playgrounds/toolkit.html">PDF Toolkit playground</a></li>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG</a></li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

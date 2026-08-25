@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/signatures.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/signatures.html">
   <link rel="alternate" type="text/markdown" href="signatures.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Digital signatures in pdfnative","item":"https://pdfnative.dev/guides/signatures.html"}]},{"@type":"TechArticle","headline":"Digital signatures in pdfnative","description":"CMS/PKCS#7 detached signatures in pdfnative — RSA SHA-256/384/512 + ECDSA P-256, the PAdES baseline profile, multiple signatures and listSignatures() (v1.7.0), one-call addSignaturePlaceholder() workflow, Adobe Reader / openssl-cms validation.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/signatures.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,408 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Digital signatures</p>
-  <article id="guide-content" class="guide-content" data-md="signatures.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="signatures.md">read signatures.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="signatures.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="digital-signatures-in-pdfnative">Digital signatures in pdfnative</h1>
+<p>pdfnative ships a zero-dependency CMS/PKCS#7 detached signature
+implementation (ISO 32000-1 §12.8) with full crypto in pure TypeScript —
+RSA PKCS#1 v1.5 and ECDSA P-256, both with SHA-256, X.509 DER parsing,
+and ASN.1 DER encoding. No OpenSSL, no node-forge, no external crypto.</p>
+<h2 id="tldr-sign-any-pdf-in-3-lines">TL;DR — sign any PDF in 3 lines<a class="heading-anchor" href="#tldr-sign-any-pdf-in-3-lines" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import {
+    buildDocumentPDFBytes,
+    addSignaturePlaceholder,
+    signPdfBytes,
+    parseCertificate,
+    parseRsaPrivateKey,
+} from &#39;pdfnative&#39;;
+
+const unsigned = buildDocumentPDFBytes(params);
+const placeheld = addSignaturePlaceholder(unsigned, { fieldName: &#39;Author&#39; });
+const signed = signPdfBytes(placeheld, {
+    signerCert: parseCertificate(certDer),  // X509Certificate (from DER bytes)
+    rsaKey: parseRsaPrivateKey(keyDer),     // RsaPrivateKey (from DER bytes)
+    algorithm: &#39;rsa-sha256&#39;,
+});
+</code></pre>
+<p>That&#39;s it. <code>addSignaturePlaceholder()</code> injects an
+AcroForm + invisible signature widget + <code>/Sig</code> dictionary into the
+existing PDF via an incremental update (ISO 32000-1 §7.5.6), then
+<code>signPdfBytes()</code> computes the <code>/ByteRange</code>, hashes the document, builds
+the CMS SignedData, and writes the result into the <code>/Contents</code>
+placeholder.</p>
+<h2 id="three-step-pipeline">Three-step pipeline<a class="heading-anchor" href="#three-step-pipeline" aria-label="Link to this section">#</a></h2>
+<pre><code>buildDocumentPDFBytes(params)
+        │
+        ▼
+   unsigned PDF
+        │
+        │  addSignaturePlaceholder()  ← injects AcroForm + /Sig dict
+        ▼
+   PDF with /ByteRange + /Contents placeholder
+        │
+        │  signPdfBytes()             ← hashes, signs, fills /Contents
+        ▼
+   signed PDF (Adobe Reader ✓ / openssl-cms ✓)
+</code></pre>
+<h3 id="1-addsignatureplaceholderpdfbytes-options">1. <code>addSignaturePlaceholder(pdfBytes, options?)</code><a class="heading-anchor" href="#1-addsignatureplaceholderpdfbytes-options" aria-label="Link to this section">#</a></h3>
+<p>Idempotent. If the input already contains an <code>/FT /Sig</code> widget,
+returns the input unchanged. Throws on encrypted input.</p>
+<p>Options:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>placeholderBytes</code></td>
+<td><code>16384</code></td>
+<td>Size of the <code>/Contents</code> hex placeholder</td>
+</tr>
+<tr>
+<td><code>fieldName</code></td>
+<td><code>&#39;Signature1&#39;</code></td>
+<td>AcroForm field name</td>
+</tr>
+<tr>
+<td><code>pageIndex</code></td>
+<td><code>0</code></td>
+<td>Page to attach the (invisible) widget to</td>
+</tr>
+<tr>
+<td><code>rect</code></td>
+<td><code>[0, 0, 0, 0]</code></td>
+<td>Widget rectangle (invisible by default)</td>
+</tr>
+<tr>
+<td><code>allowMultiple</code></td>
+<td><code>false</code></td>
+<td>Append a placeholder even when signature fields already exist — the multi-signature flow (v1.7.0, see below)</td>
+</tr>
+</tbody></table>
+<p>To size <code>placeholderBytes</code> from your actual certificate chain instead of
+relying on the 16 KiB default, use <code>estimateContentsSize(certSizes, algorithm)</code>.
+Since v1.7.0 it takes an options object: <code>estimateContentsSize(certSizes, &#39;rsa-sha256&#39;, { timestamp: true })</code> reserves ~8 KiB of extra headroom for an
+RFC 3161 timestamp token (covering the TSA&#39;s own certificate chain) when an
+external signer will add one to the CMS.</p>
+<p>Signer metadata (<code>name</code>, <code>reason</code>, <code>location</code>, <code>contactInfo</code>, <code>signingTime</code>)
+is <strong>not</strong> set here — the placeholder writes an empty <code>/Sig</code> dictionary; pass
+the metadata to <code>signPdfBytes</code>, which writes it at signing time.</p>
+<h3 id="2-signpdfbytespdfbytes-options">2. <code>signPdfBytes(pdfBytes, options)</code><a class="heading-anchor" href="#2-signpdfbytespdfbytes-options" aria-label="Link to this section">#</a></h3>
+<p>Reads the <code>/ByteRange</code>, hashes the two byte ranges (everything except
+the <code>/Contents</code> slot), builds a CMS SignedData with the certificate
+chain and <code>signedAttrs</code> (content-type, message-digest, signing-time),
+signs the <code>signedAttrs</code> digest, and writes the DER-encoded CMS into
+<code>/Contents</code>.</p>
+<p>Options:</p>
+<ul>
+<li><code>signerCert</code> — <code>X509Certificate</code> (parse DER bytes with <code>parseCertificate</code>).</li>
+<li><code>rsaKey</code> <em>or</em> <code>ecKey</code> — the private key. Parse RSA keys from DER with
+<code>parseRsaPrivateKey</code>; for ECDSA there is no DER parser in the engine — supply
+the <code>EcPrivateKey</code> scalar directly, or install a crypto provider
+(<code>setCryptoProvider</code> / per-call <code>provider</code>) and omit the raw key entirely.</li>
+<li><code>algorithm</code> — <code>&#39;rsa-sha256&#39; | &#39;rsa-sha384&#39; | &#39;rsa-sha512&#39; | &#39;ecdsa-sha256&#39;</code>
+(default <code>&#39;rsa-sha256&#39;</code>; the SHA-384/512 RSA variants are new in v1.7.0).</li>
+<li><code>certChain?</code> — additional intermediate-CA certificates for the chain.</li>
+<li><code>signingTime?</code> — forwarded to <code>signedAttrs</code>.</li>
+<li><code>fieldName?</code> — with several unsigned placeholders in the file (the
+<code>allowMultiple</code> flow below), selects which one to sign by its AcroForm field
+name. With a single placeholder — the only case prior to v1.7.0 — the option
+is unnecessary and behaviour is unchanged. (v1.7.0)</li>
+</ul>
+<h3 id="3-verifying">3. Verifying<a class="heading-anchor" href="#3-verifying" aria-label="Link to this section">#</a></h3>
+<p>The library does <strong>not</strong> ship a PDF-signature verifier — its
+verification surface is limited to <code>openPdf()</code> plus
+<code>verifyCertSignature()</code> (an X.509 certificate-signature check). To
+verify a signed PDF end to end (byte-range digest, CMS signature value,
+chain, trust, timestamps, revocation), use
+<a href="cli.html#pdfnative-verify"><code>pdfnative-cli verify</code></a> or the
+<a href="mcp.html"><code>verify_pdf</code> MCP tool</a> — the CMS verification logic lives
+there. Since pdfnative-mcp 1.6.0, <code>verify_pdf</code> also validates
+<code>/DocTimeStamp</code> fields as RFC 3161 tokens and reports the achieved
+PAdES level (B-B → B-LTA) with <code>ltv: true</code>.</p>
+<h2 id="why-a-separate-placeholder-step">Why a separate placeholder step?<a class="heading-anchor" href="#why-a-separate-placeholder-step" aria-label="Link to this section">#</a></h2>
+<p>The PDF signature spec is unusual: the <code>/Contents</code> field of the <code>/Sig</code>
+dictionary must contain the CMS bytes, <strong>but the <code>/ByteRange</code> excludes
+exactly that slot</strong>. So the PDF is hashed <em>without</em> the bytes we&#39;re
+about to write, which means the file must already have the right
+layout — including the placeholder reserved bytes — before we sign.</p>
+<p><code>addSignaturePlaceholder()</code> is the canonical way to produce that
+layout. It replaces the ad-hoc reimplementations that downstream
+tooling (notably <code>pdfnative-cli</code>&#39;s <code>sign</code> command and <code>pdfnative-mcp</code>&#39;s
+<code>prepare_signature_placeholder</code> workaround) previously had to ship.</p>
+<h2 id="multiple-signatures-v170">Multiple signatures (v1.7.0)<a class="heading-anchor" href="#multiple-signatures-v170" aria-label="Link to this section">#</a></h2>
+<p>Simply repeating the placeholder + sign pass does <strong>not</strong> add a second
+signature: <code>addSignaturePlaceholder()</code> is idempotent by contract, so on a PDF
+that already carries any <code>/FT /Sig</code> field it returns the input unchanged. To
+add further signatures, opt in with <code>allowMultiple</code> and give each signature its
+own field name:</p>
+<pre><code class="language-ts">// First signer.
+let pdf = addSignaturePlaceholder(unsigned, { fieldName: &#39;Author&#39; });
+pdf = signPdfBytes(pdf, {
+    signerCert: authorCert, rsaKey: authorKey, algorithm: &#39;rsa-sha256&#39;,
+});
+
+// Second signer — appended as a fresh incremental update.
+pdf = addSignaturePlaceholder(pdf, { fieldName: &#39;Reviewer&#39;, allowMultiple: true });
+pdf = signPdfBytes(pdf, {
+    signerCert: reviewerCert, rsaKey: reviewerKey, algorithm: &#39;rsa-sha256&#39;,
+    fieldName: &#39;Reviewer&#39;, // selects which unsigned placeholder to fill
+});
+</code></pre>
+<p>The exact semantics:</p>
+<ul>
+<li><strong><code>allowMultiple: false</code></strong> (default) preserves the 1.x idempotent
+short-circuit: any existing signature field returns the input unchanged.</li>
+<li><strong><code>allowMultiple: true</code></strong> — an existing <em>unsigned</em> placeholder with the same
+<code>fieldName</code> returns the input unchanged (per-name idempotence); a <em>signed</em>
+field with the same name throws (pass a fresh <code>fieldName</code>); other signature
+fields are left alone and a new placeholder is appended via incremental
+update, so <code>/Prev</code> chains compose naturally.</li>
+<li><strong><code>signPdfBytes</code> with several unsigned placeholders</strong> requires the
+<code>fieldName</code> selector — without it, the call throws and lists the unsigned
+field names. Already-signed signatures are never modified.</li>
+</ul>
+<h2 id="inspecting-signatures-listsignatures-v170">Inspecting signatures — <code>listSignatures()</code> (v1.7.0)<a class="heading-anchor" href="#inspecting-signatures-listsignatures-v170" aria-label="Link to this section">#</a></h2>
+<p><code>listSignatures(pdfBytes)</code> enumerates every signature field in a PDF, in
+AcroForm <code>/Fields</code> order — signed signatures, document timestamps, and
+still-unsigned placeholders:</p>
+<pre><code class="language-ts">import { listSignatures } from &#39;pdfnative&#39;;
+
+for (const sig of listSignatures(signedPdf)) {
+    console.log(sig.fieldName, sig.subFilter, sig.isPlaceholder);
+}
+// → &#39;Author&#39;   &#39;adbe.pkcs7.detached&#39; false
+// → &#39;Reviewer&#39; &#39;adbe.pkcs7.detached&#39; false
+</code></pre>
+<p>Each entry is a <code>PdfSignatureInfo</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>fieldName?</code></td>
+<td><code>string</code></td>
+<td>The widget&#39;s <code>/T</code> field name, when present</td>
+</tr>
+<tr>
+<td><code>subFilter</code></td>
+<td><code>string</code></td>
+<td><code>/SubFilter</code> — e.g. <code>&#39;adbe.pkcs7.detached&#39;</code>, <code>&#39;ETSI.CAdES.detached&#39;</code>, <code>&#39;ETSI.RFC3161&#39;</code> (<code>&#39;&#39;</code> when absent)</td>
+</tr>
+<tr>
+<td><code>byteRange</code></td>
+<td><code>readonly number[]</code></td>
+<td><code>/ByteRange</code> offsets</td>
+</tr>
+<tr>
+<td><code>contents</code></td>
+<td><code>Uint8Array</code></td>
+<td>The full decoded <code>/Contents</code> value, trailing zero padding included</td>
+</tr>
+<tr>
+<td><code>isDocTimestamp</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code> for <code>/Type /DocTimeStamp</code> entries (ISO 32000-2 §12.8.5)</td>
+</tr>
+<tr>
+<td><code>isPlaceholder</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code> for an unsigned placeholder (all-zero <code>/ByteRange</code>)</td>
+</tr>
+<tr>
+<td><code>sigObjNum</code></td>
+<td><code>number</code></td>
+<td>Object number of the <code>/Sig</code> dictionary</td>
+</tr>
+</tbody></table>
+<p><code>listSignatures()</code> is a read-only inspection API — it never <strong>verifies</strong>
+anything (see <em>Verifying</em> above for the verification story).</p>
+<p>Related v1.7.0 addition: <code>SigDictMetadata</code> — the metadata subset shared by
+<code>buildSigDict()</code> and the signing options — gains a <code>subFilter</code> field,
+<code>&#39;adbe.pkcs7.detached&#39;</code> (default, unchanged legacy behaviour) or
+<code>&#39;ETSI.CAdES.detached&#39;</code> to declare a PAdES (ETSI EN 319 142) signature.
+<code>buildSigDict()</code> writes it into the <code>/Sig</code> dictionary, and <code>listSignatures()</code>
+reports it back on each entry. When declaring <code>&#39;ETSI.CAdES.detached&#39;</code>, pair it
+with the <code>profile: &#39;pades&#39;</code> signing option so the CMS carries the matching
+ESS <code>signing-certificate-v2</code> attribute.</p>
+<h2 id="algorithms">Algorithms<a class="heading-anchor" href="#algorithms" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Hash</th>
+<th>Curve / Modulus</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rsa-sha256</code></td>
+<td>SHA-256</td>
+<td>2048 / 3072 / 4096</td>
+<td>PKCS#1 v1.5 (default)</td>
+</tr>
+<tr>
+<td><code>rsa-sha384</code></td>
+<td>SHA-384</td>
+<td>2048 / 3072 / 4096</td>
+<td>PKCS#1 v1.5 (v1.7.0)</td>
+</tr>
+<tr>
+<td><code>rsa-sha512</code></td>
+<td>SHA-512</td>
+<td>2048 / 3072 / 4096</td>
+<td>PKCS#1 v1.5 (v1.7.0)</td>
+</tr>
+<tr>
+<td><code>ecdsa-sha256</code></td>
+<td>SHA-256</td>
+<td>P-256 (secp256r1)</td>
+<td>DER-encoded ECDSA signature</td>
+</tr>
+</tbody></table>
+<p>That is the complete <code>SignatureAlgorithm</code> union — the RSA variants widened
+to SHA-384/512 in v1.7.0; ECDSA is offered with SHA-256 only.</p>
+<p>All primitives live under <a href="https://github.com/Nizoka/pdfnative/tree/main/src/crypto" target="_blank" rel="noopener">src/crypto/</a>:
+SHA-256/384/512 in <code>sha.ts</code>, ASN.1 DER in <code>asn1.ts</code>, RSA modular
+arithmetic in <code>rsa.ts</code>, ECDSA P-256 in <code>ecdsa.ts</code>, X.509 parsing in
+<code>x509.ts</code>, and the CMS SignedData builder in <code>cms.ts</code>.</p>
+<h2 id="validating-the-output">Validating the output<a class="heading-anchor" href="#validating-the-output" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash"># openssl-cms — extract the CMS payload and verify against the certificate
+openssl pkcs7 -in signed.pdf -inform DER -print_certs
+
+# Adobe Reader — open signed.pdf; signatures panel shows the field name,
+# signing time, signer subject, and a green check if the chain validates.
+
+# pdfnative-cli — full CMS verification (the library itself has no PDF-signature verifier)
+npx pdfnative-cli verify --input signed.pdf --strict
+# → { &quot;signatures&quot;: [ { &quot;integrity&quot;: true, &quot;signatureValid&quot;: true, ... } ] }
+</code></pre>
+<h2 id="reading-the-validator-output">Reading the validator output<a class="heading-anchor" href="#reading-the-validator-output" aria-label="Link to this section">#</a></h2>
+<p>Two warnings commonly surface when testing the sample PDFs in Adobe Reader.
+Both are <strong>expected by spec</strong> — they are not pdfnative bugs.</p>
+<h3 id="validity-unknown-identité-du-signataire-inconnue">&quot;Validity unknown&quot; / &quot;Identité du signataire inconnue&quot;<a class="heading-anchor" href="#validity-unknown-identité-du-signataire-inconnue" aria-label="Link to this section">#</a></h3>
+<p>Adobe shows this whenever the signing certificate&#39;s issuer chain does
+not terminate in a root CA listed in Adobe&#39;s Approved Trust List (AATL)
+or in the user&#39;s locally configured Trusted Identities.</p>
+<ul>
+<li>The <code>scripts/generators/digital-signature.ts</code> sample uses a
+<strong>self-signed demo CA</strong> so it can ship deterministically. The
+cryptographic signature itself is valid (Adobe says so:
+<em>&quot;Le document n&#39;a pas été modifié depuis l&#39;apposition de la signature&quot;</em>);
+only the identity link to a public root is missing.</li>
+<li>To remove the warning in Adobe Reader: <strong>Preferences → Signatures →
+Identités → Identités autorisées → Ajouter</strong> and import the demo
+certificate as a trusted root.</li>
+<li>To verify the CMS independently of any trust store, use
+<code>openssl pkcs7 -in signed.pdf -inform DER -print_certs</code> and
+<code>openssl cms -verify -CAfile demo-ca.pem</code>.</li>
+<li>For production signatures, use a certificate issued by a CA in the
+Adobe Approved Trust List (Sectigo, DigiCert, GlobalSign…) or your
+organisation&#39;s enterprise CA distributed via group policy.</li>
+</ul>
+<h3 id="signature-non-valable-on-a-placeholder-pdf">&quot;Signature non valable&quot; on a placeholder PDF<a class="heading-anchor" href="#signature-non-valable-on-a-placeholder-pdf" aria-label="Link to this section">#</a></h3>
+<p>A PDF that has only been through <code>addSignaturePlaceholder()</code> (i.e. not
+yet <code>signPdfBytes()</code>) <strong>will</strong> read as invalid in Adobe — and that is
+correct behaviour. The <code>/Sig</code> dictionary&#39;s <code>/Contents</code> slot is
+zero-padded hex by design, reserved for the CMS SignedData that the
+external signer will produce. Adobe sees a malformed CMS and reports
+the signature as broken.</p>
+<p>The <code>scripts/generators/signature-placeholder.ts</code> sample produces
+exactly this shape on purpose, to demonstrate:</p>
+<ol>
+<li>The placeholder layout is byte-stable (the <code>-idempotent</code> companion
+PDF proves it — re-running the function produces identical bytes).</li>
+<li>Downstream tooling (HSMs, cloud KMS, smartcards) can fill in
+<code>/Contents</code> without touching the surrounding objects.</li>
+</ol>
+<p>To turn a placeholder into a valid signature, call <code>signPdfBytes()</code> on
+the placeholder bytes — that&#39;s the pipeline shown in the TL;DR above.</p>
+<h2 id="caveats">Caveats<a class="heading-anchor" href="#caveats" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><strong>Encrypted PDFs.</strong> <code>addSignaturePlaceholder()</code> throws on encrypted
+input — sign before encrypting, or decrypt first.</li>
+<li><strong>Timestamping (RFC 3161).</strong> Supported since v1.7.0 —
+<code>signPdfBytesWithTimestamp()</code> embeds a verified TSA token as the
+<code>id-aa-signatureTimeStampToken</code> unsigned attribute, and
+<code>addDocumentTimestamp()</code> appends <code>/DocTimeStamp</code> revisions. See the
+<a href="ltv.html">Long-term validation guide</a> for the full PAdES B-B → B-LTA
+pipeline (timestamps, <code>/DSS</code> + <code>/VRI</code>, injected providers).</li>
+<li><strong>Multiple signatures.</strong> Supported since v1.7.0, but <strong>not</strong> by naively
+repeating the placeholder + sign pass — <code>addSignaturePlaceholder()</code> is
+idempotent and returns an already-signed PDF unchanged. Pass
+<code>allowMultiple: true</code> with a fresh <code>fieldName</code>, then select that field in
+<code>signPdfBytes</code> — see <a href="#multiple-signatures-v170">Multiple signatures</a>
+above.</li>
+<li><strong>PDF/A + signatures.</strong> PDF/A-2b/3b allow signatures; ISO 19005-2
+§6.3.5 forbids certain <code>/Sig</code> dictionary fields (<code>/Reference</code>,
+<code>/Changes</code>). pdfnative emits only the conformant subset.</li>
+<li><strong>Timing side-channels (pure-JS BigInt).</strong> The RSA/ECDSA math runs on
+JavaScript <code>BigInt</code>, which is <strong>not</strong> constant-time — the RSA modular
+exponentiation in particular is a secret-dependent square-and-multiply
+loop. Signing a PDF once per user action is not meaningfully
+exploitable, but a high-frequency server signing thousands of PDFs/s
+with the same key under adversarial timing observation could
+theoretically leak key material. For such pipelines, install a native
+constant-time signer via <code>setCryptoProvider()</code> (see below) — or compute the
+CMS/PKCS#7 blob with a constant-time native backend (Node.js
+<code>crypto.sign()</code> or WebCrypto <code>crypto.subtle.sign()</code>) and inject it via
+<code>signPdfBytes()</code>. See <a href="https://github.com/Nizoka/pdfnative/blob/main/SECURITY.md#cryptographic-implementation-scope--known-limitations" target="_blank" rel="noopener">SECURITY.md</a>
+for the full analysis.</li>
+</ul>
+<h2 id="native-crypto-provider-v140">Native crypto provider (v1.4.0)<a class="heading-anchor" href="#native-crypto-provider-v140" aria-label="Link to this section">#</a></h2>
+<p>For high-security, high-frequency server pipelines you can replace
+pdfnative&#39;s pure-JS RSA/ECDSA math with a native, <strong>constant-time</strong> signer
+without giving up the zero-dependency default. Install a provider globally
+with <code>setCryptoProvider(provider)</code>, or pass one per call via
+<code>PdfSignOptions.provider</code> (per-call wins over global). When a provider is set,
+<code>rsaKey</code> / <code>ecKey</code> are no longer required.</p>
+<pre><code class="language-ts">import { setCryptoProvider, signPdfBytes } from &#39;pdfnative&#39;;
+import { createSign, createPrivateKey } from &#39;node:crypto&#39;;
+
+const key = createPrivateKey(pemPrivateKey);
+
+setCryptoProvider({
+    // `tbs` is the DER-encoded CMS signed attributes. The provider hashes it
+    // with SHA-256 internally (node:crypto does this for you) and returns the
+    // raw signature value (RSA PKCS#1 v1.5, or a DER-encoded ECDSA-P256 sig).
+    sign(tbs, algorithm) {
+        return new Uint8Array(createSign(&#39;sha256&#39;).update(tbs).sign(key));
+    },
+});
+
+const signed = signPdfBytes(placeheld, {
+    signerCert: cert,
+    algorithm: &#39;rsa-sha256&#39;, // rsaKey/ecKey no longer needed
+});
+
+// Restore the pure-JS default at any time:
+setCryptoProvider(null);
+</code></pre>
+<p>This is the in-library escape hatch for the BigInt timing caveat above — the
+secret-dependent math runs in <code>node:crypto</code> / Web Crypto / an HSM while
+pdfnative&#39;s CMS/PKCS#7 assembly is reused unchanged.</p>
+<h2 id="full-example">Full example<a class="heading-anchor" href="#full-example" aria-label="Link to this section">#</a></h2>
+<p>See <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/digital-signature.ts" target="_blank" rel="noopener">scripts/generators/digital-signature.ts</a>
+for a runnable RSA + ECDSA sample (key generation, certificate
+construction, sign, verify) and
+<a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/signature-placeholder.ts" target="_blank" rel="noopener">scripts/generators/signature-placeholder.ts</a>
+for the idempotency proof.</p>
+<h2 id="related-guides">Related guides<a class="heading-anchor" href="#related-guides" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="pdfa.html">PDF/A conformance →</a> — how signatures interact with PDF/A-2b/3b.</li>
+<li><a href="architecture.html">Architecture →</a> — where the crypto module sits in the dependency graph.</li>
+<li><a href="cli.html">CLI →</a> — <code>pdfnative-cli sign</code> wraps this exact pipeline.</li>
+<li><a href="mcp.html">MCP integration →</a> — <code>pdfnative-mcp</code> exposes signing as an AI tool, and since v1.6.0 the complete PAdES ladder: <code>sign_pdf</code> (<code>profile: &#39;pades&#39;</code>, RFC 3161 <code>timestamp</code>) → <code>add_ltv</code> (<code>/DSS</code> + <code>/VRI</code>, B-LT) → <code>timestamp_pdf</code> (<code>/DocTimeStamp</code>, B-LTA), verified with <code>verify_pdf ltv: true</code>.</li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

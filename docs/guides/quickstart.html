@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/quickstart.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/quickstart.html">
   <link rel="alternate" type="text/markdown" href="quickstart.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Quick Start","item":"https://pdfnative.dev/guides/quickstart.html"}]},{"@type":"TechArticle","headline":"Quick Start","description":"Generate your first PDF with pdfnative in under a minute — install, render a document, and export bytes. Node.js ≥ 22, browsers, Deno, and Bun. Zero runtime dependencies.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/quickstart.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,188 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Quick Start</p>
-  <article id="guide-content" class="guide-content" data-md="quickstart.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="quickstart.md">read quickstart.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="quickstart.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="quick-start">Quick Start</h1>
+<p>Generate your first PDF in under a minute.</p>
+<h2 id="install">Install<a class="heading-anchor" href="#install" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash">npm install pdfnative
+</code></pre>
+<blockquote>
+<p><strong>Requirements:</strong> Node.js ≥ 22 · modern browsers · Deno · Bun.
+Zero runtime dependencies are installed.</p>
+</blockquote>
+<h2 id="nodejs">Node.js<a class="heading-anchor" href="#nodejs" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-typescript">import { writeFileSync } from &#39;node:fs&#39;;
+import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+const pdf = buildDocumentPDFBytes({
+  title: &#39;Hello&#39;,
+  blocks: [
+    { type: &#39;heading&#39;,   text: &#39;Hello, pdfnative&#39;, level: 1 },
+    { type: &#39;paragraph&#39;, text: &#39;Pure native PDF — zero dependencies, ISO 32000-1.&#39; },
+  ],
+});
+
+writeFileSync(&#39;hello.pdf&#39;, pdf);
+</code></pre>
+<p>For optimal compression on Node.js, enable native zlib once at startup:</p>
+<pre><code class="language-typescript">import { initNodeCompression, buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+await initNodeCompression();
+
+const pdf = buildDocumentPDFBytes(params, { compress: true });
+</code></pre>
+<h2 id="browser">Browser<a class="heading-anchor" href="#browser" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-html">&lt;script type=&quot;module&quot;&gt;
+  import { buildDocumentPDFBytes, downloadBlob } from &#39;https://esm.sh/pdfnative@1.7.0&#39;;
+
+  document.getElementById(&#39;go&#39;).addEventListener(&#39;click&#39;, () =&gt; {
+    const pdf = buildDocumentPDFBytes({
+      title: &#39;Hello&#39;,
+      blocks: [
+        { type: &#39;heading&#39;, text: &#39;Hello from the browser&#39;, level: 1 },
+      ],
+    });
+    downloadBlob(pdf, &#39;hello.pdf&#39;);
+  });
+&lt;/script&gt;
+</code></pre>
+<p>A stored-block compression fallback works automatically — no native zlib needed in the browser.</p>
+<h2 id="tabular-reports-buildpdfbytes">Tabular reports — <code>buildPDFBytes</code><a class="heading-anchor" href="#tabular-reports-buildpdfbytes" aria-label="Link to this section">#</a></h2>
+<p>For bank statements, invoices, and any single-table report:</p>
+<pre><code class="language-typescript">import { buildPDFBytes } from &#39;pdfnative&#39;;
+
+const pdf = buildPDFBytes({
+  title: &#39;Monthly Report&#39;,
+  infoItems: [
+    { label: &#39;Period&#39;,  value: &#39;January 2026&#39; },
+    { label: &#39;Account&#39;, value: &#39;Main&#39; },
+  ],
+  balanceText: &#39;Balance: $1,234.56&#39;,
+  countText: &#39;42 transactions&#39;,
+  headers: [&#39;Date&#39;, &#39;Description&#39;, &#39;Amount&#39;],
+  rows: [
+    { cells: [&#39;01/15&#39;, &#39;Grocery&#39;, &#39;-$45.00&#39;],   type: &#39;debit&#39;,  pointed: false },
+    { cells: [&#39;01/16&#39;, &#39;Salary&#39;,  &#39;+$3,000.00&#39;], type: &#39;credit&#39;, pointed: true  },
+  ],
+  footerText: &#39;Generated by MyApp&#39;,
+});
+</code></pre>
+<h2 id="free-form-documents-builddocumentpdfbytes">Free-form documents — <code>buildDocumentPDFBytes</code><a class="heading-anchor" href="#free-form-documents-builddocumentpdfbytes" aria-label="Link to this section">#</a></h2>
+<p>For mixed content (manuals, articles, multi-section reports):</p>
+<pre><code class="language-typescript">const pdf = buildDocumentPDFBytes({
+  title: &#39;Project Report&#39;,
+  blocks: [
+    { type: &#39;toc&#39; },
+    { type: &#39;heading&#39;,   text: &#39;Executive Summary&#39;, level: 1 },
+    { type: &#39;paragraph&#39;, text: &#39;This quarter saw strong growth.&#39; },
+    { type: &#39;list&#39;, style: &#39;bullet&#39;, items: [&#39;Revenue +15%&#39;, &#39;Costs −8%&#39;] },
+    { type: &#39;image&#39;, data: chartBytes, width: 400, alt: &#39;Revenue chart&#39; },
+    { type: &#39;barcode&#39;, format: &#39;qr&#39;, data: &#39;https://example.com&#39;, width: 80 },
+    { type: &#39;pageBreak&#39; },
+    { type: &#39;heading&#39;,   text: &#39;Details&#39;, level: 1 },
+    { type: &#39;table&#39;, headers: [&#39;Q&#39;, &#39;Revenue&#39;], rows: [
+      { cells: [&#39;Q1&#39;, &#39;$1.2M&#39;], type: &#39;&#39;, pointed: false },
+      { cells: [&#39;Q2&#39;, &#39;$1.4M&#39;], type: &#39;&#39;, pointed: false },
+    ] },
+  ],
+  footerText: &#39;Confidential&#39;,
+});
+</code></pre>
+<p>13 block types are available: <code>heading</code>, <code>paragraph</code>, <code>list</code>, <code>table</code>, <code>image</code>, <code>link</code>, <code>spacer</code>, <code>pageBreak</code>, <code>toc</code>, <code>barcode</code>, <code>svg</code>, <code>formField</code>, <code>chart</code>.</p>
+<h2 id="multi-language">Multi-language<a class="heading-anchor" href="#multi-language" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-typescript">import { registerFonts, loadFontData, buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+registerFonts({
+  th: () =&gt; import(&#39;pdfnative/fonts/noto-thai-data.js&#39;),
+  ar: () =&gt; import(&#39;pdfnative/fonts/noto-arabic-data.js&#39;),
+});
+
+const fontEntries = await Promise.all([
+  loadFontData(&#39;th&#39;).then(fd =&gt; ({ fontData: fd!, fontRef: &#39;/F3&#39;, lang: &#39;th&#39; })),
+  loadFontData(&#39;ar&#39;).then(fd =&gt; ({ fontData: fd!, fontRef: &#39;/F4&#39;, lang: &#39;ar&#39; })),
+]);
+
+const pdf = buildDocumentPDFBytes({
+  blocks: [{ type: &#39;paragraph&#39;, text: &#39;สวัสดี — مرحبا&#39; }],
+  fontEntries,
+});
+</code></pre>
+<p>Note that <code>lang</code> is a property of each <strong>font entry</strong>, not of a block: pdfnative detects the script per character and routes to the matching font, so a single paragraph can mix Thai, Arabic and Latin. BiDi resolution and OpenType shaping follow from that routing. See the <a href="faq.html#fonts-and-unicode">FAQ → Fonts and Unicode</a> for the full list of codes.</p>
+<h2 id="web-worker">Web Worker<a class="heading-anchor" href="#web-worker" aria-label="Link to this section">#</a></h2>
+<p><code>createPDF</code> is the recommended entry point — it decides between the main thread and a worker for you:</p>
+<pre><code class="language-typescript">import { createPDF } from &#39;pdfnative&#39;;
+
+const pdf = await createPDF(params, {
+  workerUrl: new URL(&#39;./pdf-worker.js&#39;, import.meta.url), // your worker script
+  threshold: 500,   // rows above this go to the worker (default WORKER_THRESHOLD = 500)
+  onProgress: (p) =&gt; console.log(`${p}%`),
+});
+</code></pre>
+<p>At or below the <code>threshold</code> (or when <code>Worker</code> / <code>workerUrl</code> is unavailable) the PDF is generated on the main thread; above it, the worker at <code>workerUrl</code> is spawned, with an automatic main-thread fallback if the worker fails.</p>
+<p>To drive a worker directly, use <code>generatePDFInWorker(workerUrl, params, { timeout, onProgress })</code> — note the worker URL is the <strong>first</strong> argument, and the options are <code>timeout</code> (ms, default 60 000) and <code>onProgress</code> (there is no threshold at this level).</p>
+<h2 id="streaming">Streaming<a class="heading-anchor" href="#streaming" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-typescript">import { buildDocumentPDFStream, concatChunks } from &#39;pdfnative&#39;;
+
+// buildDocumentPDFStream(params, layoutOptions?, streamOptions?)
+// chunkSize lives in the 3rd argument (StreamOptions)
+const chunks: Uint8Array[] = [];
+
+for await (const chunk of buildDocumentPDFStream(
+  params,
+  {},                        // layoutOptions
+  { chunkSize: 65536 },      // streamOptions
+)) {
+  chunks.push(chunk);
+}
+
+const pdf = concatChunks(chunks);
+</code></pre>
+<p>The async iterable yields <code>Uint8Array</code> chunks as the PDF is produced — no full-document buffering. The three-argument API (<code>params</code>, <code>layoutOptions</code>, <code>streamOptions</code>) keeps layout concerns (tagged, compress, watermark) and streaming concerns (chunk size) separate.</p>
+<h2 id="playgrounds">Playgrounds<a class="heading-anchor" href="#playgrounds" aria-label="Link to this section">#</a></h2>
+<p>The interactive playgrounds on <a href="https://pdfnative.dev" target="_blank" rel="noopener">pdfnative.dev</a> run entirely in the browser:</p>
+<ul>
+<li><a href="../playgrounds/extreme-scripts.html">Extreme scripts</a> — live BiDi, Tamil, Bengali + Devanagari, Arabic harakat</li>
+<li><a href="../playgrounds/scale.html">Scale</a> — 1,000 to 100,000 pages, Web Worker + true streaming</li>
+</ul>
+<blockquote>
+<p><strong>Local testing:</strong> opening the playgrounds as <code>file://</code> disables the Web Worker
+(browsers block cross-origin Worker imports from <code>file:</code> origins).
+Serve the docs directory instead:</p>
+<pre><code class="language-bash">npm run docs:serve   # → http://localhost:5000
+</code></pre>
+</blockquote>
+<h2 id="command-line-pdfnative-cli">Command line — pdfnative-cli<a class="heading-anchor" href="#command-line-pdfnative-cli" aria-label="Link to this section">#</a></h2>
+<p>Prefer the terminal? <a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener"><code>pdfnative-cli</code></a> wraps the same library with 17 commands — including <code>render</code>, <code>fill</code>, <code>sign</code>, <code>verify</code>, <code>encrypt</code>, <code>decrypt</code>, <code>merge</code>, <code>split</code>, <code>extract</code> and <code>extract-text</code>:</p>
+<pre><code class="language-bash"># Install once
+npm install --global pdfnative-cli
+
+# Render a JSON document to a PDF
+pdfnative render --input report.json --output report.pdf
+
+# Sign with an RSA key (loaded from env var, never logged)
+export PDFNATIVE_SIGN_KEY=&quot;$(cat private.pem)&quot;
+export PDFNATIVE_SIGN_CERT=&quot;$(cat cert.pem)&quot;
+pdfnative sign --input report.pdf --output report.signed.pdf
+
+# Inspect any PDF (encryption, signatures, PDF/A, metadata)
+pdfnative inspect --input report.signed.pdf --format text
+</code></pre>
+<p>Stdin/stdout makes it composable in shell pipelines:</p>
+<pre><code class="language-bash">cat report.json | pdfnative render | pdfnative sign | pdfnative inspect --format text
+</code></pre>
+<p>See the dedicated <a href="cli.html">CLI guide</a> for the full command reference, security model, and CI/CD recipes.</p>
+<h2 id="next-steps">Next steps<a class="heading-anchor" href="#next-steps" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="architecture.html">Architecture</a> — modules, builders, generation pipeline.</li>
+<li><a href="cli.html">CLI</a> — pdfnative-cli command-line interface.</li>
+<li><a href="accessibility.html">Accessibility</a> — tagged PDF, PDF/UA, PDF/A.</li>
+<li><a href="faq.html">FAQ</a> — fonts, encryption, signatures, comparisons.</li>
+<li><a href="troubleshooting.html">Troubleshooting</a> — common pitfalls and fixes.</li>
+<li><a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">Sample generators</a> — 242 PDFs across 37 categories (48 generators).</li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

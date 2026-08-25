@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/pdfa.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/pdfa.html">
   <link rel="alternate" type="text/markdown" href="pdfa.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"PDF/A conformance in pdfnative","item":"https://pdfnative.dev/guides/pdfa.html"}]},{"@type":"TechArticle","headline":"PDF/A conformance in pdfnative","description":"How pdfnative implements PDF/A-1b, 2b, 2u, and 3b — full veraPDF conformance with Latin font embedding, XMP parity, and the v1.7.0 declaration guards (strict, onDiagnostic, PDFA_* diagnostic codes).","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/pdfa.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,381 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; PDF/A</p>
-  <article id="guide-content" class="guide-content" data-md="pdfa.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="pdfa.md">read pdfa.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="pdfa.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="pdfa-conformance-in-pdfnative">PDF/A conformance in pdfnative</h1>
+<p>PDF/A is the ISO archival profile for PDF (ISO 19005). pdfnative supports
+PDF/A-1b, 2b, 2u, and 3b via the <code>tagged</code> build option. This guide
+explains what works today, what&#39;s still in flight, and how to validate
+your output against the official reference validator.</p>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildPDFBytes } from &#39;pdfnative&#39;;
+
+const pdf = buildPDFBytes(params, { tagged: true });        // PDF/A-2b (default)
+const pdf1b = buildPDFBytes(params, { tagged: &#39;pdfa1b&#39; });  // PDF/A-1b
+const pdf2u = buildPDFBytes(params, { tagged: &#39;pdfa2u&#39; });  // PDF/A-2u
+const pdf3b = buildPDFBytes(params, { tagged: &#39;pdfa3b&#39; });  // PDF/A-3b + attachments
+</code></pre>
+<blockquote>
+<h3 id="tagged-alone-is-not-enough-embed-a-font"><code>tagged</code> alone is not enough: embed a font<a class="heading-anchor" href="#tagged-alone-is-not-enough-embed-a-font" aria-label="Link to this section">#</a></h3>
+<p>ISO 19005 requires <strong>every</strong> font in the file to be embedded. <code>tagged</code> writes the
+XMP conformance declaration, the structure tree and the output intent — but it does
+not embed a font for you. If your document uses only the viewer&#39;s built-in fonts
+(which is what happens when you pass no <code>fontEntries</code>), pdfnative writes a file that
+<em>claims</em> PDF/A while referencing non-embedded Helvetica, and veraPDF will reject it.</p>
+<p>Pass at least a Latin font whenever you set <code>tagged</code>:</p>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, registerFonts, loadFontData } from &#39;pdfnative&#39;;
+
+registerFonts({ latin: () =&gt; import(&#39;pdfnative/fonts/noto-sans-data.js&#39;) });
+const fontData = await loadFontData(&#39;latin&#39;);
+
+// fontRef becomes a PDF resource name, so it needs the leading slash.
+// /F1 and /F2 are reserved by the engine — start at /F3.
+
+const pdf = buildDocumentPDFBytes(
+  { title: &#39;Archival&#39;, blocks, fontEntries: [{ fontData, fontRef: &#39;/F3&#39;, lang: &#39;latin&#39; }] },
+  { tagged: &#39;pdfa2b&#39; },
+);
+</code></pre>
+<p>Since <strong>v1.7.0</strong> the builders guard this declaration themselves: requesting any
+<code>&#39;pdfa*&#39;</code> level (or <code>tagged: true</code>) with no <code>fontEntries</code> emits the
+<code>PDFA_NO_FONT_ENTRIES</code> diagnostic — a <code>console.warn</code> by default, or a thrown
+<code>Error</code> under <code>strict: true</code>, before any output bytes are produced. See
+<em>Conformance diagnostics</em> below.</p>
+<p>The sample generators in <code>scripts/generators/</code> all do this, which is why the veraPDF
+CI job passes. If you author through <code>pdfnative-react</code>, its <code>lintDocument()</code> rule
+<code>L_TAGGED_NO_FONTS</code> still catches the same trap earlier, at the document-model
+level — a complementary check to the core diagnostic.</p>
+</blockquote>
+<p>Every output written with <code>tagged</code> set ships:</p>
+<ul>
+<li>A full structure tree (<code>/Document → /Table → /TR → /TH|/TD</code>, <code>/H1–H3</code>,
+<code>/P</code>, <code>/L → /LI</code>, <code>/Figure</code>, <code>/Link</code>).</li>
+<li><code>/ActualText</code> UTF-16BE on every marked content <code>/Span</code>.</li>
+<li>An XMP metadata stream with <code>pdfaid:part</code> and <code>pdfaid:conformance</code>.</li>
+<li>An sRGB ICC <code>OutputIntent</code> (<code>GTS_PDFA1</code>).</li>
+<li><code>/MarkInfo &lt;&lt; /Marked true &gt;&gt;</code> on the catalog.</li>
+<li>A trailer <code>/ID</code> derived deterministically from the document title and
+creation timestamp.</li>
+<li><code>/Info CreationDate</code> byte-equivalent to <code>xmp:CreateDate</code>, both with
+timezone offsets.</li>
+</ul>
+<h2 id="conformance-diagnostics-v170">Conformance diagnostics (v1.7.0)<a class="heading-anchor" href="#conformance-diagnostics-v170" aria-label="Link to this section">#</a></h2>
+<p>Configurations that produce a PDF/A claim veraPDF would reject no longer fail
+silently. Both builders (<code>buildPDFBytes</code> and <code>buildDocumentPDFBytes</code>) surface
+them through a single diagnostics channel:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Trigger</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>PDFA_NO_FONT_ENTRIES</code></td>
+<td>A <code>&#39;pdfa*&#39;</code> level (or <code>tagged: true</code>) requested with no <code>fontEntries</code> — the file would claim PDF/A while referencing unembedded standard-14 Helvetica (ISO 19005 §6.2.11.4.1).</td>
+</tr>
+<tr>
+<td><code>PDFA_DEVICE_CMYK_IMAGE</code></td>
+<td>A DeviceCMYK image embedded under a PDF/A claim with an sRGB <code>OutputIntent</code> (ISO 19005-2 §6.2.4.3).</td>
+</tr>
+<tr>
+<td><code>PDFA_UNEMBEDDED_FORM_FONT</code></td>
+<td>AcroForm fields under a PDF/A claim — form appearances render through an unembedded base-14 <code>/Helv</code> font (same §6.2.11.4.1 rule). Flatten the form or drop the level.</td>
+</tr>
+</tbody></table>
+<p>By default each diagnostic is a <code>console.warn</code>, deduplicated <strong>once per code
+per build</strong>. Two layout options change that:</p>
+<pre><code class="language-ts">import { buildPDFBytes, type PdfDiagnostic } from &#39;pdfnative&#39;;
+
+// CI / tests: escalate to a thrown Error, before any bytes are produced.
+buildPDFBytes(params, { tagged: &#39;pdfa2b&#39;, strict: true });
+
+// Custom sink — receives every diagnostic (no deduplication).
+// Pass () =&gt; {} to silence entirely.
+const diagnostics: PdfDiagnostic[] = [];
+const pdf = buildPDFBytes(params, {
+  tagged: &#39;pdfa2b&#39;,
+  onDiagnostic: (d) =&gt; diagnostics.push(d),
+});
+</code></pre>
+<p>Each <code>PdfDiagnostic</code> carries a machine-readable <code>code</code>, a <code>severity</code>
+(<code>&#39;warning&#39;</code>), and an actionable <code>message</code> that includes the remedy.
+<code>onDiagnostic</code> is ignored when <code>strict</code> is set — diagnostics throw instead.
+The code list is a stable, additions-only union (<code>PdfDiagnosticCode</code>), so a
+sink written today keeps compiling as future codes are added.</p>
+<blockquote>
+<p><strong>On the MCP surface</strong> <em>(pdfnative-mcp 1.6.0)</em>, the same honesty is exposed
+as three opt-in inputs on every document tool: <code>embedFonts: true</code> embeds
+Noto Sans Latin so a PDF/A claim on base-14 text is actually accepted by
+veraPDF, <code>strict: true</code> fails instead of producing a non-conformant file,
+and <code>includeDiagnostics: true</code> echoes the engine&#39;s diagnostics
+(<code>PDFA_NO_FONT_ENTRIES</code>, <code>PDFA_UNEMBEDDED_FORM_FONT</code>,
+<code>PDFA_DEVICE_CMYK_IMAGE</code>) in the tool result. Known engine limitation:
+<code>add_form</code> (or a <code>formField</code> block) under a PDF/A claim still fails
+veraPDF even with <code>embedFonts</code> — the AcroForm <code>/DR /Helv</code> font is an
+unembedded Type1 (ISO 19005-2 §6.2.11.4.1).</p>
+</blockquote>
+<h2 id="v110-status-fully-validated">v1.1.0 status — fully validated<a class="heading-anchor" href="#v110-status-fully-validated" aria-label="Link to this section">#</a></h2>
+<p>v1.1.0 ships full PDF/A-1b / 2b / 2u / 3b conformance against the
+official veraPDF reference validator. The validator runs as a
+<strong>blocking</strong> check on every PR (see
+<a href="https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml" target="_blank" rel="noopener">.github/workflows/verapdf.yml</a>).</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Status</th>
+<th>Fixed in</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ISO 19005-1 §6.1.3 — trailer <code>/ID</code> always present</td>
+<td>✅</td>
+<td>v1.0.4</td>
+</tr>
+<tr>
+<td>veraPDF 6.7.3 t1 — <code>CreationDate</code> ↔ <code>xmp:CreateDate</code> parity</td>
+<td>✅</td>
+<td>v1.0.4</td>
+</tr>
+<tr>
+<td>veraPDF 6.7.3 t1 — <code>dc:title</code> ↔ <code>/Info /Title</code> parity</td>
+<td>✅</td>
+<td>v1.1.0</td>
+</tr>
+<tr>
+<td>veraPDF 6.7.3 t4 — <code>dc:description</code> ↔ <code>/Info /Subject</code> parity</td>
+<td>✅</td>
+<td>v1.1.0</td>
+</tr>
+<tr>
+<td>veraPDF 6.7.3 t5 — <code>pdf:Keywords</code> ↔ <code>/Info /Keywords</code> parity</td>
+<td>✅</td>
+<td>v1.1.0</td>
+</tr>
+<tr>
+<td>veraPDF 6.7.3 — <code>dc:creator</code> ↔ <code>/Info /Author</code> parity</td>
+<td>✅</td>
+<td>v1.0.4</td>
+</tr>
+<tr>
+<td>ISO 19005-1 §6.3.4 — Latin font embedding</td>
+<td>✅</td>
+<td>v1.1.0</td>
+</tr>
+<tr>
+<td>ISO 19005-2 §6.2.11.4.1 — Type0 font references</td>
+<td>✅</td>
+<td>v1.1.0</td>
+</tr>
+<tr>
+<td>veraPDF 6.2.3.3 — DeviceRGB OutputIntent</td>
+<td>✅</td>
+<td>v1.0.4</td>
+</tr>
+</tbody></table>
+<p>To produce a strictly veraPDF-compliant PDF/A document, register the Latin
+font module <strong>and resolve it</strong>. Registering alone is not enough: the builders
+are synchronous and cannot await a loader, so the font never reaches the
+document and you get an unembedded Helvetica reference — verified: 0 embedded
+fonts.</p>
+<pre><code class="language-ts">import { registerFonts, loadFontData, buildPDFBytes } from &#39;pdfnative&#39;;
+
+registerFonts({ latin: () =&gt; import(&#39;pdfnative/fonts/noto-sans-data.js&#39;) });
+const fontData = await loadFontData(&#39;latin&#39;);
+
+const pdf = buildPDFBytes(
+  { ...params, fontEntries: [{ fontData, fontRef: &#39;/F3&#39;, lang: &#39;latin&#39; }] },
+  { tagged: true },
+);
+</code></pre>
+<p>Without the <code>&#39;latin&#39;</code> font registered, pdfnative falls back to the
+unembedded Helvetica standard-14 references for byte-stable v1.0.x
+output — convenient for non-archival rendering but invalid under
+PDF/A.</p>
+<h2 id="validating-your-output">Validating your output<a class="heading-anchor" href="#validating-your-output" aria-label="Link to this section">#</a></h2>
+<p>pdfnative ships a thin wrapper around the official veraPDF CLI:</p>
+<pre><code class="language-bash"># 1. Generate the sample suite (writes test-output/)
+npm run test:generate
+
+# 2. Run veraPDF against every PDF/A-claiming sample
+npm run validate:pdfa
+</code></pre>
+<p>The script auto-detects veraPDF on <code>$PATH</code> or via the <code>VERAPDF_HOME</code>
+env var. If veraPDF is not installed it exits 0 with install
+instructions — local development never blocks. CI installs veraPDF
+deterministically (pinned to 1.30.2) and runs the same script on every
+engine PR — see <a href="https://github.com/Nizoka/pdfnative/blob/main/.github/workflows/verapdf.yml" target="_blank" rel="noopener">.github/workflows/verapdf.yml</a> —
+and again as a blocking gate before every npm publish.</p>
+<p>Detection is automatic and guarded: every sample declaring
+<code>pdfaid:part</code> — currently the 18 PDF/A-claiming samples — is validated
+without any registration, and a <strong>coverage canary</strong> fails the run if the
+detected count drifts from <code>declared.pdfaSamples</code> in
+<code>docs/assets/ecosystem.json</code> (bump it when adding or removing a
+claiming sample; a mismatch with no sample change means detection or
+generation regressed).</p>
+<blockquote>
+<p><strong>Which samples are subject to PDF/A validation?</strong> Only files that
+<em>declare</em> a conformance level in their XMP (<code>pdfaid:part</code>) — the ones
+built with <code>tagged: &#39;pdfa…&#39;</code>, e.g. the <code>pdfa/</code> and <code>pdfa-latin/</code> sample
+categories. The script skips everything else. Most showcase samples
+(<code>bidi/</code>, <code>alphabet/</code>, <code>charts/</code>, …) intentionally make <strong>no</strong> PDF/A
+claim: they have no XMP packet at all, so force-validating one against a
+PDF/A profile in the veraPDF GUI fails by construction (missing
+<code>/Metadata</code>, uncalibrated DeviceRGB, …) — that is expected and not a
+defect.</p>
+</blockquote>
+<p>veraPDF is invoked as an <strong>external</strong> Java tool. pdfnative remains a
+zero-runtime-dependency library; veraPDF is never bundled, linked, or
+required by consumers of the npm package.</p>
+<h3 id="installing-verapdf-locally">Installing veraPDF locally<a class="heading-anchor" href="#installing-verapdf-locally" aria-label="Link to this section">#</a></h3>
+<p>veraPDF is a Java application. Pick whichever path matches your OS.
+After install, either expose <code>verapdf</code> on <code>$PATH</code> or set the
+<code>VERAPDF_HOME</code> environment variable to the install directory.</p>
+<p><strong>macOS</strong> — Homebrew cask:</p>
+<pre><code class="language-bash">brew install --cask verapdf
+verapdf --version
+</code></pre>
+<p><strong>Linux</strong> — official installer (headless):</p>
+<pre><code class="language-bash">curl -fsSL -o verapdf-installer.zip https://software.verapdf.org/rel/verapdf-installer.zip
+unzip verapdf-installer.zip
+java -jar verapdf-izpack-installer-*.jar -console
+# follow the prompts; defaults are sane
+export VERAPDF_HOME=&quot;$HOME/verapdf&quot;
+export PATH=&quot;$VERAPDF_HOME:$PATH&quot;
+</code></pre>
+<p><strong>Windows</strong> — official GUI installer from
+<a href="https://docs.verapdf.org/install/" target="_blank" rel="noopener">https://docs.verapdf.org/install/</a>, or the same headless install CI
+uses (download the pinned zip, run
+<code>java -jar verapdf-izpack-installer-*.jar auto-install.xml</code> — the
+descriptor is shown in <a href="https://github.com/Nizoka/pdfnative/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING</a>).
+After install, either add the install directory to <code>PATH</code> or:</p>
+<pre><code class="language-powershell">$env:VERAPDF_HOME = &quot;C:\Program Files\verapdf&quot;
+$env:Path += &quot;;$env:VERAPDF_HOME&quot;
+verapdf.bat --version
+</code></pre>
+<p>The <code>.bat</code> launcher is fully supported by <code>npm run validate:pdfa</code>
+since v1.7.0 (it is spawned through a shell, as recent Node versions
+require for batch files).</p>
+<p><strong>No install at all?</strong> Drop the file into the official online demo
+at <a href="https://demo.verapdf.org" target="_blank" rel="noopener">https://demo.verapdf.org</a>. It validates against the same engine,
+which is convenient for ad-hoc checks but does not scale to a CI
+suite.</p>
+<h3 id="troubleshooting">Troubleshooting<a class="heading-anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h3>
+<p><strong>&quot;My PDF fails veraPDF for missing XMP / DeviceRGB / unembedded
+font, but I never asked for PDF/A.&quot;</strong></p>
+<p>If the file was generated <strong>without</strong> <code>tagged: true</code>, it is a plain
+ISO 32000-1 document and should not be validated against any PDF/A
+profile. The veraPDF online demo lets you pick a profile manually,
+which will then surface failures by design — every PDF/A rule about
+metadata, output intents, font embedding, transparency, and color
+spaces will fire because the file never claimed any of those things.</p>
+<p>The <code>npm run validate:pdfa</code> wrapper avoids this trap: it scans each
+PDF for a <code>pdfaid:part</code> declaration in the XMP packet and skips
+files that don&#39;t claim PDF/A. The summary line reports how many were
+skipped:</p>
+<pre><code>Scanned 242 PDF(s); 18 claim PDF/A, 224 skipped (not PDF/A).
+</code></pre>
+<p>If you want a file to be validated, generate it with <code>tagged: true</code>
+(or any <code>&#39;pdfa*&#39;</code> value).</p>
+<p><strong>&quot;My tagged file still fails rule 6.3.4 (font embedding).&quot;</strong></p>
+<p>Register the Latin font module <strong>and pass the resolved data as <code>fontEntries</code></strong>
+(see the TL;DR above). Registration on its own does nothing for the synchronous
+builders. Without it, pdfnative emits Helvetica as an unembedded standard-14
+reference for byte-stable v1.0.x output. With it, every glyph used
+in the document is embedded as <code>CIDFontType2</code> / <code>FontFile2</code> — see
+the v1.1.0 status table above. Since v1.7.0 this configuration also emits the
+<code>PDFA_NO_FONT_ENTRIES</code> diagnostic at build time (a thrown error under
+<code>strict: true</code>), so the failure surfaces before veraPDF ever runs.</p>
+<h3 id="output-bytes-change-in-v104">Output bytes change in v1.0.4<a class="heading-anchor" href="#output-bytes-change-in-v104" aria-label="Link to this section">#</a></h3>
+<p>v1.0.4 has no public API break, but PDF outputs differ byte-for-byte
+from v1.0.3:</p>
+<ul>
+<li>Trailer <code>/ID</code> array is now always present.</li>
+<li><code>/Info CreationDate</code> and <code>xmp:CreateDate</code> carry timezone offsets.</li>
+<li><code>dc:creator</code> is emitted only when an author is provided.</li>
+</ul>
+<p>If your test fixtures snapshot full PDF bytes, regenerate them.</p>
+<h2 id="pdfa-vs-encryption">PDF/A vs encryption<a class="heading-anchor" href="#pdfa-vs-encryption" aria-label="Link to this section">#</a></h2>
+<p>ISO 19005-1 §6.3.2 forbids combining PDF/A with PDF encryption.
+pdfnative validates this at the build boundary — passing both
+<code>tagged: …</code> and <code>encryption: …</code> in the same call throws.</p>
+<h2 id="choosing-a-flavour">Choosing a flavour<a class="heading-anchor" href="#choosing-a-flavour" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Flavour</th>
+<th>Base PDF</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PDF/A-1b (<code>&#39;pdfa1b&#39;</code>)</td>
+<td>PDF 1.4</td>
+<td>Most conservative — required by some legacy archival systems. No transparency, no JPEG2000, no AES.</td>
+</tr>
+<tr>
+<td>PDF/A-2b (<code>true</code> / <code>&#39;pdfa2b&#39;</code>)</td>
+<td>PDF 1.7</td>
+<td>Default. Allows transparency, layers, embedded TrueType.</td>
+</tr>
+<tr>
+<td>PDF/A-2u (<code>&#39;pdfa2u&#39;</code>)</td>
+<td>PDF 1.7</td>
+<td>2b + Unicode mapping for every glyph. Required when <code>/ActualText</code> and ToUnicode CMap completeness matter (recommended for accessibility).</td>
+</tr>
+<tr>
+<td>PDF/A-3b (<code>&#39;pdfa3b&#39;</code>)</td>
+<td>PDF 1.7</td>
+<td>2b + arbitrary <code>/EmbeddedFile</code> attachments (XML, source data, etc.).</td>
+</tr>
+</tbody></table>
+<p>All four flavours share the same XMP / OutputIntent / structure-tree
+infrastructure — pdfnative only varies the PDF version, the
+<code>pdfaid:part</code>, and the <code>pdfaid:conformance</code> value.</p>
+<h3 id="canonical-list-for-tooling">Canonical list for tooling<a class="heading-anchor" href="#canonical-list-for-tooling" aria-label="Link to this section">#</a></h3>
+<p>The four legal <code>tagged</code> strings are also exposed as a
+typed constant for tooling that needs to populate a JSON-schema
+<code>enum:</code> (<code>pdfnative-mcp</code> does this for its MCP tool descriptions so
+Gemini-CLI and other agents can autocomplete the right value):</p>
+<pre><code class="language-ts">import { PDF_A_CONFORMANCE_TARGETS, type PdfAConformanceTarget } from &#39;pdfnative&#39;;
+
+PDF_A_CONFORMANCE_TARGETS;
+// → readonly [&#39;pdfa1b&#39;, &#39;pdfa2b&#39;, &#39;pdfa2u&#39;, &#39;pdfa3b&#39;]
+
+function isValidTarget(s: string): s is PdfAConformanceTarget {
+  return (PDF_A_CONFORMANCE_TARGETS as readonly string[]).includes(s);
+}
+</code></pre>
+<p>The constant is the single source of truth — adding a new target in a
+future minor release will surface automatically in every downstream
+consumer that imports it.</p>
+<h2 id="hard-invariants-for-contributors">Hard invariants for contributors<a class="heading-anchor" href="#hard-invariants-for-contributors" aria-label="Link to this section">#</a></h2>
+<p>These rules are documented in the contributor instruction file
+<a href="https://github.com/Nizoka/pdfnative/blob/main/.github/instructions/pdfa-conformance.instructions.md" target="_blank" rel="noopener">.github/instructions/pdfa-conformance.instructions.md</a>:</p>
+<ul>
+<li><code>/Info CreationDate</code> and <code>xmp:CreateDate</code> come from the <strong>same</strong>
+<code>buildPdfMetadata()</code> call. Never inline <code>new Date()</code> in the builders.</li>
+<li>The unencrypted trailer <code>/ID</code> is derived deterministically from
+<code>MD5(title + creationDate + objectCount)</code>. Never randomize — it
+breaks <code>buildPDFBytes(params)</code> byte-equality tests.</li>
+<li><code>dc:creator</code> is emitted only when an author is provided and is
+XML-escaped.</li>
+<li>XMP metadata streams are never compressed.</li>
+<li>Compression always happens <strong>before</strong> encryption (ISO 32000-1
+§7.3.8).</li>
+</ul>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>
+— full v1.0.4 release notes.</li>
+<li><a href="https://verapdf.org" target="_blank" rel="noopener">veraPDF</a> — the official reference validator.</li>
+<li><a href="https://www.iso.org/standard/38920.html" target="_blank" rel="noopener">ISO 19005-1</a> /
+<a href="https://www.iso.org/standard/50655.html" target="_blank" rel="noopener">ISO 19005-2</a> /
+<a href="https://www.iso.org/standard/57229.html" target="_blank" rel="noopener">ISO 19005-3</a>.</li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

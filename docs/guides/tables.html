@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/tables.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/tables.html">
   <link rel="alternate" type="text/markdown" href="tables.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Smart tables","item":"https://pdfnative.dev/guides/tables.html"}]},{"@type":"TechArticle","headline":"Smart tables","description":"Multi-page tables in pdfnative — auto-wrap on overflow, repeated headers, zebra striping, captions, smart auto-fit columns, and per-cell borders.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/tables.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,330 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Smart tables</p>
-  <article id="guide-content" class="guide-content" data-md="tables.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="tables.md">read tables.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="tables.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="smart-tables">Smart tables</h1>
+<blockquote>
+<p><em>Backward-compatible with v1.1.0 — existing single-page tables produce byte-identical output.</em></p>
+</blockquote>
+<p>pdfnative&#39;s table renderer is <strong>planner-driven</strong> and <strong>multi-page-safe</strong> by default. Long tables wrap on column overflow, slice cleanly across pages, and reprint their header on every continuation page — matching the behaviour readers expect from commercial PDF libraries.</p>
+<p>This guide documents the <code>TableBlock</code> fields, the planner architecture, the tagged-mode contract, and migration tips.</p>
+<hr>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+const bytes = buildDocumentPDFBytes({
+    title: &#39;Invoice&#39;,
+    blocks: [
+        {
+            type: &#39;table&#39;,
+            headers: [&#39;Item&#39;, &#39;Qty&#39;, &#39;Price&#39;],
+            // PdfRow[]: e.g. { cells: [&#39;Pro plan&#39;, &#39;1&#39;, &#39;$49.00&#39;], type: &#39;default&#39;, pointed: false }
+            rows: bigInvoiceRows, // any length
+            columns: [            // optional ColumnDef[]: f = width fraction, a = align,
+                                  // mx / mxH = char caps (data / header), plus minWidth? / maxWidth?
+                { f: 0.6, a: &#39;l&#39;, mx: 40, mxH: 20 },
+                { f: 0.2, a: &#39;r&#39;, mx: 10, mxH: 8 },
+                { f: 0.2, a: &#39;r&#39;, mx: 10, mxH: 8 },
+            ],
+            autoFitColumns: true,  // content-aware widths (respects minWidth/maxWidth)
+            wrap: &#39;auto&#39;,          // ← new (default)
+            repeatHeader: true,    // ← new (default)
+            zebra: true,           // ← new (opt-in)
+            caption: &#39;Invoice line items&#39;,
+            minRowHeight: 14,
+            cellPadding: 5,
+        },
+    ],
+});
+</code></pre>
+<p>Existing v1.1.0 code with no new fields continues to work and produces <strong>byte-identical</strong> output on single-page tables.</p>
+<hr>
+<h2 id="tableblock-fields-all-optional"><code>TableBlock</code> fields (all optional)<a class="heading-anchor" href="#tableblock-fields-all-optional" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>wrap</code></td>
+<td><code>&#39;auto&#39; | &#39;always&#39; | &#39;never&#39;</code></td>
+<td><code>&#39;auto&#39;</code></td>
+<td>Per-cell wrap policy.</td>
+</tr>
+<tr>
+<td><code>repeatHeader</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Reprint the header row at the top of each continuation page.</td>
+</tr>
+<tr>
+<td><code>zebra</code></td>
+<td><code>boolean | PdfColor</code></td>
+<td><code>false</code></td>
+<td>Alternating data-row fill. <code>true</code> uses <code>&#39;0.969 0.973 0.984&#39;</code>.</td>
+</tr>
+<tr>
+<td><code>caption</code></td>
+<td><code>string</code></td>
+<td><code>undefined</code></td>
+<td>Caption printed once above the first slice.</td>
+</tr>
+<tr>
+<td><code>minRowHeight</code></td>
+<td><code>number</code> (points)</td>
+<td><code>12</code></td>
+<td>Minimum visual row height.</td>
+</tr>
+<tr>
+<td><code>cellPadding</code></td>
+<td><code>number</code> (points)</td>
+<td><code>3</code></td>
+<td>Internal cell padding.</td>
+</tr>
+<tr>
+<td><code>cellBorders</code></td>
+<td><code>CellBorders</code></td>
+<td><code>undefined</code></td>
+<td>Per-cell vector borders (v1.4.0). Omit for byte-identical pre-1.4.0 output.</td>
+</tr>
+<tr>
+<td><code>cellVAlign</code></td>
+<td><code>&#39;top&#39; | &#39;middle&#39; | &#39;bottom&#39;</code></td>
+<td><code>undefined</code></td>
+<td>Vertical alignment of cell text within the row band (v1.4.0).</td>
+</tr>
+</tbody></table>
+<h3 id="wrap"><code>wrap</code><a class="heading-anchor" href="#wrap" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong><code>&#39;auto&#39;</code></strong> (default) — single-line rendering when cell content fits within the column width; wraps on overflow only. This is the GAFAM-grade default — fast typical case, correct edge case.</li>
+<li><strong><code>&#39;always&#39;</code></strong> — every cell is run through the word-wrapper. Use when row heights need to be uniform regardless of content length.</li>
+<li><strong><code>&#39;never&#39;</code></strong> — v1.1.0 behaviour. Content is clipped at the column boundary. Use when output byte-stability against v1.1.0 is mandatory.</li>
+</ul>
+<h3 id="repeatheader"><code>repeatHeader</code><a class="heading-anchor" href="#repeatheader" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong><code>true</code></strong> (default) — header row reprints at the top of every continuation page.</li>
+<li><strong><code>false</code></strong> — header appears only once. Set this alongside <code>wrap: &#39;never&#39;</code> to preserve the exact v1.1.0 multi-page rendering shape.</li>
+</ul>
+<h3 id="zebra"><code>zebra</code><a class="heading-anchor" href="#zebra" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong><code>false</code></strong> (default) — no row fill.</li>
+<li><strong><code>true</code></strong> — alternating even data rows (1-indexed, so the second row, fourth row, …) are filled with <code>&#39;0.969 0.973 0.984&#39;</code> (a soft cool-grey tuned for accessibility contrast).</li>
+<li>A <a href="https://github.com/Nizoka/pdfnative#api-reference" target="_blank" rel="noopener"><code>PdfColor</code></a> — hex (<code>&#39;#f7f8fa&#39;</code>), tuple (<code>[247, 248, 250]</code>, channels <strong>0–255</strong>), or PDF-rgb string (<code>&#39;0.97 0.97 0.98&#39;</code>, channels 0.0–1.0) — overrides the default.</li>
+</ul>
+<h3 id="caption"><code>caption</code><a class="heading-anchor" href="#caption" aria-label="Link to this section">#</a></h3>
+<ul>
+<li>Printed once at the top of the table (above the first slice), using Helvetica 9pt.</li>
+<li>In tagged mode, emitted as a <code>/Caption</code> structure element child of <code>/Table</code> (ISO 14289-1 §7.10.6).</li>
+<li>Multi-line captions wrap to fit the table width.</li>
+</ul>
+<h3 id="minrowheight-cellpadding"><code>minRowHeight</code> / <code>cellPadding</code><a class="heading-anchor" href="#minrowheight-cellpadding" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><code>minRowHeight</code> enforces a floor so rows look consistent even with short text.</li>
+<li><code>cellPadding</code> is the internal padding around each cell&#39;s text. Header padding inherits this but the baseline offset is a fixed v1.1.0-compatible constant (preserves byte-stability for the row body).</li>
+</ul>
+<h3 id="cellborders-v140"><code>cellBorders</code> (v1.4.0)<a class="heading-anchor" href="#cellborders-v140" aria-label="Link to this section">#</a></h3>
+<p>Draw per-cell vector borders. All sides are off by default — omitting <code>cellBorders</code> entirely keeps the table byte-identical to pre-1.4.0 (header underline + row separators only).</p>
+<pre><code class="language-ts">{
+    type: &#39;table&#39;,
+    headers: [&#39;Item&#39;, &#39;Qty&#39;],
+    rows: [/* … */],
+    cellBorders: {
+        all: true,            // shorthand for top+right+bottom+left
+        color: &#39;#cccccc&#39;,     // PdfColor — default &#39;0.8 0.8 0.8&#39;
+        width: 0.5,           // points — default 0.5
+        style: &#39;solid&#39;,       // &#39;solid&#39; | &#39;dashed&#39; | &#39;dotted&#39;
+    },
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>top</code> / <code>right</code> / <code>bottom</code> / <code>left</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Enable individual edges.</td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Shorthand — enables all four edges.</td>
+</tr>
+<tr>
+<td><code>color</code></td>
+<td><code>PdfColor</code></td>
+<td><code>&#39;0.8 0.8 0.8&#39;</code></td>
+<td>Stroke colour (hex / tuple / PDF-rgb).</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td><code>number</code> (points)</td>
+<td><code>0.5</code></td>
+<td>Stroke width.</td>
+</tr>
+<tr>
+<td><code>style</code></td>
+<td><code>&#39;solid&#39; | &#39;dashed&#39; | &#39;dotted&#39;</code></td>
+<td><code>&#39;solid&#39;</code></td>
+<td>Stroke style. The dash is reset after each cell so row separators stay solid.</td>
+</tr>
+</tbody></table>
+<p>Borders are pure vector strokes (<code>m … l S</code>), so output stays PDF/A-safe.</p>
+<h3 id="cellvalign-v140"><code>cellVAlign</code> (v1.4.0)<a class="heading-anchor" href="#cellvalign-v140" aria-label="Link to this section">#</a></h3>
+<p>Vertically align cell text within the row band. Useful when rows have a tall <code>minRowHeight</code> or wrapped cells of differing height. A per-column <a href="#columndef-fields"><code>ColumnDef.vAlign</code></a> overrides the table default.</p>
+<pre><code class="language-ts">{ type: &#39;table&#39;, headers: [/* … */], rows: [/* … */], minRowHeight: 30, cellVAlign: &#39;middle&#39; }
+</code></pre>
+<p><code>&#39;top&#39;</code> | <code>&#39;middle&#39;</code> | <code>&#39;bottom&#39;</code>. When omitted, the historic baseline placement is preserved exactly (byte-identical to pre-1.4.0).</p>
+<hr>
+<h2 id="columndefkind-field-optional"><code>ColumnDef.kind</code> field (optional)<a class="heading-anchor" href="#columndefkind-field-optional" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kind</code></td>
+<td><code>&#39;amount&#39;</code></td>
+<td><code>undefined</code></td>
+<td>Semantic hint. When set to <code>&#39;amount&#39;</code>, data cells in this column render in Helvetica-Bold with credit/debit colouring driven by <code>row.type</code>. Replaces the pre-1.2.0 hardcoded <code>i === 3</code> heuristic in <code>renderTable</code>.</td>
+</tr>
+</tbody></table>
+<pre><code class="language-ts">{
+  type: &#39;table&#39;,
+  headers: [&#39;Date&#39;, &#39;Description&#39;, &#39;Status&#39;, &#39;Amount&#39;],
+  columns: [
+    { f: 0.20, a: &#39;l&#39;, mx: 12, mxH: 12 },
+    { f: 0.45, a: &#39;l&#39;, mx: 60, mxH: 60 },
+    { f: 0.20, a: &#39;l&#39;, mx: 20, mxH: 20 },
+    { f: 0.15, a: &#39;r&#39;, mx: 18, mxH: 18, kind: &#39;amount&#39; }, // ← opt-in bold + credit/debit colour
+  ],
+  rows: [
+    { cells: [&#39;2026-05-01&#39;, &#39;Salary&#39;, &#39;Cleared&#39;, &#39;+3 000.00&#39;], type: &#39;credit&#39;, pointed: false },
+    { cells: [&#39;2026-05-03&#39;, &#39;Rent&#39;,   &#39;Pending&#39;, &#39;-1 250.00&#39;], type: &#39;debit&#39;,  pointed: false },
+  ],
+}
+</code></pre>
+<blockquote>
+<p><strong>Behaviour change for document-builder tables without <code>kind</code>.</strong> Previously the renderer applied Helvetica-Bold + credit/debit colour to whichever column happened to be at index 3. The current renderer removes that heuristic — opt in explicitly via <code>kind: &#39;amount&#39;</code>. The legacy <code>buildPDF()</code> (financial-statement) path keeps the historical heuristic for byte-identical v1.0/v1.1 output.</p>
+</blockquote>
+<hr>
+<h2 id="how-multi-page-tables-are-sliced">How multi-page tables are sliced<a class="heading-anchor" href="#how-multi-page-tables-are-sliced" aria-label="Link to this section">#</a></h2>
+<p>pdfnative uses a two-phase pipeline:</p>
+<ol>
+<li><strong>Plan phase</strong> — <code>planTable()</code> (<a href="https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-renderers.ts" target="_blank" rel="noopener">src/core/pdf-renderers.ts</a>) measures the entire table once: resolves columns (including <code>autoFit</code>), word-wraps each cell according to <code>wrap</code>, computes per-row heights, and produces a <code>TablePlan</code> containing every row&#39;s exact pixel height.</li>
+<li><strong>Slice phase</strong> — <code>_paginateBlocks()</code> in <a href="https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-document.ts" target="_blank" rel="noopener">src/core/pdf-document.ts</a> walks the plan greedily: it packs rows onto the current page until the next row would overflow, then emits a <code>TableSlice</code> ( <code>{ fromRow, toRow, drawCaption, drawHeader, isFinalSlice }</code>) and starts a new page. The caption is emitted once (on the first slice); the header is emitted on every slice when <code>repeatHeader: true</code>.</li>
+</ol>
+<p><code>renderTable()</code> is page-lifecycle-free — it accepts an optional <code>slice</code> parameter and renders exactly the rows the paginator asked for. There is no recursive &quot;if I overflow, start a new page&quot; inside the renderer; pagination decisions are deterministic and centralised.</p>
+<h3 id="edge-cases-handled">Edge cases handled<a class="heading-anchor" href="#edge-cases-handled" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Empty <code>rows</code> array</strong> — emits a header-only slice with caption (if any). No crash, no zero-height row.</li>
+<li><strong>Single row taller than a fresh page</strong> — emitted as a one-row slice; <code>clipCells</code> (existing v1.1.0 behaviour) handles vertical overflow inside the cell.</li>
+<li><strong>No room on current page even after pushing the table to start</strong> — paginator forces a new page and retries.</li>
+</ul>
+<hr>
+<h2 id="tagged-mode-pdfua">Tagged-mode / PDF/UA<a class="heading-anchor" href="#tagged-mode-pdfua" aria-label="Link to this section">#</a></h2>
+<p>When the document is built with <code>tagged: true</code> (or any explicit PDF/A mode), the table emits the following structure tree:</p>
+<pre><code class="language-text">/Table
+├── /Caption       (only when caption is present)
+├── /TR  ← header
+│   ├── /TH
+│   ├── /TH
+│   └── /TH
+├── /TR  ← data row 1
+│   ├── /TD
+│   ├── /TD
+│   └── /TD
+└── /TR  ← data row N
+    └── …
+</code></pre>
+<p>The structure is <strong>single</strong> even when the table spans multiple pages. <code>_paginateBlocks()</code> shares a <code>tableStructAccum</code> array across all slices of the same table; the final slice commits it as <code>{ type: &#39;Table&#39;, children: tableStructAccum }</code>. Each <code>/TR</code> carries the correct <code>/StructParents</code> for its page so screen readers reconstruct the logical reading order correctly (ISO 14289-1 §7.10.6).</p>
+<p>Repeated headers in <code>repeatHeader: true</code> mode are <strong>not</strong> re-emitted in the structure tree — they are visual continuations only. The single <code>/TR</code> for the header sits at the top of the <code>/Table</code> element.</p>
+<hr>
+<h2 id="tagged-mode-zebra">Tagged-mode + zebra<a class="heading-anchor" href="#tagged-mode-zebra" aria-label="Link to this section">#</a></h2>
+<p>Zebra fills are decorative — they do not appear in the structure tree. PDF/UA conformance is preserved.</p>
+<blockquote>
+<p>⚠️ <strong>PDF/A-1b note.</strong> PDF/A-1b forbids transparency (ISO 19005-1 §6.4). Zebra fills are opaque solid rectangles, so they are safe under PDF/A-1b, but <strong>avoid combining zebra with <code>pdfa1b</code> watermarks</strong> that rely on <code>/ExtGState</code>. Default <code>tagged: true</code> (PDF/A-2b) has no such restriction.</p>
+</blockquote>
+<hr>
+<h2 id="migration-from-v110">Migration from v1.1.0<a class="heading-anchor" href="#migration-from-v110" aria-label="Link to this section">#</a></h2>
+<blockquote>
+<p><strong>One unconditional fix.</strong> Right- and centre-aligned <strong>bold header</strong> cells now use Helvetica-Bold metrics for width measurement (Adobe AFM), where pre-1.2.0 they were measured with Helvetica-Regular. This corrects a 2–5pt overshoot per cell that visually clipped the trailing glyph (e.g. the <code>t</code> in <code>Amount</code>). The fix shifts header glyph positioning by 2–5pt vs v1.1.0 — a genuine correctness improvement, not a regression. There is no opt-out.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>You want…</th>
+<th>Setting</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Exact byte-identical v1.1.0 multi-page <em>body</em> output</td>
+<td><code>wrap: &#39;never&#39;, repeatHeader: false</code> (header positioning still corrected)</td>
+</tr>
+<tr>
+<td>Modern default (recommended)</td>
+<td>Omit all new fields — defaults are correct.</td>
+</tr>
+<tr>
+<td>Invoice / report parity with commercial libs</td>
+<td><code>wrap: &#39;auto&#39;, repeatHeader: true, zebra: true, caption: &#39;…&#39;</code></td>
+</tr>
+<tr>
+<td>Uniform row heights regardless of content</td>
+<td><code>wrap: &#39;always&#39;, minRowHeight: 18</code></td>
+</tr>
+<tr>
+<td>Maximum information density</td>
+<td><code>wrap: &#39;auto&#39;, cellPadding: 2, minRowHeight: 10</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="samples-shipped">Samples shipped<a class="heading-anchor" href="#samples-shipped" aria-label="Link to this section">#</a></h2>
+<p>Run <code>npm run test:generate</code> to produce:</p>
+<ul>
+<li><code>test-output/document/table-wrap-auto.pdf</code> — wrap-on-overflow demo</li>
+<li><code>test-output/document/table-multipage-header-repeat.pdf</code> — 60-row table across 2+ pages with repeated header</li>
+<li><code>test-output/document/table-zebra-caption.pdf</code> — zebra + caption + min row height</li>
+<li><code>test-output/document/table-smart-autofit.pdf</code> — <code>autoFit</code> columns + wrap</li>
+</ul>
+<p>Generator: <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/document-table-parity.ts" target="_blank" rel="noopener">scripts/generators/document-table-parity.ts</a>.</p>
+<hr>
+<h2 id="reference">Reference<a class="heading-anchor" href="#reference" aria-label="Link to this section">#</a></h2>
+<ul>
+<li>ISO 32000-1:2008 §9 — text rendering and positioning.</li>
+<li>ISO 14289-1:2014 §7.10.6 — tagged-PDF table structure (<code>/Table</code>, <code>/TR</code>, <code>/TH</code>, <code>/TD</code>, <code>/Caption</code>).</li>
+<li>ISO 19005-2:2011 — PDF/A-2b conformance.</li>
+</ul>
+<h3 id="internal-contracts-for-contributors">Internal contracts (for contributors)<a class="heading-anchor" href="#internal-contracts-for-contributors" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><code>planTable()</code> and <code>TableSlice</code> live in <a href="https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-renderers.ts" target="_blank" rel="noopener">src/core/pdf-renderers.ts</a>. They are <strong>not</strong> re-exported from the package root. Treat them as internal — they may change without a major bump as long as the public <code>TableBlock</code> contract is preserved.</li>
+<li>Single-line row rendering uses <code>rowTop - rowH + 3</code> baseline for data and <code>rowTop - rowH + 4</code> for headers. These constants (<code>CELL_PAD_BOTTOM</code>, <code>HEADER_PAD_BOTTOM</code>) preserve byte-stability with v1.1.0 single-page output.</li>
+<li>The default <code>minRowHeight</code> (<code>12</code>) and default header height (<code>15</code>) match v1.1.0&#39;s <code>ROW_H</code> and <code>TH_H</code> constants exactly.</li>
+</ul>
+<hr>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="architecture.md">Architecture</a> — overall module layout.</li>
+<li><a href="pdfa.md">PDF/A conformance</a> — tagged-mode rules.</li>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/README.md#api-reference" target="_blank" rel="noopener">API reference</a> — full <code>TableBlock</code> type.</li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

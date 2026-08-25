@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/agentic-workflows.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/agentic-workflows.html">
   <link rel="alternate" type="text/markdown" href="agentic-workflows.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Agentic workflows","item":"https://pdfnative.dev/guides/agentic-workflows.html"}]},{"@type":"TechArticle","headline":"Agentic workflows","description":"How AI agents compose with pdfnative: extend the engine at runtime by registering fonts without a release (registerFont + parseFontData/compileFontData), and embed agent-generated images via the image block and the embed_image MCP tool.","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/agentic-workflows.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,180 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Agentic workflows</p>
-  <article id="guide-content" class="guide-content" data-md="agentic-workflows.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="agentic-workflows.md">read agentic-workflows.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="agentic-workflows.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="agentic-workflows">Agentic workflows</h1>
+<blockquote>
+<p><strong>How AI agents compose with pdfnative.</strong> pdfnative is designed so an autonomous
+agent can do more than <em>call</em> the engine — it can <strong>extend</strong> it at runtime and
+<strong>feed it content it generated itself</strong>, all without waiting for a library
+release. This guide documents two concrete, factual patterns and the exact
+public APIs they rely on.</p>
+</blockquote>
+<p>Both patterns are built entirely on already-shipped, public API surfaces:</p>
+<ul>
+<li>The library&#39;s <code>registerFont()</code> / <code>loadFontData()</code> font registry, the
+<code>pdfnative/tools</code> sub-path (<code>parseFontData</code> / <code>compileFontData</code>, since v1.5.0),
+and the bundled <code>pdfnative-build-font</code> CLI.</li>
+<li>The image entry points: the <code>image</code> document block (library + CLI) and the
+<code>embed_image</code> MCP tool.</li>
+</ul>
+<p>There is <strong>no new API</strong> here — the point is that the existing surfaces were
+shaped so agents can use them autonomously, under the project&#39;s
+<a href="ai-governance.md">AI-governance / human-in-the-loop contract</a>.</p>
+<hr>
+<h2 id="pattern-1-extend-the-engine-at-runtime-without-a-release">Pattern 1 — extend the engine at runtime, without a release<a class="heading-anchor" href="#pattern-1-extend-the-engine-at-runtime-without-a-release" aria-label="Link to this section">#</a></h2>
+<p>pdfnative ships 26 bundled font-data modules (22 scripts plus Latin, math, and monochrome + colour emoji). But its font
+system is <strong>open</strong>: any TrueType/OpenType font becomes a first-class,
+CIDFont-embedded, subset-on-use font once it is <em>registered</em>. Registration is a
+runtime call — it does not require rebuilding or republishing pdfnative.</p>
+<p>This is what lets an agent add a capability the moment a document needs it. In a
+previous iteration of this project, an agent using the MCP server needed
+mathematical symbols before the bundled <strong>Noto Sans Math</strong> font existed as a
+release. Because the font registry is a public runtime API, the agent was able to
+compile the font data and register it on the spot; the same font later shipped as
+<code>registerFont(&#39;math&#39;, …)</code> in pdfnative 1.5.0. <!-- verify-docs:allow version-token (historical) --> The library did not need to change
+for the document to render — the release simply promoted an already-working
+runtime pattern into a bundled default.</p>
+<h3 id="the-three-building-blocks">The three building blocks<a class="heading-anchor" href="#the-three-building-blocks" aria-label="Link to this section">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>API</th>
+<th>Sub-path</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>registerFont(lang, loader)</code> / <code>registerFonts({ … })</code></td>
+<td><code>pdfnative</code></td>
+<td>Register a lazy font-data loader under a <code>lang</code> code. <code>loadFontData(lang)</code> resolves it on first use.</td>
+</tr>
+<tr>
+<td><code>parseFontData(bytes)</code> → <code>FontDataObject</code></td>
+<td><code>pdfnative/tools</code></td>
+<td>Parse a TTF/OTF <strong>in memory</strong> into a registerable font-data object (metrics, cmap, widths, GSUB/GPOS, <code>/W</code> array). Pure — no <code>fs</code>, no <code>child_process</code>, works in browsers / Deno / edge.</td>
+</tr>
+<tr>
+<td><code>compileFontData(bytes, { fontName })</code> → <code>string</code></td>
+<td><code>pdfnative/tools</code></td>
+<td>Emit the ES/CJS module <strong>source</strong> for a font-data file — byte-identical to the <code>pdfnative-build-font</code> CLI. Useful when the agent wants to persist a reusable <code>*-data.js</code>.</td>
+</tr>
+</tbody></table>
+<h3 id="an-agent-registers-a-font-at-runtime">An agent registers a font at runtime<a class="heading-anchor" href="#an-agent-registers-a-font-at-runtime" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, registerFont, loadFontData } from &#39;pdfnative&#39;;
+import { parseFontData } from &#39;pdfnative/tools&#39;;
+
+// The agent obtained the TTF bytes however it likes — a bundled asset,
+// a user upload, or a fetch it performed itself.
+const ttfBytes: Uint8Array = await getFontBytes();
+
+// Parse in memory → a registerable font-data object.
+const fontData = parseFontData(ttfBytes);
+
+// Register it under a lang code. No release, no rebuild.
+registerFont(&#39;custom&#39;, () =&gt; Promise.resolve(fontData));
+
+// The registry is only consulted through loadFontData + fontEntries —
+// load the data and pass it explicitly (fontRef must be a PDF name; /F1 and /F2 are reserved):
+const custom = await loadFontData(&#39;custom&#39;);
+if (!custom) throw new Error(&#39;custom font failed to load&#39;);
+
+// It is now a first-class font: pdfnative subsets and embeds it on use.
+const pdf = buildDocumentPDFBytes({
+  title: &#39;Runtime font&#39;,
+  blocks: [{ type: &#39;paragraph&#39;, text: &#39;Rendered with an agent-registered font.&#39; }],
+  fontEntries: [{ fontData: custom, fontRef: &#39;/F3&#39;, lang: &#39;custom&#39; }],
+});
+</code></pre>
+<h3 id="persisting-a-reusable-data-module">Persisting a reusable data module<a class="heading-anchor" href="#persisting-a-reusable-data-module" aria-label="Link to this section">#</a></h3>
+<p>When an agent wants the font to be reusable across runs — or to hand a ready-made
+module to a human — it can emit the module source instead:</p>
+<pre><code class="language-ts">import { compileFontData } from &#39;pdfnative/tools&#39;;
+
+const source = compileFontData(ttfBytes, { fontName: &#39;My Font&#39; });
+// `source` is byte-identical to what `pdfnative-build-font` writes to disk.
+// A human (or a sandboxed file tool) can save it as `my-font-data.js`.
+</code></pre>
+<p>The equivalent one-liner for a human at a terminal is the bundled CLI:</p>
+<pre><code class="language-bash">npx pdfnative-build-font fonts/ttf/MyFont.ttf fonts/my-font-data.js
+</code></pre>
+<blockquote>
+<p><strong>Why this matters.</strong> The engine&#39;s coverage is not frozen at release time. An
+agent can close a glyph gap — a new script, a symbol set, a brand font — the
+instant a document requires it, then optionally graduate that work into a
+committed data module for the whole team. This is <em>runtime extensibility</em>, not
+autonomous modification of the published package: the agent extends its own
+in-process pdfnative instance; the repository is only ever changed by a human
+under the <a href="ai-governance.md">governance contract</a>.</p>
+</blockquote>
+<hr>
+<h2 id="pattern-2-agent-generated-images-in-the-pdf">Pattern 2 — agent-generated images in the PDF<a class="heading-anchor" href="#pattern-2-agent-generated-images-in-the-pdf" aria-label="Link to this section">#</a></h2>
+<p>Modern agents can <em>generate</em> raster content — charts, diagrams, illustrations,
+photos. Image-generating agents (for example Antigravity, ChatGPT, and other
+multimodal assistants) can pipe that output straight into a pdfnative document.
+pdfnative treats a generated PNG/JPEG exactly like any other image: it parses it
+natively and embeds it as an Image XObject (<code>/DCTDecode</code> for JPEG,
+<code>/FlateDecode</code> for PNG) — no rasterization, no headless browser.</p>
+<h3 id="via-the-mcp-server-embed_image">Via the MCP server — <code>embed_image</code><a class="heading-anchor" href="#via-the-mcp-server-embed_image" aria-label="Link to this section">#</a></h3>
+<p>An agent that produced an image returns it as base64 and calls <code>embed_image</code>:</p>
+<pre><code class="language-jsonc">{
+  &quot;tool&quot;: &quot;embed_image&quot;,
+  &quot;input&quot;: {
+    &quot;title&quot;: &quot;Quarterly trend&quot;,
+    &quot;imageBase64&quot;: &quot;&lt;base64 PNG/JPEG the agent just generated&gt;&quot;,
+    &quot;mimeType&quot;: &quot;image/png&quot;,
+    &quot;outputMode&quot;: &quot;base64&quot;
+  }
+}
+</code></pre>
+<p>For a richer layout, the same base64 payload can be dropped into an <code>image</code>
+block on <code>generate_basic_pdf</code>, alongside headings, tables, and barcodes the agent
+assembles in the same call.</p>
+<h3 id="via-the-library-or-cli-the-image-block">Via the library or CLI — the <code>image</code> block<a class="heading-anchor" href="#via-the-library-or-cli-the-image-block" aria-label="Link to this section">#</a></h3>
+<p>In code, a generated image is just another block:</p>
+<pre><code class="language-ts">import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+const pdf = buildDocumentPDFBytes({
+  title: &#39;Report with a generated figure&#39;,
+  blocks: [
+    { type: &#39;heading&#39;, text: &#39;Findings&#39;, level: 1 },
+    { type: &#39;paragraph&#39;, text: &#39;The figure below was generated on-device by the agent.&#39; },
+    { type: &#39;image&#39;, data: generatedPngBytes, width: 480 },
+  ],
+});
+</code></pre>
+<p>From the shell, an agent driving <code>pdfnative-cli render</code> supplies the same block
+in its JSON document (image bytes are provided as a block field or an asset path,
+subject to the CLI&#39;s path-validation rules).</p>
+<blockquote>
+<p><strong>Safety.</strong> pdfnative validates image inputs at the boundary — it parses the
+JPEG/PNG structure natively and rejects malformed or unsupported payloads
+(e.g. raw RGBA). The agent supplies pixels; pdfnative decides whether they are
+a well-formed image before embedding.</p>
+</blockquote>
+<hr>
+<h2 id="how-the-two-patterns-fit-together">How the two patterns fit together<a class="heading-anchor" href="#how-the-two-patterns-fit-together" aria-label="Link to this section">#</a></h2>
+<p>A single agent turn can combine both: register a brand font, generate a cover
+image, and assemble a signed, archive-grade PDF — in one MCP conversation or one
+CLI pipeline, without a pdfnative release in the loop.</p>
+<p><img src="../assets/agentic-workflows.svg" alt="Agentic workflows: an AI agent generates images (embedded via the image block / embed_image) and compiles fonts (registered at runtime via registerFont + parseFontData), both feeding the pdfnative public API to produce an ISO 32000-1 PDF. Repository changes stay human-gated under the AI-governance / HITL contract."></p>
+<p>The engine stays zero-dependency and unchanged; the agent supplies fonts and
+images through public, validated entry points. Anything that would modify the
+<strong>repository</strong> — a new bundled font, a code change — still goes through a human
+under the <a href="ai-governance.md">AI-governance / human-in-the-loop contract</a>.</p>
+<hr>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="ai-governance.md">AI governance &amp; human-in-the-loop</a> — the contract that keeps
+repository changes human-gated.</li>
+<li><a href="mcp.md">MCP integration</a> — the 28 MCP tools, including <code>embed_image</code> and
+<code>draft_governance_issue</code>.</li>
+<li><a href="cli.md">CLI guide</a> — driving pdfnative from the shell.</li>
+<li><a href="font-validation.md">Font validation</a> — <code>validateFontData()</code> for sanity-checking
+a font module before registering it.</li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 
