@@ -45,7 +45,12 @@
   if (!container) return;
 
   var src = container.getAttribute('data-md');
-  if (!src) return;
+  // The attribute is author-controlled static HTML, but treat it as untrusted
+  // anyway (CodeQL: DOM text reinterpreted as HTML): only a plain
+  // same-directory Markdown filename may flow into fetch(), the source-bar
+  // href, and the GitHub fallback URLs. Anything else — paths, protocols,
+  // `javascript:` — is rejected here, sanitising every downstream sink.
+  if (!src || !/^[A-Za-z0-9][A-Za-z0-9_-]*\.md$/.test(src)) return;
 
   // ── Progressive enhancements shared by both paths ─────────
   // (pre-rendered shells and the runtime-rendered fallback)
