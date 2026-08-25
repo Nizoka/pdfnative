@@ -584,7 +584,7 @@ $('sample-btn').addEventListener('click', () => {
       metadata: { author: 'pdfnative playground', subject: 'A document generated in your browser for inspection' },
       blocks: [
         { type: 'heading', text: 'Inspection sample', level: 1 },
-        { type: 'paragraph', text: 'This two-page document was generated in your browser a moment ago. It is tagged, so the PDF/UA card has structure to check, and it carries two form fields for the form-field card. It has no signature fields — the signatures card should say exactly that.' },
+        { type: 'paragraph', text: 'This two-page document was generated in your browser a moment ago. It is tagged, so the PDF/UA card has structure to check, and it carries two form fields for the form-field card. It has no signature fields — the signatures card should say exactly that. One honest note: its PDF/A-2b claim is deliberately NOT conformant — the text uses unembedded base-14 Helvetica and form fields sit under the claim, the two documented limitations the engine’s diagnostics guard against. Run it through veraPDF to see both; the PDF/A guide explains the conformant recipe (embedFonts, no form fields under a claim).' },
         { type: 'list', style: 'bullet', items: [
           'Overview reads the header, page tree, xref and /Info dictionary.',
           'Text extraction returns reading-order text plus positioned runs.',
