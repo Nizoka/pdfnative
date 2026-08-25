@@ -5,14 +5,20 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 14047,
-      "approxTokens": 3512
+      "bytes": 14343,
+      "approxTokens": 3586
+    },
+    {
+      "url": "https://pdfnative.dev/agent-brief.md",
+      "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
+      "bytes": 6959,
+      "approxTokens": 1740
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 461863,
-      "approxTokens": 115466
+      "bytes": 463864,
+      "approxTokens": 115966
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
@@ -24,7 +30,7 @@
   "guides": [
     {
       "title": "Accessibility",
-      "summary": "PDF/A declaration guards _(v1.7.0)_. Tagged documents that also claim",
+      "summary": "Tagged PDF, PDF/UA and screen-reader-friendly output. Pass `layout: { tagged: true }` (or a PDF/A level) and pdfnative emits the structure tree, `/ActualText` and metadata that assistive technology needs — then check the result with the read-only `validatePdfUA()`.",
       "html": "https://pdfnative.dev/guides/accessibility.html",
       "markdown": "https://pdfnative.dev/guides/accessibility.md",
       "anchors": [
@@ -37,8 +43,8 @@
         "testing-your-pdfs-are-accessible",
         "further-reading"
       ],
-      "bytes": 7135,
-      "approxTokens": 1784
+      "bytes": 7410,
+      "approxTokens": 1853
     },
     {
       "title": "Agentic workflows",
@@ -89,7 +95,7 @@
     },
     {
       "title": "Architecture Guide",
-      "summary": "pdfnative provides two PDF builders for different use cases:",
+      "summary": "Two builders, one strict dependency flow. `buildPDFBytes` is the table-centric builder, `buildDocumentPDFBytes` the free-form document builder; beneath them the modules flow types → core ← fonts ← shaping ← worker, with standalone crypto and parser modules — no circular imports anywhere.",
       "html": "https://pdfnative.dev/guides/architecture.html",
       "markdown": "https://pdfnative.dev/guides/architecture.md",
       "anchors": [
@@ -99,8 +105,8 @@
         "key-design-decisions",
         "ecosystem"
       ],
-      "bytes": 11086,
-      "approxTokens": 2772
+      "bytes": 11392,
+      "approxTokens": 2848
     },
     {
       "title": "Charts (native vector)",
@@ -344,7 +350,7 @@
     },
     {
       "title": "PDF/A conformance in pdfnative",
-      "summary": "On the MCP surface _(pdfnative-mcp 1.6.0)_, the same honesty is exposed",
+      "summary": "PDF/A-1b, 2b, 2u and 3b via `layout: { tagged: … }`, validated against the veraPDF reference validator in CI. Since v1.7.0, a configuration that would break the declared level surfaces a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`.",
       "html": "https://pdfnative.dev/guides/pdfa.html",
       "markdown": "https://pdfnative.dev/guides/pdfa.md",
       "anchors": [
@@ -357,8 +363,8 @@
         "hard-invariants-for-contributors",
         "see-also"
       ],
-      "bytes": 15603,
-      "approxTokens": 3901
+      "bytes": 15911,
+      "approxTokens": 3978
     },
     {
       "title": "Print production — bleed, trim & printer's marks",
@@ -380,7 +386,7 @@
     },
     {
       "title": "Quick Start",
-      "summary": "Requirements: Node.js ≥ 22 · modern browsers · Deno · Bun.",
+      "summary": "One install, one function. `npm install pdfnative`, then `buildDocumentPDFBytes({ title, blocks })` returns a `Uint8Array` — synchronously, in Node, browsers, Deno and Bun. No config, no build step, no service.",
       "html": "https://pdfnative.dev/guides/quickstart.html",
       "markdown": "https://pdfnative.dev/guides/quickstart.md",
       "anchors": [
@@ -396,8 +402,8 @@
         "command-line-pdfnative-cli",
         "next-steps"
       ],
-      "bytes": 7822,
-      "approxTokens": 1956
+      "bytes": 8042,
+      "approxTokens": 2011
     },
     {
       "title": "pdfnative-react — Declarative JSX Renderer Guide",
@@ -426,7 +432,7 @@
     },
     {
       "title": "Digital signatures in pdfnative",
-      "summary": "pdfnative ships a zero-dependency CMS/PKCS#7 detached signature implementation (ISO 32000-1 §12.8) with full crypto in pure TypeScript — RSA PKCS#1 v1.5 and ECDSA P-256, both with SHA-256, X.509 DER parsing, and ASN.1 DER encoding. No OpenSSL, no node-forge, no external crypto.",
+      "summary": "CMS/PKCS#7 detached signatures in pure TypeScript — RSA PKCS#1 v1.5 (SHA-256/384/512) and ECDSA P-256, the PAdES baseline profile and multiple signatures since v1.7.0, with a one-call `addSignaturePlaceholder()` workflow. For timestamps and B-T → B-LTA, see the LTV guide.",
       "html": "https://pdfnative.dev/guides/signatures.html",
       "markdown": "https://pdfnative.dev/guides/signatures.md",
       "anchors": [
@@ -443,8 +449,8 @@
         "full-example",
         "related-guides"
       ],
-      "bytes": 17348,
-      "approxTokens": 4337
+      "bytes": 17676,
+      "approxTokens": 4419
     },
     {
       "title": "Streaming output",
@@ -504,7 +510,7 @@
     },
     {
       "title": "Troubleshooting",
-      "summary": "The `lang` property triggers: - BiDi run detection (`containsRTL()`) - Arabic positional shaping (GSUB forms) - Glyph mirroring for brackets and other paired delimiters (the full 428-pair Unicode BidiMirroring table since v1.7.0, per UAX #9 rule L4)",
+      "summary": "Symptom-first fixes for the classic failures — tofu boxes (a font registered but never loaded), RTL text appearing backwards, oversized files, PDF/A validation errors, parser rejections — each with the check that identifies it and the change that fixes it.",
       "html": "https://pdfnative.dev/guides/troubleshooting.html",
       "markdown": "https://pdfnative.dev/guides/troubleshooting.md",
       "anchors": [
@@ -516,8 +522,8 @@
         "parser-fails-on-external-pdf",
         "build-import-issues"
       ],
-      "bytes": 5035,
-      "approxTokens": 1259
+      "bytes": 5303,
+      "approxTokens": 1326
     },
     {
       "title": "Viewer preferences",

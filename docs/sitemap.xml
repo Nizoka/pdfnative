@@ -423,6 +423,14 @@
     <priority>0.3</priority>
   </url>
   <url>
+    <loc>https://pdfnative.dev/agent-brief.md</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/agent-brief.md"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/agent-brief.md"/>
+    <lastmod>2026-08-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
     <loc>https://pdfnative.dev/llms-full.txt</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/llms-full.txt"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/llms-full.txt"/>

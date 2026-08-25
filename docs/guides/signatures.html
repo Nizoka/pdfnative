@@ -64,9 +64,12 @@
   <article id="guide-content" class="guide-content" data-md="signatures.md" data-prerendered="true">
 <!-- guide:render:start -->
 <h1 id="digital-signatures-in-pdfnative">Digital signatures in pdfnative</h1>
+<blockquote>
+<p><strong>CMS/PKCS#7 detached signatures in pure TypeScript</strong> — RSA PKCS#1 v1.5 (SHA-256/384/512) and ECDSA P-256, the PAdES baseline profile and multiple signatures since v1.7.0, with a one-call <code>addSignaturePlaceholder()</code> workflow. For timestamps and B-T → B-LTA, see the <a href="ltv.html">LTV guide</a>.</p>
+</blockquote>
 <p>pdfnative ships a zero-dependency CMS/PKCS#7 detached signature
 implementation (ISO 32000-1 §12.8) with full crypto in pure TypeScript —
-RSA PKCS#1 v1.5 and ECDSA P-256, both with SHA-256, X.509 DER parsing,
+RSA PKCS#1 v1.5 (SHA-256, plus SHA-384/512 since v1.7.0) and ECDSA P-256 (SHA-256), X.509 DER parsing,
 and ASN.1 DER encoding. No OpenSSL, no node-forge, no external crypto.</p>
 <h2 id="tldr-sign-any-pdf-in-3-lines">TL;DR — sign any PDF in 3 lines<a class="heading-anchor" href="#tldr-sign-any-pdf-in-3-lines" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-ts">import {

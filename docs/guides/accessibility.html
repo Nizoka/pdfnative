@@ -64,6 +64,9 @@
   <article id="guide-content" class="guide-content" data-md="accessibility.md" data-prerendered="true">
 <!-- guide:render:start -->
 <h1 id="accessibility">Accessibility</h1>
+<blockquote>
+<p><strong>Tagged PDF, PDF/UA and screen-reader-friendly output.</strong> Pass <code>layout: { tagged: true }</code> (or a PDF/A level) and pdfnative emits the structure tree, <code>/ActualText</code> and metadata that assistive technology needs — then check the result with the read-only <code>validatePdfUA()</code>.</p>
+</blockquote>
 <p>pdfnative produces <strong>tagged, accessible PDFs</strong> out of the box. This guide covers PDF/UA, PDF/A, the structure tree, and best practices for screen-reader-friendly output.</p>
 <h2 id="why-tagged-pdf-matters">Why tagged PDF matters<a class="heading-anchor" href="#why-tagged-pdf-matters" aria-label="Link to this section">#</a></h2>
 <p>A tagged PDF carries a parallel <strong>structure tree</strong> alongside the visual content. Assistive technologies (screen readers, refreshable braille displays, reflow tools) walk the structure tree to present the document in reading order — without it, they fall back to heuristic guessing of what&#39;s a heading, a paragraph, or a table cell.</p>

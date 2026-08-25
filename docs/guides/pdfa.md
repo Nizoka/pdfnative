@@ -1,5 +1,7 @@
 # PDF/A conformance in pdfnative
 
+> **PDF/A-1b, 2b, 2u and 3b via `layout: { tagged: … }`, validated against the veraPDF reference validator in CI.** Since v1.7.0, a configuration that would break the declared level surfaces a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`.
+
 PDF/A is the ISO archival profile for PDF (ISO 19005). pdfnative supports
 PDF/A-1b, 2b, 2u, and 3b via the `tagged` build option. This guide
 explains what works today, what's still in flight, and how to validate

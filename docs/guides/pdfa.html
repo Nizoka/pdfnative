@@ -64,6 +64,9 @@
   <article id="guide-content" class="guide-content" data-md="pdfa.md" data-prerendered="true">
 <!-- guide:render:start -->
 <h1 id="pdfa-conformance-in-pdfnative">PDF/A conformance in pdfnative</h1>
+<blockquote>
+<p><strong>PDF/A-1b, 2b, 2u and 3b via <code>layout: { tagged: … }</code>, validated against the veraPDF reference validator in CI.</strong> Since v1.7.0, a configuration that would break the declared level surfaces a diagnostic — <code>console.warn</code> by default, a custom <code>onDiagnostic</code> sink, or a thrown error under <code>strict: true</code>.</p>
+</blockquote>
 <p>PDF/A is the ISO archival profile for PDF (ISO 19005). pdfnative supports
 PDF/A-1b, 2b, 2u, and 3b via the <code>tagged</code> build option. This guide
 explains what works today, what&#39;s still in flight, and how to validate

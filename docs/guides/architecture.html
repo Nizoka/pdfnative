@@ -64,6 +64,9 @@
   <article id="guide-content" class="guide-content" data-md="architecture.md" data-prerendered="true">
 <!-- guide:render:start -->
 <h1 id="architecture-guide">Architecture Guide</h1>
+<blockquote>
+<p><strong>Two builders, one strict dependency flow.</strong> <code>buildPDFBytes</code> is the table-centric builder, <code>buildDocumentPDFBytes</code> the free-form document builder; beneath them the modules flow types → core ← fonts ← shaping ← worker, with standalone crypto and parser modules — no circular imports anywhere.</p>
+</blockquote>
 <h2 id="two-builders">Two Builders<a class="heading-anchor" href="#two-builders" aria-label="Link to this section">#</a></h2>
 <p>pdfnative provides two PDF builders for different use cases:</p>
 <h3 id="buildpdf-buildpdfbytes-table-centric"><code>buildPDF()</code> / <code>buildPDFBytes()</code> — Table-Centric<a class="heading-anchor" href="#buildpdf-buildpdfbytes-table-centric" aria-label="Link to this section">#</a></h3>

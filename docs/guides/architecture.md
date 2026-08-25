@@ -1,5 +1,7 @@
 # Architecture Guide
 
+> **Two builders, one strict dependency flow.** `buildPDFBytes` is the table-centric builder, `buildDocumentPDFBytes` the free-form document builder; beneath them the modules flow types → core ← fonts ← shaping ← worker, with standalone crypto and parser modules — no circular imports anywhere.
+
 ## Two Builders
 
 pdfnative provides two PDF builders for different use cases:

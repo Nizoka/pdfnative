@@ -1,5 +1,7 @@
 # Accessibility
 
+> **Tagged PDF, PDF/UA and screen-reader-friendly output.** Pass `layout: { tagged: true }` (or a PDF/A level) and pdfnative emits the structure tree, `/ActualText` and metadata that assistive technology needs — then check the result with the read-only `validatePdfUA()`.
+
 pdfnative produces **tagged, accessible PDFs** out of the box. This guide covers PDF/UA, PDF/A, the structure tree, and best practices for screen-reader-friendly output.
 
 ## Why tagged PDF matters

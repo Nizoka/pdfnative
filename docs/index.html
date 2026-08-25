@@ -426,7 +426,7 @@ const pdf = buildDocumentPDFBytes({
 <section class="section" id="demo">
   <div class="container">
     <h2 class="section-title">Try It Live</h2>
-    <p class="section-subtitle">Pick an example, edit the code, then click "Generate PDF" — it runs entirely in your browser via the npm CDN.</p>
+    <p class="section-subtitle">Pick an example, edit the code, and watch the PDF render beside it — everything runs in your browser via the npm CDN. Nothing is uploaded anywhere.</p>
     <div class="demo-container">
       <div class="demo-toolbar">
         <label class="demo-picker-label" for="demo-picker">Example:</label>
@@ -434,13 +434,23 @@ const pdf = buildDocumentPDFBytes({
         <a class="demo-source-link" id="demo-source-link" href="#" target="_blank" rel="noopener" aria-label="View this example's full generator on GitHub">View source ↗</a>
       </div>
       <p class="demo-description" id="demo-description"></p>
-      <textarea class="demo-editor" id="demo-code" spellcheck="false" aria-label="PDF generation code"></textarea>
-      <div class="demo-actions">
-        <button class="btn btn-primary" id="demo-run">▶ Generate PDF</button>
-        <button class="btn btn-secondary" id="demo-reset" type="button">↺ Reset</button>
-        <span class="demo-status" id="demo-status"></span>
+      <div class="pn-split">
+        <div class="pn-split-pane">
+          <textarea class="demo-editor" id="demo-code" spellcheck="false" aria-label="PDF generation code"></textarea>
+          <div class="demo-actions">
+            <button class="btn btn-primary" id="demo-run">▶ Generate PDF</button>
+            <button class="btn btn-secondary" id="demo-reset" type="button">↺ Reset</button>
+            <button class="btn btn-secondary" id="demo-download" type="button" disabled>⬇ Download</button>
+            <button class="btn btn-secondary" id="demo-share" type="button">🔗 Copy link</button>
+            <span class="demo-status" id="demo-status"></span>
+          </div>
+          <div class="demo-error" id="demo-error" role="alert"></div>
+        </div>
+        <div class="pn-split-pane pn-preview-pane">
+          <iframe class="pn-preview-frame" id="demo-preview" title="Generated PDF preview"></iframe>
+          <p class="pn-preview-note" id="demo-preview-note" hidden>Your browser does not preview PDFs inline (most mobile browsers do not) — use <strong>Download</strong> to open the generated file.</p>
+        </div>
       </div>
-      <div class="demo-error" id="demo-error" role="alert"></div>
       <p class="demo-note">
         Need more? Browse all
         <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">48 generators (242 sample PDFs)</a>
@@ -816,6 +826,8 @@ const pdf = renderToBytes(
   }
 }</code></pre>
         <p>Supports Cursor, Continue, Zed, and any stdio MCP client. See the <a href="guides/mcp.html">MCP Integration Guide →</a> &middot; <a href="playgrounds/mcp.html">Try the MCP playground →</a></p>
+        <h3 style="margin-top:24px">Coding with an AI agent?</h3>
+        <p>Paste the <a href="agent-brief.md">agent brief</a> into your assistant's context: the core API, the verified pitfalls that produce wrong code, and the self-verification loop — in about a page. <button class="btn btn-secondary" type="button" data-copy-url="agent-brief.md" style="margin-left:6px">Copy as prompt</button></p>
       </div>
     </div>
   </div>

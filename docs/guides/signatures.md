@@ -1,8 +1,10 @@
 # Digital signatures in pdfnative
 
+> **CMS/PKCS#7 detached signatures in pure TypeScript** — RSA PKCS#1 v1.5 (SHA-256/384/512) and ECDSA P-256, the PAdES baseline profile and multiple signatures since v1.7.0, with a one-call `addSignaturePlaceholder()` workflow. For timestamps and B-T → B-LTA, see the [LTV guide](ltv.html).
+
 pdfnative ships a zero-dependency CMS/PKCS#7 detached signature
 implementation (ISO 32000-1 §12.8) with full crypto in pure TypeScript —
-RSA PKCS#1 v1.5 and ECDSA P-256, both with SHA-256, X.509 DER parsing,
+RSA PKCS#1 v1.5 (SHA-256, plus SHA-384/512 since v1.7.0) and ECDSA P-256 (SHA-256), X.509 DER parsing,
 and ASN.1 DER encoding. No OpenSSL, no node-forge, no external crypto.
 
 ## TL;DR — sign any PDF in 3 lines

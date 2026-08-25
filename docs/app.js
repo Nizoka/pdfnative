@@ -70,6 +70,22 @@
     });
   });
 
+  // ── Copy-a-URL's-content buttons (e.g. the agent brief) ───
+  document.querySelectorAll('[data-copy-url]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var url = btn.getAttribute('data-copy-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (text) { return navigator.clipboard.writeText(text); })
+        .then(function () {
+          var prev = btn.textContent;
+          btn.textContent = '✓ Copied';
+          setTimeout(function () { btn.textContent = prev; }, 1500);
+        })
+        .catch(function () { btn.textContent = 'Copy failed'; });
+    });
+  });
+
   // ── Code tabs ─────────────────────────────────────────────
   var tabBtns = document.querySelectorAll('.tab-btn');
   var tabPanels = document.querySelectorAll('.tab-panel');
@@ -159,6 +175,10 @@
   var demoReset = document.getElementById('demo-reset');
   var demoDescription = document.getElementById('demo-description');
   var demoSourceLink = document.getElementById('demo-source-link');
+  var demoDownload = document.getElementById('demo-download');
+  var demoShare = document.getElementById('demo-share');
+  var demoPreview = document.getElementById('demo-preview');
+  var demoPreviewNote = document.getElementById('demo-preview-note');
   var pdfnativeModule = null;
 
   // ── Examples gallery ──────────────────────────────────────
@@ -591,6 +611,8 @@
     // ── Populate picker and select default ──────────────────
     var DEFAULT_ID = 'quickstart';
     var currentId = null;
+    var lastPdf = null;       // { bytes, name } captured from the last run
+    var lastPreviewUrl = null;
 
     function loadExample(id) {
       var ex = EXAMPLES.find(function (e) { return e.id === id; });
@@ -610,6 +632,11 @@
         opt.textContent = ex.label;
         demoPicker.appendChild(opt);
       });
+      // `#preset=<id>` permalinks restore the selected example.
+      var presetMatch = /(?:^|[#&])preset=([\w-]+)/.exec(location.hash);
+      if (presetMatch && EXAMPLES.some(function (e) { return e.id === presetMatch[1]; })) {
+        DEFAULT_ID = presetMatch[1];
+      }
       demoPicker.value = DEFAULT_ID;
       demoPicker.addEventListener('change', function () { loadExample(demoPicker.value); });
     }
@@ -620,77 +647,121 @@
 
     loadExample(DEFAULT_ID);
 
-    demoBtn.addEventListener('click', async function () {
+    // ── Inline PDF preview ──────────────────────────────────
+    // Same Blob → object-URL pattern as the React playground. Some browsers
+    // (most mobile ones) cannot render PDFs in an iframe; when the engine
+    // says so, be honest about it instead of showing an empty frame.
+    var canPreview = navigator.pdfViewerEnabled !== false;
+    if (!canPreview && demoPreview && demoPreviewNote) {
+      demoPreview.hidden = true;
+      demoPreviewNote.hidden = false;
+    }
+
+    function showPreview(bytes) {
+      if (!demoPreview || !canPreview) return;
+      var blob = new Blob([bytes], { type: 'application/pdf' });
+      if (lastPreviewUrl) URL.revokeObjectURL(lastPreviewUrl);
+      lastPreviewUrl = URL.createObjectURL(blob);
+      demoPreview.src = lastPreviewUrl;
+    }
+
+    // The demo module calls `downloadBlob` like real pdfnative code; the demo
+    // routes those bytes to the preview pane and only downloads on request.
+    function captureSink(bytes, name) {
+      lastPdf = { bytes: bytes, name: name || 'document.pdf' };
+      showPreview(bytes);
+      if (demoDownload) demoDownload.disabled = false;
+    }
+
+    if (demoDownload) {
+      demoDownload.addEventListener('click', function () {
+        if (lastPdf && pdfnativeModule) pdfnativeModule.downloadBlob(lastPdf.bytes, lastPdf.name);
+      });
+    }
+
+    if (demoShare) {
+      demoShare.addEventListener('click', function () {
+        var url = location.origin + location.pathname + '#preset=' + (currentId || DEFAULT_ID);
+        navigator.clipboard.writeText(url).then(function () {
+          var prev = demoShare.textContent;
+          demoShare.textContent = '✓ Copied';
+          setTimeout(function () { demoShare.textContent = prev; }, 1500);
+        });
+      });
+    }
+
+    // ── Execution: real ES module via a Blob URL ─────────────
+    // The example code is executed as an actual module, so its
+    // `import { … } from 'pdfnative'` lines are real, top-level `await`
+    // works natively, and errors carry genuine line numbers. The pdfnative
+    // specifier is resolved to the already-loaded module through a global
+    // (no second CDN request), with `downloadBlob` routed to the preview.
+    function rewriteImports(code) {
+      return code.replace(
+        /^(\s*)import\s*\{([^}]+)\}\s*from\s*['"]pdfnative['"]\s*;?\s*$/gm,
+        '$1const {$2} = globalThis.__pdfnativeDemo.mod;'
+      );
+    }
+
+    function lineFromStack(err) {
+      var m = /blob:[^\s)]+:(\d+):\d+/.exec(err && err.stack ? err.stack : '');
+      return m ? Number(m[1]) : null;
+    }
+
+    async function runDemo() {
       demoStatus.textContent = 'Loading pdfnative…';
       demoError.style.display = 'none';
       demoError.textContent = '';
       demoBtn.disabled = true;
 
+      var moduleUrl = null;
       try {
         // Lazy-load pdfnative from ESM CDN on first use
         if (!pdfnativeModule) {
           pdfnativeModule = await loadPdfnative();
-          demoStatus.textContent = 'Generating PDF…';
         }
+        demoStatus.textContent = 'Generating PDF…';
 
-        // Extract user code and execute
-        var code = demoCode.value;
+        globalThis.__pdfnativeDemo = {
+          mod: Object.assign({}, pdfnativeModule, { downloadBlob: captureSink })
+        };
 
-        // Strip top-level static `import {…} from 'pdfnative'` statements —
-        // we provide those bindings via the function arguments below.
-        // Keep dynamic `import('…')` calls intact for examples that need them
-        // (e.g. multi-language font modules).
-        var cleanCode = code
-          .replace(/^\s*import\s*\{[^}]+\}\s*from\s*['"]pdfnative['"]\s*;?/gm, '')
-          .trim();
+        var source = rewriteImports(demoCode.value);
+        moduleUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+        await import(moduleUrl);
 
-        // Wrap in async IIFE so user code can use top-level `await`
-        var wrapped = '"use strict"; return (async () => {\n' + cleanCode + '\n})();';
-
-        var fn = new Function(
-          'buildPDFBytes', 'buildDocumentPDFBytes', 'downloadBlob',
-          'buildPDF', 'buildDocumentPDF', 'wrapText',
-          'buildDocumentPDFStream', 'buildPDFStream', 'concatChunks',
-          'registerFonts', 'loadFontData',
-          'initNodeCompression', 'signPdfBytes',
-          'extractText', 'mergePdfs', 'splitPdf', 'extractPages',
-          'openPdf', 'readFormFields', 'fillForm', 'flattenForm',
-          wrapped
-        );
-
-        await fn(
-          pdfnativeModule.buildPDFBytes,
-          pdfnativeModule.buildDocumentPDFBytes,
-          pdfnativeModule.downloadBlob,
-          pdfnativeModule.buildPDF,
-          pdfnativeModule.buildDocumentPDF,
-          pdfnativeModule.wrapText,
-          pdfnativeModule.buildDocumentPDFStream,
-          pdfnativeModule.buildPDFStream,
-          pdfnativeModule.concatChunks,
-          pdfnativeModule.registerFonts,
-          pdfnativeModule.loadFontData,
-          pdfnativeModule.initNodeCompression,
-          pdfnativeModule.signPdfBytes,
-          pdfnativeModule.extractText,
-          pdfnativeModule.mergePdfs,
-          pdfnativeModule.splitPdf,
-          pdfnativeModule.extractPages,
-          pdfnativeModule.openPdf,
-          pdfnativeModule.readFormFields,
-          pdfnativeModule.fillForm,
-          pdfnativeModule.flattenForm
-        );
-
-        demoStatus.textContent = 'PDF generated!';
+        demoStatus.textContent = lastPdf ? 'PDF generated — preview updated.' : 'Done (no PDF produced).';
         setTimeout(function () { demoStatus.textContent = ''; }, 3000);
       } catch (err) {
-        demoError.textContent = err.message || String(err);
+        var line = lineFromStack(err);
+        demoError.textContent = (line ? 'Line ' + line + ': ' : '') + (err.message || String(err));
         demoError.style.display = 'block';
         demoStatus.textContent = '';
       } finally {
+        if (moduleUrl) URL.revokeObjectURL(moduleUrl);
         demoBtn.disabled = false;
       }
-    });
+    }
+
+    demoBtn.addEventListener('click', runDemo);
+
+    // First render without a click, once the demo scrolls into view — the
+    // visitor sees a real PDF instead of an empty pane. One shot only.
+    if ('IntersectionObserver' in window && canPreview) {
+      var demoSection = document.getElementById('demo');
+      if (demoSection) {
+        var ran = false;
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting && !ran) {
+              ran = true;
+              io.disconnect();
+              runDemo();
+            }
+          });
+        }, { rootMargin: '200px' });
+        io.observe(demoSection);
+      }
+    }
   }
 })();

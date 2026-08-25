@@ -125,6 +125,7 @@ export function buildLlmsIndex(root: string): string {
     const artefactList: LlmsIndex['artefacts'] = [];
     const artefactSources: Array<[string, string, string]> = [
         [`${site}/llms.txt`, join(root, 'llms.txt'), 'Documentation index (llmstxt.org convention).'],
+        [`${site}/agent-brief.md`, join(root, 'docs', 'agent-brief.md'), 'Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.'],
         [`${site}/llms-full.txt`, join(root, 'docs', 'llms-full.txt'), 'Full corpus: index + README + every guide, one request.'],
         ['https://github.com/Nizoka/pdfnative/blob/main/README.md', join(root, 'README.md'), 'Complete feature and API reference (also embedded in llms-full.txt).'],
     ];

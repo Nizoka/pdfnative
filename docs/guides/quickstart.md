@@ -1,5 +1,7 @@
 # Quick Start
 
+> **One install, one function.** `npm install pdfnative`, then `buildDocumentPDFBytes({ title, blocks })` returns a `Uint8Array` — synchronously, in Node, browsers, Deno and Bun. No config, no build step, no service.
+
 Generate your first PDF in under a minute.
 
 ## Install
