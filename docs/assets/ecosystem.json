@@ -1,6 +1,6 @@
 {
   "$comment": "Single source of truth for every version, count and inventory quoted anywhere in the documentation. Edit THIS file, then run `npm run verify:docs` — it reports every doc that disagrees. Never hand-edit a number in a doc without updating this manifest first.",
-  "verifiedOn": "2026-08-21",
+  "verifiedOn": "2026-08-25",
   "packages": {
     "pdfnative": {
       "version": "1.7.0",
@@ -46,17 +46,18 @@
       }
     },
     "pdfnative-mcp": {
-      "version": "1.5.0",
+      "version": "1.6.0",
       "pinField": "dependencies",
-      "pin": "^1.6.0",
+      "pin": "^1.7.0",
       "repo": "https://github.com/Nizoka/pdfnative-mcp",
-      "toolCount": 24,
+      "toolCount": 28,
       "tools": [
         "add_attachment",
         "add_barcode",
         "add_chart",
         "add_form",
         "add_international_text",
+        "add_ltv",
         "add_table",
         "annotate_pdf",
         "decrypt_pdf",
@@ -68,18 +69,25 @@
         "extract_text",
         "fill_form",
         "generate_basic_pdf",
+        "inspect_layout",
         "inspect_pdf",
         "merge_pdfs",
         "prepare_signature_placeholder",
         "read_form_fields",
         "sign_pdf",
         "split_pdf",
+        "timestamp_pdf",
+        "update_metadata",
         "validate_pdf",
         "verify_pdf"
       ],
       "prompts": [
         "governance_contract",
-        "draft_issue_workflow"
+        "draft_issue_workflow",
+        "pades_ladder",
+        "print_ready",
+        "reproducible_output",
+        "pdfa_valid"
       ]
     },
     "pdfnative-react": {
@@ -148,9 +156,9 @@
     },
     {
       "id": "mcp-tool-count",
-      "canonical": "24 tools",
+      "canonical": "28 tools",
       "match": "\\b(\\d+)\\s+(?:[A-Za-z][\\w-]*\\s+){0,2}tools\\b",
-      "expect": 24,
+      "expect": 28,
       "requireIn": [
         "docs/guides/mcp.md",
         "docs/index.html",
