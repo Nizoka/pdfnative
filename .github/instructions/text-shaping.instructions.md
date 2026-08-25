@@ -51,13 +51,13 @@ applyTo: "src/shaping/**"
 - Critical for Thai, Devanagari, Bengali, Tamil, and Vietnamese where combining marks get spatially repositioned
 
 ## BiDi Resolution (UAX #9)
-- Simplified UBA: paragraph level detection (P2-P3), weak type resolution (W1-W7), neutral resolution (N1-N2)
+- Simplified UBA: paragraph level detection (P2-P3), weak type resolution (W1-W7), neutral resolution (N1-N2), and — since v1.7.0 — implicit even-level embedding (I1/I2) so digit runs (EN/AN, incl. Extended Arabic-Indic) keep logical order inside RTL text
 - `BidiType` classification: L (Latin), R (Hebrew), AL (Arabic), EN, AN, ES, ET, CS, WS, ON, NSM, BN
 - Character classification order matters: check NSM/BN/AN/EN specific ranges BEFORE broad Arabic block (0x0600-06FF)
 - General Punctuation (U+2010–U+2027, U+2030–U+205E) classified as ON — covers dashes, quotes, ellipsis, primes
 - `resolveBidiRuns(text)`: main API — returns `BidiRun[]` in visual order (L2 reordering: runs reversed for RTL paragraphs so LTR text renders first at leftmost position)
 - `containsRTL(text)`: fast O(n) check for Arabic/Hebrew content
-- Glyph mirroring via `MIRROR_MAP`: ~40 pairs (parentheses, brackets, guillemets, math symbols)
+- Glyph mirroring via `BIDI_MIRRORING_PAIRS` (`bidi-mirroring-data.ts`): the complete 428-pair UCD `BidiMirroring.txt` table under rule L4 (since v1.7.0 — replaces the former ~40-pair `MIRROR_MAP`)
 - `reverseString()`: surrogate-pair safe reversal for RTL run reordering
 - Levels: 0 = LTR, 1 = RTL, 2 = LTR embedded in RTL
 

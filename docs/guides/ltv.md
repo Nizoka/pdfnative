@@ -143,7 +143,7 @@ The repository ships a deterministic offline mock PKI (`scripts/helpers/mock-pki
 - `listSignatures(bytes)` — every entry, its SubFilter, ByteRange, placeholder/timestamp status.
 - Adobe Reader: *Signature Panel → Certificate Details* — trust the mock/company root, then look for **"LTV enabled"** on B-LT documents and a valid document timestamp on B-LTA.
 - `openssl ts -reply -in token.der -text` inspects extracted timestamp tokens.
-- pdfnative itself ships **no signature verifier** — validation belongs to dedicated tooling (veraPDF for PDF/A, Adobe/DSS for signatures, `pdfnative-cli verify` for structural checks).
+- pdfnative itself ships **no signature verifier** — validation belongs to dedicated tooling (veraPDF for PDF/A, Adobe/DSS for signatures, `pdfnative-cli verify` for full cryptographic verification: CMS signature values, certificate chain and trust, RFC 3161 timestamps, OCSP/CRL revocation).
 
 ## Limits & scope (v1.7.0)
 

@@ -14,9 +14,9 @@ We will acknowledge receipt within 48 hours and target a fix within 7 days for C
 
 | Version | Supported |
 |---------|-----------|
-| 1.6.x   | ✅        |
-| 1.5.x   | ✅ (security fixes) |
-| < 1.5   | ❌        |
+| 1.7.x   | ✅        |
+| 1.6.x   | ✅ (security fixes) |
+| < 1.6   | ❌        |
 
 ## Security Model
 
@@ -40,7 +40,7 @@ pdfnative is a pure TypeScript library with **zero runtime dependencies**. This 
 ### Digital Signatures
 
 - CMS/PKCS#7 detached signatures (ISO 32000-1 §12.8)
-- RSA PKCS#1 v1.5 (SHA-256) and ECDSA P-256 — pure TypeScript, zero external dependencies
+- RSA PKCS#1 v1.5 (SHA-256, and SHA-384/512 since v1.7.0) and ECDSA P-256 (SHA-256) — pure TypeScript, zero external dependencies
 - X.509 DER certificate parsing for certificate chain embedding
 - `/ByteRange` ensures only the signature `/Contents` is excluded from the signed digest
 

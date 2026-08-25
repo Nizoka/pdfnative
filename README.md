@@ -1026,7 +1026,7 @@ pdfnative ships as a library, but three official companion packages cover the mo
 <!-- verify-docs:allow version-token (historical: CLI v1.2.0 shipped on the pdfnative 1.5.0 engine) -->
 **New in v1.2.0:** five new commands — **`merge`**, **`split`**, **`extract`** (page-tree manipulation via pdfnative 1.5.0), **`annotate`** (markup annotations via incremental save, so existing signatures stay intact), and **`govern`** (the AI-governance / Human-in-the-Loop contract: `govern rules` / `govern policy` / `govern verify-issue`, with a stable `E_POLICY` error code). Plus PDF bookmarks (`--outline auto` or an explicit tree), the bundled math font (`--font math`), layout introspection (`--inspect-layout` / `--debug-layout`), and native constant-time crypto by default in `sign` (opt out with `--pure-crypto`).
 
-**New in v1.3.0:** five more commands on the pdfnative 1.7.0 engine — **`fill`** (fill, flatten, and export existing AcroForms via incremental save, encrypted PDFs included), **`encrypt`** / **`decrypt`** (AES-128/256 re-securing and password removal; RC4 never emitted), **`extract-text`** (reading-order Unicode text as text/JSON/NDJSON, `--runs`, `--password`), and **`doctor`** (offline environment preflight). Also native vector charts in `render`, `--password` + `--encrypt` re-encryption on merge/split/extract, an agent capability manifest (`schema manifest` + `llms.txt`), and PowerShell completion.
+**New in v1.3.0:** five more commands on the pdfnative 1.6.0 engine — **`fill`** (fill, flatten, and export existing AcroForms via incremental save, encrypted PDFs included), **`encrypt`** / **`decrypt`** (AES-128/256 re-securing and password removal; RC4 never emitted), **`extract-text`** (reading-order Unicode text as text/JSON/NDJSON, `--runs`, `--password`), and **`doctor`** (offline environment preflight). Also native vector charts in `render`, `--password` + `--encrypt` re-encryption on merge/split/extract, an agent capability manifest (`schema manifest` + `llms.txt`), and PowerShell completion.
 
 ```bash
 # render with full layout coverage (encryption + watermark + PDF/A-2b)
@@ -1066,7 +1066,7 @@ See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v1.3.0 r
 
 **v1.4.0:** adds `annotate_pdf` (markup via incremental update) and the network-free `draft_governance_issue` (**19 tools**)<!-- verify-docs:allow stale-token (historical: MCP v1.4.0 total, on the pdfnative 1.5.0 engine) -->, the MCP `prompts` capability (`governance_contract`, `draft_issue_workflow`), `pageLabels[]` in `inspect_pdf`, and the explicit `math` script — via the pdfnative 1.5.0 engine.
 
-**v1.5.0:** adds `add_chart`, `read_form_fields`, `fill_form`, `encrypt_pdf`, `decrypt_pdf` (**24 tools**)<!-- verify-docs:allow stale-token (historical: MCP v1.5.0 total) -->, `password` support on the read-only and page-tree tools, MCP resources (`pdfnative://output/…`), and tool annotations — via the pdfnative 1.7.0 engine.
+**v1.5.0:** adds `add_chart`, `read_form_fields`, `fill_form`, `encrypt_pdf`, `decrypt_pdf` (**24 tools**)<!-- verify-docs:allow stale-token (historical: MCP v1.5.0 total) -->, `password` support on the read-only and page-tree tools, MCP resources (`pdfnative://output/…`), and tool annotations — via the pdfnative 1.6.0 engine.
 
 **v1.6.0:** adds `add_ltv`, `timestamp_pdf`, `update_metadata`, `inspect_layout` (**28 tools**), all 13 block kinds in `generate_basic_pdf`, layout options and build-time `encrypt` on the document tools, image watermarks, print production, charts v2, honest PDF/A (`embedFonts` / `strict` / diagnostics), PAdES timestamps on `sign_pdf`, four new recipe prompts, and the MCP 2026-07-28 spec — via the pdfnative 1.7.0 engine.
 
@@ -1098,7 +1098,7 @@ npx -y pdfnative-mcp
 | `extract_pages` | Pull an arbitrary, order-preserving page subset into a new PDF |
 | `annotate_pdf` | Overlay markup annotations (9 types) via incremental update; not a redaction |
 | `draft_governance_issue` | Governance-compliant GitHub-issue draft, network-free, never submits (HITL) |
-| `add_chart` | Native vector charts, zero rasterisation — nine types since v1.6.0 (bar, stacked, line, area, scatter, pie, donut), dual axis, log & time scales |
+| `add_chart` | Native vector charts, zero rasterisation — nine types since v1.6.0 (bar, horizontal bar, stacked bar, stacked horizontal bar, line, area, scatter, pie, donut), dual axis, log & time scales |
 | `read_form_fields` | List an existing AcroForm's fields (types, values, options) |
 | `fill_form` | Fill and optionally flatten an existing AcroForm (encrypted PDFs supported) |
 | `encrypt_pdf` | Re-secure with AES-128/AES-256, owner/user passwords + permissions |

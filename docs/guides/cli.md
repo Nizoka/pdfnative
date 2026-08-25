@@ -1,6 +1,6 @@
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on pdfnative 1.7.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
+> **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on pdfnative 1.6.0 — pins `^1.6.0`, which semver-accepts 1.7.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
 [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 17 commands in five groups — create & edit (`render`, `fill`, `annotate`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
@@ -873,12 +873,12 @@ node samples/run-all.js
 
 ### What's new in v1.3.0
 
-v1.3.0 is built on **pdfnative 1.7.0** and surfaces its engine additions as five new commands (`extract-text`, `fill`, `encrypt`, `decrypt`, `doctor`), native vector charts in `render`, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent `render --encrypt` no-op. **100 % backward-compatible** with v1.2.0.
+v1.3.0 is built on **pdfnative 1.6.0** and surfaces its engine additions as five new commands (`extract-text`, `fill`, `encrypt`, `decrypt`, `doctor`), native vector charts in `render`, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent `render --encrypt` no-op. **100 % backward-compatible** with v1.2.0.
 
 | Area | v1.2.0 | v1.3.0 |
 |---|---|---|
 | Commands | 12 commands <!-- verify-docs:allow stale-token (v1.2.0-era count) --> | adds **`fill`** (fill / flatten / **export** AcroForms via an incremental save), **`encrypt`**, **`decrypt`**, **`extract-text`** (reading-order Unicode text: `text` \| `json` \| `ndjson`), and **`doctor`** (offline environment / capability preflight) |
-| Charts | — | the pdfnative 1.7.0 `chart` document block (bar, barH, line, pie, donut) renders as pure vector path operators through `render` |
+| Charts | — | the pdfnative 1.6.0 `chart` document block (bar, barH, line, pie, donut) renders as pure vector path operators through `render` |
 | Encryption vocabulary | `--encrypt-*` flags on `render` only | **unified vocabulary** — `--encrypt [aes-128\|aes-256]`, `--owner-password`, `--user-password`, `--permissions print,copy,modify,extract` — shared by `render`, `merge`, `split` and `extract` (legacy `--encrypt-*` flags kept as aliases) |
 | Page-tree commands | plaintext sources only | **`--password`** reads encrypted sources; **`--encrypt`** re-encrypts the output; **`--stream`** (+ `--chunk-size`) streams the output with constant memory |
 | Inspection | metadata, PDF/UA, annotations | adds `inspect --form-fields`, `--encryption` and `--password` |

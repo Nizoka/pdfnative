@@ -127,7 +127,7 @@ applyTo: "src/core/**"
 - LTR runs: standard encoding path (no BiDi processing)
 - Arabic shaping (`shapeArabicText()`) returns glyphs in logical order — must reverse for RTL visual rendering
 - Hebrew text detected by `containsHebrew()` — uses RTL ordering without shaping
-- Glyph mirroring for brackets/parentheses in RTL context via `MIRROR_MAP`
+- Glyph mirroring for brackets/parentheses in RTL context via `BIDI_MIRRORING_PAIRS` (`bidi-mirroring-data.ts`, full 428-pair UCD table since v1.7.0)
 - CRITICAL: never call `shapeArabicText()` on already-reversed text — always un-reverse to logical first
 
 ## PDF Encryption (ISO 32000-1 §7.6)
@@ -263,7 +263,7 @@ applyTo: "src/core/**"
 ## Digital Signature Model (pdf-signature.ts — ISO 32000-1 §12.8)
 - `buildSigDict(options, contentsSize?)`: builds the `/Sig` dictionary with `/ByteRange` placeholder (`SigDictMetadata` options: signingTime, name, reason, location, contact)
 - Signature includes `/Filter /Adobe.PPKLite /SubFilter /adbe.pkcs7.detached`
-- `signPdfBytes(pdfBytes, options)`: round-trip sign → inject CMS into `/Contents`; `PdfSignOptions = { signerCert: X509Certificate, rsaKey? | ecKey?, certChain?, algorithm?: 'rsa-sha256' | 'ecdsa-sha256', provider?, ...SigDictMetadata }`
+- `signPdfBytes(pdfBytes, options)`: round-trip sign → inject CMS into `/Contents`; `PdfSignOptions = { signerCert: X509Certificate, rsaKey? | ecKey?, certChain?, algorithm?: 'rsa-sha256' | 'rsa-sha384' | 'rsa-sha512' | 'ecdsa-sha256', provider?, ...SigDictMetadata }`
 - `/ByteRange [0 before after end]`: specifies which bytes are signed (excludes `/Contents` hex)
 - CMS SignedData via `crypto/cms.ts`: signed attributes, certificate embedding, digest
 
