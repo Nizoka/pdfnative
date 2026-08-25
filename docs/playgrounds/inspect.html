@@ -41,14 +41,22 @@
     .insp-pwrow .insp-pwnote { font-size: 12px; color: var(--c-text-dim); margin: 8px 0 0; }
     .insp-card { border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-bg-card); padding: 18px 20px 14px; margin-top: 20px; }
     .insp-card h2 { font-size: 17px; margin: 0 0 10px; }
-    .insp-card dl { display: grid; grid-template-columns: minmax(120px, max-content) 1fr; gap: 4px 16px; font-size: 14px; margin: 0; }
-    .insp-card dt { color: var(--c-text-dim); font-weight: 600; }
+    /* dt keys come from the dropped file's /Info — cap the column so a
+       hostile 300-character key cannot blow the grid apart. */
+    .insp-card dl { display: grid; grid-template-columns: minmax(120px, 28ch) 1fr; gap: 4px 16px; font-size: 14px; margin: 0; }
+    .insp-card dt { color: var(--c-text-dim); font-weight: 600; overflow-wrap: anywhere; }
     .insp-card dd { margin: 0; overflow-wrap: anywhere; }
     .insp-card ul { font-size: 14px; margin: 8px 0 0; padding-left: 20px; }
     .insp-card pre { margin-top: 10px; max-height: 280px; overflow: auto; padding: 12px; border-radius: 8px; background: var(--c-code-bg); color: var(--c-code-text); font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
     .insp-caveat { font-size: 13px; color: var(--c-text-dim); border-left: 3px solid #d97706; padding: 6px 12px; margin: 10px 0 0; background: var(--c-surface); border-radius: 0 6px 6px 0; }
     .insp-error { font-size: 14px; color: #b91c1c; margin: 0; }
     [data-theme="dark"] .insp-error { color: #fca5a5; }
+    .insp-status-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .insp-status-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .insp-status-info    { background: #dbeafe; color: #1e3a8a; border: 1px solid #93c5fd; }
+    [data-theme="dark"] .insp-status-error   { background: #450a0a; color: #fca5a5; border-color: #7f1d1d; }
+    [data-theme="dark"] .insp-status-success { background: #052e16; color: #86efac; border-color: #14532d; }
+    [data-theme="dark"] .insp-status-info    { background: #172554; color: #93c5fd; border-color: #1e3a8a; }
     .insp-verdict { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
     .insp-verdict.pass { background: #d1fae5; color: #065f46; }
     .insp-verdict.fail { background: #fee2e2; color: #991b1b; }
@@ -199,13 +207,8 @@ const statusBox = $('status');
 function setStatus(msg, kind) {
   statusBox.style.display = 'block';
   statusBox.textContent = msg;
-  if (kind === 'error') {
-    statusBox.style.background = '#fee2e2'; statusBox.style.color = '#991b1b'; statusBox.style.border = '1px solid #fca5a5';
-  } else if (kind === 'success') {
-    statusBox.style.background = '#d1fae5'; statusBox.style.color = '#065f46'; statusBox.style.border = '1px solid #6ee7b7';
-  } else {
-    statusBox.style.background = '#dbeafe'; statusBox.style.color = '#1e3a8a'; statusBox.style.border = '1px solid #93c5fd';
-  }
+  // Theme-aware banners via classes (styles in the page <style> block).
+  statusBox.className = 'insp-status insp-status-' + (kind === 'error' ? 'error' : kind === 'success' ? 'success' : 'info');
 }
 
 // ── DOM helpers — every file-derived string goes through textContent, never innerHTML ──
@@ -454,11 +457,14 @@ function isPasswordError(mod, err) {
   return (mod.PdfPasswordError && err instanceof mod.PdfPasswordError) || (err && err.name === 'PdfPasswordError');
 }
 
-function inspect(password) {
+async function inspect(password) {
   const mod = pdfnativeMod;
   if (!mod || !current) return;
   const t0 = performance.now();
   sectionFailures = 0;
+  // The five readers run synchronously on the main thread; yield between
+  // cards so a large file does not freeze the tab wholesale.
+  const tick = () => new Promise((r) => setTimeout(r, 0));
 
   // Overview drives the password flow: a wrong or missing password surfaces here first.
   let encryption = null;
@@ -480,12 +486,15 @@ function inspect(password) {
 
   const encryptedWithPassword = encryption !== null && password !== undefined && password !== '';
 
+  await tick();
   try { renderText(mod, current.bytes, password); }
   catch (err) { sectionError('text-body', err); }
 
+  await tick();
   try { renderUA(mod, current.bytes, encryptedWithPassword); }
   catch (err) { $('ua-verdict').replaceChildren(); sectionError('ua-body', err); }
 
+  await tick();
   try { renderSignatures(mod, current.bytes); }
   catch (err) {
     if (isPasswordError(mod, err)) {
@@ -494,6 +503,7 @@ function inspect(password) {
     } else { sectionError('sigs-body', err); }
   }
 
+  await tick();
   try { renderForms(mod, current.bytes, password); }
   catch (err) { sectionError('forms-body', err); }
 
@@ -528,6 +538,10 @@ async function acceptFile(file) {
   try {
     setStatus('Reading ' + file.name + ' with FileReader…', 'info');
     const bytes = await readFileBytes(file);
+    if (bytes.length > 25 * 1024 * 1024) {
+      setStatus('This file is ' + (bytes.length / 1024 / 1024).toFixed(0) +
+        ' MB — the five readers run in this tab and may be slow on a file this large. Proceeding…', 'info');
+    }
     current = { bytes, name: file.name };
     $('pdf-password').value = '';
     inspect(undefined);
@@ -538,11 +552,18 @@ async function acceptFile(file) {
 }
 
 // ── Drop zone: drag & drop plus a plain, keyboard-accessible file input ──
+// Document-level guards: a PDF dropped a few pixels outside the zone must
+// not navigate the tab away from the page.
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => e.preventDefault());
 const dropzone = $('dropzone');
+let dragDepth = 0; // dragleave fires when crossing child elements — count entries
+dropzone.addEventListener('dragenter', () => { dragDepth++; dropzone.classList.add('dragover'); });
 dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; dropzone.classList.remove('dragover'); } });
 dropzone.addEventListener('drop', (e) => {
   e.preventDefault();
+  dragDepth = 0;
   dropzone.classList.remove('dragover');
   const file = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
   acceptFile(file);

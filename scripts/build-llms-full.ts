@@ -87,14 +87,13 @@ export function buildLlmsRecipes(root: string): string {
 
 // ── llms-index.json ─────────────────────────────────────────────────
 
-/** Same GitHub-style slugger as scripts/build-guides.ts heading ids. */
+// The ONE slugger: the same implementation that assigns heading ids in the
+// pre-rendered shells, so the anchors this index publishes always resolve.
+// (Raw-Markdown headings get their inline backticks stripped first — the
+// equivalent of the tag-stripping the renderer does on the HTML side.)
+import { slugify as slugifyHeading } from './build-guides.ts';
 function slugify(text: string): string {
-    return text
-        .replace(/`/g, '')
-        .trim()
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}\s_-]/gu, '')
-        .replace(/\s/g, '-');
+    return slugifyHeading(text.replace(/`/g, ''));
 }
 
 function approxTokens(bytes: number): number {
@@ -180,7 +179,7 @@ export function buildLlmsIndex(root: string): string {
     return JSON.stringify(out, null, 2) + '\n';
 }
 
-const isMain = process.argv[1] && resolve(process.argv[1]).includes('build-llms-full');
+const isMain = import.meta.filename === resolve(process.argv[1] ?? '');
 if (isMain) {
     const root = resolve(import.meta.dirname, '..');
     const out = join(root, 'docs', 'llms-full.txt');

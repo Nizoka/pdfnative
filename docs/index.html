@@ -449,7 +449,7 @@ const pdf = buildDocumentPDFBytes({
             <button class="btn btn-secondary" id="demo-share" type="button">🔗 Copy link</button>
             <button class="btn btn-secondary" id="demo-copy-cli" type="button" hidden>Copy as CLI command</button>
             <button class="btn btn-secondary" id="demo-copy-mcp" type="button" hidden>Copy as MCP call</button>
-            <span class="demo-status" id="demo-status"></span>
+            <span class="demo-status" id="demo-status" role="status" aria-live="polite"></span>
           </div>
           <div class="demo-error" id="demo-error" role="alert"></div>
           <p class="demo-note" id="demo-json-note" hidden>The JSON is a pdfnative <code>DocumentParams</code> object — the same document the library, <code>pdfnative-cli render</code> and the <code>generate_basic_pdf</code> MCP tool consume. Share links (<code>#doc=…</code>) encode this JSON, never code.</p>
@@ -543,7 +543,7 @@ const pdf = renderToBytes(
         <label><input type="checkbox" data-quiz-cap="encrypt"> AES encryption</label>
         <label><input type="checkbox" data-quiz-cap="barcodes"> Barcodes / QR codes</label>
       </div>
-      <p class="cmp-quiz-verdict" id="cmp-quiz-verdict" hidden></p>
+      <p class="cmp-quiz-verdict" id="cmp-quiz-verdict" aria-live="polite" hidden></p>
     </div>
     <div class="table-wrap">
       <table class="cmp-table">

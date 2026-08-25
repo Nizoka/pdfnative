@@ -143,11 +143,16 @@ const MANIFEST_REL = rel(MANIFEST_PATH);
 // ── The documentation corpus ────────────────────────────────────────
 
 const DOC_FILES: string[] = [
-    // llms-full.txt is generated from files already in the corpus; scanning the
-    // concatenation would double-report every finding at useless line numbers.
+    // llms-full.txt and llms-recipes.txt are generated from files already in
+    // the corpus; scanning a concatenation would double-report every finding
+    // at line numbers nobody can act on.
     ...walk(
         join(ROOT, 'docs'),
-        (p) => /\.(html|md|js|svg|xml|txt)$/.test(p) && !p.includes('ecosystem.json') && !p.endsWith('llms-full.txt'),
+        (p) =>
+            /\.(html|md|js|svg|xml|txt)$/.test(p) &&
+            !p.includes('ecosystem.json') &&
+            !p.endsWith('llms-full.txt') &&
+            !p.endsWith('llms-recipes.txt'),
     ),
     ...['README.md', 'ROADMAP.md', 'AGENTS.md', 'CONTRIBUTING.md', 'SECURITY.md', 'llms.txt']
         .map((f) => join(ROOT, f))
@@ -158,6 +163,10 @@ const DOC_FILES: string[] = [
     // were outside the corpus.
     ...walk(join(ROOT, '.github', 'instructions'), (p) => p.endsWith('.md')),
     ...walk(join(ROOT, '.github', 'prompts'), (p) => p.endsWith('.md')),
+    // The recipes ARE documentation — executable documentation is the whole
+    // point — so their source is scanned directly (the generated llms-recipes
+    // concatenation above is excluded in their favour).
+    ...walk(join(ROOT, 'recipes'), (p) => p.endsWith('.ts')),
 ];
 
 const HTML_FILES = walk(join(ROOT, 'docs'), (p) => p.endsWith('.html'));
@@ -215,6 +224,17 @@ const actualDerived: Record<string, number> = {
         ? readdirSync(join(ROOT, 'recipes')).filter((f) => f.endsWith('.ts')).length
         : 0,
 };
+
+// A misspelt derived key (e.g. "recipies") would silently drop both the typo
+// AND the real counter from verification — reject unknown keys outright.
+{
+    const KNOWN_DERIVED = new Set([...Object.keys(actualDerived), 'samplePdfs', '$comment']);
+    for (const key of Object.keys(manifest.derived)) {
+        if (!KNOWN_DERIVED.has(key)) {
+            fail(MANIFEST_REL, 1, 'manifest-shape', `derived.${key} is not computed by any rule — typo, or add it to derived-counts`);
+        }
+    }
+}
 
 // samplePdfs only counts when the samples have actually been generated;
 // test-output/ is git-ignored, so an empty tree is not a failure. A partially
@@ -438,7 +458,7 @@ if (SRC_FILES.length > 0) {
     }
     const SPAN_GLOBALS = new Set([
         // Platform / runtime globals docs legitimately call in spans.
-        'fetch', 'import', 'require', 'atob', 'btoa', 'structuredClone', 'run',
+        'fetch', 'import', 'require', 'atob', 'btoa', 'structuredClone',
         // Test-framework globals (vitest) named by the testing instructions.
         'describe', 'it', 'test', 'expect', 'bench', 'vi',
         'beforeAll', 'beforeEach', 'afterAll', 'afterEach',
@@ -668,7 +688,9 @@ const SITEMAP = join(ROOT, 'docs', 'sitemap.xml');
 if (existsSync(SITEMAP)) {
     const xml = read(SITEMAP);
     const locs = [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map((m) => m[1]);
-    const today = new Date().toISOString().slice(0, 10);
+    // +1 day of tolerance: a contributor east of UTC editing after their
+    // local midnight writes a lastmod the UTC runner would call "future".
+    const today = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10);
 
     for (const m of xml.matchAll(/<lastmod>\s*([^<]+?)\s*<\/lastmod>/g)) {
         const value = m[1];
@@ -1057,6 +1079,13 @@ if (!existsSync(LLMS_RECIPES)) {
         for (const code of registered) {
             if (!srcCodes.has(code)) {
                 fail('docs/data/errors.json', 1, 'error-parity', `registry lists "${code}" but src/ never emits it`);
+            }
+        }
+        // Third direction: a code the engine emits must be in the served
+        // registry, or agents learn an incomplete error surface.
+        for (const code of srcCodes) {
+            if (!registered.has(code)) {
+                fail('docs/data/errors.json', 1, 'error-parity', `src/ emits "${code}" but the served registry does not list it`);
             }
         }
         for (const file of DOC_FILES) {

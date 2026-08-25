@@ -56,7 +56,7 @@ function stripTags(html: string): string {
     return html.replace(/<[^>]+>/g, '');
 }
 
-function slugify(text: string): string {
+export function slugify(text: string): string {
     // GitHub convention: strip punctuation, then EVERY whitespace character
     // becomes its own hyphen ("Flag & ZWJ" → "flag--zwj", not "flag-zwj") —
     // existing deep links across the guides were written against that shape.
@@ -268,7 +268,10 @@ export function applyGuideRender(root: string, htmlName: string): string {
     const ld = buildGuideJsonLd(root, mdName, shell, rendered);
     const ldBlock = `  <!-- guide:ld:start -->\n  <script type="application/ld+json">${ld}</script>\n  <!-- guide:ld:end -->\n`;
     shell = shell.replace(LD_BLOCK_RE, '');
-    shell = shell.replace(/<\/head>/, `${ldBlock}</head>`);
+    // Function replacer: the JSON-LD may legitimately contain `$'`/`$&`
+    // sequences (e.g. a FAQ answer about regex replacement patterns), which a
+    // string replacement would expand into silent corruption.
+    shell = shell.replace(/<\/head>/, () => `${ldBlock}</head>`);
 
     return shell;
 }
@@ -282,7 +285,9 @@ export function listGuideShells(root: string): string[] {
         .sort();
 }
 
-const isMain = process.argv[1] && resolve(process.argv[1]).includes('build-guides');
+// Exact-path check: a substring test would make any importer whose argv[1]
+// merely contains "build-guides" rewrite 30 shells as an import side effect.
+const isMain = import.meta.filename === resolve(process.argv[1] ?? '');
 if (isMain) {
     const root = resolve(import.meta.dirname, '..');
     let changed = 0;

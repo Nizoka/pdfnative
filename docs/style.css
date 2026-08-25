@@ -843,7 +843,38 @@ textarea:focus-visible,
 
 .cmp-quiz { margin: 0 auto 22px; max-width: 860px; padding: 16px 20px; border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-bg-card); }
 .cmp-quiz-label { font-size: 14px; color: var(--c-text-dim); margin: 0 0 12px; }
-.cmp-quiz-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px 18px; }
+.cmp-quiz-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 8px 18px; }
 .cmp-quiz-options label { font-size: 14px; color: var(--c-text); display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
 .cmp-quiz-verdict { margin: 14px 0 0; font-size: 14px; color: var(--c-text); border-left: 3px solid var(--c-primary); background: var(--c-surface); padding: 10px 14px; border-radius: 0 8px 8px 0; }
 .cmp-table tr.cmp-hot td { background: color-mix(in srgb, var(--c-primary) 10%, transparent); }
+
+/* Dark theme: --c-primary lightens to #3b82f6 while --c-primary-fg stays
+   white (3.7:1 at 13px — below AA). Use a darker active background there. */
+[data-theme="dark"] .demo-mode-btn.active { background: #1d4ed8; }
+
+/* ── Print ───────────────────────────────────────────────────────── */
+
+@media print {
+  .nav,
+  .nav-hamburger,
+  .theme-toggle,
+  .playground-switcher,
+  .guide-source-bar,
+  .demo-actions,
+  .demo-mode,
+  .pn-preview-pane,
+  .pn-version-strip,
+  .footer-links,
+  .skip-link,
+  .copy-btn,
+  .bench-live,
+  .cmp-quiz {
+    display: none !important;
+  }
+  .guide-content a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #475569;
+  }
+  body { background: #ffffff; color: #000000; }
+}

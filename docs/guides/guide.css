@@ -209,9 +209,10 @@
   opacity: 1;
 }
 
-.guide-content pre { position: relative; }
+.pre-wrap { position: relative; }
 
-.guide-content pre .copy-btn {
+.pre-wrap .copy-btn {
+  user-select: none;
   position: absolute;
   top: 8px;
   right: 8px;
@@ -227,8 +228,8 @@
   transition: opacity 0.15s;
 }
 
-.guide-content pre:hover .copy-btn,
-.guide-content pre .copy-btn:focus-visible {
+.pre-wrap:hover .copy-btn,
+.pre-wrap .copy-btn:focus-visible {
   opacity: 1;
 }
 
@@ -258,7 +259,7 @@
 /* Touch devices have no reliable :hover — the copy buttons and heading
    anchors must be visible there, with WCAG 2.5.8-sized targets. */
 @media (hover: none), (pointer: coarse) {
-  .guide-content pre .copy-btn,
+  .pre-wrap .copy-btn,
   .heading-anchor {
     opacity: 1;
   }

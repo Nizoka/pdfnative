@@ -134,7 +134,7 @@ export function buildApiJson(root: string): string {
     return JSON.stringify(out, null, 2) + '\n';
 }
 
-const isMain = process.argv[1] && resolve(process.argv[1]).includes('build-api-json');
+const isMain = import.meta.filename === resolve(process.argv[1] ?? '');
 if (isMain) {
     const root = resolve(import.meta.dirname, '..');
     const out = join(root, 'docs', 'assets', 'api.json');

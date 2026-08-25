@@ -30,7 +30,10 @@ interface Run {
 function runVerifier(root: string): Run {
     const script = root === ROOT ? SCRIPT : join(root, 'scripts', 'verify-docs.ts');
     try {
-        const output = execFileSync('npx', ['tsx', script], {
+        // shell:true (required for npx.cmd on Windows) does not quote args —
+        // a temp path with spaces or `&` would break the command line.
+        const scriptArg = process.platform === 'win32' ? JSON.stringify(script) : script;
+        const output = execFileSync('npx', ['tsx', scriptArg], {
             cwd: ROOT,
             encoding: 'utf8',
             stdio: ['ignore', 'pipe', 'pipe'],

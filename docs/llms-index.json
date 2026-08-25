@@ -23,8 +23,8 @@
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
       "description": "Executable recipes: CI-verified, copy-ready code for the most common tasks.",
-      "bytes": 24446,
-      "approxTokens": 6112
+      "bytes": 24611,
+      "approxTokens": 6153
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",

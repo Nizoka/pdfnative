@@ -213,7 +213,12 @@ describe('recipes/index.json', () => {
 
         const onDisk = fs.readdirSync(RECIPES_DIR).filter(f => f.endsWith('.ts')).sort();
         expect(index.map(e => e.file)).toEqual(onDisk);
-        expect(index.length).toBe(14);
+        // The count comes from the manifest, never a literal: derived.recipes
+        // is what verify-docs asserts against the tree.
+        const manifest = JSON.parse(
+            fs.readFileSync(`${RECIPES_DIR}/../docs/assets/ecosystem.json`, 'utf8'),
+        ) as { derived: { recipes: number } };
+        expect(index.length).toBe(manifest.derived.recipes);
 
         for (const entry of index) {
             const source = fs.readFileSync(`${RECIPES_DIR}/${entry.file}`, 'utf8');

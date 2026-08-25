@@ -14,11 +14,12 @@
 import { buildDocumentPDFBytes, openPdf, registerFont, loadFontData } from 'pdfnative';
 import type { DocumentParams, FontEntry, FontLoader } from 'pdfnative';
 
-// The generated data modules predate the full FontData declaration, hence
-// the loader cast — the runtime shape is complete.
-registerFont('ar', (() => import('pdfnative/fonts/noto-arabic-data.js')) as unknown as FontLoader);
-
 export async function run(): Promise<{ bytes: Uint8Array; pages: number }> {
+    // Registration lives inside run() so importing this module has no side
+    // effect on the global font registry; registerFont is idempotent for the
+    // same loader. The cast: the generated data modules predate the full
+    // FontData declaration — the runtime shape is complete.
+    registerFont('ar', (() => import('pdfnative/fonts/noto-arabic-data.js')) as unknown as FontLoader);
     const arabic = await loadFontData('ar');
     if (!arabic) throw new Error('Arabic font data failed to load');
 

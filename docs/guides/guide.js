@@ -52,7 +52,14 @@
 
   function addCopyButtons(scope) {
     scope.querySelectorAll('pre').forEach(function (pre) {
-      if (pre.querySelector('.copy-btn')) return;
+      // The button lives in a positioned wrapper OUTSIDE the scrollable
+      // <pre>: as a child it would scroll away with wide code and its label
+      // would pollute manual text selection.
+      if (pre.parentNode.classList && pre.parentNode.classList.contains('pre-wrap')) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'pre-wrap';
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
       var btn = document.createElement('button');
       btn.className = 'copy-btn';
       btn.type = 'button';
@@ -64,7 +71,7 @@
           setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
         }, function () { btn.textContent = 'Failed'; });
       });
-      pre.appendChild(btn);
+      wrap.appendChild(btn);
     });
   }
 

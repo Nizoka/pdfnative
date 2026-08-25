@@ -835,6 +835,11 @@
         if (!b || typeof b !== 'object' || BLOCK_TYPES.indexOf(b.type) === -1) {
           throw new Error('blocks[' + i + '].type must be one of: ' + BLOCK_TYPES.join(', '));
         }
+        // Shared #doc= payloads are untrusted: only the schemes the engine
+        // itself allows may reach a link annotation.
+        if (b.type === 'link' && typeof b.url === 'string' && !/^(https?:|mailto:|#)/i.test(b.url)) {
+          throw new Error('blocks[' + i + '].url must use http:, https:, mailto: or a #fragment.');
+        }
       }
       return doc;
     }
@@ -868,8 +873,25 @@
       var bytes = fromBase64Url(payload.slice(2));
       if (kind === 'd.') {
         if (typeof DecompressionStream !== 'function') throw new Error('This browser cannot decompress the link.');
-        var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-        bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+        // Read the inflated stream chunk by chunk and abort past the JSON
+        // size cap — deflate can expand ~1000:1, so never materialise an
+        // unbounded payload before checking its size.
+        var reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+        var chunks = [];
+        var total = 0;
+        for (;;) {
+          var step = await reader.read();
+          if (step.done) break;
+          total += step.value.length;
+          if (total > 150000) {
+            reader.cancel();
+            throw new Error('Link payload too large after decompression.');
+          }
+          chunks.push(step.value);
+        }
+        bytes = new Uint8Array(total);
+        var off = 0;
+        for (var ci = 0; ci < chunks.length; ci++) { bytes.set(chunks[ci], off); off += chunks[ci].length; }
       } else if (kind !== 'r.') {
         throw new Error('Unrecognised link format.');
       }
@@ -953,10 +975,17 @@
     // specifier is resolved to the already-loaded module through a global
     // (no second CDN request), with `downloadBlob` routed to the preview.
     function rewriteImports(code) {
-      return code.replace(
-        /^(\s*)import\s*\{([^}]+)\}\s*from\s*['"]pdfnative['"]\s*;?\s*$/gm,
-        '$1const {$2} = globalThis.__pdfnativeDemo.mod;'
-      );
+      return code
+        // Named imports — single- or multi-line.
+        .replace(
+          /^(\s*)import\s*\{([\s\S]*?)\}\s*from\s*['"]pdfnative['"]\s*;?[ \t]*$/gm,
+          '$1const {$2} = globalThis.__pdfnativeDemo.mod;'
+        )
+        // Namespace imports: import * as pdf from 'pdfnative'.
+        .replace(
+          /^(\s*)import\s*\*\s*as\s+([A-Za-z_$][\w$]*)\s+from\s*['"]pdfnative['"]\s*;?[ \t]*$/gm,
+          '$1const $2 = globalThis.__pdfnativeDemo.mod;'
+        );
     }
 
     function lineFromStack(err) {
@@ -987,6 +1016,9 @@
           };
 
           var source = rewriteImports(demoCode.value);
+          if (/from\s*['"]pdfnative['"]/.test(source)) {
+            throw new Error("This demo can only resolve `import { name } from 'pdfnative'` or `import * as pdf from 'pdfnative'` — rewrite the import in one of those forms.");
+          }
           moduleUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
           await import(moduleUrl);
         }
