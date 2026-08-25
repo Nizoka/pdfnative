@@ -5,7 +5,7 @@
 ## Docs
 
 - [README](https://github.com/Nizoka/pdfnative/blob/main/README.md): Full feature list, install, quick start, API surface, examples.
-- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.7; v1.5: math/technical-symbols font, `pdfnative/tools` font compiler/parser, SVG `<text>`, page-labels reader, layout debug overlay + `inspectDocumentLayout`, markup annotation read/write, AI-agent governance; v1.4: document outline/bookmarks, page labels, page-tree manipulation (merge/split/extract), streamToFile, COLRv1 advanced compositing; v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, validatePdfUA) + long-term (WASM, full USE).
+- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.7; v1.7: PAdES LTV B-B → B-LTA, charts v2, colour-emoji flag/ZWJ sequences, UAX #9 conformance, print production, PDF/A declaration guards, `updateMetadata`; v1.6: parser-side decryptor, streaming merge/split/extract, fill & flatten AcroForms, native vector charts, `extractText`, re-encrypt output; v1.5: math/technical-symbols font, `pdfnative/tools` font compiler/parser, SVG `<text>`, page-labels reader, layout debug overlay + `inspectDocumentLayout`, markup annotation read/write, AI-agent governance; v1.4: document outline/bookmarks, page labels, page-tree manipulation (merge/split/extract), streamToFile, COLRv1 advanced compositing; v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, validatePdfUA) + long-term (WASM, full USE).
 - [CHANGELOG](https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md): Per-version changes.
 - [Release notes v1.7.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.7.0.md): PAdES LTV signing B-B → B-LTA (`signPdfBytesWithTimestamp` RFC 3161 timestamps, `addValidationInfo` `/DSS` + `/VRI` OCSP/CRL material, `addDocumentTimestamp`, `listSignatures`, multi-signature via `addSignaturePlaceholder({ allowMultiple })` — network transport injected through `setTimestampProvider`/`setRevocationProvider`, the engine never opens a socket), charts v2 (stackedBar/stackedBarH/area/scatter, secondary right axis, log + UTC time scales, data labels, x-label collision handling), colour-emoji flag & ZWJ sequences (51 flags + 22 ZWJ as COLR ligatures), UAX #9 conformance fixes (RTL digit order, glyph mirroring, ALEF joining, Persian presentation forms), PDF/A declaration guards (`strict`/`onDiagnostic`), incremental writer/xref hardening, `PdfModifier.updateMetadata()`.
 - [Release notes v1.6.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.6.0.md): Standard Security Handler reader/decryptor (`openPdf(bytes, { password })`, RC4/AES-128/AES-256; `PdfSourceInput`/`MergeOptions.password` for encrypted merge/split sources), streaming page-tree manipulation (`streamMergedPdfs`/`streamSplitPdf`/`streamExtractPages`), fill & flatten existing AcroForm PDFs (`readFormFields`/`fillForm`/`flattenForm`) — encrypted documents included (encrypted incremental update), native vector charts (`chart` block: bar/barH/line/pie/donut), text extraction (`extractText`: per-page reading-order text + positioned runs, encrypted PDFs supported), re-encrypt merge/split output (`MergeOptions.encrypt`, AES-128/256), expanded colour-emoji subset (221 → 1167 incl. complete Transport & Map). Fixes: spec-compliant R6 hash + all-strings encryption on the writer; incremental trailer carries `/Encrypt` forward.
@@ -25,7 +25,7 @@
 - [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
 - [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
 - [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set, plus flag & ZWJ sequences via `--sequences` / `--sequence-list`; pinned download + SHA-256 verification.
-- [Charts](https://pdfnative.dev/guides/charts.html): Native vector `chart` blocks — 9 kinds (bar, horizontal bar, stacked bars, line, area, scatter, pie, donut) with secondary right axis, log and time scales, data labels, x-label collision handling. Path operators, no rasterisation; `/Figure` tagging with alt text.
+- [Charts](https://pdfnative.dev/guides/charts.html): Native vector `chart` blocks — 9 kinds (bar, horizontal bar, stacked bar, stacked horizontal bar, line, area, scatter, pie, donut) with secondary right axis, log and time scales, data labels, x-label collision handling. Path operators, no rasterisation; `/Figure` tagging with alt text.
 - [Text extraction](https://pdfnative.dev/guides/text-extraction.html): `extractText()` — reading-order Unicode via `/ToUnicode`, optional positioned runs, works on encrypted PDFs with a password. The RAG / agent-ingestion entry point.
 - [Form filling](https://pdfnative.dev/guides/form-filling.html): `readFormFields()` / `fillForm()` / `flattenForm()` on existing AcroForms, including encrypted PDFs via incremental update.
 - [PDF manipulation](https://pdfnative.dev/guides/pdf-manipulation.html): `openPdf()` (with `{ password }`), merge / split / extract pages, re-encrypt on output, and their streaming variants.
@@ -49,7 +49,7 @@
 - [Copilot instructions](https://github.com/Nizoka/pdfnative/blob/main/.github/copilot-instructions.md): Canonical project conventions — architecture, code style, build/test, PDF-specific invariants.
 - [AGENTS.md](https://github.com/Nizoka/pdfnative/blob/main/AGENTS.md): Editor-agnostic agent guidance (Cursor / Aider / Claude Code / Continue).
 - [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.6.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 28 tools — the complete PAdES ladder B-B → B-LTA (`sign_pdf` with RFC 3161 timestamps, `add_ltv`, `timestamp_pdf`), `update_metadata`, the read-only `inspect_layout` pagination preview, all 13 block kinds in `generate_basic_pdf`, print production, charts v2, native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. MCP 2026-07-28 spec with legacy fallback. Built on pdfnative 1.7.0.
-- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.3.0 — 17 commands from the terminal — render, fill, annotate, merge / split / extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract. Built on pdfnative 1.7.0.
+- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.3.0 — 17 commands from the terminal — render, fill, annotate, merge / split / extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract. Built on the pdfnative 1.6 engine (pins `^1.6.0`, semver-accepts 1.7.0).
 - [React](https://pdfnative.dev/guides/react.html): `pdfnative-react` v1.1.0 — declarative JSX components compiled on-device to pdfnative blocks; render functions, client hooks, token-frugal DocSpec.
 
 ## Source
@@ -60,7 +60,7 @@
 
 ## Ecosystem
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on pdfnative 1.7.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.3.0, built on the pdfnative 1.6 engine — pins `^1.6.0`, semver-accepts 1.7.0) — render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern.
 - [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 28 AI tools (v1.6.0, built on pdfnative 1.7.0).
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v1.1.0, React 19 + pdfnative ^1.6.0 peers).
 
@@ -177,6 +177,15 @@ For a real-world test, open your PDF with **NVDA** (Windows, free), **VoiceOver*
 | Artifact tagging (decorative content) | Not yet exposed — header/footer/watermark are tagged as content |
 
 Contributions to address these are welcome — see the [Roadmap](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md).
+
+> **PDF/A declaration guards** _(v1.7.0)_. Tagged documents that also claim
+> PDF/A are now checked at build time: configurations that would break the
+> declared level (base-14 text without embedded fonts, form fields under a
+> claim, DeviceCMYK images against the sRGB OutputIntent) surface a diagnostic
+> — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error
+> under `strict: true`. Base-14 dictionaries under tagged mode also gain full
+> `/ToUnicode` coverage, which changes output bytes versus 1.6.0. Details in
+> the [PDF/A guide](pdfa.html).
 
 ## Testing your PDFs are accessible
 
@@ -1121,7 +1130,7 @@ labels shape correctly when the matching font is registered — no extra work.
 <!-- source: docs/guides/cli.md -->
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on pdfnative 1.7.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
+> **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on the pdfnative 1.6 engine — pins `^1.6.0`, which semver-accepts 1.7.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
 [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 17 commands in five groups — create & edit (`render`, `fill`, `annotate`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
@@ -1994,12 +2003,12 @@ node samples/run-all.js
 
 ### What's new in v1.3.0
 
-v1.3.0 is built on **pdfnative 1.7.0** and surfaces its engine additions as five new commands (`extract-text`, `fill`, `encrypt`, `decrypt`, `doctor`), native vector charts in `render`, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent `render --encrypt` no-op. **100 % backward-compatible** with v1.2.0.
+v1.3.0 is built on the **pdfnative 1.6 engine** (pin `^1.6.0`) and surfaces its engine additions as five new commands (`extract-text`, `fill`, `encrypt`, `decrypt`, `doctor`), native vector charts in `render`, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent `render --encrypt` no-op. **100 % backward-compatible** with v1.2.0.
 
 | Area | v1.2.0 | v1.3.0 |
 |---|---|---|
 | Commands | 12 commands <!-- verify-docs:allow stale-token (v1.2.0-era count) --> | adds **`fill`** (fill / flatten / **export** AcroForms via an incremental save), **`encrypt`**, **`decrypt`**, **`extract-text`** (reading-order Unicode text: `text` \| `json` \| `ndjson`), and **`doctor`** (offline environment / capability preflight) |
-| Charts | — | the pdfnative 1.7.0 `chart` document block (bar, barH, line, pie, donut) renders as pure vector path operators through `render` |
+| Charts | — | the engine's `chart` document block (bar, barH, line, pie, donut — the pdfnative 1.6 set) renders as pure vector path operators through `render` |
 | Encryption vocabulary | `--encrypt-*` flags on `render` only | **unified vocabulary** — `--encrypt [aes-128\|aes-256]`, `--owner-password`, `--user-password`, `--permissions print,copy,modify,extract` — shared by `render`, `merge`, `split` and `extract` (legacy `--encrypt-*` flags kept as aliases) |
 | Page-tree commands | plaintext sources only | **`--password`** reads encrypted sources; **`--encrypt`** re-encrypts the output; **`--stream`** (+ `--chunk-size`) streams the output with constant memory |
 | Inspection | metadata, PDF/UA, annotations | adds `inspect --form-fields`, `--encryption` and `--password` |
@@ -3196,6 +3205,14 @@ Both operations use the incremental modifier
 rewritten — the update is appended after the existing body with a new xref and a
 `/Prev` chain. That is why signatures on earlier revisions stay valid.
 
+> **Searchable form text** _(v1.7.0)_. The AcroForm `/Helv` font dictionary now
+> carries a `/ToUnicode` CMap in every mode, so text typed into form fields is
+> searchable and extractable (see the [text extraction guide](text-extraction.html)).
+> Because of that CMap, **every form-carrying document changes bytes** compared
+> to v1.6.0 output (about 20 bytes) — a deliberate correctness fix, recorded in
+> the v1.7.0 release notes. Under a PDF/A claim, a form field also raises the
+> `PDFA_UNEMBEDDED_FORM_FONT` diagnostic (see the [PDF/A guide](pdfa.html)).
+
 ## See also
 
 - [Signatures](signatures.html) — CMS/PKCS#7 signing
@@ -3350,7 +3367,7 @@ The repository ships a deterministic offline mock PKI (`scripts/helpers/mock-pki
 - `listSignatures(bytes)` — every entry, its SubFilter, ByteRange, placeholder/timestamp status.
 - Adobe Reader: *Signature Panel → Certificate Details* — trust the mock/company root, then look for **"LTV enabled"** on B-LT documents and a valid document timestamp on B-LTA.
 - `openssl ts -reply -in token.der -text` inspects extracted timestamp tokens.
-- pdfnative itself ships **no signature verifier** — validation belongs to dedicated tooling (veraPDF for PDF/A, Adobe/DSS for signatures, `pdfnative-cli verify` for structural checks).
+- pdfnative itself ships **no signature verifier** — validation belongs to dedicated tooling (veraPDF for PDF/A, Adobe/DSS for signatures, `pdfnative-cli verify` for full cryptographic verification: CMS signature values, certificate chain and trust, RFC 3161 timestamps, OCSP/CRL revocation).
 
 ## Limits & scope (v1.7.0)
 
@@ -4226,7 +4243,7 @@ v1.4.0 upgrades the engine to **pdfnative 1.5.0**, brings the pdfnative **AI-gov
 
 ### What's new in v1.5.0
 
-v1.5.0 upgrades the engine to **pdfnative 1.7.0** and takes the catalogue to **24 tools** at that release,<!-- verify-docs:allow stale-token (historical: v1.5.0 total) --> closing the read/modify loop on documents the assistant did not create.
+v1.5.0 upgrades the engine to **pdfnative 1.6.0** and takes the catalogue to **24 tools** at that release,<!-- verify-docs:allow stale-token (historical: v1.5.0 total) --> closing the read/modify loop on documents the assistant did not create.
 
 - **Five new tools:**
   - `add_chart` — bar, horizontal-bar, line, pie and donut charts drawn as **native PDF vector paths**. No rasterisation and no image round-trip, so the output stays sharp at any zoom and tags as `/Figure` with alt text. If you were previously asking an agent to render a chart to PNG and push it through `embed_image`, stop — this replaces that.
@@ -4855,6 +4872,11 @@ claim are preserved, so Info↔XMP parity holds for PDF/A documents.
   to it.)
 - **Full rebuild, not in-place surgery.** The clean-graph approach trades a
   little speed for correctness and is safe to run on third-party PDFs.
+- **Page boxes survive** _(v1.7.0)_. Declared `/TrimBox`, `/BleedBox`,
+  `/ArtBox`, `/CropBox` and `/UserUnit` entries are preserved through
+  `mergePdfs` / `splitPdf` / `extractPages` (they were dropped by the rebuild
+  before 1.7.0) — so print-ready sources keep their geometry. See the
+  [print production guide](print.html).
 
 ## How it works
 
@@ -5581,7 +5603,7 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 <!-- source: docs/guides/react.md -->
 # pdfnative-react — Declarative JSX Renderer Guide
 
-> **Tracks the latest published `pdfnative-react`** (v1.1.0, built on pdfnative 1.7.0), with **React 19** and `pdfnative` ^1.6.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
+> **Tracks the latest published `pdfnative-react`** (v1.1.0, built on the pdfnative 1.6 engine), with **React 19** and `pdfnative` ^1.6.0 as peer dependencies (semver-accepts 1.7.0). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
 
 [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency [`pdfnative`](https://github.com/Nizoka/pdfnative) engine — no DOM, no headless browser, no SaaS round-trips. Your documents never leave the process.
 
@@ -6799,6 +6821,11 @@ Type0 (CID) fonts are decoded as 2-byte codes (`Identity-H`/`Identity-V`),
 mapped through their `/ToUnicode` CMap — which pdfnative's own CIDFont
 output always embeds, so **pdfnative-generated documents round-trip
 losslessly**, including CJK, Arabic, and emoji.
+
+Since pdfnative **1.7.0** the `/ToUnicode` coverage is complete across both
+builders: base-14 font dictionaries are reached under tagged mode and the
+AcroForm `/Helv` dictionary carries a CMap in every mode — so base-14 text in
+tagged documents and **text typed into form fields** now extract cleanly too.
 
 ## Reading order and runs
 

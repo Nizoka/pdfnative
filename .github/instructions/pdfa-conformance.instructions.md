@@ -74,6 +74,22 @@ applyTo: 'src/core/pdf-tags.ts,src/core/pdf-builder.ts,src/core/pdf-document.ts,
   embedded fonts. Do not reintroduce unembedded base-14 references in any
   PDF/A code path.
 
+## Declaration guards (v1.7.0)
+
+- Configurations that would break the declared PDF/A level surface a
+  diagnostic through `src/core/pdf-diagnostics.ts`: `console.warn` by default
+  (deduplicated once per code), a caller-supplied `onDiagnostic` sink, or a
+  thrown error under `strict: true` (`onDiagnostic` is ignored when `strict`
+  is set — diagnostics throw instead).
+- Current codes (stable, additions-only union `PdfDiagnosticCode`):
+  `PDFA_NO_FONT_ENTRIES` (base-14 text without embedded fonts under a claim),
+  `PDFA_UNEMBEDDED_FORM_FONT` (any form field under a claim — the AcroForm
+  `/DR /Helv` is an unembedded Type 1), `PDFA_DEVICE_CMYK_IMAGE` (CMYK JPEG
+  against the sRGB OutputIntent).
+- When adding a new guard: extend the union (never remove or rename a code),
+  include the remedy in the message, and cover both the warn path and the
+  `strict` throw path in tests.
+
 ## Validator workflow
 
 1. `npm run test:generate` — regenerate `test-output/`.

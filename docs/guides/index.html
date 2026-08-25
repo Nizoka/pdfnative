@@ -315,7 +315,7 @@
       </li>
       <li>
         <a href="pdfa.html">PDF/A conformance →</a>
-        <span class="guide-toc-desc">PDF/A-1b, 2b, 2u, 3b — validated against the veraPDF reference validator in CI on every commit.</span>
+        <span class="guide-toc-desc">PDF/A-1b, 2b, 2u, 3b — validated against the veraPDF reference validator in CI on every commit. v1.7.0 adds declaration guards: <code>strict</code>, <code>onDiagnostic</code>, and the <code>PDFA_*</code> diagnostic codes for configurations that would break the claimed level.</span>
       </li>
       <li>
         <a href="print.html">Print production →</a>
@@ -323,7 +323,7 @@
       </li>
       <li>
         <a href="signatures.html">Digital signatures →</a>
-        <span class="guide-toc-desc">CMS/PKCS#7 detached signatures — RSA + ECDSA P-256, one-call <code>addSignaturePlaceholder()</code> workflow, Adobe Reader / openssl-cms validation.</span>
+        <span class="guide-toc-desc">CMS/PKCS#7 detached signatures — RSA SHA-256/384/512 + ECDSA P-256, one-call <code>addSignaturePlaceholder()</code> workflow, Adobe Reader / openssl-cms validation. v1.7.0 adds the PAdES baseline profile (<code>profile: 'pades'</code>), multiple signatures (<code>allowMultiple</code> + <code>fieldName</code>), <code>listSignatures()</code>, and the <a href="ltv.html">LTV ladder</a> to B-LTA.</span>
       </li>
       <li>
         <a href="ltv.html">Long-term validation (LTV) →</a>
@@ -335,11 +335,11 @@
       </li>
       <li>
         <a href="colour-emoji.html">Colour emoji →</a>
-        <span class="guide-toc-desc">v1.3.0 COLRv1 colour emoji — opt-in Noto Color Emoji subset, solid + linear + radial gradient layers rendered as native PDF Form XObjects. Monochrome fallback when not registered.</span>
+        <span class="guide-toc-desc">v1.3.0 COLRv1 colour emoji — opt-in Noto Color Emoji subset, solid + linear + radial gradient layers (plus v1.4.0 sweep gradients and blend modes) rendered as native PDF Form XObjects. v1.7.0 adds 73 flag &amp; ZWJ sequences (51 flags + 22 ZWJ) resolved as single colour ligature glyphs. Monochrome fallback when not registered.</span>
       </li>
       <li>
         <a href="colour-emoji-cli.html">Colour-emoji font CLI →</a>
-        <span class="guide-toc-desc">v1.4.0 <code>pdfnative-build-emoji-font</code> — bundled CLI that generates a colour-emoji data module with exactly the glyphs you need, from a few codepoints to the full ~3,600-glyph set. <code>--download</code> + checksum, <code>--ttf</code>, <code>--all</code>, <code>--ranges</code>.</span>
+        <span class="guide-toc-desc">v1.4.0 <code>pdfnative-build-emoji-font</code> — bundled CLI that generates a colour-emoji data module with exactly the glyphs you need, from a few codepoints to the full ~3,600-glyph set. <code>--download</code> + checksum, <code>--ttf</code>, <code>--all</code>, <code>--ranges</code>, and v1.7.0 <code>--sequences flags|zwj|all|none</code> / <code>--sequence-list</code> for flag &amp; ZWJ ligatures.</span>
       </li>
       <li>
         <a href="streaming.html">Streaming output →</a>

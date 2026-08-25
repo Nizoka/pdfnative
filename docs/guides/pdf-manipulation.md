@@ -268,6 +268,11 @@ claim are preserved, so Info↔XMP parity holds for PDF/A documents.
   to it.)
 - **Full rebuild, not in-place surgery.** The clean-graph approach trades a
   little speed for correctness and is safe to run on third-party PDFs.
+- **Page boxes survive** _(v1.7.0)_. Declared `/TrimBox`, `/BleedBox`,
+  `/ArtBox`, `/CropBox` and `/UserUnit` entries are preserved through
+  `mergePdfs` / `splitPdf` / `extractPages` (they were dropped by the rebuild
+  before 1.7.0) — so print-ready sources keep their geometry. See the
+  [print production guide](print.html).
 
 ## How it works
 

@@ -110,6 +110,15 @@ For a real-world test, open your PDF with **NVDA** (Windows, free), **VoiceOver*
 
 Contributions to address these are welcome — see the [Roadmap](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md).
 
+> **PDF/A declaration guards** _(v1.7.0)_. Tagged documents that also claim
+> PDF/A are now checked at build time: configurations that would break the
+> declared level (base-14 text without embedded fonts, form fields under a
+> claim, DeviceCMYK images against the sRGB OutputIntent) surface a diagnostic
+> — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error
+> under `strict: true`. Base-14 dictionaries under tagged mode also gain full
+> `/ToUnicode` coverage, which changes output bytes versus 1.6.0. Details in
+> the [PDF/A guide](pdfa.html).
+
 ## Testing your PDFs are accessible
 
 A pragmatic checklist for solo developers:

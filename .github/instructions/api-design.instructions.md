@@ -48,7 +48,10 @@ applyTo: "src/index.ts"
 17. Core — Digital Signatures (`buildSigDict`, `signPdfBytes`, `estimateContentsSize`, `addSignaturePlaceholder`, `PdfSignOptions`, `SigDictMetadata`)
 18. Core — Streaming (`buildPDFStream`, `buildDocumentPDFStream`, `buildPDFStreamTrue`, `buildDocumentPDFStreamTrue`, `buildPDFStreamPageByPage`, `buildDocumentPDFStreamPageByPage`, `streamToFile`, `StreamOptions`)
 19. Crypto — Primitives (`sha384`, `sha512`, `hmacSha256`, `rsaSign`, `ecdsaSign`, `parseCertificate`, `buildCmsSignedData`, `setCryptoProvider`)
-20. Parser — Read & Modify (`openPdf`/`PdfReader`, `createModifier`/`PdfModifier`, `createTokenizer`/`PdfTokenizer`, `parseValue`, `parseIndirectObject`, `parseXrefTable`, `PdfValue`, `ParsedDict`, `PdfRef`, `extractText`, `readFormFields`-family lives in core, `mergePdfs`/`splitPdf`/`extractPages` + streaming variants, `validatePdfUA`, decode filters)
+20. Parser — Read & Modify (`openPdf`/`PdfReader`, `createModifier`/`PdfModifier`, `createTokenizer`/`PdfTokenizer`, `parseValue`, `parseIndirectObject`, `parseXrefTable`, `PdfValue`, `ParsedDict`, `PdfRef`, `extractText`, `readFormFields`-family lives in core, `mergePdfs`/`splitPdf`/`extractPages` + streaming variants, `validatePdfUA`, decode filters, `PdfModifier.updateMetadata` (v1.7.0))
+21. Core — LTV / PAdES (v1.7.0: `signPdfBytesWithTimestamp`, `collectValidationInfo`, `embedValidationInfo`, `addValidationInfo`, `addDocumentTimestamp`, `listSignatures`, `vriKeyForContents`, `buildDocTimeStampDict`; injected transports: `setTimestampProvider`/`getTimestampProvider`, `setRevocationProvider`/`getRevocationProvider`, `TimestampProvider`, `RevocationProvider` — the engine itself never opens a socket)
+22. Core — Print Production (v1.7.0: `layout.print` page boxes + `bleed` shorthand + `marks`, `/Trapped` metadata with XMP parity, custom OutputIntent ICC, `/UserUnit`, print-dialog `viewerPreferences`: `duplex`, `pickTrayByPDFSize`, `printPageRange`, `numCopies`)
+23. Core — PDF/A Diagnostics (v1.7.0: `strict`, `onDiagnostic`, `PdfDiagnostic`, `PdfDiagnosticCode` — codes `PDFA_NO_FONT_ENTRIES`, `PDFA_UNEMBEDDED_FORM_FONT`, `PDFA_DEVICE_CMYK_IMAGE`)
 
 ## Parser Option-Type Precedent
 - Parser-module option/result types live in the module itself (`MergeOptions`,

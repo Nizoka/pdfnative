@@ -85,7 +85,7 @@
     <loc>https://pdfnative.dev/guides/accessibility.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/accessibility.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/accessibility.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -101,7 +101,7 @@
     <loc>https://pdfnative.dev/guides/ltv.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/ltv.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/ltv.html"/>
-    <lastmod>2026-08-20</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -125,7 +125,7 @@
     <loc>https://pdfnative.dev/guides/colour-emoji.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/colour-emoji.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/colour-emoji.html"/>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -149,7 +149,7 @@
     <loc>https://pdfnative.dev/guides/pdf-manipulation.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/pdf-manipulation.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/pdf-manipulation.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -157,7 +157,7 @@
     <loc>https://pdfnative.dev/guides/form-filling.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/form-filling.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/form-filling.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -165,7 +165,7 @@
     <loc>https://pdfnative.dev/guides/charts.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/charts.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/charts.html"/>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -173,7 +173,7 @@
     <loc>https://pdfnative.dev/guides/text-extraction.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/text-extraction.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/text-extraction.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -213,7 +213,7 @@
     <loc>https://pdfnative.dev/guides/cli.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/cli.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/cli.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -229,7 +229,7 @@
     <loc>https://pdfnative.dev/guides/react.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/react.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/react.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -279,7 +279,7 @@
     <loc>https://pdfnative.dev/playgrounds/charts.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/charts.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/charts.html"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -303,7 +303,7 @@
     <loc>https://pdfnative.dev/learn/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/"/>
-    <lastmod>2026-08-01</lastmod>
+    <lastmod>2026-08-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
