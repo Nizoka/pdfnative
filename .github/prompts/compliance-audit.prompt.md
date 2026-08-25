@@ -65,7 +65,7 @@ Perform a comprehensive compliance audit of pdfnative.
 ### 10. Digital Signature Compliance (ISO 32000-1 §12.8)
 - `/ByteRange` covers entire PDF minus `/Contents` hex
 - CMS SignedData structure embeds X.509 certificate chain
-- `/Filter /Adobe.PPKLite /SubFilter /adbe.pkcs7.detached`
+- `/Filter /Adobe.PPKLite` with `/SubFilter /adbe.pkcs7.detached`, `/ETSI.CAdES.detached` (PAdES profile, v1.7.0), or `/ETSI.RFC3161` (document timestamps, v1.7.0)
 - RSA and ECDSA signatures produce valid ASN.1 DER output
 
 ### 11. Streaming Output Compliance

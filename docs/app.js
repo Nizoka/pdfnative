@@ -54,14 +54,43 @@
   }
 
   // ── Copy to clipboard ─────────────────────────────────────
+  // Single helper for every copy affordance: the Clipboard API only exists
+  // in secure contexts, so guard it and fall back to execCommand on a
+  // temporary textarea instead of throwing synchronously in the handler.
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (res, rej) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) { /* fall through */ }
+      ta.remove();
+      if (ok) res(); else rej(new Error('Clipboard unavailable'));
+    });
+  }
+
   document.querySelectorAll('.copy-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var text = btn.getAttribute('data-copy');
       if (!text) return;
-      navigator.clipboard.writeText(text).then(function () {
+      copyText(text).then(function () {
         btn.classList.add('copied');
         var prev = btn.innerHTML;
         btn.innerHTML = '✓';
+        setTimeout(function () {
+          btn.innerHTML = prev;
+          btn.classList.remove('copied');
+        }, 1500);
+      }, function () {
+        btn.classList.add('copied');
+        var prev = btn.innerHTML;
+        btn.innerHTML = '✗';
         setTimeout(function () {
           btn.innerHTML = prev;
           btn.classList.remove('copied');
@@ -70,8 +99,66 @@
     });
   });
 
+  // ── Copy-a-URL's-content buttons (e.g. the agent brief) ───
+  document.querySelectorAll('[data-copy-url]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var url = btn.getAttribute('data-copy-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (text) { return copyText(text); })
+        .then(function () {
+          var prev = btn.textContent;
+          btn.textContent = '✓ Copied';
+          setTimeout(function () { btn.textContent = prev; }, 1500);
+        })
+        .catch(function () { btn.textContent = 'Copy failed'; });
+    });
+  });
+
+  // ── Comparison quiz — verdicts derived from the table itself ──
+  var quiz = document.getElementById('cmp-quiz');
+  if (quiz) {
+    var quizBoxes = quiz.querySelectorAll('input[data-quiz-cap]');
+    var verdictEl = document.getElementById('cmp-quiz-verdict');
+    var updateQuiz = function () {
+      var caps = [];
+      quizBoxes.forEach(function (b) {
+        if (b.checked) b.getAttribute('data-quiz-cap').split(',').forEach(function (c) { caps.push(c); });
+      });
+      document.querySelectorAll('.cmp-table tr[data-cap]').forEach(function (tr) {
+        tr.classList.toggle('cmp-hot', caps.indexOf(tr.getAttribute('data-cap')) !== -1);
+      });
+      if (!caps.length) { verdictEl.hidden = true; return; }
+      // Facts, straight from the table rows above: which needs are
+      // pdfnative-only, and which are served elsewhere too.
+      var only = [];
+      if (caps.indexOf('bidi') !== -1) only.push('BiDi shaping');
+      if (caps.indexOf('pdfa') !== -1) only.push('built-in PDF/A');
+      if (caps.indexOf('sign') !== -1) only.push('digital signatures');
+      var msg;
+      if (only.length) {
+        msg = 'Of the libraries in this table, only pdfnative offers ' + only.join(', ') +
+          ' built in (highlighted rows). The others can sometimes get there with extra work — a different claim.';
+      } else if (caps.indexOf('parse') !== -1 && caps.length === 1) {
+        msg = 'Both pdf-lib and pdfnative read and modify existing PDFs. If that is your whole need, pdf-lib is a solid, widely used choice; pdfnative adds the generation, extraction and verification stack around it.';
+      } else if (caps.indexOf('encrypt') !== -1 && caps.length === 1) {
+        msg = 'pdfkit, jsPDF and pdfmake also offer AES encryption (pdf-lib does not). pdfnative adds AES-256 write plus RC4/AES read-and-decrypt if you also work with existing files.';
+      } else if (caps.indexOf('barcodes') !== -1 && caps.length === 1) {
+        msg = 'pdfmake offers QR codes; the five-format barcode set (QR, Code 128, EAN-13, Data Matrix, PDF417) is pdfnative-only in this table.';
+      } else {
+        msg = 'Several libraries in the table cover parts of this combination — the highlighted rows show who covers what. pdfnative covers all of the ticked rows in one dependency-free package.';
+      }
+      verdictEl.textContent = msg;
+      verdictEl.hidden = false;
+    };
+    quizBoxes.forEach(function (b) { b.addEventListener('change', updateQuiz); });
+  }
+
   // ── Code tabs ─────────────────────────────────────────────
-  var tabBtns = document.querySelectorAll('.tab-btn');
+  // Scoped to the Examples section: other page controls (e.g. the demo's
+  // Code/JSON mode switch) must never be captured by this tablist.
+  var exampleTabBar = document.querySelector('#examples .tab-bar');
+  var tabBtns = exampleTabBar ? exampleTabBar.querySelectorAll('.tab-btn') : [];
   var tabPanels = document.querySelectorAll('.tab-panel');
 
   function activateTab(btn) {
@@ -159,6 +246,16 @@
   var demoReset = document.getElementById('demo-reset');
   var demoDescription = document.getElementById('demo-description');
   var demoSourceLink = document.getElementById('demo-source-link');
+  var demoDownload = document.getElementById('demo-download');
+  var demoShare = document.getElementById('demo-share');
+  var demoPreview = document.getElementById('demo-preview');
+  var demoPreviewNote = document.getElementById('demo-preview-note');
+  var demoJson = document.getElementById('demo-json');
+  var demoJsonNote = document.getElementById('demo-json-note');
+  var demoModeCode = document.getElementById('demo-mode-code');
+  var demoModeJson = document.getElementById('demo-mode-json');
+  var demoCopyCli = document.getElementById('demo-copy-cli');
+  var demoCopyMcp = document.getElementById('demo-copy-mcp');
   var pdfnativeModule = null;
 
   // ── Examples gallery ──────────────────────────────────────
@@ -529,6 +626,8 @@
       label: 'Extract text & re-encrypt (v1.6.0)',
       description: 'The 1.6.0 parser round trip: build a PDF, extract its text with positions (open the browser console), then merge it with an AES-256 encrypted annex and re-encrypt the result with a new password.',
       source: GENERATORS_BASE + 'text-extract-showcase.ts',
+      encryptedOutput: true,
+      previewNote: 'This example produces an AES-256 encrypted PDF (password: rotated). The inline preview is skipped — the browser viewer would ask for the password inside a cramped frame. Use Download and open the file in your PDF reader.',
       code: [
         "import { buildDocumentPDFBytes, extractText, mergePdfs, downloadBlob } from 'pdfnative';",
         '',
@@ -591,6 +690,8 @@
     // ── Populate picker and select default ──────────────────
     var DEFAULT_ID = 'quickstart';
     var currentId = null;
+    var lastPdf = null;       // { bytes, name } captured from the last run
+    var lastPreviewUrl = null;
 
     function loadExample(id) {
       var ex = EXAMPLES.find(function (e) { return e.id === id; });
@@ -610,6 +711,11 @@
         opt.textContent = ex.label;
         demoPicker.appendChild(opt);
       });
+      // `#preset=<id>` permalinks restore the selected example.
+      var presetMatch = /(?:^|[#&])preset=([\w-]+)/.exec(location.hash);
+      if (presetMatch && EXAMPLES.some(function (e) { return e.id === presetMatch[1]; })) {
+        DEFAULT_ID = presetMatch[1];
+      }
       demoPicker.value = DEFAULT_ID;
       demoPicker.addEventListener('change', function () { loadExample(demoPicker.value); });
     }
@@ -620,77 +726,404 @@
 
     loadExample(DEFAULT_ID);
 
-    demoBtn.addEventListener('click', async function () {
+    // ── Inline PDF preview ──────────────────────────────────
+    // Same Blob → object-URL pattern as the React playground. Some browsers
+    // (most mobile ones) cannot render PDFs in an iframe; when the engine
+    // says so, be honest about it instead of showing an empty frame.
+    // Explicit opt-in: on browsers that predate the API the property is
+    // undefined, and most of those cannot render a PDF in an iframe anyway —
+    // an honest note beats an empty grey frame.
+    var canPreview = navigator.pdfViewerEnabled === true;
+    if (!canPreview && demoPreview && demoPreviewNote) {
+      demoPreview.hidden = true;
+      demoPreviewNote.hidden = false;
+    }
+
+    function showPreview(bytes) {
+      if (!demoPreview || !canPreview) return;
+      var blob = new Blob([bytes], { type: 'application/pdf' });
+      if (lastPreviewUrl) URL.revokeObjectURL(lastPreviewUrl);
+      lastPreviewUrl = URL.createObjectURL(blob);
+      demoPreview.src = lastPreviewUrl;
+    }
+
+    // An encrypted PDF in the preview iframe makes the browser's viewer ask
+    // for the password inside a cramped frame. Primary signal: the example's
+    // own declaration; safety net for user-authored code: the /Encrypt token
+    // in the byte tail (trailer region).
+    function looksEncrypted(bytes) {
+      var tail = bytes.subarray(Math.max(0, bytes.length - 2048));
+      var text = '';
+      for (var i = 0; i < tail.length; i++) text += String.fromCharCode(tail[i]);
+      return text.indexOf('/Encrypt') !== -1;
+    }
+
+    // The demo module calls `downloadBlob` like real pdfnative code; the demo
+    // routes those bytes to the preview pane and only downloads on request.
+    function captureSink(bytes, name) {
+      lastPdf = { bytes: bytes, name: name || 'document.pdf' };
+      var ex = EXAMPLES.find(function (e) { return e.id === currentId; });
+      var encrypted = (demoMode === 'code' && ex && ex.encryptedOutput) || looksEncrypted(bytes);
+      if (encrypted) {
+        if (demoPreview) { demoPreview.hidden = true; demoPreview.removeAttribute('src'); }
+        if (demoPreviewNote) {
+          demoPreviewNote.textContent = (ex && ex.previewNote) ||
+            'This PDF is encrypted — the inline viewer would prompt for its password in a cramped frame. Use Download and open it in your PDF reader.';
+          demoPreviewNote.hidden = false;
+        }
+      } else {
+        if (demoPreview && canPreview) demoPreview.hidden = false;
+        if (demoPreviewNote && canPreview) demoPreviewNote.hidden = true;
+        showPreview(bytes);
+      }
+      if (demoDownload) demoDownload.disabled = false;
+    }
+
+    if (demoDownload) {
+      demoDownload.addEventListener('click', function () {
+        if (lastPdf && pdfnativeModule) pdfnativeModule.downloadBlob(lastPdf.bytes, lastPdf.name);
+      });
+    }
+
+    // ── JSON mode: the DocumentParams the whole ecosystem consumes ──
+    var demoMode = 'code';
+    var BLOCK_TYPES = ['heading', 'paragraph', 'list', 'table', 'image', 'link', 'toc', 'barcode', 'svg', 'formField', 'chart', 'pageBreak', 'spacer'];
+    var STARTER_DOC = {
+      title: 'Shared document',
+      blocks: [
+        { type: 'heading', text: 'Shared document', level: 1 },
+        { type: 'paragraph', text: 'Edit this JSON and generate — the same object drives the library, pdfnative-cli render, and the generate_basic_pdf MCP tool.' },
+        { type: 'table', headers: ['Surface', 'Entry point'], rows: [
+          { cells: ['Library', 'buildDocumentPDFBytes(params)'] },
+          { cells: ['CLI', 'pdfnative render --input doc.json'] },
+          { cells: ['MCP', 'generate_basic_pdf'] }
+        ] }
+      ]
+    };
+
+    function setMode(mode) {
+      demoMode = mode;
+      var json = mode === 'json';
+      if (demoModeCode) demoModeCode.setAttribute('aria-pressed', String(!json));
+      if (demoModeJson) demoModeJson.setAttribute('aria-pressed', String(json));
+      if (demoCode) demoCode.hidden = json;
+      if (demoJson) {
+        demoJson.hidden = !json;
+        if (json && !demoJson.value) demoJson.value = JSON.stringify(STARTER_DOC, null, 2);
+      }
+      if (demoPicker) demoPicker.disabled = json;
+      if (demoSourceLink) demoSourceLink.hidden = json;
+      if (demoJsonNote) demoJsonNote.hidden = !json;
+      if (demoCopyCli) demoCopyCli.hidden = !json;
+      if (demoCopyMcp) demoCopyMcp.hidden = !json;
+      if (demoModeCode) demoModeCode.classList.toggle('active', !json);
+      if (demoModeJson) demoModeJson.classList.toggle('active', json);
+    }
+    if (demoModeCode) demoModeCode.addEventListener('click', function () { setMode('code'); });
+    if (demoModeJson) demoModeJson.addEventListener('click', function () { setMode('json'); });
+
+    // Defensive parse: a #doc= payload is untrusted input. Data only — the
+    // hash can never carry code — with a size cap and a block-type check
+    // against the engine's 13-kind union. Anything off-shape is rejected.
+    function parseDocJson(text) {
+      if (typeof text !== 'string' || text.length > 100000) throw new Error('Document JSON too large.');
+      var doc = JSON.parse(text);
+      if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new Error('Document must be a JSON object.');
+      if (!Array.isArray(doc.blocks)) throw new Error('Document needs a "blocks" array.');
+      for (var i = 0; i < doc.blocks.length; i++) {
+        var b = doc.blocks[i];
+        if (!b || typeof b !== 'object' || BLOCK_TYPES.indexOf(b.type) === -1) {
+          throw new Error('blocks[' + i + '].type must be one of: ' + BLOCK_TYPES.join(', '));
+        }
+        // Shared #doc= payloads are untrusted: only the schemes the engine
+        // itself allows may reach a link annotation.
+        if (b.type === 'link' && typeof b.url === 'string' && !/^(https?:|mailto:|#)/i.test(b.url)) {
+          throw new Error('blocks[' + i + '].url must use http:, https:, mailto: or a #fragment.');
+        }
+      }
+      return doc;
+    }
+
+    // #doc= payload: base64url, deflate-raw-compressed when the native
+    // CompressionStream API exists ("d." prefix), raw otherwise ("r.").
+    function toBase64Url(bytes) {
+      var bin = '';
+      for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+    function fromBase64Url(s) {
+      s = s.replace(/-/g, '+').replace(/_/g, '/');
+      var bin = atob(s);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+    async function encodeDocHash(jsonText) {
+      var raw = new TextEncoder().encode(jsonText);
+      if (typeof CompressionStream === 'function') {
+        var stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+        var packed = new Uint8Array(await new Response(stream).arrayBuffer());
+        return 'd.' + toBase64Url(packed);
+      }
+      return 'r.' + toBase64Url(raw);
+    }
+    async function decodeDocHash(payload) {
+      if (payload.length > 20000) throw new Error('Link payload too large.');
+      var kind = payload.slice(0, 2);
+      var bytes = fromBase64Url(payload.slice(2));
+      if (kind === 'd.') {
+        if (typeof DecompressionStream !== 'function') throw new Error('This browser cannot decompress the link.');
+        // Read the inflated stream chunk by chunk and abort past the JSON
+        // size cap — deflate can expand ~1000:1, so never materialise an
+        // unbounded payload before checking its size.
+        var reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+        var chunks = [];
+        var total = 0;
+        for (;;) {
+          var step = await reader.read();
+          if (step.done) break;
+          total += step.value.length;
+          if (total > 150000) {
+            reader.cancel();
+            throw new Error('Link payload too large after decompression.');
+          }
+          chunks.push(step.value);
+        }
+        bytes = new Uint8Array(total);
+        var off = 0;
+        for (var ci = 0; ci < chunks.length; ci++) { bytes.set(chunks[ci], off); off += chunks[ci].length; }
+      } else if (kind !== 'r.') {
+        throw new Error('Unrecognised link format.');
+      }
+      return new TextDecoder().decode(bytes);
+    }
+
+    if (demoShare) {
+      demoShare.addEventListener('click', async function () {
+        var base = location.origin + location.pathname;
+        var url;
+        try {
+          if (demoMode === 'json') {
+            var doc = parseDocJson(demoJson.value);
+            url = base + '#doc=' + (await encodeDocHash(JSON.stringify(doc)));
+          } else {
+            url = base + '#preset=' + (currentId || DEFAULT_ID);
+          }
+          await copyText(url);
+          var prev = demoShare.textContent;
+          demoShare.textContent = '✓ Copied';
+          setTimeout(function () { demoShare.textContent = prev; }, 1500);
+        } catch (e) {
+          demoError.textContent = 'Share failed: ' + (e.message || e);
+          demoError.style.display = 'block';
+        }
+      });
+    }
+
+    function copyWithFeedback(btn, text) {
+      copyText(text).then(function () {
+        var prev = btn.textContent;
+        btn.textContent = '✓ Copied';
+        setTimeout(function () { btn.textContent = prev; }, 1500);
+      });
+    }
+    if (demoCopyCli) {
+      demoCopyCli.addEventListener('click', function () {
+        try {
+          var doc = parseDocJson(demoJson.value);
+          copyWithFeedback(demoCopyCli,
+            '# Save the JSON below as doc.json, then:\n' +
+            'npx pdfnative-cli render --input doc.json --output out.pdf\n\n' +
+            JSON.stringify(doc, null, 2) + '\n');
+        } catch (e) { demoError.textContent = e.message; demoError.style.display = 'block'; }
+      });
+    }
+    if (demoCopyMcp) {
+      demoCopyMcp.addEventListener('click', function () {
+        try {
+          var doc = parseDocJson(demoJson.value);
+          copyWithFeedback(demoCopyMcp, JSON.stringify({
+            tool: 'generate_basic_pdf',
+            input: { title: doc.title || 'Document', blocks: doc.blocks, outputMode: 'base64' }
+          }, null, 2) + '\n');
+        } catch (e) { demoError.textContent = e.message; demoError.style.display = 'block'; }
+      });
+    }
+
+    // Restore a shared document from the URL hash. `hashReady` lets the
+    // autorun observer wait for the (async) decode instead of racing it and
+    // rendering the default example over the shared one; #doc= is not an
+    // element id, so we also bring the visitor to the demo ourselves.
+    var hashReady = Promise.resolve();
+    var docMatch = /(?:^|[#&])doc=([\w.~-]+)/.exec(location.hash);
+    if (docMatch && demoJson) {
+      hashReady = decodeDocHash(docMatch[1])
+        .then(function (text) {
+          var doc = parseDocJson(text);
+          setMode('json');
+          demoJson.value = JSON.stringify(doc, null, 2);
+          var demoSection = document.getElementById('demo');
+          if (demoSection) demoSection.scrollIntoView();
+        })
+        .catch(function () { /* off-shape payloads are silently ignored */ });
+    }
+
+    // ── Execution: real ES module via a Blob URL ─────────────
+    // The example code is executed as an actual module, so its
+    // `import { … } from 'pdfnative'` lines are real, top-level `await`
+    // works natively, and errors carry genuine line numbers. The pdfnative
+    // specifier is resolved to the already-loaded module through a global
+    // (no second CDN request), with `downloadBlob` routed to the preview.
+    function rewriteImports(code) {
+      return code
+        // Named imports — single- or multi-line.
+        .replace(
+          /^(\s*)import\s*\{([\s\S]*?)\}\s*from\s*['"]pdfnative['"]\s*;?[ \t]*$/gm,
+          '$1const {$2} = globalThis.__pdfnativeDemo.mod;'
+        )
+        // Namespace imports: import * as pdf from 'pdfnative'.
+        .replace(
+          /^(\s*)import\s*\*\s*as\s+([A-Za-z_$][\w$]*)\s+from\s*['"]pdfnative['"]\s*;?[ \t]*$/gm,
+          '$1const $2 = globalThis.__pdfnativeDemo.mod;'
+        );
+    }
+
+    function lineFromStack(err) {
+      var m = /blob:[^\s)]+:(\d+):\d+/.exec(err && err.stack ? err.stack : '');
+      return m ? Number(m[1]) : null;
+    }
+
+    async function runDemo() {
       demoStatus.textContent = 'Loading pdfnative…';
       demoError.style.display = 'none';
       demoError.textContent = '';
       demoBtn.disabled = true;
 
+      var moduleUrl = null;
       try {
         // Lazy-load pdfnative from ESM CDN on first use
         if (!pdfnativeModule) {
           pdfnativeModule = await loadPdfnative();
-          demoStatus.textContent = 'Generating PDF…';
+        }
+        demoStatus.textContent = 'Generating PDF…';
+
+        if (demoMode === 'json') {
+          var doc = parseDocJson(demoJson.value);
+          captureSink(pdfnativeModule.buildDocumentPDFBytes(doc), (doc.title || 'document') + '.pdf');
+        } else {
+          globalThis.__pdfnativeDemo = {
+            mod: Object.assign({}, pdfnativeModule, { downloadBlob: captureSink })
+          };
+
+          var source = rewriteImports(demoCode.value);
+          if (/from\s*['"]pdfnative['"]/.test(source)) {
+            throw new Error("This demo can only resolve `import { name } from 'pdfnative'` or `import * as pdf from 'pdfnative'` — rewrite the import in one of those forms.");
+          }
+          moduleUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+          await import(moduleUrl);
         }
 
-        // Extract user code and execute
-        var code = demoCode.value;
-
-        // Strip top-level static `import {…} from 'pdfnative'` statements —
-        // we provide those bindings via the function arguments below.
-        // Keep dynamic `import('…')` calls intact for examples that need them
-        // (e.g. multi-language font modules).
-        var cleanCode = code
-          .replace(/^\s*import\s*\{[^}]+\}\s*from\s*['"]pdfnative['"]\s*;?/gm, '')
-          .trim();
-
-        // Wrap in async IIFE so user code can use top-level `await`
-        var wrapped = '"use strict"; return (async () => {\n' + cleanCode + '\n})();';
-
-        var fn = new Function(
-          'buildPDFBytes', 'buildDocumentPDFBytes', 'downloadBlob',
-          'buildPDF', 'buildDocumentPDF', 'wrapText',
-          'buildDocumentPDFStream', 'buildPDFStream', 'concatChunks',
-          'registerFonts', 'loadFontData',
-          'initNodeCompression', 'signPdfBytes',
-          'extractText', 'mergePdfs', 'splitPdf', 'extractPages',
-          'openPdf', 'readFormFields', 'fillForm', 'flattenForm',
-          wrapped
-        );
-
-        await fn(
-          pdfnativeModule.buildPDFBytes,
-          pdfnativeModule.buildDocumentPDFBytes,
-          pdfnativeModule.downloadBlob,
-          pdfnativeModule.buildPDF,
-          pdfnativeModule.buildDocumentPDF,
-          pdfnativeModule.wrapText,
-          pdfnativeModule.buildDocumentPDFStream,
-          pdfnativeModule.buildPDFStream,
-          pdfnativeModule.concatChunks,
-          pdfnativeModule.registerFonts,
-          pdfnativeModule.loadFontData,
-          pdfnativeModule.initNodeCompression,
-          pdfnativeModule.signPdfBytes,
-          pdfnativeModule.extractText,
-          pdfnativeModule.mergePdfs,
-          pdfnativeModule.splitPdf,
-          pdfnativeModule.extractPages,
-          pdfnativeModule.openPdf,
-          pdfnativeModule.readFormFields,
-          pdfnativeModule.fillForm,
-          pdfnativeModule.flattenForm
-        );
-
-        demoStatus.textContent = 'PDF generated!';
+        demoStatus.textContent = lastPdf ? 'PDF generated — preview updated.' : 'Done (no PDF produced).';
         setTimeout(function () { demoStatus.textContent = ''; }, 3000);
       } catch (err) {
-        demoError.textContent = err.message || String(err);
+        var line = lineFromStack(err);
+        demoError.textContent = (line ? 'Line ' + line + ': ' : '') + (err.message || String(err));
         demoError.style.display = 'block';
         demoStatus.textContent = '';
       } finally {
+        if (moduleUrl) URL.revokeObjectURL(moduleUrl);
         demoBtn.disabled = false;
       }
-    });
+    }
+
+    demoBtn.addEventListener('click', runDemo);
+
+    // ── Live benchmark (never reuses .bench-label/.bench-value: those
+    //    classes are tied to bench/RESULTS.md by the bench-parity CI rule) ──
+    var benchBtn = document.getElementById('bench-live-run');
+    if (benchBtn) {
+      benchBtn.addEventListener('click', async function () {
+        var rowsEl = document.getElementById('bench-live-rows');
+        var noteEl = document.getElementById('bench-live-note');
+        benchBtn.disabled = true;
+        benchBtn.textContent = 'Loading pdfnative…';
+        try {
+          if (!pdfnativeModule) pdfnativeModule = await loadPdfnative();
+          benchBtn.textContent = 'Measuring…';
+          var makeParams = function (n) {
+            var rows = [];
+            for (var i = 0; i < n; i++) {
+              rows.push({ cells: ['2026-08-' + ((i % 28) + 1), 'Line item ' + i, '$' + (i * 3.5).toFixed(2)] });
+            }
+            // PdfParams requires infoItems/balanceText/countText/footerText —
+            // the engine's boundary validation does not (yet) guard them.
+            return {
+              title: 'Benchmark ' + n,
+              infoItems: [{ label: 'Rows', value: String(n) }],
+              balanceText: 'Synthetic dataset',
+              countText: n + ' rows',
+              headers: ['Date', 'Description', 'Amount'],
+              rows: rows,
+              footerText: 'pdfnative.dev live benchmark'
+            };
+          };
+          pdfnativeModule.buildPDFBytes(makeParams(50)); // warm-up
+          var sizes = [100, 500, 1000];
+          var results = [];
+          for (var s = 0; s < sizes.length; s++) {
+            var t0 = performance.now();
+            pdfnativeModule.buildPDFBytes(makeParams(sizes[s]));
+            results.push({ n: sizes[s], ms: performance.now() - t0 });
+            await new Promise(function (r) { setTimeout(r, 0); }); // keep the tab responsive
+          }
+          var max = Math.max.apply(null, results.map(function (r) { return r.ms; }));
+          rowsEl.innerHTML = results.map(function (r) {
+            var pct = Math.max(4, Math.round((r.ms / max) * 100));
+            return '<div class="bench-row">' +
+              '<span class="bench-live-label">' + r.n.toLocaleString('en-GB') + ' rows — this device</span>' +
+              '<div class="bench-bar-bg"><div class="bench-bar bench-live-bar" style="width:' + pct + '%"></div></div>' +
+              '<span class="bench-live-value">' + r.ms.toFixed(1) + ' ms</span>' +
+              '</div>';
+          }).join('');
+          rowsEl.hidden = false;
+          noteEl.hidden = false;
+        } catch (e) {
+          // Never destroy the button label with an error message.
+          noteEl.textContent = 'Benchmark failed: ' + (e.message || e);
+          noteEl.setAttribute('role', 'alert');
+          noteEl.hidden = false;
+        } finally {
+          benchBtn.textContent = '↺ Run again';
+          benchBtn.disabled = false;
+        }
+      });
+    }
+
+    // First render without a click, once the demo scrolls into view — the
+    // visitor sees a real PDF instead of an empty pane. One shot only, and
+    // desktop only: auto-loading the CDN engine on mobile data without a
+    // click would be presumptuous.
+    if ('IntersectionObserver' in window && canPreview && matchMedia('(min-width: 901px)').matches) {
+      var demoSection = document.getElementById('demo');
+      if (demoSection) {
+        var ran = false;
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting && !ran) {
+              ran = true;
+              io.disconnect();
+              // Never auto-run an example whose output is encrypted — the
+              // visitor would face a password prompt without having clicked.
+              var ex = EXAMPLES.find(function (e) { return e.id === DEFAULT_ID; });
+              if (ex && ex.encryptedOutput) return;
+              // A shared #doc= link may still be decoding: wait for it so the
+              // first render shows the shared document, not the default.
+              hashReady.then(runDemo);
+            }
+          });
+        }, { rootMargin: '200px' });
+        io.observe(demoSection);
+      }
+    }
   }
 })();

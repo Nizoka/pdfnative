@@ -1,5 +1,7 @@
 # Troubleshooting
 
+> **Symptom-first fixes for the classic failures** — tofu boxes (a font registered but never loaded), RTL text appearing backwards, oversized files, PDF/A validation errors, parser rejections — each with the check that identifies it and the change that fixes it.
+
 ## Font Not Rendering (Boxes or Blank)
 
 **Symptom:** Non-Latin text shows as empty rectangles or missing glyphs.

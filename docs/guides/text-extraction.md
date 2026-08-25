@@ -72,6 +72,11 @@ mapped through their `/ToUnicode` CMap — which pdfnative's own CIDFont
 output always embeds, so **pdfnative-generated documents round-trip
 losslessly**, including CJK, Arabic, and emoji.
 
+Since pdfnative **1.7.0** the `/ToUnicode` coverage is complete across both
+builders: base-14 font dictionaries are reached under tagged mode and the
+AcroForm `/Helv` dictionary carries a CMap in every mode — so base-14 text in
+tagged documents and **text typed into form fields** now extract cleanly too.
+
 ## Reading order and runs
 
 `page.text` is assembled geometrically: runs are grouped into lines by

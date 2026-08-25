@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/faq.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/faq.html">
   <link rel="alternate" type="text/markdown" href="faq.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"FAQ","item":"https://pdfnative.dev/guides/faq.html"}]},{"@type":"TechArticle","headline":"FAQ","description":"Frequently asked questions about pdfnative — custom fonts, PDF/A, encryption, BiDi, browser usage, signatures, and more.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/faq.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How do I generate my first PDF?","acceptedAnswer":{"@type":"Answer","text":"import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative'; const pdf = buildDocumentPDFBytes({ title: 'Hello', blocks: [ { type: 'heading', text: 'Hello world', level: 1 }, { type: 'paragraph', text: 'My first PDF.' }, ], }); downloadBlob(pdf, 'hello.pdf'); // browser // or, in Node.js: // fs.writeFileSync('hello.pdf', pdf); See the Quick Start guide for Node.js, browser, and Web Worker walkthroughs."}},{"@type":"Question","name":"Which builder should I pick: `buildPDFBytes` or `buildDocumentPDFBytes`?","acceptedAnswer":{"@type":"Answer","text":"Builder — Best for — Key shape `buildPDFBytes` — Tabular reports, bank statements, invoices with a single table — `{ title, headers, rows, infoItems, balanceText, ... }` `buildDocumentPDFBytes` — Mixed-content documents (manuals, articles, multi-section reports) — `{ title, blocks: [...] }` with 13 block types Both return Uint8Array and accept the same layout / encryption / compression / tagged-PDF options."}},{"@type":"Question","name":"Does it work in the browser?","acceptedAnswer":{"@type":"Answer","text":"Yes — pdfnative is a dual ESM/CJS build with zero Node.js-specific APIs in the core: import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative'; const pdf = buildDocumentPDFBytes({ title: 'Hello', blocks: [/* … */] }); downloadBlob(pdf, 'output.pdf'); For optimal compression in Node.js, call initNodeCompression() once at startup. In the browser, a stored-block fallback is used automatically."}},{"@type":"Question","name":"Does it work with Deno / Bun?","acceptedAnswer":{"@type":"Answer","text":"Yes. The library is standard ESM with no Node.js-specific imports in the core. Both Deno and Bun import it directly."}},{"@type":"Question","name":"Can I use custom fonts?","acceptedAnswer":{"@type":"Answer","text":"Yes. Build a font data module from any TTF file: npx pdfnative-build-font path/to/MyFont.ttf my-font-data.js Then register it: import { registerFonts, loadFontData, buildDocumentPDFBytes } from 'pdfnative'; registerFonts({ custom: () => import('./my-font-data.js'), }); const myFont = await loadFontData('custom'); const pdf = buildDocumentPDFBytes({ blocks: [{ type: 'paragraph', text: '…' }], fontEntries: [{ fontData: myFont!, fontRef: '/F3', lang: 'custom' }], }); Font subsetting is automatic — only the glyphs you actually used are embedded."}},{"@type":"Question","name":"How do I render Arabic / Hebrew / Thai / Devanagari?","acceptedAnswer":{"@type":"Answer","text":"Register the matching pre-built font module and pass it as a fontEntry : registerFonts({ ar: () => import('pdfnative/fonts/noto-arabic-data.js'), he: () => import('pdfnative/fonts/noto-hebrew-data.js'), th: () => import('pdfnative/fonts/noto-thai-data.js'), hi: () => import('pdfnative/fonts/noto-devanagari-data.js'), }); const langs = ['ar', 'he', 'th', 'hi']; const fontEntries = (await Promise.all(langs.map(loadFontData))) .map((fd, i) => (fd ? { fontData: fd, fontRef: `/F${3 + i}`, lang: langs[i] } : null)) .filter((e): e is NonNullable<typeof e> => e !== null); // .filter(Boolean) alone does not narrow the type const pdf = buildDocumentPDFBytes({ blocks: [ { type: 'paragraph', text: 'مرحبا — שלום — สวัสดี — नमस्ते' }, ], fontEntries, }); The lang property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, and Thai."}},{"@type":"Question","name":"Why does my Arabic text appear backwards?","acceptedAnswer":{"@type":"Answer","text":"The most common cause: missing lang: &#39;ar&#39; on the font entry. Without it, BiDi resolution and Arabic positional shaping are skipped. See Troubleshooting → RTL Text Backwards ."}},{"@type":"Question","name":"Which scripts are supported out of the box?","acceptedAnswer":{"@type":"Answer","text":"26 Noto font-data modules ship with the package: the 22 scripts — Amharic/Ethiopic, Arabic, Armenian, Bengali, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Myanmar, Polish, Simplified Chinese, Sinhala, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese — plus Latin (Noto Sans), math (Noto Sans Math), and monochrome + COLRv1 colour emoji."}},{"@type":"Question","name":"What PDF versions can pdfnative produce?","acceptedAnswer":{"@type":"Answer","text":"Mode — PDF version — Standard Default — 1.4 — ISO 32000-1 `tagged: true` — 1.7 — PDF/A-2b (default tagged mode, ISO 19005-2) `tagged: 'pdfa1b'` — 1.4 — PDF/A-1b (ISO 19005-1) `tagged: 'pdfa2u'` — 1.7 — PDF/A-2u (ISO 19005-2 with unicode) `tagged: 'pdfa3b'` — 1.7 — PDF/A-3b (ISO 19005-3, supports embedded files)"}},{"@type":"Question","name":"Which PDF/A variant should I pick?","acceptedAnswer":{"@type":"Answer","text":"PDF/A-1b — strictest, oldest. Pick only if your validator requires PDF 1.4 and you don&#39;t need transparency, JPEG2000, or layers. PDF/A-2b (recommended default) — PDF 1.7, supports transparency, layers, OpenType. Most modern archive systems target 2b. PDF/A-2u — same as 2b plus mandatory Unicode mapping for all text. Pick if downstream consumers need text extraction. PDF/A-3b — PDF/A-2b + ability to embed arbitrary attachments (e.g. source XML for invoicing standards like ZUGFeRD/Factur-X). Note: not all archive policies allow A-3."}},{"@type":"Question","name":"Can I combine PDF/A and encryption?","acceptedAnswer":{"@type":"Answer","text":"No. ISO 19005-1 §6.3.2 forbids encryption inside PDF/A documents. pdfnative validates this at the buildPDF() boundary and throws an error if both are requested. Pick one or the other."}},{"@type":"Question","name":"Is the output tagged for accessibility (PDF/UA)?","acceptedAnswer":{"@type":"Answer","text":"Yes — when you set tagged: true (or any PDF/A mode), pdfnative emits a structure tree with /Document → /Table → /TR → /TH|TD , /H1 – /H3 , /P , /L / /LI , /Figure , /Link , /Form , /TOC / /TOCI , and uses /ActualText for shaped Unicode. See the Accessibility guide ."}},{"@type":"Question","name":"How do I encrypt a PDF?","acceptedAnswer":{"@type":"Answer","text":"const pdf = buildPDFBytes(params, { encryption: { algorithm: 'aes256', // or 'aes128' userPassword: 'reader', ownerPassword: 'editor', permissions: { print: true, // default: true copy: false, // default: false modify: false, // default: false extractText: true, // accessibility text extraction — default: true }, }, }); aes256 (V5/R6) is recommended for new documents. Use aes128 (V4/R4) only when you need compatibility with very old viewers."}},{"@type":"Question","name":"How do I sign a PDF digitally?","acceptedAnswer":{"@type":"Answer","text":"import { addSignaturePlaceholder, signPdfBytes, parseCertificate, parseRsaPrivateKey } from 'pdfnative'; // 1. The PDF must contain a /Sig placeholder — add one if it doesn't // (skipping this throws \"No /Contents placeholder found\"): const prepared = addSignaturePlaceholder(pdfBytes); // 2. Sign it const signed = signPdfBytes(prepared, { signerCert: parseCertificate(certDer), // DER-encoded X.509 certificate rsaKey: parseRsaPrivateKey(keyDer), // DER-encoded RSA key (or `ecKey` for ECDSA P-256) algorithm: 'rsa-sha256', // or 'ecdsa-sha256' reason: 'Approved', name: 'Jane Doe', }); pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256); RSA also offers SHA-384/512 since v1.7.0. The crypto stack is implemented in pure TypeScript inside src/crypto/ — no native modules, no node:crypto (an optional constant-time native provider can be plugged in via setCryptoProvider )."}},{"@type":"Question","name":"How do I make a signature \"LTV enabled\" (valid for years)?","acceptedAnswer":{"@type":"Answer","text":"Since v1.7.0 pdfnative covers the full PAdES baseline (ETSI EN 319 142-1): sign with profile: &#39;pades&#39; , add an RFC 3161 timestamp with signPdfBytesWithTimestamp , embed revocation material with addValidationInfo ( /DSS + /VRI ), and cap with addDocumentTimestamp . The engine never opens sockets — you inject the TSA/OCSP/CRL transport via setTimestampProvider / setRevocationProvider . Full pipeline in the LTV guide ."}},{"@type":"Question","name":"Can a PDF carry several signatures?","acceptedAnswer":{"@type":"Answer","text":"Yes (v1.7.0): create each placeholder with allowMultiple: true and target it by fieldName when signing. Each signature is appended as a non-destructive incremental revision, so earlier signatures remain valid; inspect any file with listSignatures(bytes) . See signatures — multiple signatures ."}},{"@type":"Question","name":"Is the build supply-chain safe?","acceptedAnswer":{"@type":"Answer","text":"Zero runtime dependencies — npm install pdfnative brings in nothing transitive at runtime. NPM provenance — every release is signed via GitHub Actions OIDC (SLSA L3-equivalent). OpenSSF Scorecard scanned weekly; CodeQL on every push. Pinned dev dependencies managed via Dependabot."}},{"@type":"Question","name":"Can I read or modify existing PDFs?","acceptedAnswer":{"@type":"Answer","text":"Yes. pdfnative includes a tokenizer, object parser, xref/stream parser, and a non-destructive incremental modifier: import { openPdf, createModifier } from 'pdfnative'; const reader = openPdf(new Uint8Array(fs.readFileSync('input.pdf'))); console.log(`Pages: ${reader.pageCount}`); console.log(`Title: ${reader.getInfo()?.get('Title')}`); const mod = createModifier(reader); mod.setMetadata('Title', 'Updated Title'); const updated = mod.save(); // appends a new xref/trailer with /Prev chain"}},{"@type":"Question","name":"What's the maximum document size?","acceptedAnswer":{"@type":"Answer","text":"buildPDFBytes enforces a 100 000 row limit on tables. buildDocumentPDFBytes paginates automatically, with a default cap of 100 000 blocks ( DEFAULT_MAX_BLOCKS ) that you can raise via layout.maxBlocks ; past that, the practical ceiling is your available memory. For very large documents, see the streaming question below."}},{"@type":"Question","name":"How do I avoid loading the whole PDF into memory?","acceptedAnswer":{"@type":"Answer","text":"Use the streaming API — it returns an AsyncGenerator&lt;Uint8Array&gt; that yields chunks as they&#39;re produced: import { buildDocumentPDFStream } from 'pdfnative'; for await (const chunk of buildDocumentPDFStream(params, {}, { chunkSize: 65536 })) { await writeStream.write(chunk); }"}},{"@type":"Question","name":"How can I make the PDF smaller?","acceptedAnswer":{"@type":"Answer","text":"Enable compression : compress: true (FlateDecode, 50–90 % size reduction). Initialize native zlib in Node.js : await initNodeCompression() once at startup. Use JPEG for photos — JPEG (DCTDecode) is already compressed; PNG is FlateDecode-compressed. Font subsetting is automatic — but each script you embed adds one subset."}},{"@type":"Question","name":"Can I generate PDFs in a Web Worker?","acceptedAnswer":{"@type":"Answer","text":"Yes. For large datasets pdfnative ships a built-in worker pipeline — use createPDF , which routes to a worker or the main thread for you: import { createPDF } from 'pdfnative'; const pdf = await createPDF(params, { workerUrl: new URL('./pdf-worker.js', import.meta.url), threshold: 500, // default WORKER_THRESHOLD = 500 rows }); Tables above the threshold run off the main thread (with an automatic main-thread fallback); smaller ones render synchronously. The lower-level generatePDFInWorker(workerUrl, params, { timeout, onProgress }) drives a worker directly — the worker URL is its first argument, and it has no threshold logic."}},{"@type":"Question","name":"How does it compare to jsPDF / pdfkit / pdf-lib / pdfmake?","acceptedAnswer":{"@type":"Answer","text":"See the feature comparison table in the README. Key differentiators: Zero runtime dependencies (others ship 3–6). 22 Unicode scripts with built-in BiDi and OpenType GSUB/GPOS shaping. PDF/A (1b, 2b, 2u, 3b) — none of the others support this directly. Built-in digital signatures (RSA + ECDSA) without external crypto modules. 5 native barcode formats (Code 128, EAN-13, QR, Data Matrix, PDF417) as PDF vector paths."}},{"@type":"Question","name":"Does it convert HTML to PDF?","acceptedAnswer":{"@type":"Answer","text":"No, and it never will. HTML→PDF is a different problem domain (browser engine, CSS, layout) better solved by tools like puppeteer or weasyprint . pdfnative is a structured-data → PDF library — you describe blocks, it emits ISO-compliant PDF."}},{"@type":"Question","name":"Why no classes / no inheritance?","acceptedAnswer":{"@type":"Answer","text":"pdfnative is built from pure functions. State is passed explicitly. This makes the library trivially tree-shakeable, easy to test, and easy to reason about. See the Architecture guide ."}}]}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,307 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; FAQ</p>
-  <article id="guide-content" class="guide-content" data-md="faq.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="faq.md">read faq.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="faq.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="faq">FAQ</h1>
+<blockquote>
+<p>Frequently asked questions about pdfnative. Can&#39;t find your answer? Open a <a href="https://github.com/Nizoka/pdfnative/discussions" target="_blank" rel="noopener">discussion</a> or read the <a href="troubleshooting.html">Troubleshooting guide</a>.</p>
+</blockquote>
+<h2 id="getting-started">Getting started<a class="heading-anchor" href="#getting-started" aria-label="Link to this section">#</a></h2>
+<h3 id="how-do-i-generate-my-first-pdf">How do I generate my first PDF?<a class="heading-anchor" href="#how-do-i-generate-my-first-pdf" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-typescript">import { buildDocumentPDFBytes, downloadBlob } from &#39;pdfnative&#39;;
+
+const pdf = buildDocumentPDFBytes({
+  title: &#39;Hello&#39;,
+  blocks: [
+    { type: &#39;heading&#39;,   text: &#39;Hello world&#39;, level: 1 },
+    { type: &#39;paragraph&#39;, text: &#39;My first PDF.&#39; },
+  ],
+});
+
+downloadBlob(pdf, &#39;hello.pdf&#39;);     // browser
+// or, in Node.js:
+// fs.writeFileSync(&#39;hello.pdf&#39;, pdf);
+</code></pre>
+<p>See the <a href="quickstart.html">Quick Start guide</a> for Node.js, browser, and Web Worker walkthroughs.</p>
+<h3 id="which-builder-should-i-pick-buildpdfbytes-or-builddocumentpdfbytes">Which builder should I pick: <code>buildPDFBytes</code> or <code>buildDocumentPDFBytes</code>?<a class="heading-anchor" href="#which-builder-should-i-pick-buildpdfbytes-or-builddocumentpdfbytes" aria-label="Link to this section">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Builder</th>
+<th>Best for</th>
+<th>Key shape</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>buildPDFBytes</code></td>
+<td>Tabular reports, bank statements, invoices with a single table</td>
+<td><code>{ title, headers, rows, infoItems, balanceText, ... }</code></td>
+</tr>
+<tr>
+<td><code>buildDocumentPDFBytes</code></td>
+<td>Mixed-content documents (manuals, articles, multi-section reports)</td>
+<td><code>{ title, blocks: [...] }</code> with 13 block types</td>
+</tr>
+</tbody></table>
+<p>Both return <code>Uint8Array</code> and accept the same layout / encryption / compression / tagged-PDF options.</p>
+<h3 id="does-it-work-in-the-browser">Does it work in the browser?<a class="heading-anchor" href="#does-it-work-in-the-browser" aria-label="Link to this section">#</a></h3>
+<p>Yes — pdfnative is a dual ESM/CJS build with zero Node.js-specific APIs in the core:</p>
+<pre><code class="language-typescript">import { buildDocumentPDFBytes, downloadBlob } from &#39;pdfnative&#39;;
+
+const pdf = buildDocumentPDFBytes({ title: &#39;Hello&#39;, blocks: [/* … */] });
+downloadBlob(pdf, &#39;output.pdf&#39;);
+</code></pre>
+<p>For optimal compression in Node.js, call <code>initNodeCompression()</code> once at startup. In the browser, a stored-block fallback is used automatically.</p>
+<h3 id="does-it-work-with-deno--bun">Does it work with Deno / Bun?<a class="heading-anchor" href="#does-it-work-with-deno--bun" aria-label="Link to this section">#</a></h3>
+<p>Yes. The library is standard ESM with no Node.js-specific imports in the core. Both Deno and Bun import it directly.</p>
+<hr>
+<h2 id="fonts-and-unicode">Fonts and Unicode<a class="heading-anchor" href="#fonts-and-unicode" aria-label="Link to this section">#</a></h2>
+<h3 id="can-i-use-custom-fonts">Can I use custom fonts?<a class="heading-anchor" href="#can-i-use-custom-fonts" aria-label="Link to this section">#</a></h3>
+<p>Yes. Build a font data module from any TTF file:</p>
+<pre><code class="language-bash">npx pdfnative-build-font path/to/MyFont.ttf my-font-data.js
+</code></pre>
+<p>Then register it:</p>
+<pre><code class="language-typescript">import { registerFonts, loadFontData, buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+registerFonts({
+  custom: () =&gt; import(&#39;./my-font-data.js&#39;),
+});
+
+const myFont = await loadFontData(&#39;custom&#39;);
+const pdf = buildDocumentPDFBytes({
+  blocks: [{ type: &#39;paragraph&#39;, text: &#39;…&#39; }],
+  fontEntries: [{ fontData: myFont!, fontRef: &#39;/F3&#39;, lang: &#39;custom&#39; }],
+});
+</code></pre>
+<p>Font subsetting is automatic — only the glyphs you actually used are embedded.</p>
+<h3 id="how-do-i-render-arabic--hebrew--thai--devanagari">How do I render Arabic / Hebrew / Thai / Devanagari?<a class="heading-anchor" href="#how-do-i-render-arabic--hebrew--thai--devanagari" aria-label="Link to this section">#</a></h3>
+<p>Register the matching pre-built font module and pass it as a <code>fontEntry</code>:</p>
+<pre><code class="language-typescript">registerFonts({
+  ar: () =&gt; import(&#39;pdfnative/fonts/noto-arabic-data.js&#39;),
+  he: () =&gt; import(&#39;pdfnative/fonts/noto-hebrew-data.js&#39;),
+  th: () =&gt; import(&#39;pdfnative/fonts/noto-thai-data.js&#39;),
+  hi: () =&gt; import(&#39;pdfnative/fonts/noto-devanagari-data.js&#39;),
+});
+
+const langs = [&#39;ar&#39;, &#39;he&#39;, &#39;th&#39;, &#39;hi&#39;];
+const fontEntries = (await Promise.all(langs.map(loadFontData)))
+  .map((fd, i) =&gt; (fd ? { fontData: fd, fontRef: `/F${3 + i}`, lang: langs[i] } : null))
+  .filter((e): e is NonNullable&lt;typeof e&gt; =&gt; e !== null); // .filter(Boolean) alone does not narrow the type
+
+const pdf = buildDocumentPDFBytes({
+  blocks: [
+    { type: &#39;paragraph&#39;, text: &#39;مرحبا — שלום — สวัสดี — नमस्ते&#39; },
+  ],
+  fontEntries,
+});
+</code></pre>
+<p>The <code>lang</code> property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, and Thai.</p>
+<h3 id="why-does-my-arabic-text-appear-backwards">Why does my Arabic text appear backwards?<a class="heading-anchor" href="#why-does-my-arabic-text-appear-backwards" aria-label="Link to this section">#</a></h3>
+<p>The most common cause: missing <code>lang: &#39;ar&#39;</code> on the font entry. Without it, BiDi resolution and Arabic positional shaping are skipped. See <a href="troubleshooting.html">Troubleshooting → RTL Text Backwards</a>.</p>
+<h3 id="which-scripts-are-supported-out-of-the-box">Which scripts are supported out of the box?<a class="heading-anchor" href="#which-scripts-are-supported-out-of-the-box" aria-label="Link to this section">#</a></h3>
+<p>26 Noto font-data modules ship with the package: the 22 scripts — Amharic/Ethiopic, Arabic, Armenian, Bengali, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Myanmar, Polish, Simplified Chinese, Sinhala, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese — plus Latin (Noto Sans), math (Noto Sans Math), and monochrome + COLRv1 colour emoji.</p>
+<hr>
+<h2 id="standards-and-compliance">Standards and compliance<a class="heading-anchor" href="#standards-and-compliance" aria-label="Link to this section">#</a></h2>
+<h3 id="what-pdf-versions-can-pdfnative-produce">What PDF versions can pdfnative produce?<a class="heading-anchor" href="#what-pdf-versions-can-pdfnative-produce" aria-label="Link to this section">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>PDF version</th>
+<th>Standard</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Default</td>
+<td>1.4</td>
+<td>ISO 32000-1</td>
+</tr>
+<tr>
+<td><code>tagged: true</code></td>
+<td>1.7</td>
+<td>PDF/A-2b (default tagged mode, ISO 19005-2)</td>
+</tr>
+<tr>
+<td><code>tagged: &#39;pdfa1b&#39;</code></td>
+<td>1.4</td>
+<td>PDF/A-1b (ISO 19005-1)</td>
+</tr>
+<tr>
+<td><code>tagged: &#39;pdfa2u&#39;</code></td>
+<td>1.7</td>
+<td>PDF/A-2u (ISO 19005-2 with unicode)</td>
+</tr>
+<tr>
+<td><code>tagged: &#39;pdfa3b&#39;</code></td>
+<td>1.7</td>
+<td>PDF/A-3b (ISO 19005-3, supports embedded files)</td>
+</tr>
+</tbody></table>
+<h3 id="which-pdfa-variant-should-i-pick">Which PDF/A variant should I pick?<a class="heading-anchor" href="#which-pdfa-variant-should-i-pick" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>PDF/A-1b</strong> — strictest, oldest. Pick only if your validator requires PDF 1.4 and you don&#39;t need transparency, JPEG2000, or layers.</li>
+<li><strong>PDF/A-2b</strong> <em>(recommended default)</em> — PDF 1.7, supports transparency, layers, OpenType. Most modern archive systems target 2b.</li>
+<li><strong>PDF/A-2u</strong> — same as 2b plus mandatory Unicode mapping for all text. Pick if downstream consumers need text extraction.</li>
+<li><strong>PDF/A-3b</strong> — PDF/A-2b + ability to embed arbitrary attachments (e.g. source XML for invoicing standards like ZUGFeRD/Factur-X). Note: not all archive policies allow A-3.</li>
+</ul>
+<h3 id="can-i-combine-pdfa-and-encryption">Can I combine PDF/A and encryption?<a class="heading-anchor" href="#can-i-combine-pdfa-and-encryption" aria-label="Link to this section">#</a></h3>
+<p>No. ISO 19005-1 §6.3.2 forbids encryption inside PDF/A documents. pdfnative validates this at the <code>buildPDF()</code> boundary and throws an error if both are requested. Pick one or the other.</p>
+<h3 id="is-the-output-tagged-for-accessibility-pdfua">Is the output tagged for accessibility (PDF/UA)?<a class="heading-anchor" href="#is-the-output-tagged-for-accessibility-pdfua" aria-label="Link to this section">#</a></h3>
+<p>Yes — when you set <code>tagged: true</code> (or any PDF/A mode), pdfnative emits a structure tree with <code>/Document → /Table → /TR → /TH|TD</code>, <code>/H1</code>–<code>/H3</code>, <code>/P</code>, <code>/L</code>/<code>/LI</code>, <code>/Figure</code>, <code>/Link</code>, <code>/Form</code>, <code>/TOC</code>/<code>/TOCI</code>, and uses <code>/ActualText</code> for shaped Unicode. See the <a href="accessibility.html">Accessibility guide</a>.</p>
+<hr>
+<h2 id="security">Security<a class="heading-anchor" href="#security" aria-label="Link to this section">#</a></h2>
+<h3 id="how-do-i-encrypt-a-pdf">How do I encrypt a PDF?<a class="heading-anchor" href="#how-do-i-encrypt-a-pdf" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-typescript">const pdf = buildPDFBytes(params, {
+  encryption: {
+    algorithm: &#39;aes256&#39;,           // or &#39;aes128&#39;
+    userPassword: &#39;reader&#39;,
+    ownerPassword: &#39;editor&#39;,
+    permissions: {
+      print: true,        // default: true
+      copy: false,        // default: false
+      modify: false,      // default: false
+      extractText: true,  // accessibility text extraction — default: true
+    },
+  },
+});
+</code></pre>
+<p><code>aes256</code> (V5/R6) is recommended for new documents. Use <code>aes128</code> (V4/R4) only when you need compatibility with very old viewers.</p>
+<h3 id="how-do-i-sign-a-pdf-digitally">How do I sign a PDF digitally?<a class="heading-anchor" href="#how-do-i-sign-a-pdf-digitally" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-typescript">import { addSignaturePlaceholder, signPdfBytes, parseCertificate, parseRsaPrivateKey } from &#39;pdfnative&#39;;
+
+// 1. The PDF must contain a /Sig placeholder — add one if it doesn&#39;t
+//    (skipping this throws &quot;No /Contents placeholder found&quot;):
+const prepared = addSignaturePlaceholder(pdfBytes);
+
+// 2. Sign it
+const signed = signPdfBytes(prepared, {
+  signerCert: parseCertificate(certDer),   // DER-encoded X.509 certificate
+  rsaKey: parseRsaPrivateKey(keyDer),      // DER-encoded RSA key (or `ecKey` for ECDSA P-256)
+  algorithm: &#39;rsa-sha256&#39;,                 // or &#39;ecdsa-sha256&#39;
+  reason: &#39;Approved&#39;,
+  name: &#39;Jane Doe&#39;,
+});
+</code></pre>
+<p>pdfnative implements ISO 32000-1 §12.8 — CMS/PKCS#7 SignedData with RSA (PKCS#1 v1.5) or ECDSA (P-256); RSA also offers SHA-384/512 since v1.7.0. The crypto stack is implemented in pure TypeScript inside <code>src/crypto/</code> — no native modules, no <code>node:crypto</code> (an optional constant-time native provider can be plugged in via <code>setCryptoProvider</code>).</p>
+<h3 id="how-do-i-make-a-signature-ltv-enabled-valid-for-years">How do I make a signature &quot;LTV enabled&quot; (valid for years)?<a class="heading-anchor" href="#how-do-i-make-a-signature-ltv-enabled-valid-for-years" aria-label="Link to this section">#</a></h3>
+<p>Since v1.7.0 pdfnative covers the full PAdES baseline (ETSI EN 319 142-1):
+sign with <code>profile: &#39;pades&#39;</code>, add an RFC 3161 timestamp with
+<code>signPdfBytesWithTimestamp</code>, embed revocation material with
+<code>addValidationInfo</code> (<code>/DSS</code> + <code>/VRI</code>), and cap with <code>addDocumentTimestamp</code>.
+The engine never opens sockets — you inject the TSA/OCSP/CRL transport via
+<code>setTimestampProvider</code> / <code>setRevocationProvider</code>. Full pipeline in the
+<a href="ltv.html">LTV guide</a>.</p>
+<h3 id="can-a-pdf-carry-several-signatures">Can a PDF carry several signatures?<a class="heading-anchor" href="#can-a-pdf-carry-several-signatures" aria-label="Link to this section">#</a></h3>
+<p>Yes (v1.7.0): create each placeholder with <code>allowMultiple: true</code> and target
+it by <code>fieldName</code> when signing. Each signature is appended as a
+non-destructive incremental revision, so earlier signatures remain valid;
+inspect any file with <code>listSignatures(bytes)</code>. See
+<a href="signatures.html">signatures — multiple signatures</a>.</p>
+<h3 id="is-the-build-supply-chain-safe">Is the build supply-chain safe?<a class="heading-anchor" href="#is-the-build-supply-chain-safe" aria-label="Link to this section">#</a></h3>
+<ul>
+<li><strong>Zero runtime dependencies</strong> — <code>npm install pdfnative</code> brings in nothing transitive at runtime.</li>
+<li><strong>NPM provenance</strong> — every release is signed via GitHub Actions OIDC (SLSA L3-equivalent).</li>
+<li><strong>OpenSSF Scorecard</strong> scanned weekly; CodeQL on every push.</li>
+<li><strong>Pinned dev dependencies</strong> managed via Dependabot.</li>
+</ul>
+<hr>
+<h2 id="modifying-existing-pdfs">Modifying existing PDFs<a class="heading-anchor" href="#modifying-existing-pdfs" aria-label="Link to this section">#</a></h2>
+<h3 id="can-i-read-or-modify-existing-pdfs">Can I read or modify existing PDFs?<a class="heading-anchor" href="#can-i-read-or-modify-existing-pdfs" aria-label="Link to this section">#</a></h3>
+<p>Yes. pdfnative includes a tokenizer, object parser, xref/stream parser, and a non-destructive incremental modifier:</p>
+<pre><code class="language-typescript">import { openPdf, createModifier } from &#39;pdfnative&#39;;
+
+const reader = openPdf(new Uint8Array(fs.readFileSync(&#39;input.pdf&#39;)));
+
+console.log(`Pages: ${reader.pageCount}`);
+console.log(`Title: ${reader.getInfo()?.get(&#39;Title&#39;)}`);
+
+const mod = createModifier(reader);
+mod.setMetadata(&#39;Title&#39;, &#39;Updated Title&#39;);
+const updated = mod.save();   // appends a new xref/trailer with /Prev chain
+</code></pre>
+<h3 id="whats-the-maximum-document-size">What&#39;s the maximum document size?<a class="heading-anchor" href="#whats-the-maximum-document-size" aria-label="Link to this section">#</a></h3>
+<p><code>buildPDFBytes</code> enforces a 100 000 row limit on tables. <code>buildDocumentPDFBytes</code> paginates automatically, with a default cap of <strong>100 000 blocks</strong> (<code>DEFAULT_MAX_BLOCKS</code>) that you can raise via <code>layout.maxBlocks</code>; past that, the practical ceiling is your available memory. For very large documents, see the streaming question below.</p>
+<h3 id="how-do-i-avoid-loading-the-whole-pdf-into-memory">How do I avoid loading the whole PDF into memory?<a class="heading-anchor" href="#how-do-i-avoid-loading-the-whole-pdf-into-memory" aria-label="Link to this section">#</a></h3>
+<p>Use the streaming API — it returns an <code>AsyncGenerator&lt;Uint8Array&gt;</code> that yields chunks as they&#39;re produced:</p>
+<pre><code class="language-typescript">import { buildDocumentPDFStream } from &#39;pdfnative&#39;;
+
+for await (const chunk of buildDocumentPDFStream(params, {}, { chunkSize: 65536 })) {
+  await writeStream.write(chunk);
+}
+</code></pre>
+<hr>
+<h2 id="performance">Performance<a class="heading-anchor" href="#performance" aria-label="Link to this section">#</a></h2>
+<h3 id="how-can-i-make-the-pdf-smaller">How can I make the PDF smaller?<a class="heading-anchor" href="#how-can-i-make-the-pdf-smaller" aria-label="Link to this section">#</a></h3>
+<ol>
+<li><strong>Enable compression</strong>: <code>compress: true</code> (FlateDecode, 50–90 % size reduction).</li>
+<li><strong>Initialize native zlib in Node.js</strong>: <code>await initNodeCompression()</code> once at startup.</li>
+<li><strong>Use JPEG for photos</strong> — JPEG (DCTDecode) is already compressed; PNG is FlateDecode-compressed.</li>
+<li><strong>Font subsetting is automatic</strong> — but each script you embed adds one subset.</li>
+</ol>
+<h3 id="can-i-generate-pdfs-in-a-web-worker">Can I generate PDFs in a Web Worker?<a class="heading-anchor" href="#can-i-generate-pdfs-in-a-web-worker" aria-label="Link to this section">#</a></h3>
+<p>Yes. For large datasets pdfnative ships a built-in worker pipeline — use <code>createPDF</code>, which routes to a worker or the main thread for you:</p>
+<pre><code class="language-typescript">import { createPDF } from &#39;pdfnative&#39;;
+
+const pdf = await createPDF(params, {
+  workerUrl: new URL(&#39;./pdf-worker.js&#39;, import.meta.url),
+  threshold: 500, // default WORKER_THRESHOLD = 500 rows
+});
+</code></pre>
+<p>Tables above the threshold run off the main thread (with an automatic main-thread fallback); smaller ones render synchronously. The lower-level <code>generatePDFInWorker(workerUrl, params, { timeout, onProgress })</code> drives a worker directly — the worker URL is its first argument, and it has no threshold logic.</p>
+<hr>
+<h2 id="why-pdfnative">Why pdfnative?<a class="heading-anchor" href="#why-pdfnative" aria-label="Link to this section">#</a></h2>
+<h3 id="how-does-it-compare-to-jspdf--pdfkit--pdf-lib--pdfmake">How does it compare to jsPDF / pdfkit / pdf-lib / pdfmake?<a class="heading-anchor" href="#how-does-it-compare-to-jspdf--pdfkit--pdf-lib--pdfmake" aria-label="Link to this section">#</a></h3>
+<p>See the <a href="https://github.com/Nizoka/pdfnative#why-pdfnative" target="_blank" rel="noopener">feature comparison table</a> in the README. Key differentiators:</p>
+<ul>
+<li><strong>Zero runtime dependencies</strong> (others ship 3–6).</li>
+<li><strong>22 Unicode scripts</strong> with built-in BiDi and OpenType GSUB/GPOS shaping.</li>
+<li><strong>PDF/A</strong> (1b, 2b, 2u, 3b) — none of the others support this directly.</li>
+<li><strong>Built-in digital signatures</strong> (RSA + ECDSA) without external crypto modules.</li>
+<li><strong>5 native barcode formats</strong> (Code 128, EAN-13, QR, Data Matrix, PDF417) as PDF vector paths.</li>
+</ul>
+<h3 id="does-it-convert-html-to-pdf">Does it convert HTML to PDF?<a class="heading-anchor" href="#does-it-convert-html-to-pdf" aria-label="Link to this section">#</a></h3>
+<p>No, and it never will. HTML→PDF is a different problem domain (browser engine, CSS, layout) better solved by tools like <code>puppeteer</code> or <code>weasyprint</code>. pdfnative is a <strong>structured-data → PDF</strong> library — you describe blocks, it emits ISO-compliant PDF.</p>
+<h3 id="why-no-classes--no-inheritance">Why no classes / no inheritance?<a class="heading-anchor" href="#why-no-classes--no-inheritance" aria-label="Link to this section">#</a></h3>
+<p>pdfnative is built from pure functions. State is passed explicitly. This makes the library trivially tree-shakeable, easy to test, and easy to reason about. See the <a href="architecture.html">Architecture guide</a>.</p>
+<hr>
+<h2 id="common-errors">Common errors<a class="heading-anchor" href="#common-errors" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Likely cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Blank / missing glyphs for a script (no error is thrown)</td>
+<td><code>loadFontData(&#39;xx&#39;)</code> resolved to <code>null</code> because no loader was registered for that code — it returns <code>null</code> rather than throwing</td>
+<td>Call <code>registerFonts({ xx: … })</code> (or <code>registerFont</code>) first, then check the <code>loadFontData</code> result for <code>null</code> before building <code>fontEntries</code></td>
+</tr>
+<tr>
+<td><code>PDF/A and encryption are mutually exclusive</code></td>
+<td><code>tagged: &#39;pdfa…&#39;</code> combined with <code>encryption: …</code></td>
+<td>Pick one</td>
+</tr>
+<tr>
+<td><code>Invalid color format: …</code> / <code>Invalid color tuple …</code></td>
+<td>Unrecognized color value passed to a layout option</td>
+<td>Use <code>#rrggbb</code>, an <code>[r, g, b]</code> tuple with channels <strong>0–255</strong>, or a PDF RGB string <code>&#39;r g b&#39;</code> with channels 0.0–1.0</td>
+</tr>
+<tr>
+<td>Boxes / blank glyphs</td>
+<td>Font for that script is not loaded</td>
+<td>See <a href="troubleshooting.html">Troubleshooting → Missing glyphs</a></td>
+</tr>
+<tr>
+<td>Parser throws on external PDF</td>
+<td>Encrypted PDF opened without a password, or non-standard structure</td>
+<td>Pass <code>openPdf(bytes, { password })</code> — the parser decrypts RC4, AES-128 and AES-256 since v1.6.0. A missing or wrong password throws <code>PdfPasswordError</code></td>
+</tr>
+</tbody></table>
+<p>For more cases, see the <a href="troubleshooting.html">Troubleshooting guide</a>.</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

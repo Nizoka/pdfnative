@@ -25,15 +25,18 @@ tests/
 ├── worker/         # worker-api
 ├── integration/    # full PDF generation end-to-end, pdf-compression
 ├── fuzzing/        # edge-case & adversarial input tests
+├── docs/           # documentation verifier mirror test (verify-docs)
+├── tools/          # font-data tooling tests
+├── visual/         # dual-mode visual-regression suite
 └── fixtures/       # test data, sample fonts, expected outputs
 scripts/
 ├── generate-samples.ts  # Orchestrator for modular PDF sample generation
-├── generators/          # Per-category sample generators (44 modules)
+├── generators/          # Per-category sample generators (48 modules)
 └── helpers/             # Shared utilities (fonts, images, I/O)
 ```
 
 ## Current State (maintain these thresholds)
-- **2396+ tests** across 105 test files + 1 benchmark file
+- **2686+ tests** across 123 test files + 1 benchmark file
 - Statements: ~95% (threshold: 88%)
 - Branches: ~88% (threshold: 80%)
 - Functions: ~98% (threshold: 85%)

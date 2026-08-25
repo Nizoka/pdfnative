@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/annotations.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/annotations.html">
   <link rel="alternate" type="text/markdown" href="annotations.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Annotations (read & write)","item":"https://pdfnative.dev/guides/annotations.html"}]},{"@type":"TechArticle","headline":"Annotations (read & write)","description":"Typed markup annotations in pdfnative — text, highlight, underline, strikeout, squiggly, square, circle, line, freetext — with buildAnnotation(), getAnnotations() to read existing PDFs, and addAnnotation() incremental write. New in v1.5.0.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/annotations.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,146 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Annotations</p>
-  <article id="guide-content" class="guide-content" data-md="annotations.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="annotations.md">read annotations.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="annotations.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="annotations-read--write">Annotations (read &amp; write)</h1>
+<blockquote>
+<p><strong>New in v1.5.0.</strong> pdfnative now has a typed <strong>markup-annotation</strong> model plus
+round-trip <strong>read</strong> and <strong>write</strong> support. Build annotations for a new
+document, read the annotations out of an existing PDF, or inject new ones into
+an existing PDF via incremental update — all zero-dependency, all
+ISO 32000-1 §12.5.</p>
+</blockquote>
+<h2 id="supported-annotation-types">Supported annotation types<a class="heading-anchor" href="#supported-annotation-types" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th><code>type</code></th>
+<th>PDF <code>/Subtype</code></th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>text</code></td>
+<td><code>/Text</code></td>
+<td>Sticky-note comment with an icon</td>
+</tr>
+<tr>
+<td><code>highlight</code></td>
+<td><code>/Highlight</code></td>
+<td>Highlight a text region</td>
+</tr>
+<tr>
+<td><code>underline</code></td>
+<td><code>/Underline</code></td>
+<td>Underline a text region</td>
+</tr>
+<tr>
+<td><code>strikeout</code></td>
+<td><code>/StrikeOut</code></td>
+<td>Strike through a text region</td>
+</tr>
+<tr>
+<td><code>squiggly</code></td>
+<td><code>/Squiggly</code></td>
+<td>Squiggly (spellcheck-style) underline</td>
+</tr>
+<tr>
+<td><code>square</code></td>
+<td><code>/Square</code></td>
+<td>Rectangle</td>
+</tr>
+<tr>
+<td><code>circle</code></td>
+<td><code>/Circle</code></td>
+<td>Ellipse</td>
+</tr>
+<tr>
+<td><code>line</code></td>
+<td><code>/Line</code></td>
+<td>Straight line</td>
+</tr>
+<tr>
+<td><code>freetext</code></td>
+<td><code>/FreeText</code></td>
+<td>Typewriter / callout text</td>
+</tr>
+</tbody></table>
+<p>Every type shares <code>AnnotationBase</code>: <code>rect</code>, and optional <code>contents</code>, <code>color</code>,
+<code>opacity</code>, <code>title</code>, <code>modified</code>, <code>flags</code>.</p>
+<h2 id="building-annotations">Building annotations<a class="heading-anchor" href="#building-annotations" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildAnnotation } from &#39;pdfnative&#39;;
+import type { MarkupAnnotation } from &#39;pdfnative&#39;;
+
+const note: MarkupAnnotation = {
+  type: &#39;text&#39;,
+  rect: [72, 700, 96, 724],
+  contents: &#39;Please double-check this figure.&#39;,
+  title: &#39;Reviewer&#39;,
+  icon: &#39;Comment&#39;,
+};
+
+// Full indirect object, ready to concatenate into a PDF you assemble yourself:
+const obj = buildAnnotation(note, /* objNum */ 42);
+</code></pre>
+<ul>
+<li><code>buildAnnotation(annot, objNum)</code> returns a complete <code>N 0 obj … endobj</code> string.</li>
+<li><code>buildAnnotationBody(annot)</code> returns just the dictionary body — used by the
+modifier when injecting into an existing file.</li>
+</ul>
+<p><code>/Contents</code> and <code>/T</code> are safely encoded (UTF-16BE when needed), <code>/C</code> / <code>/IC</code>
+run through <code>parseColor</code>, <code>/QuadPoints</code> are auto-derived from <code>rect</code> for the
+text-markup types, and <code>/F</code> defaults to <code>4</code> (Print).</p>
+<h2 id="reading-annotations-from-an-existing-pdf">Reading annotations from an existing PDF<a class="heading-anchor" href="#reading-annotations-from-an-existing-pdf" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { openPdf } from &#39;pdfnative&#39;;
+
+const reader = openPdf(existingBytes);
+const annots = reader.getAnnotations(0); // page index 0
+
+for (const a of annots) {
+  console.log(a.subtype, a.rect, a.contents, a.url);
+}
+</code></pre>
+<p><code>getAnnotations(pageIndex)</code> returns <code>ParsedAnnotation[]</code> with <code>subtype</code>, <code>rect</code>,
+and optional <code>contents</code> (UTF-16BE decoded), <code>title</code>, <code>color</code>, <code>quadPoints</code>, and
+<code>url</code> (for URI-action links). <code>getPageRef(pageIndex)</code> returns the page&#39;s
+indirect reference when you need it.</p>
+<h2 id="writing-annotations-into-an-existing-pdf">Writing annotations into an existing PDF<a class="heading-anchor" href="#writing-annotations-into-an-existing-pdf" aria-label="Link to this section">#</a></h2>
+<p>Add a new annotation to an existing document with a non-destructive incremental
+update:</p>
+<pre><code class="language-ts">import { openPdf, createModifier, buildAnnotationBody } from &#39;pdfnative&#39;;
+
+const reader = openPdf(existingBytes);
+const modifier = createModifier(reader);
+
+const body = buildAnnotationBody({
+  type: &#39;highlight&#39;,
+  rect: [72, 640, 300, 656],
+  color: &#39;#ffe14d&#39;,
+  contents: &#39;Key clause&#39;,
+});
+
+modifier.addAnnotation(0, body); // inject on page 0
+const updated = modifier.save();  // appended incremental section, original preserved
+</code></pre>
+<p><code>addAnnotation()</code> appends the annotation object and rewrites the page&#39;s
+<code>/Annots</code> array in an incremental update section — the original bytes are never
+mutated, so any existing signature&#39;s byte range upstream of the appended section
+stays intact.</p>
+<p><strong>Encrypted documents</strong> are supported since v1.6.0: open with
+<code>openPdf(bytes, { password })</code> and annotate as usual — the appended
+annotation objects are encrypted under the document&#39;s existing scheme
+(RC4, AES-128 and AES-256 sources), so the annotation text never appears
+in cleartext in the file.</p>
+<pre><code class="language-ts">const modifier = createModifier(openPdf(encryptedBytes, { password: &#39;secret&#39; }));
+modifier.addAnnotation(0, body);
+const updated = modifier.save(); // annotation stored encrypted
+</code></pre>
+<h2 id="sample">Sample<a class="heading-anchor" href="#sample" aria-label="Link to this section">#</a></h2>
+<p><a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/annotations-showcase.ts" target="_blank" rel="noopener">annotations-showcase.ts</a>
+builds a document with every annotation type, reads them back out, and injects a
+highlight into an existing PDF.</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

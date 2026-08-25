@@ -1,5 +1,7 @@
 # PDF/A conformance in pdfnative
 
+> **PDF/A-1b, 2b, 2u and 3b via `layout: { tagged: … }`, validated against the veraPDF reference validator in CI.** Since v1.7.0, a configuration that would break the declared level surfaces a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`.
+
 PDF/A is the ISO archival profile for PDF (ISO 19005). pdfnative supports
 PDF/A-1b, 2b, 2u, and 3b via the `tagged` build option. This guide
 explains what works today, what's still in flight, and how to validate
@@ -100,6 +102,17 @@ Each `PdfDiagnostic` carries a machine-readable `code`, a `severity`
 `onDiagnostic` is ignored when `strict` is set — diagnostics throw instead.
 The code list is a stable, additions-only union (`PdfDiagnosticCode`), so a
 sink written today keeps compiling as future codes are added.
+
+> **On the MCP surface** _(pdfnative-mcp 1.6.0)_, the same honesty is exposed
+> as three opt-in inputs on every document tool: `embedFonts: true` embeds
+> Noto Sans Latin so a PDF/A claim on base-14 text is actually accepted by
+> veraPDF, `strict: true` fails instead of producing a non-conformant file,
+> and `includeDiagnostics: true` echoes the engine's diagnostics
+> (`PDFA_NO_FONT_ENTRIES`, `PDFA_UNEMBEDDED_FORM_FONT`,
+> `PDFA_DEVICE_CMYK_IMAGE`) in the tool result. Known engine limitation:
+> `add_form` (or a `formField` block) under a PDF/A claim still fails
+> veraPDF even with `embedFonts` — the AcroForm `/DR /Helv` font is an
+> unembedded Type1 (ISO 19005-2 §6.2.11.4.1).
 
 ## v1.1.0 status — fully validated
 

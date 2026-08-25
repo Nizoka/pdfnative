@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/architecture.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/architecture.html">
   <link rel="alternate" type="text/markdown" href="architecture.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Architecture Guide","item":"https://pdfnative.dev/guides/architecture.html"}]},{"@type":"TechArticle","headline":"Architecture Guide","description":"Architecture of pdfnative — the two builders (buildPDF table-centric and buildDocument free-form), the module map, and the strict zero-dependency, unidirectional dependency flow.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/architecture.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,176 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Architecture</p>
-  <article id="guide-content" class="guide-content" data-md="architecture.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="architecture.md">read architecture.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="architecture.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="architecture-guide">Architecture Guide</h1>
+<blockquote>
+<p><strong>Two builders, one strict dependency flow.</strong> <code>buildPDFBytes</code> is the table-centric builder, <code>buildDocumentPDFBytes</code> the free-form document builder; beneath them the modules flow types → core ← fonts ← shaping ← worker, with standalone crypto and parser modules — no circular imports anywhere.</p>
+</blockquote>
+<h2 id="two-builders">Two Builders<a class="heading-anchor" href="#two-builders" aria-label="Link to this section">#</a></h2>
+<p>pdfnative provides two PDF builders for different use cases:</p>
+<h3 id="buildpdf--buildpdfbytes--table-centric"><code>buildPDF()</code> / <code>buildPDFBytes()</code> — Table-Centric<a class="heading-anchor" href="#buildpdf--buildpdfbytes--table-centric" aria-label="Link to this section">#</a></h3>
+<p>Best for: financial statements, reports, tabular data.</p>
+<pre><code class="language-typescript">import { buildPDFBytes } from &#39;pdfnative&#39;;
+
+const pdf = buildPDFBytes({
+  title: &#39;Monthly Report&#39;,
+  headers: [&#39;Date&#39;, &#39;Description&#39;, &#39;Amount&#39;],
+  rows: [
+    { cells: [&#39;01/15&#39;, &#39;Grocery&#39;, &#39;-$45.00&#39;], type: &#39;debit&#39;, pointed: false },
+  ],
+  // ... infoItems, balanceText, countText, footerText
+});
+</code></pre>
+<p>Produces a structured table layout with title, info items, balance line, column headers, data rows, and footer. Supports pagination, tagged PDF, encryption, compression.</p>
+<h3 id="builddocumentpdf--builddocumentpdfbytes--free-form"><code>buildDocumentPDF()</code> / <code>buildDocumentPDFBytes()</code> — Free-Form<a class="heading-anchor" href="#builddocumentpdf--builddocumentpdfbytes--free-form" aria-label="Link to this section">#</a></h3>
+<p>Best for: reports, manuals, invoices, any document with mixed content.</p>
+<pre><code class="language-typescript">import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+const pdf = buildDocumentPDFBytes({
+  title: &#39;Project Report&#39;,
+  blocks: [
+    { type: &#39;heading&#39;, text: &#39;Introduction&#39;, level: 1 },
+    { type: &#39;paragraph&#39;, text: &#39;This report covers...&#39; },
+    { type: &#39;table&#39;, headers: [&#39;Q&#39;, &#39;Revenue&#39;], rows: [...] },
+    { type: &#39;image&#39;, data: pngBytes, width: 300 },
+    { type: &#39;barcode&#39;, format: &#39;qr&#39;, data: &#39;https://example.com&#39; },
+  ],
+});
+</code></pre>
+<p>Supports 13 block types: heading, paragraph, list, table, image, link, spacer, pageBreak, toc, barcode, svg, formField, chart.</p>
+<h2 id="generation-pipeline">Generation Pipeline<a class="heading-anchor" href="#generation-pipeline" aria-label="Link to this section">#</a></h2>
+<pre><code>Input (params + options)
+  │
+  ├─ resolveLayout()         → page dimensions, margins, column positions
+  ├─ normalizeColors()       → validate &amp; normalize color values
+  ├─ createEncodingContext()  → font encoding (WinAnsi + CIDFont)
+  │
+  ├─ Content Loop ─────────────────────────────────
+  │   ├─ Text rendering      → BT/ET operators, font selection
+  │   ├─ Image embedding     → XObject + Do operator
+  │   ├─ Barcode rendering   → PDF path operators (re f)
+  │   ├─ SVG rendering       → PDF path operators (m l c)
+  │   └─ Page breaks         → new page object
+  │
+  ├─ Font subsetting         → TTF subset per used font
+  ├─ Tagged PDF (optional)   → structure tree, /ActualText, MCID
+  ├─ PDF/A (optional)        → XMP metadata, ICC OutputIntent
+  ├─ Encryption (optional)   → AES-128/256, key derivation
+  ├─ Compression (optional)  → FlateDecode on content streams
+  │
+  └─ Assembly ─────────────────────────────────────
+      ├─ createPdfWriter()   → binary writer with offset tracking
+      ├─ Object emission     → N 0 obj ... endobj
+      └─ writeXrefTrailer()  → xref table + trailer + startxref
+</code></pre>
+<h2 id="module-dependency-flow">Module Dependency Flow<a class="heading-anchor" href="#module-dependency-flow" aria-label="Link to this section">#</a></h2>
+<pre><code>types/ → core/ ← fonts/ ← shaping/ ← worker/
+              ↑
+          crypto/ (near-standalone, imports core/pdf-encrypt for sha256)
+          parser/ (imports core/pdf-compress, pdf-encrypt, pdf-tags)
+</code></pre>
+<ul>
+<li><strong>No circular dependencies</strong> — strict unidirectional flow, with <strong>one
+sanctioned, documented reverse edge</strong>: the signature-workflow core modules
+(<code>pdf-dss</code>, <code>pdf-sig-utils</code>, <code>pdf-doc-timestamp</code>, <code>pdf-sig-placeholder</code>,
+<code>pdf-form-fill</code>) import the parser to read existing documents before
+appending incremental revisions</li>
+<li><strong>crypto/</strong> is near-standalone — its only cross-module import is <code>sha256</code> from <code>core/pdf-encrypt.ts</code> (re-exported by <code>crypto/sha.ts</code>)</li>
+<li><strong>parser/</strong> imports from <code>core/pdf-compress.ts</code> (FlateDecode), <code>core/pdf-encrypt.ts</code> (decryption, incremental <code>/ID</code>) and <code>core/pdf-tags.ts</code> (XMP resync in <code>updateMetadata</code>)</li>
+<li><strong>fonts/</strong> imports from <code>shaping/</code> for script detection</li>
+<li><strong>shaping/</strong> imports from <code>fonts/</code> encoding context (via <code>core/encoding-context.ts</code> to break cycle)</li>
+</ul>
+<h2 id="key-design-decisions">Key Design Decisions<a class="heading-anchor" href="#key-design-decisions" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>No classes</td>
+<td>Pure functions — easier to test, tree-shake, and reason about</td>
+</tr>
+<tr>
+<td>String-based PDF operators</td>
+<td>Direct control over output, no AST overhead</td>
+</tr>
+<tr>
+<td>Lazy font loading</td>
+<td><code>registerFonts()</code> + <code>loadFontData()</code> — load only needed scripts</td>
+</tr>
+<tr>
+<td>Shared assembler</td>
+<td><code>pdf-assembler.ts</code> eliminates xref/trailer duplication between builders</td>
+</tr>
+<tr>
+<td>Extracted renderers</td>
+<td><code>pdf-renderers.ts</code> — block renderers, text wrapping, constants extracted from <code>pdf-document.ts</code> for maintainability. <code>planTable()</code> and <code>TableSlice</code> provide planner-driven multi-page table rendering — <code>_paginateBlocks()</code> measures once then slices at row boundaries, keeping <code>renderTable()</code> page-lifecycle-free. See <a href="tables.md">Smart tables guide</a>.</td>
+</tr>
+<tr>
+<td>Encoding context in core/</td>
+<td>Dependency inversion — breaks fonts/ → shaping/ cycle</td>
+</tr>
+</tbody></table>
+<h2 id="ecosystem">Ecosystem<a class="heading-anchor" href="#ecosystem" aria-label="Link to this section">#</a></h2>
+<p>The architecture diagram above shows the <strong>internal library modules</strong>. External consumers sit above the library and import from <code>pdfnative</code> like any npm package. Three official companion packages — a CLI, an MCP server, and a React renderer — cover the most common non-library workflows. All live in separate repositories, version independently, and depend on <code>pdfnative</code> only through its public API, so the core engine stays zero-dependency.</p>
+<pre><code>                         ┌─────────────────────────────────────────────┐
+   [shell / CI / Docker] │  pdfnative-cli (npm) — 17 commands          │
+                         └─────────────────────────────────────────────┘
+                         ┌─────────────────────────────────────────────┐
+    [Claude / Cursor / …] │  pdfnative-mcp (npm) — 28 AI tools          │
+                         └───────────────────────────────────────────┘
+                         ┌─────────────────────────────────────────────┐
+   [React / Next.js app] │  pdfnative-react (npm) — declarative JSX    │
+                         └─────────────────────────────────────────────┘
+                            │  import { … } from &#39;pdfnative&#39;  (public API only)
+                         ┌─────────────────────────────────────────────┐
+                         │  pdfnative (npm) — zero-dependency engine   │  ← this repo
+                         └─────────────────────────────────────────────┘
+</code></pre>
+<h3 id="pdfnative-cli">pdfnative-cli<a class="heading-anchor" href="#pdfnative-cli" aria-label="Link to this section">#</a></h3>
+<p><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. It exposes seventeen commands — <code>render</code>, <code>fill</code>, <code>annotate</code>, <code>merge</code>, <code>split</code>, <code>extract</code>, <code>sign</code>, <code>verify</code>, <code>encrypt</code>, <code>decrypt</code>, <code>inspect</code>, <code>extract-text</code>, <code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code> — that map directly to public <code>pdfnative</code> APIs, with an agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code> automation contract:</p>
+<pre><code>[shell / Makefile / GitHub Actions / Docker]
+              │ argv + stdin/stdout
+     ┌──────────────────────────┐
+     │  pdfnative-cli (npm)     │  ← dispatch layer, 17 commands + agent contract
+     └──────────────────────────┘
+              │ import { buildDocumentPDFBytes, signPdfBytes, openPdf, validatePdfUA } from &#39;pdfnative&#39;
+     ┌──────────────────────────┐
+     │      pdfnative (npm)     │  ← core library (this repo)
+     └──────────────────────────┘
+</code></pre>
+<p>Like <code>pdfnative-mcp</code> and <code>pdfnative-react</code>, the CLI lives in a separate repository and depends on <code>pdfnative</code> only via the public API surface. See the <a href="cli.html">CLI Guide</a> for usage and the security model.</p>
+<h3 id="pdfnative-mcp">pdfnative-mcp<a class="heading-anchor" href="#pdfnative-mcp" aria-label="Link to this section">#</a></h3>
+<p><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that wraps the pdfnative public API and exposes it as 28 structured tools to any MCP-compatible AI client (Claude Desktop, Cursor, Continue, Zed, ChatGPT, …). It commits to API stability via a per-tool <code>_meta.apiVersion</code> field.</p>
+<pre><code>[Claude Desktop / Cursor / Continue / Zed]
+              │ MCP stdio protocol
+     ┌──────────────────────────┐
+      │  pdfnative-mcp (npm)     │  ← MCP server, 28 tools
+     └──────────────────────────┘
+              │ import { buildDocumentPDFBytes, … } from &#39;pdfnative&#39;
+     ┌──────────────────────────┐
+     │      pdfnative (npm)     │  ← core library (this repo)
+     └──────────────────────────┘
+</code></pre>
+<p>pdfnative-mcp is <strong>not an internal module</strong> — it is a separate npm package with its own repository, versioning, and release cadence. It references <code>pdfnative</code> only through the public API.</p>
+<p>For setup instructions, tool reference, and per-client configuration, see the <a href="mcp.html">MCP Integration Guide</a>.</p>
+<h3 id="pdfnative-react">pdfnative-react<a class="heading-anchor" href="#pdfnative-react" aria-label="Link to this section">#</a></h3>
+<p><a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a> v1.1.0 is the <strong>declarative React renderer</strong>. A custom React reconciler compiles a JSX component tree — synchronously, with no DOM — into the pdfnative <code>DocumentParams</code> model, which the engine renders to bytes:</p>
+<pre><code>[React / Next.js / Remix component tree]
+              │ custom react-reconciler (no DOM, no headless browser)
+     ┌──────────────────────────┐
+     │  pdfnative-react (npm)   │  ← &lt;Document&gt;/&lt;Table&gt;/&lt;Barcode&gt; → pdfnative blocks
+     └──────────────────────────┘
+              │ import { buildDocumentPDFBytes, … } from &#39;pdfnative&#39;
+     ┌──────────────────────────┐
+     │      pdfnative (npm)     │  ← core library (this repo)
+     └──────────────────────────┘
+</code></pre>
+<p><strong>React 19 is a peer dependency of <code>pdfnative-react</code> only</strong> — the core <code>pdfnative</code> engine remains zero-dependency. Components map 1:1 onto pdfnative blocks, and the token-frugal <code>DocSpec</code> lets AI agents author the same documents with a fraction of the tokens. See the <a href="react.html">React Guide</a> for the component reference and the <a href="../playgrounds/react.html">React playground</a> to try it in your browser.</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

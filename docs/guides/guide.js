@@ -44,8 +44,100 @@
   var container = document.getElementById('guide-content');
   if (!container) return;
 
-  var src = container.getAttribute('data-md');
-  if (!src) return;
+  // The Markdown source name is DERIVED from the page's own URL (every guide
+  // pairs name.html with name.md) — never from DOM text. CodeQL's
+  // js/xss-through-dom tracks getAttribute() values into href/fetch sinks
+  // regardless of regex guards, so the attribute is demoted to an opt-in
+  // marker: it must agree with the derived name, but the value that reaches
+  // fetch(), the source-bar href and the GitHub fallback URLs comes from
+  // location, filtered to a plain same-directory Markdown filename.
+  var page = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+  var src = page + '.md';
+  var declared = container.getAttribute('data-md');
+  if (!declared || declared !== src || !/^[A-Za-z0-9][A-Za-z0-9_-]*\.md$/.test(src)) return;
+
+  // ── Progressive enhancements shared by both paths ─────────
+  // (pre-rendered shells and the runtime-rendered fallback)
+
+  function addCopyButtons(scope) {
+    scope.querySelectorAll('pre').forEach(function (pre) {
+      // The button lives in a positioned wrapper OUTSIDE the scrollable
+      // <pre>: as a child it would scroll away with wide code and its label
+      // would pollute manual text selection.
+      if (pre.parentNode.classList && pre.parentNode.classList.contains('pre-wrap')) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'pre-wrap';
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+      var btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.type = 'button';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', function () {
+        var code = pre.querySelector('code');
+        navigator.clipboard.writeText(code ? code.textContent : pre.textContent).then(function () {
+          btn.textContent = 'Copied!';
+          setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+        }, function () { btn.textContent = 'Failed'; });
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function addSourceBar(scope) {
+    if (document.querySelector('.guide-source-bar')) return;
+    var bar = document.createElement('div');
+    bar.className = 'guide-source-bar';
+    var copyMd = document.createElement('button');
+    copyMd.type = 'button';
+    copyMd.className = 'guide-source-btn';
+    copyMd.textContent = 'Copy page as Markdown';
+    copyMd.addEventListener('click', function () {
+      fetch(src, { cache: 'no-cache' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (md) { return navigator.clipboard.writeText(md); })
+        .then(function () {
+          copyMd.textContent = 'Copied!';
+          setTimeout(function () { copyMd.textContent = 'Copy page as Markdown'; }, 1500);
+        })
+        .catch(function () { copyMd.textContent = 'Copy failed'; });
+    });
+    var view = document.createElement('a');
+    view.className = 'guide-source-link';
+    view.href = src;
+    view.textContent = 'View Markdown source';
+    bar.appendChild(copyMd);
+    bar.appendChild(view);
+    scope.parentNode.insertBefore(bar, scope);
+  }
+
+  function enhance(scope) {
+    addSourceBar(scope);
+    addCopyButtons(scope);
+    if (window.Prism && typeof window.Prism.highlightAllUnder === 'function') {
+      window.Prism.highlightAllUnder(scope);
+    }
+  }
+
+  // ── Pre-rendered path ─────────────────────────────────────
+  // build-guides.ts bakes the rendered article and its JSON-LD into the
+  // shell (rule guide-render-sync keeps it fresh). Nothing to fetch. The
+  // layout-affecting enhancements (source bar, copy buttons) run at once —
+  // deferring them behind the Prism wait used to shift the whole article
+  // down up to 2s after render. Only the highlighting waits for Prism.
+  if (container.getAttribute('data-prerendered') === 'true') {
+    addSourceBar(container);
+    addCopyButtons(container);
+    var tries = 20;
+    (function highlightWhenReady() {
+      if (window.Prism && typeof window.Prism.highlightAllUnder === 'function') {
+        window.Prism.highlightAllUnder(container);
+        return;
+      }
+      if (tries-- > 0) setTimeout(highlightWhenReady, 100);
+    })();
+    return;
+  }
 
   function showError(msg) {
     container.innerHTML = '<div class="guide-error">' +
@@ -123,10 +215,8 @@
           if (el) el.scrollIntoView();
         }
 
-        // Trigger Prism if loaded
-        if (window.Prism && typeof window.Prism.highlightAllUnder === 'function') {
-          window.Prism.highlightAllUnder(container);
-        }
+        // Copy buttons, source bar, Prism
+        enhance(container);
 
         // Update document title from first <h1>
         var h1 = container.querySelector('h1');

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdtempSync, rmSync, cpSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync, cpSync, existsSync, symlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -30,7 +30,10 @@ interface Run {
 function runVerifier(root: string): Run {
     const script = root === ROOT ? SCRIPT : join(root, 'scripts', 'verify-docs.ts');
     try {
-        const output = execFileSync('npx', ['tsx', script], {
+        // shell:true (required for npx.cmd on Windows) does not quote args —
+        // a temp path with spaces or `&` would break the command line.
+        const scriptArg = process.platform === 'win32' ? JSON.stringify(script) : script;
+        const output = execFileSync('npx', ['tsx', scriptArg], {
             cwd: ROOT,
             encoding: 'utf8',
             stdio: ['ignore', 'pipe', 'pipe'],
@@ -49,7 +52,7 @@ function runVerifier(root: string): Run {
  */
 function makeSandbox(): string {
     const dir = mkdtempSync(join(tmpdir(), 'pdfnative-verify-'));
-    for (const entry of ['docs', 'src', 'tests', 'scripts', 'bench', '.github']) {
+    for (const entry of ['docs', 'src', 'tests', 'scripts', 'bench', 'recipes', '.github']) {
         const from = join(ROOT, entry);
         if (existsSync(from)) cpSync(from, join(dir, entry), { recursive: true });
     }
@@ -59,6 +62,9 @@ function makeSandbox(): string {
         const from = join(ROOT, file);
         if (existsSync(from)) cpSync(from, join(dir, file));
     }
+    // scripts/build-guides.ts imports `marked` from node_modules; link the real
+    // install into the sandbox (junction: no admin rights needed on Windows).
+    symlinkSync(join(ROOT, 'node_modules'), join(dir, 'node_modules'), 'junction');
     return dir;
 }
 
@@ -79,6 +85,19 @@ describe('verify-docs', () => {
     describe('each rule reports the defect it exists for', () => {
         let sandbox: string;
 
+        // The control every perturbation test depends on: a sandbox that has
+        // NOT been perturbed must be clean, otherwise the `status === 1`
+        // assertions below are satisfied by pre-existing noise instead of by
+        // the rule under test (which is exactly how a missing `recipes/` copy
+        // once made every negative test vacuous).
+        it('an unperturbed sandbox is clean', () => {
+            withSandbox((dir) => {
+                const run = runVerifier(dir);
+                expect(run.output).toContain('rules passed');
+                expect(run.status).toBe(0);
+            });
+        }, 120_000);
+
         function withSandbox(fn: (dir: string) => void): void {
             sandbox = makeSandbox();
             try {
@@ -91,10 +110,10 @@ describe('verify-docs', () => {
         it('stale-token compares counts for equality, not against a blocklist', () => {
             withSandbox((dir) => {
                 // A value that no blocklist would have enumerated.
-                patch(dir, 'docs/guides/mcp.md', '**24 tools**', '**25 tools**');
+                patch(dir, 'docs/guides/mcp.md', '**28 tools**', '**29 tools**');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('stale-token');
-                expect(run.output).toContain('the manifest says 24');
+                expect(run.output).toContain('the manifest says 28');
                 expect(run.status).toBe(1);
             });
         }, 120_000);
@@ -121,6 +140,55 @@ describe('verify-docs', () => {
                 const run = runVerifier(dir);
                 expect(run.output).toContain('contrast');
                 expect(run.output).toContain('--c-surface');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('guide-render-sync catches a shell whose Markdown source moved on', () => {
+            withSandbox((dir) => {
+                // Edit the .md without regenerating the pre-rendered shell.
+                patch(dir, 'docs/guides/charts.md', '# Charts (native vector)', '# Charts (native vector, perturbed)');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('guide-render-sync');
+                expect(run.output).toContain('docs/guides/charts.html');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('error-parity rejects a diagnostic code the docs invent', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/guides/pdfa.md', 'PDFA_NO_FONT_ENTRIES', 'PDFA_IMAGINARY_CODE');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('error-parity');
+                expect(run.output).toContain('PDFA_IMAGINARY_CODE');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('anchor-parity catches a deep link to a renamed section', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/guides/streaming.md', '#streaming-merge--split', '#streaming-merge--split-renamed');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('anchor-parity');
+                expect(run.output).toContain('streaming-merge--split-renamed');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('api-json-sync catches a stale API surface', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/assets/api.json', '"package": "pdfnative"', '"package": "perturbed"');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('api-json-sync');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('llms-index-sync catches a stale machine index', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/llms-index.json', '"site": "https://pdfnative.dev"', '"site": "https://perturbed.example"');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('llms-index-sync');
                 expect(run.status).toBe(1);
             });
         }, 120_000);

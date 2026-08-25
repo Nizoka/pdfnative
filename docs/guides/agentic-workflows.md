@@ -178,7 +178,7 @@ under the [AI-governance / human-in-the-loop contract](ai-governance.md).
 
 - [AI governance & human-in-the-loop](ai-governance.md) — the contract that keeps
   repository changes human-gated.
-- [MCP integration](mcp.md) — the 24 MCP tools, including `embed_image` and
+- [MCP integration](mcp.md) — the 28 MCP tools, including `embed_image` and
   `draft_governance_issue`.
 - [CLI guide](cli.md) — driving pdfnative from the shell.
 - [Font validation](font-validation.md) — `validateFontData()` for sanity-checking

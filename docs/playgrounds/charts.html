@@ -13,8 +13,10 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/charts.html">
   <meta property="og:title" content="Charts Playground — pdfnative">
-  <meta property="og:description" content="Nine chart types — bar, stacked, line, area, scatter, pie, donut — rendered as pure PDF path operators, zero install, right in your browser.">
+  <meta property="og:description" content="Nine chart types — bar, horizontal bar, stacked bar, stacked horizontal bar, line, area, scatter, pie, donut — rendered as pure PDF path operators, zero install, right in your browser.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Charts Playground — pdfnative">
   <meta name="twitter:description" content="Native vector charts as pure PDF path operators. Zero install.">
@@ -105,12 +107,13 @@
 </nav>
 
 <main class="guide-shell" id="main-content" tabindex="-1">
-  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Charts (v1.6.0)</p>
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Charts (v1.6.0 → v1.7.0)</p>
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
     <a href="./all-scripts.html">All 22 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html" aria-current="page">Charts</a>
     <a href="./authoring-plus.html">Authoring+</a>
     <a href="./scale.html">Scale</a>
@@ -120,7 +123,7 @@
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
-    <h1>Native vector charts — new in 1.6.0</h1>
+    <h1>Native vector charts — since 1.6.0, charts v2 in 1.7.0</h1>
     <p>pdfnative's <code>chart</code> block renders <strong>bar, horizontal-bar, line, pie, and donut</strong> charts — and, since 1.7.0, <strong>stacked bars, area, and scatter</strong> — as <strong>pure PDF path operators</strong>: rectangles, line segments, and cubic-Bézier arcs. Zero dependencies, no rasterisation, crisp at any zoom, and PDF/A-safe. Pick a preset, generate, and open the downloaded PDF in any viewer.</p>
 
     <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
@@ -131,7 +134,7 @@
         <option value="bar">Grouped bar — revenue vs cost</option>
         <option value="line">Multi-series line with markers</option>
         <option value="pie">Pie — traffic sources</option>
-        <option value="donut">Donut — budget split (tagged + alt text)</option>
+        <option value="donut">Donut — budget split (PDF/A-2b tagged + alt text)</option>
         <option value="mixed">Dashboard — several charts on one page</option>
         <option value="v2">Charts v2 — stacked, area, scatter (1.7.0)</option>
       </select>

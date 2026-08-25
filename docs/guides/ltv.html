@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/ltv.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/ltv.html">
   <link rel="alternate" type="text/markdown" href="ltv.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Long-term validation (LTV) — PAdES B-B to B-LTA","item":"https://pdfnative.dev/guides/ltv.html"}]},{"@type":"TechArticle","headline":"Long-term validation (LTV) — PAdES B-B to B-LTA","description":"PAdES B-B to B-LTA in pdfnative — RFC 3161 signature timestamps, /DSS + /VRI validation material, document timestamps, injected providers, zero network in the engine.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/ltv.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,150 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Long-term validation</p>
-  <article id="guide-content" class="guide-content" data-md="ltv.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="ltv.md">read ltv.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="ltv.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="long-term-validation-ltv--pades-b-b-to-b-lta">Long-term validation (LTV) — PAdES B-B to B-LTA</h1>
+<blockquote>
+<p><strong>New in v1.7.0.</strong> pdfnative signs PDFs that stay verifiable for decades: PAdES baseline signatures (ETSI EN 319 142-1), RFC 3161 signature timestamps, embedded revocation material (<code>/DSS</code> + <code>/VRI</code>), and document timestamps — all with <strong>zero runtime dependencies</strong> and <strong>zero network access in the engine</strong>. Transport is injected by your code.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import {
+  buildDocumentPDFBytes, addSignaturePlaceholder, estimateContentsSize,
+  signPdfBytesWithTimestamp, addValidationInfo, addDocumentTimestamp,
+  setTimestampProvider, setRevocationProvider,
+} from &#39;pdfnative&#39;;
+
+// 1. Your transports (the engine never fetches on its own).
+setTimestampProvider({
+  async getTimestamp(request) {           // DER TimeStampReq in…
+    const res = await fetch(&#39;https://freetsa.org/tsr&#39;, {
+      method: &#39;POST&#39;,
+      headers: { &#39;Content-Type&#39;: &#39;application/timestamp-query&#39; },
+      body: request.slice(),
+    });
+    return new Uint8Array(await res.arrayBuffer());  // …DER TimeStampResp out
+  },
+});
+setRevocationProvider({
+  async fetchOcsp(url, request) {
+    const res = await fetch(url, {
+      method: &#39;POST&#39;,
+      headers: { &#39;Content-Type&#39;: &#39;application/ocsp-request&#39; },
+      body: request.slice(),
+    });
+    return new Uint8Array(await res.arrayBuffer());
+  },
+  async fetchCrl(url) {
+    const res = await fetch(url);
+    return new Uint8Array(await res.arrayBuffer());
+  },
+});
+
+// 2. Build → placeholder → sign+timestamp → embed validation → archive.
+const unsigned = addSignaturePlaceholder(buildDocumentPDFBytes(params), {
+  metadata: { subFilter: &#39;ETSI.CAdES.detached&#39;, reason: &#39;Contract v2&#39; },
+  placeholderBytes: estimateContentsSize([certDer.length], &#39;rsa-sha256&#39;, { timestamp: true }),
+});
+const signed  = await signPdfBytesWithTimestamp(unsigned, {
+  signerCert, certChain: [intermediateCert], rsaKey,
+  profile: &#39;pades&#39;,                       // ESS signing-certificate-v2, no CMS signing-time
+});
+const ltv     = await addValidationInfo(signed);       // /DSS + /VRI (B-LT)
+const archive = await addDocumentTimestamp(ltv);       // DocTimeStamp (B-LTA)
+</code></pre>
+<p>Every step appends a non-destructive incremental revision — earlier bytes are never modified, so prior signatures stay intact.</p>
+<h2 id="why-ltv">Why LTV<a class="heading-anchor" href="#why-ltv" aria-label="Link to this section">#</a></h2>
+<p>A plain signature proves <em>who</em> signed, but its verifiability decays: certificates expire, CAs go offline, revocation servers disappear. The PAdES baseline levels fix each failure mode in turn:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Adds</th>
+<th>Protects against</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>B-B</strong></td>
+<td>CAdES signature with the ESS <code>signing-certificate-v2</code> attribute</td>
+<td>Certificate substitution</td>
+</tr>
+<tr>
+<td><strong>B-T</strong></td>
+<td>RFC 3161 signature timestamp (<code>id-aa-signatureTimeStampToken</code>)</td>
+<td>&quot;Was the signature made while the certificate was valid?&quot;</td>
+</tr>
+<tr>
+<td><strong>B-LT</strong></td>
+<td><code>/DSS</code>: embedded certificates + OCSP/CRL responses, per-signature <code>/VRI</code></td>
+<td>Revocation servers disappearing</td>
+</tr>
+<tr>
+<td><strong>B-LTA</strong></td>
+<td><code>/DocTimeStamp</code> covering the whole document</td>
+<td>Algorithm/key aging — re-timestamp before the TSA certificate expires to extend the chain</td>
+</tr>
+</tbody></table>
+<p>Adobe Reader shows a B-LT/B-LTA document as <strong>&quot;LTV enabled&quot;</strong> (with the chain&#39;s root trusted).</p>
+<h2 id="the-provider-architecture">The provider architecture<a class="heading-anchor" href="#the-provider-architecture" aria-label="Link to this section">#</a></h2>
+<p>pdfnative <strong>never opens a socket</strong>. Two small interfaces move bytes; you own transport, proxies, retries and trust decisions:</p>
+<pre><code class="language-ts">interface TimestampProvider {
+  getTimestamp(request: Uint8Array): Promise&lt;Uint8Array&gt;;   // TimeStampReq → TimeStampResp
+}
+interface RevocationProvider {
+  fetchOcsp?(url: string, request: Uint8Array): Promise&lt;Uint8Array&gt;; // OCSPRequest → OCSPResponse
+  fetchCrl?(url: string): Promise&lt;Uint8Array&gt;;                      // → CertificateList
+}
+</code></pre>
+<p>Install globally (<code>setTimestampProvider</code> / <code>setRevocationProvider</code>) or pass per call (<code>timestampProvider:</code> / <code>revocationProvider:</code> options — per-call wins). pdfnative builds and parses every RFC 3161 / RFC 6960 / RFC 5280 structure itself, verifies the token&#39;s message imprint and nonce echo, and <strong>refuses to embed</strong> a rejected or tampered response.</p>
+<h2 id="step-by-step">Step by step<a class="heading-anchor" href="#step-by-step" aria-label="Link to this section">#</a></h2>
+<h3 id="b-b--a-pades-baseline-signature">B-B — a PAdES baseline signature<a class="heading-anchor" href="#b-b--a-pades-baseline-signature" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">const signed = signPdfBytes(placeheld, {
+  signerCert, certChain, rsaKey,
+  profile: &#39;pades&#39;,          // adds ESS signing-certificate-v2 (RFC 5035)
+});
+</code></pre>
+<p>Pair <code>profile: &#39;pades&#39;</code> with the placeholder&#39;s <code>metadata: { subFilter: &#39;ETSI.CAdES.detached&#39; }</code> so the <code>/Sig</code> dictionary declares the PAdES SubFilter. The legacy default (<code>adbe.pkcs7.detached</code>, <code>profile: &#39;pkcs7&#39;</code>) is unchanged. <code>digestAlgorithm: &#39;sha384&#39; | &#39;sha512&#39;</code> upgrades the whole CMS digest chain.</p>
+<h3 id="b-t--the-signature-timestamp">B-T — the signature timestamp<a class="heading-anchor" href="#b-t--the-signature-timestamp" aria-label="Link to this section">#</a></h3>
+<p><code>signPdfBytesWithTimestamp</code> (async) signs, hashes the CMS signature value, asks your <code>TimestampProvider</code> for a token, verifies it, and attaches it as an unsigned attribute — the signed bytes are untouched, so the signature stays valid. Reserve room for the token when creating the placeholder:</p>
+<pre><code class="language-ts">placeholderBytes: estimateContentsSize(certSizes, &#39;rsa-sha256&#39;, { timestamp: true })  // +8 KiB
+</code></pre>
+<h3 id="b-lt--the-document-security-store">B-LT — the Document Security Store<a class="heading-anchor" href="#b-lt--the-document-security-store" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">const data = await collectValidationInfo(signed);   // async: chains + OCSP/CRL via provider
+const ltv  = embedValidationInfo(signed, data);     // sync, offline, deterministic
+// …or in one call: await addValidationInfo(signed)
+</code></pre>
+<p><code>collectValidationInfo</code> walks every signed signature (and the TSA certificates inside embedded timestamp tokens), deduplicates the certificate pool, and requests OCSP (preferred) or CRL data for every certificate that advertises a source via its AIA / CRL-distribution-point extensions — skipping self-signed roots and <code>id-pkix-ocsp-nocheck</code> responders. Missing intermediates can be supplied with <code>extraCertificates</code>.</p>
+<p><code>embedValidationInfo</code> writes the <code>/DSS</code> dictionary — <code>/Certs</code>, <code>/OCSPs</code>, <code>/CRLs</code> stream arrays plus a <code>/VRI</code> entry per signature keyed by the uppercase-hex SHA-1 of its full <code>/Contents</code> value (the Adobe convention; <code>vriKeyForContents</code> exposes the computation). An existing <code>/DSS</code> is merged, never replaced. The split matters: collect once online, embed deterministically offline (or in tests).</p>
+<h3 id="b-lta--the-document-timestamp">B-LTA — the document timestamp<a class="heading-anchor" href="#b-lta--the-document-timestamp" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">const archive = await addDocumentTimestamp(ltv);
+</code></pre>
+<p>Appends a signature field whose dictionary is <code>/Type /DocTimeStamp /SubFilter /ETSI.RFC3161</code> with a <strong>bare</strong> TimeStampToken as <code>/Contents</code> (ISO 32000-2 §12.8.5 — no <code>/M</code>: the token&#39;s genTime is the time assertion). Field names auto-suffix (<code>DocTimeStamp1</code>, <code>DocTimeStamp2</code>, …) so periodic re-timestamping chains naturally.</p>
+<h2 id="multiple-signatures">Multiple signatures<a class="heading-anchor" href="#multiple-signatures" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">const a = signPdfBytes(addSignaturePlaceholder(pdf, { fieldName: &#39;Author&#39; }), opts);
+const b = signPdfBytes(
+  addSignaturePlaceholder(a, { fieldName: &#39;Reviewer&#39;, allowMultiple: true }),
+  { ...opts, fieldName: &#39;Reviewer&#39; },
+);
+</code></pre>
+<p><code>allowMultiple: true</code> opts out of the historical one-signature short-circuit; the <code>fieldName</code> selector on <code>signPdfBytes</code> targets the right placeholder. Signed signatures are located by their real ByteRange values and can never be overwritten. Inspect any document with <code>listSignatures(bytes)</code>.</p>
+<h2 id="testing-without-a-real-tsa-or-ca">Testing without a real TSA or CA<a class="heading-anchor" href="#testing-without-a-real-tsa-or-ca" aria-label="Link to this section">#</a></h2>
+<p>The repository ships a deterministic offline mock PKI (<code>scripts/helpers/mock-pki.ts</code>): a root CA, a signer with AIA/CRL-DP extensions, a TSA with the critical <code>id-kp-timeStamping</code> EKU and an OCSP responder with <code>ocsp-nocheck</code> — plus providers that produce <strong>real, signed</strong> TimeStampTokens, BasicOCSPResponses and CRLs. The <code>signature/signature-pades-*.pdf</code> samples and the <code>ltv-pipeline</code> integration suite run the full B-LTA chain with zero network. Public TSAs for manual testing include <code>https://freetsa.org/tsr</code>.</p>
+<h2 id="verification-checklist">Verification checklist<a class="heading-anchor" href="#verification-checklist" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><code>listSignatures(bytes)</code> — every entry, its SubFilter, ByteRange, placeholder/timestamp status.</li>
+<li>Adobe Reader: <em>Signature Panel → Certificate Details</em> — trust the mock/company root, then look for <strong>&quot;LTV enabled&quot;</strong> on B-LT documents and a valid document timestamp on B-LTA.</li>
+<li><code>openssl ts -reply -in token.der -text</code> inspects extracted timestamp tokens.</li>
+<li>pdfnative itself ships <strong>no signature verifier</strong> — validation belongs to dedicated tooling (veraPDF for PDF/A, Adobe/DSS for signatures, <code>pdfnative-cli verify</code> for full cryptographic verification: CMS signature values, certificate chain and trust, RFC 3161 timestamps, OCSP/CRL revocation).</li>
+</ul>
+<h2 id="limits--scope-v170">Limits &amp; scope (v1.7.0)<a class="heading-anchor" href="#limits--scope-v170" aria-label="Link to this section">#</a></h2>
+<ul>
+<li>ECDSA stays P-256 with SHA-256; RSA supports SHA-256/384/512.</li>
+<li>Chain building uses exact issuer-name matching over the embedded pool; cross-certification and bridge PKIs are out of scope.</li>
+<li><code>collectValidationInfo</code> fetches from the <strong>first</strong> advertised OCSP/CRL URL; provider-side failover is your transport&#39;s business.</li>
+<li>Encrypted documents cannot take signature placeholders (unchanged from v1.2).</li>
+<li>PDF 2.0 <code>/Extensions</code> declarations are not emitted; the ISO 32000-2 constructs used here are accepted by all mainstream validators.</li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

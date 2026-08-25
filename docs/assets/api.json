@@ -1,0 +1,3123 @@
+{
+  "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
+  "package": "pdfnative",
+  "source": "src/index.ts",
+  "exportCount": 445,
+  "exports": [
+    {
+      "name": "AddDocumentTimestampOptions",
+      "kind": "type",
+      "module": "src/core/pdf-doc-timestamp.ts",
+      "signature": "export interface AddDocumentTimestampOptions",
+      "summary": "Options for addDocumentTimestamp."
+    },
+    {
+      "name": "AddSignaturePlaceholderOptions",
+      "kind": "type",
+      "module": "src/core/pdf-sig-placeholder.ts",
+      "signature": "export interface AddSignaturePlaceholderOptions",
+      "summary": "Options for addSignaturePlaceholder."
+    },
+    {
+      "name": "Annotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export type Annotation = LinkAnnotation | InternalLink;",
+      "summary": "Union of all annotation types."
+    },
+    {
+      "name": "AnnotationBase",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface AnnotationBase",
+      "summary": "Fields shared by every markup / drawing annotation."
+    },
+    {
+      "name": "AnnotationRect",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export type AnnotationRect = readonly [number, number, number, number];",
+      "summary": "Rectangle `[x1, y1, x2, y2]` in PDF user space (points)."
+    },
+    {
+      "name": "Asn1Node",
+      "kind": "type",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export interface Asn1Node",
+      "summary": null
+    },
+    {
+      "name": "BAL_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const BAL_H = 32;",
+      "summary": null
+    },
+    {
+      "name": "BarcodeBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface BarcodeBlock",
+      "summary": "Barcode block — renders a 1D or 2D barcode using PDF path operators."
+    },
+    {
+      "name": "BarcodeFormat",
+      "kind": "type",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export type BarcodeFormat = 'code128' | 'ean13' | 'qr' | 'datamatrix' | 'pdf417';",
+      "summary": "Supported barcode formats."
+    },
+    {
+      "name": "BidiRun",
+      "kind": "type",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export interface BidiRun",
+      "summary": "A run of text with a resolved embedding level."
+    },
+    {
+      "name": "CellBorders",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface CellBorders",
+      "summary": "Per-cell border configuration for a TableBlock."
+    },
+    {
+      "name": "ChartBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ChartBlock",
+      "summary": "Chart block — native vector charts rendered as pure PDF path operators (zero dependencies, no rasterisation)."
+    },
+    {
+      "name": "ChartSeries",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ChartSeries",
+      "summary": "A single data series in a ChartBlock."
+    },
+    {
+      "name": "ChartType",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export type ChartType = 'bar' | 'barH' | 'line' | 'pie' | 'donut'",
+      "summary": "Supported chart types (v1.6.0; `stackedBar`/`stackedBarH`/`area`/`scatter` since v1.7.0)."
+    },
+    {
+      "name": "CmsDigestAlgorithm",
+      "kind": "type",
+      "module": "src/crypto/cms.ts",
+      "signature": "export type CmsDigestAlgorithm = 'sha256' | 'sha384' | 'sha512';",
+      "summary": "Message-digest algorithm used across the CMS structure (digestAlgorithms set, message-digest attribute, SignerInfo digestAlgorithm, certHash)."
+    },
+    {
+      "name": "CmsProfile",
+      "kind": "type",
+      "module": "src/crypto/cms.ts",
+      "signature": "export type CmsProfile = 'pkcs7' | 'pades';",
+      "summary": "CMS profile: - `'pkcs7'` (default) — classic adbe.pkcs7.detached signed attributes: content-type, message-digest, signing-time."
+    },
+    {
+      "name": "CmsSignOptions",
+      "kind": "type",
+      "module": "src/crypto/cms.ts",
+      "signature": "export interface CmsSignOptions",
+      "summary": null
+    },
+    {
+      "name": "CollectLtvOptions",
+      "kind": "type",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export interface CollectLtvOptions",
+      "summary": "Options for collectValidationInfo / addValidationInfo."
+    },
+    {
+      "name": "ColorGlyph",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColorGlyph",
+      "summary": "A resolved colour glyph: ordered layers painted back-to-front."
+    },
+    {
+      "name": "ColorGlyphForm",
+      "kind": "type",
+      "module": "src/core/pdf-color-glyph.ts",
+      "signature": "export interface ColorGlyphForm",
+      "summary": "A rendered colour glyph ready to be assembled into a Form XObject."
+    },
+    {
+      "name": "ColorLayer",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColorLayer",
+      "summary": "A single colour-glyph layer: a base outline filled by a paint."
+    },
+    {
+      "name": "ColorPaint",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint | SweepGradientPaint;",
+      "summary": "A paint used to fill a colour-glyph layer."
+    },
+    {
+      "name": "ColorStop",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColorStop",
+      "summary": "A gradient colour stop: `offset` in [0,1] with a resolved colour."
+    },
+    {
+      "name": "ColumnDef",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColumnDef",
+      "summary": "Column definition for the table layout."
+    },
+    {
+      "name": "Contour",
+      "kind": "type",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export type Contour = OutlinePoint[];",
+      "summary": "A closed contour: an ordered ring of on/off-curve points."
+    },
+    {
+      "name": "CpalColor",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type CpalColor = readonly [number, number, number, number];",
+      "summary": "An sRGB colour with alpha, each channel 0–255."
+    },
+    {
+      "name": "CrlRevokedEntry",
+      "kind": "type",
+      "module": "src/crypto/crl.ts",
+      "signature": "export interface CrlRevokedEntry",
+      "summary": "One revokedCertificates entry."
+    },
+    {
+      "name": "CryptFilterMethod",
+      "kind": "type",
+      "module": "src/parser/pdf-decrypt.ts",
+      "signature": "export type CryptFilterMethod = 'V2' | 'AESV2' | 'AESV3' | 'Identity';",
+      "summary": "Crypt-filter method resolved for streams or strings."
+    },
+    {
+      "name": "CryptoProvider",
+      "kind": "type",
+      "module": "src/crypto/crypto-provider.ts",
+      "signature": "export interface CryptoProvider",
+      "summary": "A pluggable signer that replaces pdfnative's pure-JS RSA/ECDSA math with a native, constant-time implementation."
+    },
+    {
+      "name": "CustomOutputIntent",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface CustomOutputIntent",
+      "summary": "Caller-supplied OutputIntent for tagged/PDF-A documents (v1.7.0): replaces the built-in minimal sRGB profile with a real ICC profile (e.g."
+    },
+    {
+      "name": "DEFAULT_COLORS",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_COLORS: PdfColors =",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_COLUMNS",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_COLUMNS: ColumnDef[] = [",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_CW",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_CW = PG_W - DEFAULT_MARGINS.l - DEFAULT_MARGINS.r;",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_FONT_SIZES",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_FONT_SIZES = { title: 16, info: 9, th: 8, td: 7.5, ft: 7 };",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_MARGINS",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_MARGINS = { t: 45, r: 36, b: 35, l: 36 };",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_MAX_BLOCKS",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_MAX_BLOCKS = 100_000;",
+      "summary": "Default ceiling for `buildDocumentPDF` block count, overridable per call via `PdfLayoutOptions.maxBlocks`."
+    },
+    {
+      "name": "DEFAULT_MAX_INFLATE_OUTPUT",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export const DEFAULT_MAX_INFLATE_OUTPUT = 100 * 1024 * 1024;",
+      "summary": "Default maximum decompressed size (bytes) for inflate operations."
+    },
+    {
+      "name": "DecryptionContext",
+      "kind": "type",
+      "module": "src/parser/pdf-decrypt.ts",
+      "signature": "export interface DecryptionContext",
+      "summary": "Everything needed to decrypt the objects of one document, produced by a successful authenticate call."
+    },
+    {
+      "name": "DocumentBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export type DocumentBlock =",
+      "summary": "Union of all supported document blocks."
+    },
+    {
+      "name": "DocumentMetadata",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "DocumentParams",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface DocumentParams",
+      "summary": "Parameters for the free-form document PDF builder."
+    },
+    {
+      "name": "EcPrivateKey",
+      "kind": "type",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export interface EcPrivateKey",
+      "summary": "ECDSA P-256 private key."
+    },
+    {
+      "name": "EcPublicKey",
+      "kind": "type",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export interface EcPublicKey",
+      "summary": "ECDSA P-256 public key."
+    },
+    {
+      "name": "EmbeddedFilesResult",
+      "kind": "type",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export interface EmbeddedFilesResult",
+      "summary": "Result of building embedded file objects for PDF/A-3."
+    },
+    {
+      "name": "EncodingContext",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface EncodingContext",
+      "summary": "Encoding context encapsulating text encoding and font reference logic."
+    },
+    {
+      "name": "EncryptionOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface EncryptionOptions",
+      "summary": "Options for PDF encryption (password protection)."
+    },
+    {
+      "name": "ExtractTextOptions",
+      "kind": "type",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export interface ExtractTextOptions",
+      "summary": null
+    },
+    {
+      "name": "ExtractedPageText",
+      "kind": "type",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export interface ExtractedPageText",
+      "summary": null
+    },
+    {
+      "name": "ExtractedTextRun",
+      "kind": "type",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export interface ExtractedTextRun",
+      "summary": "One text-showing operation (`Tj`, one `TJ` string, `'` or `\"`)."
+    },
+    {
+      "name": "FT_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const FT_H = 15;",
+      "summary": null
+    },
+    {
+      "name": "FillFormOptions",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export interface FillFormOptions",
+      "summary": "Options for fillForm."
+    },
+    {
+      "name": "FlattenFormOptions",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export interface FlattenFormOptions",
+      "summary": "Options for flattenForm."
+    },
+    {
+      "name": "FontData",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface FontData",
+      "summary": "Pre-built font data loaded from font data modules."
+    },
+    {
+      "name": "FontEntry",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface FontEntry",
+      "summary": "A font entry binding FontData to a PDF font reference."
+    },
+    {
+      "name": "FontLoader",
+      "kind": "type",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export type FontLoader = () => Promise<FontData | { default: FontData }>;",
+      "summary": "Font loader function type — returns a FontData or module with default export"
+    },
+    {
+      "name": "FontMetrics",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface FontMetrics",
+      "summary": "Font metrics embedded in font data modules."
+    },
+    {
+      "name": "FontRun",
+      "kind": "type",
+      "module": "src/shaping/multi-font.ts",
+      "signature": "export interface FontRun",
+      "summary": "A text run with its assigned font entry"
+    },
+    {
+      "name": "FontValidationResult",
+      "kind": "type",
+      "module": "src/fonts/font-validator.ts",
+      "signature": "export interface FontValidationResult",
+      "summary": "Result of validateFontData."
+    },
+    {
+      "name": "FormField",
+      "kind": "type",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export interface FormField",
+      "summary": "Resolved form field descriptor ready for PDF object emission."
+    },
+    {
+      "name": "FormFieldBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface FormFieldBlock",
+      "summary": "Form field block — interactive AcroForm widget (ISO 32000-1 §12.7)."
+    },
+    {
+      "name": "FormFieldNotFoundError",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export class FormFieldNotFoundError extends Error",
+      "summary": "A named field was not found in the document."
+    },
+    {
+      "name": "FormFieldType",
+      "kind": "type",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export type FormFieldType =",
+      "summary": "Supported AcroForm field types (ISO 32000-1 §12.7.3–12.7.4)."
+    },
+    {
+      "name": "FormFillValue",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export type FormFillValue = string | boolean | readonly string[];",
+      "summary": null
+    },
+    {
+      "name": "FormUnsupportedError",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export class FormUnsupportedError extends Error",
+      "summary": "The field or document uses a feature fill/flatten does not support."
+    },
+    {
+      "name": "FormValueTypeError",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export class FormValueTypeError extends Error",
+      "summary": "A supplied value has the wrong type for its field, or is not a valid option."
+    },
+    {
+      "name": "FormWidgetResult",
+      "kind": "type",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export interface FormWidgetResult",
+      "summary": "Result of building a form field: widget annotation dict + appearance stream(s)."
+    },
+    {
+      "name": "FreeTextAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface FreeTextAnnotation extends AnnotationBase",
+      "summary": "Free-text (typewriter) annotation (`/Subtype /FreeText`)."
+    },
+    {
+      "name": "GlyfFont",
+      "kind": "type",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export interface GlyfFont",
+      "summary": "A parsed TrueType font exposing just enough to read glyph outlines."
+    },
+    {
+      "name": "GradientExtend",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type GradientExtend = 'pad' | 'repeat' | 'reflect';",
+      "summary": "How a gradient extends beyond its [0,1] range (COLR Extend / PDF Extend)."
+    },
+    {
+      "name": "HEADER_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const HEADER_H = 15;",
+      "summary": null
+    },
+    {
+      "name": "HeadingBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface HeadingBlock",
+      "summary": "Heading block — rendered at a predefined size based on level."
+    },
+    {
+      "name": "INFO_LN",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const INFO_LN = 13;",
+      "summary": null
+    },
+    {
+      "name": "ImageBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ImageBlock",
+      "summary": "Image block — embeds a JPEG or PNG image."
+    },
+    {
+      "name": "InspectedBlock",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface InspectedBlock",
+      "summary": "One block's laid-out footprint, as reported by inspectDocumentLayout."
+    },
+    {
+      "name": "InspectedPage",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface InspectedPage",
+      "summary": "One page's worth of InspectedBlocks."
+    },
+    {
+      "name": "InternalLink",
+      "kind": "type",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export interface InternalLink",
+      "summary": "Internal link annotation (GoTo action — page destination)."
+    },
+    {
+      "name": "KNOWN_DECODE_FILTERS",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export const KNOWN_DECODE_FILTERS = new Set<string>([",
+      "summary": "Known non-Flate decode filter names (for membership checks)."
+    },
+    {
+      "name": "LayoutDebugOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface LayoutDebugOptions",
+      "summary": "Fine-grained control over the PdfLayoutOptions.debug overlay layers."
+    },
+    {
+      "name": "LayoutInspection",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface LayoutInspection",
+      "summary": "Deterministic, read-only description of how inspectDocumentLayout expects the document builder to paginate and place a set of blocks."
+    },
+    {
+      "name": "LineAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface LineAnnotation extends AnnotationBase",
+      "summary": "Straight-line annotation (`/Subtype /Line`)."
+    },
+    {
+      "name": "LinearGradientPaint",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface LinearGradientPaint",
+      "summary": "A linear (axial) gradient fill (COLR PaintLinearGradient → PDF Shading 2)."
+    },
+    {
+      "name": "LinkAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export interface LinkAnnotation",
+      "summary": "External link annotation (URI action)."
+    },
+    {
+      "name": "LinkBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface LinkBlock",
+      "summary": "Link block — clickable hyperlink text."
+    },
+    {
+      "name": "ListBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ListBlock",
+      "summary": "List block — bullet or numbered items."
+    },
+    {
+      "name": "ListItem",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ListItem",
+      "summary": "A single hierarchical list entry: text plus an optional nested sub-list."
+    },
+    {
+      "name": "LtvData",
+      "kind": "type",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export interface LtvData",
+      "summary": "Transport-free validation material, serializable and replayable."
+    },
+    {
+      "name": "MAX_PARSE_DEPTH",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export const MAX_PARSE_DEPTH = 1000;",
+      "summary": "Maximum depth for recursive PDF object parsing (nested arrays/dicts)."
+    },
+    {
+      "name": "MAX_XREF_CHAIN",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export const MAX_XREF_CHAIN = 100;",
+      "summary": "Maximum depth of the xref `/Prev` chain."
+    },
+    {
+      "name": "MarkupAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export type MarkupAnnotation =",
+      "summary": "Any builder-supported annotation."
+    },
+    {
+      "name": "MergeOptions",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export interface MergeOptions",
+      "summary": "Options for the page-tree manipulation API (mergePdfs, splitPdf, extractPages)."
+    },
+    {
+      "name": "OcspCertStatus",
+      "kind": "type",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export type OcspCertStatus = 'good' | 'revoked' | 'unknown';",
+      "summary": "SingleResponse certStatus."
+    },
+    {
+      "name": "OcspRequestOptions",
+      "kind": "type",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export interface OcspRequestOptions",
+      "summary": "Options for buildOcspRequest."
+    },
+    {
+      "name": "OcspResponse",
+      "kind": "type",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export interface OcspResponse",
+      "summary": "Parsed OCSPResponse (RFC 6960 §4.2.1)."
+    },
+    {
+      "name": "OpenPdfOptions",
+      "kind": "type",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export interface OpenPdfOptions",
+      "summary": "Options for openPdf."
+    },
+    {
+      "name": "OutlineItem",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface OutlineItem",
+      "summary": "A document outline (bookmark) entry — ISO 32000-1 §12.3.3."
+    },
+    {
+      "name": "OutlinePoint",
+      "kind": "type",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export interface OutlinePoint",
+      "summary": "A single outline point in font units."
+    },
+    {
+      "name": "OutlineProvider",
+      "kind": "type",
+      "module": "src/core/pdf-color-glyph.ts",
+      "signature": "export type OutlineProvider = (glyphId: number) => Contour[];",
+      "summary": "Provider of glyph outlines (decoupled from the font parser for testing)."
+    },
+    {
+      "name": "PAGE_SIZES",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const PAGE_SIZES =",
+      "summary": null
+    },
+    {
+      "name": "PDF_A_CONFORMANCE_TARGETS",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export const PDF_A_CONFORMANCE_TARGETS = ['pdfa1b', 'pdfa2b', 'pdfa2u', 'pdfa3b'] as const;",
+      "summary": "Canonical list of PDF/A conformance targets accepted by the `tagged` layout option."
+    },
+    {
+      "name": "PG_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const PG_H = 841.89; // A4 height (297mm)",
+      "summary": null
+    },
+    {
+      "name": "PG_W",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const PG_W = 595.28; // A4 width (210mm)",
+      "summary": null
+    },
+    {
+      "name": "PageBox",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PageBox = readonly [number, number, number, number];",
+      "summary": "A page box rectangle `[x0, y0, x1, y1]` in points, PDF user space."
+    },
+    {
+      "name": "PageBreakBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface PageBreakBlock",
+      "summary": "Page break block — forces a new page."
+    },
+    {
+      "name": "PageLabelRange",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "PageLabelStyle",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "PageRange",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export interface PageRange",
+      "summary": "A contiguous, inclusive page range (0-based)."
+    },
+    {
+      "name": "PageTemplate",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PageTemplate",
+      "summary": "Template for page headers and footers with placeholder support."
+    },
+    {
+      "name": "ParagraphBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ParagraphBlock",
+      "summary": "Paragraph block — text wrapping with configurable alignment."
+    },
+    {
+      "name": "ParsedAnnotation",
+      "kind": "type",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export interface ParsedAnnotation",
+      "summary": "A page annotation parsed by PdfReader.getAnnotations."
+    },
+    {
+      "name": "ParsedArray",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "ParsedCms",
+      "kind": "type",
+      "module": "src/crypto/cms-utils.ts",
+      "signature": "export interface ParsedCms",
+      "summary": "Structural view over a DER-encoded CMS ContentInfo/SignedData."
+    },
+    {
+      "name": "ParsedCrl",
+      "kind": "type",
+      "module": "src/crypto/crl.ts",
+      "signature": "export interface ParsedCrl",
+      "summary": "Parsed CertificateList (RFC 5280 §5.1)."
+    },
+    {
+      "name": "ParsedDict",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "ParsedFieldType",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export type ParsedFieldType =",
+      "summary": null
+    },
+    {
+      "name": "ParsedFormField",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export interface ParsedFormField",
+      "summary": "A form field parsed from an existing document by readFormFields."
+    },
+    {
+      "name": "ParsedImage",
+      "kind": "type",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export interface ParsedImage",
+      "summary": "Parsed image data ready for PDF embedding."
+    },
+    {
+      "name": "PdfAConfig",
+      "kind": "type",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export interface PdfAConfig",
+      "summary": "Resolved PDF/A configuration from the `tagged` layout option."
+    },
+    {
+      "name": "PdfAConformanceTarget",
+      "kind": "type",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export type PdfAConformanceTarget = typeof PDF_A_CONFORMANCE_TARGETS[number];",
+      "summary": "Type alias for the string literal members of PDF_A_CONFORMANCE_TARGETS."
+    },
+    {
+      "name": "PdfAttachment",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfAttachment",
+      "summary": "Embedded file attachment for PDF/A-3 (ISO 19005-3)."
+    },
+    {
+      "name": "PdfAttachmentRelationship",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfAttachmentRelationship = 'Source' | 'Data' | 'Alternative' | 'Supplement' | 'Unspecified';",
+      "summary": "Relationship of an embedded file to the PDF document (ISO 19005-3 §6.8)."
+    },
+    {
+      "name": "PdfColor",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | (string & {});",
+      "summary": "Color input accepted by pdfnative."
+    },
+    {
+      "name": "PdfColors",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfColors",
+      "summary": "Color palette for the PDF."
+    },
+    {
+      "name": "PdfDiagnostic",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfDiagnostic",
+      "summary": "A single conformance diagnostic surfaced by the builders."
+    },
+    {
+      "name": "PdfDiagnosticCode",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfDiagnosticCode =",
+      "summary": "Machine-readable conformance diagnostic codes (stable API — additions only)."
+    },
+    {
+      "name": "PdfDiagnosticHandler",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfDiagnosticHandler = (diagnostic: PdfDiagnostic) => void;",
+      "summary": "Sink for conformance diagnostics."
+    },
+    {
+      "name": "PdfEncryptionInfo",
+      "kind": "type",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export interface PdfEncryptionInfo",
+      "summary": "Encryption details of an opened document, or `null` when it is not encrypted."
+    },
+    {
+      "name": "PdfEncryptionUnsupportedError",
+      "kind": "value",
+      "module": "src/parser/pdf-decrypt.ts",
+      "signature": "export class PdfEncryptionUnsupportedError extends Error",
+      "summary": "Thrown when the document uses an encryption scheme pdfnative cannot read."
+    },
+    {
+      "name": "PdfIndirectObject",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export interface PdfIndirectObject",
+      "summary": null
+    },
+    {
+      "name": "PdfInfoItem",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfInfoItem",
+      "summary": "An info key/value pair displayed in the header section."
+    },
+    {
+      "name": "PdfLayoutOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfLayoutOptions",
+      "summary": "Layout options (all optional, A4 defaults applied)."
+    },
+    {
+      "name": "PdfMetadataUpdate",
+      "kind": "type",
+      "module": "src/parser/pdf-modifier.ts",
+      "signature": "export interface PdfMetadataUpdate",
+      "summary": "Metadata fields applied by PdfModifier.updateMetadata."
+    },
+    {
+      "name": "PdfModifier",
+      "kind": "type",
+      "module": "src/parser/pdf-modifier.ts",
+      "signature": "export interface PdfModifier",
+      "summary": null
+    },
+    {
+      "name": "PdfName",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export interface PdfName",
+      "summary": null
+    },
+    {
+      "name": "PdfParams",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfParams",
+      "summary": "Parameters for PDF generation."
+    },
+    {
+      "name": "PdfPasswordError",
+      "kind": "value",
+      "module": "src/parser/pdf-decrypt.ts",
+      "signature": "export class PdfPasswordError extends Error",
+      "summary": "Thrown when a password is missing or rejected."
+    },
+    {
+      "name": "PdfReader",
+      "kind": "type",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export interface PdfReader",
+      "summary": null
+    },
+    {
+      "name": "PdfRef",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export interface PdfRef",
+      "summary": null
+    },
+    {
+      "name": "PdfRgbString",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfRgbString = `${number} ${number} ${number}`;",
+      "summary": "PDF RGB color string in operator format: \"R G B\" (values 0.0–1.0)."
+    },
+    {
+      "name": "PdfRgbTuple",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfRgbTuple = readonly [r: number, g: number, b: number];",
+      "summary": "RGB color as a 3-tuple of values 0–255."
+    },
+    {
+      "name": "PdfRow",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfRow",
+      "summary": "A single row in the PDF table."
+    },
+    {
+      "name": "PdfSignOptions",
+      "kind": "type",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export interface PdfSignOptions extends SigDictMetadata",
+      "summary": null
+    },
+    {
+      "name": "PdfSignTimestampOptions",
+      "kind": "type",
+      "module": "src/core/pdf-sign-timestamp.ts",
+      "signature": "export interface PdfSignTimestampOptions extends PdfSignOptions",
+      "summary": "Options for signPdfBytesWithTimestamp."
+    },
+    {
+      "name": "PdfSignatureInfo",
+      "kind": "type",
+      "module": "src/core/pdf-sig-utils.ts",
+      "signature": "export interface PdfSignatureInfo",
+      "summary": "One signature field entry, in AcroForm /Fields order."
+    },
+    {
+      "name": "PdfSourceInput",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export type PdfSourceInput = Uint8Array | { readonly bytes: Uint8Array; readonly password?: string };",
+      "summary": "A merge source: raw PDF bytes, or bytes paired with the password needed to decrypt an encrypted source."
+    },
+    {
+      "name": "PdfStream",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export interface PdfStream",
+      "summary": null
+    },
+    {
+      "name": "PdfToken",
+      "kind": "type",
+      "module": "src/parser/pdf-tokenizer.ts",
+      "signature": "export interface PdfToken",
+      "summary": null
+    },
+    {
+      "name": "PdfTokenizer",
+      "kind": "type",
+      "module": "src/parser/pdf-tokenizer.ts",
+      "signature": "export interface PdfTokenizer",
+      "summary": null
+    },
+    {
+      "name": "PdfUAValidationResult",
+      "kind": "type",
+      "module": "src/parser/pdf-ua-validator.ts",
+      "signature": "export interface PdfUAValidationResult",
+      "summary": "Result of a PDF/UA structural validation."
+    },
+    {
+      "name": "PdfValue",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export type PdfValue =",
+      "summary": "Union of all PDF object types (ISO 32000-1 §7.3)."
+    },
+    {
+      "name": "PrintOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PrintOptions",
+      "summary": "Professional print-production options (`layout.print`, v1.7.0): page geometry boxes (ISO 32000-1 §14.11.2), printer's marks (§14.11.3) and large-format `/UserUnit`."
+    },
+    {
+      "name": "PrinterMarksOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PrinterMarksOptions",
+      "summary": "Printer's-marks options for PrintOptions.marks."
+    },
+    {
+      "name": "QRErrorLevel",
+      "kind": "type",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export type QRErrorLevel = 'L' | 'M' | 'Q' | 'H';",
+      "summary": "QR Code error correction levels."
+    },
+    {
+      "name": "ROW_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const ROW_H = 12;",
+      "summary": null
+    },
+    {
+      "name": "RadialGradientPaint",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface RadialGradientPaint",
+      "summary": "A radial gradient fill (COLR PaintRadialGradient → PDF Shading 3)."
+    },
+    {
+      "name": "RadioGroupContext",
+      "kind": "type",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export interface RadioGroupContext",
+      "summary": "Context for building a radio button child widget within a group."
+    },
+    {
+      "name": "ResolvedPrintBoxes",
+      "kind": "type",
+      "module": "src/core/pdf-print.ts",
+      "signature": "export interface ResolvedPrintBoxes",
+      "summary": "Resolved print geometry: the page-dict fragment and the trim rectangle."
+    },
+    {
+      "name": "RevocationProvider",
+      "kind": "type",
+      "module": "src/crypto/revocation-provider.ts",
+      "signature": "export interface RevocationProvider",
+      "summary": "A pluggable revocation-data transport."
+    },
+    {
+      "name": "RsaDigest",
+      "kind": "type",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export type RsaDigest = 'sha256' | 'sha384' | 'sha512';",
+      "summary": "Digest algorithm selector for the RSA PKCS#1 v1.5 entry points."
+    },
+    {
+      "name": "RsaPrivateKey",
+      "kind": "type",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export interface RsaPrivateKey",
+      "summary": "RSA private key (CRT form for efficiency)."
+    },
+    {
+      "name": "RsaPublicKey",
+      "kind": "type",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export interface RsaPublicKey",
+      "summary": "RSA public key."
+    },
+    {
+      "name": "ShapeAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface ShapeAnnotation extends AnnotationBase",
+      "summary": "Rectangle / ellipse drawing annotation."
+    },
+    {
+      "name": "ShapedGlyph",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ShapedGlyph",
+      "summary": "A single positioned glyph output from the Thai shaper."
+    },
+    {
+      "name": "SigDictMetadata",
+      "kind": "type",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export interface SigDictMetadata",
+      "summary": "Metadata-only subset of PdfSignOptions used by buildSigDict and addSignaturePlaceholder."
+    },
+    {
+      "name": "SignatureAlgorithm",
+      "kind": "type",
+      "module": "src/crypto/cms.ts",
+      "signature": "export type SignatureAlgorithm = 'rsa-sha256' | 'ecdsa-sha256' | 'rsa-sha384' | 'rsa-sha512';",
+      "summary": null
+    },
+    {
+      "name": "SolidPaint",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface SolidPaint",
+      "summary": "A flat colour fill (COLR PaintSolid / COLRv0 layer)."
+    },
+    {
+      "name": "SpacerBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface SpacerBlock",
+      "summary": "Spacer block — vertical whitespace."
+    },
+    {
+      "name": "SplitPdfStream",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export interface SplitPdfStream",
+      "summary": "One emitted document from streamSplitPdf."
+    },
+    {
+      "name": "StreamMergeOptions",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export interface StreamMergeOptions extends MergeOptions",
+      "summary": "Options for the streaming page-tree variants."
+    },
+    {
+      "name": "StreamOptions",
+      "kind": "type",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export interface StreamOptions",
+      "summary": "Options for streaming PDF output."
+    },
+    {
+      "name": "StreamToFileResult",
+      "kind": "type",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export interface StreamToFileResult",
+      "summary": "Result of streamToFile."
+    },
+    {
+      "name": "SvgBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface SvgBlock",
+      "summary": "SVG block — renders vector graphics via PDF path operators."
+    },
+    {
+      "name": "SvgRenderOptions",
+      "kind": "type",
+      "module": "src/core/pdf-svg.ts",
+      "signature": "export interface SvgRenderOptions",
+      "summary": "Options for SVG rendering to PDF operators."
+    },
+    {
+      "name": "SvgSegment",
+      "kind": "type",
+      "module": "src/core/pdf-svg.ts",
+      "signature": "export interface SvgSegment",
+      "summary": "Parsed SVG path segment in absolute coordinates (M, L, C, Z only)."
+    },
+    {
+      "name": "TH_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const TH_H = 15;",
+      "summary": null
+    },
+    {
+      "name": "TITLE_LN",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const TITLE_LN = 22;",
+      "summary": null
+    },
+    {
+      "name": "TableBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface TableBlock",
+      "summary": "Table block — reuses existing PdfRow/ColumnDef types."
+    },
+    {
+      "name": "TextAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface TextAnnotation extends AnnotationBase",
+      "summary": "Sticky-note text annotation (`/Subtype /Text`)."
+    },
+    {
+      "name": "TextMarkupAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface TextMarkupAnnotation extends AnnotationBase",
+      "summary": "Text-markup annotation (highlight / underline / strike-out / squiggly)."
+    },
+    {
+      "name": "TextRun",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface TextRun",
+      "summary": "A text run produced by the encoding context's textRuns() method."
+    },
+    {
+      "name": "TimestampProvider",
+      "kind": "type",
+      "module": "src/crypto/timestamp-provider.ts",
+      "signature": "export interface TimestampProvider",
+      "summary": "A pluggable RFC 3161 transport: sends a DER `TimeStampReq` to a TSA and resolves with the DER `TimeStampResp`."
+    },
+    {
+      "name": "TimestampRequestOptions",
+      "kind": "type",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export interface TimestampRequestOptions",
+      "summary": "Options for buildTimestampRequest."
+    },
+    {
+      "name": "TimestampResponse",
+      "kind": "type",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export interface TimestampResponse",
+      "summary": "Parsed TimeStampResp (RFC 3161 §2.4.2)."
+    },
+    {
+      "name": "TocBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface TocBlock",
+      "summary": "Table of Contents block — auto-generated from heading blocks."
+    },
+    {
+      "name": "TokenType",
+      "kind": "type",
+      "module": "src/parser/pdf-tokenizer.ts",
+      "signature": "export type TokenType =",
+      "summary": null
+    },
+    {
+      "name": "TstInfo",
+      "kind": "type",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export interface TstInfo",
+      "summary": "Parsed TSTInfo from a TimeStampToken (RFC 3161 §2.4.2)."
+    },
+    {
+      "name": "UseCategory",
+      "kind": "type",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export type UseCategory =",
+      "summary": "USE-lite cluster categories."
+    },
+    {
+      "name": "UseClassifiedCp",
+      "kind": "type",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export interface UseClassifiedCp",
+      "summary": "Classified code point with its USE-lite category."
+    },
+    {
+      "name": "UseCluster",
+      "kind": "type",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export interface UseCluster",
+      "summary": "A USE-lite cluster: a base plus its prefixed/suffixed marks and signs."
+    },
+    {
+      "name": "ViewerPreferences",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ViewerPreferences",
+      "summary": "Viewer presentation preferences (ISO 32000-1 §12.2, Table 150 + §7.7.2)."
+    },
+    {
+      "name": "WORKER_THRESHOLD",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export const WORKER_THRESHOLD = 500;",
+      "summary": "Default threshold: use Worker for datasets above this row count."
+    },
+    {
+      "name": "WORKER_TIMEOUT_MS",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export const WORKER_TIMEOUT_MS = 60000;",
+      "summary": "Worker timeout in milliseconds (used when options.timeout is not supplied)."
+    },
+    {
+      "name": "WatermarkImage",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WatermarkImage",
+      "summary": "Image watermark configuration."
+    },
+    {
+      "name": "WatermarkOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WatermarkOptions",
+      "summary": "Watermark options for PDF pages."
+    },
+    {
+      "name": "WatermarkState",
+      "kind": "type",
+      "module": "src/core/pdf-watermark.ts",
+      "signature": "export interface WatermarkState",
+      "summary": "Resolved watermark state for use during PDF assembly."
+    },
+    {
+      "name": "WatermarkText",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WatermarkText",
+      "summary": "Text watermark configuration."
+    },
+    {
+      "name": "WorkerGenerationOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WorkerGenerationOptions",
+      "summary": "Options for generating a PDF in a Web Worker via `generatePDFInWorker()`."
+    },
+    {
+      "name": "WorkerInputMessage",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WorkerInputMessage",
+      "summary": "Message sent to the PDF Worker."
+    },
+    {
+      "name": "WorkerOutputMessage",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type WorkerOutputMessage =",
+      "summary": "Messages received from the PDF Worker."
+    },
+    {
+      "name": "X509Certificate",
+      "kind": "type",
+      "module": "src/crypto/x509.ts",
+      "signature": "export interface X509Certificate",
+      "summary": null
+    },
+    {
+      "name": "X509Name",
+      "kind": "type",
+      "module": "src/crypto/x509.ts",
+      "signature": "export interface X509Name",
+      "summary": null
+    },
+    {
+      "name": "XrefEntry",
+      "kind": "type",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export interface XrefEntry",
+      "summary": null
+    },
+    {
+      "name": "XrefTable",
+      "kind": "type",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export interface XrefTable",
+      "summary": null
+    },
+    {
+      "name": "addDocumentTimestamp",
+      "kind": "value",
+      "module": "src/core/pdf-doc-timestamp.ts",
+      "signature": "export async function addDocumentTimestamp( pdfBytes: Uint8Array, options: AddDocumentTimestampOptions = {}, ): Promise<Uint8Array>",
+      "summary": "Append a document-timestamp revision covering every byte of the current document (all earlier revisions stay byte-identical)."
+    },
+    {
+      "name": "addSignaturePlaceholder",
+      "kind": "value",
+      "module": "src/core/pdf-sig-placeholder.ts",
+      "signature": "export function addSignaturePlaceholder( pdfBytes: Uint8Array, options: AddSignaturePlaceholderOptions = {}, ): Uint8Array",
+      "summary": "Inject an AcroForm + signature widget placeholder into an existing PDF via incremental update."
+    },
+    {
+      "name": "addUnsignedAttribute",
+      "kind": "value",
+      "module": "src/crypto/cms-utils.ts",
+      "signature": "export function addUnsignedAttribute(cmsDer: Uint8Array, attributeTlv: Uint8Array): Uint8Array",
+      "summary": "Append an attribute to the `[1] IMPLICIT unsignedAttrs` slot of the first SignerInfo in a CMS SignedData, creating the slot when absent."
+    },
+    {
+      "name": "addValidationInfo",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export async function addValidationInfo( pdfBytes: Uint8Array, options: CollectLtvOptions = {}, ): Promise<Uint8Array>",
+      "summary": "Convenience: collectValidationInfo + embedValidationInfo."
+    },
+    {
+      "name": "applyDecodeFilter",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function applyDecodeFilter(name: string, data: Uint8Array): Uint8Array",
+      "summary": "Apply a single PDF stream filter by name."
+    },
+    {
+      "name": "buildAcroFormDict",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function buildAcroFormDict(fieldObjNums: readonly number[], fontObjNum?: number): string",
+      "summary": "Build the /AcroForm dictionary content for the catalog."
+    },
+    {
+      "name": "buildAnnotation",
+      "kind": "value",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export function buildAnnotation(annot: MarkupAnnotation, objNum: number): string",
+      "summary": "Build a markup / drawing annotation as a PDF indirect object."
+    },
+    {
+      "name": "buildAnnotationBody",
+      "kind": "value",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export function buildAnnotationBody(annot: MarkupAnnotation): string",
+      "summary": "Build just the annotation dictionary (`<< … >>`), without the `obj`/`endobj` wrapper."
+    },
+    {
+      "name": "buildAppearanceStreamDict",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number): string",
+      "summary": "Build the Form XObject dictionary header for an appearance stream."
+    },
+    {
+      "name": "buildAttribute",
+      "kind": "value",
+      "module": "src/crypto/cms-utils.ts",
+      "signature": "export function buildAttribute(oidBytes: Uint8Array, ...values: Uint8Array[]): Uint8Array",
+      "summary": "Build a CMS Attribute TLV: `SEQUENCE { attrType OID, attrValues SET OF }`."
+    },
+    {
+      "name": "buildCmsSignedData",
+      "kind": "value",
+      "module": "src/crypto/cms.ts",
+      "signature": "export function buildCmsSignedData(options: CmsSignOptions): Uint8Array",
+      "summary": "Build a CMS SignedData structure for a PDF detached signature."
+    },
+    {
+      "name": "buildDocTimeStampDict",
+      "kind": "value",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export function buildDocTimeStampDict(contentsSize: number = DEFAULT_CONTENTS_SIZE): string",
+      "summary": "Build a `/DocTimeStamp` dictionary string (ISO 32000-2 §12.8.5) with the same byte-patchable /Contents + /ByteRange placeholders as buildSigDict."
+    },
+    {
+      "name": "buildDocumentPDF",
+      "kind": "value",
+      "module": "src/core/pdf-document.ts",
+      "signature": "export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): string",
+      "summary": "Build a free-form PDF document from content blocks."
+    },
+    {
+      "name": "buildDocumentPDFBytes",
+      "kind": "value",
+      "module": "src/core/pdf-document.ts",
+      "signature": "export function buildDocumentPDFBytes(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): Uint8Array",
+      "summary": "Build a free-form PDF document and return as Uint8Array."
+    },
+    {
+      "name": "buildDocumentPDFStream",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildDocumentPDFStream( params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>, streamOptions?: StreamOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "Build a free-form PDF document and yield Uint8Array chunks progressively."
+    },
+    {
+      "name": "buildDocumentPDFStreamPageByPage",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildDocumentPDFStreamPageByPage( params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>, ): AsyncGenerator<Uint8Array>",
+      "summary": "Build a free-form PDF document and yield Uint8Array chunks aligned at PDF object boundaries (one indirect object per chunk, plus a header chunk and a trailing xref/trailer chunk)."
+    },
+    {
+      "name": "buildDocumentPDFStreamTrue",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildDocumentPDFStreamTrue( params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>, streamOptions?: StreamOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "Build a free-form PDF document, streaming it out **without ever joining the binary**."
+    },
+    {
+      "name": "buildEmbeddedFiles",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export function buildEmbeddedFiles(attachments: readonly PdfAttachment[], startObjNum: number): EmbeddedFilesResult",
+      "summary": "Build PDF objects for embedded file attachments (PDF/A-3)."
+    },
+    {
+      "name": "buildFormWidget",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function buildFormWidget(field: FormField, apObjNum: number, radioCtx?: RadioGroupContext): FormWidgetResult",
+      "summary": "Build a form field widget annotation dictionary and its appearance stream."
+    },
+    {
+      "name": "buildImageOperators",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function buildImageOperators( imgRef: string, x: number, y: number, width: number, height: number, ): string",
+      "summary": "Build the content stream operators to paint an image at the given position and size."
+    },
+    {
+      "name": "buildImageXObject",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function buildImageXObject(img: ParsedImage, smaskObjNum?: number): string",
+      "summary": "Build a PDF Image XObject dictionary + stream for an image."
+    },
+    {
+      "name": "buildInternalLinkAnnotation",
+      "kind": "value",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export function buildInternalLinkAnnotation(annot: InternalLink, pageObjNum: number, objNum: number): string",
+      "summary": "Build a PDF link annotation object for an internal page link (GoTo action)."
+    },
+    {
+      "name": "buildLinkAnnotation",
+      "kind": "value",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export function buildLinkAnnotation(annot: LinkAnnotation, objNum: number): string",
+      "summary": "Build a PDF link annotation object for an external URI."
+    },
+    {
+      "name": "buildOcspRequest",
+      "kind": "value",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export function buildOcspRequest(cert: X509Certificate, issuer: X509Certificate, options?: OcspRequestOptions): Uint8Array",
+      "summary": "Build an unsigned DER OCSPRequest (RFC 6960 §4.1.1) for one certificate: ``` CertID ::= SEQUENCE { hashAlgorithm  AlgorithmIdentifier (SHA-1), issuerNameHash OCTET STRING,  -- SHA-1 of issuer Name DER issuerKeyHash  OCTET STRING,  -- SHA-1 "
+    },
+    {
+      "name": "buildPDF",
+      "kind": "value",
+      "module": "src/core/pdf-builder.ts",
+      "signature": "export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): string",
+      "summary": "Build a complete PDF document as a single-byte string."
+    },
+    {
+      "name": "buildPDFBytes",
+      "kind": "value",
+      "module": "src/core/pdf-builder.ts",
+      "signature": "export function buildPDFBytes(params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): Uint8Array",
+      "summary": "Build a PDF and return it as a Uint8Array (ready for download or Blob)."
+    },
+    {
+      "name": "buildPDFStream",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildPDFStream( params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>, streamOptions?: StreamOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "Build a table-centric PDF and yield Uint8Array chunks progressively."
+    },
+    {
+      "name": "buildPDFStreamPageByPage",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildPDFStreamPageByPage( params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>, ): AsyncGenerator<Uint8Array>",
+      "summary": "Build a table-centric PDF and yield Uint8Array chunks aligned at PDF object boundaries."
+    },
+    {
+      "name": "buildPDFStreamTrue",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildPDFStreamTrue( params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>, streamOptions?: StreamOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "Build a table-centric PDF, streaming it out **without ever joining the binary**."
+    },
+    {
+      "name": "buildPrinterMarksOps",
+      "kind": "value",
+      "module": "src/core/pdf-print.ts",
+      "signature": "export function buildPrinterMarksOps( trim: PageBox, pgW: number, pgH: number, marks: boolean | PrinterMarksOptions, ): string",
+      "summary": "Build the printer's-marks operator block for one page geometry."
+    },
+    {
+      "name": "buildRadioGroupParent",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function buildRadioGroupParent( name: string, selectedValue: string, childObjNums: readonly number[], readOnly: boolean, required: boolean, ): string",
+      "summary": "Build the parent field dictionary for a radio button group (ISO 32000-1 §12.7.4.2.4)."
+    },
+    {
+      "name": "buildSMaskXObject",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function buildSMaskXObject(smaskData: string, width: number, height: number): string",
+      "summary": "Build a PDF SMask (soft mask) XObject for PNG alpha channel."
+    },
+    {
+      "name": "buildSigDict",
+      "kind": "value",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export function buildSigDict(options: SigDictMetadata, contentsSize: number = DEFAULT_CONTENTS_SIZE): string",
+      "summary": "Build a /Sig signature dictionary string for embedding in a PDF."
+    },
+    {
+      "name": "buildTimestampRequest",
+      "kind": "value",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export function buildTimestampRequest(messageImprint: Uint8Array, options?: TimestampRequestOptions): Uint8Array",
+      "summary": "Build a DER-encoded TimeStampReq (RFC 3161 §2.4.1, version 1): ``` TimeStampReq ::= SEQUENCE { version        INTEGER { v1(1) }, messageImprint MessageImprint, reqPolicy      TSAPolicyId          OPTIONAL, nonce          INTEGER            "
+    },
+    {
+      "name": "buildWatermarkState",
+      "kind": "value",
+      "module": "src/core/pdf-watermark.ts",
+      "signature": "export function buildWatermarkState( watermark: WatermarkOptions, pgW: number, pgH: number, enc: EncodingContext, ): WatermarkState",
+      "summary": "Build watermark content operators and collect resources."
+    },
+    {
+      "name": "certHasEku",
+      "kind": "value",
+      "module": "src/crypto/x509.ts",
+      "signature": "export function certHasEku(cert: X509Certificate, oidBytes: Uint8Array): boolean",
+      "summary": "Check whether a certificate carries a given Extended Key Usage purpose (2.5.29.37), e.g."
+    },
+    {
+      "name": "chunkBinaryString",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export function* chunkBinaryString(str: string, chunkSize: number): Generator<Uint8Array>",
+      "summary": "Convert a binary string to Uint8Array chunks without allocating the full Uint8Array at once."
+    },
+    {
+      "name": "classifyClusters",
+      "kind": "value",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export function classifyClusters(codePoints: readonly number[]): UseCluster[]",
+      "summary": "Split a code-point sequence into USE-lite clusters."
+    },
+    {
+      "name": "classifyUseCategory",
+      "kind": "value",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export function classifyUseCategory(cp: number): UseCategory",
+      "summary": "Classify a single Unicode code point into a USE-lite category."
+    },
+    {
+      "name": "clearFontCache",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function clearFontCache(): void",
+      "summary": "Clear font cache (useful for testing)."
+    },
+    {
+      "name": "collectValidationInfo",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export async function collectValidationInfo( pdfBytes: Uint8Array, options: CollectLtvOptions = {}, ): Promise<LtvData>",
+      "summary": "Collect validation material for every signed signature in the document."
+    },
+    {
+      "name": "computeColumnPositions",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export function computeColumnPositions( columns: readonly ColumnDef[], marginLeft: number, contentWidth: number ):",
+      "summary": "Compute column X positions and widths given columns and content width."
+    },
+    {
+      "name": "concatChunks",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export function concatChunks(chunks: readonly Uint8Array[]): Uint8Array",
+      "summary": "Concatenate an array of Uint8Array chunks into a single Uint8Array."
+    },
+    {
+      "name": "containsArabic",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsArabic(text: string): boolean",
+      "summary": "Check if text contains Arabic characters requiring shaping."
+    },
+    {
+      "name": "containsBengali",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsBengali(str: string): boolean",
+      "summary": "Check whether a string contains any Bengali characters."
+    },
+    {
+      "name": "containsDevanagari",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsDevanagari(str: string): boolean",
+      "summary": "Check whether a string contains any Devanagari characters."
+    },
+    {
+      "name": "containsEthiopic",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsEthiopic(str: string): boolean",
+      "summary": "Check whether a string contains any Ethiopic characters."
+    },
+    {
+      "name": "containsHebrew",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsHebrew(text: string): boolean",
+      "summary": "Check if text contains Hebrew characters."
+    },
+    {
+      "name": "containsKhmer",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsKhmer(str: string): boolean",
+      "summary": "Check whether a string contains any Khmer characters."
+    },
+    {
+      "name": "containsMath",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsMath(str: string): boolean",
+      "summary": "Check whether a string contains any mathematical symbols."
+    },
+    {
+      "name": "containsMyanmar",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsMyanmar(str: string): boolean",
+      "summary": "Check whether a string contains any Myanmar characters."
+    },
+    {
+      "name": "containsRTL",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function containsRTL(text: string): boolean",
+      "summary": "Check if text contains any RTL characters (Arabic or Hebrew) or an explicit directional override (LRO U+202D / RLO U+202E)."
+    },
+    {
+      "name": "containsSinhala",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsSinhala(str: string): boolean",
+      "summary": "Check whether a string contains any Sinhala characters."
+    },
+    {
+      "name": "containsTamil",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTamil(str: string): boolean",
+      "summary": "Check whether a string contains any Tamil characters."
+    },
+    {
+      "name": "containsTelugu",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTelugu(str: string): boolean",
+      "summary": "Check whether a string contains any Telugu characters."
+    },
+    {
+      "name": "containsThai",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsThai(str: string): boolean",
+      "summary": "Check whether a string contains any Thai characters."
+    },
+    {
+      "name": "containsTibetan",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTibetan(str: string): boolean",
+      "summary": "Check whether a string contains any Tibetan characters."
+    },
+    {
+      "name": "contoursToPath",
+      "kind": "value",
+      "module": "src/core/pdf-color-glyph.ts",
+      "signature": "export function contoursToPath(contours: Contour[], m: Mat = ID): string",
+      "summary": "Convert a set of TrueType quadratic contours into PDF path operators (cubic Béziers), applying matrix `m`."
+    },
+    {
+      "name": "createEncodingContext",
+      "kind": "value",
+      "module": "src/core/encoding-context.ts",
+      "signature": "export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false): EncodingContext",
+      "summary": "Create an encoding context that encapsulates text encoding and font reference logic."
+    },
+    {
+      "name": "createModifier",
+      "kind": "value",
+      "module": "src/parser/pdf-modifier.ts",
+      "signature": "export function createModifier(reader: PdfReader): PdfModifier",
+      "summary": "Create a modifier for an existing PDF document."
+    },
+    {
+      "name": "createPDF",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export async function createPDF( pdfParams: PdfParams, options?: { workerUrl?: string | URL; threshold?: number; timeout?: number; onProgress?: (percent: number) => void",
+      "summary": "Smart PDF generation: uses Worker for large datasets, main thread for small ones."
+    },
+    {
+      "name": "createTokenizer",
+      "kind": "value",
+      "module": "src/parser/pdf-tokenizer.ts",
+      "signature": "export function createTokenizer(buf: Uint8Array, startPos: number = 0): PdfTokenizer",
+      "summary": "Create a PDF tokenizer for the given byte buffer."
+    },
+    {
+      "name": "decodeASCII85",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function decodeASCII85(data: Uint8Array): Uint8Array",
+      "summary": "Decode an ASCII85Decode stream (Adobe variant)."
+    },
+    {
+      "name": "decodeASCIIHex",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function decodeASCIIHex(data: Uint8Array): Uint8Array",
+      "summary": "Decode an ASCIIHexDecode stream."
+    },
+    {
+      "name": "decodeEcPublicKey",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function decodeEcPublicKey(bytes: Uint8Array): EcPublicKey",
+      "summary": "Decode an uncompressed EC public key (65 bytes: 0x04 || x || y)."
+    },
+    {
+      "name": "decodeLZW",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function decodeLZW(data: Uint8Array): Uint8Array",
+      "summary": "Decode an LZWDecode stream with variable-width codes (9–12 bits) and automatic table reset on the CLEAR code (256)."
+    },
+    {
+      "name": "decodeRunLength",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function decodeRunLength(data: Uint8Array): Uint8Array",
+      "summary": "Decode a RunLengthDecode stream."
+    },
+    {
+      "name": "defaultFieldHeight",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function defaultFieldHeight(fieldType: FormFieldType): number",
+      "summary": "Get default widget height for a given field type."
+    },
+    {
+      "name": "derBitString",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derBitString(data: Uint8Array): Uint8Array",
+      "summary": "Encode a BIT STRING (with 0 unused bits)."
+    },
+    {
+      "name": "derDecode",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derDecode(buf: Uint8Array): Asn1Node",
+      "summary": "Parse a DER-encoded ASN.1 structure."
+    },
+    {
+      "name": "derGeneralizedTime",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derGeneralizedTime(date: Date): Uint8Array",
+      "summary": "Encode a GeneralizedTime from a Date."
+    },
+    {
+      "name": "derInteger",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derInteger(value: bigint | Uint8Array): Uint8Array",
+      "summary": "Encode an INTEGER from a BigInt or Uint8Array (big-endian)."
+    },
+    {
+      "name": "derOctetString",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derOctetString(data: Uint8Array): Uint8Array",
+      "summary": "Encode an OCTET STRING."
+    },
+    {
+      "name": "derOid",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derOid(oidBytes: Uint8Array): Uint8Array",
+      "summary": "Encode an OID from byte values (already encoded arc values)."
+    },
+    {
+      "name": "derSequence",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derSequence(...children: Uint8Array[]): Uint8Array",
+      "summary": "Encode a SEQUENCE (0x30) from child TLVs."
+    },
+    {
+      "name": "derSetOf",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derSetOf(...children: Uint8Array[]): Uint8Array",
+      "summary": "Encode a DER SET OF (0x31) from child TLVs with the canonical X.690 §11.6 ordering: the encodings are sorted as octet strings in ascending lexicographic order, and when one encoding is a prefix of another the shorter one sorts first."
+    },
+    {
+      "name": "detectCharLang",
+      "kind": "value",
+      "module": "src/shaping/script-detect.ts",
+      "signature": "export function detectCharLang(cp: number): string | null",
+      "summary": "Detect the preferred font language for a single Unicode codepoint."
+    },
+    {
+      "name": "detectFallbackLangs",
+      "kind": "value",
+      "module": "src/shaping/script-detect.ts",
+      "signature": "export function detectFallbackLangs(texts: string[], primaryLang: string): Set<string>",
+      "summary": "Detect which additional font languages are needed to render user text containing scripts foreign to the primary language."
+    },
+    {
+      "name": "detectImageFormat",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function detectImageFormat(bytes: Uint8Array): 'jpeg' | 'png' | null",
+      "summary": "Detect the image format from magic bytes."
+    },
+    {
+      "name": "dictGet",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGet(dict: PdfDict, key: string): PdfValue | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetArray",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetArray(dict: PdfDict, key: string): PdfArray | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetDict",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetDict(dict: PdfDict, key: string): PdfDict | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetName",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetName(dict: PdfDict, key: string): string | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetNum",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetNum(dict: PdfDict, key: string): number | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetRef",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetRef(dict: PdfDict, key: string): PdfRef | undefined",
+      "summary": null
+    },
+    {
+      "name": "downloadBlob",
+      "kind": "value",
+      "module": "src/core/pdf-stream.ts",
+      "signature": "export function downloadBlob(bytes: Uint8Array, filename: string): void",
+      "summary": "Trigger a file download in the browser via a temporary <a> element."
+    },
+    {
+      "name": "ean13CheckDigit",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function ean13CheckDigit(digits12: string): number",
+      "summary": "Calculate EAN-13 check digit."
+    },
+    {
+      "name": "ecPublicKeyFromPrivate",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecPublicKeyFromPrivate(privateKey: EcPrivateKey): EcPublicKey",
+      "summary": "Derive the public key from a private key."
+    },
+    {
+      "name": "ecdsaSign",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecdsaSign(message: Uint8Array, privateKey: EcPrivateKey): { r: bigint; s: bigint }",
+      "summary": "Sign a message with ECDSA P-256 + SHA-256, using RFC 6979 deterministic k."
+    },
+    {
+      "name": "ecdsaVerify",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecdsaVerify(message: Uint8Array, r: bigint, s: bigint, publicKey: EcPublicKey): boolean",
+      "summary": "Verify an ECDSA P-256 + SHA-256 signature."
+    },
+    {
+      "name": "embedValidationInfo",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export function embedValidationInfo(pdfBytes: Uint8Array, data: LtvData): Uint8Array",
+      "summary": "Embed pre-collected LtvData as a `/DSS` dictionary via incremental update."
+    },
+    {
+      "name": "encodeCode128",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function encodeCode128(data: string): number[]",
+      "summary": "Encode a string as Code 128 symbol values."
+    },
+    {
+      "name": "encodeEcPublicKey",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function encodeEcPublicKey(key: EcPublicKey): Uint8Array",
+      "summary": "Encode an ECDSA public key as uncompressed point (65 bytes: 0x04 || x || y)."
+    },
+    {
+      "name": "encodePDF417",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function encodePDF417(data: string, ecLevel: number = 2): { codewords: number[]; rows: number; cols: number }",
+      "summary": "Encode data as PDF417 codewords (text compaction)."
+    },
+    {
+      "name": "encodePdfTextString",
+      "kind": "value",
+      "module": "src/core/pdf-text.ts",
+      "signature": "export function encodePdfTextString(str: string): string",
+      "summary": "Encode a string for the PDF /Info dictionary (ISO 32000-1 §7.9.2)."
+    },
+    {
+      "name": "estimateChartHeight",
+      "kind": "value",
+      "module": "src/core/pdf-chart.ts",
+      "signature": "export function estimateChartHeight(block: ChartBlock): number",
+      "summary": "Total footprint of a chart block (title + plot + axis labels + legend)."
+    },
+    {
+      "name": "estimateCmsSize",
+      "kind": "value",
+      "module": "src/crypto/cms.ts",
+      "signature": "export function estimateCmsSize(certSizes: readonly number[], algorithm: SignatureAlgorithm): number",
+      "summary": "Estimate the DER-encoded size of a CMS SignedData for allocation."
+    },
+    {
+      "name": "estimateContentsSize",
+      "kind": "value",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export function estimateContentsSize( certSizes: readonly number[], algorithm: SignatureAlgorithm = 'rsa-sha256', options?: { readonly timestamp?: boolean }, ): number",
+      "summary": "Estimate the allocation size needed for /Contents placeholder."
+    },
+    {
+      "name": "extractGlyphContours",
+      "kind": "value",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export function extractGlyphContours(font: GlyfFont, gid: number, depth = 0): Contour[]",
+      "summary": "Extract the contours of a single glyph in font units."
+    },
+    {
+      "name": "extractPages",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export function extractPages( src: PdfSourceInput, pageIndices: readonly number[], opts?: MergeOptions, ): Uint8Array",
+      "summary": "Extract a subset of pages from a single document into a new PDF."
+    },
+    {
+      "name": "extractText",
+      "kind": "value",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export function extractText(bytes: Uint8Array, options?: ExtractTextOptions): ExtractedPageText[]",
+      "summary": "Extract Unicode text from a PDF document, page by page."
+    },
+    {
+      "name": "fillForm",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export function fillForm( pdfBytes: Uint8Array, values: Record<string, FormFillValue>, opts?: FillFormOptions, ): Uint8Array",
+      "summary": "Fill the form fields of an existing PDF and return a new PDF (incremental update — original bytes are preserved, so any existing signature stays valid for its revision)."
+    },
+    {
+      "name": "findStartxref",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export function findStartxref(buf: Uint8Array): number",
+      "summary": "Find the startxref offset from the end of the PDF file."
+    },
+    {
+      "name": "flattenForm",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export function flattenForm(pdfBytes: Uint8Array, opts?: FlattenFormOptions): Uint8Array",
+      "summary": "Flatten an existing PDF's form: stamp each widget's normal appearance into its page content and remove the interactive fields (`/AcroForm`, widget `/Annots`)."
+    },
+    {
+      "name": "generateDataMatrix",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function generateDataMatrix(data: string): boolean[][]",
+      "summary": "Generate a Data Matrix ECC 200 module matrix."
+    },
+    {
+      "name": "generatePDFInWorker",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export function generatePDFInWorker( workerUrl: string | URL, pdfParams: PdfParams, options?: WorkerGenerationOptions ): Promise<Uint8Array>",
+      "summary": "Generate PDF in a Web Worker (off-main-thread)."
+    },
+    {
+      "name": "generatePDFMainThread",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export function generatePDFMainThread(pdfParams: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): Uint8Array",
+      "summary": "Main-thread fallback: generate PDF synchronously."
+    },
+    {
+      "name": "generateQR",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function generateQR(data: string, ecLevel: QRErrorLevel = 'M'): boolean[][]",
+      "summary": "Generate a QR Code module matrix."
+    },
+    {
+      "name": "getCryptoProvider",
+      "kind": "value",
+      "module": "src/crypto/crypto-provider.ts",
+      "signature": "export function getCryptoProvider(): CryptoProvider | null",
+      "summary": "The currently-installed global CryptoProvider, or `null` if none."
+    },
+    {
+      "name": "getMaxInflateOutputSize",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export function getMaxInflateOutputSize(): number",
+      "summary": "Get the current maximum decompressed output size."
+    },
+    {
+      "name": "getRegisteredLangs",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function getRegisteredLangs(): string[]",
+      "summary": "Get all registered language codes."
+    },
+    {
+      "name": "getRevocationProvider",
+      "kind": "value",
+      "module": "src/crypto/revocation-provider.ts",
+      "signature": "export function getRevocationProvider(): RevocationProvider | null",
+      "summary": "The currently-installed global RevocationProvider, or `null` if none."
+    },
+    {
+      "name": "getTimestampProvider",
+      "kind": "value",
+      "module": "src/crypto/timestamp-provider.ts",
+      "signature": "export function getTimestampProvider(): TimestampProvider | null",
+      "summary": "The currently-installed global TimestampProvider, or `null` if none."
+    },
+    {
+      "name": "getTrailerRef",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export function getTrailerRef(trailer: PdfDict, key: string): PdfRef | undefined",
+      "summary": null
+    },
+    {
+      "name": "getTrailerValue",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export function getTrailerValue(trailer: PdfDict, key: string): PdfValue | undefined",
+      "summary": null
+    },
+    {
+      "name": "hasFontLoader",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function hasFontLoader(lang: string): boolean",
+      "summary": "Check if a font loader is registered for the given language."
+    },
+    {
+      "name": "helveticaBoldWidth",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function helveticaBoldWidth(str: string, sz: number): number",
+      "summary": "Approximate text width in points using **Helvetica-Bold** character metrics."
+    },
+    {
+      "name": "helveticaWidth",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function helveticaWidth(str: string, sz: number): number",
+      "summary": "Approximate text width in points using Helvetica character metrics."
+    },
+    {
+      "name": "hmacSha256",
+      "kind": "value",
+      "module": "src/crypto/sha.ts",
+      "signature": "export function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array",
+      "summary": "HMAC-SHA256."
+    },
+    {
+      "name": "inflateSync",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export function inflateSync(data: Uint8Array): Uint8Array",
+      "summary": "Decompress zlib-format data (RFC 1950 + RFC 1951)."
+    },
+    {
+      "name": "initCrypto",
+      "kind": "value",
+      "module": "src/crypto/index.ts",
+      "signature": "export async function initCrypto(): Promise<void>",
+      "summary": "Initialize all crypto module cross-dependencies."
+    },
+    {
+      "name": "initNodeCompression",
+      "kind": "value",
+      "module": "src/core/pdf-compress.ts",
+      "signature": "export async function initNodeCompression(): Promise<void>",
+      "summary": "Initialize Node.js compression for ESM contexts."
+    },
+    {
+      "name": "initNodeDecompression_parser",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "inspectDocumentLayout",
+      "kind": "value",
+      "module": "src/core/pdf-layout-inspect.ts",
+      "signature": "export function inspectDocumentLayout( params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>, ): LayoutInspection",
+      "summary": "Inspect how DocumentParams.blocks will paginate and where each block is placed, without building a PDF."
+    },
+    {
+      "name": "isArmenianCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isArmenianCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in any Armenian Unicode block."
+    },
+    {
+      "name": "isArray",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isArray(v: PdfValue | undefined): v is PdfArray",
+      "summary": null
+    },
+    {
+      "name": "isBengaliCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isBengaliCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Bengali Unicode block."
+    },
+    {
+      "name": "isCyrillicCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isCyrillicCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in any Cyrillic Unicode block."
+    },
+    {
+      "name": "isDevanagariCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isDevanagariCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in any Devanagari Unicode block."
+    },
+    {
+      "name": "isDict",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isDict(v: PdfValue): v is PdfDict",
+      "summary": null
+    },
+    {
+      "name": "isEthiopicCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isEthiopicCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in any Ethiopic Unicode block."
+    },
+    {
+      "name": "isGeorgianCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isGeorgianCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in any Georgian Unicode block."
+    },
+    {
+      "name": "isKhmerCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isKhmerCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in any Khmer Unicode block."
+    },
+    {
+      "name": "isLinkAnnotation",
+      "kind": "value",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export function isLinkAnnotation(annot: Annotation): annot is LinkAnnotation",
+      "summary": "Check if an annotation is an external link (has `url` property)."
+    },
+    {
+      "name": "isMathCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isMathCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint should be routed to a mathematical font (e.g."
+    },
+    {
+      "name": "isMyanmarCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isMyanmarCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in any Myanmar Unicode block."
+    },
+    {
+      "name": "isName",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isName(v: PdfValue | undefined): v is PdfName",
+      "summary": null
+    },
+    {
+      "name": "isRef",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isRef(v: PdfValue | undefined): v is PdfRef",
+      "summary": null
+    },
+    {
+      "name": "isSelfSigned",
+      "kind": "value",
+      "module": "src/crypto/x509.ts",
+      "signature": "export function isSelfSigned(cert: X509Certificate): boolean",
+      "summary": "Check if a certificate is self-signed."
+    },
+    {
+      "name": "isSerialRevoked",
+      "kind": "value",
+      "module": "src/crypto/crl.ts",
+      "signature": "export function isSerialRevoked(crl: ParsedCrl, serial: bigint): boolean",
+      "summary": "Check whether a serial number appears in a CRL's revokedCertificates list."
+    },
+    {
+      "name": "isSinhalaCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isSinhalaCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Sinhala Unicode block."
+    },
+    {
+      "name": "isStream",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isStream(v: PdfValue): v is PdfStream",
+      "summary": null
+    },
+    {
+      "name": "isTamilCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTamilCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Tamil Unicode block."
+    },
+    {
+      "name": "isTeluguCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTeluguCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Telugu Unicode block."
+    },
+    {
+      "name": "isTibetanCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTibetanCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Tibetan Unicode block."
+    },
+    {
+      "name": "isValidPdfRgb",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function isValidPdfRgb(str: string): boolean",
+      "summary": "Check whether a string is a valid PDF RGB operator color."
+    },
+    {
+      "name": "listSignatures",
+      "kind": "value",
+      "module": "src/core/pdf-sig-utils.ts",
+      "signature": "export function listSignatures(pdfBytes: Uint8Array): readonly PdfSignatureInfo[]",
+      "summary": "List every signature field in the document, in AcroForm order — signed signatures, document timestamps, and unsigned placeholders."
+    },
+    {
+      "name": "loadFontData",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export async function loadFontData(lang: string): Promise<FontData | null>",
+      "summary": "Lazy-load pre-built font data for a language."
+    },
+    {
+      "name": "mergePdfs",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export function mergePdfs(sources: readonly PdfSourceInput[], opts?: MergeOptions): Uint8Array",
+      "summary": "Concatenate multiple PDF documents into one, preserving page order."
+    },
+    {
+      "name": "nameValue",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function nameValue(v: PdfValue): string | undefined",
+      "summary": "Extract the string value from a PdfName, or undefined if not a name."
+    },
+    {
+      "name": "needsUnicodeFont",
+      "kind": "value",
+      "module": "src/shaping/script-detect.ts",
+      "signature": "export function needsUnicodeFont(lang: string): boolean",
+      "summary": "Languages requiring Unicode font embedding (non-WinAnsi scripts)."
+    },
+    {
+      "name": "niceTicks",
+      "kind": "value",
+      "module": "src/core/pdf-chart.ts",
+      "signature": "export function niceTicks(min: number, max: number, target = 5): { lo: number; hi: number; step: number }",
+      "summary": "Compute rounded tick bounds/step covering [min, max] (1/2/5×10ⁿ)."
+    },
+    {
+      "name": "normalizeBidiEmbeddings",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function normalizeBidiEmbeddings(text: string): string",
+      "summary": "UAX #9 explicit embedding normalization (v1.2.0, refined v1.3.0)."
+    },
+    {
+      "name": "normalizeColors",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function normalizeColors(colors: PdfColors): PdfColors",
+      "summary": "Validate and normalize all color fields in a PdfColors object."
+    },
+    {
+      "name": "openPdf",
+      "kind": "value",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export function openPdf(bytes: Uint8Array, options?: OpenPdfOptions): PdfReader",
+      "summary": "Open a PDF file for reading."
+    },
+    {
+      "name": "parseCertificate",
+      "kind": "value",
+      "module": "src/crypto/x509.ts",
+      "signature": "export function parseCertificate(der: Uint8Array): X509Certificate",
+      "summary": "Parse a DER-encoded X.509 certificate."
+    },
+    {
+      "name": "parseCmsSignedData",
+      "kind": "value",
+      "module": "src/crypto/cms-utils.ts",
+      "signature": "export function parseCmsSignedData(der: Uint8Array): ParsedCms",
+      "summary": "Parse a DER-encoded CMS ContentInfo containing a SignedData (RFC 5652 §5.1) into its LTV-relevant parts."
+    },
+    {
+      "name": "parseColor",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function parseColor(input: PdfColor): string",
+      "summary": "Parse a color input into a validated PDF RGB operator string."
+    },
+    {
+      "name": "parseColrCpal",
+      "kind": "value",
+      "module": "src/fonts/colr-parser.ts",
+      "signature": "export function parseColrCpal(bytes: Uint8Array): Record<number, ColorGlyph> | null",
+      "summary": "Parse the COLR + CPAL tables of a font into a colour-glyph map keyed by base glyph id."
+    },
+    {
+      "name": "parseCpal",
+      "kind": "value",
+      "module": "src/fonts/colr-parser.ts",
+      "signature": "export function parseCpal(bytes: Uint8Array): CpalColor[] | null",
+      "summary": "Parse the CPAL table's first palette into an array of CpalColors (sRGB + alpha, each channel 0–255), indexed by palette entry."
+    },
+    {
+      "name": "parseCrl",
+      "kind": "value",
+      "module": "src/crypto/crl.ts",
+      "signature": "export function parseCrl(der: Uint8Array): ParsedCrl",
+      "summary": "Parse a DER-encoded CertificateList (RFC 5280 §5.1): ``` CertificateList ::= SEQUENCE { tbsCertList        TBSCertList, signatureAlgorithm AlgorithmIdentifier, signatureValue     BIT STRING } TBSCertList ::= SEQUENCE { version             I"
+    },
+    {
+      "name": "parseGlyfFont",
+      "kind": "value",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export function parseGlyfFont(bytes: Uint8Array): GlyfFont | null",
+      "summary": "Parse the table directory, `head`, `maxp` and `loca` so that subsequent extractGlyphContours calls are O(1) lookups."
+    },
+    {
+      "name": "parseImage",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function parseImage(bytes: Uint8Array): ParsedImage",
+      "summary": "Parse an image from raw bytes (auto-detect JPEG or PNG)."
+    },
+    {
+      "name": "parseIndirectObject",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function parseIndirectObject(tok: PdfTokenizer): PdfIndirectObject | null",
+      "summary": "Parse a PDF indirect object definition: `num gen obj ..."
+    },
+    {
+      "name": "parseJPEG",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function parseJPEG(bytes: Uint8Array): ParsedImage",
+      "summary": "Parse a JPEG image to extract dimensions and color space."
+    },
+    {
+      "name": "parseOcspResponse",
+      "kind": "value",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export function parseOcspResponse(der: Uint8Array): OcspResponse",
+      "summary": "Parse a DER OCSPResponse (RFC 6960 §4.2.1)."
+    },
+    {
+      "name": "parsePNG",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function parsePNG(bytes: Uint8Array): ParsedImage",
+      "summary": "Parse a PNG image to extract dimensions, color type, and compressed image data."
+    },
+    {
+      "name": "parseRsaPrivateKey",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function parseRsaPrivateKey(der: Uint8Array): RsaPrivateKey",
+      "summary": "Parse an RSA private key from PKCS#8 DER bytes."
+    },
+    {
+      "name": "parseRsaPublicKey",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function parseRsaPublicKey(der: Uint8Array): RsaPublicKey",
+      "summary": "Parse an RSA public key from SubjectPublicKeyInfo DER bytes."
+    },
+    {
+      "name": "parseSvgPath",
+      "kind": "value",
+      "module": "src/core/pdf-svg.ts",
+      "signature": "export function parseSvgPath(d: string): SvgSegment[]",
+      "summary": "Parse SVG path `d` string into normalized absolute-coordinate segments."
+    },
+    {
+      "name": "parseTimestampResponse",
+      "kind": "value",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export function parseTimestampResponse(der: Uint8Array): TimestampResponse",
+      "summary": "Parse a DER-encoded TimeStampResp (RFC 3161 §2.4.2): `SEQUENCE { status PKIStatusInfo, timeStampToken OPTIONAL }`."
+    },
+    {
+      "name": "parseTimestampToken",
+      "kind": "value",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export function parseTimestampToken(tokenDer: Uint8Array): TstInfo",
+      "summary": "Parse a TimeStampToken (a CMS SignedData whose eContent is a TSTInfo, eContentType id-ct-TSTInfo 1.2.840.113549.1.9.16.1.4) into its TSTInfo fields plus the embedded TSA certificates."
+    },
+    {
+      "name": "parseValue",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function parseValue(tok: PdfTokenizer, depth = 0): PdfValue",
+      "summary": "Parse a single PDF value from the token stream."
+    },
+    {
+      "name": "parseXrefTable",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export function parseXrefTable(buf: Uint8Array): XrefTable",
+      "summary": "Parse the complete xref table including incremental updates (via /Prev chain)."
+    },
+    {
+      "name": "pdfString",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function pdfString(str: string): string",
+      "summary": "Create a PDF string literal: encode to WinAnsi and escape (, ), \\."
+    },
+    {
+      "name": "readFormFields",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export function readFormFields(pdfBytes: Uint8Array, opts?: { password?: string }): ParsedFormField[]",
+      "summary": "Enumerate the interactive form fields of an existing PDF."
+    },
+    {
+      "name": "registerFont",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function registerFont(lang: string, loader: FontLoader): void",
+      "summary": "Register a font data loader for a language."
+    },
+    {
+      "name": "registerFonts",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function registerFonts(fonts: Record<string, FontLoader>): void",
+      "summary": "Register multiple font loaders at once."
+    },
+    {
+      "name": "renderBarcode",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderBarcode( format: BarcodeFormat, data: string, x: number, y: number, width: number, height: number, options?: { readonly ecLevel?: QRErrorLevel; readonly pdf417ECLevel?: number }, ): string",
+      "summary": "Render a barcode as PDF path operators."
+    },
+    {
+      "name": "renderChartBlock",
+      "kind": "value",
+      "module": "src/core/pdf-chart.ts",
+      "signature": "export function renderChartBlock( block: ChartBlock, y: number, mgL: number, cw: number, enc: EncodingContext, tagCtx?: TagContext, documentChildren?: (StructElement | MCRef)[],",
+      "summary": "Render a chart block."
+    },
+    {
+      "name": "renderCode128",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderCode128(data: string, x: number, y: number, width: number, height: number): string",
+      "summary": "Render Code 128 barcode as PDF path operators."
+    },
+    {
+      "name": "renderColorGlyph",
+      "kind": "value",
+      "module": "src/core/pdf-color-glyph.ts",
+      "signature": "export function renderColorGlyph( glyph: ColorGlyph, outlines: OutlineProvider, unitsPerEm: number, ): ColorGlyphForm",
+      "summary": "Render a colour glyph into a ColorGlyphForm."
+    },
+    {
+      "name": "renderDataMatrix",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderDataMatrix(data: string, x: number, y: number, size: number): string",
+      "summary": "Render a Data Matrix barcode as PDF path operators."
+    },
+    {
+      "name": "renderEAN13",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderEAN13(data: string, x: number, y: number, width: number, height: number): string",
+      "summary": "Render EAN-13 barcode as PDF path operators."
+    },
+    {
+      "name": "renderPDF417",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderPDF417(data: string, x: number, y: number, width: number, height: number, ecLevel: number = 2): string",
+      "summary": "Render PDF417 as PDF path operators."
+    },
+    {
+      "name": "renderQR",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderQR(data: string, x: number, y: number, size: number, ecLevel: QRErrorLevel = 'M'): string",
+      "summary": "Render a QR Code as PDF path operators."
+    },
+    {
+      "name": "renderSvg",
+      "kind": "value",
+      "module": "src/core/pdf-svg.ts",
+      "signature": "export function renderSvg( data: string, x: number, y: number, w: number, h: number, options?: SvgRenderOptions, enc?: EncodingContext, ): string",
+      "summary": "Render SVG content as PDF path operators."
+    },
+    {
+      "name": "resetFontRegistry",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function resetFontRegistry(): void",
+      "summary": "Clear all registered fonts and cache (useful for testing)."
+    },
+    {
+      "name": "resolveBidiRuns",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function resolveBidiRuns(text: string): BidiRun[]",
+      "summary": "Resolve bidirectional text into ordered runs with embedding levels."
+    },
+    {
+      "name": "resolveLayout",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export function resolveLayout(options?: Partial<PdfLayoutOptions>):",
+      "summary": "Create a resolved layout configuration from user options + defaults."
+    },
+    {
+      "name": "resolvePdfAConfig",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export function resolvePdfAConfig(tagged: boolean | string | undefined): PdfAConfig",
+      "summary": "Parse the `tagged` layout option into a resolved PDF/A configuration."
+    },
+    {
+      "name": "resolvePrintBoxes",
+      "kind": "value",
+      "module": "src/core/pdf-print.ts",
+      "signature": "export function resolvePrintBoxes(print: PrintOptions, pgW: number, pgH: number): ResolvedPrintBoxes",
+      "summary": "Resolve the page-dictionary fragment for the configured boxes."
+    },
+    {
+      "name": "resolveTemplate",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export function resolveTemplate( tpl: string | undefined, page: number, pages: number, title: string, date: string, ): string",
+      "summary": "Replace placeholder tokens in a header/footer template string."
+    },
+    {
+      "name": "rsaSign",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function rsaSign(message: Uint8Array, privateKey: RsaPrivateKey, digest: RsaDigest = 'sha256'): Uint8Array",
+      "summary": "Sign a message with RSA PKCS#1 v1.5."
+    },
+    {
+      "name": "rsaSignHash",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function rsaSignHash(hash: Uint8Array, privateKey: RsaPrivateKey, digest: RsaDigest = 'sha256'): Uint8Array",
+      "summary": "Sign a pre-computed hash with RSA PKCS#1 v1.5."
+    },
+    {
+      "name": "rsaVerify",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function rsaVerify(message: Uint8Array, signature: Uint8Array, publicKey: RsaPublicKey, digest: RsaDigest = 'sha256'): boolean",
+      "summary": "Verify an RSA PKCS#1 v1.5 signature over a message."
+    },
+    {
+      "name": "rsaVerifyHash",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function rsaVerifyHash(hash: Uint8Array, signature: Uint8Array, publicKey: RsaPublicKey, digest: RsaDigest = 'sha256'): boolean",
+      "summary": "Verify an RSA PKCS#1 v1.5 signature against a pre-computed hash."
+    },
+    {
+      "name": "setCryptoProvider",
+      "kind": "value",
+      "module": "src/crypto/crypto-provider.ts",
+      "signature": "export function setCryptoProvider(provider: CryptoProvider | null): void",
+      "summary": "Install (or clear) a global signature CryptoProvider."
+    },
+    {
+      "name": "setDeflateImpl",
+      "kind": "value",
+      "module": "src/core/pdf-compress.ts",
+      "signature": "export function setDeflateImpl(fn: ((buf: Uint8Array) => Uint8Array) | null): void",
+      "summary": "Inject a custom deflate implementation (e.g."
+    },
+    {
+      "name": "setInflateImpl",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export function setInflateImpl(fn: ((buf: Uint8Array) => Uint8Array) | null): void",
+      "summary": "Inject a custom inflate implementation."
+    },
+    {
+      "name": "setMaxInflateOutputSize",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export function setMaxInflateOutputSize(size: number): void",
+      "summary": "Set the global maximum decompressed output size for inflateSync."
+    },
+    {
+      "name": "setRevocationProvider",
+      "kind": "value",
+      "module": "src/crypto/revocation-provider.ts",
+      "signature": "export function setRevocationProvider(provider: RevocationProvider | null): void",
+      "summary": "Install (or clear) a global RevocationProvider."
+    },
+    {
+      "name": "setTimestampProvider",
+      "kind": "value",
+      "module": "src/crypto/timestamp-provider.ts",
+      "signature": "export function setTimestampProvider(provider: TimestampProvider | null): void",
+      "summary": "Install (or clear) a global TimestampProvider."
+    },
+    {
+      "name": "sha1",
+      "kind": "value",
+      "module": "src/crypto/sha.ts",
+      "signature": "export function sha1(input: Uint8Array): Uint8Array",
+      "summary": "SHA-1 hash (FIPS 180-4)."
+    },
+    {
+      "name": "sha384",
+      "kind": "value",
+      "module": "src/crypto/sha.ts",
+      "signature": "export function sha384(input: Uint8Array): Uint8Array",
+      "summary": "SHA-384 hash (FIPS 180-4)."
+    },
+    {
+      "name": "sha512",
+      "kind": "value",
+      "module": "src/crypto/sha.ts",
+      "signature": "export function sha512(input: Uint8Array): Uint8Array",
+      "summary": "SHA-512 hash (FIPS 180-4)."
+    },
+    {
+      "name": "shapeArabicText",
+      "kind": "value",
+      "module": "src/shaping/arabic-shaper.ts",
+      "signature": "export function shapeArabicText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape Arabic text using Unicode Presentation Forms."
+    },
+    {
+      "name": "shapeBengaliText",
+      "kind": "value",
+      "module": "src/shaping/bengali-shaper.ts",
+      "signature": "export function shapeBengaliText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Bengali text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeDevanagariText",
+      "kind": "value",
+      "module": "src/shaping/devanagari-shaper.ts",
+      "signature": "export function shapeDevanagariText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Devanagari text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeKhmerText",
+      "kind": "value",
+      "module": "src/shaping/khmer-shaper.ts",
+      "signature": "export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Khmer text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeMyanmarText",
+      "kind": "value",
+      "module": "src/shaping/myanmar-shaper.ts",
+      "signature": "export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Myanmar text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeSinhalaText",
+      "kind": "value",
+      "module": "src/shaping/sinhala-shaper.ts",
+      "signature": "export function shapeSinhalaText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Sinhala text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeTamilText",
+      "kind": "value",
+      "module": "src/shaping/tamil-shaper.ts",
+      "signature": "export function shapeTamilText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Tamil text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeTeluguText",
+      "kind": "value",
+      "module": "src/shaping/telugu-shaper.ts",
+      "signature": "export function shapeTeluguText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Telugu text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeThaiText",
+      "kind": "value",
+      "module": "src/shaping/thai-shaper.ts",
+      "signature": "export function shapeThaiText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Thai text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeTibetanText",
+      "kind": "value",
+      "module": "src/shaping/tibetan-shaper.ts",
+      "signature": "export function shapeTibetanText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Tibetan text into an array of positioned glyphs."
+    },
+    {
+      "name": "signPdfBytes",
+      "kind": "value",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export function signPdfBytes(pdfBytes: Uint8Array, options: PdfSignOptions): Uint8Array",
+      "summary": "Sign a PDF that contains a signature placeholder."
+    },
+    {
+      "name": "signPdfBytesWithTimestamp",
+      "kind": "value",
+      "module": "src/core/pdf-sign-timestamp.ts",
+      "signature": "export async function signPdfBytesWithTimestamp( pdfBytes: Uint8Array, options: PdfSignTimestampOptions, ): Promise<Uint8Array>",
+      "summary": "Sign a placeholder-carrying PDF and embed an RFC 3161 signature timestamp in the CMS unsigned attributes (PAdES B-T when combined with `profile: 'pades'`)."
+    },
+    {
+      "name": "slugify",
+      "kind": "value",
+      "module": "src/core/pdf-stream.ts",
+      "signature": "export function slugify(str: string): string",
+      "summary": "Sanitize string for use in filename (filesystem-safe)."
+    },
+    {
+      "name": "splitPdf",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export function splitPdf( src: PdfSourceInput, ranges: readonly PageRange[], opts?: MergeOptions, ): Uint8Array[]",
+      "summary": "Split a document into multiple PDFs, one per page range."
+    },
+    {
+      "name": "splitTextByFont",
+      "kind": "value",
+      "module": "src/shaping/multi-font.ts",
+      "signature": "export function splitTextByFont(str: string, fontEntries: FontEntry[]): FontRun[]",
+      "summary": "Split a string into text runs, each assigned to the font whose cmap covers it."
+    },
+    {
+      "name": "streamByteLength",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function streamByteLength(stream: AsyncGenerator<Uint8Array>): Promise<number>",
+      "summary": "Count total byte length from streaming chunks without buffering."
+    },
+    {
+      "name": "streamExtractPages",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export async function* streamExtractPages( src: PdfSourceInput, pageIndices: readonly number[], opts?: StreamMergeOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "Streaming extractPages: yields the extracted PDF as fixed-size chunks, byte-identical to `extractPages`."
+    },
+    {
+      "name": "streamMergedPdfs",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export async function* streamMergedPdfs( sources: readonly PdfSourceInput[], opts?: StreamMergeOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "Streaming mergePdfs: yields the merged PDF as fixed-size chunks."
+    },
+    {
+      "name": "streamSplitPdf",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export async function* streamSplitPdf( src: PdfSourceInput, ranges: readonly PageRange[], opts?: StreamMergeOptions, ): AsyncGenerator<SplitPdfStream>",
+      "summary": "Streaming splitPdf: yields one SplitPdfStream per range, in order."
+    },
+    {
+      "name": "streamToFile",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function streamToFile( stream: AsyncGenerator<Uint8Array>, filePath: string, opts?: { readonly signal?: AbortSignal }, ): Promise<StreamToFileResult>",
+      "summary": "Write a streaming PDF — any of the `buildPDFStream*` / `buildDocumentPDFStream*` generators — directly to a file on disk, honouring write back-pressure so only one chunk is held at a time."
+    },
+    {
+      "name": "stripBidiControls",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function stripBidiControls(text: string): string",
+      "summary": "Strip invisible Unicode bidirectional formatting characters."
+    },
+    {
+      "name": "toBytes",
+      "kind": "value",
+      "module": "src/core/pdf-stream.ts",
+      "signature": "export function toBytes(str: string): Uint8Array",
+      "summary": "Convert a single-byte string to Uint8Array."
+    },
+    {
+      "name": "toWinAnsi",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function toWinAnsi(str: string): string",
+      "summary": "Encode a JavaScript string to WinAnsiEncoding (ISO-8859-1 superset)."
+    },
+    {
+      "name": "truncate",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function truncate(str: string, max: number): string",
+      "summary": "Truncate string to max characters, appending Unicode ellipsis (…, U+2026) if needed."
+    },
+    {
+      "name": "truncateToWidth",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function truncateToWidth( str: string, maxWidthPt: number, sz: number, enc: EncodingContext, ): string",
+      "summary": "Truncate string so that its rendered width does not exceed `maxWidthPt`, appending the Unicode ellipsis (…, U+2026) when truncation occurs."
+    },
+    {
+      "name": "validateAttachments",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export function validateAttachments(attachments: readonly PdfAttachment[] | undefined, tagged: boolean | string | undefined): void",
+      "summary": "Validate attachments against PDF/A configuration."
+    },
+    {
+      "name": "validateDocumentStreamable",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export function validateDocumentStreamable(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): void",
+      "summary": "Validate that document params are compatible with streaming output."
+    },
+    {
+      "name": "validateFontData",
+      "kind": "value",
+      "module": "src/fonts/font-validator.ts",
+      "signature": "export function validateFontData(data: unknown): FontValidationResult",
+      "summary": "Structurally validate a FontData module."
+    },
+    {
+      "name": "validatePdfUA",
+      "kind": "value",
+      "module": "src/parser/pdf-ua-validator.ts",
+      "signature": "export function validatePdfUA(bytes: Uint8Array): PdfUAValidationResult",
+      "summary": "Validate the PDF/UA (ISO 14289-1) structural prerequisites of a tagged PDF."
+    },
+    {
+      "name": "validatePrintOptions",
+      "kind": "value",
+      "module": "src/core/pdf-print.ts",
+      "signature": "export function validatePrintOptions( print: PrintOptions, pgW: number, pgH: number, tagged: boolean | string | undefined, ): void",
+      "summary": "Validate `layout.print` against the page geometry and conformance target."
+    },
+    {
+      "name": "validateTableStreamable",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export function validateTableStreamable(_params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): void",
+      "summary": "Validate that table params are compatible with streaming output."
+    },
+    {
+      "name": "validateURL",
+      "kind": "value",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export function validateURL(url: string): boolean",
+      "summary": "Validate a URL for use in PDF link annotations."
+    },
+    {
+      "name": "validateWatermark",
+      "kind": "value",
+      "module": "src/core/pdf-watermark.ts",
+      "signature": "export function validateWatermark( watermark: WatermarkOptions, pdfaLevel: boolean | string | undefined, ): void",
+      "summary": "Validate watermark options against PDF/A constraints."
+    },
+    {
+      "name": "verifyCertSignature",
+      "kind": "value",
+      "module": "src/crypto/x509.ts",
+      "signature": "export function verifyCertSignature(cert: X509Certificate, issuerCert: X509Certificate): boolean",
+      "summary": "Verify a certificate's signature using the issuer's public key."
+    },
+    {
+      "name": "verifyTimestampImprint",
+      "kind": "value",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export function verifyTimestampImprint(info: TstInfo, expectedHash: Uint8Array): boolean",
+      "summary": "Check that a parsed timestamp token covers the expected data: byte-compare the TSTInfo messageImprint against `expectedHash`."
+    },
+    {
+      "name": "vriKeyForContents",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export function vriKeyForContents(contents: Uint8Array): string",
+      "summary": "Uppercase-hex SHA-1 of the full /Contents value — the /VRI key."
+    },
+    {
+      "name": "wrapText",
+      "kind": "value",
+      "module": "src/core/pdf-document.ts",
+      "signature": null,
+      "summary": null
+    }
+  ]
+}

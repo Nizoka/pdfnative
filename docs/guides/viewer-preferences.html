@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/viewer-preferences.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/viewer-preferences.html">
   <link rel="alternate" type="text/markdown" href="viewer-preferences.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Viewer preferences","item":"https://pdfnative.dev/guides/viewer-preferences.html"}]},{"@type":"TechArticle","headline":"Viewer preferences","description":"Control how a PDF reader presents your document on open with pdfnative — initial page layout, page mode, full-screen kiosk, fit/centre window, reading direction, print scaling. New in v1.4.0.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/viewer-preferences.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,176 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Viewer preferences</p>
-  <article id="guide-content" class="guide-content" data-md="viewer-preferences.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="viewer-preferences.md">read viewer-preferences.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="viewer-preferences.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="viewer-preferences">Viewer preferences</h1>
+<blockquote>
+<p><strong>New in v1.4.0.</strong> Control how a conforming reader <strong>presents</strong> your PDF the
+moment it opens — initial page layout, the bookmark/thumbnail panel, full-screen
+kiosk mode, window fit/centering, UI-chrome visibility, reading direction, and
+print scaling. Set via <code>DocumentParams.layout.viewerPreferences</code>. Purely
+presentational, PDF/A-safe, and zero overhead when unused.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+import type { ViewerPreferences } from &#39;pdfnative&#39;;
+
+const viewerPreferences: ViewerPreferences = {
+  pageLayout: &#39;twoColumnLeft&#39;,  // continuous two-up, odd pages left
+  pageMode: &#39;useOutlines&#39;,      // open the bookmark panel
+  displayDocTitle: true,        // titlebar shows /Info /Title, not the filename
+  fitWindow: true,
+  centerWindow: true,
+};
+
+const bytes = buildDocumentPDFBytes({
+  title: &#39;Annual Report&#39;,
+  blocks: [/* … */],
+  outline: &#39;auto&#39;,
+  layout: { viewerPreferences },
+});
+</code></pre>
+<h2 id="page-layout-pagelayout">Page layout (<code>/PageLayout</code>)<a class="heading-anchor" href="#page-layout-pagelayout" aria-label="Link to this section">#</a></h2>
+<p>How pages are arranged in the viewport:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>singlePage</code></td>
+<td>One page at a time</td>
+</tr>
+<tr>
+<td><code>oneColumn</code></td>
+<td>Continuous single column</td>
+</tr>
+<tr>
+<td><code>twoColumnLeft</code> / <code>twoColumnRight</code></td>
+<td>Continuous two columns; odd pages on the left / right</td>
+</tr>
+<tr>
+<td><code>twoPageLeft</code> / <code>twoPageRight</code></td>
+<td>Two pages at a time; odd pages on the left / right</td>
+</tr>
+</tbody></table>
+<h2 id="page-mode-pagemode">Page mode (<code>/PageMode</code>)<a class="heading-anchor" href="#page-mode-pagemode" aria-label="Link to this section">#</a></h2>
+<p>Which panel (if any) is open and whether the document opens full-screen:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>useNone</code></td>
+<td>Neither bookmarks nor thumbnails</td>
+</tr>
+<tr>
+<td><code>useOutlines</code></td>
+<td>Bookmark panel open</td>
+</tr>
+<tr>
+<td><code>useThumbs</code></td>
+<td>Thumbnail panel open</td>
+</tr>
+<tr>
+<td><code>fullScreen</code></td>
+<td>Full-screen presentation, no menu/panel</td>
+</tr>
+<tr>
+<td><code>useOC</code></td>
+<td>Optional-content (layers) panel</td>
+</tr>
+<tr>
+<td><code>useAttachments</code></td>
+<td>Attachments panel</td>
+</tr>
+</tbody></table>
+<p>An explicit <code>pageMode</code> <strong>overrides</strong> the <code>/UseOutlines</code> default that a document
+automatically gets when it has an <code>outline</code>.</p>
+<h2 id="viewerpreferences-flags">ViewerPreferences flags<a class="heading-anchor" href="#viewerpreferences-flags" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>hideToolbar</code></td>
+<td>Hide the reader tool bars</td>
+</tr>
+<tr>
+<td><code>hideMenubar</code></td>
+<td>Hide the menu bar</td>
+</tr>
+<tr>
+<td><code>hideWindowUI</code></td>
+<td>Hide scrollbars / navigation, leaving only the page</td>
+</tr>
+<tr>
+<td><code>fitWindow</code></td>
+<td>Resize the window to the first page</td>
+</tr>
+<tr>
+<td><code>centerWindow</code></td>
+<td>Centre the window on screen</td>
+</tr>
+<tr>
+<td><code>displayDocTitle</code></td>
+<td>Show <code>/Info /Title</code> in the titlebar instead of the filename</td>
+</tr>
+<tr>
+<td><code>nonFullScreenPageMode</code></td>
+<td>Mode to use after exiting full-screen</td>
+</tr>
+<tr>
+<td><code>direction</code></td>
+<td><code>&#39;l2r&#39;</code> (default) or <code>&#39;r2l&#39;</code> reading order</td>
+</tr>
+<tr>
+<td><code>printScaling</code></td>
+<td><code>&#39;none&#39;</code> or <code>&#39;appDefault&#39;</code> print-dialog default</td>
+</tr>
+<tr>
+<td><code>duplex</code></td>
+<td><code>&#39;simplex&#39;</code>, <code>&#39;duplexFlipShortEdge&#39;</code> or <code>&#39;duplexFlipLongEdge&#39;</code> print-dialog default (v1.7.0)</td>
+</tr>
+<tr>
+<td><code>pickTrayByPDFSize</code></td>
+<td>Select the paper tray from the PDF page size (v1.7.0)</td>
+</tr>
+<tr>
+<td><code>printPageRange</code></td>
+<td>Default print range as 1-based <code>[from, to]</code> pairs (v1.7.0)</td>
+</tr>
+<tr>
+<td><code>numCopies</code></td>
+<td>Default copy count in the print dialog (v1.7.0)</td>
+</tr>
+</tbody></table>
+<p>The four print-dialog defaults ship with v1.7.0&#39;s print-production support —
+see the <a href="print.html">print production guide</a> for bleed/trim boxes, printer&#39;s
+marks and <code>/Trapped</code>.</p>
+<h2 id="full-screen-kiosk">Full-screen kiosk<a class="heading-anchor" href="#full-screen-kiosk" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">const viewerPreferences: ViewerPreferences = {
+  pageMode: &#39;fullScreen&#39;,
+  nonFullScreenPageMode: &#39;useThumbs&#39;,
+  hideToolbar: true,
+  hideMenubar: true,
+  direction: &#39;r2l&#39;,
+  printScaling: &#39;none&#39;,
+};
+</code></pre>
+<h2 id="pdfa-note">PDF/A note<a class="heading-anchor" href="#pdfa-note" aria-label="Link to this section">#</a></h2>
+<p>Viewer preferences are metadata only — no transparency, no scripting — so they
+are safe to combine with any PDF/A conformance level. Sample generators:
+<a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/viewer-prefs-showcase.ts" target="_blank" rel="noopener">viewer-prefs-showcase.ts</a>.</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

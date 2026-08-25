@@ -1,8 +1,10 @@
 # Digital signatures in pdfnative
 
+> **CMS/PKCS#7 detached signatures in pure TypeScript** — RSA PKCS#1 v1.5 (SHA-256/384/512) and ECDSA P-256, the PAdES baseline profile and multiple signatures since v1.7.0, with a one-call `addSignaturePlaceholder()` workflow. For timestamps and B-T → B-LTA, see the [LTV guide](ltv.html).
+
 pdfnative ships a zero-dependency CMS/PKCS#7 detached signature
 implementation (ISO 32000-1 §12.8) with full crypto in pure TypeScript —
-RSA PKCS#1 v1.5 and ECDSA P-256, both with SHA-256, X.509 DER parsing,
+RSA PKCS#1 v1.5 (SHA-256, plus SHA-384/512 since v1.7.0) and ECDSA P-256 (SHA-256), X.509 DER parsing,
 and ASN.1 DER encoding. No OpenSSL, no node-forge, no external crypto.
 
 ## TL;DR — sign any PDF in 3 lines
@@ -108,7 +110,9 @@ verify a signed PDF end to end (byte-range digest, CMS signature value,
 chain, trust, timestamps, revocation), use
 [`pdfnative-cli verify`](cli.html#pdfnative-verify) or the
 [`verify_pdf` MCP tool](mcp.html) — the CMS verification logic lives
-there.
+there. Since pdfnative-mcp 1.6.0, `verify_pdf` also validates
+`/DocTimeStamp` fields as RFC 3161 tokens and reports the achieved
+PAdES level (B-B → B-LTA) with `ltv: true`.
 
 ## Why a separate placeholder step?
 
@@ -358,4 +362,4 @@ for the idempotency proof.
 - [PDF/A conformance →](pdfa.html) — how signatures interact with PDF/A-2b/3b.
 - [Architecture →](architecture.html) — where the crypto module sits in the dependency graph.
 - [CLI →](cli.html) — `pdfnative-cli sign` wraps this exact pipeline.
-- [MCP integration →](mcp.html) — `pdfnative-mcp` exposes signing as an AI tool.
+- [MCP integration →](mcp.html) — `pdfnative-mcp` exposes signing as an AI tool, and since v1.6.0 the complete PAdES ladder: `sign_pdf` (`profile: 'pades'`, RFC 3161 `timestamp`) → `add_ltv` (`/DSS` + `/VRI`, B-LT) → `timestamp_pdf` (`/DocTimeStamp`, B-LTA), verified with `verify_pdf ltv: true`.

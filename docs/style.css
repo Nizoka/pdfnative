@@ -88,6 +88,11 @@ a:hover { text-decoration: underline; }
 
 img, svg { max-width: 100%; height: auto; }
 
+/* The [hidden] attribute must always win: author display rules on the same
+   element (.btn { display: inline-flex }, .bench-live-grid { display: grid })
+   would otherwise beat the UA's `[hidden] { display: none }`. */
+[hidden] { display: none !important; }
+
 /* ── Navbar ────────────────────────────────────────────────── */
 .nav {
   position: sticky; top: 0; z-index: 100;
@@ -274,7 +279,9 @@ img, svg { max-width: 100%; height: auto; }
 
 /* ── Live Demo ─────────────────────────────────────────────── */
 .demo-container {
-  max-width: 780px; margin: 0 auto;
+  /* Wide enough for the editor + inline PDF preview split (≈552px/pane);
+     the split collapses to one column below 900px. */
+  max-width: 1120px; margin: 0 auto;
   display: grid; gap: 16px;
 }
 .demo-toolbar {
@@ -351,8 +358,8 @@ textarea:focus-visible,
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 13px; line-height: 1.5; tab-size: 2;
 }
-.demo-actions { display: flex; gap: 12px; align-items: center; }
-.demo-status { font-size: 13px; color: var(--c-text-muted); }
+.demo-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.demo-status { font-size: 13px; color: var(--c-text-muted); min-width: 0; flex: 1 1 100%; }
 .demo-error {
   background: #fef2f2; color: #991b1b;
   border: 1px solid #fecaca; border-radius: var(--radius-sm);
@@ -785,4 +792,89 @@ textarea:focus-visible,
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ── Live-demo split view (editor + inline PDF preview) ──────────── */
+
+.pn-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.pn-split-pane { min-width: 0; display: flex; flex-direction: column; }
+
+/* min-height lives on the frame only: when the iframe is hidden (no inline
+   PDF viewer, e.g. most mobile browsers) the pane must collapse to its note
+   instead of leaving a 420px empty box. */
+
+.pn-preview-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 420px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+
+.pn-preview-note {
+  font-size: 13px;
+  color: var(--c-text-dim);
+  margin: 8px 0 0;
+}
+
+@media (max-width: 900px) {
+  .pn-split { grid-template-columns: 1fr; }
+  .pn-preview-frame { min-height: 320px; }
+}
+
+.demo-mode { display: inline-flex; gap: 4px; margin-right: 10px; border: 1px solid var(--c-border); border-radius: 6px; padding: 2px; }
+.demo-mode-btn { padding: 4px 12px; font-size: 13px; border: none; background: transparent; border-radius: 4px; cursor: pointer; color: var(--c-text-dim); font-weight: 600; }
+.demo-mode-btn.active { background: var(--c-primary); color: var(--c-primary-fg); }
+
+.bench-live { margin-top: 18px; }
+.bench-live-grid { margin-top: 14px; display: grid; gap: 10px; }
+.bench-live-label { font-size: 13px; color: var(--c-text-dim); }
+.bench-live-value { font-size: 13px; font-weight: 600; color: var(--c-text); font-variant-numeric: tabular-nums; }
+.bench-live-bar { background: var(--c-success, #16a34a); }
+
+/* ── Comparison quiz ─────────────────────────────────────────────── */
+
+.cmp-quiz { margin: 0 auto 22px; max-width: 860px; padding: 16px 20px; border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-bg-card); }
+.cmp-quiz-label { font-size: 14px; color: var(--c-text-dim); margin: 0 0 12px; }
+.cmp-quiz-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 8px 18px; }
+.cmp-quiz-options label { font-size: 14px; color: var(--c-text); display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
+.cmp-quiz-verdict { margin: 14px 0 0; font-size: 14px; color: var(--c-text); border-left: 3px solid var(--c-primary); background: var(--c-surface); padding: 10px 14px; border-radius: 0 8px 8px 0; }
+.cmp-table tr.cmp-hot td { background: color-mix(in srgb, var(--c-primary) 10%, transparent); }
+
+/* Dark theme: --c-primary lightens to #3b82f6 while --c-primary-fg stays
+   white (3.7:1 at 13px — below AA). Use a darker active background there. */
+[data-theme="dark"] .demo-mode-btn.active { background: #1d4ed8; }
+
+/* ── Print ───────────────────────────────────────────────────────── */
+
+@media print {
+  .nav,
+  .nav-hamburger,
+  .theme-toggle,
+  .playground-switcher,
+  .guide-source-bar,
+  .demo-actions,
+  .demo-mode,
+  .pn-preview-pane,
+  .pn-version-strip,
+  .footer-links,
+  .skip-link,
+  .copy-btn,
+  .bench-live,
+  .cmp-quiz {
+    display: none !important;
+  }
+  .guide-content a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #475569;
+  }
+  body { background: #ffffff; color: #000000; }
 }

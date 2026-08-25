@@ -10,7 +10,7 @@ Run the full pdfnative quality gate and report results.
 
 1. `npm run typecheck:all` — verify zero TypeScript errors across src/, tests/, and scripts/
 2. `npm run lint` — verify zero ESLint warnings/errors
-3. `npm run test` — run all unit tests (2396+ expected)
+3. `npm run test` — run all unit tests (2686+ expected)
 4. `npm run test:coverage` — verify coverage thresholds (88% statements / 80% branches / 85% functions / 90% lines)
 5. `npm run build` — verify clean build (ESM + CJS + .d.ts)
 6. Verify `dist/` output contains: `index.js`, `index.cjs`, `index.d.ts`, `worker/index.js`, `tools/index.js`, `tools/build-emoji-font.js` (the last two are required by package.json `exports`/`bin`)

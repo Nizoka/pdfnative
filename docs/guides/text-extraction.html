@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/text-extraction.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/text-extraction.html">
   <link rel="alternate" type="text/markdown" href="text-extraction.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Text extraction","item":"https://pdfnative.dev/guides/text-extraction.html"}]},{"@type":"TechArticle","headline":"Text extraction","description":"Extract Unicode text from any PDF with pdfnative's extractText() — per-page reading-order text, positioned runs, ToUnicode/encoding decoding, transparent decryption of encrypted documents. Zero dependencies. New in v1.6.0.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/text-extraction.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,164 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Text extraction</p>
-  <article id="guide-content" class="guide-content" data-md="text-extraction.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="text-extraction.md">read text-extraction.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="text-extraction.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="text-extraction">Text extraction</h1>
+<blockquote>
+<p><strong>New in v1.6.0.</strong> Extract Unicode text from <strong>any PDF</strong> — including
+encrypted ones — with <code>extractText()</code>: per-page reading-order text plus
+optional positioned runs. Pure content-stream decoding, zero
+dependencies, no OCR engine, no rasterisation.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { extractText } from &#39;pdfnative&#39;;
+import { readFileSync } from &#39;node:fs&#39;;
+
+const bytes = readFileSync(&#39;report.pdf&#39;);
+
+for (const page of extractText(bytes)) {
+  console.log(`--- page ${page.pageIndex + 1} ---`);
+  console.log(page.text);
+}
+
+// Encrypted documents: pass the password (decryption is transparent).
+const secret = extractText(readFileSync(&#39;locked.pdf&#39;), { password: &#39;hunter2&#39; });
+
+// Positioned runs for layout-aware consumers (search hit boxes, RAG chunking).
+const [first] = extractText(bytes, { includeRuns: true, pages: [0] });
+for (const run of first.runs ?? []) {
+  console.log(run.text, `@ (${run.x.toFixed(1)}, ${run.y.toFixed(1)})`, run.fontSize);
+}
+</code></pre>
+<h2 id="extracttextbytes-options"><code>extractText(bytes, options?)</code><a class="heading-anchor" href="#extracttextbytes-options" aria-label="Link to this section">#</a></h2>
+<p>Returns one <code>ExtractedPageText</code> per requested page, in ascending page order:</p>
+<pre><code class="language-ts">interface ExtractTextOptions {
+  password?: string;        // for encrypted documents (delegated to openPdf)
+  pages?: number[];         // 0-based page indices; default: all pages
+  includeRuns?: boolean;    // also return positioned runs (default false)
+  maxTextLength?: number;   // hard cap on total characters (default 16 000 000)
+}
+
+interface ExtractedPageText {
+  pageIndex: number;        // 0-based index in the source document
+  text: string;             // reading-order text, &#39;\n&#39; between lines
+  runs?: ExtractedTextRun[];// content-stream order, when includeRuns is true
+}
+
+interface ExtractedTextRun {
+  text: string;             // decoded text of one show operation
+  x: number; y: number;     // device-space origin of the run (points)
+  fontSize: number;         // effective size (Tf size scaled by Tm × CTM)
+  fontName: string;         // font resource name, e.g. &#39;F1&#39;
+}
+</code></pre>
+<h2 id="how-text-is-decoded">How text is decoded<a class="heading-anchor" href="#how-text-is-decoded" aria-label="Link to this section">#</a></h2>
+<p>For every shown string, the extractor resolves each character code in
+this order:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Used for</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/ToUnicode</code> CMap</td>
+<td>any font that embeds one</td>
+<td><code>bfchar</code>, <code>bfrange</code> (both destination forms), surrogate pairs</td>
+</tr>
+<tr>
+<td><code>/Encoding /Differences</code></td>
+<td>simple fonts</td>
+<td>glyph names resolved through a compact AGL subset + <code>uniXXXX</code> / <code>uXXXX[XX]</code> patterns</td>
+</tr>
+<tr>
+<td>Base encoding</td>
+<td>simple fonts</td>
+<td><code>WinAnsiEncoding</code> (CP-1252) or <code>MacRomanEncoding</code> tables</td>
+</tr>
+<tr>
+<td>Fallback</td>
+<td>no <code>/Encoding</code> at all</td>
+<td>WinAnsi heuristic (covers pdfnative&#39;s own base-14 output and most western PDFs)</td>
+</tr>
+<tr>
+<td>No mapping anywhere</td>
+<td>—</td>
+<td>U+FFFD <code>�</code> per code</td>
+</tr>
+</tbody></table>
+<p>Type0 (CID) fonts are decoded as 2-byte codes (<code>Identity-H</code>/<code>Identity-V</code>),
+mapped through their <code>/ToUnicode</code> CMap — which pdfnative&#39;s own CIDFont
+output always embeds, so <strong>pdfnative-generated documents round-trip
+losslessly</strong>, including CJK, Arabic, and emoji.</p>
+<p>Since pdfnative <strong>1.7.0</strong> the <code>/ToUnicode</code> coverage is complete across both
+builders: base-14 font dictionaries are reached under tagged mode and the
+AcroForm <code>/Helv</code> dictionary carries a CMap in every mode — so base-14 text in
+tagged documents and <strong>text typed into form fields</strong> now extract cleanly too.</p>
+<h2 id="reading-order-and-runs">Reading order and runs<a class="heading-anchor" href="#reading-order-and-runs" aria-label="Link to this section">#</a></h2>
+<p><code>page.text</code> is assembled geometrically: runs are grouped into lines by
+baseline (tolerance scales with font size), lines are sorted top→bottom,
+runs within a line left→right, and a space is inserted where a visible
+horizontal gap separates two runs. Large negative <code>TJ</code> kerning
+adjustments (≤ −180/1000 em) are treated as word spaces.</p>
+<p><code>page.runs</code> (opt-in) preserves <strong>content-stream order</strong> — useful when you
+need the emitter&#39;s sequence rather than the geometric one. Positions are
+device-space points: <code>Tm × CTM</code> is tracked through <code>q</code>/<code>Q</code>/<code>cm</code>, so
+rotated and scaled content reports its true placement. Text inside Form
+XObjects is extracted too (<code>Do</code> recursion, depth-capped).</p>
+<h2 id="encrypted-documents">Encrypted documents<a class="heading-anchor" href="#encrypted-documents" aria-label="Link to this section">#</a></h2>
+<p><code>extractText</code> rides on <code>openPdf</code>: RC4, AES-128 and AES-256 documents
+decrypt transparently with <code>options.password</code>. A missing or wrong
+password throws <code>PdfPasswordError</code>; a document with an empty user
+password opens without one.</p>
+<h2 id="safety-bounds">Safety bounds<a class="heading-anchor" href="#safety-bounds" aria-label="Link to this section">#</a></h2>
+<p>Designed to be safe on untrusted input:</p>
+<ul>
+<li><code>maxTextLength</code> (default 16 M characters) hard-caps the total output —
+exceeding it throws rather than exhausting memory.</li>
+<li>Decompressed stream sizes are bounded by the parser&#39;s global inflate
+cap (<code>setMaxInflateOutputSize</code>).</li>
+<li>The interpreter is recursion-free with capped stacks (graphics state,
+operands, CMap entries, Form-XObject depth) and never throws on
+malformed content streams — unknown operators are skipped, unbalanced
+<code>BT</code>/<code>q</code> tolerated, inline images (<code>BI…EI</code>) byte-skipped.</li>
+</ul>
+<h2 id="limitations">Limitations<a class="heading-anchor" href="#limitations" aria-label="Link to this section">#</a></h2>
+<p>By design (documented, not bugs):</p>
+<ul>
+<li><strong>No OCR</strong> — image-only/scanned pages yield empty text.</li>
+<li>Type3 fonts are decoded via their encoding/<code>ToUnicode</code> only (glyph
+procedures are not interpreted).</li>
+<li>Non-Identity CMap <code>/Encoding</code>s (e.g. predefined UTF-16 CJK CMaps) are
+decoded best-effort as 2-byte codes through <code>/ToUnicode</code>.</li>
+<li>Vertical writing mode is treated as horizontal.</li>
+<li>The structure tree / <code>/ActualText</code> is not consulted — order is
+geometric, and ligature reversal is only as good as the embedded
+<code>/ToUnicode</code>. In practice this means <strong>shaped Indic scripts</strong>
+(Devanagari, Bengali, Tamil, Telugu, Sinhala, …) extract with U+FFFD
+for conjunct/ligature glyphs that have no single-codepoint mapping —
+the PDF <em>renders</em> correctly; only extraction of those clusters is
+lossy. Latin, CJK, Arabic and emoji round-trip cleanly.</li>
+</ul>
+<h2 id="samples">Samples<a class="heading-anchor" href="#samples" aria-label="Link to this section">#</a></h2>
+<p>Generated by <code>npm run test:generate</code>:</p>
+<ul>
+<li><code>parser/text-extract-source.pdf</code> — a rich source document.</li>
+<li><code>parser/text-extract-report.pdf</code> — its extraction rendered back to PDF
+(text + positioned-run table).</li>
+<li><code>parser/text-extract-encrypted-report.pdf</code> — AES-256 encrypted source,
+extracted with a password.</li>
+</ul>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="pdf-manipulation.html">PDF manipulation</a> — merge / split / extract pages.</li>
+<li><a href="form-filling.html">Form filling</a> — read and fill AcroForm fields.</li>
+<li><a href="debugging.html">Debugging &amp; layout inspection</a> — geometry the writer
+side reports.</li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

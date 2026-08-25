@@ -4,18 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pdfnative-cli — Command-Line Interface Guide</title>
-  <meta name="description" content="Official CLI for pdfnative — render JSON to PDF, sign with RSA or ECDSA-SHA256, inspect, and verify CMS/PKCS#7 signatures. Streaming, PDF/A, stdin/stdout.">
+  <meta name="description" content="Official CLI for pdfnative — 17 commands: render, fill, annotate, merge/split/extract, sign, verify (CMS + RFC 3161 timestamps + OCSP/CRL revocation), encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern. Streaming, PDF/A, stdin/stdout.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/guides/cli.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/cli.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/cli.html">
   <link rel="alternate" type="text/markdown" href="cli.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/cli.html">
   <meta property="og:title" content="pdfnative-cli — Command-Line Interface Guide">
-  <meta property="og:description" content="Official CLI for pdfnative — render JSON to PDF, sign with RSA or ECDSA-SHA256, inspect, and verify CMS/PKCS#7 signatures. Zero extra runtime dependencies, streaming, PDF/A, stdin/stdout pipelines.">
+  <meta property="og:description" content="Official CLI for pdfnative — 17 commands covering the full document lifecycle, incl. fill, encrypt/decrypt, extract-text and doctor (v1.3.0), with verify doing CMS + RFC 3161 + OCSP/CRL. Zero extra runtime dependencies, streaming, PDF/A, stdin/stdout pipelines.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -27,6 +28,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"pdfnative-cli — Command-Line Interface Guide","item":"https://pdfnative.dev/guides/cli.html"}]},{"@type":"TechArticle","headline":"pdfnative-cli — Command-Line Interface Guide","description":"Official CLI for pdfnative — 17 commands: render, fill, annotate, merge/split/extract, sign, verify (CMS + RFC 3161 timestamps + OCSP/CRL revocation), encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern. Streaming, PDF/A, stdin/stdout.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/cli.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,1977 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; CLI</p>
-  <article id="guide-content" class="guide-content" data-md="cli.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="cli.md">read cli.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="cli.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="pdfnative-cli--command-line-interface-guide">pdfnative-cli — Command-Line Interface Guide</h1>
+<blockquote>
+<p><strong>Tracks the latest published <code>pdfnative-cli</code></strong> (v1.3.0, built on the pdfnative 1.6 engine — pins <code>^1.6.0</code>, which semver-accepts 1.7.0). The CLI versions independently from the library. Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>. Full history: <a href="https://github.com/Nizoka/pdfnative-cli/releases" target="_blank" rel="noopener">pdfnative-cli releases</a>.</p>
+</blockquote>
+<p><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener"><code>pdfnative-cli</code></a> is the <strong>official command-line interface</strong> for the <a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><code>pdfnative</code></a> library. It exposes 17 commands in five groups — create &amp; edit (<code>render</code>, <code>fill</code>, <code>annotate</code>), page tree (<code>merge</code>, <code>split</code>, <code>extract</code>), security (<code>sign</code>, <code>verify</code>, <code>encrypt</code>, <code>decrypt</code>), read &amp; extract (<code>inspect</code>, <code>extract-text</code>), and automation &amp; meta (<code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code>) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.</p>
+<blockquote>
+<p><strong>Why a CLI?</strong> Many real-world workflows live outside Node.js: shell scripts, CI pipelines, Docker containers, Makefiles, batch jobs, build tools written in other languages. The CLI lets all of them call <code>pdfnative</code> without writing JavaScript, and is fully composable through stdin/stdout pipelines.</p>
+</blockquote>
+<p>The CLI is a <strong>pure dispatch layer</strong> over <code>pdfnative</code>. No PDF logic lives in the CLI itself — every command forwards to a public <code>pdfnative</code> API:</p>
+<table>
+<thead>
+<tr>
+<th>CLI command</th>
+<th><code>pdfnative</code> API</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>render</code></td>
+<td><code>buildDocumentPDFBytes()</code> / <code>buildDocumentPDFStream()</code> / <code>buildDocumentPDFStreamTrue()</code> / <code>buildPDFBytes()</code> (table variant = <code>buildPDFBytes</code>, the table-centric builder; document variant = <code>buildDocumentPDFBytes</code>, the free-form block builder)</td>
+</tr>
+<tr>
+<td><code>fill</code></td>
+<td><code>readFormFields()</code> / <code>fillForm()</code> / <code>flattenForm()</code></td>
+</tr>
+<tr>
+<td><code>encrypt</code> / <code>decrypt</code></td>
+<td><code>openPdf(bytes, { password })</code> + <code>MergeOptions.encrypt</code></td>
+</tr>
+<tr>
+<td><code>extract-text</code></td>
+<td><code>extractText()</code></td>
+</tr>
+<tr>
+<td><code>doctor</code></td>
+<td>— (environment probe, no library equivalent)</td>
+</tr>
+<tr>
+<td><code>sign</code></td>
+<td><code>signPdfBytes()</code> / <code>addSignaturePlaceholder()</code> — the native constant-time provider is implemented in the CLI (<code>createNativeCryptoProvider</code> is a CLI utility, not a pdfnative API) and passed per call as <code>options.provider</code> (pdfnative also exposes a global <code>setCryptoProvider()</code>, which the CLI does not use)</td>
+</tr>
+<tr>
+<td><code>inspect</code></td>
+<td><code>openPdf()</code> / <code>getInfo()</code> / <code>pageCount</code> / <code>getPageLabels()</code> / <code>getAnnotations()</code> / <code>validatePdfUA()</code></td>
+</tr>
+<tr>
+<td><code>verify</code></td>
+<td><code>openPdf()</code> + <code>verifyCertSignature()</code> (X.509 certificate-signature checks); the CMS/PKCS#7, RFC 3161 timestamp and OCSP/CRL revocation verification is implemented in the CLI itself</td>
+</tr>
+<tr>
+<td><code>merge</code></td>
+<td><code>mergePdfs()</code></td>
+</tr>
+<tr>
+<td><code>split</code></td>
+<td><code>splitPdf()</code></td>
+</tr>
+<tr>
+<td><code>extract</code></td>
+<td><code>extractPages()</code></td>
+</tr>
+<tr>
+<td><code>annotate</code></td>
+<td><code>PdfModifier.addAnnotation()</code> / <code>buildAnnotationBody()</code></td>
+</tr>
+<tr>
+<td><code>govern</code></td>
+<td>AI-governance contract (<code>.github/ai-governance.json</code>, <code>AGENT_RULES.md</code>) — draft gating uses the CLI&#39;s own <code>validateGovernanceDraft()</code> (the core repo&#39;s equivalent check is a repo script, not a published API)</td>
+</tr>
+<tr>
+<td><code>batch</code></td>
+<td>the <code>render</code> pipeline, applied in parallel across a directory</td>
+</tr>
+<tr>
+<td><code>schema</code></td>
+<td>versioned JSON Schemas (Draft 2020-12) for every input/output shape</td>
+</tr>
+</tbody></table>
+<p>This means <strong>every feature of the library is one release away from the CLI</strong>, and any bug fix in <code>pdfnative</code> is automatically picked up by <code>pdfnative-cli</code> on its next dependency bump.</p>
+<hr>
+<h2 id="installation">Installation<a class="heading-anchor" href="#installation" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-bash"># Run directly with npx — no global install required
+npx pdfnative-cli render --input document.json --output report.pdf
+
+# Or install globally
+npm install --global pdfnative-cli
+pdfnative render --input document.json --output report.pdf
+</code></pre>
+<p><strong>Requirements:</strong> Node.js ≥ 20 · Bun · Deno (<code>node dist/cli.cjs</code>).</p>
+<p>The CLI ships with <strong>NPM provenance</strong> — verify the published artifact with <code>npm audit signatures</code> or on <a href="https://www.npmjs.com/package/pdfnative-cli" target="_blank" rel="noopener">npmjs.com</a>.</p>
+<hr>
+<h2 id="when-to-use-the-cli-vs-the-library">When to use the CLI vs the library<a class="heading-anchor" href="#when-to-use-the-cli-vs-the-library" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Use the <strong>CLI</strong> when…</th>
+<th>Use the <strong>library</strong> when…</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>You write shell scripts, Makefiles, or Bash/PowerShell pipelines</td>
+<td>You build a Node.js / Bun / Deno service</td>
+</tr>
+<tr>
+<td>Your CI/CD job runs in Docker or GitHub Actions</td>
+<td>You need fine-grained streaming control or Web Worker offloading</td>
+</tr>
+<tr>
+<td>You want to compose with <code>cat</code>, <code>jq</code>, <code>tee</code>, <code>gzip</code>, etc.</td>
+<td>You target browsers, Web Workers, or Deno Deploy</td>
+</tr>
+<tr>
+<td>You sign, verify, or inspect PDFs ad-hoc from the terminal</td>
+<td>You bundle PDFs through a custom pipeline (custom font registry, hooks, etc.)</td>
+</tr>
+<tr>
+<td>You want a one-liner instead of a 30-line Node.js script</td>
+<td>You need 100 % programmatic control of the API surface</td>
+</tr>
+</tbody></table>
+<p>The two are <strong>complementary</strong>. A typical full-stack project uses the library at runtime and the CLI in CI scripts and operator workflows.</p>
+<hr>
+<h2 id="quick-start">Quick start<a class="heading-anchor" href="#quick-start" aria-label="Link to this section">#</a></h2>
+<h3 id="1-render-a-document">1. Render a document<a class="heading-anchor" href="#1-render-a-document" aria-label="Link to this section">#</a></h3>
+<p>Create <code>report.json</code>:</p>
+<pre><code class="language-json">{
+  &quot;title&quot;: &quot;April 2026 Report&quot;,
+  &quot;blocks&quot;: [
+    { &quot;type&quot;: &quot;heading&quot;, &quot;text&quot;: &quot;April 2026 Report&quot;, &quot;level&quot;: 1 },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Summary for the financial period ending 30 April 2026.&quot; },
+    { &quot;type&quot;: &quot;list&quot;, &quot;style&quot;: &quot;bullet&quot;, &quot;items&quot;: [
+      &quot;Revenue: +18% year-on-year&quot;,
+      &quot;Net Promoter Score: 72&quot;,
+      &quot;Active customers: 12,400&quot;
+    ]},
+    { &quot;type&quot;: &quot;table&quot;,
+      &quot;headers&quot;: [&quot;Quarter&quot;, &quot;Revenue&quot;, &quot;Profit&quot;],
+      &quot;rows&quot;: [
+        { &quot;cells&quot;: [&quot;Q1&quot;, &quot;$1.2M&quot;, &quot;$400K&quot;], &quot;type&quot;: &quot;credit&quot;, &quot;pointed&quot;: false },
+        { &quot;cells&quot;: [&quot;Q2&quot;, &quot;$1.5M&quot;, &quot;$600K&quot;], &quot;type&quot;: &quot;credit&quot;, &quot;pointed&quot;: true }
+      ]
+    }
+  ],
+  &quot;footerText&quot;: &quot;Confidential&quot;,
+  &quot;metadata&quot;: { &quot;author&quot;: &quot;Finance Team&quot;, &quot;subject&quot;: &quot;April 2026 Report&quot; }
+}
+</code></pre>
+<p>Render it:</p>
+<pre><code class="language-bash">pdfnative render --input report.json --output report.pdf
+</code></pre>
+<p>That&#39;s it — the file <code>report.pdf</code> is now a valid ISO 32000-1 PDF, ready to send.</p>
+<h3 id="2-sign-the-rendered-pdf-with-metadata">2. Sign the rendered PDF (with metadata)<a class="heading-anchor" href="#2-sign-the-rendered-pdf-with-metadata" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash"># Set keys via environment variables (recommended for CI/CD — never logged)
+export PDFNATIVE_SIGN_KEY=&quot;$(cat private.pem)&quot;
+export PDFNATIVE_SIGN_CERT=&quot;$(cat cert.pem)&quot;
+
+pdfnative sign \
+  --input report.pdf \
+  --output report.signed.pdf \
+  --reason &quot;Approved by Finance&quot; \
+  --name &quot;Finance Team&quot; \
+  --location &quot;Paris, FR&quot; \
+  --signing-time 2026-04-28T10:00:00Z
+</code></pre>
+<p>The CLI accepts both <strong>RSA PKCS#1 v1.5</strong> and <strong>ECDSA P-256</strong> keys, both with SHA-256 digests. The signed PDF carries a CMS/PKCS#7 signature embedded as ISO 32000-1 §12.8 prescribes, validatable by Adobe Acrobat, MuPDF, and any other PAdES-compatible reader.</p>
+<h3 id="3-verify-embedded-signatures">3. Verify embedded signatures<a class="heading-anchor" href="#3-verify-embedded-signatures" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">pdfnative verify --input report.signed.pdf --strict --trust ca-root.pem
+</code></pre>
+<p>v0.3.0 performs <strong>real CMS/PKCS#7 verification</strong> — the CLI recomputes the byte-range digest, validates the signature value (RSA-SHA256 or ECDSA-SHA256), walks the certificate chain via <code>pdfnative</code>&#39;s <code>verifyCertSignature</code>, evaluates trust against <code>--trust</code> roots and self-signed acceptance, and reports the presence of an RFC 3161 timestamp token. Exit code is 0 on success, 1 on any failure under <code>--strict</code>.</p>
+<p>A sample JSON report:</p>
+<pre><code class="language-json">{
+  &quot;signatures&quot;: [
+    {
+      &quot;integrity&quot;: true,
+      &quot;signatureValid&quot;: true,
+      &quot;signatureAlgorithm&quot;: &quot;ecdsa-sha256&quot;,
+      &quot;chainValid&quot;: true,
+      &quot;trustedRoot&quot;: true,
+      &quot;timestampPresent&quot;: false,
+      &quot;signerSubject&quot;: &quot;CN=pdfnative-cli ECDSA Test, O=pdfnative-cli, C=FR&quot;,
+      &quot;signerIssuer&quot;: &quot;CN=pdfnative-cli ECDSA Test, O=pdfnative-cli, C=FR&quot;,
+      &quot;notes&quot;: [&quot;no --trust provided; accepted self-signed root&quot;]
+    }
+  ]
+}
+</code></pre>
+<!-- legacy anchor preserved for incoming external links -->
+<p><a id="pdfnative-verify-new-in-v020"></a></p>
+<h3 id="4-inspect-any-pdf">4. Inspect any PDF<a class="heading-anchor" href="#4-inspect-any-pdf" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">pdfnative inspect --input report.signed.pdf --format text
+</code></pre>
+<pre><code>Version:        1.7
+Pages:          2
+Encrypted:      no
+PDF/A:          none
+Signatures:     1
+Title:          April 2026 Report
+Author:         Finance Team
+Created:        2026-04-28T10:00:00+00:00
+Subject:        April 2026 Report
+Producer:       —
+</code></pre>
+<p>JSON output (default) is suited for piping into <code>jq</code> or storing as a CI artifact.</p>
+<hr>
+<h2 id="hybrid-layout-model">Hybrid layout model<a class="heading-anchor" href="#hybrid-layout-model" aria-label="Link to this section">#</a></h2>
+<p><code>render</code> adopts the same layout philosophy as <code>gh</code>, <code>kubectl</code>, and <code>docker</code>: high-frequency knobs are first-class flags, while the full <code>PdfLayoutOptions</code> shape is reachable via a JSON layout file.</p>
+<p><strong>Precedence:</strong> <code>CLI flags &gt; --layout file &gt; pdfnative defaults</code>.</p>
+<pre><code class="language-bash"># 1) Flags only — best for ad-hoc invocations
+pdfnative render --input doc.json --output report.pdf \
+  --page-size A4 --margin 50 --compress --tagged pdfa2b
+
+# 2) Layout file only — best for reproducible CI configs
+pdfnative render --input doc.json --output report.pdf \
+  --layout layout.json
+
+# 3) Hybrid — base config in a file, per-job overrides on the CLI
+pdfnative render --input doc.json --output report.pdf \
+  --layout layout.json \
+  --watermark-text &quot;DRAFT $(date +%Y-%m-%d)&quot;
+</code></pre>
+<p><code>layout.json</code> accepts any subset of <code>PdfLayoutOptions</code>:</p>
+<pre><code class="language-json">{
+  &quot;pageSize&quot;: { &quot;width&quot;: 595, &quot;height&quot;: 842 },
+  &quot;margin&quot;: { &quot;top&quot;: 60, &quot;right&quot;: 50, &quot;bottom&quot;: 60, &quot;left&quot;: 50 },
+  &quot;compress&quot;: true,
+  &quot;tagged&quot;: &quot;pdfa2b&quot;,
+  &quot;headerTemplate&quot;: { &quot;left&quot;: &quot;{title}&quot;, &quot;right&quot;: &quot;{date}&quot; },
+  &quot;footerTemplate&quot;: { &quot;center&quot;: &quot;Page {page} / {pages}&quot; }
+}
+</code></pre>
+<blockquote>
+<p><strong>Security:</strong> <code>--layout</code> paths are validated against directory traversal, and any <code>attachments[].data</code> field embedded in the JSON is <strong>stripped on load</strong>. Binary attachment payloads must come from <code>--attachment &lt;path&gt;</code> so the CLI can apply the same path-validation rules.</p>
+</blockquote>
+<hr>
+<h2 id="command-reference">Command reference<a class="heading-anchor" href="#command-reference" aria-label="Link to this section">#</a></h2>
+<h3 id="pdfnative-render"><code>pdfnative render</code><a class="heading-anchor" href="#pdfnative-render" aria-label="Link to this section">#</a></h3>
+<p>Renders a JSON document into a PDF. Supports both renderer variants exposed by <code>pdfnative</code>.</p>
+<h4 id="core-flags">Core flags<a class="heading-anchor" href="#core-flags" aria-label="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--input &lt;file&gt;</code></td>
+<td>stdin</td>
+<td>JSON file (<a href="https://pdfnative.dev/#api" target="_blank" rel="noopener"><code>DocumentParams</code></a> for <code>--variant document</code>, <code>PdfParams</code> for <code>--variant table</code>)</td>
+</tr>
+<tr>
+<td><code>--output &lt;file&gt;</code></td>
+<td>stdout</td>
+<td>Output PDF path</td>
+</tr>
+<tr>
+<td><code>--variant document|table</code></td>
+<td><code>document</code></td>
+<td>Selects <code>buildDocumentPDFBytes</code> (free-form) or <code>buildPDFBytes</code> (table-centric)</td>
+</tr>
+<tr>
+<td><code>--stream</code></td>
+<td>off</td>
+<td>Streaming output via <code>buildDocumentPDFStream</code> (<code>AsyncGenerator&lt;Uint8Array&gt;</code>) — recommended for &gt;100-page documents</td>
+</tr>
+<tr>
+<td><code>--stream-page-by-page</code></td>
+<td>off</td>
+<td>Streaming chunked at PDF object boundaries. Assembles the full document first, so TOC blocks and <code>{pages}</code> <strong>are</strong> supported. Mutually exclusive with <code>--stream</code></td>
+</tr>
+<tr>
+<td><code>--stream-true</code> <em>(v1.1.0)</em></td>
+<td>off</td>
+<td>Streaming via <code>buildDocumentPDFStreamTrue</code> / <code>buildPDFStreamTrue</code> — PDF parts are emitted and freed as they go, so the joined binary never materialises. Byte-identical to the buffered builders. Same constraints as <code>--stream</code> (no TOC, no <code>{pages}</code>); mutually exclusive with the other <code>--stream*</code> flags</td>
+</tr>
+<tr>
+<td><code>--max-blocks &lt;n&gt;</code> <em>(v1.1.0)</em></td>
+<td><code>100000</code></td>
+<td>Exposes <code>layout.maxBlocks</code> so very large multi-thousand-page reports no longer hit a spurious ceiling</td>
+</tr>
+<tr>
+<td><code>--layout &lt;file.json&gt;</code></td>
+<td>—</td>
+<td>Load any subset of <code>PdfLayoutOptions</code></td>
+</tr>
+</tbody></table>
+<h4 id="smart-tables-v130-document-variant">Smart tables <em>(v1.3.0, document variant)</em><a class="heading-anchor" href="#smart-tables-v130-document-variant" aria-label="Link to this section">#</a></h4>
+<p>These flags fill <code>TableBlock</code> fields left unset in the JSON (caption is per-table — set it in the JSON <code>TableBlock</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--table-wrap &lt;mode&gt;</code></td>
+<td><code>auto</code> (default), <code>always</code>, or <code>never</code></td>
+</tr>
+<tr>
+<td><code>--repeat-header [true|false]</code></td>
+<td>Repeat the header row on continuation pages</td>
+</tr>
+<tr>
+<td><code>--zebra [true|false|&quot;R G B&quot;]</code></td>
+<td>Alternate-row striping</td>
+</tr>
+<tr>
+<td><code>--min-row-height &lt;pt&gt;</code></td>
+<td>Minimum row height in points</td>
+</tr>
+<tr>
+<td><code>--cell-padding &lt;pt&gt;</code></td>
+<td>Horizontal cell padding in points</td>
+</tr>
+</tbody></table>
+<h4 id="page-geometry">Page geometry<a class="heading-anchor" href="#page-geometry" aria-label="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--page-size &lt;name|WxH&gt;</code></td>
+<td><code>a4</code></td>
+<td>Named (<code>a4</code>, <code>letter</code>, <code>legal</code>, <code>a3</code>, <code>tabloid</code>, <code>a5</code>) or <code>WxH</code> in points</td>
+</tr>
+<tr>
+<td><code>--margin &lt;N&gt;</code> or <code>&lt;t,r,b,l&gt;</code></td>
+<td><code>50</code></td>
+<td>Uniform or per-side margin in points</td>
+</tr>
+<tr>
+<td><code>--compress</code></td>
+<td>off</td>
+<td>Apply <code>/Filter /FlateDecode</code> to all content streams</td>
+</tr>
+</tbody></table>
+<h4 id="pdfa-conformance">PDF/A conformance<a class="heading-anchor" href="#pdfa-conformance" aria-label="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--tagged &lt;level&gt;</code></td>
+<td><code>none</code></td>
+<td>Unified PDF/A flag: <code>none</code>, <code>pdfa1b</code>, <code>pdfa2b</code>, <code>pdfa2u</code>, <code>pdfa3b</code></td>
+</tr>
+<tr>
+<td><code>--conformance &lt;level&gt;</code></td>
+<td>—</td>
+<td><strong>Deprecated.</strong> Maps to <code>--tagged pdfa&lt;level&gt;</code> with a one-line stderr notice. Removed in v1.0.0</td>
+</tr>
+</tbody></table>
+<h4 id="watermarks">Watermarks<a class="heading-anchor" href="#watermarks" aria-label="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--watermark-text &lt;str&gt;</code></td>
+<td>Diagonal text watermark</td>
+</tr>
+<tr>
+<td><code>--watermark-image &lt;path&gt;</code></td>
+<td>Image watermark (PNG/JPEG, centered, aspect-preserved)</td>
+</tr>
+<tr>
+<td><code>--watermark-opacity &lt;0..1&gt;</code></td>
+<td>ExtGState <code>/ca</code> value</td>
+</tr>
+<tr>
+<td><code>--watermark-angle &lt;deg&gt;</code></td>
+<td>Rotation angle</td>
+</tr>
+<tr>
+<td><code>--watermark-color &lt;hex|R,G,B&gt;</code></td>
+<td>Fill color (text only)</td>
+</tr>
+<tr>
+<td><code>--watermark-font-size &lt;pt&gt;</code></td>
+<td>Font size (text only)</td>
+</tr>
+<tr>
+<td><code>--watermark-position background|foreground</code></td>
+<td>Drawing order vs. content</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Watermarks with transparency are <strong>mutually exclusive</strong> with PDF/A-1b (ISO 19005-1 §6.4). The pdfnative core enforces this at render time — the run fails with the generic exit code 1 (<code>Watermark transparency is not allowed with PDF/A-1b</code>), not a CLI usage error.</p>
+</blockquote>
+<h4 id="headers--footers">Headers / footers<a class="heading-anchor" href="#headers--footers" aria-label="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--header-left &lt;str&gt;</code> / <code>--header-center</code> / <code>--header-right</code></td>
+<td>Page-template zones</td>
+</tr>
+<tr>
+<td><code>--footer-left &lt;str&gt;</code> / <code>--footer-center</code> / <code>--footer-right</code></td>
+<td>Page-template zones</td>
+</tr>
+</tbody></table>
+<p>Supported placeholders: <code>{page}</code>, <code>{pages}</code>, <code>{date}</code>, <code>{title}</code>. The <code>{pages}</code> placeholder is rejected with <code>--stream</code> because the total page count is only known after multi-pass pagination.</p>
+<h4 id="encryption">Encryption<a class="heading-anchor" href="#encryption" aria-label="Link to this section">#</a></h4>
+<p>Since v1.3.0, <code>render</code> speaks the same <strong>unified encryption vocabulary</strong> as <code>merge</code> / <code>split</code> / <code>extract</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Env var</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--encrypt [aes-128|aes-256]</code></td>
+<td>—</td>
+<td>Enable encryption (bare <code>--encrypt</code> = <code>aes-128</code>)</td>
+</tr>
+<tr>
+<td><code>--owner-password &lt;pass&gt;</code></td>
+<td><code>PDFNATIVE_ENCRYPT_OWNER_PASS</code></td>
+<td><strong>Required</strong> whenever encryption is requested</td>
+</tr>
+<tr>
+<td><code>--user-password &lt;pass&gt;</code></td>
+<td><code>PDFNATIVE_ENCRYPT_USER_PASS</code></td>
+<td>Optional password needed to open the document</td>
+</tr>
+<tr>
+<td><code>--permissions &lt;list&gt;</code></td>
+<td>—</td>
+<td>Comma list: <code>print</code>, <code>copy</code>, <code>modify</code>, <code>extract</code></td>
+</tr>
+</tbody></table>
+<p>The legacy v0.2.0 flags — <code>--encrypt-algorithm</code>, <code>--encrypt-owner-pass</code>, <code>--encrypt-user-pass</code>, <code>--encrypt-permissions</code> — remain accepted as aliases; when both are given, the unified value wins.</p>
+<p>Env vars take precedence over flags, ensuring secrets never appear in shell history. Encryption is <strong>mutually exclusive</strong> with <code>--tagged pdfa*</code> per ISO 19005-1 §6.3.2 — rejected with exit 2.</p>
+<h4 id="pdfa-3-attachments">PDF/A-3 attachments<a class="heading-anchor" href="#pdfa-3-attachments" aria-label="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--attachment &lt;path&gt;[:mime[:rel[:desc]]]</code></td>
+<td>Embed a file as <code>/EmbeddedFile</code>. Repeatable</td>
+</tr>
+</tbody></table>
+<p>The Windows drive-letter colon (<code>D:\path</code>) is detected and not split — see <em>Troubleshooting</em>.</p>
+<h4 id="multilingual-fonts">Multilingual fonts<a class="heading-anchor" href="#multilingual-fonts" aria-label="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--lang &lt;code,code&gt;</code></td>
+<td>Activate font loaders for the listed languages (e.g. <code>th,ja,ar,te,si,km</code>)</td>
+</tr>
+<tr>
+<td><code>--font &lt;name&gt;</code> <em>(v1.1.0)</em></td>
+<td>Register a bundled pdfnative font shortcut. Repeatable. Allow-list covers every bundled font: <code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, <code>math</code> <em>(v1.2.0)</em>, and the 22 script codes (<code>ar hy bn ru hi am ka el he ja km ko my pl zh si ta te th bo tr vi</code>). Each shortcut name doubles as its <code>--lang</code> code</td>
+</tr>
+</tbody></table>
+<p><code>--lang</code> activates a <em>programmatically registered</em> font loader via <code>loadFontData(code)</code>. Latin scripts are built-in. With v1.1.0, every bundled font is registrable directly through <code>--font</code> — no wrapper script needed for the 22 bundled scripts, colour emoji, or Latin. pdfnative routes each code point to the font whose cmap covers it. See <em>Recipes → Multilang fonts</em> only for fonts you ship yourself (those require calling the library directly).</p>
+<h4 id="bookmarks-math--layout-tooling-v120">Bookmarks, math &amp; layout tooling <em>(v1.2.0)</em><a class="heading-anchor" href="#bookmarks-math--layout-tooling-v120" aria-label="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--outline auto|&lt;tree.json&gt;</code></td>
+<td>Add a navigable PDF bookmark tree (<code>/Outlines</code>). <code>auto</code> derives it from the document&#39;s headings; a file supplies an explicit <code>OutlineItem[]</code> tree</td>
+</tr>
+<tr>
+<td><code>--font math</code></td>
+<td>Register the bundled <strong>Noto Sans Math</strong> font; pdfnative auto-routes math-operator and geometric-shape code points to it</td>
+</tr>
+<tr>
+<td><code>--inspect-layout</code></td>
+<td>Emit a <code>LayoutInspection</code> JSON report (per-page blocks, positions, sizes) instead of a PDF (document variant only)</td>
+</tr>
+<tr>
+<td><code>--debug-layout [margins,content,cells]</code></td>
+<td>Render a normal PDF with the opt-in layout-debug guides overlaid</td>
+</tr>
+</tbody></table>
+<pre><code class="language-bash"># Bookmarks derived from headings + math font
+pdfnative render --input paper.json --output paper.pdf --outline auto --font math
+
+# Layout introspection instead of a PDF
+pdfnative render --input report.json --inspect-layout &gt; layout.json
+</code></pre>
+<h4 id="iteration-helpers-v030">Iteration helpers <em>(v0.3.0)</em><a class="heading-anchor" href="#iteration-helpers-v030" aria-label="Link to this section">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--watch</code></td>
+<td>Re-render on input file change. 200 ms debounce, stderr-only logs. Requires <code>--input &lt;file&gt;</code> and a file <code>--output</code> (stdin / stdout pipelines are not supported — watch needs a stable on-disk source)</td>
+</tr>
+<tr>
+<td><code>--template &lt;file.json&gt;</code></td>
+<td>Deep-merge a base template under stdin / <code>--input</code>. Plain objects merge recursively; arrays and primitives are replaced (caller wins). Useful for centralising title / layout / headers in CI</td>
+</tr>
+</tbody></table>
+<pre><code class="language-bash"># Watch a file
+pdfnative render --input report.json --output report.pdf --watch
+
+# Template + override (template carries title/layout/headers, stdin overrides body)
+echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;text&quot;:&quot;Today only.&quot;}]}&#39; \
+  | pdfnative render --template template.json -o today.pdf
+
+# Bundled fonts via flag (no wrapper)
+echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;text&quot;:&quot;Hi \ud83d\ude80&quot;}]}&#39; \
+  | pdfnative render --font latin --font emoji --lang latin,emoji -o out.pdf
+</code></pre>
+<h3 id="pdfnative-sign"><code>pdfnative sign</code><a class="heading-anchor" href="#pdfnative-sign" aria-label="Link to this section">#</a></h3>
+<p>Applies a CMS/PKCS#7 digital signature to an existing PDF.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--input &lt;file&gt;</code></td>
+<td>stdin</td>
+<td>Input PDF</td>
+</tr>
+<tr>
+<td><code>--output &lt;file&gt;</code></td>
+<td>stdout</td>
+<td>Output signed PDF</td>
+</tr>
+<tr>
+<td><code>--key &lt;file&gt;</code></td>
+<td><code>PDFNATIVE_SIGN_KEY</code> env</td>
+<td>PEM-encoded private key (env var takes precedence)</td>
+</tr>
+<tr>
+<td><code>--cert &lt;file&gt;</code></td>
+<td><code>PDFNATIVE_SIGN_CERT</code> env</td>
+<td>PEM-encoded X.509 certificate (env var takes precedence)</td>
+</tr>
+<tr>
+<td><code>--cert-chain &lt;file&gt;</code></td>
+<td><code>PDFNATIVE_SIGN_CHAIN</code> env</td>
+<td>Intermediate-CA PEM (repeatable, concatenated into <code>certChain[]</code>)</td>
+</tr>
+<tr>
+<td><code>--algorithm &lt;algo&gt;</code></td>
+<td><code>rsa-sha256</code></td>
+<td><code>rsa-sha256</code> or <code>ecdsa-sha256</code> (both fully wired in v0.3.0; SEC1 / PKCS#8 P-256 keys accepted)</td>
+</tr>
+<tr>
+<td><code>--reason &lt;str&gt;</code></td>
+<td>—</td>
+<td><code>PdfSignOptions.reason</code></td>
+</tr>
+<tr>
+<td><code>--name &lt;str&gt;</code></td>
+<td>—</td>
+<td><code>PdfSignOptions.name</code></td>
+</tr>
+<tr>
+<td><code>--location &lt;str&gt;</code></td>
+<td>—</td>
+<td><code>PdfSignOptions.location</code></td>
+</tr>
+<tr>
+<td><code>--contact &lt;str&gt;</code></td>
+<td>—</td>
+<td><code>PdfSignOptions.contact</code></td>
+</tr>
+<tr>
+<td><code>--signing-time &lt;ISO 8601&gt;</code></td>
+<td>now</td>
+<td>Explicit timestamp; validated up-front before any credential I/O</td>
+</tr>
+<tr>
+<td><code>--pure-crypto</code> <em>(v1.2.0)</em></td>
+<td>off</td>
+<td>Force pdfnative&#39;s portable <strong>pure-JS</strong> bignum CMS path instead of the default native provider</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Native constant-time signing (v1.2.0).</strong> <code>sign</code> now routes CMS signing through Node&#39;s <code>node:crypto</code> by default (via <code>createNativeCryptoProvider</code>), for side-channel-resistant RSA/ECDSA. Pass <strong><code>--pure-crypto</code></strong> to select the portable pure-JS path (e.g. on a runtime without <code>node:crypto</code>).</p>
+</blockquote>
+<p>Signing keys are <strong>never logged</strong> — not in error output, not in debug traces, not in stack traces. The CLI redacts them at every code path that surfaces error context.</p>
+<h3 id="pdfnative-inspect"><code>pdfnative inspect</code><a class="heading-anchor" href="#pdfnative-inspect" aria-label="Link to this section">#</a></h3>
+<p>Inspects metadata and conformance of an existing PDF. Read-only — never modifies the input.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--input &lt;file&gt;</code></td>
+<td>stdin</td>
+<td>Input PDF</td>
+</tr>
+<tr>
+<td><code>--format &lt;fmt&gt;</code></td>
+<td><code>json</code></td>
+<td><code>json</code> or <code>text</code></td>
+</tr>
+<tr>
+<td><code>--verbose</code></td>
+<td>off</td>
+<td>Adds <code>verbose.{trailerKeys, catalogKeys, objectCount, xmpMetadata}</code>. Sanitised — no raw stream bytes</td>
+</tr>
+<tr>
+<td><code>--pages</code></td>
+<td>off</td>
+<td>Adds <code>pages: [{ index, width, height, rotation, annotations, formFields }]</code></td>
+</tr>
+<tr>
+<td><code>--pdfua</code> <em>(v1.1.0)</em></td>
+<td>off</td>
+<td>Adds a <code>pdfua: { valid, errors, warnings }</code> report from <code>validatePdfUA()</code> (ISO 14289-1 structural checks: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness)</td>
+</tr>
+<tr>
+<td><code>--annotations</code> <em>(v1.2.0)</em></td>
+<td>off</td>
+<td>Lists markup + link annotations per page (from <code>getAnnotations()</code>). <code>/PageLabels</code> are reported automatically when present</td>
+</tr>
+<tr>
+<td><code>--form-fields</code> <em>(v1.3.0)</em></td>
+<td>off</td>
+<td>Lists AcroForm fields (name, type, value, required/read-only)</td>
+</tr>
+<tr>
+<td><code>--encryption</code> <em>(v1.3.0)</em></td>
+<td>off</td>
+<td>Reports the encryption scheme (algorithm, revision, opened-as)</td>
+</tr>
+<tr>
+<td><code>--password &lt;pass&gt;</code> <em>(v1.3.0)</em></td>
+<td>—</td>
+<td>Password for an encrypted PDF (env <code>PDFNATIVE_PASSWORD</code>)</td>
+</tr>
+<tr>
+<td><code>--check &lt;assertion&gt;</code></td>
+<td>—</td>
+<td>Repeatable; ANDed. Values: <code>pdfa</code>, <code>signed</code>, <code>encrypted</code>, <code>pdfua</code> <em>(v1.1.0)</em>. Sets exit 0 = pass, 1 = fail</td>
+</tr>
+<tr>
+<td><code>--summary</code> <em>(v1.1.0)</em></td>
+<td>off</td>
+<td>Under <code>--json</code>, emit a canonical minimal verdict (<code>{ pages, encrypted, signatures, pdfa }</code>)</td>
+</tr>
+<tr>
+<td><code>--fields &lt;a,b.c&gt;</code> <em>(v1.1.0)</em></td>
+<td>—</td>
+<td>Project the JSON result to named dot-paths (array segments map over elements; unknown paths omitted)</td>
+</tr>
+<tr>
+<td><code>--pretty</code></td>
+<td>off</td>
+<td>Force indented JSON even under the global <code>--json</code> (agent mode is compact)</td>
+</tr>
+</tbody></table>
+<p>Composable example:</p>
+<pre><code class="language-bash">pdfnative inspect --input dist/q1.pdf \
+  --check pdfa --check signed \
+  --format json &gt; dist/q1.report.json
+echo &quot;exit code: $?&quot;   # 0 if both assertions hold
+</code></pre>
+<h3 id="pdfnative-verify"><code>pdfnative verify</code><a class="heading-anchor" href="#pdfnative-verify" aria-label="Link to this section">#</a></h3>
+<p>Verifies CMS/PKCS#7 signatures embedded in a PDF.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--input &lt;file&gt;</code></td>
+<td>stdin</td>
+<td>Input PDF</td>
+</tr>
+<tr>
+<td><code>--format &lt;fmt&gt;</code></td>
+<td><code>json</code></td>
+<td><code>json</code> or <code>text</code></td>
+</tr>
+<tr>
+<td><code>--strict</code></td>
+<td>off</td>
+<td>Exit 1 on any failure or zero signatures</td>
+</tr>
+<tr>
+<td><code>--trust &lt;pem&gt;</code></td>
+<td>—</td>
+<td>Trust-anchor certificate (repeatable)</td>
+</tr>
+<tr>
+<td><code>--revocation &lt;mode&gt;</code></td>
+<td><code>offline</code></td>
+<td><code>offline</code> (embedded <code>/DSS</code> only), <code>online</code> (opt-in, SSRF-guarded OCSP/CRL fetch), or <code>disabled</code></td>
+</tr>
+<tr>
+<td><code>--revocation-policy &lt;p&gt;</code></td>
+<td><code>soft-fail</code></td>
+<td><code>soft-fail</code> or <code>strict</code></td>
+</tr>
+<tr>
+<td><code>--summary</code> <em>(v1.1.0)</em></td>
+<td>off</td>
+<td>Under <code>--json</code>, emit a minimal verdict (<code>{ valid, signatures, invalid }</code>)</td>
+</tr>
+<tr>
+<td><code>--fields &lt;a,b.c&gt;</code> <em>(v1.1.0)</em></td>
+<td>—</td>
+<td>Project the JSON result to named dot-paths</td>
+</tr>
+</tbody></table>
+<p><strong>Scope (since v1.0.0):</strong></p>
+<ul>
+<li>✅ Byte-range integrity (SHA-256 recomputed and compared with CMS <code>messageDigest</code> attribute)</li>
+<li>✅ Signature value verification — RSA-SHA256 and ECDSA-SHA256</li>
+<li>✅ Certificate chain verification via <code>pdfnative</code>&#39;s <code>verifyCertSignature</code></li>
+<li>✅ Trust evaluation against <code>--trust</code> roots, with self-signed acceptance for testing</li>
+<li>✅ <strong>RFC 3161 timestamp validation (PAdES-T)</strong> — TSA signature, <code>messageImprint</code> binding, chain, <code>genTime</code></li>
+<li>✅ <strong>OCSP (RFC 6960) + CRL (RFC 5280) revocation</strong> — embedded <code>/DSS</code> offline by default, opt-in SSRF-guarded online via AIA / CDP</li>
+</ul>
+<p><strong>Out of scope (upstream-blocked in pdfnative):</strong></p>
+<ul>
+<li>⚠️ Sign-side LTV (timestamp embedding / DSS) — <code>sign --timestamp</code> reserved</li>
+</ul>
+<h3 id="pdfnative-merge-v120"><code>pdfnative merge</code> <em>(v1.2.0)</em><a class="heading-anchor" href="#pdfnative-merge-v120" aria-label="Link to this section">#</a></h3>
+<p>Concatenates <strong>2–50</strong> PDFs into one document, in order, via <code>mergePdfs</code>.</p>
+<pre><code class="language-bash">pdfnative merge a.pdf b.pdf c.pdf --output combined.pdf
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&lt;paths…&gt;</code> / <code>--input &lt;file&gt;</code></td>
+<td>— <em>(required)</em></td>
+<td>Source PDFs — positional paths and/or repeatable <code>--input</code>. 2–50 total</td>
+</tr>
+<tr>
+<td><code>--output &lt;file&gt;</code></td>
+<td>stdout</td>
+<td>Output PDF</td>
+</tr>
+<tr>
+<td><code>--drop-annotations</code></td>
+<td>off</td>
+<td>Drop non-link annotations from the sources</td>
+</tr>
+<tr>
+<td><code>--max-output-size &lt;bytes&gt;</code></td>
+<td>256 MiB</td>
+<td>Reject an output larger than this ceiling</td>
+</tr>
+<tr>
+<td><code>--password &lt;pass&gt;</code> <em>(v1.3.0)</em></td>
+<td>—</td>
+<td>Password for encrypted sources (env <code>PDFNATIVE_PASSWORD</code>). One password is applied to every source; mixed passwords fail with <code>E_PASSWORD</code></td>
+</tr>
+<tr>
+<td><code>--encrypt [aes-128|aes-256]</code> <em>(v1.3.0)</em></td>
+<td>—</td>
+<td>Re-encrypt the output (bare = <code>aes-128</code>); needs <code>--owner-password</code></td>
+</tr>
+<tr>
+<td><code>--owner-password</code> / <code>--user-password</code> <em>(v1.3.0)</em></td>
+<td>—</td>
+<td>Passwords for <code>--encrypt</code> (env <code>PDFNATIVE_ENCRYPT_OWNER_PASS</code> / <code>_USER_PASS</code>)</td>
+</tr>
+<tr>
+<td><code>--permissions &lt;list&gt;</code> <em>(v1.3.0)</em></td>
+<td><code>print,extract</code></td>
+<td>Comma list: <code>print</code>, <code>copy</code>, <code>modify</code>, <code>extract</code> — without the flag, print and extract are allowed, copy and modify denied</td>
+</tr>
+<tr>
+<td><code>--stream</code> <em>(v1.3.0)</em></td>
+<td>off</td>
+<td>Constant-memory streaming output (<code>--chunk-size N</code>)</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>off</td>
+<td>Validate inputs without writing output</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Encrypted sources are <strong>supported since v1.3.0</strong> via <code>--password</code> (a single password applied to every source), and the output can be re-encrypted via <code>--encrypt</code>. Signatures and <code>/AcroForm</code> are dropped (page edits invalidate <code>/ByteRange</code>); self-contained URI <code>/Link</code> annotations are preserved. Every path — positionals included — is validated against traversal.</p>
+</blockquote>
+<h3 id="pdfnative-split-v120"><code>pdfnative split</code> <em>(v1.2.0)</em><a class="heading-anchor" href="#pdfnative-split-v120" aria-label="Link to this section">#</a></h3>
+<p>Splits one PDF into many via <code>splitPdf</code> — one output per page (default) or one per comma-separated range.</p>
+<pre><code class="language-bash"># One output per page
+pdfnative split --input report.pdf --output-dir pages/ --prefix page
+
+# One output per range (1-based, inclusive)
+pdfnative split --input report.pdf --output-dir out/ --pages &quot;1-2,3-4&quot;
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--input &lt;file&gt;</code></td>
+<td>stdin</td>
+<td>Source PDF</td>
+</tr>
+<tr>
+<td><code>--output-dir &lt;dir&gt;</code></td>
+<td>— <em>(required)</em></td>
+<td>Destination directory; parts are written as <code>&lt;prefix&gt;-&lt;n&gt;.pdf</code> (zero-padded)</td>
+</tr>
+<tr>
+<td><code>--prefix &lt;str&gt;</code></td>
+<td>input basename (<code>part</code> on stdin)</td>
+<td>Output filename prefix</td>
+</tr>
+<tr>
+<td><code>--pages &lt;ranges&gt;</code></td>
+<td>per-page</td>
+<td>Comma-separated 1-based inclusive ranges (e.g. <code>1-2,3-4</code>)</td>
+</tr>
+<tr>
+<td><code>--max-output-size &lt;bytes&gt;</code></td>
+<td>256 MiB</td>
+<td>Per-part output ceiling</td>
+</tr>
+<tr>
+<td><code>--password &lt;pass&gt;</code> <em>(v1.3.0)</em></td>
+<td>—</td>
+<td>Password for an encrypted source (env <code>PDFNATIVE_PASSWORD</code>)</td>
+</tr>
+<tr>
+<td><code>--encrypt [aes-128|aes-256]</code> <em>(v1.3.0)</em></td>
+<td>—</td>
+<td>Re-encrypt each output (needs <code>--owner-password</code>; <code>--user-password</code> / <code>--permissions</code> as in <code>merge</code>)</td>
+</tr>
+<tr>
+<td><code>--stream</code> <em>(v1.3.0)</em></td>
+<td>off</td>
+<td>Constant-memory streaming output (<code>--chunk-size N</code>)</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>off</td>
+<td>Validate without writing</td>
+</tr>
+</tbody></table>
+<h3 id="pdfnative-extract-v120"><code>pdfnative extract</code> <em>(v1.2.0)</em><a class="heading-anchor" href="#pdfnative-extract-v120" aria-label="Link to this section">#</a></h3>
+<p>Pulls a selected, order-preserving subset of pages into a single PDF via <code>extractPages</code>.</p>
+<pre><code class="language-bash">pdfnative extract --input report.pdf --output cover.pdf --pages &quot;4,1-2&quot;
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--input &lt;file&gt;</code></td>
+<td>stdin</td>
+<td>Source PDF</td>
+</tr>
+<tr>
+<td><code>--output &lt;file&gt;</code></td>
+<td>stdout</td>
+<td>Output PDF</td>
+</tr>
+<tr>
+<td><code>--pages &lt;list&gt;</code></td>
+<td>— <em>(required)</em></td>
+<td>1-based page list/ranges; <strong>order is preserved and repeats are allowed</strong></td>
+</tr>
+<tr>
+<td><code>--max-output-size &lt;bytes&gt;</code></td>
+<td>256 MiB</td>
+<td>Output ceiling</td>
+</tr>
+<tr>
+<td><code>--password &lt;pass&gt;</code> <em>(v1.3.0)</em></td>
+<td>—</td>
+<td>Password for an encrypted source (env <code>PDFNATIVE_PASSWORD</code>)</td>
+</tr>
+<tr>
+<td><code>--encrypt [aes-128|aes-256]</code> <em>(v1.3.0)</em></td>
+<td>—</td>
+<td>Re-encrypt the output (needs <code>--owner-password</code>; <code>--user-password</code> / <code>--permissions</code> as in <code>merge</code>)</td>
+</tr>
+<tr>
+<td><code>--stream</code> <em>(v1.3.0)</em></td>
+<td>off</td>
+<td>Constant-memory streaming output (<code>--chunk-size N</code>)</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>off</td>
+<td>Validate without writing</td>
+</tr>
+</tbody></table>
+<h3 id="pdfnative-annotate-v120"><code>pdfnative annotate</code> <em>(v1.2.0)</em><a class="heading-anchor" href="#pdfnative-annotate-v120" aria-label="Link to this section">#</a></h3>
+<p>Attaches markup annotations to an existing PDF via an <strong>incremental save</strong>, so the original bytes — and any existing signature — stay intact.</p>
+<pre><code class="language-bash">pdfnative annotate --input report.pdf --output annotated.pdf \
+  --annotations notes.json
+</code></pre>
+<p><code>notes.json</code> is a JSON array (or <code>{ &quot;annotations&quot;: […] }</code>), each entry a markup annotation plus a 1-based <code>page</code>:</p>
+<pre><code class="language-json">[
+  { &quot;page&quot;: 1, &quot;type&quot;: &quot;highlight&quot;, &quot;rect&quot;: [72, 700, 520, 715], &quot;color&quot;: &quot;#ffe066&quot;, &quot;contents&quot;: &quot;Review this clause&quot; },
+  { &quot;page&quot;: 2, &quot;type&quot;: &quot;text&quot;, &quot;rect&quot;: [80, 640, 100, 660], &quot;contents&quot;: &quot;Sticky note&quot; }
+]
+</code></pre>
+<p>Supported types: <code>text</code>, <code>highlight</code>, <code>underline</code>, <code>strikeout</code>, <code>squiggly</code>, <code>square</code>, <code>circle</code>, <code>line</code>, <code>freetext</code>. Only known fields are forwarded (no dictionary injection). Read them back with <code>inspect --annotations</code>.</p>
+<blockquote>
+<p><strong>Overlay, not redaction.</strong> Annotations are a <em>visual review layer</em>; the underlying bytes remain. They do <strong>not</strong> remove or obscure content for security purposes.</p>
+</blockquote>
+<h3 id="pdfnative-govern-v120"><code>pdfnative govern</code> <em>(v1.2.0)</em><a class="heading-anchor" href="#pdfnative-govern-v120" aria-label="Link to this section">#</a></h3>
+<p>Surfaces pdfnative&#39;s <strong>AI-governance / Human-in-the-Loop (HITL)</strong> contract. Agents act as <strong>draftsmen</strong>: a human must always review and submit under their own GitHub identity.</p>
+<pre><code class="language-bash">pdfnative govern rules                  # human/agent protocol (AGENT_RULES)
+pdfnative govern policy --json          # machine-readable policy JSON
+pdfnative govern verify-issue draft.md  # gate a draft (exit 1 / E_POLICY)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Subcommand</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rules</code></td>
+<td>Print the human-and-agent protocol (mirrors <code>.github/AGENT_RULES.md</code>)</td>
+</tr>
+<tr>
+<td><code>policy [--json]</code></td>
+<td>Print the governance policy (mirrors <code>.github/ai-governance.json</code>)</td>
+</tr>
+<tr>
+<td><code>verify-issue &lt;draft.md&gt;</code></td>
+<td>Gate a local issue draft; exit <code>1</code> / <code>E_POLICY</code> on a violation (proposes a runtime dependency, omits a reproduction code block). Missing recommended fields surface as warnings</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><code>verify-issue</code> is a pure, <strong>fully offline</strong> validator — no GitHub or network access. A passing check is <em>necessary but not sufficient</em>: the human review gate always applies.</p>
+</blockquote>
+<h3 id="pdfnative-fill-v130"><code>pdfnative fill</code> <em>(v1.3.0)</em><a class="heading-anchor" href="#pdfnative-fill-v130" aria-label="Link to this section">#</a></h3>
+<p>Fill, flatten or export an AcroForm. The three modes compose into a round trip:
+export the current values, edit the JSON, feed it back.</p>
+<pre><code class="language-bash">pdfnative fill --input form.pdf --export --output values.json   # read
+pdfnative fill --input form.pdf --data values.json --output filled.pdf
+pdfnative fill --input filled.pdf --flatten --output flat.pdf   # freeze
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--data &lt;file&gt;</code></td>
+<td>—</td>
+<td>Values JSON. Required unless <code>--flatten</code> or <code>--export</code></td>
+</tr>
+<tr>
+<td><code>--flatten</code></td>
+<td>off</td>
+<td>Flatten after filling, or flatten the existing values</td>
+</tr>
+<tr>
+<td><code>--export</code></td>
+<td>off</td>
+<td>Read-only: emit current values in <code>--data</code> shape</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>off</td>
+<td>Flatten even when a signed signature field is present</td>
+</tr>
+<tr>
+<td><code>--on-unknown &lt;mode&gt;</code></td>
+<td><code>throw</code></td>
+<td><code>throw</code> or <code>ignore</code> for unknown field names</td>
+</tr>
+<tr>
+<td><code>--need-appearances</code></td>
+<td>off</td>
+<td>Set <code>/NeedAppearances</code> to allow non-WinAnsi values</td>
+</tr>
+<tr>
+<td><code>--password &lt;pass&gt;</code></td>
+<td>—</td>
+<td>Open an encrypted form (env <code>PDFNATIVE_PASSWORD</code>)</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>off</td>
+<td>Validate and enumerate fields without writing</td>
+</tr>
+</tbody></table>
+<p>Flattening a signed document invalidates the signature, which is why <code>--force</code>
+exists rather than it being silent.</p>
+<h3 id="pdfnative-encrypt-v130"><code>pdfnative encrypt</code> <em>(v1.3.0)</em><a class="heading-anchor" href="#pdfnative-encrypt-v130" aria-label="Link to this section">#</a></h3>
+<p>Re-secure an existing PDF. <code>--owner-password</code> is required; without a
+<code>--user-password</code> the document <strong>opens with no prompt</strong> and the owner password
+only governs permissions.</p>
+<pre><code class="language-bash">pdfnative encrypt --input report.pdf --output secure.pdf \
+  --owner-password &quot;$OWNER&quot; --user-password &quot;$USER&quot; \
+  --algorithm aes-256 --permissions print,extract
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--owner-password &lt;pass&gt;</code></td>
+<td>—</td>
+<td><strong>Required.</strong> Env <code>PDFNATIVE_ENCRYPT_OWNER_PASS</code></td>
+</tr>
+<tr>
+<td><code>--user-password &lt;pass&gt;</code></td>
+<td>—</td>
+<td>Password needed to open. Env <code>PDFNATIVE_ENCRYPT_USER_PASS</code></td>
+</tr>
+<tr>
+<td><code>--algorithm &lt;alg&gt;</code></td>
+<td><code>aes-128</code></td>
+<td><code>aes-128</code> or <code>aes-256</code></td>
+</tr>
+<tr>
+<td><code>--permissions &lt;list&gt;</code></td>
+<td><code>print,extract</code></td>
+<td>Comma-separated: <code>print</code>, <code>copy</code>, <code>modify</code>, <code>extract</code> — without the flag, print and extract are allowed, copy and modify denied</td>
+</tr>
+<tr>
+<td><code>--password &lt;pass&gt;</code></td>
+<td>—</td>
+<td>Open an already-encrypted source (password rotation)</td>
+</tr>
+<tr>
+<td><code>--drop-annotations</code></td>
+<td>off</td>
+<td>Drop all annotations; the default keeps URI links</td>
+</tr>
+<tr>
+<td><code>--max-output-size &lt;n&gt;</code></td>
+<td>256 MiB</td>
+<td>Cap on the assembled size</td>
+</tr>
+<tr>
+<td><code>--stream</code></td>
+<td>off</td>
+<td>Stream the output (<code>--chunk-size N</code>)</td>
+</tr>
+</tbody></table>
+<h3 id="pdfnative-decrypt-v130"><code>pdfnative decrypt</code> <em>(v1.3.0)</em><a class="heading-anchor" href="#pdfnative-decrypt-v130" aria-label="Link to this section">#</a></h3>
+<p>Remove encryption, given the password. Reads RC4, AES-128 and AES-256 sources.</p>
+<pre><code class="language-bash">pdfnative decrypt --input secure.pdf --password &quot;$PASS&quot; --output plain.pdf
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--password &lt;pass&gt;</code></td>
+<td>—</td>
+<td>Document password. Env <code>PDFNATIVE_PASSWORD</code></td>
+</tr>
+<tr>
+<td><code>--drop-annotations</code></td>
+<td>off</td>
+<td>Drop all annotations; the default keeps URI links</td>
+</tr>
+<tr>
+<td><code>--max-output-size &lt;n&gt;</code></td>
+<td>256 MiB</td>
+<td>Cap on the assembled size</td>
+</tr>
+<tr>
+<td><code>--stream</code></td>
+<td>off</td>
+<td>Stream the output (<code>--chunk-size N</code>)</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>off</td>
+<td>Validate without writing</td>
+</tr>
+</tbody></table>
+<h3 id="pdfnative-extract-text-v130"><code>pdfnative extract-text</code> <em>(v1.3.0)</em><a class="heading-anchor" href="#pdfnative-extract-text-v130" aria-label="Link to this section">#</a></h3>
+<p>Reading-order Unicode text from an existing PDF. <code>ndjson</code> emits one JSON object
+per page, which makes it a natural feed for a RAG ingestion pipeline.</p>
+<pre><code class="language-bash">pdfnative extract-text --input paper.pdf --format ndjson --runs &gt; pages.ndjson
+pdfnative extract-text --input paper.pdf --pages 1,3,5-7 --format text
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--format, -f &lt;fmt&gt;</code></td>
+<td><code>text</code></td>
+<td><code>text</code>, <code>json</code>, or <code>ndjson</code> (one object per page)</td>
+</tr>
+<tr>
+<td><code>--pages &lt;selector&gt;</code></td>
+<td>all</td>
+<td>1-based selector, e.g. <code>1,3,5-7</code></td>
+</tr>
+<tr>
+<td><code>--runs</code></td>
+<td>off</td>
+<td>Include positioned runs <code>{ text, x, y, fontSize, fontName }</code></td>
+</tr>
+<tr>
+<td><code>--password &lt;pass&gt;</code></td>
+<td>—</td>
+<td>Extract from an encrypted PDF</td>
+</tr>
+<tr>
+<td><code>--max-length &lt;n&gt;</code></td>
+<td>16000000</td>
+<td>Hard cap on total characters; <code>0</code> disables</td>
+</tr>
+<tr>
+<td><code>--summary</code></td>
+<td>off</td>
+<td>(json) Emit only <code>{ pages, characters }</code></td>
+</tr>
+<tr>
+<td><code>--fields &lt;paths&gt;</code></td>
+<td>—</td>
+<td>(json) Comma-separated dot-paths to keep</td>
+</tr>
+</tbody></table>
+<p>Text comes from the <code>/ToUnicode</code> mapping, so it is real Unicode rather than
+glyph indices. A page whose content decodes entirely to U+FFFD is reported as
+not extractable rather than returning noise.</p>
+<h3 id="pdfnative-doctor-v130"><code>pdfnative doctor</code> <em>(v1.3.0)</em><a class="heading-anchor" href="#pdfnative-doctor-v130" aria-label="Link to this section">#</a></h3>
+<p>Environment and capability preflight. The first thing to run in a new
+environment, and the first thing an agent should call before planning work.</p>
+<pre><code class="language-bash">pdfnative doctor              # human-readable
+pdfnative doctor --format json --pretty
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--format, -f &lt;fmt&gt;</code></td>
+<td><code>text</code></td>
+<td><code>text</code> or <code>json</code></td>
+</tr>
+<tr>
+<td><code>--pretty</code></td>
+<td>off</td>
+<td>Indented JSON even under the global <code>--json</code></td>
+</tr>
+</tbody></table>
+<h3 id="pdfnative-batch"><code>pdfnative batch</code><a class="heading-anchor" href="#pdfnative-batch" aria-label="Link to this section">#</a></h3>
+<p>Renders every JSON file in a directory to PDF <strong>in parallel</strong>, reusing the full <code>render</code> pipeline.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--input-dir &lt;dir&gt;</code></td>
+<td>— <em>(required)</em></td>
+<td>Directory of <code>*.json</code> documents</td>
+</tr>
+<tr>
+<td><code>--output-dir &lt;dir&gt;</code></td>
+<td>— <em>(required)</em></td>
+<td>Destination directory for <code>*.pdf</code> (created if absent)</td>
+</tr>
+<tr>
+<td><code>--concurrency &lt;n&gt;</code></td>
+<td><code>4</code></td>
+<td>Bounded parallelism</td>
+</tr>
+<tr>
+<td><code>--fail-fast</code></td>
+<td>off</td>
+<td>Abort on the first failure</td>
+</tr>
+<tr>
+<td><code>--dry-run</code> <em>(v1.1.0)</em></td>
+<td>off</td>
+<td>Validate every input without writing output</td>
+</tr>
+<tr>
+<td><code>--json</code> / <code>--summary</code> <em>(v1.1.0)</em></td>
+<td>off</td>
+<td>Machine-readable per-file report; <code>--summary</code> emits <code>{ total, succeeded, failed }</code></td>
+</tr>
+</tbody></table>
+<pre><code class="language-bash">pdfnative batch --input-dir inputs/ --output-dir outputs/ --tagged pdfa2b --concurrency 4
+</code></pre>
+<h3 id="pdfnative-schema"><code>pdfnative schema</code><a class="heading-anchor" href="#pdfnative-schema" aria-label="Link to this section">#</a></h3>
+<p>Prints a versioned <strong>JSON Schema (Draft 2020-12)</strong> for a CLI input/output shape, so agents can self-validate before invoking a command. The <code>$id</code> embeds the CLI version.</p>
+<pre><code class="language-bash">pdfnative schema render            # input schema for `render`
+pdfnative schema inspect-summary   # compact inspect verdict shape
+pdfnative schema list              # enumerate every subject
+</code></pre>
+<p>Subjects: <code>render</code>, <code>inspect</code>, <code>verify</code>, <code>batch</code>, <code>annotate</code> <em>(v1.2.0)</em>, <code>govern-verify</code> <em>(v1.2.0)</em>, <code>extract-text</code>, <code>fill</code>, <code>form-export</code>, <code>status</code>, <code>manifest</code>, <code>doctor</code> <em>(all v1.3.0)</em>, and the compact <code>inspect-summary</code> / <code>verify-summary</code> / <code>batch-summary</code> shapes. <code>pdfnative schema list</code> enumerates them all.</p>
+<h3 id="pdfnative-completion"><code>pdfnative completion</code><a class="heading-anchor" href="#pdfnative-completion" aria-label="Link to this section">#</a></h3>
+<p>Emits a shell-completion script: <code>pdfnative completion bash|zsh|fish|powershell</code> <em>(PowerShell added in v1.3.0)</em>.</p>
+<hr>
+<h2 id="agent-native-automation-contract">Agent-native automation contract<a class="heading-anchor" href="#agent-native-automation-contract" aria-label="Link to this section">#</a></h2>
+<p>v1.1.0 makes the CLI deterministic to drive from autonomous AI agents and CI pipelines. The full contract is documented in <a href="https://github.com/Nizoka/pdfnative-cli/blob/main/AGENTS.md" target="_blank" rel="noopener">pdfnative-cli AGENTS.md</a>.</p>
+<ul>
+<li><strong>Global <code>--json</code> envelope.</strong> Any command run with <code>--json</code> emits a single machine-readable object on <strong>stderr</strong>: <code>{ ok: false, command, error: { code, message } }</code> on failure, and a <code>{ ok: true, … }</code> status line for <code>render</code> / <code>sign</code> / <code>batch</code> on success (since v1.3.0, every write command emits the success line). stdout stays reserved for the primary artifact (PDF, report, schema, script).</li>
+<li><strong>Stable <code>E_*</code> error codes</strong> on every failure: <code>E_USAGE</code>, <code>E_INPUT</code>, <code>E_PARSE</code>, <code>E_IO</code>, <code>E_SIGN</code>, <code>E_VERIFY_FAILED</code>, <code>E_CHECK_FAILED</code>, <code>E_POLICY</code> <em>(v1.2.0 — governance-gate failure)</em>, <code>E_UNSUPPORTED</code>, <code>E_PASSWORD</code> <em>(v1.3.0 — encrypted PDF: password missing or incorrect)</em>, <code>E_RUNTIME</code>. Numeric exit codes (0/1/2) are unchanged.</li>
+<li><strong><code>--dry-run</code></strong> for <code>render</code>, <code>sign</code>, <code>batch</code>, and — since v1.2.0 — <code>merge</code>, <code>split</code>, <code>extract</code>, and <code>annotate</code> (v1.3.0 extends it to <code>fill</code>, <code>encrypt</code> and <code>decrypt</code>) — fully validate inputs (and, for <code>sign</code>, parse credentials and prepare the PDF) without producing output.</li>
+<li><strong>Token-economy output projection</strong> (<code>inspect</code> / <code>verify</code> / <code>batch</code> / <code>extract-text</code>): stdout JSON is <strong>compact by default</strong> under <code>--json</code> (<code>--pretty</code> opts back into the human 2-space form), <strong><code>--summary</code></strong> emits a canonical minimal verdict, and <strong><code>--fields a,b.c</code></strong> projects the result to named dot-paths. Typically ~90 % fewer output tokens with no loss of the fields agents branch on. Non-<code>--json</code> human output is unchanged.</li>
+</ul>
+<pre><code class="language-bash"># Agent-friendly: compact verdict on stdout, structured status on stderr
+pdfnative inspect --input report.pdf --json --summary 2&gt;status.json
+
+# Branch on a stable error class
+pdfnative verify --input report.pdf --json --strict \
+  || echo &quot;failed: $(jq -r .error.code status.json)&quot;
+</code></pre>
+<hr>
+<h2 id="recipes">Recipes<a class="heading-anchor" href="#recipes" aria-label="Link to this section">#</a></h2>
+<h3 id="render--sign--verify--inspect-in-a-single-chain">Render → sign → verify → inspect, in a single chain<a class="heading-anchor" href="#render--sign--verify--inspect-in-a-single-chain" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">cat report.json \
+  | pdfnative render --tagged pdfa2b --compress \
+  | pdfnative sign --reason &quot;Approved&quot; \
+  | tee signed.pdf \
+  | pdfnative verify --strict --trust ca.pem
+pdfnative inspect --input signed.pdf --check pdfa --check signed
+</code></pre>
+<h3 id="encrypted-pdfa-3-hybrid-invoice-factur-x--zugferd">Encrypted PDF/A-3 hybrid invoice (Factur-X / ZUGFeRD)<a class="heading-anchor" href="#encrypted-pdfa-3-hybrid-invoice-factur-x--zugferd" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">pdfnative render \
+  --input invoice.json --output invoice.pdf \
+  --tagged pdfa3b \
+  --attachment factur-x.xml:application/xml:Source:&quot;Structured invoice data&quot; \
+  --footer-center &quot;Page {page} / {pages}&quot;
+</code></pre>
+<h3 id="encrypted-distribution-copy">Encrypted distribution copy<a class="heading-anchor" href="#encrypted-distribution-copy" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">pdfnative render \
+  --input contract.json --output contract.encrypted.pdf \
+  --encrypt-algorithm aes256 \
+  --encrypt-permissions print
+# PDFNATIVE_ENCRYPT_OWNER_PASS read from the env — never on the command line
+</code></pre>
+<h3 id="multilang-fonts">Multilang fonts<a class="heading-anchor" href="#multilang-fonts" aria-label="Link to this section">#</a></h3>
+<p>For the 22 bundled scripts (plus <code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, <code>math</code>), no wrapper is needed — <code>--font</code> registers each bundled font inside the CLI process:</p>
+<pre><code class="language-bash">echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;text&quot;:&quot;สวัสดี こんにちは&quot;}]}&#39; \
+  | pdfnative render --font th --font ja --lang th,ja -o out.pdf
+</code></pre>
+<p>For a font you ship yourself (not bundled), the CLI cannot use it: in-memory font registration does not cross a process boundary, so a wrapper that registers fonts and then <em>spawns</em> the CLI does not work. Call the library directly instead:</p>
+<pre><code class="language-javascript">// render-custom-font.mjs
+import { registerFont, loadFontData, buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+import { writeFile } from &#39;node:fs/promises&#39;;
+
+registerFont(&#39;th&#39;, () =&gt; import(&#39;./fonts/my-thai-data.js&#39;));
+const th = await loadFontData(&#39;th&#39;);
+if (!th) throw new Error(&#39;Thai font failed to load&#39;);
+const bytes = buildDocumentPDFBytes({
+  title: &#39;Thai demo&#39;,
+  blocks: [{ type: &#39;paragraph&#39;, text: &#39;สวัสดี&#39; }],
+  fontEntries: [{ fontData: th, fontRef: &#39;/F3&#39;, lang: &#39;th&#39; }], // /F1 and /F2 are reserved
+});
+await writeFile(&#39;out.pdf&#39;, bytes);
+</code></pre>
+<h3 id="ci-assertion-github-actions">CI assertion (GitHub Actions)<a class="heading-anchor" href="#ci-assertion-github-actions" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-yaml">- name: Render and assert PDF/A + signed
+  run: |
+    pdfnative render --input data/q1.json --output dist/q1.pdf --tagged pdfa2b
+    pdfnative sign  --input dist/q1.pdf  --output dist/q1.signed.pdf
+    pdfnative verify --input dist/q1.signed.pdf --strict
+    pdfnative inspect --input dist/q1.signed.pdf --check pdfa --check signed
+</code></pre>
+<h3 id="batch-render-a-directory-of-json-files">Batch-render a directory of JSON files<a class="heading-anchor" href="#batch-render-a-directory-of-json-files" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">for f in inputs/*.json; do
+  pdfnative render --input &quot;$f&quot; --output &quot;outputs/$(basename &quot;$f&quot; .json).pdf&quot; --tagged pdfa2b
+done
+</code></pre>
+<hr>
+<h2 id="security-model">Security model<a class="heading-anchor" href="#security-model" aria-label="Link to this section">#</a></h2>
+<p><code>pdfnative-cli</code> is built with the same zero-trust posture as the underlying library:</p>
+<ul>
+<li><strong>No <code>eval</code>, no <code>Function</code>, no dynamic code</strong> — input JSON is parsed via the standard <code>JSON.parse</code> with a 50 MB cap to prevent memory exhaustion.</li>
+<li><strong>Path traversal protection</strong> — all <code>--input</code> / <code>--output</code> / <code>--key</code> / <code>--cert</code> / <code>--cert-chain</code> / <code>--trust</code> / <code>--layout</code> / <code>--attachment</code> / <code>--watermark-image</code> paths are validated against <code>..</code> segments before any file system access.</li>
+<li><strong>Secrets never logged</strong> — <code>loadPem</code> / <code>loadPemChain</code> surface only generic error messages on parse failure; raw key material never appears in <code>CliError</code> messages or stderr. Encryption passwords are never echoed.</li>
+<li><strong>Layout-file injection blocked</strong> — <code>attachments[].data</code> fields embedded in <code>--layout</code> JSON are <strong>stripped on load</strong>. Binary attachment payloads must come from <code>--attachment &lt;path&gt;</code> so the CLI can apply path validation.</li>
+<li><strong>Env-var precedence for secrets</strong> — <code>PDFNATIVE_SIGN_KEY</code> / <code>PDFNATIVE_SIGN_CERT</code> / <code>PDFNATIVE_SIGN_CHAIN</code> / <code>PDFNATIVE_ENCRYPT_OWNER_PASS</code> / <code>PDFNATIVE_ENCRYPT_USER_PASS</code> are preferred over file-path flags so secrets never enter shell history.</li>
+<li><strong>Stdin/stdout safe</strong> — binary streams are passed through without interpretation; no shell-quoting issues.</li>
+<li><strong>NPM provenance</strong> — every published version is signed via GitHub Actions OIDC. Verify with <code>npm audit signatures</code>.</li>
+</ul>
+<p>The CLI <strong>does not</strong> open network connections, write to system directories outside the working directory, or load arbitrary code. It only reads the files you point it at.</p>
+<hr>
+<h2 id="comparison-with-the-library-api">Comparison with the library API<a class="heading-anchor" href="#comparison-with-the-library-api" aria-label="Link to this section">#</a></h2>
+<p>The CLI now covers nearly the full library surface; only Web Worker offloading remains library-only.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>CLI v1.3.0</th>
+<th>Library</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Document rendering (13 block types)</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Streaming output</td>
+<td>✅ <code>--stream</code> / <code>--stream-true</code></td>
+<td>✅ <code>buildDocumentPDFStream()</code> / <code>buildDocumentPDFStreamTrue()</code></td>
+</tr>
+<tr>
+<td>Configurable block cap</td>
+<td>✅ <code>--max-blocks</code></td>
+<td>✅ <code>layout.maxBlocks</code></td>
+</tr>
+<tr>
+<td>PDF/A conformance (1b, 2b, 2u, 3b)</td>
+<td>✅ <code>--tagged</code></td>
+<td>✅ <code>tagged: &#39;…&#39;</code></td>
+</tr>
+<tr>
+<td>Digital signatures (RSA-SHA256)</td>
+<td>✅</td>
+<td>✅ <code>signPdfBytes()</code></td>
+</tr>
+<tr>
+<td>Digital signatures (ECDSA-SHA256)</td>
+<td>✅ <code>--algorithm ecdsa-sha256</code></td>
+<td>✅ <code>signPdfBytes()</code></td>
+</tr>
+<tr>
+<td><strong>Native constant-time signing</strong></td>
+<td>✅ default (<code>--pure-crypto</code> opts out; the native provider is a CLI utility)</td>
+<td>✅ <code>setCryptoProvider()</code> (accepts any <code>CryptoProvider</code>)</td>
+</tr>
+<tr>
+<td>Inspection / metadata</td>
+<td>✅</td>
+<td>✅ <code>PdfReader</code></td>
+</tr>
+<tr>
+<td><strong>PDF/UA structural validation</strong></td>
+<td>✅ <code>inspect --pdfua</code></td>
+<td>✅ <code>validatePdfUA()</code></td>
+</tr>
+<tr>
+<td><strong>Annotation listing</strong></td>
+<td>✅ <code>inspect --annotations</code></td>
+<td>✅ <code>getAnnotations()</code></td>
+</tr>
+<tr>
+<td><strong>Signature verification (CMS/PKCS#7)</strong></td>
+<td>✅ <code>verify</code> (real CMS, RSA + ECDSA — implemented in the CLI)</td>
+<td>➖ <code>openPdf()</code> + <code>verifyCertSignature()</code> only (X.509 certificate-signature check, not CMS PDF-signature verification)</td>
+</tr>
+<tr>
+<td><strong>PAdES-T timestamp + OCSP/CRL revocation</strong></td>
+<td>✅ <code>verify --revocation</code> (implemented in the CLI)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Encryption (AES-128/256)</strong></td>
+<td>✅ <code>--encrypt-*</code></td>
+<td>✅ <code>encryption: {…}</code></td>
+</tr>
+<tr>
+<td><strong>Watermarks</strong></td>
+<td>✅ <code>--watermark-*</code></td>
+<td>✅ <code>watermark: {…}</code></td>
+</tr>
+<tr>
+<td><strong>PDF/A-3 attachments</strong></td>
+<td>✅ <code>--attachment</code></td>
+<td>✅ <code>attachments: [...]</code></td>
+</tr>
+<tr>
+<td><strong>22 scripts + COLRv1 emoji + math</strong></td>
+<td>✅ <code>--font</code> / <code>--lang</code></td>
+<td>✅ <code>registerFont()</code> / <code>loadFontData()</code></td>
+</tr>
+<tr>
+<td><strong>Page-tree editing (merge / split / extract)</strong></td>
+<td>✅ <code>merge</code> / <code>split</code> / <code>extract</code></td>
+<td>✅ <code>mergePdfs()</code> / <code>splitPdf()</code> / <code>extractPages()</code></td>
+</tr>
+<tr>
+<td><strong>Markup annotations</strong></td>
+<td>✅ <code>annotate</code></td>
+<td>✅ <code>PdfModifier.addAnnotation()</code> / <code>buildAnnotationBody()</code></td>
+</tr>
+<tr>
+<td><strong>Bookmarks / outline</strong></td>
+<td>✅ <code>render --outline</code></td>
+<td>✅ <code>outline: &#39;…&#39;</code></td>
+</tr>
+<tr>
+<td><strong>Layout introspection / debug</strong></td>
+<td>✅ <code>render --inspect-layout</code> / <code>--debug-layout</code></td>
+<td>✅ <code>inspectDocumentLayout()</code> / <code>layout.debug</code></td>
+</tr>
+<tr>
+<td><strong>AI-governance / HITL gate</strong></td>
+<td>✅ <code>govern</code> (draft validation via the CLI&#39;s <code>validateGovernanceDraft()</code>)</td>
+<td>— (contract files in the repo; the core&#39;s check is a repo script, not a published API)</td>
+</tr>
+<tr>
+<td><strong>Parallel batch render</strong></td>
+<td>✅ <code>batch</code></td>
+<td>— (compose <code>render</code>)</td>
+</tr>
+<tr>
+<td><strong>JSON Schema export</strong></td>
+<td>✅ <code>schema</code></td>
+<td>— N/A</td>
+</tr>
+<tr>
+<td><strong>Agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code></strong></td>
+<td>✅</td>
+<td>— N/A</td>
+</tr>
+<tr>
+<td><strong>Table-centric variant</strong></td>
+<td>✅ <code>--variant table</code></td>
+<td>✅ <code>buildPDFBytes()</code></td>
+</tr>
+<tr>
+<td><strong>Full <code>PdfLayoutOptions</code></strong></td>
+<td>✅ <code>--layout file.json</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>Web Worker offloading</strong></td>
+<td>❌ N/A</td>
+<td>✅ <code>pdfWorker.ts</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="examples--ready-to-run">Examples — ready-to-run<a class="heading-anchor" href="#examples--ready-to-run" aria-label="Link to this section">#</a></h2>
+<p>The <a href="https://github.com/Nizoka/pdfnative-cli/tree/main/samples" target="_blank" rel="noopener"><code>samples/</code></a> directory in the CLI repository ships <strong>40+ ready-to-run examples</strong> organized by feature:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>render/document/</code></td>
+<td>Minimal document, all blocks reference, invoice, technical spec, multi-page report</td>
+</tr>
+<tr>
+<td><code>render/table/</code></td>
+<td>Project status, financial summary</td>
+</tr>
+<tr>
+<td><code>render/table-variant/</code></td>
+<td><code>PdfParams</code>-shaped financial ledger via <code>--variant table</code></td>
+</tr>
+<tr>
+<td><code>render/barcode/</code></td>
+<td>QR code, Code 128, EAN-13</td>
+</tr>
+<tr>
+<td><code>render/form/</code></td>
+<td>Contact form, survey</td>
+</tr>
+<tr>
+<td><code>render/toc/</code></td>
+<td>Auto-generated table of contents with <code>/GoTo</code> links</td>
+</tr>
+<tr>
+<td><code>render/link/</code></td>
+<td>Resource directory with hyperlinks</td>
+</tr>
+<tr>
+<td><code>render/watermark/</code></td>
+<td>Draft / Confidential watermarks</td>
+</tr>
+<tr>
+<td><code>render/layout/</code></td>
+<td>US Letter, A5 portrait, A4 landscape</td>
+</tr>
+<tr>
+<td><code>render/pdfa/</code></td>
+<td>PDF/A-1b, 2b, 3b archival conformance</td>
+</tr>
+<tr>
+<td><code>render/encryption/</code></td>
+<td>AES-128 password-protected PDF</td>
+</tr>
+<tr>
+<td><code>render/headers-footers/</code></td>
+<td>Page templates with <code>{page}/{pages}/{date}/{title}</code></td>
+</tr>
+<tr>
+<td><code>render/attachments/</code></td>
+<td>PDF/A-3 hybrid invoice with embedded XML (Factur-X / ZUGFeRD)</td>
+</tr>
+<tr>
+<td><code>render/multilang/</code></td>
+<td>Multilang rendering via the bundled <code>--font</code> shortcuts</td>
+</tr>
+<tr>
+<td><code>render/chart/</code></td>
+<td>Native vector charts (bar, line, pie, donut) <em>(v1.3.0)</em></td>
+</tr>
+<tr>
+<td><code>render/math/</code></td>
+<td>Noto Sans Math font routing <em>(v1.2.0)</em></td>
+</tr>
+<tr>
+<td><code>render/outline/</code></td>
+<td><code>/Outlines</code> bookmark trees (<code>--outline auto</code> and explicit JSON) <em>(v1.2.0)</em></td>
+</tr>
+<tr>
+<td><code>render/table-smart/</code></td>
+<td>Smart-table flags (<code>--table-wrap</code>, <code>--zebra</code>, …) <em>(v1.3.0)</em></td>
+</tr>
+<tr>
+<td><code>render/font/</code>, <code>render/template/</code>, <code>render/watch/</code>, <code>render/inspect-layout/</code></td>
+<td>Font shortcuts, templates, watch mode, layout introspection</td>
+</tr>
+<tr>
+<td><code>fill/</code></td>
+<td>AcroForm fill / flatten / export round trip <em>(v1.3.0)</em></td>
+</tr>
+<tr>
+<td><code>encrypt/</code></td>
+<td>Encrypt / decrypt an existing PDF <em>(v1.3.0)</em></td>
+</tr>
+<tr>
+<td><code>extract-text/</code></td>
+<td>Reading-order text extraction (<code>text</code> / <code>json</code> / <code>ndjson</code>) <em>(v1.3.0)</em></td>
+</tr>
+<tr>
+<td><code>merge/</code>, <code>split/</code>, <code>extract/</code>, <code>annotate/</code></td>
+<td>Page-tree editing and markup annotations <em>(v1.2.0)</em></td>
+</tr>
+<tr>
+<td><code>sign/</code></td>
+<td>Bash + PowerShell signing scripts (basic + with metadata)</td>
+</tr>
+<tr>
+<td><code>inspect/</code></td>
+<td>JSON &amp; text inspection, <code>--verbose --pages</code>, <code>--check pdfa</code></td>
+</tr>
+<tr>
+<td><code>verify/</code></td>
+<td>Self-signed verification, strict-mode CI gating</td>
+</tr>
+<tr>
+<td><code>batch/</code>, <code>doctor/</code>, <code>govern/</code>, <code>completion/</code>, <code>agent/</code>, <code>config/</code></td>
+<td>Automation, preflight, governance, shell completion, agent patterns</td>
+</tr>
+<tr>
+<td><code>streaming/</code></td>
+<td>200-section document via streaming render</td>
+</tr>
+</tbody></table>
+<p>Render them all at once:</p>
+<pre><code class="language-bash">git clone https://github.com/Nizoka/pdfnative-cli
+cd pdfnative-cli
+node samples/run-all.js
+</code></pre>
+<hr>
+<h2 id="release-history">Release history<a class="heading-anchor" href="#release-history" aria-label="Link to this section">#</a></h2>
+<h3 id="whats-new-in-v130">What&#39;s new in v1.3.0<a class="heading-anchor" href="#whats-new-in-v130" aria-label="Link to this section">#</a></h3>
+<p>v1.3.0 is built on the <strong>pdfnative 1.6 engine</strong> (pin <code>^1.6.0</code>) and surfaces its engine additions as five new commands (<code>extract-text</code>, <code>fill</code>, <code>encrypt</code>, <code>decrypt</code>, <code>doctor</code>), native vector charts in <code>render</code>, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent <code>render --encrypt</code> no-op. <strong>100 % backward-compatible</strong> with v1.2.0.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>v1.2.0</th>
+<th>v1.3.0</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Commands</td>
+<td>12 commands <!-- verify-docs:allow stale-token (v1.2.0-era count) --></td>
+<td>adds <strong><code>fill</code></strong> (fill / flatten / <strong>export</strong> AcroForms via an incremental save), <strong><code>encrypt</code></strong>, <strong><code>decrypt</code></strong>, <strong><code>extract-text</code></strong> (reading-order Unicode text: <code>text</code> | <code>json</code> | <code>ndjson</code>), and <strong><code>doctor</code></strong> (offline environment / capability preflight)</td>
+</tr>
+<tr>
+<td>Charts</td>
+<td>—</td>
+<td>the engine&#39;s <code>chart</code> document block (bar, barH, line, pie, donut — the pdfnative 1.6 set) renders as pure vector path operators through <code>render</code></td>
+</tr>
+<tr>
+<td>Encryption vocabulary</td>
+<td><code>--encrypt-*</code> flags on <code>render</code> only</td>
+<td><strong>unified vocabulary</strong> — <code>--encrypt [aes-128|aes-256]</code>, <code>--owner-password</code>, <code>--user-password</code>, <code>--permissions print,copy,modify,extract</code> — shared by <code>render</code>, <code>merge</code>, <code>split</code> and <code>extract</code> (legacy <code>--encrypt-*</code> flags kept as aliases)</td>
+</tr>
+<tr>
+<td>Page-tree commands</td>
+<td>plaintext sources only</td>
+<td><strong><code>--password</code></strong> reads encrypted sources; <strong><code>--encrypt</code></strong> re-encrypts the output; <strong><code>--stream</code></strong> (+ <code>--chunk-size</code>) streams the output with constant memory</td>
+</tr>
+<tr>
+<td>Inspection</td>
+<td>metadata, PDF/UA, annotations</td>
+<td>adds <code>inspect --form-fields</code>, <code>--encryption</code> and <code>--password</code></td>
+</tr>
+<tr>
+<td>Shell completion</td>
+<td>bash, zsh, fish</td>
+<td>adds <strong>powershell</strong></td>
+</tr>
+<tr>
+<td>Agent contract</td>
+<td><code>--json</code> / <code>E_*</code> / <code>--dry-run</code> / schemas</td>
+<td>adds the stable <strong><code>E_PASSWORD</code></strong> code and an agent capability manifest (<code>schema manifest</code> + <code>llms.txt</code>)</td>
+</tr>
+<tr>
+<td>Compatibility</td>
+<td><code>pdfnative ^1.5.0</code></td>
+<td><code>pdfnative ^1.6.0</code></td>
+</tr>
+</tbody></table>
+<p>Full changelog: <a href="https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.3.0" target="_blank" rel="noopener">pdfnative-cli release notes v1.3.0</a>.</p>
+<h3 id="whats-new-in-v120">What&#39;s new in v1.2.0<a class="heading-anchor" href="#whats-new-in-v120" aria-label="Link to this section">#</a></h3>
+<!-- verify-docs:allow version-token (historical release entry) -->
+<p>v1.2.0 lands the <strong>pdfnative 1.5.0</strong> engine&#39;s page-tree and annotation APIs on the CLI as five new commands, adds document bookmarks, a math font, layout introspection, native constant-time signing, and — for autonomous agents — surfaces pdfnative&#39;s <strong>AI-governance / Human-in-the-Loop (HITL)</strong> contract. <strong>100 % backward-compatible</strong> with v1.1.0.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>v1.1.0</th>
+<th>v1.2.0</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Commands</td>
+<td>render, sign, inspect, verify, batch, schema</td>
+<td>adds <strong><code>merge</code></strong>, <strong><code>split</code></strong>, <strong><code>extract</code></strong> (page-tree), <strong><code>annotate</code></strong> (markup), and <strong><code>govern</code></strong> (<code>rules</code> / <code>policy</code> / <code>verify-issue</code>)</td>
+</tr>
+<tr>
+<td>Bookmarks</td>
+<td>—</td>
+<td><strong><code>render --outline auto</code></strong> derives a <code>/Outlines</code> bookmark tree from headings; <code>--outline &lt;tree.json&gt;</code> supplies an explicit <code>OutlineItem[]</code></td>
+</tr>
+<tr>
+<td>Math font</td>
+<td>—</td>
+<td><strong><code>render --font math</code></strong> registers the bundled Noto Sans Math font; pdfnative auto-routes math-operator / geometric-shape code points to it</td>
+</tr>
+<tr>
+<td>Layout tooling</td>
+<td>—</td>
+<td><strong><code>render --inspect-layout</code></strong> emits a <code>LayoutInspection</code> JSON report; <strong><code>--debug-layout [margins,content,cells]</code></strong> overlays layout guides on a normal PDF</td>
+</tr>
+<tr>
+<td>Signing</td>
+<td>pure-JS bignum CMS</td>
+<td><strong>native <code>node:crypto</code> by default</strong> (constant-time, side-channel-resistant RSA/ECDSA); <strong><code>--pure-crypto</code></strong> opts back into the portable pure-JS path</td>
+</tr>
+<tr>
+<td>Inspection</td>
+<td>metadata, PDF/UA</td>
+<td><strong><code>inspect --annotations</code></strong> lists markup + link annotations; <code>/PageLabels</code> are reported automatically when present</td>
+</tr>
+<tr>
+<td>Agent / governance</td>
+<td><code>--json</code>/<code>E_*</code>/<code>--dry-run</code></td>
+<td>adds the stable <strong><code>E_POLICY</code></strong> code; <code>schema</code> gains <code>annotate</code> + <code>govern-verify</code> subjects; <code>--dry-run</code> now also covers <code>merge</code> / <code>split</code> / <code>extract</code> / <code>annotate</code></td>
+</tr>
+<tr>
+<td>Compatibility</td>
+<td><code>pdfnative ^1.3.0</code></td>
+<td><code>pdfnative ^1.5.0</code></td>
+</tr>
+</tbody></table>
+<p>Full changelog: <a href="https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.2.0" target="_blank" rel="noopener">pdfnative-cli release notes v1.2.0</a>. <!-- verify-docs:allow version-token (historical link) --></p>
+<h3 id="previously-in-v110">Previously in v1.1.0<a class="heading-anchor" href="#previously-in-v110" aria-label="Link to this section">#</a></h3>
+<!-- verify-docs:allow version-token (historical release entry) -->
+<p>v1.1.0 is built on <strong>pdfnative 1.3.0</strong> and surfaces its new engine capabilities through the CLI, plus a full agent-native automation contract. <strong>100 % backward-compatible</strong> with v0.3.0.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>v0.3.0</th>
+<th>v1.1.0</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fonts</td>
+<td><code>--font {latin,emoji}</code></td>
+<td><strong>22 Unicode scripts + COLRv1 colour emoji</strong> — <code>--font</code>/<code>--lang</code> allow-list covers every bundled font (<code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, and the 22 script codes incl. Telugu <code>te</code>, Sinhala <code>si</code>, Tibetan <code>bo</code>, Khmer <code>km</code>, Myanmar <code>my</code>, Amharic <code>am</code>)</td>
+</tr>
+<tr>
+<td>Streaming</td>
+<td><code>--stream</code> (single-pass), page-by-page</td>
+<td>adds <strong><code>--stream-true</code></strong> — true constant-memory streaming via <code>buildDocumentPDFStreamTrue</code> / <code>buildPDFStreamTrue</code>; the joined binary never materialises</td>
+</tr>
+<tr>
+<td>Block cap</td>
+<td>hard-coded ceiling</td>
+<td><strong><code>--max-blocks &lt;n&gt;</code></strong> exposes <code>layout.maxBlocks</code> (default 100 000) for very large reports</td>
+</tr>
+<tr>
+<td>Accessibility</td>
+<td>—</td>
+<td><strong>PDF/UA (ISO 14289-1) structural validator</strong> — <code>inspect --pdfua</code> and <code>--check pdfua</code> as a CI accessibility gate</td>
+</tr>
+<tr>
+<td>Agent contract</td>
+<td>—</td>
+<td>global <strong><code>--json</code></strong> status/error envelope on stderr, stable <strong><code>E_*</code> error codes</strong>, <strong><code>--dry-run</code></strong>, token-economy <strong><code>--summary</code></strong> / <strong><code>--fields</code></strong> projection, compact JSON by default</td>
+</tr>
+<tr>
+<td>Commands</td>
+<td>render, sign, inspect, verify</td>
+<td>adds <strong><code>batch</code></strong> (parallel directory render) and <strong><code>schema</code></strong> (JSON Schema export)</td>
+</tr>
+<tr>
+<td>Supply chain</td>
+<td>provenance</td>
+<td>adds a CycloneDX <strong>SBOM</strong> (<code>sbom.cdx.json</code>) attached to every release + OpenSSF Scorecard badge</td>
+</tr>
+<tr>
+<td>Compatibility</td>
+<td><code>pdfnative ^1.1.0</code></td>
+<td><code>pdfnative ^1.3.0</code></td>
+</tr>
+</tbody></table>
+<p>Full changelog: <a href="https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.1.0" target="_blank" rel="noopener">pdfnative-cli release notes v1.1.0</a>. <!-- verify-docs:allow version-token (historical link) --></p>
+<h3 id="previously-in-v030">Previously in v0.3.0<a class="heading-anchor" href="#previously-in-v030" aria-label="Link to this section">#</a></h3>
+<p>v0.3.0 finished the digital-signature story and added three iteration-friendly <code>render</code> flags. <strong>100 % backward-compatible</strong> with v0.2.0.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>v0.2.0</th>
+<th>v0.3.0</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>sign</code> algorithm</td>
+<td>RSA-SHA256 only (ECDSA stub)</td>
+<td>RSA-SHA256 <strong>and</strong> ECDSA-SHA256 — fully wired via <code>parseEcPrivateKey</code> (SEC1 / PKCS#8 P-256)</td>
+</tr>
+<tr>
+<td><code>sign</code> placeholder</td>
+<td>Required a prior <code>prepare_signature_placeholder</code> call</td>
+<td><strong>Auto-injection</strong> — CLI detects PDFs with no AcroForm signature field and adds <code>/Sig</code> via a single incremental update</td>
+</tr>
+<tr>
+<td><code>verify</code> scope</td>
+<td>Byte-range integrity + cert chain</td>
+<td>Real CMS/PKCS#7 verification — signature value (RSA + ECDSA), message digest, certificate chain, trust roots, RFC 3161 timestamp detection</td>
+</tr>
+<tr>
+<td><code>render --watch</code></td>
+<td>—</td>
+<td>Re-render on input change (200 ms debounce, stderr-only logs)</td>
+</tr>
+<tr>
+<td><code>render --template &lt;file.json&gt;</code></td>
+<td>—</td>
+<td>Deep-merge a base template under stdin / <code>--input</code></td>
+</tr>
+<tr>
+<td><code>render --font &lt;name&gt;</code></td>
+<td>—</td>
+<td>Bundled font shortcut (<code>latin</code>, <code>emoji</code>)</td>
+</tr>
+<tr>
+<td>Compatibility</td>
+<td><code>pdfnative ^1.0.5</code></td>
+<td><code>pdfnative ^1.1.0</code></td>
+</tr>
+</tbody></table>
+<h3 id="previously-in-v020">Previously in v0.2.0<a class="heading-anchor" href="#previously-in-v020" aria-label="Link to this section">#</a></h3>
+<p>The v0.2.0 release expanded the CLI from ~10 flags to a near-complete projection of the <code>pdfnative</code> v1.0.5 surface, while remaining 100 % backward-compatible with v0.1.0.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>v0.1.0</th>
+<th>v0.2.0</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Layout</td>
+<td><code>--conformance</code> only</td>
+<td>Hybrid model — high-frequency knobs as flags, full <code>PdfLayoutOptions</code> via <code>--layout file.json</code></td>
+</tr>
+<tr>
+<td>PDF/A</td>
+<td><code>--conformance 1b|2b|3b</code></td>
+<td><code>--tagged none|pdfa1b|pdfa2b|pdfa2u|pdfa3b</code> (<code>--conformance</code> deprecated)</td>
+</tr>
+<tr>
+<td>Encryption</td>
+<td>—</td>
+<td><code>--encrypt-owner-pass</code>, <code>--encrypt-user-pass</code>, <code>--encrypt-algorithm</code>, <code>--encrypt-permissions</code> (env-var precedence)</td>
+</tr>
+<tr>
+<td>Watermarks</td>
+<td>—</td>
+<td><code>--watermark-text</code>/<code>-image</code>/<code>-opacity</code>/<code>-angle</code>/<code>-color</code>/<code>-font-size</code>/<code>-position</code></td>
+</tr>
+<tr>
+<td>Headers / footers</td>
+<td>—</td>
+<td><code>--header-{l,c,r}</code>, <code>--footer-{l,c,r}</code> with <code>{page}/{pages}/{date}/{title}</code> placeholders</td>
+</tr>
+<tr>
+<td>PDF/A-3 attachments</td>
+<td>—</td>
+<td><code>--attachment &lt;path&gt;[:mime[:rel[:desc]]]</code> (repeatable)</td>
+</tr>
+<tr>
+<td>Multilingual fonts</td>
+<td>—</td>
+<td><code>--lang th,ja,ar</code> (at the time, required a wrapper registering fonts via <code>registerFont()</code>; superseded by <code>--font</code> in v1.1.0)</td>
+</tr>
+<tr>
+<td><code>verify</code> command</td>
+<td>n/a</td>
+<td>byte-range integrity + cert chain + <code>--trust</code> roots</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="migration-v030--v110">Migration v0.3.0 → v1.1.0<a class="heading-anchor" href="#migration-v030--v110" aria-label="Link to this section">#</a></h2>
+<p><strong>100 % backward-compatible.</strong> Every v0.3.0 invocation continues to produce a byte-equivalent PDF. New, optional opportunities:</p>
+<pre><code class="language-diff"># 1. True constant-memory streaming for very large reports
+- pdfnative render --input big.json --output big.pdf --stream
++ pdfnative render --input big.json --output big.pdf --stream-true
+
+# 2. CI accessibility gate (PDF/UA)
++ pdfnative inspect --input report.pdf --check pdfua
+
+# 3. Agent-native, token-frugal output
++ pdfnative inspect --input report.pdf --json --summary
+
+# 4. Parallel directory render
++ pdfnative batch --input-dir inputs/ --output-dir outputs/ --concurrency 4
+</code></pre>
+<h2 id="migration-v020--v030">Migration v0.2.0 → v0.3.0<a class="heading-anchor" href="#migration-v020--v030" aria-label="Link to this section">#</a></h2>
+<p><strong>100 % backward-compatible.</strong> Three forward-looking opportunities:</p>
+<pre><code class="language-diff"># 1. ECDSA signing now works without a workaround
+- pdfnative sign -i in.pdf -o out.pdf --algorithm rsa-sha256 ...
++ pdfnative sign -i in.pdf -o out.pdf --algorithm ecdsa-sha256 \
++   --key ec-key.pem --cert ec-cert.pem
+
+# 2. Sign without a prior placeholder step
+- pdfnative sign -i with-placeholder.pdf -o signed.pdf ...
++ pdfnative sign -i any-pdf.pdf -o signed.pdf ...   # placeholder auto-injected
+</code></pre>
+<h2 id="migration-v010--v020">Migration v0.1.0 → v0.2.0<a class="heading-anchor" href="#migration-v010--v020" aria-label="Link to this section">#</a></h2>
+<p><strong>100 % backward-compatible</strong> — every v0.1.0 invocation continues to produce a byte-equivalent PDF, modulo a one-line stderr notice for <code>--conformance</code>. All v0.1.0 exit codes and JSON shapes are preserved; new <code>inspect</code> JSON fields are additive only.</p>
+<p>The only soft change you should plan for:</p>
+<pre><code class="language-diff">- pdfnative render --input doc.json --output report.pdf --conformance 2b
++ pdfnative render --input doc.json --output report.pdf --tagged pdfa2b
+</code></pre>
+<p><code>--conformance</code> will be <strong>removed in v1.0.0</strong> of the CLI.</p>
+<hr>
+<h2 id="troubleshooting">Troubleshooting<a class="heading-anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
+<h3 id="command-not-found-pdfnative"><code>command not found: pdfnative</code><a class="heading-anchor" href="#command-not-found-pdfnative" aria-label="Link to this section">#</a></h3>
+<p>You installed via <code>npx</code> (one-shot) and not globally. Either prepend <code>npx</code> to every invocation, or run <code>npm install --global pdfnative-cli</code>.</p>
+<h3 id="json-parse-error-input-too-large"><code>JSON parse error: input too large</code><a class="heading-anchor" href="#json-parse-error-input-too-large" aria-label="Link to this section">#</a></h3>
+<p>The CLI caps input JSON at 50 MB to prevent memory exhaustion. For very large documents, either split the document into multiple PDFs or use the library directly with the streaming API.</p>
+<h3 id="error-invalid-private-key"><code>Error: invalid private key</code><a class="heading-anchor" href="#error-invalid-private-key" aria-label="Link to this section">#</a></h3>
+<p>Both RSA PKCS#1 and ECDSA P-256 keys are accepted, but they must be <strong>PEM-encoded</strong>. Convert DER to PEM with <code>openssl pkcs8 -topk8 -in key.der -out key.pem -nocrypt</code>. As of v0.3.0, ECDSA support in <code>sign</code> is fully wired (SEC1 / PKCS#8 P-256 via <code>parseEcPrivateKey</code>).</p>
+<h3 id="encryption-requires-an-owner-password-provide---owner-password-pass-or-pdfnative_encrypt_owner_pass"><code>Encryption requires an owner password. Provide --owner-password &lt;pass&gt; or $PDFNATIVE_ENCRYPT_OWNER_PASS.</code><a class="heading-anchor" href="#encryption-requires-an-owner-password-provide---owner-password-pass-or-pdfnative_encrypt_owner_pass" aria-label="Link to this section">#</a></h3>
+<p>Any encryption flag was set without an owner password. Provide it via <code>--owner-password &lt;pass&gt;</code> (legacy alias: <code>--encrypt-owner-pass</code>) or — recommended — the <code>PDFNATIVE_ENCRYPT_OWNER_PASS</code> env var so it never enters shell history.</p>
+<h3 id="error---tagged-pdfa-and---encrypt--are-mutually-exclusive"><code>Error: --tagged pdfa* and --encrypt-* are mutually exclusive</code><a class="heading-anchor" href="#error---tagged-pdfa-and---encrypt--are-mutually-exclusive" aria-label="Link to this section">#</a></h3>
+<p>ISO 19005-1 §6.3.2 forbids encryption in PDF/A. Pick one — either an archival PDF/A document, or an encrypted distribution copy, but not both.</p>
+<h3 id="enoent-no-such-file-or-directory-d--windows"><code>ENOENT: no such file or directory, &#39;D\&#39;</code>  (Windows)<a class="heading-anchor" href="#enoent-no-such-file-or-directory-d--windows" aria-label="Link to this section">#</a></h3>
+<p>This was a v0.1.0 / pre-v0.2.0 regression: <code>--attachment D:\file.xml</code> was split at the drive-letter colon. Fixed in v0.2.0 — make sure you&#39;re on <code>pdfnative-cli@^0.2.0</code>.</p>
+<h3 id="layout-file-is-ignored-when-i-also-pass-cli-flags">Layout file is ignored when I also pass CLI flags<a class="heading-anchor" href="#layout-file-is-ignored-when-i-also-pass-cli-flags" aria-label="Link to this section">#</a></h3>
+<p>That is the <strong>intended precedence</strong>: <code>CLI flags &gt; --layout file &gt; pdfnative defaults</code>. To merge nested objects (e.g. a watermark in the layout file plus a <code>--watermark-text</code> on the CLI), the CLI now correctly merges <code>params.layout</code> with CLI-derived flags as of v0.2.0 (previously the JSON-embedded layout could be silently dropped — fixed).</p>
+<h3 id="--lang-th-does-not-produce-thai-glyphs"><code>--lang th</code> does not produce Thai glyphs<a class="heading-anchor" href="#--lang-th-does-not-produce-thai-glyphs" aria-label="Link to this section">#</a></h3>
+<p><code>--lang</code> only <em>activates</em> fonts that are registered in the CLI process — pass <code>--font th</code> as well so the bundled Noto Thai module is registered (<code>--font</code> covers all 22 bundled scripts, <code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, <code>math</code>). A wrapper script that registers fonts and then spawns the CLI does <strong>not</strong> work: in-memory registration does not cross a process boundary. For a non-bundled font you ship yourself, call the library directly — see <em>Recipes → Multilang fonts</em>.</p>
+<h3 id="signed-pdf-fails-adobe-verification">Signed PDF fails Adobe verification<a class="heading-anchor" href="#signed-pdf-fails-adobe-verification" aria-label="Link to this section">#</a></h3>
+<p>Ensure your certificate&#39;s signing-key usage extension includes <code>digitalSignature</code> (key usage 0). Self-signed certificates work for testing but require the validator to trust the issuer — pass <code>--trust ca-root.pem</code> to <code>verify</code> for self-signed setups.</p>
+<hr>
+<h2 id="resources">Resources<a class="heading-anchor" href="#resources" aria-label="Link to this section">#</a></h2>
+<ul>
+<li>📦 <strong>npm:</strong> <a href="https://www.npmjs.com/package/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a></li>
+<li>🏛️ <strong>Repo:</strong> <a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">Nizoka/pdfnative-cli</a></li>
+<li>📚 <strong>Knowledge base:</strong> <a href="https://github.com/Nizoka/pdfnative-cli/blob/main/docs/KNOWLEDGE_BASE.md" target="_blank" rel="noopener">pdfnative-cli/docs/KNOWLEDGE_BASE.md</a> — full architecture, integration patterns, FAQ</li>
+<li>📁 <strong>Samples:</strong> <a href="https://github.com/Nizoka/pdfnative-cli/tree/main/samples" target="_blank" rel="noopener">pdfnative-cli/samples</a></li>
+<li>🧪 <strong>Try it interactively:</strong> <a href="../playgrounds/cli.html">CLI playground</a> — build commands without leaving the browser</li>
+<li>🔧 <strong>Underlying library:</strong> <a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><code>pdfnative</code></a></li>
+<li>🤖 <strong>AI integration:</strong> <a href="mcp.html">pdfnative-mcp guide</a> — same library exposed as a Model Context Protocol server</li>
+<li>🐛 <strong>Report a bug:</strong> <a href="https://github.com/Nizoka/pdfnative-cli/issues" target="_blank" rel="noopener">Nizoka/pdfnative-cli/issues</a></li>
+<li>💬 <strong>Discuss:</strong> <a href="https://github.com/Nizoka/pdfnative-cli/discussions" target="_blank" rel="noopener">Nizoka/pdfnative-cli/discussions</a></li>
+</ul>
+<hr>
+<h2 id="citation">Citation<a class="heading-anchor" href="#citation" aria-label="Link to this section">#</a></h2>
+<p>If you use the CLI in research or academic pipelines, cite both repositories:</p>
+<pre><code class="language-bibtex">@software{pdfnative_cli_2026,
+  title  = {pdfnative-cli: Official CLI for the pdfnative PDF generation library},
+  author = {Nizoka},
+  year   = {2026},
+  url    = {https://github.com/Nizoka/pdfnative-cli},
+  license = {MIT}
+}
+</code></pre>
+<!-- guide:render:end -->
   </article>
 </main>
 

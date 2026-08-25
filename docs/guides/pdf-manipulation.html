@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/pdf-manipulation.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/pdf-manipulation.html">
   <link rel="alternate" type="text/markdown" href="pdf-manipulation.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"PDF manipulation (merge / split / extract)","item":"https://pdfnative.dev/guides/pdf-manipulation.html"}]},{"@type":"TechArticle","headline":"PDF manipulation (merge / split / extract)","description":"Merge, split, and extract pages from existing PDFs with pdfnative's production-safe page-tree API — clean object-graph rebuild, resolved inherited attributes, optional signature/annotation stripping. New in v1.4.0.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/pdf-manipulation.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,265 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; PDF manipulation</p>
-  <article id="guide-content" class="guide-content" data-md="pdf-manipulation.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="pdf-manipulation.md">read pdf-manipulation.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="pdf-manipulation.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="pdf-manipulation-merge--split--extract">PDF manipulation (merge / split / extract)</h1>
+<blockquote>
+<p><strong>New in v1.4.0.</strong> Combine, slice, and reorder existing PDFs with a
+production-safe page-tree API. Each operation <strong>rebuilds a clean object graph</strong>
+rather than patching bytes in place — inherited page attributes are resolved,
+dangling references are pruned, and the result is a fresh, well-formed PDF.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { mergePdfs, splitPdf, extractPages } from &#39;pdfnative&#39;;
+import { readFileSync, writeFileSync } from &#39;node:fs&#39;;
+
+const a = readFileSync(&#39;cover.pdf&#39;);
+const b = readFileSync(&#39;body.pdf&#39;);
+
+// Merge
+writeFileSync(&#39;combined.pdf&#39;, mergePdfs([a, b]));
+
+// Split into page ranges (0-based, end inclusive; end defaults to start)
+const [intro, rest] = splitPdf(b, [
+  { start: 0, end: 1 },   // pages 0–1
+  { start: 2, end: 9 },   // pages 2–9
+]);
+
+// Extract specific pages (0-based)
+writeFileSync(&#39;selected.pdf&#39;, extractPages(b, [0, 3, 7]));
+</code></pre>
+<p>All three accept and return <code>Uint8Array</code> PDF bytes.</p>
+<blockquote>
+<p><strong>New in v1.6.0.</strong> Encrypted sources are now <strong>decrypted on ingest</strong> — pass a
+password (see <a href="#encrypted-sources">Encrypted sources</a>) — the rebuilt output
+can be <strong>re-encrypted</strong> with <code>encrypt</code> (see
+<a href="#re-encrypting-the-output">Re-encrypting the output</a>), and there are
+constant-memory <strong>streaming</strong> variants (<code>streamMergedPdfs</code> / <code>streamSplitPdf</code> /
+<code>streamExtractPages</code>, see <a href="#streaming-merge--split">Streaming merge &amp; split</a>).</p>
+</blockquote>
+<h2 id="mergepdfssources-options"><code>mergePdfs(sources, options?)</code><a class="heading-anchor" href="#mergepdfssources-options" aria-label="Link to this section">#</a></h2>
+<p>Concatenates multiple PDFs into one, in order.</p>
+<pre><code class="language-ts">function mergePdfs(
+  sources: readonly PdfSourceInput[],
+  options?: MergeOptions,
+): Uint8Array;
+
+// Raw bytes, or bytes + password for an encrypted source (v1.6.0):
+type PdfSourceInput = Uint8Array | { bytes: Uint8Array; password?: string };
+
+interface MergeOptions {
+  /** Strip digital-signature widgets/fields from the result. Default false. */
+  dropSignatures?: boolean;
+  /** Strip all annotations (links, comments, …) from the result. Default false. */
+  dropAnnotations?: boolean;
+  /** Password used to decrypt encrypted sources (default for every source). v1.6.0 */
+  password?: string;
+  /**
+   * Maximum size, in bytes, of the assembled output. The operation throws as
+   * soon as the copied object graph would exceed this limit — even mid-copy,
+   * before an oversized stream is materialised — so a malicious or accidentally
+   * huge source cannot exhaust process memory. Defaults to **256 MiB**; pass
+   * `Infinity` to disable (not recommended for untrusted input).
+   */
+  maxOutputSize?: number;
+}
+</code></pre>
+<ul>
+<li>Up to <strong>50 source documents</strong> per call (<code>MAX_MERGE_SOURCES</code>).</li>
+<li>Output is hard-capped at <strong>256 MiB</strong> by default (<code>maxOutputSize</code>) so a hostile
+source cannot OOM the process; raise it for legitimately large merges.</li>
+<li>Page resources (<code>/Font</code>, <code>/XObject</code>, …) are deep-copied into a fresh
+object-number space, so there are no collisions between sources.</li>
+<li>Inherited attributes (<code>/MediaBox</code>, <code>/CropBox</code>, <code>/Rotate</code>, <code>/Resources</code>) are
+resolved from each page&#39;s ancestors and folded onto the page, so pages keep
+their geometry even when the original relied on inheritance.</li>
+</ul>
+<blockquote>
+<p>Merging a signed PDF invalidates its signature (the bytes change). Pass
+<code>dropSignatures: true</code> to remove the now-meaningless signature fields.</p>
+</blockquote>
+<h2 id="splitpdfsource-ranges"><code>splitPdf(source, ranges)</code><a class="heading-anchor" href="#splitpdfsource-ranges" aria-label="Link to this section">#</a></h2>
+<p>Splits one PDF into several, one output per range.</p>
+<pre><code class="language-ts">function splitPdf(
+  source: Uint8Array,
+  ranges: readonly PageRange[],
+  options?: MergeOptions,
+): Uint8Array[];
+
+interface PageRange {
+  /** 0-based first page (inclusive). */
+  start: number;
+  /** 0-based last page (inclusive). Defaults to `start` (single page). */
+  end?: number;
+}
+</code></pre>
+<p>Ranges may overlap and need not be contiguous. Each output is an independent,
+fully-formed PDF. <code>options</code> (including <code>maxOutputSize</code>) applies to every emitted
+document.</p>
+<h2 id="extractpagessource-indices"><code>extractPages(source, indices)</code><a class="heading-anchor" href="#extractpagessource-indices" aria-label="Link to this section">#</a></h2>
+<p>Builds a new PDF from an explicit list of <strong>0-based</strong> page indices, in the order
+given — handy for reordering or cherry-picking.</p>
+<pre><code class="language-ts">function extractPages(
+  source: Uint8Array,
+  indices: readonly number[],
+  options?: MergeOptions,
+): Uint8Array;
+
+extractPages(pdf, [4, 0, 1]); // page 5 first, then 1, then 2
+</code></pre>
+<p><code>options</code> (including <code>maxOutputSize</code> and <code>dropAnnotations</code>) is honoured here too.</p>
+<h2 id="encrypted-sources">Encrypted sources<a class="heading-anchor" href="#encrypted-sources" aria-label="Link to this section">#</a></h2>
+<p>Since <strong>v1.6.0</strong>, <code>mergePdfs</code> / <code>splitPdf</code> / <code>extractPages</code> decrypt encrypted
+sources transparently (Standard Security Handler — RC4, AES-128, AES-256). Give
+the password either per-source or as a shared default:</p>
+<pre><code class="language-ts">// Per-source password (only that source is encrypted):
+mergePdfs([cover, { bytes: encryptedBody, password: &#39;secret&#39; }]);
+
+// Shared password for every source, via options:
+mergePdfs([a, b], { password: &#39;secret&#39; });
+
+// splitPdf / extractPages take the password on options:
+splitPdf(encrypted, [{ start: 0, end: 2 }], { password: &#39;secret&#39; });
+</code></pre>
+<p>A wrong or missing password throws <code>PdfPasswordError</code>; an unsupported handler
+(e.g. public-key) throws <code>PdfEncryptionUnsupportedError</code>. The rebuilt output is
+unencrypted <strong>unless you set <code>encrypt</code></strong> (below). See the
+<a href="../guides/architecture.html">reader guide</a> for <code>openPdf(bytes, { password })</code>.</p>
+<h2 id="re-encrypting-the-output">Re-encrypting the output<a class="heading-anchor" href="#re-encrypting-the-output" aria-label="Link to this section">#</a></h2>
+<p>Since <strong>v1.6.0</strong>, <code>MergeOptions.encrypt</code> re-encrypts the rebuilt document —
+closing the round trip: <em>open encrypted → edit → re-secure</em>. It takes the same
+shape as the document builder&#39;s <code>encryption</code> option:</p>
+<pre><code class="language-ts">import { mergePdfs, splitPdf } from &#39;pdfnative&#39;;
+
+// Merge, then protect the result (AES-256):
+const secured = mergePdfs([a, b], {
+  encrypt: {
+    ownerPassword: &#39;owner-secret&#39;,      // required, non-empty
+    userPassword: &#39;user-secret&#39;,        // optional (empty = opens freely)
+    algorithm: &#39;aes256&#39;,                // &#39;aes128&#39; (V4/R4, default) | &#39;aes256&#39; (V5/R6)
+    permissions: { print: true, copy: false, modify: false },
+  },
+});
+
+// Change a document&#39;s password: decrypt on ingest, re-encrypt on output.
+const rekeyed = mergePdfs(
+  [{ bytes: oldPdf, password: &#39;old-password&#39; }],
+  { encrypt: { ownerPassword: &#39;new-password&#39;, algorithm: &#39;aes256&#39; } },
+);
+
+// Works identically on splitPdf / extractPages and the streaming variants.
+splitPdf(src, [{ start: 0, end: 4 }], { encrypt: { ownerPassword: &#39;o&#39; } });
+</code></pre>
+<p>Notes:</p>
+<ul>
+<li><strong>AES only</strong> — new output is never RC4-encrypted (legacy RC4 is read-only).</li>
+<li><strong>CSPRNG required</strong> — a missing Web Crypto secure random source throws
+before any copying starts (encryption keys are never derived from
+<code>Math.random()</code>).</li>
+<li><strong>Fresh keys</strong> — no key material, permissions, or passwords from any source
+document are reused; the caller states the new protection explicitly.</li>
+<li><strong>Non-deterministic output</strong> — random IVs/salts and a random document <code>/ID</code>
+mean encrypted output is not byte-reproducible (the unencrypted path keeps
+its content-addressed deterministic <code>/ID</code>).</li>
+</ul>
+<h2 id="streaming-merge--split">Streaming merge &amp; split<a class="heading-anchor" href="#streaming-merge--split" aria-label="Link to this section">#</a></h2>
+<p>For large documents, the streaming variants emit the result as fixed-size
+chunks while holding only the cross-reference offsets and small object dicts in
+memory — stream payloads flow straight from the (in-memory) source bytes, so the
+fully-joined document is never materialised. Each is <strong>byte-identical</strong> to its
+buffered counterpart (except with <code>encrypt</code>, where fresh random IVs make each
+invocation structurally — not byte — identical) and composes with
+<a href="streaming.html"><code>streamToFile</code></a>:</p>
+<pre><code class="language-ts">import { streamMergedPdfs, streamSplitPdf, streamToFile } from &#39;pdfnative&#39;;
+
+// Constant-memory merge straight to disk:
+await streamToFile(streamMergedPdfs([a, b]), &#39;combined.pdf&#39;);
+
+// Split: one output stream per range (drain each fully before advancing):
+for await (const part of streamSplitPdf(body, [{ start: 0, end: 1 }, { start: 2, end: 9 }])) {
+  await streamToFile(part.pdf, `part-${part.index}.pdf`);
+}
+</code></pre>
+<p><code>StreamMergeOptions</code> adds <code>chunkSize</code> (1 KiB–16 MiB, default 64 KiB) on top of
+<code>MergeOptions</code>. For multi-gigabyte merges pass <code>maxOutputSize: Infinity</code> — safe
+with streaming because output bytes are never buffered (the sources themselves
+are still in-memory <code>Uint8Array</code>s).</p>
+<p>For freshly <em>built</em> (not merged) documents, combine the true streaming builders
+with <a href="streaming.html"><code>streamToFile</code></a> so the binary never fully materialises:</p>
+<pre><code class="language-ts">import { buildDocumentPDFStreamTrue, streamToFile } from &#39;pdfnative&#39;;
+
+await streamToFile(buildDocumentPDFStreamTrue(params), &#39;report.pdf&#39;);
+</code></pre>
+<h2 id="updating-metadata-in-place">Updating metadata in place<a class="heading-anchor" href="#updating-metadata-in-place" aria-label="Link to this section">#</a></h2>
+<blockquote>
+<p><strong>New in v1.7.0.</strong> <code>PdfModifier.updateMetadata()</code> rewrites a document&#39;s
+metadata as a non-destructive incremental revision — no re-serialisation,
+existing signatures over earlier revisions stay intact.</p>
+</blockquote>
+<pre><code class="language-ts">import { openPdf, createModifier } from &#39;pdfnative&#39;;
+
+const modifier = createModifier(openPdf(bytes));
+modifier.updateMetadata({
+  title: &#39;Q3 report (final)&#39;,
+  author: &#39;Finance&#39;,
+  keywords: &#39;quarterly, revenue&#39;,
+  // modDate: new Date(&#39;2026-08-21T00:00:00Z&#39;),  // pin for reproducible bytes
+});
+const updated = modifier.save();
+</code></pre>
+<p>Only the fields you pass change; the rest of <code>/Info</code> is preserved. <code>/ModDate</code>
+is always refreshed (pass <code>modDate</code> to pin it). When the document carries an
+XMP packet, it is resynchronised in the same revision — <code>dc:title</code>,
+<code>dc:creator</code>, <code>dc:description</code>, <code>pdf:Keywords</code>, <code>xmp:ModifyDate</code> and
+<code>xmp:MetadataDate</code> — while <code>xmp:CreateDate</code> and any <code>pdfaid:*</code> conformance
+claim are preserved, so Info↔XMP parity holds for PDF/A documents.</p>
+<h2 id="safety--limits">Safety &amp; limits<a class="heading-anchor" href="#safety--limits" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><strong>Encrypted input is decrypted on ingest</strong> (v1.6.0) when a valid password is
+supplied; a wrong/missing password throws <code>PdfPasswordError</code>. Output is
+unencrypted unless <code>encrypt</code> re-protects it (AES-128/AES-256, CSPRNG
+required, fresh keys only).</li>
+<li><strong>Annotations are filtered to URI <code>/Link</code> only</strong> during the rebuild (plus the
+full strip when <code>dropAnnotations</code> is set), so interactive form/JS annotations
+don&#39;t leak across documents.</li>
+<li><strong>Bounded-depth copy.</strong> The object-graph copy is capped at a fixed recursion
+depth, so a pathologically nested or adversarial source can never overflow the
+stack — it throws a descriptive error instead.</li>
+<li><strong>Bounded output size.</strong> Cumulative output is capped at <strong>256 MiB</strong> by default
+(<code>maxOutputSize</code>), checked <em>before</em> each stream is materialised, so a source
+full of multi-gigabyte objects is rejected rather than allowed to exhaust
+memory. Tune or disable (<code>Infinity</code>) per call.</li>
+<li><strong>Deterministic output.</strong> Every unencrypted result carries a
+content-addressed trailer <code>/ID</code> (ISO 32000-1 §7.5.5) derived from the
+assembled bytes, so the same inputs always produce a byte-identical PDF —
+friendly to caching, diffing, and reproducible builds. (With <code>encrypt</code>, the
+<code>/ID</code> is the encryption state&#39;s random document ID, as the file key is bound
+to it.)</li>
+<li><strong>Full rebuild, not in-place surgery.</strong> The clean-graph approach trades a
+little speed for correctness and is safe to run on third-party PDFs.</li>
+<li><strong>Page boxes survive</strong> <em>(v1.7.0)</em>. Declared <code>/TrimBox</code>, <code>/BleedBox</code>,
+<code>/ArtBox</code>, <code>/CropBox</code> and <code>/UserUnit</code> entries are preserved through
+<code>mergePdfs</code> / <code>splitPdf</code> / <code>extractPages</code> (they were dropped by the rebuild
+before 1.7.0) — so print-ready sources keep their geometry. See the
+<a href="print.html">print production guide</a>.</li>
+</ul>
+<h2 id="how-it-works">How it works<a class="heading-anchor" href="#how-it-works" aria-label="Link to this section">#</a></h2>
+<p><a href="https://github.com/Nizoka/pdfnative/blob/main/src/parser/pdf-pagetree.ts" target="_blank" rel="noopener"><code>src/parser/pdf-pagetree.ts</code></a>
+opens each source with the built-in <a href="architecture.html">PDF reader</a>, walks the
+page tree, and deep-copies every kept page plus its transitive object graph into
+a new document (<code>obj 1</code> = Catalog, <code>obj 2</code> = Pages root, <code>obj 3+</code> = the copied
+graph). The copy is <strong>memoised per reader</strong> and <strong>cycle-safe</strong>, and all values
+are serialised binary-safe (Latin-1) so embedded fonts and image streams survive
+intact.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="architecture.html">Architecture</a> — the parser/reader internals</li>
+<li><a href="streaming.html">Streaming output</a> — <code>streamToFile</code></li>
+<li><a href="outlines.html">Outlines &amp; page labels</a></li>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG</a></li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/form-filling.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/form-filling.html">
   <link rel="alternate" type="text/markdown" href="form-filling.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Form filling & flattening","item":"https://pdfnative.dev/guides/form-filling.html"}]},{"@type":"TechArticle","headline":"Form filling & flattening","description":"Read, fill, and flatten existing AcroForm PDFs with pdfnative — readFormFields(), fillForm() (regenerated appearances), flattenForm() — via non-destructive incremental update that preserves prior signatures. New in v1.6.0.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/form-filling.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,159 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Form filling</p>
-  <article id="guide-content" class="guide-content" data-md="form-filling.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="form-filling.md">read form-filling.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="form-filling.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="form-filling--flattening">Form filling &amp; flattening</h1>
+<blockquote>
+<p><strong>New in v1.6.0.</strong> Read, fill, and flatten the <strong>interactive AcroForm fields
+of existing PDFs</strong> — whether authored by pdfnative or a third party — via
+non-destructive incremental update. Complements the form <em>builder</em> (which
+creates fields from scratch).</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { readFormFields, fillForm, flattenForm } from &#39;pdfnative&#39;;
+import { readFileSync, writeFileSync } from &#39;node:fs&#39;;
+
+const src = readFileSync(&#39;application.pdf&#39;);
+
+// 1. Discover the fields
+for (const f of readFormFields(src)) {
+  console.log(f.name, f.type, f.value);
+}
+
+// 2. Fill by field name
+const filled = fillForm(src, {
+  fullName: &#39;Ada Lovelace&#39;,
+  agree: true,               // checkbox
+  country: &#39;France&#39;,         // dropdown option
+});
+writeFileSync(&#39;filled.pdf&#39;, filled);
+
+// 3. Optionally flatten (make it non-editable)
+writeFileSync(&#39;flat.pdf&#39;, flattenForm(filled));
+</code></pre>
+<h2 id="readformfieldsbytes-options"><code>readFormFields(bytes, options?)</code><a class="heading-anchor" href="#readformfieldsbytes-options" aria-label="Link to this section">#</a></h2>
+<p>Returns a <code>ParsedFormField[]</code> describing every terminal field:</p>
+<pre><code class="language-ts">interface ParsedFormField {
+  name: string;                               // fully-qualified (dotted) name
+  type: &#39;text&#39; | &#39;checkbox&#39; | &#39;radio&#39; | &#39;dropdown&#39; | &#39;listbox&#39;
+      | &#39;button&#39; | &#39;signature&#39; | &#39;unknown&#39;;
+  value: string | string[] | boolean | null;
+  readOnly: boolean;
+  required: boolean;
+  multiline: boolean;
+  options?: { export: string; label: string }[]; // choice fields
+  maxLen?: number;
+  onState?: string;                           // checkbox/radio &quot;on&quot; state name
+  widgets: { pageIndex: number; rect: [number, number, number, number] }[];
+  ref: number;                                // terminal field object number
+}
+</code></pre>
+<p>Inherited attributes (<code>/FT</code>, <code>/Ff</code>, <code>/DA</code>, <code>/Opt</code>, <code>/MaxLen</code>) are resolved up the
+<code>/Parent</code> chain, and UTF-16BE names/values are decoded.</p>
+<h2 id="fillformbytes-values-options"><code>fillForm(bytes, values, options?)</code><a class="heading-anchor" href="#fillformbytes-values-options" aria-label="Link to this section">#</a></h2>
+<p><code>values</code> maps <strong>fully-qualified field name → value</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Field type</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>text / multiline</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td>dropdown</td>
+<td><code>string</code> (one option&#39;s export/label)</td>
+</tr>
+<tr>
+<td>listbox</td>
+<td><code>string</code> or <code>string[]</code> (multi-select)</td>
+</tr>
+<tr>
+<td>checkbox / radio</td>
+<td><code>boolean</code>, or the export-state <code>string</code></td>
+</tr>
+</tbody></table>
+<pre><code class="language-ts">interface FillFormOptions {
+  flatten?: boolean;                          // fill then flatten in one call
+  onUnknownField?: &#39;throw&#39; | &#39;ignore&#39;;        // default &#39;throw&#39;
+  nonWinAnsi?: &#39;throw&#39; | &#39;needAppearances&#39;;   // default &#39;throw&#39;
+  password?: string;                          // for encrypted documents (see below)
+}
+</code></pre>
+<ul>
+<li>Text/choice fields get a freshly generated, <strong>self-contained</strong> Helvetica
+appearance stream (its own <code>/Resources /Helv</code>), so filling never depends on the
+document&#39;s <code>/DR</code>.</li>
+<li>Checkbox/radio set <code>/V</code> and <code>/AS</code> from the widget&#39;s <strong>own</strong> <code>/AP</code> on/off states,
+preserving the document&#39;s original look.</li>
+<li>Non-WinAnsi text (e.g. CJK) can&#39;t be drawn with the built-in Helvetica
+appearance; pass <code>nonWinAnsi: &#39;needAppearances&#39;</code> to write the value and let the
+viewer regenerate the appearance, or the call throws by default.</li>
+</ul>
+<p>Errors: <code>FormFieldNotFoundError</code>, <code>FormValueTypeError</code>, <code>FormUnsupportedError</code>.</p>
+<h2 id="flattenformbytes-options"><code>flattenForm(bytes, options?)</code><a class="heading-anchor" href="#flattenformbytes-options" aria-label="Link to this section">#</a></h2>
+<p>Stamps each widget&#39;s appearance into its page content and removes the
+interactive layer (<code>/AcroForm</code>, widget <code>/Annots</code>):</p>
+<pre><code class="language-ts">interface FlattenFormOptions {
+  force?: boolean;      // flatten even over a signed signature field
+  password?: string;    // for encrypted documents
+}
+</code></pre>
+<p>Flattening a document with a <strong>signed signature field</strong> throws by default
+(flattening is destructive to what was signed); pass <code>{ force: true }</code> to
+override.</p>
+<h2 id="encrypted--signed-documents">Encrypted &amp; signed documents<a class="heading-anchor" href="#encrypted--signed-documents" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><p><strong>Encrypted documents are supported</strong> (v1.6.0): pass the password —</p>
+<pre><code class="language-ts">const filled = fillForm(encryptedPdf, { fullName: &#39;Grace Hopper&#39; }, { password: &#39;secret&#39; });
+const flat = flattenForm(filled, { password: &#39;secret&#39; });
+</code></pre>
+<p>The appended objects — field values, regenerated appearance streams,
+flatten overlays — are <strong>encrypted under the document&#39;s existing scheme</strong>
+(same <code>/Encrypt</code> dictionary, same file key; RC4, AES-128 and AES-256
+sources all work), so no plaintext ever leaks into an encrypted file and
+no downgrade or upgrade of the scheme is possible. A wrong or missing
+password throws <code>PdfPasswordError</code>. Note: the <code>/P</code> permission bits are
+<strong>not enforced</strong> — the update proceeds if the password authenticates;
+honouring the modify bit is the caller&#39;s responsibility
+(<code>openPdf(bytes, { password }).encryption.authenticatedAs</code> tells you
+which password opened the file).</p>
+</li>
+<li><p><strong>Signed documents:</strong> filling <em>non-signature</em> fields is allowed and preserves
+the signed revision byte-for-byte (incremental update only appends). Viewers
+will report &quot;document modified after signing&quot; for the added revision — expected,
+since the fill is a new, unsigned revision layered on top. Adding a <em>new</em>
+signature placeholder to an <strong>encrypted</strong> document is not supported
+(<code>addSignaturePlaceholder</code> needs a verbatim byte layout that cannot be
+transparently encrypted — it fails fast with a clear error).</p>
+</li>
+</ul>
+<h2 id="how-it-works">How it works<a class="heading-anchor" href="#how-it-works" aria-label="Link to this section">#</a></h2>
+<p>Both operations use the incremental modifier
+(<a href="architecture.html"><code>createModifier</code></a>), so the original bytes are never
+rewritten — the update is appended after the existing body with a new xref and a
+<code>/Prev</code> chain. That is why signatures on earlier revisions stay valid.</p>
+<blockquote>
+<p><strong>Searchable form text</strong> <em>(v1.7.0)</em>. The AcroForm <code>/Helv</code> font dictionary now
+carries a <code>/ToUnicode</code> CMap in every mode, so text typed into form fields is
+searchable and extractable (see the <a href="text-extraction.html">text extraction guide</a>).
+Because of that CMap, <strong>every form-carrying document changes bytes</strong> compared
+to v1.6.0 output (about 20 bytes) — a deliberate correctness fix, recorded in
+the v1.7.0 release notes. Under a PDF/A claim, a form field also raises the
+<code>PDFA_UNEMBEDDED_FORM_FONT</code> diagnostic (see the <a href="pdfa.html">PDF/A guide</a>).</p>
+</blockquote>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="signatures.html">Signatures</a> — CMS/PKCS#7 signing</li>
+<li><a href="pdf-manipulation.html">PDF manipulation</a> — merge/split/extract, decryption</li>
+<li><a href="accessibility.html">Accessibility</a></li>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG</a></li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

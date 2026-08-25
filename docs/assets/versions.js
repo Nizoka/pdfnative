@@ -33,9 +33,9 @@
     // the whole site; these mirror the latest published releases so an offline
     // visitor still sees a sensible value. Bumped at every release.
     var FALLBACK = {
-        'pdfnative': { version: '1.6.0', pin: null, pinField: null },
+        'pdfnative': { version: '1.7.0', pin: null, pinField: null },
         'pdfnative-cli': { version: '1.3.0', pin: '^1.6.0', pinField: 'dependencies' },
-        'pdfnative-mcp': { version: '1.5.0', pin: '^1.6.0', pinField: 'dependencies' },
+        'pdfnative-mcp': { version: '1.6.0', pin: '^1.7.0', pinField: 'dependencies' },
         'pdfnative-react': { version: '1.1.0', pin: '^1.6.0', pinField: 'peerDependencies' }
     };
 

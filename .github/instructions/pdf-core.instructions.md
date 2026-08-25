@@ -127,7 +127,7 @@ applyTo: "src/core/**"
 - LTR runs: standard encoding path (no BiDi processing)
 - Arabic shaping (`shapeArabicText()`) returns glyphs in logical order — must reverse for RTL visual rendering
 - Hebrew text detected by `containsHebrew()` — uses RTL ordering without shaping
-- Glyph mirroring for brackets/parentheses in RTL context via `MIRROR_MAP`
+- Glyph mirroring for brackets/parentheses in RTL context via `BIDI_MIRRORING_PAIRS` (`bidi-mirroring-data.ts`, full 428-pair UCD table since v1.7.0)
 - CRITICAL: never call `shapeArabicText()` on already-reversed text — always un-reverse to logical first
 
 ## PDF Encryption (ISO 32000-1 §7.6)
@@ -201,7 +201,7 @@ applyTo: "src/core/**"
 - `headerTemplate` / `footerTemplate` on `PdfLayoutOptions` — both builders support them
 - `HEADER_H = 15` constant in `pdf-layout.ts` — header zone reduces available content height
 - Backward compat: `footerText` maps to `{ left: footerText, right: '{page}/{pages}' }`
-- `_renderPageTemplate()` (pdf-document.ts) / `_buildPageTemplate()` (pdf-builder.ts) — renders left/center/right at given Y
+- `renderPageTemplate()` (pdf-document.ts) / `_buildPageTemplate()` (pdf-builder.ts) — renders left/center/right at given Y
 - Default color from `colors.footer` (`PdfColor`), parsed via `parseColor()`
 - Tagged mode: template text wrapped in `/P` structure elements with marked content
 
@@ -225,9 +225,9 @@ applyTo: "src/core/**"
 - **Document builder only** — table builder has no headings concept
 - **Multi-pass pagination** (max 3 iterations):
   1. Pass 1: paginate without TOC → collect `HeadingDestination[]` (destName, text, level, pageIndex, y)
-  2. Pass 2: estimate TOC height via `_estimateTocHeight()`, re-paginate with TOC height included
+  2. Pass 2: estimate TOC height via `estimateTocHeight()`, re-paginate with TOC height included
   3. Pass 3 (if needed): if heading page assignments shifted, re-paginate one more time
-- `_renderToc()`: renders TOC title (bold, larger font), indented entries with dot leaders, right-aligned page numbers
+- `renderToc()`: renders TOC title (bold, larger font), indented entries with dot leaders, right-aligned page numbers
 - TOC entries are `/GoTo` annotations: `<< /Type /Annot /Subtype /Link /Rect [...] /Dest /toc_h_N >>`
 - Annotations starting with `#` prefix → `/Dest` (internal); others → `/URI` (external)
 - **Named destinations** in catalog: `/Dests << /toc_h_0 [pageObj /XYZ x y null] ... >>`
@@ -263,7 +263,7 @@ applyTo: "src/core/**"
 ## Digital Signature Model (pdf-signature.ts — ISO 32000-1 §12.8)
 - `buildSigDict(options, contentsSize?)`: builds the `/Sig` dictionary with `/ByteRange` placeholder (`SigDictMetadata` options: signingTime, name, reason, location, contact)
 - Signature includes `/Filter /Adobe.PPKLite /SubFilter /adbe.pkcs7.detached`
-- `signPdfBytes(pdfBytes, options)`: round-trip sign → inject CMS into `/Contents`; `PdfSignOptions = { signerCert: X509Certificate, rsaKey? | ecKey?, certChain?, algorithm?: 'rsa-sha256' | 'ecdsa-sha256', provider?, ...SigDictMetadata }`
+- `signPdfBytes(pdfBytes, options)`: round-trip sign → inject CMS into `/Contents`; `PdfSignOptions = { signerCert: X509Certificate, rsaKey? | ecKey?, certChain?, algorithm?: 'rsa-sha256' | 'rsa-sha384' | 'rsa-sha512' | 'ecdsa-sha256', provider?, ...SigDictMetadata }`
 - `/ByteRange [0 before after end]`: specifies which bytes are signed (excludes `/Contents` hex)
 - CMS SignedData via `crypto/cms.ts`: signed attributes, certificate embedding, digest
 

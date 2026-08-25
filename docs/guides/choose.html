@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choosing your surface — pdfnative</title>
+  <meta name="description" content="Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — generate, tables, charts, signatures, LTV, encryption, forms, text extraction, page-tree editing, annotations, layout inspection and PDF/UA validation on each surface.">
+  <link rel="canonical" href="https://pdfnative.dev/guides/choose.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/choose.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/choose.html">
+  <link rel="alternate" type="text/markdown" href="choose.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/guides/choose.html">
+  <meta property="og:title" content="Choosing your surface — pdfnative">
+  <meta property="og:description" content="Application code → library, shell/CI → CLI, AI assistant → MCP, React 19 app → React renderer — same engine, same bytes, with a verified capability matrix.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Choosing your surface — pdfnative">
+  <meta name="twitter:description" content="Library vs CLI vs MCP vs React — the decision tree and the capability × surface matrix, verified against the sources.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Choosing your surface","item":"https://pdfnative.dev/guides/choose.html"}]},{"@type":"TechArticle","headline":"Choosing your surface","description":"Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — generate, tables, charts, signatures, LTV, encryption, forms, text extraction, page-tree editing, annotations, layout inspection and PDF/UA validation on each surface.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/choose.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
+      <li><a href="./">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Choosing your surface</p>
+  <article id="guide-content" class="guide-content" data-md="choose.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="choosing-your-surface">Choosing your surface</h1>
+<blockquote>
+<p><strong>Write application code → the library. Drive a shell, Makefile or CI job →
+<code>pdfnative-cli</code>. Give a conversational AI assistant tool access →
+<code>pdfnative-mcp</code>. Author documents inside a React 19 app →
+<code>pdfnative-react</code>.</strong> All four surfaces sit on the same zero-dependency
+engine and produce the same ISO 32000-1 / PDF/A-conformant bytes, so the
+choice is about <em>who is calling</em>, not about what comes out — and you can
+switch later without re-authoring your documents.</p>
+</blockquote>
+<h2 id="the-decision-in-prose">The decision, in prose<a class="heading-anchor" href="#the-decision-in-prose" aria-label="Link to this section">#</a></h2>
+<p><strong>You are writing application code</strong> — a Node.js, Deno, Bun or browser
+service, a worker, a script with logic around the PDF. Use the <strong>library</strong>
+(<code>npm install pdfnative</code>). It is the full surface: synchronous builders, the
+parser, signatures with long-term validation, streaming, Web Worker support.
+Everything the other three surfaces do, they do by calling this package.</p>
+<p><strong>You are driving a shell, a CI pipeline, a container, or a build tool in
+another language.</strong> Use the <strong>CLI</strong> (<code>pdfnative-cli</code>, binary <code>pdfnative</code>) —
+17 commands over stdin/stdout pipelines, with an agent-native automation
+contract: a <code>--json</code> envelope, stable <code>E_*</code> error codes, <code>--dry-run</code>, and
+compact <code>--summary</code> / <code>--fields</code> output projection. No JavaScript required.</p>
+<p><strong>You are (or you are building) a conversational assistant with tool
+access</strong> — Claude Desktop, Cursor, Continue, Zed, or any Model Context
+Protocol client. Use the <strong>MCP server</strong> (<code>pdfnative-mcp</code>, <code>npx -y pdfnative-mcp</code>) — 28 tools with strict JSON Schemas, read-back tools for
+self-verification, and no outbound network access except the
+operator-configured TSA/OCSP/CRL endpoints.</p>
+<p><strong>Your host application is React 19.</strong> Use the <strong>React renderer</strong>
+(<code>pdfnative-react</code>) — declarative JSX compiled on-device to pdfnative blocks
+by a custom reconciler (no DOM, no headless browser), with live-preview hooks
+and the token-frugal <code>DocSpec</code> for agent authoring. React 19 is a peer
+dependency of this package only; the engine stays zero-dependency.</p>
+<h2 id="capability--surface">Capability × surface<a class="heading-anchor" href="#capability--surface" aria-label="Link to this section">#</a></h2>
+<p>The same facts in machine-readable form live in
+<a href="../data/surfaces.json"><code>docs/data/surfaces.json</code></a>; tool, command and export
+names are verified against
+<a href="../assets/ecosystem.json"><code>docs/assets/ecosystem.json</code></a> and the engine&#39;s
+export surface by the documentation CI. Version annotations name the release
+<em>of that surface&#39;s own package</em> which introduced the capability; an em-dash
+means the surface does not offer it.</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Library (<code>pdfnative</code>)</th>
+<th>CLI (<code>pdfnative-cli</code>)</th>
+<th>MCP (<code>pdfnative-mcp</code>)</th>
+<th>React (<code>pdfnative-react</code>)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Generate documents</td>
+<td><code>buildDocumentPDFBytes</code> / <code>buildPDFBytes</code></td>
+<td><code>render</code></td>
+<td><code>generate_basic_pdf</code> (+ the dedicated document tools)</td>
+<td><code>renderToBytes</code> and friends, <code>&lt;Document&gt;</code> tree</td>
+</tr>
+<tr>
+<td>Smart tables</td>
+<td><code>table</code> block</td>
+<td><code>render</code> (<code>table</code> block, or <code>--variant table</code>)</td>
+<td><code>add_table</code></td>
+<td><code>&lt;Table&gt;</code></td>
+</tr>
+<tr>
+<td>Native vector charts</td>
+<td><code>chart</code> block <em>(v1.6.0)</em></td>
+<td><code>render</code> (<code>chart</code> block) <em>(v1.3.0)</em></td>
+<td><code>add_chart</code> <em>(v1.5.0)</em></td>
+<td><code>&lt;Chart&gt;</code> <em>(v1.1.0)</em></td>
+</tr>
+<tr>
+<td>Digital signatures (PAdES CMS)</td>
+<td><code>addSignaturePlaceholder</code> <em>(v1.2.0)</em> + <code>signPdfBytes</code></td>
+<td><code>sign</code></td>
+<td><code>sign_pdf</code> (+ <code>prepare_signature_placeholder</code>)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>LTV ladder (B-T → B-LTA)</td>
+<td><code>signPdfBytesWithTimestamp</code>, <code>addValidationInfo</code>, <code>addDocumentTimestamp</code> <em>(v1.7.0)</em></td>
+<td>— (verification only: <code>verify --revocation</code>)</td>
+<td><code>add_ltv</code>, <code>timestamp_pdf</code> <em>(v1.6.0)</em></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Encrypt / decrypt</td>
+<td>build-time <code>encryption</code> layout option; existing PDFs via the page-tree <code>encrypt</code> option and <code>openPdf</code> with a password</td>
+<td><code>encrypt</code> / <code>decrypt</code> <em>(v1.3.0)</em></td>
+<td><code>encrypt_pdf</code> / <code>decrypt_pdf</code> <em>(v1.5.0)</em></td>
+<td>build-time only, via the <code>layout</code> render option</td>
+</tr>
+<tr>
+<td>Fill / flatten forms</td>
+<td><code>readFormFields</code>, <code>fillForm</code>, <code>flattenForm</code> <em>(v1.6.0)</em></td>
+<td><code>fill</code> <em>(v1.3.0)</em></td>
+<td><code>read_form_fields</code>, <code>fill_form</code> <em>(v1.5.0)</em></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Extract text</td>
+<td><code>extractText</code> <em>(v1.6.0)</em></td>
+<td><code>extract-text</code> <em>(v1.3.0)</em></td>
+<td><code>extract_text</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Merge / split / extract pages</td>
+<td><code>mergePdfs</code>, <code>splitPdf</code>, <code>extractPages</code> <em>(v1.4.0)</em></td>
+<td><code>merge</code> / <code>split</code> / <code>extract</code> <em>(v1.2.0)</em></td>
+<td><code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code> <em>(v1.3.0)</em></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Markup annotations</td>
+<td><code>buildAnnotation</code> + <code>PdfModifier.addAnnotation</code> <em>(v1.5.0)</em></td>
+<td><code>annotate</code> <em>(v1.2.0)</em></td>
+<td><code>annotate_pdf</code> <em>(v1.4.0)</em></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Inspect layout (pagination dry run)</td>
+<td><code>inspectDocumentLayout</code> <em>(v1.5.0)</em></td>
+<td><code>render --inspect-layout</code> <em>(v1.2.0)</em></td>
+<td><code>inspect_layout</code> <em>(v1.6.0)</em></td>
+<td><code>inspectDocument</code></td>
+</tr>
+<tr>
+<td>Validate PDF/UA</td>
+<td><code>validatePdfUA</code> <em>(v1.3.0)</em></td>
+<td><code>inspect --pdfua</code> <em>(v1.1.0)</em></td>
+<td><code>validate_pdf</code> <em>(v1.1.0)</em></td>
+<td>— (<code>lintDocument</code> checks the authoring model before rendering, not the emitted PDF)</td>
+</tr>
+</tbody></table>
+<h2 id="honest-notes">Honest notes<a class="heading-anchor" href="#honest-notes" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><strong>LTV differs by surface on purpose.</strong> The engine opens no socket: in the
+<strong>library</strong>, the RFC 3161 / OCSP / CRL transport is <em>injected by your code</em>
+(<code>setTimestampProvider</code> / <code>setRevocationProvider</code>). On <strong>MCP</strong>, the transport
+is <em>operator-configured</em> through environment variables
+(<code>PDFNATIVE_MCP_TSA_URL</code>, <code>PDFNATIVE_MCP_REVOCATION</code>, an allow-list) — never
+from tool arguments. The <strong>CLI</strong> currently <em>verifies</em> LTV material
+(<code>verify --revocation</code>, RFC 3161 timestamp validation) but does not create
+it — sign-side LTV is documented as out of scope there.</li>
+<li><strong>The engine ships no cryptographic signature verifier.</strong> <code>listSignatures</code>
+is an inventory; full verification (digest, CMS, chain, trust, timestamps,
+revocation) lives in <code>pdfnative-cli verify</code> and the MCP <code>verify_pdf</code> tool.</li>
+<li><strong>React is an authoring surface.</strong> It generates documents (including charts,
+barcodes, SVG, form <em>widgets</em> and build-time encryption via the <code>layout</code>
+render option) but does not operate on existing PDFs — no fill, extract,
+merge or signing. When a React app needs those, call the library directly:
+it is already installed as the renderer&#39;s peer dependency.</li>
+<li><strong>The MCP tool names, CLI commands and library exports in the table are the
+complete story for these capabilities</strong>, not a sample — where a cell is an
+em-dash, the surface genuinely lacks the capability today rather than
+hiding it under another name.</li>
+</ul>
+<h2 id="you-can-switch-later">You can switch later<a class="heading-anchor" href="#you-can-switch-later" aria-label="Link to this section">#</a></h2>
+<p>All four surfaces call the same engine, so the artefacts are interchangeable:
+a PDF rendered by the React reconciler can be signed by the CLI, inspected by
+an MCP tool, and have its text extracted by the library. Document <em>inputs</em>
+travel too — the CLI&#39;s <code>render</code> consumes the same <code>DocumentParams</code> JSON the
+library takes, the MCP <code>generate_basic_pdf</code> blocks mirror the engine&#39;s block
+kinds, and <code>pdfnative-react</code> compiles JSX (or a <code>DocSpec</code>) into that same
+model. Starting on the &quot;wrong&quot; surface costs a call-site migration, not a
+document rewrite.</p>
+<h2 id="further-reading">Further reading<a class="heading-anchor" href="#further-reading" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="onboarding.html">Onboarding</a> — the 90-second install-and-first-call for
+each surface.</li>
+<li><a href="self-verify.html">Self-verifying generation</a> — the generate → inspect →
+assert → correct loop on every surface.</li>
+<li><a href="architecture.html">Architecture</a> — how the four packages relate.</li>
+<li><a href="cli.html">CLI guide</a> · <a href="mcp.html">MCP guide</a> · <a href="react.html">React guide</a> —
+the complete per-surface references.</li>
+<li><a href="../agent-brief.md">Agent brief</a> — the same decision tree in
+paste-into-context form for AI agents.</li>
+</ul>
+<!-- guide:render:end -->
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="./">All guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
+<script src="guide.js" defer></script>
+</body>
+</html>

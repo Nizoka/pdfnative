@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/outlines.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/outlines.html">
   <link rel="alternate" type="text/markdown" href="outlines.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Outlines & page labels","item":"https://pdfnative.dev/guides/outlines.html"}]},{"@type":"TechArticle","headline":"Outlines & page labels","description":"Add a navigable bookmark tree (/Outlines) and logical page numbering (/PageLabels) to PDFs with pdfnative — auto outline from headings, roman front matter, prefixed appendices. New in v1.4.0.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/outlines.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,206 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Outlines & page labels</p>
-  <article id="guide-content" class="guide-content" data-md="outlines.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="outlines.md">read outlines.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="outlines.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="outlines--page-labels">Outlines &amp; page labels</h1>
+<blockquote>
+<p><strong>New in v1.4.0.</strong> Give long documents a navigable <strong>bookmark tree</strong>
+(<code>/Outlines</code>) and <strong>logical page numbering</strong> (<code>/PageLabels</code>) — roman-numbered
+front matter, prefixed appendices, custom starting numbers. Both are opt-in
+<code>DocumentParams</code> fields and add zero overhead when unused.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+const bytes = buildDocumentPDFBytes({
+  title: &#39;Annual Report&#39;,
+  outline: &#39;auto&#39;,                       // bookmarks derived from headings
+  pageLabels: [
+    { startPage: 0, style: &#39;roman&#39; },    // startPage is 0-based — i, ii, iii … (front matter)
+    { startPage: 3, style: &#39;decimal&#39; },  // 1, 2, 3 … (body, from the 4th page)
+  ],
+  blocks: [
+    { type: &#39;heading&#39;, level: 1, text: &#39;Overview&#39; },
+    { type: &#39;paragraph&#39;, text: &#39;…&#39; },
+    { type: &#39;heading&#39;, level: 2, text: &#39;Highlights&#39; },
+    { type: &#39;paragraph&#39;, text: &#39;…&#39; },
+  ],
+});
+</code></pre>
+<h2 id="document-outline-bookmarks">Document outline (bookmarks)<a class="heading-anchor" href="#document-outline-bookmarks" aria-label="Link to this section">#</a></h2>
+<p>The outline appears in the viewer&#39;s sidebar / bookmarks panel and lets readers
+jump straight to a section. Set <code>DocumentParams.outline</code> to either <code>&#39;auto&#39;</code> or
+an explicit nested tree.</p>
+<h3 id="automatic-outline-from-headings">Automatic outline from headings<a class="heading-anchor" href="#automatic-outline-from-headings" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">outline: &#39;auto&#39;
+</code></pre>
+<p>pdfnative walks your <code>HeadingBlock</code>s and builds a nested tree by heading level
+(<code>level: 1</code> → top level, <code>level: 2</code> → child, …), each bookmark linking to the
+page the heading lands on. This is the zero-effort option for structured
+reports.</p>
+<h3 id="explicit-outline">Explicit outline<a class="heading-anchor" href="#explicit-outline" aria-label="Link to this section">#</a></h3>
+<p>For full control over titles, nesting, ordering, styling, and destinations,
+pass an array of <code>OutlineItem</code>:</p>
+<pre><code class="language-ts">import type { OutlineItem } from &#39;pdfnative&#39;;
+
+const outline: OutlineItem[] = [
+  {
+    title: &#39;Part I — Introduction&#39;,
+    pageIndex: 0,       // 0-based page index
+    bold: true,
+    children: [
+      { title: &#39;Background&#39;, pageIndex: 0 },
+      { title: &#39;Scope&#39;,      pageIndex: 1 },
+    ],
+  },
+  {
+    title: &#39;Part II — Results&#39;,
+    pageIndex: 2,
+    color: [0.1, 0.3, 0.9], // RGB 0–1; also accepts &#39;#1a4fd6&#39;
+    children: [
+      { title: &#39;Findings&#39;, pageIndex: 2, italic: true },
+    ],
+  },
+];
+</code></pre>
+<table>
+<thead>
+<tr>
+<th><code>OutlineItem</code> field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>title</code></td>
+<td><code>string</code></td>
+<td>Bookmark label (encoded as PDF text, UTF-16BE when needed)</td>
+</tr>
+<tr>
+<td><code>pageIndex</code></td>
+<td><code>number</code></td>
+<td>0-based page index to jump to</td>
+</tr>
+<tr>
+<td><code>y</code></td>
+<td><code>number?</code></td>
+<td>Optional vertical destination (PDF user units from the bottom); defaults to the top of the page</td>
+</tr>
+<tr>
+<td><code>bold</code></td>
+<td><code>boolean?</code></td>
+<td>Render the label bold (<code>/F</code> flag 2)</td>
+</tr>
+<tr>
+<td><code>italic</code></td>
+<td><code>boolean?</code></td>
+<td>Render the label italic (<code>/F</code> flag 1)</td>
+</tr>
+<tr>
+<td><code>color</code></td>
+<td><code>PdfColor?</code></td>
+<td>Label colour (<code>/C</code>) — <code>[r,g,b]</code> 0–1 or a hex string</td>
+</tr>
+<tr>
+<td><code>open</code></td>
+<td><code>boolean?</code></td>
+<td>Initial expansion state. <code>true</code> (default) renders the bookmark expanded; <code>false</code> renders it <strong>collapsed</strong> (negative <code>/Count</code>), hiding its children until the reader expands it. Only meaningful with <code>children</code>.</td>
+</tr>
+<tr>
+<td><code>children</code></td>
+<td><code>OutlineItem[]?</code></td>
+<td>Nested bookmarks</td>
+</tr>
+</tbody></table>
+<p>Destinations use <code>/XYZ</code> with the page&#39;s top-left as the default anchor, so the
+viewer scrolls the target page into view at 100 % zoom.</p>
+<h3 id="collapsed-bookmarks">Collapsed bookmarks<a class="heading-anchor" href="#collapsed-bookmarks" aria-label="Link to this section">#</a></h3>
+<p>Deep hierarchies read better when some branches start collapsed. Set
+<code>open: false</code> on any item with children:</p>
+<pre><code class="language-ts">const outline: OutlineItem[] = [
+  { title: &#39;Front matter&#39;, pageIndex: 0 },
+  {
+    title: &#39;Appendices&#39;,
+    pageIndex: 12,
+    open: false,            // collapsed on open — children hidden until expanded
+    children: [
+      { title: &#39;Appendix A&#39;, pageIndex: 12 },
+      { title: &#39;Appendix B&#39;, pageIndex: 18 },
+    ],
+  },
+];
+</code></pre>
+<p>pdfnative emits the spec-correct signed <code>/Count</code> (ISO 32000-1 §12.3.3): a
+positive count for open items, a negative count for collapsed ones, and a
+collapsed node contributes only itself — not its hidden descendants — to its
+ancestors&#39; visible counts.</p>
+<h2 id="page-labels">Page labels<a class="heading-anchor" href="#page-labels" aria-label="Link to this section">#</a></h2>
+<p>By default a viewer numbers pages <code>1, 2, 3 …</code>. <code>/PageLabels</code> overrides that with
+<em>logical</em> numbering — front matter in lowercase roman, the body in decimal,
+appendices with an <code>A-</code> prefix, and so on. The labels show in the viewer&#39;s page
+thumbnail / &quot;go to page&quot; box and in printed page references.</p>
+<pre><code class="language-ts">import type { PageLabelRange } from &#39;pdfnative&#39;;
+
+const pageLabels: PageLabelRange[] = [
+  { startPage: 0, style: &#39;roman&#39; },                 // i, ii, iii
+  { startPage: 3, style: &#39;decimal&#39; },               // 1, 2, 3
+  { startPage: 20, style: &#39;decimal&#39;, prefix: &#39;A-&#39;, start: 1 }, // A-1, A-2
+];
+</code></pre>
+<table>
+<thead>
+<tr>
+<th><code>PageLabelRange</code> field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>startPage</code></td>
+<td><code>number</code></td>
+<td>0-based page index where this range begins</td>
+</tr>
+<tr>
+<td><code>style</code></td>
+<td><code>PageLabelStyle?</code></td>
+<td><code>&#39;decimal&#39;</code> · <code>&#39;roman&#39;</code> (i, ii) · <code>&#39;Roman&#39;</code> (I, II) · <code>&#39;alpha&#39;</code> (a, b) · <code>&#39;Alpha&#39;</code> (A, B) · <code>&#39;none&#39;</code> (label is the prefix only)</td>
+</tr>
+<tr>
+<td><code>prefix</code></td>
+<td><code>string?</code></td>
+<td>Text prepended to each label (e.g. <code>&#39;A-&#39;</code>)</td>
+</tr>
+<tr>
+<td><code>start</code></td>
+<td><code>number?</code></td>
+<td>First number in the range (default <code>1</code>)</td>
+</tr>
+</tbody></table>
+<p>Ranges must be ordered by <code>startPage</code> and stay within the document&#39;s page
+count — both are validated at the boundary with a descriptive error.</p>
+<h2 id="how-it-works">How it works<a class="heading-anchor" href="#how-it-works" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><strong>Outline</strong> — <code>buildOutlineObjects()</code>
+(<a href="https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-outline.ts" target="_blank" rel="noopener"><code>src/core/pdf-outline.ts</code></a>)
+emits the <code>/Outlines</code> dictionary plus one indirect object per bookmark, wired
+with <code>/First /Last /Next /Prev /Parent /Count</code>. The objects are appended as
+trailing indirect objects and the catalog gains <code>/Outlines N 0 R</code>.</li>
+<li><strong>Page labels</strong> — <code>buildPageLabelsDict()</code>
+(<a href="https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-page-labels.ts" target="_blank" rel="noopener"><code>src/core/pdf-page-labels.ts</code></a>)
+emits an inline <code>/PageLabels &lt;&lt; /Nums [...] &gt;&gt;</code> number tree in the catalog, so
+it adds no indirect objects.</li>
+</ul>
+<p>Both features are fully additive: a document with neither field is <strong>byte-identical</strong>
+to the pre-v1.4.0 output.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="quickstart.html">Quick start</a></li>
+<li><a href="pdf-manipulation.html">PDF manipulation</a> — merge/split/extract</li>
+<li><a href="accessibility.html">Accessibility</a> — tagged structure &amp; TOC</li>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG</a></li>
+</ul>
+<!-- guide:render:end -->
   </article>
 </main>
 

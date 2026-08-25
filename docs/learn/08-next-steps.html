@@ -25,21 +25,7 @@
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="../guides/guide.css">
-  <style>
-    .ln-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 36px 0 0; padding-top: 20px; border-top: 1px solid var(--c-border); font-size: 14px; }
-    .ln-pager a { font-weight: 600; }
-    .ln-step { color: var(--c-text-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
-    .ln-hint { color: var(--c-text-dim); font-size: 13px; }
-    .ln-kbd { font-size: 12px; color: var(--c-text-dim); margin: 28px 0 -12px; }
-    .ln-kbd kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; padding: 1px 5px; border: 1px solid var(--c-border); border-radius: 4px; background: var(--c-surface); }
-    .ln-prereq { font-size: 13px; color: var(--c-text-dim); margin: -8px 0 20px; }
-    .ln-check { margin: 28px 0 0; padding: 12px 16px; background: var(--c-surface); border-left: 3px solid var(--c-success); border-radius: 0 8px 8px 0; font-size: 14px; }
-    .ln-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 10px; }
-    .ln-list li { border: 1px solid var(--c-border); border-radius: 8px; padding: 14px 16px; }
-    .ln-list a { font-weight: 700; font-size: 15px; }
-    .ln-list p { margin: 4px 0 0; font-size: 13px; color: var(--c-text-dim); }
-    .ln-num { display: inline-block; min-width: 22px; color: var(--c-text-dim); font-variant-numeric: tabular-nums; }
-  </style>
+  <link rel="stylesheet" href="learn.css">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -124,7 +110,7 @@
     <ul>
       <li><strong>The library</strong> — what you have been using. Full control, any runtime.</li>
       <li><strong><a href="../guides/cli.html">pdfnative-cli</a></strong> — 17 commands for shell scripts, CI and Makefiles. Render, sign, encrypt, extract text, fill forms, merge and split, all from JSON on stdin.</li>
-      <li><strong><a href="../guides/mcp.html">pdfnative-mcp</a></strong> — 24 tools that let an AI assistant (Claude, Cursor, Zed, any stdio MCP client) produce and inspect PDFs on your behalf, with no code.</li>
+      <li><strong><a href="../guides/mcp.html">pdfnative-mcp</a></strong> — 28 tools that let an AI assistant (Claude, Cursor, Zed, any MCP client) produce, sign and inspect PDFs on your behalf, with no code.</li>
       <li><strong><a href="../guides/react.html">pdfnative-react</a></strong> — the same engine driven by JSX components, if your app is already React.</li>
     </ul>
 
@@ -139,9 +125,9 @@
     </ul>
 
     <h2>Try things without installing anything</h2>
-    <p>Nine <a href="../playgrounds/">playgrounds</a> run in your browser: 22 writing systems in one document, native charts, the full toolkit, a CLI command builder, an MCP tool explorer, the React renderer, and 100,000 pages.</p>
+    <p>Ten <a href="../playgrounds/">playgrounds</a> run in your browser: 22 writing systems in one document, native charts, the full toolkit, an inspect-and-verify report on any PDF you drop in, a CLI command builder, an MCP tool explorer, the React renderer, and 100,000 pages.</p>
 
-    <p>All 26 <a href="../guides/">reference guides</a> are one click away. If something in them does not hold up, <a href="https://github.com/Nizoka/pdfnative/issues/new" target="_blank" rel="noopener">say so</a> — a claim we cannot defend is a bug.</p>
+    <p>All 30 <a href="../guides/">reference guides</a> are one click away. If something in them does not hold up, <a href="https://github.com/Nizoka/pdfnative/issues/new" target="_blank" rel="noopener">say so</a> — a claim we cannot defend is a bug.</p>
 
     <div class="ln-check">
       <strong>You are done.</strong> You know the model, the delivery paths and where the reference material lives.

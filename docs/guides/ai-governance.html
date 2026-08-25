@@ -9,6 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/ai-governance.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/ai-governance.html">
   <link rel="alternate" type="text/markdown" href="ai-governance.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
@@ -26,6 +27,9 @@
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"AI governance & human-in-the-loop","item":"https://pdfnative.dev/guides/ai-governance.html"}]},{"@type":"TechArticle","headline":"AI governance & human-in-the-loop","description":"How pdfnative governs AI coding agents: a machine-readable contract (ai-governance.json) and a human-in-the-loop protocol that keep agents as draftsmen. Humans review, approve, and submit everything. Shipped in v1.5.0.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/ai-governance.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
 </head>
 <body>
 
@@ -57,9 +61,175 @@
 
 <main class="guide-shell" id="main-content" tabindex="-1">
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; AI governance</p>
-  <article id="guide-content" class="guide-content" data-md="ai-governance.md">
-    <p class="guide-loading">Loading…</p>
-    <noscript><p>This guide is written in Markdown: <a href="ai-governance.md">read ai-governance.md</a>.</p></noscript>
+  <article id="guide-content" class="guide-content" data-md="ai-governance.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="ai-governance--human-in-the-loop">AI governance &amp; human-in-the-loop</h1>
+<blockquote>
+<p><strong>Shipped in v1.5.0.</strong> pdfnative is developed with the help of AI coding
+agents — and it governs them. This repository ships a <strong>machine-readable
+governance contract</strong> and a <strong>human-in-the-loop (HITL) protocol</strong> that keep
+AI agents in an advisory role: they may <em>draft</em> proposals, but a human always
+reviews, approves, and submits. Nothing reaches GitHub autonomously.</p>
+</blockquote>
+<p>This page exists for <strong>transparency</strong>. If you evaluate pdfnative for production,
+you should be able to see exactly how AI participates in its maintenance — and
+where the hard limits are.</p>
+<p><img src="../assets/ai-governance.svg" alt="AI governance and human-in-the-loop flow — an agent drafts across four steps (detect, reproduce, self-check, draft into .github/drafts/), automated checks run verify-issue.mjs and produce a compliance report, then a human review and sign-off gate is the only path to a submission published under the human&#39;s own GitHub identity. A red callout lists what agents must never do."></p>
+<h2 id="why-this-exists">Why this exists<a class="heading-anchor" href="#why-this-exists" aria-label="Link to this section">#</a></h2>
+<p>Modern open-source projects increasingly receive AI-generated issues and pull
+requests. Unbounded, that creates noise, low-signal duplicates, and — worst of
+all — a diffusion of responsibility: <em>who actually stands behind this change?</em></p>
+<p>pdfnative&#39;s answer is a written, enforceable contract:</p>
+<ul>
+<li><strong>Agents are draftsmen, never submitters.</strong> Their authority ends at producing
+a local markdown draft plus a compliance report.</li>
+<li><strong>A human is always in the loop.</strong> A person explicitly reviews, approves, and
+triggers every issue, comment, pull request, and release.</li>
+<li><strong>Identity integrity.</strong> Anything submitted is published under the human&#39;s own
+GitHub identity — so a human always shares responsibility for the content.</li>
+</ul>
+<p>The two source-of-truth files live in the repository and are loaded by any agent
+that scans project configuration on start-up:</p>
+<ul>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/.github/AGENT_RULES.md" target="_blank" rel="noopener">.github/AGENT_RULES.md</a>
+— the human-and-agent-readable protocol.</li>
+<li><a href="https://github.com/Nizoka/pdfnative/blob/main/.github/ai-governance.json" target="_blank" rel="noopener">.github/ai-governance.json</a>
+— the machine-readable contract.</li>
+</ul>
+<h2 id="the-six-mandatory-rules">The six mandatory rules<a class="heading-anchor" href="#the-six-mandatory-rules" aria-label="Link to this section">#</a></h2>
+<p>Every agent (Copilot, Cursor, Claude, Antigravity, Aider, Cline, Windsurf,
+Gemini CLI, …) must satisfy all six before proposing anything:</p>
+<ol>
+<li><strong>Zero runtime dependencies.</strong> Never suggest, add, or import an external npm
+package for a runtime feature. This is a non-negotiable blocker.</li>
+<li><strong>No duplicates.</strong> Search open <em>and</em> closed issues/PRs first. Surface a
+matching one instead of opening a new report.</li>
+<li><strong>Local validation &amp; reproduction.</strong> Create and <em>execute</em> a minimal
+reproduction. If it does not fail or show a measurable regression, do not
+propose an issue.</li>
+<li><strong>Byte-identity awareness.</strong> For changes touching the builders, confirm the
+change is additive and existing output stays byte-identical — or report any
+intentional byte change.</li>
+<li><strong>Human-in-the-loop gate (ethics).</strong> Agents are strictly forbidden from
+creating, editing, or submitting issues, comments, PRs, or releases via any
+tool or API. They produce a local draft in
+<a href="https://github.com/Nizoka/pdfnative/tree/main/.github" target="_blank" rel="noopener">.github/drafts/</a> and
+present it with a compliance report.</li>
+<li><strong>Identity integrity.</strong> The agent reminds the user that anything submitted is
+published under their GitHub identity and that they share responsibility.</li>
+</ol>
+<h2 id="the-human-in-the-loop-workflow">The human-in-the-loop workflow<a class="heading-anchor" href="#the-human-in-the-loop-workflow" aria-label="Link to this section">#</a></h2>
+<pre><code>[Agent detects bug/improvement]
+            │
+            ▼
+ [Local validation &amp; reproduction]
+            │
+            ▼
+[Verify zero-dependency constraint]
+            │
+            ▼
+ [Generate draft markdown in .github/drafts/]
+            │
+            ▼
+[Present draft + compliance report to user]
+            │
+            ▼
+ [User explicitly reviews &amp; signs off]   ◄─── CRITICAL ETHICAL GATE
+            │
+            ▼
+ [User manually submits or approves the API call]
+</code></pre>
+<p>The agent&#39;s job ends at the draft. The <strong>human gate</strong> is the only path from a
+proposal to a published issue, PR, or release.</p>
+<h2 id="the-compliance-report">The compliance report<a class="heading-anchor" href="#the-compliance-report" aria-label="Link to this section">#</a></h2>
+<p>Every draft must be accompanied by a structured compliance report so the human
+can review with full context. At minimum it contains:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>What it confirms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Zero-dependency confirmed</strong></td>
+<td>no new runtime dependency introduced</td>
+</tr>
+<tr>
+<td><strong>Reproduction command</strong></td>
+<td>the exact command the agent ran</td>
+</tr>
+<tr>
+<td><strong>Reproduction result</strong></td>
+<td>the observed failure or regression</td>
+</tr>
+<tr>
+<td><strong>Duplicate search</strong></td>
+<td>what was searched and what was found</td>
+</tr>
+<tr>
+<td><strong>Affected packages</strong></td>
+<td>which monorepo packages are impacted</td>
+</tr>
+<tr>
+<td><strong>Identity reminder shown</strong></td>
+<td>the user was told it publishes under their name</td>
+</tr>
+</tbody></table>
+<h2 id="validate-a-draft-before-presenting-it">Validate a draft before presenting it<a class="heading-anchor" href="#validate-a-draft-before-presenting-it" aria-label="Link to this section">#</a></h2>
+<p>A small, dependency-free verifier checks a draft mechanically:</p>
+<pre><code class="language-bash">node scripts/verify-issue.mjs .github/drafts/my-issue.md
+# or via the npm script
+npm run verify:issue .github/drafts/my-issue.md
+</code></pre>
+<p>It fails when the draft proposes an external dependency or omits a reproduction
+code block. A passing check is <strong>necessary but not sufficient</strong> — the human
+review gate above always applies. The verifier is advisory in CI and exposes a
+pure <code>validateIssueMarkdown(content)</code> function so its logic is unit-tested.</p>
+<h2 id="the-machine-readable-contract">The machine-readable contract<a class="heading-anchor" href="#the-machine-readable-contract" aria-label="Link to this section">#</a></h2>
+<p><a href="https://github.com/Nizoka/pdfnative/blob/main/.github/ai-governance.json" target="_blank" rel="noopener">.github/ai-governance.json</a>
+encodes the policy so agents that scan repository configuration can honour it
+without parsing prose. Key fields:</p>
+<pre><code class="language-jsonc">{
+  &quot;policy&quot;: {
+    &quot;automatic_issue_reporting&quot;: false,
+    &quot;runtime_dependencies_allowed&quot;: false,
+    &quot;human_in_the_loop_mandatory&quot;: true,
+    &quot;autonomous_github_writes_allowed&quot;: false,
+    &quot;required_issue_fields&quot;: [
+      &quot;minimal_reproduction&quot;, &quot;environment&quot;, &quot;expected_behavior&quot;
+    ]
+  },
+  &quot;human_in_the_loop&quot;: {
+    &quot;role_of_agent&quot;: &quot;draftsman&quot;,
+    &quot;gate&quot;: &quot;A human MUST explicitly review, sign off on, and trigger any GitHub issue, comment, PR, or release.&quot;,
+    &quot;draft_location&quot;: &quot;.github/drafts/&quot;
+  }
+}
+</code></pre>
+<p>The contract <code>applies_to</code> the whole ecosystem — <code>pdfnative</code>, <code>pdfnative-cli</code>,
+<code>pdfnative-mcp</code>, and <code>pdfnative-react</code>.</p>
+<p>Since pdfnative-mcp 1.6.0, that package&#39;s mirror of the charter also states
+the <strong>single permitted egress class</strong>: the server makes no outbound request by
+default, and the only network calls it can ever perform go to the TSA / OCSP /
+CRL endpoints the <em>operator</em> configures for the PAdES tools — never to a URL
+taken from a tool argument, and never to GitHub. &quot;No GitHub write path&quot; and
+&quot;no telemetry&quot; remain absolute.</p>
+<h2 id="what-agents-must-never-do">What agents must never do<a class="heading-anchor" href="#what-agents-must-never-do" aria-label="Link to this section">#</a></h2>
+<ul>
+<li>Add a runtime dependency.</li>
+<li>Open, edit, label, close, or comment on issues/PRs autonomously.</li>
+<li>Submit anything under the user&#39;s identity without explicit, per-submission
+human approval.</li>
+<li>Bypass local validation or duplicate checks.</li>
+</ul>
+<h2 id="in-short">In short<a class="heading-anchor" href="#in-short" aria-label="Link to this section">#</a></h2>
+<p>pdfnative treats AI as a <strong>force multiplier for humans, not a replacement for
+human judgement</strong>. Agents accelerate the tedious parts — reproduction, drafting,
+compliance checking — while every externally visible action stays under
+deliberate human control. That is the standard we hold ourselves to, and we
+publish it so you can hold us to it too.</p>
+<!-- guide:render:end -->
   </article>
 </main>
 

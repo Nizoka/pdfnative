@@ -24,7 +24,7 @@
  */
 
 import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
-import { join, relative, resolve, dirname, posix } from 'node:path';
+import { join, relative, resolve, dirname, posix, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 
@@ -143,11 +143,16 @@ const MANIFEST_REL = rel(MANIFEST_PATH);
 // ── The documentation corpus ────────────────────────────────────────
 
 const DOC_FILES: string[] = [
-    // llms-full.txt is generated from files already in the corpus; scanning the
-    // concatenation would double-report every finding at useless line numbers.
+    // llms-full.txt and llms-recipes.txt are generated from files already in
+    // the corpus; scanning a concatenation would double-report every finding
+    // at line numbers nobody can act on.
     ...walk(
         join(ROOT, 'docs'),
-        (p) => /\.(html|md|js|svg|xml|txt)$/.test(p) && !p.includes('ecosystem.json') && !p.endsWith('llms-full.txt'),
+        (p) =>
+            /\.(html|md|js|svg|xml|txt)$/.test(p) &&
+            !p.includes('ecosystem.json') &&
+            !p.endsWith('llms-full.txt') &&
+            !p.endsWith('llms-recipes.txt'),
     ),
     ...['README.md', 'ROADMAP.md', 'AGENTS.md', 'CONTRIBUTING.md', 'SECURITY.md', 'llms.txt']
         .map((f) => join(ROOT, f))
@@ -158,6 +163,10 @@ const DOC_FILES: string[] = [
     // were outside the corpus.
     ...walk(join(ROOT, '.github', 'instructions'), (p) => p.endsWith('.md')),
     ...walk(join(ROOT, '.github', 'prompts'), (p) => p.endsWith('.md')),
+    // The recipes ARE documentation — executable documentation is the whole
+    // point — so their source is scanned directly (the generated llms-recipes
+    // concatenation above is excluded in their favour).
+    ...walk(join(ROOT, 'recipes'), (p) => p.endsWith('.ts')),
 ];
 
 const HTML_FILES = walk(join(ROOT, 'docs'), (p) => p.endsWith('.html'));
@@ -211,7 +220,21 @@ const actualDerived: Record<string, number> = {
           ).length
         : 0,
     learnSteps: manifest.learnPath.length,
+    recipes: existsSync(join(ROOT, 'recipes'))
+        ? readdirSync(join(ROOT, 'recipes')).filter((f) => f.endsWith('.ts')).length
+        : 0,
 };
+
+// A misspelt derived key (e.g. "recipies") would silently drop both the typo
+// AND the real counter from verification — reject unknown keys outright.
+{
+    const KNOWN_DERIVED = new Set([...Object.keys(actualDerived), 'samplePdfs', '$comment']);
+    for (const key of Object.keys(manifest.derived)) {
+        if (!KNOWN_DERIVED.has(key)) {
+            fail(MANIFEST_REL, 1, 'manifest-shape', `derived.${key} is not computed by any rule — typo, or add it to derived-counts`);
+        }
+    }
+}
 
 // samplePdfs only counts when the samples have actually been generated;
 // test-output/ is git-ignored, so an empty tree is not a failure. A partially
@@ -411,6 +434,98 @@ if (SRC_FILES.length > 0) {
             fail(rel(file), lineOf(text, m.index), 'api-exists', `"${id}" is not declared anywhere in src/`);
         }
     }
+
+    // Generalisation of the scan above: ANY identifier written call-shaped at
+    // the very start of an inline code span — `name(…)` in Markdown, or
+    // <code>name(…)</code> in rendered/authored HTML — must exist somewhere in
+    // src/. "Exists" is the same doctrine as the build*/stream* scan: docs may
+    // name internal helpers and interface methods, so the reference set is
+    // every call- or declaration-shaped identifier in the sources, not just
+    // the exports. Anchoring on the span opener keeps prose and member calls
+    // (`mod.updateMetadata(…)`) out of scope; fenced code blocks never start
+    // an identifier with a backtick, so they stay out too. Platform globals
+    // that docs legitimately call in spans are allow-listed here.
+    const callable = new Set<string>(exported);
+    const CALLABLE_FILES = [
+        ...SRC_FILES,
+        // Repo tooling the agent docs legitimately reference (verify-issue.mjs & co).
+        ...walk(join(ROOT, 'scripts'), (p) => p.endsWith('.ts') || p.endsWith('.mjs')),
+    ];
+    for (const srcFile of CALLABLE_FILES) {
+        for (const m of read(srcFile).matchAll(/\b([A-Za-z_]\w*)\s*\(/g)) {
+            callable.add(m[1]);
+        }
+    }
+    const SPAN_GLOBALS = new Set([
+        // Platform / runtime globals docs legitimately call in spans.
+        'fetch', 'import', 'require', 'atob', 'btoa', 'structuredClone',
+        // Test-framework globals (vitest) named by the testing instructions.
+        'describe', 'it', 'test', 'expect', 'bench', 'vi',
+        'beforeAll', 'beforeEach', 'afterAll', 'afterEach',
+        // Conventional-commit prefixes written call-shaped (`feat(scope):`).
+        'feat', 'fix', 'chore', 'refactor', 'perf', 'style', 'ci',
+        // Companion-package exports named in ecosystem prose outside the
+        // dedicated companion guides (their drift is a companion-repo concern,
+        // caught by the weekly --online npm-drift run, not this offline scan).
+        'validateGovernanceDraft', // pdfnative-cli
+        'docSpecSchema', // pdfnative-react (README ecosystem row)
+        'lintDocument', // pdfnative-react (cited by the PDF/A guide)
+    ]);
+    // Guides DEDICATED to a companion package document that package's API
+    // throughout — checking those names against this repo's src/ would be a
+    // category error, so they are out of this scan's scope entirely.
+    const SPAN_SKIP = /docs[\\/](?:guides|playgrounds)[\\/](react|cli|mcp)\.(md|html)$/;
+    // Companion-package exports are legitimate wherever the docs corpus shows
+    // them imported from that package (`import { usePdf } from
+    // 'pdfnative-react'`) — the import example is itself the documentation
+    // that the name exists there.
+    const companionImported = new Set<string>();
+    for (const file of DOC_FILES) {
+        for (const m of read(file).matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*['"]pdfnative-[\w-]+['"]/g)) {
+            for (const raw of m[1].split(',')) {
+                const name = raw.replace(/^type\s+/, '').split(/\s+as\s+/)[0].trim();
+                if (name) companionImported.add(name);
+            }
+        }
+    }
+    // In Markdown a backtick opens a code span; in HTML a backtick is almost
+    // always a JS template literal inside an inline <script>, so only the
+    // literal <code> opener counts there.
+    const SPAN_CALL_MD = /(?:`|<code>)([A-Za-z_]\w*)\(/g;
+    const SPAN_CALL_HTML = /<code>([A-Za-z_]\w*)\(/g;
+    for (const file of DOC_FILES) {
+        if (SPAN_SKIP.test(file)) continue;
+        const SPAN_CALL = file.endsWith('.html') ? SPAN_CALL_HTML : SPAN_CALL_MD;
+        const text = read(file);
+        const lines = text.split(/\r?\n/);
+        SPAN_CALL.lastIndex = 0;
+        let m: RegExpExecArray | null;
+        while ((m = SPAN_CALL.exec(text)) !== null) {
+            const id = m[1];
+            if (callable.has(id) || SPAN_GLOBALS.has(id) || companionImported.has(id)) continue;
+            if (Object.prototype.hasOwnProperty.call(manifest.apiDenylist, id)) continue;
+            const line = lineOf(text, m.index);
+            if (isSuppressed(lines, line, 'api-exists')) continue;
+            fail(rel(file), line, 'api-exists', `"${id}()" is not declared anywhere in src/`);
+        }
+    }
+}
+
+// ── Rule: api-json-sync ─────────────────────────────────────────────
+
+/**
+ * `docs/assets/api.json` is the served, machine-readable export surface —
+ * the substitute for the gitignored `dist/index.d.ts` that agents cannot
+ * otherwise reach. A stale copy teaches last release's API, so it is policed
+ * like every other generated artefact: rebuilt in memory and compared.
+ */
+const { buildApiJson } = await import('./build-api-json.ts');
+
+const API_JSON = join(ROOT, 'docs', 'assets', 'api.json');
+if (!existsSync(API_JSON)) {
+    fail('docs/assets/api.json', 1, 'api-json-sync', 'missing — generate it with `npm run docs:api`');
+} else if (read(API_JSON).replace(/\r\n/g, '\n') !== buildApiJson(ROOT)) {
+    fail('docs/assets/api.json', 1, 'api-json-sync', 'stale — regenerate with `npm run docs:api`');
 }
 
 // ── Rule: jsonld-version ────────────────────────────────────────────
@@ -573,7 +688,9 @@ const SITEMAP = join(ROOT, 'docs', 'sitemap.xml');
 if (existsSync(SITEMAP)) {
     const xml = read(SITEMAP);
     const locs = [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map((m) => m[1]);
-    const today = new Date().toISOString().slice(0, 10);
+    // +1 day of tolerance: a contributor east of UTC editing after their
+    // local midnight writes a lastmod the UTC runner would call "future".
+    const today = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10);
 
     for (const m of xml.matchAll(/<lastmod>\s*([^<]+?)\s*<\/lastmod>/g)) {
         const value = m[1];
@@ -931,6 +1048,152 @@ if (!existsSync(LLMS_FULL)) {
     fail('docs/llms-full.txt', 1, 'llms-sync', 'stale — regenerate with `npx tsx scripts/build-llms-full.ts`');
 }
 
+const { buildLlmsRecipes } = await import('./build-llms-full.ts');
+const LLMS_RECIPES = join(ROOT, 'docs', 'llms-recipes.txt');
+if (!existsSync(LLMS_RECIPES)) {
+    fail('docs/llms-recipes.txt', 1, 'llms-sync', 'missing — generate it with `npm run docs:llms`');
+} else if (read(LLMS_RECIPES).replace(/\r\n/g, '\n') !== buildLlmsRecipes(ROOT)) {
+    fail('docs/llms-recipes.txt', 1, 'llms-sync', 'stale — regenerate with `npm run docs:llms`');
+}
+
+// ── Rule: error-parity ──────────────────────────────────────────────
+
+/**
+ * `docs/data/errors.json` is the served registry of the engine's diagnostic
+ * codes. Two-way check against reality: every `PDFA_*` token the docs mention
+ * must exist both in the registry and in src/, and every registry entry must
+ * exist in src/ — a registry entry for a code the engine no longer emits
+ * teaches agents a ghost.
+ */
+{
+    const ERRORS_JSON = join(ROOT, 'docs', 'data', 'errors.json');
+    if (!existsSync(ERRORS_JSON)) {
+        fail('docs/data/errors.json', 1, 'error-parity', 'missing — the engine diagnostic registry must be served');
+    } else {
+        const registry = JSON.parse(read(ERRORS_JSON)) as { diagnostics: Array<{ code: string }> };
+        const registered = new Set(registry.diagnostics.map((d) => d.code));
+        const srcCodes = new Set<string>();
+        for (const f of walk(join(ROOT, 'src'), (p) => p.endsWith('.ts'))) {
+            for (const m of read(f).matchAll(/\bPDFA_[A-Z_]+\b/g)) srcCodes.add(m[0]);
+        }
+        for (const code of registered) {
+            if (!srcCodes.has(code)) {
+                fail('docs/data/errors.json', 1, 'error-parity', `registry lists "${code}" but src/ never emits it`);
+            }
+        }
+        // Third direction: a code the engine emits must be in the served
+        // registry, or agents learn an incomplete error surface.
+        for (const code of srcCodes) {
+            if (!registered.has(code)) {
+                fail('docs/data/errors.json', 1, 'error-parity', `src/ emits "${code}" but the served registry does not list it`);
+            }
+        }
+        for (const file of DOC_FILES) {
+            const text = read(file);
+            for (const m of text.matchAll(/\bPDFA_[A-Z_]+\b/g)) {
+                if (registered.has(m[0])) continue;
+                fail(rel(file), lineOf(text, m.index!), 'error-parity', `diagnostic "${m[0]}" is not in docs/data/errors.json`);
+            }
+        }
+    }
+}
+
+// ── Rule: anchor-parity ─────────────────────────────────────────────
+
+/**
+ * `internal-links` deliberately strips `#fragments` — so a deep link to a
+ * renamed section rots invisibly, which matters twice as much now that AI
+ * answers cite section-level URLs. With every guide pre-rendered, anchors are
+ * plain `id="…"` attributes in committed HTML: every internal link that
+ * carries a fragment must point at an id that exists in its target page.
+ * Links written against a `.md` target are checked against the paired `.html`
+ * (that is where the pre-rendered ids live).
+ */
+{
+    const anchorCache = new Map<string, Set<string> | null>();
+    const anchorsOf = (absPath: string): Set<string> | null => {
+        if (anchorCache.has(absPath)) return anchorCache.get(absPath)!;
+        if (!existsSync(absPath) || !absPath.endsWith('.html')) {
+            anchorCache.set(absPath, null);
+            return null;
+        }
+        const ids = new Set<string>();
+        for (const m of read(absPath).matchAll(/\bid=["']([^"']+)["']/g)) ids.add(m[1]);
+        anchorCache.set(absPath, ids);
+        return ids;
+    };
+    // Fragment may start with a digit: numbered headings ("## 1. Render…")
+    // slug to ids like "1-render-a-document".
+    const LINK_WITH_FRAG = /(?:\]\(|href=["'])([^)"'#\s]*)#([\p{L}\p{N}][\p{L}\p{N}_-]*)/gu;
+    for (const file of DOC_FILES) {
+        if (!file.endsWith('.md') && !file.endsWith('.html')) continue;
+        const text = read(file);
+        const lines = text.split(/\r?\n/);
+        LINK_WITH_FRAG.lastIndex = 0;
+        let m: RegExpExecArray | null;
+        while ((m = LINK_WITH_FRAG.exec(text)) !== null) {
+            let target = m[1];
+            const frag = m[2];
+            if (/^[a-z][a-z0-9+.-]*:/i.test(target)) continue; // external / mailto
+            if (target === '') target = rel(file).split('/').pop()!; // same-page link
+            let abs = resolve(dirname(file), target);
+            if (abs.endsWith(sep)) abs = join(abs, 'index.html');
+            if (abs.endsWith('.md')) abs = abs.slice(0, -3) + '.html';
+            const ids = anchorsOf(abs);
+            if (ids === null) continue; // non-HTML target or missing file: internal-links' turf
+            if (ids.has(frag)) continue;
+            const line = lineOf(text, m.index);
+            if (isSuppressed(lines, line, 'anchor-parity')) continue;
+            fail(rel(file), line, 'anchor-parity', `link fragment "#${frag}" has no matching id in ${rel(abs)}`);
+        }
+    }
+}
+
+// ── Rule: llms-index-sync ───────────────────────────────────────────
+
+/**
+ * `docs/llms-index.json` tells an agent what every page costs before it
+ * spends the tokens (URLs, anchors, exact bytes). A stale index quietly
+ * advertises last release's sizes and anchors, so it is policed exactly like
+ * `llms-full.txt`. Runs after llms-sync: the index reports the on-disk size
+ * of llms-full.txt, which the previous rule has just proven fresh.
+ */
+const { buildLlmsIndex } = await import('./build-llms-full.ts');
+
+const LLMS_INDEX = join(ROOT, 'docs', 'llms-index.json');
+if (!existsSync(LLMS_INDEX)) {
+    fail('docs/llms-index.json', 1, 'llms-index-sync', 'missing — generate it with `npm run docs:llms`');
+} else if (read(LLMS_INDEX).replace(/\r\n/g, '\n') !== buildLlmsIndex(ROOT)) {
+    fail('docs/llms-index.json', 1, 'llms-index-sync', 'stale — regenerate with `npm run docs:llms`');
+}
+
+// ── Rule: guide-render-sync ─────────────────────────────────────────
+
+/**
+ * Guide shells carry the pre-rendered HTML of their Markdown source (between
+ * `guide:render` markers) plus server-side JSON-LD, so crawlers that do not
+ * execute JavaScript — most AI fetchers — receive the full guide instead of
+ * "Loading…". The renderer is `scripts/build-guides.ts`; this rule rebuilds
+ * every shell in memory and fails when a committed copy is stale, exactly as
+ * `llms-sync` polices `llms-full.txt`. A shell whose article has never been
+ * generated (no marker) fails too: an empty article is the defect this whole
+ * mechanism exists to remove.
+ */
+const { applyGuideRender, listGuideShells } = await import('./build-guides.ts');
+
+for (const htmlName of listGuideShells(ROOT)) {
+    const relPath = `docs/guides/${htmlName}`;
+    const committed = read(join(ROOT, 'docs', 'guides', htmlName)).replace(/\r\n/g, '\n');
+    if (!committed.includes('<!-- guide:render:start -->')) {
+        fail(relPath, 1, 'guide-render-sync', 'article is not pre-rendered — run `npm run docs:guides`');
+        continue;
+    }
+    const expected = applyGuideRender(ROOT, htmlName);
+    if (committed !== expected) {
+        fail(relPath, 1, 'guide-render-sync', 'stale — the committed render differs from its Markdown source; run `npm run docs:guides`');
+    }
+}
+
 // ── Rule: playground-syntax ─────────────────────────────────────────
 
 /**
@@ -1049,6 +1312,11 @@ const OFFLINE_RULES = [
     'bench-parity',
     'contrast',
     'llms-sync',
+    'llms-index-sync',
+    'error-parity',
+    'anchor-parity',
+    'guide-render-sync',
+    'api-json-sync',
     'playground-syntax',
 ] as const;
 

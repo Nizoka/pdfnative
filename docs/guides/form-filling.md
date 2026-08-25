@@ -135,6 +135,14 @@ Both operations use the incremental modifier
 rewritten — the update is appended after the existing body with a new xref and a
 `/Prev` chain. That is why signatures on earlier revisions stay valid.
 
+> **Searchable form text** _(v1.7.0)_. The AcroForm `/Helv` font dictionary now
+> carries a `/ToUnicode` CMap in every mode, so text typed into form fields is
+> searchable and extractable (see the [text extraction guide](text-extraction.html)).
+> Because of that CMap, **every form-carrying document changes bytes** compared
+> to v1.6.0 output (about 20 bytes) — a deliberate correctness fix, recorded in
+> the v1.7.0 release notes. Under a PDF/A claim, a form field also raises the
+> `PDFA_UNEMBEDDED_FORM_FONT` diagnostic (see the [PDF/A guide](pdfa.html)).
+
 ## See also
 
 - [Signatures](signatures.html) — CMS/PKCS#7 signing
