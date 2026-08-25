@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCP Tool Explorer — pdfnative</title>
-  <meta name="description" content="Browse all 24 pdfnative-mcp tools, read example prompts and JSON payloads, and generate the exact PDFs an AI assistant receives — in your browser.">
-  <meta name="keywords" content="pdfnative-mcp, Model Context Protocol, MCP server, AI PDF generation, Claude Desktop, Cursor, PDF tools, generate PDF, merge PDF, split PDF, PDF/A, digital signature">
+  <meta name="description" content="Browse all 28 pdfnative-mcp tools, read example prompts and JSON payloads, and generate the exact PDFs an AI assistant receives — in your browser.">
+  <meta name="keywords" content="pdfnative-mcp, Model Context Protocol, MCP server, AI PDF generation, Claude Desktop, Cursor, PDF tools, generate PDF, merge PDF, split PDF, PDF/A, digital signature, PAdES, LTV, document timestamp, update PDF metadata, layout preview">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/mcp.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/mcp.html">
@@ -14,14 +14,14 @@
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/mcp.html">
-  <meta property="og:title" content="pdfnative-mcp Tool Explorer — 24 AI PDF tools">
-  <meta property="og:description" content="Browse the 24 pdfnative-mcp tool schemas, see example prompts, and generate the exact PDFs an AI assistant receives — directly in your browser. No keys, no install.">
+  <meta property="og:title" content="pdfnative-mcp Tool Explorer — 28 AI PDF tools">
+  <meta property="og:description" content="Browse the 28 pdfnative-mcp tool schemas, see example prompts, and generate the exact PDFs an AI assistant receives — directly in your browser. No keys, no install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="pdfnative-mcp Tool Explorer — 24 AI PDF tools">
-  <meta name="twitter:description" content="Browse the 24 pdfnative-mcp tool schemas, see example prompts, and generate real PDFs in your browser. No keys, no install, no LLM cost.">
+  <meta name="twitter:title" content="pdfnative-mcp Tool Explorer — 28 AI PDF tools">
+  <meta name="twitter:description" content="Browse the 28 pdfnative-mcp tool schemas, see example prompts, and generate real PDFs in your browser. No keys, no install, no LLM cost.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -66,14 +66,14 @@
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
     "url": "https://pdfnative.dev/playgrounds/mcp.html",
-    "description": "Interactive explorer for the 24 pdfnative-mcp tools. Browse JSON schemas, see example prompts, and generate the exact PDFs an AI assistant receives — directly in the browser.",
+    "description": "Interactive explorer for the 28 pdfnative-mcp tools. Browse JSON schemas, see example prompts, and generate the exact PDFs an AI assistant receives — directly in the browser.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "about": {
       "@type": "SoftwareApplication",
       "inLanguage": "en",
       "name": "pdfnative-mcp",
-      "softwareVersion": "1.5.0",
+      "softwareVersion": "1.6.0",
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "Node.js",
       "url": "https://github.com/Nizoka/pdfnative-mcp"
@@ -127,7 +127,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
-    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>24 tools</strong> — including the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, plus <code>validate_pdf</code>, <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code> (Factur-X / ZUGFeRD PDF/A-3), and <code>extract_text</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, token-frugal read modes (<code>verbosity</code> / <code>fields</code>), and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the pdfnative library payload this browser demo executes (the MCP tool schemas differ — see the <a href="../guides/mcp.html">MCP guide</a> for the exact schemas), and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
+    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>28 tools</strong> — including the v1.6.0 PAdES ladder <code>add_ltv</code> / <code>timestamp_pdf</code> (with RFC 3161 timestamps on <code>sign_pdf</code>), <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, all 13 block kinds in <code>generate_basic_pdf</code>, print production and charts v2, the v1.5.0 <code>add_chart</code> / form / encryption tools, the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, and the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, token-frugal read modes (<code>verbosity</code> / <code>fields</code>), and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the pdfnative library payload this browser demo executes (the MCP tool schemas differ — see the <a href="../guides/mcp.html">MCP guide</a> for the exact schemas), and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
 
     <p style="font-size: 14px; color: var(--c-text-dim);">For the full integration story (config, security model, signed-document workflow), see the <a href="../guides/mcp.html">MCP guide</a>.</p>
 
@@ -146,7 +146,7 @@
 
     <h2 style="margin-top: 36px;">2. Try the tools</h2>
     <p id="loader-status" style="font-size: 13px; color: var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once per page load.</p>
-    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), and the v1.4.0 <code>annotate_pdf</code> — all of which build their own source PDFs in the browser and run the real pdfnative 1.7.0 API. <code>draft_governance_issue</code> produces no PDF (it validates a report locally, network-free) — use its <em>Copy args</em> button. Nine of the 24 tools have no card here, because they need a real PDF as input and run best from your own MCP client: <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code> and <code>decrypt_pdf</code>. See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
+    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), the v1.4.0 <code>annotate_pdf</code>, and the v1.6.0 <code>update_metadata</code> — all of which build their own source PDFs in the browser and run the real pdfnative 1.7.0 API. Two cards produce no PDF by design: <code>inspect_layout</code> returns a pagination report (run it to see the JSON), and <code>draft_governance_issue</code> validates a report locally, network-free — use its <em>Copy args</em> button. Eleven of the 28 tools have no card here: nine need a real PDF as input and run best from your own MCP client (<code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code>, <code>decrypt_pdf</code>), and two need the operator-configured network providers a browser page cannot supply (<code>add_ltv</code>, <code>timestamp_pdf</code> — TSA / OCSP / CRL endpoints set via environment variables). See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
 
     <div class="mcp-cards" id="cards"></div>
 
@@ -305,7 +305,7 @@
     },
     {
       id: 'add_chart',
-      purpose: 'Render a bar, horizontal-bar, line, pie or donut chart as native PDF vector paths — no rasterisation, no image round-trip.',
+      purpose: 'Render a chart as native PDF vector paths — nine types since v1.6.0 (bar, stacked, line, area, scatter, pie, donut), dual axis, log and time scales; no rasterisation, no image round-trip.',
       prompt: 'Chart our Q1-Q4 revenue against cost as a bar chart, and tag it for accessibility.',
       args: {
         title: 'FY2026 performance',
@@ -326,7 +326,7 @@
     },
     {
       id: 'add_international_text',
-      purpose: 'Render text in any of 24 lang codes — 22 scripts plus latin and emoji, with explicit math on top — with BiDi & OpenType shaping. You can pass several in one call.',
+      purpose: 'Render text in any of 25 lang codes — 22 scripts plus latin, emoji and the explicit math font — with BiDi & OpenType shaping. You can pass several in one call.',
       prompt: 'Create a multilingual greeting card with English, Thai, Arabic, and a smiling-face emoji.',
       args: {
         title: 'Multilingual greeting',
@@ -360,7 +360,7 @@
     },
     {
       id: 'add_form',
-      purpose: 'Build an interactive AcroForm PDF (text, checkbox, radio, dropdown).',
+      purpose: 'Build an interactive AcroForm PDF (text, textarea, checkbox, radio, dropdown — plus listbox and placeholder since v1.6.0).',
       prompt: 'Create a contact form PDF with a name field, an email field, and a “subscribe to newsletter” checkbox.',
       args: {
         title: 'Contact us',
@@ -407,7 +407,7 @@
     },
     {
       id: 'sign_pdf',
-      purpose: 'Apply a CMS/PKCS#7 signature (RSA or ECDSA) to an existing PDF.',
+      purpose: 'Apply a PAdES CMS signature (RSA-SHA256/384/512 or ECDSA) to an existing PDF — with profile: "pades", an RFC 3161 timestamp, certificate chains and multiple signatures since v1.6.0.',
       prompt: 'Sign the prepared contract using our corporate certificate.',
       args: {
         algorithm: 'rsa-sha256',
@@ -451,6 +451,30 @@
             { type: 'paragraph', text: 'This is the kind of file an AI assistant would hand to inspect_pdf. The tool returns metadata, page geometry, signature info, and PDF/A status as structured JSON — driven by the tool outputSchema.' },
           ],
         });
+      },
+    },
+    {
+      id: 'inspect_layout',
+      purpose: 'Dry-run pagination: page count, page geometry and the position of every block — with no PDF produced (new in v1.6.0).',
+      prompt: 'Before rendering, tell me how many pages this report will take and where the table lands.',
+      args: {
+        title: 'Layout preview',
+        blocks: [
+          { type: 'heading', text: 'Quarterly report', level: 1 },
+          { type: 'paragraph', text: 'A short summary paragraph that flows above the figures table.' },
+          { type: 'table',
+            headers: ['Quarter', 'Revenue'],
+            rows: [
+              { cells: ['Q1', '$1.2M'] },
+              { cells: ['Q2', '$1.5M'] },
+            ],
+          },
+        ],
+      },
+      noteHtml: 'The MCP tool wraps the same read-only <code>inspectDocumentLayout()</code> this button runs — token-frugal by design, because no base64 PDF bytes are produced or transferred. The button prints the real pagination report (page size, margins, and each block&rsquo;s page / x / top / width / height) below the card.',
+      runJson: (p, m) => {
+        requireFn(m, 'inspectDocumentLayout');
+        return m.inspectDocumentLayout(p);
       },
     },
     {
@@ -565,6 +589,40 @@
       },
     },
     {
+      id: 'update_metadata',
+      purpose: 'Rewrite the /Info dictionary (+ XMP) of an existing PDF — title, author, subject, keywords, pinned modDate — via a non-destructive incremental update (new in v1.6.0).',
+      prompt: 'Set the title of this PDF to "Quarterly Report — Final" and the author to "Finance Team", without touching anything else.',
+      args: {
+        pdfBase64: '<base64 source PDF>',
+        title: 'Quarterly Report — Final',
+        author: 'Finance Team',
+        keywords: 'finance, quarterly, 2026',
+        modDate: '2026-08-25T09:00:00+02:00',
+        outputMode: 'base64',
+      },
+      noteHtml: 'In a real MCP call the AI assistant supplies the source as base64. This demo builds a small source PDF in the browser, then runs the <em>real</em> pdfnative 1.7.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>updateMetadata()</code> → <code>save()</code> pipeline the tool calls — an incremental update, so the original bytes stay a byte-exact prefix. Pinning <code>modDate</code> keeps the output reproducible. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
+      build: (p, m) => {
+        requireFn(m, 'openPdf');
+        requireFn(m, 'createModifier');
+        const src = m.buildDocumentPDFBytes({ title: 'Quarterly report (draft)', blocks: [
+          { type: 'heading', text: 'Quarterly report', level: 1 },
+          { type: 'paragraph', text: 'Source document handed to update_metadata — its /Info dictionary is rewritten as an appended revision.' },
+        ]});
+        const reader = m.openPdf(src);
+        const mod = m.createModifier(reader);
+        if (typeof mod.updateMetadata !== 'function') {
+          throw new Error('updateMetadata() requires pdfnative ≥ 1.7.0 — the CDN served an older build. Try reloading.');
+        }
+        mod.updateMetadata({
+          title: 'Quarterly Report — Final',
+          author: 'Finance Team',
+          keywords: 'finance, quarterly, 2026',
+          modDate: new Date('2026-08-25T09:00:00+02:00'),
+        });
+        return mod.save();
+      },
+    },
+    {
       id: 'draft_governance_issue',
       purpose: 'Generate a policy-compliant GitHub issue report locally — fully network-free (new in v1.4.0).',
       prompt: 'Draft a governance issue for the layout regression I just described, following the repo contract.',
@@ -612,16 +670,18 @@
       <div class="prompt">${t.prompt}</div>
       ${t.noteHtml ? `<p class="purpose">${t.noteHtml}</p>` : ''}
       <details>
-        <summary>${t.build ? 'Payload (pdfnative library form)' : 'MCP tool-call payload (schema example)'}</summary>
+        <summary>${(t.build || t.runJson) ? 'Payload (pdfnative library form)' : 'MCP tool-call payload (schema example)'}</summary>
         <div>
-          ${t.build ? '<p class="purpose" style="margin:0 0 6px;">This is the pdfnative library payload the browser demo executes; the MCP tool schema differs — see the <a href="../guides/mcp.html">MCP guide</a>.</p>' : ''}
+          ${(t.build || t.runJson) ? '<p class="purpose" style="margin:0 0 6px;">This is the pdfnative library payload the browser demo executes; the MCP tool schema differs — see the <a href="../guides/mcp.html">MCP guide</a>.</p>' : ''}
           <pre><code class="language-json">${escapeHtml(JSON.stringify(t.args, null, 2))}</code></pre>
         </div>
       </details>
       <div class="actions">
         ${t.build ? `<button class="primary" data-action="run" data-tool="${idx}" disabled>Generate PDF</button>` : ''}
+        ${t.runJson ? `<button class="primary" data-action="run" data-tool="${idx}" disabled>Preview layout</button>` : ''}
         <button class="secondary" data-action="copy-args" data-tool="${idx}">Copy args</button>
       </div>
+      ${t.runJson ? '<pre data-result hidden></pre>' : ''}
       <div class="status" data-status></div>
     `;
     cards.appendChild(card);
@@ -677,14 +737,24 @@
     if (btn.dataset.action === 'run') {
       if (!pdfnativeMod) return;
       btn.disabled = true;
-      status.textContent = 'Generating…'; status.className = 'status';
+      status.textContent = tool.runJson ? 'Measuring…' : 'Generating…'; status.className = 'status';
       try {
         const t0 = performance.now();
-        const bytes = await tool.build(tool.args, pdfnativeMod);
-        const elapsed = (performance.now() - t0).toFixed(0);
-        downloadPdf(bytes, tool.id + '.pdf');
-        status.textContent = `Generated ${(bytes.length / 1024).toFixed(1)} KB in ${elapsed} ms.`;
-        status.className = 'status success';
+        if (tool.runJson) {
+          const report = await tool.runJson(tool.args, pdfnativeMod);
+          const elapsed = (performance.now() - t0).toFixed(0);
+          const out = card.querySelector('[data-result]');
+          out.textContent = JSON.stringify(report, null, 2);
+          out.hidden = false;
+          status.textContent = `Previewed ${report.totalPages} page(s) in ${elapsed} ms — no PDF produced.`;
+          status.className = 'status success';
+        } else {
+          const bytes = await tool.build(tool.args, pdfnativeMod);
+          const elapsed = (performance.now() - t0).toFixed(0);
+          downloadPdf(bytes, tool.id + '.pdf');
+          status.textContent = `Generated ${(bytes.length / 1024).toFixed(1)} KB in ${elapsed} ms.`;
+          status.className = 'status success';
+        }
       } catch (e) {
         status.textContent = 'Error: ' + (e && e.message ? e.message : e);
         status.className = 'status error';

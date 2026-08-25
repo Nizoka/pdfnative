@@ -101,6 +101,17 @@ Each `PdfDiagnostic` carries a machine-readable `code`, a `severity`
 The code list is a stable, additions-only union (`PdfDiagnosticCode`), so a
 sink written today keeps compiling as future codes are added.
 
+> **On the MCP surface** _(pdfnative-mcp 1.6.0)_, the same honesty is exposed
+> as three opt-in inputs on every document tool: `embedFonts: true` embeds
+> Noto Sans Latin so a PDF/A claim on base-14 text is actually accepted by
+> veraPDF, `strict: true` fails instead of producing a non-conformant file,
+> and `includeDiagnostics: true` echoes the engine's diagnostics
+> (`PDFA_NO_FONT_ENTRIES`, `PDFA_UNEMBEDDED_FORM_FONT`,
+> `PDFA_DEVICE_CMYK_IMAGE`) in the tool result. Known engine limitation:
+> `add_form` (or a `formField` block) under a PDF/A claim still fails
+> veraPDF even with `embedFonts` — the AcroForm `/DR /Helv` font is an
+> unembedded Type1 (ISO 19005-2 §6.2.11.4.1).
+
 ## v1.1.0 status — fully validated
 
 v1.1.0 ships full PDF/A-1b / 2b / 2u / 3b conformance against the

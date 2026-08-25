@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pdfnative — Zero-dependency PDF generation for TypeScript</title>
   <meta name="description" content="Zero-dependency PDF library for TypeScript: generate, parse, extract text, fill forms, encrypt & decrypt. ISO 32000-1, PDF/A, AES-128/256, PAdES signatures with long-term validation (LTV, RSA + ECDSA), 22 Unicode scripts, BiDi, native charts, barcodes, SVG, streaming. CLI + MCP server included.">
-  <meta name="keywords" content="pdf, typescript, javascript, pdf generation, pdf parser, text extraction, extract text from pdf, fill pdf form, flatten pdf, decrypt pdf, encrypt pdf, pdf charts, zero dependencies, unicode, arabic, thai, hebrew, bidi, pdf-a, tagged-pdf, pades, acroform, accessibility, encryption, aes, rsa, ecdsa, cms, pkcs7, rfc-3161, digital-signatures, sign pdf, ltv, long-term validation, document timestamp, rtl, persian, barcodes, qr-code, svg, opentype, emoji, noto, cjk, mcp, model-context-protocol, claude, cursor, ai, llm, react, jsx, react-pdf, pdfnative-cli, pdfnative-mcp, pdfnative-react">
+  <meta name="keywords" content="pdf, typescript, javascript, pdf generation, pdf parser, text extraction, extract text from pdf, fill pdf form, flatten pdf, decrypt pdf, encrypt pdf, pdf charts, zero dependencies, unicode, arabic, thai, hebrew, bidi, pdf-a, tagged-pdf, pades, acroform, accessibility, encryption, aes, rsa, ecdsa, cms, pkcs7, rfc-3161, digital-signatures, sign pdf, ltv, long-term validation, document timestamp, ocsp, crl, rtl, persian, barcodes, qr-code, svg, opentype, emoji, noto, cjk, mcp, model-context-protocol, claude, cursor, ai, llm, react, jsx, react-pdf, pdfnative-cli, pdfnative-mcp, pdfnative-react">
   <meta name="author" content="Nizoka">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="theme-color" content="#2563eb">
@@ -103,9 +103,9 @@
         "@id": "https://pdfnative.dev/#mcp",
         "inLanguage": "en",
         "name": "pdfnative-mcp",
-        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any stdio MCP client. 24 tools (incl. native vector add_chart, fill_form / read_form_fields, encrypt_pdf / decrypt_pdf, page-tree merge/split/extract, markup annotate_pdf, and the network-free draft_governance_issue), per-tool apiVersion, PDF/A flag.",
+        "description": "Model Context Protocol server exposing pdfnative to Claude Desktop, Cursor, Continue, Zed, and any MCP client. 28 tools (incl. the complete PAdES ladder sign_pdf / add_ltv / timestamp_pdf, update_metadata, the read-only inspect_layout preview, native vector add_chart, fill_form / read_form_fields, encrypt_pdf / decrypt_pdf, page-tree merge/split/extract, markup annotate_pdf, and the network-free draft_governance_issue), MCP 2026-07-28 spec, per-tool apiVersion, PDF/A flag.",
         "url": "https://github.com/Nizoka/pdfnative-mcp",
-        "softwareVersion": "1.5.0",
+        "softwareVersion": "1.6.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -282,7 +282,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-mcp"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M15 8h2M11 8h2"/></svg></div>
         <h3>AI Integration — MCP</h3>
-        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other stdio MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. <strong>24 production tools</strong> incl. page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, <code>pdfA</code> flag everywhere, and token-frugal read modes. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
+        <p>Use pdfnative from Claude Desktop, Cursor, Continue, Zed, and any other MCP client (Cline, Windsurf, Goose, Gemini CLI…) via <a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a>. <strong>28 production tools</strong> incl. the complete PAdES ladder <code>sign_pdf</code> / <code>add_ltv</code> / <code>timestamp_pdf</code>, <code>update_metadata</code>, the read-only <code>inspect_layout</code> preview, page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, <code>pdfA</code> flag everywhere, and token-frugal read modes. Zero configuration beyond <code>npx -y pdfnative-mcp</code>.</p>
       </div>
 
       <div class="feature-card">
@@ -479,7 +479,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
         <a class="ob-link" href="guides/cli.html">CLI guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>MCP <span class="ob-badge" data-pn-badge="pdfnative-mcp">v1.5.0</span></h3>
+        <h3>MCP <span class="ob-badge" data-pn-badge="pdfnative-mcp">v1.6.0</span></h3>
         <p class="ob-tag">For Claude Desktop, Cursor, Continue, Zed, …</p>
 <pre><code class="language-json">{
   "mcpServers": {
@@ -739,7 +739,7 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/main/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative 1.7.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (17 commands: render · fill · sign · encrypt · extract-text and more), pdfnative-mcp (MCP server, 24 tools, any stdio client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative 1.7.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (17 commands: render · fill · sign · encrypt · extract-text and more), pdfnative-mcp (MCP server, 28 tools, any MCP client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
   </div>
@@ -763,25 +763,28 @@ const pdf = renderToBytes(
 <section class="section section-alt" id="mcp">
   <div class="container">
     <h2 class="section-title">Use pdfnative from Any AI Client</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code> / <code>extract_attachments</code>, <code>extract_text</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and token-frugal read modes.</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the full pdfnative library to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with the complete PAdES ladder (<code>sign_pdf</code> with RFC 3161 timestamps, <code>add_ltv</code>, <code>timestamp_pdf</code>), <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, all 13 block kinds in <code>generate_basic_pdf</code>, print production, charts v2, page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, a <code>pdfA</code> flag on every document tool, and token-frugal read modes — on the MCP 2026-07-28 spec with automatic legacy fallback.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>24 Production Tools</h3>
+        <h3>28 Production Tools</h3>
         <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
           <tbody>
-            <tr><td><code>generate_basic_pdf</code></td><td>Multi-page documents (headings, paragraphs, lists). Optional <code>pdfA</code> flag.</td></tr>
+            <tr><td><code>generate_basic_pdf</code></td><td>Multi-page documents — all 13 block kinds since v1.6.0 (incl. tables, images, links, TOC, barcodes, SVG, form fields, charts). Optional <code>pdfA</code>, layout options, build-time <code>encrypt</code>, print production.</td></tr>
             <tr><td><code>add_table</code></td><td>Tabular reports — now with optional <code>autoFitColumns</code> and <code>clipCells</code> (pdfnative v1.2 <code>TableBlock</code>).</td></tr>
             <tr><td><code>add_barcode</code></td><td>QR Code, Code 128, EAN-13, Data Matrix, PDF417</td></tr>
-            <tr><td><code>add_international_text</code></td><td>22 scripts with BiDi &amp; OpenType shaping. <code>lang</code> now accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
-            <tr><td><code>add_form</code></td><td>Interactive AcroForm fields</td></tr>
-            <tr><td><code>embed_image</code></td><td>JPEG / PNG image embedding</td></tr>
-            <tr><td><code>prepare_signature_placeholder</code></td><td>PDF with <code>/Sig</code> field ready to sign</td></tr>
-            <tr><td><code>sign_pdf</code></td><td>CMS/PKCS#7 signatures (RSA &amp; ECDSA)</td></tr>
-            <tr><td><code>inspect_pdf</code></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; optional CI-style <code>check: ('pdfa'|'signed'|'encrypted'|'placeholder'|'attachments')[]</code>.</td></tr>
+            <tr><td><code>add_international_text</code></td><td>25 <code>lang</code> font codes (22 Unicode scripts + <code>latin</code> + <code>emoji</code> + explicit <code>math</code>) with BiDi &amp; OpenType shaping. <code>lang</code> accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
+            <tr><td><code>add_form</code></td><td>Interactive AcroForm fields — <code>text</code>, <code>textarea</code>, <code>checkbox</code>, <code>radio</code>, <code>dropdown</code>, plus <code>listbox</code> and <code>placeholder</code> (v1.6.0)</td></tr>
+            <tr><td><code>embed_image</code></td><td>JPEG / PNG image embedding, with <code>align</code> / <code>alt</code> (v1.6.0)</td></tr>
+            <tr><td><code>prepare_signature_placeholder</code></td><td>PDF with <code>/Sig</code> field ready to sign; <code>subFilter</code> / <code>reserveTimestamp</code> (v1.6.0)</td></tr>
+            <tr><td><code>sign_pdf</code></td><td>PAdES CMS signatures (RSA-SHA256/384/512 &amp; ECDSA); <code>profile: 'pades'</code>, RFC 3161 <code>timestamp</code>, cert chains, multiple signatures (v1.6.0)</td></tr>
+            <tr><td><code>add_ltv</code></td><td>Embed <code>/DSS</code> + <code>/VRI</code> long-term-validation material — PAdES B-LT (v1.6.0).</td></tr>
+            <tr><td><code>timestamp_pdf</code></td><td>Append a <code>/DocTimeStamp</code> through the operator TSA — PAdES B-LTA (v1.6.0).</td></tr>
+            <tr><td><code>inspect_pdf</code></td><td>Read-only inspection — version, page count, encryption, PDF/A claim, signatures, info dict; signature / annotation inventories, page boxes, <code>dss</code> (v1.6.0); optional CI-style <code>check</code> assertions.</td></tr>
+            <tr><td><code>inspect_layout</code></td><td>Read-only pagination dry run — page count and block geometry, no PDF produced (v1.6.0).</td></tr>
             <tr><td><code>validate_pdf</code></td><td>Read-only PDF/UA structural validation (<code>valid</code>, <code>errors</code>, <code>warnings</code>).</td></tr>
-            <tr><td><code>verify_pdf</code></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain (v1.0.0).</td></tr>
+            <tr><td><code>verify_pdf</code></td><td>Real CMS/PKCS#7 signature verification — RSA &amp; ECDSA, digest, certificate chain; <code>/DocTimeStamp</code> tokens and the <code>ltv: true</code> PAdES-level report (v1.6.0).</td></tr>
             <tr><td><code>add_attachment</code></td><td>Embed files (Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output (v1.0.0).</td></tr>
             <tr><td><code>extract_attachments</code></td><td>Extract embedded files from existing PDFs (metadata-only mode available, v1.2.0).</td></tr>
             <tr><td><code>extract_text</code></td><td>Extract text content from an existing PDF via the native parser (v1.0.0).</td></tr>
@@ -790,11 +793,12 @@ const pdf = renderToBytes(
             <tr><td><code>extract_pages</code></td><td>Pull an arbitrary, order-preserving page subset (max 5000) into a new PDF (v1.3.0).</td></tr>
             <tr><td><code>annotate_pdf</code></td><td>Overlay markup annotations (highlight / underline / note / shape) on an existing PDF via incremental update. A visual review layer, not a redaction (v1.4.0).</td></tr>
             <tr><td><code>draft_governance_issue</code></td><td>Assemble a governance-compliant GitHub-issue draft locally — network-free by construction; never submits (v1.4.0).</td></tr>
-            <tr><td><code>add_chart</code></td><td>Render bar / horizontal-bar / line / pie / donut charts as native PDF vector paths — no rasterisation, no image round-trip (v1.5.0).</td></tr>
+            <tr><td><code>add_chart</code></td><td>Render charts as native PDF vector paths — nine types since v1.6.0 (bar, stacked, line, area, scatter, pie, donut), dual axis, log &amp; time scales; no rasterisation (v1.5.0).</td></tr>
             <tr><td><code>read_form_fields</code></td><td>List an existing AcroForm's fields with their types, current values and options — the read half of the fill round-trip (v1.5.0).</td></tr>
             <tr><td><code>fill_form</code></td><td>Fill AcroForm field values and optionally flatten them into static page content (v1.5.0).</td></tr>
             <tr><td><code>encrypt_pdf</code></td><td>Re-secure an existing PDF with AES-128 or AES-256, setting owner/user passwords and permissions (v1.5.0).</td></tr>
             <tr><td><code>decrypt_pdf</code></td><td>Remove encryption from a password-protected PDF, in-server — RC4, AES-128 and AES-256 sources (v1.5.0).</td></tr>
+            <tr><td><code>update_metadata</code></td><td>Rewrite <code>/Info</code> (+ XMP) of an existing PDF via incremental update (v1.6.0).</td></tr>
           </tbody>
         </table>
         </div>

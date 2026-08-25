@@ -108,7 +108,9 @@ verify a signed PDF end to end (byte-range digest, CMS signature value,
 chain, trust, timestamps, revocation), use
 [`pdfnative-cli verify`](cli.html#pdfnative-verify) or the
 [`verify_pdf` MCP tool](mcp.html) — the CMS verification logic lives
-there.
+there. Since pdfnative-mcp 1.6.0, `verify_pdf` also validates
+`/DocTimeStamp` fields as RFC 3161 tokens and reports the achieved
+PAdES level (B-B → B-LTA) with `ltv: true`.
 
 ## Why a separate placeholder step?
 
@@ -358,4 +360,4 @@ for the idempotency proof.
 - [PDF/A conformance →](pdfa.html) — how signatures interact with PDF/A-2b/3b.
 - [Architecture →](architecture.html) — where the crypto module sits in the dependency graph.
 - [CLI →](cli.html) — `pdfnative-cli sign` wraps this exact pipeline.
-- [MCP integration →](mcp.html) — `pdfnative-mcp` exposes signing as an AI tool.
+- [MCP integration →](mcp.html) — `pdfnative-mcp` exposes signing as an AI tool, and since v1.6.0 the complete PAdES ladder: `sign_pdf` (`profile: 'pades'`, RFC 3161 `timestamp`) → `add_ltv` (`/DSS` + `/VRI`, B-LT) → `timestamp_pdf` (`/DocTimeStamp`, B-LTA), verified with `verify_pdf ltv: true`.

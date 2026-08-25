@@ -98,7 +98,7 @@
 
     <div class="rs-claim">
       <p><strong>The engine has no runtime dependencies.</strong> <code>pdfnative</code> ships with no <code>dependencies</code> field at all: nothing transitive to install, audit, or patch.</p>
-      <p>Scoped honestly, because the ecosystem is not uniform: <code>pdfnative-cli</code> depends only on <code>pdfnative</code> itself. <code>pdfnative-react</code> adds one real runtime dependency, <code>react-reconciler</code>, with React and pdfnative as peers. <code>pdfnative-mcp</code> adds two, <code>@modelcontextprotocol/sdk</code> and <code>zod</code>. And this documentation site itself loads Prism, marked and DOMPurify from a CDN — pinned, with subresource-integrity hashes.</p>
+      <p>Scoped honestly, because the ecosystem is not uniform: <code>pdfnative-cli</code> depends only on <code>pdfnative</code> itself. <code>pdfnative-react</code> adds one real runtime dependency, <code>react-reconciler</code>, with React and pdfnative as peers. <code>pdfnative-mcp</code> adds two, <code>@modelcontextprotocol/server</code> and <code>zod</code>. And this documentation site itself loads Prism, marked and DOMPurify from a CDN — pinned, with subresource-integrity hashes.</p>
       <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/package.json" target="_blank" rel="noopener">package.json</a> (no dependencies key) · <a href="https://github.com/Nizoka/pdfnative-react/blob/main/package.json" target="_blank" rel="noopener">pdfnative-react/package.json</a> · <a href="https://github.com/Nizoka/pdfnative-mcp/blob/main/package.json" target="_blank" rel="noopener">pdfnative-mcp/package.json</a></p>
     </div>
 

@@ -91,10 +91,10 @@ describe('verify-docs', () => {
         it('stale-token compares counts for equality, not against a blocklist', () => {
             withSandbox((dir) => {
                 // A value that no blocklist would have enumerated.
-                patch(dir, 'docs/guides/mcp.md', '**24 tools**', '**25 tools**');
+                patch(dir, 'docs/guides/mcp.md', '**28 tools**', '**29 tools**');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('stale-token');
-                expect(run.output).toContain('the manifest says 24');
+                expect(run.output).toContain('the manifest says 28');
                 expect(run.status).toBe(1);
             });
         }, 120_000);

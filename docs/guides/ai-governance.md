@@ -142,6 +142,13 @@ without parsing prose. Key fields:
 The contract `applies_to` the whole ecosystem — `pdfnative`, `pdfnative-cli`,
 `pdfnative-mcp`, and `pdfnative-react`.
 
+Since pdfnative-mcp 1.6.0, that package's mirror of the charter also states
+the **single permitted egress class**: the server makes no outbound request by
+default, and the only network calls it can ever perform go to the TSA / OCSP /
+CRL endpoints the *operator* configures for the PAdES tools — never to a URL
+taken from a tool argument, and never to GitHub. "No GitHub write path" and
+"no telemetry" remain absolute.
+
 ## What agents must never do
 
 - Add a runtime dependency.
