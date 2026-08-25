@@ -702,5 +702,13 @@
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
+  <url>
+    <loc>https://pdfnative.dev/playgrounds/inspect.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/inspect.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/inspect.html"/>
+    <lastmod>2026-08-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 
 </urlset>

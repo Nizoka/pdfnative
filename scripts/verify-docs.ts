@@ -24,7 +24,7 @@
  */
 
 import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
-import { join, relative, resolve, dirname, posix } from 'node:path';
+import { join, relative, resolve, dirname, posix, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 
@@ -1034,6 +1034,55 @@ if (!existsSync(LLMS_RECIPES)) {
     fail('docs/llms-recipes.txt', 1, 'llms-sync', 'stale — regenerate with `npm run docs:llms`');
 }
 
+// ── Rule: anchor-parity ─────────────────────────────────────────────
+
+/**
+ * `internal-links` deliberately strips `#fragments` — so a deep link to a
+ * renamed section rots invisibly, which matters twice as much now that AI
+ * answers cite section-level URLs. With every guide pre-rendered, anchors are
+ * plain `id="…"` attributes in committed HTML: every internal link that
+ * carries a fragment must point at an id that exists in its target page.
+ * Links written against a `.md` target are checked against the paired `.html`
+ * (that is where the pre-rendered ids live).
+ */
+{
+    const anchorCache = new Map<string, Set<string> | null>();
+    const anchorsOf = (absPath: string): Set<string> | null => {
+        if (anchorCache.has(absPath)) return anchorCache.get(absPath)!;
+        if (!existsSync(absPath) || !absPath.endsWith('.html')) {
+            anchorCache.set(absPath, null);
+            return null;
+        }
+        const ids = new Set<string>();
+        for (const m of read(absPath).matchAll(/\bid=["']([^"']+)["']/g)) ids.add(m[1]);
+        anchorCache.set(absPath, ids);
+        return ids;
+    };
+    const LINK_WITH_FRAG = /(?:\]\(|href=["'])([^)"'#\s]*)#([\p{L}][\p{L}\p{N}_-]*)/gu;
+    for (const file of DOC_FILES) {
+        if (!file.endsWith('.md') && !file.endsWith('.html')) continue;
+        const text = read(file);
+        const lines = text.split(/\r?\n/);
+        LINK_WITH_FRAG.lastIndex = 0;
+        let m: RegExpExecArray | null;
+        while ((m = LINK_WITH_FRAG.exec(text)) !== null) {
+            let target = m[1];
+            const frag = m[2];
+            if (/^[a-z][a-z0-9+.-]*:/i.test(target)) continue; // external / mailto
+            if (target === '') target = rel(file).split('/').pop()!; // same-page link
+            let abs = resolve(dirname(file), target);
+            if (abs.endsWith(sep)) abs = join(abs, 'index.html');
+            if (abs.endsWith('.md')) abs = abs.slice(0, -3) + '.html';
+            const ids = anchorsOf(abs);
+            if (ids === null) continue; // non-HTML target or missing file: internal-links' turf
+            if (ids.has(frag)) continue;
+            const line = lineOf(text, m.index);
+            if (isSuppressed(lines, line, 'anchor-parity')) continue;
+            fail(rel(file), line, 'anchor-parity', `link fragment "#${frag}" has no matching id in ${rel(abs)}`);
+        }
+    }
+}
+
 // ── Rule: llms-index-sync ───────────────────────────────────────────
 
 /**
@@ -1198,6 +1247,7 @@ const OFFLINE_RULES = [
     'contrast',
     'llms-sync',
     'llms-index-sync',
+    'anchor-parity',
     'guide-render-sync',
     'api-json-sync',
     'playground-syntax',

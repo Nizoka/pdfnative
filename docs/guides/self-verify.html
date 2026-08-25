@@ -96,7 +96,7 @@ byte is produced.</li>
 </ol>
 <p>The rest of this guide walks the four verifiers with realistic
 failure → fix examples, then shows the identical loop on the CLI and on MCP.</p>
-<h2 id="verifier-1-inspectdocumentlayout-geometry-before-generating">Verifier 1 — <code>inspectDocumentLayout()</code>: geometry, before generating<a class="heading-anchor" href="#verifier-1-inspectdocumentlayout-geometry-before-generating" aria-label="Link to this section">#</a></h2>
+<h2 id="verifier-1--inspectdocumentlayout-geometry-before-generating">Verifier 1 — <code>inspectDocumentLayout()</code>: geometry, before generating<a class="heading-anchor" href="#verifier-1--inspectdocumentlayout-geometry-before-generating" aria-label="Link to this section">#</a></h2>
 <p><em>(v1.5.0)</em> A pagination dry run: the same planning logic as the builder, but it
 returns data instead of PDF bytes — no rendering, no font embedding.</p>
 <pre><code class="language-ts">import { buildDocumentPDFBytes, inspectDocumentLayout } from &#39;pdfnative&#39;;
@@ -141,7 +141,7 @@ verification of the actual output, pair it with <code>extractText()</code> below
 <a href="debugging.html">Layout debugging &amp; inspection</a> for the full data shape and
 the visual overlay variant.</p>
 </blockquote>
-<h2 id="verifier-2-extracttext-is-the-content-actually-in-the-file">Verifier 2 — <code>extractText()</code>: is the content actually in the file?<a class="heading-anchor" href="#verifier-2-extracttext-is-the-content-actually-in-the-file" aria-label="Link to this section">#</a></h2>
+<h2 id="verifier-2--extracttext-is-the-content-actually-in-the-file">Verifier 2 — <code>extractText()</code>: is the content actually in the file?<a class="heading-anchor" href="#verifier-2--extracttext-is-the-content-actually-in-the-file" aria-label="Link to this section">#</a></h2>
 <p><em>(v1.6.0)</em> Reading-order Unicode text per page, decoded from the content
 streams of the emitted bytes — pdfnative-generated documents round-trip
 losslessly, including CJK, Arabic and emoji.</p>
@@ -172,7 +172,7 @@ exists.</p>
 <p>Extraction has documented limits (no OCR on image content, lossy conjuncts in
 shaped Indic scripts) — see <a href="text-extraction.html">Text extraction</a> before
 asserting on those cases.</p>
-<h2 id="verifier-3-validatepdfua-structural-pdfua">Verifier 3 — <code>validatePdfUA()</code>: structural PDF/UA<a class="heading-anchor" href="#verifier-3-validatepdfua-structural-pdfua" aria-label="Link to this section">#</a></h2>
+<h2 id="verifier-3--validatepdfua-structural-pdfua">Verifier 3 — <code>validatePdfUA()</code>: structural PDF/UA<a class="heading-anchor" href="#verifier-3--validatepdfua-structural-pdfua" aria-label="Link to this section">#</a></h2>
 <p>Read-only ISO 14289-1 structural checks over the emitted bytes: <code>/MarkInfo</code>,
 the structure tree, the parent tree, a document <code>/Lang</code>, per-page MCID
 uniqueness.</p>
@@ -198,7 +198,7 @@ human, whether alt text is meaningful, or whether colour contrast is
 adequate. And it is not a PDF/A validator: for archival conformance, run
 veraPDF as described in <a href="pdfa.html">PDF/A conformance</a>.</p>
 </blockquote>
-<h2 id="verifier-4-listsignatures-openpdf-signatures-encryption-metadata">Verifier 4 — <code>listSignatures()</code> + <code>openPdf()</code>: signatures, encryption, metadata<a class="heading-anchor" href="#verifier-4-listsignatures-openpdf-signatures-encryption-metadata" aria-label="Link to this section">#</a></h2>
+<h2 id="verifier-4--listsignatures--openpdf-signatures-encryption-metadata">Verifier 4 — <code>listSignatures()</code> + <code>openPdf()</code>: signatures, encryption, metadata<a class="heading-anchor" href="#verifier-4--listsignatures--openpdf-signatures-encryption-metadata" aria-label="Link to this section">#</a></h2>
 <p><em>(v1.7.0)</em> <code>listSignatures()</code> inventories every signature field in the
 document; <code>openPdf()</code> exposes page count, encryption state and the <code>/Info</code>
 dictionary.</p>

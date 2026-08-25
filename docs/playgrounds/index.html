@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playgrounds — pdfnative</title>
-  <meta name="description" content="Nine zero-install pdfnative playgrounds: extreme scripts, all 22 scripts + emoji, a document toolkit, native charts, authoring+, a 100,000-page scale test, CLI, MCP, and React.">
+  <meta name="description" content="Ten zero-install pdfnative playgrounds: extreme scripts, all 22 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, and React.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/">
@@ -14,13 +14,13 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/">
   <meta property="og:title" content="Playgrounds — pdfnative">
-  <meta property="og:description" content="Nine interactive playgrounds for pdfnative 1.7.0: extreme-script shaping, an all-22-scripts + colour-emoji showcase, a document toolkit (engine features from v1.4.0 through v1.6.0), native vector charts (v1.6.0, charts v2 in v1.7.0), an authoring showcase (v1.5.0 features), a 100,000-page scale test, a CLI command builder, an MCP tool explorer, and a declarative React (JSX) renderer. All zero-install, in your browser.">
+  <meta property="og:description" content="Ten interactive playgrounds for pdfnative 1.7.0: extreme-script shaping, an all-22-scripts + colour-emoji showcase, a document toolkit (engine features from v1.4.0 through v1.6.0), an inspect &amp; verify drop-zone that reads a full report from any PDF, native vector charts (v1.6.0, charts v2 in v1.7.0), an authoring showcase (v1.5.0 features), a 100,000-page scale test, a CLI command builder, an MCP tool explorer, and a declarative React (JSX) renderer. All zero-install, in your browser.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Playgrounds — pdfnative">
-  <meta name="twitter:description" content="Nine zero-install playgrounds: extreme scripts, all-22-scripts + emoji, document toolkit, native charts, authoring showcase, 100k-page scale test, CLI builder, MCP explorer, React renderer.">
+  <meta name="twitter:description" content="Ten zero-install playgrounds: extreme scripts, all-22-scripts + emoji, document toolkit, inspect &amp; verify, native charts, authoring showcase, 100k-page scale test, CLI builder, MCP explorer, React renderer.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -52,7 +52,7 @@
         "inLanguage": "en",
         "@id": "https://pdfnative.dev/playgrounds/#collection",
         "name": "pdfnative interactive playgrounds",
-        "description": "9 zero-install playgrounds that generate real PDFs in your browser.",
+        "description": "10 zero-install playgrounds that generate and inspect real PDFs in your browser.",
         "url": "https://pdfnative.dev/playgrounds/",
         "isPartOf": {
           "@type": "WebSite",
@@ -61,7 +61,7 @@
         },
         "mainEntity": {
           "@type": "ItemList",
-          "numberOfItems": 9,
+          "numberOfItems": 10,
           "itemListElement": [
             {
               "@type": "ListItem",
@@ -96,24 +96,30 @@
             {
               "@type": "ListItem",
               "position": 6,
+              "name": "Inspect & verify — metadata, PDF/UA, signatures, form fields",
+              "url": "https://pdfnative.dev/playgrounds/inspect.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 7,
               "name": "MCP tool explorer",
               "url": "https://pdfnative.dev/playgrounds/mcp.html"
             },
             {
               "@type": "ListItem",
-              "position": 7,
+              "position": 8,
               "name": "React (JSX) renderer",
               "url": "https://pdfnative.dev/playgrounds/react.html"
             },
             {
               "@type": "ListItem",
-              "position": 8,
+              "position": 9,
               "name": "Scale — up to 100,000 pages",
               "url": "https://pdfnative.dev/playgrounds/scale.html"
             },
             {
               "@type": "ListItem",
-              "position": 9,
+              "position": 10,
               "name": "PDF toolkit — bookmarks, forms, encryption, extraction",
               "url": "https://pdfnative.dev/playgrounds/toolkit.html"
             }
@@ -172,7 +178,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Playgrounds</p>
   <article class="guide-content">
     <h1>Interactive playgrounds</h1>
-    <p>Nine hands-on environments that exercise the entire pdfnative ecosystem in your browser. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
+    <p>Ten hands-on environments that exercise the entire pdfnative ecosystem in your browser — from generating documents to inspecting the ones you already have. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
 
     <div class="pg-grid">
       <a class="pg-card" href="./extreme-scripts.html">
@@ -203,6 +209,16 @@
           <span class="pg-tag">Bookmarks</span><span class="pg-tag">Merge/split</span><span class="pg-tag">Re-encrypt</span><span class="pg-tag">Form fill</span><span class="pg-tag">Extract text</span>
         </div>
         <div class="pg-cta">Open PDF Toolkit playground →</div>
+      </a>
+
+      <a class="pg-card" href="./inspect.html">
+        <div class="pg-icon" aria-hidden="true">🔍</div>
+        <h3>Inspect &amp; verify <span class="badge">Library</span></h3>
+        <p>Drop any PDF and read a full report — metadata, extracted text, PDF/UA structure, a signature inventory, and form fields — built by <code>openPdf</code>, <code>extractText</code>, <code>validatePdfUA</code>, <code>listSignatures</code> and <code>readFormFields</code>, entirely in your browser. Honest limits stated on the page: the PDF/UA check is structural, not an accessibility audit, and the signature card is an inventory, not cryptographic verification.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">Metadata</span><span class="pg-tag">PDF/UA</span><span class="pg-tag">Signatures</span><span class="pg-tag">Form fields</span><span class="pg-tag">Nothing uploaded</span>
+        </div>
+        <div class="pg-cta">Open Inspect &amp; verify playground →</div>
       </a>
 
       <a class="pg-card" href="./charts.html">
@@ -287,6 +303,7 @@
       <li><a href="./extreme-scripts.html">Extreme scripts</a></li>
       <li><a href="./all-scripts.html">All 22 scripts</a></li>
       <li><a href="./toolkit.html">PDF Toolkit</a></li>
+      <li><a href="./inspect.html">Inspect &amp; verify</a></li>
       <li><a href="./charts.html">Charts</a></li>
       <li><a href="./authoring-plus.html">Authoring+</a></li>
       <li><a href="./scale.html">Scale</a></li>

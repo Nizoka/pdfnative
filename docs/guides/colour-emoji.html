@@ -152,7 +152,7 @@ bloat every consumer. Register it only when you need colour.</li>
 <p>To keep monochrome emoji instead, register the monochrome font:</p>
 <pre><code class="language-ts">registerFont(&#39;emoji&#39;, () =&gt; import(&#39;pdfnative/fonts/noto-emoji-data.js&#39;));
 </code></pre>
-<h2 id="coverage-limits">Coverage &amp; limits<a class="heading-anchor" href="#coverage-limits" aria-label="Link to this section">#</a></h2>
+<h2 id="coverage--limits">Coverage &amp; limits<a class="heading-anchor" href="#coverage--limits" aria-label="Link to this section">#</a></h2>
 <p>The bundled module is a <strong>curated subset</strong> of <strong>1167 common single-codepoint
 emoji</strong> (expanded from 221 in v1.6.0): the complete Emoticons and Supplemental
 Symbols &amp; Pictographs blocks, Miscellaneous Symbols &amp; Pictographs through
@@ -190,7 +190,7 @@ npx pdfnative-build-emoji-font --download \
 </code></pre>
 <p>See the <a href="colour-emoji-cli.html">colour-emoji CLI guide</a> for every flag, offline
 usage with <code>--ttf</code>, and the checksum/licensing details.</p>
-<h2 id="flag-zwj-sequences-v170">Flag &amp; ZWJ sequences (v1.7.0)<a class="heading-anchor" href="#flag-zwj-sequences-v170" aria-label="Link to this section">#</a></h2>
+<h2 id="flag--zwj-sequences-v170">Flag &amp; ZWJ sequences (v1.7.0)<a class="heading-anchor" href="#flag--zwj-sequences-v170" aria-label="Link to this section">#</a></h2>
 <p>Multi-codepoint emoji now render as <strong>single colour glyphs</strong>. The bundled
 module resolves the font&#39;s GSUB ligature lookups at build time into a
 <code>sequences</code> table (first codepoint → resolved ligature glyph), and the text
@@ -264,7 +264,7 @@ monochrome outline otherwise. Tracked for a future release.</li>
 <li><strong>PDF/A:</strong> gradient transparency uses <code>/ExtGState</code> alpha, which PDF/A-1b
 forbids. Use solid-layer emoji or a non-PDF/A document for colour gradients.</li>
 </ul>
-<h2 id="variation-selectors-skin-tone-modifiers-v130">Variation selectors &amp; skin-tone modifiers (v1.3.0)<a class="heading-anchor" href="#variation-selectors-skin-tone-modifiers-v130" aria-label="Link to this section">#</a></h2>
+<h2 id="variation-selectors--skin-tone-modifiers-v130">Variation selectors &amp; skin-tone modifiers (v1.3.0)<a class="heading-anchor" href="#variation-selectors--skin-tone-modifiers-v130" aria-label="Link to this section">#</a></h2>
 <p>Text such as <code>❤️</code> carries an invisible <strong>VS-16</strong> variation selector
 (U+FE0F), and <code>👍🏽</code> carries a <strong>Fitzpatrick</strong> skin-tone modifier
 (U+1F3FB–U+1F3FF); ZWJ sequences (<code>👨‍👩‍👧</code>) join several codepoints. Before

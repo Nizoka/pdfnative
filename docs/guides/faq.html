@@ -113,7 +113,7 @@ const pdf = buildDocumentPDFBytes({ title: &#39;Hello&#39;, blocks: [/* … */] 
 downloadBlob(pdf, &#39;output.pdf&#39;);
 </code></pre>
 <p>For optimal compression in Node.js, call <code>initNodeCompression()</code> once at startup. In the browser, a stored-block fallback is used automatically.</p>
-<h3 id="does-it-work-with-deno-bun">Does it work with Deno / Bun?<a class="heading-anchor" href="#does-it-work-with-deno-bun" aria-label="Link to this section">#</a></h3>
+<h3 id="does-it-work-with-deno--bun">Does it work with Deno / Bun?<a class="heading-anchor" href="#does-it-work-with-deno--bun" aria-label="Link to this section">#</a></h3>
 <p>Yes. The library is standard ESM with no Node.js-specific imports in the core. Both Deno and Bun import it directly.</p>
 <hr>
 <h2 id="fonts-and-unicode">Fonts and Unicode<a class="heading-anchor" href="#fonts-and-unicode" aria-label="Link to this section">#</a></h2>
@@ -135,7 +135,7 @@ const pdf = buildDocumentPDFBytes({
 });
 </code></pre>
 <p>Font subsetting is automatic — only the glyphs you actually used are embedded.</p>
-<h3 id="how-do-i-render-arabic-hebrew-thai-devanagari">How do I render Arabic / Hebrew / Thai / Devanagari?<a class="heading-anchor" href="#how-do-i-render-arabic-hebrew-thai-devanagari" aria-label="Link to this section">#</a></h3>
+<h3 id="how-do-i-render-arabic--hebrew--thai--devanagari">How do I render Arabic / Hebrew / Thai / Devanagari?<a class="heading-anchor" href="#how-do-i-render-arabic--hebrew--thai--devanagari" aria-label="Link to this section">#</a></h3>
 <p>Register the matching pre-built font module and pass it as a <code>fontEntry</code>:</p>
 <pre><code class="language-typescript">registerFonts({
   ar: () =&gt; import(&#39;pdfnative/fonts/noto-arabic-data.js&#39;),
@@ -311,7 +311,7 @@ const pdf = await createPDF(params, {
 <p>Tables above the threshold run off the main thread (with an automatic main-thread fallback); smaller ones render synchronously. The lower-level <code>generatePDFInWorker(workerUrl, params, { timeout, onProgress })</code> drives a worker directly — the worker URL is its first argument, and it has no threshold logic.</p>
 <hr>
 <h2 id="why-pdfnative">Why pdfnative?<a class="heading-anchor" href="#why-pdfnative" aria-label="Link to this section">#</a></h2>
-<h3 id="how-does-it-compare-to-jspdf-pdfkit-pdf-lib-pdfmake">How does it compare to jsPDF / pdfkit / pdf-lib / pdfmake?<a class="heading-anchor" href="#how-does-it-compare-to-jspdf-pdfkit-pdf-lib-pdfmake" aria-label="Link to this section">#</a></h3>
+<h3 id="how-does-it-compare-to-jspdf--pdfkit--pdf-lib--pdfmake">How does it compare to jsPDF / pdfkit / pdf-lib / pdfmake?<a class="heading-anchor" href="#how-does-it-compare-to-jspdf--pdfkit--pdf-lib--pdfmake" aria-label="Link to this section">#</a></h3>
 <p>See the <a href="https://github.com/Nizoka/pdfnative#why-pdfnative" target="_blank" rel="noopener">feature comparison table</a> in the README. Key differentiators:</p>
 <ul>
 <li><strong>Zero runtime dependencies</strong> (others ship 3–6).</li>
@@ -322,7 +322,7 @@ const pdf = await createPDF(params, {
 </ul>
 <h3 id="does-it-convert-html-to-pdf">Does it convert HTML to PDF?<a class="heading-anchor" href="#does-it-convert-html-to-pdf" aria-label="Link to this section">#</a></h3>
 <p>No, and it never will. HTML→PDF is a different problem domain (browser engine, CSS, layout) better solved by tools like <code>puppeteer</code> or <code>weasyprint</code>. pdfnative is a <strong>structured-data → PDF</strong> library — you describe blocks, it emits ISO-compliant PDF.</p>
-<h3 id="why-no-classes-no-inheritance">Why no classes / no inheritance?<a class="heading-anchor" href="#why-no-classes-no-inheritance" aria-label="Link to this section">#</a></h3>
+<h3 id="why-no-classes--no-inheritance">Why no classes / no inheritance?<a class="heading-anchor" href="#why-no-classes--no-inheritance" aria-label="Link to this section">#</a></h3>
 <p>pdfnative is built from pure functions. State is passed explicitly. This makes the library trivially tree-shakeable, easy to test, and easy to reason about. See the <a href="architecture.html">Architecture guide</a>.</p>
 <hr>
 <h2 id="common-errors">Common errors<a class="heading-anchor" href="#common-errors" aria-label="Link to this section">#</a></h2>

@@ -114,7 +114,7 @@ Borders are pure vector strokes (`m … l S`), so output stays PDF/A-safe.
 
 ### `cellVAlign` (v1.4.0)
 
-Vertically align cell text within the row band. Useful when rows have a tall `minRowHeight` or wrapped cells of differing height. A per-column [`ColumnDef.vAlign`](#columndef-fields) overrides the table default.
+Vertically align cell text within the row band. Useful when rows have a tall `minRowHeight` or wrapped cells of differing height. A per-column [`ColumnDef.vAlign`](#tableblock-fields-all-optional) overrides the table default.
 
 ```ts
 { type: 'table', headers: [/* … */], rows: [/* … */], minRowHeight: 30, cellVAlign: 'middle' }

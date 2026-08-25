@@ -83,7 +83,7 @@ and the bundled <code>pdfnative-build-font</code> CLI.</li>
 shaped so agents can use them autonomously, under the project&#39;s
 <a href="ai-governance.md">AI-governance / human-in-the-loop contract</a>.</p>
 <hr>
-<h2 id="pattern-1-extend-the-engine-at-runtime-without-a-release">Pattern 1 — extend the engine at runtime, without a release<a class="heading-anchor" href="#pattern-1-extend-the-engine-at-runtime-without-a-release" aria-label="Link to this section">#</a></h2>
+<h2 id="pattern-1--extend-the-engine-at-runtime-without-a-release">Pattern 1 — extend the engine at runtime, without a release<a class="heading-anchor" href="#pattern-1--extend-the-engine-at-runtime-without-a-release" aria-label="Link to this section">#</a></h2>
 <p>pdfnative ships 26 bundled font-data modules (22 scripts plus Latin, math, and monochrome + colour emoji). But its font
 system is <strong>open</strong>: any TrueType/OpenType font becomes a first-class,
 CIDFont-embedded, subset-on-use font once it is <em>registered</em>. Registration is a
@@ -169,14 +169,14 @@ in-process pdfnative instance; the repository is only ever changed by a human
 under the <a href="ai-governance.md">governance contract</a>.</p>
 </blockquote>
 <hr>
-<h2 id="pattern-2-agent-generated-images-in-the-pdf">Pattern 2 — agent-generated images in the PDF<a class="heading-anchor" href="#pattern-2-agent-generated-images-in-the-pdf" aria-label="Link to this section">#</a></h2>
+<h2 id="pattern-2--agent-generated-images-in-the-pdf">Pattern 2 — agent-generated images in the PDF<a class="heading-anchor" href="#pattern-2--agent-generated-images-in-the-pdf" aria-label="Link to this section">#</a></h2>
 <p>Modern agents can <em>generate</em> raster content — charts, diagrams, illustrations,
 photos. Image-generating agents (for example Antigravity, ChatGPT, and other
 multimodal assistants) can pipe that output straight into a pdfnative document.
 pdfnative treats a generated PNG/JPEG exactly like any other image: it parses it
 natively and embeds it as an Image XObject (<code>/DCTDecode</code> for JPEG,
 <code>/FlateDecode</code> for PNG) — no rasterization, no headless browser.</p>
-<h3 id="via-the-mcp-server-embed_image">Via the MCP server — <code>embed_image</code><a class="heading-anchor" href="#via-the-mcp-server-embed_image" aria-label="Link to this section">#</a></h3>
+<h3 id="via-the-mcp-server--embed_image">Via the MCP server — <code>embed_image</code><a class="heading-anchor" href="#via-the-mcp-server--embed_image" aria-label="Link to this section">#</a></h3>
 <p>An agent that produced an image returns it as base64 and calls <code>embed_image</code>:</p>
 <pre><code class="language-jsonc">{
   &quot;tool&quot;: &quot;embed_image&quot;,
@@ -191,7 +191,7 @@ natively and embeds it as an Image XObject (<code>/DCTDecode</code> for JPEG,
 <p>For a richer layout, the same base64 payload can be dropped into an <code>image</code>
 block on <code>generate_basic_pdf</code>, alongside headings, tables, and barcodes the agent
 assembles in the same call.</p>
-<h3 id="via-the-library-or-cli-the-image-block">Via the library or CLI — the <code>image</code> block<a class="heading-anchor" href="#via-the-library-or-cli-the-image-block" aria-label="Link to this section">#</a></h3>
+<h3 id="via-the-library-or-cli--the-image-block">Via the library or CLI — the <code>image</code> block<a class="heading-anchor" href="#via-the-library-or-cli--the-image-block" aria-label="Link to this section">#</a></h3>
 <p>In code, a generated image is just another block:</p>
 <pre><code class="language-ts">import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
 

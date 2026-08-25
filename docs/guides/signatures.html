@@ -71,7 +71,7 @@
 implementation (ISO 32000-1 §12.8) with full crypto in pure TypeScript —
 RSA PKCS#1 v1.5 (SHA-256, plus SHA-384/512 since v1.7.0) and ECDSA P-256 (SHA-256), X.509 DER parsing,
 and ASN.1 DER encoding. No OpenSSL, no node-forge, no external crypto.</p>
-<h2 id="tldr-sign-any-pdf-in-3-lines">TL;DR — sign any PDF in 3 lines<a class="heading-anchor" href="#tldr-sign-any-pdf-in-3-lines" aria-label="Link to this section">#</a></h2>
+<h2 id="tldr--sign-any-pdf-in-3-lines">TL;DR — sign any PDF in 3 lines<a class="heading-anchor" href="#tldr--sign-any-pdf-in-3-lines" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-ts">import {
     buildDocumentPDFBytes,
     addSignaturePlaceholder,
@@ -229,7 +229,7 @@ update, so <code>/Prev</code> chains compose naturally.</li>
 <code>fieldName</code> selector — without it, the call throws and lists the unsigned
 field names. Already-signed signatures are never modified.</li>
 </ul>
-<h2 id="inspecting-signatures-listsignatures-v170">Inspecting signatures — <code>listSignatures()</code> (v1.7.0)<a class="heading-anchor" href="#inspecting-signatures-listsignatures-v170" aria-label="Link to this section">#</a></h2>
+<h2 id="inspecting-signatures--listsignatures-v170">Inspecting signatures — <code>listSignatures()</code> (v1.7.0)<a class="heading-anchor" href="#inspecting-signatures--listsignatures-v170" aria-label="Link to this section">#</a></h2>
 <p><code>listSignatures(pdfBytes)</code> enumerates every signature field in a PDF, in
 AcroForm <code>/Fields</code> order — signed signatures, document timestamps, and
 still-unsigned placeholders:</p>
@@ -351,7 +351,7 @@ npx pdfnative-cli verify --input signed.pdf --strict
 <h2 id="reading-the-validator-output">Reading the validator output<a class="heading-anchor" href="#reading-the-validator-output" aria-label="Link to this section">#</a></h2>
 <p>Two warnings commonly surface when testing the sample PDFs in Adobe Reader.
 Both are <strong>expected by spec</strong> — they are not pdfnative bugs.</p>
-<h3 id="validity-unknown-identité-du-signataire-inconnue">&quot;Validity unknown&quot; / &quot;Identité du signataire inconnue&quot;<a class="heading-anchor" href="#validity-unknown-identité-du-signataire-inconnue" aria-label="Link to this section">#</a></h3>
+<h3 id="validity-unknown--identité-du-signataire-inconnue">&quot;Validity unknown&quot; / &quot;Identité du signataire inconnue&quot;<a class="heading-anchor" href="#validity-unknown--identité-du-signataire-inconnue" aria-label="Link to this section">#</a></h3>
 <p>Adobe shows this whenever the signing certificate&#39;s issuer chain does
 not terminate in a root CA listed in Adobe&#39;s Approved Trust List (AATL)
 or in the user&#39;s locally configured Trusted Identities.</p>

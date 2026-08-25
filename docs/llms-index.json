@@ -17,8 +17,8 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 485829,
-      "approxTokens": 121457
+      "bytes": 485843,
+      "approxTokens": 121461
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -58,8 +58,8 @@
       "html": "https://pdfnative.dev/guides/agentic-workflows.html",
       "markdown": "https://pdfnative.dev/guides/agentic-workflows.md",
       "anchors": [
-        "pattern-1-extend-the-engine-at-runtime-without-a-release",
-        "pattern-2-agent-generated-images-in-the-pdf",
+        "pattern-1--extend-the-engine-at-runtime-without-a-release",
+        "pattern-2--agent-generated-images-in-the-pdf",
         "how-the-two-patterns-fit-together",
         "see-also"
       ],
@@ -126,7 +126,7 @@
         "examples",
         "accessibility-tagged-pdf",
         "internationalised-labels",
-        "limits-scope-v170",
+        "limits--scope-v170",
         "see-also"
       ],
       "bytes": 9748,
@@ -139,7 +139,7 @@
       "markdown": "https://pdfnative.dev/guides/choose.md",
       "anchors": [
         "the-decision-in-prose",
-        "capability-surface",
+        "capability--surface",
         "honest-notes",
         "you-can-switch-later",
         "further-reading"
@@ -162,11 +162,11 @@
         "recipes",
         "security-model",
         "comparison-with-the-library-api",
-        "examples-ready-to-run",
+        "examples--ready-to-run",
         "release-history",
-        "migration-v030-v110",
-        "migration-v020-v030",
-        "migration-v010-v020",
+        "migration-v030--v110",
+        "migration-v020--v030",
+        "migration-v010--v020",
         "troubleshooting",
         "resources",
         "citation"
@@ -203,11 +203,11 @@
         "tldr",
         "how-it-works",
         "opt-in-not-default",
-        "coverage-limits",
-        "flag-zwj-sequences-v170",
+        "coverage--limits",
+        "flag--zwj-sequences-v170",
         "advanced-compositing-v140",
         "limitations",
-        "variation-selectors-skin-tone-modifiers-v130",
+        "variation-selectors--skin-tone-modifiers-v130",
         "see-also"
       ],
       "bytes": 11715,
@@ -270,7 +270,7 @@
         "readformfieldsbytes-options",
         "fillformbytes-values-options",
         "flattenformbytes-options",
-        "encrypted-signed-documents",
+        "encrypted--signed-documents",
         "how-it-works",
         "see-also"
       ],
@@ -290,7 +290,7 @@
         "multiple-signatures",
         "testing-without-a-real-tsa-or-ca",
         "verification-checklist",
-        "limits-scope-v170"
+        "limits--scope-v170"
       ],
       "bytes": 8882,
       "approxTokens": 2221
@@ -324,10 +324,10 @@
       "html": "https://pdfnative.dev/guides/onboarding.html",
       "markdown": "https://pdfnative.dev/guides/onboarding.md",
       "anchors": [
-        "1-library-node-browser-deno-bun-30-seconds",
-        "2-cli-30-seconds",
-        "3-mcp-claude-desktop-cursor-continue-zed-30-seconds",
-        "4-react-nextjs-remix-any-react-19-app-30-seconds",
+        "1-library-node-browser-deno-bun--30-seconds",
+        "2-cli--30-seconds",
+        "3-mcp-claude-desktop-cursor-continue-zed--30-seconds",
+        "4-react-nextjs-remix-any-react-19-app--30-seconds",
         "what-to-read-next"
       ],
       "bytes": 6270,
@@ -360,9 +360,9 @@
         "extractpagessource-indices",
         "encrypted-sources",
         "re-encrypting-the-output",
-        "streaming-merge-split",
+        "streaming-merge--split",
         "updating-metadata-in-place",
-        "safety-limits",
+        "safety--limits",
         "how-it-works",
         "see-also"
       ],
@@ -377,7 +377,7 @@
       "anchors": [
         "tldr",
         "conformance-diagnostics-v170",
-        "v110-status-fully-validated",
+        "v110-status--fully-validated",
         "validating-your-output",
         "pdfa-vs-encryption",
         "choosing-a-flavour",
@@ -399,8 +399,8 @@
         "trapped-and-prepress-metadata",
         "print-dialog-defaults-viewerpreferences",
         "custom-outputintent-taggedpdf-a",
-        "large-formats-userunit",
-        "limits-scope-v170"
+        "large-formats--userunit",
+        "limits--scope-v170"
       ],
       "bytes": 6287,
       "approxTokens": 1572
@@ -414,13 +414,13 @@
         "install",
         "nodejs",
         "browser",
-        "tabular-reports-buildpdfbytes",
-        "free-form-documents-builddocumentpdfbytes",
+        "tabular-reports--buildpdfbytes",
+        "free-form-documents--builddocumentpdfbytes",
         "multi-language",
         "web-worker",
         "streaming",
         "playgrounds",
-        "command-line-pdfnative-cli",
+        "command-line--pdfnative-cli",
         "next-steps"
       ],
       "bytes": 8042,
@@ -441,9 +441,9 @@
         "linting",
         "agent-surface",
         "rendering",
-        "hooks-client-components",
-        "agent-authoring-the-token-frugal-docspec",
-        "fonts-environment",
+        "hooks--client-components",
+        "agent-authoring--the-token-frugal-docspec",
+        "fonts--environment",
         "migrating-from-react-pdfrenderer",
         "diagnostics",
         "resources"
@@ -458,10 +458,10 @@
       "markdown": "https://pdfnative.dev/guides/self-verify.md",
       "anchors": [
         "why-a-pdf-is-normally-a-blind-artefact",
-        "verifier-1-inspectdocumentlayout-geometry-before-generating",
-        "verifier-2-extracttext-is-the-content-actually-in-the-file",
-        "verifier-3-validatepdfua-structural-pdfua",
-        "verifier-4-listsignatures-openpdf-signatures-encryption-metadata",
+        "verifier-1--inspectdocumentlayout-geometry-before-generating",
+        "verifier-2--extracttext-is-the-content-actually-in-the-file",
+        "verifier-3--validatepdfua-structural-pdfua",
+        "verifier-4--listsignatures--openpdf-signatures-encryption-metadata",
         "the-same-loop-on-the-cli",
         "the-same-loop-on-mcp",
         "wire-it-into-ci-and-agent-loops",
@@ -476,11 +476,11 @@
       "html": "https://pdfnative.dev/guides/signatures.html",
       "markdown": "https://pdfnative.dev/guides/signatures.md",
       "anchors": [
-        "tldr-sign-any-pdf-in-3-lines",
+        "tldr--sign-any-pdf-in-3-lines",
         "three-step-pipeline",
         "why-a-separate-placeholder-step",
         "multiple-signatures-v170",
-        "inspecting-signatures-listsignatures-v170",
+        "inspecting-signatures--listsignatures-v170",
         "algorithms",
         "validating-the-output",
         "reading-the-validator-output",
@@ -502,7 +502,7 @@
         "streaming-without-joining-the-binary-v130",
         "options",
         "draining-to-a-file-streamtofile-v140",
-        "streaming-merge-split-v160",
+        "streaming-merge--split-v160",
         "constraints",
         "see-also"
       ],
@@ -519,15 +519,15 @@
         "tableblock-fields-all-optional",
         "columndefkind-field-optional",
         "how-multi-page-tables-are-sliced",
-        "tagged-mode-pdfua",
-        "tagged-mode-zebra",
+        "tagged-mode--pdfua",
+        "tagged-mode--zebra",
         "migration-from-v110",
         "samples-shipped",
         "reference",
         "see-also"
       ],
-      "bytes": 15157,
-      "approxTokens": 3789
+      "bytes": 15171,
+      "approxTokens": 3793
     },
     {
       "title": "Text extraction",
@@ -558,9 +558,9 @@
         "pdf-file-too-large",
         "rtl-text-backwards",
         "pdfa-validation-fails",
-        "document-has-too-many-blocks-very-large-documents",
+        "document-has-too-many-blocks--very-large-documents",
         "parser-fails-on-external-pdf",
-        "build-import-issues"
+        "build--import-issues"
       ],
       "bytes": 5303,
       "approxTokens": 1326

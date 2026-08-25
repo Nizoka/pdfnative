@@ -429,6 +429,10 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Pick an example, edit the code, and watch the PDF render beside it — everything runs in your browser via the npm CDN. Nothing is uploaded anywhere.</p>
     <div class="demo-container">
       <div class="demo-toolbar">
+        <div class="demo-mode" role="tablist" aria-label="Editor mode">
+          <button class="tab-btn active" id="demo-mode-code" role="tab" aria-selected="true" type="button">Code</button>
+          <button class="tab-btn" id="demo-mode-json" role="tab" aria-selected="false" type="button">JSON</button>
+        </div>
         <label class="demo-picker-label" for="demo-picker">Example:</label>
         <select id="demo-picker" class="demo-picker" aria-label="Choose an example"></select>
         <a class="demo-source-link" id="demo-source-link" href="#" target="_blank" rel="noopener" aria-label="View this example's full generator on GitHub">View source ↗</a>
@@ -437,14 +441,18 @@ const pdf = buildDocumentPDFBytes({
       <div class="pn-split">
         <div class="pn-split-pane">
           <textarea class="demo-editor" id="demo-code" spellcheck="false" aria-label="PDF generation code"></textarea>
+          <textarea class="demo-editor" id="demo-json" spellcheck="false" aria-label="Document JSON (DocumentParams)" hidden></textarea>
           <div class="demo-actions">
             <button class="btn btn-primary" id="demo-run">▶ Generate PDF</button>
             <button class="btn btn-secondary" id="demo-reset" type="button">↺ Reset</button>
             <button class="btn btn-secondary" id="demo-download" type="button" disabled>⬇ Download</button>
             <button class="btn btn-secondary" id="demo-share" type="button">🔗 Copy link</button>
+            <button class="btn btn-secondary" id="demo-copy-cli" type="button" hidden>Copy as CLI command</button>
+            <button class="btn btn-secondary" id="demo-copy-mcp" type="button" hidden>Copy as MCP call</button>
             <span class="demo-status" id="demo-status"></span>
           </div>
           <div class="demo-error" id="demo-error" role="alert"></div>
+          <p class="demo-note" id="demo-json-note" hidden>The JSON is a pdfnative <code>DocumentParams</code> object — the same document the library, <code>pdfnative-cli render</code> and the <code>generate_basic_pdf</code> MCP tool consume. Share links (<code>#doc=…</code>) encode this JSON, never code.</p>
         </div>
         <div class="pn-split-pane pn-preview-pane">
           <iframe class="pn-preview-frame" id="demo-preview" title="Generated PDF preview"></iframe>
@@ -711,6 +719,13 @@ const pdf = renderToBytes(
       Faster hardware (Apple M-series, desktop i7/i9) typically runs 2–4× quicker. Results may vary.
       Run <code>npx vitest bench</code> to measure on your hardware.
     </p>
+    <div class="bench-live" id="bench-live">
+      <button class="btn btn-secondary" id="bench-live-run" type="button">▶ Run this benchmark in your browser</button>
+      <div class="bench-live-grid" id="bench-live-rows" hidden></div>
+      <p class="bench-note" id="bench-live-note" hidden>
+        Measured in this tab just now with <code>performance.now()</code> — one sample per size after a warm-up run, on whatever this device and browser happen to be doing. Indicative, not a benchmark: the CI reference above uses <code>vitest bench</code> with proper sampling. Browser engines typically run this workload slower than Node.
+      </p>
+    </div>
   </div>
 </section>
 
@@ -999,6 +1014,7 @@ const bytes = renderToBytes(
           <li><a href="playgrounds/extreme-scripts.html">Extreme scripts</a></li>
           <li><a href="playgrounds/all-scripts.html">All 22 scripts</a></li>
           <li><a href="playgrounds/toolkit.html">PDF Toolkit</a></li>
+          <li><a href="playgrounds/inspect.html">Inspect &amp; verify</a></li>
           <li><a href="playgrounds/charts.html">Charts</a></li>
           <li><a href="playgrounds/authoring-plus.html">Authoring+</a></li>
           <li><a href="playgrounds/scale.html">Scale</a></li>

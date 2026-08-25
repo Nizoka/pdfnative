@@ -94,7 +94,7 @@ function slugify(text: string): string {
         .trim()
         .toLowerCase()
         .replace(/[^\p{L}\p{N}\s_-]/gu, '')
-        .replace(/\s+/g, '-');
+        .replace(/\s/g, '-');
 }
 
 function approxTokens(bytes: number): number {

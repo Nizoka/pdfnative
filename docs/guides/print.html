@@ -63,7 +63,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Print production</p>
   <article id="guide-content" class="guide-content" data-md="print.md" data-prerendered="true">
 <!-- guide:render:start -->
-<h1 id="print-production-bleed-trim-printers-marks">Print production — bleed, trim &amp; printer&#39;s marks</h1>
+<h1 id="print-production--bleed-trim--printers-marks">Print production — bleed, trim &amp; printer&#39;s marks</h1>
 <blockquote>
 <p><strong>New in v1.7.0.</strong> Print-ready PDFs with zero dependencies: page geometry boxes (<code>/TrimBox</code>, <code>/BleedBox</code>, <code>/ArtBox</code>, <code>/CropBox</code>), crop and registration marks drawn as pure vector operators, <code>/Trapped</code> metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format <code>/UserUnit</code>. Everything is opt-in — output is byte-identical when unused.</p>
 </blockquote>
@@ -189,13 +189,13 @@ buildDocumentPDFBytes(params, {
 });
 </code></pre>
 <p>RGB profiles only — pdfnative emits RGB content, and a mismatched intent fails PDF/A validation (a CMYK profile throws with an actionable message). Omitted, the historical built-in profile is used byte-identically.</p>
-<h2 id="large-formats-userunit">Large formats — <code>/UserUnit</code><a class="heading-anchor" href="#large-formats-userunit" aria-label="Link to this section">#</a></h2>
+<h2 id="large-formats--userunit">Large formats — <code>/UserUnit</code><a class="heading-anchor" href="#large-formats--userunit" aria-label="Link to this section">#</a></h2>
 <p>PDF user space caps pages at 14 400 units (200 in). For banners and plans, <code>print.userUnit</code> scales the unit (1 unit = <code>userUnit</code>/72 inch, up to 75 000):</p>
 <pre><code class="language-ts">// A 5 m × 1 m banner: 1417 × 283 units at 10/72 inch per unit.
 buildDocumentPDFBytes(params, { pageWidth: 1417, pageHeight: 283, print: { userUnit: 10 } });
 </code></pre>
 <p><code>/UserUnit</code> needs PDF 1.6+, so the header is raised to <code>%PDF-1.7</code> when the option is set — and it is rejected under <code>tagged: &#39;pdfa1b&#39;</code> (PDF/A-1 is PDF 1.4; use <code>pdfa2b</code> or later).</p>
-<h2 id="limits-scope-v170">Limits &amp; scope (v1.7.0)<a class="heading-anchor" href="#limits-scope-v170" aria-label="Link to this section">#</a></h2>
+<h2 id="limits--scope-v170">Limits &amp; scope (v1.7.0)<a class="heading-anchor" href="#limits--scope-v170" aria-label="Link to this section">#</a></h2>
 <ul>
 <li>Marks are RGB black; <strong>no CMYK content</strong>, spot colours, colour bars or <strong>PDF/X</strong> conformance claims yet — all on the roadmap as one coherent CMYK workstream.</li>
 <li>One geometry per document (pages share the same boxes), matching the single-page-size layout model.</li>

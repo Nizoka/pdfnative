@@ -179,6 +179,12 @@
   var demoShare = document.getElementById('demo-share');
   var demoPreview = document.getElementById('demo-preview');
   var demoPreviewNote = document.getElementById('demo-preview-note');
+  var demoJson = document.getElementById('demo-json');
+  var demoJsonNote = document.getElementById('demo-json-note');
+  var demoModeCode = document.getElementById('demo-mode-code');
+  var demoModeJson = document.getElementById('demo-mode-json');
+  var demoCopyCli = document.getElementById('demo-copy-cli');
+  var demoCopyMcp = document.getElementById('demo-copy-mcp');
   var pdfnativeModule = null;
 
   // ── Examples gallery ──────────────────────────────────────
@@ -679,15 +685,163 @@
       });
     }
 
+    // ── JSON mode: the DocumentParams the whole ecosystem consumes ──
+    var demoMode = 'code';
+    var BLOCK_TYPES = ['heading', 'paragraph', 'list', 'table', 'image', 'link', 'toc', 'barcode', 'svg', 'formField', 'chart', 'pageBreak', 'spacer'];
+    var STARTER_DOC = {
+      title: 'Shared document',
+      blocks: [
+        { type: 'heading', text: 'Shared document', level: 1 },
+        { type: 'paragraph', text: 'Edit this JSON and generate — the same object drives the library, pdfnative-cli render, and the generate_basic_pdf MCP tool.' },
+        { type: 'table', headers: ['Surface', 'Entry point'], rows: [
+          { cells: ['Library', 'buildDocumentPDFBytes(params)'] },
+          { cells: ['CLI', 'pdfnative render --input doc.json'] },
+          { cells: ['MCP', 'generate_basic_pdf'] }
+        ] }
+      ]
+    };
+
+    function setMode(mode) {
+      demoMode = mode;
+      var json = mode === 'json';
+      if (demoCode) demoCode.hidden = json;
+      if (demoJson) {
+        demoJson.hidden = !json;
+        if (json && !demoJson.value) demoJson.value = JSON.stringify(STARTER_DOC, null, 2);
+      }
+      if (demoPicker) demoPicker.disabled = json;
+      if (demoSourceLink) demoSourceLink.hidden = json;
+      if (demoJsonNote) demoJsonNote.hidden = !json;
+      if (demoCopyCli) demoCopyCli.hidden = !json;
+      if (demoCopyMcp) demoCopyMcp.hidden = !json;
+      if (demoModeCode) {
+        demoModeCode.classList.toggle('active', !json);
+        demoModeCode.setAttribute('aria-selected', String(!json));
+      }
+      if (demoModeJson) {
+        demoModeJson.classList.toggle('active', json);
+        demoModeJson.setAttribute('aria-selected', String(json));
+      }
+    }
+    if (demoModeCode) demoModeCode.addEventListener('click', function () { setMode('code'); });
+    if (demoModeJson) demoModeJson.addEventListener('click', function () { setMode('json'); });
+
+    // Defensive parse: a #doc= payload is untrusted input. Data only — the
+    // hash can never carry code — with a size cap and a block-type check
+    // against the engine's 13-kind union. Anything off-shape is rejected.
+    function parseDocJson(text) {
+      if (typeof text !== 'string' || text.length > 100000) throw new Error('Document JSON too large.');
+      var doc = JSON.parse(text);
+      if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new Error('Document must be a JSON object.');
+      if (!Array.isArray(doc.blocks)) throw new Error('Document needs a "blocks" array.');
+      for (var i = 0; i < doc.blocks.length; i++) {
+        var b = doc.blocks[i];
+        if (!b || typeof b !== 'object' || BLOCK_TYPES.indexOf(b.type) === -1) {
+          throw new Error('blocks[' + i + '].type must be one of: ' + BLOCK_TYPES.join(', '));
+        }
+      }
+      return doc;
+    }
+
+    // #doc= payload: base64url, deflate-raw-compressed when the native
+    // CompressionStream API exists ("d." prefix), raw otherwise ("r.").
+    function toBase64Url(bytes) {
+      var bin = '';
+      for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+    function fromBase64Url(s) {
+      s = s.replace(/-/g, '+').replace(/_/g, '/');
+      var bin = atob(s);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+    async function encodeDocHash(jsonText) {
+      var raw = new TextEncoder().encode(jsonText);
+      if (typeof CompressionStream === 'function') {
+        var stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+        var packed = new Uint8Array(await new Response(stream).arrayBuffer());
+        return 'd.' + toBase64Url(packed);
+      }
+      return 'r.' + toBase64Url(raw);
+    }
+    async function decodeDocHash(payload) {
+      if (payload.length > 20000) throw new Error('Link payload too large.');
+      var kind = payload.slice(0, 2);
+      var bytes = fromBase64Url(payload.slice(2));
+      if (kind === 'd.') {
+        if (typeof DecompressionStream !== 'function') throw new Error('This browser cannot decompress the link.');
+        var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+      } else if (kind !== 'r.') {
+        throw new Error('Unrecognised link format.');
+      }
+      return new TextDecoder().decode(bytes);
+    }
+
     if (demoShare) {
-      demoShare.addEventListener('click', function () {
-        var url = location.origin + location.pathname + '#preset=' + (currentId || DEFAULT_ID);
-        navigator.clipboard.writeText(url).then(function () {
+      demoShare.addEventListener('click', async function () {
+        var base = location.origin + location.pathname;
+        var url;
+        try {
+          if (demoMode === 'json') {
+            var doc = parseDocJson(demoJson.value);
+            url = base + '#doc=' + (await encodeDocHash(JSON.stringify(doc)));
+          } else {
+            url = base + '#preset=' + (currentId || DEFAULT_ID);
+          }
+          await navigator.clipboard.writeText(url);
           var prev = demoShare.textContent;
           demoShare.textContent = '✓ Copied';
           setTimeout(function () { demoShare.textContent = prev; }, 1500);
-        });
+        } catch (e) {
+          demoError.textContent = 'Share failed: ' + (e.message || e);
+          demoError.style.display = 'block';
+        }
       });
+    }
+
+    function copyWithFeedback(btn, text) {
+      navigator.clipboard.writeText(text).then(function () {
+        var prev = btn.textContent;
+        btn.textContent = '✓ Copied';
+        setTimeout(function () { btn.textContent = prev; }, 1500);
+      });
+    }
+    if (demoCopyCli) {
+      demoCopyCli.addEventListener('click', function () {
+        try {
+          var doc = parseDocJson(demoJson.value);
+          copyWithFeedback(demoCopyCli,
+            '# Save the JSON below as doc.json, then:\n' +
+            'npx pdfnative-cli render --input doc.json --output out.pdf\n\n' +
+            JSON.stringify(doc, null, 2) + '\n');
+        } catch (e) { demoError.textContent = e.message; demoError.style.display = 'block'; }
+      });
+    }
+    if (demoCopyMcp) {
+      demoCopyMcp.addEventListener('click', function () {
+        try {
+          var doc = parseDocJson(demoJson.value);
+          copyWithFeedback(demoCopyMcp, JSON.stringify({
+            tool: 'generate_basic_pdf',
+            input: { title: doc.title || 'Document', blocks: doc.blocks, outputMode: 'base64' }
+          }, null, 2) + '\n');
+        } catch (e) { demoError.textContent = e.message; demoError.style.display = 'block'; }
+      });
+    }
+
+    // Restore a shared document from the URL hash.
+    var docMatch = /(?:^|[#&])doc=([\w.~-]+)/.exec(location.hash);
+    if (docMatch && demoJson) {
+      decodeDocHash(docMatch[1])
+        .then(function (text) {
+          var doc = parseDocJson(text);
+          setMode('json');
+          demoJson.value = JSON.stringify(doc, null, 2);
+        })
+        .catch(function () { /* off-shape payloads are silently ignored */ });
     }
 
     // ── Execution: real ES module via a Blob URL ─────────────
@@ -722,13 +876,18 @@
         }
         demoStatus.textContent = 'Generating PDF…';
 
-        globalThis.__pdfnativeDemo = {
-          mod: Object.assign({}, pdfnativeModule, { downloadBlob: captureSink })
-        };
+        if (demoMode === 'json') {
+          var doc = parseDocJson(demoJson.value);
+          captureSink(pdfnativeModule.buildDocumentPDFBytes(doc), (doc.title || 'document') + '.pdf');
+        } else {
+          globalThis.__pdfnativeDemo = {
+            mod: Object.assign({}, pdfnativeModule, { downloadBlob: captureSink })
+          };
 
-        var source = rewriteImports(demoCode.value);
-        moduleUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
-        await import(moduleUrl);
+          var source = rewriteImports(demoCode.value);
+          moduleUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+          await import(moduleUrl);
+        }
 
         demoStatus.textContent = lastPdf ? 'PDF generated — preview updated.' : 'Done (no PDF produced).';
         setTimeout(function () { demoStatus.textContent = ''; }, 3000);
@@ -744,6 +903,54 @@
     }
 
     demoBtn.addEventListener('click', runDemo);
+
+    // ── Live benchmark (never reuses .bench-label/.bench-value: those
+    //    classes are tied to bench/RESULTS.md by the bench-parity CI rule) ──
+    var benchBtn = document.getElementById('bench-live-run');
+    if (benchBtn) {
+      benchBtn.addEventListener('click', async function () {
+        var rowsEl = document.getElementById('bench-live-rows');
+        var noteEl = document.getElementById('bench-live-note');
+        benchBtn.disabled = true;
+        benchBtn.textContent = 'Loading pdfnative…';
+        try {
+          if (!pdfnativeModule) pdfnativeModule = await loadPdfnative();
+          benchBtn.textContent = 'Measuring…';
+          var makeParams = function (n) {
+            var rows = [];
+            for (var i = 0; i < n; i++) {
+              rows.push({ cells: ['2026-08-' + ((i % 28) + 1), 'Line item ' + i, '$' + (i * 3.5).toFixed(2)] });
+            }
+            return { title: 'Benchmark ' + n, headers: ['Date', 'Description', 'Amount'], rows: rows };
+          };
+          pdfnativeModule.buildPDFBytes(makeParams(50)); // warm-up
+          var sizes = [100, 500, 1000];
+          var results = [];
+          for (var s = 0; s < sizes.length; s++) {
+            var t0 = performance.now();
+            pdfnativeModule.buildPDFBytes(makeParams(sizes[s]));
+            results.push({ n: sizes[s], ms: performance.now() - t0 });
+            await new Promise(function (r) { setTimeout(r, 0); }); // keep the tab responsive
+          }
+          var max = Math.max.apply(null, results.map(function (r) { return r.ms; }));
+          rowsEl.innerHTML = results.map(function (r) {
+            var pct = Math.max(4, Math.round((r.ms / max) * 100));
+            return '<div class="bench-row">' +
+              '<span class="bench-live-label">' + r.n.toLocaleString('en-GB') + ' rows — this device</span>' +
+              '<div class="bench-bar-bg"><div class="bench-bar bench-live-bar" style="width:' + pct + '%"></div></div>' +
+              '<span class="bench-live-value">' + r.ms.toFixed(1) + ' ms</span>' +
+              '</div>';
+          }).join('');
+          rowsEl.hidden = false;
+          noteEl.hidden = false;
+          benchBtn.textContent = '↺ Run again';
+        } catch (e) {
+          benchBtn.textContent = 'Failed — ' + (e.message || e);
+        } finally {
+          benchBtn.disabled = false;
+        }
+      });
+    }
 
     // First render without a click, once the demo scrolls into view — the
     // visitor sees a real PDF instead of an empty pane. One shot only.

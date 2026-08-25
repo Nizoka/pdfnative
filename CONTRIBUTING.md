@@ -59,7 +59,7 @@ npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (95%+ stmts measured at the v1.6.0 release; CI enforces ≥88%)
 npm run test:generate  # Generate 242 sample PDFs → test-output/
 npm run validate:pdfa  # veraPDF validation of every PDF/A-claiming sample (see below)
-npm run verify:docs    # 20 offline rules over docs/, playgrounds, README, llms files
+npm run verify:docs    # 21 offline rules over docs/, playgrounds, README, llms files
 npm run bench          # Performance benchmarks (vitest bench)
 ```
 

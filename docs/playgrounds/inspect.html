@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspect &amp; Verify Playground — pdfnative</title>
+  <meta name="description" content="Drop a PDF and read a full report — metadata, text, PDF/UA structure, signatures, form fields — produced entirely in your browser. Nothing is uploaded.">
+  <meta name="keywords" content="inspect PDF, PDF metadata reader, PDF/UA validator, PDF signature inventory, AcroForm fields, extract PDF text, encrypted PDF, PDF report, browser PDF inspector, pdfnative">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/inspect.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/inspect.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/inspect.html">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/inspect.html">
+  <meta property="og:title" content="Inspect &amp; Verify Playground — pdfnative">
+  <meta property="og:description" content="Drop a PDF and read a full report — metadata, text, PDF/UA structure, signature inventory, form fields — produced entirely in your browser. Nothing is uploaded.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Inspect &amp; Verify Playground — pdfnative">
+  <meta name="twitter:description" content="Metadata, text, PDF/UA structure, signatures and form fields — read from your PDF entirely in your browser. Nothing is uploaded.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <style>
+    .insp-drop { border: 2px dashed var(--c-border); border-radius: 12px; padding: 28px 24px; text-align: center; background: var(--c-bg-card); margin-top: 24px; transition: border-color 0.15s, background 0.15s; }
+    .insp-drop.dragover { border-color: var(--c-primary); background: var(--c-surface); }
+    .insp-drop p { margin: 0 0 12px; color: var(--c-text-dim); font-size: 14px; }
+    .insp-drop .insp-file-row { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; }
+    .insp-drop input[type="file"] { font-size: 13px; max-width: 100%; }
+    .insp-pwrow { margin-top: 16px; padding: 14px 16px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface); }
+    .insp-pwrow label { font-weight: 600; margin-right: 8px; }
+    .insp-pwrow input { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--c-border); font-size: 14px; }
+    .insp-pwrow button { margin-left: 8px; padding: 6px 14px; border-radius: 6px; border: none; background: var(--c-primary); color: #fff; font-weight: 600; cursor: pointer; }
+    .insp-pwrow .insp-pwnote { font-size: 12px; color: var(--c-text-dim); margin: 8px 0 0; }
+    .insp-card { border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-bg-card); padding: 18px 20px 14px; margin-top: 20px; }
+    .insp-card h2 { font-size: 17px; margin: 0 0 10px; }
+    .insp-card dl { display: grid; grid-template-columns: minmax(120px, max-content) 1fr; gap: 4px 16px; font-size: 14px; margin: 0; }
+    .insp-card dt { color: var(--c-text-dim); font-weight: 600; }
+    .insp-card dd { margin: 0; overflow-wrap: anywhere; }
+    .insp-card ul { font-size: 14px; margin: 8px 0 0; padding-left: 20px; }
+    .insp-card pre { margin-top: 10px; max-height: 280px; overflow: auto; padding: 12px; border-radius: 8px; background: var(--c-code-bg); color: var(--c-code-text); font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+    .insp-caveat { font-size: 13px; color: var(--c-text-dim); border-left: 3px solid #d97706; padding: 6px 12px; margin: 10px 0 0; background: var(--c-surface); border-radius: 0 6px 6px 0; }
+    .insp-error { font-size: 14px; color: #b91c1c; margin: 0; }
+    [data-theme="dark"] .insp-error { color: #fca5a5; }
+    .insp-verdict { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
+    .insp-verdict.pass { background: #d1fae5; color: #065f46; }
+    .insp-verdict.fail { background: #fee2e2; color: #991b1b; }
+    .rs-verify { font-size: 13px; color: var(--c-text-dim); margin: 12px 0 0; }
+    .rs-verify a { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .insp-meta { font-size: 13px; color: var(--c-text-dim); margin-top: 16px; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "inLanguage": "en",
+    "name": "Inspect & Verify Playground",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any (browser-based)",
+    "browserRequirements": "Requires JavaScript and HTML5",
+    "url": "https://pdfnative.dev/playgrounds/inspect.html",
+    "description": "Drop a PDF and read a full report — metadata, text, PDF/UA structure, signatures, form fields — produced entirely in your browser. Nothing is uploaded.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
+    "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Inspect &amp; verify</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./inspect.html" aria-current="page">Inspect &amp; verify</a>
+    <a href="./charts.html">Charts</a>
+    <a href="./authoring-plus.html">Authoring+</a>
+    <a href="./scale.html">Scale</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>Inspect &amp; verify — drop a PDF, nothing leaves your machine</h1>
+    <p>Drop any PDF below and read a full report — document metadata, extracted text, PDF/UA structure, a signature inventory, and form fields — produced by the same pdfnative reader APIs that run in Node, Deno and Bun. Open your browser's Network panel before dropping a file: the only requests this page ever makes happen while it loads — its stylesheets, the Prism highlighter, and the pdfnative engine from the CDN — before you drop anything. The file is read with the standard FileReader API and never leaves this tab. Nothing is stored either: reload the page and the report is gone.</p>
+    <p style="font-size:14px;color:var(--c-text-dim);">In the spirit of the <a href="../responsibility.html">responsibility page</a>, every card below links the source file in the repository that produced it — the report is only as trustworthy as the code you can read.</p>
+
+    <p id="loader-status" style="font-size:13px;color:var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once, at page load.</p>
+
+    <div id="dropzone" class="insp-drop">
+      <p><strong>Drop a PDF anywhere in this box</strong> — or pick one:</p>
+      <div class="insp-file-row">
+        <label for="file-input"><strong>Choose a PDF file</strong></label>
+        <input type="file" id="file-input" accept="application/pdf">
+        <span aria-hidden="true" style="color:var(--c-text-dim);">·</span>
+        <button id="sample-btn" class="btn btn-primary" type="button" style="padding:8px 18px;" disabled>Try a generated sample</button>
+      </div>
+      <p style="margin:12px 0 0;">The sample is a small two-page tagged document with form fields, built in this tab by <code>buildDocumentPDFBytes()</code> — so the page can demonstrate itself without needing a file of yours.</p>
+    </div>
+
+    <div id="password-row" class="insp-pwrow" hidden>
+      <label for="pdf-password">Password</label>
+      <input type="password" id="pdf-password" autocomplete="off">
+      <button id="password-apply" type="button">Unlock and inspect</button>
+      <p class="insp-pwnote">This document is encrypted. The password is handed to <code>openPdf()</code> in this tab only — it is never stored and never sent anywhere.</p>
+    </div>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0 0;font-size:14px;"></div>
+    <p id="file-meta" class="insp-meta" hidden></p>
+
+    <div id="report" hidden>
+      <section class="insp-card" aria-labelledby="h-overview">
+        <h2 id="h-overview">Overview</h2>
+        <div id="overview-body"></div>
+        <p class="rs-verify">Read the source: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/parser/pdf-reader.ts" target="_blank" rel="noopener">src/parser/pdf-reader.ts</a> · <a href="https://github.com/Nizoka/pdfnative/blob/main/src/parser/pdf-xref-parser.ts" target="_blank" rel="noopener">src/parser/pdf-xref-parser.ts</a></p>
+      </section>
+
+      <section class="insp-card" aria-labelledby="h-text">
+        <h2 id="h-text">Text</h2>
+        <div id="text-body"></div>
+        <p class="rs-verify">Read the source: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/parser/pdf-text-extract.ts" target="_blank" rel="noopener">src/parser/pdf-text-extract.ts</a></p>
+      </section>
+
+      <section class="insp-card" aria-labelledby="h-ua">
+        <h2 id="h-ua">PDF/UA structure <span id="ua-verdict"></span></h2>
+        <div id="ua-body"></div>
+        <p class="insp-caveat">Structural checks only (ISO 14289-1) — a passing result is not an accessibility audit. Whether the reading order makes sense or the alt text is meaningful remains the author's judgement; no validator substitutes for it.</p>
+        <p class="rs-verify">Read the source: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/parser/pdf-ua-validator.ts" target="_blank" rel="noopener">src/parser/pdf-ua-validator.ts</a></p>
+      </section>
+
+      <section class="insp-card" aria-labelledby="h-sigs">
+        <h2 id="h-sigs">Signatures</h2>
+        <div id="sigs-body"></div>
+        <p class="insp-caveat">This is an inventory, not cryptographic verification — nothing here checks the CMS signature, the certificate chain or the document digest. Use <code>pdfnative-cli verify</code> or the <code>verify_pdf</code> MCP tool for that.</p>
+        <p class="rs-verify">Read the source: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-sig-utils.ts" target="_blank" rel="noopener">src/core/pdf-sig-utils.ts</a></p>
+      </section>
+
+      <section class="insp-card" aria-labelledby="h-forms">
+        <h2 id="h-forms">Form fields</h2>
+        <div id="forms-body"></div>
+        <p class="rs-verify">Read the source: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/core/pdf-form-fill.ts" target="_blank" rel="noopener">src/core/pdf-form-fill.ts</a></p>
+      </section>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/">All guides</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js" integrity="sha384-RhrmFFMb0ZCHImjFMpR/UE3VEtIVTCtNrtKQqXCzqXZNJala02N3UbVhi+qzw3CY" crossorigin="anonymous" defer></script>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const statusBox = $('status');
+
+function setStatus(msg, kind) {
+  statusBox.style.display = 'block';
+  statusBox.textContent = msg;
+  if (kind === 'error') {
+    statusBox.style.background = '#fee2e2'; statusBox.style.color = '#991b1b'; statusBox.style.border = '1px solid #fca5a5';
+  } else if (kind === 'success') {
+    statusBox.style.background = '#d1fae5'; statusBox.style.color = '#065f46'; statusBox.style.border = '1px solid #6ee7b7';
+  } else {
+    statusBox.style.background = '#dbeafe'; statusBox.style.color = '#1e3a8a'; statusBox.style.border = '1px solid #93c5fd';
+  }
+}
+
+// ── DOM helpers — every file-derived string goes through textContent, never innerHTML ──
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+function kv(dl, key, value) {
+  dl.appendChild(el('dt', '', key));
+  dl.appendChild(el('dd', '', value));
+}
+function sectionError(bodyId, err) {
+  const p = el('p', 'insp-error', 'Could not run on this file: ' + (err && err.message ? err.message : String(err)));
+  $(bodyId).replaceChildren(p);
+}
+function rawJsonDetails(obj) {
+  const details = document.createElement('details');
+  details.appendChild(el('summary', '', 'Raw JSON'));
+  const pre = document.createElement('pre');
+  const code = el('code', 'language-json', JSON.stringify(obj, (k, v) => {
+    if (v instanceof Uint8Array) return '<' + v.length + ' bytes>';
+    if (v instanceof Map) return Object.fromEntries(v);
+    return v;
+  }, 2));
+  pre.appendChild(code);
+  details.appendChild(pre);
+  details.addEventListener('toggle', () => { if (details.open && window.Prism) window.Prism.highlightElement(code); }, { once: true });
+  return details;
+}
+
+// PDF text strings are either PDFDocEncoding (close to Latin-1) or UTF-16BE
+// with a FE FF byte-order mark. The parser hands both over as byte strings.
+function decodePdfText(s) {
+  if (typeof s !== 'string') return String(s);
+  if (s.length >= 2 && s.charCodeAt(0) === 0xFE && s.charCodeAt(1) === 0xFF) {
+    let out = '';
+    for (let i = 2; i + 1 < s.length; i += 2) {
+      out += String.fromCharCode((s.charCodeAt(i) << 8) | s.charCodeAt(i + 1));
+    }
+    return out;
+  }
+  return s;
+}
+function displayValue(mod, reader, raw) {
+  const v = reader.resolveValue(raw);
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'string') return decodePdfText(v);
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (typeof v === 'object' && v.type === 'name') return '/' + v.value;
+  return '(non-scalar value)';
+}
+
+// ── pdfnative loader — eager, at page load, so no request follows a drop ──
+const CDN_URLS = ['https://esm.sh/pdfnative@1.7.0', 'https://unpkg.com/pdfnative@1.7.0?module'];
+let pdfnativeMod = null;
+let loadErr = null;
+
+(async () => {
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = m.buildDocumentPDFBytes ? m : (m.default && m.default.buildDocumentPDFBytes ? m.default : m);
+      if (mod && typeof mod.buildDocumentPDFBytes === 'function') { pdfnativeMod = mod; break; }
+    } catch (e) { loadErr = e; }
+  }
+  const ls = $('loader-status');
+  if (pdfnativeMod) {
+    ls.textContent = 'pdfnative loaded — drop a PDF or try the generated sample. No further network request will be made.';
+    ls.style.color = 'var(--c-success)';
+    $('sample-btn').disabled = false;
+  } else {
+    ls.textContent = 'Failed to load pdfnative from CDN: ' + (loadErr && loadErr.message ? loadErr.message : 'unknown error');
+    ls.style.color = '#b91c1c';
+  }
+})();
+
+// ── Report sections — each runs independently: a PDF may fail one reader and pass another ──
+
+function renderOverview(mod, bytes, password) {
+  const body = $('overview-body');
+  body.replaceChildren();
+  const reader = mod.openPdf(bytes, password !== undefined ? { password } : undefined);
+
+  const dl = document.createElement('dl');
+  const head = new TextDecoder('latin1').decode(bytes.subarray(0, 1024));
+  const headerMatch = /%PDF-(\d+\.\d+)/.exec(head);
+  let version = headerMatch ? headerMatch[1] : '(no %PDF header found)';
+  try {
+    const catVersion = reader.resolveValue(reader.getCatalog().get('Version'));
+    if (catVersion && typeof catVersion === 'object' && catVersion.type === 'name') {
+      version += ' (raised to ' + catVersion.value + ' by the catalog /Version entry)';
+    }
+  } catch (e) { /* catalogue unreadable — the header value stands */ }
+  kv(dl, 'PDF version', version);
+  kv(dl, 'Pages', String(reader.pageCount));
+  kv(dl, 'File size', (bytes.length / 1024).toFixed(1) + ' KB (' + bytes.length + ' bytes)');
+
+  if (reader.encryption) {
+    kv(dl, 'Encryption', reader.encryption.algorithm + ' · security handler revision ' + reader.encryption.revision + ' · opened as ' + reader.encryption.authenticatedAs);
+  } else {
+    kv(dl, 'Encryption', 'Not encrypted');
+  }
+
+  try {
+    kv(dl, 'startxref', 'byte offset ' + mod.findStartxref(bytes));
+  } catch (e) {
+    kv(dl, 'startxref', 'not found: ' + (e && e.message ? e.message : e));
+  }
+  kv(dl, 'Xref entries', String(reader.xref.entries.size) + ' objects');
+
+  const info = reader.getInfo();
+  const infoOut = {};
+  if (info) {
+    for (const [key, raw] of info) {
+      const value = displayValue(mod, reader, raw);
+      if (value !== '') { kv(dl, '/' + key, value); infoOut[key] = value; }
+    }
+  } else {
+    kv(dl, '/Info', 'No document information dictionary');
+  }
+  body.appendChild(dl);
+  body.appendChild(rawJsonDetails({
+    version, pageCount: reader.pageCount, bytes: bytes.length,
+    encryption: reader.encryption, xrefEntries: reader.xref.entries.size, info: infoOut,
+  }));
+  return reader.encryption;
+}
+
+function renderText(mod, bytes, password) {
+  const body = $('text-body');
+  body.replaceChildren();
+  const opts = { includeRuns: true };
+  if (password !== undefined) opts.password = password;
+  const pages = mod.extractText(bytes, opts);
+  let totalChars = 0, runCount = 0;
+  for (const page of pages) {
+    totalChars += page.text.length;
+    runCount += (page.runs ? page.runs.length : 0);
+  }
+  const dl = document.createElement('dl');
+  kv(dl, 'Pages read', String(pages.length));
+  kv(dl, 'Characters', String(totalChars) + ' across all pages');
+  kv(dl, 'Positioned runs', String(runCount) + ' (includeRuns: true)');
+  body.appendChild(dl);
+  if (pages.length > 0 && pages[0].text.trim() !== '') {
+    const preview = pages[0].text.length > 1200 ? pages[0].text.slice(0, 1200) + '… (truncated)' : pages[0].text;
+    body.appendChild(el('p', '', 'First page, reading order:'));
+    const pre = document.createElement('pre');
+    pre.textContent = preview;
+    body.appendChild(pre);
+  } else {
+    body.appendChild(el('p', '', 'No text on the first page — the document may be image-only, or its text may live on later pages.'));
+  }
+}
+
+function renderUA(mod, bytes, encrypted) {
+  const body = $('ua-body');
+  const verdict = $('ua-verdict');
+  body.replaceChildren();
+  verdict.replaceChildren();
+  const res = mod.validatePdfUA(bytes);
+  const badge = el('span', 'insp-verdict ' + (res.valid ? 'pass' : 'fail'), res.valid ? 'structurally valid' : 'not valid');
+  verdict.appendChild(badge);
+  if (encrypted) {
+    body.appendChild(el('p', '', 'Note: validatePdfUA() opens the document without a password. On an encrypted file that needs one, the result below reflects that failure, not the document structure.'));
+  }
+  if (res.errors.length === 0 && res.warnings.length === 0) {
+    body.appendChild(el('p', '', 'No structural errors and no warnings: MarkInfo, StructTreeRoot, ParentTree, /Lang and per-page MCID uniqueness all check out.'));
+  }
+  if (res.errors.length > 0) {
+    body.appendChild(el('p', '', String(res.errors.length) + ' blocking error(s):'));
+    const ul = document.createElement('ul');
+    for (const err of res.errors) ul.appendChild(el('li', '', err));
+    body.appendChild(ul);
+  }
+  if (res.warnings.length > 0) {
+    body.appendChild(el('p', '', String(res.warnings.length) + ' warning(s):'));
+    const ul = document.createElement('ul');
+    for (const w of res.warnings) ul.appendChild(el('li', '', w));
+    body.appendChild(ul);
+  }
+  body.appendChild(rawJsonDetails(res));
+}
+
+function renderSignatures(mod, bytes) {
+  const body = $('sigs-body');
+  body.replaceChildren();
+  const sigs = mod.listSignatures(bytes);
+  if (sigs.length === 0) {
+    body.appendChild(el('p', '', 'No signature fields — no signed signatures, no document timestamps, no unsigned placeholders.'));
+    return;
+  }
+  body.appendChild(el('p', '', String(sigs.length) + ' signature field(s), in AcroForm order:'));
+  const ul = document.createElement('ul');
+  for (const s of sigs) {
+    const kind = s.isPlaceholder ? 'unsigned placeholder'
+      : s.isDocTimestamp ? 'document timestamp'
+      : 'signed signature';
+    const parts = [
+      (s.fieldName ? s.fieldName : '(unnamed field)'),
+      kind,
+      'subFilter: ' + (s.subFilter !== '' ? s.subFilter : '(none)'),
+      'ByteRange: ' + (s.byteRange.length > 0 ? '[' + s.byteRange.join(', ') + ']' : 'empty'),
+      '/Contents: ' + s.contents.length + ' bytes',
+    ];
+    ul.appendChild(el('li', '', parts.join(' · ')));
+  }
+  body.appendChild(ul);
+  body.appendChild(rawJsonDetails(sigs));
+}
+
+function renderForms(mod, bytes, password) {
+  const body = $('forms-body');
+  body.replaceChildren();
+  const opts = password !== undefined ? { password } : undefined;
+  const fields = mod.readFormFields(bytes, opts);
+  if (fields.length === 0) {
+    body.appendChild(el('p', '', 'No AcroForm fields in this document.'));
+    return;
+  }
+  body.appendChild(el('p', '', String(fields.length) + ' field(s):'));
+  const ul = document.createElement('ul');
+  for (const f of fields) {
+    const flags = [];
+    if (f.readOnly) flags.push('read-only');
+    if (f.required) flags.push('required');
+    if (f.multiline) flags.push('multiline');
+    let valueText;
+    if (f.value === null) valueText = 'empty';
+    else if (Array.isArray(f.value)) valueText = f.value.join(', ');
+    else valueText = String(f.value);
+    ul.appendChild(el('li', '', f.name + ' — ' + f.type + (flags.length ? ' (' + flags.join(', ') + ')' : '') + ' · value: ' + valueText));
+  }
+  body.appendChild(ul);
+  body.appendChild(rawJsonDetails(fields));
+}
+
+// ── Orchestration ──
+let current = null; // { bytes: Uint8Array, name: string } — held in memory only, never persisted
+
+function isPasswordError(mod, err) {
+  return (mod.PdfPasswordError && err instanceof mod.PdfPasswordError) || (err && err.name === 'PdfPasswordError');
+}
+
+function inspect(password) {
+  const mod = pdfnativeMod;
+  if (!mod || !current) return;
+  const t0 = performance.now();
+
+  // Overview drives the password flow: a wrong or missing password surfaces here first.
+  let encryption = null;
+  try {
+    encryption = renderOverview(mod, current.bytes, password);
+    $('password-row').hidden = true;
+  } catch (err) {
+    if (isPasswordError(mod, err)) {
+      $('report').hidden = true;
+      $('password-row').hidden = false;
+      $('pdf-password').focus();
+      setStatus(password === undefined
+        ? 'This document is encrypted — enter its password to inspect it.'
+        : 'Wrong password — ' + (err.message || 'the document did not open.'), 'error');
+      return;
+    }
+    sectionError('overview-body', err);
+  }
+
+  const encryptedWithPassword = encryption !== null && password !== undefined && password !== '';
+
+  try { renderText(mod, current.bytes, password); }
+  catch (err) { sectionError('text-body', err); }
+
+  try { renderUA(mod, current.bytes, encryptedWithPassword); }
+  catch (err) { $('ua-verdict').replaceChildren(); sectionError('ua-body', err); }
+
+  try { renderSignatures(mod, current.bytes); }
+  catch (err) {
+    if (isPasswordError(mod, err)) {
+      $('sigs-body').replaceChildren(el('p', 'insp-error',
+        'listSignatures() takes no password option, so it cannot open this encrypted file. That is a limit of the current API, not a property of your document — pdfnative-cli inspect reads it with --password.'));
+    } else { sectionError('sigs-body', err); }
+  }
+
+  try { renderForms(mod, current.bytes, password); }
+  catch (err) { sectionError('forms-body', err); }
+
+  $('report').hidden = false;
+  const ms = (performance.now() - t0).toFixed(0);
+  const meta = $('file-meta');
+  meta.hidden = false;
+  meta.textContent = current.name + ' · ' + (current.bytes.length / 1024).toFixed(1) + ' KB · inspected in ' + ms + ' ms, entirely in this tab.';
+  setStatus('Report ready.', 'success');
+}
+
+function readFileBytes(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(new Uint8Array(fr.result));
+    fr.onerror = () => reject(fr.error || new Error('File read failed'));
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+async function acceptFile(file) {
+  if (!file) return;
+  if (!pdfnativeMod) {
+    setStatus('The engine has not finished loading yet — try again in a moment.', 'error');
+    return;
+  }
+  try {
+    setStatus('Reading ' + file.name + ' with FileReader…', 'info');
+    const bytes = await readFileBytes(file);
+    current = { bytes, name: file.name };
+    $('pdf-password').value = '';
+    inspect(undefined);
+  } catch (err) {
+    setStatus('Error: ' + (err && err.message ? err.message : err), 'error');
+    console.error(err);
+  }
+}
+
+// ── Drop zone: drag & drop plus a plain, keyboard-accessible file input ──
+const dropzone = $('dropzone');
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  const file = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+  acceptFile(file);
+});
+$('file-input').addEventListener('change', (e) => acceptFile(e.target.files[0]));
+
+$('password-apply').addEventListener('click', () => inspect($('pdf-password').value));
+$('pdf-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') inspect($('pdf-password').value); });
+
+// ── Generated sample: the page demonstrates itself without a visitor's file ──
+$('sample-btn').addEventListener('click', () => {
+  const mod = pdfnativeMod;
+  if (!mod) return;
+  try {
+    setStatus('Building the sample document in this tab…', 'info');
+    const bytes = mod.buildDocumentPDFBytes({
+      title: 'Inspection sample',
+      metadata: { author: 'pdfnative playground', subject: 'A document generated in your browser for inspection' },
+      blocks: [
+        { type: 'heading', text: 'Inspection sample', level: 1 },
+        { type: 'paragraph', text: 'This two-page document was generated in your browser a moment ago. It is tagged, so the PDF/UA card has structure to check, and it carries two form fields for the form-field card. It has no signature fields — the signatures card should say exactly that.' },
+        { type: 'list', style: 'bullet', items: [
+          'Overview reads the header, page tree, xref and /Info dictionary.',
+          'Text extraction returns reading-order text plus positioned runs.',
+          'Nothing about this file exists outside this tab.',
+        ]},
+        { type: 'pageBreak' },
+        { type: 'heading', text: 'Form fields', level: 1 },
+        { type: 'formField', fieldType: 'text', name: 'fullName', label: 'Full name' },
+        { type: 'formField', fieldType: 'checkbox', name: 'subscribe', label: 'Subscribe to the newsletter' },
+      ],
+    }, { tagged: true });
+    current = { bytes, name: 'generated-sample.pdf' };
+    $('pdf-password').value = '';
+    inspect(undefined);
+  } catch (err) {
+    setStatus('Error: ' + (err && err.message ? err.message : err), 'error');
+    console.error(err);
+  }
+});
+
+// ── Theme + hamburger parity with the rest of the site ──
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

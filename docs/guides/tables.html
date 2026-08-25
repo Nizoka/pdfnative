@@ -182,7 +182,7 @@ const bytes = buildDocumentPDFBytes({
 <li>In tagged mode, emitted as a <code>/Caption</code> structure element child of <code>/Table</code> (ISO 14289-1 §7.10.6).</li>
 <li>Multi-line captions wrap to fit the table width.</li>
 </ul>
-<h3 id="minrowheight-cellpadding"><code>minRowHeight</code> / <code>cellPadding</code><a class="heading-anchor" href="#minrowheight-cellpadding" aria-label="Link to this section">#</a></h3>
+<h3 id="minrowheight--cellpadding"><code>minRowHeight</code> / <code>cellPadding</code><a class="heading-anchor" href="#minrowheight--cellpadding" aria-label="Link to this section">#</a></h3>
 <ul>
 <li><code>minRowHeight</code> enforces a floor so rows look consistent even with short text.</li>
 <li><code>cellPadding</code> is the internal padding around each cell&#39;s text. Header padding inherits this but the baseline offset is a fixed v1.1.0-compatible constant (preserves byte-stability for the row body).</li>
@@ -243,7 +243,7 @@ const bytes = buildDocumentPDFBytes({
 </tbody></table>
 <p>Borders are pure vector strokes (<code>m … l S</code>), so output stays PDF/A-safe.</p>
 <h3 id="cellvalign-v140"><code>cellVAlign</code> (v1.4.0)<a class="heading-anchor" href="#cellvalign-v140" aria-label="Link to this section">#</a></h3>
-<p>Vertically align cell text within the row band. Useful when rows have a tall <code>minRowHeight</code> or wrapped cells of differing height. A per-column <a href="#columndef-fields"><code>ColumnDef.vAlign</code></a> overrides the table default.</p>
+<p>Vertically align cell text within the row band. Useful when rows have a tall <code>minRowHeight</code> or wrapped cells of differing height. A per-column <a href="#tableblock-fields-all-optional"><code>ColumnDef.vAlign</code></a> overrides the table default.</p>
 <pre><code class="language-ts">{ type: &#39;table&#39;, headers: [/* … */], rows: [/* … */], minRowHeight: 30, cellVAlign: &#39;middle&#39; }
 </code></pre>
 <p><code>&#39;top&#39;</code> | <code>&#39;middle&#39;</code> | <code>&#39;bottom&#39;</code>. When omitted, the historic baseline placement is preserved exactly (byte-identical to pre-1.4.0).</p>
@@ -298,7 +298,7 @@ const bytes = buildDocumentPDFBytes({
 <li><strong>No room on current page even after pushing the table to start</strong> — paginator forces a new page and retries.</li>
 </ul>
 <hr>
-<h2 id="tagged-mode-pdfua">Tagged-mode / PDF/UA<a class="heading-anchor" href="#tagged-mode-pdfua" aria-label="Link to this section">#</a></h2>
+<h2 id="tagged-mode--pdfua">Tagged-mode / PDF/UA<a class="heading-anchor" href="#tagged-mode--pdfua" aria-label="Link to this section">#</a></h2>
 <p>When the document is built with <code>tagged: true</code> (or any explicit PDF/A mode), the table emits the following structure tree:</p>
 <pre><code class="language-text">/Table
 ├── /Caption       (only when caption is present)
@@ -316,7 +316,7 @@ const bytes = buildDocumentPDFBytes({
 <p>The structure is <strong>single</strong> even when the table spans multiple pages. <code>_paginateBlocks()</code> shares a <code>tableStructAccum</code> array across all slices of the same table; the final slice commits it as <code>{ type: &#39;Table&#39;, children: tableStructAccum }</code>. Each <code>/TR</code> carries the correct <code>/StructParents</code> for its page so screen readers reconstruct the logical reading order correctly (ISO 14289-1 §7.10.6).</p>
 <p>Repeated headers in <code>repeatHeader: true</code> mode are <strong>not</strong> re-emitted in the structure tree — they are visual continuations only. The single <code>/TR</code> for the header sits at the top of the <code>/Table</code> element.</p>
 <hr>
-<h2 id="tagged-mode-zebra">Tagged-mode + zebra<a class="heading-anchor" href="#tagged-mode-zebra" aria-label="Link to this section">#</a></h2>
+<h2 id="tagged-mode--zebra">Tagged-mode + zebra<a class="heading-anchor" href="#tagged-mode--zebra" aria-label="Link to this section">#</a></h2>
 <p>Zebra fills are decorative — they do not appear in the structure tree. PDF/UA conformance is preserved.</p>
 <blockquote>
 <p>⚠️ <strong>PDF/A-1b note.</strong> PDF/A-1b forbids transparency (ISO 19005-1 §6.4). Zebra fills are opaque solid rectangles, so they are safe under PDF/A-1b, but <strong>avoid combining zebra with <code>pdfa1b</code> watermarks</strong> that rely on <code>/ExtGState</code>. Default <code>tagged: true</code> (PDF/A-2b) has no such restriction.</p>

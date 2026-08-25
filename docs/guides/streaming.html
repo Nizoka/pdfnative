@@ -143,7 +143,7 @@ app.get(&#39;/report.pdf&#39;, async (req, res) =&gt; {
   res.end();
 });
 </code></pre>
-<h3 id="web-streams-browser-deno-edge">Web Streams (browser / Deno / edge)<a class="heading-anchor" href="#web-streams-browser-deno-edge" aria-label="Link to this section">#</a></h3>
+<h3 id="web-streams-browser--deno--edge">Web Streams (browser / Deno / edge)<a class="heading-anchor" href="#web-streams-browser--deno--edge" aria-label="Link to this section">#</a></h3>
 <pre><code class="language-ts">const stream = new ReadableStream({
   async pull(controller) {
     for await (const chunk of buildDocumentPDFStreamTrue(params)) {
@@ -189,7 +189,7 @@ failed run never leaves an orphaned half-written PDF on disk.</p>
 so importing it in a browser or Deno bundle adds no static Node dependency. In
 non-Node runtimes, drive the generator yourself with the Web Streams snippet
 above.</p>
-<h2 id="streaming-merge-split-v160">Streaming merge &amp; split (v1.6.0)<a class="heading-anchor" href="#streaming-merge-split-v160" aria-label="Link to this section">#</a></h2>
+<h2 id="streaming-merge--split-v160">Streaming merge &amp; split (v1.6.0)<a class="heading-anchor" href="#streaming-merge--split-v160" aria-label="Link to this section">#</a></h2>
 <p>The page-tree API has constant-memory variants —
 <code>streamMergedPdfs</code> / <code>streamSplitPdf</code> / <code>streamExtractPages</code> — that emit the
 assembled document as fixed-size chunks while holding only the cross-reference

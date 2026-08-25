@@ -820,3 +820,13 @@ textarea:focus-visible,
   .pn-preview-pane { min-height: 320px; }
   .pn-preview-frame { min-height: 320px; }
 }
+
+.demo-mode { display: inline-flex; gap: 4px; margin-right: 10px; border: 1px solid var(--c-border); border-radius: 6px; padding: 2px; }
+.demo-mode .tab-btn { padding: 4px 12px; font-size: 13px; border: none; background: transparent; border-radius: 4px; cursor: pointer; color: var(--c-text-dim); font-weight: 600; }
+.demo-mode .tab-btn.active { background: var(--c-primary); color: var(--c-primary-fg); }
+
+.bench-live { margin-top: 18px; }
+.bench-live-grid { margin-top: 14px; display: grid; gap: 10px; }
+.bench-live-label { font-size: 13px; color: var(--c-text-dim); }
+.bench-live-value { font-size: 13px; font-weight: 600; color: var(--c-text); font-variant-numeric: tabular-nums; }
+.bench-live-bar { background: var(--c-success, #16a34a); }

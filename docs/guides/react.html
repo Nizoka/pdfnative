@@ -64,7 +64,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; React</p>
   <article id="guide-content" class="guide-content" data-md="react.md" data-prerendered="true">
 <!-- guide:render:start -->
-<h1 id="pdfnative-react-declarative-jsx-renderer-guide">pdfnative-react — Declarative JSX Renderer Guide</h1>
+<h1 id="pdfnative-react--declarative-jsx-renderer-guide">pdfnative-react — Declarative JSX Renderer Guide</h1>
 <blockquote>
 <p><strong>Tracks the latest published <code>pdfnative-react</code></strong> (v1.1.0, built on the pdfnative 1.6 engine), with <strong>React 19</strong> and <code>pdfnative</code> ^1.6.0 as peer dependencies (semver-accepts 1.7.0). Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>. Full history: <a href="https://github.com/Nizoka/pdfnative-react/releases" target="_blank" rel="noopener">pdfnative-react releases</a>.</p>
 </blockquote>
@@ -276,7 +276,7 @@ and <code>SCHEMA_SUBJECTS</code> cover DocSpec validation; <code>aiGovernancePol
 </code></pre>
 <p><code>options</code> is <code>{ layout?: Partial&lt;PdfLayoutOptions&gt;; fontEntries?: FontEntry[]; fonts?: FontsMap }</code> and merges on top of anything set on <code>&lt;Document&gt;</code> — page size, margins, colors, PDF/A mode, encryption, and non-Latin fonts. Note that <code>fonts</code> is only honored by the <strong>async</strong> entry points (<code>renderToFile</code>, <code>renderToFileStream</code>, <code>renderToResponse</code>, <code>usePdf</code>, <code>usePdfStream</code>) — font loading is asynchronous, so the synchronous entries (<code>renderToBytes</code>, <code>renderToBlob</code>, <code>renderToStream</code>) ignore it; resolve manually first (<code>fontEntries: await resolveFonts(fonts)</code> — but see the <code>fontRef</code> caveat below).</p>
 <blockquote>
-<h3 id="build-fontentries-yourself-resolvefonts-produces-an-invalid-fontref">Build <code>fontEntries</code> yourself — <code>resolveFonts</code> produces an invalid <code>fontRef</code><a class="heading-anchor" href="#build-fontentries-yourself-resolvefonts-produces-an-invalid-fontref" aria-label="Link to this section">#</a></h3>
+<h3 id="build-fontentries-yourself--resolvefonts-produces-an-invalid-fontref">Build <code>fontEntries</code> yourself — <code>resolveFonts</code> produces an invalid <code>fontRef</code><a class="heading-anchor" href="#build-fontentries-yourself--resolvefonts-produces-an-invalid-fontref" aria-label="Link to this section">#</a></h3>
 <p><code>resolveFonts</code> (and the <code>fonts</code> option, which calls it) sets each entry&#39;s
 <code>fontRef</code> to the bare language code. <code>fontRef</code> is written straight into the PDF
 as a resource name, so it must be a <strong>PDF name starting with <code>/</code></strong> — and <code>/F1</code>
@@ -314,7 +314,7 @@ nothing at all and every non-Latin glyph comes out blank.</p>
 });
 </code></pre>
 <hr>
-<h2 id="hooks-client-components">Hooks &amp; client components<a class="heading-anchor" href="#hooks-client-components" aria-label="Link to this section">#</a></h2>
+<h2 id="hooks--client-components">Hooks &amp; client components<a class="heading-anchor" href="#hooks--client-components" aria-label="Link to this section">#</a></h2>
 <p>The published root bundle does <strong>not</strong> carry <code>&#39;use client&#39;</code> (a directive in an internal module does not survive single-file bundling); import hooks and viewer components from <code>pdfnative-react/client</code> in a React Server Components app, or add the directive to your own file as below.</p>
 <pre><code class="language-tsx">&#39;use client&#39;;
 import { usePdf } from &#39;pdfnative-react&#39;;
@@ -335,7 +335,7 @@ function Preview({ doc }: { doc: React.ReactElement }) {
 <p>Try it live in the <a href="../playgrounds/react.html">React playground</a> — edit JSX or a <code>DocSpec</code> and see the PDF render in your browser.</p>
 </blockquote>
 <hr>
-<h2 id="agent-authoring-the-token-frugal-docspec">Agent authoring — the token-frugal <code>DocSpec</code><a class="heading-anchor" href="#agent-authoring-the-token-frugal-docspec" aria-label="Link to this section">#</a></h2>
+<h2 id="agent-authoring--the-token-frugal-docspec">Agent authoring — the token-frugal <code>DocSpec</code><a class="heading-anchor" href="#agent-authoring--the-token-frugal-docspec" aria-label="Link to this section">#</a></h2>
 <p><code>pdfnative-react</code> is a <em>library</em>, so the place LLM agents spend tokens is <strong>authoring</strong> documents. The compact <code>DocSpec</code> expresses the same document as terse, JSON-serializable tuples — and compiles to the <strong>exact same</strong> PDF as the JSX, because it is built on the very same components.</p>
 <pre><code class="language-ts">import { renderSpecToBytes, type DocSpec } from &#39;pdfnative-react&#39;;
 
@@ -360,7 +360,7 @@ const bytes = renderSpecToBytes(spec);
 </ul>
 <p><strong>Block tuples:</strong> <code>[&#39;h1&#39;|&#39;h2&#39;|&#39;h3&#39;, text, opts?]</code>, <code>[&#39;p&#39;, text, opts?]</code>, <code>[&#39;ul&#39;|&#39;ol&#39;, items, opts?]</code>, <code>[&#39;table&#39;, { h?, r }]</code>, <code>[&#39;img&#39;, { data }]</code>, <code>[&#39;link&#39;, text, { url }]</code>, <code>[&#39;sp&#39;, height?]</code>, <code>[&#39;br&#39;]</code>, <code>[&#39;page&#39;, blocks]</code>, <code>[&#39;toc&#39;, opts?]</code>, <code>[&#39;qr&#39;|&#39;code128&#39;|&#39;ean13&#39;|&#39;pdf417&#39;|&#39;datamatrix&#39;, data, opts?]</code>, <code>[&#39;svg&#39;, data, opts?]</code>, <code>[&#39;chart&#39;, { chartType, series, … }]</code>, <code>[&#39;field&#39;, { fieldType, name, … }]</code>.</p>
 <hr>
-<h2 id="fonts-environment">Fonts &amp; environment<a class="heading-anchor" href="#fonts-environment" aria-label="Link to this section">#</a></h2>
+<h2 id="fonts--environment">Fonts &amp; environment<a class="heading-anchor" href="#fonts--environment" aria-label="Link to this section">#</a></h2>
 <p>Re-exported from the engine: <code>registerFonts</code>, <code>registerFont</code>, <code>loadFontData</code>, <code>validateFontData</code>, <code>downloadBlob</code> (browser), <code>initNodeCompression</code> (Node). (<code>loadFontData</code> is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the <code>fontEntries</code> render option (or on <code>&lt;Document fontEntries={…}&gt;</code>), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.</p>
 <pre><code class="language-tsx">import { Document, Text, renderToBytes, registerFont, loadFontData } from &#39;pdfnative-react&#39;;
 

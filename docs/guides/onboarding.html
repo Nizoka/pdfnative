@@ -64,12 +64,12 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Onboarding</p>
   <article id="guide-content" class="guide-content" data-md="onboarding.md" data-prerendered="true">
 <!-- guide:render:start -->
-<h1 id="onboarding-the-pdfnative-ecosystem-in-90-seconds">Onboarding — the pdfnative ecosystem in 90 seconds</h1>
+<h1 id="onboarding--the-pdfnative-ecosystem-in-90-seconds">Onboarding — the pdfnative ecosystem in 90 seconds</h1>
 <blockquote>
 <p><strong>Pick your entry point:</strong> the library for code, the CLI for shell scripts, MCP for AI assistants, and React for declarative JSX. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs from the same zero-dependency engine. Live versions for every package are shown at the top of the <a href="../index.html">documentation home</a>.</p>
 </blockquote>
 <hr>
-<h2 id="1-library-node-browser-deno-bun-30-seconds">1. Library (Node, browser, Deno, Bun) — 30 seconds<a class="heading-anchor" href="#1-library-node-browser-deno-bun-30-seconds" aria-label="Link to this section">#</a></h2>
+<h2 id="1-library-node-browser-deno-bun--30-seconds">1. Library (Node, browser, Deno, Bun) — 30 seconds<a class="heading-anchor" href="#1-library-node-browser-deno-bun--30-seconds" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">npm install pdfnative
 </code></pre>
 <pre><code class="language-ts">import { buildDocumentPDFBytes, registerFont, loadFontData } from &#39;pdfnative&#39;;
@@ -97,7 +97,7 @@ const bytes = buildDocumentPDFBytes({
 </code></pre>
 <p>Next: <a href="quickstart.html">Quick Start →</a> · <a href="architecture.html">Architecture →</a> · <a href="pdfa.html">PDF/A conformance →</a></p>
 <hr>
-<h2 id="2-cli-30-seconds">2. CLI — 30 seconds<a class="heading-anchor" href="#2-cli-30-seconds" aria-label="Link to this section">#</a></h2>
+<h2 id="2-cli--30-seconds">2. CLI — 30 seconds<a class="heading-anchor" href="#2-cli--30-seconds" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">npm install -g pdfnative-cli   # or: npx pdfnative-cli ...
 </code></pre>
 <blockquote>
@@ -127,7 +127,7 @@ v1.3.0 fixes it and unifies the flags under <code>--encrypt</code> / <code>--own
 </blockquote>
 <p>Next: <a href="cli.html">CLI guide →</a> · <a href="../playgrounds/cli.html">CLI playground →</a></p>
 <hr>
-<h2 id="3-mcp-claude-desktop-cursor-continue-zed-30-seconds">3. MCP (Claude Desktop, Cursor, Continue, Zed) — 30 seconds<a class="heading-anchor" href="#3-mcp-claude-desktop-cursor-continue-zed-30-seconds" aria-label="Link to this section">#</a></h2>
+<h2 id="3-mcp-claude-desktop-cursor-continue-zed--30-seconds">3. MCP (Claude Desktop, Cursor, Continue, Zed) — 30 seconds<a class="heading-anchor" href="#3-mcp-claude-desktop-cursor-continue-zed--30-seconds" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">npm install -g pdfnative-mcp
 </code></pre>
 <p>Add the server to your client config — Claude Desktop example (<code>~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS):</p>
@@ -147,7 +147,7 @@ v1.3.0 fixes it and unifies the flags under <code>--encrypt</code> / <code>--own
 <p>The assistant calls <code>generate_basic_pdf</code> (with <code>pdfA: &quot;pdfa2b&quot;</code>), then <code>add_international_text</code> (with <code>lang: [&quot;ar&quot;, &quot;emoji&quot;]</code>), <code>add_table</code>, <code>sign_pdf</code>, and finally <code>inspect_pdf</code> — confirming the result. v1.6.0 ships <strong>28 tools</strong>, including the complete PAdES ladder (<code>sign_pdf</code> with RFC 3161 timestamps, <code>add_ltv</code>, <code>timestamp_pdf</code>), the page-tree trio <code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>, markup <code>annotate_pdf</code>, <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, the network-free <code>draft_governance_issue</code>, plus <code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, and <code>extract_text</code>.</p>
 <p>Next: <a href="mcp.html">MCP guide →</a> · <a href="../playgrounds/mcp.html">MCP playground →</a></p>
 <hr>
-<h2 id="4-react-nextjs-remix-any-react-19-app-30-seconds">4. React (Next.js, Remix, any React 19 app) — 30 seconds<a class="heading-anchor" href="#4-react-nextjs-remix-any-react-19-app-30-seconds" aria-label="Link to this section">#</a></h2>
+<h2 id="4-react-nextjs-remix-any-react-19-app--30-seconds">4. React (Next.js, Remix, any React 19 app) — 30 seconds<a class="heading-anchor" href="#4-react-nextjs-remix-any-react-19-app--30-seconds" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">npm install pdfnative-react pdfnative react
 </code></pre>
 <pre><code class="language-tsx">import { Document, Heading, Text, Table, renderToBytes } from &#39;pdfnative-react&#39;;

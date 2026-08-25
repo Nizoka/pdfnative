@@ -140,18 +140,18 @@
 <li><strong>sRGB ICC OutputIntent</strong> so colors remain stable across viewers.</li>
 </ul>
 <h2 id="block-level-accessibility-hints">Block-level accessibility hints<a class="heading-anchor" href="#block-level-accessibility-hints" aria-label="Link to this section">#</a></h2>
-<h3 id="images-and-svg-require-alt">Images and SVG → require <code>alt</code><a class="heading-anchor" href="#images-and-svg-require-alt" aria-label="Link to this section">#</a></h3>
+<h3 id="images-and-svg--require-alt">Images and SVG → require <code>alt</code><a class="heading-anchor" href="#images-and-svg--require-alt" aria-label="Link to this section">#</a></h3>
 <pre><code class="language-typescript">{ type: &#39;image&#39;,  data: pngBytes, width: 300, alt: &#39;Q1 revenue chart, $1.2M peak in March&#39; }
 { type: &#39;svg&#39;,    data: logoSvg, width: 200, alt: &#39;Company logo&#39; }   // note: property is `data`
 </code></pre>
 <p>Only <code>image</code> and <code>svg</code> blocks accept an <code>alt</code> property (and <code>chart</code> accepts <code>altText</code>, auto-generated when omitted); a <code>barcode</code> block has <strong>no</strong> <code>alt</code> field — its accessible description cannot currently be customised. Every <code>/Figure</code> in the structure tree gets an <code>/Alt</code> entry from the <code>alt</code> property. <strong>Always provide alt text</strong> for non-decorative images — empty strings are treated as decorative and may be skipped by screen readers.</p>
-<h3 id="links-meaningful-link-text">Links → meaningful link text<a class="heading-anchor" href="#links-meaningful-link-text" aria-label="Link to this section">#</a></h3>
+<h3 id="links--meaningful-link-text">Links → meaningful link text<a class="heading-anchor" href="#links--meaningful-link-text" aria-label="Link to this section">#</a></h3>
 <pre><code class="language-typescript">{ type: &#39;link&#39;, text: &#39;Read the API reference&#39;, url: &#39;https://github.com/Nizoka/pdfnative#api&#39; }
 </code></pre>
 <p>Avoid <code>text: &#39;click here&#39;</code> — screen reader users who navigate by link list lose context.</p>
-<h3 id="tables-header-rows-are-detected-automatically">Tables → header rows are detected automatically<a class="heading-anchor" href="#tables-header-rows-are-detected-automatically" aria-label="Link to this section">#</a></h3>
+<h3 id="tables--header-rows-are-detected-automatically">Tables → header rows are detected automatically<a class="heading-anchor" href="#tables--header-rows-are-detected-automatically" aria-label="Link to this section">#</a></h3>
 <p>When you pass a <code>headers</code> array, those cells are tagged <code>/TH</code> and the data rows are tagged <code>/TD</code>. For complex tables with span-cells or merged headers, pdfnative currently emits flat <code>/Table → /TR → /TH|TD</code> — explicit cell scopes (<code>/Scope = Row|Column</code>) are not yet exposed.</p>
-<h3 id="forms-label-every-field">Forms → label every field<a class="heading-anchor" href="#forms-label-every-field" aria-label="Link to this section">#</a></h3>
+<h3 id="forms--label-every-field">Forms → label every field<a class="heading-anchor" href="#forms--label-every-field" aria-label="Link to this section">#</a></h3>
 <pre><code class="language-typescript">{ type: &#39;formField&#39;, fieldType: &#39;text&#39;, name: &#39;email&#39;, label: &#39;Email address&#39;, width: 400 }
 </code></pre>
 <p>The <code>label</code> is drawn as a visible text label next to the widget. pdfnative does not emit a <code>/TU</code> (tooltip) entry, so the visible label is the field&#39;s only accessible name — keep it present and descriptive.</p>

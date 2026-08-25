@@ -139,6 +139,16 @@ describe('verify-docs', () => {
             });
         }, 120_000);
 
+        it('anchor-parity catches a deep link to a renamed section', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/guides/streaming.md', '#streaming-merge--split', '#streaming-merge--split-renamed');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('anchor-parity');
+                expect(run.output).toContain('streaming-merge--split-renamed');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
         it('api-json-sync catches a stale API surface', () => {
             withSandbox((dir) => {
                 patch(dir, 'docs/assets/api.json', '"package": "pdfnative"', '"package": "perturbed"');

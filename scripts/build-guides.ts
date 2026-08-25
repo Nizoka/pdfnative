@@ -57,11 +57,14 @@ function stripTags(html: string): string {
 }
 
 function slugify(text: string): string {
+    // GitHub convention: strip punctuation, then EVERY whitespace character
+    // becomes its own hyphen ("Flag & ZWJ" → "flag--zwj", not "flag-zwj") —
+    // existing deep links across the guides were written against that shape.
     return decodeEntities(stripTags(text))
         .trim()
         .toLowerCase()
         .replace(/[^\p{L}\p{N}\s_-]/gu, '')
-        .replace(/\s+/g, '-');
+        .replace(/\s/g, '-');
 }
 
 /**

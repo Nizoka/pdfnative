@@ -63,7 +63,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; PDF manipulation</p>
   <article id="guide-content" class="guide-content" data-md="pdf-manipulation.md" data-prerendered="true">
 <!-- guide:render:start -->
-<h1 id="pdf-manipulation-merge-split-extract">PDF manipulation (merge / split / extract)</h1>
+<h1 id="pdf-manipulation-merge--split--extract">PDF manipulation (merge / split / extract)</h1>
 <blockquote>
 <p><strong>New in v1.4.0.</strong> Combine, slice, and reorder existing PDFs with a
 production-safe page-tree API. Each operation <strong>rebuilds a clean object graph</strong>
@@ -223,7 +223,7 @@ document are reused; the caller states the new protection explicitly.</li>
 mean encrypted output is not byte-reproducible (the unencrypted path keeps
 its content-addressed deterministic <code>/ID</code>).</li>
 </ul>
-<h2 id="streaming-merge-split">Streaming merge &amp; split<a class="heading-anchor" href="#streaming-merge-split" aria-label="Link to this section">#</a></h2>
+<h2 id="streaming-merge--split">Streaming merge &amp; split<a class="heading-anchor" href="#streaming-merge--split" aria-label="Link to this section">#</a></h2>
 <p>For large documents, the streaming variants emit the result as fixed-size
 chunks while holding only the cross-reference offsets and small object dicts in
 memory — stream payloads flow straight from the (in-memory) source bytes, so the
@@ -274,7 +274,7 @@ XMP packet, it is resynchronised in the same revision — <code>dc:title</code>,
 <code>dc:creator</code>, <code>dc:description</code>, <code>pdf:Keywords</code>, <code>xmp:ModifyDate</code> and
 <code>xmp:MetadataDate</code> — while <code>xmp:CreateDate</code> and any <code>pdfaid:*</code> conformance
 claim are preserved, so Info↔XMP parity holds for PDF/A documents.</p>
-<h2 id="safety-limits">Safety &amp; limits<a class="heading-anchor" href="#safety-limits" aria-label="Link to this section">#</a></h2>
+<h2 id="safety--limits">Safety &amp; limits<a class="heading-anchor" href="#safety--limits" aria-label="Link to this section">#</a></h2>
 <ul>
 <li><strong>Encrypted input is decrypted on ingest</strong> (v1.6.0) when a valid password is
 supplied; a wrong/missing password throws <code>PdfPasswordError</code>. Output is

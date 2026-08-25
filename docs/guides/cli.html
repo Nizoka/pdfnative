@@ -63,7 +63,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; CLI</p>
   <article id="guide-content" class="guide-content" data-md="cli.md" data-prerendered="true">
 <!-- guide:render:start -->
-<h1 id="pdfnative-cli-command-line-interface-guide">pdfnative-cli — Command-Line Interface Guide</h1>
+<h1 id="pdfnative-cli--command-line-interface-guide">pdfnative-cli — Command-Line Interface Guide</h1>
 <blockquote>
 <p><strong>Tracks the latest published <code>pdfnative-cli</code></strong> (v1.3.0, built on the pdfnative 1.6 engine — pins <code>^1.6.0</code>, which semver-accepts 1.7.0). The CLI versions independently from the library. Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>. Full history: <a href="https://github.com/Nizoka/pdfnative-cli/releases" target="_blank" rel="noopener">pdfnative-cli releases</a>.</p>
 </blockquote>
@@ -464,7 +464,7 @@ pdfnative render --input doc.json --output report.pdf \
 <blockquote>
 <p>Watermarks with transparency are <strong>mutually exclusive</strong> with PDF/A-1b (ISO 19005-1 §6.4). The pdfnative core enforces this at render time — the run fails with the generic exit code 1 (<code>Watermark transparency is not allowed with PDF/A-1b</code>), not a CLI usage error.</p>
 </blockquote>
-<h4 id="headers-footers">Headers / footers<a class="heading-anchor" href="#headers-footers" aria-label="Link to this section">#</a></h4>
+<h4 id="headers--footers">Headers / footers<a class="heading-anchor" href="#headers--footers" aria-label="Link to this section">#</a></h4>
 <table>
 <thead>
 <tr>
@@ -547,7 +547,7 @@ pdfnative render --input doc.json --output report.pdf \
 </tr>
 </tbody></table>
 <p><code>--lang</code> activates a <em>programmatically registered</em> font loader via <code>loadFontData(code)</code>. Latin scripts are built-in. With v1.1.0, every bundled font is registrable directly through <code>--font</code> — no wrapper script needed for the 22 bundled scripts, colour emoji, or Latin. pdfnative routes each code point to the font whose cmap covers it. See <em>Recipes → Multilang fonts</em> only for fonts you ship yourself (those require calling the library directly).</p>
-<h4 id="bookmarks-math-layout-tooling-v120">Bookmarks, math &amp; layout tooling <em>(v1.2.0)</em><a class="heading-anchor" href="#bookmarks-math-layout-tooling-v120" aria-label="Link to this section">#</a></h4>
+<h4 id="bookmarks-math--layout-tooling-v120">Bookmarks, math &amp; layout tooling <em>(v1.2.0)</em><a class="heading-anchor" href="#bookmarks-math--layout-tooling-v120" aria-label="Link to this section">#</a></h4>
 <table>
 <thead>
 <tr>
@@ -1353,7 +1353,7 @@ pdfnative verify --input report.pdf --json --strict \
 </code></pre>
 <hr>
 <h2 id="recipes">Recipes<a class="heading-anchor" href="#recipes" aria-label="Link to this section">#</a></h2>
-<h3 id="render-sign-verify-inspect-in-a-single-chain">Render → sign → verify → inspect, in a single chain<a class="heading-anchor" href="#render-sign-verify-inspect-in-a-single-chain" aria-label="Link to this section">#</a></h3>
+<h3 id="render--sign--verify--inspect-in-a-single-chain">Render → sign → verify → inspect, in a single chain<a class="heading-anchor" href="#render--sign--verify--inspect-in-a-single-chain" aria-label="Link to this section">#</a></h3>
 <pre><code class="language-bash">cat report.json \
   | pdfnative render --tagged pdfa2b --compress \
   | pdfnative sign --reason &quot;Approved&quot; \
@@ -1361,7 +1361,7 @@ pdfnative verify --input report.pdf --json --strict \
   | pdfnative verify --strict --trust ca.pem
 pdfnative inspect --input signed.pdf --check pdfa --check signed
 </code></pre>
-<h3 id="encrypted-pdfa-3-hybrid-invoice-factur-x-zugferd">Encrypted PDF/A-3 hybrid invoice (Factur-X / ZUGFeRD)<a class="heading-anchor" href="#encrypted-pdfa-3-hybrid-invoice-factur-x-zugferd" aria-label="Link to this section">#</a></h3>
+<h3 id="encrypted-pdfa-3-hybrid-invoice-factur-x--zugferd">Encrypted PDF/A-3 hybrid invoice (Factur-X / ZUGFeRD)<a class="heading-anchor" href="#encrypted-pdfa-3-hybrid-invoice-factur-x--zugferd" aria-label="Link to this section">#</a></h3>
 <pre><code class="language-bash">pdfnative render \
   --input invoice.json --output invoice.pdf \
   --tagged pdfa3b \
@@ -1569,7 +1569,7 @@ done
 </tr>
 </tbody></table>
 <hr>
-<h2 id="examples-ready-to-run">Examples — ready-to-run<a class="heading-anchor" href="#examples-ready-to-run" aria-label="Link to this section">#</a></h2>
+<h2 id="examples--ready-to-run">Examples — ready-to-run<a class="heading-anchor" href="#examples--ready-to-run" aria-label="Link to this section">#</a></h2>
 <p>The <a href="https://github.com/Nizoka/pdfnative-cli/tree/main/samples" target="_blank" rel="noopener"><code>samples/</code></a> directory in the CLI repository ships <strong>40+ ready-to-run examples</strong> organized by feature:</p>
 <table>
 <thead>
@@ -1954,7 +1954,7 @@ node samples/run-all.js
 </tr>
 </tbody></table>
 <hr>
-<h2 id="migration-v030-v110">Migration v0.3.0 → v1.1.0<a class="heading-anchor" href="#migration-v030-v110" aria-label="Link to this section">#</a></h2>
+<h2 id="migration-v030--v110">Migration v0.3.0 → v1.1.0<a class="heading-anchor" href="#migration-v030--v110" aria-label="Link to this section">#</a></h2>
 <p><strong>100 % backward-compatible.</strong> Every v0.3.0 invocation continues to produce a byte-equivalent PDF. New, optional opportunities:</p>
 <pre><code class="language-diff"># 1. True constant-memory streaming for very large reports
 - pdfnative render --input big.json --output big.pdf --stream
@@ -1969,7 +1969,7 @@ node samples/run-all.js
 # 4. Parallel directory render
 + pdfnative batch --input-dir inputs/ --output-dir outputs/ --concurrency 4
 </code></pre>
-<h2 id="migration-v020-v030">Migration v0.2.0 → v0.3.0<a class="heading-anchor" href="#migration-v020-v030" aria-label="Link to this section">#</a></h2>
+<h2 id="migration-v020--v030">Migration v0.2.0 → v0.3.0<a class="heading-anchor" href="#migration-v020--v030" aria-label="Link to this section">#</a></h2>
 <p><strong>100 % backward-compatible.</strong> Three forward-looking opportunities:</p>
 <pre><code class="language-diff"># 1. ECDSA signing now works without a workaround
 - pdfnative sign -i in.pdf -o out.pdf --algorithm rsa-sha256 ...
@@ -1980,7 +1980,7 @@ node samples/run-all.js
 - pdfnative sign -i with-placeholder.pdf -o signed.pdf ...
 + pdfnative sign -i any-pdf.pdf -o signed.pdf ...   # placeholder auto-injected
 </code></pre>
-<h2 id="migration-v010-v020">Migration v0.1.0 → v0.2.0<a class="heading-anchor" href="#migration-v010-v020" aria-label="Link to this section">#</a></h2>
+<h2 id="migration-v010--v020">Migration v0.1.0 → v0.2.0<a class="heading-anchor" href="#migration-v010--v020" aria-label="Link to this section">#</a></h2>
 <p><strong>100 % backward-compatible</strong> — every v0.1.0 invocation continues to produce a byte-equivalent PDF, modulo a one-line stderr notice for <code>--conformance</code>. All v0.1.0 exit codes and JSON shapes are preserved; new <code>inspect</code> JSON fields are additive only.</p>
 <p>The only soft change you should plan for:</p>
 <pre><code class="language-diff">- pdfnative render --input doc.json --output report.pdf --conformance 2b
@@ -1999,7 +1999,7 @@ node samples/run-all.js
 <p>Any encryption flag was set without an owner password. Provide it via <code>--owner-password &lt;pass&gt;</code> (legacy alias: <code>--encrypt-owner-pass</code>) or — recommended — the <code>PDFNATIVE_ENCRYPT_OWNER_PASS</code> env var so it never enters shell history.</p>
 <h3 id="error---tagged-pdfa-and---encrypt--are-mutually-exclusive"><code>Error: --tagged pdfa* and --encrypt-* are mutually exclusive</code><a class="heading-anchor" href="#error---tagged-pdfa-and---encrypt--are-mutually-exclusive" aria-label="Link to this section">#</a></h3>
 <p>ISO 19005-1 §6.3.2 forbids encryption in PDF/A. Pick one — either an archival PDF/A document, or an encrypted distribution copy, but not both.</p>
-<h3 id="enoent-no-such-file-or-directory-d-windows"><code>ENOENT: no such file or directory, &#39;D\&#39;</code>  (Windows)<a class="heading-anchor" href="#enoent-no-such-file-or-directory-d-windows" aria-label="Link to this section">#</a></h3>
+<h3 id="enoent-no-such-file-or-directory-d--windows"><code>ENOENT: no such file or directory, &#39;D\&#39;</code>  (Windows)<a class="heading-anchor" href="#enoent-no-such-file-or-directory-d--windows" aria-label="Link to this section">#</a></h3>
 <p>This was a v0.1.0 / pre-v0.2.0 regression: <code>--attachment D:\file.xml</code> was split at the drive-letter colon. Fixed in v0.2.0 — make sure you&#39;re on <code>pdfnative-cli@^0.2.0</code>.</p>
 <h3 id="layout-file-is-ignored-when-i-also-pass-cli-flags">Layout file is ignored when I also pass CLI flags<a class="heading-anchor" href="#layout-file-is-ignored-when-i-also-pass-cli-flags" aria-label="Link to this section">#</a></h3>
 <p>That is the <strong>intended precedence</strong>: <code>CLI flags &gt; --layout file &gt; pdfnative defaults</code>. To merge nested objects (e.g. a watermark in the layout file plus a <code>--watermark-text</code> on the CLI), the CLI now correctly merges <code>params.layout</code> with CLI-derived flags as of v0.2.0 (previously the JSON-embedded layout could be silently dropped — fixed).</p>

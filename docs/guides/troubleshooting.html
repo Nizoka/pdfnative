@@ -144,7 +144,7 @@ buildPDFBytes(params, { tagged: &#39;pdfa1b&#39; }); // PDF/A-1b
 <li><p><strong>Transparency in PDF/A-1b:</strong> Watermarks with opacity &lt; 1.0 are blocked in PDF/A-1b (ISO 19005-1 §6.4). Use PDF/A-2b or remove transparency.</p>
 </li>
 </ol>
-<h2 id="document-has-too-many-blocks-very-large-documents">&quot;Document has too many blocks&quot; / Very Large Documents<a class="heading-anchor" href="#document-has-too-many-blocks-very-large-documents" aria-label="Link to this section">#</a></h2>
+<h2 id="document-has-too-many-blocks--very-large-documents">&quot;Document has too many blocks&quot; / Very Large Documents<a class="heading-anchor" href="#document-has-too-many-blocks--very-large-documents" aria-label="Link to this section">#</a></h2>
 <p><strong>Symptom:</strong> Generating a multi-thousand-page report throws a &quot;too many blocks&quot; error.</p>
 <p><strong>Cause:</strong> The document builder caps the number of content blocks as a safety rail. Before v1.3.0 this was a hard-coded 10 000. As of <strong>v1.3.0</strong> the default is <strong>100 000</strong> and is configurable.</p>
 <p><strong>Fix:</strong> raise the limit via the layout option:</p>
@@ -161,7 +161,7 @@ buildDocumentPDFStream(params, { maxBlocks: 500000 }, { chunkSize: 65536 });
 <li><strong>Linearized PDF:</strong> The parser follows standard xref/trailer. Linearized hint tables may cause offset issues.</li>
 <li><strong>Non-standard formatting:</strong> Some PDF generators produce non-compliant output. The parser follows ISO 32000-1 strictly.</li>
 </ol>
-<h2 id="build-import-issues">Build / Import Issues<a class="heading-anchor" href="#build-import-issues" aria-label="Link to this section">#</a></h2>
+<h2 id="build--import-issues">Build / Import Issues<a class="heading-anchor" href="#build--import-issues" aria-label="Link to this section">#</a></h2>
 <p><strong>ESM import paths:</strong></p>
 <pre><code class="language-typescript">// Bare package import — no extension involved
 import { buildPDFBytes } from &#39;pdfnative&#39;;
