@@ -44,13 +44,17 @@
   var container = document.getElementById('guide-content');
   if (!container) return;
 
-  var src = container.getAttribute('data-md');
-  // The attribute is author-controlled static HTML, but treat it as untrusted
-  // anyway (CodeQL: DOM text reinterpreted as HTML): only a plain
-  // same-directory Markdown filename may flow into fetch(), the source-bar
-  // href, and the GitHub fallback URLs. Anything else — paths, protocols,
-  // `javascript:` — is rejected here, sanitising every downstream sink.
-  if (!src || !/^[A-Za-z0-9][A-Za-z0-9_-]*\.md$/.test(src)) return;
+  // The Markdown source name is DERIVED from the page's own URL (every guide
+  // pairs name.html with name.md) — never from DOM text. CodeQL's
+  // js/xss-through-dom tracks getAttribute() values into href/fetch sinks
+  // regardless of regex guards, so the attribute is demoted to an opt-in
+  // marker: it must agree with the derived name, but the value that reaches
+  // fetch(), the source-bar href and the GitHub fallback URLs comes from
+  // location, filtered to a plain same-directory Markdown filename.
+  var page = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+  var src = page + '.md';
+  var declared = container.getAttribute('data-md');
+  if (!declared || declared !== src || !/^[A-Za-z0-9][A-Za-z0-9_-]*\.md$/.test(src)) return;
 
   // ── Progressive enhancements shared by both paths ─────────
   // (pre-rendered shells and the runtime-rendered fallback)
