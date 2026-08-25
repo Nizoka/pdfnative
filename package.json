@@ -67,6 +67,7 @@
     "verify:docs": "npx tsx scripts/verify-docs.ts",
     "docs:llms": "npx tsx scripts/build-llms-full.ts",
     "docs:guides": "npx tsx scripts/build-guides.ts",
+    "docs:api": "npx tsx scripts/build-api-json.ts",
     "fonts:download": "npx tsx scripts/download-fonts.ts",
     "verify:issue": "node scripts/verify-issue.mjs",
     "lint": "eslint src/",

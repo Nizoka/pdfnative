@@ -1,0 +1,680 @@
+# pdfnative — executable recipes
+
+> Every file below lives in the repository as `recipes/<name>.ts`, imports only
+> from 'pdfnative', and is executed in CI with each `@expect` assertion checked
+> (tests/docs/recipes.test.ts). The machine index is recipes/index.json.
+
+---
+<!-- source: recipes/arabic-rtl.ts -->
+
+```ts
+/**
+ * Arabic text with positional shaping and right-to-left layout. The Noto
+ * Naskh Arabic data module is registered as a lazy loader, resolved with
+ * `loadFontData`, and passed through `fontEntries`; the engine embeds a
+ * subsetted CIDFont (Identity-H) and shapes the letterforms.
+ *
+ * @task Render shaped right-to-left Arabic text with an embedded Noto font
+ * @surface library
+ * @since 1.3.0
+ * @expect pages === 1
+ * @expect pdf contains '/FontFile2'
+ * @expect pdf contains '/Identity-H'
+ */
+import { buildDocumentPDFBytes, openPdf, registerFont, loadFontData } from 'pdfnative';
+import type { DocumentParams, FontEntry, FontLoader } from 'pdfnative';
+
+// The generated data modules predate the full FontData declaration, hence
+// the loader cast — the runtime shape is complete.
+registerFont('ar', (() => import('pdfnative/fonts/noto-arabic-data.js')) as unknown as FontLoader);
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number }> {
+    const arabic = await loadFontData('ar');
+    if (!arabic) throw new Error('Arabic font data failed to load');
+
+    const fontEntries: FontEntry[] = [{ fontData: arabic, fontRef: '/F3', lang: 'ar' }];
+    const params: DocumentParams = {
+        title: 'Arabic shaping',
+        blocks: [
+            { type: 'heading', text: 'Positional forms and ligatures', level: 1 },
+            { type: 'paragraph', text: 'السلام عليكم ورحمة الله وبركاته.' },
+            { type: 'paragraph', text: 'النص العربي يُعرض من اليمين إلى اليسار.' },
+        ],
+        footerText: 'Arabic recipe',
+        fontEntries,
+    };
+
+    const bytes = buildDocumentPDFBytes(params, { creationDate: new Date('2026-08-25T00:00:00Z') });
+    return { bytes, pages: openPdf(bytes).pageCount };
+}
+```
+
+---
+<!-- source: recipes/charts-v2.ts -->
+
+```ts
+/**
+ * Native vector charts (charts v2): a stacked bar chart of quarterly
+ * revenue and a scatter plot on a linear x-axis, one per page. Charts are
+ * pure PDF path operators — no rasterisation, no dependencies.
+ *
+ * @task Render stacked-bar and scatter charts as native vector graphics
+ * @surface library
+ * @since 1.7.0
+ * @expect pages === 2
+ */
+import { buildDocumentPDFBytes, openPdf } from 'pdfnative';
+import type { DocumentParams } from 'pdfnative';
+
+const params: DocumentParams = {
+    title: 'Quarterly figures',
+    blocks: [
+        {
+            type: 'chart',
+            chartType: 'stackedBar',
+            title: 'Revenue by region',
+            categories: ['Q1', 'Q2', 'Q3', 'Q4'],
+            series: [
+                { label: 'EMEA', values: [120, 135, 128, 150] },
+                { label: 'Americas', values: [90, 105, 118, 122] },
+                { label: 'APAC', values: [45, 52, 61, 70] },
+            ],
+            height: 220,
+            legend: 'bottom',
+        },
+        { type: 'pageBreak' },
+        {
+            type: 'chart',
+            chartType: 'scatter',
+            title: 'Latency against payload size',
+            xAxis: { type: 'linear', grid: true },
+            series: [
+                { label: 'Samples', values: [12, 18, 25, 31, 44], xValues: [10, 25, 50, 75, 100] },
+            ],
+            height: 220,
+            dataLabels: { decimals: 0, suffix: ' ms' },
+        },
+    ],
+    footerText: 'Quarterly figures',
+};
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number }> {
+    const bytes = buildDocumentPDFBytes(params, { creationDate: new Date('2026-08-25T00:00:00Z') });
+    return { bytes, pages: openPdf(bytes).pageCount };
+}
+```
+
+---
+<!-- source: recipes/form-fill-roundtrip.ts -->
+
+```ts
+/**
+ * AcroForm round trip: author a form, enumerate its fields, fill a value,
+ * and read it back. A second fill with `flatten: true` stamps the
+ * appearance into the page content, where plain text extraction finds it.
+ *
+ * @task Author an AcroForm, fill it, and read the value back
+ * @surface library
+ * @since 1.6.0
+ * @expect field 'fullName' value === 'Ada Lovelace'
+ * @expect text of page 0 of the flattened document contains 'Ada Lovelace'
+ */
+import { buildDocumentPDFBytes, readFormFields, fillForm, extractText } from 'pdfnative';
+import type { DocumentParams, ParsedFormField } from 'pdfnative';
+
+const params: DocumentParams = {
+    title: 'Application',
+    blocks: [
+        { type: 'heading', text: 'Application form', level: 1 },
+        { type: 'formField', fieldType: 'text', name: 'fullName', label: 'Full name' },
+        { type: 'formField', fieldType: 'checkbox', name: 'agree', label: 'I agree to the terms' },
+        { type: 'formField', fieldType: 'dropdown', name: 'country', label: 'Country', options: ['France', 'Germany', 'Spain'] },
+    ],
+    footerText: 'Application',
+};
+
+export async function run(): Promise<{
+    bytes: Uint8Array;
+    fields: readonly ParsedFormField[];
+    filledValue: string | readonly string[] | boolean | null;
+    flattenedText: string;
+}> {
+    const blank = buildDocumentPDFBytes(params, { creationDate: new Date('2026-08-25T00:00:00Z') });
+
+    // Enumerate the authored fields, then fill by fully-qualified name.
+    const values = { fullName: 'Ada Lovelace', agree: true, country: 'Germany' } as const;
+    const filled = fillForm(blank, values);
+    const fields = readFormFields(filled);
+    const filledValue = fields.find(f => f.name === 'fullName')?.value ?? null;
+
+    // Flattening replaces the widgets with static page content.
+    const flattened = fillForm(blank, values, { flatten: true });
+    const flattenedText = extractText(flattened, { pages: [0] })[0].text;
+
+    return { bytes: filled, fields, filledValue, flattenedText };
+}
+```
+
+---
+<!-- source: recipes/invoice-pdfa2b.ts -->
+
+```ts
+/**
+ * Invoice as tagged PDF/A-2b — an itemised table with an embedded Latin
+ * font, so the archival claim survives validation. The creation date is
+ * pinned to keep the output byte-identical across runs.
+ *
+ * @task Build a PDF/A-2b invoice with an itemised line-item table
+ * @surface library
+ * @since 1.6.0
+ * @expect pages === 1
+ * @expect text of page 0 contains 'Invoice'
+ * @expect pdfA claim === 'pdfa2b'
+ */
+import { buildDocumentPDFBytes, openPdf, extractText } from 'pdfnative';
+import type { DocumentParams, FontData, FontEntry } from 'pdfnative';
+import * as notoSans from 'pdfnative/fonts/noto-sans-data.js';
+
+// PDF/A requires every rendered glyph to come from an embedded font
+// (ISO 19005 §6.2.11.4.1); the bundled Noto Sans data module covers Latin.
+const latinFont: FontEntry = {
+    fontRef: '/F1',
+    fontData: notoSans as unknown as FontData,
+};
+
+const params: DocumentParams = {
+    title: 'Invoice INV-2026-0042',
+    blocks: [
+        { type: 'paragraph', text: 'Billed to: Acme Widgets Ltd, 4 Foundry Lane, Sheffield' },
+        { type: 'spacer', height: 8 },
+        {
+            type: 'table',
+            caption: 'Line items',
+            headers: ['Item', 'Quantity', 'Unit price', 'Total'],
+            rows: [
+                { cells: ['Consultancy (June)', '3 days', '650.00', '1,950.00'], type: 'debit', pointed: false },
+                { cells: ['Managed hosting', '1 month', '120.00', '120.00'], type: 'debit', pointed: false },
+                { cells: ['Support retainer', '1 month', '250.00', '250.00'], type: 'debit', pointed: false },
+            ],
+        },
+        { type: 'spacer', height: 8 },
+        { type: 'paragraph', text: 'Total due: 2,320.00 GBP within 30 days.', align: 'right' },
+    ],
+    footerText: 'Registered in England no. 01234567',
+    fontEntries: [latinFont],
+    metadata: { author: 'Accounts', subject: 'Invoice INV-2026-0042' },
+};
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number; text: string }> {
+    const bytes = buildDocumentPDFBytes(params, {
+        tagged: 'pdfa2b',
+        creationDate: new Date('2026-08-25T00:00:00Z'),
+    });
+    const pages = openPdf(bytes).pageCount;
+    const text = extractText(bytes, { pages: [0] })[0].text;
+    return { bytes, pages, text };
+}
+```
+
+---
+<!-- source: recipes/layout-preview.ts -->
+
+```ts
+/**
+ * Dry-run layout inspection: `inspectDocumentLayout` reports how the
+ * builder will paginate and place each block — page index, x, top, width,
+ * height — without rendering a PDF. Useful for layout assertions and
+ * tooling.
+ *
+ * @task Preview pagination and block geometry without rendering a PDF
+ * @surface library
+ * @since 1.5.0
+ * @expect totalPages === 2
+ * @expect first block type === 'heading' on page 0 with width > 0
+ */
+import { inspectDocumentLayout } from 'pdfnative';
+import type { DocumentParams, LayoutInspection } from 'pdfnative';
+
+const params: DocumentParams = {
+    title: 'Layout probe',
+    blocks: [
+        { type: 'heading', text: 'Section one', level: 1 },
+        { type: 'paragraph', text: 'A paragraph measured, not rendered.' },
+        { type: 'pageBreak' },
+        { type: 'heading', text: 'Section two', level: 1 },
+        { type: 'paragraph', text: 'Placed on the second page.' },
+    ],
+    footerText: 'Layout probe',
+};
+
+export async function run(): Promise<{ inspection: LayoutInspection }> {
+    const inspection = inspectDocumentLayout(params);
+    return { inspection };
+}
+```
+
+---
+<!-- source: recipes/merge-encrypted.ts -->
+
+```ts
+/**
+ * Merge two documents and encrypt the result in the same call.
+ * `MergeOptions.encrypt` re-protects the assembled document (AES-128
+ * here); the reader then opens it with the user password and reports the
+ * scheme. Encryption uses random salts, so the bytes differ per run while
+ * the structure stays identical.
+ *
+ * @task Merge two PDFs and AES-encrypt the combined document
+ * @surface library
+ * @since 1.6.0
+ * @expect pages === 2
+ * @expect encryption.algorithm === 'aes128'
+ */
+import { buildDocumentPDFBytes, mergePdfs, openPdf } from 'pdfnative';
+import type { DocumentParams, PdfEncryptionInfo } from 'pdfnative';
+
+function chapter(title: string, body: string): DocumentParams {
+    return {
+        title,
+        blocks: [{ type: 'paragraph', text: body }],
+        footerText: title,
+    };
+}
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number; encryption: PdfEncryptionInfo | null }> {
+    const created = new Date('2026-08-25T00:00:00Z');
+    const first = buildDocumentPDFBytes(chapter('Part one', 'Opening chapter.'), { creationDate: created });
+    const second = buildDocumentPDFBytes(chapter('Part two', 'Closing chapter.'), { creationDate: created });
+
+    const bytes = mergePdfs([first, second], {
+        encrypt: {
+            ownerPassword: 'owner-secret',
+            userPassword: 'reader-secret',
+            algorithm: 'aes128',
+            permissions: { print: true, copy: false },
+        },
+    });
+
+    const reader = openPdf(bytes, { password: 'reader-secret' });
+    return { bytes, pages: reader.pageCount, encryption: reader.encryption };
+}
+```
+
+---
+<!-- source: recipes/multipage-table.ts -->
+
+```ts
+/**
+ * A table long enough to paginate. `repeatHeader` (the default, stated
+ * here explicitly) re-draws the header row on every continuation page,
+ * which the extracted text of page 1 confirms.
+ *
+ * @task Paginate a long table with the header row repeated on every page
+ * @surface library
+ * @since 1.6.0
+ * @expect pages === 2
+ * @expect text of page 1 contains 'Description'
+ */
+import { buildDocumentPDFBytes, openPdf, extractText } from 'pdfnative';
+import type { DocumentParams, PdfRow } from 'pdfnative';
+
+const rows: PdfRow[] = Array.from({ length: 70 }, (_, i) => ({
+    cells: [`2026-06-${String((i % 28) + 1).padStart(2, '0')}`, `Ledger entry ${i + 1}`, (100 + i).toFixed(2)],
+    type: i % 2 === 0 ? 'credit' : 'debit',
+    pointed: false,
+}));
+
+const params: DocumentParams = {
+    title: 'June ledger',
+    blocks: [
+        {
+            type: 'table',
+            headers: ['Date', 'Description', 'Amount'],
+            rows,
+            repeatHeader: true,
+        },
+    ],
+    footerText: 'June ledger',
+};
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number; page1Text: string }> {
+    const bytes = buildDocumentPDFBytes(params, { creationDate: new Date('2026-08-25T00:00:00Z') });
+    const pages = openPdf(bytes).pageCount;
+    const page1Text = extractText(bytes, { pages: [1] })[0].text;
+    return { bytes, pages, page1Text };
+}
+```
+
+---
+<!-- source: recipes/print-bleed.ts -->
+
+```ts
+/**
+ * Print production: the page is designed at trim size plus 3 mm bleed on
+ * every side (8.5 pt), `layout.print.bleed` derives the TrimBox and
+ * BleedBox, and `marks: true` draws crop and registration marks outside
+ * the trim area. The boxes are read back from the parsed page.
+ *
+ * @task Prepare a print-ready page with bleed, TrimBox and printer's marks
+ * @surface library
+ * @since 1.7.0
+ * @expect trimBox === [8.5, 8.5, 603.78, 850.39]
+ * @expect bleedBox === [0, 0, 612.28, 858.89]
+ */
+import { buildDocumentPDFBytes, openPdf, dictGetArray } from 'pdfnative';
+
+const BLEED = 8.5; // 3 mm in points
+const TRIM_W = 595.28; // A4 trim width
+const TRIM_H = 841.89; // A4 trim height
+
+export async function run(): Promise<{
+    bytes: Uint8Array;
+    trimBox: readonly number[];
+    bleedBox: readonly number[];
+}> {
+    const bytes = buildDocumentPDFBytes(
+        {
+            title: 'Poster',
+            blocks: [{ type: 'paragraph', text: 'Background art runs to the page edge; keep copy inside the trim.' }],
+            footerText: 'Poster',
+        },
+        {
+            // Page size = trim size + 2 × bleed; backgrounds may run to the edge.
+            pageWidth: TRIM_W + 2 * BLEED,
+            pageHeight: TRIM_H + 2 * BLEED,
+            print: { bleed: BLEED, marks: true },
+            creationDate: new Date('2026-08-25T00:00:00Z'),
+        },
+    );
+
+    const page = openPdf(bytes).getPage(0);
+    const asNumbers = (name: string): number[] =>
+        (dictGetArray(page, name) ?? []).filter((v): v is number => typeof v === 'number');
+
+    return { bytes, trimBox: asNumbers('TrimBox'), bleedBox: asNumbers('BleedBox') };
+}
+```
+
+---
+<!-- source: recipes/signed-pades.ts -->
+
+```ts
+/**
+ * PAdES B-B digital signature. The document is built, an invisible
+ * signature placeholder is injected (with the CAdES subFilter and the
+ * descriptive entries baked in — the /Sig dictionary's byte layout is
+ * frozen at placeholder time), then signed. The caller supplies the
+ * certificate and RSA key; pdfnative never generates key material.
+ *
+ * @task Sign a document with a PAdES B-B (ETSI.CAdES.detached) signature
+ * @surface library
+ * @since 1.7.0
+ * @expect signatures.length === 1
+ * @expect signatures[0].subFilter === 'ETSI.CAdES.detached'
+ * @expect signatures[0].isPlaceholder === false
+ */
+import { buildDocumentPDFBytes, addSignaturePlaceholder, signPdfBytes, listSignatures } from 'pdfnative';
+import type { DocumentParams, PdfSignatureInfo, RsaPrivateKey, X509Certificate } from 'pdfnative';
+
+/** Key material supplied by the caller (e.g. from a PKCS#12 store). */
+export interface SignerMaterial {
+    readonly cert: X509Certificate;
+    readonly key: RsaPrivateKey;
+    readonly chain?: readonly X509Certificate[];
+}
+
+const params: DocumentParams = {
+    title: 'Service agreement',
+    blocks: [
+        { type: 'heading', text: 'Agreement', level: 1 },
+        { type: 'paragraph', text: 'This agreement is executed by digital signature.' },
+    ],
+    footerText: 'Service agreement',
+};
+
+export async function run(signer: SignerMaterial): Promise<{ bytes: Uint8Array; signatures: readonly PdfSignatureInfo[] }> {
+    const unsigned = buildDocumentPDFBytes(params, { creationDate: new Date('2026-08-25T00:00:00Z') });
+
+    const placeheld = addSignaturePlaceholder(unsigned, {
+        fieldName: 'Author',
+        metadata: {
+            subFilter: 'ETSI.CAdES.detached',
+            reason: 'Approval',
+            location: 'London',
+            signingTime: new Date('2026-08-25T00:00:00Z'),
+        },
+    });
+
+    const bytes = signPdfBytes(placeheld, {
+        signerCert: signer.cert,
+        certChain: signer.chain,
+        rsaKey: signer.key,
+        algorithm: 'rsa-sha256',
+        profile: 'pades',
+        signingTime: new Date('2026-08-25T00:00:00Z'),
+    });
+
+    return { bytes, signatures: listSignatures(bytes) };
+}
+```
+
+---
+<!-- source: recipes/streaming-large.ts -->
+
+```ts
+/**
+ * True streaming output for a large document: `buildDocumentPDFStreamTrue`
+ * yields the PDF in chunks whose concatenation is byte-identical to the
+ * buffered builder's output for the same input (creation date pinned so
+ * both builds share it).
+ *
+ * @task Stream a 300-block document and match the buffered output byte for byte
+ * @surface library
+ * @since 1.3.0
+ * @expect identical === true
+ * @expect pages === 8
+ */
+import { buildDocumentPDFBytes, buildDocumentPDFStreamTrue, concatChunks, openPdf } from 'pdfnative';
+import type { DocumentParams, DocumentBlock } from 'pdfnative';
+
+const blocks: DocumentBlock[] = Array.from({ length: 300 }, (_, i) => ({
+    type: 'paragraph' as const,
+    text: `Row ${i + 1}: measurement recorded and archived.`,
+}));
+
+const params: DocumentParams = {
+    title: 'Measurement log',
+    blocks,
+    footerText: 'Measurement log',
+};
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number; identical: boolean }> {
+    const created = new Date('2026-08-25T00:00:00Z');
+
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of buildDocumentPDFStreamTrue(params, { creationDate: created }, { chunkSize: 16 * 1024 })) {
+        chunks.push(chunk);
+    }
+    const bytes = concatChunks(chunks);
+
+    const buffered = buildDocumentPDFBytes(params, { creationDate: created });
+    const identical = bytes.length === buffered.length && bytes.every((b, i) => b === buffered[i]);
+
+    return { bytes, pages: openPdf(bytes).pageCount, identical };
+}
+```
+
+---
+<!-- source: recipes/text-extraction-rag.ts -->
+
+```ts
+/**
+ * Positioned text extraction for indexing pipelines (RAG, search). With
+ * `includeRuns` each text-showing operation is returned with its
+ * device-space origin and effective font size, alongside the
+ * reading-order text per page.
+ *
+ * @task Extract reading-order text plus positioned runs from a document
+ * @surface library
+ * @since 1.6.0
+ * @expect text of page 0 contains 'retrieval'
+ * @expect runs.length > 0
+ * @expect every run has numeric x, y and fontSize
+ */
+import { buildDocumentPDFBytes, extractText } from 'pdfnative';
+import type { DocumentParams, ExtractedPageText } from 'pdfnative';
+
+const params: DocumentParams = {
+    title: 'Corpus notes',
+    blocks: [
+        { type: 'heading', text: 'Chunking strategy', level: 1 },
+        { type: 'paragraph', text: 'Split documents into passages before retrieval; keep headings with their sections.' },
+        { type: 'paragraph', text: 'Store the run positions so citations can point back into the page.' },
+    ],
+    footerText: 'Corpus notes',
+};
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: readonly ExtractedPageText[] }> {
+    const bytes = buildDocumentPDFBytes(params, { creationDate: new Date('2026-08-25T00:00:00Z') });
+    const pages = extractText(bytes, { includeRuns: true });
+    return { bytes, pages };
+}
+```
+
+---
+<!-- source: recipes/toc-outline.ts -->
+
+```ts
+/**
+ * Table of contents and bookmarks together: a `toc` block renders linked
+ * entries for every heading, while `outline: 'auto'` derives the viewer's
+ * bookmark panel from the same headings and adds /Outlines to the catalog.
+ *
+ * @task Generate a linked table of contents plus automatic bookmarks
+ * @surface library
+ * @since 1.6.0
+ * @expect pages === 3
+ * @expect catalog has /Outlines
+ * @expect text of page 0 contains 'Table of Contents'
+ */
+import { buildDocumentPDFBytes, openPdf, extractText } from 'pdfnative';
+import type { DocumentParams } from 'pdfnative';
+
+const params: DocumentParams = {
+    title: 'Operations handbook',
+    blocks: [
+        { type: 'toc', maxLevel: 2 },
+        { type: 'pageBreak' },
+        { type: 'heading', text: 'Onboarding', level: 1 },
+        { type: 'paragraph', text: 'Accounts, hardware and access requests.' },
+        { type: 'heading', text: 'First week', level: 2 },
+        { type: 'paragraph', text: 'Pairing schedule and reading list.' },
+        { type: 'pageBreak' },
+        { type: 'heading', text: 'Incident response', level: 1 },
+        { type: 'paragraph', text: 'Escalation ladder and post-incident review.' },
+    ],
+    footerText: 'Operations handbook',
+    outline: 'auto',
+};
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number; hasOutlines: boolean; tocText: string }> {
+    const bytes = buildDocumentPDFBytes(params, { creationDate: new Date('2026-08-25T00:00:00Z') });
+    const reader = openPdf(bytes);
+    const hasOutlines = reader.getCatalog().get('Outlines') !== undefined;
+    const tocText = extractText(bytes, { pages: [0] })[0].text;
+    return { bytes, pages: reader.pageCount, hasOutlines, tocText };
+}
+```
+
+---
+<!-- source: recipes/update-metadata.ts -->
+
+```ts
+/**
+ * Incremental metadata update: open an existing document, re-issue its
+ * /Info dictionary with a new title and a pinned modification date, and
+ * save. The original revision is preserved byte for byte; the reopened
+ * document reports the new title.
+ *
+ * @task Retitle an existing PDF via a non-destructive incremental update
+ * @surface library
+ * @since 1.7.0
+ * @expect title === 'Quarterly report (revised)'
+ */
+import { buildDocumentPDFBytes, openPdf, createModifier } from 'pdfnative';
+
+/** /Info strings may be UTF-16BE with a BOM; plain literals pass through. */
+function decodePdfText(raw: unknown): string {
+    if (typeof raw !== 'string') return '';
+    if (raw.length >= 2 && raw.charCodeAt(0) === 0xFE && raw.charCodeAt(1) === 0xFF) {
+        let out = '';
+        for (let i = 2; i + 1 < raw.length; i += 2) {
+            out += String.fromCharCode((raw.charCodeAt(i) << 8) | raw.charCodeAt(i + 1));
+        }
+        return out;
+    }
+    return raw;
+}
+
+export async function run(): Promise<{ bytes: Uint8Array; title: string }> {
+    const original = buildDocumentPDFBytes(
+        {
+            title: 'Quarterly report',
+            blocks: [{ type: 'paragraph', text: 'Figures under review.' }],
+            footerText: 'Quarterly report',
+        },
+        { creationDate: new Date('2026-08-25T00:00:00Z') },
+    );
+
+    const modifier = createModifier(openPdf(original));
+    modifier.updateMetadata({
+        title: 'Quarterly report (revised)',
+        modDate: new Date('2026-08-25T00:00:00Z'),
+    });
+    const bytes = modifier.save();
+
+    const info = openPdf(bytes).getInfo();
+    const title = decodePdfText(info?.get('Title'));
+    return { bytes, title };
+}
+```
+
+---
+<!-- source: recipes/watermark.ts -->
+
+```ts
+/**
+ * A rotated, semi-transparent text watermark behind the content of every
+ * page. The watermark never disturbs the body text: extraction still
+ * returns the paragraph, and the watermark string itself is present too.
+ *
+ * @task Stamp a rotated DRAFT watermark behind the page content
+ * @surface library
+ * @since 1.6.0
+ * @expect text of page 0 contains 'Confidential clause'
+ * @expect text of page 0 contains 'DRAFT'
+ */
+import { buildDocumentPDFBytes, extractText } from 'pdfnative';
+import type { DocumentParams } from 'pdfnative';
+
+const params: DocumentParams = {
+    title: 'Draft contract',
+    blocks: [
+        { type: 'heading', text: 'Terms', level: 1 },
+        { type: 'paragraph', text: 'Confidential clause: neither party discloses the commercial terms.' },
+    ],
+    footerText: 'Draft contract',
+};
+
+export async function run(): Promise<{ bytes: Uint8Array; text: string }> {
+    const bytes = buildDocumentPDFBytes(params, {
+        watermark: {
+            text: { text: 'DRAFT', fontSize: 60, opacity: 0.15, angle: -45 },
+            position: 'background',
+        },
+        creationDate: new Date('2026-08-25T00:00:00Z'),
+    });
+    const text = extractText(bytes, { pages: [0] })[0].text;
+    return { bytes, text };
+}
+```

@@ -62,6 +62,9 @@
 
 - [agent-brief.md](https://pdfnative.dev/agent-brief.md): A compact briefing for AI agents writing code with pdfnative — the core API, the verified pitfalls that produce wrong code, the surface decision tree, and the self-verification loop. Designed to be pasted into a coding agent's context.
 - [llms-full.txt](https://pdfnative.dev/llms-full.txt): This index plus the README and the full Markdown source of every guide, in one request.
+- [llms-recipes.txt](https://pdfnative.dev/llms-recipes.txt): The executable recipe corpus — standalone TypeScript files importing from `pdfnative`, each executed in CI with its `@expect` assertions verified, so the code you copy is proven to compile and to produce exactly the artefact its header describes.
+- [api.json](https://pdfnative.dev/assets/api.json): The public API surface, derived mechanically from the export statements of `src/index.ts` — name, kind, source module, signature and TSDoc summary where extractable. The substitute for the unpublished `index.d.ts`.
+- [surfaces.json](https://pdfnative.dev/data/surfaces.json): The capability × surface matrix (library / CLI / MCP / React) behind the [Choosing your surface](https://pdfnative.dev/guides/choose.md) guide.
 - [llms-index.json](https://pdfnative.dev/llms-index.json): Per-page machine index — HTML and raw-Markdown URL, title, summary, section anchors, and exact byte / approximate token sizes for every artefact, so you can decide what to fetch before spending the tokens.
 - Every guide serves its raw Markdown at the same URL with `.md` instead of `.html`, declared via `<link rel="alternate" type="text/markdown">` in each page head. All of these URLs are listed in the sitemap.
 

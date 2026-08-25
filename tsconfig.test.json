@@ -19,8 +19,12 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
-    "exactOptionalPropertyTypes": false
+    "exactOptionalPropertyTypes": false,
+    "paths": {
+      "pdfnative": ["./src/index.ts"],
+      "pdfnative/fonts/*": ["./fonts/*"]
+    }
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "include": ["src/**/*.ts", "tests/**/*.ts", "recipes/**/*.ts"],
   "exclude": ["node_modules", "dist", "tools", "scripts"]
 }

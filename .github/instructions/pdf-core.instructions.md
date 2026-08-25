@@ -201,7 +201,7 @@ applyTo: "src/core/**"
 - `headerTemplate` / `footerTemplate` on `PdfLayoutOptions` — both builders support them
 - `HEADER_H = 15` constant in `pdf-layout.ts` — header zone reduces available content height
 - Backward compat: `footerText` maps to `{ left: footerText, right: '{page}/{pages}' }`
-- `_renderPageTemplate()` (pdf-document.ts) / `_buildPageTemplate()` (pdf-builder.ts) — renders left/center/right at given Y
+- `renderPageTemplate()` (pdf-document.ts) / `_buildPageTemplate()` (pdf-builder.ts) — renders left/center/right at given Y
 - Default color from `colors.footer` (`PdfColor`), parsed via `parseColor()`
 - Tagged mode: template text wrapped in `/P` structure elements with marked content
 
@@ -225,9 +225,9 @@ applyTo: "src/core/**"
 - **Document builder only** — table builder has no headings concept
 - **Multi-pass pagination** (max 3 iterations):
   1. Pass 1: paginate without TOC → collect `HeadingDestination[]` (destName, text, level, pageIndex, y)
-  2. Pass 2: estimate TOC height via `_estimateTocHeight()`, re-paginate with TOC height included
+  2. Pass 2: estimate TOC height via `estimateTocHeight()`, re-paginate with TOC height included
   3. Pass 3 (if needed): if heading page assignments shifted, re-paginate one more time
-- `_renderToc()`: renders TOC title (bold, larger font), indented entries with dot leaders, right-aligned page numbers
+- `renderToc()`: renders TOC title (bold, larger font), indented entries with dot leaders, right-aligned page numbers
 - TOC entries are `/GoTo` annotations: `<< /Type /Annot /Subtype /Link /Rect [...] /Dest /toc_h_N >>`
 - Annotations starting with `#` prefix → `/Dest` (internal); others → `/URI` (external)
 - **Named destinations** in catalog: `/Dests << /toc_h_0 [pageObj /XYZ x y null] ... >>`

@@ -55,6 +55,36 @@ export function buildLlmsFull(root: string): string {
     return parts.join('') + '\n';
 }
 
+// ── llms-recipes.txt ────────────────────────────────────────────────
+
+/**
+ * Concatenation of the executable recipe corpus (`recipes/*.ts`) — every file
+ * is CI-executed with its `@expect` assertions verified, so an agent ingesting
+ * this artefact copies code that is proven to compile and produce exactly the
+ * artefact its header describes. The cheapest high-signal fetch for a coding
+ * agent.
+ */
+export function buildLlmsRecipes(root: string): string {
+    const dir = join(root, 'recipes');
+    const parts: string[] = [
+        '# pdfnative — executable recipes',
+        '',
+        '> Every file below lives in the repository as `recipes/<name>.ts`, imports only',
+        "> from 'pdfnative', and is executed in CI with each `@expect` assertion checked",
+        '> (tests/docs/recipes.test.ts). The machine index is recipes/index.json.',
+    ];
+    const files = existsSync(dir)
+        ? readdirSync(dir).filter((f) => f.endsWith('.ts')).sort()
+        : [];
+    for (const name of files) {
+        parts.push(`\n---\n<!-- source: recipes/${name} -->\n`);
+        parts.push('```ts');
+        parts.push(lf(readFileSync(join(dir, name), 'utf8')).trimEnd());
+        parts.push('```');
+    }
+    return parts.join('\n') + '\n';
+}
+
 // ── llms-index.json ─────────────────────────────────────────────────
 
 /** Same GitHub-style slugger as scripts/build-guides.ts heading ids. */
@@ -127,6 +157,7 @@ export function buildLlmsIndex(root: string): string {
         [`${site}/llms.txt`, join(root, 'llms.txt'), 'Documentation index (llmstxt.org convention).'],
         [`${site}/agent-brief.md`, join(root, 'docs', 'agent-brief.md'), 'Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.'],
         [`${site}/llms-full.txt`, join(root, 'docs', 'llms-full.txt'), 'Full corpus: index + README + every guide, one request.'],
+        [`${site}/llms-recipes.txt`, join(root, 'docs', 'llms-recipes.txt'), 'Executable recipes: CI-verified, copy-ready code for the most common tasks.'],
         ['https://github.com/Nizoka/pdfnative/blob/main/README.md', join(root, 'README.md'), 'Complete feature and API reference (also embedded in llms-full.txt).'],
     ];
     for (const [url, path, description] of artefactSources) {
@@ -151,7 +182,10 @@ if (isMain) {
     const out = join(root, 'docs', 'llms-full.txt');
     writeFileSync(out, buildLlmsFull(root));
     console.log(`build-llms-full: wrote ${out}`);
-    // Index second: it reports llms-full.txt's on-disk size.
+    const rec = join(root, 'docs', 'llms-recipes.txt');
+    writeFileSync(rec, buildLlmsRecipes(root));
+    console.log(`build-llms-full: wrote ${rec}`);
+    // Index last: it reports the other artefacts' on-disk sizes.
     const idx = join(root, 'docs', 'llms-index.json');
     writeFileSync(idx, buildLlmsIndex(root));
     console.log(`build-llms-full: wrote ${idx}`);

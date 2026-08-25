@@ -1,0 +1,3123 @@
+{
+  "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
+  "package": "pdfnative",
+  "source": "src/index.ts",
+  "exportCount": 445,
+  "exports": [
+    {
+      "name": "AddDocumentTimestampOptions",
+      "kind": "type",
+      "module": "src/core/pdf-doc-timestamp.ts",
+      "signature": "export interface AddDocumentTimestampOptions",
+      "summary": "pdfnative — Document Timestamps (PAdES B-LTA, v1.7.0) ====================================================== `addDocumentTimestamp` appends a document-timestamp revision per ISO 32000-2 §12.8.5: a signature field whose dictionary is `/Type "
+    },
+    {
+      "name": "AddSignaturePlaceholderOptions",
+      "kind": "type",
+      "module": "src/core/pdf-sig-placeholder.ts",
+      "signature": "export interface AddSignaturePlaceholderOptions",
+      "summary": "pdfnative — Signature Placeholder Injector ============================================ Inject an AcroForm + invisible signature widget placeholder into an existing PDF via incremental update (ISO 32000-1 §7.5.6, §12.7.4.5, §12.8)."
+    },
+    {
+      "name": "Annotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export type Annotation = LinkAnnotation | InternalLink;",
+      "summary": "pdfnative — PDF Link Annotations ================================== Build PDF link annotation objects for external URLs and internal page links."
+    },
+    {
+      "name": "AnnotationBase",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface AnnotationBase",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "AnnotationRect",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export type AnnotationRect = readonly [number, number, number, number];",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "Asn1Node",
+      "kind": "type",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export interface Asn1Node",
+      "summary": null
+    },
+    {
+      "name": "BAL_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const BAL_H = 32;",
+      "summary": null
+    },
+    {
+      "name": "BarcodeBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface BarcodeBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "BarcodeFormat",
+      "kind": "type",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export type BarcodeFormat = 'code128' | 'ean13' | 'qr' | 'datamatrix' | 'pdf417';",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "BidiRun",
+      "kind": "type",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export interface BidiRun",
+      "summary": "pdfnative — Simplified Unicode Bidirectional Algorithm ======================================================= Pure JS implementation of a subset of UAX #9 (Unicode Bidirectional Algorithm)."
+    },
+    {
+      "name": "CellBorders",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface CellBorders",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "ChartBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ChartBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "ChartSeries",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ChartSeries",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "ChartType",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export type ChartType = 'bar' | 'barH' | 'line' | 'pie' | 'donut'",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "CmsDigestAlgorithm",
+      "kind": "type",
+      "module": "src/crypto/cms.ts",
+      "signature": "export type CmsDigestAlgorithm = 'sha256' | 'sha384' | 'sha512';",
+      "summary": "pdfnative — CMS SignedData Builder (RFC 5652) ============================================== Builds CMS/PKCS#7 SignedData structures for PDF digital signatures."
+    },
+    {
+      "name": "CmsProfile",
+      "kind": "type",
+      "module": "src/crypto/cms.ts",
+      "signature": "export type CmsProfile = 'pkcs7' | 'pades';",
+      "summary": "pdfnative — CMS SignedData Builder (RFC 5652) ============================================== Builds CMS/PKCS#7 SignedData structures for PDF digital signatures."
+    },
+    {
+      "name": "CmsSignOptions",
+      "kind": "type",
+      "module": "src/crypto/cms.ts",
+      "signature": "export interface CmsSignOptions",
+      "summary": null
+    },
+    {
+      "name": "CollectLtvOptions",
+      "kind": "type",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export interface CollectLtvOptions",
+      "summary": "pdfnative — Document Security Store (PAdES B-LT, v1.7.0) ========================================================= LTV enablement per ISO 32000-2 §12.8.4: collect the validation material for every signature (certificates, OCSP responses, CR"
+    },
+    {
+      "name": "ColorGlyph",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColorGlyph",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "ColorGlyphForm",
+      "kind": "type",
+      "module": "src/core/pdf-color-glyph.ts",
+      "signature": "export interface ColorGlyphForm",
+      "summary": "pdfnative — Colour Glyph Renderer (COLR/CPAL → native PDF) ========================================================== Renders a resolved ColorGlyph as a native PDF Form XObject: each layer's base-glyph outline is emitted as a vector path an"
+    },
+    {
+      "name": "ColorLayer",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColorLayer",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "ColorPaint",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint | SweepGradientPaint;",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "ColorStop",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColorStop",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "ColumnDef",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColumnDef",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "Contour",
+      "kind": "type",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export type Contour = OutlinePoint[];",
+      "summary": "pdfnative — TrueType `glyf` Outline Extractor ============================================== Pure-JS reader that turns a TrueType glyph outline into ordered contours of quadratic on/off-curve points."
+    },
+    {
+      "name": "CpalColor",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type CpalColor = readonly [number, number, number, number];",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "CrlRevokedEntry",
+      "kind": "type",
+      "module": "src/crypto/crl.ts",
+      "signature": "export interface CrlRevokedEntry",
+      "summary": "pdfnative — CRL Parser (RFC 5280 §5) ===================================== Parses X.509 CertificateList DER for LTV revocation data collection (PAdES B-LT — /DSS /CRLs streams)."
+    },
+    {
+      "name": "CryptFilterMethod",
+      "kind": "type",
+      "module": "src/parser/pdf-decrypt.ts",
+      "signature": "export type CryptFilterMethod = 'V2' | 'AESV2' | 'AESV3' | 'Identity';",
+      "summary": "pdfnative — Standard Security Handler reader/decryptor ========================================================= Password authentication and transparent object decryption for encrypted PDFs (ISO 32000-1 §7.6 / ISO 32000-2 §7.6), closing the"
+    },
+    {
+      "name": "CryptoProvider",
+      "kind": "type",
+      "module": "src/crypto/crypto-provider.ts",
+      "signature": "export interface CryptoProvider",
+      "summary": "pdfnative — Pluggable Signature Crypto Provider ================================================ pdfnative ships its own pure-TypeScript RSA (PKCS#1 v1.5) and ECDSA (P-256) implementations so that signing works in any runtime with **zero de"
+    },
+    {
+      "name": "CustomOutputIntent",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface CustomOutputIntent",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "DEFAULT_COLORS",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_COLORS: PdfColors =",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_COLUMNS",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_COLUMNS: ColumnDef[] = [",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_CW",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_CW = PG_W - DEFAULT_MARGINS.l - DEFAULT_MARGINS.r;",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_FONT_SIZES",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_FONT_SIZES = { title: 16, info: 9, th: 8, td: 7.5, ft: 7 };",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_MARGINS",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_MARGINS = { t: 45, r: 36, b: 35, l: 36 };",
+      "summary": null
+    },
+    {
+      "name": "DEFAULT_MAX_BLOCKS",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const DEFAULT_MAX_BLOCKS = 100_000;",
+      "summary": "pdfnative — PDF Layout Constants ================================== A4 page dimensions and default layout settings."
+    },
+    {
+      "name": "DEFAULT_MAX_INFLATE_OUTPUT",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export const DEFAULT_MAX_INFLATE_OUTPUT = 100 * 1024 * 1024;",
+      "summary": "pdfnative — DEFLATE Decompressor (FlateDecode reader) ====================================================== Zero-dependency DEFLATE decompression for reading FlateDecode streams."
+    },
+    {
+      "name": "DecryptionContext",
+      "kind": "type",
+      "module": "src/parser/pdf-decrypt.ts",
+      "signature": "export interface DecryptionContext",
+      "summary": "pdfnative — Standard Security Handler reader/decryptor ========================================================= Password authentication and transparent object decryption for encrypted PDFs (ISO 32000-1 §7.6 / ISO 32000-2 §7.6), closing the"
+    },
+    {
+      "name": "DocumentBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export type DocumentBlock =",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "DocumentMetadata",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "DocumentParams",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface DocumentParams",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "EcPrivateKey",
+      "kind": "type",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export interface EcPrivateKey",
+      "summary": "pdfnative — ECDSA P-256 Sign / Verify ====================================== Pure BigInt implementation of ECDSA on the NIST P-256 curve (secp256r1)."
+    },
+    {
+      "name": "EcPublicKey",
+      "kind": "type",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export interface EcPublicKey",
+      "summary": "pdfnative — ECDSA P-256 Sign / Verify ====================================== Pure BigInt implementation of ECDSA on the NIST P-256 curve (secp256r1)."
+    },
+    {
+      "name": "EmbeddedFilesResult",
+      "kind": "type",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export interface EmbeddedFilesResult",
+      "summary": "pdfnative — Tagged PDF & PDF/A Support ======================================== Structure tree, marked content operators, XMP metadata, and OutputIntent for PDF/UA accessibility and PDF/A archival compliance."
+    },
+    {
+      "name": "EncodingContext",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface EncodingContext",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "EncryptionOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface EncryptionOptions",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "ExtractTextOptions",
+      "kind": "type",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export interface ExtractTextOptions",
+      "summary": null
+    },
+    {
+      "name": "ExtractedPageText",
+      "kind": "type",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export interface ExtractedPageText",
+      "summary": null
+    },
+    {
+      "name": "ExtractedTextRun",
+      "kind": "type",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export interface ExtractedTextRun",
+      "summary": "pdfnative — PDF Text Extraction ================================= Decodes page content streams (ISO 32000-1 §9) into per-page Unicode text with optional positioned runs."
+    },
+    {
+      "name": "FT_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const FT_H = 15;",
+      "summary": null
+    },
+    {
+      "name": "FillFormOptions",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export interface FillFormOptions",
+      "summary": "pdfnative — AcroForm fill & flatten (ISO 32000-1 §12.7) ========================================================== Read, fill, and flatten the interactive form fields of an **existing** PDF (whether authored by pdfnative or a third party), "
+    },
+    {
+      "name": "FlattenFormOptions",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export interface FlattenFormOptions",
+      "summary": "pdfnative — AcroForm fill & flatten (ISO 32000-1 §12.7) ========================================================== Read, fill, and flatten the interactive form fields of an **existing** PDF (whether authored by pdfnative or a third party), "
+    },
+    {
+      "name": "FontData",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface FontData",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "FontEntry",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface FontEntry",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "FontLoader",
+      "kind": "type",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export type FontLoader = () => Promise<FontData | { default: FontData }>;",
+      "summary": "pdfnative — Font Loader ========================= Configurable font registry and lazy-loading."
+    },
+    {
+      "name": "FontMetrics",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface FontMetrics",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "FontRun",
+      "kind": "type",
+      "module": "src/shaping/multi-font.ts",
+      "signature": "export interface FontRun",
+      "summary": "pdfnative — Multi-Font Text Run Splitter ========================================== Split text into runs, each assigned to the font whose cmap covers it."
+    },
+    {
+      "name": "FontValidationResult",
+      "kind": "type",
+      "module": "src/fonts/font-validator.ts",
+      "signature": "export interface FontValidationResult",
+      "summary": "pdfnative — Font Data Validator ================================ `validateFontData()` performs a read-only structural sanity check on a FontData module before it is used for rendering."
+    },
+    {
+      "name": "FormField",
+      "kind": "type",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export interface FormField",
+      "summary": "pdfnative — AcroForm Interactive Fields (ISO 32000-1 §12.7) ============================================================= Builds AcroForm dictionaries, field widgets, and appearance streams."
+    },
+    {
+      "name": "FormFieldBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface FormFieldBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "FormFieldNotFoundError",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export class FormFieldNotFoundError extends Error",
+      "summary": "pdfnative — AcroForm fill & flatten (ISO 32000-1 §12.7) ========================================================== Read, fill, and flatten the interactive form fields of an **existing** PDF (whether authored by pdfnative or a third party), "
+    },
+    {
+      "name": "FormFieldType",
+      "kind": "type",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export type FormFieldType =",
+      "summary": "pdfnative — AcroForm Interactive Fields (ISO 32000-1 §12.7) ============================================================= Builds AcroForm dictionaries, field widgets, and appearance streams."
+    },
+    {
+      "name": "FormFillValue",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export type FormFillValue = string | boolean | readonly string[];",
+      "summary": null
+    },
+    {
+      "name": "FormUnsupportedError",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export class FormUnsupportedError extends Error",
+      "summary": "pdfnative — AcroForm fill & flatten (ISO 32000-1 §12.7) ========================================================== Read, fill, and flatten the interactive form fields of an **existing** PDF (whether authored by pdfnative or a third party), "
+    },
+    {
+      "name": "FormValueTypeError",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export class FormValueTypeError extends Error",
+      "summary": "pdfnative — AcroForm fill & flatten (ISO 32000-1 §12.7) ========================================================== Read, fill, and flatten the interactive form fields of an **existing** PDF (whether authored by pdfnative or a third party), "
+    },
+    {
+      "name": "FormWidgetResult",
+      "kind": "type",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export interface FormWidgetResult",
+      "summary": "pdfnative — AcroForm Interactive Fields (ISO 32000-1 §12.7) ============================================================= Builds AcroForm dictionaries, field widgets, and appearance streams."
+    },
+    {
+      "name": "FreeTextAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface FreeTextAnnotation extends AnnotationBase",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "GlyfFont",
+      "kind": "type",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export interface GlyfFont",
+      "summary": "pdfnative — TrueType `glyf` Outline Extractor ============================================== Pure-JS reader that turns a TrueType glyph outline into ordered contours of quadratic on/off-curve points."
+    },
+    {
+      "name": "GradientExtend",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type GradientExtend = 'pad' | 'repeat' | 'reflect';",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "HEADER_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const HEADER_H = 15;",
+      "summary": null
+    },
+    {
+      "name": "HeadingBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface HeadingBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "INFO_LN",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const INFO_LN = 13;",
+      "summary": null
+    },
+    {
+      "name": "ImageBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ImageBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "InspectedBlock",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface InspectedBlock",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "InspectedPage",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface InspectedPage",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "InternalLink",
+      "kind": "type",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export interface InternalLink",
+      "summary": "pdfnative — PDF Link Annotations ================================== Build PDF link annotation objects for external URLs and internal page links."
+    },
+    {
+      "name": "KNOWN_DECODE_FILTERS",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export const KNOWN_DECODE_FILTERS = new Set<string>([",
+      "summary": "pdfnative — PDF Stream Filter Decoders ======================================== Pure, zero-dependency decoders for the standard PDF stream filters that are not handled by inflateSync (FlateDecode)."
+    },
+    {
+      "name": "LayoutDebugOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface LayoutDebugOptions",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "LayoutInspection",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface LayoutInspection",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "LineAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface LineAnnotation extends AnnotationBase",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "LinearGradientPaint",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface LinearGradientPaint",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "LinkAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export interface LinkAnnotation",
+      "summary": "pdfnative — PDF Link Annotations ================================== Build PDF link annotation objects for external URLs and internal page links."
+    },
+    {
+      "name": "LinkBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface LinkBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "ListBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ListBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "ListItem",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ListItem",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "LtvData",
+      "kind": "type",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export interface LtvData",
+      "summary": "pdfnative — Document Security Store (PAdES B-LT, v1.7.0) ========================================================= LTV enablement per ISO 32000-2 §12.8.4: collect the validation material for every signature (certificates, OCSP responses, CR"
+    },
+    {
+      "name": "MAX_PARSE_DEPTH",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export const MAX_PARSE_DEPTH = 1000;",
+      "summary": "pdfnative — PDF Object Parser ================================ Parses PDF indirect objects from a tokenized stream (ISO 32000-1 §7.3)."
+    },
+    {
+      "name": "MAX_XREF_CHAIN",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export const MAX_XREF_CHAIN = 100;",
+      "summary": "pdfnative — PDF Cross-Reference Table Parser =============================================== Parses traditional xref tables and xref streams (ISO 32000-1 §7.5)."
+    },
+    {
+      "name": "MarkupAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export type MarkupAnnotation =",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "MergeOptions",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export interface MergeOptions",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "OcspCertStatus",
+      "kind": "type",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export type OcspCertStatus = 'good' | 'revoked' | 'unknown';",
+      "summary": "pdfnative — OCSP Request Builder / Response Parser (RFC 6960) ============================================================== Builds unsigned OCSPRequest DER and parses OCSPResponse / BasicOCSPResponse for LTV revocation data collection (PAd"
+    },
+    {
+      "name": "OcspRequestOptions",
+      "kind": "type",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export interface OcspRequestOptions",
+      "summary": "pdfnative — OCSP Request Builder / Response Parser (RFC 6960) ============================================================== Builds unsigned OCSPRequest DER and parses OCSPResponse / BasicOCSPResponse for LTV revocation data collection (PAd"
+    },
+    {
+      "name": "OcspResponse",
+      "kind": "type",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export interface OcspResponse",
+      "summary": "pdfnative — OCSP Request Builder / Response Parser (RFC 6960) ============================================================== Builds unsigned OCSPRequest DER and parses OCSPResponse / BasicOCSPResponse for LTV revocation data collection (PAd"
+    },
+    {
+      "name": "OpenPdfOptions",
+      "kind": "type",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export interface OpenPdfOptions",
+      "summary": "pdfnative — PDF Document Reader ================================== High-level reader that provides lazy object resolution and page access."
+    },
+    {
+      "name": "OutlineItem",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface OutlineItem",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "OutlinePoint",
+      "kind": "type",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export interface OutlinePoint",
+      "summary": "pdfnative — TrueType `glyf` Outline Extractor ============================================== Pure-JS reader that turns a TrueType glyph outline into ordered contours of quadratic on/off-curve points."
+    },
+    {
+      "name": "OutlineProvider",
+      "kind": "type",
+      "module": "src/core/pdf-color-glyph.ts",
+      "signature": "export type OutlineProvider = (glyphId: number) => Contour[];",
+      "summary": "pdfnative — Colour Glyph Renderer (COLR/CPAL → native PDF) ========================================================== Renders a resolved ColorGlyph as a native PDF Form XObject: each layer's base-glyph outline is emitted as a vector path an"
+    },
+    {
+      "name": "PAGE_SIZES",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const PAGE_SIZES =",
+      "summary": null
+    },
+    {
+      "name": "PDF_A_CONFORMANCE_TARGETS",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export const PDF_A_CONFORMANCE_TARGETS = ['pdfa1b', 'pdfa2b', 'pdfa2u', 'pdfa3b'] as const;",
+      "summary": "pdfnative — Tagged PDF & PDF/A Support ======================================== Structure tree, marked content operators, XMP metadata, and OutputIntent for PDF/UA accessibility and PDF/A archival compliance."
+    },
+    {
+      "name": "PG_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const PG_H = 841.89; // A4 height (297mm)",
+      "summary": null
+    },
+    {
+      "name": "PG_W",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const PG_W = 595.28; // A4 width (210mm)",
+      "summary": null
+    },
+    {
+      "name": "PageBox",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PageBox = readonly [number, number, number, number];",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PageBreakBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface PageBreakBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "PageLabelRange",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "PageLabelStyle",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "PageRange",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export interface PageRange",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "PageTemplate",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PageTemplate",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "ParagraphBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface ParagraphBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "ParsedAnnotation",
+      "kind": "type",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export interface ParsedAnnotation",
+      "summary": "pdfnative — PDF Document Reader ================================== High-level reader that provides lazy object resolution and page access."
+    },
+    {
+      "name": "ParsedArray",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "ParsedCms",
+      "kind": "type",
+      "module": "src/crypto/cms-utils.ts",
+      "signature": "export interface ParsedCms",
+      "summary": "pdfnative — CMS SignedData Parsing & DER Surgery (RFC 5652) ============================================================ Parses CMS/PKCS#7 SignedData structures (the inverse of cms.ts) and performs the one mutation LTV workflows need: appen"
+    },
+    {
+      "name": "ParsedCrl",
+      "kind": "type",
+      "module": "src/crypto/crl.ts",
+      "signature": "export interface ParsedCrl",
+      "summary": "pdfnative — CRL Parser (RFC 5280 §5) ===================================== Parses X.509 CertificateList DER for LTV revocation data collection (PAdES B-LT — /DSS /CRLs streams)."
+    },
+    {
+      "name": "ParsedDict",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "ParsedFieldType",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export type ParsedFieldType =",
+      "summary": null
+    },
+    {
+      "name": "ParsedFormField",
+      "kind": "type",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export interface ParsedFormField",
+      "summary": "pdfnative — AcroForm fill & flatten (ISO 32000-1 §12.7) ========================================================== Read, fill, and flatten the interactive form fields of an **existing** PDF (whether authored by pdfnative or a third party), "
+    },
+    {
+      "name": "ParsedImage",
+      "kind": "type",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export interface ParsedImage",
+      "summary": "pdfnative — PDF Image Support =============================== Parse JPEG and PNG images, build PDF XObject streams."
+    },
+    {
+      "name": "PdfAConfig",
+      "kind": "type",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export interface PdfAConfig",
+      "summary": "pdfnative — Tagged PDF & PDF/A Support ======================================== Structure tree, marked content operators, XMP metadata, and OutputIntent for PDF/UA accessibility and PDF/A archival compliance."
+    },
+    {
+      "name": "PdfAConformanceTarget",
+      "kind": "type",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export type PdfAConformanceTarget = typeof PDF_A_CONFORMANCE_TARGETS[number];",
+      "summary": "pdfnative — Tagged PDF & PDF/A Support ======================================== Structure tree, marked content operators, XMP metadata, and OutputIntent for PDF/UA accessibility and PDF/A archival compliance."
+    },
+    {
+      "name": "PdfAttachment",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfAttachment",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfAttachmentRelationship",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfAttachmentRelationship = 'Source' | 'Data' | 'Alternative' | 'Supplement' | 'Unspecified';",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfColor",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | (string & {});",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfColors",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfColors",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfDiagnostic",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfDiagnostic",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfDiagnosticCode",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfDiagnosticCode =",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfDiagnosticHandler",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfDiagnosticHandler = (diagnostic: PdfDiagnostic) => void;",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfEncryptionInfo",
+      "kind": "type",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export interface PdfEncryptionInfo",
+      "summary": "pdfnative — PDF Document Reader ================================== High-level reader that provides lazy object resolution and page access."
+    },
+    {
+      "name": "PdfEncryptionUnsupportedError",
+      "kind": "value",
+      "module": "src/parser/pdf-decrypt.ts",
+      "signature": "export class PdfEncryptionUnsupportedError extends Error",
+      "summary": "pdfnative — Standard Security Handler reader/decryptor ========================================================= Password authentication and transparent object decryption for encrypted PDFs (ISO 32000-1 §7.6 / ISO 32000-2 §7.6), closing the"
+    },
+    {
+      "name": "PdfIndirectObject",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export interface PdfIndirectObject",
+      "summary": null
+    },
+    {
+      "name": "PdfInfoItem",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfInfoItem",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfLayoutOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfLayoutOptions",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfMetadataUpdate",
+      "kind": "type",
+      "module": "src/parser/pdf-modifier.ts",
+      "signature": "export interface PdfMetadataUpdate",
+      "summary": "pdfnative — PDF Document Modifier ==================================== Modify existing PDF documents using incremental save (ISO 32000-1 §7.5.6)."
+    },
+    {
+      "name": "PdfModifier",
+      "kind": "type",
+      "module": "src/parser/pdf-modifier.ts",
+      "signature": "export interface PdfModifier",
+      "summary": null
+    },
+    {
+      "name": "PdfName",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export interface PdfName",
+      "summary": null
+    },
+    {
+      "name": "PdfParams",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfParams",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfPasswordError",
+      "kind": "value",
+      "module": "src/parser/pdf-decrypt.ts",
+      "signature": "export class PdfPasswordError extends Error",
+      "summary": "pdfnative — Standard Security Handler reader/decryptor ========================================================= Password authentication and transparent object decryption for encrypted PDFs (ISO 32000-1 §7.6 / ISO 32000-2 §7.6), closing the"
+    },
+    {
+      "name": "PdfReader",
+      "kind": "type",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export interface PdfReader",
+      "summary": null
+    },
+    {
+      "name": "PdfRef",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export interface PdfRef",
+      "summary": null
+    },
+    {
+      "name": "PdfRgbString",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfRgbString = `${number} ${number} ${number}`;",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfRgbTuple",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfRgbTuple = readonly [r: number, g: number, b: number];",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfRow",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfRow",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PdfSignOptions",
+      "kind": "type",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export interface PdfSignOptions extends SigDictMetadata",
+      "summary": null
+    },
+    {
+      "name": "PdfSignTimestampOptions",
+      "kind": "type",
+      "module": "src/core/pdf-sign-timestamp.ts",
+      "signature": "export interface PdfSignTimestampOptions extends PdfSignOptions",
+      "summary": "pdfnative — Timestamped PDF Signing (PAdES B-T, v1.7.0) ======================================================== `signPdfBytesWithTimestamp` signs exactly like signPdfBytes and then obtains an RFC 3161 timestamp over the CMS signature value"
+    },
+    {
+      "name": "PdfSignatureInfo",
+      "kind": "type",
+      "module": "src/core/pdf-sig-utils.ts",
+      "signature": "export interface PdfSignatureInfo",
+      "summary": "pdfnative — Signature Enumeration Utilities (v1.7.0) ===================================================== Read-only inspection of the signature fields in a PDF: which signatures exist, their `/SubFilter`, their `/ByteRange`, the raw `/Cont"
+    },
+    {
+      "name": "PdfSourceInput",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export type PdfSourceInput = Uint8Array | { readonly bytes: Uint8Array; readonly password?: string };",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "PdfStream",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export interface PdfStream",
+      "summary": null
+    },
+    {
+      "name": "PdfToken",
+      "kind": "type",
+      "module": "src/parser/pdf-tokenizer.ts",
+      "signature": "export interface PdfToken",
+      "summary": null
+    },
+    {
+      "name": "PdfTokenizer",
+      "kind": "type",
+      "module": "src/parser/pdf-tokenizer.ts",
+      "signature": "export interface PdfTokenizer",
+      "summary": null
+    },
+    {
+      "name": "PdfUAValidationResult",
+      "kind": "type",
+      "module": "src/parser/pdf-ua-validator.ts",
+      "signature": "export interface PdfUAValidationResult",
+      "summary": "pdfnative — PDF/UA structural validator (ISO 14289-1) ====================================================== A lightweight, read-only conformance checker for tagged-PDF (PDF/UA) structural prerequisites."
+    },
+    {
+      "name": "PdfValue",
+      "kind": "type",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export type PdfValue =",
+      "summary": "pdfnative — PDF Object Parser ================================ Parses PDF indirect objects from a tokenized stream (ISO 32000-1 §7.3)."
+    },
+    {
+      "name": "PrintOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PrintOptions",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "PrinterMarksOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PrinterMarksOptions",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "QRErrorLevel",
+      "kind": "type",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export type QRErrorLevel = 'L' | 'M' | 'Q' | 'H';",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "ROW_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const ROW_H = 12;",
+      "summary": null
+    },
+    {
+      "name": "RadialGradientPaint",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface RadialGradientPaint",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "RadioGroupContext",
+      "kind": "type",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export interface RadioGroupContext",
+      "summary": "pdfnative — AcroForm Interactive Fields (ISO 32000-1 §12.7) ============================================================= Builds AcroForm dictionaries, field widgets, and appearance streams."
+    },
+    {
+      "name": "ResolvedPrintBoxes",
+      "kind": "type",
+      "module": "src/core/pdf-print.ts",
+      "signature": "export interface ResolvedPrintBoxes",
+      "summary": "pdfnative — Print Production (v1.7.0) ====================================== Professional-printing page geometry and decoration: - Page boxes — `/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox` (ISO 32000-1 §14.11.2) plus large-format `/UserUn"
+    },
+    {
+      "name": "RevocationProvider",
+      "kind": "type",
+      "module": "src/crypto/revocation-provider.ts",
+      "signature": "export interface RevocationProvider",
+      "summary": "pdfnative — Pluggable OCSP/CRL Revocation Provider =================================================== pdfnative builds OCSP requests and parses OCSP/CRL responses itself (ocsp.ts / crl.ts) but **never touches the network**: the HTTP round-"
+    },
+    {
+      "name": "RsaDigest",
+      "kind": "type",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export type RsaDigest = 'sha256' | 'sha384' | 'sha512';",
+      "summary": "pdfnative — RSA PKCS#1 v1.5 Sign / Verify ============================================ Pure BigInt implementation of RSA signature operations."
+    },
+    {
+      "name": "RsaPrivateKey",
+      "kind": "type",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export interface RsaPrivateKey",
+      "summary": "pdfnative — RSA PKCS#1 v1.5 Sign / Verify ============================================ Pure BigInt implementation of RSA signature operations."
+    },
+    {
+      "name": "RsaPublicKey",
+      "kind": "type",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export interface RsaPublicKey",
+      "summary": "pdfnative — RSA PKCS#1 v1.5 Sign / Verify ============================================ Pure BigInt implementation of RSA signature operations."
+    },
+    {
+      "name": "ShapeAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface ShapeAnnotation extends AnnotationBase",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "ShapedGlyph",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ShapedGlyph",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "SigDictMetadata",
+      "kind": "type",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export interface SigDictMetadata",
+      "summary": "pdfnative — PDF Digital Signature Support ========================================== ISO 32000-1 §12.8 compliant PDF signing."
+    },
+    {
+      "name": "SignatureAlgorithm",
+      "kind": "type",
+      "module": "src/crypto/cms.ts",
+      "signature": "export type SignatureAlgorithm = 'rsa-sha256' | 'ecdsa-sha256' | 'rsa-sha384' | 'rsa-sha512';",
+      "summary": null
+    },
+    {
+      "name": "SolidPaint",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface SolidPaint",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "SpacerBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface SpacerBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "SplitPdfStream",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export interface SplitPdfStream",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "StreamMergeOptions",
+      "kind": "type",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export interface StreamMergeOptions extends MergeOptions",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "StreamOptions",
+      "kind": "type",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export interface StreamOptions",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "StreamToFileResult",
+      "kind": "type",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export interface StreamToFileResult",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "SvgBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface SvgBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "SvgRenderOptions",
+      "kind": "type",
+      "module": "src/core/pdf-svg.ts",
+      "signature": "export interface SvgRenderOptions",
+      "summary": "pdfnative — SVG Path Rendering ================================ Parses SVG path data and basic SVG elements, renders them as PDF path operators using coordinate matrix transformation."
+    },
+    {
+      "name": "SvgSegment",
+      "kind": "type",
+      "module": "src/core/pdf-svg.ts",
+      "signature": "export interface SvgSegment",
+      "summary": "pdfnative — SVG Path Rendering ================================ Parses SVG path data and basic SVG elements, renders them as PDF path operators using coordinate matrix transformation."
+    },
+    {
+      "name": "TH_H",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const TH_H = 15;",
+      "summary": null
+    },
+    {
+      "name": "TITLE_LN",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export const TITLE_LN = 22;",
+      "summary": null
+    },
+    {
+      "name": "TableBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface TableBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "TextAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface TextAnnotation extends AnnotationBase",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "TextMarkupAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface TextMarkupAnnotation extends AnnotationBase",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "TextRun",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface TextRun",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "TimestampProvider",
+      "kind": "type",
+      "module": "src/crypto/timestamp-provider.ts",
+      "signature": "export interface TimestampProvider",
+      "summary": "pdfnative — Pluggable RFC 3161 Timestamp Provider ================================================== pdfnative builds and parses RFC 3161 structures itself (rfc3161.ts) but **never touches the network**: the single HTTP round-trip to a Time"
+    },
+    {
+      "name": "TimestampRequestOptions",
+      "kind": "type",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export interface TimestampRequestOptions",
+      "summary": "pdfnative — RFC 3161 Time-Stamp Protocol Structures ==================================================== Builds TimeStampReq and parses TimeStampResp / TimeStampToken DER for PAdES B-T signature timestamps and ISO 32000-2 document timestamp"
+    },
+    {
+      "name": "TimestampResponse",
+      "kind": "type",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export interface TimestampResponse",
+      "summary": "pdfnative — RFC 3161 Time-Stamp Protocol Structures ==================================================== Builds TimeStampReq and parses TimeStampResp / TimeStampToken DER for PAdES B-T signature timestamps and ISO 32000-2 document timestamp"
+    },
+    {
+      "name": "TocBlock",
+      "kind": "type",
+      "module": "src/types/pdf-document-types.ts",
+      "signature": "export interface TocBlock",
+      "summary": "pdfnative — Document Content Model Types ========================================== Types for the free-form document builder API (Phase 4)."
+    },
+    {
+      "name": "TokenType",
+      "kind": "type",
+      "module": "src/parser/pdf-tokenizer.ts",
+      "signature": "export type TokenType =",
+      "summary": null
+    },
+    {
+      "name": "TstInfo",
+      "kind": "type",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export interface TstInfo",
+      "summary": "pdfnative — RFC 3161 Time-Stamp Protocol Structures ==================================================== Builds TimeStampReq and parses TimeStampResp / TimeStampToken DER for PAdES B-T signature timestamps and ISO 32000-2 document timestamp"
+    },
+    {
+      "name": "UseCategory",
+      "kind": "type",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export type UseCategory =",
+      "summary": "pdfnative — Universal Shaping Engine (USE) lite ================================================= Cluster classification utility for Indic and related complex scripts (Devanagari, Bengali, Tamil, Gujarati, Gurmukhi, Telugu, Kannada, Malayal"
+    },
+    {
+      "name": "UseClassifiedCp",
+      "kind": "type",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export interface UseClassifiedCp",
+      "summary": "pdfnative — Universal Shaping Engine (USE) lite ================================================= Cluster classification utility for Indic and related complex scripts (Devanagari, Bengali, Tamil, Gujarati, Gurmukhi, Telugu, Kannada, Malayal"
+    },
+    {
+      "name": "UseCluster",
+      "kind": "type",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export interface UseCluster",
+      "summary": "pdfnative — Universal Shaping Engine (USE) lite ================================================= Cluster classification utility for Indic and related complex scripts (Devanagari, Bengali, Tamil, Gujarati, Gurmukhi, Telugu, Kannada, Malayal"
+    },
+    {
+      "name": "ViewerPreferences",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ViewerPreferences",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "WORKER_THRESHOLD",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export const WORKER_THRESHOLD = 500;",
+      "summary": "pdfnative — Worker API ======================== High-level API for generating PDFs using Web Workers or main thread fallback."
+    },
+    {
+      "name": "WORKER_TIMEOUT_MS",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export const WORKER_TIMEOUT_MS = 60000;",
+      "summary": "pdfnative — Worker API ======================== High-level API for generating PDFs using Web Workers or main thread fallback."
+    },
+    {
+      "name": "WatermarkImage",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WatermarkImage",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "WatermarkOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WatermarkOptions",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "WatermarkState",
+      "kind": "type",
+      "module": "src/core/pdf-watermark.ts",
+      "signature": "export interface WatermarkState",
+      "summary": "pdfnative — PDF Watermark Rendering ====================================== Builds PDF content operators for text and image watermarks."
+    },
+    {
+      "name": "WatermarkText",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WatermarkText",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "WorkerGenerationOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WorkerGenerationOptions",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "WorkerInputMessage",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface WorkerInputMessage",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "WorkerOutputMessage",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type WorkerOutputMessage =",
+      "summary": "pdfnative — Public Type Definitions ==================================== All types exported by the library for consumers."
+    },
+    {
+      "name": "X509Certificate",
+      "kind": "type",
+      "module": "src/crypto/x509.ts",
+      "signature": "export interface X509Certificate",
+      "summary": null
+    },
+    {
+      "name": "X509Name",
+      "kind": "type",
+      "module": "src/crypto/x509.ts",
+      "signature": "export interface X509Name",
+      "summary": null
+    },
+    {
+      "name": "XrefEntry",
+      "kind": "type",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export interface XrefEntry",
+      "summary": null
+    },
+    {
+      "name": "XrefTable",
+      "kind": "type",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export interface XrefTable",
+      "summary": null
+    },
+    {
+      "name": "addDocumentTimestamp",
+      "kind": "value",
+      "module": "src/core/pdf-doc-timestamp.ts",
+      "signature": "export async function addDocumentTimestamp( pdfBytes: Uint8Array, options: AddDocumentTimestampOptions = {}, ): Promise<Uint8Array>",
+      "summary": "pdfnative — Document Timestamps (PAdES B-LTA, v1.7.0) ====================================================== `addDocumentTimestamp` appends a document-timestamp revision per ISO 32000-2 §12.8.5: a signature field whose dictionary is `/Type "
+    },
+    {
+      "name": "addSignaturePlaceholder",
+      "kind": "value",
+      "module": "src/core/pdf-sig-placeholder.ts",
+      "signature": "export function addSignaturePlaceholder( pdfBytes: Uint8Array, options: AddSignaturePlaceholderOptions = {}, ): Uint8Array",
+      "summary": "pdfnative — Signature Placeholder Injector ============================================ Inject an AcroForm + invisible signature widget placeholder into an existing PDF via incremental update (ISO 32000-1 §7.5.6, §12.7.4.5, §12.8)."
+    },
+    {
+      "name": "addUnsignedAttribute",
+      "kind": "value",
+      "module": "src/crypto/cms-utils.ts",
+      "signature": "export function addUnsignedAttribute(cmsDer: Uint8Array, attributeTlv: Uint8Array): Uint8Array",
+      "summary": "pdfnative — CMS SignedData Parsing & DER Surgery (RFC 5652) ============================================================ Parses CMS/PKCS#7 SignedData structures (the inverse of cms.ts) and performs the one mutation LTV workflows need: appen"
+    },
+    {
+      "name": "addValidationInfo",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export async function addValidationInfo( pdfBytes: Uint8Array, options: CollectLtvOptions = {}, ): Promise<Uint8Array>",
+      "summary": "pdfnative — Document Security Store (PAdES B-LT, v1.7.0) ========================================================= LTV enablement per ISO 32000-2 §12.8.4: collect the validation material for every signature (certificates, OCSP responses, CR"
+    },
+    {
+      "name": "applyDecodeFilter",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function applyDecodeFilter(name: string, data: Uint8Array): Uint8Array",
+      "summary": "pdfnative — PDF Stream Filter Decoders ======================================== Pure, zero-dependency decoders for the standard PDF stream filters that are not handled by inflateSync (FlateDecode)."
+    },
+    {
+      "name": "buildAcroFormDict",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function buildAcroFormDict(fieldObjNums: readonly number[], fontObjNum?: number): string",
+      "summary": "pdfnative — AcroForm Interactive Fields (ISO 32000-1 §12.7) ============================================================= Builds AcroForm dictionaries, field widgets, and appearance streams."
+    },
+    {
+      "name": "buildAnnotation",
+      "kind": "value",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export function buildAnnotation(annot: MarkupAnnotation, objNum: number): string",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "buildAnnotationBody",
+      "kind": "value",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export function buildAnnotationBody(annot: MarkupAnnotation): string",
+      "summary": "pdfnative — Markup & Drawing Annotations (ISO 32000-1 §12.5) ============================================================ Typed builders for the common non-link annotation types: text (sticky note), the text-markup family (highlight / under"
+    },
+    {
+      "name": "buildAppearanceStreamDict",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number): string",
+      "summary": "pdfnative — AcroForm Interactive Fields (ISO 32000-1 §12.7) ============================================================= Builds AcroForm dictionaries, field widgets, and appearance streams."
+    },
+    {
+      "name": "buildAttribute",
+      "kind": "value",
+      "module": "src/crypto/cms-utils.ts",
+      "signature": "export function buildAttribute(oidBytes: Uint8Array, ...values: Uint8Array[]): Uint8Array",
+      "summary": "pdfnative — CMS SignedData Parsing & DER Surgery (RFC 5652) ============================================================ Parses CMS/PKCS#7 SignedData structures (the inverse of cms.ts) and performs the one mutation LTV workflows need: appen"
+    },
+    {
+      "name": "buildCmsSignedData",
+      "kind": "value",
+      "module": "src/crypto/cms.ts",
+      "signature": "export function buildCmsSignedData(options: CmsSignOptions): Uint8Array",
+      "summary": "pdfnative — CMS SignedData Builder (RFC 5652) ============================================== Builds CMS/PKCS#7 SignedData structures for PDF digital signatures."
+    },
+    {
+      "name": "buildDocTimeStampDict",
+      "kind": "value",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export function buildDocTimeStampDict(contentsSize: number = DEFAULT_CONTENTS_SIZE): string",
+      "summary": "pdfnative — PDF Digital Signature Support ========================================== ISO 32000-1 §12.8 compliant PDF signing."
+    },
+    {
+      "name": "buildDocumentPDF",
+      "kind": "value",
+      "module": "src/core/pdf-document.ts",
+      "signature": "export function buildDocumentPDF(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): string",
+      "summary": "pdfnative — Free-form Document Builder ======================================== Generates PDF 1.4 documents from a sequence of content blocks (headings, paragraphs, lists, tables, spacers, page breaks)."
+    },
+    {
+      "name": "buildDocumentPDFBytes",
+      "kind": "value",
+      "module": "src/core/pdf-document.ts",
+      "signature": "export function buildDocumentPDFBytes(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): Uint8Array",
+      "summary": "pdfnative — Free-form Document Builder ======================================== Generates PDF 1.4 documents from a sequence of content blocks (headings, paragraphs, lists, tables, spacers, page breaks)."
+    },
+    {
+      "name": "buildDocumentPDFStream",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildDocumentPDFStream( params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>, streamOptions?: StreamOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "buildDocumentPDFStreamPageByPage",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildDocumentPDFStreamPageByPage( params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>, ): AsyncGenerator<Uint8Array>",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "buildDocumentPDFStreamTrue",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildDocumentPDFStreamTrue( params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>, streamOptions?: StreamOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "buildEmbeddedFiles",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export function buildEmbeddedFiles(attachments: readonly PdfAttachment[], startObjNum: number): EmbeddedFilesResult",
+      "summary": "pdfnative — Tagged PDF & PDF/A Support ======================================== Structure tree, marked content operators, XMP metadata, and OutputIntent for PDF/UA accessibility and PDF/A archival compliance."
+    },
+    {
+      "name": "buildFormWidget",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function buildFormWidget(field: FormField, apObjNum: number, radioCtx?: RadioGroupContext): FormWidgetResult",
+      "summary": "pdfnative — AcroForm Interactive Fields (ISO 32000-1 §12.7) ============================================================= Builds AcroForm dictionaries, field widgets, and appearance streams."
+    },
+    {
+      "name": "buildImageOperators",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function buildImageOperators( imgRef: string, x: number, y: number, width: number, height: number, ): string",
+      "summary": "pdfnative — PDF Image Support =============================== Parse JPEG and PNG images, build PDF XObject streams."
+    },
+    {
+      "name": "buildImageXObject",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function buildImageXObject(img: ParsedImage, smaskObjNum?: number): string",
+      "summary": "pdfnative — PDF Image Support =============================== Parse JPEG and PNG images, build PDF XObject streams."
+    },
+    {
+      "name": "buildInternalLinkAnnotation",
+      "kind": "value",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export function buildInternalLinkAnnotation(annot: InternalLink, pageObjNum: number, objNum: number): string",
+      "summary": "pdfnative — PDF Link Annotations ================================== Build PDF link annotation objects for external URLs and internal page links."
+    },
+    {
+      "name": "buildLinkAnnotation",
+      "kind": "value",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export function buildLinkAnnotation(annot: LinkAnnotation, objNum: number): string",
+      "summary": "pdfnative — PDF Link Annotations ================================== Build PDF link annotation objects for external URLs and internal page links."
+    },
+    {
+      "name": "buildOcspRequest",
+      "kind": "value",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export function buildOcspRequest(cert: X509Certificate, issuer: X509Certificate, options?: OcspRequestOptions): Uint8Array",
+      "summary": "pdfnative — OCSP Request Builder / Response Parser (RFC 6960) ============================================================== Builds unsigned OCSPRequest DER and parses OCSPResponse / BasicOCSPResponse for LTV revocation data collection (PAd"
+    },
+    {
+      "name": "buildPDF",
+      "kind": "value",
+      "module": "src/core/pdf-builder.ts",
+      "signature": "export function buildPDF(params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): string",
+      "summary": "pdfnative — PDF Document Builder =================================== Main entry point: builds a complete PDF 1.4 document as a byte string."
+    },
+    {
+      "name": "buildPDFBytes",
+      "kind": "value",
+      "module": "src/core/pdf-builder.ts",
+      "signature": "export function buildPDFBytes(params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): Uint8Array",
+      "summary": "pdfnative — PDF Document Builder =================================== Main entry point: builds a complete PDF 1.4 document as a byte string."
+    },
+    {
+      "name": "buildPDFStream",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildPDFStream( params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>, streamOptions?: StreamOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "buildPDFStreamPageByPage",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildPDFStreamPageByPage( params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>, ): AsyncGenerator<Uint8Array>",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "buildPDFStreamTrue",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function* buildPDFStreamTrue( params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>, streamOptions?: StreamOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "buildPrinterMarksOps",
+      "kind": "value",
+      "module": "src/core/pdf-print.ts",
+      "signature": "export function buildPrinterMarksOps( trim: PageBox, pgW: number, pgH: number, marks: boolean | PrinterMarksOptions, ): string",
+      "summary": "pdfnative — Print Production (v1.7.0) ====================================== Professional-printing page geometry and decoration: - Page boxes — `/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox` (ISO 32000-1 §14.11.2) plus large-format `/UserUn"
+    },
+    {
+      "name": "buildRadioGroupParent",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function buildRadioGroupParent( name: string, selectedValue: string, childObjNums: readonly number[], readOnly: boolean, required: boolean, ): string",
+      "summary": "pdfnative — AcroForm Interactive Fields (ISO 32000-1 §12.7) ============================================================= Builds AcroForm dictionaries, field widgets, and appearance streams."
+    },
+    {
+      "name": "buildSMaskXObject",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function buildSMaskXObject(smaskData: string, width: number, height: number): string",
+      "summary": "pdfnative — PDF Image Support =============================== Parse JPEG and PNG images, build PDF XObject streams."
+    },
+    {
+      "name": "buildSigDict",
+      "kind": "value",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export function buildSigDict(options: SigDictMetadata, contentsSize: number = DEFAULT_CONTENTS_SIZE): string",
+      "summary": "pdfnative — PDF Digital Signature Support ========================================== ISO 32000-1 §12.8 compliant PDF signing."
+    },
+    {
+      "name": "buildTimestampRequest",
+      "kind": "value",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export function buildTimestampRequest(messageImprint: Uint8Array, options?: TimestampRequestOptions): Uint8Array",
+      "summary": "pdfnative — RFC 3161 Time-Stamp Protocol Structures ==================================================== Builds TimeStampReq and parses TimeStampResp / TimeStampToken DER for PAdES B-T signature timestamps and ISO 32000-2 document timestamp"
+    },
+    {
+      "name": "buildWatermarkState",
+      "kind": "value",
+      "module": "src/core/pdf-watermark.ts",
+      "signature": "export function buildWatermarkState( watermark: WatermarkOptions, pgW: number, pgH: number, enc: EncodingContext, ): WatermarkState",
+      "summary": "pdfnative — PDF Watermark Rendering ====================================== Builds PDF content operators for text and image watermarks."
+    },
+    {
+      "name": "certHasEku",
+      "kind": "value",
+      "module": "src/crypto/x509.ts",
+      "signature": "export function certHasEku(cert: X509Certificate, oidBytes: Uint8Array): boolean",
+      "summary": "pdfnative — X.509 Certificate Parser ===================================== Parses X.509 v3 certificates (RFC 5280) from DER-encoded bytes."
+    },
+    {
+      "name": "chunkBinaryString",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export function* chunkBinaryString(str: string, chunkSize: number): Generator<Uint8Array>",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "classifyClusters",
+      "kind": "value",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export function classifyClusters(codePoints: readonly number[]): UseCluster[]",
+      "summary": "pdfnative — Universal Shaping Engine (USE) lite ================================================= Cluster classification utility for Indic and related complex scripts (Devanagari, Bengali, Tamil, Gujarati, Gurmukhi, Telugu, Kannada, Malayal"
+    },
+    {
+      "name": "classifyUseCategory",
+      "kind": "value",
+      "module": "src/shaping/use-lite.ts",
+      "signature": "export function classifyUseCategory(cp: number): UseCategory",
+      "summary": "pdfnative — Universal Shaping Engine (USE) lite ================================================= Cluster classification utility for Indic and related complex scripts (Devanagari, Bengali, Tamil, Gujarati, Gurmukhi, Telugu, Kannada, Malayal"
+    },
+    {
+      "name": "clearFontCache",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function clearFontCache(): void",
+      "summary": "pdfnative — Font Loader ========================= Configurable font registry and lazy-loading."
+    },
+    {
+      "name": "collectValidationInfo",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export async function collectValidationInfo( pdfBytes: Uint8Array, options: CollectLtvOptions = {}, ): Promise<LtvData>",
+      "summary": "pdfnative — Document Security Store (PAdES B-LT, v1.7.0) ========================================================= LTV enablement per ISO 32000-2 §12.8.4: collect the validation material for every signature (certificates, OCSP responses, CR"
+    },
+    {
+      "name": "computeColumnPositions",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export function computeColumnPositions( columns: readonly ColumnDef[], marginLeft: number, contentWidth: number ):",
+      "summary": "pdfnative — PDF Layout Constants ================================== A4 page dimensions and default layout settings."
+    },
+    {
+      "name": "concatChunks",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export function concatChunks(chunks: readonly Uint8Array[]): Uint8Array",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "containsArabic",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsArabic(text: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsBengali",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsBengali(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsDevanagari",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsDevanagari(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsEthiopic",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsEthiopic(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsHebrew",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsHebrew(text: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsKhmer",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsKhmer(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsMath",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsMath(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsMyanmar",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsMyanmar(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsRTL",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function containsRTL(text: string): boolean",
+      "summary": "pdfnative — Simplified Unicode Bidirectional Algorithm ======================================================= Pure JS implementation of a subset of UAX #9 (Unicode Bidirectional Algorithm)."
+    },
+    {
+      "name": "containsSinhala",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsSinhala(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsTamil",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTamil(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsTelugu",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTelugu(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsThai",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsThai(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "containsTibetan",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTibetan(str: string): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "contoursToPath",
+      "kind": "value",
+      "module": "src/core/pdf-color-glyph.ts",
+      "signature": "export function contoursToPath(contours: Contour[], m: Mat = ID): string",
+      "summary": "pdfnative — Colour Glyph Renderer (COLR/CPAL → native PDF) ========================================================== Renders a resolved ColorGlyph as a native PDF Form XObject: each layer's base-glyph outline is emitted as a vector path an"
+    },
+    {
+      "name": "createEncodingContext",
+      "kind": "value",
+      "module": "src/core/encoding-context.ts",
+      "signature": "export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false): EncodingContext",
+      "summary": "pdfnative — Encoding Context Factory ====================================== Creates encoding contexts that bridge font encoding (WinAnsi/CIDFont) with text shaping (Thai, Arabic, BiDi, multi-font fallback)."
+    },
+    {
+      "name": "createModifier",
+      "kind": "value",
+      "module": "src/parser/pdf-modifier.ts",
+      "signature": "export function createModifier(reader: PdfReader): PdfModifier",
+      "summary": "pdfnative — PDF Document Modifier ==================================== Modify existing PDF documents using incremental save (ISO 32000-1 §7.5.6)."
+    },
+    {
+      "name": "createPDF",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export async function createPDF( pdfParams: PdfParams, options?: { workerUrl?: string | URL; threshold?: number; timeout?: number; onProgress?: (percent: number) => void",
+      "summary": "pdfnative — Worker API ======================== High-level API for generating PDFs using Web Workers or main thread fallback."
+    },
+    {
+      "name": "createTokenizer",
+      "kind": "value",
+      "module": "src/parser/pdf-tokenizer.ts",
+      "signature": "export function createTokenizer(buf: Uint8Array, startPos: number = 0): PdfTokenizer",
+      "summary": "pdfnative — PDF Token Scanner =============================== Scans PDF byte stream into typed tokens (ISO 32000-1 §7.2)."
+    },
+    {
+      "name": "decodeASCII85",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function decodeASCII85(data: Uint8Array): Uint8Array",
+      "summary": "pdfnative — PDF Stream Filter Decoders ======================================== Pure, zero-dependency decoders for the standard PDF stream filters that are not handled by inflateSync (FlateDecode)."
+    },
+    {
+      "name": "decodeASCIIHex",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function decodeASCIIHex(data: Uint8Array): Uint8Array",
+      "summary": "pdfnative — PDF Stream Filter Decoders ======================================== Pure, zero-dependency decoders for the standard PDF stream filters that are not handled by inflateSync (FlateDecode)."
+    },
+    {
+      "name": "decodeEcPublicKey",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function decodeEcPublicKey(bytes: Uint8Array): EcPublicKey",
+      "summary": "pdfnative — ECDSA P-256 Sign / Verify ====================================== Pure BigInt implementation of ECDSA on the NIST P-256 curve (secp256r1)."
+    },
+    {
+      "name": "decodeLZW",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function decodeLZW(data: Uint8Array): Uint8Array",
+      "summary": "pdfnative — PDF Stream Filter Decoders ======================================== Pure, zero-dependency decoders for the standard PDF stream filters that are not handled by inflateSync (FlateDecode)."
+    },
+    {
+      "name": "decodeRunLength",
+      "kind": "value",
+      "module": "src/parser/pdf-decode-filters.ts",
+      "signature": "export function decodeRunLength(data: Uint8Array): Uint8Array",
+      "summary": "pdfnative — PDF Stream Filter Decoders ======================================== Pure, zero-dependency decoders for the standard PDF stream filters that are not handled by inflateSync (FlateDecode)."
+    },
+    {
+      "name": "defaultFieldHeight",
+      "kind": "value",
+      "module": "src/core/pdf-form.ts",
+      "signature": "export function defaultFieldHeight(fieldType: FormFieldType): number",
+      "summary": "pdfnative — AcroForm Interactive Fields (ISO 32000-1 §12.7) ============================================================= Builds AcroForm dictionaries, field widgets, and appearance streams."
+    },
+    {
+      "name": "derBitString",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derBitString(data: Uint8Array): Uint8Array",
+      "summary": "pdfnative — ASN.1 DER Encoder / Decoder ======================================== Minimal DER (Distinguished Encoding Rules) codec for X.509, CMS, and PKCS."
+    },
+    {
+      "name": "derDecode",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derDecode(buf: Uint8Array): Asn1Node",
+      "summary": "pdfnative — ASN.1 DER Encoder / Decoder ======================================== Minimal DER (Distinguished Encoding Rules) codec for X.509, CMS, and PKCS."
+    },
+    {
+      "name": "derGeneralizedTime",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derGeneralizedTime(date: Date): Uint8Array",
+      "summary": "pdfnative — ASN.1 DER Encoder / Decoder ======================================== Minimal DER (Distinguished Encoding Rules) codec for X.509, CMS, and PKCS."
+    },
+    {
+      "name": "derInteger",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derInteger(value: bigint | Uint8Array): Uint8Array",
+      "summary": "pdfnative — ASN.1 DER Encoder / Decoder ======================================== Minimal DER (Distinguished Encoding Rules) codec for X.509, CMS, and PKCS."
+    },
+    {
+      "name": "derOctetString",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derOctetString(data: Uint8Array): Uint8Array",
+      "summary": "pdfnative — ASN.1 DER Encoder / Decoder ======================================== Minimal DER (Distinguished Encoding Rules) codec for X.509, CMS, and PKCS."
+    },
+    {
+      "name": "derOid",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derOid(oidBytes: Uint8Array): Uint8Array",
+      "summary": "pdfnative — ASN.1 DER Encoder / Decoder ======================================== Minimal DER (Distinguished Encoding Rules) codec for X.509, CMS, and PKCS."
+    },
+    {
+      "name": "derSequence",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derSequence(...children: Uint8Array[]): Uint8Array",
+      "summary": "pdfnative — ASN.1 DER Encoder / Decoder ======================================== Minimal DER (Distinguished Encoding Rules) codec for X.509, CMS, and PKCS."
+    },
+    {
+      "name": "derSetOf",
+      "kind": "value",
+      "module": "src/crypto/asn1.ts",
+      "signature": "export function derSetOf(...children: Uint8Array[]): Uint8Array",
+      "summary": "pdfnative — ASN.1 DER Encoder / Decoder ======================================== Minimal DER (Distinguished Encoding Rules) codec for X.509, CMS, and PKCS."
+    },
+    {
+      "name": "detectCharLang",
+      "kind": "value",
+      "module": "src/shaping/script-detect.ts",
+      "signature": "export function detectCharLang(cp: number): string | null",
+      "summary": "pdfnative — Script Detection ============================= Detects Unicode script ranges in text to determine which fonts are needed."
+    },
+    {
+      "name": "detectFallbackLangs",
+      "kind": "value",
+      "module": "src/shaping/script-detect.ts",
+      "signature": "export function detectFallbackLangs(texts: string[], primaryLang: string): Set<string>",
+      "summary": "pdfnative — Script Detection ============================= Detects Unicode script ranges in text to determine which fonts are needed."
+    },
+    {
+      "name": "detectImageFormat",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function detectImageFormat(bytes: Uint8Array): 'jpeg' | 'png' | null",
+      "summary": "pdfnative — PDF Image Support =============================== Parse JPEG and PNG images, build PDF XObject streams."
+    },
+    {
+      "name": "dictGet",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGet(dict: PdfDict, key: string): PdfValue | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetArray",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetArray(dict: PdfDict, key: string): PdfArray | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetDict",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetDict(dict: PdfDict, key: string): PdfDict | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetName",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetName(dict: PdfDict, key: string): string | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetNum",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetNum(dict: PdfDict, key: string): number | undefined",
+      "summary": null
+    },
+    {
+      "name": "dictGetRef",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function dictGetRef(dict: PdfDict, key: string): PdfRef | undefined",
+      "summary": null
+    },
+    {
+      "name": "downloadBlob",
+      "kind": "value",
+      "module": "src/core/pdf-stream.ts",
+      "signature": "export function downloadBlob(bytes: Uint8Array, filename: string): void",
+      "summary": "pdfnative — PDF Stream Utilities ================================== Binary conversion and PDF byte-level helpers."
+    },
+    {
+      "name": "ean13CheckDigit",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function ean13CheckDigit(digits12: string): number",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "ecPublicKeyFromPrivate",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecPublicKeyFromPrivate(privateKey: EcPrivateKey): EcPublicKey",
+      "summary": "pdfnative — ECDSA P-256 Sign / Verify ====================================== Pure BigInt implementation of ECDSA on the NIST P-256 curve (secp256r1)."
+    },
+    {
+      "name": "ecdsaSign",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecdsaSign(message: Uint8Array, privateKey: EcPrivateKey): { r: bigint; s: bigint }",
+      "summary": "pdfnative — ECDSA P-256 Sign / Verify ====================================== Pure BigInt implementation of ECDSA on the NIST P-256 curve (secp256r1)."
+    },
+    {
+      "name": "ecdsaVerify",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecdsaVerify(message: Uint8Array, r: bigint, s: bigint, publicKey: EcPublicKey): boolean",
+      "summary": "pdfnative — ECDSA P-256 Sign / Verify ====================================== Pure BigInt implementation of ECDSA on the NIST P-256 curve (secp256r1)."
+    },
+    {
+      "name": "embedValidationInfo",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export function embedValidationInfo(pdfBytes: Uint8Array, data: LtvData): Uint8Array",
+      "summary": "pdfnative — Document Security Store (PAdES B-LT, v1.7.0) ========================================================= LTV enablement per ISO 32000-2 §12.8.4: collect the validation material for every signature (certificates, OCSP responses, CR"
+    },
+    {
+      "name": "encodeCode128",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function encodeCode128(data: string): number[]",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "encodeEcPublicKey",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function encodeEcPublicKey(key: EcPublicKey): Uint8Array",
+      "summary": "pdfnative — ECDSA P-256 Sign / Verify ====================================== Pure BigInt implementation of ECDSA on the NIST P-256 curve (secp256r1)."
+    },
+    {
+      "name": "encodePDF417",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function encodePDF417(data: string, ecLevel: number = 2): { codewords: number[]; rows: number; cols: number }",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "encodePdfTextString",
+      "kind": "value",
+      "module": "src/core/pdf-text.ts",
+      "signature": "export function encodePdfTextString(str: string): string",
+      "summary": "pdfnative — PDF Text Primitives ================================= Low-level PDF content stream operators for text rendering."
+    },
+    {
+      "name": "estimateChartHeight",
+      "kind": "value",
+      "module": "src/core/pdf-chart.ts",
+      "signature": "export function estimateChartHeight(block: ChartBlock): number",
+      "summary": "pdfnative — Native vector charts (v1.6.0, extended v1.7.0) ============================================ Renders ChartBlocks as pure PDF path operators — rectangles, line segments and cubic-Bézier arcs — with zero dependencies and no rasteri"
+    },
+    {
+      "name": "estimateCmsSize",
+      "kind": "value",
+      "module": "src/crypto/cms.ts",
+      "signature": "export function estimateCmsSize(certSizes: readonly number[], algorithm: SignatureAlgorithm): number",
+      "summary": "pdfnative — CMS SignedData Builder (RFC 5652) ============================================== Builds CMS/PKCS#7 SignedData structures for PDF digital signatures."
+    },
+    {
+      "name": "estimateContentsSize",
+      "kind": "value",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export function estimateContentsSize( certSizes: readonly number[], algorithm: SignatureAlgorithm = 'rsa-sha256', options?: { readonly timestamp?: boolean }, ): number",
+      "summary": "pdfnative — PDF Digital Signature Support ========================================== ISO 32000-1 §12.8 compliant PDF signing."
+    },
+    {
+      "name": "extractGlyphContours",
+      "kind": "value",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export function extractGlyphContours(font: GlyfFont, gid: number, depth = 0): Contour[]",
+      "summary": "pdfnative — TrueType `glyf` Outline Extractor ============================================== Pure-JS reader that turns a TrueType glyph outline into ordered contours of quadratic on/off-curve points."
+    },
+    {
+      "name": "extractPages",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export function extractPages( src: PdfSourceInput, pageIndices: readonly number[], opts?: MergeOptions, ): Uint8Array",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "extractText",
+      "kind": "value",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export function extractText(bytes: Uint8Array, options?: ExtractTextOptions): ExtractedPageText[]",
+      "summary": "pdfnative — PDF Text Extraction ================================= Decodes page content streams (ISO 32000-1 §9) into per-page Unicode text with optional positioned runs."
+    },
+    {
+      "name": "fillForm",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export function fillForm( pdfBytes: Uint8Array, values: Record<string, FormFillValue>, opts?: FillFormOptions, ): Uint8Array",
+      "summary": "pdfnative — AcroForm fill & flatten (ISO 32000-1 §12.7) ========================================================== Read, fill, and flatten the interactive form fields of an **existing** PDF (whether authored by pdfnative or a third party), "
+    },
+    {
+      "name": "findStartxref",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export function findStartxref(buf: Uint8Array): number",
+      "summary": "pdfnative — PDF Cross-Reference Table Parser =============================================== Parses traditional xref tables and xref streams (ISO 32000-1 §7.5)."
+    },
+    {
+      "name": "flattenForm",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export function flattenForm(pdfBytes: Uint8Array, opts?: FlattenFormOptions): Uint8Array",
+      "summary": "pdfnative — AcroForm fill & flatten (ISO 32000-1 §12.7) ========================================================== Read, fill, and flatten the interactive form fields of an **existing** PDF (whether authored by pdfnative or a third party), "
+    },
+    {
+      "name": "generateDataMatrix",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function generateDataMatrix(data: string): boolean[][]",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "generatePDFInWorker",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export function generatePDFInWorker( workerUrl: string | URL, pdfParams: PdfParams, options?: WorkerGenerationOptions ): Promise<Uint8Array>",
+      "summary": "pdfnative — Worker API ======================== High-level API for generating PDFs using Web Workers or main thread fallback."
+    },
+    {
+      "name": "generatePDFMainThread",
+      "kind": "value",
+      "module": "src/worker/worker-api.ts",
+      "signature": "export function generatePDFMainThread(pdfParams: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): Uint8Array",
+      "summary": "pdfnative — Worker API ======================== High-level API for generating PDFs using Web Workers or main thread fallback."
+    },
+    {
+      "name": "generateQR",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function generateQR(data: string, ecLevel: QRErrorLevel = 'M'): boolean[][]",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "getCryptoProvider",
+      "kind": "value",
+      "module": "src/crypto/crypto-provider.ts",
+      "signature": "export function getCryptoProvider(): CryptoProvider | null",
+      "summary": "pdfnative — Pluggable Signature Crypto Provider ================================================ pdfnative ships its own pure-TypeScript RSA (PKCS#1 v1.5) and ECDSA (P-256) implementations so that signing works in any runtime with **zero de"
+    },
+    {
+      "name": "getMaxInflateOutputSize",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export function getMaxInflateOutputSize(): number",
+      "summary": "pdfnative — DEFLATE Decompressor (FlateDecode reader) ====================================================== Zero-dependency DEFLATE decompression for reading FlateDecode streams."
+    },
+    {
+      "name": "getRegisteredLangs",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function getRegisteredLangs(): string[]",
+      "summary": "pdfnative — Font Loader ========================= Configurable font registry and lazy-loading."
+    },
+    {
+      "name": "getRevocationProvider",
+      "kind": "value",
+      "module": "src/crypto/revocation-provider.ts",
+      "signature": "export function getRevocationProvider(): RevocationProvider | null",
+      "summary": "pdfnative — Pluggable OCSP/CRL Revocation Provider =================================================== pdfnative builds OCSP requests and parses OCSP/CRL responses itself (ocsp.ts / crl.ts) but **never touches the network**: the HTTP round-"
+    },
+    {
+      "name": "getTimestampProvider",
+      "kind": "value",
+      "module": "src/crypto/timestamp-provider.ts",
+      "signature": "export function getTimestampProvider(): TimestampProvider | null",
+      "summary": "pdfnative — Pluggable RFC 3161 Timestamp Provider ================================================== pdfnative builds and parses RFC 3161 structures itself (rfc3161.ts) but **never touches the network**: the single HTTP round-trip to a Time"
+    },
+    {
+      "name": "getTrailerRef",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export function getTrailerRef(trailer: PdfDict, key: string): PdfRef | undefined",
+      "summary": null
+    },
+    {
+      "name": "getTrailerValue",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export function getTrailerValue(trailer: PdfDict, key: string): PdfValue | undefined",
+      "summary": null
+    },
+    {
+      "name": "hasFontLoader",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function hasFontLoader(lang: string): boolean",
+      "summary": "pdfnative — Font Loader ========================= Configurable font registry and lazy-loading."
+    },
+    {
+      "name": "helveticaBoldWidth",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function helveticaBoldWidth(str: string, sz: number): number",
+      "summary": "pdfnative — WinAnsi Encoding ============================== Text encoding and font reference logic for Latin (WinAnsi/Helvetica) and Unicode (CIDFont/Identity-H) modes."
+    },
+    {
+      "name": "helveticaWidth",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function helveticaWidth(str: string, sz: number): number",
+      "summary": "pdfnative — WinAnsi Encoding ============================== Text encoding and font reference logic for Latin (WinAnsi/Helvetica) and Unicode (CIDFont/Identity-H) modes."
+    },
+    {
+      "name": "hmacSha256",
+      "kind": "value",
+      "module": "src/crypto/sha.ts",
+      "signature": "export function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array",
+      "summary": "pdfnative — SHA-1, SHA-384, SHA-512, HMAC-SHA256 ================================================= SHA-2 64-bit variants using paired 32-bit words (FIPS 180-4 §6.4)."
+    },
+    {
+      "name": "inflateSync",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export function inflateSync(data: Uint8Array): Uint8Array",
+      "summary": "pdfnative — DEFLATE Decompressor (FlateDecode reader) ====================================================== Zero-dependency DEFLATE decompression for reading FlateDecode streams."
+    },
+    {
+      "name": "initCrypto",
+      "kind": "value",
+      "module": "src/crypto/index.ts",
+      "signature": "export async function initCrypto(): Promise<void>",
+      "summary": "pdfnative — Crypto Module Index ================================= Re-exports all cryptographic primitives for PDF digital signatures."
+    },
+    {
+      "name": "initNodeCompression",
+      "kind": "value",
+      "module": "src/core/pdf-compress.ts",
+      "signature": "export async function initNodeCompression(): Promise<void>",
+      "summary": "pdfnative — PDF Stream Compression (FlateDecode) =================================================== Zero-dependency FlateDecode compression using platform-native APIs."
+    },
+    {
+      "name": "initNodeDecompression_parser",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "inspectDocumentLayout",
+      "kind": "value",
+      "module": "src/core/pdf-layout-inspect.ts",
+      "signature": "export function inspectDocumentLayout( params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>, ): LayoutInspection",
+      "summary": "pdfnative — Layout Inspection (development / tooling aid) ======================================================== `inspectDocumentLayout()` reports, without rendering a PDF, how the document builder is expected to paginate a set of blocks "
+    },
+    {
+      "name": "isArmenianCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isArmenianCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isArray",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isArray(v: PdfValue | undefined): v is PdfArray",
+      "summary": null
+    },
+    {
+      "name": "isBengaliCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isBengaliCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isCyrillicCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isCyrillicCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isDevanagariCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isDevanagariCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isDict",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isDict(v: PdfValue): v is PdfDict",
+      "summary": null
+    },
+    {
+      "name": "isEthiopicCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isEthiopicCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isGeorgianCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isGeorgianCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isKhmerCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isKhmerCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isLinkAnnotation",
+      "kind": "value",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export function isLinkAnnotation(annot: Annotation): annot is LinkAnnotation",
+      "summary": "pdfnative — PDF Link Annotations ================================== Build PDF link annotation objects for external URLs and internal page links."
+    },
+    {
+      "name": "isMathCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isMathCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isMyanmarCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isMyanmarCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isName",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isName(v: PdfValue | undefined): v is PdfName",
+      "summary": null
+    },
+    {
+      "name": "isRef",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isRef(v: PdfValue | undefined): v is PdfRef",
+      "summary": null
+    },
+    {
+      "name": "isSelfSigned",
+      "kind": "value",
+      "module": "src/crypto/x509.ts",
+      "signature": "export function isSelfSigned(cert: X509Certificate): boolean",
+      "summary": "pdfnative — X.509 Certificate Parser ===================================== Parses X.509 v3 certificates (RFC 5280) from DER-encoded bytes."
+    },
+    {
+      "name": "isSerialRevoked",
+      "kind": "value",
+      "module": "src/crypto/crl.ts",
+      "signature": "export function isSerialRevoked(crl: ParsedCrl, serial: bigint): boolean",
+      "summary": "pdfnative — CRL Parser (RFC 5280 §5) ===================================== Parses X.509 CertificateList DER for LTV revocation data collection (PAdES B-LT — /DSS /CRLs streams)."
+    },
+    {
+      "name": "isSinhalaCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isSinhalaCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isStream",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function isStream(v: PdfValue): v is PdfStream",
+      "summary": null
+    },
+    {
+      "name": "isTamilCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTamilCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isTeluguCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTeluguCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isTibetanCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTibetanCodepoint(cp: number): boolean",
+      "summary": "pdfnative — Script Registry ============================ Centralised Unicode range constants and script detection predicates."
+    },
+    {
+      "name": "isValidPdfRgb",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function isValidPdfRgb(str: string): boolean",
+      "summary": "pdfnative — Color Parsing, Validation & Normalization ======================================================= Accepts multiple color input formats and converts them into safe PDF operator strings (\"R G B\", values 0.0–1.0)."
+    },
+    {
+      "name": "listSignatures",
+      "kind": "value",
+      "module": "src/core/pdf-sig-utils.ts",
+      "signature": "export function listSignatures(pdfBytes: Uint8Array): readonly PdfSignatureInfo[]",
+      "summary": "pdfnative — Signature Enumeration Utilities (v1.7.0) ===================================================== Read-only inspection of the signature fields in a PDF: which signatures exist, their `/SubFilter`, their `/ByteRange`, the raw `/Cont"
+    },
+    {
+      "name": "loadFontData",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export async function loadFontData(lang: string): Promise<FontData | null>",
+      "summary": "pdfnative — Font Loader ========================= Configurable font registry and lazy-loading."
+    },
+    {
+      "name": "mergePdfs",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export function mergePdfs(sources: readonly PdfSourceInput[], opts?: MergeOptions): Uint8Array",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "nameValue",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function nameValue(v: PdfValue): string | undefined",
+      "summary": "pdfnative — PDF Object Parser ================================ Parses PDF indirect objects from a tokenized stream (ISO 32000-1 §7.3)."
+    },
+    {
+      "name": "needsUnicodeFont",
+      "kind": "value",
+      "module": "src/shaping/script-detect.ts",
+      "signature": "export function needsUnicodeFont(lang: string): boolean",
+      "summary": "pdfnative — Script Detection ============================= Detects Unicode script ranges in text to determine which fonts are needed."
+    },
+    {
+      "name": "niceTicks",
+      "kind": "value",
+      "module": "src/core/pdf-chart.ts",
+      "signature": "export function niceTicks(min: number, max: number, target = 5): { lo: number; hi: number; step: number }",
+      "summary": "pdfnative — Native vector charts (v1.6.0, extended v1.7.0) ============================================ Renders ChartBlocks as pure PDF path operators — rectangles, line segments and cubic-Bézier arcs — with zero dependencies and no rasteri"
+    },
+    {
+      "name": "normalizeBidiEmbeddings",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function normalizeBidiEmbeddings(text: string): string",
+      "summary": "pdfnative — Simplified Unicode Bidirectional Algorithm ======================================================= Pure JS implementation of a subset of UAX #9 (Unicode Bidirectional Algorithm)."
+    },
+    {
+      "name": "normalizeColors",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function normalizeColors(colors: PdfColors): PdfColors",
+      "summary": "pdfnative — Color Parsing, Validation & Normalization ======================================================= Accepts multiple color input formats and converts them into safe PDF operator strings (\"R G B\", values 0.0–1.0)."
+    },
+    {
+      "name": "openPdf",
+      "kind": "value",
+      "module": "src/parser/pdf-reader.ts",
+      "signature": "export function openPdf(bytes: Uint8Array, options?: OpenPdfOptions): PdfReader",
+      "summary": "pdfnative — PDF Document Reader ================================== High-level reader that provides lazy object resolution and page access."
+    },
+    {
+      "name": "parseCertificate",
+      "kind": "value",
+      "module": "src/crypto/x509.ts",
+      "signature": "export function parseCertificate(der: Uint8Array): X509Certificate",
+      "summary": "pdfnative — X.509 Certificate Parser ===================================== Parses X.509 v3 certificates (RFC 5280) from DER-encoded bytes."
+    },
+    {
+      "name": "parseCmsSignedData",
+      "kind": "value",
+      "module": "src/crypto/cms-utils.ts",
+      "signature": "export function parseCmsSignedData(der: Uint8Array): ParsedCms",
+      "summary": "pdfnative — CMS SignedData Parsing & DER Surgery (RFC 5652) ============================================================ Parses CMS/PKCS#7 SignedData structures (the inverse of cms.ts) and performs the one mutation LTV workflows need: appen"
+    },
+    {
+      "name": "parseColor",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function parseColor(input: PdfColor): string",
+      "summary": "pdfnative — Color Parsing, Validation & Normalization ======================================================= Accepts multiple color input formats and converts them into safe PDF operator strings (\"R G B\", values 0.0–1.0)."
+    },
+    {
+      "name": "parseColrCpal",
+      "kind": "value",
+      "module": "src/fonts/colr-parser.ts",
+      "signature": "export function parseColrCpal(bytes: Uint8Array): Record<number, ColorGlyph> | null",
+      "summary": "pdfnative — COLR / CPAL Colour-Font Parser =========================================== Pure-JS reader for the OpenType COLR (colour layers) and CPAL (colour palette) tables."
+    },
+    {
+      "name": "parseCpal",
+      "kind": "value",
+      "module": "src/fonts/colr-parser.ts",
+      "signature": "export function parseCpal(bytes: Uint8Array): CpalColor[] | null",
+      "summary": "pdfnative — COLR / CPAL Colour-Font Parser =========================================== Pure-JS reader for the OpenType COLR (colour layers) and CPAL (colour palette) tables."
+    },
+    {
+      "name": "parseCrl",
+      "kind": "value",
+      "module": "src/crypto/crl.ts",
+      "signature": "export function parseCrl(der: Uint8Array): ParsedCrl",
+      "summary": "pdfnative — CRL Parser (RFC 5280 §5) ===================================== Parses X.509 CertificateList DER for LTV revocation data collection (PAdES B-LT — /DSS /CRLs streams)."
+    },
+    {
+      "name": "parseGlyfFont",
+      "kind": "value",
+      "module": "src/fonts/glyf-outline.ts",
+      "signature": "export function parseGlyfFont(bytes: Uint8Array): GlyfFont | null",
+      "summary": "pdfnative — TrueType `glyf` Outline Extractor ============================================== Pure-JS reader that turns a TrueType glyph outline into ordered contours of quadratic on/off-curve points."
+    },
+    {
+      "name": "parseImage",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function parseImage(bytes: Uint8Array): ParsedImage",
+      "summary": "pdfnative — PDF Image Support =============================== Parse JPEG and PNG images, build PDF XObject streams."
+    },
+    {
+      "name": "parseIndirectObject",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function parseIndirectObject(tok: PdfTokenizer): PdfIndirectObject | null",
+      "summary": "pdfnative — PDF Object Parser ================================ Parses PDF indirect objects from a tokenized stream (ISO 32000-1 §7.3)."
+    },
+    {
+      "name": "parseJPEG",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function parseJPEG(bytes: Uint8Array): ParsedImage",
+      "summary": "pdfnative — PDF Image Support =============================== Parse JPEG and PNG images, build PDF XObject streams."
+    },
+    {
+      "name": "parseOcspResponse",
+      "kind": "value",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export function parseOcspResponse(der: Uint8Array): OcspResponse",
+      "summary": "pdfnative — OCSP Request Builder / Response Parser (RFC 6960) ============================================================== Builds unsigned OCSPRequest DER and parses OCSPResponse / BasicOCSPResponse for LTV revocation data collection (PAd"
+    },
+    {
+      "name": "parsePNG",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function parsePNG(bytes: Uint8Array): ParsedImage",
+      "summary": "pdfnative — PDF Image Support =============================== Parse JPEG and PNG images, build PDF XObject streams."
+    },
+    {
+      "name": "parseRsaPrivateKey",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function parseRsaPrivateKey(der: Uint8Array): RsaPrivateKey",
+      "summary": "pdfnative — RSA PKCS#1 v1.5 Sign / Verify ============================================ Pure BigInt implementation of RSA signature operations."
+    },
+    {
+      "name": "parseRsaPublicKey",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function parseRsaPublicKey(der: Uint8Array): RsaPublicKey",
+      "summary": "pdfnative — RSA PKCS#1 v1.5 Sign / Verify ============================================ Pure BigInt implementation of RSA signature operations."
+    },
+    {
+      "name": "parseSvgPath",
+      "kind": "value",
+      "module": "src/core/pdf-svg.ts",
+      "signature": "export function parseSvgPath(d: string): SvgSegment[]",
+      "summary": "pdfnative — SVG Path Rendering ================================ Parses SVG path data and basic SVG elements, renders them as PDF path operators using coordinate matrix transformation."
+    },
+    {
+      "name": "parseTimestampResponse",
+      "kind": "value",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export function parseTimestampResponse(der: Uint8Array): TimestampResponse",
+      "summary": "pdfnative — RFC 3161 Time-Stamp Protocol Structures ==================================================== Builds TimeStampReq and parses TimeStampResp / TimeStampToken DER for PAdES B-T signature timestamps and ISO 32000-2 document timestamp"
+    },
+    {
+      "name": "parseTimestampToken",
+      "kind": "value",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export function parseTimestampToken(tokenDer: Uint8Array): TstInfo",
+      "summary": "pdfnative — RFC 3161 Time-Stamp Protocol Structures ==================================================== Builds TimeStampReq and parses TimeStampResp / TimeStampToken DER for PAdES B-T signature timestamps and ISO 32000-2 document timestamp"
+    },
+    {
+      "name": "parseValue",
+      "kind": "value",
+      "module": "src/parser/pdf-object-parser.ts",
+      "signature": "export function parseValue(tok: PdfTokenizer, depth = 0): PdfValue",
+      "summary": "pdfnative — PDF Object Parser ================================ Parses PDF indirect objects from a tokenized stream (ISO 32000-1 §7.3)."
+    },
+    {
+      "name": "parseXrefTable",
+      "kind": "value",
+      "module": "src/parser/pdf-xref-parser.ts",
+      "signature": "export function parseXrefTable(buf: Uint8Array): XrefTable",
+      "summary": "pdfnative — PDF Cross-Reference Table Parser =============================================== Parses traditional xref tables and xref streams (ISO 32000-1 §7.5)."
+    },
+    {
+      "name": "pdfString",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function pdfString(str: string): string",
+      "summary": "pdfnative — WinAnsi Encoding ============================== Text encoding and font reference logic for Latin (WinAnsi/Helvetica) and Unicode (CIDFont/Identity-H) modes."
+    },
+    {
+      "name": "readFormFields",
+      "kind": "value",
+      "module": "src/core/pdf-form-fill.ts",
+      "signature": "export function readFormFields(pdfBytes: Uint8Array, opts?: { password?: string }): ParsedFormField[]",
+      "summary": "pdfnative — AcroForm fill & flatten (ISO 32000-1 §12.7) ========================================================== Read, fill, and flatten the interactive form fields of an **existing** PDF (whether authored by pdfnative or a third party), "
+    },
+    {
+      "name": "registerFont",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function registerFont(lang: string, loader: FontLoader): void",
+      "summary": "pdfnative — Font Loader ========================= Configurable font registry and lazy-loading."
+    },
+    {
+      "name": "registerFonts",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function registerFonts(fonts: Record<string, FontLoader>): void",
+      "summary": "pdfnative — Font Loader ========================= Configurable font registry and lazy-loading."
+    },
+    {
+      "name": "renderBarcode",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderBarcode( format: BarcodeFormat, data: string, x: number, y: number, width: number, height: number, options?: { readonly ecLevel?: QRErrorLevel; readonly pdf417ECLevel?: number }, ): string",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "renderChartBlock",
+      "kind": "value",
+      "module": "src/core/pdf-chart.ts",
+      "signature": "export function renderChartBlock( block: ChartBlock, y: number, mgL: number, cw: number, enc: EncodingContext, tagCtx?: TagContext, documentChildren?: (StructElement | MCRef)[],",
+      "summary": "pdfnative — Native vector charts (v1.6.0, extended v1.7.0) ============================================ Renders ChartBlocks as pure PDF path operators — rectangles, line segments and cubic-Bézier arcs — with zero dependencies and no rasteri"
+    },
+    {
+      "name": "renderCode128",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderCode128(data: string, x: number, y: number, width: number, height: number): string",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "renderColorGlyph",
+      "kind": "value",
+      "module": "src/core/pdf-color-glyph.ts",
+      "signature": "export function renderColorGlyph( glyph: ColorGlyph, outlines: OutlineProvider, unitsPerEm: number, ): ColorGlyphForm",
+      "summary": "pdfnative — Colour Glyph Renderer (COLR/CPAL → native PDF) ========================================================== Renders a resolved ColorGlyph as a native PDF Form XObject: each layer's base-glyph outline is emitted as a vector path an"
+    },
+    {
+      "name": "renderDataMatrix",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderDataMatrix(data: string, x: number, y: number, size: number): string",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "renderEAN13",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderEAN13(data: string, x: number, y: number, width: number, height: number): string",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "renderPDF417",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderPDF417(data: string, x: number, y: number, width: number, height: number, ecLevel: number = 2): string",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "renderQR",
+      "kind": "value",
+      "module": "src/core/pdf-barcode.ts",
+      "signature": "export function renderQR(data: string, x: number, y: number, size: number, ecLevel: QRErrorLevel = 'M'): string",
+      "summary": "pdfnative — Barcode & QR Code Generation ========================================== Pure PDF operator rendering for 1D and 2D barcodes."
+    },
+    {
+      "name": "renderSvg",
+      "kind": "value",
+      "module": "src/core/pdf-svg.ts",
+      "signature": "export function renderSvg( data: string, x: number, y: number, w: number, h: number, options?: SvgRenderOptions, enc?: EncodingContext, ): string",
+      "summary": "pdfnative — SVG Path Rendering ================================ Parses SVG path data and basic SVG elements, renders them as PDF path operators using coordinate matrix transformation."
+    },
+    {
+      "name": "resetFontRegistry",
+      "kind": "value",
+      "module": "src/fonts/font-loader.ts",
+      "signature": "export function resetFontRegistry(): void",
+      "summary": "pdfnative — Font Loader ========================= Configurable font registry and lazy-loading."
+    },
+    {
+      "name": "resolveBidiRuns",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function resolveBidiRuns(text: string): BidiRun[]",
+      "summary": "pdfnative — Simplified Unicode Bidirectional Algorithm ======================================================= Pure JS implementation of a subset of UAX #9 (Unicode Bidirectional Algorithm)."
+    },
+    {
+      "name": "resolveLayout",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export function resolveLayout(options?: Partial<PdfLayoutOptions>):",
+      "summary": "pdfnative — PDF Layout Constants ================================== A4 page dimensions and default layout settings."
+    },
+    {
+      "name": "resolvePdfAConfig",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export function resolvePdfAConfig(tagged: boolean | string | undefined): PdfAConfig",
+      "summary": "pdfnative — Tagged PDF & PDF/A Support ======================================== Structure tree, marked content operators, XMP metadata, and OutputIntent for PDF/UA accessibility and PDF/A archival compliance."
+    },
+    {
+      "name": "resolvePrintBoxes",
+      "kind": "value",
+      "module": "src/core/pdf-print.ts",
+      "signature": "export function resolvePrintBoxes(print: PrintOptions, pgW: number, pgH: number): ResolvedPrintBoxes",
+      "summary": "pdfnative — Print Production (v1.7.0) ====================================== Professional-printing page geometry and decoration: - Page boxes — `/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox` (ISO 32000-1 §14.11.2) plus large-format `/UserUn"
+    },
+    {
+      "name": "resolveTemplate",
+      "kind": "value",
+      "module": "src/core/pdf-layout.ts",
+      "signature": "export function resolveTemplate( tpl: string | undefined, page: number, pages: number, title: string, date: string, ): string",
+      "summary": "pdfnative — PDF Layout Constants ================================== A4 page dimensions and default layout settings."
+    },
+    {
+      "name": "rsaSign",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function rsaSign(message: Uint8Array, privateKey: RsaPrivateKey, digest: RsaDigest = 'sha256'): Uint8Array",
+      "summary": "pdfnative — RSA PKCS#1 v1.5 Sign / Verify ============================================ Pure BigInt implementation of RSA signature operations."
+    },
+    {
+      "name": "rsaSignHash",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function rsaSignHash(hash: Uint8Array, privateKey: RsaPrivateKey, digest: RsaDigest = 'sha256'): Uint8Array",
+      "summary": "pdfnative — RSA PKCS#1 v1.5 Sign / Verify ============================================ Pure BigInt implementation of RSA signature operations."
+    },
+    {
+      "name": "rsaVerify",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function rsaVerify(message: Uint8Array, signature: Uint8Array, publicKey: RsaPublicKey, digest: RsaDigest = 'sha256'): boolean",
+      "summary": "pdfnative — RSA PKCS#1 v1.5 Sign / Verify ============================================ Pure BigInt implementation of RSA signature operations."
+    },
+    {
+      "name": "rsaVerifyHash",
+      "kind": "value",
+      "module": "src/crypto/rsa.ts",
+      "signature": "export function rsaVerifyHash(hash: Uint8Array, signature: Uint8Array, publicKey: RsaPublicKey, digest: RsaDigest = 'sha256'): boolean",
+      "summary": "pdfnative — RSA PKCS#1 v1.5 Sign / Verify ============================================ Pure BigInt implementation of RSA signature operations."
+    },
+    {
+      "name": "setCryptoProvider",
+      "kind": "value",
+      "module": "src/crypto/crypto-provider.ts",
+      "signature": "export function setCryptoProvider(provider: CryptoProvider | null): void",
+      "summary": "pdfnative — Pluggable Signature Crypto Provider ================================================ pdfnative ships its own pure-TypeScript RSA (PKCS#1 v1.5) and ECDSA (P-256) implementations so that signing works in any runtime with **zero de"
+    },
+    {
+      "name": "setDeflateImpl",
+      "kind": "value",
+      "module": "src/core/pdf-compress.ts",
+      "signature": "export function setDeflateImpl(fn: ((buf: Uint8Array) => Uint8Array) | null): void",
+      "summary": "pdfnative — PDF Stream Compression (FlateDecode) =================================================== Zero-dependency FlateDecode compression using platform-native APIs."
+    },
+    {
+      "name": "setInflateImpl",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export function setInflateImpl(fn: ((buf: Uint8Array) => Uint8Array) | null): void",
+      "summary": "pdfnative — DEFLATE Decompressor (FlateDecode reader) ====================================================== Zero-dependency DEFLATE decompression for reading FlateDecode streams."
+    },
+    {
+      "name": "setMaxInflateOutputSize",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export function setMaxInflateOutputSize(size: number): void",
+      "summary": "pdfnative — DEFLATE Decompressor (FlateDecode reader) ====================================================== Zero-dependency DEFLATE decompression for reading FlateDecode streams."
+    },
+    {
+      "name": "setRevocationProvider",
+      "kind": "value",
+      "module": "src/crypto/revocation-provider.ts",
+      "signature": "export function setRevocationProvider(provider: RevocationProvider | null): void",
+      "summary": "pdfnative — Pluggable OCSP/CRL Revocation Provider =================================================== pdfnative builds OCSP requests and parses OCSP/CRL responses itself (ocsp.ts / crl.ts) but **never touches the network**: the HTTP round-"
+    },
+    {
+      "name": "setTimestampProvider",
+      "kind": "value",
+      "module": "src/crypto/timestamp-provider.ts",
+      "signature": "export function setTimestampProvider(provider: TimestampProvider | null): void",
+      "summary": "pdfnative — Pluggable RFC 3161 Timestamp Provider ================================================== pdfnative builds and parses RFC 3161 structures itself (rfc3161.ts) but **never touches the network**: the single HTTP round-trip to a Time"
+    },
+    {
+      "name": "sha1",
+      "kind": "value",
+      "module": "src/crypto/sha.ts",
+      "signature": "export function sha1(input: Uint8Array): Uint8Array",
+      "summary": "pdfnative — SHA-1, SHA-384, SHA-512, HMAC-SHA256 ================================================= SHA-2 64-bit variants using paired 32-bit words (FIPS 180-4 §6.4)."
+    },
+    {
+      "name": "sha384",
+      "kind": "value",
+      "module": "src/crypto/sha.ts",
+      "signature": "export function sha384(input: Uint8Array): Uint8Array",
+      "summary": "pdfnative — SHA-1, SHA-384, SHA-512, HMAC-SHA256 ================================================= SHA-2 64-bit variants using paired 32-bit words (FIPS 180-4 §6.4)."
+    },
+    {
+      "name": "sha512",
+      "kind": "value",
+      "module": "src/crypto/sha.ts",
+      "signature": "export function sha512(input: Uint8Array): Uint8Array",
+      "summary": "pdfnative — SHA-1, SHA-384, SHA-512, HMAC-SHA256 ================================================= SHA-2 64-bit variants using paired 32-bit words (FIPS 180-4 §6.4)."
+    },
+    {
+      "name": "shapeArabicText",
+      "kind": "value",
+      "module": "src/shaping/arabic-shaper.ts",
+      "signature": "export function shapeArabicText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Arabic Text Shaper ================================ Unicode Presentation Forms-based positional shaping for Arabic script."
+    },
+    {
+      "name": "shapeBengaliText",
+      "kind": "value",
+      "module": "src/shaping/bengali-shaper.ts",
+      "signature": "export function shapeBengaliText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Bengali Mini-Shaper ================================= Pure JS OpenType GSUB + GPOS shaping for Bengali script."
+    },
+    {
+      "name": "shapeDevanagariText",
+      "kind": "value",
+      "module": "src/shaping/devanagari-shaper.ts",
+      "signature": "export function shapeDevanagariText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Devanagari Mini-Shaper ==================================== Pure JS OpenType GSUB + GPOS shaping for Devanagari script."
+    },
+    {
+      "name": "shapeKhmerText",
+      "kind": "value",
+      "module": "src/shaping/khmer-shaper.ts",
+      "signature": "export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Khmer Mini-Shaper ============================== Pure JS OpenType GSUB + GPOS shaping for the Khmer script (Cambodia)."
+    },
+    {
+      "name": "shapeMyanmarText",
+      "kind": "value",
+      "module": "src/shaping/myanmar-shaper.ts",
+      "signature": "export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Myanmar Mini-Shaper ================================ Pure JS OpenType GSUB + GPOS shaping for the Myanmar (Burmese) script."
+    },
+    {
+      "name": "shapeSinhalaText",
+      "kind": "value",
+      "module": "src/shaping/sinhala-shaper.ts",
+      "signature": "export function shapeSinhalaText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Sinhala Mini-Shaper ================================ Pure JS OpenType GSUB + GPOS shaping for the Sinhala script (Sri Lanka)."
+    },
+    {
+      "name": "shapeTamilText",
+      "kind": "value",
+      "module": "src/shaping/tamil-shaper.ts",
+      "signature": "export function shapeTamilText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Tamil Mini-Shaper =============================== Pure JS OpenType GSUB + GPOS shaping for Tamil script."
+    },
+    {
+      "name": "shapeTeluguText",
+      "kind": "value",
+      "module": "src/shaping/telugu-shaper.ts",
+      "signature": "export function shapeTeluguText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Telugu Mini-Shaper ================================ Pure JS OpenType GSUB + GPOS shaping for Telugu script."
+    },
+    {
+      "name": "shapeThaiText",
+      "kind": "value",
+      "module": "src/shaping/thai-shaper.ts",
+      "signature": "export function shapeThaiText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Thai Mini-Shaper ============================= Pure JS OpenType GSUB + GPOS shaping for Thai script."
+    },
+    {
+      "name": "shapeTibetanText",
+      "kind": "value",
+      "module": "src/shaping/tibetan-shaper.ts",
+      "signature": "export function shapeTibetanText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "pdfnative — Tibetan Mini-Shaper ================================ Pure JS OpenType GSUB + GPOS shaping for the Tibetan script."
+    },
+    {
+      "name": "signPdfBytes",
+      "kind": "value",
+      "module": "src/core/pdf-signature.ts",
+      "signature": "export function signPdfBytes(pdfBytes: Uint8Array, options: PdfSignOptions): Uint8Array",
+      "summary": "pdfnative — PDF Digital Signature Support ========================================== ISO 32000-1 §12.8 compliant PDF signing."
+    },
+    {
+      "name": "signPdfBytesWithTimestamp",
+      "kind": "value",
+      "module": "src/core/pdf-sign-timestamp.ts",
+      "signature": "export async function signPdfBytesWithTimestamp( pdfBytes: Uint8Array, options: PdfSignTimestampOptions, ): Promise<Uint8Array>",
+      "summary": "pdfnative — Timestamped PDF Signing (PAdES B-T, v1.7.0) ======================================================== `signPdfBytesWithTimestamp` signs exactly like signPdfBytes and then obtains an RFC 3161 timestamp over the CMS signature value"
+    },
+    {
+      "name": "slugify",
+      "kind": "value",
+      "module": "src/core/pdf-stream.ts",
+      "signature": "export function slugify(str: string): string",
+      "summary": "pdfnative — PDF Stream Utilities ================================== Binary conversion and PDF byte-level helpers."
+    },
+    {
+      "name": "splitPdf",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export function splitPdf( src: PdfSourceInput, ranges: readonly PageRange[], opts?: MergeOptions, ): Uint8Array[]",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "splitTextByFont",
+      "kind": "value",
+      "module": "src/shaping/multi-font.ts",
+      "signature": "export function splitTextByFont(str: string, fontEntries: FontEntry[]): FontRun[]",
+      "summary": "pdfnative — Multi-Font Text Run Splitter ========================================== Split text into runs, each assigned to the font whose cmap covers it."
+    },
+    {
+      "name": "streamByteLength",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function streamByteLength(stream: AsyncGenerator<Uint8Array>): Promise<number>",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "streamExtractPages",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export async function* streamExtractPages( src: PdfSourceInput, pageIndices: readonly number[], opts?: StreamMergeOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "streamMergedPdfs",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export async function* streamMergedPdfs( sources: readonly PdfSourceInput[], opts?: StreamMergeOptions, ): AsyncGenerator<Uint8Array>",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "streamSplitPdf",
+      "kind": "value",
+      "module": "src/parser/pdf-pagetree.ts",
+      "signature": "export async function* streamSplitPdf( src: PdfSourceInput, ranges: readonly PageRange[], opts?: StreamMergeOptions, ): AsyncGenerator<SplitPdfStream>",
+      "summary": "pdfnative — Page-Tree Manipulation API (ISO 32000-1 §7.7.3) ============================================================ Safe, **faithful** page-level document assembly: merge, split, and extract pages across PDF documents."
+    },
+    {
+      "name": "streamToFile",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export async function streamToFile( stream: AsyncGenerator<Uint8Array>, filePath: string, opts?: { readonly signal?: AbortSignal }, ): Promise<StreamToFileResult>",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "stripBidiControls",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function stripBidiControls(text: string): string",
+      "summary": "pdfnative — Simplified Unicode Bidirectional Algorithm ======================================================= Pure JS implementation of a subset of UAX #9 (Unicode Bidirectional Algorithm)."
+    },
+    {
+      "name": "toBytes",
+      "kind": "value",
+      "module": "src/core/pdf-stream.ts",
+      "signature": "export function toBytes(str: string): Uint8Array",
+      "summary": "pdfnative — PDF Stream Utilities ================================== Binary conversion and PDF byte-level helpers."
+    },
+    {
+      "name": "toWinAnsi",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function toWinAnsi(str: string): string",
+      "summary": "pdfnative — WinAnsi Encoding ============================== Text encoding and font reference logic for Latin (WinAnsi/Helvetica) and Unicode (CIDFont/Identity-H) modes."
+    },
+    {
+      "name": "truncate",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function truncate(str: string, max: number): string",
+      "summary": "pdfnative — WinAnsi Encoding ============================== Text encoding and font reference logic for Latin (WinAnsi/Helvetica) and Unicode (CIDFont/Identity-H) modes."
+    },
+    {
+      "name": "truncateToWidth",
+      "kind": "value",
+      "module": "src/fonts/encoding.ts",
+      "signature": "export function truncateToWidth( str: string, maxWidthPt: number, sz: number, enc: EncodingContext, ): string",
+      "summary": "pdfnative — WinAnsi Encoding ============================== Text encoding and font reference logic for Latin (WinAnsi/Helvetica) and Unicode (CIDFont/Identity-H) modes."
+    },
+    {
+      "name": "validateAttachments",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export function validateAttachments(attachments: readonly PdfAttachment[] | undefined, tagged: boolean | string | undefined): void",
+      "summary": "pdfnative — Tagged PDF & PDF/A Support ======================================== Structure tree, marked content operators, XMP metadata, and OutputIntent for PDF/UA accessibility and PDF/A archival compliance."
+    },
+    {
+      "name": "validateDocumentStreamable",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export function validateDocumentStreamable(params: DocumentParams, layoutOptions?: Partial<PdfLayoutOptions>): void",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "validateFontData",
+      "kind": "value",
+      "module": "src/fonts/font-validator.ts",
+      "signature": "export function validateFontData(data: unknown): FontValidationResult",
+      "summary": "pdfnative — Font Data Validator ================================ `validateFontData()` performs a read-only structural sanity check on a FontData module before it is used for rendering."
+    },
+    {
+      "name": "validatePdfUA",
+      "kind": "value",
+      "module": "src/parser/pdf-ua-validator.ts",
+      "signature": "export function validatePdfUA(bytes: Uint8Array): PdfUAValidationResult",
+      "summary": "pdfnative — PDF/UA structural validator (ISO 14289-1) ====================================================== A lightweight, read-only conformance checker for tagged-PDF (PDF/UA) structural prerequisites."
+    },
+    {
+      "name": "validatePrintOptions",
+      "kind": "value",
+      "module": "src/core/pdf-print.ts",
+      "signature": "export function validatePrintOptions( print: PrintOptions, pgW: number, pgH: number, tagged: boolean | string | undefined, ): void",
+      "summary": "pdfnative — Print Production (v1.7.0) ====================================== Professional-printing page geometry and decoration: - Page boxes — `/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox` (ISO 32000-1 §14.11.2) plus large-format `/UserUn"
+    },
+    {
+      "name": "validateTableStreamable",
+      "kind": "value",
+      "module": "src/core/pdf-stream-writer.ts",
+      "signature": "export function validateTableStreamable(_params: PdfParams, layoutOptions?: Partial<PdfLayoutOptions>): void",
+      "summary": "pdfnative — Streaming PDF Output ================================== AsyncGenerator-based PDF output for progressive chunk emission."
+    },
+    {
+      "name": "validateURL",
+      "kind": "value",
+      "module": "src/core/pdf-annot.ts",
+      "signature": "export function validateURL(url: string): boolean",
+      "summary": "pdfnative — PDF Link Annotations ================================== Build PDF link annotation objects for external URLs and internal page links."
+    },
+    {
+      "name": "validateWatermark",
+      "kind": "value",
+      "module": "src/core/pdf-watermark.ts",
+      "signature": "export function validateWatermark( watermark: WatermarkOptions, pdfaLevel: boolean | string | undefined, ): void",
+      "summary": "pdfnative — PDF Watermark Rendering ====================================== Builds PDF content operators for text and image watermarks."
+    },
+    {
+      "name": "verifyCertSignature",
+      "kind": "value",
+      "module": "src/crypto/x509.ts",
+      "signature": "export function verifyCertSignature(cert: X509Certificate, issuerCert: X509Certificate): boolean",
+      "summary": "pdfnative — X.509 Certificate Parser ===================================== Parses X.509 v3 certificates (RFC 5280) from DER-encoded bytes."
+    },
+    {
+      "name": "verifyTimestampImprint",
+      "kind": "value",
+      "module": "src/crypto/rfc3161.ts",
+      "signature": "export function verifyTimestampImprint(info: TstInfo, expectedHash: Uint8Array): boolean",
+      "summary": "pdfnative — RFC 3161 Time-Stamp Protocol Structures ==================================================== Builds TimeStampReq and parses TimeStampResp / TimeStampToken DER for PAdES B-T signature timestamps and ISO 32000-2 document timestamp"
+    },
+    {
+      "name": "vriKeyForContents",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export function vriKeyForContents(contents: Uint8Array): string",
+      "summary": "pdfnative — Document Security Store (PAdES B-LT, v1.7.0) ========================================================= LTV enablement per ISO 32000-2 §12.8.4: collect the validation material for every signature (certificates, OCSP responses, CR"
+    },
+    {
+      "name": "wrapText",
+      "kind": "value",
+      "module": "src/core/pdf-document.ts",
+      "signature": null,
+      "summary": null
+    }
+  ]
+}

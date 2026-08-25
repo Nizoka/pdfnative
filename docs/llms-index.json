@@ -5,8 +5,8 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 14343,
-      "approxTokens": 3586
+      "bytes": 15130,
+      "approxTokens": 3783
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -17,8 +17,14 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 463864,
-      "approxTokens": 115966
+      "bytes": 485829,
+      "approxTokens": 121457
+    },
+    {
+      "url": "https://pdfnative.dev/llms-recipes.txt",
+      "description": "Executable recipes: CI-verified, copy-ready code for the most common tasks.",
+      "bytes": 24351,
+      "approxTokens": 6088
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
@@ -125,6 +131,21 @@
       ],
       "bytes": 9748,
       "approxTokens": 2437
+    },
+    {
+      "title": "Choosing your surface",
+      "summary": "Write application code → the library. Drive a shell, Makefile or CI job →",
+      "html": "https://pdfnative.dev/guides/choose.html",
+      "markdown": "https://pdfnative.dev/guides/choose.md",
+      "anchors": [
+        "the-decision-in-prose",
+        "capability-surface",
+        "honest-notes",
+        "you-can-switch-later",
+        "further-reading"
+      ],
+      "bytes": 7177,
+      "approxTokens": 1794
     },
     {
       "title": "pdfnative-cli — Command-Line Interface Guide",
@@ -427,8 +448,27 @@
         "diagnostics",
         "resources"
       ],
-      "bytes": 17383,
-      "approxTokens": 4346
+      "bytes": 17489,
+      "approxTokens": 4372
+    },
+    {
+      "title": "Self-verifying generation",
+      "summary": "pdfnative can read what it writes, so a generated PDF never has to ship",
+      "html": "https://pdfnative.dev/guides/self-verify.html",
+      "markdown": "https://pdfnative.dev/guides/self-verify.md",
+      "anchors": [
+        "why-a-pdf-is-normally-a-blind-artefact",
+        "verifier-1-inspectdocumentlayout-geometry-before-generating",
+        "verifier-2-extracttext-is-the-content-actually-in-the-file",
+        "verifier-3-validatepdfua-structural-pdfua",
+        "verifier-4-listsignatures-openpdf-signatures-encryption-metadata",
+        "the-same-loop-on-the-cli",
+        "the-same-loop-on-mcp",
+        "wire-it-into-ci-and-agent-loops",
+        "further-reading"
+      ],
+      "bytes": 13802,
+      "approxTokens": 3451
     },
     {
       "title": "Digital signatures in pdfnative",

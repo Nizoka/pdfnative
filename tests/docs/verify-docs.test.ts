@@ -139,6 +139,15 @@ describe('verify-docs', () => {
             });
         }, 120_000);
 
+        it('api-json-sync catches a stale API surface', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/assets/api.json', '"package": "pdfnative"', '"package": "perturbed"');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('api-json-sync');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
         it('llms-index-sync catches a stale machine index', () => {
             withSandbox((dir) => {
                 patch(dir, 'docs/llms-index.json', '"site": "https://pdfnative.dev"', '"site": "https://perturbed.example"');

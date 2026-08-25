@@ -211,6 +211,9 @@ const actualDerived: Record<string, number> = {
           ).length
         : 0,
     learnSteps: manifest.learnPath.length,
+    recipes: existsSync(join(ROOT, 'recipes'))
+        ? readdirSync(join(ROOT, 'recipes')).filter((f) => f.endsWith('.ts')).length
+        : 0,
 };
 
 // samplePdfs only counts when the samples have actually been generated;
@@ -411,6 +414,98 @@ if (SRC_FILES.length > 0) {
             fail(rel(file), lineOf(text, m.index), 'api-exists', `"${id}" is not declared anywhere in src/`);
         }
     }
+
+    // Generalisation of the scan above: ANY identifier written call-shaped at
+    // the very start of an inline code span — `name(…)` in Markdown, or
+    // <code>name(…)</code> in rendered/authored HTML — must exist somewhere in
+    // src/. "Exists" is the same doctrine as the build*/stream* scan: docs may
+    // name internal helpers and interface methods, so the reference set is
+    // every call- or declaration-shaped identifier in the sources, not just
+    // the exports. Anchoring on the span opener keeps prose and member calls
+    // (`mod.updateMetadata(…)`) out of scope; fenced code blocks never start
+    // an identifier with a backtick, so they stay out too. Platform globals
+    // that docs legitimately call in spans are allow-listed here.
+    const callable = new Set<string>(exported);
+    const CALLABLE_FILES = [
+        ...SRC_FILES,
+        // Repo tooling the agent docs legitimately reference (verify-issue.mjs & co).
+        ...walk(join(ROOT, 'scripts'), (p) => p.endsWith('.ts') || p.endsWith('.mjs')),
+    ];
+    for (const srcFile of CALLABLE_FILES) {
+        for (const m of read(srcFile).matchAll(/\b([A-Za-z_]\w*)\s*\(/g)) {
+            callable.add(m[1]);
+        }
+    }
+    const SPAN_GLOBALS = new Set([
+        // Platform / runtime globals docs legitimately call in spans.
+        'fetch', 'import', 'require', 'atob', 'btoa', 'structuredClone', 'run',
+        // Test-framework globals (vitest) named by the testing instructions.
+        'describe', 'it', 'test', 'expect', 'bench', 'vi',
+        'beforeAll', 'beforeEach', 'afterAll', 'afterEach',
+        // Conventional-commit prefixes written call-shaped (`feat(scope):`).
+        'feat', 'fix', 'chore', 'refactor', 'perf', 'style', 'ci',
+        // Companion-package exports named in ecosystem prose outside the
+        // dedicated companion guides (their drift is a companion-repo concern,
+        // caught by the weekly --online npm-drift run, not this offline scan).
+        'validateGovernanceDraft', // pdfnative-cli
+        'docSpecSchema', // pdfnative-react (README ecosystem row)
+        'lintDocument', // pdfnative-react (cited by the PDF/A guide)
+    ]);
+    // Guides DEDICATED to a companion package document that package's API
+    // throughout — checking those names against this repo's src/ would be a
+    // category error, so they are out of this scan's scope entirely.
+    const SPAN_SKIP = /docs[\\/](?:guides|playgrounds)[\\/](react|cli|mcp)\.(md|html)$/;
+    // Companion-package exports are legitimate wherever the docs corpus shows
+    // them imported from that package (`import { usePdf } from
+    // 'pdfnative-react'`) — the import example is itself the documentation
+    // that the name exists there.
+    const companionImported = new Set<string>();
+    for (const file of DOC_FILES) {
+        for (const m of read(file).matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*['"]pdfnative-[\w-]+['"]/g)) {
+            for (const raw of m[1].split(',')) {
+                const name = raw.replace(/^type\s+/, '').split(/\s+as\s+/)[0].trim();
+                if (name) companionImported.add(name);
+            }
+        }
+    }
+    // In Markdown a backtick opens a code span; in HTML a backtick is almost
+    // always a JS template literal inside an inline <script>, so only the
+    // literal <code> opener counts there.
+    const SPAN_CALL_MD = /(?:`|<code>)([A-Za-z_]\w*)\(/g;
+    const SPAN_CALL_HTML = /<code>([A-Za-z_]\w*)\(/g;
+    for (const file of DOC_FILES) {
+        if (SPAN_SKIP.test(file)) continue;
+        const SPAN_CALL = file.endsWith('.html') ? SPAN_CALL_HTML : SPAN_CALL_MD;
+        const text = read(file);
+        const lines = text.split(/\r?\n/);
+        SPAN_CALL.lastIndex = 0;
+        let m: RegExpExecArray | null;
+        while ((m = SPAN_CALL.exec(text)) !== null) {
+            const id = m[1];
+            if (callable.has(id) || SPAN_GLOBALS.has(id) || companionImported.has(id)) continue;
+            if (Object.prototype.hasOwnProperty.call(manifest.apiDenylist, id)) continue;
+            const line = lineOf(text, m.index);
+            if (isSuppressed(lines, line, 'api-exists')) continue;
+            fail(rel(file), line, 'api-exists', `"${id}()" is not declared anywhere in src/`);
+        }
+    }
+}
+
+// ── Rule: api-json-sync ─────────────────────────────────────────────
+
+/**
+ * `docs/assets/api.json` is the served, machine-readable export surface —
+ * the substitute for the gitignored `dist/index.d.ts` that agents cannot
+ * otherwise reach. A stale copy teaches last release's API, so it is policed
+ * like every other generated artefact: rebuilt in memory and compared.
+ */
+const { buildApiJson } = await import('./build-api-json.ts');
+
+const API_JSON = join(ROOT, 'docs', 'assets', 'api.json');
+if (!existsSync(API_JSON)) {
+    fail('docs/assets/api.json', 1, 'api-json-sync', 'missing — generate it with `npm run docs:api`');
+} else if (read(API_JSON).replace(/\r\n/g, '\n') !== buildApiJson(ROOT)) {
+    fail('docs/assets/api.json', 1, 'api-json-sync', 'stale — regenerate with `npm run docs:api`');
 }
 
 // ── Rule: jsonld-version ────────────────────────────────────────────
@@ -931,6 +1026,14 @@ if (!existsSync(LLMS_FULL)) {
     fail('docs/llms-full.txt', 1, 'llms-sync', 'stale — regenerate with `npx tsx scripts/build-llms-full.ts`');
 }
 
+const { buildLlmsRecipes } = await import('./build-llms-full.ts');
+const LLMS_RECIPES = join(ROOT, 'docs', 'llms-recipes.txt');
+if (!existsSync(LLMS_RECIPES)) {
+    fail('docs/llms-recipes.txt', 1, 'llms-sync', 'missing — generate it with `npm run docs:llms`');
+} else if (read(LLMS_RECIPES).replace(/\r\n/g, '\n') !== buildLlmsRecipes(ROOT)) {
+    fail('docs/llms-recipes.txt', 1, 'llms-sync', 'stale — regenerate with `npm run docs:llms`');
+}
+
 // ── Rule: llms-index-sync ───────────────────────────────────────────
 
 /**
@@ -1096,6 +1199,7 @@ const OFFLINE_RULES = [
     'llms-sync',
     'llms-index-sync',
     'guide-render-sync',
+    'api-json-sync',
     'playground-syntax',
 ] as const;
 

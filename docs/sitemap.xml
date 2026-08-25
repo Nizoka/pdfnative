@@ -662,5 +662,45 @@
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/choose.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/choose.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/choose.html"/>
+    <lastmod>2026-08-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/self-verify.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/self-verify.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/self-verify.html"/>
+    <lastmod>2026-08-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/choose.md</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/choose.md"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/choose.md"/>
+    <lastmod>2026-08-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/self-verify.md</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/self-verify.md"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/self-verify.md"/>
+    <lastmod>2026-08-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/llms-recipes.txt</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/llms-recipes.txt"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/llms-recipes.txt"/>
+    <lastmod>2026-08-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
 
 </urlset>

@@ -309,7 +309,7 @@ const bytes = renderToBytes(
 | `<View>` + flexbox styles | *(none — declarative block flow; use blocks + `<Spacer>`)* |
 | `StyleSheet` | per-component props (`align`, `color`, `fontSize`, …) |
 | `<PDFViewer>` / `<PDFDownloadLink>` / `<BlobProvider>` | same names, same shape |
-| `usePDF()` | `usePdf()` |
+| <!-- verify-docs:allow api-exists (left column names the @react-pdf/renderer API being migrated from) --> `usePDF()` | `usePdf()` |
 
 The biggest mental shift: there is **no flexbox layout engine**. Documents are a top-to-bottom block flow. Use `<Spacer>`, `<PageBreak>`, tables, and per-component alignment props instead of `<View>` containers.
 

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Self-verifying generation — pdfnative</title>
+  <meta name="description" content="Close the loop on PDF generation: plan with inspectDocumentLayout(), then verify the emitted bytes with extractText(), validatePdfUA() and listSignatures()/openPdf() — the same generate → inspect → assert → correct pattern on the library, CLI (inspect --check) and MCP (inspect_pdf).">
+  <link rel="canonical" href="https://pdfnative.dev/guides/self-verify.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/self-verify.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/self-verify.html">
+  <link rel="alternate" type="text/markdown" href="self-verify.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/guides/self-verify.html">
+  <meta property="og:title" content="Self-verifying generation — pdfnative">
+  <meta property="og:description" content="Generate → inspect → assert → correct: verify a generated PDF in-process with pdfnative's own parser, on the library, the CLI and MCP.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Self-verifying generation — pdfnative">
+  <meta name="twitter:description" content="Verify a generated PDF in-process: layout, text, PDF/UA structure and signatures, across all four pdfnative surfaces.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Self-verifying generation","item":"https://pdfnative.dev/guides/self-verify.html"}]},{"@type":"TechArticle","headline":"Self-verifying generation","description":"Close the loop on PDF generation: plan with inspectDocumentLayout(), then verify the emitted bytes with extractText(), validatePdfUA() and listSignatures()/openPdf() — the same generate → inspect → assert → correct pattern on the library, CLI (inspect --check) and MCP (inspect_pdf).","inLanguage":"en","dateModified":"2026-08-25","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/self-verify.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
+      <li><a href="./">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Self-verifying generation</p>
+  <article id="guide-content" class="guide-content" data-md="self-verify.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="self-verifying-generation">Self-verifying generation</h1>
+<blockquote>
+<p><strong>pdfnative can read what it writes, so a generated PDF never has to ship
+unchecked.</strong> Plan pagination with <code>inspectDocumentLayout()</code> <em>before</em> building,
+then run <code>extractText()</code>, <code>validatePdfUA()</code> and <code>listSignatures()</code> /
+<code>openPdf()</code> against the emitted bytes, assert what matters, and correct the
+input until every assertion holds. The same generate → inspect → assert →
+correct loop runs on all four surfaces: in the library, on the CLI
+(<code>inspect --check</code>, stable exit codes and <code>E_*</code> error classes), and on MCP
+(<code>inspect_pdf</code> check assertions) — so a test suite, a CI job or an AI agent
+can close the loop without a human ever opening a viewer.</p>
+</blockquote>
+<h2 id="why-a-pdf-is-normally-a-blind-artefact">Why a PDF is normally a blind artefact<a class="heading-anchor" href="#why-a-pdf-is-normally-a-blind-artefact" aria-label="Link to this section">#</a></h2>
+<p>Most PDF generators are write-only: the library that produced the file cannot
+parse it back. The only verification available is a human opening the result in
+a viewer — which no pipeline, test suite or autonomous agent can do. So defects
+ship silently: a table that slipped onto a second page, a template placeholder
+that was never substituted, a PDF/A claim the file cannot honour, a signature
+placeholder that was never actually signed.</p>
+<p>pdfnative bundles a parser next to the writer, in the same zero-dependency
+package. The read side (<code>openPdf()</code>, <code>extractText()</code>, <code>validatePdfUA()</code>,
+<code>listSignatures()</code>) consumes exactly what the write side emits — and any other
+PDF — which turns generation into a closed loop:</p>
+<ol>
+<li><strong>Plan</strong> — measure pagination with <code>inspectDocumentLayout()</code> before a single
+byte is produced.</li>
+<li><strong>Generate</strong> — build the document.</li>
+<li><strong>Inspect</strong> — read the emitted bytes back with the parser.</li>
+<li><strong>Assert &amp; correct</strong> — check the facts you care about; on failure, fix the
+<em>input</em> and regenerate. Never patch the output bytes.</li>
+</ol>
+<p>The rest of this guide walks the four verifiers with realistic
+failure → fix examples, then shows the identical loop on the CLI and on MCP.</p>
+<h2 id="verifier-1-inspectdocumentlayout-geometry-before-generating">Verifier 1 — <code>inspectDocumentLayout()</code>: geometry, before generating<a class="heading-anchor" href="#verifier-1-inspectdocumentlayout-geometry-before-generating" aria-label="Link to this section">#</a></h2>
+<p><em>(v1.5.0)</em> A pagination dry run: the same planning logic as the builder, but it
+returns data instead of PDF bytes — no rendering, no font embedding.</p>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, inspectDocumentLayout } from &#39;pdfnative&#39;;
+
+const params = {
+  title: &#39;Invoice #2026-041&#39;,
+  blocks: [
+    { type: &#39;heading&#39;, level: 1, text: &#39;Invoice #2026-041&#39; },
+    { type: &#39;paragraph&#39;, text: intro },
+    { type: &#39;table&#39;, headers: [&#39;Item&#39;, &#39;Qty&#39;, &#39;Total&#39;], rows },
+  ],
+};
+
+// Plan — no PDF is produced.
+const layout = inspectDocumentLayout(params);
+
+// Assert: a one-page invoice.
+if (layout.totalPages !== 1) {
+  throw new Error(`expected 1 page, planned ${layout.totalPages}`);
+}
+
+// Assert: the table starts on page 1, not after a stray break.
+const table = layout.pages[0].blocks.find((b) =&gt; b.type === &#39;table&#39;);
+if (!table) throw new Error(&#39;table was pushed off page 1&#39;);
+
+// Only now generate.
+const bytes = buildDocumentPDFBytes(params);
+</code></pre>
+<p><strong>Failure → fix.</strong> <code>totalPages</code> comes back as <code>2</code> because this month&#39;s <code>rows</code>
+grew by three entries. Fixes live in the input: shorten <code>intro</code>, reduce the
+margins in the layout options, or accept the second page and change the
+assertion — the table planner repeats headers on continuation pages by default,
+so a deliberate two-pager stays readable. Re-run the inspection until the
+assertion holds, then build.</p>
+<blockquote>
+<p><strong>Honest caveat.</strong> <code>inspectDocumentLayout()</code> shares the builder&#39;s measurement
+code (<code>estimateBlockHeight</code> / <code>planTable</code> and its constants) — that is
+precisely why its geometry matches where the renderer places each block,
+including table slicing across page breaks. But it is a <em>prediction from the
+shared engine</em>, not an independent re-parse of the emitted bytes. For
+verification of the actual output, pair it with <code>extractText()</code> below. See
+<a href="debugging.html">Layout debugging &amp; inspection</a> for the full data shape and
+the visual overlay variant.</p>
+</blockquote>
+<h2 id="verifier-2-extracttext-is-the-content-actually-in-the-file">Verifier 2 — <code>extractText()</code>: is the content actually in the file?<a class="heading-anchor" href="#verifier-2-extracttext-is-the-content-actually-in-the-file" aria-label="Link to this section">#</a></h2>
+<p><em>(v1.6.0)</em> Reading-order Unicode text per page, decoded from the content
+streams of the emitted bytes — pdfnative-generated documents round-trip
+losslessly, including CJK, Arabic and emoji.</p>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, extractText } from &#39;pdfnative&#39;;
+
+const bytes = buildDocumentPDFBytes(params);
+
+const pages = extractText(bytes);               // ExtractedPageText[]
+// Each entry: { pageIndex: number, text: string, runs?: ExtractedTextRun[] }
+const flat = pages.map((p) =&gt; p.text).join(&#39;\n&#39;);
+
+for (const required of [&#39;Invoice #2026-041&#39;, &#39;Total&#39;, &#39;1 240,00 €&#39;]) {
+  if (!flat.includes(required)) {
+    throw new Error(`missing from the emitted PDF: &quot;${required}&quot;`);
+  }
+}
+if (flat.includes(&#39;{{&#39;)) {
+  throw new Error(&#39;an unresolved template placeholder reached the PDF&#39;);
+}
+</code></pre>
+<p><strong>Failure → fix.</strong> The total is missing: the value never entered <code>blocks</code> —
+typically a renamed data field, or a templating step that ran after the build
+instead of before it. The <code>{{</code> guard catches the classic half-rendered
+template. Fix the data flow and regenerate. Positioned runs
+(<code>{ includeRuns: true }</code>) additionally give each string&#39;s <code>x</code> / <code>y</code> /
+<code>fontSize</code> when you need to assert <em>where</em> something landed, not just that it
+exists.</p>
+<p>Extraction has documented limits (no OCR on image content, lossy conjuncts in
+shaped Indic scripts) — see <a href="text-extraction.html">Text extraction</a> before
+asserting on those cases.</p>
+<h2 id="verifier-3-validatepdfua-structural-pdfua">Verifier 3 — <code>validatePdfUA()</code>: structural PDF/UA<a class="heading-anchor" href="#verifier-3-validatepdfua-structural-pdfua" aria-label="Link to this section">#</a></h2>
+<p>Read-only ISO 14289-1 structural checks over the emitted bytes: <code>/MarkInfo</code>,
+the structure tree, the parent tree, a document <code>/Lang</code>, per-page MCID
+uniqueness.</p>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, validatePdfUA } from &#39;pdfnative&#39;;
+
+const bytes = buildDocumentPDFBytes(params, { tagged: true });
+
+const report = validatePdfUA(bytes);   // { valid, errors, warnings }
+if (!report.valid) {
+  throw new Error(`PDF/UA structure: ${report.errors.join(&#39;; &#39;)}`);
+}
+</code></pre>
+<p><strong>Failure → fix.</strong> The most common failure is building without <code>tagged</code> — the
+document then has no structure tree at all, and every structural check fires.
+Set <code>layout: { tagged: true }</code> (or a <code>&#39;pdfa*&#39;</code> level) and regenerate. Warnings
+are non-blocking best-practice notes; decide explicitly whether your pipeline
+tolerates them.</p>
+<blockquote>
+<p><strong>Honest caveat.</strong> This is a <em>structural</em> validation, not an accessibility
+audit. A passing report means the machine-checkable structure is present and
+consistent — it cannot judge whether the reading order makes sense to a
+human, whether alt text is meaningful, or whether colour contrast is
+adequate. And it is not a PDF/A validator: for archival conformance, run
+veraPDF as described in <a href="pdfa.html">PDF/A conformance</a>.</p>
+</blockquote>
+<h2 id="verifier-4-listsignatures-openpdf-signatures-encryption-metadata">Verifier 4 — <code>listSignatures()</code> + <code>openPdf()</code>: signatures, encryption, metadata<a class="heading-anchor" href="#verifier-4-listsignatures-openpdf-signatures-encryption-metadata" aria-label="Link to this section">#</a></h2>
+<p><em>(v1.7.0)</em> <code>listSignatures()</code> inventories every signature field in the
+document; <code>openPdf()</code> exposes page count, encryption state and the <code>/Info</code>
+dictionary.</p>
+<pre><code class="language-ts">import { openPdf, listSignatures } from &#39;pdfnative&#39;;
+
+const sigs = listSignatures(signedBytes);
+if (sigs.length === 0) throw new Error(&#39;no signature field found&#39;);
+if (sigs.some((s) =&gt; s.isPlaceholder)) {
+  throw new Error(&#39;a /Sig field is still an unsigned placeholder&#39;);
+}
+// Per entry: fieldName?, subFilter, byteRange, isDocTimestamp, isPlaceholder.
+const pades = sigs.filter((s) =&gt; s.subFilter === &#39;ETSI.CAdES.detached&#39;);
+
+const reader = openPdf(signedBytes);
+if (reader.encryption !== null) throw new Error(&#39;expected an unencrypted document&#39;);
+if (reader.pageCount &lt; 2) throw new Error(&#39;terms page missing&#39;);
+const info = reader.getInfo();
+</code></pre>
+<p><strong>Failure → fix.</strong> <code>isPlaceholder: true</code> means <code>addSignaturePlaceholder()</code> ran
+but <code>signPdfBytes()</code> never filled that field — usually a skipped signing step,
+or a <code>fieldName</code> selector that targeted a different placeholder. Sign the
+document (or the right field) and re-check. <code>isDocTimestamp</code> distinguishes
+<code>/DocTimeStamp</code> entries when you assert on the PAdES ladder.</p>
+<blockquote>
+<p><strong>Honest caveat.</strong> <code>listSignatures()</code> is an inventory, not a cryptographic
+verdict — the pdfnative engine deliberately ships no signature verifier.
+Full verification (byte-range digest, CMS signature value, certificate
+chain, trust, timestamps, revocation) lives in <code>pdfnative-cli verify</code> and in
+the MCP <code>verify_pdf</code> tool, below. See
+<a href="ltv.html">Long-term validation (LTV)</a>.</p>
+</blockquote>
+<h2 id="the-same-loop-on-the-cli">The same loop on the CLI<a class="heading-anchor" href="#the-same-loop-on-the-cli" aria-label="Link to this section">#</a></h2>
+<p><code>pdfnative-cli</code> turns the assertions into exit codes, which is what a shell or
+CI step branches on:</p>
+<pre><code class="language-bash"># Plan (pre-flight): pagination report instead of a PDF   (v1.2.0)
+pdfnative render --input invoice.json --inspect-layout &gt; layout.json
+
+# Generate, then assert — exit 0 when every --check holds, 1 otherwise
+pdfnative render  --input invoice.json --output invoice.pdf --tagged pdfa2b
+pdfnative inspect --input invoice.pdf --check pdfa --check pdfua --json --summary
+echo $?   # 0 = all assertions hold, 1 = at least one failed
+
+# Content presence, pipeline-style
+pdfnative extract-text --input invoice.pdf --format text | grep -q &#39;Invoice #2026-041&#39;
+</code></pre>
+<ul>
+<li><code>inspect --check</code> takes repeatable, ANDed assertions — <code>pdfa</code>, <code>signed</code>,
+<code>encrypted</code>, <code>pdfua</code> <em>(v1.1.0)</em> — and sets the exit code accordingly; under
+<code>--json</code>, a failed assertion also emits the stable error class
+<code>E_CHECK_FAILED</code> in the machine-readable envelope on stderr
+(<code>{ ok: false, command, error: { code, message } }</code>).</li>
+<li><code>--summary</code> <em>(v1.1.0)</em> shrinks the stdout verdict to
+<code>{ pages, encrypted, signatures, pdfa }</code>; <code>--fields a,b.c</code> projects arbitrary
+dot-paths — both exist so agents branch on facts without paying for the full
+report.</li>
+<li><code>pdfnative verify --strict</code> performs the cryptographic half: byte-range
+digest, CMS signature value (RSA and ECDSA), certificate chain and trust
+against <code>--trust</code> roots, RFC 3161 timestamps, OCSP/CRL revocation — exit 1
+and <code>E_VERIFY_FAILED</code> on any failure <em>or on zero signatures</em>.</li>
+</ul>
+<p>The full command reference, including every <code>--check</code> flag and the <code>E_*</code>
+catalogue, is in the <a href="cli.html">CLI guide</a>.</p>
+<h2 id="the-same-loop-on-mcp">The same loop on MCP<a class="heading-anchor" href="#the-same-loop-on-mcp" aria-label="Link to this section">#</a></h2>
+<p><code>pdfnative-mcp</code> gives a conversational agent the identical verifiers as
+read-only tools — the natural final step after any document tool call:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Verifies</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inspect_pdf</code></td>
+<td>Version, page count, encryption, PDF/A claim, signatures, attachments, <code>/Info</code> — plus <code>check</code> assertions with a boolean verdict.</td>
+</tr>
+<tr>
+<td><code>inspect_layout</code> <em>(v1.6.0)</em></td>
+<td>Pagination dry run for a prospective document — page count and block geometry, no PDF produced, no base64 output tokens spent.</td>
+</tr>
+<tr>
+<td><code>validate_pdf</code></td>
+<td>Structural PDF/UA — <code>{ valid, errors, warnings }</code>.</td>
+</tr>
+<tr>
+<td><code>verify_pdf</code></td>
+<td>Cryptographic signature verification; <code>ltv: true</code> <em>(v1.6.0)</em> reports the achieved PAdES level (B-B → B-LTA).</td>
+</tr>
+</tbody></table>
+<pre><code class="language-jsonc">{ &quot;tool&quot;: &quot;inspect_pdf&quot;,
+  &quot;input&quot;: { &quot;pdfBase64&quot;: &quot;&lt;...&gt;&quot;, &quot;check&quot;: [&quot;pdfa&quot;, &quot;signed&quot;] } }
+// → { ..., &quot;checks&quot;: { &quot;pdfa&quot;: true, &quot;signed&quot;: true }, &quot;checksPassed&quot;: true }
+</code></pre>
+<ul>
+<li><code>check</code> accepts <code>pdfa</code>, <code>signed</code>, <code>encrypted</code>, <code>placeholder</code>, <code>attachments</code>,
+and — <em>(v1.6.0)</em> — <code>dss</code>, <code>docTimestamp</code>, <code>trapped</code>, <code>annotations</code>.
+<code>checksPassed</code> is the AND of all requested assertions; since v1.6.0 <code>checks</code>
+contains <strong>only</strong> the requested keys, so branch on <code>checksPassed</code> or on a key
+you asked for, never on an absent one.</li>
+<li><code>inspect_layout</code> accepts the same <code>title</code> / <code>blocks</code> (plus every input that
+moves a block) as <code>generate_basic_pdf</code>, so an agent can iterate on pagination
+before spending output tokens on real bytes. Known engine gap: a <code>toc</code> block
+is measured as 0 pt, so a document with a printed contents page may paginate
+one page later than previewed.</li>
+<li><code>validate_pdf</code> on unparsable bytes is an error (<code>PDF_PARSE_FAILED</code>), not a
+<code>{ valid: false }</code> verdict, since v1.6.0 — a parse failure is not a PDF/UA
+result.</li>
+</ul>
+<p>Tool-by-tool inputs and error codes are in the <a href="mcp.html">MCP guide</a>.</p>
+<h2 id="wire-it-into-ci-and-agent-loops">Wire it into CI and agent loops<a class="heading-anchor" href="#wire-it-into-ci-and-agent-loops" aria-label="Link to this section">#</a></h2>
+<p><strong>CI.</strong> Chain the loop with <code>set -e</code> so any failed assertion fails the job —
+no PDF-viewing human in the path:</p>
+<pre><code class="language-bash">set -e
+pdfnative render  --input report.json --output report.pdf --tagged pdfa2b
+pdfnative sign    --input report.pdf  --output signed.pdf --key k.pem --cert c.pem
+pdfnative inspect --input signed.pdf  --check pdfa --check signed --json --summary
+pdfnative verify  --input signed.pdf  --strict --trust ca-root.pem
+</code></pre>
+<p><code>--dry-run</code> on the write commands validates inputs without producing output,
+which makes a cheap first CI stage; <code>--summary</code> / <code>--fields</code> keep logs and
+agent context small.</p>
+<p><strong>Agent loops.</strong> Treat every generation as unfinished until a read tool
+confirms it: after <code>generate_basic_pdf</code> (or any document tool), call
+<code>inspect_pdf</code> with the <code>check</code> list that encodes the user&#39;s requirements and
+branch on <code>checksPassed</code>; on failure, correct the tool input and regenerate
+rather than apologising with an unverified file. Use <code>inspect_layout</code> before
+generating and <code>verbosity: &quot;summary&quot;</code> on the read tools to keep token spend
+proportional. The <a href="../agent-brief.md">agent brief</a> condenses this contract
+into a paste-into-context form.</p>
+<h2 id="further-reading">Further reading<a class="heading-anchor" href="#further-reading" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="../agent-brief.md">Agent brief</a> — the compact form of this loop for AI
+agents, verified by the documentation CI.</li>
+<li><a href="debugging.html">Layout debugging &amp; inspection</a> — the visual overlay and the
+full <code>LayoutInspection</code> data shape.</li>
+<li><a href="text-extraction.html">Text extraction</a> — decoding rules, positioned runs,
+documented limits.</li>
+<li><a href="pdfa.html">PDF/A conformance</a> — validating archival claims with veraPDF,
+and the build-time <code>PDFA_*</code> diagnostics.</li>
+<li><a href="ltv.html">Long-term validation (LTV)</a> — the PAdES ladder the signature
+assertions climb.</li>
+<li><a href="cli.html">CLI guide</a> · <a href="mcp.html">MCP guide</a> — the complete surface
+references.</li>
+</ul>
+<!-- guide:render:end -->
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="./">All guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
+<script src="guide.js" defer></script>
+</body>
+</html>

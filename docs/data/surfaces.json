@@ -1,0 +1,102 @@
+{
+  "$comment": "Machine-readable form of the capability × surface table in docs/guides/choose.md. Hand-maintained, verified against the sources on the date below: library `call` names against src/index.ts exports, CLI `command` names against packages.pdfnative-cli.commandGroups and MCP `tool` names against packages.pdfnative-mcp.tools in docs/assets/ecosystem.json (the single source of truth for names and counts — regenerate nothing from this file), React entries against docs/guides/react.md. Each `since` is a version of that surface's OWN package (pdfnative, pdfnative-cli, pdfnative-mcp or pdfnative-react); it is omitted where the capability predates 1.0.0 or the introducing release is not documented. `supported: false` cells carry a note naming the honest alternative where one exists.",
+  "verifiedOn": "2026-08-25",
+  "capabilities": [
+    {
+      "id": "generate",
+      "label": "Generate documents",
+      "library": { "supported": true, "call": "buildDocumentPDFBytes / buildPDFBytes" },
+      "cli": { "supported": true, "command": "render" },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "notes": "Plus the dedicated document tools (add_table, add_barcode, add_international_text, add_form, embed_image, add_chart, prepare_signature_placeholder, add_attachment)." },
+      "react": { "supported": true, "call": "renderToBytes / renderToBlob / renderToStream / renderToFile / renderToResponse over a <Document> tree" }
+    },
+    {
+      "id": "tables",
+      "label": "Smart tables",
+      "library": { "supported": true, "call": "table block in buildDocumentPDFBytes (or the table-centric buildPDFBytes)" },
+      "cli": { "supported": true, "command": "render", "notes": "table block in the document JSON, or --variant table; smart-table flags since v1.3.0." },
+      "mcp": { "supported": true, "tool": "add_table" },
+      "react": { "supported": true, "call": "<Table> / <Row> / <Cell>" }
+    },
+    {
+      "id": "charts",
+      "label": "Native vector charts",
+      "library": { "supported": true, "call": "chart block in buildDocumentPDFBytes", "since": "1.6.0" },
+      "cli": { "supported": true, "command": "render", "since": "1.3.0", "notes": "chart blocks in the document JSON." },
+      "mcp": { "supported": true, "tool": "add_chart", "since": "1.5.0", "notes": "Also as a chart block inside generate_basic_pdf." },
+      "react": { "supported": true, "call": "<Chart>" }
+    },
+    {
+      "id": "sign",
+      "label": "Digital signatures (PAdES CMS)",
+      "library": { "supported": true, "call": "addSignaturePlaceholder + signPdfBytes" },
+      "cli": { "supported": true, "command": "sign" },
+      "mcp": { "supported": true, "tool": "sign_pdf", "notes": "prepare_signature_placeholder creates the /Sig placeholder; sign_pdf auto-injects one when absent." },
+      "react": { "supported": false, "notes": "Sign the rendered bytes with the library or the CLI." }
+    },
+    {
+      "id": "ltv",
+      "label": "LTV ladder (PAdES B-T → B-LTA)",
+      "library": { "supported": true, "call": "signPdfBytesWithTimestamp + addValidationInfo + addDocumentTimestamp", "since": "1.7.0", "notes": "Network transport is injected by the caller via setTimestampProvider / setRevocationProvider — the engine opens no socket." },
+      "cli": { "supported": false, "notes": "Verification only: verify --revocation validates RFC 3161 timestamps and OCSP/CRL material; sign-side LTV is documented as out of scope." },
+      "mcp": { "supported": true, "tool": "add_ltv + timestamp_pdf", "since": "1.6.0", "notes": "Transport is operator-configured via PDFNATIVE_MCP_TSA_URL / PDFNATIVE_MCP_REVOCATION and a host allow-list — never from tool arguments. verify_pdf with ltv: true reports the achieved level." },
+      "react": { "supported": false }
+    },
+    {
+      "id": "encrypt-decrypt",
+      "label": "Encrypt / decrypt",
+      "library": { "supported": true, "call": "encryption layout option at build time; page-tree encrypt option and openPdf with a password for existing PDFs" },
+      "cli": { "supported": true, "command": "encrypt / decrypt", "since": "1.3.0" },
+      "mcp": { "supported": true, "tool": "encrypt_pdf / decrypt_pdf", "since": "1.5.0", "notes": "Build-time encrypt on the document tools (since 1.6.0) keeps the AcroForm; encrypt_pdf rebuilds the page tree and drops signatures and /AcroForm." },
+      "react": { "supported": true, "call": "layout render option (build-time encryption only)", "notes": "No decryption of existing PDFs." }
+    },
+    {
+      "id": "fill-forms",
+      "label": "Fill / flatten forms",
+      "library": { "supported": true, "call": "readFormFields + fillForm + flattenForm", "since": "1.6.0" },
+      "cli": { "supported": true, "command": "fill", "since": "1.3.0" },
+      "mcp": { "supported": true, "tool": "read_form_fields + fill_form", "since": "1.5.0" },
+      "react": { "supported": false, "notes": "<FormField> creates form widgets in new documents; filling existing AcroForms is a library / CLI / MCP capability." }
+    },
+    {
+      "id": "extract-text",
+      "label": "Extract text",
+      "library": { "supported": true, "call": "extractText", "since": "1.6.0" },
+      "cli": { "supported": true, "command": "extract-text", "since": "1.3.0" },
+      "mcp": { "supported": true, "tool": "extract_text" },
+      "react": { "supported": false }
+    },
+    {
+      "id": "merge-split",
+      "label": "Merge / split / extract pages",
+      "library": { "supported": true, "call": "mergePdfs + splitPdf + extractPages", "since": "1.4.0" },
+      "cli": { "supported": true, "command": "merge / split / extract", "since": "1.2.0" },
+      "mcp": { "supported": true, "tool": "merge_pdfs / split_pdf / extract_pages", "since": "1.3.0" },
+      "react": { "supported": false }
+    },
+    {
+      "id": "annotate",
+      "label": "Markup annotations",
+      "library": { "supported": true, "call": "buildAnnotation + PdfModifier.addAnnotation", "since": "1.5.0" },
+      "cli": { "supported": true, "command": "annotate", "since": "1.2.0" },
+      "mcp": { "supported": true, "tool": "annotate_pdf", "since": "1.4.0" },
+      "react": { "supported": false }
+    },
+    {
+      "id": "inspect-layout",
+      "label": "Inspect layout (pagination dry run)",
+      "library": { "supported": true, "call": "inspectDocumentLayout", "since": "1.5.0" },
+      "cli": { "supported": true, "command": "render", "since": "1.2.0", "notes": "render --inspect-layout emits the LayoutInspection report instead of a PDF." },
+      "mcp": { "supported": true, "tool": "inspect_layout", "since": "1.6.0" },
+      "react": { "supported": true, "call": "inspectDocument" }
+    },
+    {
+      "id": "validate-pdfua",
+      "label": "Validate PDF/UA",
+      "library": { "supported": true, "call": "validatePdfUA" },
+      "cli": { "supported": true, "command": "inspect", "since": "1.1.0", "notes": "inspect --pdfua, and --check pdfua as a CI assertion." },
+      "mcp": { "supported": true, "tool": "validate_pdf", "since": "1.1.0" },
+      "react": { "supported": false, "notes": "lintDocument checks the authoring model before rendering; it is not a validation of the emitted PDF." }
+    }
+  ]
+}
