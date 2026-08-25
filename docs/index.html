@@ -533,6 +533,18 @@ const pdf = renderToBytes(
   <div class="container">
     <h2 class="section-title">How It Compares</h2>
     <p class="section-subtitle">Feature-by-feature comparison with popular PDF libraries.</p>
+    <div class="cmp-quiz" id="cmp-quiz">
+      <p class="cmp-quiz-label">What does your project need? Tick what applies — the matching rows light up and the verdict below is derived from the table, including the cases where another library is the better fit.</p>
+      <div class="cmp-quiz-options">
+        <label><input type="checkbox" data-quiz-cap="scripts,bidi"> Non-Latin scripts with correct shaping (Arabic, Thai, CJK…)</label>
+        <label><input type="checkbox" data-quiz-cap="sign"> Digital signatures</label>
+        <label><input type="checkbox" data-quiz-cap="pdfa"> PDF/A archival conformance</label>
+        <label><input type="checkbox" data-quiz-cap="parse"> Read or modify existing PDFs</label>
+        <label><input type="checkbox" data-quiz-cap="encrypt"> AES encryption</label>
+        <label><input type="checkbox" data-quiz-cap="barcodes"> Barcodes / QR codes</label>
+      </div>
+      <p class="cmp-quiz-verdict" id="cmp-quiz-verdict" hidden></p>
+    </div>
     <div class="table-wrap">
       <table class="cmp-table">
         <caption style="caption-side:bottom;text-align:left;font-size:12px;color:var(--c-text-dim);padding-top:12px;line-height:1.6;">
@@ -568,7 +580,7 @@ const pdf = renderToBytes(
             <td>@types</td>
             <td class="cmp-check">✓</td>
           </tr>
-          <tr>
+          <tr data-cap="scripts">
             <td>Unicode scripts</td>
             <td><strong>22</strong></td>
             <td>Via fontkit</td>
@@ -576,7 +588,7 @@ const pdf = renderToBytes(
             <td>Via pdfkit</td>
             <td>Via @pdf-lib/fontkit</td>
           </tr>
-          <tr>
+          <tr data-cap="bidi">
             <td>BiDi (Arabic / Hebrew)</td>
             <td class="cmp-check">✓</td>
             <td class="cmp-cross">✗</td>
@@ -584,7 +596,7 @@ const pdf = renderToBytes(
             <td class="cmp-cross">✗</td>
             <td class="cmp-cross">✗</td>
           </tr>
-          <tr>
+          <tr data-cap="pdfa">
             <td>PDF/A compliance</td>
             <td><strong>4 levels</strong></td>
             <td class="cmp-cross">✗</td>
@@ -592,7 +604,7 @@ const pdf = renderToBytes(
             <td class="cmp-cross">✗</td>
             <td class="cmp-cross">✗</td>
           </tr>
-          <tr>
+          <tr data-cap="encrypt">
             <td>AES encryption</td>
             <td><strong>128 + 256</strong></td>
             <td class="cmp-check">✓</td>
@@ -600,7 +612,7 @@ const pdf = renderToBytes(
             <td class="cmp-check">✓</td>
             <td class="cmp-cross">✗</td>
           </tr>
-          <tr>
+          <tr data-cap="sign">
             <td>Digital signatures</td>
             <td class="cmp-check"><strong>RSA + ECDSA</strong></td>
             <td class="cmp-cross">✗</td>
@@ -608,7 +620,7 @@ const pdf = renderToBytes(
             <td class="cmp-cross">✗</td>
             <td class="cmp-cross">✗</td>
           </tr>
-          <tr>
+          <tr data-cap="barcodes">
             <td>Barcodes / QR codes</td>
             <td><strong>5 formats</strong></td>
             <td class="cmp-cross">✗</td>
@@ -640,7 +652,7 @@ const pdf = renderToBytes(
             <td class="cmp-check">✓</td>
             <td class="cmp-cross">✗</td>
           </tr>
-          <tr>
+          <tr data-cap="parse">
             <td>PDF parser / modifier</td>
             <td class="cmp-check">✓</td>
             <td class="cmp-cross">✗</td>

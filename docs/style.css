@@ -830,3 +830,12 @@ textarea:focus-visible,
 .bench-live-label { font-size: 13px; color: var(--c-text-dim); }
 .bench-live-value { font-size: 13px; font-weight: 600; color: var(--c-text); font-variant-numeric: tabular-nums; }
 .bench-live-bar { background: var(--c-success, #16a34a); }
+
+/* ── Comparison quiz ─────────────────────────────────────────────── */
+
+.cmp-quiz { margin: 0 auto 22px; max-width: 860px; padding: 16px 20px; border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-bg-card); }
+.cmp-quiz-label { font-size: 14px; color: var(--c-text-dim); margin: 0 0 12px; }
+.cmp-quiz-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px 18px; }
+.cmp-quiz-options label { font-size: 14px; color: var(--c-text); display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
+.cmp-quiz-verdict { margin: 14px 0 0; font-size: 14px; color: var(--c-text); border-left: 3px solid var(--c-primary); background: var(--c-surface); padding: 10px 14px; border-radius: 0 8px 8px 0; }
+.cmp-table tr.cmp-hot td { background: color-mix(in srgb, var(--c-primary) 10%, transparent); }

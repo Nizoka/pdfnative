@@ -139,6 +139,16 @@ describe('verify-docs', () => {
             });
         }, 120_000);
 
+        it('error-parity rejects a diagnostic code the docs invent', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/guides/pdfa.md', 'PDFA_NO_FONT_ENTRIES', 'PDFA_IMAGINARY_CODE');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('error-parity');
+                expect(run.output).toContain('PDFA_IMAGINARY_CODE');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
         it('anchor-parity catches a deep link to a renamed section', () => {
             withSandbox((dir) => {
                 patch(dir, 'docs/guides/streaming.md', '#streaming-merge--split', '#streaming-merge--split-renamed');

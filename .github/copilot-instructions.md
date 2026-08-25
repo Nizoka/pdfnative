@@ -113,7 +113,7 @@ npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit
 npm run typecheck:all   # typecheck src/ + tests/ + scripts/
 npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 npm run validate:pdfa   # veraPDF over every PDF/A-claiming sample (auto-detected; coverage canary vs declared.pdfaSamples; skips with exit 0 when veraPDF is absent, blocking in CI)
-npm run verify:docs     # 21 offline rules over docs/, playgrounds, README, llms files (ecosystem.json is the source of truth)
+npm run verify:docs     # 22 offline rules over docs/, playgrounds, README, llms files (ecosystem.json is the source of truth)
 ```
 
 - Build tool: **tsup** (dual ESM/CJS, tree-shakeable, sourcemaps)

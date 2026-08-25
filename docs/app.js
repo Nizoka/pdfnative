@@ -86,6 +86,45 @@
     });
   });
 
+  // ── Comparison quiz — verdicts derived from the table itself ──
+  var quiz = document.getElementById('cmp-quiz');
+  if (quiz) {
+    var quizBoxes = quiz.querySelectorAll('input[data-quiz-cap]');
+    var verdictEl = document.getElementById('cmp-quiz-verdict');
+    var updateQuiz = function () {
+      var caps = [];
+      quizBoxes.forEach(function (b) {
+        if (b.checked) b.getAttribute('data-quiz-cap').split(',').forEach(function (c) { caps.push(c); });
+      });
+      document.querySelectorAll('.cmp-table tr[data-cap]').forEach(function (tr) {
+        tr.classList.toggle('cmp-hot', caps.indexOf(tr.getAttribute('data-cap')) !== -1);
+      });
+      if (!caps.length) { verdictEl.hidden = true; return; }
+      // Facts, straight from the table rows above: which needs are
+      // pdfnative-only, and which are served elsewhere too.
+      var only = [];
+      if (caps.indexOf('bidi') !== -1) only.push('BiDi shaping');
+      if (caps.indexOf('pdfa') !== -1) only.push('built-in PDF/A');
+      if (caps.indexOf('sign') !== -1) only.push('digital signatures');
+      var msg;
+      if (only.length) {
+        msg = 'Of the libraries in this table, only pdfnative offers ' + only.join(', ') +
+          ' built in (highlighted rows). The others can sometimes get there with extra work — a different claim.';
+      } else if (caps.indexOf('parse') !== -1 && caps.length === 1) {
+        msg = 'Both pdf-lib and pdfnative read and modify existing PDFs. If that is your whole need, pdf-lib is a solid, widely used choice; pdfnative adds the generation, extraction and verification stack around it.';
+      } else if (caps.indexOf('encrypt') !== -1 && caps.length === 1) {
+        msg = 'pdfkit, jsPDF and pdfmake also offer AES encryption (pdf-lib does not). pdfnative adds AES-256 write plus RC4/AES read-and-decrypt if you also work with existing files.';
+      } else if (caps.indexOf('barcodes') !== -1 && caps.length === 1) {
+        msg = 'pdfmake offers QR codes; the five-format barcode set (QR, Code 128, EAN-13, Data Matrix, PDF417) is pdfnative-only in this table.';
+      } else {
+        msg = 'Several libraries in the table cover parts of this combination — the highlighted rows show who covers what. pdfnative covers all of the ticked rows in one dependency-free package.';
+      }
+      verdictEl.textContent = msg;
+      verdictEl.hidden = false;
+    };
+    quizBoxes.forEach(function (b) { b.addEventListener('change', updateQuiz); });
+  }
+
   // ── Code tabs ─────────────────────────────────────────────
   var tabBtns = document.querySelectorAll('.tab-btn');
   var tabPanels = document.querySelectorAll('.tab-panel');

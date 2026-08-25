@@ -1034,6 +1034,41 @@ if (!existsSync(LLMS_RECIPES)) {
     fail('docs/llms-recipes.txt', 1, 'llms-sync', 'stale — regenerate with `npm run docs:llms`');
 }
 
+// ── Rule: error-parity ──────────────────────────────────────────────
+
+/**
+ * `docs/data/errors.json` is the served registry of the engine's diagnostic
+ * codes. Two-way check against reality: every `PDFA_*` token the docs mention
+ * must exist both in the registry and in src/, and every registry entry must
+ * exist in src/ — a registry entry for a code the engine no longer emits
+ * teaches agents a ghost.
+ */
+{
+    const ERRORS_JSON = join(ROOT, 'docs', 'data', 'errors.json');
+    if (!existsSync(ERRORS_JSON)) {
+        fail('docs/data/errors.json', 1, 'error-parity', 'missing — the engine diagnostic registry must be served');
+    } else {
+        const registry = JSON.parse(read(ERRORS_JSON)) as { diagnostics: Array<{ code: string }> };
+        const registered = new Set(registry.diagnostics.map((d) => d.code));
+        const srcCodes = new Set<string>();
+        for (const f of walk(join(ROOT, 'src'), (p) => p.endsWith('.ts'))) {
+            for (const m of read(f).matchAll(/\bPDFA_[A-Z_]+\b/g)) srcCodes.add(m[0]);
+        }
+        for (const code of registered) {
+            if (!srcCodes.has(code)) {
+                fail('docs/data/errors.json', 1, 'error-parity', `registry lists "${code}" but src/ never emits it`);
+            }
+        }
+        for (const file of DOC_FILES) {
+            const text = read(file);
+            for (const m of text.matchAll(/\bPDFA_[A-Z_]+\b/g)) {
+                if (registered.has(m[0])) continue;
+                fail(rel(file), lineOf(text, m.index!), 'error-parity', `diagnostic "${m[0]}" is not in docs/data/errors.json`);
+            }
+        }
+    }
+}
+
 // ── Rule: anchor-parity ─────────────────────────────────────────────
 
 /**
@@ -1247,6 +1282,7 @@ const OFFLINE_RULES = [
     'contrast',
     'llms-sync',
     'llms-index-sync',
+    'error-parity',
     'anchor-parity',
     'guide-render-sync',
     'api-json-sync',

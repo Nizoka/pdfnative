@@ -1,0 +1,39 @@
+{
+  "$comment": "Machine-readable registry of the diagnostic codes the pdfnative ENGINE emits (src/core/pdf-diagnostics.ts). Meanings and remedies are restated from the source messages; the error-parity rule of scripts/verify-docs.ts checks that every code named in the documentation exists here and in src/, and vice versa. The CLI's E_* codes and the MCP server's tool error codes belong to their own repositories (pdfnative-cli llms.txt / schema manifest, and the MCP guide's error table, checked against the published package by the weekly --online run) and are deliberately not mirrored here.",
+  "package": "pdfnative",
+  "verifiedOn": "2026-08-25",
+  "diagnostics": [
+    {
+      "code": "PDFA_NO_FONT_ENTRIES",
+      "severity": "warning",
+      "since": "1.7.0",
+      "raisedWhen": "A document claims a PDF/A level (layout.tagged) while rendering text through the unembedded standard-14 Helvetica — no fontEntries were supplied.",
+      "standard": "ISO 19005 §6.2.11.4.1 (every font embedded; veraPDF rejects the file)",
+      "remedy": "Register an embedded Latin font (e.g. Noto Sans via registerFont('latin', …) + fontEntries) or drop the PDF/A level.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
+      "code": "PDFA_UNEMBEDDED_FORM_FONT",
+      "severity": "warning",
+      "since": "1.7.0",
+      "raisedWhen": "An AcroForm field appears under a PDF/A claim — field appearances render through the unembedded base-14 /Helv font.",
+      "standard": "ISO 19005 §6.2.11.4.1 (veraPDF rejects the file)",
+      "remedy": "Drop the PDF/A level for form documents, or flatten the form before claiming conformance.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
+      "code": "PDFA_DEVICE_CMYK_IMAGE",
+      "severity": "warning",
+      "since": "1.7.0",
+      "raisedWhen": "A DeviceCMYK image is embedded under a PDF/A claim whose OutputIntent is sRGB.",
+      "standard": "ISO 19005-2 §6.2.4.3 (device colour must match the output intent; veraPDF rejects the file)",
+      "remedy": "Convert the image to RGB or drop the PDF/A level.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
+    }
+  ],
+  "sink": {
+    "default": "console.warn, deduplicated once per code per build",
+    "custom": "layout.onDiagnostic receives every diagnostic (no deduplication)",
+    "strict": "layout.strict: true throws instead (onDiagnostic is then ignored)"
+  }
+}
