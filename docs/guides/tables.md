@@ -1,6 +1,10 @@
 # Smart tables
 
-> _Backward-compatible with v1.1.0 — existing single-page tables produce byte-identical output._
+> **Multi-page-safe tables by default.** Long tables wrap on column overflow,
+> slice cleanly across pages and reprint their header on every continuation
+> page; zebra striping, captions, per-cell padding and minimum row heights are
+> one field each on `TableBlock`. Backward-compatible with v1.1.0 — existing
+> single-page tables produce byte-identical output.
 
 pdfnative's table renderer is **planner-driven** and **multi-page-safe** by default. Long tables wrap on column overflow, slice cleanly across pages, and reprint their header on every continuation page — matching the behaviour readers expect from commercial PDF libraries.
 

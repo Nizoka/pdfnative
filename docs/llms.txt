@@ -2,6 +2,8 @@
 
 > Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 22 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. PAdES digital signatures with long-term validation (B-B → B-LTA). Current version: 1.7.0.
 
+_Verified on 2026-08-29 against the source tree by `npm run verify:docs`; the canonical manifest is <https://pdfnative.dev/assets/ecosystem.json>._
+
 ## Docs
 
 - [README](https://github.com/Nizoka/pdfnative/blob/main/README.md): Full feature list, install, quick start, API surface, examples.
@@ -22,6 +24,7 @@
 - [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`.
 - [Accessibility](https://pdfnative.dev/guides/accessibility.html): Tagged PDF, /ActualText, PDF/UA structure tree.
 - [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
+- [Choosing your surface](https://pdfnative.dev/guides/choose.html): Library, CLI, MCP or React? The decision tree plus a verified capability × surface matrix, with an honest em-dash where a surface lacks a capability.
 - [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
 - [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
 - [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set, plus flag & ZWJ sequences via `--sequences` / `--sequence-list`; pinned download + SHA-256 verification.
@@ -37,13 +40,14 @@
 - [Colour emoji](https://pdfnative.dev/guides/colour-emoji.html): COLRv1 rendering — solid, linear and radial gradient layers as native PDF Form XObjects; flag & ZWJ sequences (51 flags + 22 ZWJ bundled) render as single ligature glyphs.
 - [Layout debugging](https://pdfnative.dev/guides/debugging.html): `inspectDocumentLayout()` and the `debug: true` overlay for diagnosing pagination.
 - [Font validation](https://pdfnative.dev/guides/font-validation.html): `validateFontData()` — check a font module before registering it.
+- [Self-verifying generation](https://pdfnative.dev/guides/self-verify.html): The generate → inspect → assert → correct loop — `inspectDocumentLayout()` before building, then `extractText()` / `validatePdfUA()` / `listSignatures()` against the emitted bytes; the same loop on the CLI (`inspect --check`, stable exit codes) and MCP (`inspect_pdf`).
 - [Agentic workflows](https://pdfnative.dev/guides/agentic-workflows.html): Patterns for driving pdfnative from AI agents on public, validated APIs.
 - [Use cases](https://pdfnative.dev/guides/use-cases.html): Four ecosystem architectures with diagrams — store the DocSpec instead of the PDF and render on-device, air-gapped PAdES B-LTA archiving, a CI document-regression gate with `compare`, and edge-rendered PDFs with correct HTTP caching.
 - [AI governance](https://pdfnative.dev/guides/ai-governance.html): The human-in-the-loop contract — agents draft, humans review, approve and submit.
 - [Responsibility](https://pdfnative.dev/responsibility.html): Sustainability, supply-chain and accessibility position — every claim linked to its proof, plus an explicit list of what is deliberately not claimed.
 - [Ecosystem manifest](https://pdfnative.dev/assets/ecosystem.json): Machine-readable versions and counts for the whole ecosystem (canonical, enforced by `npm run verify:docs`).
 
-> Guide pages render their markdown client-side. For the full text without executing JavaScript, request the `.md` source at the same path — e.g. `https://pdfnative.dev/guides/charts.md`.
+> Every guide is pre-rendered: the HTML at `https://pdfnative.dev/guides/<name>.html` already contains the full article, so a fetcher that does not execute JavaScript gets the whole page. The Markdown source is served at the same path with `.md` (`https://pdfnative.dev/guides/charts.md`) and is declared as a `text/markdown` alternate in each page head — the same text without the page chrome, and the cheaper fetch of the two. Both work without JavaScript.
 
 ## Agent and AI integration
 
@@ -57,7 +61,7 @@
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 48 sample generators producing 242 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2687+ tests across 123 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2691+ tests across 123 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
 
 ## Machine-readable artefacts
 
@@ -66,6 +70,7 @@
 - [llms-recipes.txt](https://pdfnative.dev/llms-recipes.txt): The executable recipe corpus — standalone TypeScript files importing from `pdfnative`, each executed in CI with its `@expect` assertions verified, so the code you copy is proven to compile and to produce exactly the artefact its header describes.
 - [api.json](https://pdfnative.dev/assets/api.json): The public API surface, derived mechanically from the export statements of `src/index.ts` — name, kind, source module, signature and TSDoc summary where extractable. The substitute for the unpublished `index.d.ts`.
 - [surfaces.json](https://pdfnative.dev/data/surfaces.json): The capability × surface matrix (library / CLI / MCP / React) behind the [Choosing your surface](https://pdfnative.dev/guides/choose.html) guide.
+- [errors.json](https://pdfnative.dev/data/errors.json): The engine's diagnostic registry — every `PDFA_` diagnostic code with its meaning and remedy, two-way verified against `src/` by the `error-parity` rule.
 - [llms-index.json](https://pdfnative.dev/llms-index.json): Per-page machine index — HTML and raw-Markdown URL, title, summary, section anchors, and exact byte / approximate token sizes for every artefact, so you can decide what to fetch before spending the tokens.
 - Every guide serves its raw Markdown at the same URL with `.md` instead of `.html`, declared via `<link rel="alternate" type="text/markdown">` in each page head. All of these URLs are listed in the sitemap.
 

@@ -1,6 +1,6 @@
 # Streaming output
 
-> pdfnative emits PDFs as `AsyncGenerator<Uint8Array>` so you can pipe them to disk, an HTTP response, or a Web Stream without buffering the whole document. **New in v1.3.0:** a mode in which the fully-joined PDF binary never exists in memory — see [what this does and does not buy you](#what-this-does-and-does-not-buy-you) for the exact profile.
+> **pdfnative emits PDFs as `AsyncGenerator<Uint8Array>`** so you can pipe them to disk, an HTTP response, or a Web Stream without buffering the whole document. **New in v1.3.0:** a mode in which the fully-joined PDF binary never exists in memory — see [what this does and does not buy you](#what-this-does-and-does-not-buy-you) for the exact profile.
 
 ## Three streaming modes
 
