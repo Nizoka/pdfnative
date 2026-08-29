@@ -43,8 +43,6 @@
   <text x="676" y="259" text-anchor="middle" font-size="11.5" fill="#4F46E5">committed reference</text>
 
   <!-- Compare -->
-  <line x1="676" y1="174" x2="676" y2="200" stroke="#475569" stroke-width="0" />
-  <line x1="586" y1="142" x2="500" y2="142" stroke="#475569" stroke-width="0"/>
   <path d="M676 174 C 676 190, 560 190, 522 236" fill="none" stroke="#475569" stroke-width="1.75" marker-end="url(#ucg-ah)"/>
   <path d="M586 244 C 560 244, 540 244, 524 244" fill="none" stroke="#475569" stroke-width="1.75" marker-end="url(#ucg-ah)"/>
 
@@ -68,7 +66,7 @@
   <text x="570" y="422" text-anchor="middle" font-size="11.5" fill="#B91C1C">explains itself in the CI log</text>
 
   <!-- Promote loop -->
-  <path d="M766 244 C 850 244, 850 396, 722 396" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 5" marker-start="url(#ucg-ah)"/>
+  <path d="M766 244 C 800 244, 800 396, 722 396" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 5" marker-start="url(#ucg-ah)"/>
   <text x="848" y="316" text-anchor="middle" font-size="11.5" fill="#64748B">intentional change?</text>
   <text x="848" y="332" text-anchor="middle" font-size="11.5" fill="#64748B">promote candidate</text>
   <text x="848" y="348" text-anchor="middle" font-size="11.5" fill="#64748B">to golden in the PR</text>

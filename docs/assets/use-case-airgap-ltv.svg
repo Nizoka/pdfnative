@@ -16,61 +16,61 @@
   <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">Evidence is collected online as replayable JSON, embedded fully offline — CLI v1.4.0</text>
 
   <!-- Connected zone -->
-  <rect x="40" y="96" width="400" height="360" rx="14" fill="#FFFFFF" stroke="#93C5FD" stroke-width="1.5"/>
-  <text x="240" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#1E40AF">Connected zone</text>
-  <text x="240" y="145" text-anchor="middle" font-size="11.5" fill="#3B82F6">every network touch is an explicit opt-in, SSRF-guarded</text>
+  <rect x="40" y="96" width="370" height="360" rx="14" fill="#FFFFFF" stroke="#93C5FD" stroke-width="1.5"/>
+  <text x="225" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#1E40AF">Connected zone</text>
+  <text x="225" y="145" text-anchor="middle" font-size="11.5" fill="#3B82F6">every network touch is an explicit opt-in, SSRF-guarded</text>
 
-  <rect x="76" y="166" width="328" height="60" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
-  <text x="240" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">pdfnative sign --timestamp &lt;tsa-url&gt;</text>
-  <text x="240" y="210" text-anchor="middle" font-size="11.5" fill="#3B82F6">RFC 3161 token embedded → PAdES B-T</text>
+  <rect x="61" y="166" width="328" height="60" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="225" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">pdfnative sign --timestamp &lt;tsa-url&gt;</text>
+  <text x="225" y="210" text-anchor="middle" font-size="11.5" fill="#3B82F6">RFC 3161 token embedded → PAdES B-T</text>
 
-  <line x1="240" y1="226" x2="240" y2="252" stroke="#475569" stroke-width="1.75" marker-end="url(#ual-ah)"/>
+  <line x1="225" y1="226" x2="225" y2="252" stroke="#475569" stroke-width="1.75" marker-end="url(#ual-ah)"/>
 
-  <rect x="76" y="254" width="328" height="60" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
-  <text x="240" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">pdfnative ltv collect --online</text>
-  <text x="240" y="298" text-anchor="middle" font-size="11.5" fill="#3B82F6">gathers OCSP responses + CRLs from the CAs</text>
+  <rect x="61" y="254" width="328" height="60" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="225" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">pdfnative ltv collect --online</text>
+  <text x="225" y="298" text-anchor="middle" font-size="11.5" fill="#3B82F6">gathers OCSP responses + CRLs from the CAs</text>
 
-  <line x1="240" y1="314" x2="240" y2="340" stroke="#475569" stroke-width="1.75" marker-end="url(#ual-ah)"/>
+  <line x1="225" y1="314" x2="225" y2="340" stroke="#475569" stroke-width="1.75" marker-end="url(#ual-ah)"/>
 
-  <rect x="112" y="342" width="256" height="60" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
-  <text x="240" y="366" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">ltv-data.json</text>
-  <text x="240" y="386" text-anchor="middle" font-size="11.5" fill="#B45309">versioned, auditable, replayable (DER as base64)</text>
+  <rect x="85" y="342" width="280" height="60" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
+  <text x="225" y="366" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">ltv-data.json</text>
+  <text x="225" y="386" text-anchor="middle" font-size="11.5" fill="#B45309">versioned, auditable, replayable (DER as base64)</text>
 
-  <text x="240" y="434" text-anchor="middle" font-size="11.5" fill="#64748B">verify anywhere, later: pdfnative verify --strict</text>
-  <text x="240" y="450" text-anchor="middle" font-size="11.5" fill="#64748B">--revocation offline reads the embedded /DSS</text>
+  <text x="225" y="434" text-anchor="middle" font-size="11.5" fill="#64748B">verify anywhere, later: pdfnative verify --strict</text>
+  <text x="225" y="450" text-anchor="middle" font-size="11.5" fill="#64748B">--revocation offline reads the embedded /DSS</text>
 
   <!-- Air gap boundary -->
   <line x1="480" y1="96" x2="480" y2="456" stroke="#DC2626" stroke-width="2.5" stroke-dasharray="10 7"/>
   <text x="480" y="88" text-anchor="middle" font-size="12.5" font-weight="700" fill="#DC2626">AIR GAP</text>
 
   <!-- Transfer arrow -->
-  <line x1="382" y1="372" x2="560" y2="372" stroke="#D97706" stroke-width="2.25" marker-end="url(#ual-ah-amber)"/>
+  <line x1="372" y1="372" x2="546" y2="372" stroke="#D97706" stroke-width="2.25" marker-end="url(#ual-ah-amber)"/>
   <text x="480" y="356" text-anchor="middle" font-size="11.5" font-weight="600" fill="#D97706">controlled transfer</text>
   <text x="480" y="392" text-anchor="middle" font-size="11" fill="#B45309">only the JSON crosses</text>
 
   <!-- Enclave zone -->
-  <rect x="520" y="96" width="400" height="360" rx="14" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
-  <text x="720" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Air-gapped enclave</text>
-  <text x="720" y="145" text-anchor="middle" font-size="11.5" fill="#64748B">no network I/O is even possible in embed — by design</text>
+  <rect x="550" y="96" width="370" height="360" rx="14" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+  <text x="735" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Air-gapped enclave</text>
+  <text x="735" y="145" text-anchor="middle" font-size="11.5" fill="#64748B">no network I/O is even possible in embed — by design</text>
 
-  <rect x="556" y="166" width="328" height="60" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
-  <text x="720" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">pdfnative ltv embed --data ltv-data.json</text>
-  <text x="720" y="210" text-anchor="middle" font-size="11.5" fill="#16A34A">evidence written into /DSS → PAdES B-LT, 100 % offline</text>
+  <rect x="571" y="166" width="328" height="60" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="735" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">pdfnative ltv embed --data ltv-data.json</text>
+  <text x="735" y="210" text-anchor="middle" font-size="11.5" fill="#16A34A">evidence written into /DSS → PAdES B-LT, 100 % offline</text>
 
-  <line x1="720" y1="226" x2="720" y2="252" stroke="#475569" stroke-width="1.75" marker-end="url(#ual-ah)"/>
+  <line x1="735" y1="226" x2="735" y2="252" stroke="#475569" stroke-width="1.75" marker-end="url(#ual-ah)"/>
 
-  <rect x="556" y="254" width="328" height="60" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
-  <text x="720" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">pdfnative doc-timestamp --url &lt;tsa&gt;</text>
-  <text x="720" y="298" text-anchor="middle" font-size="11.5" fill="#16A34A">at the gateway: /DocTimeStamp revision → B-LTA</text>
+  <rect x="571" y="254" width="328" height="60" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="735" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">pdfnative doc-timestamp --url &lt;tsa&gt;</text>
+  <text x="735" y="298" text-anchor="middle" font-size="11.5" fill="#16A34A">at the gateway: /DocTimeStamp revision → B-LTA</text>
 
-  <line x1="720" y1="314" x2="720" y2="340" stroke="#475569" stroke-width="1.75" marker-end="url(#ual-ah)"/>
+  <line x1="735" y1="314" x2="735" y2="340" stroke="#475569" stroke-width="1.75" marker-end="url(#ual-ah)"/>
 
-  <rect x="592" y="342" width="256" height="60" rx="10" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1.25"/>
-  <text x="720" y="366" text-anchor="middle" font-size="13" font-weight="700" fill="#3730A3">signed.lta.pdf</text>
-  <text x="720" y="386" text-anchor="middle" font-size="11.5" fill="#4F46E5">decades-verifiable · earlier revisions byte-identical</text>
+  <rect x="595" y="342" width="280" height="60" rx="10" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1.25"/>
+  <text x="735" y="366" text-anchor="middle" font-size="13" font-weight="700" fill="#3730A3">signed.lta.pdf</text>
+  <text x="735" y="386" text-anchor="middle" font-size="11.5" fill="#4F46E5">decades-verifiable · earlier revisions byte-identical</text>
 
-  <text x="720" y="434" text-anchor="middle" font-size="11.5" fill="#64748B">renew years later: run doc-timestamp again before</text>
-  <text x="720" y="450" text-anchor="middle" font-size="11.5" fill="#64748B">the TSA certificate expires</text>
+  <text x="735" y="434" text-anchor="middle" font-size="11.5" fill="#64748B">renew years later: run doc-timestamp again before</text>
+  <text x="735" y="450" text-anchor="middle" font-size="11.5" fill="#64748B">the TSA certificate expires</text>
 
   <!-- Footer -->
   <rect x="40" y="476" width="880" height="52" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
