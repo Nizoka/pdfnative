@@ -102,6 +102,64 @@ function approxTokens(bytes: number): number {
     return Math.round(bytes / 4);
 }
 
+/**
+ * Budget for a page summary, exported so the `llms-index-quality` rule in
+ * scripts/verify-docs.ts asserts against the same number the generator
+ * enforces — a drifted copy of this constant would be exactly the kind of
+ * silent divergence these rules exist to prevent.
+ */
+export const SUMMARY_MAX = 400;
+
+/**
+ * The lede blockquote: the contiguous run of `>` lines that follows the H1.
+ * Anchored on the H1 rather than searched globally, because a mid-document
+ * callout is not the page's summary (docs/guides/tables.md once shipped its
+ * line-150 behaviour-change box as its index entry); taken as a whole block
+ * rather than one line, because most ledes wrap over 4-9 physical lines and
+ * the `$`-under-/m regex this replaces kept only the first, severing 23 of
+ * 31 summaries mid-sentence.
+ */
+function ledeQuote(md: string): string {
+    const lines = md.split('\n');
+    const h1 = lines.findIndex((l) => /^# /.test(l));
+    if (h1 < 0) return '';
+    let j = h1 + 1;
+    while (j < lines.length && lines[j].trim() === '') j++;
+    if (!/^>/.test(lines[j] ?? '')) return '';
+    const out: string[] = [];
+    for (let k = j; k < lines.length && /^>/.test(lines[k]); k++) out.push(lines[k]);
+    return out.join('\n');
+}
+
+function cleanSummary(quote: string): string {
+    return quote
+        .replace(/^> ?/gm, '')
+        .replace(/\*\*/g, '')
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim()
+        // A lede written entirely in italics (anchored on the whole string, so
+        // inline code such as `E_*` elsewhere is never touched).
+        .replace(/^_(.*)_$/, '$1')
+        .trim();
+}
+
+/**
+ * Trim to the budget without ever cutting a word. Prefer the last sentence
+ * boundary in the final stretch (a summary that ends on a full stop reads as
+ * written, not as severed); fall back to the last word boundary plus an
+ * ellipsis, so a machine consumer can tell a truncated summary from a
+ * complete one.
+ */
+function truncateSummary(s: string, max = SUMMARY_MAX): string {
+    if (s.length <= max) return s;
+    const head = s.slice(0, max - 1);
+    const stop = Math.max(head.lastIndexOf('. '), head.lastIndexOf('? '), head.lastIndexOf('! '));
+    if (stop >= max * 0.6) return head.slice(0, stop + 1);
+    const space = head.lastIndexOf(' ');
+    return (space > 0 ? head.slice(0, space) : head).replace(/[\s,;:—-]+$/, '') + '…';
+}
+
 interface IndexPage {
     title: string;
     summary: string;
@@ -129,15 +187,14 @@ export function buildLlmsIndex(root: string): string {
     for (const name of guides) {
         const md = lf(readFileSync(join(guidesDir, name), 'utf8'));
         const title = md.match(/^# (.+)$/m)?.[1].replace(/`/g, '').trim() ?? name;
-        const quote = md.match(/^> \*\*([\s\S]*?)$/m)?.[0] ?? '';
-        const firstPara = md.split(/\n\n+/).find((p) => /^[A-Za-z[]/.test(p.trim())) ?? '';
-        const summary = (quote || firstPara)
-            .replace(/^> /gm, '')
-            .replace(/\*\*/g, '')
-            .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .slice(0, 300);
+        const quote = ledeQuote(md);
+        // Fallback for a guide without a lede; the fence guard keeps a code
+        // block from ever becoming a summary (the FAQ shipped one for three
+        // releases before the lede extraction above was anchored).
+        const firstPara = md
+            .split(/\n\n+/)
+            .find((p) => /^[A-Za-z[]/.test(p.trim()) && !p.includes('```')) ?? '';
+        const summary = truncateSummary(cleanSummary(quote || firstPara));
         const anchors = [...md.matchAll(/^## (.+)$/gm)].map((m) => slugify(m[1]));
         const bytes = Buffer.byteLength(md, 'utf8');
         pages.push({
@@ -157,6 +214,9 @@ export function buildLlmsIndex(root: string): string {
         [`${site}/agent-brief.md`, join(root, 'docs', 'agent-brief.md'), 'Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.'],
         [`${site}/llms-full.txt`, join(root, 'docs', 'llms-full.txt'), 'Full corpus: index + README + every guide, one request.'],
         [`${site}/llms-recipes.txt`, join(root, 'docs', 'llms-recipes.txt'), 'Executable recipes: CI-verified, copy-ready code for the most common tasks.'],
+        [`${site}/assets/api.json`, join(root, 'docs', 'assets', 'api.json'), 'The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.'],
+        [`${site}/data/surfaces.json`, join(root, 'docs', 'data', 'surfaces.json'), 'The capability × surface matrix (library / CLI / MCP / React) behind the choose guide, with an honest note on every unsupported cell.'],
+        [`${site}/data/errors.json`, join(root, 'docs', 'data', 'errors.json'), 'The engine diagnostic registry (PDFA_* codes), two-way checked against src/ by the error-parity rule.'],
         ['https://github.com/Nizoka/pdfnative/blob/main/README.md', join(root, 'README.md'), 'Complete feature and API reference (also embedded in llms-full.txt).'],
     ];
     for (const [url, path, description] of artefactSources) {

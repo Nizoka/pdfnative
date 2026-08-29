@@ -193,6 +193,52 @@ describe('verify-docs', () => {
             });
         }, 120_000);
 
+        it('llms-index-quality rejects a summary that is source code, not prose', () => {
+            withSandbox((dir) => {
+                // The exact shape of the defect the rule exists for: the FAQ's
+                // summary once shipped as a line lifted out of a fenced code
+                // block, and llms-index-sync — comparing a deterministic bug
+                // against itself — stayed green for three releases.
+                // (The perturbation also trips llms-index-sync; the assertions
+                // below target the quality rule's own message.)
+                patch(
+                    dir,
+                    'docs/llms-index.json',
+                    '"summary": "Frequently asked questions about pdfnative',
+                    '"summary": "const pdf = buildDocumentPDFBytes(x); questions about pdfnative',
+                );
+                const run = runVerifier(dir);
+                expect(run.output).toContain('llms-index-quality');
+                expect(run.output).toContain('starts with source code');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('llms-index-quality rejects a summary severed mid-sentence', () => {
+            withSandbox((dir) => {
+                patch(
+                    dir,
+                    'docs/llms-index.json',
+                    'no OCR engine, no rasterisation."',
+                    'no OCR engine, no"',
+                );
+                const run = runVerifier(dir);
+                expect(run.output).toContain('llms-index-quality');
+                expect(run.output).toContain('cut mid-sentence');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('verified-on-parity rejects a stamp that disagrees with the manifest', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/agent-brief.md', '_Verified on 2026-08-29', '_Verified on 2026-08-25');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('verified-on-parity');
+                expect(run.output).toContain('stamped 2026-08-25');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
         it('bench-parity ties the homepage figures to bench/RESULTS.md', () => {
             withSandbox((dir) => {
                 patch(dir, 'docs/index.html', '<span class="bench-value">~98 ms</span>', '<span class="bench-value">~33 ms</span>');

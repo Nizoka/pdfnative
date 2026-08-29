@@ -4,6 +4,11 @@
   Checked by `npm run verify:docs` (CI: .github/workflows/docs.yml): every
   indexable page under /docs must appear here, every <loc> must resolve to a
   file on disk, and no <lastmod> may be malformed or in the future.
+  lastmod is the date of the page's last DOCUMENTATION AUDIT, not its last
+  git commit — git history is unavailable to the CI verifier's shallow
+  checkout, the same doctrine that keeps dateModified out of the guides'
+  JSON-LD (scripts/build-guides.ts, "No dateModified" note). The verifier
+  bounds every lastmod to the manifest's verifiedOn audit window instead.
   Pages retired behind a noindex stub must be REMOVED from this list.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">

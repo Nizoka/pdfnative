@@ -200,7 +200,10 @@ export function buildGuideJsonLd(root: string, mdName: string, shell: string, ar
     // modified, and the only honest per-guide source (git history) is not
     // available to the CI verifier's shallow checkout. Stamping the manifest's
     // verifiedOn here claimed a modification date for guides whose Markdown
-    // had not changed — a false date is worse than no date.
+    // had not changed — a false date is worse than no date. The same doctrine
+    // governs docs/sitemap.xml: its lastmod is an audit date, bounded to the
+    // manifest's verifiedOn window by the sitemap-parity rule, never a git
+    // date.
     graph.push({
         '@type': 'TechArticle',
         headline,

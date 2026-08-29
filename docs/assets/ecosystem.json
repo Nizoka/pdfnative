@@ -115,11 +115,11 @@
     "guides": 31,
     "playgrounds": 10,
     "learnSteps": 8,
-    "recipes": 14
+    "recipes": 15
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 2687,
+    "tests": 2691,
     "scripts": 22,
     "bundledFontModules": 26,
     "blockTypes": 13,
@@ -195,7 +195,7 @@
     {
       "id": "test-count-homepage",
       "$comment": "The homepage quoted a stale test count for a full release train; no assertion covered it. canonical-present pins the current figure where it is displayed.",
-      "canonical": "2687+ tests across 123 files",
+      "canonical": "2691+ tests across 123 files",
       "requireIn": [
         "docs/index.html"
       ]
@@ -207,7 +207,18 @@
       "expect": 22,
       "requireIn": [
         "docs/index.html",
-        "README.md"
+        "README.md",
+        "docs/responsibility.html"
+      ]
+    },
+    {
+      "id": "cli-network-optins",
+      "$comment": "responsibility.html claimed for a full release train that sign --timestamp was not implemented (it shipped in CLI 1.4.0). The network opt-in list is now a canonical fact: the flag must be named on both pages, and never again described as unimplemented.",
+      "canonical": "sign --timestamp",
+      "forbid": "sign --timestamp[^.\\n]{0,90}(not yet implemented|is not implemented|does not contact)",
+      "requireIn": [
+        "docs/responsibility.html",
+        "docs/guides/cli.md"
       ]
     }
   ],
