@@ -561,7 +561,7 @@
         </div>
         <div>
           <label><input type="checkbox" data-cmd="inspect" data-flag="--signatures"> --signatures <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
-          <span class="hint">Structural signature inventory — fieldName, subFilter, byteRange, isDocTimestamp, isPlaceholder. Never the signature bytes.</span>
+          <span class="hint">Structural signature inventory — fieldName, subFilter, byteRange, isDocTimestamp, isPlaceholder, sigObjNum, contentsLength. Never the signature bytes.</span>
         </div>
         <div>
           <label for="i-password">--password</label>
@@ -1491,7 +1491,7 @@
     if (activeCmd === 'batch') {
       const bt = state.batch;
       if (bt['--manifest'] && bt['--input-dir']) {
-        warns.push('Pick one mode: `--manifest` (declarative pipeline) or `--input-dir` (directory render).');
+        errors.push('`--manifest` is mutually exclusive with `--input-dir`/`--output-dir` — the CLI refuses with exit 2.');
       }
       if (!bt['--manifest'] && !bt['--input-dir']) {
         warns.push('`batch` needs `--input-dir` + `--output-dir` (directory mode) or `--manifest tasks.json` (pipeline mode).');

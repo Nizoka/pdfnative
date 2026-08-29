@@ -49,7 +49,7 @@ means the surface does not offer it.
 |---|---|---|---|---|
 | Generate documents | `buildDocumentPDFBytes` / `buildPDFBytes` | `render` | `generate_basic_pdf` (+ the dedicated document tools) | `renderToBytes` and friends, `<Document>` tree |
 | Smart tables | `table` block | `render` (`table` block, or `--variant table`) | `add_table` | `<Table>` |
-| Native vector charts | `chart` block _(v1.6.0)_ | `render` (`chart` block) _(v1.3.0)_ | `add_chart` _(v1.5.0)_ | `<Chart>` _(v1.1.0)_ |
+| Native vector charts | `chart` block _(v1.6.0)_ | `render` (`chart` block) _(v1.3.0)_ | `add_chart` _(v1.5.0)_ | `<Chart>` _(v1.1.0; charts v2 — nine kinds, secondary axis, log/time scales, data labels — since v1.2.0)_ |
 | Digital signatures (PAdES CMS) | `addSignaturePlaceholder` _(v1.2.0)_ + `signPdfBytes` | `sign` | `sign_pdf` (+ `prepare_signature_placeholder`) | — |
 | LTV ladder (B-T → B-LTA) | `signPdfBytesWithTimestamp`, `addValidationInfo`, `addDocumentTimestamp` _(v1.7.0)_ | `sign --timestamp`, `ltv`, `doc-timestamp` _(v1.4.0)_ | `add_ltv`, `timestamp_pdf` _(v1.6.0)_ | — |
 | Encrypt / decrypt | build-time `encryption` layout option; existing PDFs via the page-tree `encrypt` option and `openPdf` with a password | `encrypt` / `decrypt` _(v1.3.0)_ | `encrypt_pdf` / `decrypt_pdf` _(v1.5.0)_ | build-time only, via the `layout` render option |
@@ -104,6 +104,8 @@ document rewrite.
 
 - [Onboarding](onboarding.html) — the 90-second install-and-first-call for
   each surface.
+- [Ecosystem use cases](use-cases.html) — four production architectures that
+  compose these surfaces, with diagrams.
 - [Self-verifying generation](self-verify.html) — the generate → inspect →
   assert → correct loop on every surface.
 - [Architecture](architecture.html) — how the four packages relate.

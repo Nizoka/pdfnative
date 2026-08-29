@@ -781,7 +781,7 @@ actually uses it. Two practical consequences:
   closed the mathematical-symbols gap locally before Noto Sans Math shipped in
   the engine. The published `lang` enum is closed and there is no operator-level
   fonts variable yet (a roadmap candidate), so this is a local code-level
-  pattern — see [Agentic workflows → Via the MCP server](agentic-workflows.md#via-the-mcp-server--the-local-install-is-the-extension-point)
+  pattern — see [Agentic workflows → Via the MCP server](agentic-workflows.html#via-the-mcp-server--the-local-install-is-the-extension-point)
   for the honest, step-by-step version.
 
 ---

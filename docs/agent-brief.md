@@ -22,9 +22,10 @@ Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar) and full UAX #9 BiDi.
 ## Choose your surface
 
 - **Writing application code** → the library: `npm install pdfnative`, `import { … } from 'pdfnative'`.
-- **Driving a shell, CI, or Makefile** → `pdfnative-cli` (21 commands, JSON-in/JSON-out agent contract with stable `E_*` error codes).
+- **Driving a shell, CI, or Makefile** → `pdfnative-cli` (21 commands, JSON-in/JSON-out agent contract with stable `E_*` error codes). New in v1.4.0: the complete PAdES ladder — `sign --timestamp <tsa-url>` (B-T), `ltv collect`/`embed` (B-LT, air-gap-friendly: evidence travels as replayable JSON), `doc-timestamp` (B-LTA) — plus signature-safe `metadata` edits and `compare` (text + structure diff with CI exit codes).
 - **You are a conversational assistant with tool access** → `pdfnative-mcp` (28 tools, MCP 2026-07-28 spec; config: `npx -y pdfnative-mcp`).
-- **The host app is React 19** → `pdfnative-react` (declarative JSX compiled on-device to pdfnative blocks).
+- **The host app is React 19** → `pdfnative-react` (declarative JSX compiled on-device to pdfnative blocks). New in v1.2.0: charts v2 (9 kinds, secondary axis), print production via `<Document print>`, and HTTP caching (`etag`/`cacheControl`) on `renderToResponse`.
+- Worked architectures combining the surfaces (store-the-spec, air-gapped B-LTA, CI compare gate, edge caching): [use cases](https://pdfnative.dev/guides/use-cases.md).
 
 All four produce the same PDFs from the same engine. Details: [onboarding](https://pdfnative.dev/guides/onboarding.md).
 

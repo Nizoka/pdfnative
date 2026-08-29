@@ -134,8 +134,9 @@ no rasterisation, and `/Figure` tagging with alt text.
 
 **Charts v2 (v1.2.0)** widens the surface to the engine's nine chart types and
 adds five props: `axis2` (a secondary Y axis — put a series on it with
-`yAxis: 'right'`), `xAxis` (`category` | `linear` | `time` positional axes, with
-optional log scale), `dataLabels`, `labelStride` and `labelRotation`. The
+`yAxis: 'right'`), `xAxis` (`category` | `linear` | `time` positional axes; a
+log scale is available on the *value* axes via `axis` / `axis2`
+`scale: 'log'`), `dataLabels`, `labelStride` and `labelRotation`. The
 exported `ChartPropsCoversChartBlock` compile-time lock guarantees `<Chart>`
 covers every engine `ChartBlock` field — which is exactly why the `pdfnative`
 peer floor is `^1.7.0`: a 1.6 engine would throw mid-render on the v2 fields.
@@ -225,10 +226,11 @@ import {
 > entry's `fontRef` to the bare language code instead of a slash-prefixed PDF
 > name, yielding invalid syntax like `latin 12 Tf` — Acrobat refuses such a file
 > ("an error occurred while reading this document (14)") and Chrome draws raw
-> glyph indices. **v1.2.0 fixes this**: `resolveFonts` now assigns proper
-> `/F3`, `/F4`, … references. If you shipped PDFs through `resolveFonts` or the
-> `fonts` option under v1.1.0, re-render them. Hand-built `fontEntries` using
-> `/F3`+ were never affected (`/F1` and `/F2` remain reserved by the engine).
+> glyph indices. **v1.2.0 fixes this**: `resolveFonts` now prefixes the slash,
+> emitting valid PDF names like `/latin` and `/th`. If you shipped PDFs through
+> `resolveFonts` or the `fonts` option under v1.1.0, re-render them. Hand-built
+> `fontEntries` using a correct `/F3`-style ref were never affected (`/F1` and
+> `/F2` remain reserved by the engine).
 >
 > When building entries by hand, keep failing loudly — `loadFontData` resolves to
 > `null` (it does not throw) when a code has no registered loader:
@@ -323,7 +325,7 @@ dual-axis document before rendering it.
 
 ## Fonts & environment
 
-Re-exported from the engine: `registerFonts`, `registerFont`, `loadFontData`, `validateFontData`, `downloadBlob` (browser), `initNodeCompression` (Node), and — v1.2.0 — `setDeflateImpl`, which plugs any deflate implementation into the engine (e.g. the browser-native `CompressionStream`, for compressed client-side rendering without shipping a compression library). (`loadFontData` is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the `fontEntries` render option (or on `<Document fontEntries={…}>`), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.
+Re-exported from the engine: `registerFonts`, `registerFont`, `loadFontData`, `validateFontData`, `downloadBlob` (browser), `initNodeCompression` (Node), and — v1.2.0 — `setDeflateImpl`, which plugs a **synchronous** deflate implementation into the engine for compressed client-side rendering (the function's output is written verbatim, so it must produce a zlib-wrapped RFC 1950 stream — e.g. fflate's `zlibSync`; the async browser `CompressionStream` cannot be plugged in). (`loadFontData` is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the `fontEntries` render option (or on `<Document fontEntries={…}>`), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.
 
 ```tsx
 import { Document, Text, renderToBytes, registerFont, loadFontData } from 'pdfnative-react';
@@ -383,12 +385,12 @@ v1.2.0 follows the pdfnative 1.7.0 engine — charts v2, print production, and t
 
 | Area | v1.1.0 | v1.2.0 |
 |---|---|---|
-| Charts | 5 types | **9 types** (`stackedBar`, `stackedBarH`, `area`, `scatter`) + `axis2`, `xAxis` (category / linear / time, log scale), `dataLabels`, `labelStride`, `labelRotation` |
+| Charts | 5 types | **9 types** (`stackedBar`, `stackedBarH`, `area`, `scatter`) + `axis2`, `xAxis` (category / linear / time), log scale on the value axes, `dataLabels`, `labelStride`, `labelRotation` |
 | Print | — | **`<Document print>`** / `DocSpec.print` — bleed shorthand, page boxes, printer's marks, `/UserUnit`; viewer preferences and a custom output intent via `layout` |
 | Conformance | — | `layout.strict` / `layout.onDiagnostic` expose the engine's PDF/A diagnostics channel; new `PdfDiagnostic*` types |
 | HTTP | `renderToResponse` | + `cacheControl` and `etag` options; streamability validated **before** the first byte |
 | Linting | 18 rules | **25 rules** (7 new, incl. `L_PRINT_BOXES` which delegates to the engine's `validatePrintOptions`) |
-| Fonts | `resolveFonts` emitted an invalid bare `fontRef` | **fixed** — proper `/F3`+ names; re-render anything produced through `resolveFonts` / the `fonts` option |
+| Fonts | `resolveFonts` emitted an invalid bare `fontRef` | **fixed** — slash-prefixed PDF names (`/latin`, `/th`, …); re-render anything produced through `resolveFonts` / the `fonts` option |
 | Exports | — | +`setDeflateImpl` and 8 types (`PrintOptions`, `PrinterMarksOptions`, `PageBox`, `CustomOutputIntent`, `PdfDiagnostic`, `PdfDiagnosticCode`, `PdfDiagnosticHandler`, `PdfColors`) |
 | Quality | — | 292 tests / 18 files · 95 % statement coverage · a veraPDF gate over an 11-file PDF/A corpus (with 2 negative canaries) blocks CI and publish |
 | Compatibility | `pdfnative ^1.6.0` peer | **`pdfnative ^1.7.0`** peer; React `^19.0.0` and Node ≥ 22 unchanged |

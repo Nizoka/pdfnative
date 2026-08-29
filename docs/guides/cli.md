@@ -25,7 +25,7 @@ The CLI is a **pure dispatch layer** over `pdfnative`. No PDF logic lives in the
 | `metadata` | `PdfModifier.updateMetadata()` — incremental `/Info` + XMP edits that keep existing signatures valid for their revision |
 | `ltv` | `collectValidationInfo()` / `embedValidationInfo()` / `addValidationInfo()` (PAdES B-LT `/DSS`) |
 | `doc-timestamp` | `addDocumentTimestamp()` — an RFC 3161 `/DocTimeStamp` revision (PAdES B-LTA) |
-| `compare` | `openPdf()` / `extractText()` / `readFormFields()` / `getAnnotations()` — text + structure diff, implemented in the CLI |
+| `compare` | `openPdf()` / `extractText()` / `readFormFields()` / `getAnnotations()` / `listSignatures()` — text + structure diff, implemented in the CLI |
 | `govern` | AI-governance contract (`.github/ai-governance.json`, `AGENT_RULES.md`) — draft gating uses the CLI's own `validateGovernanceDraft()` (the core repo's equivalent check is a repo script, not a published API) |
 | `batch` | the `render` pipeline, applied in parallel across a directory |
 | `schema` | versioned JSON Schemas (Draft 2020-12) for every input/output shape |
@@ -231,7 +231,7 @@ Renders a JSON document into a PDF. Supports both renderer variants exposed by `
 | `--stream-true` *(v1.1.0)* | off | Streaming via `buildDocumentPDFStreamTrue` / `buildPDFStreamTrue` — PDF parts are emitted and freed as they go, so the joined binary never materialises. Byte-identical to the buffered builders. Same constraints as `--stream` (no TOC, no `{pages}`); mutually exclusive with the other `--stream*` flags |
 | `--max-blocks <n>` *(v1.1.0)* | `100000` | Exposes `layout.maxBlocks` so very large multi-thousand-page reports no longer hit a spurious ceiling |
 | `--layout <file.json>` | — | Load any subset of `PdfLayoutOptions` |
-| `--chunk-size <n>` *(v1.4.0)* | — | Chunk size for the `--stream` / `--stream-true` output |
+| `--chunk-size <n>` *(v1.4.0)* | `65536` | Chunk size in bytes for the `--stream` / `--stream-true` output (not applicable to `--stream-page-by-page`) |
 | `--strict` *(v1.4.0)* | off | Escalate PDF/A diagnostics (`PDFA_NO_FONT_ENTRIES`, `PDFA_UNEMBEDDED_FORM_FONT`, `PDFA_DEVICE_CMYK_IMAGE`) into a hard failure **before the first output byte** — exit 1, `E_CHECK_FAILED`. Without it they are `warning:` lines on stderr (hidden by `--quiet`) plus an additive `diagnostics[]` array in the `--json` envelope |
 
 #### Smart tables _(v1.3.0, document variant)_
@@ -384,7 +384,7 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 | `--timestamp <tsa-url>` *(v1.4.0)* | — | Embed an **RFC 3161 timestamp token** from the given TSA (PAdES **B-T**). The only network opt-in on `sign` — SSRF-guarded, no fallback: transport failure is `E_NETWORK`, a malformed response is `E_PARSE`. `--dry-run` never touches the network |
 | `--timestamp-digest <algo>` *(v1.4.0)* | `sha256` | TSA digest: `sha256`, `sha384`, or `sha512` |
 | `--timestamp-nonce <hex>` *(v1.4.0)* | random | Explicit RFC 3161 nonce (testing / reproducibility) |
-| `--digest <algo>` *(v1.4.0)* | `sha256` | CMS digest for RSA keys: `sha256`, `sha384`, or `sha512` (ECDSA stays SHA-256) |
+| `--digest <algo>` *(v1.4.0)* | `sha256` | CMS digest for RSA keys: `sha256`, `sha384`, or `sha512`. Combining `sha384`/`sha512` with `--algorithm ecdsa-sha256` is a usage error (exit 2) — ECDSA is SHA-256 only |
 | `--profile <p>` *(v1.4.0)* | `pkcs7` | `pkcs7` or `pades` — `pades` emits `ETSI.CAdES.detached` with the ESS signing-certificate-v2 attribute and omits signing-time |
 | `--allow-multiple` *(v1.4.0)* | off | Add a signature to an already-signed PDF instead of refusing (the 1.x idempotent default is preserved) |
 | `--field-name <name>` *(v1.4.0)* | auto | Explicit signature field name (auto-suffixed on collision) |
@@ -406,13 +406,13 @@ Inspects metadata and conformance of an existing PDF. Read-only — never modifi
 | `--input <file>` | stdin | Input PDF |
 | `--format <fmt>` | `json` | `json` or `text` |
 | `--verbose` | off | Adds `verbose.{trailerKeys, catalogKeys, objectCount, xmpMetadata}`. Sanitised — no raw stream bytes |
-| `--pages` | off | Adds `pages: [{ index, width, height, rotation, annotations, formFields }]` — since v1.4.0 also `cropBox` / `trimBox` / `bleedBox` / `artBox` and `userUnit` when present, and `metadata.trapped` is reported |
+| `--pages` | off | Adds `pages: [{ index, width, height, rotation, annotations, formFields }]` — since v1.4.0 also `cropBox` / `trimBox` / `bleedBox` / `artBox` and `userUnit` when present. (`metadata.trapped` is reported unconditionally since v1.4.0, with or without `--pages`) |
 | `--pdfua` *(v1.1.0)* | off | Adds a `pdfua: { valid, errors, warnings }` report from `validatePdfUA()` (ISO 14289-1 structural checks: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) |
 | `--annotations` *(v1.2.0)* | off | Lists markup + link annotations per page (from `getAnnotations()`). `/PageLabels` are reported automatically when present |
 | `--form-fields` *(v1.3.0)* | off | Lists AcroForm fields (name, type, value, required/read-only) |
 | `--encryption` *(v1.3.0)* | off | Reports the encryption scheme (algorithm, revision, opened-as) |
 | `--password <pass>` *(v1.3.0)* | — | Password for an encrypted PDF (env `PDFNATIVE_PASSWORD`) |
-| `--signatures` *(v1.4.0)* | off | Structural signature inventory via `listSignatures()` — `fieldName`, `subFilter`, `byteRange`, `isDocTimestamp`, `isPlaceholder`, `contentsLength`. Never emits the signature bytes themselves |
+| `--signatures` *(v1.4.0)* | off | Structural signature inventory via `listSignatures()` — `fieldName`, `subFilter`, `byteRange`, `isDocTimestamp`, `isPlaceholder`, `sigObjNum`, `contentsLength`. Never emits the signature bytes themselves |
 | `--check <assertion>` | — | Repeatable; ANDed. Values: `pdfa`, `signed`, `encrypted`, `pdfua` *(v1.1.0)*, `signatures>=N` *(v1.4.0)*. Sets exit 0 = pass, 1 = fail |
 | `--summary` *(v1.1.0)* | off | Under `--json`, emit a canonical minimal verdict (`{ pages, encrypted, signatures, pdfa }`) |
 | `--fields <a,b.c>` *(v1.1.0)* | — | Project the JSON result to named dot-paths (array segments map over elements; unknown paths omitted) |
@@ -443,6 +443,7 @@ Verifies CMS/PKCS#7 signatures embedded in a PDF.
 | `--revocation-policy <p>` | `soft-fail` | `soft-fail` or `strict` |
 | `--summary` *(v1.1.0)* | off | Under `--json`, emit a minimal verdict (`{ valid, signatures, invalid }`) |
 | `--fields <a,b.c>` *(v1.1.0)* | — | Project the JSON result to named dot-paths |
+| `--pretty` | off | Indented JSON even under the global `--json` |
 
 **Scope (since v1.0.0):**
 
@@ -678,6 +679,7 @@ pdfnative encrypt --input report.pdf --output secure.pdf \
 | `--drop-annotations` | off | Drop all annotations; the default keeps URI links |
 | `--max-output-size <n>` | 256 MiB | Cap on the assembled size |
 | `--stream` | off | Stream the output (`--chunk-size N`) |
+| `--dry-run` | off | Validate without writing |
 
 ### `pdfnative decrypt` _(v1.3.0)_
 
@@ -767,7 +769,9 @@ Renders every JSON file in a directory to PDF **in parallel**, reusing the full 
 | `--fail-fast` | off | Abort on the first failure |
 | `--dry-run` *(v1.1.0)* | off | Validate every input without writing output |
 | `--json` / `--summary` *(v1.1.0)* | off | Machine-readable per-file report; `--summary` emits `{ total, succeeded, failed }` |
-| `--manifest <tasks.json>` *(v1.4.0)* | — | **Declarative pipeline mode** — see below |
+| `--format <fmt>` | `text` | Report format: `text` or `json` |
+| `[render options]` | — | `--layout`, `--variant`, smart tables, PDF/A, compression… — every `render` option is honoured and applied to each file |
+| `--manifest <tasks.json>` *(v1.4.0)* | — | **Declarative pipeline mode** — see below. Mutually exclusive with `--input-dir` / `--output-dir` (exit 2) |
 | `--allow-network` *(v1.4.0)* | off | Required before any network flag inside a manifest (`--timestamp`, `--url`, `--online`, `--revocation online`) — an untrusted manifest can never trigger network I/O on its own |
 | `--continue-on-error` *(v1.4.0)* | off | Keep going after a task fails; tasks that reference the failed output via `@id` are skipped |
 
@@ -777,19 +781,19 @@ pdfnative batch --input-dir inputs/ --output-dir outputs/ --tagged pdfa2b --conc
 
 #### Manifest mode _(v1.4.0)_
 
-`--manifest tasks.json` runs a declarative pipeline — `{ "version": 1, "tasks": [{ "id", "command", "flags" }] }` (`schema batch-manifest`). A flag value of `"@<id>"` references the output of an earlier task; relative paths resolve against the manifest's directory. The whole manifest is validated **before** anything runs, then executed sequentially and fail-fast (unless `--continue-on-error`).
+`--manifest tasks.json` runs a declarative pipeline — `{ "version": 1, "tasks": [{ "id", "command", "flags" }] }` (`schema batch-manifest`). Flag names are written **bare, without the leading dashes** (a dashed key is rejected with exit 2). A flag value of `"@<id>"` references the output of an earlier task; relative paths resolve against the manifest's directory. The whole manifest is validated **before** anything runs, then executed sequentially and fail-fast (unless `--continue-on-error`).
 
 ```json
 {
   "version": 1,
   "tasks": [
-    { "id": "report",  "command": "render", "flags": { "--input": "report.json", "--output": "report.pdf", "--tagged": "pdfa2b" } },
-    { "id": "stamped", "command": "metadata", "flags": { "--input": "@report", "--output": "final.pdf", "--title": "Q2 report" } }
+    { "id": "report",  "command": "render", "flags": { "input": "report.json", "output": "report.pdf", "tagged": "pdfa2b" } },
+    { "id": "stamped", "command": "metadata", "flags": { "input": "@report", "output": "final.pdf", "title": "Q2 report" } }
   ]
 }
 ```
 
-Only a fixed **14-command whitelist** is allowed inside a manifest — `render`, `sign`, `verify`, `inspect`, `merge`, `split`, `extract`, `extract-text`, `fill`, `encrypt`, `decrypt`, `annotate`, `metadata`, `doc-timestamp`. `ltv` and `compare` are excluded (they take positionals, which manifest tasks — a flat flag map — cannot express), and the meta commands (`batch`, `govern`, `schema`, `completion`, `doctor`) can never nest. Manifests are capped at 1 000 tasks with the same path-traversal checks as direct flags; a structural violation exits 2/`E_USAGE`, a forbidden command or flag exits 1/`E_INPUT`.
+Only a fixed **14-command whitelist** is allowed inside a manifest — `render`, `sign`, `verify`, `inspect`, `merge`, `split`, `extract`, `extract-text`, `fill`, `encrypt`, `decrypt`, `annotate`, `metadata`, `doc-timestamp`. `ltv` and `compare` are excluded (they take positionals, which manifest tasks — a flat flag map — cannot express), and the meta commands (`batch`, `govern`, `schema`, `completion`, `doctor`) can never nest. Manifests are capped at 1 000 tasks with the same path-traversal checks as direct flags. Error classes: a structural violation, an invalid flag name or value type, or a network-reaching flag without `--allow-network` exits 2/`E_USAGE`; an invalid or duplicate task id, a non-whitelisted command, or a broken `@ref` exits 1/`E_INPUT`; malformed JSON is 1/`E_PARSE`.
 
 ### `pdfnative schema`
 

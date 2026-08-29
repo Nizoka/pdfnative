@@ -21,26 +21,34 @@ which fits in a few kilobytes of JSON. So: persist the compact
 [`DocSpec`](react.html#agent-authoring--the-token-frugal-docspec) (or a
 `DocumentParams` JSON), and let the device that *asks* for the PDF produce it.
 
-![Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of megabyte-sized PDFs in object storage. When a client requests a document, the server sends the JSON; the client's own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine, using the browser-native CompressionStream plugged in via setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network.](../assets/use-case-spec-storage.svg)
+![Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of megabyte-sized PDFs in object storage. When a client requests a document, the server sends the JSON; the client's own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine — uncompressed by default, or compressed by plugging a synchronous deflate implementation into setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network.](../assets/use-case-spec-storage.svg)
 
 Why this works in a browser at all: the engine has **zero dependencies and no
-Node-only code paths** on this route, and pdfnative-react 1.2.0 exports
-`setDeflateImpl` — so compression can come from the browser's own
-`CompressionStream` instead of a bundled library.
+Node-only code paths** on this route. Rendering is synchronous and the output
+is a valid, uncompressed PDF — and since the bytes stay on the device, their
+size costs nothing on the wire.
 
 ```tsx
 // On the reader's device — nothing but the two packages and React.
-import { renderSpecToBytes, setDeflateImpl, downloadBlob } from 'pdfnative-react';
-
-// Browser-native deflate: no compression library shipped to the client.
-setDeflateImpl(async (bytes) => {
-  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-});
+import { renderSpecToBytes, downloadBlob } from 'pdfnative-react';
 
 const spec = await fetch(`/api/documents/${id}`).then((r) => r.json()); // ~2 KB
-const bytes = renderSpecToBytes(spec);                                   // rendered locally
-downloadBlob(new Blob([bytes], { type: 'application/pdf' }), 'invoice.pdf');
+const bytes = renderSpecToBytes(spec);       // rendered locally, synchronously
+downloadBlob(bytes, 'invoice.pdf');          // builds the Blob itself
+```
+
+Want compressed output too? `setDeflateImpl` accepts a **synchronous** deflate
+function whose result is written into the file verbatim, so it must produce a
+**zlib-wrapped (RFC 1950)** stream — `/FlateDecode` is zlib per ISO 32000-1
+§7.3.8. The browser's `CompressionStream` cannot be plugged in (it is
+asynchronous by nature); a tiny synchronous library can:
+
+```tsx
+import { zlibSync } from 'fflate';           // synchronous, zlib-wrapped output
+import { setDeflateImpl, renderSpecToBytes } from 'pdfnative-react';
+
+setDeflateImpl((bytes) => zlibSync(bytes));
+const compressed = renderSpecToBytes({ ...spec, layout: { ...spec.layout, compress: true } });
 ```
 
 What you gain, concretely:
