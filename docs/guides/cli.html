@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pdfnative-cli — Command-Line Interface Guide</title>
-  <meta name="description" content="Official CLI for pdfnative — 21 commands: render, fill, annotate, metadata, merge/split/extract, sign (RFC 3161 timestamps), verify, ltv, doc-timestamp (full PAdES ladder), encrypt, decrypt, inspect, extract-text, compare, batch, doctor, schema, completion, govern. Streaming, PDF/A, stdin/stdout.">
+  <meta name="description" content="Official CLI for pdfnative — 21 commands covering the full document lifecycle, incl. the complete PAdES ladder (sign --timestamp, ltv, doc-timestamp), metadata, compare and batch manifests. Streaming, PDF/A, stdin/stdout.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/guides/cli.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/cli.html">
@@ -16,7 +16,7 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/cli.html">
   <meta property="og:title" content="pdfnative-cli — Command-Line Interface Guide">
-  <meta property="og:description" content="Official CLI for pdfnative — 21 commands covering the full document lifecycle, incl. the complete PAdES ladder (sign --timestamp, ltv, doc-timestamp), signature-safe metadata edits and a CI-grade compare diff (v1.4.0). Zero extra runtime dependencies, streaming, PDF/A, stdin/stdout pipelines.">
+  <meta property="og:description" content="21 commands from the terminal — the complete PAdES ladder, signature-safe metadata edits, a CI-grade compare diff, batch manifests. Zero extra runtime dependencies, streaming, PDF/A.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -29,7 +29,7 @@
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"pdfnative-cli — Command-Line Interface Guide","item":"https://pdfnative.dev/guides/cli.html"}]},{"@type":"TechArticle","headline":"pdfnative-cli — Command-Line Interface Guide","description":"Official CLI for pdfnative — 21 commands: render, fill, annotate, metadata, merge/split/extract, sign (RFC 3161 timestamps), verify, ltv, doc-timestamp (full PAdES ladder), encrypt, decrypt, inspect, extract-text, compare, batch, doctor, schema, completion, govern. Streaming, PDF/A, stdin/stdout.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/cli.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"pdfnative-cli — Command-Line Interface Guide","item":"https://pdfnative.dev/guides/cli.html"}]},{"@type":"TechArticle","headline":"pdfnative-cli — Command-Line Interface Guide","description":"Official CLI for pdfnative — 21 commands covering the full document lifecycle, incl. the complete PAdES ladder (sign --timestamp, ltv, doc-timestamp), metadata, compare and batch manifests. Streaming, PDF/A, stdin/stdout.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/cli.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -141,7 +141,7 @@
 </tr>
 <tr>
 <td><code>compare</code></td>
-<td><code>openPdf()</code> / <code>extractText()</code> / <code>readFormFields()</code> / <code>getAnnotations()</code> — text + structure diff, implemented in the CLI</td>
+<td><code>openPdf()</code> / <code>extractText()</code> / <code>readFormFields()</code> / <code>getAnnotations()</code> / <code>listSignatures()</code> — text + structure diff, implemented in the CLI</td>
 </tr>
 <tr>
 <td><code>govern</code></td>
@@ -366,8 +366,8 @@ pdfnative render --input doc.json --output report.pdf \
 </tr>
 <tr>
 <td><code>--chunk-size &lt;n&gt;</code> <em>(v1.4.0)</em></td>
-<td>—</td>
-<td>Chunk size for the <code>--stream</code> / <code>--stream-true</code> output</td>
+<td><code>65536</code></td>
+<td>Chunk size in bytes for the <code>--stream</code> / <code>--stream-true</code> output (not applicable to <code>--stream-page-by-page</code>)</td>
 </tr>
 <tr>
 <td><code>--strict</code> <em>(v1.4.0)</em></td>
@@ -729,7 +729,7 @@ echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;tex
 <tr>
 <td><code>--digest &lt;algo&gt;</code> <em>(v1.4.0)</em></td>
 <td><code>sha256</code></td>
-<td>CMS digest for RSA keys: <code>sha256</code>, <code>sha384</code>, or <code>sha512</code> (ECDSA stays SHA-256)</td>
+<td>CMS digest for RSA keys: <code>sha256</code>, <code>sha384</code>, or <code>sha512</code>. Combining <code>sha384</code>/<code>sha512</code> with <code>--algorithm ecdsa-sha256</code> is a usage error (exit 2) — ECDSA is SHA-256 only</td>
 </tr>
 <tr>
 <td><code>--profile &lt;p&gt;</code> <em>(v1.4.0)</em></td>
@@ -792,7 +792,7 @@ echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;tex
 <tr>
 <td><code>--pages</code></td>
 <td>off</td>
-<td>Adds <code>pages: [{ index, width, height, rotation, annotations, formFields }]</code> — since v1.4.0 also <code>cropBox</code> / <code>trimBox</code> / <code>bleedBox</code> / <code>artBox</code> and <code>userUnit</code> when present, and <code>metadata.trapped</code> is reported</td>
+<td>Adds <code>pages: [{ index, width, height, rotation, annotations, formFields }]</code> — since v1.4.0 also <code>cropBox</code> / <code>trimBox</code> / <code>bleedBox</code> / <code>artBox</code> and <code>userUnit</code> when present. (<code>metadata.trapped</code> is reported unconditionally since v1.4.0, with or without <code>--pages</code>)</td>
 </tr>
 <tr>
 <td><code>--pdfua</code> <em>(v1.1.0)</em></td>
@@ -822,7 +822,7 @@ echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;tex
 <tr>
 <td><code>--signatures</code> <em>(v1.4.0)</em></td>
 <td>off</td>
-<td>Structural signature inventory via <code>listSignatures()</code> — <code>fieldName</code>, <code>subFilter</code>, <code>byteRange</code>, <code>isDocTimestamp</code>, <code>isPlaceholder</code>, <code>contentsLength</code>. Never emits the signature bytes themselves</td>
+<td>Structural signature inventory via <code>listSignatures()</code> — <code>fieldName</code>, <code>subFilter</code>, <code>byteRange</code>, <code>isDocTimestamp</code>, <code>isPlaceholder</code>, <code>sigObjNum</code>, <code>contentsLength</code>. Never emits the signature bytes themselves</td>
 </tr>
 <tr>
 <td><code>--check &lt;assertion&gt;</code></td>
@@ -903,6 +903,11 @@ echo &quot;exit code: $?&quot;   # 0 if both assertions hold
 <td><code>--fields &lt;a,b.c&gt;</code> <em>(v1.1.0)</em></td>
 <td>—</td>
 <td>Project the JSON result to named dot-paths</td>
+</tr>
+<tr>
+<td><code>--pretty</code></td>
+<td>off</td>
+<td>Indented JSON even under the global <code>--json</code></td>
 </tr>
 </tbody></table>
 <p><strong>Scope (since v1.0.0):</strong></p>
@@ -1431,6 +1436,11 @@ only governs permissions.</p>
 <td>off</td>
 <td>Stream the output (<code>--chunk-size N</code>)</td>
 </tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>off</td>
+<td>Validate without writing</td>
+</tr>
 </tbody></table>
 <h3 id="pdfnative-decrypt-v130"><code>pdfnative decrypt</code> <em>(v1.3.0)</em><a class="heading-anchor" href="#pdfnative-decrypt-v130" aria-label="Link to this section">#</a></h3>
 <p>Remove encryption, given the password. Reads RC4, AES-128 and AES-256 sources.</p>
@@ -1645,9 +1655,19 @@ pdfnative doctor --format json --pretty
 <td>Machine-readable per-file report; <code>--summary</code> emits <code>{ total, succeeded, failed }</code></td>
 </tr>
 <tr>
+<td><code>--format &lt;fmt&gt;</code></td>
+<td><code>text</code></td>
+<td>Report format: <code>text</code> or <code>json</code></td>
+</tr>
+<tr>
+<td><code>[render options]</code></td>
+<td>—</td>
+<td><code>--layout</code>, <code>--variant</code>, smart tables, PDF/A, compression… — every <code>render</code> option is honoured and applied to each file</td>
+</tr>
+<tr>
 <td><code>--manifest &lt;tasks.json&gt;</code> <em>(v1.4.0)</em></td>
 <td>—</td>
-<td><strong>Declarative pipeline mode</strong> — see below</td>
+<td><strong>Declarative pipeline mode</strong> — see below. Mutually exclusive with <code>--input-dir</code> / <code>--output-dir</code> (exit 2)</td>
 </tr>
 <tr>
 <td><code>--allow-network</code> <em>(v1.4.0)</em></td>
@@ -1663,16 +1683,16 @@ pdfnative doctor --format json --pretty
 <pre><code class="language-bash">pdfnative batch --input-dir inputs/ --output-dir outputs/ --tagged pdfa2b --concurrency 4
 </code></pre>
 <h4 id="manifest-mode-v140">Manifest mode <em>(v1.4.0)</em><a class="heading-anchor" href="#manifest-mode-v140" aria-label="Link to this section">#</a></h4>
-<p><code>--manifest tasks.json</code> runs a declarative pipeline — <code>{ &quot;version&quot;: 1, &quot;tasks&quot;: [{ &quot;id&quot;, &quot;command&quot;, &quot;flags&quot; }] }</code> (<code>schema batch-manifest</code>). A flag value of <code>&quot;@&lt;id&gt;&quot;</code> references the output of an earlier task; relative paths resolve against the manifest&#39;s directory. The whole manifest is validated <strong>before</strong> anything runs, then executed sequentially and fail-fast (unless <code>--continue-on-error</code>).</p>
+<p><code>--manifest tasks.json</code> runs a declarative pipeline — <code>{ &quot;version&quot;: 1, &quot;tasks&quot;: [{ &quot;id&quot;, &quot;command&quot;, &quot;flags&quot; }] }</code> (<code>schema batch-manifest</code>). Flag names are written <strong>bare, without the leading dashes</strong> (a dashed key is rejected with exit 2). A flag value of <code>&quot;@&lt;id&gt;&quot;</code> references the output of an earlier task; relative paths resolve against the manifest&#39;s directory. The whole manifest is validated <strong>before</strong> anything runs, then executed sequentially and fail-fast (unless <code>--continue-on-error</code>).</p>
 <pre><code class="language-json">{
   &quot;version&quot;: 1,
   &quot;tasks&quot;: [
-    { &quot;id&quot;: &quot;report&quot;,  &quot;command&quot;: &quot;render&quot;, &quot;flags&quot;: { &quot;--input&quot;: &quot;report.json&quot;, &quot;--output&quot;: &quot;report.pdf&quot;, &quot;--tagged&quot;: &quot;pdfa2b&quot; } },
-    { &quot;id&quot;: &quot;stamped&quot;, &quot;command&quot;: &quot;metadata&quot;, &quot;flags&quot;: { &quot;--input&quot;: &quot;@report&quot;, &quot;--output&quot;: &quot;final.pdf&quot;, &quot;--title&quot;: &quot;Q2 report&quot; } }
+    { &quot;id&quot;: &quot;report&quot;,  &quot;command&quot;: &quot;render&quot;, &quot;flags&quot;: { &quot;input&quot;: &quot;report.json&quot;, &quot;output&quot;: &quot;report.pdf&quot;, &quot;tagged&quot;: &quot;pdfa2b&quot; } },
+    { &quot;id&quot;: &quot;stamped&quot;, &quot;command&quot;: &quot;metadata&quot;, &quot;flags&quot;: { &quot;input&quot;: &quot;@report&quot;, &quot;output&quot;: &quot;final.pdf&quot;, &quot;title&quot;: &quot;Q2 report&quot; } }
   ]
 }
 </code></pre>
-<p>Only a fixed <strong>14-command whitelist</strong> is allowed inside a manifest — <code>render</code>, <code>sign</code>, <code>verify</code>, <code>inspect</code>, <code>merge</code>, <code>split</code>, <code>extract</code>, <code>extract-text</code>, <code>fill</code>, <code>encrypt</code>, <code>decrypt</code>, <code>annotate</code>, <code>metadata</code>, <code>doc-timestamp</code>. <code>ltv</code> and <code>compare</code> are excluded (they take positionals, which manifest tasks — a flat flag map — cannot express), and the meta commands (<code>batch</code>, <code>govern</code>, <code>schema</code>, <code>completion</code>, <code>doctor</code>) can never nest. Manifests are capped at 1 000 tasks with the same path-traversal checks as direct flags; a structural violation exits 2/<code>E_USAGE</code>, a forbidden command or flag exits 1/<code>E_INPUT</code>.</p>
+<p>Only a fixed <strong>14-command whitelist</strong> is allowed inside a manifest — <code>render</code>, <code>sign</code>, <code>verify</code>, <code>inspect</code>, <code>merge</code>, <code>split</code>, <code>extract</code>, <code>extract-text</code>, <code>fill</code>, <code>encrypt</code>, <code>decrypt</code>, <code>annotate</code>, <code>metadata</code>, <code>doc-timestamp</code>. <code>ltv</code> and <code>compare</code> are excluded (they take positionals, which manifest tasks — a flat flag map — cannot express), and the meta commands (<code>batch</code>, <code>govern</code>, <code>schema</code>, <code>completion</code>, <code>doctor</code>) can never nest. Manifests are capped at 1 000 tasks with the same path-traversal checks as direct flags. Error classes: a structural violation, an invalid flag name or value type, or a network-reaching flag without <code>--allow-network</code> exits 2/<code>E_USAGE</code>; an invalid or duplicate task id, a non-whitelisted command, or a broken <code>@ref</code> exits 1/<code>E_INPUT</code>; malformed JSON is 1/<code>E_PARSE</code>.</p>
 <h3 id="pdfnative-schema"><code>pdfnative schema</code><a class="heading-anchor" href="#pdfnative-schema" aria-label="Link to this section">#</a></h3>
 <p>Prints a versioned <strong>JSON Schema (Draft 2020-12)</strong> for a CLI input/output shape, so agents can self-validate before invoking a command. The <code>$id</code> embeds the CLI version.</p>
 <pre><code class="language-bash">pdfnative schema render            # input schema for `render`

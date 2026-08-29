@@ -119,7 +119,7 @@
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 2686,
+    "tests": 2687,
     "scripts": 22,
     "bundledFontModules": 26,
     "blockTypes": 13,
@@ -195,7 +195,7 @@
     {
       "id": "test-count-homepage",
       "$comment": "The homepage quoted a stale test count for a full release train; no assertion covered it. canonical-present pins the current figure where it is displayed.",
-      "canonical": "2686+ tests across 123 files",
+      "canonical": "2687+ tests across 123 files",
       "requireIn": [
         "docs/index.html"
       ]

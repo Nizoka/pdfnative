@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Choosing your surface — pdfnative</title>
-  <meta name="description" content="Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — generate, tables, charts, signatures, LTV, encryption, forms, text extraction, page-tree editing, annotations, layout inspection and PDF/UA validation on each surface.">
+  <meta name="description" content="Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — signatures, LTV, encryption, forms, extraction, comparison and validation on each surface.">
   <link rel="canonical" href="https://pdfnative.dev/guides/choose.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/choose.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/choose.html">
@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Choosing your surface","item":"https://pdfnative.dev/guides/choose.html"}]},{"@type":"TechArticle","headline":"Choosing your surface","description":"Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — generate, tables, charts, signatures, LTV, encryption, forms, text extraction, page-tree editing, annotations, layout inspection and PDF/UA validation on each surface.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/choose.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Choosing your surface","item":"https://pdfnative.dev/guides/choose.html"}]},{"@type":"TechArticle","headline":"Choosing your surface","description":"Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — signatures, LTV, encryption, forms, extraction, comparison and validation on each surface.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/choose.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -131,7 +131,7 @@ means the surface does not offer it.</p>
 <td><code>chart</code> block <em>(v1.6.0)</em></td>
 <td><code>render</code> (<code>chart</code> block) <em>(v1.3.0)</em></td>
 <td><code>add_chart</code> <em>(v1.5.0)</em></td>
-<td><code>&lt;Chart&gt;</code> <em>(v1.1.0)</em></td>
+<td><code>&lt;Chart&gt;</code> <em>(v1.1.0; charts v2 — nine kinds, secondary axis, log/time scales, data labels — since v1.2.0)</em></td>
 </tr>
 <tr>
 <td>Digital signatures (PAdES CMS)</td>
@@ -257,6 +257,8 @@ document rewrite.</p>
 <ul>
 <li><a href="onboarding.html">Onboarding</a> — the 90-second install-and-first-call for
 each surface.</li>
+<li><a href="use-cases.html">Ecosystem use cases</a> — four production architectures that
+compose these surfaces, with diagrams.</li>
 <li><a href="self-verify.html">Self-verifying generation</a> — the generate → inspect →
 assert → correct loop on every surface.</li>
 <li><a href="architecture.html">Architecture</a> — how the four packages relate.</li>

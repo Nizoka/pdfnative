@@ -5,20 +5,20 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 15765,
-      "approxTokens": 3941
+      "bytes": 15767,
+      "approxTokens": 3942
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
-      "bytes": 7114,
-      "approxTokens": 1779
+      "bytes": 7729,
+      "approxTokens": 1932
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 526752,
-      "approxTokens": 131688
+      "bytes": 528589,
+      "approxTokens": 132147
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -144,8 +144,8 @@
         "you-can-switch-later",
         "further-reading"
       ],
-      "bytes": 8022,
-      "approxTokens": 2006
+      "bytes": 8231,
+      "approxTokens": 2058
     },
     {
       "title": "pdfnative-cli — Command-Line Interface Guide",
@@ -171,8 +171,8 @@
         "resources",
         "citation"
       ],
-      "bytes": 77590,
-      "approxTokens": 19398
+      "bytes": 78502,
+      "approxTokens": 19626
     },
     {
       "title": "Colour-emoji font CLI (pdfnative-build-emoji-font)",
@@ -316,7 +316,7 @@
         "release-history",
         "further-reading"
       ],
-      "bytes": 62594,
+      "bytes": 62596,
       "approxTokens": 15649
     },
     {
@@ -331,8 +331,8 @@
         "4-react-nextjs-remix-any-react-19-app--30-seconds",
         "what-to-read-next"
       ],
-      "bytes": 6471,
-      "approxTokens": 1618
+      "bytes": 6528,
+      "approxTokens": 1632
     },
     {
       "title": "Outlines & page labels",
@@ -451,8 +451,8 @@
         "release-history",
         "resources"
       ],
-      "bytes": 22665,
-      "approxTokens": 5666
+      "bytes": 22926,
+      "approxTokens": 5732
     },
     {
       "title": "Self-verifying generation",
@@ -581,8 +581,8 @@
         "picking-parts-not-a-platform",
         "see-also"
       ],
-      "bytes": 12023,
-      "approxTokens": 3006
+      "bytes": 12417,
+      "approxTokens": 3104
     },
     {
       "title": "Viewer preferences",

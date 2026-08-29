@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ecosystem use cases — pdfnative</title>
-  <meta name="description" content="Four production architectures built from shipped pdfnative parts: store DocSpec JSON instead of PDFs and render on-device, sign to PAdES B-LTA across an air gap, gate template changes in CI with pdfnative compare, and serve edge-rendered PDFs with honest HTTP caching.">
+  <meta name="description" content="Four production architectures from shipped pdfnative parts: store DocSpec JSON and render on-device, air-gapped PAdES B-LTA signing, a CI regression gate on pdfnative compare, and edge-rendered PDFs with HTTP caching.">
   <link rel="canonical" href="https://pdfnative.dev/guides/use-cases.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases.html">
@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Ecosystem use cases","item":"https://pdfnative.dev/guides/use-cases.html"}]},{"@type":"TechArticle","headline":"Ecosystem use cases","description":"Four production architectures built from shipped pdfnative parts: store DocSpec JSON instead of PDFs and render on-device, sign to PAdES B-LTA across an air gap, gate template changes in CI with pdfnative compare, and serve edge-rendered PDFs with honest HTTP caching.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Ecosystem use cases","item":"https://pdfnative.dev/guides/use-cases.html"}]},{"@type":"TechArticle","headline":"Ecosystem use cases","description":"Four production architectures from shipped pdfnative parts: store DocSpec JSON and render on-device, air-gapped PAdES B-LTA signing, a CI regression gate on pdfnative compare, and edge-rendered PDFs with HTTP caching.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -83,23 +83,28 @@ render</strong>. The document&#39;s actual information content is the text and s
 which fits in a few kilobytes of JSON. So: persist the compact
 <a href="react.html#agent-authoring--the-token-frugal-docspec"><code>DocSpec</code></a> (or a
 <code>DocumentParams</code> JSON), and let the device that <em>asks</em> for the PDF produce it.</p>
-<p><img src="../assets/use-case-spec-storage.svg" alt="Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of megabyte-sized PDFs in object storage. When a client requests a document, the server sends the JSON; the client&#39;s own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine, using the browser-native CompressionStream plugged in via setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network."></p>
+<p><img src="../assets/use-case-spec-storage.svg" alt="Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of megabyte-sized PDFs in object storage. When a client requests a document, the server sends the JSON; the client&#39;s own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine — uncompressed by default, or compressed by plugging a synchronous deflate implementation into setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network."></p>
 <p>Why this works in a browser at all: the engine has <strong>zero dependencies and no
-Node-only code paths</strong> on this route, and pdfnative-react 1.2.0 exports
-<code>setDeflateImpl</code> — so compression can come from the browser&#39;s own
-<code>CompressionStream</code> instead of a bundled library.</p>
+Node-only code paths</strong> on this route. Rendering is synchronous and the output
+is a valid, uncompressed PDF — and since the bytes stay on the device, their
+size costs nothing on the wire.</p>
 <pre><code class="language-tsx">// On the reader&#39;s device — nothing but the two packages and React.
-import { renderSpecToBytes, setDeflateImpl, downloadBlob } from &#39;pdfnative-react&#39;;
-
-// Browser-native deflate: no compression library shipped to the client.
-setDeflateImpl(async (bytes) =&gt; {
-  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream(&#39;deflate-raw&#39;));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-});
+import { renderSpecToBytes, downloadBlob } from &#39;pdfnative-react&#39;;
 
 const spec = await fetch(`/api/documents/${id}`).then((r) =&gt; r.json()); // ~2 KB
-const bytes = renderSpecToBytes(spec);                                   // rendered locally
-downloadBlob(new Blob([bytes], { type: &#39;application/pdf&#39; }), &#39;invoice.pdf&#39;);
+const bytes = renderSpecToBytes(spec);       // rendered locally, synchronously
+downloadBlob(bytes, &#39;invoice.pdf&#39;);          // builds the Blob itself
+</code></pre>
+<p>Want compressed output too? <code>setDeflateImpl</code> accepts a <strong>synchronous</strong> deflate
+function whose result is written into the file verbatim, so it must produce a
+<strong>zlib-wrapped (RFC 1950)</strong> stream — <code>/FlateDecode</code> is zlib per ISO 32000-1
+§7.3.8. The browser&#39;s <code>CompressionStream</code> cannot be plugged in (it is
+asynchronous by nature); a tiny synchronous library can:</p>
+<pre><code class="language-tsx">import { zlibSync } from &#39;fflate&#39;;           // synchronous, zlib-wrapped output
+import { setDeflateImpl, renderSpecToBytes } from &#39;pdfnative-react&#39;;
+
+setDeflateImpl((bytes) =&gt; zlibSync(bytes));
+const compressed = renderSpecToBytes({ ...spec, layout: { ...spec.layout, compress: true } });
 </code></pre>
 <p>What you gain, concretely:</p>
 <ul>

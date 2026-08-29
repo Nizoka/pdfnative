@@ -243,8 +243,9 @@ no rasterisation, and <code>/Figure</code> tagging with alt text.</p>
 </code></pre>
 <p><strong>Charts v2 (v1.2.0)</strong> widens the surface to the engine&#39;s nine chart types and
 adds five props: <code>axis2</code> (a secondary Y axis — put a series on it with
-<code>yAxis: &#39;right&#39;</code>), <code>xAxis</code> (<code>category</code> | <code>linear</code> | <code>time</code> positional axes, with
-optional log scale), <code>dataLabels</code>, <code>labelStride</code> and <code>labelRotation</code>. The
+<code>yAxis: &#39;right&#39;</code>), <code>xAxis</code> (<code>category</code> | <code>linear</code> | <code>time</code> positional axes; a
+log scale is available on the <em>value</em> axes via <code>axis</code> / <code>axis2</code>
+<code>scale: &#39;log&#39;</code>), <code>dataLabels</code>, <code>labelStride</code> and <code>labelRotation</code>. The
 exported <code>ChartPropsCoversChartBlock</code> compile-time lock guarantees <code>&lt;Chart&gt;</code>
 covers every engine <code>ChartBlock</code> field — which is exactly why the <code>pdfnative</code>
 peer floor is <code>^1.7.0</code>: a 1.6 engine would throw mid-render on the v2 fields.</p>
@@ -317,10 +318,11 @@ and <code>SCHEMA_SUBJECTS</code> cover DocSpec validation; <code>aiGovernancePol
 entry&#39;s <code>fontRef</code> to the bare language code instead of a slash-prefixed PDF
 name, yielding invalid syntax like <code>latin 12 Tf</code> — Acrobat refuses such a file
 (&quot;an error occurred while reading this document (14)&quot;) and Chrome draws raw
-glyph indices. <strong>v1.2.0 fixes this</strong>: <code>resolveFonts</code> now assigns proper
-<code>/F3</code>, <code>/F4</code>, … references. If you shipped PDFs through <code>resolveFonts</code> or the
-<code>fonts</code> option under v1.1.0, re-render them. Hand-built <code>fontEntries</code> using
-<code>/F3</code>+ were never affected (<code>/F1</code> and <code>/F2</code> remain reserved by the engine).</p>
+glyph indices. <strong>v1.2.0 fixes this</strong>: <code>resolveFonts</code> now prefixes the slash,
+emitting valid PDF names like <code>/latin</code> and <code>/th</code>. If you shipped PDFs through
+<code>resolveFonts</code> or the <code>fonts</code> option under v1.1.0, re-render them. Hand-built
+<code>fontEntries</code> using a correct <code>/F3</code>-style ref were never affected (<code>/F1</code> and
+<code>/F2</code> remain reserved by the engine).</p>
 <p>When building entries by hand, keep failing loudly — <code>loadFontData</code> resolves to
 <code>null</code> (it does not throw) when a code has no registered loader:</p>
 <pre><code class="language-ts">import { registerFonts, loadFontData } from &#39;pdfnative&#39;;
@@ -396,7 +398,7 @@ covers every charts-v2 field — so an agent can self-validate a print-ready,
 dual-axis document before rendering it.</p>
 <hr>
 <h2 id="fonts--environment">Fonts &amp; environment<a class="heading-anchor" href="#fonts--environment" aria-label="Link to this section">#</a></h2>
-<p>Re-exported from the engine: <code>registerFonts</code>, <code>registerFont</code>, <code>loadFontData</code>, <code>validateFontData</code>, <code>downloadBlob</code> (browser), <code>initNodeCompression</code> (Node), and — v1.2.0 — <code>setDeflateImpl</code>, which plugs any deflate implementation into the engine (e.g. the browser-native <code>CompressionStream</code>, for compressed client-side rendering without shipping a compression library). (<code>loadFontData</code> is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the <code>fontEntries</code> render option (or on <code>&lt;Document fontEntries={…}&gt;</code>), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.</p>
+<p>Re-exported from the engine: <code>registerFonts</code>, <code>registerFont</code>, <code>loadFontData</code>, <code>validateFontData</code>, <code>downloadBlob</code> (browser), <code>initNodeCompression</code> (Node), and — v1.2.0 — <code>setDeflateImpl</code>, which plugs a <strong>synchronous</strong> deflate implementation into the engine for compressed client-side rendering (the function&#39;s output is written verbatim, so it must produce a zlib-wrapped RFC 1950 stream — e.g. fflate&#39;s <code>zlibSync</code>; the async browser <code>CompressionStream</code> cannot be plugged in). (<code>loadFontData</code> is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the <code>fontEntries</code> render option (or on <code>&lt;Document fontEntries={…}&gt;</code>), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.</p>
 <pre><code class="language-tsx">import { Document, Text, renderToBytes, registerFont, loadFontData } from &#39;pdfnative-react&#39;;
 
 registerFont(&#39;th&#39;, () =&gt; import(&#39;pdfnative/fonts/noto-thai-data.js&#39;));
@@ -473,7 +475,7 @@ try {
 <tbody><tr>
 <td>Charts</td>
 <td>5 types</td>
-<td><strong>9 types</strong> (<code>stackedBar</code>, <code>stackedBarH</code>, <code>area</code>, <code>scatter</code>) + <code>axis2</code>, <code>xAxis</code> (category / linear / time, log scale), <code>dataLabels</code>, <code>labelStride</code>, <code>labelRotation</code></td>
+<td><strong>9 types</strong> (<code>stackedBar</code>, <code>stackedBarH</code>, <code>area</code>, <code>scatter</code>) + <code>axis2</code>, <code>xAxis</code> (category / linear / time), log scale on the value axes, <code>dataLabels</code>, <code>labelStride</code>, <code>labelRotation</code></td>
 </tr>
 <tr>
 <td>Print</td>
@@ -498,7 +500,7 @@ try {
 <tr>
 <td>Fonts</td>
 <td><code>resolveFonts</code> emitted an invalid bare <code>fontRef</code></td>
-<td><strong>fixed</strong> — proper <code>/F3</code>+ names; re-render anything produced through <code>resolveFonts</code> / the <code>fonts</code> option</td>
+<td><strong>fixed</strong> — slash-prefixed PDF names (<code>/latin</code>, <code>/th</code>, …); re-render anything produced through <code>resolveFonts</code> / the <code>fonts</code> option</td>
 </tr>
 <tr>
 <td>Exports</td>

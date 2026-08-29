@@ -57,7 +57,7 @@
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 48 sample generators producing 242 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2686+ tests across 123 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2687+ tests across 123 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
 
 ## Machine-readable artefacts
 
@@ -65,7 +65,7 @@
 - [llms-full.txt](https://pdfnative.dev/llms-full.txt): This index plus the README and the full Markdown source of every guide, in one request.
 - [llms-recipes.txt](https://pdfnative.dev/llms-recipes.txt): The executable recipe corpus — standalone TypeScript files importing from `pdfnative`, each executed in CI with its `@expect` assertions verified, so the code you copy is proven to compile and to produce exactly the artefact its header describes.
 - [api.json](https://pdfnative.dev/assets/api.json): The public API surface, derived mechanically from the export statements of `src/index.ts` — name, kind, source module, signature and TSDoc summary where extractable. The substitute for the unpublished `index.d.ts`.
-- [surfaces.json](https://pdfnative.dev/data/surfaces.json): The capability × surface matrix (library / CLI / MCP / React) behind the [Choosing your surface](https://pdfnative.dev/guides/choose.md) guide.
+- [surfaces.json](https://pdfnative.dev/data/surfaces.json): The capability × surface matrix (library / CLI / MCP / React) behind the [Choosing your surface](https://pdfnative.dev/guides/choose.html) guide.
 - [llms-index.json](https://pdfnative.dev/llms-index.json): Per-page machine index — HTML and raw-Markdown URL, title, summary, section anchors, and exact byte / approximate token sizes for every artefact, so you can decide what to fetch before spending the tokens.
 - Every guide serves its raw Markdown at the same URL with `.md` instead of `.html`, declared via `<link rel="alternate" type="text/markdown">` in each page head. All of these URLs are listed in the sitemap.
 
@@ -156,7 +156,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 2686+ tests across 123 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 95.41% statement coverage measured at the v1.6.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 2687+ tests across 123 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 95.41% statement coverage measured at the v1.6.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1293,7 +1293,7 @@ src/
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (48 generators, 242 PDFs)
-tests/                    # 2686+ tests (123 files: unit + integration + fuzz + parser + docs)
+tests/                    # 2687+ tests (123 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1305,7 +1305,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (2686+ tests)
+npm run test             # vitest run (2687+ tests)
 npm run test:coverage    # vitest with v8 coverage (95.41% statements at the v1.6.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate 242 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1320,7 +1320,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 2686+ (123 files) |
+| Tests | 2687+ (123 files) |
 | Statement coverage | 95.41% (measured at the v1.6.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 87.79% (measured at the v1.6.0 release; CI enforces ≥80%) |
 | Function coverage | 98.5% (measured at the v1.6.0 release; CI enforces ≥85%; lines gate: ≥90%) |
@@ -2708,7 +2708,7 @@ means the surface does not offer it.
 |---|---|---|---|---|
 | Generate documents | `buildDocumentPDFBytes` / `buildPDFBytes` | `render` | `generate_basic_pdf` (+ the dedicated document tools) | `renderToBytes` and friends, `<Document>` tree |
 | Smart tables | `table` block | `render` (`table` block, or `--variant table`) | `add_table` | `<Table>` |
-| Native vector charts | `chart` block _(v1.6.0)_ | `render` (`chart` block) _(v1.3.0)_ | `add_chart` _(v1.5.0)_ | `<Chart>` _(v1.1.0)_ |
+| Native vector charts | `chart` block _(v1.6.0)_ | `render` (`chart` block) _(v1.3.0)_ | `add_chart` _(v1.5.0)_ | `<Chart>` _(v1.1.0; charts v2 — nine kinds, secondary axis, log/time scales, data labels — since v1.2.0)_ |
 | Digital signatures (PAdES CMS) | `addSignaturePlaceholder` _(v1.2.0)_ + `signPdfBytes` | `sign` | `sign_pdf` (+ `prepare_signature_placeholder`) | — |
 | LTV ladder (B-T → B-LTA) | `signPdfBytesWithTimestamp`, `addValidationInfo`, `addDocumentTimestamp` _(v1.7.0)_ | `sign --timestamp`, `ltv`, `doc-timestamp` _(v1.4.0)_ | `add_ltv`, `timestamp_pdf` _(v1.6.0)_ | — |
 | Encrypt / decrypt | build-time `encryption` layout option; existing PDFs via the page-tree `encrypt` option and `openPdf` with a password | `encrypt` / `decrypt` _(v1.3.0)_ | `encrypt_pdf` / `decrypt_pdf` _(v1.5.0)_ | build-time only, via the `layout` render option |
@@ -2763,6 +2763,8 @@ document rewrite.
 
 - [Onboarding](onboarding.html) — the 90-second install-and-first-call for
   each surface.
+- [Ecosystem use cases](use-cases.html) — four production architectures that
+  compose these surfaces, with diagrams.
 - [Self-verifying generation](self-verify.html) — the generate → inspect →
   assert → correct loop on every surface.
 - [Architecture](architecture.html) — how the four packages relate.
@@ -2800,7 +2802,7 @@ The CLI is a **pure dispatch layer** over `pdfnative`. No PDF logic lives in the
 | `metadata` | `PdfModifier.updateMetadata()` — incremental `/Info` + XMP edits that keep existing signatures valid for their revision |
 | `ltv` | `collectValidationInfo()` / `embedValidationInfo()` / `addValidationInfo()` (PAdES B-LT `/DSS`) |
 | `doc-timestamp` | `addDocumentTimestamp()` — an RFC 3161 `/DocTimeStamp` revision (PAdES B-LTA) |
-| `compare` | `openPdf()` / `extractText()` / `readFormFields()` / `getAnnotations()` — text + structure diff, implemented in the CLI |
+| `compare` | `openPdf()` / `extractText()` / `readFormFields()` / `getAnnotations()` / `listSignatures()` — text + structure diff, implemented in the CLI |
 | `govern` | AI-governance contract (`.github/ai-governance.json`, `AGENT_RULES.md`) — draft gating uses the CLI's own `validateGovernanceDraft()` (the core repo's equivalent check is a repo script, not a published API) |
 | `batch` | the `render` pipeline, applied in parallel across a directory |
 | `schema` | versioned JSON Schemas (Draft 2020-12) for every input/output shape |
@@ -3006,7 +3008,7 @@ Renders a JSON document into a PDF. Supports both renderer variants exposed by `
 | `--stream-true` *(v1.1.0)* | off | Streaming via `buildDocumentPDFStreamTrue` / `buildPDFStreamTrue` — PDF parts are emitted and freed as they go, so the joined binary never materialises. Byte-identical to the buffered builders. Same constraints as `--stream` (no TOC, no `{pages}`); mutually exclusive with the other `--stream*` flags |
 | `--max-blocks <n>` *(v1.1.0)* | `100000` | Exposes `layout.maxBlocks` so very large multi-thousand-page reports no longer hit a spurious ceiling |
 | `--layout <file.json>` | — | Load any subset of `PdfLayoutOptions` |
-| `--chunk-size <n>` *(v1.4.0)* | — | Chunk size for the `--stream` / `--stream-true` output |
+| `--chunk-size <n>` *(v1.4.0)* | `65536` | Chunk size in bytes for the `--stream` / `--stream-true` output (not applicable to `--stream-page-by-page`) |
 | `--strict` *(v1.4.0)* | off | Escalate PDF/A diagnostics (`PDFA_NO_FONT_ENTRIES`, `PDFA_UNEMBEDDED_FORM_FONT`, `PDFA_DEVICE_CMYK_IMAGE`) into a hard failure **before the first output byte** — exit 1, `E_CHECK_FAILED`. Without it they are `warning:` lines on stderr (hidden by `--quiet`) plus an additive `diagnostics[]` array in the `--json` envelope |
 
 #### Smart tables _(v1.3.0, document variant)_
@@ -3159,7 +3161,7 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 | `--timestamp <tsa-url>` *(v1.4.0)* | — | Embed an **RFC 3161 timestamp token** from the given TSA (PAdES **B-T**). The only network opt-in on `sign` — SSRF-guarded, no fallback: transport failure is `E_NETWORK`, a malformed response is `E_PARSE`. `--dry-run` never touches the network |
 | `--timestamp-digest <algo>` *(v1.4.0)* | `sha256` | TSA digest: `sha256`, `sha384`, or `sha512` |
 | `--timestamp-nonce <hex>` *(v1.4.0)* | random | Explicit RFC 3161 nonce (testing / reproducibility) |
-| `--digest <algo>` *(v1.4.0)* | `sha256` | CMS digest for RSA keys: `sha256`, `sha384`, or `sha512` (ECDSA stays SHA-256) |
+| `--digest <algo>` *(v1.4.0)* | `sha256` | CMS digest for RSA keys: `sha256`, `sha384`, or `sha512`. Combining `sha384`/`sha512` with `--algorithm ecdsa-sha256` is a usage error (exit 2) — ECDSA is SHA-256 only |
 | `--profile <p>` *(v1.4.0)* | `pkcs7` | `pkcs7` or `pades` — `pades` emits `ETSI.CAdES.detached` with the ESS signing-certificate-v2 attribute and omits signing-time |
 | `--allow-multiple` *(v1.4.0)* | off | Add a signature to an already-signed PDF instead of refusing (the 1.x idempotent default is preserved) |
 | `--field-name <name>` *(v1.4.0)* | auto | Explicit signature field name (auto-suffixed on collision) |
@@ -3181,13 +3183,13 @@ Inspects metadata and conformance of an existing PDF. Read-only — never modifi
 | `--input <file>` | stdin | Input PDF |
 | `--format <fmt>` | `json` | `json` or `text` |
 | `--verbose` | off | Adds `verbose.{trailerKeys, catalogKeys, objectCount, xmpMetadata}`. Sanitised — no raw stream bytes |
-| `--pages` | off | Adds `pages: [{ index, width, height, rotation, annotations, formFields }]` — since v1.4.0 also `cropBox` / `trimBox` / `bleedBox` / `artBox` and `userUnit` when present, and `metadata.trapped` is reported |
+| `--pages` | off | Adds `pages: [{ index, width, height, rotation, annotations, formFields }]` — since v1.4.0 also `cropBox` / `trimBox` / `bleedBox` / `artBox` and `userUnit` when present. (`metadata.trapped` is reported unconditionally since v1.4.0, with or without `--pages`) |
 | `--pdfua` *(v1.1.0)* | off | Adds a `pdfua: { valid, errors, warnings }` report from `validatePdfUA()` (ISO 14289-1 structural checks: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) |
 | `--annotations` *(v1.2.0)* | off | Lists markup + link annotations per page (from `getAnnotations()`). `/PageLabels` are reported automatically when present |
 | `--form-fields` *(v1.3.0)* | off | Lists AcroForm fields (name, type, value, required/read-only) |
 | `--encryption` *(v1.3.0)* | off | Reports the encryption scheme (algorithm, revision, opened-as) |
 | `--password <pass>` *(v1.3.0)* | — | Password for an encrypted PDF (env `PDFNATIVE_PASSWORD`) |
-| `--signatures` *(v1.4.0)* | off | Structural signature inventory via `listSignatures()` — `fieldName`, `subFilter`, `byteRange`, `isDocTimestamp`, `isPlaceholder`, `contentsLength`. Never emits the signature bytes themselves |
+| `--signatures` *(v1.4.0)* | off | Structural signature inventory via `listSignatures()` — `fieldName`, `subFilter`, `byteRange`, `isDocTimestamp`, `isPlaceholder`, `sigObjNum`, `contentsLength`. Never emits the signature bytes themselves |
 | `--check <assertion>` | — | Repeatable; ANDed. Values: `pdfa`, `signed`, `encrypted`, `pdfua` *(v1.1.0)*, `signatures>=N` *(v1.4.0)*. Sets exit 0 = pass, 1 = fail |
 | `--summary` *(v1.1.0)* | off | Under `--json`, emit a canonical minimal verdict (`{ pages, encrypted, signatures, pdfa }`) |
 | `--fields <a,b.c>` *(v1.1.0)* | — | Project the JSON result to named dot-paths (array segments map over elements; unknown paths omitted) |
@@ -3218,6 +3220,7 @@ Verifies CMS/PKCS#7 signatures embedded in a PDF.
 | `--revocation-policy <p>` | `soft-fail` | `soft-fail` or `strict` |
 | `--summary` *(v1.1.0)* | off | Under `--json`, emit a minimal verdict (`{ valid, signatures, invalid }`) |
 | `--fields <a,b.c>` *(v1.1.0)* | — | Project the JSON result to named dot-paths |
+| `--pretty` | off | Indented JSON even under the global `--json` |
 
 **Scope (since v1.0.0):**
 
@@ -3453,6 +3456,7 @@ pdfnative encrypt --input report.pdf --output secure.pdf \
 | `--drop-annotations` | off | Drop all annotations; the default keeps URI links |
 | `--max-output-size <n>` | 256 MiB | Cap on the assembled size |
 | `--stream` | off | Stream the output (`--chunk-size N`) |
+| `--dry-run` | off | Validate without writing |
 
 ### `pdfnative decrypt` _(v1.3.0)_
 
@@ -3542,7 +3546,9 @@ Renders every JSON file in a directory to PDF **in parallel**, reusing the full 
 | `--fail-fast` | off | Abort on the first failure |
 | `--dry-run` *(v1.1.0)* | off | Validate every input without writing output |
 | `--json` / `--summary` *(v1.1.0)* | off | Machine-readable per-file report; `--summary` emits `{ total, succeeded, failed }` |
-| `--manifest <tasks.json>` *(v1.4.0)* | — | **Declarative pipeline mode** — see below |
+| `--format <fmt>` | `text` | Report format: `text` or `json` |
+| `[render options]` | — | `--layout`, `--variant`, smart tables, PDF/A, compression… — every `render` option is honoured and applied to each file |
+| `--manifest <tasks.json>` *(v1.4.0)* | — | **Declarative pipeline mode** — see below. Mutually exclusive with `--input-dir` / `--output-dir` (exit 2) |
 | `--allow-network` *(v1.4.0)* | off | Required before any network flag inside a manifest (`--timestamp`, `--url`, `--online`, `--revocation online`) — an untrusted manifest can never trigger network I/O on its own |
 | `--continue-on-error` *(v1.4.0)* | off | Keep going after a task fails; tasks that reference the failed output via `@id` are skipped |
 
@@ -3552,19 +3558,19 @@ pdfnative batch --input-dir inputs/ --output-dir outputs/ --tagged pdfa2b --conc
 
 #### Manifest mode _(v1.4.0)_
 
-`--manifest tasks.json` runs a declarative pipeline — `{ "version": 1, "tasks": [{ "id", "command", "flags" }] }` (`schema batch-manifest`). A flag value of `"@<id>"` references the output of an earlier task; relative paths resolve against the manifest's directory. The whole manifest is validated **before** anything runs, then executed sequentially and fail-fast (unless `--continue-on-error`).
+`--manifest tasks.json` runs a declarative pipeline — `{ "version": 1, "tasks": [{ "id", "command", "flags" }] }` (`schema batch-manifest`). Flag names are written **bare, without the leading dashes** (a dashed key is rejected with exit 2). A flag value of `"@<id>"` references the output of an earlier task; relative paths resolve against the manifest's directory. The whole manifest is validated **before** anything runs, then executed sequentially and fail-fast (unless `--continue-on-error`).
 
 ```json
 {
   "version": 1,
   "tasks": [
-    { "id": "report",  "command": "render", "flags": { "--input": "report.json", "--output": "report.pdf", "--tagged": "pdfa2b" } },
-    { "id": "stamped", "command": "metadata", "flags": { "--input": "@report", "--output": "final.pdf", "--title": "Q2 report" } }
+    { "id": "report",  "command": "render", "flags": { "input": "report.json", "output": "report.pdf", "tagged": "pdfa2b" } },
+    { "id": "stamped", "command": "metadata", "flags": { "input": "@report", "output": "final.pdf", "title": "Q2 report" } }
   ]
 }
 ```
 
-Only a fixed **14-command whitelist** is allowed inside a manifest — `render`, `sign`, `verify`, `inspect`, `merge`, `split`, `extract`, `extract-text`, `fill`, `encrypt`, `decrypt`, `annotate`, `metadata`, `doc-timestamp`. `ltv` and `compare` are excluded (they take positionals, which manifest tasks — a flat flag map — cannot express), and the meta commands (`batch`, `govern`, `schema`, `completion`, `doctor`) can never nest. Manifests are capped at 1 000 tasks with the same path-traversal checks as direct flags; a structural violation exits 2/`E_USAGE`, a forbidden command or flag exits 1/`E_INPUT`.
+Only a fixed **14-command whitelist** is allowed inside a manifest — `render`, `sign`, `verify`, `inspect`, `merge`, `split`, `extract`, `extract-text`, `fill`, `encrypt`, `decrypt`, `annotate`, `metadata`, `doc-timestamp`. `ltv` and `compare` are excluded (they take positionals, which manifest tasks — a flat flag map — cannot express), and the meta commands (`batch`, `govern`, `schema`, `completion`, `doctor`) can never nest. Manifests are capped at 1 000 tasks with the same path-traversal checks as direct flags. Error classes: a structural violation, an invalid flag name or value type, or a network-reaching flag without `--allow-network` exits 2/`E_USAGE`; an invalid or duplicate task id, a non-whitelisted command, or a broken `@ref` exits 1/`E_INPUT`; malformed JSON is 1/`E_PARSE`.
 
 ### `pdfnative schema`
 
@@ -5976,7 +5982,7 @@ actually uses it. Two practical consequences:
   closed the mathematical-symbols gap locally before Noto Sans Math shipped in
   the engine. The published `lang` enum is closed and there is no operator-level
   fonts variable yet (a roadmap candidate), so this is a local code-level
-  pattern — see [Agentic workflows → Via the MCP server](agentic-workflows.md#via-the-mcp-server--the-local-install-is-the-extension-point)
+  pattern — see [Agentic workflows → Via the MCP server](agentic-workflows.html#via-the-mcp-server--the-local-install-is-the-extension-point)
   for the honest, step-by-step version.
 
 ---
@@ -6197,7 +6203,7 @@ pdfnative sign --input out.pdf --output signed.pdf \
 pdfnative verify --input signed.pdf --json
 ```
 
-Iteration helpers: `--watch` re-renders on save, `--template` injects variables, `--font` enables any of the 22 bundled scripts + colour emoji + the math font. v1.1.0 added `--stream-true`, `inspect --pdfua` (accessibility gate), and an agent-native `--json`/`E_*`/`--dry-run` contract; v1.2.0 added page-tree `merge` / `split` / `extract`, markup `annotate`, an AI-governance `govern` gate, and `render --outline` / `--font math` / `--inspect-layout`; v1.3.0 added `fill`, `encrypt`, `decrypt`, `extract-text` and `doctor`, native `chart` blocks in `render`, passwords on the page-tree commands, and PowerShell completion; **v1.4.0** adds the full PAdES ladder (`sign --timestamp`, `ltv`, `doc-timestamp`), signature-safe `metadata` edits, a CI-grade `compare` diff, and declarative `batch --manifest` pipelines (Node ≥ 22).
+Iteration helpers: `--watch` re-renders on save, `--template` deep-merges a base document under your input (caller wins; arrays replace), `--font` enables any of the 22 bundled scripts + colour emoji + the math font. v1.1.0 added `--stream-true`, `inspect --pdfua` (accessibility gate), and an agent-native `--json`/`E_*`/`--dry-run` contract; v1.2.0 added page-tree `merge` / `split` / `extract`, markup `annotate`, an AI-governance `govern` gate, and `render --outline` / `--font math` / `--inspect-layout`; v1.3.0 added `fill`, `encrypt`, `decrypt`, `extract-text` and `doctor`, native `chart` blocks in `render`, passwords on the page-tree commands, and PowerShell completion; **v1.4.0** adds the full PAdES ladder (`sign --timestamp`, `ltv`, `doc-timestamp`), signature-safe `metadata` edits, a CI-grade `compare` diff, and declarative `batch --manifest` pipelines (Node ≥ 22).
 
 > **Upgrading from v1.2.0?** `render --encrypt` was a silent no-op in that
 > release — documents you thought were encrypted were written in the clear.
@@ -7575,8 +7581,9 @@ no rasterisation, and `/Figure` tagging with alt text.
 
 **Charts v2 (v1.2.0)** widens the surface to the engine's nine chart types and
 adds five props: `axis2` (a secondary Y axis — put a series on it with
-`yAxis: 'right'`), `xAxis` (`category` | `linear` | `time` positional axes, with
-optional log scale), `dataLabels`, `labelStride` and `labelRotation`. The
+`yAxis: 'right'`), `xAxis` (`category` | `linear` | `time` positional axes; a
+log scale is available on the *value* axes via `axis` / `axis2`
+`scale: 'log'`), `dataLabels`, `labelStride` and `labelRotation`. The
 exported `ChartPropsCoversChartBlock` compile-time lock guarantees `<Chart>`
 covers every engine `ChartBlock` field — which is exactly why the `pdfnative`
 peer floor is `^1.7.0`: a 1.6 engine would throw mid-render on the v2 fields.
@@ -7666,10 +7673,11 @@ import {
 > entry's `fontRef` to the bare language code instead of a slash-prefixed PDF
 > name, yielding invalid syntax like `latin 12 Tf` — Acrobat refuses such a file
 > ("an error occurred while reading this document (14)") and Chrome draws raw
-> glyph indices. **v1.2.0 fixes this**: `resolveFonts` now assigns proper
-> `/F3`, `/F4`, … references. If you shipped PDFs through `resolveFonts` or the
-> `fonts` option under v1.1.0, re-render them. Hand-built `fontEntries` using
-> `/F3`+ were never affected (`/F1` and `/F2` remain reserved by the engine).
+> glyph indices. **v1.2.0 fixes this**: `resolveFonts` now prefixes the slash,
+> emitting valid PDF names like `/latin` and `/th`. If you shipped PDFs through
+> `resolveFonts` or the `fonts` option under v1.1.0, re-render them. Hand-built
+> `fontEntries` using a correct `/F3`-style ref were never affected (`/F1` and
+> `/F2` remain reserved by the engine).
 >
 > When building entries by hand, keep failing loudly — `loadFontData` resolves to
 > `null` (it does not throw) when a code has no registered loader:
@@ -7764,7 +7772,7 @@ dual-axis document before rendering it.
 
 ## Fonts & environment
 
-Re-exported from the engine: `registerFonts`, `registerFont`, `loadFontData`, `validateFontData`, `downloadBlob` (browser), `initNodeCompression` (Node), and — v1.2.0 — `setDeflateImpl`, which plugs any deflate implementation into the engine (e.g. the browser-native `CompressionStream`, for compressed client-side rendering without shipping a compression library). (`loadFontData` is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the `fontEntries` render option (or on `<Document fontEntries={…}>`), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.
+Re-exported from the engine: `registerFonts`, `registerFont`, `loadFontData`, `validateFontData`, `downloadBlob` (browser), `initNodeCompression` (Node), and — v1.2.0 — `setDeflateImpl`, which plugs a **synchronous** deflate implementation into the engine for compressed client-side rendering (the function's output is written verbatim, so it must produce a zlib-wrapped RFC 1950 stream — e.g. fflate's `zlibSync`; the async browser `CompressionStream` cannot be plugged in). (`loadFontData` is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the `fontEntries` render option (or on `<Document fontEntries={…}>`), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.
 
 ```tsx
 import { Document, Text, renderToBytes, registerFont, loadFontData } from 'pdfnative-react';
@@ -7824,12 +7832,12 @@ v1.2.0 follows the pdfnative 1.7.0 engine — charts v2, print production, and t
 
 | Area | v1.1.0 | v1.2.0 |
 |---|---|---|
-| Charts | 5 types | **9 types** (`stackedBar`, `stackedBarH`, `area`, `scatter`) + `axis2`, `xAxis` (category / linear / time, log scale), `dataLabels`, `labelStride`, `labelRotation` |
+| Charts | 5 types | **9 types** (`stackedBar`, `stackedBarH`, `area`, `scatter`) + `axis2`, `xAxis` (category / linear / time), log scale on the value axes, `dataLabels`, `labelStride`, `labelRotation` |
 | Print | — | **`<Document print>`** / `DocSpec.print` — bleed shorthand, page boxes, printer's marks, `/UserUnit`; viewer preferences and a custom output intent via `layout` |
 | Conformance | — | `layout.strict` / `layout.onDiagnostic` expose the engine's PDF/A diagnostics channel; new `PdfDiagnostic*` types |
 | HTTP | `renderToResponse` | + `cacheControl` and `etag` options; streamability validated **before** the first byte |
 | Linting | 18 rules | **25 rules** (7 new, incl. `L_PRINT_BOXES` which delegates to the engine's `validatePrintOptions`) |
-| Fonts | `resolveFonts` emitted an invalid bare `fontRef` | **fixed** — proper `/F3`+ names; re-render anything produced through `resolveFonts` / the `fonts` option |
+| Fonts | `resolveFonts` emitted an invalid bare `fontRef` | **fixed** — slash-prefixed PDF names (`/latin`, `/th`, …); re-render anything produced through `resolveFonts` / the `fonts` option |
 | Exports | — | +`setDeflateImpl` and 8 types (`PrintOptions`, `PrinterMarksOptions`, `PageBox`, `CustomOutputIntent`, `PdfDiagnostic`, `PdfDiagnosticCode`, `PdfDiagnosticHandler`, `PdfColors`) |
 | Quality | — | 292 tests / 18 files · 95 % statement coverage · a veraPDF gate over an 11-file PDF/A corpus (with 2 negative canaries) blocks CI and publish |
 | Compatibility | `pdfnative ^1.6.0` peer | **`pdfnative ^1.7.0`** peer; React `^19.0.0` and Node ≥ 22 unchanged |
@@ -9269,26 +9277,34 @@ which fits in a few kilobytes of JSON. So: persist the compact
 [`DocSpec`](react.html#agent-authoring--the-token-frugal-docspec) (or a
 `DocumentParams` JSON), and let the device that *asks* for the PDF produce it.
 
-![Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of megabyte-sized PDFs in object storage. When a client requests a document, the server sends the JSON; the client's own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine, using the browser-native CompressionStream plugged in via setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network.](../assets/use-case-spec-storage.svg)
+![Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of megabyte-sized PDFs in object storage. When a client requests a document, the server sends the JSON; the client's own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine — uncompressed by default, or compressed by plugging a synchronous deflate implementation into setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network.](../assets/use-case-spec-storage.svg)
 
 Why this works in a browser at all: the engine has **zero dependencies and no
-Node-only code paths** on this route, and pdfnative-react 1.2.0 exports
-`setDeflateImpl` — so compression can come from the browser's own
-`CompressionStream` instead of a bundled library.
+Node-only code paths** on this route. Rendering is synchronous and the output
+is a valid, uncompressed PDF — and since the bytes stay on the device, their
+size costs nothing on the wire.
 
 ```tsx
 // On the reader's device — nothing but the two packages and React.
-import { renderSpecToBytes, setDeflateImpl, downloadBlob } from 'pdfnative-react';
-
-// Browser-native deflate: no compression library shipped to the client.
-setDeflateImpl(async (bytes) => {
-  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-});
+import { renderSpecToBytes, downloadBlob } from 'pdfnative-react';
 
 const spec = await fetch(`/api/documents/${id}`).then((r) => r.json()); // ~2 KB
-const bytes = renderSpecToBytes(spec);                                   // rendered locally
-downloadBlob(new Blob([bytes], { type: 'application/pdf' }), 'invoice.pdf');
+const bytes = renderSpecToBytes(spec);       // rendered locally, synchronously
+downloadBlob(bytes, 'invoice.pdf');          // builds the Blob itself
+```
+
+Want compressed output too? `setDeflateImpl` accepts a **synchronous** deflate
+function whose result is written into the file verbatim, so it must produce a
+**zlib-wrapped (RFC 1950)** stream — `/FlateDecode` is zlib per ISO 32000-1
+§7.3.8. The browser's `CompressionStream` cannot be plugged in (it is
+asynchronous by nature); a tiny synchronous library can:
+
+```tsx
+import { zlibSync } from 'fflate';           // synchronous, zlib-wrapped output
+import { setDeflateImpl, renderSpecToBytes } from 'pdfnative-react';
+
+setDeflateImpl((bytes) => zlibSync(bytes));
+const compressed = renderSpecToBytes({ ...spec, layout: { ...spec.layout, compress: true } });
 ```
 
 What you gain, concretely:
