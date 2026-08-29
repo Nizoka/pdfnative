@@ -80,11 +80,12 @@ with no network. CLI 1.4.0 resolves it by splitting the ladder: **evidence is
 collected as replayable JSON on a connected machine, and embedded fully
 offline inside the enclave**.
 
-![Architecture: two network zones. In the connected zone, a machine runs pdfnative sign with an RFC 3161 timestamp URL, reaching PAdES B-T, then ltv collect with the online opt-in gathers OCSP responses and CRLs into a replayable ltv-data.json file. Only that JSON file crosses the controlled transfer boundary into the air-gapped enclave, where ltv embed writes the evidence into the PDF's DSS dictionary with no network access, reaching B-LT, and doc-timestamp appends a document-timestamp revision for B-LTA on the way out through the gateway.](../assets/use-case-airgap-ltv.svg)
+![Architecture: two network zones. In the connected zone, a machine runs pdfnative sign with the PAdES profile and an RFC 3161 timestamp URL, reaching PAdES B-T, then ltv collect with the online opt-in gathers OCSP responses and CRLs into a replayable ltv-data.json file. Only that JSON file crosses the controlled transfer boundary into the air-gapped enclave, where ltv embed writes the evidence into the PDF's DSS dictionary with no network access, reaching B-LT, and doc-timestamp appends a document-timestamp revision for B-LTA on the way out through the gateway.](../assets/use-case-airgap-ltv.svg)
 
 ```bash
 # Connected zone — sign with a timestamp (B-T), then gather the evidence.
 pdfnative sign --input contract.pdf --output signed.pdf \
+  --profile pades \                                    # ETSI.CAdES.detached
   --timestamp https://tsa.example.com/rfc3161          # RFC 3161, SSRF-guarded
 pdfnative ltv collect --input signed.pdf --online --output ltv-data.json
 
@@ -100,6 +101,11 @@ pdfnative doc-timestamp --input signed.lt.pdf \
 # Anywhere, later — verify the whole ladder offline from the embedded /DSS.
 pdfnative verify --input signed.lta.pdf --strict --revocation offline
 ```
+
+`--profile pades` is not optional here: the default is `pkcs7`, which writes
+`/SubFilter /adbe.pkcs7.detached` — a valid CMS signature, but not an
+ETSI EN 319 142-1 baseline, so the whole B-T → B-LTA ladder would sit on a
+non-PAdES foundation.
 
 The evidence file is versioned JSON (`pdfnative schema ltv-data`) with DER
 payloads as base64 — auditable before it crosses the boundary, replayable if

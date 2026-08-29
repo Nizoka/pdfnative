@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="ual-title ual-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
   <title id="ual-title">Air-gapped PAdES B-LTA archiving</title>
-  <desc id="ual-desc">Architecture: two network zones. In the connected zone, a machine runs pdfnative sign with an RFC 3161 timestamp URL, reaching PAdES B-T, then ltv collect with the online opt-in gathers OCSP responses and CRLs into a replayable ltv-data.json file. Only that JSON file crosses the controlled transfer boundary into the air-gapped enclave, where ltv embed writes the evidence into the PDF's DSS dictionary with no network access, reaching B-LT, and doc-timestamp appends a document-timestamp revision for B-LTA on the way out through the gateway.</desc>
+  <desc id="ual-desc">Architecture: two network zones. In the connected zone, a machine runs pdfnative sign with the PAdES profile and an RFC 3161 timestamp URL, reaching PAdES B-T, then ltv collect with the online opt-in gathers OCSP responses and CRLs into a replayable ltv-data.json file. Only that JSON file crosses the controlled transfer boundary into the air-gapped enclave, where ltv embed writes the evidence into the PDF's DSS dictionary with no network access, reaching B-LT, and doc-timestamp appends a document-timestamp revision for B-LTA on the way out through the gateway.</desc>
 
   <defs>
     <marker id="ual-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -22,7 +22,7 @@
 
   <rect x="61" y="166" width="328" height="60" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
   <text x="225" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">pdfnative sign --timestamp &lt;tsa-url&gt;</text>
-  <text x="225" y="210" text-anchor="middle" font-size="11.5" fill="#3B82F6">RFC 3161 token embedded → PAdES B-T</text>
+  <text x="225" y="210" text-anchor="middle" font-size="11.5" fill="#3B82F6">--profile pades · RFC 3161 token → PAdES B-T</text>
 
   <line x1="225" y1="226" x2="225" y2="252" stroke="#475569" stroke-width="1.75" marker-end="url(#ual-ah)"/>
 
@@ -74,5 +74,5 @@
 
   <!-- Footer -->
   <rect x="40" y="476" width="880" height="52" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
-  <text x="480" y="508" text-anchor="middle" font-size="12.5" fill="#475569">The ladder: B-B (signature) → B-T (sign --timestamp) → B-LT (ltv) → B-LTA (doc-timestamp). Validates in any PAdES-compatible reader.</text>
+  <text x="480" y="508" text-anchor="middle" font-size="12.5" fill="#475569">The ladder: B-B (sign --profile pades) → B-T (+ --timestamp) → B-LT (ltv) → B-LTA (doc-timestamp). Validates in any PAdES-compatible reader.</text>
 </svg>

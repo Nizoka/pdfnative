@@ -381,7 +381,7 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 | `--contact <str>` | — | `PdfSignOptions.contact` |
 | `--signing-time <ISO 8601>` | now | Explicit timestamp; validated up-front before any credential I/O |
 | `--pure-crypto` *(v1.2.0)* | off | Force pdfnative's portable **pure-JS** bignum CMS path instead of the default native provider |
-| `--timestamp <tsa-url>` *(v1.4.0)* | — | Embed an **RFC 3161 timestamp token** from the given TSA (PAdES **B-T**). The only network opt-in on `sign` — SSRF-guarded, no fallback: transport failure is `E_NETWORK`, a malformed response is `E_PARSE`. `--dry-run` never touches the network |
+| `--timestamp <tsa-url>` *(v1.4.0)* | — | Embed an **RFC 3161 timestamp token** from the given TSA (PAdES **B-T** — combine with `--profile pades` for a true ETSI baseline). The only network opt-in on `sign` — SSRF-guarded, no fallback: transport failure is `E_NETWORK`, a malformed response is `E_PARSE`. `--dry-run` never touches the network |
 | `--timestamp-digest <algo>` *(v1.4.0)* | `sha256` | TSA digest: `sha256`, `sha384`, or `sha512` |
 | `--timestamp-nonce <hex>` *(v1.4.0)* | random | Explicit RFC 3161 nonce (testing / reproducibility) |
 | `--digest <algo>` *(v1.4.0)* | `sha256` | CMS digest for RSA keys: `sha256`, `sha384`, or `sha512`. Combining `sha384`/`sha512` with `--algorithm ecdsa-sha256` is a usage error (exit 2) — ECDSA is SHA-256 only |
@@ -393,7 +393,16 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 
 > **Native constant-time signing (v1.2.0).** `sign` now routes CMS signing through Node's `node:crypto` by default (via `createNativeCryptoProvider`), for side-channel-resistant RSA/ECDSA. Pass **`--pure-crypto`** to select the portable pure-JS path (e.g. on a runtime without `node:crypto`).
 
-> **PAdES B-T (v1.4.0).** `--timestamp <tsa-url>` — previously a reserved flag that failed with `E_UNSUPPORTED` — is now functional: the CLI POSTs an RFC 3161 request through its SSRF guard, verifies the token, and embeds it in the CMS unsigned attributes via `signPdfBytesWithTimestamp`. Continue the ladder with [`ltv`](#pdfnative-ltv-v140) (B-LT) and [`doc-timestamp`](#pdfnative-doc-timestamp-v140) (B-LTA).
+> **PAdES B-T (v1.4.0).** `--timestamp <tsa-url>` — previously a reserved flag that failed with `E_UNSUPPORTED` — is now functional: the CLI POSTs an RFC 3161 request through its SSRF guard, verifies the token, and embeds it in the CMS unsigned attributes via `signPdfBytesWithTimestamp`. Pair it with `--profile pades`: the default `pkcs7` profile writes `/SubFilter /adbe.pkcs7.detached`, a valid CMS signature but not an ETSI EN 319 142-1 baseline. The typical ladder:
+>
+> ```bash
+> pdfnative sign --timestamp <tsa> --profile pades   # → B-T
+> pdfnative ltv add --online                         # → B-LT
+> pdfnative doc-timestamp --url <tsa>                # → B-LTA
+> pdfnative ltv add --online                         # LTV for the doc-timestamp itself
+> ```
+>
+> Continue with [`ltv`](#pdfnative-ltv-v140) (B-LT) and [`doc-timestamp`](#pdfnative-doc-timestamp-v140) (B-LTA) below.
 
 Signing keys are **never logged** — not in error output, not in debug traces, not in stack traces. The CLI redacts them at every code path that surfaces error context.
 
