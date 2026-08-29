@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  pdfnative GitHub social preview image (1280x640, 2:1).
+  Editable vector source. Rasterise to social-preview.png with headless
+  Chromium/Edge using a window size of 1280x640 and the screenshot flag:
+    chrome ++headless ++disable-gpu ++hide-scrollbars ++window-size=1280,640
+           ++screenshot=social-preview.png social-preview.svg
+  (replace ++ with double dashes). Upload the PNG manually in
+  GitHub Settings -> General -> Social preview.
+  All text and logos stay at least 40px inside every edge (GitHub's
+  recommended safe area for the open-graph template).
+  Brand charter: primary #2563eb, accent #1d4ed8, primary-dim #3b82f6
+  on the dark surface palette (bg #0f172a / bg-alt #1e293b).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="sp-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1326"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#172554"/>
+    </linearGradient>
+    <radialGradient id="sp-glow" cx="18%" cy="14%" r="55%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sp-accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="sp-logo-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="url(#sp-bg)"/>
+  <rect width="1280" height="640" fill="url(#sp-glow)"/>
+  <!-- Hairline frame -->
+  <rect x="0.5" y="0.5" width="1279" height="639" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <!-- Top accent bar (decorative, outside the safe area on purpose) -->
+  <rect x="0" y="0" width="1280" height="6" fill="url(#sp-accent)"/>
+
+  <!-- Brand row: logo + wordmark (safe area starts at 40px; content at 80px) -->
+  <g transform="translate(80, 68)">
+    <!-- Logo (40x40 source scaled x1.85 -> 74px) -->
+    <g transform="scale(1.85)">
+      <rect x="6" y="3" width="22" height="30" rx="3" fill="url(#sp-logo-grad)"/>
+      <polygon points="24,3 28,3 28,8.5 24,3" fill="#93C5FD" opacity="0.35"/>
+      <rect x="10" y="12" width="14" height="1.8" rx="0.9" fill="white" opacity="0.95"/>
+      <rect x="10" y="17" width="10" height="1.8" rx="0.9" fill="white" opacity="0.6"/>
+      <rect x="10" y="22" width="14" height="1.8" rx="0.9" fill="white" opacity="0.95"/>
+      <rect x="10" y="27" width="8" height="1.8" rx="0.9" fill="white" opacity="0.6"/>
+    </g>
+    <text x="74" y="48" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="40" font-weight="700" fill="#f8fafc" letter-spacing="-0.5">pdfnative</text>
+  </g>
+
+  <!-- Top-right URL -->
+  <text x="1200" y="104" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="22" fill="#64748b">pdfnative.dev</text>
+
+  <!-- Headline -->
+  <text x="78" y="296" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="96" font-weight="800" fill="#f8fafc" letter-spacing="-2">Pure Native</text>
+  <text x="78" y="402" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="96" font-weight="800" fill="url(#sp-accent)" letter-spacing="-2">PDF Generation</text>
+
+  <!-- Subtitle -->
+  <text x="80" y="458" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="500" fill="#e2e8f0">Zero dependencies · ISO 32000-1 · PDF/A · TypeScript-first</text>
+  <text x="80" y="494" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="23" font-weight="400" fill="#94a3b8">Charts · Forms · Merge / Split · LTV Signatures · Print Production · 22 Unicode scripts</text>
+
+  <!-- Capability pills -->
+  <g font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="600">
+    <!-- PDF/A -->
+    <rect x="80" y="526" width="120" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="140" y="557" text-anchor="middle" fill="#e2e8f0">PDF/A</text>
+    <!-- Signatures -->
+    <rect x="212" y="526" width="208" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="316" y="557" text-anchor="middle" fill="#e2e8f0">RSA + ECDSA</text>
+    <!-- CLI -->
+    <rect x="432" y="526" width="86" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="475" y="557" text-anchor="middle" fill="#e2e8f0">CLI</text>
+    <!-- MCP -->
+    <rect x="530" y="526" width="96" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="578" y="557" text-anchor="middle" fill="#e2e8f0">MCP</text>
+    <!-- React -->
+    <rect x="638" y="526" width="114" height="48" rx="24" fill="#ffffff" fill-opacity="0.05" stroke="#334155" stroke-width="1"/>
+    <text x="695" y="557" text-anchor="middle" fill="#e2e8f0">React</text>
+  </g>
+
+  <!-- Bottom-right license / MIT mark -->
+  <text x="1200" y="566" text-anchor="end" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="600" fill="#475569">MIT · open source</text>
+</svg>

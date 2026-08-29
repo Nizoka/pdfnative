@@ -303,6 +303,10 @@
         <span class="guide-toc-desc">Library, CLI, MCP or React? The decision tree in prose plus a verified capability × surface matrix — every export, command and tool name checked against the sources, with an honest em-dash where a surface lacks a capability. Machine-readable twin in <code>docs/data/surfaces.json</code>.</span>
       </li>
       <li>
+        <a href="use-cases.html">Ecosystem use cases →</a>
+        <span class="guide-toc-desc">Four production architectures with diagrams, each built from shipped APIs — store the DocSpec JSON instead of the PDF and render on the reader's device, air-gapped PAdES B-LTA archiving (<code>ltv collect</code> → transfer → offline <code>embed</code>), a CI document-regression gate on <code>pdfnative compare</code> exit codes, and edge-rendered PDFs with real HTTP caching (<code>etag</code>/<code>cacheControl</code>).</span>
+      </li>
+      <li>
         <a href="quickstart.html">Quick Start →</a>
         <span class="guide-toc-desc">Install pdfnative and generate your first PDF in Node.js or the browser in under a minute.</span>
       </li>
@@ -316,7 +320,7 @@
       </li>
       <li>
         <a href="agentic-workflows.html">Agentic workflows →</a>
-        <span class="guide-toc-desc">Two factual patterns for driving pdfnative from AI agents — extend the engine at runtime by registering fonts without a release (<code>registerFont</code> + <code>parseFontData</code> / <code>compileFontData</code>), and pipe agent-generated images into the PDF via the <code>image</code> block and the <code>embed_image</code> MCP tool. Built on public, validated APIs.</span>
+        <span class="guide-toc-desc">Two factual patterns for driving pdfnative from AI agents — extend the engine at runtime by registering fonts without a release (<code>registerFont</code> + <code>parseFontData</code> / <code>compileFontData</code>, incl. extending a local MCP install in place), and pipe agent-generated images into the PDF via the <code>image</code> block and the <code>embed_image</code> MCP tool. Built on public, validated APIs.</span>
       </li>
       <li>
         <a href="faq.html">FAQ →</a>
@@ -408,11 +412,11 @@
       </li>
       <li>
         <a href="cli.html">CLI →</a>
-        <span class="guide-toc-desc">pdfnative-cli — 17 commands: render, fill, sign, verify, encrypt, decrypt, inspect, extract-text, merge / split / extract, annotate, govern, batch, doctor, shell completion, and emit JSON Schemas from the terminal. Stdin/stdout pipelines, constant-memory streaming, PDF/UA &amp; PDF/A checks, PAdES-T verification, secret-safe signing, and an agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code> contract.</span>
+        <span class="guide-toc-desc">pdfnative-cli — 21 commands: render, fill, metadata, sign, verify, ltv, doc-timestamp, encrypt, decrypt, inspect, extract-text, compare, merge / split / extract, annotate, govern, batch, doctor, shell completion, and emit JSON Schemas from the terminal. The complete PAdES ladder (B-B → B-LTA) from the shell, stdin/stdout pipelines, constant-memory streaming, PDF/UA &amp; PDF/A checks, secret-safe signing, and an agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code> contract.</span>
       </li>
       <li>
         <a href="react.html">React →</a>
-        <span class="guide-toc-desc">pdfnative-react — build PDFs declaratively with JSX. A custom React reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code> on-device to pdfnative blocks. Live-preview hooks, streaming, and a token-frugal <code>DocSpec</code>. React 19 peer dep on the React package only — the engine stays zero-dependency.</span>
+        <span class="guide-toc-desc">pdfnative-react — build PDFs declaratively with JSX. A custom React reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code>/<code>&lt;Chart&gt;</code> on-device to pdfnative blocks. Charts v2, print production, the PDF/A diagnostics channel, HTTP caching on <code>renderToResponse</code>, live-preview hooks, streaming, and a token-frugal <code>DocSpec</code>. React 19 peer dep on the React package only — the engine stays zero-dependency.</span>
       </li>
     </ul>
 
@@ -447,7 +451,7 @@
       </li>
       <li>
         <a href="../playgrounds/cli.html">CLI command builder →</a>
-        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> commands interactively — nine of the seventeen commands (render / sign / inspect / verify / merge / split / extract / annotate / govern) with <code>--watch</code>, <code>--template</code>, <code>--outline</code>, <code>--font math</code>, ECDSA-SHA256, PAdES-T detection, and one-click presets. The <a href="cli.html">CLI guide</a> covers the other eight: fill, encrypt, decrypt, extract-text, doctor, batch, schema, completion.</span>
+        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> commands interactively — all twenty-one commands, from <code>render</code> and <code>fill</code> to the full PAdES ladder (<code>sign --timestamp</code> / <code>ltv</code> / <code>doc-timestamp</code>), <code>metadata</code>, <code>compare</code>, <code>batch --manifest</code> and <code>govern</code> — with inline validation and one-click presets. The <a href="cli.html">CLI guide</a> is the complete flag reference.</span>
       </li>
       <li>
         <a href="../playgrounds/mcp.html">MCP tool explorer →</a>

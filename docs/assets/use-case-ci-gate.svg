@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="ucg-title ucg-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="ucg-title">A document-regression gate in CI</title>
+  <desc id="ucg-desc">Architecture: a CI pipeline triggered by a pull request renders the changed template to a candidate PDF with render using the strict PDF/A gate, then runs pdfnative compare between the committed golden PDF and the candidate. Identical documents exit 0 and the check passes; differences print a text-and-structure report and exit 1, failing the pull request. An optional veraPDF step validates the PDF/A claim, and an approved change promotes the candidate to become the new golden file.</desc>
+
+  <defs>
+    <marker id="ucg-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ucg-ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/>
+    </marker>
+    <marker id="ucg-ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#DC2626"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#F8FAFC"/>
+  <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">A document-regression gate in CI</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">pdfnative compare turns write-only artefacts into asserted ones — CLI v1.4.0</text>
+
+  <!-- PR trigger -->
+  <rect x="40" y="110" width="180" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="130" y="137" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">Pull request</text>
+  <text x="130" y="157" text-anchor="middle" font-size="11.5" fill="#64748B">template change</text>
+
+  <line x1="220" y1="142" x2="266" y2="142" stroke="#475569" stroke-width="1.75" marker-end="url(#ucg-ah)"/>
+
+  <!-- Render -->
+  <rect x="268" y="110" width="270" height="64" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="403" y="137" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1E40AF">render --tagged pdfa2b --strict</text>
+  <text x="403" y="157" text-anchor="middle" font-size="11.5" fill="#3B82F6">PDF/A diagnostics fail the build up-front</text>
+
+  <line x1="538" y1="142" x2="584" y2="142" stroke="#475569" stroke-width="1.75" marker-end="url(#ucg-ah)"/>
+
+  <!-- Candidate -->
+  <rect x="586" y="110" width="180" height="64" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
+  <text x="676" y="137" text-anchor="middle" font-size="13.5" font-weight="700" fill="#92400E">candidate.pdf</text>
+  <text x="676" y="157" text-anchor="middle" font-size="11.5" fill="#B45309">fresh render</text>
+
+  <!-- Golden -->
+  <rect x="586" y="212" width="180" height="64" rx="10" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1.25"/>
+  <text x="676" y="239" text-anchor="middle" font-size="13.5" font-weight="700" fill="#3730A3">golden.pdf</text>
+  <text x="676" y="259" text-anchor="middle" font-size="11.5" fill="#4F46E5">committed reference</text>
+
+  <!-- Compare -->
+  <line x1="676" y1="174" x2="676" y2="200" stroke="#475569" stroke-width="0" />
+  <line x1="586" y1="142" x2="500" y2="142" stroke="#475569" stroke-width="0"/>
+  <path d="M676 174 C 676 190, 560 190, 522 236" fill="none" stroke="#475569" stroke-width="1.75" marker-end="url(#ucg-ah)"/>
+  <path d="M586 244 C 560 244, 540 244, 524 244" fill="none" stroke="#475569" stroke-width="1.75" marker-end="url(#ucg-ah)"/>
+
+  <rect x="240" y="212" width="282" height="88" rx="10" fill="#ECFEFF" stroke="#5EBECF" stroke-width="1.25"/>
+  <text x="381" y="240" text-anchor="middle" font-size="13.5" font-weight="700" fill="#155E75">pdfnative compare golden candidate</text>
+  <text x="381" y="260" text-anchor="middle" font-size="11.5" fill="#0E7490">--mode both · text + structure (pages, boxes,</text>
+  <text x="381" y="276" text-anchor="middle" font-size="11.5" fill="#0E7490">metadata, forms, annotations, signatures)</text>
+  <text x="381" y="292" text-anchor="middle" font-size="11.5" fill="#0E7490">--tolerance in points · --ignore-whitespace</text>
+
+  <!-- Outcomes -->
+  <line x1="310" y1="300" x2="230" y2="356" stroke="#16A34A" stroke-width="2" marker-end="url(#ucg-ah-green)"/>
+  <line x1="450" y1="300" x2="530" y2="356" stroke="#DC2626" stroke-width="2" marker-end="url(#ucg-ah-red)"/>
+
+  <rect x="80" y="360" width="270" height="72" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="215" y="388" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">identical → exit 0</text>
+  <text x="215" y="410" text-anchor="middle" font-size="11.5" fill="#16A34A">check passes, PR can merge</text>
+
+  <rect x="420" y="360" width="300" height="72" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.25"/>
+  <text x="570" y="386" text-anchor="middle" font-size="13.5" font-weight="700" fill="#991B1B">different → exit 1 / E_CHECK_FAILED</text>
+  <text x="570" y="406" text-anchor="middle" font-size="11.5" fill="#B91C1C">diff report on stdout first — the failure</text>
+  <text x="570" y="422" text-anchor="middle" font-size="11.5" fill="#B91C1C">explains itself in the CI log</text>
+
+  <!-- Promote loop -->
+  <path d="M766 244 C 850 244, 850 396, 722 396" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 5" marker-start="url(#ucg-ah)"/>
+  <text x="848" y="316" text-anchor="middle" font-size="11.5" fill="#64748B">intentional change?</text>
+  <text x="848" y="332" text-anchor="middle" font-size="11.5" fill="#64748B">promote candidate</text>
+  <text x="848" y="348" text-anchor="middle" font-size="11.5" fill="#64748B">to golden in the PR</text>
+
+  <!-- Footer -->
+  <rect x="40" y="462" width="880" height="66" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="490" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">Not a visual diff — pdfnative has no rasteriser; compare diffs what the format declares.</text>
+  <text x="480" y="510" text-anchor="middle" font-size="12.5" fill="#475569">That is also why it survives engine upgrades: content is compared, not bytes. Optional: veraPDF validates the PDF/A claim.</text>
+</svg>

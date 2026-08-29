@@ -925,6 +925,24 @@ tools (<code>inspect_pdf</code>, <code>inspect_layout</code>, <code>validate_pdf
 </ul>
 <p>See <a href="https://github.com/Nizoka/pdfnative-mcp/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a> for responsible disclosure.</p>
 <hr>
+<h2 id="fonts-come-from-the-local-pdfnative-install">Fonts come from the local <code>pdfnative</code> install<a class="heading-anchor" href="#fonts-come-from-the-local-pdfnative-install" aria-label="Link to this section">#</a></h2>
+<p><code>pdfnative-mcp</code> bundles <strong>no font data of its own</strong>: at runtime it resolves the
+locally installed <code>pdfnative</code> package and lazily imports the Noto font modules
+from that package&#39;s <code>fonts/</code> directory, embedding a font only when a request
+actually uses it. Two practical consequences:</p>
+<ul>
+<li><strong>Upgrading the local <code>pdfnative</code> upgrades the server&#39;s font coverage</strong> —
+nothing to configure, nothing re-downloaded.</li>
+<li><strong>The local install is an extension point for agents.</strong> A coding agent on the
+host can compile a font with <code>compileFontData</code> (<code>pdfnative/tools</code>) into the
+resolved local install and the next tool call serves it — the pattern that
+closed the mathematical-symbols gap locally before Noto Sans Math shipped in
+the engine. The published <code>lang</code> enum is closed and there is no operator-level
+fonts variable yet (a roadmap candidate), so this is a local code-level
+pattern — see <a href="agentic-workflows.md#via-the-mcp-server--the-local-install-is-the-extension-point">Agentic workflows → Via the MCP server</a>
+for the honest, step-by-step version.</li>
+</ul>
+<hr>
 <h2 id="troubleshooting">Troubleshooting<a class="heading-anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
 <p><strong>The server does not appear in my AI client.</strong><br>Verify that Node.js ≥ 22 is installed (<code>node --version</code>) and that the config file path is correct for your OS. Restart the client after any config change.</p>
 <p><strong><code>file</code> output mode returns a SecurityError.</strong><br>Set the <code>PDFNATIVE_MCP_OUTPUT_DIR</code> environment variable to an existing absolute path in the client config.</p>

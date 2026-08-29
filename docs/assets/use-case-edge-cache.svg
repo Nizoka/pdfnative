@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="uec-title uec-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="uec-title">Edge-rendered PDFs with honest HTTP caching</title>
+  <desc id="uec-desc">Architecture: browsers request a PDF from an edge or serverless runtime. The handler calls renderToResponse from pdfnative-react, which streams the PDF with constant memory and sets Cache-Control and a strong ETag derived from the rendered bytes. The CDN in front caches the response; repeat requests are served from cache, and revalidation requests answered with 304 Not Modified cost no render at all. No central PDF service, no headless browser, no SaaS round-trip.</desc>
+
+  <defs>
+    <marker id="uec-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="uec-ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#F8FAFC"/>
+  <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Edge-rendered PDFs with honest HTTP caching</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">renderToResponse + etag / cacheControl — pdfnative-react v1.2.0</text>
+
+  <!-- Browsers -->
+  <rect x="40" y="140" width="180" height="150" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="130" y="170" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">Browsers</text>
+  <text x="130" y="196" text-anchor="middle" font-size="11.5" fill="#64748B">GET /invoice/1024</text>
+  <text x="130" y="216" text-anchor="middle" font-size="11.5" fill="#64748B">If-None-Match:</text>
+  <text x="130" y="232" text-anchor="middle" font-size="11.5" fill="#64748B">"a1b2c3…"</text>
+
+  <line x1="220" y1="196" x2="296" y2="196" stroke="#475569" stroke-width="1.75" marker-end="url(#uec-ah)"/>
+
+  <!-- CDN -->
+  <rect x="298" y="140" width="230" height="150" rx="12" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1.25"/>
+  <text x="413" y="170" text-anchor="middle" font-size="14" font-weight="700" fill="#3730A3">CDN / cache tier</text>
+  <text x="413" y="196" text-anchor="middle" font-size="11.5" fill="#4F46E5">Cache-Control honoured verbatim</text>
+  <text x="413" y="216" text-anchor="middle" font-size="11.5" fill="#4F46E5">hit → served from cache</text>
+  <text x="413" y="236" text-anchor="middle" font-size="11.5" fill="#4F46E5">revalidation → 304 Not Modified</text>
+  <text x="413" y="256" text-anchor="middle" font-size="11.5" font-weight="600" fill="#3730A3">no render on either path</text>
+
+  <line x1="528" y1="196" x2="604" y2="196" stroke="#475569" stroke-width="1.75" marker-end="url(#uec-ah)"/>
+  <text x="566" y="184" text-anchor="middle" font-size="11" fill="#64748B">miss only</text>
+
+  <!-- Edge runtime -->
+  <rect x="606" y="110" width="314" height="240" rx="12" fill="#FFFFFF" stroke="#5EBECF" stroke-width="1.5"/>
+  <text x="763" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#155E75">Edge / serverless runtime</text>
+  <text x="763" y="159" text-anchor="middle" font-size="11.5" fill="#0E7490">Next.js route · Workers · Deno Deploy · Bun</text>
+
+  <rect x="634" y="176" width="258" height="64" rx="10" fill="#ECFEFF" stroke="#5EBECF" stroke-width="1.25"/>
+  <text x="763" y="202" text-anchor="middle" font-size="13" font-weight="700" fill="#155E75">renderToResponse(&lt;Invoice/&gt;, {…})</text>
+  <text x="763" y="222" text-anchor="middle" font-size="11.5" fill="#0E7490">web-standard Response · constant-memory stream</text>
+
+  <line x1="763" y1="240" x2="763" y2="262" stroke="#475569" stroke-width="1.75" marker-end="url(#uec-ah)"/>
+
+  <rect x="634" y="264" width="258" height="64" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="763" y="288" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E40AF">Cache-Control: public, s-maxage=86400</text>
+  <text x="763" y="308" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E40AF">ETag: strong, from the rendered bytes</text>
+
+  <!-- Return arrow -->
+  <path d="M606 320 C 480 372, 300 372, 226 320" fill="none" stroke="#16A34A" stroke-width="2" marker-end="url(#uec-ah-green)"/>
+  <text x="416" y="392" text-anchor="middle" font-size="12" font-weight="600" fill="#16A34A">application/pdf — streamed once, cached at the edge</text>
+
+  <!-- Guarantees strip -->
+  <rect x="40" y="420" width="880" height="56" rx="12" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1"/>
+  <text x="480" y="444" text-anchor="middle" font-size="12.5" font-weight="600" fill="#166534">Streamability is validated before the first byte — a document that cannot stream fails up-front,</text>
+  <text x="480" y="464" text-anchor="middle" font-size="12.5" fill="#16A34A">never mid-response with the headers already sent. No headless browser, no SaaS round-trip.</text>
+
+  <!-- Limits strip -->
+  <rect x="40" y="488" width="880" height="44" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="515" text-anchor="middle" font-size="12" fill="#475569">etag: true buffers to hash — pick streaming or the strong validator, not both · per-user documents: Cache-Control private + user-scoped cache keys</text>
+</svg>

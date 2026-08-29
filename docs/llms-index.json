@@ -5,8 +5,8 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 15130,
-      "approxTokens": 3783
+      "bytes": 15765,
+      "approxTokens": 3941
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -17,8 +17,8 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 486009,
-      "approxTokens": 121502
+      "bytes": 526752,
+      "approxTokens": 131688
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -29,8 +29,8 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 97646,
-      "approxTokens": 24412
+      "bytes": 99121,
+      "approxTokens": 24780
     }
   ],
   "guides": [
@@ -63,8 +63,8 @@
         "how-the-two-patterns-fit-together",
         "see-also"
       ],
-      "bytes": 8416,
-      "approxTokens": 2104
+      "bytes": 10059,
+      "approxTokens": 2515
     },
     {
       "title": "AI governance & human-in-the-loop",
@@ -111,8 +111,8 @@
         "key-design-decisions",
         "ecosystem"
       ],
-      "bytes": 11392,
-      "approxTokens": 2848
+      "bytes": 11440,
+      "approxTokens": 2860
     },
     {
       "title": "Charts (native vector)",
@@ -144,12 +144,12 @@
         "you-can-switch-later",
         "further-reading"
       ],
-      "bytes": 7210,
-      "approxTokens": 1803
+      "bytes": 8022,
+      "approxTokens": 2006
     },
     {
       "title": "pdfnative-cli — Command-Line Interface Guide",
-      "summary": "Tracks the latest published `pdfnative-cli` (v1.3.0, built on the pdfnative 1.6 engine — pins `^1.6.0`, which semver-accepts 1.7.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation h",
+      "summary": "Tracks the latest published `pdfnative-cli` (v1.4.0, built on pdfnative 1.7.0 — pins `^1.7.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-cli rele",
       "html": "https://pdfnative.dev/guides/cli.html",
       "markdown": "https://pdfnative.dev/guides/cli.md",
       "anchors": [
@@ -171,8 +171,8 @@
         "resources",
         "citation"
       ],
-      "bytes": 60044,
-      "approxTokens": 15011
+      "bytes": 77590,
+      "approxTokens": 19398
     },
     {
       "title": "Colour-emoji font CLI (pdfnative-build-emoji-font)",
@@ -311,12 +311,13 @@
         "output-modes",
         "end-to-end-example-signed-document",
         "security-model",
+        "fonts-come-from-the-local-pdfnative-install",
         "troubleshooting",
         "release-history",
         "further-reading"
       ],
-      "bytes": 61475,
-      "approxTokens": 15369
+      "bytes": 62594,
+      "approxTokens": 15649
     },
     {
       "title": "Onboarding — the pdfnative ecosystem in 90 seconds",
@@ -330,8 +331,8 @@
         "4-react-nextjs-remix-any-react-19-app--30-seconds",
         "what-to-read-next"
       ],
-      "bytes": 6270,
-      "approxTokens": 1568
+      "bytes": 6471,
+      "approxTokens": 1618
     },
     {
       "title": "Outlines & page labels",
@@ -423,12 +424,12 @@
         "command-line--pdfnative-cli",
         "next-steps"
       ],
-      "bytes": 8042,
-      "approxTokens": 2011
+      "bytes": 8060,
+      "approxTokens": 2015
     },
     {
       "title": "pdfnative-react — Declarative JSX Renderer Guide",
-      "summary": "Tracks the latest published `pdfnative-react` (v1.1.0, built on the pdfnative 1.6 engine), with React 19 and `pdfnative` ^1.6.0 as peer dependencies (semver-accepts 1.7.0). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full",
+      "summary": "Tracks the latest published `pdfnative-react` (v1.2.0, built on pdfnative 1.7.0), with React 19 and `pdfnative` ^1.7.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-react releas",
       "html": "https://pdfnative.dev/guides/react.html",
       "markdown": "https://pdfnative.dev/guides/react.md",
       "anchors": [
@@ -438,6 +439,7 @@
         "components",
         "server-rendering",
         "charts",
+        "print-production--conformance-diagnostics-_v120_",
         "linting",
         "agent-surface",
         "rendering",
@@ -446,10 +448,11 @@
         "fonts--environment",
         "migrating-from-react-pdfrenderer",
         "diagnostics",
+        "release-history",
         "resources"
       ],
-      "bytes": 17489,
-      "approxTokens": 4372
+      "bytes": 22665,
+      "approxTokens": 5666
     },
     {
       "title": "Self-verifying generation",
@@ -564,6 +567,22 @@
       ],
       "bytes": 5303,
       "approxTokens": 1326
+    },
+    {
+      "title": "Ecosystem use cases",
+      "summary": "Four production architectures, each built from parts the ecosystem already",
+      "html": "https://pdfnative.dev/guides/use-cases.html",
+      "markdown": "https://pdfnative.dev/guides/use-cases.md",
+      "anchors": [
+        "case-1--store-the-spec-not-the-pdf",
+        "case-2--air-gapped-pades-b-lta-archiving",
+        "case-3--a-document-regression-gate-in-ci",
+        "case-4--edge-rendered-pdfs-with-honest-http-caching",
+        "picking-parts-not-a-platform",
+        "see-also"
+      ],
+      "bytes": 12023,
+      "approxTokens": 3006
     },
     {
       "title": "Viewer preferences",
