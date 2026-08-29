@@ -2,6 +2,8 @@
 
 > Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 22 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. PAdES digital signatures with long-term validation (B-B → B-LTA). Current version: 1.7.0.
 
+_Verified on 2026-08-29 against the source tree by `npm run verify:docs`; the canonical manifest is <https://pdfnative.dev/assets/ecosystem.json>._
+
 ## Docs
 
 - [README](https://github.com/Nizoka/pdfnative/blob/main/README.md): Full feature list, install, quick start, API surface, examples.
@@ -22,6 +24,7 @@
 - [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`.
 - [Accessibility](https://pdfnative.dev/guides/accessibility.html): Tagged PDF, /ActualText, PDF/UA structure tree.
 - [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
+- [Choosing your surface](https://pdfnative.dev/guides/choose.html): Library, CLI, MCP or React? The decision tree plus a verified capability × surface matrix, with an honest em-dash where a surface lacks a capability.
 - [FAQ](https://pdfnative.dev/guides/faq.html): Custom fonts, encryption, BiDi, workers, vs other libs.
 - [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
 - [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set, plus flag & ZWJ sequences via `--sequences` / `--sequence-list`; pinned download + SHA-256 verification.
@@ -37,13 +40,14 @@
 - [Colour emoji](https://pdfnative.dev/guides/colour-emoji.html): COLRv1 rendering — solid, linear and radial gradient layers as native PDF Form XObjects; flag & ZWJ sequences (51 flags + 22 ZWJ bundled) render as single ligature glyphs.
 - [Layout debugging](https://pdfnative.dev/guides/debugging.html): `inspectDocumentLayout()` and the `debug: true` overlay for diagnosing pagination.
 - [Font validation](https://pdfnative.dev/guides/font-validation.html): `validateFontData()` — check a font module before registering it.
+- [Self-verifying generation](https://pdfnative.dev/guides/self-verify.html): The generate → inspect → assert → correct loop — `inspectDocumentLayout()` before building, then `extractText()` / `validatePdfUA()` / `listSignatures()` against the emitted bytes; the same loop on the CLI (`inspect --check`, stable exit codes) and MCP (`inspect_pdf`).
 - [Agentic workflows](https://pdfnative.dev/guides/agentic-workflows.html): Patterns for driving pdfnative from AI agents on public, validated APIs.
 - [Use cases](https://pdfnative.dev/guides/use-cases.html): Four ecosystem architectures with diagrams — store the DocSpec instead of the PDF and render on-device, air-gapped PAdES B-LTA archiving, a CI document-regression gate with `compare`, and edge-rendered PDFs with correct HTTP caching.
 - [AI governance](https://pdfnative.dev/guides/ai-governance.html): The human-in-the-loop contract — agents draft, humans review, approve and submit.
 - [Responsibility](https://pdfnative.dev/responsibility.html): Sustainability, supply-chain and accessibility position — every claim linked to its proof, plus an explicit list of what is deliberately not claimed.
 - [Ecosystem manifest](https://pdfnative.dev/assets/ecosystem.json): Machine-readable versions and counts for the whole ecosystem (canonical, enforced by `npm run verify:docs`).
 
-> Guide pages render their markdown client-side. For the full text without executing JavaScript, request the `.md` source at the same path — e.g. `https://pdfnative.dev/guides/charts.md`.
+> Every guide is pre-rendered: the HTML at `https://pdfnative.dev/guides/<name>.html` already contains the full article, so a fetcher that does not execute JavaScript gets the whole page. The Markdown source is served at the same path with `.md` (`https://pdfnative.dev/guides/charts.md`) and is declared as a `text/markdown` alternate in each page head — the same text without the page chrome, and the cheaper fetch of the two. Both work without JavaScript.
 
 ## Agent and AI integration
 
@@ -57,7 +61,7 @@
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 48 sample generators producing 242 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2687+ tests across 123 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 2691+ tests across 123 files. 95%+ statements measured at v1.6.0; CI enforces ≥88%.
 
 ## Machine-readable artefacts
 
@@ -66,6 +70,7 @@
 - [llms-recipes.txt](https://pdfnative.dev/llms-recipes.txt): The executable recipe corpus — standalone TypeScript files importing from `pdfnative`, each executed in CI with its `@expect` assertions verified, so the code you copy is proven to compile and to produce exactly the artefact its header describes.
 - [api.json](https://pdfnative.dev/assets/api.json): The public API surface, derived mechanically from the export statements of `src/index.ts` — name, kind, source module, signature and TSDoc summary where extractable. The substitute for the unpublished `index.d.ts`.
 - [surfaces.json](https://pdfnative.dev/data/surfaces.json): The capability × surface matrix (library / CLI / MCP / React) behind the [Choosing your surface](https://pdfnative.dev/guides/choose.html) guide.
+- [errors.json](https://pdfnative.dev/data/errors.json): The engine's diagnostic registry — every `PDFA_` diagnostic code with its meaning and remedy, two-way verified against `src/` by the `error-parity` rule.
 - [llms-index.json](https://pdfnative.dev/llms-index.json): Per-page machine index — HTML and raw-Markdown URL, title, summary, section anchors, and exact byte / approximate token sizes for every artefact, so you can decide what to fetch before spending the tokens.
 - Every guide serves its raw Markdown at the same URL with `.md` instead of `.html`, declared via `<link rel="alternate" type="text/markdown">` in each page head. All of these URLs are listed in the sitemap.
 
@@ -156,7 +161,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 2687+ tests across 123 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 95.41% statement coverage measured at the v1.6.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 2691+ tests across 123 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 95.41% statement coverage measured at the v1.6.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1293,7 +1298,7 @@ src/
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (48 generators, 242 PDFs)
-tests/                    # 2687+ tests (123 files: unit + integration + fuzz + parser + docs)
+tests/                    # 2691+ tests (123 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1305,7 +1310,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (2687+ tests)
+npm run test             # vitest run (2691+ tests)
 npm run test:coverage    # vitest with v8 coverage (95.41% statements at the v1.6.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate 242 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1320,7 +1325,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 2687+ (123 files) |
+| Tests | 2691+ (123 files) |
 | Statement coverage | 95.41% (measured at the v1.6.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 87.79% (measured at the v1.6.0 release; CI enforces ≥80%) |
 | Function coverage | 98.5% (measured at the v1.6.0 release; CI enforces ≥85%; lines gate: ≥90%) |
@@ -3158,7 +3163,7 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 | `--contact <str>` | — | `PdfSignOptions.contact` |
 | `--signing-time <ISO 8601>` | now | Explicit timestamp; validated up-front before any credential I/O |
 | `--pure-crypto` *(v1.2.0)* | off | Force pdfnative's portable **pure-JS** bignum CMS path instead of the default native provider |
-| `--timestamp <tsa-url>` *(v1.4.0)* | — | Embed an **RFC 3161 timestamp token** from the given TSA (PAdES **B-T**). The only network opt-in on `sign` — SSRF-guarded, no fallback: transport failure is `E_NETWORK`, a malformed response is `E_PARSE`. `--dry-run` never touches the network |
+| `--timestamp <tsa-url>` *(v1.4.0)* | — | Embed an **RFC 3161 timestamp token** from the given TSA (PAdES **B-T** — combine with `--profile pades` for a true ETSI baseline). The only network opt-in on `sign` — SSRF-guarded, no fallback: transport failure is `E_NETWORK`, a malformed response is `E_PARSE`. `--dry-run` never touches the network |
 | `--timestamp-digest <algo>` *(v1.4.0)* | `sha256` | TSA digest: `sha256`, `sha384`, or `sha512` |
 | `--timestamp-nonce <hex>` *(v1.4.0)* | random | Explicit RFC 3161 nonce (testing / reproducibility) |
 | `--digest <algo>` *(v1.4.0)* | `sha256` | CMS digest for RSA keys: `sha256`, `sha384`, or `sha512`. Combining `sha384`/`sha512` with `--algorithm ecdsa-sha256` is a usage error (exit 2) — ECDSA is SHA-256 only |
@@ -3170,7 +3175,16 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 
 > **Native constant-time signing (v1.2.0).** `sign` now routes CMS signing through Node's `node:crypto` by default (via `createNativeCryptoProvider`), for side-channel-resistant RSA/ECDSA. Pass **`--pure-crypto`** to select the portable pure-JS path (e.g. on a runtime without `node:crypto`).
 
-> **PAdES B-T (v1.4.0).** `--timestamp <tsa-url>` — previously a reserved flag that failed with `E_UNSUPPORTED` — is now functional: the CLI POSTs an RFC 3161 request through its SSRF guard, verifies the token, and embeds it in the CMS unsigned attributes via `signPdfBytesWithTimestamp`. Continue the ladder with [`ltv`](#pdfnative-ltv-v140) (B-LT) and [`doc-timestamp`](#pdfnative-doc-timestamp-v140) (B-LTA).
+> **PAdES B-T (v1.4.0).** `--timestamp <tsa-url>` — previously a reserved flag that failed with `E_UNSUPPORTED` — is now functional: the CLI POSTs an RFC 3161 request through its SSRF guard, verifies the token, and embeds it in the CMS unsigned attributes via `signPdfBytesWithTimestamp`. Pair it with `--profile pades`: the default `pkcs7` profile writes `/SubFilter /adbe.pkcs7.detached`, a valid CMS signature but not an ETSI EN 319 142-1 baseline. The typical ladder:
+>
+> ```bash
+> pdfnative sign --timestamp <tsa> --profile pades   # → B-T
+> pdfnative ltv add --online                         # → B-LT
+> pdfnative doc-timestamp --url <tsa>                # → B-LTA
+> pdfnative ltv add --online                         # LTV for the doc-timestamp itself
+> ```
+>
+> Continue with [`ltv`](#pdfnative-ltv-v140) (B-LT) and [`doc-timestamp`](#pdfnative-doc-timestamp-v140) (B-LTA) below.
 
 Signing keys are **never logged** — not in error output, not in debug traces, not in stack traces. The CLI redacts them at every code path that surfaces error context.
 
@@ -4513,7 +4527,10 @@ the `inspectDocumentLayout()` report.
 <!-- source: docs/guides/faq.md -->
 # FAQ
 
-> Frequently asked questions about pdfnative. Can't find your answer? Open a [discussion](https://github.com/Nizoka/pdfnative/discussions) or read the [Troubleshooting guide](troubleshooting.html).
+> **Frequently asked questions about pdfnative** — getting started, custom
+> fonts, PDF/A variants, encryption, BiDi text, browser / Deno / Bun support,
+> signatures, workers, and how it compares with other libraries. Can't find
+> your answer? Open a [discussion](https://github.com/Nizoka/pdfnative/discussions) or read the [Troubleshooting guide](troubleshooting.html).
 
 ## Getting started
 
@@ -8534,7 +8551,7 @@ for the idempotency proof.
 <!-- source: docs/guides/streaming.md -->
 # Streaming output
 
-> pdfnative emits PDFs as `AsyncGenerator<Uint8Array>` so you can pipe them to disk, an HTTP response, or a Web Stream without buffering the whole document. **New in v1.3.0:** a mode in which the fully-joined PDF binary never exists in memory — see [what this does and does not buy you](#what-this-does-and-does-not-buy-you) for the exact profile.
+> **pdfnative emits PDFs as `AsyncGenerator<Uint8Array>`** so you can pipe them to disk, an HTTP response, or a Web Stream without buffering the whole document. **New in v1.3.0:** a mode in which the fully-joined PDF binary never exists in memory — see [what this does and does not buy you](#what-this-does-and-does-not-buy-you) for the exact profile.
 
 ## Three streaming modes
 
@@ -8716,7 +8733,11 @@ error:
 <!-- source: docs/guides/tables.md -->
 # Smart tables
 
-> _Backward-compatible with v1.1.0 — existing single-page tables produce byte-identical output._
+> **Multi-page-safe tables by default.** Long tables wrap on column overflow,
+> slice cleanly across pages and reprint their header on every continuation
+> page; zebra striping, captions, per-cell padding and minimum row heights are
+> one field each on `TableBlock`. Backward-compatible with v1.1.0 — existing
+> single-page tables produce byte-identical output.
 
 pdfnative's table renderer is **planner-driven** and **multi-page-safe** by default. Long tables wrap on column overflow, slice cleanly across pages, and reprint their header on every continuation page — matching the behaviour readers expect from commercial PDF libraries.
 
@@ -9336,11 +9357,12 @@ with no network. CLI 1.4.0 resolves it by splitting the ladder: **evidence is
 collected as replayable JSON on a connected machine, and embedded fully
 offline inside the enclave**.
 
-![Architecture: two network zones. In the connected zone, a machine runs pdfnative sign with an RFC 3161 timestamp URL, reaching PAdES B-T, then ltv collect with the online opt-in gathers OCSP responses and CRLs into a replayable ltv-data.json file. Only that JSON file crosses the controlled transfer boundary into the air-gapped enclave, where ltv embed writes the evidence into the PDF's DSS dictionary with no network access, reaching B-LT, and doc-timestamp appends a document-timestamp revision for B-LTA on the way out through the gateway.](../assets/use-case-airgap-ltv.svg)
+![Architecture: two network zones. In the connected zone, a machine runs pdfnative sign with the PAdES profile and an RFC 3161 timestamp URL, reaching PAdES B-T, then ltv collect with the online opt-in gathers OCSP responses and CRLs into a replayable ltv-data.json file. Only that JSON file crosses the controlled transfer boundary into the air-gapped enclave, where ltv embed writes the evidence into the PDF's DSS dictionary with no network access, reaching B-LT, and doc-timestamp appends a document-timestamp revision for B-LTA on the way out through the gateway.](../assets/use-case-airgap-ltv.svg)
 
 ```bash
 # Connected zone — sign with a timestamp (B-T), then gather the evidence.
 pdfnative sign --input contract.pdf --output signed.pdf \
+  --profile pades \                                    # ETSI.CAdES.detached
   --timestamp https://tsa.example.com/rfc3161          # RFC 3161, SSRF-guarded
 pdfnative ltv collect --input signed.pdf --online --output ltv-data.json
 
@@ -9356,6 +9378,11 @@ pdfnative doc-timestamp --input signed.lt.pdf \
 # Anywhere, later — verify the whole ladder offline from the embedded /DSS.
 pdfnative verify --input signed.lta.pdf --strict --revocation offline
 ```
+
+`--profile pades` is not optional here: the default is `pkcs7`, which writes
+`/SubFilter /adbe.pkcs7.detached` — a valid CMS signature, but not an
+ETSI EN 319 142-1 baseline, so the whole B-T → B-LTA ladder would sit on a
+non-PAdES foundation.
 
 The evidence file is versioned JSON (`pdfnative schema ltv-data`) with DER
 payloads as base64 — auditable before it crosses the boundary, replayable if

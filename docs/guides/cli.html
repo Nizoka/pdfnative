@@ -714,7 +714,7 @@ echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;tex
 <tr>
 <td><code>--timestamp &lt;tsa-url&gt;</code> <em>(v1.4.0)</em></td>
 <td>—</td>
-<td>Embed an <strong>RFC 3161 timestamp token</strong> from the given TSA (PAdES <strong>B-T</strong>). The only network opt-in on <code>sign</code> — SSRF-guarded, no fallback: transport failure is <code>E_NETWORK</code>, a malformed response is <code>E_PARSE</code>. <code>--dry-run</code> never touches the network</td>
+<td>Embed an <strong>RFC 3161 timestamp token</strong> from the given TSA (PAdES <strong>B-T</strong> — combine with <code>--profile pades</code> for a true ETSI baseline). The only network opt-in on <code>sign</code> — SSRF-guarded, no fallback: transport failure is <code>E_NETWORK</code>, a malformed response is <code>E_PARSE</code>. <code>--dry-run</code> never touches the network</td>
 </tr>
 <tr>
 <td><code>--timestamp-digest &lt;algo&gt;</code> <em>(v1.4.0)</em></td>
@@ -761,7 +761,13 @@ echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;tex
 <p><strong>Native constant-time signing (v1.2.0).</strong> <code>sign</code> now routes CMS signing through Node&#39;s <code>node:crypto</code> by default (via <code>createNativeCryptoProvider</code>), for side-channel-resistant RSA/ECDSA. Pass <strong><code>--pure-crypto</code></strong> to select the portable pure-JS path (e.g. on a runtime without <code>node:crypto</code>).</p>
 </blockquote>
 <blockquote>
-<p><strong>PAdES B-T (v1.4.0).</strong> <code>--timestamp &lt;tsa-url&gt;</code> — previously a reserved flag that failed with <code>E_UNSUPPORTED</code> — is now functional: the CLI POSTs an RFC 3161 request through its SSRF guard, verifies the token, and embeds it in the CMS unsigned attributes via <code>signPdfBytesWithTimestamp</code>. Continue the ladder with <a href="#pdfnative-ltv-v140"><code>ltv</code></a> (B-LT) and <a href="#pdfnative-doc-timestamp-v140"><code>doc-timestamp</code></a> (B-LTA).</p>
+<p><strong>PAdES B-T (v1.4.0).</strong> <code>--timestamp &lt;tsa-url&gt;</code> — previously a reserved flag that failed with <code>E_UNSUPPORTED</code> — is now functional: the CLI POSTs an RFC 3161 request through its SSRF guard, verifies the token, and embeds it in the CMS unsigned attributes via <code>signPdfBytesWithTimestamp</code>. Pair it with <code>--profile pades</code>: the default <code>pkcs7</code> profile writes <code>/SubFilter /adbe.pkcs7.detached</code>, a valid CMS signature but not an ETSI EN 319 142-1 baseline. The typical ladder:</p>
+<pre><code class="language-bash">pdfnative sign --timestamp &lt;tsa&gt; --profile pades   # → B-T
+pdfnative ltv add --online                         # → B-LT
+pdfnative doc-timestamp --url &lt;tsa&gt;                # → B-LTA
+pdfnative ltv add --online                         # LTV for the doc-timestamp itself
+</code></pre>
+<p>Continue with <a href="#pdfnative-ltv-v140"><code>ltv</code></a> (B-LT) and <a href="#pdfnative-doc-timestamp-v140"><code>doc-timestamp</code></a> (B-LTA) below.</p>
 </blockquote>
 <p>Signing keys are <strong>never logged</strong> — not in error output, not in debug traces, not in stack traces. The CLI redacts them at every code path that surfaces error context.</p>
 <h3 id="pdfnative-inspect"><code>pdfnative inspect</code><a class="heading-anchor" href="#pdfnative-inspect" aria-label="Link to this section">#</a></h3>
