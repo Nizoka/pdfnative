@@ -1,8 +1,8 @@
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks the latest published `pdfnative-cli`** (v1.3.0, built on the pdfnative 1.6 engine — pins `^1.6.0`, which semver-accepts 1.7.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
+> **Tracks the latest published `pdfnative-cli`** (v1.4.0, built on pdfnative 1.7.0 — pins `^1.7.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
-[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 17 commands in five groups — create & edit (`render`, `fill`, `annotate`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — that together cover the full document lifecycle from JSON to a signed, verified, archive-grade PDF, plus page-tree editing, markup annotations, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 21 commands in five groups — create & edit (`render`, `fill`, `annotate`, `metadata`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `ltv`, `doc-timestamp`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`, `compare`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — that together cover the full document lifecycle from JSON to a signed, timestamped, archive-grade PDF with the complete PAdES ladder (B-B → B-T → B-LT → B-LTA), plus page-tree editing, markup annotations, document comparison, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
 > **Why a CLI?** Many real-world workflows live outside Node.js: shell scripts, CI pipelines, Docker containers, Makefiles, batch jobs, build tools written in other languages. The CLI lets all of them call `pdfnative` without writing JavaScript, and is fully composable through stdin/stdout pipelines.
 
@@ -22,6 +22,10 @@ The CLI is a **pure dispatch layer** over `pdfnative`. No PDF logic lives in the
 | `split` | `splitPdf()` |
 | `extract` | `extractPages()` |
 | `annotate` | `PdfModifier.addAnnotation()` / `buildAnnotationBody()` |
+| `metadata` | `PdfModifier.updateMetadata()` — incremental `/Info` + XMP edits that keep existing signatures valid for their revision |
+| `ltv` | `collectValidationInfo()` / `embedValidationInfo()` / `addValidationInfo()` (PAdES B-LT `/DSS`) |
+| `doc-timestamp` | `addDocumentTimestamp()` — an RFC 3161 `/DocTimeStamp` revision (PAdES B-LTA) |
+| `compare` | `openPdf()` / `extractText()` / `readFormFields()` / `getAnnotations()` — text + structure diff, implemented in the CLI |
 | `govern` | AI-governance contract (`.github/ai-governance.json`, `AGENT_RULES.md`) — draft gating uses the CLI's own `validateGovernanceDraft()` (the core repo's equivalent check is a repo script, not a published API) |
 | `batch` | the `render` pipeline, applied in parallel across a directory |
 | `schema` | versioned JSON Schemas (Draft 2020-12) for every input/output shape |
@@ -41,7 +45,7 @@ npm install --global pdfnative-cli
 pdfnative render --input document.json --output report.pdf
 ```
 
-**Requirements:** Node.js ≥ 20 · Bun · Deno (`node dist/cli.cjs`).
+**Requirements:** Node.js ≥ 22 *(v1.4.0 — Node 20 reached end-of-life on 2026-04-30)* · Bun · Deno (`node dist/cli.cjs`).
 
 The CLI ships with **NPM provenance** — verify the published artifact with `npm audit signatures` or on [npmjs.com](https://www.npmjs.com/package/pdfnative-cli).
 
@@ -227,6 +231,8 @@ Renders a JSON document into a PDF. Supports both renderer variants exposed by `
 | `--stream-true` *(v1.1.0)* | off | Streaming via `buildDocumentPDFStreamTrue` / `buildPDFStreamTrue` — PDF parts are emitted and freed as they go, so the joined binary never materialises. Byte-identical to the buffered builders. Same constraints as `--stream` (no TOC, no `{pages}`); mutually exclusive with the other `--stream*` flags |
 | `--max-blocks <n>` *(v1.1.0)* | `100000` | Exposes `layout.maxBlocks` so very large multi-thousand-page reports no longer hit a spurious ceiling |
 | `--layout <file.json>` | — | Load any subset of `PdfLayoutOptions` |
+| `--chunk-size <n>` *(v1.4.0)* | — | Chunk size for the `--stream` / `--stream-true` output |
+| `--strict` *(v1.4.0)* | off | Escalate PDF/A diagnostics (`PDFA_NO_FONT_ENTRIES`, `PDFA_UNEMBEDDED_FORM_FONT`, `PDFA_DEVICE_CMYK_IMAGE`) into a hard failure **before the first output byte** — exit 1, `E_CHECK_FAILED`. Without it they are `warning:` lines on stderr (hidden by `--quiet`) plus an additive `diagnostics[]` array in the `--json` envelope |
 
 #### Smart tables _(v1.3.0, document variant)_
 
@@ -327,6 +333,16 @@ pdfnative render --input paper.json --output paper.pdf --outline auto --font mat
 pdfnative render --input report.json --inspect-layout > layout.json
 ```
 
+#### Print production, images from JSON &amp; charts v2 _(v1.4.0)_
+
+Everything here rides on the pdfnative 1.7.0 engine and is reachable through the existing `--layout` file and the document JSON — no new flags needed:
+
+- **Image blocks in the document JSON** — `{ "type": "image", "src": "logo.png" }` (path resolved relative to the `--input` JSON, same validation as `--attachment`) or `{ "type": "image", "dataBase64": "…" }` for inline JPEG/PNG.
+- **`layout.print`** — `bleed`, `trimBox` / `bleedBox` / `artBox` / `cropBox`, vector printer's marks (`print.marks`), and `/UserUnit` (1–75 000). `merge` / `split` / `extract` now preserve these boxes too.
+- **`layout.outputIntent`** — a custom RGB ICC output intent; **`layout.viewerPreferences`** — `duplex`, `pickTrayByPDFSize`, `printPageRange`, `numCopies`.
+- **`params.metadata`** — `author`, `subject`, `keywords`, and `trapped: True|False|Unknown`, written to `/Info` and XMP.
+- **Charts v2** — the `chart` block now covers 9 types (adds `stackedBar`, `stackedBarH`, `area`, `scatter`), a secondary Y axis (`series.yAxis: "right"` + `axis2`), `category` / `linear` / `time` X axes, log scale, `dataLabels`, `labelStride`, and `labelRotation`.
+
 #### Iteration helpers _(v0.3.0)_
 
 | Flag | Description |
@@ -365,8 +381,19 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 | `--contact <str>` | — | `PdfSignOptions.contact` |
 | `--signing-time <ISO 8601>` | now | Explicit timestamp; validated up-front before any credential I/O |
 | `--pure-crypto` *(v1.2.0)* | off | Force pdfnative's portable **pure-JS** bignum CMS path instead of the default native provider |
+| `--timestamp <tsa-url>` *(v1.4.0)* | — | Embed an **RFC 3161 timestamp token** from the given TSA (PAdES **B-T**). The only network opt-in on `sign` — SSRF-guarded, no fallback: transport failure is `E_NETWORK`, a malformed response is `E_PARSE`. `--dry-run` never touches the network |
+| `--timestamp-digest <algo>` *(v1.4.0)* | `sha256` | TSA digest: `sha256`, `sha384`, or `sha512` |
+| `--timestamp-nonce <hex>` *(v1.4.0)* | random | Explicit RFC 3161 nonce (testing / reproducibility) |
+| `--digest <algo>` *(v1.4.0)* | `sha256` | CMS digest for RSA keys: `sha256`, `sha384`, or `sha512` (ECDSA stays SHA-256) |
+| `--profile <p>` *(v1.4.0)* | `pkcs7` | `pkcs7` or `pades` — `pades` emits `ETSI.CAdES.detached` with the ESS signing-certificate-v2 attribute and omits signing-time |
+| `--allow-multiple` *(v1.4.0)* | off | Add a signature to an already-signed PDF instead of refusing (the 1.x idempotent default is preserved) |
+| `--field-name <name>` *(v1.4.0)* | auto | Explicit signature field name (auto-suffixed on collision) |
+| `--signature-rect <x1,y1,x2,y2>` / `--signature-page <n>` *(v1.4.0)* | invisible | Place a visible signature widget |
+| `--placeholder-bytes <n>` *(v1.4.0)* | auto | Reserve a larger `/Contents` placeholder (e.g. for long chains or large timestamp tokens) |
 
 > **Native constant-time signing (v1.2.0).** `sign` now routes CMS signing through Node's `node:crypto` by default (via `createNativeCryptoProvider`), for side-channel-resistant RSA/ECDSA. Pass **`--pure-crypto`** to select the portable pure-JS path (e.g. on a runtime without `node:crypto`).
+
+> **PAdES B-T (v1.4.0).** `--timestamp <tsa-url>` — previously a reserved flag that failed with `E_UNSUPPORTED` — is now functional: the CLI POSTs an RFC 3161 request through its SSRF guard, verifies the token, and embeds it in the CMS unsigned attributes via `signPdfBytesWithTimestamp`. Continue the ladder with [`ltv`](#pdfnative-ltv-v140) (B-LT) and [`doc-timestamp`](#pdfnative-doc-timestamp-v140) (B-LTA).
 
 Signing keys are **never logged** — not in error output, not in debug traces, not in stack traces. The CLI redacts them at every code path that surfaces error context.
 
@@ -379,13 +406,14 @@ Inspects metadata and conformance of an existing PDF. Read-only — never modifi
 | `--input <file>` | stdin | Input PDF |
 | `--format <fmt>` | `json` | `json` or `text` |
 | `--verbose` | off | Adds `verbose.{trailerKeys, catalogKeys, objectCount, xmpMetadata}`. Sanitised — no raw stream bytes |
-| `--pages` | off | Adds `pages: [{ index, width, height, rotation, annotations, formFields }]` |
+| `--pages` | off | Adds `pages: [{ index, width, height, rotation, annotations, formFields }]` — since v1.4.0 also `cropBox` / `trimBox` / `bleedBox` / `artBox` and `userUnit` when present, and `metadata.trapped` is reported |
 | `--pdfua` *(v1.1.0)* | off | Adds a `pdfua: { valid, errors, warnings }` report from `validatePdfUA()` (ISO 14289-1 structural checks: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) |
 | `--annotations` *(v1.2.0)* | off | Lists markup + link annotations per page (from `getAnnotations()`). `/PageLabels` are reported automatically when present |
 | `--form-fields` *(v1.3.0)* | off | Lists AcroForm fields (name, type, value, required/read-only) |
 | `--encryption` *(v1.3.0)* | off | Reports the encryption scheme (algorithm, revision, opened-as) |
 | `--password <pass>` *(v1.3.0)* | — | Password for an encrypted PDF (env `PDFNATIVE_PASSWORD`) |
-| `--check <assertion>` | — | Repeatable; ANDed. Values: `pdfa`, `signed`, `encrypted`, `pdfua` *(v1.1.0)*. Sets exit 0 = pass, 1 = fail |
+| `--signatures` *(v1.4.0)* | off | Structural signature inventory via `listSignatures()` — `fieldName`, `subFilter`, `byteRange`, `isDocTimestamp`, `isPlaceholder`, `contentsLength`. Never emits the signature bytes themselves |
+| `--check <assertion>` | — | Repeatable; ANDed. Values: `pdfa`, `signed`, `encrypted`, `pdfua` *(v1.1.0)*, `signatures>=N` *(v1.4.0)*. Sets exit 0 = pass, 1 = fail |
 | `--summary` *(v1.1.0)* | off | Under `--json`, emit a canonical minimal verdict (`{ pages, encrypted, signatures, pdfa }`) |
 | `--fields <a,b.c>` *(v1.1.0)* | — | Project the JSON result to named dot-paths (array segments map over elements; unknown paths omitted) |
 | `--pretty` | off | Force indented JSON even under the global `--json` (agent mode is compact) |
@@ -398,6 +426,8 @@ pdfnative inspect --input dist/q1.pdf \
   --format json > dist/q1.report.json
 echo "exit code: $?"   # 0 if both assertions hold
 ```
+
+> **Behaviour change in v1.4.0:** `--check signed` now counts only *actual* signatures — unsigned placeholders and `/DocTimeStamp` revisions no longer satisfy it. A placeholder-only PDF that passed under v1.3.0 fails under v1.4.0; this is a deliberate correctness fix. v1.4.0 also fixes the `signatures` and `formFields` counters in the JSON body, which previously always reported 0. Use `--check "signatures>=1"` together with `--signatures` when you need the structural inventory.
 
 ### `pdfnative verify`
 
@@ -417,15 +447,64 @@ Verifies CMS/PKCS#7 signatures embedded in a PDF.
 **Scope (since v1.0.0):**
 
 - ✅ Byte-range integrity (SHA-256 recomputed and compared with CMS `messageDigest` attribute)
-- ✅ Signature value verification — RSA-SHA256 and ECDSA-SHA256
+- ✅ Signature value verification — RSA-SHA256, ECDSA-SHA256, and *(v1.4.0)* RSA-SHA384 / RSA-SHA512
 - ✅ Certificate chain verification via `pdfnative`'s `verifyCertSignature`
 - ✅ Trust evaluation against `--trust` roots, with self-signed acceptance for testing
 - ✅ **RFC 3161 timestamp validation (PAdES-T)** — TSA signature, `messageImprint` binding, chain, `genTime`
 - ✅ **OCSP (RFC 6960) + CRL (RFC 5280) revocation** — embedded `/DSS` offline by default, opt-in SSRF-guarded online via AIA / CDP
+- ✅ *(v1.4.0)* **`/DocTimeStamp` revisions** validated as RFC 3161 tokens; each signature in the report now carries `fieldName` and `isDocTimestamp` (additive fields, no new flags)
 
-**Out of scope (upstream-blocked in pdfnative):**
+> Since v1.4.0 the CLI also **creates** LTV material — `sign --timestamp` (B-T), [`ltv`](#pdfnative-ltv-v140) (B-LT `/DSS`), and [`doc-timestamp`](#pdfnative-doc-timestamp-v140) (B-LTA) — so `verify` and the write side now cover the same PAdES ladder.
 
-- ⚠️ Sign-side LTV (timestamp embedding / DSS) — `sign --timestamp` reserved
+### `pdfnative ltv` _(v1.4.0)_
+
+Embeds long-term-validation material — certificates, OCSP responses, CRLs — into a signed PDF's `/DSS` dictionary (PAdES **B-LT**), via the engine's `collectValidationInfo` / `embedValidationInfo` / `addValidationInfo`.
+
+```bash
+# Connected machine: gather the revocation evidence as replayable JSON
+pdfnative ltv collect --input signed.pdf --online --output ltv-data.json
+
+# Air-gapped machine: embed it — no network I/O is even possible here
+pdfnative ltv embed --input signed.pdf --data ltv-data.json --output signed.lt.pdf
+
+# Or both in one pass on a connected machine
+pdfnative ltv add --input signed.pdf --online --output signed.lt.pdf
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `collect` \| `embed` \| `add` | — *(required)* | Subcommand: gather evidence, embed evidence, or both |
+| `--input <file>` | stdin | Signed source PDF |
+| `--output <file>` | stdout | Destination — `collect` writes the evidence JSON, `embed`/`add` write the PDF |
+| `--online` | off | **Required for `collect` / `add`** — the explicit network opt-in (refused with exit 2 without it). `embed` is 100 % offline by design |
+| `--data <file>` | — | Evidence JSON produced by `collect` (for `embed`) |
+| `--prefer <src>` | — | `ocsp` or `crl` when both are available |
+| `--extra-cert <pem>` | — | Additional certificate for the `/DSS` (repeatable) |
+| `--timeout <ms>` | `10000` | Per-fetch network timeout |
+| `--dry-run` | off | Validate without writing |
+
+The evidence JSON (`schema ltv-data`, versioned, DER as base64) is the air-gap bridge: `collect` on a connected machine, transfer the JSON, `embed` inside the enclave. Network fetches go through the same SSRF guard as `verify --revocation online`; failures surface as `E_NETWORK`.
+
+### `pdfnative doc-timestamp` _(v1.4.0)_
+
+Appends an RFC 3161 **document timestamp** revision (`/DocTimeStamp`, `/SubFilter /ETSI.RFC3161` — ISO 32000-2 §12.8.5) covering every byte of the document (PAdES **B-LTA**). Earlier revisions stay byte-identical; run it again years later to renew the protection before the TSA's certificate expires.
+
+```bash
+pdfnative doc-timestamp --input signed.lt.pdf \
+  --url https://tsa.example.com/rfc3161 --output signed.lta.pdf
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--input <file>` | stdin | Source PDF |
+| `--output <file>` | stdout | Output PDF |
+| `--url <tsa-url>` | — *(required)* | TSA endpoint — requiring it makes the network use an explicit opt-in |
+| `--digest <algo>` | `sha256` | `sha256`, `sha384`, or `sha512` |
+| `--field-name <name>` | `DocTimeStamp1` | Field name (auto-suffixed on collision) |
+| `--placeholder-bytes <n>` | `12288` | Reserved `/Contents` size for the token |
+| `--nonce <hex>` | random | Explicit RFC 3161 nonce |
+| `--timeout <ms>` | `10000` | Network timeout |
+| `--dry-run` | off | Validate without writing (never touches the network) |
 
 ### `pdfnative merge` _(v1.2.0)_
 
@@ -511,9 +590,28 @@ pdfnative annotate --input report.pdf --output annotated.pdf \
 ]
 ```
 
-Supported types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`. Only known fields are forwarded (no dictionary injection). Read them back with `inspect --annotations`.
+Supported types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`. Only known fields are forwarded (no dictionary injection). Read them back with `inspect --annotations`. Since v1.4.0, `--password <pass>` (env `PDFNATIVE_PASSWORD`) lets you annotate an encrypted PDF — the added objects are encrypted under the document's existing scheme.
 
 > **Overlay, not redaction.** Annotations are a *visual review layer*; the underlying bytes remain. They do **not** remove or obscure content for security purposes.
+
+### `pdfnative metadata` _(v1.4.0)_
+
+Updates `/Info` and XMP metadata via an **incremental save** — the original bytes are kept as a prefix, so existing signatures remain valid for their revision. `xmp:ModifyDate` and `pdf:Keywords` stay synchronised. Reading metadata remains `inspect`'s job.
+
+```bash
+pdfnative metadata --input report.pdf --output revised.pdf \
+  --title "Quarterly report (revised)" --keywords "finance,Q2"
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--input <file>` | stdin | Source PDF |
+| `--output <file>` | stdout | Output PDF |
+| `--title` / `--author` / `--subject` / `--keywords` | — | Individual `/Info` + XMP fields (at least one field is required) |
+| `--mod-date <ISO 8601>` | now | Explicit modification date |
+| `--from-json <file>` | — | All fields from a JSON file (`schema metadata`) — mutually exclusive with the individual flags |
+| `--password <pass>` | — | Open an encrypted source (env `PDFNATIVE_PASSWORD`) |
+| `--dry-run` | off | Validate without writing |
 
 ### `pdfnative govern` _(v1.2.0)_
 
@@ -621,6 +719,27 @@ Text comes from the `/ToUnicode` mapping, so it is real Unicode rather than
 glyph indices. A page whose content decodes entirely to U+FFFD is reported as
 not extractable rather than returning noise.
 
+### `pdfnative compare` _(v1.4.0)_
+
+Compares two PDFs by extracted text and by structure — page count, page/print boxes, metadata, form fields, annotations, encryption, signatures. Built for CI: identical documents exit 0; differences print the report on stdout **first**, then exit 1 with `E_CHECK_FAILED`.
+
+```bash
+pdfnative compare golden.pdf candidate.pdf --mode both --format json --pretty
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `<a.pdf> <b.pdf>` | — *(required)* | The two documents, as positionals |
+| `--mode <m>` | `both` | `text`, `structure`, or `both` |
+| `--format <fmt>` | `text` | `text` or `json` |
+| `--tolerance <pt>` | `0` | Geometric tolerance in points for box comparisons |
+| `--ignore-whitespace` | off | Normalise whitespace before the text diff |
+| `--pages <selector>` | all | 1-based page selector |
+| `--password-a` / `--password-b` | — | Passwords for encrypted inputs |
+| `--pretty` | off | Indented JSON |
+
+> **Not a visual diff.** pdfnative has no rasteriser, so pixel comparison is out of scope by design — `compare` diffs what the format itself declares (text and structure). Pair it with an external rasteriser if you need pixel-level checks.
+
 ### `pdfnative doctor` _(v1.3.0)_
 
 Environment and capability preflight. The first thing to run in a new
@@ -648,10 +767,29 @@ Renders every JSON file in a directory to PDF **in parallel**, reusing the full 
 | `--fail-fast` | off | Abort on the first failure |
 | `--dry-run` *(v1.1.0)* | off | Validate every input without writing output |
 | `--json` / `--summary` *(v1.1.0)* | off | Machine-readable per-file report; `--summary` emits `{ total, succeeded, failed }` |
+| `--manifest <tasks.json>` *(v1.4.0)* | — | **Declarative pipeline mode** — see below |
+| `--allow-network` *(v1.4.0)* | off | Required before any network flag inside a manifest (`--timestamp`, `--url`, `--online`, `--revocation online`) — an untrusted manifest can never trigger network I/O on its own |
+| `--continue-on-error` *(v1.4.0)* | off | Keep going after a task fails; tasks that reference the failed output via `@id` are skipped |
 
 ```bash
 pdfnative batch --input-dir inputs/ --output-dir outputs/ --tagged pdfa2b --concurrency 4
 ```
+
+#### Manifest mode _(v1.4.0)_
+
+`--manifest tasks.json` runs a declarative pipeline — `{ "version": 1, "tasks": [{ "id", "command", "flags" }] }` (`schema batch-manifest`). A flag value of `"@<id>"` references the output of an earlier task; relative paths resolve against the manifest's directory. The whole manifest is validated **before** anything runs, then executed sequentially and fail-fast (unless `--continue-on-error`).
+
+```json
+{
+  "version": 1,
+  "tasks": [
+    { "id": "report",  "command": "render", "flags": { "--input": "report.json", "--output": "report.pdf", "--tagged": "pdfa2b" } },
+    { "id": "stamped", "command": "metadata", "flags": { "--input": "@report", "--output": "final.pdf", "--title": "Q2 report" } }
+  ]
+}
+```
+
+Only a fixed **14-command whitelist** is allowed inside a manifest — `render`, `sign`, `verify`, `inspect`, `merge`, `split`, `extract`, `extract-text`, `fill`, `encrypt`, `decrypt`, `annotate`, `metadata`, `doc-timestamp`. `ltv` and `compare` are excluded (they take positionals, which manifest tasks — a flat flag map — cannot express), and the meta commands (`batch`, `govern`, `schema`, `completion`, `doctor`) can never nest. Manifests are capped at 1 000 tasks with the same path-traversal checks as direct flags; a structural violation exits 2/`E_USAGE`, a forbidden command or flag exits 1/`E_INPUT`.
 
 ### `pdfnative schema`
 
@@ -663,7 +801,7 @@ pdfnative schema inspect-summary   # compact inspect verdict shape
 pdfnative schema list              # enumerate every subject
 ```
 
-Subjects: `render`, `inspect`, `verify`, `batch`, `annotate` *(v1.2.0)*, `govern-verify` *(v1.2.0)*, `extract-text`, `fill`, `form-export`, `status`, `manifest`, `doctor` *(all v1.3.0)*, and the compact `inspect-summary` / `verify-summary` / `batch-summary` shapes. `pdfnative schema list` enumerates them all.
+Subjects (19): `render`, `inspect`, `verify`, `batch`, `annotate` *(v1.2.0)*, `govern-verify` *(v1.2.0)*, `extract-text`, `fill`, `form-export`, `status`, `manifest`, `doctor` *(all v1.3.0)*, `metadata`, `ltv-data`, `compare`, `batch-manifest` *(all v1.4.0)*, and the compact `inspect-summary` / `verify-summary` / `batch-summary` shapes. `pdfnative schema list` enumerates them all.
 
 ### `pdfnative completion`
 
@@ -676,8 +814,9 @@ Emits a shell-completion script: `pdfnative completion bash|zsh|fish|powershell`
 v1.1.0 makes the CLI deterministic to drive from autonomous AI agents and CI pipelines. The full contract is documented in [pdfnative-cli AGENTS.md](https://github.com/Nizoka/pdfnative-cli/blob/main/AGENTS.md).
 
 - **Global `--json` envelope.** Any command run with `--json` emits a single machine-readable object on **stderr**: `{ ok: false, command, error: { code, message } }` on failure, and a `{ ok: true, … }` status line for `render` / `sign` / `batch` on success (since v1.3.0, every write command emits the success line). stdout stays reserved for the primary artifact (PDF, report, schema, script).
-- **Stable `E_*` error codes** on every failure: `E_USAGE`, `E_INPUT`, `E_PARSE`, `E_IO`, `E_SIGN`, `E_VERIFY_FAILED`, `E_CHECK_FAILED`, `E_POLICY` *(v1.2.0 — governance-gate failure)*, `E_UNSUPPORTED`, `E_PASSWORD` *(v1.3.0 — encrypted PDF: password missing or incorrect)*, `E_RUNTIME`. Numeric exit codes (0/1/2) are unchanged.
-- **`--dry-run`** for `render`, `sign`, `batch`, and — since v1.2.0 — `merge`, `split`, `extract`, and `annotate` (v1.3.0 extends it to `fill`, `encrypt` and `decrypt`) — fully validate inputs (and, for `sign`, parse credentials and prepare the PDF) without producing output.
+- **Stable `E_*` error codes** on every failure: `E_USAGE`, `E_INPUT`, `E_PARSE`, `E_IO`, `E_SIGN`, `E_VERIFY_FAILED`, `E_CHECK_FAILED`, `E_POLICY` *(v1.2.0 — governance-gate failure)*, `E_UNSUPPORTED`, `E_PASSWORD` *(v1.3.0 — encrypted PDF: password missing or incorrect)*, `E_NETWORK` *(v1.4.0 — an opt-in network operation failed: TSA / OCSP / CRL fetch)*, `E_RUNTIME`. Numeric exit codes (0/1/2) are unchanged.
+- **`--dry-run`** for `render`, `sign`, `batch`, and — since v1.2.0 — `merge`, `split`, `extract`, and `annotate` (v1.3.0 extends it to `fill`, `encrypt` and `decrypt`; v1.4.0 to `metadata`, `ltv` and `doc-timestamp`) — fully validate inputs (and, for `sign`, parse credentials and prepare the PDF) without producing output. A dry run never touches the network.
+- **Global `--max-inflate-size <bytes>`** *(v1.4.0)* caps the decompressed size of each PDF stream when parsing untrusted inputs (anti zip-bomb; default 100 MiB).
 - **Token-economy output projection** (`inspect` / `verify` / `batch` / `extract-text`): stdout JSON is **compact by default** under `--json` (`--pretty` opts back into the human 2-space form), **`--summary`** emits a canonical minimal verdict, and **`--fields a,b.c`** projects the result to named dot-paths. Typically ~90 % fewer output tokens with no loss of the fields agents branch on. Non-`--json` human output is unchanged.
 
 ```bash
@@ -782,9 +921,10 @@ done
 - **Layout-file injection blocked** — `attachments[].data` fields embedded in `--layout` JSON are **stripped on load**. Binary attachment payloads must come from `--attachment <path>` so the CLI can apply path validation.
 - **Env-var precedence for secrets** — `PDFNATIVE_SIGN_KEY` / `PDFNATIVE_SIGN_CERT` / `PDFNATIVE_SIGN_CHAIN` / `PDFNATIVE_ENCRYPT_OWNER_PASS` / `PDFNATIVE_ENCRYPT_USER_PASS` are preferred over file-path flags so secrets never enter shell history.
 - **Stdin/stdout safe** — binary streams are passed through without interpretation; no shell-quoting issues.
+- **Zip-bomb cap** *(v1.4.0)* — the global `--max-inflate-size` bounds the decompressed size of every PDF stream (default 100 MiB).
 - **NPM provenance** — every published version is signed via GitHub Actions OIDC. Verify with `npm audit signatures`.
 
-The CLI **does not** open network connections, write to system directories outside the working directory, or load arbitrary code. It only reads the files you point it at.
+The CLI opens **no network connection unless you explicitly opt in** — the only network paths are `verify --revocation online`, `sign --timestamp <url>`, `ltv --online`, `doc-timestamp --url <url>`, and `batch --allow-network`, and all of them go through the same SSRF guard: http/https only, private / loopback / metadata addresses blocked, DNS pinning, 10 s timeout, 5 MiB response cap, no redirects. Response bodies are never echoed into CLI output. It never writes to system directories outside the working directory or loads arbitrary code.
 
 ---
 
@@ -792,14 +932,19 @@ The CLI **does not** open network connections, write to system directories outsi
 
 The CLI now covers nearly the full library surface; only Web Worker offloading remains library-only.
 
-| Feature | CLI v1.3.0 | Library |
+| Feature | CLI v1.4.0 | Library |
 |---|---|---|
 | Document rendering (13 block types) | ✅ | ✅ |
 | Streaming output | ✅ `--stream` / `--stream-true` | ✅ `buildDocumentPDFStream()` / `buildDocumentPDFStreamTrue()` |
 | Configurable block cap | ✅ `--max-blocks` | ✅ `layout.maxBlocks` |
 | PDF/A conformance (1b, 2b, 2u, 3b) | ✅ `--tagged` | ✅ `tagged: '…'` |
-| Digital signatures (RSA-SHA256) | ✅ | ✅ `signPdfBytes()` |
+| Digital signatures (RSA-SHA256/384/512) | ✅ (`--digest`, v1.4.0 for 384/512) | ✅ `signPdfBytes()` |
 | Digital signatures (ECDSA-SHA256) | ✅ `--algorithm ecdsa-sha256` | ✅ `signPdfBytes()` |
+| **PAdES B-T timestamp at signing** | ✅ `sign --timestamp` *(v1.4.0)* | ✅ `signPdfBytesWithTimestamp()` |
+| **PAdES B-LT `/DSS` (LTV)** | ✅ `ltv collect / embed / add` *(v1.4.0)* | ✅ `collectValidationInfo()` / `embedValidationInfo()` / `addValidationInfo()` |
+| **PAdES B-LTA document timestamp** | ✅ `doc-timestamp` *(v1.4.0)* | ✅ `addDocumentTimestamp()` |
+| **Metadata update (signature-safe)** | ✅ `metadata` *(v1.4.0)* | ✅ `PdfModifier.updateMetadata()` |
+| **Text + structure diff** | ✅ `compare` *(v1.4.0 — implemented in the CLI)* | — (compose the readers) |
 | **Native constant-time signing** | ✅ default (`--pure-crypto` opts out; the native provider is a CLI utility) | ✅ `setCryptoProvider()` (accepts any `CryptoProvider`) |
 | Inspection / metadata | ✅ | ✅ `PdfReader` |
 | **PDF/UA structural validation** | ✅ `inspect --pdfua` | ✅ `validatePdfUA()` |
@@ -871,6 +1016,24 @@ node samples/run-all.js
 
 ## Release history
 
+### What's new in v1.4.0
+
+v1.4.0 is built on **pdfnative 1.7.0** (pin `^1.7.0`) and completes the signature story: the full **PAdES ladder** (B-B → B-T → B-LT → B-LTA) is now writable from the command line, alongside signature-safe metadata edits, a CI-grade document diff, and a declarative batch pipeline. **No contract change** — every flag, default, exit code, error code and envelope from 1.x behaves identically on Node ≥ 22.
+
+| Area | v1.3.0 | v1.4.0 |
+|---|---|---|
+| Commands | 17 commands <!-- verify-docs:allow stale-token (v1.3.0-era count) --> | adds **`metadata`** (incremental `/Info` + XMP edits that keep signatures valid), **`ltv`** (PAdES B-LT — `collect` / `embed` / `add`, air-gap-friendly), **`doc-timestamp`** (PAdES B-LTA `/DocTimeStamp` revisions), and **`compare`** (text + structure diff with CI exit codes) |
+| Signing | `--timestamp` reserved (`E_UNSUPPORTED`) | **`sign --timestamp <tsa-url>` works** (RFC 3161, PAdES B-T) with `--timestamp-digest` / `--timestamp-nonce`; plus `--digest sha384\|sha512` (RSA), `--profile pades`, `--allow-multiple`, `--field-name`, visible signatures (`--signature-rect` / `--signature-page`), `--placeholder-bytes` |
+| Verification | RSA/ECDSA-SHA256 | adds **rsa-sha384 / rsa-sha512** and validates `/DocTimeStamp` revisions; per-signature `fieldName` and `isDocTimestamp` (additive) |
+| Inspection | metadata, forms, encryption | adds `--signatures` (structural inventory), `--check "signatures>=N"`, print boxes (`cropBox` / `trimBox` / `bleedBox` / `artBox`, `userUnit`), `trapped`; **`--check signed` no longer counts unsigned placeholders** (correctness fix) |
+| `render` | charts v1 (5 types) | **`--strict`** PDF/A gate, image blocks from JSON, print production (`layout.print`, output intent, viewer preferences, `/Trapped`), **charts v2** (9 types, dual axes, log/time scales, data labels), `--chunk-size` |
+| Automation | per-directory `batch` | **`batch --manifest`** — declarative pipeline with `@id` references, a 14-command whitelist, `--allow-network` opt-in and `--continue-on-error` |
+| Hardening | — | global **`--max-inflate-size`** (anti zip-bomb, default 100 MiB); all network paths opt-in behind the SSRF guard |
+| Agent contract | 11 codes, 15 subjects | **`E_NETWORK`**; `schema` grows to 19 subjects (`metadata`, `ltv-data`, `compare`, `batch-manifest`); 600 tests on Node 22/24 |
+| Compatibility | `pdfnative ^1.6.0`, Node ≥ 20 | `pdfnative ^1.7.0`, **Node ≥ 22** |
+
+Full changelog: [pdfnative-cli release notes v1.4.0](https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.4.0).
+
 ### What's new in v1.3.0
 
 v1.3.0 is built on the **pdfnative 1.6 engine** (pin `^1.6.0`) and surfaces its engine additions as five new commands (`extract-text`, `fill`, `encrypt`, `decrypt`, `doctor`), native vector charts in `render`, and password / re-encryption / constant-memory streaming on the page-tree commands. Fixes a silent `render --encrypt` no-op. **100 % backward-compatible** with v1.2.0.
@@ -886,7 +1049,7 @@ v1.3.0 is built on the **pdfnative 1.6 engine** (pin `^1.6.0`) and surfaces its 
 | Agent contract | `--json` / `E_*` / `--dry-run` / schemas | adds the stable **`E_PASSWORD`** code and an agent capability manifest (`schema manifest` + `llms.txt`) |
 | Compatibility | `pdfnative ^1.5.0` | `pdfnative ^1.6.0` |
 
-Full changelog: [pdfnative-cli release notes v1.3.0](https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.3.0).
+Full changelog: [pdfnative-cli release notes v1.3.0](https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.3.0). <!-- verify-docs:allow version-token (historical link) -->
 
 ### What's new in v1.2.0
 
@@ -1020,6 +1183,12 @@ Any encryption flag was set without an owner password. Provide it via `--owner-p
 
 ### `Error: --tagged pdfa* and --encrypt-* are mutually exclusive`
 ISO 19005-1 §6.3.2 forbids encryption in PDF/A. Pick one — either an archival PDF/A document, or an encrypted distribution copy, but not both.
+
+### `E_NETWORK: opt-in network operation failed`
+A TSA / OCSP / CRL fetch (`sign --timestamp`, `ltv --online`, `doc-timestamp`, `verify --revocation online`) failed at the transport level. The SSRF guard allows http/https only, blocks private / loopback / metadata addresses, follows no redirects, and enforces a 10 s timeout and a 5 MiB response cap — check the URL is public and reachable, or raise `--timeout` where the command exposes it (`ltv`, `doc-timestamp`). A *malformed* TSA response is `E_PARSE` instead. There is never a silent fallback: either the token is embedded and verified, or the command fails.
+
+### `E_PARSE` on a PDF that other tools open
+If the message mentions an inflate cap, one of the PDF's compressed streams expands past the anti-zip-bomb ceiling (default 100 MiB). For a trusted file, raise it with the global `--max-inflate-size <bytes>` *(v1.4.0)*.
 
 ### `ENOENT: no such file or directory, 'D\'`  (Windows)
 This was a v0.1.0 / pre-v0.2.0 regression: `--attachment D:\file.xml` was split at the drive-letter colon. Fixed in v0.2.0 — make sure you're on `pdfnative-cli@^0.2.0`.

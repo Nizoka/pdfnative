@@ -1,6 +1,6 @@
 {
   "$comment": "Single source of truth for every version, count and inventory quoted anywhere in the documentation. Edit THIS file, then run `npm run verify:docs` — it reports every doc that disagrees. Never hand-edit a number in a doc without updating this manifest first.",
-  "verifiedOn": "2026-08-25",
+  "verifiedOn": "2026-08-29",
   "packages": {
     "pdfnative": {
       "version": "1.7.0",
@@ -9,17 +9,18 @@
       "repo": "https://github.com/Nizoka/pdfnative"
     },
     "pdfnative-cli": {
-      "version": "1.3.0",
+      "version": "1.4.0",
       "pinField": "dependencies",
-      "pin": "^1.6.0",
+      "pin": "^1.7.0",
       "repo": "https://github.com/Nizoka/pdfnative-cli",
       "binary": "pdfnative",
-      "commandCount": 17,
+      "commandCount": 21,
       "commandGroups": {
         "Create & edit": [
           "render",
           "fill",
-          "annotate"
+          "annotate",
+          "metadata"
         ],
         "Page tree": [
           "merge",
@@ -29,12 +30,15 @@
         "Security": [
           "sign",
           "verify",
+          "ltv",
+          "doc-timestamp",
           "encrypt",
           "decrypt"
         ],
         "Read & extract": [
           "inspect",
-          "extract-text"
+          "extract-text",
+          "compare"
         ],
         "Automation & meta": [
           "batch",
@@ -91,9 +95,9 @@
       ]
     },
     "pdfnative-react": {
-      "version": "1.1.0",
+      "version": "1.2.0",
       "pinField": "peerDependencies",
-      "pin": "^1.6.0",
+      "pin": "^1.7.0",
       "repo": "https://github.com/Nizoka/pdfnative-react",
       "$comment": "pdfnative is declared as a PEER dependency here, not a dependency. versions.js must read both fields or the pin annotation silently never renders for this package.",
       "runtimeDependencies": [
@@ -108,7 +112,7 @@
     "testFiles": 123,
     "sampleGenerators": 48,
     "samplePdfs": 242,
-    "guides": 30,
+    "guides": 31,
     "playgrounds": 10,
     "learnSteps": 8,
     "recipes": 14
@@ -170,9 +174,9 @@
     },
     {
       "id": "cli-command-count",
-      "canonical": "17 commands",
+      "canonical": "21 commands",
       "match": "\\b(\\d+)\\s+(?:[A-Za-z][\\w-]*\\s+){0,2}commands\\b",
-      "expect": 17,
+      "expect": 21,
       "requireIn": [
         "docs/guides/cli.md",
         "docs/index.html",

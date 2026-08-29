@@ -18,7 +18,7 @@ Everything the other three surfaces do, they do by calling this package.
 
 **You are driving a shell, a CI pipeline, a container, or a build tool in
 another language.** Use the **CLI** (`pdfnative-cli`, binary `pdfnative`) —
-17 commands over stdin/stdout pipelines, with an agent-native automation
+21 commands over stdin/stdout pipelines, with an agent-native automation
 contract: a `--json` envelope, stable `E_*` error codes, `--dry-run`, and
 compact `--summary` / `--fields` output projection. No JavaScript required.
 
@@ -51,7 +51,7 @@ means the surface does not offer it.
 | Smart tables | `table` block | `render` (`table` block, or `--variant table`) | `add_table` | `<Table>` |
 | Native vector charts | `chart` block _(v1.6.0)_ | `render` (`chart` block) _(v1.3.0)_ | `add_chart` _(v1.5.0)_ | `<Chart>` _(v1.1.0)_ |
 | Digital signatures (PAdES CMS) | `addSignaturePlaceholder` _(v1.2.0)_ + `signPdfBytes` | `sign` | `sign_pdf` (+ `prepare_signature_placeholder`) | — |
-| LTV ladder (B-T → B-LTA) | `signPdfBytesWithTimestamp`, `addValidationInfo`, `addDocumentTimestamp` _(v1.7.0)_ | — (verification only: `verify --revocation`) | `add_ltv`, `timestamp_pdf` _(v1.6.0)_ | — |
+| LTV ladder (B-T → B-LTA) | `signPdfBytesWithTimestamp`, `addValidationInfo`, `addDocumentTimestamp` _(v1.7.0)_ | `sign --timestamp`, `ltv`, `doc-timestamp` _(v1.4.0)_ | `add_ltv`, `timestamp_pdf` _(v1.6.0)_ | — |
 | Encrypt / decrypt | build-time `encryption` layout option; existing PDFs via the page-tree `encrypt` option and `openPdf` with a password | `encrypt` / `decrypt` _(v1.3.0)_ | `encrypt_pdf` / `decrypt_pdf` _(v1.5.0)_ | build-time only, via the `layout` render option |
 | Fill / flatten forms | `readFormFields`, `fillForm`, `flattenForm` _(v1.6.0)_ | `fill` _(v1.3.0)_ | `read_form_fields`, `fill_form` _(v1.5.0)_ | — |
 | Extract text | `extractText` _(v1.6.0)_ | `extract-text` _(v1.3.0)_ | `extract_text` | — |
@@ -59,17 +59,23 @@ means the surface does not offer it.
 | Markup annotations | `buildAnnotation` + `PdfModifier.addAnnotation` _(v1.5.0)_ | `annotate` _(v1.2.0)_ | `annotate_pdf` _(v1.4.0)_ | — |
 | Inspect layout (pagination dry run) | `inspectDocumentLayout` _(v1.5.0)_ | `render --inspect-layout` _(v1.2.0)_ | `inspect_layout` _(v1.6.0)_ | `inspectDocument` |
 | Validate PDF/UA | `validatePdfUA` _(v1.3.0)_ | `inspect --pdfua` _(v1.1.0)_ | `validate_pdf` _(v1.1.0)_ | — (`lintDocument` checks the authoring model before rendering, not the emitted PDF) |
+| Update metadata (signature-safe) | `PdfModifier.updateMetadata` _(v1.7.0)_ | `metadata` _(v1.4.0)_ | `update_metadata` _(v1.6.0)_ | — |
+| Compare two PDFs (text + structure) | — (compose `openPdf` / `extractText` / the readers) | `compare` _(v1.4.0)_ | — | — |
+| Runtime font registration | `registerFont` / `registerFonts` _(v1.5.0, any loader — incl. fonts you compile with `compileFontData`)_ | `render --font` (bundled fonts only) _(v1.1.0)_ | — (fixed `lang` enum; fonts resolved from the local `pdfnative` install) | `registerFont` / `registerFonts` (re-exported) |
 
 ## Honest notes
 
-- **LTV differs by surface on purpose.** The engine opens no socket: in the
-  **library**, the RFC 3161 / OCSP / CRL transport is *injected by your code*
-  (`setTimestampProvider` / `setRevocationProvider`). On **MCP**, the transport
-  is *operator-configured* through environment variables
+- **LTV transport differs by surface on purpose.** The engine opens no socket:
+  in the **library**, the RFC 3161 / OCSP / CRL transport is *injected by your
+  code* (`setTimestampProvider` / `setRevocationProvider`). On **MCP**, the
+  transport is *operator-configured* through environment variables
   (`PDFNATIVE_MCP_TSA_URL`, `PDFNATIVE_MCP_REVOCATION`, an allow-list) — never
-  from tool arguments. The **CLI** currently *verifies* LTV material
-  (`verify --revocation`, RFC 3161 timestamp validation) but does not create
-  it — sign-side LTV is documented as out of scope there.
+  from tool arguments. On the **CLI** (since v1.4.0, which completes the
+  write-side ladder), every network touch is an *explicit per-invocation
+  opt-in* — `sign --timestamp <url>`, `ltv --online`, `doc-timestamp --url` —
+  behind an SSRF guard, and `ltv collect` / `ltv embed` split the ladder across
+  an air gap: evidence is gathered as replayable JSON on a connected machine
+  and embedded fully offline.
 - **The engine ships no cryptographic signature verifier.** `listSignatures`
   is an inventory; full verification (digest, CMS, chain, trust, timestamps,
   revocation) lives in `pdfnative-cli verify` and the MCP `verify_pdf` tool.

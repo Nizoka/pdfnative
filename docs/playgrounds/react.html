@@ -123,6 +123,8 @@
         <option value="invoice">Invoice — heading, text, zebra table</option>
         <option value="report">Report — list, table, barcode</option>
         <option value="multilingual">Multilingual — registerFont + Arabic</option>
+        <option value="charts-v2">Charts v2 — stacked bars + scatter, dual axis · v1.2</option>
+        <option value="print">Print production — bleed + printer's marks · v1.2</option>
       </select>
       <button id="rx-reset" class="rx-btn secondary">Reset preset</button>
     </div>
@@ -157,7 +159,7 @@ const bytes = renderSpecToBytes({
     ['table', { h: ['Item', 'Total'], r: [['Pro plan', '$49.00']], zebra: true }],
   ],
 });</code></pre>
-    <p>See the <a href="../guides/react.html">React guide</a> for the full component and DocSpec reference.</p>
+    <p>Since v1.2.0 a spec can also carry a top-level <code>print</code> field (bleed, page boxes, printer's marks) and every charts-v2 field — all covered by the published JSON Schema, so an agent can self-validate a print-ready, dual-axis document before rendering. See the <a href="../guides/react.html">React guide</a> for the full component and DocSpec reference.</p>
   </article>
 </main>
 
@@ -182,7 +184,7 @@ const bytes = renderSpecToBytes({
     "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
     "pdfnative": "https://esm.sh/pdfnative@1.7.0",
     "pdfnative/": "https://esm.sh/pdfnative@1.7.0/",
-    "pdfnative-react": "https://esm.sh/pdfnative-react@1.1.0?external=react,pdfnative"
+    "pdfnative-react": "https://esm.sh/pdfnative-react@1.2.0?external=react,pdfnative"
   }
 }
 </script>
@@ -294,6 +296,63 @@ const bytes = renderSpecToBytes({
       "    <Paragraph>مرحبا بكم في pdfnative — نص عربي مع تشكيل.</Paragraph>",
       "  </Document>",
       ");",
+    ].join("\n"),
+    'charts-v2': [
+      "// Charts v2 (pdfnative-react 1.2.0 on the 1.7.0 engine): nine chart",
+      "// kinds, a secondary right axis, and data labels — all pure vector.",
+      "<Document title=\"Charts v2\" footerText=\"pdfnative-react 1.2.0\">",
+      "  <Heading level={1}>Charts v2</Heading>",
+      "  <Chart",
+      "    chartType=\"stackedBar\"",
+      "    title=\"Revenue by segment\"",
+      "    categories={['Q1', 'Q2', 'Q3', 'Q4']}",
+      "    series={[",
+      "      { label: 'SMB', values: [120, 135, 150, 170] },",
+      "      { label: 'Enterprise', values: [200, 240, 260, 310] },",
+      "    ]}",
+      "    dataLabels",
+      "    altText=\"Stacked bars of SMB and Enterprise revenue per quarter\"",
+      "  />",
+      "  <Spacer height={10} />",
+      "  <Chart",
+      "    chartType=\"line\"",
+      "    title=\"Volume vs margin\"",
+      "    categories={['Q1', 'Q2', 'Q3', 'Q4']}",
+      "    series={[",
+      "      { label: 'Orders', values: [320, 375, 410, 480] },",
+      "      { label: 'Margin %', values: [22, 24, 23, 26], yAxis: 'right' },",
+      "    ]}",
+      "    axis2={{ yMin: 0, yMax: 40 }}",
+      "    altText=\"Line chart of order volume with margin percentage on a secondary right axis\"",
+      "  />",
+      "  <Spacer height={10} />",
+      "  <Chart",
+      "    chartType=\"scatter\"",
+      "    title=\"p95 response time vs load\"",
+      "    xAxis={{ type: 'linear' }}",
+      "    series={[{",
+      "      label: 'p95 (ms)',",
+      "      xValues: [100, 200, 400, 800, 1600],",
+      "      values: [42, 48, 61, 95, 180],",
+      "    }]}",
+      "    altText=\"Scatter plot of p95 response time against request rate\"",
+      "  />",
+      "</Document>",
+    ].join("\n"),
+    print: [
+      "// Print production (v1.2.0): the print prop derives TrimBox and BleedBox",
+      "// from the bleed shorthand and draws vector printer's marks — the same",
+      "// layout.print surface the engine exposes, typed as PrintOptions.",
+      "<Document",
+      "  title=\"Print-ready poster\"",
+      "  print={{ bleed: 8.5, marks: { crop: true, registration: true } }}",
+      ">",
+      "  <Heading level={1}>Print-ready</Heading>",
+      "  <Paragraph>",
+      "    This document carries TrimBox, BleedBox and crop marks — open it in a",
+      "    prepress tool to see the boxes. Screen viewers simply show the page.",
+      "  </Paragraph>",
+      "</Document>",
     ].join("\n"),
   };
 

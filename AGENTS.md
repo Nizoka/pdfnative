@@ -101,9 +101,9 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) §Archite
 
 ## Ecosystem context
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) v1.3.0 — terminal wrapper (render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern). Pins pdfnative `^1.6.0` in its `package.json` (semver-accepts 1.7.0); coordinates via that explicit pin.
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) v1.4.0 — terminal wrapper (render, fill, annotate, metadata, merge, split, extract, sign, verify, ltv, doc-timestamp, encrypt, decrypt, inspect, extract-text, compare, batch, doctor, schema, completion, govern — the complete PAdES ladder B-B → B-LTA from the shell). Pins pdfnative `^1.7.0` in its `package.json`; coordinates via that explicit pin. Node ≥ 22.
 - [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.6.0 — Model Context Protocol server exposing 28 AI tools (adds `add_ltv`, `timestamp_pdf`, `update_metadata` and `inspect_layout` on top of the v1.5.0 chart, form and encryption tools; completes the PAdES ladder B-B → B-LTA and speaks MCP 2026-07-28 with legacy fallback). Pins pdfnative `^1.7.0`. Same coordination model.
-- [pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.1.0 — React renderer: declarative JSX compiled on-device to pdfnative blocks via a custom reconciler. React 19 is a peer dependency of *that* package only — pdfnative itself stays zero-dependency. Same coordination model.
+- [pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.2.0 — React renderer: declarative JSX compiled on-device to pdfnative blocks via a custom reconciler (charts v2, print production, PDF/A diagnostics channel, 25 lint rules). React 19 and pdfnative `^1.7.0` are peer dependencies of *that* package only — pdfnative itself stays zero-dependency. Same coordination model.
 
 Downstream-impacting changes (new public APIs, removed APIs, behaviour shifts) must be documented in the **Downstream integration notes** section of the relevant `release-notes/vX.Y.Z.md`.
 

@@ -190,7 +190,7 @@ The interactive playgrounds on [pdfnative.dev](https://pdfnative.dev) run entire
 
 ## Command line — pdfnative-cli
 
-Prefer the terminal? [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) wraps the same library with 17 commands — including `render`, `fill`, `sign`, `verify`, `encrypt`, `decrypt`, `merge`, `split`, `extract` and `extract-text`:
+Prefer the terminal? [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) wraps the same library with 21 commands — including `render`, `fill`, `sign`, `verify`, `ltv`, `encrypt`, `decrypt`, `merge`, `split`, `extract`, `extract-text` and `compare`:
 
 ```bash
 # Install once

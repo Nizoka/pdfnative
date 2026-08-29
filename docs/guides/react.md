@@ -1,6 +1,6 @@
 # pdfnative-react — Declarative JSX Renderer Guide
 
-> **Tracks the latest published `pdfnative-react`** (v1.1.0, built on the pdfnative 1.6 engine), with **React 19** and `pdfnative` ^1.6.0 as peer dependencies (semver-accepts 1.7.0). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
+> **Tracks the latest published `pdfnative-react`** (v1.2.0, built on pdfnative 1.7.0), with **React 19** and `pdfnative` ^1.7.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
 
 [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency [`pdfnative`](https://github.com/Nizoka/pdfnative) engine — no DOM, no headless browser, no SaaS round-trips. Your documents never leave the process.
 
@@ -50,7 +50,7 @@ A custom **React reconciler** compiles your component tree — synchronously, wi
 npm install pdfnative-react pdfnative react
 ```
 
-**Requirements:** **React 19** and **pdfnative ^1.6.0** (both peer dependencies) · **Node.js ≥ 22**. The package adds one runtime dependency of its own, `react-reconciler`. Works in Node, browsers and SSR frameworks.
+**Requirements:** **React 19** and **pdfnative ^1.7.0** (both peer dependencies) · **Node.js ≥ 22**. The package adds one runtime dependency of its own, `react-reconciler`. Works in Node, browsers and SSR frameworks.
 
 > **Next.js and other React Server Component setups.** The root barrel is deliberately *not* marked `'use client'`, and importing it from a Server Component or a `'use server'` file **fails** — the reconciler needs `createContext`, which is unavailable under React's `react-server` condition. Render from a **Route Handler** instead (see [Server rendering](#server-rendering) below). The hooks and viewer components carry the directive and are published separately at `pdfnative-react/client`; import them from there in an app that mixes server and client components, because the directive does not survive bundling in the root barrel.
 
@@ -77,7 +77,7 @@ Every component maps 1:1 onto a pdfnative block (`Section` being the one intenti
 
 | Component | Renders |
 |---|---|
-| `Document` | The required root (`title`, `footerText`, `metadata`, `fontEntries`, `layout`). |
+| `Document` | The required root (`title`, `footerText`, `metadata`, `fontEntries`, `layout`, and — v1.2.0 — `print`). |
 | `Page` | An explicit page boundary (content auto-paginates otherwise). |
 | `Heading` | A section heading (`level` 1–3); feeds the auto `TableOfContents`. |
 | `Paragraph` / `Text` | A wrapping paragraph (`fontSize`, `lineHeight`, `align`, `indent`, `color`). |
@@ -124,7 +124,7 @@ no rasterisation, and `/Figure` tagging with alt text.
 
 ```tsx
 <Chart
-  chartType="bar"            // bar | barH | line | pie | donut
+  chartType="bar"            // bar | barH | line | pie | donut | stackedBar | stackedBarH | area | scatter
   title="Quarterly revenue"
   categories={['Q1', 'Q2', 'Q3', 'Q4']}
   series={[{ label: 'Revenue', values: [50, 62, 70, 81] }]}
@@ -132,15 +132,57 @@ no rasterisation, and `/Figure` tagging with alt text.
 />
 ```
 
-This is why the `pdfnative` peer floor is `^1.6.0`: a 1.5 engine receives an
-unknown block and drops it silently.
+**Charts v2 (v1.2.0)** widens the surface to the engine's nine chart types and
+adds five props: `axis2` (a secondary Y axis — put a series on it with
+`yAxis: 'right'`), `xAxis` (`category` | `linear` | `time` positional axes, with
+optional log scale), `dataLabels`, `labelStride` and `labelRotation`. The
+exported `ChartPropsCoversChartBlock` compile-time lock guarantees `<Chart>`
+covers every engine `ChartBlock` field — which is exactly why the `pdfnative`
+peer floor is `^1.7.0`: a 1.6 engine would throw mid-render on the v2 fields.
+
+## Print production &amp; conformance diagnostics _(v1.2.0)_
+
+`<Document print={…}>` is document-level sugar over `layout.print` — the typed
+`PrintOptions` covers `bleed` (a shorthand that derives `TrimBox` and
+`BleedBox`), explicit `trimBox` / `bleedBox` / `artBox` / `cropBox` page boxes,
+vector printer's marks, and `/UserUnit`. The companion types ship from the root
+barrel: `PrintOptions`, `PrinterMarksOptions`, `PageBox`, `CustomOutputIntent`,
+and `PdfColors`. Viewer preferences (`duplex`, `pickTrayByPDFSize`,
+`printPageRange`, `numCopies`) and a custom RGB ICC `outputIntent` pass through
+`layout` untouched.
+
+```tsx
+const bytes = renderToBytes(
+  <Document title="Poster" print={{ bleed: 8.5, marks: { crop: true } }}>
+    <Heading level={1}>Print-ready</Heading>
+  </Document>,
+);
+```
+
+The engine's conformance channel is exposed the same way: `layout.strict`
+escalates PDF/A diagnostics (`PdfDiagnosticCode` — e.g.
+`PDFA_UNEMBEDDED_FORM_FONT`) into a hard failure before any bytes are produced,
+while `layout.onDiagnostic` (a `PdfDiagnosticHandler` receiving each
+`PdfDiagnostic`) lets you collect them without failing. In a DocSpec only
+`strict: true` is expressible — `onDiagnostic` is function-valued and therefore
+not JSON-representable.
 
 ## Linting
 
-`lintDocument` runs 18 deterministic rules over a compiled tree — no I/O, so it
+`lintDocument` runs 25 deterministic rules over a compiled tree — no I/O, so it
 is safe in a test or a CI step. It catches the classes of mistake a type system
 cannot, including `L_TAGGED_NO_FONTS`: declaring PDF/A without embedding a font,
-which produces a file that claims conformance it does not have.
+which produces a file that claims conformance it does not have. Thirteen of the
+rules pre-empt an engine throw with a named, actionable finding.
+
+v1.2.0 adds seven rules for the new surface: `L_CHART_LOG_SCALE`,
+`L_CHART_X_AXIS` and `L_CHART_LABELS` (charts v2 misconfigurations),
+`L_PRINT_BOXES` (print geometry — it delegates to the engine's
+`validatePrintOptions` and reports its message verbatim, so the rule can never
+drift from what the engine enforces), `L_VIEWER_PRINT_RANGE`,
+`L_OUTPUT_INTENT_IGNORED` (warning: an `outputIntent` without `tagged` is a
+silent no-op), and `L_TAGGED_FORM_FONTS` (warning: PDF/A plus form fields needs
+embedded form fonts).
 
 ```ts
 import { lintDocument, LINT_RULES } from 'pdfnative-react';
@@ -175,45 +217,41 @@ import {
 } from 'pdfnative-react';
 ```
 
-`options` is `{ layout?: Partial<PdfLayoutOptions>; fontEntries?: FontEntry[]; fonts?: FontsMap }` and merges on top of anything set on `<Document>` — page size, margins, colors, PDF/A mode, encryption, and non-Latin fonts. Note that `fonts` is only honored by the **async** entry points (`renderToFile`, `renderToFileStream`, `renderToResponse`, `usePdf`, `usePdfStream`) — font loading is asynchronous, so the synchronous entries (`renderToBytes`, `renderToBlob`, `renderToStream`) ignore it; resolve manually first (`fontEntries: await resolveFonts(fonts)` — but see the `fontRef` caveat below).
+`options` is `{ layout?: Partial<PdfLayoutOptions>; fontEntries?: FontEntry[]; fonts?: FontsMap }` and merges on top of anything set on `<Document>` — page size, margins, colors, PDF/A mode, encryption, and non-Latin fonts. Note that `fonts` is only honored by the **async** entry points (`renderToFile`, `renderToFileStream`, `renderToResponse`, `usePdf`, `usePdfStream`) — font loading is asynchronous, so the synchronous entries (`renderToBytes`, `renderToBlob`, `renderToStream`) ignore it; resolve manually first (`fontEntries: await resolveFonts(fonts)`).
 
-> ### Build `fontEntries` yourself — `resolveFonts` produces an invalid `fontRef`
+> ### `resolveFonts` fixed in v1.2.0 — re-render affected documents
 >
-> `resolveFonts` (and the `fonts` option, which calls it) sets each entry's
-> `fontRef` to the bare language code. `fontRef` is written straight into the PDF
-> as a resource name, so it must be a **PDF name starting with `/`** — and `/F1`
-> and `/F2` are reserved by the engine. A bare code yields `latin 12 Tf` and a
-> `/Font` key of `latin 5 0 R`, neither of which is valid syntax: Acrobat refuses
-> the file with "an error occurred while reading this document (14)", and Chrome
-> falls back to a default encoding and draws raw glyph indices — *Multilingual*
-> renders as *0XOWLOLQJXDO*.
+> Before v1.2.0, `resolveFonts` (and the `fonts` option, which calls it) set each
+> entry's `fontRef` to the bare language code instead of a slash-prefixed PDF
+> name, yielding invalid syntax like `latin 12 Tf` — Acrobat refuses such a file
+> ("an error occurred while reading this document (14)") and Chrome draws raw
+> glyph indices. **v1.2.0 fixes this**: `resolveFonts` now assigns proper
+> `/F3`, `/F4`, … references. If you shipped PDFs through `resolveFonts` or the
+> `fonts` option under v1.1.0, re-render them. Hand-built `fontEntries` using
+> `/F3`+ were never affected (`/F1` and `/F2` remain reserved by the engine).
 >
-> Until that is fixed upstream, resolve the fonts by hand:
+> When building entries by hand, keep failing loudly — `loadFontData` resolves to
+> `null` (it does not throw) when a code has no registered loader:
 >
 > ```ts
 > import { registerFonts, loadFontData } from 'pdfnative';
 >
-> registerFonts({
->   latin: () => import('pdfnative/fonts/noto-sans-data.js'),
->   ar:    () => import('pdfnative/fonts/noto-arabic-data.js'),
-> });
->
-> const langs = ['latin', 'ar'];
-> const fontEntries = await Promise.all(
->   langs.map(async (lang, i) => {
->     const fontData = await loadFontData(lang);
->     // loadFontData resolves to null (it does not throw) when the code has no
->     // registered loader — fail loudly instead of embedding nothing:
->     if (!fontData) throw new Error(`font "${lang}" failed to load — did you call registerFonts first?`);
->     return { fontData, fontRef: `/F${3 + i}`, lang };   // /F3, /F4, …
->   }),
-> );
->
-> const bytes = renderToBytes(<Doc />, { fontEntries });
+> registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+> const fontData = await loadFontData('latin');
+> if (!fontData) throw new Error('font failed to load — did you call registerFonts first?');
+> const bytes = renderToBytes(<Doc />, { fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }] });
 > ```
 >
 > Rendering is synchronous, so registering without awaiting `loadFontData` embeds
 > nothing at all and every non-Latin glyph comes out blank.
+
+Two `renderToResponse` / `renderSpecToResponse` options arrived in v1.2.0 for
+HTTP caching: `cacheControl` (a verbatim `Cache-Control` header) and `etag` — a
+verbatim string, or `true` to derive a strong validator from the rendered bytes
+(which implies buffering the response instead of streaming it). v1.2.0 also
+validates streamability **before** the first byte: a document that cannot
+stream (a TOC, `{pages}` placeholders) now fails up-front instead of mid-response
+with the headers already sent.
 
 ```ts
 const bytes = renderToBytes(<Invoice />, {
@@ -276,11 +314,16 @@ The equivalent JSX is several times more tokens for a typical document, because 
 
 **Block tuples:** `['h1'|'h2'|'h3', text, opts?]`, `['p', text, opts?]`, `['ul'|'ol', items, opts?]`, `['table', { h?, r }]`, `['img', { data }]`, `['link', text, { url }]`, `['sp', height?]`, `['br']`, `['page', blocks]`, `['toc', opts?]`, `['qr'|'code128'|'ean13'|'pdf417'|'datamatrix', data, opts?]`, `['svg', data, opts?]`, `['chart', { chartType, series, … }]`, `['field', { fieldType, name, … }]`.
 
+Since v1.2.0 a spec can also carry a top-level `print` field (the same
+`PrintOptions` shape as `<Document print>`), and the generated JSON Schema
+covers every charts-v2 field — so an agent can self-validate a print-ready,
+dual-axis document before rendering it.
+
 ---
 
 ## Fonts & environment
 
-Re-exported from the engine: `registerFonts`, `registerFont`, `loadFontData`, `validateFontData`, `downloadBlob` (browser), `initNodeCompression` (Node). (`loadFontData` is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the `fontEntries` render option (or on `<Document fontEntries={…}>`), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.
+Re-exported from the engine: `registerFonts`, `registerFont`, `loadFontData`, `validateFontData`, `downloadBlob` (browser), `initNodeCompression` (Node), and — v1.2.0 — `setDeflateImpl`, which plugs any deflate implementation into the engine (e.g. the browser-native `CompressionStream`, for compressed client-side rendering without shipping a compression library). (`loadFontData` is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the `fontEntries` render option (or on `<Document fontEntries={…}>`), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.
 
 ```tsx
 import { Document, Text, renderToBytes, registerFont, loadFontData } from 'pdfnative-react';
@@ -329,6 +372,33 @@ try {
   else throw e;
 }
 ```
+
+---
+
+## Release history
+
+### What's new in v1.2.0
+
+v1.2.0 follows the pdfnative 1.7.0 engine — charts v2, print production, and the conformance channel — and is **100 % additive**: no component, hook or function was removed or changed shape. The only floor that moves is the `pdfnative` peer, `^1.6.0` → `^1.7.0`.
+
+| Area | v1.1.0 | v1.2.0 |
+|---|---|---|
+| Charts | 5 types | **9 types** (`stackedBar`, `stackedBarH`, `area`, `scatter`) + `axis2`, `xAxis` (category / linear / time, log scale), `dataLabels`, `labelStride`, `labelRotation` |
+| Print | — | **`<Document print>`** / `DocSpec.print` — bleed shorthand, page boxes, printer's marks, `/UserUnit`; viewer preferences and a custom output intent via `layout` |
+| Conformance | — | `layout.strict` / `layout.onDiagnostic` expose the engine's PDF/A diagnostics channel; new `PdfDiagnostic*` types |
+| HTTP | `renderToResponse` | + `cacheControl` and `etag` options; streamability validated **before** the first byte |
+| Linting | 18 rules | **25 rules** (7 new, incl. `L_PRINT_BOXES` which delegates to the engine's `validatePrintOptions`) |
+| Fonts | `resolveFonts` emitted an invalid bare `fontRef` | **fixed** — proper `/F3`+ names; re-render anything produced through `resolveFonts` / the `fonts` option |
+| Exports | — | +`setDeflateImpl` and 8 types (`PrintOptions`, `PrinterMarksOptions`, `PageBox`, `CustomOutputIntent`, `PdfDiagnostic`, `PdfDiagnosticCode`, `PdfDiagnosticHandler`, `PdfColors`) |
+| Quality | — | 292 tests / 18 files · 95 % statement coverage · a veraPDF gate over an 11-file PDF/A corpus (with 2 negative canaries) blocks CI and publish |
+| Compatibility | `pdfnative ^1.6.0` peer | **`pdfnative ^1.7.0`** peer; React `^19.0.0` and Node ≥ 22 unchanged |
+
+Full changelog: [pdfnative-react release notes v1.2.0](https://github.com/Nizoka/pdfnative-react/releases/tag/v1.2.0).
+
+### Previously in v1.1.0
+
+<!-- verify-docs:allow version-token (historical release entry) -->
+v1.1.0 brought the engine's 1.6 surface to the renderer — `<Chart>`, the `DocSpec` chart tuple, and the agent discovery pair (`capabilityManifest` / `doctor`) — on the `pdfnative ^1.6.0` peer.
 
 ---
 

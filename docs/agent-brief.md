@@ -22,7 +22,7 @@ Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar) and full UAX #9 BiDi.
 ## Choose your surface
 
 - **Writing application code** → the library: `npm install pdfnative`, `import { … } from 'pdfnative'`.
-- **Driving a shell, CI, or Makefile** → `pdfnative-cli` (17 commands, JSON-in/JSON-out agent contract with stable `E_*` error codes).
+- **Driving a shell, CI, or Makefile** → `pdfnative-cli` (21 commands, JSON-in/JSON-out agent contract with stable `E_*` error codes).
 - **You are a conversational assistant with tool access** → `pdfnative-mcp` (28 tools, MCP 2026-07-28 spec; config: `npx -y pdfnative-mcp`).
 - **The host app is React 19** → `pdfnative-react` (declarative JSX compiled on-device to pdfnative blocks).
 
@@ -121,5 +121,5 @@ The same loop exists on every surface: `pdfnative-cli inspect --check … --json
 
 - [Quick start](https://pdfnative.dev/guides/quickstart.md) · [Onboarding](https://pdfnative.dev/guides/onboarding.md) — first PDF in each surface.
 - [MCP guide](https://pdfnative.dev/guides/mcp.md) — the 28 tools, schemas, error codes.
-- [CLI guide](https://pdfnative.dev/guides/cli.md) — 17 commands and the `--json` / `E_*` agent contract.
+- [CLI guide](https://pdfnative.dev/guides/cli.md) — 21 commands and the `--json` / `E_*` agent contract.
 - Every guide serves raw Markdown at the same URL with `.md`; sizes and anchors are in [llms-index.json](https://pdfnative.dev/llms-index.json).

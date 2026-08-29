@@ -91,9 +91,9 @@
         "@id": "https://pdfnative.dev/#cli",
         "inLanguage": "en",
         "name": "pdfnative-cli",
-        "description": "Official command-line interface for pdfnative — render, sign (RSA + ECDSA via node:crypto by default), inspect, verify (RFC 3161 timestamp validation + OCSP/CRL), merge / split / extract pages, annotate (markup), govern (AI-governance / HITL), batch, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
+        "description": "Official command-line interface for pdfnative — render, sign with the complete PAdES ladder (sign --timestamp B-T, ltv B-LT, doc-timestamp B-LTA; RSA + ECDSA via node:crypto by default), signature-safe metadata edits, compare (CI text + structure diff), inspect, verify (RFC 3161 timestamp validation + OCSP/CRL), merge / split / extract pages, annotate (markup), govern (AI-governance / HITL), declarative batch --manifest pipelines, and emit JSON Schemas. Agent-native --json/E_*/--dry-run contract.",
         "url": "https://github.com/Nizoka/pdfnative-cli",
-        "softwareVersion": "1.3.0",
+        "softwareVersion": "1.4.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -117,13 +117,13 @@
         "@id": "https://pdfnative.dev/#react",
         "inLanguage": "en",
         "name": "pdfnative-react",
-        "description": "React renderer for pdfnative — declarative JSX components compiled on-device to PDF by a custom React reconciler. Live preview hooks, streaming, 22 Unicode scripts, token-frugal DocSpec for AI agents.",
+        "description": "React renderer for pdfnative — declarative JSX components compiled on-device to PDF by a custom React reconciler. Charts v2, print production, PDF/A diagnostics channel, HTTP caching on renderToResponse, live preview hooks, streaming, 22 Unicode scripts, token-frugal DocSpec for AI agents.",
         "url": "https://github.com/Nizoka/pdfnative-react",
         "codeRepository": "https://github.com/Nizoka/pdfnative-react",
         "programmingLanguage": "TypeScript",
         "license": "https://opensource.org/licenses/MIT",
         "runtimePlatform": ["Node.js", "Browser"],
-        "softwareVersion": "1.1.0",
+        "softwareVersion": "1.2.0",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
@@ -487,7 +487,7 @@ extractText(pdf)[0].text; // 'Hello, world.' — parse any PDF back</code></pre>
         <a class="ob-link" href="guides/quickstart.html">Quick Start guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>CLI <span class="ob-badge" data-pn-badge="pdfnative-cli">v1.3.0</span></h3>
+        <h3>CLI <span class="ob-badge" data-pn-badge="pdfnative-cli">v1.4.0</span></h3>
         <p class="ob-tag">For shells, CI, and Makefiles.</p>
 <pre><code class="language-bash">echo '{"blocks":[{"type":"paragraph","text":"Hi"}]}' \
   | npx pdfnative-cli render -o out.pdf</code></pre>
@@ -512,7 +512,7 @@ npx pdfnative-cli verify -i signed.pdf</code></pre>
         <a class="ob-link" href="guides/mcp.html">MCP guide →</a>
       </div>
       <div class="onboarding-card">
-        <h3>React <span class="ob-badge" data-pn-badge="pdfnative-react">v1.1.0</span></h3>
+        <h3>React <span class="ob-badge" data-pn-badge="pdfnative-react">v1.2.0</span></h3>
         <p class="ob-tag">For React, Next.js, and Remix apps.</p>
 <pre><code class="language-bash">npm install pdfnative-react pdfnative react</code></pre>
 <pre><code class="language-typescript">import { Document, Heading, renderToBytes } from 'pdfnative-react';
@@ -777,7 +777,7 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/main/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative 1.7.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (17 commands: render · fill · sign · encrypt · extract-text and more), pdfnative-mcp (MCP server, 28 tools, any MCP client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative 1.7.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (21 commands: render · fill · sign · ltv · compare and more), pdfnative-mcp (MCP server, 28 tools, any MCP client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
   </div>
@@ -864,10 +864,10 @@ const pdf = renderToBytes(
 <section class="section" id="cli">
   <div class="container">
     <h2 class="section-title">Use pdfnative from your shell, CI, or Makefile</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. 17 commands in five groups, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. It covers the whole document lifecycle: author with <code>render</code> and <code>fill</code>, restructure with <code>merge</code> / <code>split</code> / <code>extract</code>, secure with <code>sign</code> / <code>verify</code> / <code>encrypt</code> / <code>decrypt</code>, read back with <code>inspect</code> and <code>extract-text</code>, and automate with <code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code> and the AI-governance <code>govern</code> gate. Installing the package puts a <code>pdfnative</code> binary on your PATH.</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. 21 commands in five groups, zero extra runtime dependencies, stdin/stdout pipelines, NPM-provenance signed. It covers the whole document lifecycle: author with <code>render</code>, <code>fill</code> and <code>metadata</code>, restructure with <code>merge</code> / <code>split</code> / <code>extract</code>, secure with <code>sign</code> / <code>verify</code> / <code>ltv</code> / <code>doc-timestamp</code> / <code>encrypt</code> / <code>decrypt</code> — the complete PAdES ladder, B-B → B-LTA — read back with <code>inspect</code>, <code>extract-text</code> and <code>compare</code>, and automate with <code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code> and the AI-governance <code>govern</code> gate. Installing the package puts a <code>pdfnative</code> binary on your PATH.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
-        <h3>17 Production Commands</h3>
+        <h3>21 Production Commands</h3>
         <div class="table-wrap">
         <table class="mcp-table">
           <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
@@ -875,21 +875,25 @@ const pdf = renderToBytes(
             <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Create &amp; edit</th></tr>
             <tr><td><code>render</code></td><td>JSON → PDF with hybrid <code>flags + --layout</code>. <code>--watch</code> (re-render on change), <code>--template &lt;file.json&gt;</code> (deep-merge base), <code>--font {latin,emoji,math}</code>, <code>--outline auto</code> (bookmarks), native <code>chart</code> blocks, <code>--encrypt aes-128|aes-256</code>, <code>--inspect-layout</code> / <code>--debug-layout</code>.</td></tr>
             <tr><td><code>fill</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Fill, flatten or export an AcroForm. <code>--export</code> dumps current values as JSON; feed the edited file back with <code>--data</code>.</td></tr>
-            <tr><td><code>annotate</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Attach markup annotations via an incremental save — signatures stay valid.</td></tr>
+            <tr><td><code>annotate</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Attach markup annotations via an incremental save — signatures stay valid. Encrypted PDFs supported with <code>--password</code>.</td></tr>
+            <tr><td><code>metadata</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.4</span></td><td>Update <code>/Info</code> + XMP via an incremental save — existing signatures remain valid for their revision.</td></tr>
             <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Page tree</th></tr>
             <tr><td><code>merge</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Concatenate 2–50 PDFs into one via the page-tree API. Reads encrypted sources with <code>--password</code> and can re-encrypt the result.</td></tr>
             <tr><td><code>split</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Split one PDF into many — one output per page or per range. Supports <code>--stream</code> for large inputs.</td></tr>
             <tr><td><code>extract</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.2</span></td><td>Pull a selected, order-preserving page subset into a single PDF.</td></tr>
             <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Security</th></tr>
-            <tr><td><code>sign</code></td><td>End-to-end CMS/PKCS#7 signing. <strong>ECDSA-SHA256</strong> fully wired, delegating to <code>node:crypto</code> by default (<code>--pure-crypto</code> opts out). Auto-injects the AcroForm signature placeholder when missing.</td></tr>
-            <tr><td><code>verify</code></td><td>Real CMS/PKCS#7 verification — signature value (RSA + ECDSA-SHA256), message digest, certificate chain, trust roots, RFC 3161 timestamp-token validation (PAdES-T) and OCSP/CRL revocation checking. JSON report.</td></tr>
+            <tr><td><code>sign</code></td><td>End-to-end CMS/PKCS#7 signing, delegating to <code>node:crypto</code> by default (<code>--pure-crypto</code> opts out). RSA-SHA256/384/512 + ECDSA; <code>--timestamp &lt;tsa-url&gt;</code> embeds an RFC 3161 token (PAdES B-T, v1.4); <code>--profile pades</code>, multi-signature and visible-widget placement. Auto-injects the AcroForm signature placeholder when missing.</td></tr>
+            <tr><td><code>verify</code></td><td>Real CMS/PKCS#7 verification — signature value (RSA-SHA256/384/512 + ECDSA), message digest, certificate chain, trust roots, RFC 3161 timestamp-token and <code>/DocTimeStamp</code> validation, and OCSP/CRL revocation checking. JSON report.</td></tr>
+            <tr><td><code>ltv</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.4</span></td><td>Embed long-term-validation material into <code>/DSS</code> (PAdES B-LT). <code>collect</code> gathers evidence as replayable JSON so <code>embed</code> can run fully offline — air-gap friendly.</td></tr>
+            <tr><td><code>doc-timestamp</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.4</span></td><td>Append an RFC 3161 <code>/DocTimeStamp</code> revision covering every byte (PAdES B-LTA); repeatable to renew protection.</td></tr>
             <tr><td><code>encrypt</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Re-secure a PDF with AES-128 or AES-256, setting owner/user passwords and a permission set.</td></tr>
             <tr><td><code>decrypt</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Remove encryption with <code>--password</code> — RC4, AES-128 and AES-256 sources.</td></tr>
             <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Read &amp; extract</th></tr>
             <tr><td><code>inspect</code></td><td>Read-only PDF analysis. <code>--verbose</code>, <code>--pages</code>, <code>--annotations</code>, <code>--form-fields</code>, <code>--encryption</code>, page labels, and <code>--check pdfa|signed|encrypted|pdfua</code> for CI assertions.</td></tr>
             <tr><td><code>extract-text</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Reading-order Unicode text as <code>text</code>, <code>json</code> or <code>ndjson</code>, with optional positioned runs — a RAG/agent ingestion primitive.</td></tr>
+            <tr><td><code>compare</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.4</span></td><td>Text + structure diff of two PDFs with CI-friendly exit codes — identical → 0, different → report on stdout then exit 1.</td></tr>
             <tr><th colspan="2" style="text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;">Automation &amp; meta</th></tr>
-            <tr><td><code>batch</code></td><td>Render every JSON file in a directory (<code>--input-dir</code> / <code>--output-dir</code>) — bounded parallelism, per-file status.</td></tr>
+            <tr><td><code>batch</code></td><td>Render every JSON file in a directory (<code>--input-dir</code> / <code>--output-dir</code>) — bounded parallelism, per-file status. Since v1.4, <code>--manifest</code> runs a declarative multi-command pipeline with <code>@id</code> references and an <code>--allow-network</code> opt-in.</td></tr>
             <tr><td><code>doctor</code> <span style="color:var(--c-success);font-size:11px;font-weight:700;">v1.3</span></td><td>Environment and capability preflight, text or <code>--json</code>. The first command to run in a new environment.</td></tr>
             <tr><td><code>schema</code></td><td>Print a JSON Schema or the full <code>manifest</code> capability document for agent tool-discovery.</td></tr>
             <tr><td><code>completion</code></td><td>Generate shell completion scripts (bash / zsh / fish / powershell).</td></tr>
@@ -929,8 +933,8 @@ npx pdfnative-cli verify -i signed.pdf --strict</code></pre>
           <thead><tr><th>Surface</th><th>What you get</th></tr></thead>
           <tbody>
             <tr><td><code>&lt;Document&gt;</code> / <code>&lt;Page&gt;</code></td><td>Document metadata, page size, headers/footers, tagged &amp; PDF/A modes.</td></tr>
-            <tr><td>Content</td><td><code>&lt;Heading&gt;</code>, <code>&lt;Text&gt;</code>, <code>&lt;List&gt;</code>/<code>&lt;Item&gt;</code>, <code>&lt;Table&gt;</code>/<code>&lt;Row&gt;</code>/<code>&lt;Cell&gt;</code>, <code>&lt;Image&gt;</code>, <code>&lt;Link&gt;</code>, <code>&lt;Barcode&gt;</code>, <code>&lt;Svg&gt;</code>, <code>&lt;FormField&gt;</code>, <code>&lt;Toc&gt;</code>.</td></tr>
-            <tr><td>Render</td><td><code>renderToBytes</code> / <code>renderToBlob</code> / <code>renderToStream</code> / <code>renderToFile</code> — plus <code>compileDocument</code> for the raw params.</td></tr>
+            <tr><td>Content</td><td><code>&lt;Heading&gt;</code>, <code>&lt;Text&gt;</code>, <code>&lt;List&gt;</code>/<code>&lt;Item&gt;</code>, <code>&lt;Table&gt;</code>/<code>&lt;Row&gt;</code>/<code>&lt;Cell&gt;</code>, <code>&lt;Image&gt;</code>, <code>&lt;Link&gt;</code>, <code>&lt;Barcode&gt;</code>, <code>&lt;Svg&gt;</code>, <code>&lt;FormField&gt;</code>, <code>&lt;Toc&gt;</code>, <code>&lt;Chart&gt;</code> — charts v2 since v1.2: 9 kinds, secondary axis, log/time scales, data labels.</td></tr>
+            <tr><td>Render</td><td><code>renderToBytes</code> / <code>renderToBlob</code> / <code>renderToStream</code> / <code>renderToFile</code> — plus <code>compileDocument</code> for the raw params, print production via <code>&lt;Document print&gt;</code>, and HTTP caching (<code>etag</code> / <code>cacheControl</code>) on <code>renderToResponse</code> (v1.2).</td></tr>
             <tr><td>Live preview</td><td><code>usePdf</code> / <code>usePdfStream</code> hooks &amp; client components <code>&lt;PDFViewer&gt;</code>, <code>&lt;PDFDownloadLink&gt;</code>, <code>&lt;BlobProvider&gt;</code>.</td></tr>
             <tr><td>Agent-friendly</td><td>Token-frugal <code>DocSpec</code> (<code>compileSpec</code>/<code>renderSpec*</code>) with a published JSON Schema for LLM authoring.</td></tr>
           </tbody>
