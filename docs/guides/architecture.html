@@ -177,7 +177,7 @@ appending incremental revisions</li>
 <h2 id="ecosystem">Ecosystem<a class="heading-anchor" href="#ecosystem" aria-label="Link to this section">#</a></h2>
 <p>The architecture diagram above shows the <strong>internal library modules</strong>. External consumers sit above the library and import from <code>pdfnative</code> like any npm package. Three official companion packages — a CLI, an MCP server, and a React renderer — cover the most common non-library workflows. All live in separate repositories, version independently, and depend on <code>pdfnative</code> only through its public API, so the core engine stays zero-dependency.</p>
 <pre><code>                         ┌─────────────────────────────────────────────┐
-   [shell / CI / Docker] │  pdfnative-cli (npm) — 17 commands          │
+   [shell / CI / Docker] │  pdfnative-cli (npm) — 21 commands          │
                          └─────────────────────────────────────────────┘
                          ┌─────────────────────────────────────────────┐
     [Claude / Cursor / …] │  pdfnative-mcp (npm) — 28 AI tools          │
@@ -191,11 +191,11 @@ appending incremental revisions</li>
                          └─────────────────────────────────────────────┘
 </code></pre>
 <h3 id="pdfnative-cli">pdfnative-cli<a class="heading-anchor" href="#pdfnative-cli" aria-label="Link to this section">#</a></h3>
-<p><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. It exposes seventeen commands — <code>render</code>, <code>fill</code>, <code>annotate</code>, <code>merge</code>, <code>split</code>, <code>extract</code>, <code>sign</code>, <code>verify</code>, <code>encrypt</code>, <code>decrypt</code>, <code>inspect</code>, <code>extract-text</code>, <code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code> — that map directly to public <code>pdfnative</code> APIs, with an agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code> automation contract:</p>
+<p><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. It exposes twenty-one commands — <code>render</code>, <code>fill</code>, <code>annotate</code>, <code>metadata</code>, <code>merge</code>, <code>split</code>, <code>extract</code>, <code>sign</code>, <code>verify</code>, <code>ltv</code>, <code>doc-timestamp</code>, <code>encrypt</code>, <code>decrypt</code>, <code>inspect</code>, <code>extract-text</code>, <code>compare</code>, <code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code> — that map directly to public <code>pdfnative</code> APIs, with an agent-native <code>--json</code>/<code>E_*</code>/<code>--dry-run</code> automation contract:</p>
 <pre><code>[shell / Makefile / GitHub Actions / Docker]
               │ argv + stdin/stdout
      ┌──────────────────────────┐
-     │  pdfnative-cli (npm)     │  ← dispatch layer, 17 commands + agent contract
+     │  pdfnative-cli (npm)     │  ← dispatch layer, 21 commands + agent contract
      └──────────────────────────┘
               │ import { buildDocumentPDFBytes, signPdfBytes, openPdf, validatePdfUA } from &#39;pdfnative&#39;
      ┌──────────────────────────┐
@@ -218,7 +218,7 @@ appending incremental revisions</li>
 <p>pdfnative-mcp is <strong>not an internal module</strong> — it is a separate npm package with its own repository, versioning, and release cadence. It references <code>pdfnative</code> only through the public API.</p>
 <p>For setup instructions, tool reference, and per-client configuration, see the <a href="mcp.html">MCP Integration Guide</a>.</p>
 <h3 id="pdfnative-react">pdfnative-react<a class="heading-anchor" href="#pdfnative-react" aria-label="Link to this section">#</a></h3>
-<p><a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a> v1.1.0 is the <strong>declarative React renderer</strong>. A custom React reconciler compiles a JSX component tree — synchronously, with no DOM — into the pdfnative <code>DocumentParams</code> model, which the engine renders to bytes:</p>
+<p><a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a> v1.2.0 is the <strong>declarative React renderer</strong>. A custom React reconciler compiles a JSX component tree — synchronously, with no DOM — into the pdfnative <code>DocumentParams</code> model, which the engine renders to bytes:</p>
 <pre><code>[React / Next.js / Remix component tree]
               │ custom react-reconciler (no DOM, no headless browser)
      ┌──────────────────────────┐

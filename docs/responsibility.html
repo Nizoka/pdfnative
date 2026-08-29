@@ -74,6 +74,7 @@
       <li><a href="./#demo">Demo</a></li>
       <li><a href="./#mcp">MCP</a></li>
       <li><a href="./#cli">CLI</a></li>
+      <li><a href="learn/">Learn</a></li>
       <li><a href="guides/">Guides</a></li>
       <li><a href="playgrounds/">Playgrounds</a></li>
       <li><a href="responsibility.html" aria-current="page">Responsibility</a></li>
@@ -93,20 +94,20 @@
     <h2 id="efficiency">Efficiency by architecture</h2>
 
     <div class="rs-claim">
-      <p><strong>Generation happens on the device that asked for it.</strong> PDFs are assembled in the calling process — Node, a browser tab, a Worker, Deno, Bun, an edge runtime. There is no SaaS round-trip, so a document does not leave the user's machine unless the application chooses to send it. Every playground on this site is a demonstration: they generate real PDFs with nothing but the page you already loaded.</p>
+      <p><strong>Generation happens on the device that asked for it.</strong> PDFs are assembled in the calling process — Node, a browser tab, a Worker, Deno, Bun, an edge runtime. There is no SaaS round-trip, so a document does not leave the user's machine unless the application chooses to send it. Every playground on this site is a demonstration: they load the engine module from a pinned CDN URL and then generate real PDFs entirely in the tab — no document byte crosses the network.</p>
       <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/tree/main/src" target="_blank" rel="noopener">src/</a> · <a href="playgrounds/scale.html">the scale playground generates 100,000 pages client-side</a></p>
     </div>
 
     <div class="rs-claim">
       <p><strong>The engine has no runtime dependencies.</strong> <code>pdfnative</code> ships with no <code>dependencies</code> field at all: nothing transitive to install, audit, or patch.</p>
-      <p>Scoped honestly, because the ecosystem is not uniform: <code>pdfnative-cli</code> depends only on <code>pdfnative</code> itself. <code>pdfnative-react</code> adds one real runtime dependency, <code>react-reconciler</code>, with React and pdfnative as peers. <code>pdfnative-mcp</code> adds two, <code>@modelcontextprotocol/server</code> and <code>zod</code>. And this documentation site itself loads Prism, marked and DOMPurify from a CDN — pinned, with subresource-integrity hashes.</p>
+      <p>Scoped honestly, because the ecosystem is not uniform: <code>pdfnative-cli</code> depends only on <code>pdfnative</code> itself. <code>pdfnative-react</code> adds one real runtime dependency, <code>react-reconciler</code>, with React and pdfnative as peers. <code>pdfnative-mcp</code> adds two, <code>@modelcontextprotocol/server</code> and <code>zod</code>. And this documentation site itself loads Prism, marked and DOMPurify from a CDN — pinned, with subresource-integrity hashes, and since every guide ships pre-rendered, marked and DOMPurify are only a progressive-enhancement fallback.</p>
       <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/blob/main/package.json" target="_blank" rel="noopener">package.json</a> (no dependencies key) · <a href="https://github.com/Nizoka/pdfnative-react/blob/main/package.json" target="_blank" rel="noopener">pdfnative-react/package.json</a> · <a href="https://github.com/Nizoka/pdfnative-mcp/blob/main/package.json" target="_blank" rel="noopener">pdfnative-mcp/package.json</a></p>
     </div>
 
     <div class="rs-claim">
       <p><strong>The library never opens a socket.</strong> No telemetry endpoint, no auto-update channel, no remote font fetch. Searching the engine source for any of the ways JavaScript can reach the network — <code>fetch</code>, <code>XMLHttpRequest</code>, <code>WebSocket</code>, <code>node:http</code>, <code>sendBeacon</code> — finds no call sites in executable code. The only matches are documentation comments: the <code>@example</code> blocks of the injectable <code>TimestampProvider</code> / <code>RevocationProvider</code> interfaces (v1.7.0), which show how <em>your</em> code can supply network transport for LTV — the engine itself never performs the request.</p>
-      <p>One scoped exception, stated because it is real: <code>pdfnative-cli verify</code> can fetch OCSP and CRL responses when checking whether a signing certificate has been revoked. It does not do so by default — the default reads only the revocation data already embedded in the document, and network checks require <code>--revocation online</code>. RFC 3161 timestamps are <em>validated</em> from the embedded token; the CLI does not contact a timestamp authority, and <code>sign --timestamp</code> reports that it is not yet implemented.</p>
-      <p class="rs-verify">Verify it: <code>grep -rE "fetch\(|XMLHttpRequest|WebSocket|node:http" src/</code> · <a href="https://github.com/Nizoka/pdfnative/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a></p>
+      <p>One scoped exception, stated because it is real: <code>pdfnative-cli</code> can open connections — but only where a flag says so, one invocation at a time. Five opt-ins exist and nothing else reaches the network: <code>verify --revocation online</code> (OCSP / CRL), <code>sign --timestamp</code> (an RFC 3161 timestamp authority, PAdES B-T — functional since CLI 1.4.0), <code>ltv --online</code> (revocation material for <code>/DSS</code>), <code>doc-timestamp --url</code> (a <code>/DocTimeStamp</code> revision), and <code>batch --allow-network</code>, which is required before any manifest task may use one of the other four. Every request passes the same SSRF guard: http/https only, DNS-resolved addresses checked against private, loopback, link-local and reserved ranges, a 10-second timeout, a 5&nbsp;MiB response cap, no redirect following. Without those flags the CLI reads only the revocation data and timestamp tokens already embedded in the document, and <code>--dry-run</code> never touches the network at all.</p>
+      <p class="rs-verify">Verify it: <code>grep -rE "fetch\(|XMLHttpRequest|WebSocket|node:http" src/</code> · <a href="guides/cli.html">the CLI guide's security model</a> · <a href="https://github.com/Nizoka/pdfnative-cli/blob/main/src/utils/fetch-guard.ts" target="_blank" rel="noopener">pdfnative-cli/src/utils/fetch-guard.ts</a></p>
     </div>
 
     <div class="rs-claim">
@@ -144,7 +145,7 @@
     <h2 id="inclusion">Digital inclusion and longevity</h2>
 
     <div class="rs-claim">
-      <p><strong>22 writing systems with real shaping, in the box.</strong> Arabic and Hebrew bidirectional text (UAX #9), Devanagari, Bengali, Tamil, Telugu, Sinhala, Thai, Khmer, Myanmar, Tibetan, Ethiopic, CJK and more — with GSUB/GPOS OpenType shaping, not just codepoint mapping. Most PDF tooling in this ecosystem handles Latin well and degrades from there. Documents that people can actually read in their own script is an accessibility argument before it is a feature list.</p>
+      <p><strong>22 writing systems — 22 scripts with real shaping, in the box.</strong> Arabic and Hebrew bidirectional text (UAX #9), Devanagari, Bengali, Tamil, Telugu, Sinhala, Thai, Khmer, Myanmar, Tibetan, Ethiopic, CJK and more — with GSUB/GPOS OpenType shaping, not just codepoint mapping. Most PDF tooling in this ecosystem handles Latin well and degrades from there. Documents that people can actually read in their own script is an accessibility argument before it is a feature list.</p>
       <p class="rs-verify">Verify it: <a href="https://github.com/Nizoka/pdfnative/tree/main/src/shaping" target="_blank" rel="noopener">src/shaping/</a> · <a href="playgrounds/all-scripts.html">all-scripts playground</a> · <a href="playgrounds/extreme-scripts.html">extreme-scripts playground</a></p>
     </div>
 
@@ -180,7 +181,7 @@
         <li><strong>"Lighter than <em>library X</em>" as an environmental argument.</strong> The <a href="./#comparison">feature comparison</a> compares capabilities. There is no committed benchmark comparing runtime or bundle size against other libraries, so there is no basis for an efficiency claim relative to them.</li>
         <li><strong>A single headline bundle size.</strong> The built artefacts in <code>dist/</code> are unminified and ship with sourcemaps, so quoting their raw byte count would overstate the cost as badly as quoting a gzipped figure would understate it. Measure it for your own bundle.</li>
         <li><strong>"Zero dependencies" across the ecosystem.</strong> True for the engine. Not true for <code>pdfnative-react</code> or <code>pdfnative-mcp</code>, as stated above.</li>
-        <li><strong>"Never touches the network" across the ecosystem.</strong> True for the engine. The CLI's <code>verify</code> command can make OCSP and CRL requests when <code>--revocation online</code> is passed, and pdfnative-mcp's PAdES tools reach only the operator-configured TSA / OCSP / CRL endpoints — by design in both cases.</li>
+        <li><strong>"Never touches the network" across the ecosystem.</strong> True for the engine. The CLI opens connections behind five explicit opt-ins (<code>verify --revocation online</code>, <code>sign --timestamp</code>, <code>ltv --online</code>, <code>doc-timestamp --url</code>, <code>batch --allow-network</code>), all through the same SSRF guard; and pdfnative-mcp's PAdES tools reach only the operator-configured TSA / OCSP / CRL endpoints — by design in both cases.</li>
         <li><strong>Certification of any kind.</strong> PDF/A output is validated by the veraPDF reference validator in CI, which is meaningful evidence — but pdfnative is not an accredited conformance-tested product, and there is no ISO 14001, SOC 2, HIPAA or GDPR certification behind it. Software architecture is not a compliance certificate.</li>
         <li><strong>WCAG conformance of this website.</strong> The site has a skip link, visible focus indicators, reduced-motion support and contrast ratios checked in CI. It has not been through a formal accessibility audit, so we describe the measures rather than claim the outcome.</li>
       </ul>

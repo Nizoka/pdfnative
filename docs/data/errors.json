@@ -1,7 +1,7 @@
 {
   "$comment": "Machine-readable registry of the diagnostic codes the pdfnative ENGINE emits (src/core/pdf-diagnostics.ts). Meanings and remedies are restated from the source messages; the error-parity rule of scripts/verify-docs.ts checks that every code named in the documentation exists here and in src/, and vice versa. The CLI's E_* codes and the MCP server's tool error codes belong to their own repositories (pdfnative-cli llms.txt / schema manifest, and the MCP guide's error table, checked against the published package by the weekly --online run) and are deliberately not mirrored here.",
   "package": "pdfnative",
-  "verifiedOn": "2026-08-25",
+  "verifiedOn": "2026-08-29",
   "diagnostics": [
     {
       "code": "PDFA_NO_FONT_ENTRIES",

@@ -77,7 +77,7 @@ fonts/            # Pre-built font data modules (.js/.d.ts) — 22 scripts + mat
 tools/            # CLI tools: build-font-data.cjs (TTF → data module); build-emoji-font (bundled via tsup from scripts/build-emoji-font.ts → dist/tools/, npx pdfnative-build-emoji-font — generates colour-emoji data modules up to the full ~3,600-glyph set)
 scripts/          # Modular sample PDF generation (48 generators; persian-showcase.ts + print-showcase.ts, signature-ltv.ts + incremental-metadata.ts added in v1.7.0; text-extract-showcase.ts added in v1.6.0; math-symbols.ts + svg-text-labels.ts + layout-debug-overlay.ts + annotations-showcase.ts + font-compiler-demo.ts added in v1.5.0; outline-bookmarks.ts + pdf-manipulation.ts added in v1.4.0; currency-symbols.ts + color-emoji-showcase real-world rewrite added in v1.3.0; signature-placeholder.ts, bidi-embeddings-showcase.ts, document-table-parity.ts, use-lite-showcase.ts added in v1.2.0/v1.3.0). scripts/lib/ holds the shared deterministic emoji-build core (emoji-font-core.ts, curated-emoji.ts, emoji-cli.ts) used by both build-color-emoji-data.ts and the bundled build-emoji-font CLI
 test-output/extreme/  # Visual regression baselines for extreme scripts (extreme-bidi.pdf, extreme-tamil.pdf, extreme-bengali-devanagari.pdf, extreme-arabic-harakat.pdf, extreme-bidi-isolates.pdf)
-tests/            # 2686+ tests (123 files: unit/integration/fuzz/parser/visual/docs) mirroring src/ structure
+tests/            # 2691+ tests (123 files: unit/integration/fuzz/parser/visual/docs) mirroring src/ structure
 bench/            # Performance benchmarks (vitest bench)
 docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/JS, zero build deps
   └── playgrounds/  # 9 interactive browser playgrounds (extreme-scripts, all-scripts, toolkit, charts, authoring-plus, scale, cli, mcp, react)
@@ -103,7 +103,7 @@ docs/             # GitHub Pages landing site (pdfnative.dev) — pure HTML/CSS/
 
 ```bash
 npm run build           # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test            # vitest run (2686+ tests, 123 files)
+npm run test            # vitest run (2691+ tests, 123 files)
 npm run test:watch      # vitest (watch mode)
 npm run test:coverage   # vitest with v8 coverage (thresholds: 88/80/85/90)
 npm run test:generate   # Generate ~242 sample PDFs → test-output/ (incl. extreme/, emoji/, pdfa-latin/, forms/, charts/, parser/ baselines)
@@ -113,14 +113,14 @@ npm run typecheck:scripts # tsc --project tsconfig.scripts.json --noEmit
 npm run typecheck:all   # typecheck src/ + tests/ + scripts/
 npm run lint            # eslint src/ (ESLint 9 + typescript-eslint strict)
 npm run validate:pdfa   # veraPDF over every PDF/A-claiming sample (auto-detected; coverage canary vs declared.pdfaSamples; skips with exit 0 when veraPDF is absent, blocking in CI)
-npm run verify:docs     # 22 offline rules over docs/, playgrounds, README, llms files (ecosystem.json is the source of truth)
+npm run verify:docs     # 24 offline rules over docs/, playgrounds, README, llms files (ecosystem.json is the source of truth)
 ```
 
 - Build tool: **tsup** (dual ESM/CJS, tree-shakeable, sourcemaps)
 - Test runner: **vitest** (fast, native ESM, watch mode, v8 coverage)
 - CI: GitHub Actions — lint/typecheck/test/build on Node 22/24
 - Publish: GitHub Actions OIDC Trusted Publishing (`npm publish --access public`; provenance is attached automatically via the workflow's `id-token: write`)
-- All new code must have tests. 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90. 2686+ tests (123 files)
+- All new code must have tests. 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90. 2691+ tests (123 files)
 
 ## Conventions
 
@@ -305,7 +305,7 @@ npm run verify:docs     # 22 offline rules over docs/, playgrounds, README, llms
 - **PDF /Info metadata** — Title, Producer (pdfnative), CreationDate in D:YYYYMMDDHHmmss format
 - **Input validation** — at `buildPDF()` boundary: null/undefined/type checks, 100K row limit
 - **URL validation** — at `validateURL()`: blocks javascript:, file:, data: schemes
-- **Test coverage** — 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90 (statements/branches/functions/lines). 2686+ tests (123 files), 89 fuzz tests across 5 files (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
+- **Test coverage** — 95%+ statements measured at the v1.6.0 release; CI enforces 88/80/85/90 (statements/branches/functions/lines). 2691+ tests (123 files), 89 fuzz tests across 5 files (including recursion/zip-bomb/xref-chain hardening), dual-mode visual-regression suite, performance benchmarks
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - Security: no `eval()`, no `Function()`, no dynamic code execution
 - No `console.log` in library code (only in tools/ and scripts/). `console.warn` is allowed **only** inside `src/core/pdf-diagnostics.ts` — the single sanctioned sink for conformance diagnostics (silence or redirect via `onDiagnostic`, escalate via `strict`)

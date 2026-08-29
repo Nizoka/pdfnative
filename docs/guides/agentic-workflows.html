@@ -159,6 +159,31 @@ const source = compileFontData(ttfBytes, { fontName: &#39;My Font&#39; });
 <p>The equivalent one-liner for a human at a terminal is the bundled CLI:</p>
 <pre><code class="language-bash">npx pdfnative-build-font fonts/ttf/MyFont.ttf fonts/my-font-data.js
 </code></pre>
+<h3 id="via-the-mcp-server--the-local-install-is-the-extension-point">Via the MCP server — the local install is the extension point<a class="heading-anchor" href="#via-the-mcp-server--the-local-install-is-the-extension-point" aria-label="Link to this section">#</a></h3>
+<p><code>pdfnative-mcp</code> <strong>bundles no font data of its own</strong>. At runtime it resolves the
+locally installed <code>pdfnative</code> package and lazily imports font modules from that
+package&#39;s <code>fonts/</code> directory — its <code>lang</code> table is a mapping from language codes
+to files it expects to find there. That design has a useful consequence for
+agents operating on the host: <strong>whatever the local <code>pdfnative</code> installation
+provides, the MCP server serves.</strong> A coding agent with filesystem access can
+compile a missing font with <code>compileFontData</code>, drop the resulting <code>*-data.js</code>
+into the resolved local install, wire up the local mapping, and the very next
+MCP tool call renders with it — no release of either package in the loop. That
+is exactly how the mathematical-symbols gap above was closed locally before
+Noto Sans Math shipped upstream.</p>
+<p>Two honest limits, so the pattern is used with open eyes:</p>
+<ul>
+<li>The <strong>published</strong> <code>add_international_text</code> tool exposes a closed <code>lang</code> enum
+in its JSON Schema (an unknown code is rejected with <code>UNSUPPORTED_LANG</code>), so
+serving a <em>new</em> language code requires the agent to adjust the local mapping
+too — it is a local code-level extension, not a configuration flag.</li>
+<li>There is <strong>no operator-facing extension point yet</strong> (no fonts-directory
+environment variable). Exposing one is a roadmap candidate, not a shipped
+capability.</li>
+</ul>
+<p>Local, in-place extension by an agent and upstreaming through the
+<a href="ai-governance.md">governance contract</a> are complementary: the first unblocks
+<em>this</em> document today, the second makes the capability durable for everyone.</p>
 <blockquote>
 <p><strong>Why this matters.</strong> The engine&#39;s coverage is not frozen at release time. An
 agent can close a glyph gap — a new script, a symbol set, a brand font — the

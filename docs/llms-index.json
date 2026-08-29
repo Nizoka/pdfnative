@@ -5,32 +5,50 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 15130,
-      "approxTokens": 3783
+      "bytes": 16976,
+      "approxTokens": 4244
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
-      "bytes": 7114,
-      "approxTokens": 1779
+      "bytes": 8970,
+      "approxTokens": 2243
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 486009,
-      "approxTokens": 121502
+      "bytes": 531131,
+      "approxTokens": 132783
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
       "description": "Executable recipes: CI-verified, copy-ready code for the most common tasks.",
-      "bytes": 24611,
-      "approxTokens": 6153
+      "bytes": 26611,
+      "approxTokens": 6653
+    },
+    {
+      "url": "https://pdfnative.dev/assets/api.json",
+      "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
+      "bytes": 121729,
+      "approxTokens": 30432
+    },
+    {
+      "url": "https://pdfnative.dev/data/surfaces.json",
+      "description": "The capability × surface matrix (library / CLI / MCP / React) behind the choose guide, with an honest note on every unsupported cell.",
+      "bytes": 10061,
+      "approxTokens": 2515
+    },
+    {
+      "url": "https://pdfnative.dev/data/errors.json",
+      "description": "The engine diagnostic registry (PDFA_* codes), two-way checked against src/ by the error-parity rule.",
+      "bytes": 2418,
+      "approxTokens": 605
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 97646,
-      "approxTokens": 24412
+      "bytes": 99121,
+      "approxTokens": 24780
     }
   ],
   "guides": [
@@ -54,7 +72,7 @@
     },
     {
       "title": "Agentic workflows",
-      "summary": "How AI agents compose with pdfnative. pdfnative is designed so an autonomous",
+      "summary": "How AI agents compose with pdfnative. pdfnative is designed so an autonomous agent can do more than *call* the engine — it can extend it at runtime and feed it content it generated itself, all without waiting for a library release. This guide documents two concrete, factual patterns and the exact public APIs they rely on.",
       "html": "https://pdfnative.dev/guides/agentic-workflows.html",
       "markdown": "https://pdfnative.dev/guides/agentic-workflows.md",
       "anchors": [
@@ -63,12 +81,12 @@
         "how-the-two-patterns-fit-together",
         "see-also"
       ],
-      "bytes": 8416,
-      "approxTokens": 2104
+      "bytes": 10059,
+      "approxTokens": 2515
     },
     {
       "title": "AI governance & human-in-the-loop",
-      "summary": "Shipped in v1.5.0. pdfnative is developed with the help of AI coding",
+      "summary": "Shipped in v1.5.0. pdfnative is developed with the help of AI coding agents — and it governs them. This repository ships a machine-readable governance contract and a human-in-the-loop (HITL) protocol that keep AI agents in an advisory role: they may *draft* proposals, but a human always reviews, approves, and submits. Nothing reaches GitHub autonomously.",
       "html": "https://pdfnative.dev/guides/ai-governance.html",
       "markdown": "https://pdfnative.dev/guides/ai-governance.md",
       "anchors": [
@@ -86,7 +104,7 @@
     },
     {
       "title": "Annotations (read & write)",
-      "summary": "New in v1.5.0. pdfnative now has a typed markup-annotation model plus",
+      "summary": "New in v1.5.0. pdfnative now has a typed markup-annotation model plus round-trip read and write support. Build annotations for a new document, read the annotations out of an existing PDF, or inject new ones into an existing PDF via incremental update — all zero-dependency, all ISO 32000-1 §12.5.",
       "html": "https://pdfnative.dev/guides/annotations.html",
       "markdown": "https://pdfnative.dev/guides/annotations.md",
       "anchors": [
@@ -111,12 +129,12 @@
         "key-design-decisions",
         "ecosystem"
       ],
-      "bytes": 11392,
-      "approxTokens": 2848
+      "bytes": 11440,
+      "approxTokens": 2860
     },
     {
       "title": "Charts (native vector)",
-      "summary": "New in v1.6.0, extended in v1.7.0. Render bar, horizontal-bar, stacked-bar,",
+      "summary": "New in v1.6.0, extended in v1.7.0. Render bar, horizontal-bar, stacked-bar, line, area, scatter, pie, and donut charts as pure PDF path operators — rectangles, line segments, and cubic-Bézier arcs. Zero dependencies, no rasterisation, no image embedding. Charts are crisp at any zoom, searchable (labels are real text), and PDF/A-safe.",
       "html": "https://pdfnative.dev/guides/charts.html",
       "markdown": "https://pdfnative.dev/guides/charts.md",
       "anchors": [
@@ -134,7 +152,7 @@
     },
     {
       "title": "Choosing your surface",
-      "summary": "Write application code → the library. Drive a shell, Makefile or CI job →",
+      "summary": "Write application code → the library. Drive a shell, Makefile or CI job → `pdfnative-cli`. Give a conversational AI assistant tool access → `pdfnative-mcp`. Author documents inside a React 19 app → `pdfnative-react`. All four surfaces sit on the same zero-dependency engine and produce the same ISO 32000-1 / PDF/A-conformant bytes, so the choice is about *who is calling*, not about what comes out…",
       "html": "https://pdfnative.dev/guides/choose.html",
       "markdown": "https://pdfnative.dev/guides/choose.md",
       "anchors": [
@@ -144,12 +162,12 @@
         "you-can-switch-later",
         "further-reading"
       ],
-      "bytes": 7210,
-      "approxTokens": 1803
+      "bytes": 8231,
+      "approxTokens": 2058
     },
     {
       "title": "pdfnative-cli — Command-Line Interface Guide",
-      "summary": "Tracks the latest published `pdfnative-cli` (v1.3.0, built on the pdfnative 1.6 engine — pins `^1.6.0`, which semver-accepts 1.7.0). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation h",
+      "summary": "Tracks the latest published `pdfnative-cli` (v1.4.0, built on pdfnative 1.7.0 — pins `^1.7.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-cli releases.",
       "html": "https://pdfnative.dev/guides/cli.html",
       "markdown": "https://pdfnative.dev/guides/cli.md",
       "anchors": [
@@ -171,12 +189,12 @@
         "resources",
         "citation"
       ],
-      "bytes": 60044,
-      "approxTokens": 15011
+      "bytes": 79042,
+      "approxTokens": 19761
     },
     {
       "title": "Colour-emoji font CLI (pdfnative-build-emoji-font)",
-      "summary": "New in v1.4.0, expanded in v1.6.0 and v1.7.0. pdfnative ships a curated",
+      "summary": "New in v1.4.0, expanded in v1.6.0 and v1.7.0. pdfnative ships a curated 1167-glyph colour-emoji module by default (plus 73 flag/ZWJ sequences since v1.7.0). When you need more emoji — up to the full ~3 600-glyph set, or skin-tone sequence variants — the `pdfnative-build-emoji-font` CLI generates a data module containing exactly the glyphs and sequences you choose.",
       "html": "https://pdfnative.dev/guides/colour-emoji-cli.html",
       "markdown": "https://pdfnative.dev/guides/colour-emoji-cli.md",
       "anchors": [
@@ -215,7 +233,7 @@
     },
     {
       "title": "Layout debugging & inspection",
-      "summary": "New in v1.5.0. Two complementary tools help you understand *where*",
+      "summary": "New in v1.5.0. Two complementary tools help you understand *where* pdfnative places every block on the page: an opt-in visual overlay (`layout: { debug: true }`) that draws margin / content / cell boxes straight onto the PDF, and a programmatic inspection API (`inspectDocumentLayout()`) that returns the per-page block geometry as plain data.",
       "html": "https://pdfnative.dev/guides/debugging.html",
       "markdown": "https://pdfnative.dev/guides/debugging.md",
       "anchors": [
@@ -230,7 +248,7 @@
     },
     {
       "title": "FAQ",
-      "summary": "const pdf = buildDocumentPDFBytes({ title: 'Hello', blocks: [ { type: 'heading', text: 'Hello world', level: 1 }, { type: 'paragraph', text: 'My first PDF.' }, ], });",
+      "summary": "Frequently asked questions about pdfnative — getting started, custom fonts, PDF/A variants, encryption, BiDi text, browser / Deno / Bun support, signatures, workers, and how it compares with other libraries. Can't find your answer? Open a discussion or read the Troubleshooting guide.",
       "html": "https://pdfnative.dev/guides/faq.html",
       "markdown": "https://pdfnative.dev/guides/faq.md",
       "anchors": [
@@ -243,12 +261,12 @@
         "why-pdfnative",
         "common-errors"
       ],
-      "bytes": 13596,
-      "approxTokens": 3399
+      "bytes": 13772,
+      "approxTokens": 3443
     },
     {
       "title": "Font-data validation",
-      "summary": "New in v1.4.0. `validateFontData()` is an opt-in, read-only structural",
+      "summary": "New in v1.4.0. `validateFontData()` is an opt-in, read-only structural sanity check for custom font-data modules built from an untrusted or unfamiliar TTF/OTF. It catches the common failure modes early and returns `{ valid, errors, warnings }` instead of letting a cryptic `.notdef`/`NaN` surface deep inside the encoding/subsetting pipeline.",
       "html": "https://pdfnative.dev/guides/font-validation.html",
       "markdown": "https://pdfnative.dev/guides/font-validation.md",
       "anchors": [
@@ -262,7 +280,7 @@
     },
     {
       "title": "Form filling & flattening",
-      "summary": "New in v1.6.0. Read, fill, and flatten the interactive AcroForm fields",
+      "summary": "New in v1.6.0. Read, fill, and flatten the interactive AcroForm fields of existing PDFs — whether authored by pdfnative or a third party — via non-destructive incremental update. Complements the form *builder* (which creates fields from scratch).",
       "html": "https://pdfnative.dev/guides/form-filling.html",
       "markdown": "https://pdfnative.dev/guides/form-filling.md",
       "anchors": [
@@ -279,7 +297,7 @@
     },
     {
       "title": "Long-term validation (LTV) — PAdES B-B to B-LTA",
-      "summary": "New in v1.7.0. pdfnative signs PDFs that stay verifiable for decades: PAdES baseline signatures (ETSI EN 319 142-1), RFC 3161 signature timestamps, embedded revocation material (`/DSS` + `/VRI`), and document timestamps — all with zero runtime dependencies and zero network access in the engine. Tran",
+      "summary": "New in v1.7.0. pdfnative signs PDFs that stay verifiable for decades: PAdES baseline signatures (ETSI EN 319 142-1), RFC 3161 signature timestamps, embedded revocation material (`/DSS` + `/VRI`), and document timestamps — all with zero runtime dependencies and zero network access in the engine. Transport is injected by your code.",
       "html": "https://pdfnative.dev/guides/ltv.html",
       "markdown": "https://pdfnative.dev/guides/ltv.md",
       "anchors": [
@@ -311,16 +329,17 @@
         "output-modes",
         "end-to-end-example-signed-document",
         "security-model",
+        "fonts-come-from-the-local-pdfnative-install",
         "troubleshooting",
         "release-history",
         "further-reading"
       ],
-      "bytes": 61475,
-      "approxTokens": 15369
+      "bytes": 62596,
+      "approxTokens": 15649
     },
     {
       "title": "Onboarding — the pdfnative ecosystem in 90 seconds",
-      "summary": "Pick your entry point: the library for code, the CLI for shell scripts, MCP for AI assistants, and React for declarative JSX. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs from the same zero-dependency engine. Live versions for every package are shown at the top of the documentation ",
+      "summary": "Pick your entry point: the library for code, the CLI for shell scripts, MCP for AI assistants, and React for declarative JSX. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs from the same zero-dependency engine. Live versions for every package are shown at the top of the documentation home.",
       "html": "https://pdfnative.dev/guides/onboarding.html",
       "markdown": "https://pdfnative.dev/guides/onboarding.md",
       "anchors": [
@@ -330,12 +349,12 @@
         "4-react-nextjs-remix-any-react-19-app--30-seconds",
         "what-to-read-next"
       ],
-      "bytes": 6270,
-      "approxTokens": 1568
+      "bytes": 6528,
+      "approxTokens": 1632
     },
     {
       "title": "Outlines & page labels",
-      "summary": "New in v1.4.0. Give long documents a navigable bookmark tree",
+      "summary": "New in v1.4.0. Give long documents a navigable bookmark tree (`/Outlines`) and logical page numbering (`/PageLabels`) — roman-numbered front matter, prefixed appendices, custom starting numbers. Both are opt-in `DocumentParams` fields and add zero overhead when unused.",
       "html": "https://pdfnative.dev/guides/outlines.html",
       "markdown": "https://pdfnative.dev/guides/outlines.md",
       "anchors": [
@@ -350,7 +369,7 @@
     },
     {
       "title": "PDF manipulation (merge / split / extract)",
-      "summary": "New in v1.4.0. Combine, slice, and reorder existing PDFs with a",
+      "summary": "New in v1.4.0. Combine, slice, and reorder existing PDFs with a production-safe page-tree API. Each operation rebuilds a clean object graph rather than patching bytes in place — inherited page attributes are resolved, dangling references are pruned, and the result is a fresh, well-formed PDF.",
       "html": "https://pdfnative.dev/guides/pdf-manipulation.html",
       "markdown": "https://pdfnative.dev/guides/pdf-manipulation.md",
       "anchors": [
@@ -389,7 +408,7 @@
     },
     {
       "title": "Print production — bleed, trim & printer's marks",
-      "summary": "New in v1.7.0. Print-ready PDFs with zero dependencies: page geometry boxes (`/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`), crop and registration marks drawn as pure vector operators, `/Trapped` metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied O",
+      "summary": "New in v1.7.0. Print-ready PDFs with zero dependencies: page geometry boxes (`/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`), crop and registration marks drawn as pure vector operators, `/Trapped` metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format `/UserUnit`.",
       "html": "https://pdfnative.dev/guides/print.html",
       "markdown": "https://pdfnative.dev/guides/print.md",
       "anchors": [
@@ -423,12 +442,12 @@
         "command-line--pdfnative-cli",
         "next-steps"
       ],
-      "bytes": 8042,
-      "approxTokens": 2011
+      "bytes": 8060,
+      "approxTokens": 2015
     },
     {
       "title": "pdfnative-react — Declarative JSX Renderer Guide",
-      "summary": "Tracks the latest published `pdfnative-react` (v1.1.0, built on the pdfnative 1.6 engine), with React 19 and `pdfnative` ^1.6.0 as peer dependencies (semver-accepts 1.7.0). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full",
+      "summary": "Tracks the latest published `pdfnative-react` (v1.2.0, built on pdfnative 1.7.0), with React 19 and `pdfnative` ^1.7.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-react releases.",
       "html": "https://pdfnative.dev/guides/react.html",
       "markdown": "https://pdfnative.dev/guides/react.md",
       "anchors": [
@@ -438,6 +457,7 @@
         "components",
         "server-rendering",
         "charts",
+        "print-production--conformance-diagnostics-_v120_",
         "linting",
         "agent-surface",
         "rendering",
@@ -446,14 +466,15 @@
         "fonts--environment",
         "migrating-from-react-pdfrenderer",
         "diagnostics",
+        "release-history",
         "resources"
       ],
-      "bytes": 17489,
-      "approxTokens": 4372
+      "bytes": 22926,
+      "approxTokens": 5732
     },
     {
       "title": "Self-verifying generation",
-      "summary": "pdfnative can read what it writes, so a generated PDF never has to ship",
+      "summary": "pdfnative can read what it writes, so a generated PDF never has to ship unchecked. Plan pagination with `inspectDocumentLayout()` *before* building, then run `extractText()`, `validatePdfUA()` and `listSignatures()` / `openPdf()` against the emitted bytes, assert what matters, and correct the input until every assertion holds.",
       "html": "https://pdfnative.dev/guides/self-verify.html",
       "markdown": "https://pdfnative.dev/guides/self-verify.md",
       "anchors": [
@@ -494,7 +515,7 @@
     },
     {
       "title": "Streaming output",
-      "summary": "All three produce byte-identical output to `buildDocumentPDFBytes()` / `buildPDFBytes()`.",
+      "summary": "pdfnative emits PDFs as `AsyncGenerator<Uint8Array>` so you can pipe them to disk, an HTTP response, or a Web Stream without buffering the whole document. New in v1.3.0: a mode in which the fully-joined PDF binary never exists in memory — see what this does and does not buy you for the exact profile.",
       "html": "https://pdfnative.dev/guides/streaming.html",
       "markdown": "https://pdfnative.dev/guides/streaming.md",
       "anchors": [
@@ -506,12 +527,12 @@
         "constraints",
         "see-also"
       ],
-      "bytes": 7078,
-      "approxTokens": 1770
+      "bytes": 7082,
+      "approxTokens": 1771
     },
     {
       "title": "Smart tables",
-      "summary": "Behaviour change for document-builder tables without `kind`. Previously the renderer applied Helvetica-Bold + credit/debit colour to whichever column happened to be at index 3. The current renderer removes that heuristic — opt in explicitly via `kind: 'amount'`. The legacy `buildPDF()` (financial-st",
+      "summary": "Multi-page-safe tables by default. Long tables wrap on column overflow, slice cleanly across pages and reprint their header on every continuation page; zebra striping, captions, per-cell padding and minimum row heights are one field each on `TableBlock`. Backward-compatible with v1.1.0 — existing single-page tables produce byte-identical output.",
       "html": "https://pdfnative.dev/guides/tables.html",
       "markdown": "https://pdfnative.dev/guides/tables.md",
       "anchors": [
@@ -526,12 +547,12 @@
         "reference",
         "see-also"
       ],
-      "bytes": 15171,
-      "approxTokens": 3793
+      "bytes": 15436,
+      "approxTokens": 3859
     },
     {
       "title": "Text extraction",
-      "summary": "New in v1.6.0. Extract Unicode text from any PDF — including",
+      "summary": "New in v1.6.0. Extract Unicode text from any PDF — including encrypted ones — with `extractText()`: per-page reading-order text plus optional positioned runs. Pure content-stream decoding, zero dependencies, no OCR engine, no rasterisation.",
       "html": "https://pdfnative.dev/guides/text-extraction.html",
       "markdown": "https://pdfnative.dev/guides/text-extraction.md",
       "anchors": [
@@ -566,8 +587,24 @@
       "approxTokens": 1326
     },
     {
+      "title": "Ecosystem use cases",
+      "summary": "Four production architectures, each built from parts the ecosystem already ships. Store a kilobyte of JSON instead of a megabyte of PDF and render on the reader's own device; sign to PAdES B-LTA across an air gap; gate template changes in CI with a real document diff; and serve edge-rendered PDFs with honest HTTP caching.",
+      "html": "https://pdfnative.dev/guides/use-cases.html",
+      "markdown": "https://pdfnative.dev/guides/use-cases.md",
+      "anchors": [
+        "case-1--store-the-spec-not-the-pdf",
+        "case-2--air-gapped-pades-b-lta-archiving",
+        "case-3--a-document-regression-gate-in-ci",
+        "case-4--edge-rendered-pdfs-with-honest-http-caching",
+        "picking-parts-not-a-platform",
+        "see-also"
+      ],
+      "bytes": 12765,
+      "approxTokens": 3191
+    },
+    {
       "title": "Viewer preferences",
-      "summary": "New in v1.4.0. Control how a conforming reader presents your PDF the",
+      "summary": "New in v1.4.0. Control how a conforming reader presents your PDF the moment it opens — initial page layout, the bookmark/thumbnail panel, full-screen kiosk mode, window fit/centering, UI-chrome visibility, reading direction, and print scaling. Set via `DocumentParams.layout.viewerPreferences`. Purely presentational, PDF/A-safe, and zero overhead when unused.",
       "html": "https://pdfnative.dev/guides/viewer-preferences.html",
       "markdown": "https://pdfnative.dev/guides/viewer-preferences.md",
       "anchors": [

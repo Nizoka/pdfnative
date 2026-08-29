@@ -6,6 +6,7 @@
 > Longer forms: [llms.txt](https://pdfnative.dev/llms.txt) (index),
 > [llms-full.txt](https://pdfnative.dev/llms-full.txt) (full corpus),
 > [llms-index.json](https://pdfnative.dev/llms-index.json) (per-page sizes and anchors).
+> _Verified on 2026-08-29 against the source tree by `npm run verify:docs`._
 
 ## What it is
 
@@ -22,9 +23,11 @@ Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar) and full UAX #9 BiDi.
 ## Choose your surface
 
 - **Writing application code** → the library: `npm install pdfnative`, `import { … } from 'pdfnative'`.
-- **Driving a shell, CI, or Makefile** → `pdfnative-cli` (17 commands, JSON-in/JSON-out agent contract with stable `E_*` error codes).
+- **Driving a shell, CI, or Makefile** → `pdfnative-cli` (21 commands, JSON-in/JSON-out agent contract with stable `E_*` error codes). New in v1.4.0: the complete PAdES ladder — `sign --timestamp <tsa-url>` (B-T), `ltv collect`/`embed` (B-LT, air-gap-friendly: evidence travels as replayable JSON), `doc-timestamp` (B-LTA) — plus signature-safe `metadata` edits and `compare` (text + structure diff with CI exit codes).
 - **You are a conversational assistant with tool access** → `pdfnative-mcp` (28 tools, MCP 2026-07-28 spec; config: `npx -y pdfnative-mcp`).
-- **The host app is React 19** → `pdfnative-react` (declarative JSX compiled on-device to pdfnative blocks).
+- **The host app is React 19** → `pdfnative-react` (declarative JSX compiled on-device to pdfnative blocks). New in v1.2.0: charts v2 (9 kinds, secondary axis), print production via `<Document print>`, and HTTP caching (`etag`/`cacheControl`) on `renderToResponse`.
+- Still undecided? The capability × surface matrix decides for you, cell by cell: [choose your surface](https://pdfnative.dev/guides/choose.md).
+- Worked architectures combining the surfaces (store-the-spec, air-gapped B-LTA, CI compare gate, edge caching): [use cases](https://pdfnative.dev/guides/use-cases.md).
 
 All four produce the same PDFs from the same engine. Details: [onboarding](https://pdfnative.dev/guides/onboarding.md).
 
@@ -82,7 +85,17 @@ Functions an agent reaches for most, all exported from `'pdfnative'`:
    the top level; it is mutually exclusive with encryption. A claim on base-14
    text needs embedded fonts to pass veraPDF (see the
    [PDF/A guide](https://pdfnative.dev/guides/pdfa.md)).
-6. **This is not pdfkit / jsPDF / pdf-lib.** There is no `new PDFDocument()`,
+6. **The second argument REPLACES `params.layout` — it does not merge with it.**
+   `buildDocumentPDFBytes(params, layoutOptions)` resolves layout as
+   `layoutOptions ?? params.layout`, so passing any second argument — even just
+   `{ creationDate }` — discards `params.layout` entirely. A `tagged: 'pdfa2b'`
+   set inside `params.layout` then vanishes silently: no error, no diagnostic,
+   just a PDF that is no longer PDF/A. Put everything in one object, or spread:
+   `buildDocumentPDFBytes(params, { ...params.layout, creationDate })`. The
+   same rule applies in `inspectDocumentLayout` and every streaming variant.
+   The table-centric `buildPDFBytes` is the mirror image: `PdfParams` has no
+   `layout` field at all, so there the second argument is the only channel.
+7. **This is not pdfkit / jsPDF / pdf-lib.** There is no `new PDFDocument()`,
    no `doc.text(…)`, no `pdf.save()`, no `doc.pipe(…)` — documents are plain
    data (`blocks` arrays) passed to pure functions.
    <!-- verify-docs:allow api-exists (deliberately naming the ghost identifiers to warn against them) -->
@@ -121,5 +134,6 @@ The same loop exists on every surface: `pdfnative-cli inspect --check … --json
 
 - [Quick start](https://pdfnative.dev/guides/quickstart.md) · [Onboarding](https://pdfnative.dev/guides/onboarding.md) — first PDF in each surface.
 - [MCP guide](https://pdfnative.dev/guides/mcp.md) — the 28 tools, schemas, error codes.
-- [CLI guide](https://pdfnative.dev/guides/cli.md) — 17 commands and the `--json` / `E_*` agent contract.
+- [CLI guide](https://pdfnative.dev/guides/cli.md) — 21 commands and the `--json` / `E_*` agent contract.
+- [surfaces.json](https://pdfnative.dev/data/surfaces.json) — the capability × surface matrix as machine-readable JSON: one row per capability, one cell per surface, with `since` versions and an honest note on every unsupported cell.
 - Every guide serves raw Markdown at the same URL with `.md`; sizes and anchors are in [llms-index.json](https://pdfnative.dev/llms-index.json).

@@ -64,7 +64,7 @@ pdfnative sign --input out.pdf --output signed.pdf \
 pdfnative verify --input signed.pdf --json
 ```
 
-Iteration helpers: `--watch` re-renders on save, `--template` injects variables, `--font` enables any of the 22 bundled scripts + colour emoji + the math font. v1.1.0 added `--stream-true`, `inspect --pdfua` (accessibility gate), and an agent-native `--json`/`E_*`/`--dry-run` contract; v1.2.0 added page-tree `merge` / `split` / `extract`, markup `annotate`, an AI-governance `govern` gate, and `render --outline` / `--font math` / `--inspect-layout`; **v1.3.0** adds `fill`, `encrypt`, `decrypt`, `extract-text` and `doctor`, native `chart` blocks in `render`, passwords on the page-tree commands, and PowerShell completion.
+Iteration helpers: `--watch` re-renders on save, `--template` deep-merges a base document under your input (caller wins; arrays replace), `--font` enables any of the 22 bundled scripts + colour emoji + the math font. v1.1.0 added `--stream-true`, `inspect --pdfua` (accessibility gate), and an agent-native `--json`/`E_*`/`--dry-run` contract; v1.2.0 added page-tree `merge` / `split` / `extract`, markup `annotate`, an AI-governance `govern` gate, and `render --outline` / `--font math` / `--inspect-layout`; v1.3.0 added `fill`, `encrypt`, `decrypt`, `extract-text` and `doctor`, native `chart` blocks in `render`, passwords on the page-tree commands, and PowerShell completion; **v1.4.0** adds the full PAdES ladder (`sign --timestamp`, `ltv`, `doc-timestamp`), signature-safe `metadata` edits, a CI-grade `compare` diff, and declarative `batch --manifest` pipelines (Node ≥ 22).
 
 > **Upgrading from v1.2.0?** `render --encrypt` was a silent no-op in that
 > release — documents you thought were encrypted were written in the clear.

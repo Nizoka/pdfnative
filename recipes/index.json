@@ -20,6 +20,17 @@
     ]
   },
   {
+    "file": "docspec-invoice.ts",
+    "task": "Render a persisted DocSpec (JSON) to PDF with pdfnative-react",
+    "surface": "react",
+    "since": "1.1.0",
+    "expects": [
+      "pages === 1",
+      "text of page 0 contains 'Quarterly report'",
+      "text of page 0 contains 'Total'"
+    ]
+  },
+  {
     "file": "form-fill-roundtrip.ts",
     "task": "Author an AcroForm, fill it, and read the value back",
     "surface": "library",

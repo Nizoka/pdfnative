@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLI Command Builder — pdfnative-cli playground</title>
-  <meta name="description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, merge, split, extract, annotate, and govern invocations with a live shell preview. Zero install.">
+  <meta name="description" content="Interactive command-builder for pdfnative-cli — assemble all 21 commands, from render and fill to the PAdES ladder (sign --timestamp, ltv, doc-timestamp), metadata, compare and batch manifests, with a live shell preview. Zero install.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/cli.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/cli.html">
@@ -14,13 +14,13 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/cli.html">
   <meta property="og:title" content="CLI Command Builder — pdfnative-cli playground">
-  <meta property="og:description" content="Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, merge, split, extract, annotate and govern invocations with full flag coverage. Live shell preview, copy-to-clipboard, validation. Zero install.">
+  <meta property="og:description" content="Interactive command-builder for pdfnative-cli — all 21 commands, from render and fill to the PAdES ladder (sign --timestamp, ltv, doc-timestamp), metadata, compare and batch manifests. Live shell preview, copy-to-clipboard, validation. Zero install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="CLI Command Builder — pdfnative-cli playground">
-  <meta name="twitter:description" content="Assemble render, sign, inspect, verify, merge, split, extract, annotate and govern commands with full flag coverage. Live shell preview. Zero install.">
+  <meta name="twitter:description" content="Assemble all 21 pdfnative-cli commands — incl. the PAdES ladder, metadata, compare and batch manifests. Live shell preview. Zero install.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -71,7 +71,7 @@
     "operatingSystem": "Any (browser-based)",
     "browserRequirements": "Requires JavaScript and HTML5",
     "url": "https://pdfnative.dev/playgrounds/cli.html",
-    "description": "Interactive command-builder for pdfnative-cli — assemble render, sign, inspect, verify, merge, split, extract, annotate and govern invocations with a live shell preview.",
+    "description": "Interactive command-builder for pdfnative-cli — assemble all 21 commands, from render and fill to the PAdES ladder (sign --timestamp, ltv, doc-timestamp), metadata, compare and batch manifests, with a live shell preview.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
@@ -125,7 +125,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-cli command builder</h1>
-    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers nine of the seventeen commands — see the <a href="../guides/cli.html">CLI guide</a> for the rest: <code>render</code> (with <code>--outline</code> / <code>--font math</code> / <code>--inspect-layout</code>), <code>sign</code> (RSA + ECDSA-SHA256, native constant-time crypto, <code>--pure-crypto</code> opt-out), <code>inspect</code> (with <code>--annotations</code>), <code>verify</code>, and the v1.2.0 page-tree / governance commands <code>merge</code>, <code>split</code>, <code>extract</code>, <code>annotate</code> and <code>govern</code>. The v1.3.0 additions — <code>fill</code>, <code>encrypt</code>, <code>decrypt</code>, <code>extract-text</code> and <code>doctor</code> — have no tab yet; their full flag reference is in the <a href="../guides/cli.html">CLI guide</a>. The builder runs entirely in your browser — nothing is uploaded.</p>
+    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers all twenty-one commands of <strong>pdfnative-cli v1.4.0</strong> — authoring (<code>render</code>, <code>fill</code>, <code>annotate</code>, <code>metadata</code>), the page tree (<code>merge</code>, <code>split</code>, <code>extract</code>), the complete PAdES ladder (<code>sign --timestamp</code> B-T, <code>ltv</code> B-LT, <code>doc-timestamp</code> B-LTA, plus <code>encrypt</code> / <code>decrypt</code> and <code>verify</code>), reading (<code>inspect</code>, <code>extract-text</code>, <code>compare</code>), and automation (<code>batch</code> with declarative manifests, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code>). The most-used flags have form fields; the <a href="../guides/cli.html">CLI guide</a> is the exhaustive flag reference. The builder runs entirely in your browser — nothing is uploaded.</p>
 
     <div class="cli-presets">
       <label for="preset"><strong>Quick preset:</strong></label>
@@ -148,6 +148,17 @@
         <option value="extract-pages">extract · selected pages · v1.2</option>
         <option value="annotate-notes">annotate · markup from JSON · v1.2</option>
         <option value="govern-verify">govern · verify-issue draft · v1.2</option>
+        <option value="fill-roundtrip">fill · values from JSON · v1.3</option>
+        <option value="encrypt-secure">encrypt · AES-256 re-secure · v1.3</option>
+        <option value="extract-text-rag">extract-text · NDJSON + runs · v1.3</option>
+        <option value="sign-timestamp">sign · RFC 3161 timestamp (B-T) · v1.4</option>
+        <option value="ltv-add">ltv · add validation info (B-LT) · v1.4</option>
+        <option value="ltv-airgap">ltv · air-gapped embed · v1.4</option>
+        <option value="doc-timestamp-lta">doc-timestamp · B-LTA revision · v1.4</option>
+        <option value="compare-ci">compare · CI regression gate · v1.4</option>
+        <option value="metadata-update">metadata · signature-safe edit · v1.4</option>
+        <option value="batch-manifest">batch · declarative manifest · v1.4</option>
+        <option value="render-strict">render · strict PDF/A gate · v1.4</option>
       </select>
       <button id="reset" class="btn btn-secondary" style="padding: 6px 14px; font-size: 13px;">Reset</button>
     </div>
@@ -157,11 +168,23 @@
       <button class="cli-tab" role="tab" aria-selected="false" data-tab="sign">sign</button>
       <button class="cli-tab" role="tab" aria-selected="false" data-tab="inspect">inspect</button>
       <button class="cli-tab" role="tab" aria-selected="false" data-tab="verify">verify</button>
-      <button class="cli-tab" role="tab" aria-selected="false" data-tab="merge">merge<span class="new-badge">v1.2</span></button>
-      <button class="cli-tab" role="tab" aria-selected="false" data-tab="split">split<span class="new-badge">v1.2</span></button>
-      <button class="cli-tab" role="tab" aria-selected="false" data-tab="extract">extract<span class="new-badge">v1.2</span></button>
-      <button class="cli-tab" role="tab" aria-selected="false" data-tab="annotate">annotate<span class="new-badge">v1.2</span></button>
-      <button class="cli-tab" role="tab" aria-selected="false" data-tab="govern">govern<span class="new-badge">v1.2</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="merge">merge</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="split">split</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="extract">extract</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="annotate">annotate</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="metadata">metadata<span class="new-badge">v1.4</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="ltv">ltv<span class="new-badge">v1.4</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="doc-timestamp">doc-timestamp<span class="new-badge">v1.4</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="encrypt">encrypt</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="decrypt">decrypt</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="extract-text">extract-text</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="compare">compare<span class="new-badge">v1.4</span></button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="fill">fill</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="batch">batch</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="doctor">doctor</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="schema">schema</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="completion">completion</button>
+      <button class="cli-tab" role="tab" aria-selected="false" data-tab="govern">govern</button>
     </div>
 
     <!-- ─────────────── RENDER ─────────────── -->
@@ -221,7 +244,16 @@
         </div>
         <div>
           <label><input type="checkbox" data-cmd="render" data-flag="--stream"> --stream</label>
-          <span class="hint">AsyncGenerator streaming output.</span>
+          <span class="hint">AsyncGenerator streaming output. Chunk it with <code>--chunk-size</code>.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="render" data-flag="--strict"> --strict <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
+          <span class="hint">Escalate PDF/A diagnostics (unembedded form fonts, DeviceCMYK images…) into a hard failure before the first byte — exit 1 / <code>E_CHECK_FAILED</code>.</span>
+        </div>
+        <div>
+          <label for="r-chunk">--chunk-size <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
+          <input id="r-chunk" type="text" data-cmd="render" data-flag="--chunk-size" placeholder="65536">
+          <span class="hint">Chunk size in bytes for <code>--stream</code> / <code>--stream-true</code>.</span>
         </div>
         <div class="full">
           <label for="r-layout">--layout (file path)</label>
@@ -429,6 +461,66 @@
           <label><input type="checkbox" data-cmd="sign" data-flag="--pure-crypto"> --pure-crypto <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.2</span></label>
           <span class="hint">Force the portable pure-JS CMS path. The default delegates to <code>node:crypto</code>, inheriting its side-channel hardening; the pure-JS path is <strong>not</strong> constant-time.</span>
         </div>
+
+        <fieldset>
+          <legend>PAdES &amp; timestamps <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></legend>
+          <div class="grid">
+            <div>
+              <label for="s-timestamp">--timestamp (TSA URL)</label>
+              <input id="s-timestamp" type="text" data-cmd="sign" data-flag="--timestamp" placeholder="https://tsa.example.com/rfc3161">
+              <span class="hint">Embed an RFC 3161 token (PAdES <strong>B-T</strong>). The only network opt-in on <code>sign</code> — SSRF-guarded, no silent fallback (<code>E_NETWORK</code> / <code>E_PARSE</code>).</span>
+            </div>
+            <div>
+              <label for="s-ts-digest">--timestamp-digest</label>
+              <select id="s-ts-digest" data-cmd="sign" data-flag="--timestamp-digest">
+                <option value="">sha256 (default)</option>
+                <option value="sha256">sha256</option>
+                <option value="sha384">sha384</option>
+                <option value="sha512">sha512</option>
+              </select>
+            </div>
+            <div>
+              <label for="s-digest">--digest</label>
+              <select id="s-digest" data-cmd="sign" data-flag="--digest">
+                <option value="">sha256 (default)</option>
+                <option value="sha256">sha256</option>
+                <option value="sha384">sha384</option>
+                <option value="sha512">sha512</option>
+              </select>
+              <span class="hint">CMS digest for RSA keys; ECDSA stays SHA-256.</span>
+            </div>
+            <div>
+              <label for="s-profile">--profile</label>
+              <select id="s-profile" data-cmd="sign" data-flag="--profile">
+                <option value="">pkcs7 (default)</option>
+                <option value="pkcs7">pkcs7</option>
+                <option value="pades">pades (ETSI.CAdES.detached)</option>
+              </select>
+            </div>
+            <div>
+              <label><input type="checkbox" data-cmd="sign" data-flag="--allow-multiple"> --allow-multiple</label>
+              <span class="hint">Add a signature to an already-signed PDF instead of refusing.</span>
+            </div>
+            <div>
+              <label for="s-field-name">--field-name</label>
+              <input id="s-field-name" type="text" data-cmd="sign" data-flag="--field-name" placeholder="Signature2">
+            </div>
+            <div>
+              <label for="s-rect">--signature-rect</label>
+              <input id="s-rect" type="text" data-cmd="sign" data-flag="--signature-rect" placeholder="400,40,560,90">
+              <span class="hint">Visible widget: <code>x1,y1,x2,y2</code>. Pair with <code>--signature-page</code>.</span>
+            </div>
+            <div>
+              <label for="s-sig-page">--signature-page</label>
+              <input id="s-sig-page" type="text" data-cmd="sign" data-flag="--signature-page" placeholder="1">
+            </div>
+            <div>
+              <label for="s-placeholder">--placeholder-bytes</label>
+              <input id="s-placeholder" type="text" data-cmd="sign" data-flag="--placeholder-bytes" placeholder="16384">
+              <span class="hint">Reserve a larger <code>/Contents</code> (long chains, big TSA tokens).</span>
+            </div>
+          </div>
+        </fieldset>
       </div>
     </section>
 
@@ -459,14 +551,37 @@
           <label><input type="checkbox" data-cmd="inspect" data-flag="--annotations"> --annotations <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.2</span></label>
           <span class="hint">List markup + link annotations per page. Page labels reported automatically.</span>
         </div>
+        <div>
+          <label><input type="checkbox" data-cmd="inspect" data-flag="--form-fields"> --form-fields</label>
+          <span class="hint">List AcroForm fields (name, type, value, flags).</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="inspect" data-flag="--encryption"> --encryption</label>
+          <span class="hint">Report the encryption scheme (algorithm, revision, opened-as).</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="inspect" data-flag="--signatures"> --signatures <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
+          <span class="hint">Structural signature inventory — fieldName, subFilter, byteRange, isDocTimestamp, isPlaceholder, sigObjNum, contentsLength. Never the signature bytes.</span>
+        </div>
+        <div>
+          <label for="i-password">--password</label>
+          <input id="i-password" type="text" data-cmd="inspect" data-flag="--password" placeholder="$PDFNATIVE_PASSWORD">
+          <span class="hint">Open an encrypted PDF. Prefer the env var.</span>
+        </div>
         <fieldset class="full">
           <legend>--check (CI assertions, ANDed)</legend>
           <div class="grid">
             <div><label><input type="checkbox" data-cmd="inspect" data-flag="--check" data-value="pdfa"> --check pdfa</label></div>
             <div><label><input type="checkbox" data-cmd="inspect" data-flag="--check" data-value="signed"> --check signed</label></div>
             <div><label><input type="checkbox" data-cmd="inspect" data-flag="--check" data-value="encrypted"> --check encrypted</label></div>
+            <div><label><input type="checkbox" data-cmd="inspect" data-flag="--check" data-value="pdfua"> --check pdfua</label></div>
+            <div>
+              <label for="i-check-sigs">--check "signatures&gt;=N" <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
+              <input id="i-check-sigs" type="text" data-cmd="inspect" data-flag="--check-signatures" placeholder="1">
+              <span class="hint">Minimum number of real signatures.</span>
+            </div>
           </div>
-          <span class="hint" style="margin-top: 8px; display: block;">Exit code 0 on all-pass, 1 on any failure. Composable with <code>--format</code>.</span>
+          <span class="hint" style="margin-top: 8px; display: block;">Exit code 0 on all-pass, 1 on any failure. Composable with <code>--format</code>. Since v1.4.0, <code>--check signed</code> counts only real signatures — unsigned placeholders and <code>/DocTimeStamp</code> revisions no longer pass.</span>
         </fieldset>
       </div>
     </section>
@@ -495,8 +610,29 @@
           <textarea id="v-trust" data-cmd="verify" data-flag="--trust" placeholder="ca-root.pem"></textarea>
           <span class="hint">Trust-anchor PEMs. Repeatable.</span>
         </div>
+        <div>
+          <label for="v-revocation">--revocation</label>
+          <select id="v-revocation" data-cmd="verify" data-flag="--revocation">
+            <option value="">offline (default)</option>
+            <option value="offline">offline (embedded /DSS only)</option>
+            <option value="online">online (opt-in, SSRF-guarded)</option>
+            <option value="disabled">disabled</option>
+          </select>
+        </div>
+        <div>
+          <label for="v-rev-policy">--revocation-policy</label>
+          <select id="v-rev-policy" data-cmd="verify" data-flag="--revocation-policy">
+            <option value="">soft-fail (default)</option>
+            <option value="soft-fail">soft-fail</option>
+            <option value="strict">strict</option>
+          </select>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="verify" data-flag="--summary"> --summary</label>
+          <span class="hint">Minimal verdict under <code>--json</code>: <code>{ valid, signatures, invalid }</code>.</span>
+        </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Scope (since v1.0.0): full CMS/PKCS#7 verification (RSA + ECDSA-SHA256), byte-range integrity (SHA-256), certificate chain, trust evaluation against <code>--trust</code> roots, RFC 3161 timestamp validation (<strong>PAdES-T</strong>), and OCSP/CRL revocation checking via <code>--revocation</code> / <code>--revocation-policy</code>. See the <a href="../guides/cli.html">CLI guide</a>.</p>
+      <p class="hint" style="margin-top: 14px;">Scope (since v1.0.0): full CMS/PKCS#7 verification (RSA-SHA256 — plus SHA-384/512 since v1.4.0 — and ECDSA-SHA256), byte-range integrity, certificate chain, trust evaluation against <code>--trust</code> roots, RFC 3161 timestamp validation (<strong>PAdES-T</strong>) incl. <code>/DocTimeStamp</code> revisions (v1.4.0), and OCSP/CRL revocation checking. See the <a href="../guides/cli.html">CLI guide</a>.</p>
     </section>
 
     <!-- ─────────────── MERGE (v1.2) ─────────────── -->
@@ -592,6 +728,11 @@
           <span class="hint">JSON array (or <code>{ "annotations": [...] }</code>): each entry a markup annotation plus a 1-based <code>page</code>.</span>
         </div>
         <div>
+          <label for="a-password">--password <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
+          <input id="a-password" type="text" data-cmd="annotate" data-flag="--password" placeholder="$PDFNATIVE_PASSWORD">
+          <span class="hint">Annotate an encrypted PDF — added objects are encrypted under the existing scheme.</span>
+        </div>
+        <div>
           <label><input type="checkbox" data-cmd="annotate" data-flag="--dry-run"> --dry-run</label>
         </div>
       </div>
@@ -621,6 +762,485 @@
         </div>
       </div>
       <p class="hint" style="margin-top: 14px;">Agents act as <strong>draftsmen</strong>: a human must always review and submit. <code>verify-issue</code> is a pure, fully offline validator — no GitHub or network access.</p>
+    </section>
+
+    <!-- ─────────────── METADATA (v1.4) ─────────────── -->
+    <section class="cli-panel" data-panel="metadata">
+      <div class="cli-form">
+        <div>
+          <label for="md-input">--input</label>
+          <input id="md-input" type="text" data-cmd="metadata" data-flag="--input" placeholder="report.pdf">
+        </div>
+        <div>
+          <label for="md-output">--output</label>
+          <input id="md-output" type="text" data-cmd="metadata" data-flag="--output" placeholder="revised.pdf">
+        </div>
+        <div>
+          <label for="md-title">--title</label>
+          <input id="md-title" type="text" data-cmd="metadata" data-flag="--title" placeholder="Quarterly report (revised)">
+        </div>
+        <div>
+          <label for="md-author">--author</label>
+          <input id="md-author" type="text" data-cmd="metadata" data-flag="--author" placeholder="Finance Team">
+        </div>
+        <div>
+          <label for="md-subject">--subject</label>
+          <input id="md-subject" type="text" data-cmd="metadata" data-flag="--subject" placeholder="Q2 figures">
+        </div>
+        <div>
+          <label for="md-keywords">--keywords</label>
+          <input id="md-keywords" type="text" data-cmd="metadata" data-flag="--keywords" placeholder="finance,Q2,revised">
+        </div>
+        <div>
+          <label for="md-moddate">--mod-date</label>
+          <input id="md-moddate" type="text" data-cmd="metadata" data-flag="--mod-date" placeholder="2026-08-29T10:00:00Z">
+        </div>
+        <div>
+          <label for="md-fromjson">--from-json</label>
+          <input id="md-fromjson" type="text" data-cmd="metadata" data-flag="--from-json" placeholder="meta.json">
+          <span class="hint">All fields from a JSON file (<code>schema metadata</code>). Mutually exclusive with the individual flags.</span>
+        </div>
+        <div>
+          <label for="md-password">--password</label>
+          <input id="md-password" type="text" data-cmd="metadata" data-flag="--password" placeholder="$PDFNATIVE_PASSWORD">
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="metadata" data-flag="--dry-run"> --dry-run</label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;">Written as an <strong>incremental save</strong> — the original bytes stay as a prefix, so existing signatures remain valid for their revision. <code>/Info</code> and XMP stay in sync. Reading metadata remains <code>inspect</code>'s job.</p>
+    </section>
+
+    <!-- ─────────────── LTV (v1.4) ─────────────── -->
+    <section class="cli-panel" data-panel="ltv">
+      <div class="cli-form">
+        <div>
+          <label for="l-sub">subcommand</label>
+          <select id="l-sub" data-cmd="ltv" data-flag="__positional__">
+            <option value="collect">collect — gather evidence as JSON</option>
+            <option value="embed">embed — write evidence into /DSS (offline)</option>
+            <option value="add">add — collect + embed in one pass</option>
+          </select>
+          <span class="hint">PAdES <strong>B-LT</strong>: certificates, OCSP responses and CRLs embedded into the <code>/DSS</code> dictionary.</span>
+        </div>
+        <div>
+          <label for="l-input">--input</label>
+          <input id="l-input" type="text" data-cmd="ltv" data-flag="--input" placeholder="signed.pdf">
+        </div>
+        <div>
+          <label for="l-output">--output</label>
+          <input id="l-output" type="text" data-cmd="ltv" data-flag="--output" placeholder="signed.lt.pdf  or  ltv-data.json">
+          <span class="hint"><code>collect</code> writes the evidence JSON; <code>embed</code> / <code>add</code> write the PDF.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="ltv" data-flag="--online"> --online</label>
+          <span class="hint"><strong>Required for <code>collect</code> / <code>add</code></strong> — the explicit network opt-in (SSRF-guarded). <code>embed</code> is 100 % offline.</span>
+        </div>
+        <div>
+          <label for="l-data">--data (for embed)</label>
+          <input id="l-data" type="text" data-cmd="ltv" data-flag="--data" placeholder="ltv-data.json">
+          <span class="hint">Evidence JSON produced by <code>collect</code> — the air-gap bridge.</span>
+        </div>
+        <div>
+          <label for="l-prefer">--prefer</label>
+          <select id="l-prefer" data-cmd="ltv" data-flag="--prefer">
+            <option value="">— no preference —</option>
+            <option value="ocsp">ocsp</option>
+            <option value="crl">crl</option>
+          </select>
+        </div>
+        <div>
+          <label for="l-timeout">--timeout (ms)</label>
+          <input id="l-timeout" type="text" data-cmd="ltv" data-flag="--timeout" placeholder="10000">
+        </div>
+        <div class="full">
+          <label for="l-extra">--extra-cert (one per line)</label>
+          <textarea id="l-extra" data-cmd="ltv" data-flag="--extra-cert" placeholder="issuing-ca.pem"></textarea>
+          <span class="hint">Additional certificates for the <code>/DSS</code>. Repeatable.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="ltv" data-flag="--dry-run"> --dry-run</label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;"><strong>Air-gapped workflow:</strong> <code>ltv collect --online</code> on a connected machine → transfer the JSON → <code>ltv embed --data</code> inside the enclave, where no network I/O is even possible. Continue to B-LTA with <code>doc-timestamp</code>.</p>
+    </section>
+
+    <!-- ─────────────── DOC-TIMESTAMP (v1.4) ─────────────── -->
+    <section class="cli-panel" data-panel="doc-timestamp">
+      <div class="cli-form">
+        <div>
+          <label for="dt-input">--input</label>
+          <input id="dt-input" type="text" data-cmd="doc-timestamp" data-flag="--input" placeholder="signed.lt.pdf">
+        </div>
+        <div>
+          <label for="dt-output">--output</label>
+          <input id="dt-output" type="text" data-cmd="doc-timestamp" data-flag="--output" placeholder="signed.lta.pdf">
+        </div>
+        <div class="full">
+          <label for="dt-url">--url (TSA endpoint)</label>
+          <input id="dt-url" type="text" data-cmd="doc-timestamp" data-flag="--url" placeholder="https://tsa.example.com/rfc3161">
+          <span class="hint"><strong>Required</strong> — making the network use an explicit opt-in. SSRF-guarded, 10 s timeout, 5 MiB cap, no redirects.</span>
+        </div>
+        <div>
+          <label for="dt-digest">--digest</label>
+          <select id="dt-digest" data-cmd="doc-timestamp" data-flag="--digest">
+            <option value="">sha256 (default)</option>
+            <option value="sha256">sha256</option>
+            <option value="sha384">sha384</option>
+            <option value="sha512">sha512</option>
+          </select>
+        </div>
+        <div>
+          <label for="dt-field">--field-name</label>
+          <input id="dt-field" type="text" data-cmd="doc-timestamp" data-flag="--field-name" placeholder="DocTimeStamp1">
+        </div>
+        <div>
+          <label for="dt-placeholder">--placeholder-bytes</label>
+          <input id="dt-placeholder" type="text" data-cmd="doc-timestamp" data-flag="--placeholder-bytes" placeholder="12288">
+        </div>
+        <div>
+          <label for="dt-timeout">--timeout (ms)</label>
+          <input id="dt-timeout" type="text" data-cmd="doc-timestamp" data-flag="--timeout" placeholder="10000">
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="doc-timestamp" data-flag="--dry-run"> --dry-run</label>
+          <span class="hint">Never touches the network.</span>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;">Appends an RFC 3161 <code>/DocTimeStamp</code> revision (<code>/SubFilter /ETSI.RFC3161</code>, ISO 32000-2 §12.8.5) covering <strong>every byte</strong> — PAdES <strong>B-LTA</strong>. Earlier revisions stay byte-identical; run again years later to renew the protection.</p>
+    </section>
+
+    <!-- ─────────────── ENCRYPT (v1.3) ─────────────── -->
+    <section class="cli-panel" data-panel="encrypt">
+      <div class="cli-form">
+        <div>
+          <label for="en-input">--input</label>
+          <input id="en-input" type="text" data-cmd="encrypt" data-flag="--input" placeholder="report.pdf">
+        </div>
+        <div>
+          <label for="en-output">--output</label>
+          <input id="en-output" type="text" data-cmd="encrypt" data-flag="--output" placeholder="secure.pdf">
+        </div>
+        <div>
+          <label for="en-owner">--owner-password</label>
+          <input id="en-owner" type="text" data-cmd="encrypt" data-flag="--owner-password" placeholder="$PDFNATIVE_ENCRYPT_OWNER_PASS">
+          <span class="hint"><strong>Required.</strong> Prefer the env var — never shell history.</span>
+        </div>
+        <div>
+          <label for="en-user">--user-password</label>
+          <input id="en-user" type="text" data-cmd="encrypt" data-flag="--user-password" placeholder="$PDFNATIVE_ENCRYPT_USER_PASS">
+          <span class="hint">Without it the document opens with no prompt; the owner password only governs permissions.</span>
+        </div>
+        <div>
+          <label for="en-algo">--algorithm</label>
+          <select id="en-algo" data-cmd="encrypt" data-flag="--algorithm">
+            <option value="">aes-128 (default)</option>
+            <option value="aes-128">aes-128</option>
+            <option value="aes-256">aes-256</option>
+          </select>
+        </div>
+        <div>
+          <label for="en-perm">--permissions</label>
+          <input id="en-perm" type="text" data-cmd="encrypt" data-flag="--permissions" placeholder="print,extract">
+          <span class="hint">Comma list: print, copy, modify, extract.</span>
+        </div>
+        <div>
+          <label for="en-password">--password (source)</label>
+          <input id="en-password" type="text" data-cmd="encrypt" data-flag="--password" placeholder="$PDFNATIVE_PASSWORD">
+          <span class="hint">Open an already-encrypted source (password rotation).</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="encrypt" data-flag="--stream"> --stream</label>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="encrypt" data-flag="--dry-run"> --dry-run</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── DECRYPT (v1.3) ─────────────── -->
+    <section class="cli-panel" data-panel="decrypt">
+      <div class="cli-form">
+        <div>
+          <label for="de-input">--input</label>
+          <input id="de-input" type="text" data-cmd="decrypt" data-flag="--input" placeholder="secure.pdf">
+        </div>
+        <div>
+          <label for="de-output">--output</label>
+          <input id="de-output" type="text" data-cmd="decrypt" data-flag="--output" placeholder="plain.pdf">
+        </div>
+        <div>
+          <label for="de-password">--password</label>
+          <input id="de-password" type="text" data-cmd="decrypt" data-flag="--password" placeholder="$PDFNATIVE_PASSWORD">
+          <span class="hint">Reads RC4, AES-128 and AES-256 sources.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="decrypt" data-flag="--drop-annotations"> --drop-annotations</label>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="decrypt" data-flag="--stream"> --stream</label>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="decrypt" data-flag="--dry-run"> --dry-run</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── EXTRACT-TEXT (v1.3) ─────────────── -->
+    <section class="cli-panel" data-panel="extract-text">
+      <div class="cli-form">
+        <div>
+          <label for="et-input">--input</label>
+          <input id="et-input" type="text" data-cmd="extract-text" data-flag="--input" placeholder="paper.pdf">
+        </div>
+        <div>
+          <label for="et-format">--format</label>
+          <select id="et-format" data-cmd="extract-text" data-flag="--format">
+            <option value="">text (default)</option>
+            <option value="text">text</option>
+            <option value="json">json</option>
+            <option value="ndjson">ndjson (one object per page)</option>
+          </select>
+        </div>
+        <div>
+          <label for="et-pages">--pages</label>
+          <input id="et-pages" type="text" data-cmd="extract-text" data-flag="--pages" placeholder="1,3,5-7">
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="extract-text" data-flag="--runs"> --runs</label>
+          <span class="hint">Include positioned runs <code>{ text, x, y, fontSize, fontName }</code>.</span>
+        </div>
+        <div>
+          <label for="et-password">--password</label>
+          <input id="et-password" type="text" data-cmd="extract-text" data-flag="--password" placeholder="$PDFNATIVE_PASSWORD">
+        </div>
+        <div>
+          <label for="et-maxlen">--max-length</label>
+          <input id="et-maxlen" type="text" data-cmd="extract-text" data-flag="--max-length" placeholder="16000000">
+          <span class="hint">Hard cap on total characters; <code>0</code> disables.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="extract-text" data-flag="--summary"> --summary</label>
+          <span class="hint">(json) Emit only <code>{ pages, characters }</code>.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="extract-text" data-flag="--pretty"> --pretty</label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;">Real Unicode from the <code>/ToUnicode</code> mapping in reading order — <code>ndjson</code> is a natural feed for a RAG ingestion pipeline.</p>
+    </section>
+
+    <!-- ─────────────── COMPARE (v1.4) ─────────────── -->
+    <section class="cli-panel" data-panel="compare">
+      <div class="cli-form">
+        <div>
+          <label for="c-a">document A (positional)</label>
+          <input id="c-a" type="text" data-cmd="compare" data-flag="__positional__" placeholder="golden.pdf">
+        </div>
+        <div>
+          <label for="c-b">document B (positional)</label>
+          <input id="c-b" type="text" data-cmd="compare" data-flag="__arg__" placeholder="candidate.pdf">
+        </div>
+        <div>
+          <label for="c-mode">--mode</label>
+          <select id="c-mode" data-cmd="compare" data-flag="--mode">
+            <option value="">both (default)</option>
+            <option value="text">text</option>
+            <option value="structure">structure</option>
+            <option value="both">both</option>
+          </select>
+          <span class="hint">Structure = page count, page/print boxes, metadata, form fields, annotations, encryption, signatures.</span>
+        </div>
+        <div>
+          <label for="c-format">--format</label>
+          <select id="c-format" data-cmd="compare" data-flag="--format">
+            <option value="">text (default)</option>
+            <option value="text">text</option>
+            <option value="json">json</option>
+          </select>
+        </div>
+        <div>
+          <label for="c-tolerance">--tolerance (pt)</label>
+          <input id="c-tolerance" type="text" data-cmd="compare" data-flag="--tolerance" placeholder="0.5">
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="compare" data-flag="--ignore-whitespace"> --ignore-whitespace</label>
+        </div>
+        <div>
+          <label for="c-pages">--pages</label>
+          <input id="c-pages" type="text" data-cmd="compare" data-flag="--pages" placeholder="1-10">
+        </div>
+        <div>
+          <label for="c-pass-a">--password-a</label>
+          <input id="c-pass-a" type="text" data-cmd="compare" data-flag="--password-a">
+        </div>
+        <div>
+          <label for="c-pass-b">--password-b</label>
+          <input id="c-pass-b" type="text" data-cmd="compare" data-flag="--password-b">
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="compare" data-flag="--pretty"> --pretty</label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;"><strong>CI contract:</strong> identical → exit 0; different → the report prints on stdout first, then exit 1 / <code>E_CHECK_FAILED</code>. Not a visual diff — pdfnative has no rasteriser; <code>compare</code> diffs what the format declares.</p>
+    </section>
+
+    <!-- ─────────────── FILL (v1.3) ─────────────── -->
+    <section class="cli-panel" data-panel="fill">
+      <div class="cli-form">
+        <div>
+          <label for="f-input">--input</label>
+          <input id="f-input" type="text" data-cmd="fill" data-flag="--input" placeholder="form.pdf">
+        </div>
+        <div>
+          <label for="f-output">--output</label>
+          <input id="f-output" type="text" data-cmd="fill" data-flag="--output" placeholder="filled.pdf">
+        </div>
+        <div>
+          <label for="f-data">--data</label>
+          <input id="f-data" type="text" data-cmd="fill" data-flag="--data" placeholder="values.json">
+          <span class="hint">Required unless <code>--flatten</code> or <code>--export</code>.</span>
+        </div>
+        <div>
+          <label for="f-onunknown">--on-unknown</label>
+          <select id="f-onunknown" data-cmd="fill" data-flag="--on-unknown">
+            <option value="">throw (default)</option>
+            <option value="throw">throw</option>
+            <option value="ignore">ignore</option>
+          </select>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="fill" data-flag="--flatten"> --flatten</label>
+          <span class="hint">Freeze the values into page content.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="fill" data-flag="--export"> --export</label>
+          <span class="hint">Read-only: dump current values in <code>--data</code> shape.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="fill" data-flag="--force"> --force</label>
+          <span class="hint">Flatten even when a signed signature field is present (invalidates it).</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="fill" data-flag="--need-appearances"> --need-appearances</label>
+        </div>
+        <div>
+          <label for="f-password">--password</label>
+          <input id="f-password" type="text" data-cmd="fill" data-flag="--password" placeholder="$PDFNATIVE_PASSWORD">
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="fill" data-flag="--dry-run"> --dry-run</label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;">The three modes compose into a round trip: <code>--export</code> the current values, edit the JSON, feed it back with <code>--data</code>, optionally <code>--flatten</code>.</p>
+    </section>
+
+    <!-- ─────────────── BATCH ─────────────── -->
+    <section class="cli-panel" data-panel="batch">
+      <div class="cli-form">
+        <div>
+          <label for="b-indir">--input-dir</label>
+          <input id="b-indir" type="text" data-cmd="batch" data-flag="--input-dir" placeholder="inputs/">
+          <span class="hint">Directory of <code>*.json</code> documents (directory mode).</span>
+        </div>
+        <div>
+          <label for="b-outdir">--output-dir</label>
+          <input id="b-outdir" type="text" data-cmd="batch" data-flag="--output-dir" placeholder="outputs/">
+        </div>
+        <div>
+          <label for="b-concurrency">--concurrency</label>
+          <input id="b-concurrency" type="text" data-cmd="batch" data-flag="--concurrency" placeholder="4">
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="batch" data-flag="--fail-fast"> --fail-fast</label>
+        </div>
+        <div class="full">
+          <label for="b-manifest">--manifest <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
+          <input id="b-manifest" type="text" data-cmd="batch" data-flag="--manifest" placeholder="tasks.json">
+          <span class="hint">Declarative pipeline: <code>{ "version": 1, "tasks": [{ "id", "command", "flags" }] }</code>. <code>"@&lt;id&gt;"</code> references an earlier task's output; a 14-command whitelist applies (never <code>ltv</code> / <code>compare</code> / the meta commands); validated in full before anything runs; max 1 000 tasks.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="batch" data-flag="--allow-network"> --allow-network</label>
+          <span class="hint">Required before any network flag inside the manifest (<code>--timestamp</code>, <code>--url</code>, <code>--online</code>, <code>--revocation online</code>).</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="batch" data-flag="--continue-on-error"> --continue-on-error</label>
+          <span class="hint">Keep going after a failure; <code>@id</code>-dependent tasks are skipped.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="batch" data-flag="--dry-run"> --dry-run</label>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="batch" data-flag="--summary"> --summary</label>
+          <span class="hint">Emit <code>{ total, succeeded, failed }</code>.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── DOCTOR (v1.3) ─────────────── -->
+    <section class="cli-panel" data-panel="doctor">
+      <div class="cli-form">
+        <div>
+          <label for="do-format">--format</label>
+          <select id="do-format" data-cmd="doctor" data-flag="--format">
+            <option value="">text (default)</option>
+            <option value="text">text</option>
+            <option value="json">json</option>
+          </select>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="doctor" data-flag="--pretty"> --pretty</label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top: 14px;">Five offline checks: CLI version, Node (≥ 22 since v1.4.0), WebCrypto CSPRNG, resolved <code>pdfnative</code> engine version, and the command count. The first thing to run in a new environment — and the first thing an agent should call.</p>
+    </section>
+
+    <!-- ─────────────── SCHEMA ─────────────── -->
+    <section class="cli-panel" data-panel="schema">
+      <div class="cli-form">
+        <div class="full">
+          <label for="sc-subject">subject (positional)</label>
+          <select id="sc-subject" data-cmd="schema" data-flag="__positional__">
+            <option value="list">list — enumerate every subject</option>
+            <option value="render">render</option>
+            <option value="inspect">inspect</option>
+            <option value="verify">verify</option>
+            <option value="batch">batch</option>
+            <option value="annotate">annotate</option>
+            <option value="extract-text">extract-text</option>
+            <option value="fill">fill</option>
+            <option value="form-export">form-export</option>
+            <option value="inspect-summary">inspect-summary</option>
+            <option value="verify-summary">verify-summary</option>
+            <option value="batch-summary">batch-summary</option>
+            <option value="govern-verify">govern-verify</option>
+            <option value="metadata">metadata · v1.4</option>
+            <option value="ltv-data">ltv-data · v1.4</option>
+            <option value="compare">compare · v1.4</option>
+            <option value="batch-manifest">batch-manifest · v1.4</option>
+            <option value="status">status</option>
+            <option value="manifest">manifest (capability document)</option>
+            <option value="doctor">doctor</option>
+          </select>
+          <span class="hint">Versioned JSON Schemas (Draft 2020-12) — the <code>$id</code> embeds the CLI version, so agents can self-validate before invoking a command. 19 subjects in v1.4.0.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── COMPLETION ─────────────── -->
+    <section class="cli-panel" data-panel="completion">
+      <div class="cli-form">
+        <div class="full">
+          <label for="co-shell">shell (positional)</label>
+          <select id="co-shell" data-cmd="completion" data-flag="__positional__">
+            <option value="bash">bash</option>
+            <option value="zsh">zsh</option>
+            <option value="fish">fish</option>
+            <option value="powershell">powershell · v1.3</option>
+          </select>
+          <span class="hint">Emits a completion script covering all 21 commands and their flags. Pipe it into your shell's completion directory.</span>
+        </div>
+      </div>
     </section>
 
     <div class="cli-validation" id="validation"></div>
@@ -665,11 +1285,16 @@
 
   // ── State ──────────────────────────────────────────
   // For each command, an object { flagName: value | array | bool }
-  const state = { render: {}, sign: {}, inspect: {}, verify: {}, merge: {}, split: {}, extract: {}, annotate: {}, govern: {} };
+  const state = {
+    render: {}, sign: {}, inspect: {}, verify: {}, merge: {}, split: {}, extract: {},
+    annotate: {}, govern: {}, metadata: {}, ltv: {}, 'doc-timestamp': {}, encrypt: {},
+    decrypt: {}, 'extract-text': {}, compare: {}, fill: {}, batch: {}, doctor: {},
+    schema: {}, completion: {},
+  };
   let activeCmd = 'render';
 
   // Repeatable flags (one occurrence per item)
-  const REPEATABLE = new Set(['--cert-chain', '--attachment', '--trust', '--check']);
+  const REPEATABLE = new Set(['--cert-chain', '--attachment', '--trust', '--check', '--extra-cert']);
 
   // ── DOM helpers ───────────────────────────────────
   const $  = (id) => document.getElementById(id);
@@ -802,6 +1427,80 @@
       if (sub === 'verify-issue' && !draft) warns.push('`govern verify-issue` needs a draft file path.');
     }
 
+    if (activeCmd === 'metadata') {
+      const md = state.metadata;
+      const unit = ['--title', '--author', '--subject', '--keywords', '--mod-date'].filter((f) => md[f]);
+      if (md['--from-json'] && unit.length) {
+        errors.push('`--from-json` is mutually exclusive with the individual field flags (' + unit.join(', ') + ').');
+      }
+      if (!md['--from-json'] && !unit.length) {
+        warns.push('`metadata` needs at least one field — `--title`, `--author`, `--subject`, `--keywords`, `--mod-date` or `--from-json`.');
+      }
+    }
+
+    if (activeCmd === 'ltv') {
+      const l = state.ltv;
+      const sub = $('l-sub') ? $('l-sub').value : 'collect';
+      if ((sub === 'collect' || sub === 'add') && !l['--online']) {
+        errors.push('`ltv ' + sub + '` requires the explicit `--online` opt-in — without it the CLI refuses with exit 2.');
+      }
+      if (sub === 'embed' && !l['--data']) {
+        warns.push('`ltv embed` needs `--data <ltv-data.json>` (the evidence produced by `collect`).');
+      }
+      if (sub === 'embed' && l['--online']) {
+        warns.push('`--online` has no effect on `embed` — it is 100 % offline by design.');
+      }
+    }
+
+    if (activeCmd === 'doc-timestamp') {
+      const dt = state['doc-timestamp'];
+      if (!dt['--url']) errors.push('`doc-timestamp` requires `--url <tsa-endpoint>` — the network use is an explicit opt-in.');
+    }
+
+    if (activeCmd === 'encrypt') {
+      const en = state.encrypt;
+      if (!en['--owner-password']) {
+        warns.push('`encrypt` requires an owner password — `--owner-password` or `$PDFNATIVE_ENCRYPT_OWNER_PASS`.');
+      }
+      if (!en['--user-password']) {
+        warns.push('Without `--user-password` the document opens with no prompt; the owner password only governs permissions.');
+      }
+    }
+
+    if (activeCmd === 'decrypt') {
+      const de = state.decrypt;
+      if (!de['--password']) warns.push('`decrypt` needs `--password` (or `$PDFNATIVE_PASSWORD`).');
+    }
+
+    if (activeCmd === 'compare') {
+      const a = $('c-a') ? $('c-a').value.trim() : '';
+      const b = $('c-b') ? $('c-b').value.trim() : '';
+      if (!a || !b) warns.push('`compare` takes two positional paths — document A and document B.');
+    }
+
+    if (activeCmd === 'fill') {
+      const f = state.fill;
+      if (!f['--data'] && !f['--flatten'] && !f['--export']) {
+        warns.push('`fill` needs `--data <values.json>` unless `--flatten` or `--export` is set.');
+      }
+      if (f['--export'] && (f['--data'] || f['--flatten'])) {
+        warns.push('`--export` is read-only — it does not combine with `--data` / `--flatten`.');
+      }
+    }
+
+    if (activeCmd === 'batch') {
+      const bt = state.batch;
+      if (bt['--manifest'] && bt['--input-dir']) {
+        errors.push('`--manifest` is mutually exclusive with `--input-dir`/`--output-dir` — the CLI refuses with exit 2.');
+      }
+      if (!bt['--manifest'] && !bt['--input-dir']) {
+        warns.push('`batch` needs `--input-dir` + `--output-dir` (directory mode) or `--manifest tasks.json` (pipeline mode).');
+      }
+      if (bt['--allow-network'] && !bt['--manifest']) {
+        warns.push('`--allow-network` only applies to manifest mode — directory mode never touches the network.');
+      }
+    }
+
     return { errors, warns };
   }
 
@@ -829,6 +1528,35 @@
       return singleG;
     }
 
+    // Special schema / completion: a single positional, no flags
+    if (activeCmd === 'schema') {
+      parts.push($('sc-subject') ? $('sc-subject').value : 'list');
+      return parts.join(' ');
+    }
+    if (activeCmd === 'completion') {
+      parts.push($('co-shell') ? $('co-shell').value : 'bash');
+      return parts.join(' ');
+    }
+
+    // Special ltv: a positional subcommand before the flags
+    if (activeCmd === 'ltv') {
+      parts.push($('l-sub') ? $('l-sub').value : 'collect');
+    }
+
+    // Special compare: two positional paths before the flags
+    if (activeCmd === 'compare') {
+      const a = $('c-a') ? $('c-a').value.trim() : '';
+      const b = $('c-b') ? $('c-b').value.trim() : '';
+      if (a) parts.push(shellEscape(a));
+      if (b) parts.push(shellEscape(b));
+    }
+
+    // Special inspect: --check-signatures builds a quoted `--check "signatures>=N"`
+    if (activeCmd === 'inspect' && bag['--check-signatures']) {
+      const n = String(bag['--check-signatures']).trim();
+      if (/^\d+$/.test(n)) parts.push('--check', shellEscape('signatures>=' + n));
+    }
+
     // Special render: combine --page-size + --page-size-custom
     if (activeCmd === 'render') {
       if (pageSizeSelect.value === '__custom__' && pageSizeCustom.value) {
@@ -840,7 +1568,8 @@
 
     Object.keys(bag).forEach((flag) => {
       if (flag === '--page-size' || flag === '--page-size-custom') return; // handled above
-      if (flag === '__positional__' || flag === '__arg__') return;         // govern, handled above
+      if (flag === '--check-signatures') return;                           // inspect, handled above
+      if (flag === '__positional__' || flag === '__arg__') return;         // positionals, handled above
       const v = bag[flag];
       if (v === true) {
         parts.push(flag);
@@ -899,10 +1628,10 @@
 
   // ── Reset ─────────────────────────────────────────
   $('reset').addEventListener('click', () => {
-    state.render = {}; state.sign = {}; state.inspect = {}; state.verify = {};
+    Object.keys(state).forEach((cmd) => { state[cmd] = {}; });
     $$('[data-cmd][data-flag]').forEach((el) => {
       if (el.type === 'checkbox') el.checked = false;
-      else if (el.tagName === 'SELECT') el.value = '';
+      else if (el.tagName === 'SELECT') el.selectedIndex = 0;
       else el.value = '';
     });
     pageSizeCustom.style.display = 'none';
@@ -930,6 +1659,17 @@
     'extract-pages':     { tab: 'extract', fields: { 'e-input': 'report.pdf', 'e-output': 'cover.pdf', 'e-pages': '4,1-2' } },
     'annotate-notes':    { tab: 'annotate', fields: { 'a-input': 'report.pdf', 'a-output': 'annotated.pdf', 'a-annotations': 'notes.json' } },
     'govern-verify':     { tab: 'govern',  fields: { 'g-sub': 'verify-issue', 'g-draft': 'draft.md' } },
+    'fill-roundtrip':    { tab: 'fill',    fields: { 'f-input': 'form.pdf', 'f-output': 'filled.pdf', 'f-data': 'values.json' } },
+    'encrypt-secure':    { tab: 'encrypt', fields: { 'en-input': 'report.pdf', 'en-output': 'secure.pdf', 'en-algo': 'aes-256', 'en-perm': 'print,extract' } },
+    'extract-text-rag':  { tab: 'extract-text', fields: { 'et-input': 'paper.pdf', 'et-format': 'ndjson' }, checks: ['--runs'] },
+    'sign-timestamp':    { tab: 'sign',    fields: { 's-input': 'report.pdf', 's-output': 'signed.pdf', 's-timestamp': 'https://tsa.example.com/rfc3161', 's-reason': 'Approved' } },
+    'ltv-add':           { tab: 'ltv',     fields: { 'l-sub': 'add', 'l-input': 'signed.pdf', 'l-output': 'signed.lt.pdf' }, checks: ['--online'] },
+    'ltv-airgap':        { tab: 'ltv',     fields: { 'l-sub': 'embed', 'l-input': 'signed.pdf', 'l-output': 'signed.lt.pdf', 'l-data': 'ltv-data.json' } },
+    'doc-timestamp-lta': { tab: 'doc-timestamp', fields: { 'dt-input': 'signed.lt.pdf', 'dt-output': 'signed.lta.pdf', 'dt-url': 'https://tsa.example.com/rfc3161' } },
+    'compare-ci':        { tab: 'compare', fields: { 'c-a': 'golden.pdf', 'c-b': 'candidate.pdf', 'c-format': 'json' }, checks: ['--ignore-whitespace'] },
+    'metadata-update':   { tab: 'metadata', fields: { 'md-input': 'report.pdf', 'md-output': 'revised.pdf', 'md-title': 'Quarterly report (revised)', 'md-keywords': 'finance,Q2' } },
+    'batch-manifest':    { tab: 'batch',   fields: { 'b-manifest': 'tasks.json' }, checks: ['--continue-on-error'] },
+    'render-strict':     { tab: 'render',  fields: { 'r-input': 'doc.json', 'r-output': 'archive.pdf', 'r-tagged': 'pdfa2b' }, checks: ['--strict', '--compress'] },
   };
 
   $('preset').addEventListener('change', (e) => {

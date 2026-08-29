@@ -92,6 +92,34 @@ The equivalent one-liner for a human at a terminal is the bundled CLI:
 npx pdfnative-build-font fonts/ttf/MyFont.ttf fonts/my-font-data.js
 ```
 
+### Via the MCP server — the local install is the extension point
+
+`pdfnative-mcp` **bundles no font data of its own**. At runtime it resolves the
+locally installed `pdfnative` package and lazily imports font modules from that
+package's `fonts/` directory — its `lang` table is a mapping from language codes
+to files it expects to find there. That design has a useful consequence for
+agents operating on the host: **whatever the local `pdfnative` installation
+provides, the MCP server serves.** A coding agent with filesystem access can
+compile a missing font with `compileFontData`, drop the resulting `*-data.js`
+into the resolved local install, wire up the local mapping, and the very next
+MCP tool call renders with it — no release of either package in the loop. That
+is exactly how the mathematical-symbols gap above was closed locally before
+Noto Sans Math shipped upstream.
+
+Two honest limits, so the pattern is used with open eyes:
+
+- The **published** `add_international_text` tool exposes a closed `lang` enum
+  in its JSON Schema (an unknown code is rejected with `UNSUPPORTED_LANG`), so
+  serving a *new* language code requires the agent to adjust the local mapping
+  too — it is a local code-level extension, not a configuration flag.
+- There is **no operator-facing extension point yet** (no fonts-directory
+  environment variable). Exposing one is a roadmap candidate, not a shipped
+  capability.
+
+Local, in-place extension by an agent and upstreaming through the
+[governance contract](ai-governance.md) are complementary: the first unblocks
+*this* document today, the second makes the capability durable for everyone.
+
 > **Why this matters.** The engine's coverage is not frozen at release time. An
 > agent can close a glyph gap — a new script, a symbol set, a brand font — the
 > instant a document requires it, then optionally graduate that work into a

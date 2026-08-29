@@ -1,6 +1,9 @@
 # FAQ
 
-> Frequently asked questions about pdfnative. Can't find your answer? Open a [discussion](https://github.com/Nizoka/pdfnative/discussions) or read the [Troubleshooting guide](troubleshooting.html).
+> **Frequently asked questions about pdfnative** — getting started, custom
+> fonts, PDF/A variants, encryption, BiDi text, browser / Deno / Bun support,
+> signatures, workers, and how it compares with other libraries. Can't find
+> your answer? Open a [discussion](https://github.com/Nizoka/pdfnative/discussions) or read the [Troubleshooting guide](troubleshooting.html).
 
 ## Getting started
 

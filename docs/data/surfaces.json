@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable form of the capability × surface table in docs/guides/choose.md. Hand-maintained, verified against the sources on the date below: library `call` names against src/index.ts exports, CLI `command` names against packages.pdfnative-cli.commandGroups and MCP `tool` names against packages.pdfnative-mcp.tools in docs/assets/ecosystem.json (the single source of truth for names and counts — regenerate nothing from this file), React entries against docs/guides/react.md. Each `since` is a version of that surface's OWN package (pdfnative, pdfnative-cli, pdfnative-mcp or pdfnative-react); it is omitted where the capability predates 1.0.0 or the introducing release is not documented. `supported: false` cells carry a note naming the honest alternative where one exists.",
-  "verifiedOn": "2026-08-25",
+  "verifiedOn": "2026-08-29",
   "capabilities": [
     {
       "id": "generate",
@@ -24,7 +24,7 @@
       "library": { "supported": true, "call": "chart block in buildDocumentPDFBytes", "since": "1.6.0" },
       "cli": { "supported": true, "command": "render", "since": "1.3.0", "notes": "chart blocks in the document JSON." },
       "mcp": { "supported": true, "tool": "add_chart", "since": "1.5.0", "notes": "Also as a chart block inside generate_basic_pdf." },
-      "react": { "supported": true, "call": "<Chart>", "since": "1.1.0" }
+      "react": { "supported": true, "call": "<Chart>", "since": "1.1.0", "notes": "Charts v2 — nine kinds incl. stacked/area/scatter, secondary axis, category/linear/time X axes, log scale, data labels — since 1.2.0 (engine 1.7.0)." }
     },
     {
       "id": "sign",
@@ -38,7 +38,7 @@
       "id": "ltv",
       "label": "LTV ladder (PAdES B-T → B-LTA)",
       "library": { "supported": true, "call": "signPdfBytesWithTimestamp + addValidationInfo + addDocumentTimestamp", "since": "1.7.0", "notes": "Network transport is injected by the caller via setTimestampProvider / setRevocationProvider — the engine opens no socket." },
-      "cli": { "supported": false, "notes": "Verification only: verify --revocation validates RFC 3161 timestamps and OCSP/CRL material; sign-side LTV is documented as out of scope." },
+      "cli": { "supported": true, "command": "sign / ltv / doc-timestamp", "since": "1.4.0", "notes": "sign --timestamp <url> (B-T), ltv collect|embed|add (B-LT — collect gathers evidence as replayable JSON, embed is fully offline for air-gapped workflows), doc-timestamp (B-LTA). Every network touch is an explicit per-invocation opt-in behind an SSRF guard; verify --revocation validates the ladder." },
       "mcp": { "supported": true, "tool": "add_ltv + timestamp_pdf", "since": "1.6.0", "notes": "Transport is operator-configured via PDFNATIVE_MCP_TSA_URL / PDFNATIVE_MCP_REVOCATION and a host allow-list — never from tool arguments. verify_pdf with ltv: true reports the achieved level." },
       "react": { "supported": false }
     },
@@ -97,6 +97,30 @@
       "cli": { "supported": true, "command": "inspect", "since": "1.1.0", "notes": "inspect --pdfua, and --check pdfua as a CI assertion." },
       "mcp": { "supported": true, "tool": "validate_pdf", "since": "1.1.0" },
       "react": { "supported": false, "notes": "lintDocument checks the authoring model before rendering; it is not a validation of the emitted PDF." }
+    },
+    {
+      "id": "update-metadata",
+      "label": "Update metadata (signature-safe)",
+      "library": { "supported": true, "call": "PdfModifier.updateMetadata", "since": "1.7.0", "notes": "Incremental save — /Info and XMP are re-issued in a new revision; existing signatures stay valid for theirs." },
+      "cli": { "supported": true, "command": "metadata", "since": "1.4.0" },
+      "mcp": { "supported": true, "tool": "update_metadata", "since": "1.6.0" },
+      "react": { "supported": false, "notes": "Set metadata at authoring time on <Document metadata>; edit existing PDFs with the library, CLI or MCP." }
+    },
+    {
+      "id": "compare",
+      "label": "Compare two PDFs (text + structure)",
+      "library": { "supported": false, "notes": "Compose the readers yourself: openPdf, extractText, readFormFields, getAnnotations." },
+      "cli": { "supported": true, "command": "compare", "since": "1.4.0", "notes": "Text and structure diff with CI-friendly exit codes (identical → 0, different → 1 / E_CHECK_FAILED). Not a visual diff — pdfnative has no rasteriser." },
+      "mcp": { "supported": false, "notes": "Run inspect_pdf / extract_text on both documents and compare the reports." },
+      "react": { "supported": false }
+    },
+    {
+      "id": "register-fonts",
+      "label": "Runtime font registration",
+      "library": { "supported": true, "call": "registerFont / registerFonts + loadFontData", "since": "1.5.0", "notes": "The loader is any () => Promise of a font-data module — including one you compile yourself from a TTF/OTF with compileFontData (pdfnative/tools) or the pdfnative-build-font binary. No engine release needed to add a font." },
+      "cli": { "supported": true, "command": "render", "since": "1.1.0", "notes": "--font registers bundled fonts only (fixed allow-list); for a font you ship yourself, call the library — in-memory registration does not cross a process boundary." },
+      "mcp": { "supported": false, "notes": "The server resolves fonts from the locally installed pdfnative package at runtime and bundles none itself; the lang list is a fixed enum. An operator-level extension point is on the roadmap — see the agentic-workflows guide for what an agent can already do locally." },
+      "react": { "supported": true, "call": "registerFont / registerFonts (re-exported from the engine)", "notes": "Pass the loaded data via fontEntries." }
     }
   ]
 }

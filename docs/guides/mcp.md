@@ -766,6 +766,26 @@ See [SECURITY.md](https://github.com/Nizoka/pdfnative-mcp/blob/main/SECURITY.md)
 
 ---
 
+## Fonts come from the local `pdfnative` install
+
+`pdfnative-mcp` bundles **no font data of its own**: at runtime it resolves the
+locally installed `pdfnative` package and lazily imports the Noto font modules
+from that package's `fonts/` directory, embedding a font only when a request
+actually uses it. Two practical consequences:
+
+- **Upgrading the local `pdfnative` upgrades the server's font coverage** —
+  nothing to configure, nothing re-downloaded.
+- **The local install is an extension point for agents.** A coding agent on the
+  host can compile a font with `compileFontData` (`pdfnative/tools`) into the
+  resolved local install and the next tool call serves it — the pattern that
+  closed the mathematical-symbols gap locally before Noto Sans Math shipped in
+  the engine. The published `lang` enum is closed and there is no operator-level
+  fonts variable yet (a roadmap candidate), so this is a local code-level
+  pattern — see [Agentic workflows → Via the MCP server](agentic-workflows.html#via-the-mcp-server--the-local-install-is-the-extension-point)
+  for the honest, step-by-step version.
+
+---
+
 ## Troubleshooting
 
 **The server does not appear in my AI client.**  

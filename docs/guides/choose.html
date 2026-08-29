@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Choosing your surface — pdfnative</title>
-  <meta name="description" content="Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — generate, tables, charts, signatures, LTV, encryption, forms, text extraction, page-tree editing, annotations, layout inspection and PDF/UA validation on each surface.">
+  <meta name="description" content="Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — signatures, LTV, encryption, forms, extraction, comparison and validation on each surface.">
   <link rel="canonical" href="https://pdfnative.dev/guides/choose.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/choose.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/choose.html">
@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Choosing your surface","item":"https://pdfnative.dev/guides/choose.html"}]},{"@type":"TechArticle","headline":"Choosing your surface","description":"Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — generate, tables, charts, signatures, LTV, encryption, forms, text extraction, page-tree editing, annotations, layout inspection and PDF/UA validation on each surface.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/choose.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Choosing your surface","item":"https://pdfnative.dev/guides/choose.html"}]},{"@type":"TechArticle","headline":"Choosing your surface","description":"Library, CLI, MCP or React? The pdfnative decision tree plus a verified capability × surface matrix — signatures, LTV, encryption, forms, extraction, comparison and validation on each surface.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/choose.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -81,7 +81,7 @@ parser, signatures with long-term validation, streaming, Web Worker support.
 Everything the other three surfaces do, they do by calling this package.</p>
 <p><strong>You are driving a shell, a CI pipeline, a container, or a build tool in
 another language.</strong> Use the <strong>CLI</strong> (<code>pdfnative-cli</code>, binary <code>pdfnative</code>) —
-17 commands over stdin/stdout pipelines, with an agent-native automation
+21 commands over stdin/stdout pipelines, with an agent-native automation
 contract: a <code>--json</code> envelope, stable <code>E_*</code> error codes, <code>--dry-run</code>, and
 compact <code>--summary</code> / <code>--fields</code> output projection. No JavaScript required.</p>
 <p><strong>You are (or you are building) a conversational assistant with tool
@@ -131,7 +131,7 @@ means the surface does not offer it.</p>
 <td><code>chart</code> block <em>(v1.6.0)</em></td>
 <td><code>render</code> (<code>chart</code> block) <em>(v1.3.0)</em></td>
 <td><code>add_chart</code> <em>(v1.5.0)</em></td>
-<td><code>&lt;Chart&gt;</code> <em>(v1.1.0)</em></td>
+<td><code>&lt;Chart&gt;</code> <em>(v1.1.0; charts v2 — nine kinds, secondary axis, log/time scales, data labels — since v1.2.0)</em></td>
 </tr>
 <tr>
 <td>Digital signatures (PAdES CMS)</td>
@@ -143,7 +143,7 @@ means the surface does not offer it.</p>
 <tr>
 <td>LTV ladder (B-T → B-LTA)</td>
 <td><code>signPdfBytesWithTimestamp</code>, <code>addValidationInfo</code>, <code>addDocumentTimestamp</code> <em>(v1.7.0)</em></td>
-<td>— (verification only: <code>verify --revocation</code>)</td>
+<td><code>sign --timestamp</code>, <code>ltv</code>, <code>doc-timestamp</code> <em>(v1.4.0)</em></td>
 <td><code>add_ltv</code>, <code>timestamp_pdf</code> <em>(v1.6.0)</em></td>
 <td>—</td>
 </tr>
@@ -196,17 +196,41 @@ means the surface does not offer it.</p>
 <td><code>validate_pdf</code> <em>(v1.1.0)</em></td>
 <td>— (<code>lintDocument</code> checks the authoring model before rendering, not the emitted PDF)</td>
 </tr>
+<tr>
+<td>Update metadata (signature-safe)</td>
+<td><code>PdfModifier.updateMetadata</code> <em>(v1.7.0)</em></td>
+<td><code>metadata</code> <em>(v1.4.0)</em></td>
+<td><code>update_metadata</code> <em>(v1.6.0)</em></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Compare two PDFs (text + structure)</td>
+<td>— (compose <code>openPdf</code> / <code>extractText</code> / the readers)</td>
+<td><code>compare</code> <em>(v1.4.0)</em></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Runtime font registration</td>
+<td><code>registerFont</code> / <code>registerFonts</code> <em>(v1.5.0, any loader — incl. fonts you compile with <code>compileFontData</code>)</em></td>
+<td><code>render --font</code> (bundled fonts only) <em>(v1.1.0)</em></td>
+<td>— (fixed <code>lang</code> enum; fonts resolved from the local <code>pdfnative</code> install)</td>
+<td><code>registerFont</code> / <code>registerFonts</code> (re-exported)</td>
+</tr>
 </tbody></table>
 <h2 id="honest-notes">Honest notes<a class="heading-anchor" href="#honest-notes" aria-label="Link to this section">#</a></h2>
 <ul>
-<li><strong>LTV differs by surface on purpose.</strong> The engine opens no socket: in the
-<strong>library</strong>, the RFC 3161 / OCSP / CRL transport is <em>injected by your code</em>
-(<code>setTimestampProvider</code> / <code>setRevocationProvider</code>). On <strong>MCP</strong>, the transport
-is <em>operator-configured</em> through environment variables
+<li><strong>LTV transport differs by surface on purpose.</strong> The engine opens no socket:
+in the <strong>library</strong>, the RFC 3161 / OCSP / CRL transport is <em>injected by your
+code</em> (<code>setTimestampProvider</code> / <code>setRevocationProvider</code>). On <strong>MCP</strong>, the
+transport is <em>operator-configured</em> through environment variables
 (<code>PDFNATIVE_MCP_TSA_URL</code>, <code>PDFNATIVE_MCP_REVOCATION</code>, an allow-list) — never
-from tool arguments. The <strong>CLI</strong> currently <em>verifies</em> LTV material
-(<code>verify --revocation</code>, RFC 3161 timestamp validation) but does not create
-it — sign-side LTV is documented as out of scope there.</li>
+from tool arguments. On the <strong>CLI</strong> (since v1.4.0, which completes the
+write-side ladder), every network touch is an <em>explicit per-invocation
+opt-in</em> — <code>sign --timestamp &lt;url&gt;</code>, <code>ltv --online</code>, <code>doc-timestamp --url</code> —
+behind an SSRF guard, and <code>ltv collect</code> / <code>ltv embed</code> split the ladder across
+an air gap: evidence is gathered as replayable JSON on a connected machine
+and embedded fully offline.</li>
 <li><strong>The engine ships no cryptographic signature verifier.</strong> <code>listSignatures</code>
 is an inventory; full verification (digest, CMS, chain, trust, timestamps,
 revocation) lives in <code>pdfnative-cli verify</code> and the MCP <code>verify_pdf</code> tool.</li>
@@ -233,6 +257,8 @@ document rewrite.</p>
 <ul>
 <li><a href="onboarding.html">Onboarding</a> — the 90-second install-and-first-call for
 each surface.</li>
+<li><a href="use-cases.html">Ecosystem use cases</a> — four production architectures that
+compose these surfaces, with diagrams.</li>
 <li><a href="self-verify.html">Self-verifying generation</a> — the generate → inspect →
 assert → correct loop on every surface.</li>
 <li><a href="architecture.html">Architecture</a> — how the four packages relate.</li>

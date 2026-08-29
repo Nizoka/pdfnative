@@ -8,7 +8,7 @@ Guidance for AI coding agents (Cursor, Aider, Claude Code, Continue, Zed, Cline,
 
 pdfnative is a **zero-runtime-dependency** TypeScript library that generates ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) compliant PDFs. Pure native — no Cairo, no PDFKit, no node-forge, no fontkit, no anything.
 
-Quality bar: GAFAM-grade. 2686+ tests, 95%+ statement coverage measured at v1.6.0 (CI enforces ≥88%), blocking veraPDF validation in CI, SLSA provenance on npm.
+Quality bar: GAFAM-grade. 2691+ tests, 95%+ statement coverage measured at v1.6.0 (CI enforces ≥88%), blocking veraPDF validation in CI, SLSA provenance on npm.
 
 Since v1.6.0 the parser side also **decrypts** (Standard Security Handler, RC4 + AES-128/256), **streams** page-tree merge/split/extract, **fills & flattens** AcroForms — including encrypted sources via encrypted incremental update — **extracts text** with positions (`extractText`), renders native **vector charts**, and **re-encrypts** output (`MergeOptions.encrypt`). All exported from `src/index.ts` like everything else.
 
@@ -16,7 +16,7 @@ Since v1.6.0 the parser side also **decrypts** (Standard Security Handler, RC4 +
 
 ```bash
 npm run build              # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test               # vitest run (2686+ tests)
+npm run test               # vitest run (2691+ tests)
 npm run typecheck:all      # src/ + tests/ + scripts/
 npm run lint               # eslint
 npm run test:generate      # produce ~242 sample PDFs → test-output/
@@ -101,9 +101,9 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) §Archite
 
 ## Ecosystem context
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) v1.3.0 — terminal wrapper (render, fill, annotate, merge, split, extract, sign, verify, encrypt, decrypt, inspect, extract-text, batch, doctor, schema, completion, govern). Pins pdfnative `^1.6.0` in its `package.json` (semver-accepts 1.7.0); coordinates via that explicit pin.
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) v1.4.0 — terminal wrapper (render, fill, annotate, metadata, merge, split, extract, sign, verify, ltv, doc-timestamp, encrypt, decrypt, inspect, extract-text, compare, batch, doctor, schema, completion, govern — the complete PAdES ladder B-B → B-LTA from the shell). Pins pdfnative `^1.7.0` in its `package.json`; coordinates via that explicit pin. Node ≥ 22.
 - [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) v1.6.0 — Model Context Protocol server exposing 28 AI tools (adds `add_ltv`, `timestamp_pdf`, `update_metadata` and `inspect_layout` on top of the v1.5.0 chart, form and encryption tools; completes the PAdES ladder B-B → B-LTA and speaks MCP 2026-07-28 with legacy fallback). Pins pdfnative `^1.7.0`. Same coordination model.
-- [pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.1.0 — React renderer: declarative JSX compiled on-device to pdfnative blocks via a custom reconciler. React 19 is a peer dependency of *that* package only — pdfnative itself stays zero-dependency. Same coordination model.
+- [pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.2.0 — React renderer: declarative JSX compiled on-device to pdfnative blocks via a custom reconciler (charts v2, print production, PDF/A diagnostics channel, 25 lint rules). React 19 and pdfnative `^1.7.0` are peer dependencies of *that* package only — pdfnative itself stays zero-dependency. Same coordination model.
 
 Downstream-impacting changes (new public APIs, removed APIs, behaviour shifts) must be documented in the **Downstream integration notes** section of the relevant `release-notes/vX.Y.Z.md`.
 

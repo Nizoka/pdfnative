@@ -23,9 +23,9 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 | Package | Latest | Use it for |
 |---|:---:|---|
 | [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.7.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
-| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.3.0** | Render JSON → PDF, sign (RSA + ECDSA-SHA256, native constant-time crypto by default), inspect, verify (PAdES-T + OCSP/CRL), **merge / split / extract** pages, **annotate** (markup annotations), **govern** (AI-governance / HITL gate), batch, and emit JSON Schemas from the shell. Pins pdfnative `^1.6.0` (semver-accepts 1.7.0): 22 scripts + COLRv1 emoji, `--font math`, PDF bookmarks (`--outline`), layout introspection (`--inspect-layout` / `--debug-layout`), and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. |
+| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.4.0** | Render JSON → PDF, sign with the **complete PAdES ladder** (`sign --timestamp` B-T, `ltv` B-LT with air-gapped collect → embed, `doc-timestamp` B-LTA; RSA-SHA256/384/512 + ECDSA, native constant-time crypto by default), inspect, verify, **compare** (CI text + structure diff), signature-safe **metadata** edits, **merge / split / extract** pages, **annotate**, **govern** (AI-governance / HITL gate), declarative **batch `--manifest`** pipelines, and emit JSON Schemas from the shell. Pins pdfnative `^1.7.0`: 22 scripts + COLRv1 emoji, `--font math`, charts v2, print production, `render --strict` PDF/A gating, and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. Node ≥ 22. |
 | [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.6.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any MCP client, stdio or HTTP) — **28 production tools** spanning the engine's full document model: all 13 block kinds in `generate_basic_pdf`, layout options, build-time `encrypt` that keeps the AcroForm, image watermarks, print production (page boxes, bleed, marks, `/UserUnit`, OutputIntent), charts v2 (stacked / area / scatter, dual axis, log & time scales), the complete PAdES ladder B-B → B-LTA (`sign_pdf` with RFC 3161 timestamps, `add_ltv`, `timestamp_pdf`, `verify_pdf ltv: true`), `update_metadata`, the read-only `inspect_layout` pagination preview, honest PDF/A (`embedFonts` / `strict` / diagnostics), six MCP prompts, token-frugal read modes (`verbosity` / `fields`), the network-free `draft_governance_issue` (AI-governance / HITL), and the MCP **2026-07-28** spec with automatic legacy fallback. No outbound request by default — the only permitted egress is operator-configured TSA / OCSP / CRL. Pins pdfnative `^1.7.0`. |
-| [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v1.1.0** | Write PDFs as declarative JSX — `<Document>`, `<Page>`, `<Table>`, `<Barcode>`, `<Svg>`, `<FormField>`… compiled on-device to pdfnative blocks by a custom React 19 reconciler. Render functions (`renderToBytes` / `renderToStream` / `renderToFile`), client hooks & components (`usePdf`, `PDFViewer`, `PDFDownloadLink`), and a versioned `DocSpec` grammar (`docSpecSchema()`) for AI agents. Peer: pdfnative ^1.6.0, React ^19.0.0, Node ≥22. (A 1.5 engine would silently drop the new `<Chart>` block.) |
+| [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v1.2.0** | Write PDFs as declarative JSX — `<Document>`, `<Page>`, `<Table>`, `<Barcode>`, `<Svg>`, `<FormField>`… compiled on-device to pdfnative blocks by a custom React 19 reconciler. Charts v2 (9 kinds, dual axes, log/time scales), print production (`<Document print>`), the PDF/A diagnostics channel (`layout.strict` / `onDiagnostic`), HTTP caching on `renderToResponse` (`etag` / `cacheControl`), 25 lint rules, client hooks & components (`usePdf`, `PDFViewer`, `PDFDownloadLink`), and a versioned `DocSpec` grammar (`docSpecSchema()`) for AI agents. Peer: pdfnative ^1.7.0, React ^19.0.0, Node ≥22. (A 1.6 engine would throw mid-render on the charts-v2 fields.) |
 
 ```bash
 npm install pdfnative                 # library
@@ -77,7 +77,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 2686+ tests across 123 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 95.41% statement coverage measured at the v1.6.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 2691+ tests across 123 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 95.41% statement coverage measured at the v1.6.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1019,7 +1019,7 @@ pdfnative ships as a library, but three official companion packages cover the mo
 
 ### pdfnative-cli — command-line interface
 
-[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v1.3.0 is the **official CLI**, built on `pdfnative` v1.6.0. It exposes 17 commands in five groups — create & edit (`render`, `fill`, `annotate`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed, with a CycloneDX SBOM attached to every release.
+[`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v1.4.0 is the **official CLI**, built on `pdfnative` v1.7.0. It exposes 21 commands in five groups — create & edit (`render`, `fill`, `annotate`, `metadata`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `ltv`, `doc-timestamp`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`, `compare`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed, with a CycloneDX SBOM attached to every release. Requires Node ≥ 22.
 
 **New in v1.1.0:** **22 Unicode scripts + COLRv1 colour emoji** through the `--font`/`--lang` shortcuts, **true constant-memory streaming** (`--stream-true`), a `--max-blocks` cap for very large documents, and a **PDF/UA (ISO 14289-1) structural validator** (`inspect --pdfua` / `--check pdfua`). It also adds an **agent-native contract** — a global `--json` status/error envelope, stable `E_*` error codes, a `--dry-run` validation mode, the new **`schema`** command (Draft 2020-12), and token-economy output projection (`--summary` / `--fields` + compact JSON) that cuts agent output ~90 %. **100 % backward-compatible.**
 
@@ -1027,6 +1027,8 @@ pdfnative ships as a library, but three official companion packages cover the mo
 **New in v1.2.0:** five new commands — **`merge`**, **`split`**, **`extract`** (page-tree manipulation via pdfnative 1.5.0), **`annotate`** (markup annotations via incremental save, so existing signatures stay intact), and **`govern`** (the AI-governance / Human-in-the-Loop contract: `govern rules` / `govern policy` / `govern verify-issue`, with a stable `E_POLICY` error code). Plus PDF bookmarks (`--outline auto` or an explicit tree), the bundled math font (`--font math`), layout introspection (`--inspect-layout` / `--debug-layout`), and native constant-time crypto by default in `sign` (opt out with `--pure-crypto`).
 
 **New in v1.3.0:** five more commands on the pdfnative 1.6 engine — **`fill`** (fill, flatten, and export existing AcroForms via incremental save, encrypted PDFs included), **`encrypt`** / **`decrypt`** (AES-128/256 re-securing and password removal; RC4 never emitted), **`extract-text`** (reading-order Unicode text as text/JSON/NDJSON, `--runs`, `--password`), and **`doctor`** (offline environment preflight). Also native vector charts in `render`, `--password` + `--encrypt` re-encryption on merge/split/extract, an agent capability manifest (`schema manifest` + `llms.txt`), and PowerShell completion.
+
+**New in v1.4.0:** the **complete PAdES ladder** from the shell — `sign --timestamp <tsa-url>` (RFC 3161, B-T), **`ltv`** (B-LT `/DSS`; `collect` gathers revocation evidence as replayable JSON so `embed` can run fully offline in air-gapped environments), and **`doc-timestamp`** (B-LTA document-timestamp revisions) — plus **`metadata`** (signature-safe `/Info` + XMP edits), **`compare`** (text + structure diff with CI exit codes), **`batch --manifest`** declarative pipelines with `@id` references and an `--allow-network` opt-in, `render --strict` PDF/A gating, `inspect --signatures`, RSA-SHA384/512, and a global `--max-inflate-size` zip-bomb cap. Every network path is an explicit opt-in behind an SSRF guard. Built on pdfnative 1.7.0, Node ≥ 22.
 
 ```bash
 # render with full layout coverage (encryption + watermark + PDF/A-2b)
@@ -1049,7 +1051,7 @@ npx pdfnative-cli inspect --input signed.pdf \
 ```
 
 <!-- verify-docs:allow version-token (pdfnative-cli's own current version, not the engine) -->
-See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v1.3.0 reference, agent contract, security model, and recipes. Try the [interactive CLI playground](https://pdfnative.dev/playgrounds/cli.html) to build commands without leaving the browser.
+See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v1.4.0 reference, agent contract, security model, and recipes. Try the [interactive CLI playground](https://pdfnative.dev/playgrounds/cli.html) to build commands without leaving the browser.
 
 ### pdfnative-mcp — Model Context Protocol server
 
@@ -1127,7 +1129,7 @@ See the [MCP Integration Guide](https://pdfnative.dev/guides/mcp.html) and the [
 
 ### pdfnative-react — declarative JSX renderer
 
-[`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) v1.1.0 turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency pdfnative engine — no DOM, no headless browser, no SaaS round-trips. A custom React reconciler compiles your component tree synchronously into the pdfnative block model. Requires **React 19**, **pdfnative ^1.6.0** and **Node.js ≥ 22**. React and pdfnative are peer dependencies; the package itself adds one runtime dependency, `react-reconciler`. The pdfnative engine remains dependency-free.
+[`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) v1.2.0 turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency pdfnative engine — no DOM, no headless browser, no SaaS round-trips. A custom React reconciler compiles your component tree synchronously into the pdfnative block model. v1.2.0 follows the pdfnative 1.7.0 engine: charts v2 (9 kinds, secondary axis, log/time scales, data labels), print production via `<Document print>`, the PDF/A diagnostics channel (`layout.strict` / `onDiagnostic`), HTTP caching on `renderToResponse` (`etag` / `cacheControl`), and 25 lint rules — all additive. Requires **React 19**, **pdfnative ^1.7.0** and **Node.js ≥ 22**. React and pdfnative are peer dependencies; the package itself adds one runtime dependency, `react-reconciler`. The pdfnative engine remains dependency-free.
 
 ```tsx
 import { Document, Heading, Text, Table, renderToBytes } from 'pdfnative-react';
@@ -1212,7 +1214,7 @@ src/
 fonts/                    # Pre-built font data modules (22 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (48 generators, 242 PDFs)
-tests/                    # 2686+ tests (123 files: unit + integration + fuzz + parser + docs)
+tests/                    # 2691+ tests (123 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1224,7 +1226,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (2686+ tests)
+npm run test             # vitest run (2691+ tests)
 npm run test:coverage    # vitest with v8 coverage (95.41% statements at the v1.6.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate 242 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1239,7 +1241,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 2686+ (123 files) |
+| Tests | 2691+ (123 files) |
 | Statement coverage | 95.41% (measured at the v1.6.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 87.79% (measured at the v1.6.0 release; CI enforces ≥80%) |
 | Function coverage | 98.5% (measured at the v1.6.0 release; CI enforces ≥85%; lines gate: ≥90%) |

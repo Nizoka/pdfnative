@@ -692,12 +692,29 @@ if (existsSync(SITEMAP)) {
     // local midnight writes a lastmod the UTC runner would call "future".
     const today = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10);
 
+    // lastmod is the date of the page's last documentation audit, not its
+    // last commit — git history is unavailable to the CI verifier's shallow
+    // checkout, the same reason the guides carry no JSON-LD dateModified
+    // (scripts/build-guides.ts, "No dateModified" note). What CAN be checked
+    // offline is coherence with the audit cycle: no page may claim a review
+    // date after the manifest's verifiedOn, nor sit more than STALE_WINDOW
+    // days behind it — a sitemap frozen across audit trains is exactly the
+    // drift this bound exists to catch.
+    const STALE_WINDOW_DAYS = 45;
+    const verifiedMs = Date.parse(manifest.verifiedOn);
+    const oldestAllowed = new Date(verifiedMs - STALE_WINDOW_DAYS * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const newestAllowed = new Date(verifiedMs + 24 * 3600 * 1000).toISOString().slice(0, 10);
+
     for (const m of xml.matchAll(/<lastmod>\s*([^<]+?)\s*<\/lastmod>/g)) {
         const value = m[1];
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
             fail('docs/sitemap.xml', lineOf(xml, m.index!), 'sitemap-parity', `lastmod "${value}" is not ISO-8601 (YYYY-MM-DD)`);
         } else if (value > today) {
             fail('docs/sitemap.xml', lineOf(xml, m.index!), 'sitemap-parity', `lastmod "${value}" is in the future`);
+        } else if (value > newestAllowed) {
+            fail('docs/sitemap.xml', lineOf(xml, m.index!), 'sitemap-parity', `lastmod "${value}" is after the manifest's verifiedOn (${manifest.verifiedOn}) — audit the page and bump the manifest, or fix the date`);
+        } else if (value < oldestAllowed) {
+            fail('docs/sitemap.xml', lineOf(xml, m.index!), 'sitemap-parity', `lastmod "${value}" is more than ${STALE_WINDOW_DAYS} days behind the manifest's verifiedOn (${manifest.verifiedOn}) — the page has missed an audit train`);
         }
     }
 
@@ -1158,13 +1175,86 @@ if (!existsSync(LLMS_RECIPES)) {
  * `llms-full.txt`. Runs after llms-sync: the index reports the on-disk size
  * of llms-full.txt, which the previous rule has just proven fresh.
  */
-const { buildLlmsIndex } = await import('./build-llms-full.ts');
+const { buildLlmsIndex, SUMMARY_MAX } = await import('./build-llms-full.ts');
 
 const LLMS_INDEX = join(ROOT, 'docs', 'llms-index.json');
 if (!existsSync(LLMS_INDEX)) {
     fail('docs/llms-index.json', 1, 'llms-index-sync', 'missing — generate it with `npm run docs:llms`');
 } else if (read(LLMS_INDEX).replace(/\r\n/g, '\n') !== buildLlmsIndex(ROOT)) {
     fail('docs/llms-index.json', 1, 'llms-index-sync', 'stale — regenerate with `npm run docs:llms`');
+}
+
+// ── Rule: llms-index-quality ────────────────────────────────────────
+
+/**
+ * `llms-index-sync` proves the index is *fresh* — it rebuilds it in memory
+ * and compares byte for byte. That check is blind to a deterministic defect
+ * in the generator: a bug that truncates every summary mid-sentence produces
+ * the same bytes on both sides and passes forever (it did — 23 of 31
+ * summaries shipped severed, and the FAQ's was a line of source code). This
+ * rule reads the committed index as *content* and asserts each summary is
+ * usable prose, so a generator regression fails the build instead of
+ * shipping.
+ */
+const CODEY_START = /^(const |let |var |import |export |function |class |return |await |async |type |interface |npm |npx |\{|\}|\[|\/\/|\/\*|<|```)/;
+const SUMMARY_MIN = 60;
+
+if (existsSync(LLMS_INDEX)) {
+    const rawIndex = read(LLMS_INDEX);
+    let indexDoc: { guides?: Array<{ title?: string; summary?: string; markdown?: string }> } = {};
+    try {
+        indexDoc = JSON.parse(rawIndex) as typeof indexDoc;
+    } catch (err) {
+        fail('docs/llms-index.json', 1, 'llms-index-quality', `not valid JSON — ${(err as Error).message}`);
+    }
+    for (const page of indexDoc.guides ?? []) {
+        const src = page.markdown?.split('/').pop() ?? page.title ?? '?';
+        const s = (page.summary ?? '').trim();
+        const at = rawIndex.indexOf(JSON.stringify(page.summary ?? ''));
+        const line = at >= 0 ? lineOf(rawIndex, at) : 1;
+        const bad = (msg: string): void =>
+            fail('docs/llms-index.json', line, 'llms-index-quality', `${src}: ${msg}`);
+
+        if (!s) { bad('summary is empty'); continue; }
+        if (CODEY_START.test(s)) bad(`summary starts with source code, not prose — the lede blockquote of docs/guides/${src} was not picked up`);
+        if (!/[.!?…]$/.test(s)) bad(`summary is cut mid-sentence: "…${s.slice(-40)}"`);
+        if (s.length < SUMMARY_MIN) bad(`summary is ${s.length} chars — too short to be useful (min ${SUMMARY_MIN})`);
+        if (s.length > SUMMARY_MAX) bad(`summary is ${s.length} chars — over the index budget (max ${SUMMARY_MAX})`);
+        if (/[\s,;:—-]…$/.test(s)) bad('truncated summary keeps a dangling separator before its ellipsis');
+        if (s.includes('**') || s.includes('> ')) bad('summary carries unstripped Markdown');
+        if (!page.title || page.title === src) bad('title fell back to the filename — the guide has no H1');
+    }
+}
+
+// ── Rule: verified-on-parity ────────────────────────────────────────
+
+/**
+ * The entry-point artefacts agents consume carry a "Verified on" stamp (and
+ * the machine-data files a `verifiedOn` field) so a reader can judge
+ * freshness without git. A hand-maintained date is a lie waiting to happen —
+ * errors.json drifted four days behind the manifest before this rule
+ * existed — so every stamp must equal the manifest's `verifiedOn` exactly:
+ * bumping the manifest without re-stamping (or vice versa) fails the build.
+ * The date itself lives in exactly one place, docs/assets/ecosystem.json.
+ */
+const STAMPED = [
+    'llms.txt',
+    'docs/llms.txt',
+    'docs/agent-brief.md',
+    'docs/data/surfaces.json',
+    'docs/data/errors.json',
+];
+for (const relPath of STAMPED) {
+    const full = join(ROOT, relPath);
+    if (!existsSync(full)) continue; // parity rules elsewhere report missing files
+    const text = read(full);
+    const m = /(?:"verifiedOn"\s*:\s*"|Verified on )(\d{4}-\d{2}-\d{2})/.exec(text);
+    if (!m) {
+        fail(relPath, 1, 'verified-on-parity', `carries no verifiedOn stamp (manifest says ${manifest.verifiedOn})`);
+    } else if (m[1] !== manifest.verifiedOn) {
+        fail(relPath, lineOf(text, m.index), 'verified-on-parity',
+            `stamped ${m[1]} but the manifest was verified on ${manifest.verifiedOn}`);
+    }
 }
 
 // ── Rule: guide-render-sync ─────────────────────────────────────────
@@ -1313,6 +1403,8 @@ const OFFLINE_RULES = [
     'contrast',
     'llms-sync',
     'llms-index-sync',
+    'llms-index-quality',
+    'verified-on-parity',
     'error-parity',
     'anchor-parity',
     'guide-render-sync',

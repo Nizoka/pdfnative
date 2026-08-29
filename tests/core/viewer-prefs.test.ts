@@ -68,6 +68,14 @@ describe('buildViewerPreferences', () => {
 // ── Integration ──────────────────────────────────────────────────────
 
 describe('document viewer preferences integration', () => {
+    // Pin the date so repeated builds embed the same /CreationDate (and thus
+    // the same content-derived /ID) — without this the byte-identical test
+    // flakes when two calls straddle a second boundary (same pattern as
+    // pdf-stream-pagebypage.test.ts). Merged into the single layout object
+    // rather than passed as a second argument, because layoutOptions REPLACES
+    // params.layout and would silently drop viewerPreferences.
+    const PINNED = new Date('2026-01-01T00:00:00.000Z');
+
     function doc(viewerPreferences?: ViewerPreferences, extra?: Partial<DocumentParams>): string {
         const params: DocumentParams = {
             title: 'VP',
@@ -77,9 +85,14 @@ describe('document viewer preferences integration', () => {
             ],
             ...extra,
         };
-        const withVp: DocumentParams = viewerPreferences
-            ? { ...params, layout: { ...params.layout, viewerPreferences } }
-            : params;
+        const withVp: DocumentParams = {
+            ...params,
+            layout: {
+                ...params.layout,
+                creationDate: PINNED,
+                ...(viewerPreferences ? { viewerPreferences } : {}),
+            },
+        };
         return bytesToLatin1(buildDocumentPDFBytes(withVp));
     }
 

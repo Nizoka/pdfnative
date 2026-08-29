@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="usp-title usp-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="usp-title">Store the spec, not the PDF — on-device rendering</title>
+  <desc id="usp-desc">Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of megabyte-sized PDFs in object storage. When a client requests a document, the server sends the JSON; the client's own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine — uncompressed by default, or compressed by plugging a synchronous deflate implementation into setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network.</desc>
+
+  <defs>
+    <marker id="usp-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="usp-ah-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#F8FAFC"/>
+  <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Store the spec, not the PDF</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">The information travels; the bytes are made where they are read</text>
+
+  <!-- Server zone -->
+  <rect x="40" y="96" width="360" height="330" rx="14" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="220" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Your server</text>
+
+  <!-- Database -->
+  <g>
+    <ellipse cx="220" cy="180" rx="110" ry="20" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+    <path d="M110 180 v96 a110 20 0 0 0 220 0 v-96" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+    <ellipse cx="220" cy="180" rx="110" ry="20" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1.25"/>
+    <text x="220" y="228" text-anchor="middle" font-size="13.5" font-weight="600" fill="#1E40AF">DocSpec JSON per document</text>
+    <text x="220" y="248" text-anchor="middle" font-size="12" fill="#3B82F6">~2 KB each — plain, diffable data</text>
+  </g>
+
+  <!-- Crossed-out object storage -->
+  <g opacity="0.75">
+    <rect x="86" y="330" width="268" height="64" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.25"/>
+    <text x="220" y="356" text-anchor="middle" font-size="12.5" font-weight="600" fill="#991B1B">PDF object storage — not needed</text>
+    <text x="220" y="376" text-anchor="middle" font-size="11.5" fill="#B91C1C">~300 KB per rendered PDF, ~150× the spec</text>
+    <line x1="94" y1="390" x2="346" y2="334" stroke="#DC2626" stroke-width="2"/>
+  </g>
+
+  <!-- Transfer arrow -->
+  <line x1="400" y1="200" x2="556" y2="200" stroke="#2563EB" stroke-width="2.25" marker-end="url(#usp-ah-blue)"/>
+  <text x="478" y="184" text-anchor="middle" font-size="12.5" font-weight="600" fill="#2563EB">JSON over HTTPS</text>
+  <text x="478" y="222" text-anchor="middle" font-size="11.5" fill="#64748B">the PDF bytes never</text>
+  <text x="478" y="238" text-anchor="middle" font-size="11.5" fill="#64748B">cross the network</text>
+
+  <!-- Client zone -->
+  <rect x="560" y="96" width="360" height="330" rx="14" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="740" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">Reader's device (browser)</text>
+
+  <rect x="596" y="146" width="288" height="56" rx="10" fill="#ECFEFF" stroke="#5EBECF" stroke-width="1.25"/>
+  <text x="740" y="170" text-anchor="middle" font-size="13.5" font-weight="700" fill="#155E75">pdfnative-react</text>
+  <text x="740" y="190" text-anchor="middle" font-size="11.5" fill="#0E7490">renderSpecToBytes(spec)</text>
+
+  <line x1="740" y1="202" x2="740" y2="228" stroke="#475569" stroke-width="1.75" marker-end="url(#usp-ah)"/>
+
+  <rect x="596" y="230" width="288" height="66" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="740" y="252" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1E40AF">pdfnative engine</text>
+  <text x="740" y="270" text-anchor="middle" font-size="11.5" fill="#3B82F6">zero dependencies · no Node-only code paths</text>
+  <text x="740" y="286" text-anchor="middle" font-size="11.5" fill="#3B82F6">optional sync deflate via setDeflateImpl</text>
+
+  <line x1="740" y1="296" x2="740" y2="322" stroke="#475569" stroke-width="1.75" marker-end="url(#usp-ah)"/>
+
+  <rect x="640" y="324" width="200" height="56" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="740" y="348" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">invoice.pdf</text>
+  <text x="740" y="368" text-anchor="middle" font-size="11.5" fill="#16A34A">rendered locally, on demand</text>
+
+  <text x="740" y="404" text-anchor="middle" font-size="11.5" fill="#64748B">re-brand old specs with today's template · pin the</text>
+  <text x="740" y="420" text-anchor="middle" font-size="11.5" fill="#64748B">engine version when reproducibility matters</text>
+
+  <!-- Footer note -->
+  <rect x="40" y="452" width="880" height="72" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="482" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">A spec is not a byte-frozen archive — for documents that must never change (or carry signatures),</text>
+  <text x="480" y="502" text-anchor="middle" font-size="12.5" fill="#475569">render once and archive the bytes. Non-Latin scripts ship as lazily imported font modules.</text>
+</svg>
