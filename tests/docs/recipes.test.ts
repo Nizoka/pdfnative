@@ -173,6 +173,16 @@ describe('recipe: layout-preview', () => {
     });
 });
 
+describe('recipe: docspec-invoice', () => {
+    it('renders a stored DocSpec through pdfnative-react and reads it back', { timeout: 60_000 }, async () => {
+        const { run } = await import('../../recipes/docspec-invoice.js');
+        const { pages, text } = await run();
+        expect(pages).toBe(1);
+        expect(text).toContain('Quarterly report');
+        expect(text).toContain('Total');
+    });
+});
+
 describe('recipe: update-metadata', () => {
     it('re-reads the incrementally updated title', async () => {
         const { run } = await import('../../recipes/update-metadata.js');
@@ -230,17 +240,20 @@ describe('recipes/index.json', () => {
         }
     });
 
-    it('recipes import only from pdfnative — never from src or relative paths', async () => {
+    it('recipes import only from published packages — never from src or relative paths', async () => {
         const fs = await nodeFs();
         const files = fs.readdirSync(RECIPES_DIR).filter(f => f.endsWith('.ts'));
+        // The consumer-visible package names a recipe may import. Surface
+        // packages (pdfnative-react) are allowed so recipes can cover more
+        // than the library; relative paths and src/ stay forbidden — a recipe
+        // must read exactly like code in a consumer's project.
+        const allowed = (spec: string): boolean =>
+            spec === 'pdfnative' || spec.startsWith('pdfnative/') || spec === 'pdfnative-react';
         for (const file of files) {
             const source = fs.readFileSync(`${RECIPES_DIR}/${file}`, 'utf8');
             const re = /from\s+'([^']+)'/g;
             for (let m = re.exec(source); m !== null; m = re.exec(source)) {
-                expect(
-                    m[1] === 'pdfnative' || m[1].startsWith('pdfnative/'),
-                    `${file} imports '${m[1]}'`,
-                ).toBe(true);
+                expect(allowed(m[1]), `${file} imports '${m[1]}'`).toBe(true);
             }
         }
     });
