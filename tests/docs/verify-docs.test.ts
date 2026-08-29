@@ -214,7 +214,7 @@ describe('verify-docs', () => {
 
         it('jsonld-version rejects a softwareVersion that disagrees with the manifest', () => {
             withSandbox((dir) => {
-                patch(dir, 'docs/index.html', '"softwareVersion": "1.3.0"', '"softwareVersion": "1.2.0"');
+                patch(dir, 'docs/index.html', '"softwareVersion": "1.4.0"', '"softwareVersion": "1.3.0"');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('jsonld-version');
                 expect(run.status).toBe(1);
