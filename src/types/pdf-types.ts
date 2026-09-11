@@ -488,16 +488,41 @@ export interface PdfLayoutOptions {
      * - Browser / edge runtimes: no native deflate is available by default. The library
      *   falls back to a valid DEFLATE **stored-block** wrapper (0x78 0x01 header + Adler-32
      *   checksum, no actual compression). All PDF readers accept this as valid FlateDecode,
-     *   but the output will be slightly larger than the uncompressed baseline due to the
-     *   DEFLATE framing overhead (~5 bytes per 64 KB block).
+     *   but the output is in fact slightly **larger** than the uncompressed baseline, because
+     *   of the DEFLATE framing overhead (~5 bytes per 64 KB block).
      *
-     *   To enable real compression in the browser, supply a deflate implementation via
-     *   `setDeflateImpl()` before calling `buildPDF` / `buildDocumentPDF`:
+     *   To get real compression there, inject a **synchronous** compressor. The recommended
+     *   route is `setDeflateRawImpl()`, which takes plain RFC 1951 output — what portable
+     *   compressors actually emit — and lets pdfnative add the zlib envelope itself:
      *   ```ts
-     *   import { deflate } from 'fflate'; // or 'pako', or CompressionStream
-     *   import { setDeflateImpl } from 'pdfnative';
-     *   setDeflateImpl((buf) => deflate(buf));
+     *   import { getCodec, METHOD_DEFLATE } from 'zipnative';
+     *   import { setDeflateRawImpl } from 'pdfnative';
+     *
+     *   const codec = getCodec(METHOD_DEFLATE);
+     *   setDeflateRawImpl((buf) => codec.compressSync!(buf, { level: 6, deterministic: true }));
      *   ```
+     *   zipnative is a zero-dependency pure-TypeScript encoder, so this keeps the whole stack
+     *   dependency-free; `deterministic: true` pins its pure encoder, so the emitted PDF is
+     *   byte-identical on every runtime. On a typical text-heavy document this takes the
+     *   output to roughly a quarter of its uncompressed size, where the stored-block fallback
+     *   would have made it marginally bigger.
+     *
+     *   `setDeflateImpl()` remains available for a compressor that already emits the
+     *   RFC 1950 envelope:
+     *   ```ts
+     *   import { zlibSync } from 'fflate';   // NOT `deflateSync`, which is raw
+     *   setDeflateImpl((buf) => zlibSync(buf));
+     *   ```
+     *   ```ts
+     *   import pako from 'pako';             // `pako.deflate` already wraps
+     *   setDeflateImpl((buf) => pako.deflate(buf));
+     *   ```
+     *   Two traps, both rejected at build time with an explanatory error rather than
+     *   silently producing blank pages: passing **raw** RFC 1951 output to `setDeflateImpl`
+     *   (fflate's `deflateSync`, `CompressionStream`'s `'deflate-raw'`), and passing an
+     *   **asynchronous** compressor to either entry point, which returns `undefined` or a
+     *   `Promise` rather than bytes. `CompressionStream` cannot be adapted at all, because
+     *   PDF assembly is synchronous.
      *
      * Image streams (JPEG/PNG) are NOT recompressed — they already use DCTDecode/FlateDecode.
      * XMP metadata streams are NOT compressed when tagged mode is active (PDF/A safety).

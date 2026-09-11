@@ -163,7 +163,7 @@ export type { PdfAConfig, EmbeddedFilesResult, PdfAConformanceTarget } from './c
 export { resolvePdfAConfig, buildEmbeddedFiles, validateAttachments, PDF_A_CONFORMANCE_TARGETS } from './core/pdf-tags.js';
 
 // ── Core — Stream Compression ───────────────────────────────────────
-export { initNodeCompression, setDeflateImpl } from './core/pdf-compress.js';
+export { initNodeCompression, setDeflateImpl, setDeflateRawImpl, wrapZlib } from './core/pdf-compress.js';
 
 // ── Core — Reproducible builds ──────────────────────────────────────
 export { setDefaultCreationDate, getDefaultCreationDate } from './core/pdf-reproducible.js';
