@@ -61,6 +61,7 @@ import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
+import { resolveCreationDate } from './pdf-reproducible.js';
 import { resolveDebugOptions, marginBoxOps, blockBoundsOps, tableCellOps } from './pdf-layout-debug.js';
 import { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent } from './pdf-form.js';
 import {
@@ -218,7 +219,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const headerTpl: PageTemplate | undefined = layout?.headerTemplate;
     const headerH = headerTpl ? HEADER_H : 0;
 
-    const dateNow = new Date();
+    // The `{date}` header/footer placeholder resolves against the same instant
+    // as `/Info /CreationDate` when `layout.creationDate` pins it, so a pinned
+    // build is reproducible in full. Previously this was a second, independent
+    // wall-clock read that no option could override.
+    const dateNow = resolveCreationDate(layout?.creationDate);
     const pad2d = (n: number) => String(n).padStart(2, '0');
     const dateStr = `${dateNow.getFullYear()}-${pad2d(dateNow.getMonth() + 1)}-${pad2d(dateNow.getDate())}`;
     const docTitle = params.title ?? '';
@@ -1187,7 +1192,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
     const infoObjNum = baseObjCount + 1;
 
-    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(layout?.creationDate);
+    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(dateNow);
     const infoTitle = params.title ?? '';
 
     const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];

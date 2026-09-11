@@ -29,8 +29,8 @@
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 121729,
-      "approxTokens": 30432
+      "bytes": 122307,
+      "approxTokens": 30577
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",

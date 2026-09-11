@@ -1,0 +1,79 @@
+name: Sample Regression
+
+# Guards the whole emission pipeline against unintended output changes.
+# Regenerates all 242 sample PDFs from the current source and fingerprints
+# them against the committed baseline at
+# tests/regression/baselines/samples.sha256.json.
+#
+# Most samples are compared byte-for-byte: `setDefaultCreationDate()` pins the
+# creation instant and the harness pins TZ=UTC, which makes unencrypted output
+# a pure function of its inputs. The encrypted samples can never repeat their
+# bytes (CSPRNG file key and AES IVs, ISO 32000-1 §7.6), so those are compared
+# through a canonical projection of the decrypted document instead.
+#
+# Gated on everything that can change emitted bytes.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'fonts/**'
+      - 'scripts/**'
+      - 'tests/regression/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/sample-regression.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'fonts/**'
+      - 'scripts/**'
+      - 'tests/regression/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/sample-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sample-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sample-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate samples
+        run: npm run test:generate
+
+      - name: Verify samples against the baseline
+        run: npx tsx scripts/verify-samples.ts
+
+      - name: Report divergences
+        if: failure()
+        run: npx tsx scripts/verify-samples.ts --json || true
+
+      - name: Upload diverged samples on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sample-regression-output
+          path: test-output/
+          retention-days: 7

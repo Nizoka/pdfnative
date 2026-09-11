@@ -8,9 +8,12 @@
  * Then:  open test-output/ and visually inspect each PDF.
  */
 
-import { initNodeCompression } from '../src/index.js';
+// Must be first: pins process.env.TZ before anything formats a PDF date.
+import './helpers/tz.js';
+
+import { initNodeCompression, setDefaultCreationDate } from '../src/index.js';
 import { registerAllFonts } from './helpers/fonts.js';
-import { createContext, printSummary } from './helpers/io.js';
+import { createContext, printSummary, SAMPLE_CREATION_DATE } from './helpers/io.js';
 
 import { generate as generateFinancial } from './generators/financial-statements.js';
 import { generate as generateDiverse } from './generators/diverse-use-cases.js';
@@ -62,6 +65,12 @@ import { generate as generateTextExtract } from './generators/text-extract-showc
 import { generate as generateIncrementalMetadata } from './generators/incremental-metadata.js';
 
 async function generateAll(): Promise<void> {
+    // Pin the creation instant so the whole suite is byte-reproducible and
+    // `npm run verify:samples` can detect regressions by hash. Encrypted and
+    // signed samples stay non-deterministic by design; the harness normalises
+    // those before hashing.
+    setDefaultCreationDate(SAMPLE_CREATION_DATE);
+
     registerAllFonts();
     await initNodeCompression();
 

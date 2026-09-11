@@ -58,6 +58,7 @@ import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
+import { resolveCreationDate } from './pdf-reproducible.js';
 
 // ── Tagged Mode Helper Types ─────────────────────────────────────────
 
@@ -319,7 +320,11 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const headerTpl: PageTemplate | undefined = layoutOptions?.headerTemplate;
     const headerH = headerTpl ? HEADER_H : 0;
 
-    const dateNow = new Date();
+    // The `{date}` header/footer placeholder resolves against the same instant
+    // as `/Info /CreationDate` when `layout.creationDate` pins it, so a pinned
+    // build is reproducible in full. Previously this was a second, independent
+    // wall-clock read that no option could override.
+    const dateNow = resolveCreationDate(layoutOptions?.creationDate);
     const pad2d = (n: number) => String(n).padStart(2, '0');
     const dateStr = `${dateNow.getFullYear()}-${pad2d(dateNow.getMonth() + 1)}-${pad2d(dateNow.getDate())}`;
 
@@ -747,7 +752,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         : 4 + wmExtraObjs + totalPages * 2;
     const infoObjNum = baseObjCount + 1;
 
-    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(layoutOptions?.creationDate);
+    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(dateNow);
     const infoTitle = params.docTitle || title || '';
     const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];
     if (params.metadata?.author) {

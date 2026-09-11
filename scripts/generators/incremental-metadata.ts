@@ -63,7 +63,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         author: 'pdfnative sample generator',
         subject: 'updateMetadata() incremental /Info + XMP resync',
         keywords: 'incremental update, metadata, XMP, ModDate',
-        modDate: new Date(),
+        // Pinned so the sample is byte-reproducible; the option defaults to
+        // the wall clock, which the JSDoc already flags as non-deterministic.
+        modDate: new Date('2026-06-15T12:00:00Z'),
     });
     const updated = modifier.save();
     ctx.writeSafe(

@@ -165,6 +165,9 @@ export { resolvePdfAConfig, buildEmbeddedFiles, validateAttachments, PDF_A_CONFO
 // ── Core — Stream Compression ───────────────────────────────────────
 export { initNodeCompression, setDeflateImpl } from './core/pdf-compress.js';
 
+// ── Core — Reproducible builds ──────────────────────────────────────
+export { setDefaultCreationDate, getDefaultCreationDate } from './core/pdf-reproducible.js';
+
 // ── Core — Barcodes & QR Codes ──────────────────────────────────────
 export type { BarcodeFormat, QRErrorLevel } from './core/pdf-barcode.js';
 export {

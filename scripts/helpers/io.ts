@@ -9,6 +9,20 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const OUTPUT_DIR = resolve(__dirname, '..', '..', 'test-output');
 
+/**
+ * The instant every sample is stamped with.
+ *
+ * Unencrypted pdfnative output is a pure function of its inputs plus this one
+ * date — the trailer `/ID` is an MD5 of title + creation date + object count —
+ * so pinning it makes the whole sample suite byte-reproducible and lets
+ * `npm run verify:samples` detect regressions by hash. Changing this value
+ * invalidates every baseline hash.
+ *
+ * Reproducibility also requires the process timezone to be UTC, because PDF
+ * dates carry a local offset — see `scripts/helpers/tz.ts`.
+ */
+export const SAMPLE_CREATION_DATE = new Date('2026-01-01T00:00:00Z');
+
 export interface SampleResult {
     file: string;
     size: number;

@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 445,
+  "exportCount": 447,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -2182,6 +2182,13 @@
       "summary": "The currently-installed global CryptoProvider, or `null` if none."
     },
     {
+      "name": "getDefaultCreationDate",
+      "kind": "value",
+      "module": "src/core/pdf-reproducible.ts",
+      "signature": "export function getDefaultCreationDate(): Date | null",
+      "summary": "The currently pinned default creation instant, or `null` when unset."
+    },
+    {
       "name": "getMaxInflateOutputSize",
       "kind": "value",
       "module": "src/parser/pdf-inflate.ts",
@@ -2803,6 +2810,13 @@
       "module": "src/crypto/crypto-provider.ts",
       "signature": "export function setCryptoProvider(provider: CryptoProvider | null): void",
       "summary": "Install (or clear) a global signature CryptoProvider."
+    },
+    {
+      "name": "setDefaultCreationDate",
+      "kind": "value",
+      "module": "src/core/pdf-reproducible.ts",
+      "signature": "export function setDefaultCreationDate(date: Date | null): void",
+      "summary": "Pin the default creation instant for every subsequent build."
     },
     {
       "name": "setDeflateImpl",

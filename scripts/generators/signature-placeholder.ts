@@ -73,10 +73,15 @@ function buildShowcaseDoc(): DocumentParams {
 export async function generate(ctx: GenerateContext): Promise<void> {
     const unsigned = buildDocumentPDFBytes(buildShowcaseDoc());
 
-    const placeheld = addSignaturePlaceholder(unsigned, {
+    // Pinned so the sample is byte-reproducible: the /Sig dictionary's /M
+    // defaults to the wall clock, which would otherwise change every run.
+    const placeholderOpts = {
         fieldName: 'AuthorSignature',
         placeholderBytes: 16384,
-    });
+        metadata: { signingTime: new Date('2026-06-15T12:00:00Z') },
+    };
+
+    const placeheld = addSignaturePlaceholder(unsigned, placeholderOpts);
     ctx.writeSafe(
         resolve(ctx.outputDir, 'signature', 'signature-placeholder-unsigned.pdf'),
         'signature/signature-placeholder-unsigned.pdf',
@@ -84,10 +89,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     );
 
     // Idempotency check — second call must return identical bytes.
-    const placeheldAgain = addSignaturePlaceholder(placeheld, {
-        fieldName: 'AuthorSignature',
-        placeholderBytes: 16384,
-    });
+    const placeheldAgain = addSignaturePlaceholder(placeheld, placeholderOpts);
     ctx.writeSafe(
         resolve(ctx.outputDir, 'signature', 'signature-placeholder-idempotent.pdf'),
         'signature/signature-placeholder-idempotent.pdf',
