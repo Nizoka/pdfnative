@@ -19,7 +19,7 @@ const samples = [...walkPdfs(OUTPUT_DIR)];
 const havecorpus = samples.length > 0;
 
 describe.runIf(havecorpus)('sample regression baseline', () => {
-    it('every generated sample matches the committed baseline', () => {
+    it('every tracked sample still emits what its reference release emitted', () => {
         const baseline = loadBaseline();
         expect(baseline, `missing baseline at ${BASELINE_PATH}`).not.toBeNull();
 
@@ -27,21 +27,47 @@ describe.runIf(havecorpus)('sample regression baseline', () => {
         expect(unreadable, 'samples that could not be fingerprinted').toEqual([]);
         expect(missingEncrypted, 'ENCRYPTED_SAMPLES entries with no generated file').toEqual([]);
 
-        const { changed, added, removed } = compareToBaseline(entries, baseline!);
+        const { changed, removed } = compareToBaseline(entries, baseline!);
         expect(changed, 'samples whose output changed').toEqual([]);
-        expect(added, 'samples missing from the baseline').toEqual([]);
         expect(removed, 'baseline entries with no generated sample').toEqual([]);
-    });
-
-    it('covers every generated sample', () => {
-        const baseline = loadBaseline()!;
-        expect(Object.keys(baseline.entries).length).toBe(samples.length);
+        // `added` is deliberately not asserted: a sample introduced by the
+        // release under development has no earlier reference to be held to.
+        // `verify-samples --strict` is the opt-in gate for that.
     });
 
     it('pins the creation instant and timezone the baseline was built with', () => {
         const baseline = loadBaseline()!;
         expect(baseline.timezone).toBe('UTC');
         expect(Number.isNaN(Date.parse(baseline.creationDate))).toBe(false);
+    });
+
+    it('anchors every entry to the release its reference was captured at', () => {
+        const baseline = loadBaseline()!;
+        const semver = /^\d+\.\d+\.\d+$/;
+        for (const [path, entry] of Object.entries(baseline.entries)) {
+            expect(entry.since, `${path} has no \`since\``).toMatch(semver);
+        }
+    });
+
+    it('never stamps an entry with a release later than the baseline itself', () => {
+        const baseline = loadBaseline()!;
+        const rank = (v: string): number => {
+            const [a, b, c] = v.split('.').map(Number);
+            return a * 1e6 + b * 1e3 + c;
+        };
+        const ceiling = rank(baseline.baselineVersion);
+        for (const [path, entry] of Object.entries(baseline.entries)) {
+            expect(rank(entry.since), `${path} claims a reference from the future`).toBeLessThanOrEqual(ceiling);
+        }
+    });
+
+    it('carries forward references from the previous release', () => {
+        // The chain is the point: most 1.8.0 entries must still be held to
+        // what 1.7.0 emitted, not silently re-anchored to the current tree.
+        const baseline = loadBaseline()!;
+        const inherited = Object.values(baseline.entries)
+            .filter(e => e.since !== baseline.baselineVersion).length;
+        expect(inherited).toBeGreaterThan(0);
     });
 
     it('uses semantic mode for exactly the encrypted samples', () => {

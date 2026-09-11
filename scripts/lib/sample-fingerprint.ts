@@ -59,18 +59,40 @@ export const ENCRYPTED_SAMPLES: Readonly<Record<string, string>> = {
 
 export type FingerprintMode = 'bytes' | 'semantic';
 
-export interface BaselineEntry {
+/** What fingerprinting a sample yields, independent of any baseline. */
+export interface Fingerprint {
     readonly mode: FingerprintMode;
     readonly hash: string;
     /** Byte length — informational, and a cheap first signal in diffs. */
     readonly size: number;
 }
 
+export interface BaselineEntry extends Fingerprint {
+    /**
+     * Release whose output this fingerprint captures — the sample's oldest
+     * verified reference, carried forward untouched by every later
+     * rebaseline. A sample first fingerprinted in 1.8.0 reads `"1.8.0"` and
+     * has no earlier reference to be compared against; one that reads
+     * `"1.7.0"` is still being held to the bytes v1.7.0 emitted.
+     */
+    readonly since: string;
+}
+
 export interface Baseline {
     readonly $comment: string;
+    /** Release at which the manifest was last written. */
+    readonly baselineVersion: string;
+    /** How the oldest entries were verified against the previous release. */
+    readonly provenance: string;
     readonly creationDate: string;
     readonly timezone: string;
     readonly entries: Record<string, BaselineEntry>;
+}
+
+/** The version in package.json — stamped on newly baselined samples. */
+export function currentVersion(): string {
+    const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')) as { version: string };
+    return pkg.version;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -164,7 +186,7 @@ export function semanticProjection(bytes: Uint8Array, password: string): string 
 }
 
 /** Fingerprint one sample. `rel` selects the mode via {@link ENCRYPTED_SAMPLES}. */
-export function fingerprint(absPath: string, rel: string): BaselineEntry {
+export function fingerprint(absPath: string, rel: string): Fingerprint {
     const bytes = readFileSync(absPath);
     const password = ENCRYPTED_SAMPLES[rel];
     if (password === undefined) {
@@ -174,7 +196,7 @@ export function fingerprint(absPath: string, rel: string): BaselineEntry {
 }
 
 export interface FingerprintRun {
-    readonly entries: Record<string, BaselineEntry>;
+    readonly entries: Record<string, Fingerprint>;
     readonly unreadable: { readonly path: string; readonly error: string }[];
     /** Paths listed in {@link ENCRYPTED_SAMPLES} that were not generated. */
     readonly missingEncrypted: string[];
@@ -182,7 +204,7 @@ export interface FingerprintRun {
 
 /** Fingerprint every sample currently in `test-output/`. */
 export function fingerprintAll(): FingerprintRun {
-    const entries: Record<string, BaselineEntry> = {};
+    const entries: Record<string, Fingerprint> = {};
     const unreadable: { path: string; error: string }[] = [];
     for (const file of walkPdfs(OUTPUT_DIR)) {
         const rel = relPath(file);
@@ -207,7 +229,7 @@ export interface Comparison {
     readonly removed: string[];
 }
 
-export function compareToBaseline(entries: Record<string, BaselineEntry>, baseline: Baseline): Comparison {
+export function compareToBaseline(entries: Record<string, Fingerprint>, baseline: Baseline): Comparison {
     const changed: string[] = [];
     const added: string[] = [];
     const removed: string[] = [];
