@@ -64,6 +64,7 @@ import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
 import { resolveCreationDate } from './pdf-reproducible.js';
 import { resolveDebugOptions, marginBoxOps, blockBoundsOps, tableCellOps } from './pdf-layout-debug.js';
 import { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent } from './pdf-form.js';
+import { selectFormFont, buildFormFontObjects, FORM_FONT_OBJ_COUNT } from './pdf-form-font.js';
 import {
     estimateBlockHeight,
     renderHeading,
@@ -681,10 +682,18 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         formFieldsByPage.set(pf.page, list);
     }
     const totalFormFields = pageFormFields.length;
-    // Form appearances render through a dedicated UNEMBEDDED base-14 /Helv
-    // font — under a PDF/A claim that violates the same ISO 19005
-    // §6.2.11.4.1 rule the no-fonts guard covers (#69), so surface it.
-    if (tagged && totalFormFields > 0) {
+
+    // AcroForm default resources (issue #74). Under a PDF/A claim the form's
+    // /DR font must be embedded like any other (ISO 19005 §6.2.11.4.1), so
+    // when a suitable Latin font is registered we embed a simple TrueType
+    // subset of it and point /DR plus every appearance stream at that.
+    // Without a PDF/A claim, or with no registered font to embed, the
+    // historical unembedded base-14 /Helv is kept and the output stays
+    // byte-identical.
+    const embeddedFormFont = (tagged && totalFormFields > 0)
+        ? selectFormFont(fontEntries)
+        : null;
+    if (tagged && totalFormFields > 0 && embeddedFormFont === null) {
         emitDiagnostic(pdfaUnembeddedFormFontDiagnostic());
     }
     // Each form field: button types (checkbox/radio) = 3 objects (widget + Yes AP + Off AP)
@@ -712,7 +721,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const numRadioGroups = radioGroups.size;
     // Radio group parents sit after all field objects, before the font object
     const totalFormObjs = totalFieldObjs + numRadioGroups;
-    const formFontObjs = totalFormFields > 0 ? 1 : 0; // dedicated /Helv font object for forms
+    // One object for the unembedded base-14 /Helv, or three when the font is
+    // embedded (font dict + descriptor + FontFile2 stream).
+    const formFontObjs = totalFormFields > 0
+        ? (embeddedFormFont ? FORM_FONT_OBJ_COUNT : 1)
+        : 0;
 
     // Base-14 /ToUnicode CMap (issue #48): Helvetica/Helvetica-Bold carry no
     // ToUnicode by default, so the CP1252 0x80–0x9F band (Euro, curly
@@ -975,7 +988,17 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
             const radioGroupParentStart = formObjStart + totalFieldObjs;
             const formFontObjNum = formObjStart + totalFormObjs;
-            emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
+            if (embeddedFormFont) {
+                // PDF/A: embed the /DR font (issue #74). The appearance
+                // streams are unchanged — they address a byte-encoded simple
+                // font under the same /Helv resource name.
+                const ff = buildFormFontObjects(embeddedFormFont, formFontObjNum, latinToUniObjNum);
+                emitObj(formFontObjNum, ff.fontDict);
+                emitObj(formFontObjNum + 1, ff.descriptorDict);
+                emitStreamObj(formFontObjNum + 2, `<< /Length ${ff.fontFile.length} /Length1 ${ff.fontFile.length}`, ff.fontFile);
+            } else {
+                emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
+            }
 
             // Build radio group parent object map: group name → parent obj num + selected value
             const radioGroupObjNums = new Map<string, number>();
@@ -1136,7 +1159,17 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
             const radioGroupParentStart = formObjStart + totalFieldObjs;
             const formFontObjNum = formObjStart + totalFormObjs;
-            emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
+            if (embeddedFormFont) {
+                // PDF/A: embed the /DR font (issue #74). The appearance
+                // streams are unchanged — they address a byte-encoded simple
+                // font under the same /Helv resource name.
+                const ff = buildFormFontObjects(embeddedFormFont, formFontObjNum, latinToUniObjNum);
+                emitObj(formFontObjNum, ff.fontDict);
+                emitObj(formFontObjNum + 1, ff.descriptorDict);
+                emitStreamObj(formFontObjNum + 2, `<< /Length ${ff.fontFile.length} /Length1 ${ff.fontFile.length}`, ff.fontFile);
+            } else {
+                emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
+            }
 
             // Build radio group parent object map
             const radioGroupObjNums = new Map<string, number>();

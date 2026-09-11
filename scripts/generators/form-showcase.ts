@@ -6,6 +6,7 @@ import { resolve } from 'path';
 import { buildDocumentPDFBytes } from '../../src/index.js';
 import type { DocumentParams } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
+import { loadFontEntries } from '../helpers/fonts.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
     // ── Full form showcase ───────────────────────────────────────
@@ -73,5 +74,40 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
         const bytes = buildDocumentPDFBytes(params);
         ctx.writeSafe(resolve(ctx.outputDir, 'form', 'form-contact.pdf'), 'form/form-contact.pdf', bytes);
+    }
+
+    // ── Archival form: PDF/A-2b + interactive fields (issue #74) ─
+    //
+    // Before v1.8.0 this combination was unreachable: the AcroForm /DR held
+    // an unembedded base-14 Helvetica, which ISO 19005 §6.2.11.4.1 forbids,
+    // so veraPDF rejected every form-bearing PDF/A document. Registering a
+    // Latin font now makes pdfnative embed a WinAnsi TrueType subset of it
+    // into /DR and into every widget appearance stream. This sample is the
+    // regression guard: `npm run validate:pdfa` must accept it.
+    {
+        const latinEntries = await loadFontEntries('latin', '/F3');
+
+        const params: DocumentParams = {
+            title: 'Archival Application Form – PDF/A-2b',
+            fontEntries: latinEntries,
+            blocks: [
+                { type: 'heading', text: 'Archival Application Form', level: 1 },
+                { type: 'paragraph', text: 'An interactive AcroForm inside a PDF/A-2b document. The form default resources embed a WinAnsi TrueType subset of the registered Latin font, so the conformance claim holds and the fields stay fillable — no flattening required.' },
+
+                { type: 'heading', text: 'Applicant', level: 2 },
+                { type: 'formField', fieldType: 'text', name: 'applicantName', label: 'Full Name', value: 'Amelie Durand' },
+                { type: 'formField', fieldType: 'text', name: 'applicantRef', label: 'Reference', value: 'ARCH-2026-0417' },
+                { type: 'formField', fieldType: 'multilineText', name: 'applicantNotes', label: 'Notes', value: 'Retained for long-term archival under ISO 19005-2.\nFields remain editable after validation.', height: 70 },
+
+                { type: 'heading', text: 'Declaration', level: 2 },
+                { type: 'formField', fieldType: 'checkbox', name: 'declare', label: 'The information above is accurate', value: 'Yes', checked: true },
+                { type: 'formField', fieldType: 'radio', name: 'retention', label: 'Retain for 10 years', value: 'ten', checked: true },
+                { type: 'formField', fieldType: 'radio', name: 'retention', label: 'Retain permanently', value: 'permanent' },
+                { type: 'formField', fieldType: 'dropdown', name: 'department', label: 'Department', options: ['Records', 'Legal', 'Finance'], value: 'Records' },
+            ],
+        };
+
+        const bytes = buildDocumentPDFBytes(params, { tagged: 'pdfa2b' });
+        ctx.writeSafe(resolve(ctx.outputDir, 'form', 'form-pdfa2b.pdf'), 'form/form-pdfa2b.pdf', bytes);
     }
 }

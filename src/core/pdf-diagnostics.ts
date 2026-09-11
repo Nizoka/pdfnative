@@ -62,15 +62,23 @@ export function pdfaNoFontEntriesDiagnostic(level: string): PdfDiagnostic {
     };
 }
 
-/** Diagnostic payload for AcroForm fields under a PDF/A claim. */
+/**
+ * Diagnostic payload for AcroForm fields under a PDF/A claim with no font
+ * available to embed in the form's default resources (#74).
+ *
+ * Since v1.8.0 the `/DR` font is embedded automatically whenever a suitable
+ * Latin font is registered, so this now fires only when none is — the one
+ * remaining case where the claim really is unsatisfiable.
+ */
 export function pdfaUnembeddedFormFontDiagnostic(): PdfDiagnostic {
     return {
         code: 'PDFA_UNEMBEDDED_FORM_FONT',
         severity: 'warning',
-        message: 'AcroForm field appearances render through an unembedded base-14 /Helv font, '
-            + 'which breaks the requested PDF/A conformance level (ISO 19005 §6.2.11.4.1; '
-            + 'veraPDF rejects the file). Drop the PDF/A level for form documents, or flatten '
-            + 'the form before claiming conformance.',
+        message: 'AcroForm field appearances fall back to an unembedded base-14 /Helv font '
+            + 'because no registered font covers basic Latin, which breaks the requested PDF/A '
+            + 'conformance level (ISO 19005 §6.2.11.4.1; veraPDF rejects the file). Register a '
+            + 'Latin font (e.g. registerFont(\'latin\', …) with Noto Sans) and pdfnative embeds '
+            + 'it into the form\'s /DR automatically. See docs/guides/pdfa.md.',
     };
 }
 

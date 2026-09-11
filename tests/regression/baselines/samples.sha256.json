@@ -815,6 +815,12 @@
       "size": 16014,
       "since": "1.7.0"
     },
+    "form/form-pdfa2b.pdf": {
+      "mode": "bytes",
+      "hash": "3e377afaec0e40ba98cef9958258e10276aff662ca634d008c23816f7d0e5112",
+      "size": 253777,
+      "since": "1.8.0"
+    },
     "forms/fill-blank.pdf": {
       "mode": "bytes",
       "hash": "9d65ec3e708e1a2b76372331b988182622cb1c4b7a45ba14680b0dbafc19baad",

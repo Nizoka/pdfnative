@@ -97,6 +97,14 @@ interface ValidationResult {
     readonly profile: string;
     readonly compliant: boolean;
     readonly failedRules: readonly string[];
+    /**
+     * Set when veraPDF could not run at all (rather than running and
+     * rejecting the file) — a broken Java runtime, a missing plugin, a
+     * corrupt install. Without this, every file reports FAIL with no rules
+     * listed, which reads as "the library broke PDF/A" when in fact nothing
+     * was validated.
+     */
+    readonly infraError?: string;
 }
 
 function validateFile(verapdf: string, file: string, profile: string): ValidationResult {
@@ -108,6 +116,7 @@ function validateFile(verapdf: string, file: string, profile: string): Validatio
     const isBatch = /\.(bat|cmd)$/i.test(verapdf);
     const quote = (s: string): string => (isBatch ? `"${s}"` : s);
     let xml: string;
+    let stderr = '';
     try {
         xml = execFileSync(quote(verapdf), ['--format', 'xml', '--flavour', profile, quote(file)], {
             encoding: 'utf8',
@@ -115,9 +124,23 @@ function validateFile(verapdf: string, file: string, profile: string): Validatio
             shell: isBatch,
         });
     } catch (err) {
-        const e = err as { stdout?: string };
+        const e = err as { stdout?: string; stderr?: string; message?: string };
         xml = e.stdout ?? '';
+        stderr = (e.stderr ?? e.message ?? '').trim();
     }
+
+    // No report element at all means veraPDF never validated anything.
+    // Distinguish that from a genuine rejection, which always emits a report.
+    if (!/<report|<validationReport|isCompliant=/i.test(xml)) {
+        return {
+            file,
+            profile,
+            compliant: false,
+            failedRules: [],
+            infraError: stderr || 'veraPDF produced no validation report',
+        };
+    }
+
     const compliant = /isCompliant="true"/i.test(xml);
     const failedRules = Array.from(xml.matchAll(/<rule[^>]*specification="[^"]*"[^>]*clause="([^"]+)"[^>]*testNumber="([^"]+)"[^>]*status="failed"/gi))
         .map(m => `${m[1]} t${m[2]}`);
@@ -198,6 +221,18 @@ function main(): number {
     for (const [file, claim] of claimed) {
         const rel = relative(process.cwd(), file);
         const result = validateFile(verapdf, file, claim.profile);
+        if (result.infraError !== undefined) {
+            // Abort rather than mark every remaining file FAIL: nothing was
+            // validated, so reporting failures would be actively misleading.
+            process.stderr.write(
+                `\nveraPDF could not run — no file was validated.\n\n`
+                + `  ${result.infraError.split('\n').join('\n  ')}\n\n`
+                + '  Most often a broken Java runtime: veraPDF needs a working JRE/JDK on\n'
+                + '  PATH, and JAVA_HOME must point at one that still exists. Check with\n'
+                + '  `java -version`, then re-run.\n',
+            );
+            return 2;
+        }
         if (result.compliant) {
             process.stdout.write(`  PASS  [${claim.profile}]  ${rel}\n`);
         } else {

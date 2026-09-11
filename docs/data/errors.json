@@ -16,9 +16,9 @@
       "code": "PDFA_UNEMBEDDED_FORM_FONT",
       "severity": "warning",
       "since": "1.7.0",
-      "raisedWhen": "An AcroForm field appears under a PDF/A claim — field appearances render through the unembedded base-14 /Helv font.",
+      "raisedWhen": "An AcroForm field appears under a PDF/A claim and no registered font covers basic Latin, so the form's /DR falls back to the unembedded base-14 /Helv font. Since 1.8.0 a registered Latin font is embedded into /DR automatically, so this no longer fires for the common case.",
       "standard": "ISO 19005 §6.2.11.4.1 (veraPDF rejects the file)",
-      "remedy": "Drop the PDF/A level for form documents, or flatten the form before claiming conformance.",
+      "remedy": "Register a Latin font (e.g. registerFont('latin', …) with Noto Sans); pdfnative then embeds a WinAnsi TrueType subset of it into the form's /DR and appearance streams.",
       "guide": "https://pdfnative.dev/guides/pdfa.md"
     },
     {

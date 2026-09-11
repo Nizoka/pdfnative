@@ -41,8 +41,8 @@
     {
       "url": "https://pdfnative.dev/data/errors.json",
       "description": "The engine diagnostic registry (PDFA_* codes), two-way checked against src/ by the error-parity rule.",
-      "bytes": 2418,
-      "approxTokens": 605
+      "bytes": 2653,
+      "approxTokens": 663
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
