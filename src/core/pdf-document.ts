@@ -19,9 +19,7 @@ import type {
 } from '../types/pdf-types.js';
 import type {
     DocumentParams,
-    DocumentBlock,
     ImageBlock,
-    TableBlock,
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
@@ -62,11 +60,11 @@ import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
 import { resolveCreationDate } from './pdf-reproducible.js';
+import { paginateDocument } from './pdf-pagination.js';
 import { resolveDebugOptions, marginBoxOps, blockBoundsOps, tableCellOps } from './pdf-layout-debug.js';
 import { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent } from './pdf-form.js';
 import { selectFormFont, buildFormFontObjects, FORM_FONT_OBJ_COUNT } from './pdf-form-font.js';
 import {
-    estimateBlockHeight,
     renderHeading,
     renderParagraph,
     renderList,
@@ -88,7 +86,6 @@ import type {
     PageAnnotation,
     PageFormField,
     ResolvedImage,
-    TableSlice,
 } from './pdf-renderers.js';
 
 // Re-export wrapText as public API
@@ -97,19 +94,11 @@ export { wrapText } from './pdf-renderers.js';
 // ── Internal Pagination Types ────────────────────────────────────────
 
 /**
- * Synthetic block produced by `_paginateBlocks()` when a table is sliced
- * across multiple pages. Carries the original `TableBlock` plus the
- * pre-computed slice that the renderer consumes. Internal only — never
- * appears in the public `DocumentBlock` union.
+ * Pagination placements. The declarations live in `pdf-pagination.ts`, the
+ * single planner shared with `inspectDocumentLayout()`, and are re-exported
+ * here for the renderers that consume them.
  */
-interface TableSliceItem {
-    readonly type: '__tableSlice';
-    readonly block: TableBlock;
-    readonly slice: TableSlice;
-}
-
-/** Any item the paginator can place on a page. */
-type PaginatedItem = DocumentBlock | TableSliceItem;
+export type { TableSliceItem, PaginatedItem } from './pdf-pagination.js';
 
 // ── Main Builder ─────────────────────────────────────────────────────
 
@@ -229,200 +218,19 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const dateStr = `${dateNow.getFullYear()}-${pad2d(dateNow.getMonth() + 1)}-${pad2d(dateNow.getDate())}`;
     const docTitle = params.title ?? '';
 
-    // ── Pagination: build pages from blocks ──────────────────────────
-    const availableH = pgH - mg.t - mg.b - FT_H - headerH;
-
+    // ── Pagination ───────────────────────────────────────────────────
+    // One planner, shared with `inspectDocumentLayout()` so the two can no
+    // longer disagree about page count or placement (issue #75).
     const hasToc = params.blocks.some(b => b.type === 'toc');
-
-    /**
-     * Run a pagination pass to assign blocks to pages and collect heading positions.
-     * Returns page blocks array and collected headings.
-     *
-     * Tables that don't fit on a single page are sliced row-by-row into
-     * {@link PaginatedItem}s of type `'__tableSlice'`; the renderer emits each
-     * slice with optional repeated header and a shared `/Table` struct-tree
-     * accumulator threaded through every slice.
-     */
-    function _paginateBlocks(
-        headingsIn?: readonly HeadingDestination[],
-    ): { pages: PaginatedItem[][]; headings: HeadingDestination[] } {
-        const pages: PaginatedItem[][] = [[]];
-        const headings: HeadingDestination[] = [];
-        let remainH = availableH;
-        let headingIdx = 0;
-        // Track Y per page for heading destination positions
-        let curY = pgH - mg.t - headerH;
-
-        // Account for title on page 0
-        if (params.title) {
-            const titleH = 22 + 12; // TITLE_LN + underline spacing
-            remainH -= titleH;
-            curY -= titleH;
-        }
-
-        for (const block of params.blocks) {
-            if (block.type === 'pageBreak') {
-                pages.push([]);
-                remainH = availableH;
-                curY = pgH - mg.t - headerH;
-                continue;
-            }
-
-            // Tables get sliced row-by-row across pages with optional header
-            // repetition and one shared `/Table` struct accumulator per table.
-            if (block.type === 'table') {
-                const plan = planTable(block, enc, mg.l, cw);
-                const repeatHeader = block.repeatHeader !== false; // default true
-                const sharedAccum: (StructElement | MCRef)[] = [];
-                const totalRows = block.rows.length;
-                let rowIdx = 0;
-                let isFirstSlice = true;
-
-                // Empty-rows table: still emit caption + header + trailer on one slice.
-                if (totalRows === 0) {
-                    const totalH = plan.captionHeight + plan.headerHeight + plan.trailerSpacing;
-                    if (totalH > remainH && pages[pages.length - 1].length > 0) {
-                        pages.push([]);
-                        remainH = availableH;
-                        curY = pgH - mg.t - headerH;
-                    }
-                    pages[pages.length - 1].push({
-                        type: '__tableSlice',
-                        block,
-                        slice: {
-                            plan,
-                            fromRow: 0,
-                            toRow: 0,
-                            drawCaption: true,
-                            drawHeader: true,
-                            isFinalSlice: true,
-                            tableStructAccum: sharedAccum,
-                        },
-                    });
-                    remainH -= totalH;
-                    curY -= totalH;
-                    continue;
-                }
-
-                while (rowIdx < totalRows) {
-                    const drawCaption = isFirstSlice;
-                    const drawHeader = isFirstSlice || repeatHeader;
-                    const tCapH = drawCaption ? plan.captionHeight : 0;
-                    const tHdrH = drawHeader ? plan.headerHeight : 0;
-                    const availableForRows = remainH - tCapH - tHdrH - plan.trailerSpacing;
-
-                    let usedH = 0;
-                    let count = 0;
-                    while (
-                        rowIdx + count < totalRows
-                        && usedH + plan.rowHeights[rowIdx + count] <= availableForRows
-                    ) {
-                        usedH += plan.rowHeights[rowIdx + count];
-                        count++;
-                    }
-
-                    // No rows fit AND page has prior content → move to a new page.
-                    if (count === 0 && pages[pages.length - 1].length > 0) {
-                        pages.push([]);
-                        remainH = availableH;
-                        curY = pgH - mg.t - headerH;
-                        continue;
-                    }
-                    // No rows fit even on a fresh page (single row taller than
-                    // the page): force one row through; clipCells clips overflow.
-                    if (count === 0) count = 1;
-
-                    const fromRow = rowIdx;
-                    const toRow = rowIdx + count;
-                    rowIdx = toRow;
-                    const isFinalSlice = rowIdx >= totalRows;
-
-                    pages[pages.length - 1].push({
-                        type: '__tableSlice',
-                        block,
-                        slice: {
-                            plan,
-                            fromRow,
-                            toRow,
-                            drawCaption,
-                            drawHeader,
-                            isFinalSlice,
-                            tableStructAccum: sharedAccum,
-                        },
-                    });
-
-                    const sliceH = tCapH + tHdrH + usedH + (isFinalSlice ? plan.trailerSpacing : 0);
-                    remainH -= sliceH;
-                    curY -= sliceH;
-                    isFirstSlice = false;
-
-                    if (!isFinalSlice) {
-                        pages.push([]);
-                        remainH = availableH;
-                        curY = pgH - mg.t - headerH;
-                    }
-                }
-                continue;
-            }
-
-            const blockH = estimateBlockHeight(block, enc, cw, headingsIn);
-            if (blockH > remainH && pages[pages.length - 1].length > 0) {
-                pages.push([]);
-                remainH = availableH;
-                curY = pgH - mg.t - headerH;
-            }
-
-            pages[pages.length - 1].push(block);
-
-            if (block.type === 'heading') {
-                headings.push({
-                    destName: `toc_h_${headingIdx++}`,
-                    text: block.text,
-                    level: block.level,
-                    pageIndex: pages.length - 1,
-                    y: curY,
-                });
-            }
-
-            remainH -= blockH;
-            curY -= blockH;
-        }
-
-        return { pages, headings };
-    }
-
-    // Multi-pass pagination for TOC support (max 3 iterations)
-    let headingDests: HeadingDestination[] = [];
-    let pageBlocks: PaginatedItem[][];
-
-    if (hasToc) {
-        // Pass 1: paginate without TOC content to collect headings
-        const pass1 = _paginateBlocks();
-        headingDests = pass1.headings;
-
-        // Pass 2: re-paginate with TOC height included
-        const pass2 = _paginateBlocks(headingDests);
-
-        // Check if heading page assignments changed
-        const pagesChanged = pass2.headings.some((h, i) =>
-            i < headingDests.length && h.pageIndex !== headingDests[i].pageIndex
-        );
-
-        if (pagesChanged) {
-            // Pass 3: final re-pagination with updated heading positions
-            headingDests = pass2.headings;
-            const pass3 = _paginateBlocks(headingDests);
-            headingDests = pass3.headings;
-            pageBlocks = pass3.pages;
-        } else {
-            headingDests = pass2.headings;
-            pageBlocks = pass2.pages;
-        }
-    } else {
-        const result = _paginateBlocks();
-        pageBlocks = result.pages;
-        headingDests = result.headings;
-    }
+    const { pages: pageBlocks, headings: headingDests } = paginateDocument({
+        blocks: params.blocks,
+        title: params.title,
+        enc,
+        pgH,
+        mg,
+        cw,
+        headerH,
+    });
 
     const totalPages = Math.max(1, pageBlocks.length);
 
