@@ -147,6 +147,46 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         }),
     );
 
+    // ── Justification and optical margins ───────────────────────
+    // Three variants of one page: ragged right, justified, and justified
+    // with punctuation hanging past the measure.
+    const QUOTED =
+        '« La justification remplit la mesure, ce qui distingue une page composee '
+        + 'd\'une page simplement generee. » Le debordement optique va plus loin : '
+        + 'la ponctuation qui borde une ligne deborde legerement, de sorte que le bord '
+        + 'optique de la colonne paraisse droit. "Une guillemet ouvrante", un point '
+        + 'final, une virgule : chacun laisse un blanc qui se voit. ';
+
+    const alignDoc = (align: 'left' | 'justify'): DocumentParams => ({
+        title: align === 'justify' ? 'Justification' : 'Alignement au fer a gauche',
+        blocks: [
+            { type: 'heading', text: align === 'justify' ? 'Texte justifie' : 'Texte au fer a gauche', level: 1 },
+            { type: 'paragraph', text: QUOTED.repeat(4), align },
+            { type: 'paragraph', text: QUOTED.repeat(4), align },
+        ],
+        footerText: 'pdfnative – typography showcase',
+    });
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'align-ragged.pdf'),
+        'typography/align-ragged.pdf',
+        buildDocumentPDFBytes(alignDoc('left')),
+    );
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'align-justified.pdf'),
+        'typography/align-justified.pdf',
+        buildDocumentPDFBytes(alignDoc('justify')),
+    );
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'align-optical.pdf'),
+        'typography/align-optical.pdf',
+        buildDocumentPDFBytes(alignDoc('justify'), {
+            typography: { opticalMargins: true, punctuationSpacing: 'fr', unitBinding: true },
+        }),
+    );
+
     // ── Tagged: a split paragraph stays one /P element ───────────
     // PDF/A-2b, so veraPDF checks that splitting a paragraph across pages
     // leaves the structure tree conformant. Needs an embedded Latin font like

@@ -166,6 +166,105 @@ export function txtC(
     return txt(str, leftX + (colW - width) / 2, y, font, sz, enc);
 }
 
+/**
+ * Measure a string the way {@link txtR} and {@link txtC} do, so justified
+ * placement agrees with right- and centre-alignment.
+ */
+function measureFor(str: string, sz: number, enc: EncodingContext): number {
+    return enc.isUnicode ? enc.tw(str, sz) : helveticaWidth(toWinAnsi(str), sz);
+}
+
+/**
+ * A gap wider than this multiple of the natural space is a river down the
+ * page, not justification. Such a line is left ragged instead.
+ */
+const MAX_JUSTIFY_STRETCH = 3;
+
+/**
+ * How far a character may hang past the measure, as a fraction of its own
+ * advance.
+ *
+ * Punctuation is mostly white space inside its own box, so a line beginning
+ * with an opening quote or ending in a full stop *looks* indented even though
+ * its glyph origin is exactly on the margin. Letting those glyphs protrude
+ * makes the optical edge straight — the difference between a page that looks
+ * typeset and one that looks generated.
+ *
+ * Values are conservative: a half advance for the marks that are almost all
+ * white, a third for dashes, less for the taller marks.
+ */
+const PROTRUSION: Readonly<Record<string, number>> = {
+    '"': 0.5, "'": 0.5,
+    '‘': 0.5, '’': 0.5, // ‘ ’
+    '“': 0.5, '”': 0.5, // “ ”
+    '«': 0.4, '»': 0.4, // « »
+    '.': 0.5, ',': 0.5,
+    '-': 0.33, '–': 0.33, '—': 0.33, // - – —
+    ':': 0.25, ';': 0.25,
+    '!': 0.2, '?': 0.2,
+    '(': 0.2, ')': 0.2, '[': 0.2, ']': 0.2,
+};
+
+/** Points by which a line's first character should hang left of the measure. */
+export function protrusionLeft(line: string, sz: number, enc: EncodingContext): number {
+    const ch = line[0];
+    const frac = ch === undefined ? undefined : PROTRUSION[ch];
+    return frac === undefined ? 0 : measureFor(ch as string, sz, enc) * frac;
+}
+
+/** Points by which a line's last character may hang right of the measure. */
+export function protrusionRight(line: string, sz: number, enc: EncodingContext): number {
+    const ch = line[line.length - 1];
+    const frac = ch === undefined ? undefined : PROTRUSION[ch];
+    return frac === undefined ? 0 : measureFor(ch as string, sz, enc) * frac;
+}
+
+/**
+ * Justified text: lay the line's words out so it spans exactly `targetWidth`.
+ *
+ * Each word is placed at its own absolute x rather than relying on the `Tw`
+ * word-spacing operator, because `Tw` applies only to single-byte code 32 —
+ * it has no effect at all on the Identity-H CID fonts every non-Latin script
+ * uses (ISO 32000-1 §9.3.3). Explicit placement is the only approach that
+ * behaves identically in both modes.
+ *
+ * Falls back to plain left-aligned output when the line has a single word,
+ * already overruns, or would need an implausible stretch.
+ *
+ * @since 1.8.0
+ */
+export function txtJustified(
+    str: string,
+    x: number,
+    y: number,
+    font: string,
+    sz: number,
+    enc: EncodingContext,
+    targetWidth: number,
+): string {
+    // Split on plain spaces only: a no-break space is part of its word, which
+    // is precisely what makes "150 €" survive justification intact.
+    const words = str.split(' ').filter(w => w !== '');
+    if (words.length < 2) return txt(str, x, y, font, sz, enc);
+
+    const spaceW = measureFor(' ', sz, enc);
+    const widths = words.map(w => measureFor(w, sz, enc));
+    const natural = widths.reduce((a, b) => a + b, 0) + spaceW * (words.length - 1);
+    const extra = targetWidth - natural;
+    if (extra <= 0 || extra / (words.length - 1) > spaceW * MAX_JUSTIFY_STRETCH) {
+        return txt(str, x, y, font, sz, enc);
+    }
+
+    const gap = spaceW + extra / (words.length - 1);
+    const parts: string[] = [];
+    let penX = x;
+    for (let i = 0; i < words.length; i++) {
+        parts.push(txt(words[i], penX, y, font, sz, enc));
+        penX += widths[i] + gap;
+    }
+    return parts.join('\n');
+}
+
 /** Tagged text at absolute position — wraps in /Span BDC…EMC with /ActualText. */
 export function txtTagged(
     str: string,

@@ -495,6 +495,23 @@ export interface TypographyOptions {
      * Default: `undefined` (no change).
      */
     readonly punctuationSpacing?: PunctuationSpacingPreset | readonly PunctuationSpacingRule[];
+    /**
+     * Let punctuation hang past the edge it sits against, so the optical edge
+     * of a column reads straight.
+     *
+     * A line beginning with an opening quote, or ending in a full stop, looks
+     * indented even with its glyph origin exactly on the margin, because the
+     * mark is mostly white space inside its own box. Hanging it back out is
+     * the classic fix, and the most visible difference between typeset and
+     * generated pages.
+     *
+     * Applies to paragraphs: the leading mark of left-aligned and justified
+     * lines, and the trailing mark of justified and right-aligned ones.
+     * Offsets are a fraction of the mark's own advance and are conservative.
+     *
+     * Default: `false`.
+     */
+    readonly opticalMargins?: boolean;
 }
 
 /** Built-in punctuation-spacing conventions. @since 1.8.0 */

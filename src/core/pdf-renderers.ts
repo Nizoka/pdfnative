@@ -34,7 +34,11 @@ import { validateURL } from './pdf-annot.js';
 import { parseColor } from './pdf-color.js';
 import type { LinkAnnotation } from './pdf-annot.js';
 import { truncate, helveticaWidth, helveticaBoldWidth } from '../fonts/encoding.js';
-import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum } from './pdf-text.js';
+import {
+    txt, txtR, txtC, txtJustified, txtTagged, txtRTagged, txtCTagged,
+    protrusionLeft, protrusionRight, fmtNum,
+} from './pdf-text.js';
+import { wrapSpan } from './pdf-tags.js';
 import {
     ROW_H, TH_H,
     DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
@@ -467,6 +471,7 @@ export function renderParagraph(
     tagCtx: TagContext | undefined,
     documentChildren: (StructElement | MCRef)[],
     slice?: ParagraphSlice,
+    optical: boolean = false,
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
     const sz = block.fontSize ?? DEFAULT_PARA_SIZE;
@@ -487,24 +492,47 @@ export function renderParagraph(
 
     const pChildren: MCRef[] = slice ? slice.paraStructAccum : [];
 
-    for (const line of lines) {
+    // A justified paragraph leaves its LAST line ragged — the line that ends
+    // the paragraph, not merely the last of this slice.
+    const firstLineIdx = slice ? slice.fromLine : 0;
+    const lastLineIdx = allLines.length - 1;
+
+    for (let li = 0; li < lines.length; li++) {
+        const line = lines[li];
+        const justifyThis = align === 'justify' && (firstLineIdx + li) !== lastLineIdx;
+
+        // Optical margins: punctuation hangs past the edge it sits against, so
+        // the optical edge reads straight. Left-aligned and justified lines
+        // hang their leading mark left; justified and right-aligned lines hang
+        // their trailing mark right.
+        const hangL = optical && align !== 'right' ? protrusionLeft(line, sz, enc) : 0;
+        const hangR = optical && (justifyThis || align === 'right')
+            ? protrusionRight(line, sz, enc)
+            : 0;
+        const lineX = mgL + indent - hangL;
+        const lineW = availW + hangL + hangR;
+
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             pChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
             if (align === 'right') {
-                ops.push(txtRTagged(line, pgW - mgR, y - sz, enc.f1, sz, enc, mcid));
+                ops.push(txtRTagged(line, pgW - mgR + hangR, y - sz, enc.f1, sz, enc, mcid));
             } else if (align === 'center') {
                 ops.push(txtCTagged(line, mgL + indent, y - sz, enc.f1, sz, availW, enc, mcid));
+            } else if (justifyThis) {
+                ops.push(wrapSpan(txtJustified(line, lineX, y - sz, enc.f1, sz, enc, lineW), line, mcid));
             } else {
-                ops.push(txtTagged(line, mgL + indent, y - sz, enc.f1, sz, enc, mcid));
+                ops.push(txtTagged(line, lineX, y - sz, enc.f1, sz, enc, mcid));
             }
         } else {
             if (align === 'right') {
-                ops.push(txtR(line, pgW - mgR, y - sz, enc.f1, sz, enc));
+                ops.push(txtR(line, pgW - mgR + hangR, y - sz, enc.f1, sz, enc));
             } else if (align === 'center') {
                 ops.push(txtC(line, mgL + indent, y - sz, enc.f1, sz, availW, enc));
+            } else if (justifyThis) {
+                ops.push(txtJustified(line, lineX, y - sz, enc.f1, sz, enc, lineW));
             } else {
-                ops.push(txt(line, mgL + indent, y - sz, enc.f1, sz, enc));
+                ops.push(txt(line, lineX, y - sz, enc.f1, sz, enc));
             }
         }
         y -= lineH;

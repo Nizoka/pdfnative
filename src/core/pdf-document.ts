@@ -226,6 +226,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // Typographic text transforms run once, here, so the planner and every
     // renderer below see the same strings. Returns the input untouched when
     // nothing is configured.
+    const opticalMargins = layout?.typography?.opticalMargins === true;
     const preparedBlocks = prepareBlocks(params.blocks, layout?.typography);
     const { pages: pageBlocks, headings: headingDests } = paginateDocument({
         blocks: preparedBlocks,
@@ -357,7 +358,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                     break;
                 }
                 case 'paragraph': {
-                    const result = renderParagraph(block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren);
+                    const result = renderParagraph(block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, undefined, opticalMargins);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
@@ -387,7 +388,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 }
                 case '__paraSlice': {
                     const result = renderParagraph(
-                        block.block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, block.slice,
+                        block.block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, block.slice, opticalMargins,
                     );
                     ops.push(...result.ops);
                     y = result.y;

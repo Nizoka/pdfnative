@@ -1415,6 +1415,24 @@
       "size": 6707,
       "since": "1.7.0"
     },
+    "typography/align-justified.pdf": {
+      "mode": "bytes",
+      "hash": "c536ab5cf0900c83233e9182969029e91b041198e1000e1ce38bd1e86b89abf6",
+      "size": 23945,
+      "since": "1.8.0"
+    },
+    "typography/align-optical.pdf": {
+      "mode": "bytes",
+      "hash": "efa44a01f29cd3929225eea06fffd28bd5ce99507f5659bc6f5b4a2877895b12",
+      "size": 22809,
+      "since": "1.8.0"
+    },
+    "typography/align-ragged.pdf": {
+      "mode": "bytes",
+      "hash": "700c2ca9b7de656695c6b7afb11f32a8b1e8826d5f3ff72e2744782b8031a6da",
+      "size": 8204,
+      "since": "1.8.0"
+    },
     "typography/breaks-atomic.pdf": {
       "mode": "bytes",
       "hash": "1d8cc1564ed0d9ca81d42b41d771949c4c6bb81af34909b8c2858d1b411e4eb9",

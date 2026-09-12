@@ -37,7 +37,14 @@ export interface ParagraphBlock {
     readonly text: string;
     readonly fontSize?: number;
     readonly lineHeight?: number;
-    readonly align?: 'left' | 'right' | 'center';
+    /**
+     * `'justify'` spans every line but the paragraph's last across the full
+     * measure, by placing each word at its own x. A line that would need an
+     * implausible stretch is left ragged rather than opened into a river.
+     *
+     * @since 1.8.0 — the `'justify'` value.
+     */
+    readonly align?: 'left' | 'right' | 'center' | 'justify';
     readonly indent?: number;
     readonly color?: PdfColor;
     /**
