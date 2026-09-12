@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>All 23 Scripts + Emoji Playground — pdfnative</title>
-  <meta name="description" content="Generate one PDF with all 23 Unicode scripts pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji, in your browser.">
+  <title>All 27 Scripts + Emoji Playground — pdfnative</title>
+  <meta name="description" content="Generate one PDF with all 27 Unicode scripts pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji, in your browser.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/all-scripts.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/all-scripts.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/all-scripts.html">
@@ -12,14 +12,14 @@
   <meta property="og:site_name" content="pdfnative">
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/all-scripts.html">
-  <meta property="og:title" content="All 23 Scripts + Emoji Playground — pdfnative">
-  <meta property="og:description" content="The ultimate stress test: generate a single PDF containing all 23 Unicode scripts pdfnative supports — plus native COLRv1 colour emoji, all in your browser with zero install.">
+  <meta property="og:title" content="All 27 Scripts + Emoji Playground — pdfnative">
+  <meta property="og:description" content="The ultimate stress test: generate a single PDF containing all 27 Unicode scripts pdfnative supports — plus native COLRv1 colour emoji, all in your browser with zero install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="All 23 Scripts + Emoji Playground — pdfnative">
-  <meta name="twitter:description" content="Generate a single PDF with all 23 Unicode scripts pdfnative supports — plus native COLRv1 colour emoji. Zero install.">
+  <meta name="twitter:title" content="All 27 Scripts + Emoji Playground — pdfnative">
+  <meta name="twitter:description" content="Generate a single PDF with all 27 Unicode scripts pdfnative supports — plus native COLRv1 colour emoji. Zero install.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -30,12 +30,12 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "inLanguage": "en",
-    "name": "All 23 Scripts + Emoji Playground",
+    "name": "All 27 Scripts + Emoji Playground",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any (browser-based)",
     "browserRequirements": "Requires JavaScript and HTML5",
     "url": "https://pdfnative.dev/playgrounds/all-scripts.html",
-    "description": "Generate one PDF with all 23 Unicode scripts pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji, in your browser.",
+    "description": "Generate one PDF with all 27 Unicode scripts pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji, in your browser.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
@@ -69,11 +69,11 @@
 </nav>
 
 <main class="guide-shell" id="main-content" tabindex="-1">
-  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; All 23 scripts + emoji</p>
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; All 27 scripts + emoji</p>
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html" aria-current="page">All 23 scripts</a>
+    <a href="./all-scripts.html" aria-current="page">All 27 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -85,11 +85,11 @@
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
-    <h1>All 23 Scripts + Emoji</h1>
+    <h1>All 27 Scripts + Emoji</h1>
     <p>The flagship stress test. One <code>buildDocumentPDFBytes()</code> call, <strong>every Unicode script pdfnative supports</strong> — 22 writing systems with full BiDi reordering and OpenType GSUB/GPOS shaping — plus native <strong>COLRv1 colour emoji</strong>, composed into a single PDF entirely in your browser. The text-routing engine inspects every code point and dispatches it to the right embedded font automatically, so a single paragraph can freely mix Arabic, Tamil, Japanese and emoji.</p>
 
     <div class="callout" style="margin:16px 0;padding:12px 16px;border-radius:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:14px;">
-      <strong>Heads-up:</strong> this preset embeds up to <strong>24 fonts</strong> (23 scripts + Latin + colour emoji). The first run fetches several megabytes of font data from the CDN — give it a few seconds. Everything after that is instant.
+      <strong>Heads-up:</strong> this preset embeds up to <strong>24 fonts</strong> (27 scripts + Latin + colour emoji). The first run fetches several megabytes of font data from the CDN — give it a few seconds. Everything after that is instant.
     </div>
 
     <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
@@ -97,8 +97,8 @@
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
       <label for="preset"><strong>Preset:</strong></label>
       <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
-        <option value="world-color">World tour — 23 scripts + COLRv1 colour emoji</option>
-        <option value="world-mono">World tour — 23 scripts + monochrome emoji</option>
+        <option value="world-color">World tour — 27 scripts + COLRv1 colour emoji</option>
+        <option value="world-mono">World tour — 27 scripts + monochrome emoji</option>
         <option value="greetings">Hello, world — greeting per script (compact)</option>
       </select>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
@@ -119,7 +119,7 @@
       <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
     </details>
 
-    <h2 style="margin-top:32px;">The 23 scripts at a glance</h2>
+    <h2 style="margin-top:32px;">The 27 scripts at a glance</h2>
     <p>Every writing system below ships as a bundled Noto font module and renders through the same shaping engine. The demo reads this table directly — what you see here is what lands in the PDF.</p>
     <table id="greetings-table">
       <thead>
@@ -207,8 +207,8 @@ const REGION_PARAS = [
 
 const PRESETS = {
   'world-color': {
-    title: 'pdfnative — 23 Unicode scripts + colour emoji',
-    heading: 'One library · 23 scripts · zero dependencies 🌍',
+    title: 'pdfnative — 27 Unicode scripts + colour emoji',
+    heading: 'One library · 27 scripts · zero dependencies 🌍',
     langs: [...ALL_LANGS, 'emoji'],
     emojiColor: true,
     body: [
@@ -218,8 +218,8 @@ const PRESETS = {
     ].join('\n').trimEnd()
   },
   'world-mono': {
-    title: 'pdfnative — 23 Unicode scripts + monochrome emoji',
-    heading: 'One library · 23 scripts · zero dependencies',
+    title: 'pdfnative — 27 Unicode scripts + monochrome emoji',
+    heading: 'One library · 27 scripts · zero dependencies',
     langs: [...ALL_LANGS, 'emoji'],
     emojiColor: false,
     body: [
@@ -229,7 +229,7 @@ const PRESETS = {
     ].join('\n').trimEnd()
   },
   greetings: {
-    title: 'Hello, world — in 23 scripts',
+    title: 'Hello, world — in 27 scripts',
     heading: 'Hello, world 👋',
     langs: [...ALL_LANGS, 'emoji'],
     emojiColor: true,
@@ -298,7 +298,7 @@ function updateCodeView(id) {
   const code = [
     "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
     '',
-    '// 23 scripts + Latin + emoji — each lazy-loaded from the package fonts/ subpath.',
+    '// 27 scripts + Latin + emoji — each lazy-loaded from the package fonts/ subpath.',
     `const langs = ${JSON.stringify(p.langs)};`,
     'registerFonts(Object.fromEntries(langs.map(l => [l,',
     '  () => import(`https://esm.sh/pdfnative@1.7.0/fonts/${MODULE[l]}`)])));',

@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 471,
+  "exportCount": 480,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -1818,6 +1818,13 @@
       "summary": "Check whether a string contains any Bengali characters."
     },
     {
+      "name": "containsCham",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsCham(str: string): boolean",
+      "summary": "Check whether a string contains any Cham characters."
+    },
+    {
       "name": "containsDevanagari",
       "kind": "value",
       "module": "src/shaping/script-registry.ts",
@@ -1867,6 +1874,13 @@
       "summary": "Check whether a string contains any Myanmar characters."
     },
     {
+      "name": "containsNewTaiLue",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsNewTaiLue(str: string): boolean",
+      "summary": "Check whether a string contains any New Tai Lue characters."
+    },
+    {
       "name": "containsRTL",
       "kind": "value",
       "module": "src/shaping/bidi.ts",
@@ -1879,6 +1893,20 @@
       "module": "src/shaping/script-registry.ts",
       "signature": "export function containsSinhala(str: string): boolean",
       "summary": "Check whether a string contains any Sinhala characters."
+    },
+    {
+      "name": "containsTaiLe",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTaiLe(str: string): boolean",
+      "summary": "Check whether a string contains any Tai Le characters."
+    },
+    {
+      "name": "containsTaiTham",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTaiTham(str: string): boolean",
+      "summary": "Check whether a string contains any Tai Tham (Lanna) characters."
     },
     {
       "name": "containsTamil",
@@ -2420,6 +2448,13 @@
       "summary": "Check if a codepoint falls in the Bengali Unicode block."
     },
     {
+      "name": "isChamCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isChamCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Cham Unicode block."
+    },
+    {
       "name": "isCyrillicCodepoint",
       "kind": "value",
       "module": "src/shaping/script-registry.ts",
@@ -2497,6 +2532,13 @@
       "summary": null
     },
     {
+      "name": "isNewTaiLueCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isNewTaiLueCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the New Tai Lue Unicode block."
+    },
+    {
       "name": "isRef",
       "kind": "value",
       "module": "src/parser/pdf-object-parser.ts",
@@ -2530,6 +2572,20 @@
       "module": "src/parser/pdf-object-parser.ts",
       "signature": "export function isStream(v: PdfValue): v is PdfStream",
       "summary": null
+    },
+    {
+      "name": "isTaiLeCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTaiLeCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Tai Le Unicode block."
+    },
+    {
+      "name": "isTaiThamCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTaiThamCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Tai Tham (Lanna) Unicode block."
     },
     {
       "name": "isTamilCodepoint",
@@ -3083,6 +3139,13 @@
       "module": "src/shaping/tibetan-shaper.ts",
       "signature": "export function shapeTibetanText(str: string, fontData: FontData): ShapedGlyph[]",
       "summary": "Shape a string of Tibetan text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeUseText",
+      "kind": "value",
+      "module": "src/shaping/use-shaper.ts",
+      "signature": "export function shapeUseText(str: string, fd: FontData): ShapedGlyph[]",
+      "summary": "Shape text through the Universal Shaping Engine."
     },
     {
       "name": "signPdfBytes",

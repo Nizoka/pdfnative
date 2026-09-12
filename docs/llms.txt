@@ -1,6 +1,6 @@
 # pdfnative
 
-> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 23 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. PAdES digital signatures with long-term validation (B-B → B-LTA). Current version: 1.7.0.
+> Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 27 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. PAdES digital signatures with long-term validation (B-B → B-LTA). Current version: 1.7.0.
 
 _Verified on 2026-08-29 against the source tree by `npm run verify:docs`; the canonical manifest is <https://pdfnative.dev/assets/ecosystem.json>._
 
