@@ -28,6 +28,9 @@ function registerVisualFonts(): void {
         lo: fl(() => import('../../fonts/noto-lao-data.js')),
         nod: fl(() => import('../../fonts/noto-taitham-data.js')),
         cjm: fl(() => import('../../fonts/noto-cham-data.js')),
+        km: fl(() => import('../../fonts/noto-khmer-data.js')),
+        my: fl(() => import('../../fonts/noto-myanmar-data.js')),
+        si: fl(() => import('../../fonts/noto-sinhala-data.js')),
     });
     registered = true;
 }
@@ -141,6 +144,71 @@ export const FIXTURES: readonly Fixture[] = [
                     { type: 'paragraph', text: '\uAA00\uAA2F \uAA00\uAA30 \uAA00\uAA35\uAA36 \uAA00\uAA4C \uAA00\uAA2A.' },
                 ],
                 footerText: 'tai tham + cham fixture',
+                fontEntries,
+            };
+            return buildDocumentPDFBytes(params, { creationDate: new Date('2026-01-01T00:00:00Z') });
+        },
+    },
+    {
+        name: 'khmer',
+        build: async () => {
+            registerVisualFonts();
+            const fontEntries = await entries(['km']);
+            const params: DocumentParams = {
+                title: 'Khmer shaping fixture',
+                blocks: [
+                    { type: 'heading', text: 'Khmer \u2014 coeng stacks, pre-base vowels, robat', level: 1 },
+                    // Coeng subscripts, one and two deep.
+                    { type: 'paragraph', text: '\u1780\u17D2\u1780 \u179F\u17D2\u178F \u1784\u17D2\u1780 \u1780\u17D2\u179A\u17D2\u1798.' },
+                    // Pre-base vowels, which render left of a base that follows them.
+                    { type: 'paragraph', text: '\u1780\u17C1 \u1780\u17C2 \u1780\u17C3 \u1780\u17BE \u1780\u17C4.' },
+                    // Robat U+17CC, and marks stacked on marks.
+                    { type: 'paragraph', text: '\u1780\u17CC \u1780\u17BB\u17C6 \u1780\u17B7\u17CB \u2014 \u1797\u17B6\u179F\u17B6\u1781\u17D2\u1798\u17C2\u179A.' },
+                ],
+                footerText: 'khmer fixture',
+                fontEntries,
+            };
+            return buildDocumentPDFBytes(params, { creationDate: new Date('2026-01-01T00:00:00Z') });
+        },
+    },
+    {
+        name: 'myanmar',
+        build: async () => {
+            registerVisualFonts();
+            const fontEntries = await entries(['my']);
+            const params: DocumentParams = {
+                title: 'Myanmar shaping fixture',
+                blocks: [
+                    { type: 'heading', text: 'Myanmar \u2014 kinzi, medials, stacks', level: 1 },
+                    // Kinzi: nga + asat + virama, drawn above the following base.
+                    { type: 'paragraph', text: '\u1004\u103A\u1039\u1000 \u1004\u103A\u1039\u1015.' },
+                    // The four medials, alone and combined.
+                    { type: 'paragraph', text: '\u1000\u103B \u1000\u103C \u1000\u103D \u1000\u103E \u1000\u103C\u103D.' },
+                    // Stacked consonants and marks on marks.
+                    { type: 'paragraph', text: '\u1000\u1039\u1000 \u1000\u102D\u102F \u1019\u103C\u1014\u103A\u1019\u102C.' },
+                ],
+                footerText: 'myanmar fixture',
+                fontEntries,
+            };
+            return buildDocumentPDFBytes(params, { creationDate: new Date('2026-01-01T00:00:00Z') });
+        },
+    },
+    {
+        name: 'sinhala',
+        build: async () => {
+            registerVisualFonts();
+            const fontEntries = await entries(['si']);
+            const params: DocumentParams = {
+                title: 'Sinhala shaping fixture',
+                blocks: [
+                    { type: 'heading', text: 'Sinhala \u2014 conjuncts, split vowels, al-lakuna', level: 1 },
+                    // Touching conjuncts through the al-lakuna U+0DCA.
+                    { type: 'paragraph', text: '\u0D9A\u0DCA\u0D9A \u0DAF\u0DCA\u0DC0 \u0D9A\u0DCA\u200D\u0DBB.' },
+                    // Split vowels, whose parts sit on both sides of the base.
+                    { type: 'paragraph', text: '\u0D9A\u0DD9 \u0D9A\u0DDA \u0D9A\u0DDC \u0D9A\u0DDD \u0D9A\u0DDE.' },
+                    { type: 'paragraph', text: '\u0DC3\u0DD2\u0D82\u0DC4\u0DBD \u2014 \u0DC1\u0DCA\u200D\u0DBB\u0DD3.' },
+                ],
+                footerText: 'sinhala fixture',
                 fontEntries,
             };
             return buildDocumentPDFBytes(params, { creationDate: new Date('2026-01-01T00:00:00Z') });
