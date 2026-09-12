@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import {
-    OUTPUT_DIR, BASELINE_PATH, ENCRYPTED_SAMPLES,
+    REPO_ROOT, OUTPUT_DIR, BASELINE_PATH, ENCRYPTED_SAMPLES,
     walkPdfs, relPath, fingerprintAll, loadBaseline, compareToBaseline,
     canonicalJson, sha256Hex, semanticProjection,
 } from '../../scripts/lib/sample-fingerprint.js';
@@ -117,5 +117,46 @@ describe('sample fingerprint helpers', () => {
 
     it('ships a committed baseline', () => {
         expect(existsSync(BASELINE_PATH)).toBe(true);
+    });
+});
+
+describe('sample generation is environment-independent', () => {
+    // Reproducibility needs more than a pinned clock. `toLocaleString()` with
+    // no explicit locale follows the machine's: on a fr-FR developer machine
+    // 1500 formats as "1 500" with U+202F, on a C/en-US CI runner as "1,500".
+    // That silently made three samples machine-dependent, so their committed
+    // hashes could never have matched in CI.
+    const LOCALE_SENSITIVE = /\.toLocale(?:String|DateString|TimeString)\(\s*\)/;
+
+    function* walkTs(dir: string): Generator<string> {
+        for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+            const p = join(dir, entry.name);
+            if (entry.isDirectory()) yield* walkTs(p);
+            else if (entry.name.endsWith('.ts')) yield p;
+        }
+    }
+
+    it('never formats numbers or dates without an explicit locale', () => {
+        const offenders: string[] = [];
+        for (const dir of ['scripts', 'src', 'recipes']) {
+            const abs = join(REPO_ROOT, dir);
+            if (!existsSync(abs)) continue;
+            for (const file of walkTs(abs)) {
+                const src = readFileSync(file, 'utf8');
+                src.split('\n').forEach((line, i) => {
+                    if (LOCALE_SENSITIVE.test(line)) {
+                        offenders.push(`${relative(REPO_ROOT, file)}:${i + 1}`);
+                    }
+                });
+            }
+        }
+        expect(offenders, 'pass an explicit locale, e.g. toLocaleString(\'en-US\')').toEqual([]);
+    });
+
+    it('runs the generator in UTC', () => {
+        // scripts/helpers/tz.ts pins it; PDF dates carry a local offset, so
+        // without this the same instant renders differently per machine.
+        const tz = readFileSync(join(REPO_ROOT, 'scripts', 'helpers', 'tz.ts'), 'utf8');
+        expect(tz).toContain("process.env.TZ = 'UTC'");
     });
 });

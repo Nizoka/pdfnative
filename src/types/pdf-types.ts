@@ -465,6 +465,63 @@ export interface TypographyOptions {
      * Default: `false`.
      */
     readonly keepHeadingsWithNext?: boolean;
+    /**
+     * Bind a numerical value to the unit symbol that follows it with a
+     * no-break space, so `150 €`, `12 kg` or `30 %` never break across a
+     * line. ISO 80000-1 §7.1 asks for this in every language, so it carries
+     * no locale and no cultural assumption.
+     *
+     * Pass `true` for the built-in symbol list, or an object to extend it.
+     * Only an existing plain space is converted, and only before a recognised
+     * unit standing on its own — "150 personnes" stays breakable.
+     *
+     * Default: `false`.
+     */
+    readonly unitBinding?: boolean | UnitBindingOptions;
+    /**
+     * Replace the plain spaces around punctuation with no-break ones.
+     *
+     * Unlike unit binding, this is **not** universal: French sets a narrow
+     * space before `;` `!` `?`, Canadian French sets none, English, German,
+     * Italian and Spanish set none anywhere, and Polish has an unrelated rule
+     * about one-letter prepositions. So it takes either the name of a preset
+     * the library can state precisely (`'fr'`, `'fr-CA'`) or an explicit list
+     * of rules describing any other convention.
+     *
+     * Only existing spaces are converted; nothing is inserted where the
+     * author wrote none. Applies to headings, paragraphs, lists, link labels
+     * and table content.
+     *
+     * Default: `undefined` (no change).
+     */
+    readonly punctuationSpacing?: PunctuationSpacingPreset | readonly PunctuationSpacingRule[];
+}
+
+/** Built-in punctuation-spacing conventions. @since 1.8.0 */
+export type PunctuationSpacingPreset = 'fr' | 'fr-CA';
+
+/**
+ * One punctuation-spacing rule: the plain space on `side` of `char` becomes
+ * the given no-break space.
+ *
+ * @since 1.8.0
+ */
+export interface PunctuationSpacingRule {
+    /** The punctuation character the rule applies to. */
+    readonly char: string;
+    /** Which side of the character the space sits on. */
+    readonly side: 'before' | 'after';
+    /** `'nbsp'` for U+00A0, `'narrow'` for U+202F. */
+    readonly space: 'nbsp' | 'narrow';
+}
+
+/** Configuration for {@link TypographyOptions.unitBinding}. @since 1.8.0 */
+export interface UnitBindingOptions {
+    /**
+     * Unit symbols to recognise, replacing the built-in list entirely.
+     * Longer symbols win over shorter prefixes automatically.
+     */
+    readonly units?: readonly string[];
 }
 
 /** Layout options (all optional, A4 defaults applied). */

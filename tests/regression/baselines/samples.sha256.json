@@ -229,7 +229,7 @@
     },
     "compression/compressed-arabic.pdf": {
       "mode": "bytes",
-      "hash": "72878f2b5fc53a850590bef905f8772f6288c09eb13acce19b2949bb2074d87c",
+      "hash": "2c77ac8c79477b331b254f9b357f6fa348e4c67e8fb6a9a201aa2245f7af0234",
       "size": 27222,
       "since": "1.7.0"
     },
@@ -241,8 +241,8 @@
     },
     "compression/compressed-japanese.pdf": {
       "mode": "bytes",
-      "hash": "67a3b3efaf9d2f0afe39f44631bb9fab81d3fbba81bb9b53a06b39a5f44625bf",
-      "size": 117686,
+      "hash": "1b83e8a859579c253fdf130af9fd9a0139ef15a68b39959ffd481e1e870c5edd",
+      "size": 117685,
       "since": "1.7.0"
     },
     "compression/compressed-latin-100rows.pdf": {
@@ -259,8 +259,8 @@
     },
     "compression/compressed-thai.pdf": {
       "mode": "bytes",
-      "hash": "f3999f6c6597b15df84d9bda5fc0271213437e587243f88d7a0153c719055847",
-      "size": 17418,
+      "hash": "d8fab924c2cffac502da73823620a5c3f9c5af4289e835417f07b5b714a4aa2d",
+      "size": 17419,
       "since": "1.7.0"
     },
     "compression/doc-compressed.pdf": {
@@ -1455,6 +1455,18 @@
       "mode": "bytes",
       "hash": "8b87a0185e395a42248fc23b882affbdd117c9559433e0ed2c541d12384d9bf2",
       "size": 27585,
+      "since": "1.8.0"
+    },
+    "typography/text-plain.pdf": {
+      "mode": "bytes",
+      "hash": "7de13e06dda812fee333a9cf09a6f38773d9f2dd35b6b0351e33befe37ad18f1",
+      "size": 5452,
+      "since": "1.8.0"
+    },
+    "typography/text-refined.pdf": {
+      "mode": "bytes",
+      "hash": "bcd89f96d94325bbdfedcdb18243e2f09aa986705a901903099303d1be88b5f3",
+      "size": 5452,
       "since": "1.8.0"
     },
     "viewer/viewer-fullscreen-kiosk.pdf": {

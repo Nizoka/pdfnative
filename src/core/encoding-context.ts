@@ -10,7 +10,7 @@
  */
 
 import type { FontEntry, FontData, TextRun, EncodingContext } from '../types/pdf-types.js';
-import { pdfString, helveticaWidth } from '../fonts/encoding.js';
+import { pdfString, helveticaWidth, stripSoftHyphens } from '../fonts/encoding.js';
 import { shapeThaiText } from '../shaping/thai-shaper.js';
 import { shapeBengaliText } from '../shaping/bengali-shaper.js';
 import { shapeTamilText } from '../shaping/tamil-shaper.js';
@@ -265,6 +265,10 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
             // text with an orphan PDF/LRI/RLI marker would otherwise reach the
             // cmap as .notdef.
             str = stripBidiControls(str);
+            // Soft hyphens are conditional: the line breaker already
+            // materialised a real hyphen wherever it broke, so any that
+            // survive to here must render as nothing (Unicode §23.2).
+            str = stripSoftHyphens(str);
             if (!str) return [];
             // ── RTL path: BiDi reordering ────────────────────────────
             if (containsRTL(str)) {
@@ -536,7 +540,7 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
             if (!str) return '<>';
             str = _norm(str);
             // Strip invisible BiDi controls before encoding (see textRuns above).
-            str = stripBidiControls(str);
+            str = stripSoftHyphens(stripBidiControls(str));
             if (!str) return '<>';
             const { cmap } = primary.fontData;
 

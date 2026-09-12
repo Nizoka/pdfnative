@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 449,
+  "exportCount": 453,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -262,6 +262,13 @@
       "module": "src/parser/pdf-inflate.ts",
       "signature": "export const DEFAULT_MAX_INFLATE_OUTPUT = 100 * 1024 * 1024;",
       "summary": "Default maximum decompressed size (bytes) for inflate operations."
+    },
+    {
+      "name": "DEFAULT_UNITS",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export const DEFAULT_UNITS: readonly string[] = [",
+      "summary": "Unit symbols bound to the number in front of them by default."
     },
     {
       "name": "DecryptionContext",
@@ -710,6 +717,13 @@
       "module": "src/core/pdf-layout.ts",
       "signature": "export const PG_W = 595.28; // A4 width (210mm)",
       "summary": null
+    },
+    {
+      "name": "PUNCTUATION_SPACING_PRESETS",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export const PUNCTUATION_SPACING_PRESETS: Readonly<Record<PunctuationSpacingPreset, readonly PunctuationSpacingRule[]>> =",
+      "summary": "Built-in punctuation-spacing conventions."
     },
     {
       "name": "PageBox",
@@ -1452,6 +1466,20 @@
       "module": "src/parser/pdf-decode-filters.ts",
       "signature": "export function applyDecodeFilter(name: string, data: Uint8Array): Uint8Array",
       "summary": "Apply a single PDF stream filter by name."
+    },
+    {
+      "name": "applyPunctuationSpacing",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export function applyPunctuationSpacing(text: string, rules: readonly PunctuationSpacingRule[]): string",
+      "summary": "Replace the plain spaces adjacent to punctuation with no-break ones, following an explicit set of rules."
+    },
+    {
+      "name": "bindUnits",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export function bindUnits(text: string, units: readonly string[] = DEFAULT_UNITS): string",
+      "summary": "Bind numbers to the units that follow them with a no-break space (ISO 80000-1 §7.1)."
     },
     {
       "name": "buildAcroFormDict",
@@ -2249,7 +2277,7 @@
       "kind": "value",
       "module": "src/fonts/encoding.ts",
       "signature": "export function helveticaWidth(str: string, sz: number): number",
-      "summary": "Approximate text width in points using Helvetica character metrics."
+      "summary": null
     },
     {
       "name": "hmacSha256",

@@ -190,8 +190,25 @@ export function truncateToWidth(
  * Invisible BiDi controls are stripped before measuring (zero-width
  * per UAX #9).
  */
+/**
+ * Remove SOFT HYPHEN (U+00AD) — a *conditional* hyphen, which must be
+ * invisible and zero-width unless the line actually breaks there
+ * (Unicode §23.2). It falls inside the WinAnsi range, so without this it
+ * used to encode straight through and render as a permanent hyphen in the
+ * middle of a word.
+ *
+ * The line breaker materialises a real hyphen at the break it takes and
+ * drops the rest, so by the time text reaches measurement or encoding no
+ * soft hyphen should ever be drawn.
+ *
+ * @since 1.8.0
+ */
+export function stripSoftHyphens(str: string): string {
+    return str.includes('­') ? str.split('­').join('') : str;
+}
+
 export function helveticaWidth(str: string, sz: number): number {
-    str = stripBidiControls(str);
+    str = stripSoftHyphens(stripBidiControls(str));
     let w = 0;
     for (let i = 0; i < str.length; i++) {
         const cp = str.codePointAt(i) ?? 0;
@@ -200,6 +217,11 @@ export function helveticaWidth(str: string, sz: number): number {
         else if (cp >= 65 && cp <= 90) w += 680;
         else if (cp >= 97 && cp <= 122) w += 500;
         else if (cp === 32) w += 278;
+        // No-break and narrow no-break space. Both encode to a normal space in
+        // WinAnsi (which has no narrow space glyph), so they must MEASURE as
+        // one too — they previously fell through to the 556 default, making
+        // every "150 €" or "12 kg" measure roughly twice its drawn width.
+        else if (cp === 0xA0 || cp === 0x202F) w += 278;
         else if (cp === 46 || cp === 44) w += 278;
         else if (cp === 43) w += 584;
         else if (cp === 45) w += 333;
@@ -230,7 +252,7 @@ export function helveticaWidth(str: string, sz: number): number {
  * @since 1.2.0
  */
 export function helveticaBoldWidth(str: string, sz: number): number {
-    str = stripBidiControls(str);
+    str = stripSoftHyphens(stripBidiControls(str));
     let w = 0;
     for (let i = 0; i < str.length; i++) {
         const cp = str.codePointAt(i) ?? 0;
@@ -239,6 +261,7 @@ export function helveticaBoldWidth(str: string, sz: number): number {
         else if (cp >= 65 && cp <= 90) w += 722;  // A–Z bold (was 680 regular)
         else if (cp >= 97 && cp <= 122) w += 611; // a–z bold (was 500 regular)
         else if (cp === 32) w += 278;             // space
+        else if (cp === 0xA0 || cp === 0x202F) w += 278; // NBSP / narrow NBSP
         else if (cp === 46 || cp === 44) w += 278; // . ,
         else if (cp === 43) w += 584;             // +
         else if (cp === 45) w += 333;             // -

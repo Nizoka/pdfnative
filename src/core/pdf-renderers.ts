@@ -238,11 +238,49 @@ function hardBreakSegment(
     return pieces.length > 0 ? pieces : [seg];
 }
 
+/** SOFT HYPHEN — a break opportunity, invisible unless the break is taken. */
+const SHY = '­';
+
+/**
+ * Split a word at the last soft hyphen whose leading part still fits in
+ * `maxWidth`, materialising a real hyphen there.
+ *
+ * Returns `null` when the word carries no soft hyphen, or when even its
+ * first fragment is too wide — in which case the caller falls back to the
+ * ordinary word-wrapping path.
+ */
+function softHyphenBreak(
+    seg: string,
+    maxWidth: number,
+    fontSize: number,
+    enc: EncodingContext,
+): { head: string; tail: string } | null {
+    if (!seg.includes(SHY)) return null;
+
+    let best = -1;
+    let bestHead = '';
+    for (let i = 0; i < seg.length; i++) {
+        if (seg[i] !== SHY) continue;
+        const head = `${seg.slice(0, i).split(SHY).join('')}-`;
+        if (measureText(head, fontSize, enc) > maxWidth) break; // later ones only get wider
+        best = i;
+        bestHead = head;
+    }
+    if (best < 0) return null;
+    return { head: bestHead, tail: seg.slice(best + 1) };
+}
+
 /**
  * Wrap text into lines that fit within maxWidth.
  * Greedy line-filling algorithm with CJK character-level breaking.
  * Latin text breaks at word boundaries (spaces).
  * CJK characters break individually (no spaces needed).
+ *
+ * A SOFT HYPHEN (U+00AD) marks an optional break inside a word: when a word
+ * does not fit, it is split at the last soft hyphen that does and a real
+ * hyphen is written there. Soft hyphens where no break is taken disappear —
+ * they are invisible and zero-width by definition (Unicode §23.2), which is
+ * what makes them safe to sprinkle through narrow table cells and captions.
  *
  * If a single segment exceeds maxWidth (e.g. a long word, URL, or
  * non-breaking-space-joined compound), it is hard-broken at character
@@ -262,9 +300,15 @@ export function wrapText(
     if (segments.length === 0) return [''];
 
     const lines: string[] = [];
+    // Any soft hyphen still present is one where no break was taken, so it
+    // must vanish. Guarded: wrapping is hot and most text has none.
+    const push = (line: string): void => {
+        lines.push((line.includes(SHY) ? line.split(SHY).join('') : line).trimEnd());
+    };
     let currentLine = '';
 
-    for (const seg of segments) {
+    for (let si = 0; si < segments.length; si++) {
+        const seg = segments[si];
         const candidate = currentLine + seg;
         const w = measureText(candidate, fontSize, enc);
         if (w <= maxWidth) {
@@ -272,9 +316,22 @@ export function wrapText(
             continue;
         }
 
+        // Can part of this word finish the current line at a soft hyphen?
+        if (seg.includes(SHY)) {
+            const used = measureText(currentLine, fontSize, enc);
+            const brk = softHyphenBreak(seg, maxWidth - used, fontSize, enc);
+            if (brk) {
+                push(currentLine + brk.head);
+                currentLine = '';
+                segments[si] = brk.tail; // re-process the remainder
+                si--;
+                continue;
+            }
+        }
+
         // Flush whatever fit so far on the current line.
         if (currentLine !== '') {
-            lines.push(currentLine.trimEnd());
+            push(currentLine);
             currentLine = '';
         }
 
@@ -286,14 +343,23 @@ export function wrapText(
             continue;
         }
 
-        // Segment alone still overflows — hard-break at character boundaries.
+        // Still overflows alone — try a soft-hyphen break across a full line.
+        const brk = softHyphenBreak(segTrim, maxWidth, fontSize, enc);
+        if (brk) {
+            push(brk.head);
+            segments[si] = brk.tail;
+            si--;
+            continue;
+        }
+
+        // No break opportunity — hard-break at character boundaries.
         const pieces = hardBreakSegment(segTrim, maxWidth, fontSize, enc);
         for (let pi = 0; pi < pieces.length - 1; pi++) {
-            lines.push(pieces[pi].trimEnd());
+            push(pieces[pi]);
         }
         currentLine = pieces[pieces.length - 1];
     }
-    if (currentLine) lines.push(currentLine.trimEnd());
+    if (currentLine) push(currentLine);
 
     return lines;
 }

@@ -23,6 +23,7 @@ import type { DocumentParams } from '../types/pdf-document-types.js';
 import { createEncodingContext } from './encoding-context.js';
 import { resolvePdfAConfig } from './pdf-tags.js';
 import { paginateDocument } from './pdf-pagination.js';
+import { prepareBlocks } from './pdf-typography.js';
 import { PG_W, PG_H, DEFAULT_MARGINS, HEADER_H } from './pdf-layout.js';
 
 /**
@@ -56,7 +57,7 @@ export function inspectDocumentLayout(
     const headerH = layout?.headerTemplate ? HEADER_H : 0;
 
     const { planned } = paginateDocument({
-        blocks: params.blocks,
+        blocks: prepareBlocks(params.blocks, layout?.typography),
         title: params.title,
         enc,
         pgH,

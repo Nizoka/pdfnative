@@ -61,6 +61,7 @@ import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
 import { resolveCreationDate } from './pdf-reproducible.js';
 import { paginateDocument } from './pdf-pagination.js';
+import { prepareBlocks } from './pdf-typography.js';
 import { resolveDebugOptions, marginBoxOps, blockBoundsOps, tableCellOps } from './pdf-layout-debug.js';
 import { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent } from './pdf-form.js';
 import { selectFormFont, buildFormFontObjects, FORM_FONT_OBJ_COUNT } from './pdf-form-font.js';
@@ -222,8 +223,12 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // One planner, shared with `inspectDocumentLayout()` so the two can no
     // longer disagree about page count or placement (issue #75).
     const hasToc = params.blocks.some(b => b.type === 'toc');
+    // Typographic text transforms run once, here, so the planner and every
+    // renderer below see the same strings. Returns the input untouched when
+    // nothing is configured.
+    const preparedBlocks = prepareBlocks(params.blocks, layout?.typography);
     const { pages: pageBlocks, headings: headingDests } = paginateDocument({
-        blocks: params.blocks,
+        blocks: preparedBlocks,
         title: params.title,
         enc,
         pgH,

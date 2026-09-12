@@ -110,6 +110,43 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         }),
     );
 
+    // ── Text-level typography ────────────────────────────────────
+    // Soft hyphens in a narrow column, universal unit binding, and a
+    // locale convention supplied as a preset.
+    const SHY = '­';
+    const hyphenated =
+        `Les colonnes etroites sont le cas ou la cesure compte vraiment : un mot comme `
+        + `anti${SHY}consti${SHY}tution${SHY}nelle${SHY}ment deborde sans point de coupure, `
+        + `et se coupe proprement avec. Le tiret conditionnel reste invisible partout ou la `
+        + `coupure n'est pas prise.`;
+
+    const textDoc: DocumentParams = {
+        title: 'Text Typography',
+        blocks: [
+            { type: 'heading', text: 'Cesure douce et espaces insecables', level: 1 },
+            { type: 'paragraph', text: hyphenated, indent: 300 },
+            { type: 'heading', text: 'Liaison nombre-unite (ISO 80000-1)', level: 2 },
+            { type: 'paragraph', text: 'Facture de 150 € pour 12 kg de materiel, remise de 30 %, stockage 500 Mo, temperature 21 °C. Aucune de ces paires ne doit se couper en fin de ligne, quelle que soit la langue.' },
+            { type: 'heading', text: 'Convention de ponctuation', level: 2 },
+            { type: 'paragraph', text: 'Vraiment ? Oui ! Total : 42. Et une « citation » pour finir.' },
+        ],
+        footerText: 'pdfnative – typography showcase',
+    };
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'text-plain.pdf'),
+        'typography/text-plain.pdf',
+        buildDocumentPDFBytes(textDoc),
+    );
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'text-refined.pdf'),
+        'typography/text-refined.pdf',
+        buildDocumentPDFBytes(textDoc, {
+            typography: { unitBinding: true, punctuationSpacing: 'fr' },
+        }),
+    );
+
     // ── Tagged: a split paragraph stays one /P element ───────────
     // PDF/A-2b, so veraPDF checks that splitting a paragraph across pages
     // leaves the structure tree conformant. Needs an embedded Latin font like

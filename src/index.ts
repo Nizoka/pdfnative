@@ -168,6 +168,12 @@ export { initNodeCompression, setDeflateImpl, setDeflateRawImpl, wrapZlib } from
 // ── Core — Reproducible builds ──────────────────────────────────────
 export { setDefaultCreationDate, getDefaultCreationDate } from './core/pdf-reproducible.js';
 
+// ── Core — Typography ───────────────────────────────────────────────
+export {
+    bindUnits, applyPunctuationSpacing,
+    PUNCTUATION_SPACING_PRESETS, DEFAULT_UNITS,
+} from './core/pdf-typography.js';
+
 // ── Core — Barcodes & QR Codes ──────────────────────────────────────
 export type { BarcodeFormat, QRErrorLevel } from './core/pdf-barcode.js';
 export {
