@@ -30,10 +30,11 @@ import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import {
     containsThai, containsLao, containsBengali, containsTamil, containsTelugu,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar,
-    containsDevanagari,
+    containsDevanagari, containsTaiTham, containsCham,
 } from './script-registry.js';
 import { shapeThaiText } from './thai-shaper.js';
 import { shapeLaoText } from './lao-shaper.js';
+import { shapeUseText } from './use-shaper.js';
 import { shapeBengaliText } from './bengali-shaper.js';
 import { shapeTamilText } from './tamil-shaper.js';
 import { shapeTeluguText } from './telugu-shaper.js';
@@ -77,6 +78,12 @@ export const SCRIPT_SHAPERS: readonly ScriptShaper[] = [
     { id: 'khmer', detect: containsKhmer, shape: shapeKhmerText },
     { id: 'myanmar', detect: containsMyanmar, shape: shapeMyanmarText },
     { id: 'devanagari', detect: containsDevanagari, shape: shapeDevanagariText },
+    // v1.8.0 — the first two scripts shaped by the engine rather than by a
+    // hand-written module. Tai Le and New Tai Lue are deliberately absent:
+    // their vowels and tones are spacing letters, so they need font routing
+    // and nothing else, exactly like Greek or Georgian.
+    { id: 'taitham', detect: containsTaiTham, shape: shapeUseText },
+    { id: 'cham', detect: containsCham, shape: shapeUseText },
 ];
 
 /**

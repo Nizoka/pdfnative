@@ -10,8 +10,9 @@
  *   - Free-form document builder (headings, paragraphs, lists, tables, images, links, barcodes)
  *   - Built-in Helvetica (Latin/WinAnsi) — no font embedding needed
  *   - CIDFont Type2/Identity-H embedding for Unicode scripts
- *   - 23 Unicode scripts: Thai, Lao, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
+ *   - 27 Unicode scripts: Thai, Lao, Tai Tham, New Tai Lue, Tai Le, Cham, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
  *   - Thai and Lao OpenType shaping (GSUB + GPOS)
+ *   - Universal Shaping Engine for Tai Tham and Cham, driven by Unicode data
  *   - Arabic positional shaping (GSUB isolated/initial/medial/final forms)
  *   - BiDi text layout (simplified UAX #9) with glyph mirroring
  *   - Multi-font cross-script fallback
@@ -284,9 +285,10 @@ export type { FontLoader } from './fonts/font-loader.js';
 export type { FontValidationResult } from './fonts/font-validator.js';
 export { validateFontData } from './fonts/font-validator.js';
 
-// ── Shaping — Thai, Lao, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari & Multi-Script ─
+// ── Shaping — Thai, Lao, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari, Tai Tham, Cham & Multi-Script ─
 export { shapeThaiText } from './shaping/thai-shaper.js';
 export { shapeLaoText, buildLaoClusters } from './shaping/lao-shaper.js';
+export { shapeUseText } from './shaping/use-shaper.js';
 export { shapeBengaliText } from './shaping/bengali-shaper.js';
 export { shapeTamilText } from './shaping/tamil-shaper.js';
 export { shapeTeluguText } from './shaping/telugu-shaper.js';
@@ -297,13 +299,15 @@ export { shapeMyanmarText } from './shaping/myanmar-shaper.js';
 export { shapeDevanagariText } from './shaping/devanagari-shaper.js';
 export {
     containsThai, containsLao, containsArabic, containsHebrew,
+    containsTaiTham, containsNewTaiLue, containsTaiLe, containsCham,
     containsBengali, containsTamil, containsTelugu, containsDevanagari,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsEthiopic,
     containsMath,
     isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,
     isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isEthiopicCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint, isMathCodepoint,
-    isLaoCodepoint,
+    isLaoCodepoint, isTaiThamCodepoint, isNewTaiLueCodepoint,
+    isTaiLeCodepoint, isChamCodepoint,
 } from './shaping/script-registry.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './shaping/script-detect.js';
 export { splitTextByFont } from './shaping/multi-font.js';

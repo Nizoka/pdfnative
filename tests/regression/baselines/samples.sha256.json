@@ -23,6 +23,12 @@
       "size": 59564,
       "since": "1.7.0"
     },
+    "alphabet/alphabet-cham.pdf": {
+      "mode": "bytes",
+      "hash": "29c7273d3d7469ecdc4e363b4e89166a57b76f98dde8cd43181a5d8fb00e8fdd",
+      "size": 41180,
+      "since": "1.8.0"
+    },
     "alphabet/alphabet-chinese.pdf": {
       "mode": "bytes",
       "hash": "46cc4e62a96f7b6b602a6995743416ad0659600f23a3af64c2904f46ef64570d",
@@ -95,6 +101,12 @@
       "size": 47176,
       "since": "1.7.0"
     },
+    "alphabet/alphabet-newtailue.pdf": {
+      "mode": "bytes",
+      "hash": "9fe3bce1a6f7e9cbf2de188e3a5c0de5327f639d3508ebdfe88577b3af28f675",
+      "size": 34338,
+      "since": "1.8.0"
+    },
     "alphabet/alphabet-polish.pdf": {
       "mode": "bytes",
       "hash": "a405ee4e7ba727111b428c07380940e7a86a08b0bf65bc3e57d23e658d2b8f4d",
@@ -106,6 +118,18 @@
       "hash": "190383c96a08db8b0e2735f757c6027af961141ae9e3be6a02487f50c485022a",
       "size": 61236,
       "since": "1.7.0"
+    },
+    "alphabet/alphabet-taile.pdf": {
+      "mode": "bytes",
+      "hash": "ccda140df833d530979342148d762176da36cfeb769828f9759e958ca6791c65",
+      "size": 33877,
+      "since": "1.8.0"
+    },
+    "alphabet/alphabet-taitham.pdf": {
+      "mode": "bytes",
+      "hash": "591da744778173eee12236d2156153ec08afe31e3afa38cfdab968374b4d4925",
+      "size": 62147,
+      "since": "1.8.0"
     },
     "alphabet/alphabet-tamil.pdf": {
       "mode": "bytes",
@@ -499,8 +523,8 @@
     },
     "document/doc-multi-language.pdf": {
       "mode": "bytes",
-      "hash": "1002cd357e28ddd5a6ba91d103e330f74e858329d8e20fd046c67a606855b39e",
-      "size": 1970869,
+      "hash": "859ce238919d455d917ec7b3cdfca0fdcaeec156e84c871386ef2eb4f937d346",
+      "size": 2068145,
       "since": "1.8.0"
     },
     "document/doc-myanmar.pdf": {
@@ -523,9 +547,9 @@
     },
     "document/doc-showcase-all-blocks.pdf": {
       "mode": "bytes",
-      "hash": "9da58bbabd0258d8904b7270546fe2c4dfba34413e293414abd21fc7c4d8981b",
+      "hash": "6e9b33487bff53a9dcfab17e86df6cdc5aeafadb5d55daa202cb442898cc6dc9",
       "size": 11590,
-      "since": "1.7.0"
+      "since": "1.8.0"
     },
     "document/doc-sinhala.pdf": {
       "mode": "bytes",
@@ -751,8 +775,8 @@
     },
     "financial/sample-multi.pdf": {
       "mode": "bytes",
-      "hash": "5bf5c51074bbc9bd8eb174d3d815f5507570e86c3cbdfaf59415f43655ba47bb",
-      "size": 9678677,
+      "hash": "9bc8420ff91e45ff8e7cfe82f52414c59acc2460773558ffa59d1c19f825861b",
+      "size": 10129061,
       "since": "1.8.0"
     },
     "financial/sample-pagination.pdf": {

@@ -26,6 +26,8 @@ function registerVisualFonts(): void {
         he: fl(() => import('../../fonts/noto-hebrew-data.js')),
         th: fl(() => import('../../fonts/noto-thai-data.js')),
         lo: fl(() => import('../../fonts/noto-lao-data.js')),
+        nod: fl(() => import('../../fonts/noto-taitham-data.js')),
+        cjm: fl(() => import('../../fonts/noto-cham-data.js')),
     });
     registered = true;
 }
@@ -118,6 +120,27 @@ export const FIXTURES: readonly Fixture[] = [
                     { type: 'paragraph', text: 'ກຳ ພຣ຺ະ — ໐ ໑ ໒ ໓ ໔.' },
                 ],
                 footerText: 'lao fixture',
+                fontEntries,
+            };
+            return buildDocumentPDFBytes(params, { creationDate: new Date('2026-01-01T00:00:00Z') });
+        },
+    },
+    {
+        name: 'taitham-cham',
+        build: async () => {
+            registerVisualFonts();
+            const fontEntries = await entries(['nod', 'cjm']);
+            const params: DocumentParams = {
+                title: 'Tai Tham + Cham fixture',
+                blocks: [
+                    { type: 'heading', text: 'Tai Tham \u2014 sakot stacks and pre-base vowels', level: 1 },
+                    // Composed base + pre-base vowel, then two sakot stacks.
+                    { type: 'paragraph', text: '\u1A20\u1A6E \u1A3E\u1A6E \u1A20\u1A60\u1A20 \u1A32\u1A62\u1A60\u1A45 \u1A3F\u1A60\u1A3F.' },
+                    { type: 'paragraph', text: '\u1A20\u1A63 \u1A20\u1A65 \u1A20\u1A69 \u1A20\u1A75 \u1A20\u1A77.' },
+                    { type: 'heading', text: 'Cham \u2014 pre-base vowels and composed medials', level: 2 },
+                    { type: 'paragraph', text: '\uAA00\uAA2F \uAA00\uAA30 \uAA00\uAA35\uAA36 \uAA00\uAA4C \uAA00\uAA2A.' },
+                ],
+                footerText: 'tai tham + cham fixture',
                 fontEntries,
             };
             return buildDocumentPDFBytes(params, { creationDate: new Date('2026-01-01T00:00:00Z') });

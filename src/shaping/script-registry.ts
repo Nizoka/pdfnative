@@ -51,6 +51,45 @@ export const THAI_END = 0x0E7F;
 export const LAO_START = 0x0E80;
 export const LAO_END = 0x0EFF;
 
+// ── Tai scripts and Cham (v1.8.0) ────────────────────────────────────
+
+/**
+ * Tai Tham (Lanna), the script of Northern Thai, Tai Lü and Khün.
+ *
+ * A Universal Shaping Engine script: pre-base vowels, subjoined consonants
+ * stacked through the sakot U+1A60, medial consonants above, below and
+ * before the base.
+ */
+export const TAI_THAM_START = 0x1A20;
+export const TAI_THAM_END = 0x1AAF;
+
+/**
+ * New Tai Lue (Xishuangbanna Dai).
+ *
+ * Re-encoded in Unicode 8.0 so that its vowels are spacing letters rather
+ * than combining marks: the script needs font routing, not shaping.
+ */
+export const NEW_TAI_LUE_START = 0x1980;
+export const NEW_TAI_LUE_END = 0x19DF;
+
+/**
+ * Tai Le (Dehong Dai).
+ *
+ * Its tones are spacing modifier letters, so like New Tai Lue it needs no
+ * reordering or mark positioning.
+ */
+export const TAI_LE_START = 0x1950;
+export const TAI_LE_END = 0x197F;
+
+/**
+ * Cham, of the Cham people of Vietnam and Cambodia.
+ *
+ * A Universal Shaping Engine script: two pre-base vowels, medial
+ * consonants in all four positions, and final consonants drawn on the base.
+ */
+export const CHAM_START = 0xAA00;
+export const CHAM_END = 0xAA5F;
+
 // ── Greek ────────────────────────────────────────────────────────────
 
 export const GREEK_START = 0x0370;
@@ -271,6 +310,42 @@ export function isLaoCodepoint(cp: number): boolean {
     return cp >= LAO_START && cp <= LAO_END;
 }
 
+/**
+ * Check if a codepoint falls in the Tai Tham (Lanna) Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isTaiThamCodepoint(cp: number): boolean {
+    return cp >= TAI_THAM_START && cp <= TAI_THAM_END;
+}
+
+/**
+ * Check if a codepoint falls in the New Tai Lue Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isNewTaiLueCodepoint(cp: number): boolean {
+    return cp >= NEW_TAI_LUE_START && cp <= NEW_TAI_LUE_END;
+}
+
+/**
+ * Check if a codepoint falls in the Tai Le Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isTaiLeCodepoint(cp: number): boolean {
+    return cp >= TAI_LE_START && cp <= TAI_LE_END;
+}
+
+/**
+ * Check if a codepoint falls in the Cham Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isChamCodepoint(cp: number): boolean {
+    return cp >= CHAM_START && cp <= CHAM_END;
+}
+
 /** Check if a codepoint falls in any Cyrillic Unicode block. */
 export function isCyrillicCodepoint(cp: number): boolean {
     return (cp >= CYRILLIC_START && cp <= CYRILLIC_END) ||
@@ -436,6 +511,54 @@ export function containsThai(str: string): boolean {
 export function containsLao(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isLaoCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any Tai Tham (Lanna) characters.
+ *
+ * @since 1.8.0
+ */
+export function containsTaiTham(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isTaiThamCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any New Tai Lue characters.
+ *
+ * @since 1.8.0
+ */
+export function containsNewTaiLue(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isNewTaiLueCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any Tai Le characters.
+ *
+ * @since 1.8.0
+ */
+export function containsTaiLe(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isTaiLeCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any Cham characters.
+ *
+ * @since 1.8.0
+ */
+export function containsCham(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isChamCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }

@@ -4,14 +4,14 @@
  * Detects Unicode script ranges in text to determine which fonts are needed.
  */
 
-import { isEmojiCodepoint, isMathCodepoint, isEthiopicCodepoint, isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isLaoCodepoint } from './script-registry.js';
+import { isEmojiCodepoint, isMathCodepoint, isEthiopicCodepoint, isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isLaoCodepoint, isTaiThamCodepoint, isNewTaiLueCodepoint, isTaiLeCodepoint, isChamCodepoint } from './script-registry.js';
 
 /**
  * Languages requiring Unicode font embedding (non-WinAnsi scripts).
  * Latin-script languages using Helvetica built-in don't need embedding.
  */
 export function needsUnicodeFont(lang: string): boolean {
-    return ['th', 'lo', 'ja', 'zh', 'ko', 'el', 'hi', 'te', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'am', 'si', 'bo', 'km', 'my', 'math', 'emoji'].includes(lang);
+    return ['th', 'lo', 'nod', 'khb', 'tdd', 'cjm', 'ja', 'zh', 'ko', 'el', 'hi', 'te', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'am', 'si', 'bo', 'km', 'my', 'math', 'emoji'].includes(lang);
 }
 
 /**
@@ -49,6 +49,12 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             if (cp >= 0x0E00 && cp <= 0x0E7F) { needed.add('th'); continue; }
             // Lao → 'lo'  (v1.8.0)
             if (isLaoCodepoint(cp)) { needed.add('lo'); continue; }
+            // Tai Tham, New Tai Lue, Tai Le, Cham  (v1.8.0)
+            // ISO 639-3 codes: none of these languages has a two-letter one.
+            if (isTaiThamCodepoint(cp)) { needed.add('nod'); continue; }
+            if (isNewTaiLueCodepoint(cp)) { needed.add('khb'); continue; }
+            if (isTaiLeCodepoint(cp)) { needed.add('tdd'); continue; }
+            if (isChamCodepoint(cp)) { needed.add('cjm'); continue; }
             // Hiragana / Katakana → 'ja'
             if (cp >= 0x3040 && cp <= 0x30FF) { needed.add('ja'); continue; }
             // Hangul Syllables + Jamo + Compat Jamo → 'ko'
@@ -99,7 +105,7 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
  * Returns the language code of the font most appropriate for rendering.
  *
  * @param cp - Unicode codepoint
- * @returns Language code ('el', 'hi', 'th', 'lo', 'ja', 'ko', 'zh', 'vi', 'pl', 'tr', 'he', 'ar', 'ru', 'ka', 'hy', 'emoji') or null for Latin/common
+ * @returns Language code ('el', 'hi', 'th', 'lo', 'nod', 'khb', 'tdd', 'cjm', 'ja', 'ko', 'zh', 'vi', 'pl', 'tr', 'he', 'ar', 'ru', 'ka', 'hy', 'emoji') or null for Latin/common
  */
 export function detectCharLang(cp: number): string | null {
     if ((cp >= 0x0370 && cp <= 0x03FF) || (cp >= 0x1F00 && cp <= 0x1FFF)) return 'el';
@@ -112,6 +118,10 @@ export function detectCharLang(cp: number): string | null {
     if (isEthiopicCodepoint(cp)) return 'am';
     if (cp >= 0x0E00 && cp <= 0x0E7F) return 'th';
     if (isLaoCodepoint(cp)) return 'lo';
+    if (isTaiThamCodepoint(cp)) return 'nod';
+    if (isNewTaiLueCodepoint(cp)) return 'khb';
+    if (isTaiLeCodepoint(cp)) return 'tdd';
+    if (isChamCodepoint(cp)) return 'cjm';
     if (cp >= 0x3040 && cp <= 0x30FF) return 'ja';
     if ((cp >= 0xAC00 && cp <= 0xD7AF) || (cp >= 0x1100 && cp <= 0x11FF) || (cp >= 0x3130 && cp <= 0x318F)) return 'ko';
     if ((cp >= 0x4E00 && cp <= 0x9FFF) || (cp >= 0x3400 && cp <= 0x4DBF) || (cp >= 0xF900 && cp <= 0xFAFF)) return 'zh';

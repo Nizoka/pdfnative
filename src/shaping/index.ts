@@ -22,6 +22,7 @@ export type { UseClusterCategory, UseSyllable, UseSyllableType } from './use-eng
 // ── Per-script shapers ───────────────────────────────────────────────
 export { shapeThaiText, buildThaiClusters } from './thai-shaper.js';
 export { shapeLaoText, buildLaoClusters } from './lao-shaper.js';
+export { shapeUseText } from './use-shaper.js';
 export { shapeBengaliText } from './bengali-shaper.js';
 export { shapeTamilText } from './tamil-shaper.js';
 export { shapeTeluguText } from './telugu-shaper.js';
@@ -35,11 +36,15 @@ export { shapeArabicText } from './arabic-shaper.js';
 // ── Script identification ────────────────────────────────────────────
 export {
     THAI_START, THAI_END, LAO_START, LAO_END,
+    TAI_THAM_START, TAI_THAM_END, NEW_TAI_LUE_START, NEW_TAI_LUE_END,
+    TAI_LE_START, TAI_LE_END, CHAM_START, CHAM_END,
     containsThai, containsLao, containsArabic, containsHebrew,
+    containsTaiTham, containsNewTaiLue, containsTaiLe, containsCham,
     containsBengali, containsTamil, containsTelugu, containsDevanagari,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar,
     containsEthiopic, containsMath,
     isArabicCodepoint, isHebrewCodepoint, isThaiCodepoint, isLaoCodepoint,
+    isTaiThamCodepoint, isNewTaiLueCodepoint, isTaiLeCodepoint, isChamCodepoint,
     isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,
     isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint,
     isEthiopicCodepoint, isCyrillicCodepoint, isGeorgianCodepoint,

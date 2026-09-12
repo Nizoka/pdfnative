@@ -21,13 +21,15 @@ const SAMPLES: Record<string, string> = {
     khmer: 'ភាសាខ្មែរ',
     myanmar: 'မြန်မာ',
     devanagari: 'नमस्ते',
+    taitham: 'ᨠᩮ',
+    cham: 'ꨀꨯ',
 };
 
 describe('SCRIPT_SHAPERS', () => {
     it('registers every script the engine shapes', () => {
         expect(SCRIPT_SHAPERS.map(s => s.id)).toEqual([
             'thai', 'lao', 'bengali', 'tamil', 'telugu', 'sinhala',
-            'tibetan', 'khmer', 'myanmar', 'devanagari',
+            'tibetan', 'khmer', 'myanmar', 'devanagari', 'taitham', 'cham',
         ]);
     });
 

@@ -35,6 +35,10 @@ export function registerAllFonts(): void {
         my: fl(() => import('../../fonts/noto-myanmar-data.js')),
         // v1.8.0 — Lao, the 23rd script
         lo: fl(() => import('../../fonts/noto-lao-data.js')),
+        nod: fl(() => import('../../fonts/noto-taitham-data.js')),
+        khb: fl(() => import('../../fonts/noto-newtailue-data.js')),
+        tdd: fl(() => import('../../fonts/noto-taile-data.js')),
+        cjm: fl(() => import('../../fonts/noto-cham-data.js')),
         // v1.1.0 — Latin VF (PDF/A non-WinAnsi fallback) + monochrome emoji
         latin: fl(() => import('../../fonts/noto-sans-data.js')),
         emoji: fl(() => import('../../fonts/noto-emoji-data.js')),
@@ -72,7 +76,7 @@ export async function loadMultiFontEntries(): Promise<FontEntry[]> {
     return loadSelectedFontEntries([
         'th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru',
         'ka', 'hy', 'bn', 'ta', 'te', 'si', 'bo', 'km', 'my', 'am',
-        'lo', // v1.8.0
+        'lo', 'nod', 'khb', 'tdd', 'cjm', // v1.8.0
     ]);
 }
 
