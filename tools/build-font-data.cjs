@@ -330,6 +330,9 @@ function parseTTF(buffer) {
     // without also getting every other single substitution in the face.
     const features = parseTTFGSUBFeatures(r, tables);
 
+    // ── Parse GPOS LookupType 2 — pair kerning (v1.8.0) ─────────────
+    const kern = parseTTFGPOSKerning(r, tables);
+
     return {
         metrics: {
             unitsPerEm,
@@ -346,6 +349,7 @@ function parseTTF(buffer) {
         gsub,
         ligatures,
         features,
+        kern,
         markAnchors
     };
 }
@@ -686,6 +690,198 @@ function parseTTFGSUBLigatures(r, tables) {
  *                mark2Classes: { [mark2Gid]: { classIdx, x, y } } }
  * }
  */
+// ── GPOS Parser — LookupType 2 (PairPos / kerning) ───────────────────
+
+/**
+ * Read a ClassDef table into `{ gid: classIndex }`. Glyphs absent from the
+ * table are class 0 by definition (OpenType §5.1).
+ */
+function readClassDef(r, absOffset) {
+    const classes = {};
+    r.seek(absOffset);
+    const format = r.readUint16();
+    if (format === 1) {
+        const startGid = r.readUint16();
+        const count = r.readUint16();
+        for (let i = 0; i < count; i++) {
+            const c = r.readUint16();
+            if (c !== 0) classes[startGid + i] = c;
+        }
+    } else if (format === 2) {
+        const rangeCount = r.readUint16();
+        for (let i = 0; i < rangeCount; i++) {
+            const start = r.readUint16();
+            const end = r.readUint16();
+            const c = r.readUint16();
+            if (c !== 0) for (let g = start; g <= end; g++) classes[g] = c;
+        }
+    }
+    return classes;
+}
+
+/** Number of bytes a ValueRecord occupies for a given valueFormat mask. */
+function valueRecordSize(valueFormat) {
+    let n = 0;
+    for (let bit = 0; bit < 8; bit++) if (valueFormat & (1 << bit)) n += 2;
+    return n;
+}
+
+/**
+ * Read a ValueRecord and return its XAdvance, skipping the rest.
+ * XAdvance is bit 2 (0x0004), preceded by XPlacement (0x0001) and
+ * YPlacement (0x0002).
+ */
+function readXAdvance(r, valueFormat) {
+    let x = 0;
+    if (valueFormat & 0x0001) r.skip(2);           // XPlacement
+    if (valueFormat & 0x0002) r.skip(2);           // YPlacement
+    if (valueFormat & 0x0004) x = r.readInt16();   // XAdvance
+    if (valueFormat & 0x0008) r.skip(2);           // YAdvance
+    if (valueFormat & 0x0010) r.skip(2);           // XPlaDevice
+    if (valueFormat & 0x0020) r.skip(2);           // YPlaDevice
+    if (valueFormat & 0x0040) r.skip(2);           // XAdvDevice
+    if (valueFormat & 0x0080) r.skip(2);           // YAdvDevice
+    return x;
+}
+
+/**
+ * Parse GPOS LookupType 2 (PairPos) into `{ leftGid: { rightGid: adjust } }`,
+ * in design units.
+ *
+ * Kerning is the most visible typographic refinement a font carries and
+ * pdfnative extracted none of it: the generator skipped every GPOS lookup
+ * that was not MarkToBase or MarkToMark, so "AV", "To" and "Yo" were set with
+ * their nominal advances in every script.
+ *
+ * Both subtable formats are read. Format 1 lists glyph pairs directly;
+ * format 2 is class-based and is expanded to glyph pairs here, so the runtime
+ * needs nothing but a two-level lookup. Only non-zero adjustments are kept.
+ *
+ * Returns `null` when the font carries no pair positioning.
+ */
+function parseTTFGPOSKerning(r, tables) {
+    if (!tables['GPOS']) return null;
+    const kern = {};
+    let pairs = 0;
+
+    const add = (left, right, adjust) => {
+        if (adjust === 0) return;
+        let row = kern[left];
+        if (row === undefined) { row = {}; kern[left] = row; }
+        if (row[right] === undefined) pairs++;
+        row[right] = adjust;
+    };
+
+    try {
+        const base = tables['GPOS'].offset;
+        r.seek(base);
+        r.skip(4); // version
+        r.skip(2); // scriptListOffset
+        r.skip(2); // featureListOffset
+        const lookupListOffset = r.readUint16();
+
+        r.seek(base + lookupListOffset);
+        const lookupCount = r.readUint16();
+        const lookupOffsets = [];
+        for (let i = 0; i < lookupCount; i++) lookupOffsets.push(r.readUint16());
+
+        for (let li = 0; li < lookupCount; li++) {
+            const lkBase = base + lookupListOffset + lookupOffsets[li];
+            r.seek(lkBase);
+            let lookupType = r.readUint16();
+            r.skip(2); // lookupFlag
+            const subtableCount = r.readUint16();
+            const rawOffsets = [];
+            for (let si = 0; si < subtableCount; si++) rawOffsets.push(r.readUint16());
+
+            // LookupType 9 (Extension Positioning) wraps the real subtable so
+            // it can sit beyond the 16-bit offset window. Large fonts put most
+            // of their kerning behind one — Noto Sans hides all but two
+            // subtables there — so skipping type 9 means missing the kerning.
+            let stAbs = rawOffsets.map(o => lkBase + o);
+            if (lookupType === 9) {
+                const resolved = [];
+                let innerType = 0;
+                for (const abs of stAbs) {
+                    r.seek(abs);
+                    r.skip(2); // posFormat (1)
+                    innerType = r.readUint16();
+                    resolved.push(abs + r.readUint32());
+                }
+                lookupType = innerType;
+                stAbs = resolved;
+            }
+            if (lookupType !== 2) continue;
+
+            for (const stBase of stAbs) {
+                r.seek(stBase);
+                const posFormat = r.readUint16();
+                const coverageOffset = r.readUint16();
+                const valueFormat1 = r.readUint16();
+                const valueFormat2 = r.readUint16();
+                const covered = readCoverageTable(r, stBase + coverageOffset);
+
+                if (posFormat === 1) {
+                    r.seek(stBase + 8);
+                    const pairSetCount = r.readUint16();
+                    const pairSetOffsets = [];
+                    for (let i = 0; i < pairSetCount; i++) pairSetOffsets.push(r.readUint16());
+
+                    for (let i = 0; i < pairSetCount && i < covered.length; i++) {
+                        const psBase = stBase + pairSetOffsets[i];
+                        r.seek(psBase);
+                        const pairValueCount = r.readUint16();
+                        for (let p = 0; p < pairValueCount; p++) {
+                            const second = r.readUint16();
+                            const adjust = readXAdvance(r, valueFormat1);
+                            // The second glyph's own record is not applied:
+                            // PDF positions the pair by the first advance.
+                            r.skip(valueRecordSize(valueFormat2));
+                            add(covered[i], second, adjust);
+                        }
+                    }
+                } else if (posFormat === 2) {
+                    r.seek(stBase + 8);
+                    const classDef1Offset = r.readUint16();
+                    const classDef2Offset = r.readUint16();
+                    const class1Count = r.readUint16();
+                    const class2Count = r.readUint16();
+                    const recordsBase = r.pos;
+
+                    const cd1 = readClassDef(r, stBase + classDef1Offset);
+                    const cd2 = readClassDef(r, stBase + classDef2Offset);
+
+                    // Glyphs per class2, so class pairs expand to glyph pairs.
+                    const byClass2 = new Map();
+                    for (const [gidStr, c] of Object.entries(cd2)) {
+                        let list = byClass2.get(c);
+                        if (!list) { list = []; byClass2.set(c, list); }
+                        list.push(Number(gidStr));
+                    }
+
+                    const rec1Size = valueRecordSize(valueFormat1) + valueRecordSize(valueFormat2);
+                    for (const left of covered) {
+                        const c1 = cd1[left] ?? 0;
+                        if (c1 >= class1Count) continue;
+                        for (let c2 = 1; c2 < class2Count; c2++) { // class 0 is "everything else"
+                            const rights = byClass2.get(c2);
+                            if (!rights || rights.length === 0) continue;
+                            r.seek(recordsBase + (c1 * class2Count + c2) * rec1Size);
+                            const adjust = readXAdvance(r, valueFormat1);
+                            if (adjust === 0) continue;
+                            for (const right of rights) add(left, right, adjust);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[build-font-data] GPOS kerning parse error (non-fatal):', e.message);
+        return null;
+    }
+    return pairs > 0 ? kern : null;
+}
+
 function parseTTFGPOS(r, tables) {
     const result = { marks: {}, bases: {}, mark2mark: { mark1Anchors: {}, mark2Classes: {} } };
     if (!tables['GPOS']) return result;
@@ -831,7 +1027,7 @@ function readCoverageTable(r, absOffset) {
 // ── JS Module Generator ──────────────────────────────────────────────
 
 function generateModule(fontName, parsed, ttfBase64) {
-    const { metrics, cmap, widths, gsub, ligatures, features, markAnchors } = parsed;
+    const { metrics, cmap, widths, gsub, ligatures, features, kern, markAnchors } = parsed;
 
     // Compact cmap: only entries where glyph exists
     const cmapEntries = Object.entries(cmap)
@@ -856,6 +1052,14 @@ function generateModule(fontName, parsed, ttfBase64) {
         .map(([gid, ligs]) => {
             const inner = ligs.map(lig => `[${lig.join(',')}]`).join(',');
             return `${gid}:[${inner}]`;
+        })
+        .join(',');
+
+    // Compact kerning: { leftGid: { rightGid: adjustment } }, design units
+    const kernEntries = Object.entries(kern || {})
+        .map(([left, row]) => {
+            const inner = Object.entries(row).map(([k, v]) => `${k}:${v}`).join(',');
+            return `${left}:{${inner}}`;
         })
         .join(',');
 
@@ -940,6 +1144,11 @@ export const ligatures = {${ligaturesEntries}};
 // Kept apart from the merged gsub table above, which unions every SingleSubst
 // lookup in the font, so a caller can ask for tabular figures alone.
 export const features = ${features ? `{${featuresEntries}}` : 'null'};
+
+// GPOS PairPos kerning (v1.8.0) — { leftGid: { rightGid: adjustment } } in
+// design units, negative to pull the pair together. Class-based subtables are
+// expanded to glyph pairs here so the runtime needs only a two-level lookup.
+export const kern = ${kern ? `{${kernEntries}}` : 'null'};
 
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)

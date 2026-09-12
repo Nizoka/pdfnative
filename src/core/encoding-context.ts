@@ -13,6 +13,7 @@ import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics } fro
 import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { applyFeaturesToRuns, composeFeatureMap } from '../fonts/font-features.js';
+import { applyKerningToRuns } from '../fonts/font-kerning.js';
 import { shapeThaiText } from '../shaping/thai-shaper.js';
 import { shapeBengaliText } from '../shaping/bengali-shaper.js';
 import { shapeTamilText } from '../shaping/tamil-shaper.js';
@@ -643,6 +644,31 @@ export function applyDocumentFeatures(
 ): EncodingContext {
     if (!tags || tags.length === 0 || !enc.withFeatures) return enc;
     return enc.withFeatures(tags);
+}
+
+/**
+ * Derive a context that applies the fonts' pair kerning.
+ *
+ * A no-op without a registered font, or when no font in play carries a pair
+ * table — the base-14 faces have no OpenType data at all.
+ *
+ * @since 1.8.0
+ */
+export function applyDocumentKerning(enc: EncodingContext, on: boolean | undefined): EncodingContext {
+    if (on !== true || !enc.isUnicode) return enc;
+    if (!enc.fontEntries.some(fe => fe.fontData.kern)) return enc;
+
+    const kerned: EncodingContext = {
+        ...enc,
+        textRuns: (str: string, sz: number) => applyKerningToRuns(enc.textRuns(str, sz), sz),
+        tw(str: string, sz: number): number {
+            if (!str) return 0;
+            let total = 0;
+            for (const run of kerned.textRuns(str, sz)) total += run.widthPt;
+            return total;
+        },
+    };
+    return kerned;
 }
 
 /**

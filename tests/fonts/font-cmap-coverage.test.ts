@@ -106,7 +106,7 @@ describe('bundled module contract', () => {
             expect(existsSync(dts), `${m} has no .d.ts`).toBe(true);
             const js = readFileSync(join(FONTS, m), 'utf8');
             const d = readFileSync(dts, 'utf8');
-            for (const name of ['cmap', 'widths', 'gsub', 'ligatures', 'features', 'metrics', 'ttfBase64']) {
+            for (const name of ['cmap', 'widths', 'gsub', 'ligatures', 'features', 'kern', 'metrics', 'ttfBase64']) {
                 const inJs = js.includes(`export const ${name} =`);
                 const inDts = d.includes(`export declare const ${name}`);
                 expect(inDts, `${m}: ${name} declared=${inDts} but exported=${inJs}`).toBe(inJs);

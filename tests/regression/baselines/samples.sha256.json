@@ -1411,7 +1411,7 @@
     },
     "tools/font-compiler-report.pdf": {
       "mode": "bytes",
-      "hash": "ae080a8502e9ea287b9cb4c3efe68bfd984128dda4e5579f274cb1ab83f0895f",
+      "hash": "05da7b7815f0fc346c3e795e1228fb6151ab6bad6c088142e853a0ce13461667",
       "size": 6707,
       "since": "1.7.0"
     },
@@ -1479,6 +1479,18 @@
       "mode": "bytes",
       "hash": "0c786efbd055b500e47eac6b40535a69f6a94d303024db76d301ead4e58a84c2",
       "size": 19853,
+      "since": "1.8.0"
+    },
+    "typography/kerning-off.pdf": {
+      "mode": "bytes",
+      "hash": "91c88c53614a43fd9f2f016267dd9b984dae040a6c55300ee4b8c8535537d29a",
+      "size": 120637,
+      "since": "1.8.0"
+    },
+    "typography/kerning-on.pdf": {
+      "mode": "bytes",
+      "hash": "e3fed19a4dc4c1c81eedfe4301064eb94ba4e345050bca1ba9e6548b141a3665",
+      "size": 122119,
       "since": "1.8.0"
     },
     "typography/metrics-approximate.pdf": {

@@ -44,6 +44,23 @@ export interface FontData {
      * @since 1.8.0
      */
     readonly features?: Record<string, Record<number, number>> | null;
+    /**
+     * GPOS pair kerning: `{ leftGid: { rightGid: adjustment } }`, in design
+     * units, negative to pull a pair together.
+     *
+     * Kerning is the most visible refinement a font carries — "AV", "To" and
+     * "Yo" are set with their nominal advances without it — and pdfnative
+     * extracted none of it before v1.8.0. Class-based GPOS subtables are
+     * expanded to glyph pairs at build time, so applying them is a two-level
+     * lookup with no shaping state.
+     *
+     * Absent or `null` on fonts built before v1.8.0 and on fonts with no pair
+     * positioning, including the four Latin subsets whose GPOS was stripped
+     * when they were subsetted.
+     *
+     * @since 1.8.0
+     */
+    readonly kern?: Record<number, Record<number, number>> | null;
     readonly markAnchors: {
         readonly bases: Record<number, Record<number, [number, number]>>;
         readonly marks: Record<number, [number, number, number]>;
@@ -220,6 +237,14 @@ export interface TextRun {
     readonly shaped: ShapedGlyph[] | null;
     readonly hexStr: string | null;
     readonly widthPt: number;
+    /**
+     * Operand for a `TJ` array when the run carries kerning adjustments, e.g.
+     * `<0024> 40 <0057>`. The emitter writes `TJ` instead of `Tj` when this is
+     * present; {@link widthPt} already accounts for the adjustments.
+     *
+     * @since 1.8.0
+     */
+    readonly tjStr?: string;
 }
 
 /** Encoding context encapsulating text encoding and font reference logic. */
@@ -600,6 +625,23 @@ export interface TypographyOptions {
      * Default: none.
      */
     readonly fontFeatures?: readonly string[];
+    /**
+     * Apply the font's pair kerning.
+     *
+     * Without it "AV", "To" and "Yo" are set with their nominal advances,
+     * which is the single most visible difference between typeset and
+     * generated text. Adjustments are emitted as `TJ` arrays, so a kerned run
+     * stays one text-showing operator and viewer selection and extraction are
+     * unaffected.
+     *
+     * Requires a registered font carrying a `kern` table — the base-14 faces
+     * have no OpenType data, and the four Latin subsets had their GPOS
+     * stripped when they were subsetted. Opt-in because it necessarily moves
+     * glyphs and therefore changes output.
+     *
+     * Default: `false`.
+     */
+    readonly kerning?: boolean;
 }
 
 /** Built-in punctuation-spacing conventions. @since 1.8.0 */

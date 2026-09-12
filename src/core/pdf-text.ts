@@ -107,6 +107,11 @@ export function txt(
         } else if (run.shaped) {
             parts.push(txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData));
             penX += run.widthPt;
+        } else if (run.tjStr) {
+            // Kerned: one TJ array keeps the run a single text-showing
+            // operator, so viewer selection and extraction stay intact.
+            parts.push(`BT ${run.fontRef} ${sz} Tf ${fmtNum(penX)} ${fmtNum(y)} Td [${run.tjStr}] TJ ET`);
+            penX += run.widthPt;
         } else {
             parts.push(`BT ${run.fontRef} ${sz} Tf ${fmtNum(penX)} ${fmtNum(y)} Td ${run.hexStr} Tj ET`);
             penX += run.widthPt;

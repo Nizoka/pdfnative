@@ -62,6 +62,12 @@ export interface FontDataObject {
      * @since 1.8.0
      */
     readonly features: Record<string, Record<number, number>> | null;
+    /**
+     * GPOS pair kerning: `{ leftGid: { rightGid: adjustment } }` in design
+     * units, or `null` when the font carries no pair positioning.
+     * @since 1.8.0
+     */
+    readonly kern: Record<number, Record<number, number>> | null;
     /** GPOS MarkToBase anchors. */
     readonly markAnchors: {
         readonly marks: Record<number, [number, number, number]>;
@@ -118,6 +124,7 @@ interface RawParsed {
     gsub: Record<number, number>;
     ligatures: Record<number, number[][]>;
     features: Record<string, Record<number, number>> | null;
+    kern: Record<number, Record<number, number>> | null;
     markAnchors: RawMarkAnchors;
     name?: string;
 }
@@ -460,6 +467,172 @@ function parseGSUBLigatures(r: TTFReader, tables: TableDir): Record<number, numb
 
 // ── GPOS LookupType 4 (MarkToBase) + 6 (MarkToMark) ──────────────────
 
+// ── GPOS LookupType 2 (PairPos / kerning) ────────────────────────────
+
+/** Read a ClassDef into `{ gid: classIndex }`; absent glyphs are class 0. */
+function readClassDef(r: TTFReader, absOffset: number): Record<number, number> {
+    const classes: Record<number, number> = {};
+    r.seek(absOffset);
+    const format = r.readUint16();
+    if (format === 1) {
+        const startGid = r.readUint16();
+        const count = r.readUint16();
+        for (let i = 0; i < count; i++) {
+            const c = r.readUint16();
+            if (c !== 0) classes[startGid + i] = c;
+        }
+    } else if (format === 2) {
+        const rangeCount = r.readUint16();
+        for (let i = 0; i < rangeCount; i++) {
+            const start = r.readUint16();
+            const end = r.readUint16();
+            const c = r.readUint16();
+            if (c !== 0) for (let g = start; g <= end; g++) classes[g] = c;
+        }
+    }
+    return classes;
+}
+
+/** Bytes a ValueRecord occupies for a given valueFormat mask. */
+function valueRecordSize(valueFormat: number): number {
+    let n = 0;
+    for (let bit = 0; bit < 8; bit++) if (valueFormat & (1 << bit)) n += 2;
+    return n;
+}
+
+/** Read a ValueRecord, returning its XAdvance and consuming the rest. */
+function readXAdvance(r: TTFReader, valueFormat: number): number {
+    let x = 0;
+    if (valueFormat & 0x0001) r.skip(2);
+    if (valueFormat & 0x0002) r.skip(2);
+    if (valueFormat & 0x0004) x = r.readInt16();
+    if (valueFormat & 0x0008) r.skip(2);
+    if (valueFormat & 0x0010) r.skip(2);
+    if (valueFormat & 0x0020) r.skip(2);
+    if (valueFormat & 0x0040) r.skip(2);
+    if (valueFormat & 0x0080) r.skip(2);
+    return x;
+}
+
+/**
+ * Parse GPOS LookupType 2 into `{ leftGid: { rightGid: adjust } }`, design
+ * units. Must mirror `parseTTFGPOSKerning` in `tools/build-font-data.cjs`.
+ */
+function parseGPOSKerning(r: TTFReader, tables: TableDir): Record<number, Record<number, number>> | null {
+    if (!tables['GPOS']) return null;
+    const kern: Record<number, Record<number, number>> = {};
+    let pairs = 0;
+
+    const add = (left: number, right: number, adjust: number): void => {
+        if (adjust === 0) return;
+        let row = kern[left];
+        if (row === undefined) { row = {}; kern[left] = row; }
+        if (row[right] === undefined) pairs++;
+        row[right] = adjust;
+    };
+
+    try {
+        const base = tables['GPOS'].offset;
+        r.seek(base);
+        r.skip(4);
+        r.skip(2); // scriptListOffset
+        r.skip(2); // featureListOffset
+        const lookupListOffset = r.readUint16();
+
+        r.seek(base + lookupListOffset);
+        const lookupCount = r.readUint16();
+        const lookupOffsets: number[] = [];
+        for (let i = 0; i < lookupCount; i++) lookupOffsets.push(r.readUint16());
+
+        for (let li = 0; li < lookupCount; li++) {
+            const lkBase = base + lookupListOffset + lookupOffsets[li];
+            r.seek(lkBase);
+            let lookupType = r.readUint16();
+            r.skip(2); // lookupFlag
+            const subtableCount = r.readUint16();
+            const rawOffsets: number[] = [];
+            for (let si = 0; si < subtableCount; si++) rawOffsets.push(r.readUint16());
+
+            // LookupType 9 (Extension Positioning) wraps the real subtable.
+            let stAbs = rawOffsets.map(o => lkBase + o);
+            if (lookupType === 9) {
+                const resolved: number[] = [];
+                let innerType = 0;
+                for (const abs of stAbs) {
+                    r.seek(abs);
+                    r.skip(2);
+                    innerType = r.readUint16();
+                    resolved.push(abs + r.readUint32());
+                }
+                lookupType = innerType;
+                stAbs = resolved;
+            }
+            if (lookupType !== 2) continue;
+
+            for (const stBase of stAbs) {
+                r.seek(stBase);
+                const posFormat = r.readUint16();
+                const coverageOffset = r.readUint16();
+                const valueFormat1 = r.readUint16();
+                const valueFormat2 = r.readUint16();
+                const covered = readCoverageTable(r, stBase + coverageOffset);
+
+                if (posFormat === 1) {
+                    r.seek(stBase + 8);
+                    const pairSetCount = r.readUint16();
+                    const pairSetOffsets: number[] = [];
+                    for (let i = 0; i < pairSetCount; i++) pairSetOffsets.push(r.readUint16());
+
+                    for (let i = 0; i < pairSetCount && i < covered.length; i++) {
+                        r.seek(stBase + pairSetOffsets[i]);
+                        const pairValueCount = r.readUint16();
+                        for (let p = 0; p < pairValueCount; p++) {
+                            const second = r.readUint16();
+                            const adjust = readXAdvance(r, valueFormat1);
+                            r.skip(valueRecordSize(valueFormat2));
+                            add(covered[i], second, adjust);
+                        }
+                    }
+                } else if (posFormat === 2) {
+                    r.seek(stBase + 8);
+                    const classDef1Offset = r.readUint16();
+                    const classDef2Offset = r.readUint16();
+                    const class1Count = r.readUint16();
+                    const class2Count = r.readUint16();
+                    const recordsBase = r.pos;
+
+                    const cd1 = readClassDef(r, stBase + classDef1Offset);
+                    const cd2 = readClassDef(r, stBase + classDef2Offset);
+
+                    const byClass2 = new Map<number, number[]>();
+                    for (const [gidStr, c] of Object.entries(cd2)) {
+                        let list = byClass2.get(c);
+                        if (!list) { list = []; byClass2.set(c, list); }
+                        list.push(Number(gidStr));
+                    }
+
+                    const recSize = valueRecordSize(valueFormat1) + valueRecordSize(valueFormat2);
+                    for (const left of covered) {
+                        const c1 = cd1[left] ?? 0;
+                        if (c1 >= class1Count) continue;
+                        for (let c2 = 1; c2 < class2Count; c2++) {
+                            const rights = byClass2.get(c2);
+                            if (!rights || rights.length === 0) continue;
+                            r.seek(recordsBase + (c1 * class2Count + c2) * recSize);
+                            const adjust = readXAdvance(r, valueFormat1);
+                            if (adjust === 0) continue;
+                            for (const right of rights) add(left, right, adjust);
+                        }
+                    }
+                }
+            }
+        }
+    } catch {
+        return null;
+    }
+    return pairs > 0 ? kern : null;
+}
+
 function parseGPOS(r: TTFReader, tables: TableDir): RawMarkAnchors {
     const result: RawMarkAnchors = { marks: {}, bases: {}, mark2mark: { mark1Anchors: {}, mark2Classes: {} } };
     if (!tables['GPOS']) return result;
@@ -770,6 +943,7 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
     const ligatures = parseGSUBLigatures(r, tables);
     const markAnchors = parseGPOS(r, tables);
     const features = parseGSUBFeatures(r, tables);
+    const kern = parseGPOSKerning(r, tables);
     const name = parseName(r, tables);
 
     return {
@@ -777,7 +951,7 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
             unitsPerEm, ascent, descent, capHeight, stemV,
             bbox: [xMin, yMin, xMax, yMax], defaultWidth, numGlyphs,
         },
-        cmap, widths, gsub, ligatures, features, markAnchors, name,
+        cmap, widths, gsub, ligatures, features, kern, markAnchors, name,
     };
 }
 
@@ -831,7 +1005,7 @@ function sanitizeFontName(name: string): string {
 }
 
 function generateEsmModule(fontName: string, parsed: RawParsed, ttfBase64: string): string {
-    const { metrics, cmap, widths, gsub, ligatures, features, markAnchors } = parsed;
+    const { metrics, cmap, widths, gsub, ligatures, features, kern, markAnchors } = parsed;
 
     const cmapEntries = Object.entries(cmap).map(([k, v]) => `${k}:${v}`).join(',');
     const defaultW = metrics.defaultWidth;
@@ -842,6 +1016,11 @@ function generateEsmModule(fontName: string, parsed: RawParsed, ttfBase64: strin
     // byte-identical modules.
     const featuresEntries = Object.entries(features || {})
         .map(([tag, map]) => `${JSON.stringify(tag)}:{${Object.entries(map).map(([k, v]) => `${k}:${v}`).join(',')}}`)
+        .join(',');
+
+    // Pair kerning: { leftGid: { rightGid: adjustment } }, design units.
+    const kernEntries = Object.entries(kern || {})
+        .map(([left, row]) => `${left}:{${Object.entries(row).map(([k, v]) => `${k}:${v}`).join(',')}}`)
         .join(',');
 
     const ligaturesEntries = Object.entries(ligatures || {})
@@ -897,6 +1076,11 @@ export const ligatures = {${ligaturesEntries}};
 // Kept apart from the merged gsub table above, which unions every SingleSubst
 // lookup in the font, so a caller can ask for tabular figures alone.
 export const features = ${features ? `{${featuresEntries}}` : 'null'};
+
+// GPOS PairPos kerning (v1.8.0) — { leftGid: { rightGid: adjustment } } in
+// design units, negative to pull the pair together. Class-based subtables are
+// expanded to glyph pairs here so the runtime needs only a two-level lookup.
+export const kern = ${kern ? `{${kernEntries}}` : 'null'};
 
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)
@@ -1000,6 +1184,7 @@ export function parseFontData(buffer: Uint8Array, opts: ParseFontDataOptions = {
         gsub: parsed.gsub,
         ligatures: parsed.ligatures,
         features: parsed.features,
+        kern: parsed.kern,
         markAnchors: { marks, bases },
         mark2mark: { mark1Anchors, mark2Classes },
         pdfWidthArray: buildPDFWidthArray(parsed.widths, parsed.metrics.numGlyphs, parsed.metrics.defaultWidth),

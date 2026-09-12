@@ -36,6 +36,11 @@ export const ligatures = {};
 // lookup in the font, so a caller can ask for tabular figures alone.
 export const features = null;
 
+// GPOS PairPos kerning (v1.8.0) — { leftGid: { rightGid: adjustment } } in
+// design units, negative to pull the pair together. Class-based subtables are
+// expanded to glyph pairs here so the runtime needs only a two-level lookup.
+export const kern = null;
+
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)
 // bases[gid] = { classIdx: [anchorX, anchorY] }

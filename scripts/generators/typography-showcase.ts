@@ -271,6 +271,34 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         buildDocumentPDFBytes(featureDoc, { typography: { fontFeatures: ['onum', 'smcp'] } }),
     );
 
+    // ── Pair kerning ─────────────────────────────────────────────
+    // The pairs everyone checks: AV, To, Yo, Wa. Without kerning they are
+    // set with their nominal advances, which reads loose at any size and
+    // obvious at display sizes.
+    const kernDoc: DocumentParams = {
+        title: 'Crenage',
+        fontEntries: featureLatin,
+        blocks: [
+            { type: 'heading', text: 'AVATAR Yo To Wave', level: 1 },
+            { type: 'heading', text: 'AWAY Toyota Vyborg Wavy', level: 2 },
+            { type: 'paragraph', text: 'AVATAR To Yo Wave AWAY Toyota Vyborg Wavy LTAVA. ' .repeat(12) },
+            { type: 'paragraph', text: 'Le crenage rapproche les paires que le dessin des lettres laisse trop ouvertes. Les titres ci-dessus sont le cas le plus visible ; en texte courant l\'effet est cumulatif sur la longueur de ligne.' },
+        ],
+        footerText: 'pdfnative – typography showcase',
+    };
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'kerning-off.pdf'),
+        'typography/kerning-off.pdf',
+        buildDocumentPDFBytes(kernDoc),
+    );
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'kerning-on.pdf'),
+        'typography/kerning-on.pdf',
+        buildDocumentPDFBytes(kernDoc, { typography: { kerning: true } }),
+    );
+
     // ── Tagged: a split paragraph stays one /P element ───────────
     // PDF/A-2b, so veraPDF checks that splitting a paragraph across pages
     // leaves the structure tree conformant. Needs an embedded Latin font like

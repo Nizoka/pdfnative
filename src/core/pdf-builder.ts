@@ -23,7 +23,7 @@ import type {
     PageTemplate,
     PdfColor,
 } from '../types/pdf-types.js';
-import { createEncodingContext, applyDocumentFeatures } from './encoding-context.js';
+import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
 import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic } from './pdf-diagnostics.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
@@ -311,7 +311,8 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     }
 
     const encBase = createEncodingContext(fontEntries, tagged, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics);
-    const enc = applyDocumentFeatures(encBase, layoutOptions?.typography?.fontFeatures);
+    const encFeat = applyDocumentFeatures(encBase, layoutOptions?.typography?.fontFeatures);
+    const enc = applyDocumentKerning(encFeat, layoutOptions?.typography?.kerning);
 
     // ── Resolve header/footer templates ──────────────
     const footerTpl: PageTemplate = layoutOptions?.footerTemplate ?? {
