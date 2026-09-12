@@ -1006,23 +1006,25 @@ export function containsRTL(text: string): boolean {
 export function stripBidiControls(text: string): string {
     if (!text) return text;
     // Fast path: scan once; only rebuild if a control is present.
+    // U+061C ARABIC LETTER MARK is the Arabic counterpart of LRM/RLM: an
+    // invisible implicit directional mark (UAX #9 §2.5). It was not listed
+    // here, so it reached the cmap and drew whatever glyph the font had for
+    // it — an empty one in Noto Sans Arabic, and .notdef in any font without
+    // it, which is a tofu box in Persian and Arabic text.
+    const isControl = (c: number): boolean =>
+        c === 0x200E || c === 0x200F
+        || c === 0x061C
+        || (c >= 0x202A && c <= 0x202E)
+        || (c >= 0x2066 && c <= 0x2069);
+
     let needs = false;
     for (let i = 0; i < text.length; i++) {
-        const c = text.charCodeAt(i);
-        if (c === 0x200E || c === 0x200F
-            || (c >= 0x202A && c <= 0x202E)
-            || (c >= 0x2066 && c <= 0x2069)) {
-            needs = true;
-            break;
-        }
+        if (isControl(text.charCodeAt(i))) { needs = true; break; }
     }
     if (!needs) return text;
     let out = '';
     for (let i = 0; i < text.length; i++) {
-        const c = text.charCodeAt(i);
-        if (c === 0x200E || c === 0x200F
-            || (c >= 0x202A && c <= 0x202E)
-            || (c >= 0x2066 && c <= 0x2069)) continue;
+        if (isControl(text.charCodeAt(i))) continue;
         out += text[i];
     }
     return out;
