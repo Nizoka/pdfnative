@@ -15,6 +15,7 @@
  */
 
 import { fmtNum } from './pdf-text.js';
+import { fillOp } from './pdf-color.js';
 
 // ── Code 128 (ISO/IEC 15417) ─────────────────────────────────────────
 
@@ -162,7 +163,7 @@ export function renderCode128(data: string, x: number, y: number, width: number,
     totalModules += 2; // quiet zones
 
     const moduleW = width / totalModules;
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
     let cx = x + moduleW; // left quiet zone
 
     for (const pat of patterns) {
@@ -293,7 +294,7 @@ export function renderEAN13(data: string, x: number, y: number, width: number, h
 
     // Render modules
     const moduleW = width / (modules.length + 2); // +2 for quiet zones
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
     let cx = x + moduleW;
 
     for (let i = 0; i < modules.length; i++) {
@@ -460,7 +461,7 @@ export function renderQR(data: string, x: number, y: number, size: number, ecLev
     const modules = generateQR(data, ecLevel);
     const n = modules.length;
     const moduleSize = size / n;
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
 
     for (let row = 0; row < n; row++) {
         for (let col = 0; col < n; col++) {
@@ -1087,7 +1088,7 @@ export function renderDataMatrix(data: string, x: number, y: number, size: numbe
     const modules = generateDataMatrix(data);
     const n = modules.length;
     const moduleSize = size / n;
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
 
     for (let row = 0; row < n; row++) {
         for (let col = 0; col < modules[row].length; col++) {
@@ -1294,7 +1295,7 @@ export function renderPDF417(data: string, x: number, y: number, width: number, 
     const totalModules = 17 + 17 + cols * 17 + 17 + 18;
     const moduleW = width / totalModules;
 
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
 
     for (let r = 0; r < rows; r++) {
         const ry = y + (rows - 1 - r) * rowHeight;

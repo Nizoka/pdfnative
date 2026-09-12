@@ -38,7 +38,7 @@ import {
     computeColumnPositions,
     resolveTemplate,
 } from './pdf-layout.js';
-import { normalizeColors, parseColor } from './pdf-color.js';
+import { normalizeColors, parseColor, fillOp, strokeOp } from './pdf-color.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
 import {
     createMCIDAllocator,
@@ -87,11 +87,11 @@ function _buildTableHeader(
     tagCtx?: TagContext,
 ): { ops: string[]; y: number; structRow?: StructElement } {
     const ops: string[] = [];
-    ops.push(`${colors.thBg} rg`);
+    ops.push(`${fillOp(colors.thBg)}`);
     ops.push(`${fmtNum(mgL)} ${fmtNum(y - TH_H)} ${fmtNum(cw)} ${fmtNum(TH_H)} re f`);
-    ops.push(`0.75 w ${colors.thBrd} RG`);
+    ops.push(`0.75 w ${strokeOp(colors.thBrd)}`);
     ops.push(`${fmtNum(mgL)} ${fmtNum(y - TH_H)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - TH_H)} l S`);
-    ops.push(`${colors.text} rg`);
+    ops.push(`${fillOp(colors.text)}`);
 
     const thChildren: (StructElement | MCRef)[] = [];
 
@@ -143,10 +143,10 @@ function _buildDataRow(
 ): { ops: string[]; y: number; structRow?: StructElement } {
     const ops: string[] = [];
     if (pointed) {
-        ops.push(`${colors.ptdBg} rg`);
+        ops.push(`${fillOp(colors.ptdBg)}`);
         ops.push(`${fmtNum(mgL)} ${fmtNum(y - ROW_H)} ${fmtNum(cw)} ${fmtNum(ROW_H)} re f`);
     }
-    ops.push(`0.25 w ${colors.rowBrd} RG`);
+    ops.push(`0.25 w ${strokeOp(colors.rowBrd)}`);
     ops.push(`${fmtNum(mgL)} ${fmtNum(y - ROW_H)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - ROW_H)} l S`);
 
     const tdChildren: (StructElement | MCRef)[] = [];
@@ -156,7 +156,7 @@ function _buildDataRow(
         const isAmount = (i === 3);
         const color = isAmount ? (type === 'credit' ? colors.credit : colors.debit) : colors.text;
         const font = isAmount ? enc.f2 : enc.f1;
-        ops.push(`${color} rg`);
+        ops.push(`${fillOp(color)}`);
 
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
@@ -206,7 +206,7 @@ function _buildPageTemplate(
     const sz = template.fontSize ?? defaultFontSize;
     const color = parseColor(template.color ?? defaultColor);
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     if (template.left) {
         const text = resolveTemplate(template.left, page, pages, title, date);
@@ -448,7 +448,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
         if (p === 0) {
             // Title
-            ops.push(`${colors.title} rg`);
+            ops.push(`${fillOp(colors.title)}`);
             if (tagCtx) {
                 const mcid = tagCtx.mcidAlloc.next(pageObjNum);
                 ops.push(txtTagged(title, mg.l, y - fs.title, enc.f2, fs.title, enc, mcid));
@@ -459,18 +459,18 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             y -= TITLE_LN;
 
             // Title underline
-            ops.push(`0.75 w ${colors.title} RG`);
+            ops.push(`0.75 w ${strokeOp(colors.title)}`);
             ops.push(`${fmtNum(mg.l)} ${fmtNum(y)} m ${fmtNum(pgW - mg.r)} ${fmtNum(y)} l S`);
             y -= 14;
 
             // Info section
             for (const item of infoItems) {
-                ops.push(`${colors.label} rg`);
+                ops.push(`${fillOp(colors.label)}`);
                 if (tagCtx) {
                     const mcidLabel = tagCtx.mcidAlloc.next(pageObjNum);
                     const mcidValue = tagCtx.mcidAlloc.next(pageObjNum);
                     ops.push(txtTagged(`${item.label} :`, mg.l, y, enc.f2, fs.info, enc, mcidLabel));
-                    ops.push(`${colors.text} rg`);
+                    ops.push(`${fillOp(colors.text)}`);
                     ops.push(txtTagged(item.value, mg.l + 100, y, enc.f1, fs.info, enc, mcidValue));
                     documentChildren.push({
                         type: 'P',
@@ -481,7 +481,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                     });
                 } else {
                     ops.push(txt(`${item.label} :`, mg.l, y, enc.f2, fs.info, enc));
-                    ops.push(`${colors.text} rg`);
+                    ops.push(`${fillOp(colors.text)}`);
                     ops.push(txt(item.value, mg.l + 100, y, enc.f1, fs.info, enc));
                 }
                 y -= INFO_LN;
@@ -489,16 +489,16 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             y -= 6;
 
             // Balance box
-            ops.push(`${colors.balBg} rg`);
+            ops.push(`${fillOp(colors.balBg)}`);
             ops.push(`${fmtNum(mg.l)} ${fmtNum(y - BAL_H)} ${fmtNum(cw)} ${fmtNum(BAL_H)} re f`);
-            ops.push(`0.5 w ${colors.balBrd} RG`);
+            ops.push(`0.5 w ${strokeOp(colors.balBrd)}`);
             ops.push(`${fmtNum(mg.l)} ${fmtNum(y - BAL_H)} ${fmtNum(cw)} ${fmtNum(BAL_H)} re S`);
-            ops.push(`${colors.title} rg`);
+            ops.push(`${fillOp(colors.title)}`);
             if (tagCtx) {
                 const mcidBal = tagCtx.mcidAlloc.next(pageObjNum);
                 const mcidCnt = tagCtx.mcidAlloc.next(pageObjNum);
                 ops.push(txtTagged(balanceText, mg.l + 8, y - 14, enc.f2, 12, enc, mcidBal));
-                ops.push(`${colors.footer} rg`);
+                ops.push(`${fillOp(colors.footer)}`);
                 ops.push(txtTagged(countText, mg.l + 8, y - 26, enc.f1, 7, enc, mcidCnt));
                 documentChildren.push({
                     type: 'P',
@@ -509,7 +509,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                 });
             } else {
                 ops.push(txt(balanceText, mg.l + 8, y - 14, enc.f2, 12, enc));
-                ops.push(`${colors.footer} rg`);
+                ops.push(`${fillOp(colors.footer)}`);
                 ops.push(txt(countText, mg.l + 8, y - 26, enc.f1, 7, enc));
             }
             y -= BAL_H + 8;

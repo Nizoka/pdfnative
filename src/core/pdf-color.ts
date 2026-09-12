@@ -8,6 +8,13 @@
  *   - Hex string: "#2563EB", "#26E"
  *   - RGB tuple: [37, 99, 235] (0–255)
  *   - PDF operator string: "0.145 0.388 0.922" (0.0–1.0)
+ *
+ * Emitting a colour goes through {@link fillOp} / {@link strokeOp} rather
+ * than through string concatenation at the call site. Until v1.8.0 the
+ * operator was appended by hand at roughly a hundred places across a dozen
+ * modules, which meant the library could only ever emit one colour space:
+ * adding a second would have required finding and editing every one of them.
+ * The two helpers are that single point of choice.
  */
 
 import type { PdfColor, PdfColors } from '../types/pdf-types.js';
@@ -48,6 +55,62 @@ export function parseColor(input: PdfColor): string {
         `Invalid color format: ${JSON.stringify(input)}. ` +
         'Expected "#RRGGBB", "#RGB", [r, g, b] (0–255), or "R G B" (0.0–1.0).'
     );
+}
+
+/**
+ * The colour space a resolved colour belongs to.
+ *
+ * @since 1.8.0
+ */
+export type PdfColorSpace = 'rgb' | 'cmyk';
+
+/**
+ * A colour reduced to the operands a PDF operator takes, plus the space
+ * those operands are in — which is what decides the operator itself.
+ *
+ * @since 1.8.0
+ */
+export interface ResolvedColor {
+    readonly space: PdfColorSpace;
+    /** Space-separated operands: `"R G B"` or `"C M Y K"`, each 0.0–1.0. */
+    readonly operands: string;
+}
+
+/**
+ * Resolve any accepted colour input to its operands and colour space.
+ *
+ * @since 1.8.0
+ */
+export function resolveColor(input: PdfColor): ResolvedColor {
+    return { space: 'rgb', operands: parseColor(input) };
+}
+
+/** Operator suffix for each space, non-stroking then stroking. */
+const FILL_OPERATOR: Record<PdfColorSpace, string> = { rgb: 'rg', cmyk: 'k' };
+const STROKE_OPERATOR: Record<PdfColorSpace, string> = { rgb: 'RG', cmyk: 'K' };
+
+/**
+ * The complete non-stroking colour operator for a colour, operands included.
+ *
+ * ```ts
+ * fillOp('#2563EB')  // "0.145 0.388 0.922 rg"
+ * ```
+ *
+ * @since 1.8.0
+ */
+export function fillOp(input: PdfColor): string {
+    const { space, operands } = resolveColor(input);
+    return `${operands} ${FILL_OPERATOR[space]}`;
+}
+
+/**
+ * The complete stroking colour operator for a colour, operands included.
+ *
+ * @since 1.8.0
+ */
+export function strokeOp(input: PdfColor): string {
+    const { space, operands } = resolveColor(input);
+    return `${operands} ${STROKE_OPERATOR[space]}`;
 }
 
 /**

@@ -8,7 +8,7 @@
  */
 
 import type { WatermarkOptions, WatermarkText, WatermarkImage, EncodingContext } from '../types/pdf-types.js';
-import { parseColor } from './pdf-color.js';
+import { parseColor, fillOp } from './pdf-color.js';
 import { parseImage, buildImageXObject } from './pdf-image.js';
 import type { ParsedImage } from './pdf-image.js';
 import { fmtNum } from './pdf-text.js';
@@ -215,7 +215,7 @@ function _buildTextWatermarkOps(
         'q',
         `${gsName} gs`,
         'BT',
-        `${color} rg`,
+        `${fillOp(color)}`,
         `${enc.f2} ${fmtNum(sz)} Tf`,
         `${fmtNum(cos)} ${fmtNum(sin)} ${fmtNum(-sin)} ${fmtNum(cos)} ${fmtNum(tx)} ${fmtNum(ty)} Tm`,
         `${escapedText} Tj`,

@@ -31,7 +31,7 @@ import type {
 import { parseImage, buildImageOperators } from './pdf-image.js';
 import type { ParsedImage } from './pdf-image.js';
 import { validateURL } from './pdf-annot.js';
-import { parseColor } from './pdf-color.js';
+import { parseColor, fillOp, strokeOp } from './pdf-color.js';
 import type { LinkAnnotation } from './pdf-annot.js';
 import { truncate, helveticaWidth, helveticaBoldWidth } from '../fonts/encoding.js';
 import {
@@ -396,7 +396,7 @@ export function renderHeading(
     const structTag = block.level === 1 ? 'H1' : block.level === 2 ? 'H2' : 'H3';
 
     y -= spacing.top;
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     const lines = wrapText(block.text, cw, sz, enc);
     const lineH = sz * 1.3;
@@ -498,7 +498,7 @@ export function renderParagraph(
     const lines = slice ? allLines.slice(slice.fromLine, slice.toLine) : allLines;
     const isFinalSlice = slice ? slice.isFinalSlice : true;
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     const pChildren: MCRef[] = slice ? slice.paraStructAccum : [];
 
@@ -572,7 +572,7 @@ export function renderList(
     const lineH = sz * DEFAULT_LINE_HEIGHT;
     const color = '0.216 0.255 0.318';
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     // Render the (possibly nested) list recursively. The fill colour is set
     // once above and persists across levels via PDF graphics state.
@@ -933,7 +933,7 @@ export function renderTable(
             return [];
         }
         const o: string[] = [];
-        o.push(`${fmtNum(borderWidth)} w ${borderColor} RG${borderDash ? ' ' + borderDash : ''}`);
+        o.push(`${fmtNum(borderWidth)} w ${strokeOp(borderColor)}${borderDash ? ' ' + borderDash : ''}`);
         const x0 = cellX, x1 = cellX + cellW, y0 = top - h, y1 = top;
         if (borderSides.top) o.push(`${fmtNum(x0)} ${fmtNum(y1)} m ${fmtNum(x1)} ${fmtNum(y1)} l S`);
         if (borderSides.bottom) o.push(`${fmtNum(x0)} ${fmtNum(y0)} m ${fmtNum(x1)} ${fmtNum(y0)} l S`);
@@ -1035,7 +1035,7 @@ export function renderTable(
 
     // ── Caption (first slice only) ───────────────────────────────────
     if (drawCaption && plan.captionLines.length > 0) {
-        ops.push(`${colors.text} rg`);
+        ops.push(`${fillOp(colors.text)}`);
         const lineH = CAPTION_FONT_SIZE * TABLE_LINE_HEIGHT;
         let cy = y - CAPTION_FONT_SIZE;
         const captionRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
@@ -1057,11 +1057,11 @@ export function renderTable(
 
     // ── Header ───────────────────────────────────────────────────────
     if (drawHeader) {
-        ops.push(`${colors.thBg} rg`);
+        ops.push(`${fillOp(colors.thBg)}`);
         ops.push(`${fmtNum(mgL)} ${fmtNum(y - headerHeight)} ${fmtNum(cw)} ${fmtNum(headerHeight)} re f`);
-        ops.push(`0.75 w ${colors.thBrd} RG`);
+        ops.push(`0.75 w ${strokeOp(colors.thBrd)}`);
         ops.push(`${fmtNum(mgL)} ${fmtNum(y - headerHeight)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - headerHeight)} l S`);
-        ops.push(`${colors.text} rg`);
+        ops.push(`${fillOp(colors.text)}`);
 
         const thChildren: (StructElement | MCRef)[] = [];
         for (let i = 0; i < block.headers.length && i < columns.length; i++) {
@@ -1085,12 +1085,12 @@ export function renderTable(
 
         // Zebra fill (even data rows, counting from 0 across the entire table).
         if (zebraColor && r % 2 === 1) {
-            ops.push(`${zebraColor} rg`);
+            ops.push(`${fillOp(zebraColor)}`);
             ops.push(`${fmtNum(mgL)} ${fmtNum(y - rowH)} ${fmtNum(cw)} ${fmtNum(rowH)} re f`);
         }
 
         // Row separator
-        ops.push(`0.25 w ${colors.rowBrd} RG`);
+        ops.push(`0.25 w ${strokeOp(colors.rowBrd)}`);
         ops.push(`${fmtNum(mgL)} ${fmtNum(y - rowH)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - rowH)} l S`);
 
         const tdChildren: (StructElement | MCRef)[] = [];
@@ -1103,7 +1103,7 @@ export function renderTable(
             const isAmount = columns[i].kind === 'amount';
             const color = isAmount ? (row.type === 'credit' ? colors.credit : colors.debit) : colors.text;
             const font = isAmount ? enc.f2 : enc.f1;
-            ops.push(`${color} rg`);
+            ops.push(`${fillOp(color)}`);
 
             const cellRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
             ops.push(...emitCell(cells[i] ?? [''], i, y, rowH, font, fs.td, cellRefs, false));
@@ -1146,7 +1146,7 @@ export function renderPageTemplate(
     const sz = template.fontSize ?? DEFAULT_FONT_SIZES.ft;
     const color = parseColor(template.color ?? '0.612 0.639 0.682');
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     if (template.left) {
         const text = resolveTemplate(template.left, page, pages, title, date);
@@ -1283,7 +1283,7 @@ export function renderLink(
 
     const lines = wrapText(block.text, cw, sz, enc);
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     for (const line of lines) {
         const textW = measureText(line, sz, enc);
@@ -1300,7 +1300,7 @@ export function renderLink(
 
         // Underline
         const ulY = textY - LINK_UNDERLINE_OFFSET;
-        ops.push(`${color} RG 0.5 w`);
+        ops.push(`${strokeOp(color)} 0.5 w`);
         ops.push(`${fmtNum(textX)} ${fmtNum(ulY)} m ${fmtNum(textX + textW)} ${fmtNum(ulY)} l S`);
 
         if (isValid) {
@@ -1357,7 +1357,7 @@ export function renderToc(
     // TOC Title
     const titleSz = 14;
     const titleColor = '0.145 0.388 0.922';
-    ops.push(`${titleColor} rg`);
+    ops.push(`${fillOp(titleColor)}`);
     if (tagCtx?.tagged) {
         const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
         ops.push(txtTagged(title, mgL, y - titleSz, enc.f2, titleSz, enc, mcid));
@@ -1369,7 +1369,7 @@ export function renderToc(
 
     // TOC entries
     const textColor = '0.216 0.255 0.318';
-    ops.push(`${textColor} rg`);
+    ops.push(`${fillOp(textColor)}`);
 
     for (const heading of headings) {
         if (heading.level > maxLevel) continue;
@@ -1405,9 +1405,9 @@ export function renderToc(
         const dotStart = entryX + textW + 4;
         if (dotStart < dotLeaderEnd) {
             const dotStr = '.'.repeat(Math.max(1, Math.floor((dotLeaderEnd - dotStart) / (measureText('.', sz, enc) + 0.5))));
-            ops.push(`0.6 0.6 0.6 rg`);
+            ops.push(fillOp('0.6 0.6 0.6'));
             ops.push(txt(dotStr, dotStart, textY, enc.f1, sz, enc));
-            ops.push(`${textColor} rg`);
+            ops.push(`${fillOp(textColor)}`);
         }
 
         ops.push(txtR(pageNumStr, mgL + cw, textY, enc.f1, sz, enc));

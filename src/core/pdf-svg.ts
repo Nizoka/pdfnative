@@ -16,7 +16,7 @@
  * SVG 1.1 §8.3 Path Data.
  */
 
-import { parseColor } from './pdf-color.js';
+import { parseColor, fillOp, strokeOp } from './pdf-color.js';
 import { txt } from './pdf-text.js';
 import type { PdfColor, EncodingContext } from '../types/pdf-types.js';
 
@@ -698,9 +698,9 @@ function buildPathOps(
 ): string {
     const ops: string[] = ['q'];
 
-    if (fillRgb) ops.push(`${fillRgb} rg`);
+    if (fillRgb) ops.push(`${fillOp(fillRgb)}`);
     if (strokeRgb) {
-        ops.push(`${strokeRgb} RG`);
+        ops.push(`${strokeOp(strokeRgb)}`);
         ops.push(`${fn(strokeWidth)} w`);
     }
 
@@ -824,7 +824,7 @@ export function renderSvg(
             const pdfX = pdfBaseX - anchorOffset;
             const fillRgb = resolveColor(t.fill, '0 0 0');
             textOps.push('q');
-            if (fillRgb) textOps.push(`${fillRgb} rg`);
+            if (fillRgb) textOps.push(`${fillOp(fillRgb)}`);
             textOps.push(txt(t.text, pdfX, pdfBaseY, enc.f1, szPdf, enc));
             textOps.push('Q');
         }

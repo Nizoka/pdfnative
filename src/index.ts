@@ -153,7 +153,8 @@ export type {
 export { buildAnnotation, buildAnnotationBody } from './core/pdf-annot-markup.js';
 
 // ── Core — Color Utilities ──────────────────────────────────────────
-export { parseColor, isValidPdfRgb, normalizeColors } from './core/pdf-color.js';
+export { parseColor, isValidPdfRgb, normalizeColors, fillOp, strokeOp, resolveColor } from './core/pdf-color.js';
+export type { PdfColorSpace, ResolvedColor } from './core/pdf-color.js';
 
 // ── Core — Watermark ────────────────────────────────────────────────
 export type { WatermarkState } from './core/pdf-watermark.js';

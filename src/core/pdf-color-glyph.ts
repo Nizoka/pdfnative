@@ -17,6 +17,13 @@
  * The Form XObject's user space is font units; the caller scales it onto the
  * page with a `cm` and draws it with `Do`.
  *
+ * This module is the one place that still writes a colour operator directly
+ * rather than through `fillOp`. That is deliberate, not an omission: these
+ * colours are CPAL palette entries, and CPAL stores BGRA — the table has no
+ * way to express anything but RGB. The shadings emitted alongside them
+ * declare `/DeviceRGB` for the same reason. A document-wide colour space
+ * cannot reach in here without contradicting the font.
+ *
  * References:
  *   - ISO 32000-1 §8.7.4.5 (Shadings), §7.10.2 (Type 2 functions),
  *     §8.10 (Form XObjects)

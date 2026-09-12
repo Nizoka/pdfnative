@@ -18,7 +18,7 @@
  */
 
 import { fmtNum, encodePdfTextString } from './pdf-text.js';
-import { parseColor } from './pdf-color.js';
+import { parseColor, fillOp } from './pdf-color.js';
 import type { PdfColor } from '../types/pdf-types.js';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ export function buildAnnotationBody(annot: MarkupAnnotation): string {
             const sz = annot.fontSize ?? 12;
             const col = annot.color !== undefined ? parseColor(annot.color) : '0 0 0';
             // /DA sets the free-text default appearance (font + size + colour).
-            entries.push(`/DA (/Helv ${fmtNum(sz)} Tf ${col} rg)`);
+            entries.push(`/DA (/Helv ${fmtNum(sz)} Tf ${fillOp(col)})`);
             break;
         }
     }

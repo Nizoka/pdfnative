@@ -35,7 +35,7 @@ import { toBytes } from './pdf-stream.js';
 import { buildOutlineObjects, type OutlineRenderItem } from './pdf-outline.js';
 import { buildPageLabelsDict } from './pdf-page-labels.js';
 import { buildViewerPreferences } from './pdf-viewer-prefs.js';
-import { parseColor } from './pdf-color.js';
+import { parseColor, fillOp, strokeOp } from './pdf-color.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
     FT_H, HEADER_H,
@@ -326,7 +326,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         if (p === 0 && params.title) {
             const titleSz = 16;
             const titleColor = '0.145 0.388 0.922';
-            ops.push(`${titleColor} rg`);
+            ops.push(`${fillOp(titleColor)}`);
             if (tagCtx?.tagged) {
                 const mcid = tagCtx.mcidAlloc.next(pageObjNum);
                 ops.push(txtTagged(params.title, mg.l, y - titleSz, enc.f2, titleSz, enc, mcid));
@@ -337,7 +337,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             y -= 22; // TITLE_LN
 
             // Title underline
-            ops.push(`0.75 w ${titleColor} RG`);
+            ops.push(`0.75 w ${strokeOp(titleColor)}`);
             ops.push(`${fmtNum(mg.l)} ${fmtNum(y)} m ${fmtNum(pgW - mg.r)} ${fmtNum(y)} l S`);
             y -= 12;
         }

@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 480,
+  "exportCount": 485,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -873,6 +873,13 @@
       "summary": "Color input accepted by pdfnative."
     },
     {
+      "name": "PdfColorSpace",
+      "kind": "type",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export type PdfColorSpace = 'rgb' | 'cmyk';",
+      "summary": "The colour space a resolved colour belongs to."
+    },
+    {
       "name": "PdfColors",
       "kind": "type",
       "module": "src/types/pdf-types.ts",
@@ -1109,6 +1116,13 @@
       "module": "src/core/pdf-form.ts",
       "signature": "export interface RadioGroupContext",
       "summary": "Context for building a radio button child widget within a group."
+    },
+    {
+      "name": "ResolvedColor",
+      "kind": "type",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export interface ResolvedColor",
+      "summary": "A colour reduced to the operands a PDF operator takes, plus the space those operands are in — which is what decides the operator itself."
     },
     {
       "name": "ResolvedPrintBoxes",
@@ -2252,6 +2266,13 @@
       "summary": "Fill the form fields of an existing PDF and return a new PDF (incremental update — original bytes are preserved, so any existing signature stays valid for its revision)."
     },
     {
+      "name": "fillOp",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function fillOp(input: PdfColor): string",
+      "summary": "The complete non-stroking colour operator for a colour, operands included."
+    },
+    {
       "name": "findShaper",
       "kind": "value",
       "module": "src/shaping/shaper-registry.ts",
@@ -2924,6 +2945,13 @@
       "summary": "Resolve bidirectional text into ordered runs with embedding levels."
     },
     {
+      "name": "resolveColor",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function resolveColor(input: PdfColor): ResolvedColor",
+      "summary": "Resolve any accepted colour input to its operands and colour space."
+    },
+    {
       "name": "resolveLayout",
       "kind": "value",
       "module": "src/core/pdf-layout.ts",
@@ -3230,6 +3258,13 @@
       "module": "src/shaping/bidi.ts",
       "signature": "export function stripBidiControls(text: string): string",
       "summary": "Strip invisible Unicode bidirectional formatting characters."
+    },
+    {
+      "name": "strokeOp",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function strokeOp(input: PdfColor): string",
+      "summary": "The complete stroking colour operator for a colour, operands included."
     },
     {
       "name": "toBytes",

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseColor, isValidPdfRgb, normalizeColors } from '../../src/core/pdf-color.js';
+import { parseColor, isValidPdfRgb, normalizeColors, fillOp, strokeOp, resolveColor } from '../../src/core/pdf-color.js';
 import type { PdfColors } from '../../src/types/pdf-types.js';
 
 // ── parseColor — hex ─────────────────────────────────────────────────
@@ -275,5 +275,49 @@ describe('normalizeColors', () => {
         expect(result.credit).toBe('0 1 0');
         expect(result.debit).toBe('0 0 1');
         expect(typeof result.text).toBe('string');
+    });
+});
+
+// ── Colour operator emission (v1.8.0) ────────────────────────────────
+
+describe('fillOp / strokeOp', () => {
+    it('appends the non-stroking operator for RGB', () => {
+        expect(fillOp('0.1 0.2 0.3')).toBe('0.1 0.2 0.3 rg');
+    });
+
+    it('appends the stroking operator for RGB', () => {
+        expect(strokeOp('0.1 0.2 0.3')).toBe('0.1 0.2 0.3 RG');
+    });
+
+    it('accepts every input form parseColor accepts', () => {
+        expect(fillOp('#2563EB')).toBe('0.145 0.388 0.922 rg');
+        expect(fillOp([37, 99, 235])).toBe('0.145 0.388 0.922 rg');
+        expect(strokeOp('#000')).toBe('0 0 0 RG');
+    });
+
+    it('reproduces exactly what the call sites used to concatenate', () => {
+        // The v1.8.0 refactor replaced `${parseColor(c)} rg` at ~100 sites.
+        // Byte identity across the whole sample corpus rests on this.
+        for (const input of ['#2563EB', '#000', '#FFF', '0 0 0', '0.5 0.25 0.125']) {
+            expect(fillOp(input)).toBe(`${parseColor(input)} rg`);
+            expect(strokeOp(input)).toBe(`${parseColor(input)} RG`);
+        }
+    });
+
+    it('rejects an invalid colour rather than emitting a broken operator', () => {
+        expect(() => fillOp('not a colour')).toThrow(/Invalid color format/);
+        expect(() => strokeOp('1 2')).toThrow(/Invalid color format/);
+    });
+});
+
+describe('resolveColor', () => {
+    it('reports the space alongside the operands', () => {
+        expect(resolveColor('#2563EB')).toEqual({ space: 'rgb', operands: '0.145 0.388 0.922' });
+    });
+
+    it('returns operands identical to parseColor', () => {
+        for (const input of ['#2563EB', [1, 2, 3] as const, '0 0 0']) {
+            expect(resolveColor(input).operands).toBe(parseColor(input));
+        }
     });
 });

@@ -19,6 +19,7 @@
 
 import type { PageBox, PrintOptions, PrinterMarksOptions } from '../types/pdf-types.js';
 import { fmtNum } from './pdf-text.js';
+import { strokeOp } from './pdf-color.js';
 
 /** Resolved print geometry: the page-dict fragment and the trim rectangle. */
 export interface ResolvedPrintBoxes {
@@ -160,7 +161,7 @@ export function buildPrinterMarksOps(
     const weight = opts.weight ?? 0.25;
 
     const [tx0, ty0, tx1, ty1] = trim;
-    const ops: string[] = ['q', `0 0 0 RG ${fmtNum(weight)} w`];
+    const ops: string[] = ['q', `${strokeOp('0 0 0')} ${fmtNum(weight)} w`];
     const line = (x1: number, y1: number, x2: number, y2: number): void => {
         ops.push(`${fmtNum(x1)} ${fmtNum(y1)} m ${fmtNum(x2)} ${fmtNum(y2)} l S`);
     };

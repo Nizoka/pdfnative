@@ -16,6 +16,7 @@
 import { fmtNum } from './pdf-text.js';
 import type { LayoutDebugOptions } from '../types/pdf-types.js';
 import type { TablePlan, TableSlice } from './pdf-renderers.js';
+import { strokeOp } from './pdf-color.js';
 
 /** Resolved overlay layer flags. */
 export interface ResolvedDebugOptions {
@@ -54,7 +55,7 @@ const COL_CELL = '0 0.62 0.30';     // green — table cell grid
 
 /** Stroke a single rectangle in its own graphics block. */
 function rectOp(x: number, y: number, w: number, h: number, color: string, lineW: number): string {
-    return `q ${color} RG ${fmtNum(lineW)} w ${fmtNum(x)} ${fmtNum(y)} ${fmtNum(w)} ${fmtNum(h)} re S Q`;
+    return `q ${strokeOp(color)} ${fmtNum(lineW)} w ${fmtNum(x)} ${fmtNum(y)} ${fmtNum(w)} ${fmtNum(h)} re S Q`;
 }
 
 /**
