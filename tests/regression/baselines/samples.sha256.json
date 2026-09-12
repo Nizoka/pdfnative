@@ -1415,6 +1415,48 @@
       "size": 6707,
       "since": "1.7.0"
     },
+    "typography/breaks-atomic.pdf": {
+      "mode": "bytes",
+      "hash": "1d8cc1564ed0d9ca81d42b41d771949c4c6bb81af34909b8c2858d1b411e4eb9",
+      "size": 18311,
+      "since": "1.8.0"
+    },
+    "typography/breaks-split-tagged.pdf": {
+      "mode": "bytes",
+      "hash": "27bdf7d9790c94b6fbb42e19c1751fda34887bae5833fe5452a65f49015c1d9f",
+      "size": 210592,
+      "since": "1.8.0"
+    },
+    "typography/breaks-split.pdf": {
+      "mode": "bytes",
+      "hash": "1d8cc1564ed0d9ca81d42b41d771949c4c6bb81af34909b8c2858d1b411e4eb9",
+      "size": 18311,
+      "since": "1.8.0"
+    },
+    "typography/keep-with-next-off.pdf": {
+      "mode": "bytes",
+      "hash": "0c786efbd055b500e47eac6b40535a69f6a94d303024db76d301ead4e58a84c2",
+      "size": 19853,
+      "since": "1.8.0"
+    },
+    "typography/keep-with-next-on.pdf": {
+      "mode": "bytes",
+      "hash": "0c786efbd055b500e47eac6b40535a69f6a94d303024db76d301ead4e58a84c2",
+      "size": 19853,
+      "since": "1.8.0"
+    },
+    "typography/oversized-atomic.pdf": {
+      "mode": "bytes",
+      "hash": "9f2adacc38657783b2cac5309e716a7d01653132c28ba5c24c48b575153ea9e1",
+      "size": 27282,
+      "since": "1.8.0"
+    },
+    "typography/oversized-split.pdf": {
+      "mode": "bytes",
+      "hash": "8b87a0185e395a42248fc23b882affbdd117c9559433e0ed2c541d12384d9bf2",
+      "size": 27585,
+      "since": "1.8.0"
+    },
     "viewer/viewer-fullscreen-kiosk.pdf": {
       "mode": "bytes",
       "hash": "6252ea5b17ff13d451781b057f0aca618ea6671bf4d4b6fe1e15e696258d3c34",

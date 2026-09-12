@@ -336,6 +336,60 @@ export function renderHeading(
     return { ops, y };
 }
 
+/**
+ * Measurement pass for a {@link ParagraphBlock}: the wrapped lines and the
+ * geometry the renderer will use, computed once so the planner can split the
+ * paragraph across pages without the renderer re-wrapping it.
+ *
+ * The symmetric counterpart of {@link planTable}. Pure — safe to call during
+ * multi-pass pagination.
+ *
+ * @since 1.8.0
+ */
+export interface ParagraphPlan {
+    readonly lines: readonly string[];
+    /** Font size in points. */
+    readonly size: number;
+    /** Distance between successive baselines, in points. */
+    readonly lineH: number;
+    /** Left indent in points. */
+    readonly indent: number;
+    /** Spacing emitted after the paragraph's last line. */
+    readonly trailerSpacing: number;
+}
+
+/** One run of consecutive lines of a paragraph, placed on a single page. */
+export interface ParagraphSlice {
+    readonly plan: ParagraphPlan;
+    readonly fromLine: number;
+    /** Exclusive. */
+    readonly toLine: number;
+    readonly isFinalSlice: boolean;
+    /** Shared accumulator collecting the `/P` element's children across slices. */
+    readonly paraStructAccum: MCRef[];
+}
+
+/** Spacing emitted below every paragraph. */
+const PARA_TRAILER = 4;
+
+/**
+ * Wrap a paragraph and describe its geometry.
+ *
+ * @since 1.8.0
+ */
+export function planParagraph(block: ParagraphBlock, enc: EncodingContext, cw: number): ParagraphPlan {
+    const size = block.fontSize ?? DEFAULT_PARA_SIZE;
+    const lhMul = block.lineHeight ?? DEFAULT_LINE_HEIGHT;
+    const indent = block.indent ?? 0;
+    return {
+        lines: wrapText(block.text, cw - indent, size, enc),
+        size,
+        lineH: size * lhMul,
+        indent,
+        trailerSpacing: PARA_TRAILER,
+    };
+}
+
 export function renderParagraph(
     block: ParagraphBlock,
     y: number,
@@ -346,6 +400,7 @@ export function renderParagraph(
     mgR: number,
     tagCtx: TagContext | undefined,
     documentChildren: (StructElement | MCRef)[],
+    slice?: ParagraphSlice,
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
     const sz = block.fontSize ?? DEFAULT_PARA_SIZE;
@@ -356,11 +411,15 @@ export function renderParagraph(
     const align = block.align ?? 'left';
 
     const availW = cw - indent;
-    const lines = wrapText(block.text, availW, sz, enc);
+    // Unsliced (the historical path) renders the whole paragraph; a slice
+    // renders its own run of lines and defers the `/P` element to the last one.
+    const allLines = slice ? slice.plan.lines : wrapText(block.text, availW, sz, enc);
+    const lines = slice ? allLines.slice(slice.fromLine, slice.toLine) : allLines;
+    const isFinalSlice = slice ? slice.isFinalSlice : true;
 
     ops.push(`${color} rg`);
 
-    const pChildren: MCRef[] = [];
+    const pChildren: MCRef[] = slice ? slice.paraStructAccum : [];
 
     for (const line of lines) {
         if (tagCtx?.tagged) {
@@ -385,11 +444,13 @@ export function renderParagraph(
         y -= lineH;
     }
 
-    if (tagCtx?.tagged && pChildren.length > 0) {
+    // A split paragraph stays one `/P` element: its marked-content references
+    // accumulate across slices and are emitted once, with the final one.
+    if (isFinalSlice && tagCtx?.tagged && pChildren.length > 0) {
         documentChildren.push({ type: 'P', children: pChildren });
     }
 
-    y -= 4; // post-paragraph spacing
+    if (isFinalSlice) y -= PARA_TRAILER; // post-paragraph spacing
     return { ops, y };
 }
 

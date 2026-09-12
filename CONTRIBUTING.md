@@ -70,7 +70,7 @@ All new code must include tests. Coverage thresholds (vitest.config.ts): stateme
 pdfnative's PDF/A claims are backed by the official reference validator,
 [veraPDF](https://verapdf.org). `npm run validate:pdfa` scans `test-output/`
 (run `npm run test:generate` first), **auto-detects** every PDF that declares
-`pdfaid:part` in its XMP — currently the 19 PDF/A-claiming samples — and
+`pdfaid:part` in its XMP — currently the 20 PDF/A-claiming samples — and
 validates each against its declared profile (1b/2b/2u/3b). Detection is
 automatic: a new sample that claims PDF/A is validated without registering
 anything, and a coverage canary fails the run if the detected count drifts

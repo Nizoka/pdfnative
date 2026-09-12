@@ -19,6 +19,16 @@ export interface HeadingBlock {
     readonly text: string;
     readonly level: 1 | 2 | 3;
     readonly color?: PdfColor;
+    /**
+     * Keep this block on the same page as the one that follows it, moving both
+     * over rather than stranding this one at the foot of a page.
+     *
+     * Overrides `layout.typography.keepHeadingsWithNext` for this block, in
+     * both directions. Default: that document-level setting, itself `false`.
+     *
+     * @since 1.8.0
+     */
+    readonly keepWithNext?: boolean;
 }
 
 /** Paragraph block — text wrapping with configurable alignment. */
@@ -30,6 +40,22 @@ export interface ParagraphBlock {
     readonly align?: 'left' | 'right' | 'center';
     readonly indent?: number;
     readonly color?: PdfColor;
+    /**
+     * Keep this block on the same page as the one that follows it.
+     *
+     * Useful for a lead-in line that must not be separated from the table or
+     * figure it introduces. Default: `false`.
+     *
+     * @since 1.8.0
+     */
+    readonly keepWithNext?: boolean;
+    /**
+     * Allow or forbid this paragraph breaking across pages, overriding
+     * `layout.typography.splitParagraphs` for this block.
+     *
+     * @since 1.8.0
+     */
+    readonly splittable?: boolean;
 }
 
 /** Table block — reuses existing PdfRow/ColumnDef types. */

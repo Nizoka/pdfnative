@@ -412,6 +412,61 @@ export interface PdfDiagnostic {
 /** Sink for conformance diagnostics. Pass `() => {}` to silence. */
 export type PdfDiagnosticHandler = (diagnostic: PdfDiagnostic) => void;
 
+/**
+ * Fine typographic control over how text blocks break across pages.
+ *
+ * Every setting is opt-in: with `typography` omitted, paragraphs stay atomic
+ * and output is byte-identical to earlier releases.
+ *
+ * @since 1.8.0
+ */
+export interface TypographyOptions {
+    /**
+     * Allow a paragraph to break across a page boundary at a line boundary.
+     *
+     * Historically a paragraph was atomic: one that did not fit in the
+     * remaining space moved to the next page whole, which leaves large gaps in
+     * running text, and one taller than a full page simply overflowed off the
+     * bottom. With this on, a paragraph is laid out line by line, the way
+     * tables have always been laid out row by row.
+     *
+     * {@link orphans} and {@link widows} constrain where those breaks may fall
+     * and only apply when this is on.
+     *
+     * Default: `false` (atomic, byte-identical).
+     */
+    readonly splitParagraphs?: boolean;
+    /**
+     * Minimum number of a paragraph's lines that must remain at the foot of a
+     * page for a break to be allowed there. Fewer, and the whole paragraph
+     * moves to the next page rather than leaving a stranded first line.
+     *
+     * Requires {@link splitParagraphs}. Default: `2`.
+     */
+    readonly orphans?: number;
+    /**
+     * Minimum number of a paragraph's lines that must be carried to the next
+     * page. Fewer, and the break is pulled earlier so the remainder is not a
+     * single stranded last line.
+     *
+     * Requires {@link splitParagraphs}. Default: `2`.
+     */
+    readonly widows?: number;
+    /**
+     * Keep every heading with the content that follows it: a heading that
+     * would be the last item on a page moves to the next page along with it.
+     *
+     * Independent of {@link splitParagraphs} — a heading stranded at the foot
+     * of a page is the most visible break fault in a generated report, and
+     * fixing it needs no line-level layout.
+     *
+     * Individual blocks can opt in or out with their own `keepWithNext`.
+     *
+     * Default: `false`.
+     */
+    readonly keepHeadingsWithNext?: boolean;
+}
+
 /** Layout options (all optional, A4 defaults applied). */
 export interface PdfLayoutOptions {
     /** Page width in points (default: 595.28 = A4). */
@@ -609,6 +664,16 @@ export interface PdfLayoutOptions {
      * @since 1.3.0
      */
     readonly creationDate?: Date;
+    /**
+     * Fine typographic control: where a paragraph may break across pages and
+     * how many of its lines must stay together.
+     *
+     * Entirely opt-in. Omitted, every setting keeps its historical behaviour
+     * and output is byte-identical.
+     *
+     * @since 1.8.0
+     */
+    readonly typography?: TypographyOptions;
     /**
      * How a conforming viewer should present the document when it is first
      * opened: initial page layout, page mode (bookmark/thumbnail panel, full

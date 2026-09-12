@@ -230,6 +230,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         mg,
         cw,
         headerH,
+        typography: layout?.typography,
     });
 
     const totalPages = Math.max(1, pageBlocks.length);
@@ -374,6 +375,14 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 case '__tableSlice': {
                     const result = renderTable(
                         block.block, y, enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren, block.slice,
+                    );
+                    ops.push(...result.ops);
+                    y = result.y;
+                    break;
+                }
+                case '__paraSlice': {
+                    const result = renderParagraph(
+                        block.block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, block.slice,
                     );
                     ops.push(...result.ops);
                     y = result.y;

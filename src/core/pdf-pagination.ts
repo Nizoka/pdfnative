@@ -18,11 +18,11 @@
  * @module core/pdf-pagination
  */
 
-import type { DocumentBlock, TableBlock } from '../types/pdf-document-types.js';
-import type { EncodingContext } from '../types/pdf-types.js';
+import type { DocumentBlock, TableBlock, ParagraphBlock } from '../types/pdf-document-types.js';
+import type { EncodingContext, TypographyOptions } from '../types/pdf-types.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
-import type { TableSlice, HeadingDestination } from './pdf-renderers.js';
-import { estimateBlockHeight, planTable } from './pdf-renderers.js';
+import type { TableSlice, ParagraphSlice, HeadingDestination } from './pdf-renderers.js';
+import { estimateBlockHeight, planTable, planParagraph } from './pdf-renderers.js';
 import { FT_H } from './pdf-layout.js';
 
 /**
@@ -36,8 +36,21 @@ export interface TableSliceItem {
     readonly slice: TableSlice;
 }
 
+/**
+ * Synthetic block produced when a paragraph breaks across pages. The
+ * counterpart of {@link TableSliceItem}, and only ever produced when
+ * `typography.splitParagraphs` is on.
+ *
+ * @since 1.8.0
+ */
+export interface ParagraphSliceItem {
+    readonly type: '__paraSlice';
+    readonly block: ParagraphBlock;
+    readonly slice: ParagraphSlice;
+}
+
 /** Any item the paginator can place on a page. */
-export type PaginatedItem = DocumentBlock | TableSliceItem;
+export type PaginatedItem = DocumentBlock | TableSliceItem | ParagraphSliceItem;
 
 /** A placement plus the geometry the inspector reports. */
 export interface PlannedItem {
@@ -69,6 +82,25 @@ export interface PaginationInput {
     readonly cw: number;
     /** Reserved header height (0 when no header template). */
     readonly headerH: number;
+    /** Opt-in typographic controls. Omitted, every block stays atomic. */
+    readonly typography?: TypographyOptions;
+}
+
+/** Resolved typography settings, with the documented defaults applied. */
+interface Typography {
+    readonly splitParagraphs: boolean;
+    readonly orphans: number;
+    readonly widows: number;
+    readonly keepHeadingsWithNext: boolean;
+}
+
+function resolveTypography(opts: TypographyOptions | undefined): Typography {
+    return {
+        splitParagraphs: opts?.splitParagraphs === true,
+        orphans: Math.max(1, Math.floor(opts?.orphans ?? 2)),
+        widows: Math.max(1, Math.floor(opts?.widows ?? 2)),
+        keepHeadingsWithNext: opts?.keepHeadingsWithNext === true,
+    };
 }
 
 export interface PaginationResult {
@@ -97,7 +129,11 @@ export function paginatePass(
     headingsIn?: readonly HeadingDestination[],
 ): PaginationResult {
     const { blocks, enc, pgH, mg, cw, headerH } = input;
+    const typo = resolveTypography(input.typography);
     const availableH = pgH - mg.t - mg.b - FT_H - headerH;
+    // Guards against a line being pushed to the next page by floating-point
+    // noise when it fits exactly.
+    const EPS = 1e-9;
 
     const pages: PaginatedItem[][] = [[]];
     const planned: PlannedItem[][] = [[]];
@@ -133,7 +169,36 @@ export function paginatePass(
         curY -= TITLE_BAND_H;
     }
 
-    for (const block of blocks) {
+    /** Whether a paragraph may break across pages. */
+    const isSplittable = (b: ParagraphBlock): boolean => b.splittable ?? typo.splitParagraphs;
+
+    /** Whether a block must not be stranded as the last item on its page. */
+    const keepsWithNext = (b: DocumentBlock): boolean => {
+        if (b.type === 'heading') return b.keepWithNext ?? typo.keepHeadingsWithNext;
+        if (b.type === 'paragraph') return b.keepWithNext === true;
+        return false;
+    };
+
+    /**
+     * Height of the smallest piece of a block that can stand alone on a page:
+     * one line of a splittable paragraph, a table's caption plus header plus
+     * first row, otherwise the whole block. Used by keep-with-next so a
+     * heading is only pushed over when its successor genuinely cannot follow.
+     */
+    const leadHeight = (b: DocumentBlock): number => {
+        if (b.type === 'paragraph' && isSplittable(b)) {
+            return planParagraph(b, enc, cw).lineH;
+        }
+        if (b.type === 'table') {
+            const plan = planTable(b, enc, mg.l, cw);
+            const firstRow = b.rows.length > 0 ? plan.rowHeights[0] : plan.trailerSpacing;
+            return plan.captionHeight + plan.headerHeight + firstRow;
+        }
+        return estimateBlockHeight(b, enc, cw, headingsIn);
+    };
+
+    for (let bi = 0; bi < blocks.length; bi++) {
+        const block = blocks[bi];
         if (block.type === 'pageBreak') {
             newPage();
             continue;
@@ -222,8 +287,75 @@ export function paginatePass(
             continue;
         }
 
+        // Paragraphs break at line boundaries when asked to, the way tables
+        // have always broken at row boundaries. Off by default, so the
+        // historical atomic path below stays byte-identical.
+        if (block.type === 'paragraph' && isSplittable(block)) {
+            const plan = planParagraph(block, enc, cw);
+            const total = plan.lines.length;
+            if (total === 0) {
+                place(block, 'paragraph', plan.trailerSpacing);
+                continue;
+            }
+
+            const accum: MCRef[] = [];
+            let lineIdx = 0;
+            while (lineIdx < total) {
+                const remaining = total - lineIdx;
+                const hasPrior = pages[pages.length - 1].length > 0;
+                let fit = Math.max(0, Math.floor((remainH + EPS) / plan.lineH));
+
+                if (fit >= remaining) {
+                    // The rest of the paragraph fits — if its trailer does too.
+                    if (remainH + EPS >= remaining * plan.lineH + plan.trailerSpacing) {
+                        place({
+                            type: '__paraSlice',
+                            block,
+                            slice: { plan, fromLine: lineIdx, toLine: total, isFinalSlice: true, paraStructAccum: accum },
+                        }, 'paragraph', remaining * plan.lineH + plan.trailerSpacing);
+                        lineIdx = total;
+                        break;
+                    }
+                    fit = remaining - 1; // carry the last line over so the trailer fits
+                }
+
+                if (fit > 0) {
+                    // Widows: never leave fewer than N lines for the next page.
+                    if (remaining - fit < typo.widows) fit = remaining - typo.widows;
+                    // Orphans: never strand fewer than N lines at the foot.
+                    if (fit < typo.orphans) fit = 0;
+                }
+
+                if (fit <= 0) {
+                    // Move the whole paragraph over; on a fresh page force one
+                    // line through rather than loop forever.
+                    if (hasPrior) { newPage(); continue; }
+                    fit = 1;
+                }
+
+                place({
+                    type: '__paraSlice',
+                    block,
+                    slice: { plan, fromLine: lineIdx, toLine: lineIdx + fit, isFinalSlice: false, paraStructAccum: accum },
+                }, 'paragraph', fit * plan.lineH);
+                lineIdx += fit;
+                newPage();
+            }
+            continue;
+        }
+
         const blockH = estimateBlockHeight(block, enc, cw, headingsIn);
-        if (blockH > remainH && pages[pages.length - 1].length > 0) newPage();
+
+        // Keep-with-next: a block that would be stranded as the last item on
+        // its page moves over together with the block it introduces.
+        let required = blockH;
+        if (keepsWithNext(block)) {
+            const next = bi + 1 < blocks.length ? blocks[bi + 1] : undefined;
+            // An explicit page break after it makes the pairing meaningless.
+            if (next && next.type !== 'pageBreak') required += leadHeight(next);
+        }
+
+        if (required > remainH && pages[pages.length - 1].length > 0) newPage();
 
         // A heading's destination is its top edge, recorded before the pen moves.
         if (block.type === 'heading') {

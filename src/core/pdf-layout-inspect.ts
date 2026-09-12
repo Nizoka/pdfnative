@@ -63,6 +63,7 @@ export function inspectDocumentLayout(
         mg,
         cw,
         headerH,
+        typography: layout?.typography,
     });
 
     const inspectedPages: InspectedPage[] = planned.map((items, index) => ({

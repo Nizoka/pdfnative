@@ -63,6 +63,7 @@ import { generate as generateFormFill } from './generators/form-fill-showcase.js
 import { generate as generateChart } from './generators/chart-showcase.js';
 import { generate as generateTextExtract } from './generators/text-extract-showcase.js';
 import { generate as generateIncrementalMetadata } from './generators/incremental-metadata.js';
+import { generate as generateTypography } from './generators/typography-showcase.js';
 
 async function generateAll(): Promise<void> {
     // Pin the creation instant so the whole suite is byte-reproducible and
@@ -213,6 +214,9 @@ async function generateAll(): Promise<void> {
 
     // ── Incremental metadata update (v1.7.0) ─────────────────────
     await generateIncrementalMetadata(ctx);
+
+    // ── Typographic page breaking (v1.8.0) ───────────────────────
+    await generateTypography(ctx);
 
     // ── Summary ──────────────────────────────────────────────────
     printSummary(ctx.results, ctx.outputDir);
