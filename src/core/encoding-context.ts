@@ -14,20 +14,12 @@ import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi } from '../fonts
 import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { applyFeaturesToRuns, composeFeatureMap } from '../fonts/font-features.js';
 import { applyKerningToRuns } from '../fonts/font-kerning.js';
-import { shapeThaiText } from '../shaping/thai-shaper.js';
-import { shapeBengaliText } from '../shaping/bengali-shaper.js';
-import { shapeTamilText } from '../shaping/tamil-shaper.js';
-import { shapeTeluguText } from '../shaping/telugu-shaper.js';
-import { shapeSinhalaText } from '../shaping/sinhala-shaper.js';
-import { shapeTibetanText } from '../shaping/tibetan-shaper.js';
-import { shapeKhmerText } from '../shaping/khmer-shaper.js';
-import { shapeMyanmarText } from '../shaping/myanmar-shaper.js';
-import { shapeDevanagariText } from '../shaping/devanagari-shaper.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
+import { findShaper, type ScriptShaper } from '../shaping/shaper-registry.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
 import { resolveBidiRuns, containsRTL, reverseString, stripBidiControls } from '../shaping/bidi.js';
 import { hasSequenceTriggers, matchEmojiSequences } from '../shaping/emoji-sequences.js';
-import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil, containsTelugu, containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsDevanagari } from '../shaping/script-registry.js';
+import { isArabicCodepoint, containsArabic } from '../shaping/script-registry.js';
 import { createColorEmojiCollector } from './color-emoji.js';
 
 // ── Helvetica Fallback Helpers ───────────────────────────────────────
@@ -45,6 +37,37 @@ function isWinAnsi(cp: number): boolean {
     if (cp === 0x0153 || cp === 0x017E || cp === 0x0178) return true;
     if (cp === 0x202F || cp === 0x09 || cp === 0x0A || cp === 0x0D) return true;
     return false;
+}
+
+/**
+ * Shape one run with a registered shaper and measure it.
+ *
+ * Zero-advance glyphs — the combining marks a shaper stacks on their base —
+ * contribute no width, which is the difference between a Thai tone mark
+ * sitting above its vowel and pushing the line along.
+ *
+ * @since 1.8.0
+ */
+function shapedRun(
+    text: string,
+    shaper: ScriptShaper,
+    fontRef: string,
+    fd: FontData,
+    sz: number,
+    trackGid: (ref: string, gid: number) => void,
+): TextRun {
+    const shaped = shaper.shape(text, fd);
+    let designW = 0;
+    for (const g of shaped) {
+        trackGid(fontRef, g.gid);
+        if (!g.isZeroAdvance) {
+            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+        }
+    }
+    return {
+        text, fontRef, fontData: fd, shaped, hexStr: null,
+        widthPt: designW * sz / fd.metrics.unitsPerEm,
+    };
 }
 
 interface ArabicSegment { text: string; arabic: boolean; }
@@ -334,96 +357,9 @@ export function createEncodingContext(
                             result.push(...subRuns);
                         } else {
                             // LTR run: standard path
-                            if (containsThai(fRun.text)) {
-                                const shaped = shapeThaiText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsBengali(fRun.text)) {
-                                const shaped = shapeBengaliText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsTamil(fRun.text)) {
-                                const shaped = shapeTamilText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsTelugu(fRun.text)) {
-                                const shaped = shapeTeluguText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsSinhala(fRun.text)) {
-                                const shaped = shapeSinhalaText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsTibetan(fRun.text)) {
-                                const shaped = shapeTibetanText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsKhmer(fRun.text)) {
-                                const shaped = shapeKhmerText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsMyanmar(fRun.text)) {
-                                const shaped = shapeMyanmarText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsDevanagari(fRun.text)) {
-                                const shaped = shapeDevanagariText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            const shaper = findShaper(fRun.text);
+                            if (shaper) {
+                                result.push(shapedRun(fRun.text, shaper, fontRef, fd, sz, _trackGid));
                             } else {
                                 // LTR non-shaped: use fallback helper
                                 const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA);
@@ -440,115 +376,9 @@ export function createEncodingContext(
             return rawRuns.flatMap(run => {
                 const fd = run.entry.fontData;
                 const fontRef = run.entry.fontRef;
-                const upm = fd.metrics.unitsPerEm;
 
-                if (containsThai(run.text)) {
-                    const shaped = shapeThaiText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsBengali(run.text)) {
-                    const shaped = shapeBengaliText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsTamil(run.text)) {
-                    const shaped = shapeTamilText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsTelugu(run.text)) {
-                    const shaped = shapeTeluguText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsSinhala(run.text)) {
-                    const shaped = shapeSinhalaText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsTibetan(run.text)) {
-                    const shaped = shapeTibetanText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsKhmer(run.text)) {
-                    const shaped = shapeKhmerText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsMyanmar(run.text)) {
-                    const shaped = shapeMyanmarText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsDevanagari(run.text)) {
-                    const shaped = shapeDevanagariText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
+                const shaper = findShaper(run.text);
+                if (shaper) return [shapedRun(run.text, shaper, fontRef, fd, sz, _trackGid)];
 
                 return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid, pdfA);
             });
@@ -589,7 +419,8 @@ export function createEncodingContext(
                 return `<${hex.toUpperCase()}>`;
             }
 
-            if (!containsThai(str) && !containsBengali(str) && !containsTamil(str) && !containsTelugu(str) && !containsSinhala(str) && !containsTibetan(str) && !containsKhmer(str) && !containsMyanmar(str) && !containsDevanagari(str)) {
+            const shaper = findShaper(str);
+            if (!shaper) {
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     const rawCp = str.codePointAt(i) ?? 0;
@@ -601,17 +432,11 @@ export function createEncodingContext(
                 }
                 return `<${hex.toUpperCase()}>`;
             }
-            // Shaped text path (Thai, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari)
-            const shapeFn = containsThai(str) ? shapeThaiText
-                : containsBengali(str) ? shapeBengaliText
-                : containsTamil(str) ? shapeTamilText
-                : containsTelugu(str) ? shapeTeluguText
-                : containsSinhala(str) ? shapeSinhalaText
-                : containsTibetan(str) ? shapeTibetanText
-                : containsKhmer(str) ? shapeKhmerText
-                : containsMyanmar(str) ? shapeMyanmarText
-                : shapeDevanagariText;
-            const shaped = shapeFn(str, primary.fontData);
+            // Shaped text path: the registry's first match, as the hand-written
+            // ternary chain did. Note the chain's last arm was an UNGUARDED
+            // fall-through to Devanagari; the registry cannot reach here at all
+            // unless some predicate matched, so that hazard is gone.
+            const shaped = shaper.shape(str, primary.fontData);
             let hex = '';
             for (const g of shaped) { _trackGid(primary.fontRef, g.gid); hex += g.gid.toString(16).padStart(4, '0'); }
             return `<${hex.toUpperCase()}>`;

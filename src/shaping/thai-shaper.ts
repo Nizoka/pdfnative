@@ -18,10 +18,12 @@
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 
 // ── Thai Unicode Constants ───────────────────────────────────────────
+//
+// Re-exported, not redefined: `script-registry.ts` is the single source of
+// truth for every script's range and predicate. Thai carried a second copy
+// of both until v1.8.0, and each new script inherited the fork.
 
-/** Thai Unicode block range */
-export const THAI_START = 0x0E00;
-export const THAI_END = 0x0E7F;
+export { THAI_START, THAI_END, containsThai } from './script-registry.js';
 
 /**
  * Thai character classification by combining class.
@@ -253,13 +255,3 @@ export function shapeThaiText(str: string, fontData: FontData): ShapedGlyph[] {
     return shaped;
 }
 
-/**
- * Check whether a string contains any Thai characters.
- */
-export function containsThai(str: string): boolean {
-    for (let i = 0; i < str.length; i++) {
-        const c = str.charCodeAt(i);
-        if (c >= THAI_START && c <= THAI_END) return true;
-    }
-    return false;
-}
