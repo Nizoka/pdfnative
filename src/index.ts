@@ -314,6 +314,24 @@ export type { UseCategory, UseClassifiedCp, UseCluster } from './shaping/use-lit
 export { classifyUseCategory, classifyClusters } from './shaping/use-lite.js';
 export { shapeArabicText } from './shaping/arabic-shaper.js';
 
+// ── Shaping — Universal Shaping Engine (v1.8.0) ─────────────────────
+//
+// Classification and cluster segmentation driven by a table generated from
+// the Unicode Character Database, covering every complex script rather than
+// the three the hand-written classifier above knows. The older
+// `classifyUseCategory` / `classifyClusters` pair stays exported and
+// unchanged: the bundled Indic shapers still consume it, and it is a public
+// API since 1.3.0.
+export { SCRIPT_SHAPERS, findShaper } from './shaping/shaper-registry.js';
+export type { ScriptShaper } from './shaping/shaper-registry.js';
+export {
+    useCategory, useCategories, splitUseSyllables, reorderUseCluster,
+    USE_UNICODE_VERSION,
+} from './shaping/use-engine.js';
+export type {
+    UseClusterCategory, UseSyllable, UseSyllableType,
+} from './shaping/use-engine.js';
+
 // ── Colour Glyphs — COLR/CPAL emoji (v1.3.0) ────────────────────────
 export type {
     CpalColor, ColorStop, GradientExtend, SolidPaint, LinearGradientPaint,

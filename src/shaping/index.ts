@@ -12,6 +12,13 @@
 export { SCRIPT_SHAPERS, findShaper } from './shaper-registry.js';
 export type { ScriptShaper } from './shaper-registry.js';
 
+// ── Universal Shaping Engine ─────────────────────────────────────────
+export {
+    useCategory, useCategories, splitUseSyllables, reorderUseCluster,
+    USE_UNICODE_VERSION,
+} from './use-engine.js';
+export type { UseClusterCategory, UseSyllable, UseSyllableType } from './use-engine.js';
+
 // ── Per-script shapers ───────────────────────────────────────────────
 export { shapeThaiText, buildThaiClusters } from './thai-shaper.js';
 export { shapeBengaliText } from './bengali-shaper.js';

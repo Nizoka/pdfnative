@@ -62,6 +62,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # The USE character table is generated from the vendored UCD files.
+      # A hand-edit to the table, or a UCD upgrade without a regeneration,
+      # would otherwise ship silently.
+      - name: Verify the Unicode table matches its generator
+        run: npm run verify:unicode
+
       - name: Test with coverage
         run: npm run test:coverage
 

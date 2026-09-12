@@ -25,4 +25,17 @@ package; only the generated modules are.
 - Copyright: © Unicode, Inc.
 - Provenance and regeneration: [scripts/data/README.md](scripts/data/README.md).
 
+## Universal Shaping Engine override tables — Old MIT License
+
+The Universal Shaping Engine needs `Indic_Syllabic_Category` and
+`Indic_Positional_Category` values the Unicode Character Database does not
+carry. Microsoft publishes those overrides, and two of their files
+(`IndicSyllabicCategory-Additional.txt`, `IndicPositionalCategory-Additional.txt`)
+are checked in under `scripts/data/`. They are consumed only by the dev-time
+generator and are **not** shipped in the npm package.
+
+- License: [Old MIT](https://github.com/harfbuzz/harfbuzz/blob/main/COPYING),
+  as distributed by HarfBuzz; each file retains its original header.
+- Author: Andrew Glass (Microsoft), via the HarfBuzz project.
+
 No other third-party code or data is included.

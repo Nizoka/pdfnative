@@ -24,6 +24,15 @@
  * Not in scope (deferred):
  *   - State-table classification for Khmer/Myanmar/Tibetan/Sinhala/
  *     other USE-required scripts not currently bundled.
+ *
+ * Superseded, but not removed (v1.8.0). `shaping/use-engine.ts` does what
+ * this module's header defers: it classifies every complex script from a
+ * table generated out of the Unicode Character Database, and segments with
+ * the specification's own cluster grammar. This module stays because the
+ * bundled Devanagari, Bengali and Tamil shapers consume it and because
+ * `classifyUseCategory` and `classifyClusters` have been public API since
+ * 1.3.0. Those shapers move across once parity is proven sample by sample;
+ * new work should target the engine.
  */
 
 // ── Cluster Categories (USE spec subset) ─────────────────────────────
