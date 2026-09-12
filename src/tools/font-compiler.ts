@@ -190,9 +190,32 @@ function readCoverageTable(r: TTFReader, absOffset: number): number[] {
     }
     return glyphs;
 }
-
 // ── GSUB LookupType 1 (SingleSubst) ──────────────────────────────────
 
+/**
+ * Tags a font declares but a renderer must not turn on by itself: stylistic
+ * sets, character variants, figure styles, small caps, swashes. They are the
+ * user's choice, exposed through `features`, and merging them into the
+ * default table makes every document render as if the user had ticked every
+ * box. Noto Sans Thai puts 27 substitutions behind `aalt` alone.
+ */
+function isDiscretionaryFeature(tag: string): boolean {
+    return /^(ss\d\d|cv\d\d)$/.test(tag)
+        || [
+            'aalt', 'salt', 'nalt', 'rand', 'swsh', 'cswh', 'titl', 'hist',
+            'ornm', 'unic', 'smcp', 'c2sc', 'pcap', 'c2pc', 'sups', 'subs',
+            'sinf', 'numr', 'dnom', 'frac', 'afrc', 'zero', 'ordn', 'case',
+            'tnum', 'pnum', 'lnum', 'onum',
+        ].includes(tag);
+}
+
+/**
+ * Extract the SingleSubst mappings a shaper may apply by default.
+ *
+ * Mirrors `parseTTFGSUB` in the reference CLI exactly — the two generators
+ * must emit byte-identical modules. See that function for why lookups behind
+ * a discretionary feature are dropped and why LookupType 7 must be resolved.
+ */
 function parseGSUBSingle(r: TTFReader, tables: TableDir): Record<number, number> {
     const gsub: Record<number, number> = {};
     if (!tables['GSUB']) return gsub;
@@ -201,8 +224,28 @@ function parseGSUBSingle(r: TTFReader, tables: TableDir): Record<number, number>
         r.seek(base);
         r.skip(4); // version
         r.skip(2); // scriptListOffset
-        r.skip(2); // featureListOffset
+        const featureListOffset = r.readUint16();
         const lookupListOffset = r.readUint16();
+
+        r.seek(base + featureListOffset);
+        const featureCount = r.readUint16();
+        const wantedBy = new Map<number, { default: boolean; discretionary: boolean }>();
+        for (let fi = 0; fi < featureCount; fi++) {
+            const tag = r.readTag();
+            const featureOffset = r.readUint16();
+            const saved = r.pos;
+            r.seek(base + featureListOffset + featureOffset);
+            r.skip(2); // featureParamsOffset
+            const lookupCount = r.readUint16();
+            const discretionary = isDiscretionaryFeature(tag);
+            for (let li = 0; li < lookupCount; li++) {
+                const idx = r.readUint16();
+                const seen = wantedBy.get(idx) ?? { default: false, discretionary: false };
+                if (discretionary) seen.discretionary = true; else seen.default = true;
+                wantedBy.set(idx, seen);
+            }
+            r.pos = saved;
+        }
 
         r.seek(base + lookupListOffset);
         const lookupCount = r.readUint16();
@@ -210,31 +253,47 @@ function parseGSUBSingle(r: TTFReader, tables: TableDir): Record<number, number>
         for (let i = 0; i < lookupCount; i++) lookupOffsets.push(r.readUint16());
 
         for (let li = 0; li < lookupCount; li++) {
-            r.seek(base + lookupListOffset + lookupOffsets[li]);
-            const lookupType = r.readUint16();
+            const seen = wantedBy.get(li);
+            if (seen && seen.discretionary && !seen.default) continue;
+
+            const lookupBase = base + lookupListOffset + lookupOffsets[li];
+            r.seek(lookupBase);
+            let lookupType = r.readUint16();
             r.skip(2); // lookupFlag
             const subtableCount = r.readUint16();
-            const subtableOffsets: number[] = [];
-            for (let si = 0; si < subtableCount; si++) subtableOffsets.push(r.readUint16());
+            const rawOffsets: number[] = [];
+            for (let si = 0; si < subtableCount; si++) rawOffsets.push(r.readUint16());
+
+            let subtables = rawOffsets.map(o => lookupBase + o);
+            if (lookupType === 7) {
+                const resolved: number[] = [];
+                let innerType = 0;
+                for (const abs of subtables) {
+                    r.seek(abs);
+                    r.skip(2); // substFormat (1)
+                    innerType = r.readUint16();
+                    resolved.push(abs + r.readUint32());
+                }
+                lookupType = innerType;
+                subtables = resolved;
+            }
             if (lookupType !== 1) continue;
 
-            for (const stOffset of subtableOffsets) {
-                const stBase = base + lookupListOffset + lookupOffsets[li] + stOffset;
+            for (const stBase of subtables) {
                 r.seek(stBase);
                 const substFormat = r.readUint16();
                 const coverageOffset = r.readUint16();
                 const coverageGlyphs = readCoverageTable(r, stBase + coverageOffset);
-                // NB: the cursor is intentionally left where readCoverageTable
-                // ended — this mirrors the reference CLI (tools/build-font-data.cjs)
-                // exactly so compileFontData is byte-identical to every bundled
-                // font module. Do NOT seek back to stBase + 4.
+
                 if (substFormat === 1) {
+                    r.seek(stBase + 4);
                     const delta = r.readInt16();
                     for (const gid of coverageGlyphs) {
                         const sub = (gid + delta) & 0xFFFF;
                         if (sub > 0) gsub[gid] = sub;
                     }
                 } else if (substFormat === 2) {
+                    r.seek(stBase + 4);
                     const glyphCount = r.readUint16();
                     for (let gi = 0; gi < glyphCount && gi < coverageGlyphs.length; gi++) {
                         const sub = r.readUint16();

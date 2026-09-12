@@ -24,7 +24,7 @@ export const widths = {0:600,1:0,4:470,5:318,6:708,7:1037,8:1017,9:1022,10:763,1
 
 // GSUB SingleSubst: fromGid → substituteGid
 // Used by the Thai mini-shaper to select below-clash variants of consonants.
-export const gsub = {63:1,67:68,68:69,71:72,72:73,75:4,127:257,128:129,129:130,691:1810,753:1820,773:775,843:845,852:854,888:890};
+export const gsub = {63:464,67:545,68:546,71:131,72:132,75:65,77:66,78:130,79:80,127:128,128:127,129:185,691:920,753:921,773:774,805:920,843:844,852:853,868:921,888:889};
 
 // GSUB LigatureSubst: firstGid → [[resultGid, comp1, comp2, ...], ...]
 // Used by Indic shapers for conjunct formation (C + Halant + C → ligature).

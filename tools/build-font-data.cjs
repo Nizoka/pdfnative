@@ -362,15 +362,51 @@ function parseTTF(buffer) {
     };
 }
 
+/**
+ * Tags a font declares but a renderer must not turn on by itself: stylistic
+ * sets, character variants, figure styles, small caps, swashes. They are the
+ * user's choice, exposed through `features` (see FEATURE_TAGS), and merging
+ * them into the default table makes every document render as if the user had
+ * ticked every box. Noto Sans Thai puts 27 substitutions behind `aalt` alone.
+ */
+function isDiscretionaryFeature(tag) {
+    return /^(ss\d\d|cv\d\d)$/.test(tag)
+        || [
+            'aalt', 'salt', 'nalt', 'rand', 'swsh', 'cswh', 'titl', 'hist',
+            'ornm', 'unic', 'smcp', 'c2sc', 'pcap', 'c2pc', 'sups', 'subs',
+            'sinf', 'numr', 'dnom', 'frac', 'afrc', 'zero', 'ordn', 'case',
+            'tnum', 'pnum', 'lnum', 'onum',
+        ].includes(tag);
+}
+
 // ── GSUB Parser — LookupType 1 (SingleSubst) ─────────────────────────
 /**
- * Parse GSUB table and extract SingleSubst (LookupType 1) mappings.
- * These are used for Thai "short" consonant variants (e.g. ป→ป variant)
- * when stacked with above-base marks whose descenders would clash.
+ * Parse GSUB and extract the SingleSubst (LookupType 1) mappings a shaper
+ * may apply by default: `{ fromGid: toGid, ... }`.
  *
- * Returns a sparse object: { fromGid: toGid, ... }
- * Only LookupType 1 (Single Substitution) is extracted.
- * Lookup subtable Format 1 (delta) and Format 2 (explicit mapping) both handled.
+ * These carry the contextual variants the mini-shapers need — the Thai tall
+ * consonant whose ascender would collide with an above mark, the Lao mark
+ * that shifts when its base has a descender. Those live in lookups the font
+ * reaches through chained-context rules, so they belong to no feature of
+ * their own; the shaper supplies the context instead, from its own cluster
+ * analysis.
+ *
+ * Two things are deliberately excluded:
+ *
+ *   - **Lookups reachable only through a discretionary feature.** See
+ *     {@link isDiscretionaryFeature}. A lookup shared with a default
+ *     feature is kept, since something other than the user's preference
+ *     wants it.
+ *   - **Nothing else.** A lookup attached to no feature at all is a
+ *     context-only target and is exactly what the shapers consume.
+ *
+ * Both subtable formats are handled, and LookupType 7 (Extension
+ * Substitution) is resolved: large fonts put most of their lookups behind
+ * one, and ignoring it cost Noto Sans 382 substitutions and Noto Sans JP
+ * 1469 of its 1477.
+ *
+ * OpenType spec: §5.2 FeatureList, §6.2.1 SingleSubstFormat1/2, §6.7
+ * Extension Substitution.
  */
 function parseTTFGSUB(r, tables) {
     const gsub = {};
@@ -380,33 +416,29 @@ function parseTTFGSUB(r, tables) {
         const base = tables['GSUB'].offset;
         r.seek(base);
         r.skip(4); // version (major.minor uint16+uint16)
-        const scriptListOffset = r.readUint16();
+        r.skip(2); // scriptListOffset
         const featureListOffset = r.readUint16();
         const lookupListOffset = r.readUint16();
 
-        // ── Collect LookupType 1 lookup indices from FeatureList ─────
-        // We want ALL SingleSubst lookups regardless of feature tag:
-        // Thai uses 'abvm', 'blwm', 'abvs', 'blws', 'calt', 'locl', etc.
+        // ── Which lookups only a discretionary feature asks for ──────
         r.seek(base + featureListOffset);
         const featureCount = r.readUint16();
-        const singleSubstLookupIndices = new Set();
-
-        // Collect per-feature lookup indices
+        const wantedBy = new Map(); // lookupIndex → { default, discretionary }
         for (let fi = 0; fi < featureCount; fi++) {
-            r.skip(4); // feature tag (4 bytes ASCII)
+            const tag = r.readTag();
             const featureOffset = r.readUint16();
-            const savedPos = r.pos;
+            const saved = r.pos;
             r.seek(base + featureListOffset + featureOffset);
             r.skip(2); // featureParamsOffset
             const lookupCount = r.readUint16();
-            const indices = [];
+            const discretionary = isDiscretionaryFeature(tag);
             for (let li = 0; li < lookupCount; li++) {
-                indices.push(r.readUint16());
+                const idx = r.readUint16();
+                const seen = wantedBy.get(idx) ?? { default: false, discretionary: false };
+                if (discretionary) seen.discretionary = true; else seen.default = true;
+                wantedBy.set(idx, seen);
             }
-            r.pos = savedPos;
-
-            // Store indices to check once we read LookupList
-            for (const idx of indices) singleSubstLookupIndices.add(idx);
+            r.pos = saved;
         }
 
         // ── Read LookupList ──────────────────────────────────────────
@@ -416,34 +448,52 @@ function parseTTFGSUB(r, tables) {
         for (let i = 0; i < lookupCount; i++) lookupOffsets.push(r.readUint16());
 
         for (let li = 0; li < lookupCount; li++) {
-            r.seek(base + lookupListOffset + lookupOffsets[li]);
-            const lookupType = r.readUint16();
+            const seen = wantedBy.get(li);
+            if (seen && seen.discretionary && !seen.default) continue;
+
+            const lookupBase = base + lookupListOffset + lookupOffsets[li];
+            r.seek(lookupBase);
+            let lookupType = r.readUint16();
             r.skip(2); // lookupFlag
             const subtableCount = r.readUint16();
-            const subtableOffsets = [];
-            for (let si = 0; si < subtableCount; si++) subtableOffsets.push(r.readUint16());
+            const rawOffsets = [];
+            for (let si = 0; si < subtableCount; si++) rawOffsets.push(r.readUint16());
 
-            // LookupType 1 = SingleSubst
+            // LookupType 7 (Extension) wraps the real subtable behind a
+            // 32-bit offset so it can sit beyond the 16-bit window.
+            let subtables = rawOffsets.map(o => lookupBase + o);
+            if (lookupType === 7) {
+                const resolved = [];
+                let innerType = 0;
+                for (const abs of subtables) {
+                    r.seek(abs);
+                    r.skip(2); // substFormat (1)
+                    innerType = r.readUint16();
+                    resolved.push(abs + r.readUint32());
+                }
+                lookupType = innerType;
+                subtables = resolved;
+            }
             if (lookupType !== 1) continue;
 
-            for (const stOffset of subtableOffsets) {
-                const stBase = base + lookupListOffset + lookupOffsets[li] + stOffset;
+            for (const stBase of subtables) {
                 r.seek(stBase);
                 const substFormat = r.readUint16();
                 const coverageOffset = r.readUint16();
 
-                // Read Coverage table
+                // Read the coverage first, then seek back: reading it moves
+                // the cursor, and the fields below sit at a fixed offset.
                 const coverageGlyphs = readCoverageTable(r, stBase + coverageOffset);
 
                 if (substFormat === 1) {
-                    // Format 1: apply delta to all covered glyphs
+                    r.seek(stBase + 4);
                     const delta = r.readInt16();
                     for (const gid of coverageGlyphs) {
                         const sub = (gid + delta) & 0xFFFF;
                         if (sub > 0) gsub[gid] = sub;
                     }
                 } else if (substFormat === 2) {
-                    // Format 2: explicit list
+                    r.seek(stBase + 4);
                     const glyphCount = r.readUint16();
                     for (let gi = 0; gi < glyphCount && gi < coverageGlyphs.length; gi++) {
                         const sub = r.readUint16();
@@ -458,7 +508,6 @@ function parseTTFGSUB(r, tables) {
     }
     return gsub;
 }
-
 // ── GSUB Parser — per-feature SingleSubst (LookupType 1) ─────────────
 
 /**
