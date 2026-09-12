@@ -108,7 +108,7 @@ const pdf = buildDocumentPDFBytes({
 });
 ```
 
-The `lang` property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, and Thai.
+The `lang` property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Thai, and Lao.
 
 ### Why does my Arabic text appear backwards?
 
@@ -116,7 +116,7 @@ The most common cause: missing `lang: 'ar'` on the font entry. Without it, BiDi 
 
 ### Which scripts are supported out of the box?
 
-26 Noto font-data modules ship with the package: the 22 scripts — Amharic/Ethiopic, Arabic, Armenian, Bengali, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Myanmar, Polish, Simplified Chinese, Sinhala, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese — plus Latin (Noto Sans), math (Noto Sans Math), and monochrome + COLRv1 colour emoji.
+27 Noto font-data modules ship with the package: the 23 scripts — Amharic/Ethiopic, Arabic, Armenian, Bengali, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Myanmar, Polish, Simplified Chinese, Sinhala, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese — plus Latin (Noto Sans), math (Noto Sans Math), and monochrome + COLRv1 colour emoji.
 
 ---
 
@@ -289,7 +289,7 @@ Tables above the threshold run off the main thread (with an automatic main-threa
 See the [feature comparison table](https://github.com/Nizoka/pdfnative#why-pdfnative) in the README. Key differentiators:
 
 - **Zero runtime dependencies** (others ship 3–6).
-- **22 Unicode scripts** with built-in BiDi and OpenType GSUB/GPOS shaping.
+- **23 Unicode scripts** with built-in BiDi and OpenType GSUB/GPOS shaping.
 - **PDF/A** (1b, 2b, 2u, 3b) — none of the others support this directly.
 - **Built-in digital signatures** (RSA + ECDSA) without external crypto modules.
 - **5 native barcode formats** (Code 128, EAN-13, QR, Data Matrix, PDF417) as PDF vector paths.

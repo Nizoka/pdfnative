@@ -16,9 +16,9 @@ Node ≥ 22, browsers, Deno, Bun, Web Workers. No SaaS round-trip, no telemetry,
 no sockets. Current version: 1.7.0. It writes (documents, tables, charts,
 barcodes, SVG, forms, watermarks, signatures with long-term validation, print
 production) and reads (parse, decrypt, extract text, read/fill/flatten forms,
-merge/split/extract pages, verify structure) — 22 Unicode scripts, with
+merge/split/extract pages, verify structure) — 23 Unicode scripts, with
 OpenType GSUB/GPOS shaping for the complex ones (Thai, Arabic, Devanagari,
-Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar) and full UAX #9 BiDi.
+Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Lao) and full UAX #9 BiDi.
 
 ## Choose your surface
 

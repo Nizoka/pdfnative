@@ -11,14 +11,14 @@
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
-      "bytes": 8970,
-      "approxTokens": 2243
+      "bytes": 8975,
+      "approxTokens": 2244
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 531131,
-      "approxTokens": 132783
+      "bytes": 531149,
+      "approxTokens": 132787
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -29,8 +29,8 @@
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 125052,
-      "approxTokens": 31263
+      "bytes": 129010,
+      "approxTokens": 32253
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
@@ -47,8 +47,8 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 99121,
-      "approxTokens": 24780
+      "bytes": 99134,
+      "approxTokens": 24784
     }
   ],
   "guides": [
@@ -261,8 +261,8 @@
         "why-pdfnative",
         "common-errors"
       ],
-      "bytes": 13772,
-      "approxTokens": 3443
+      "bytes": 13777,
+      "approxTokens": 3444
     },
     {
       "title": "Font-data validation",

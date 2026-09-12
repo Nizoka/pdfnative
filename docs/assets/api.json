@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 456,
+  "exportCount": 471,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -1146,6 +1146,20 @@
       "summary": "RSA public key."
     },
     {
+      "name": "SCRIPT_SHAPERS",
+      "kind": "value",
+      "module": "src/shaping/shaper-registry.ts",
+      "signature": "export const SCRIPT_SHAPERS: readonly ScriptShaper[] = [",
+      "summary": "Every shaped script, in dispatch order."
+    },
+    {
+      "name": "ScriptShaper",
+      "kind": "type",
+      "module": "src/shaping/shaper-registry.ts",
+      "signature": "export interface ScriptShaper",
+      "summary": "One complex script the engine can shape."
+    },
+    {
       "name": "ShapeAnnotation",
       "kind": "type",
       "module": "src/core/pdf-annot-markup.ts",
@@ -1321,6 +1335,13 @@
       "summary": "Parsed TSTInfo from a TimeStampToken (RFC 3161 §2.4.2)."
     },
     {
+      "name": "USE_UNICODE_VERSION",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
       "name": "UseCategory",
       "kind": "type",
       "module": "src/shaping/use-lite.ts",
@@ -1340,6 +1361,27 @@
       "module": "src/shaping/use-lite.ts",
       "signature": "export interface UseCluster",
       "summary": "A USE-lite cluster: a base plus its prefixed/suffixed marks and signs."
+    },
+    {
+      "name": "UseClusterCategory",
+      "kind": "type",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export type UseClusterCategory = string;",
+      "summary": "A USE cluster category: one of the base categories (`B`, `H`, `R`, …) or a positional variant (`VPre`, `MAbv`, `FBlw`, …)."
+    },
+    {
+      "name": "UseSyllable",
+      "kind": "type",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export interface UseSyllable",
+      "summary": "One cluster, as a half-open range over the input code points."
+    },
+    {
+      "name": "UseSyllableType",
+      "kind": "type",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export type UseSyllableType =",
+      "summary": "The kind of cluster the grammar matched."
     },
     {
       "name": "ViewerPreferences",
@@ -1608,6 +1650,13 @@
       "summary": "Build a PDF link annotation object for an internal page link (GoTo action)."
     },
     {
+      "name": "buildLaoClusters",
+      "kind": "value",
+      "module": "src/shaping/lao-shaper.ts",
+      "signature": "export function buildLaoClusters(str: string): LaoCluster[]",
+      "summary": "Split Lao text into clusters of `{ base, aboves, belows, leadings }`."
+    },
+    {
       "name": "buildLinkAnnotation",
       "kind": "value",
       "module": "src/core/pdf-annot.ts",
@@ -1795,6 +1844,13 @@
       "module": "src/shaping/script-registry.ts",
       "signature": "export function containsKhmer(str: string): boolean",
       "summary": "Check whether a string contains any Khmer characters."
+    },
+    {
+      "name": "containsLao",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsLao(str: string): boolean",
+      "summary": "Check whether a string contains any Lao characters."
     },
     {
       "name": "containsMath",
@@ -2168,6 +2224,13 @@
       "summary": "Fill the form fields of an existing PDF and return a new PDF (incremental update — original bytes are preserved, so any existing signature stays valid for its revision)."
     },
     {
+      "name": "findShaper",
+      "kind": "value",
+      "module": "src/shaping/shaper-registry.ts",
+      "signature": "export function findShaper(text: string): ScriptShaper | null",
+      "summary": "The first registered shaper claiming `text`, or `null` when no complex script is present and the caller should take its plain encoding path."
+    },
+    {
       "name": "findStartxref",
       "kind": "value",
       "module": "src/parser/pdf-xref-parser.ts",
@@ -2397,6 +2460,13 @@
       "module": "src/shaping/script-registry.ts",
       "signature": "export function isKhmerCodepoint(cp: number): boolean",
       "summary": "Check if a codepoint falls in any Khmer Unicode block."
+    },
+    {
+      "name": "isLaoCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isLaoCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Lao Unicode block."
     },
     {
       "name": "isLinkAnnotation",
@@ -2777,6 +2847,13 @@
       "summary": "Render SVG content as PDF path operators."
     },
     {
+      "name": "reorderUseCluster",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export function reorderUseCluster(cps: readonly number[]): number[]",
+      "summary": "Reorder one cluster into visual order."
+    },
+    {
       "name": "resetFontRegistry",
       "kind": "value",
       "module": "src/fonts/font-loader.ts",
@@ -2959,6 +3036,13 @@
       "summary": "Shape a string of Khmer text into an array of positioned glyphs."
     },
     {
+      "name": "shapeLaoText",
+      "kind": "value",
+      "module": "src/shaping/lao-shaper.ts",
+      "signature": "export function shapeLaoText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Lao text into positioned glyphs."
+    },
+    {
       "name": "shapeMyanmarText",
       "kind": "value",
       "module": "src/shaping/myanmar-shaper.ts",
@@ -3036,6 +3120,13 @@
       "summary": "Split a string into text runs, each assigned to the font whose cmap covers it."
     },
     {
+      "name": "splitUseSyllables",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export function splitUseSyllables(cps: readonly number[]): UseSyllable[]",
+      "summary": "Split a code-point sequence into USE clusters."
+    },
+    {
       "name": "streamByteLength",
       "kind": "value",
       "module": "src/core/pdf-stream-writer.ts",
@@ -3104,6 +3195,20 @@
       "module": "src/fonts/encoding.ts",
       "signature": "export function truncateToWidth( str: string, maxWidthPt: number, sz: number, enc: EncodingContext, ): string",
       "summary": "Truncate string so that its rendered width does not exceed `maxWidthPt`, appending the Unicode ellipsis (…, U+2026) when truncation occurs."
+    },
+    {
+      "name": "useCategories",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export function useCategories(cps: readonly number[]): UseClusterCategory[]",
+      "summary": "Classify a whole code-point sequence in one pass."
+    },
+    {
+      "name": "useCategory",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export function useCategory(cp: number): UseClusterCategory",
+      "summary": "The USE cluster category of a code point."
     },
     {
       "name": "validateAttachments",

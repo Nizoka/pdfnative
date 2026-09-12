@@ -22,7 +22,7 @@ shaped so agents can use them autonomously, under the project's
 
 ## Pattern 1 — extend the engine at runtime, without a release
 
-pdfnative ships 26 bundled font-data modules (22 scripts plus Latin, math, and monochrome + colour emoji). But its font
+pdfnative ships 27 bundled font-data modules (23 scripts plus Latin, math, and monochrome + colour emoji). But its font
 system is **open**: any TrueType/OpenType font becomes a first-class,
 CIDFont-embedded, subset-on-use font once it is *registered*. Registration is a
 runtime call — it does not require rebuilding or republishing pdfnative.
