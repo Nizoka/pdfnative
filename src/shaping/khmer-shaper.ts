@@ -14,10 +14,20 @@
  *   - GSUB LigatureSubst: coeng-form subscript ligatures when the font provides
  *     them; GPOS MarkToBase for above / below vowel signs and diacritics.
  *
+ * Subscripts (v1.8.0). The font keys its subscript forms on the coeng —
+ * `coeng + ka` is one glyph, and there is no `ka + coeng + ka` — so the
+ * ligature lookup has to be tried at every position in the stack, not only
+ * at its head. Anchoring it at the head found nothing and left the cluster
+ * as a visible coeng sign with a full-size consonant drawn over the base,
+ * which in Khmer is most words.
+ *
+ * Stacked marks (v1.8.0). A second mark on one base is placed against the
+ * first through the font's MarkToMark anchors. Without that both are
+ * anchored to the base and drawn in the same place.
+ *
  * Known limitations (documented):
- *   - This is not a full USE implementation. Robat (U+17CC), complex
- *     multi-coeng stacks beyond the font's ligature coverage, and contextual
- *     GSUB (LookupType 5/6) are approximated, not fully reordered.
+ *   - This is not a full USE implementation. Contextual GSUB (LookupType
+ *     5/6) is not consumed, so contextual variants are approximated.
  *
  * References:
  *   - Unicode Standard §16.4 Khmer
@@ -28,6 +38,7 @@
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { KHMER_START, KHMER_END, KHMER_COENG, containsKhmer } from './script-registry.js';
 import { tryLigature } from './gsub-driver.js';
+import { positionMarkOnBase, positionMarkOnMark } from './gpos-positioner.js';
 
 // Re-export range constants
 export { KHMER_START, KHMER_END, containsKhmer };
@@ -185,6 +196,30 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
         return { classIdx: mark[0], x: mark[1], y: mark[2] };
     }
 
+    /**
+     * Place a mark, stacking it on the previous mark of the same cluster when
+     * the font carries a mark-to-mark anchor for the pair. Without that, two
+     * marks on one base are both anchored to the base and land on top of each
+     * other. Returns the placed mark so the next one can stack on it.
+     */
+    function emitMark(
+        gid: number,
+        baseGid: number,
+        prev: { gid: number; dx: number; dy: number } | null,
+    ): { gid: number; dx: number; dy: number } {
+        const stacked = prev ? positionMarkOnMark(fontData.mark2mark, prev.gid, gid) : null;
+        if (stacked && prev) {
+            const placed = { gid, dx: prev.dx + stacked.dx, dy: prev.dy + stacked.dy };
+            shaped.push({ gid, dx: placed.dx, dy: placed.dy, isZeroAdvance: true });
+            return placed;
+        }
+        const onBase = positionMarkOnBase(markAnchors, gid, baseGid, getAdv(baseGid));
+        const dx = onBase ? onBase.dx : 0;
+        const dy = onBase ? onBase.dy : 0;
+        shaped.push({ gid, dx, dy, isZeroAdvance: true });
+        return { gid, dx, dy };
+    }
+
     function emitGlyph(gid: number, isZero: boolean, baseGid?: number): void {
         if (isZero && baseGid !== undefined) {
             const markAnchor = getMarkAnchor(gid);
@@ -240,40 +275,41 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
             }
         }
 
-        const ligResult = tryLig(stackGids);
-        if (ligResult) {
-            emitGlyph(ligResult.resultGid, false);
-            baseGid = ligResult.resultGid;
-            let gi = ligResult.consumed;
-            while (gi < stackGids.length) {
-                const subLig = tryLig(stackGids.slice(gi));
-                if (subLig) { emitGlyph(subLig.resultGid, false); gi += subLig.consumed; }
-                else {
-                    const origCi = stackEndIdx[gi];
-                    const ct = khmerCharType(codepoints[origCi]);
-                    if (ct === 7) emitGlyph(stackGids[gi], true, baseGid); // orphan coeng → below
-                    else emitGlyph(stackGids[gi], false);
-                    gi++;
-                }
+        // Compose the stack, trying a ligature at EVERY position rather than
+        // only at the start. The font keys its subscript forms on the coeng
+        // — `coeng + ka` is one glyph, and there is no `ka + coeng + ka` —
+        // so a lookup anchored at index 0 finds nothing and the cluster
+        // falls apart into a visible coeng sign with a full-size consonant
+        // drawn on top of the base. Subscripts are the common case in Khmer,
+        // so this was most words.
+        let gi = 0;
+        let first = true;
+        while (gi < stackGids.length) {
+            const lig = tryLig(stackGids.slice(gi));
+            const gid = lig ? lig.resultGid : stackGids[gi];
+            if (first) {
+                emitGlyph(gid, false);
+                if (lig) baseGid = gid;
+                first = false;
+            } else {
+                // Everything after the base hangs off it, coeng sign and
+                // subscript consonant alike.
+                emitGlyph(gid, true, baseGid);
             }
-        } else {
-            for (let gi = 0; gi < stackGids.length; gi++) {
-                const origCi = stackEndIdx[gi];
-                const ct = khmerCharType(codepoints[origCi]);
-                if (gi === 0) emitGlyph(stackGids[gi], false);
-                else if (ct === 7) emitGlyph(stackGids[gi], true, baseGid);
-                else emitGlyph(stackGids[gi], true, baseGid); // subscript consonant below
-            }
+            gi += lig ? lig.consumed : 1;
         }
 
-        // Emit remaining vowels and signs (pre-base already done).
+        // Emit remaining vowels and signs (pre-base already done), stacking
+        // each mark on the one before it where the font says how.
+        let prevMark: { gid: number; dx: number; dy: number } | null = null;
         for (let ci = markStart; ci < codepoints.length; ci++) {
             const cp = codepoints[ci];
             const ct = khmerCharType(cp);
-            if (ct === 2 || ct === 3 || ct === 6) emitGlyph(resolveGid(cp), true, baseGid);
-            else if (ct === 5) emitGlyph(resolveGid(cp), false);
+            if (ct === 2 || ct === 3 || ct === 6) {
+                prevMark = emitMark(resolveGid(cp), baseGid, prevMark);
+            } else if (ct === 5) { emitGlyph(resolveGid(cp), false); prevMark = null; }
             else if (ct === 4) { /* already emitted pre-base */ }
-            else emitGlyph(resolveGid(cp), false);
+            else { emitGlyph(resolveGid(cp), false); prevMark = null; }
         }
     }
 

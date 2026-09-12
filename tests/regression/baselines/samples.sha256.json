@@ -79,9 +79,9 @@
     },
     "alphabet/alphabet-khmer.pdf": {
       "mode": "bytes",
-      "hash": "3056fb6dc0fc6edafeda9beca323430055a6b877b45a06ef328ba3b0a116dfb2",
-      "size": 41114,
-      "since": "1.7.0"
+      "hash": "e3448e722e96a3bb389562d8a13a9aa08b8bb84db834b625661f0a0757ebd9d3",
+      "size": 41050,
+      "since": "1.8.0"
     },
     "alphabet/alphabet-korean.pdf": {
       "mode": "bytes",
@@ -97,9 +97,9 @@
     },
     "alphabet/alphabet-myanmar.pdf": {
       "mode": "bytes",
-      "hash": "daaa26636aeb9dd18d35c4a6271ee889eebe32a412408036e2bc77f3a82c5283",
-      "size": 47176,
-      "since": "1.7.0"
+      "hash": "01a3465e7083b37091feaf25eff0d6bd854b13d437a7a6828b8f08be831862cd",
+      "size": 47213,
+      "since": "1.8.0"
     },
     "alphabet/alphabet-newtailue.pdf": {
       "mode": "bytes",
@@ -505,9 +505,9 @@
     },
     "document/doc-khmer.pdf": {
       "mode": "bytes",
-      "hash": "af49e6d9abe749f96459315496d2da214eaae9cca4338b8b3a819bf7b57674c6",
-      "size": 36003,
-      "since": "1.7.0"
+      "hash": "738be100fb9f4cd486ff8bcc2b9e70769b3d5c3029989f913d05eac7407e46ef",
+      "size": 36124,
+      "since": "1.8.0"
     },
     "document/doc-links.pdf": {
       "mode": "bytes",
@@ -523,8 +523,8 @@
     },
     "document/doc-multi-language.pdf": {
       "mode": "bytes",
-      "hash": "859ce238919d455d917ec7b3cdfca0fdcaeec156e84c871386ef2eb4f937d346",
-      "size": 2068145,
+      "hash": "1635410b0a4b4fca5dd8edc474b1b95a4a712a4c3268258f4943f6bff3182c54",
+      "size": 2068301,
       "since": "1.8.0"
     },
     "document/doc-myanmar.pdf": {
@@ -817,9 +817,9 @@
     },
     "font/font-subsetting-multiscript.pdf": {
       "mode": "bytes",
-      "hash": "017ce0d2c82d47207c4690958ab3bba9161a525ef0d0679df39742a611d01f77",
-      "size": 602304,
-      "since": "1.7.0"
+      "hash": "131b4946fa0b51a904fc7e34680ff33630bf3d86be68a56ee097eee82b4a8395",
+      "size": 602129,
+      "since": "1.8.0"
     },
     "font/font-subsetting-overview.pdf": {
       "mode": "bytes",
@@ -1153,9 +1153,9 @@
     },
     "shaping/shaping-khmer.pdf": {
       "mode": "bytes",
-      "hash": "5b90c7eea995df8c164239aac5e707ce2753681a79576e6003da5561cfbdd945",
-      "size": 34348,
-      "since": "1.7.0"
+      "hash": "76e858228815ca79e041ca8c96ae37f7ae31cdac32209b1628b2b31d737316d5",
+      "size": 34553,
+      "since": "1.8.0"
     },
     "shaping/shaping-myanmar.pdf": {
       "mode": "bytes",

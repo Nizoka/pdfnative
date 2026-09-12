@@ -14,11 +14,24 @@
  *   - GSUB LigatureSubst for medial / stacked forms when the font provides
  *     them; GPOS MarkToBase for above / below vowel signs and tone marks.
  *
+ * Kinzi (v1.8.0). A kinzi is read before the syllable it decorates and drawn
+ * above it, so it is held apart from the cluster it precedes and emitted as
+ * a mark once that cluster's base is on the page. Treating its three code
+ * points as ordinary text made the nga and the virama take horizontal space
+ * of their own, which is space Burmese does not give them.
+ *
+ * Stacks (v1.8.0). The font keys its subjoined forms on the virama —
+ * `virama + ka` is one glyph, and there is no `ka + virama + ka` — so the
+ * ligature lookup has to be tried at every position in the stack, not only
+ * at its head.
+ *
+ * Stacked marks (v1.8.0). A second mark on one base is placed against the
+ * first through the font's MarkToMark anchors, rather than both being
+ * anchored to the base and drawn in the same place.
+ *
  * Known limitations (documented):
- *   - This is not a full USE implementation. Kinzi (U+1004 U+103A U+1039),
- *     deep stacks beyond the font's ligature coverage, and contextual GSUB
- *     (LookupType 5/6) are approximated, not fully reordered. Kinzi is rendered
- *     via its stacking sequence rather than a dedicated reordering pass.
+ *   - This is not a full USE implementation. Contextual GSUB (LookupType
+ *     5/6) is not consumed, so contextual variants are approximated.
  *
  * References:
  *   - Unicode Standard §16.3 Myanmar
@@ -29,6 +42,7 @@
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { MYANMAR_START, MYANMAR_END, MYANMAR_VIRAMA, containsMyanmar } from './script-registry.js';
 import { tryLigature } from './gsub-driver.js';
+import { positionMarkOnBase, positionMarkOnMark } from './gpos-positioner.js';
 
 // Re-export range constants
 export { MYANMAR_START, MYANMAR_END, containsMyanmar };
@@ -83,13 +97,35 @@ function isConsonant(cp: number): boolean {
     return myanmarCharType(cp) === 0;
 }
 
+/**
+ * Letters that can carry the kinzi: nga, ra, and Mon nga. Each forms the
+ * kinzi with a following asat and virama, and the result is drawn above the
+ * consonant that comes *after* it, not beside the letter itself.
+ */
+const KINZI_LETTERS = new Set([0x1004, 0x101B, 0x105A]);
+
+/** Whether `cps` starts a kinzi prefix at `i` with a base to attach to. */
+function isKinziAt(cps: readonly number[], i: number): boolean {
+    return KINZI_LETTERS.has(cps[i])
+        && cps[i + 1] === 0x103A
+        && cps[i + 2] === VIRAMA
+        && i + 3 < cps.length
+        && isConsonant(cps[i + 3]);
+}
+
 interface MyanmarCluster {
     codepoints: number[];
+    /**
+     * The three code points of a kinzi preceding this cluster, or null. They
+     * belong to the syllable that follows them, which is why they are held
+     * apart from `codepoints` rather than sitting at its head.
+     */
+    kinzi: number[] | null;
 }
 
 /**
  * Build Myanmar syllable clusters.
- * A cluster: Consonant (Virama Consonant)* Medial* [vowels] [signs]
+ * A cluster: [Kinzi] Consonant (Virama Consonant)* Medial* [vowels] [signs]
  */
 export function buildMyanmarClusters(str: string): MyanmarCluster[] {
     const clusters: MyanmarCluster[] = [];
@@ -102,17 +138,24 @@ export function buildMyanmarClusters(str: string): MyanmarCluster[] {
 
     let i = 0;
     while (i < cps.length) {
+        // A kinzi is read before the syllable it decorates, and belongs to it.
+        let kinzi: number[] | null = null;
+        if (isKinziAt(cps, i)) {
+            kinzi = [cps[i], cps[i + 1], cps[i + 2]];
+            i += 3;
+        }
+
         const cp = cps[i];
         const type = myanmarCharType(cp);
 
         if (type < 0 || cp < MYANMAR_START || cp > MYANMAR_END) {
-            clusters.push({ codepoints: [cp] });
+            clusters.push({ codepoints: [cp], kinzi });
             i++;
             continue;
         }
 
         if (type !== 0) {
-            clusters.push({ codepoints: [cp] });
+            clusters.push({ codepoints: [cp], kinzi });
             i++;
             continue;
         }
@@ -143,7 +186,7 @@ export function buildMyanmarClusters(str: string): MyanmarCluster[] {
             if ((ct >= 2 && ct <= 6)) { cluster.push(cps[i]); i++; }
             else break;
         }
-        clusters.push({ codepoints: cluster });
+        clusters.push({ codepoints: cluster, kinzi });
     }
     return clusters;
 }
@@ -182,6 +225,30 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
         const mark = markAnchors && markAnchors.marks && markAnchors.marks[markGid];
         if (!mark) return null;
         return { classIdx: mark[0], x: mark[1], y: mark[2] };
+    }
+
+    /**
+     * Place a mark, stacking it on the previous mark of the same cluster when
+     * the font carries a mark-to-mark anchor for the pair. Without that, two
+     * marks on one base are both anchored to the base and land on top of each
+     * other. Returns the placed mark so the next one can stack on it.
+     */
+    function emitMark(
+        gid: number,
+        baseGid: number,
+        prev: { gid: number; dx: number; dy: number } | null,
+    ): { gid: number; dx: number; dy: number } {
+        const stacked = prev ? positionMarkOnMark(fontData.mark2mark, prev.gid, gid) : null;
+        if (stacked && prev) {
+            const placed = { gid, dx: prev.dx + stacked.dx, dy: prev.dy + stacked.dy };
+            shaped.push({ gid, dx: placed.dx, dy: placed.dy, isZeroAdvance: true });
+            return placed;
+        }
+        const onBase = positionMarkOnBase(markAnchors, gid, baseGid, getAdv(baseGid));
+        const dx = onBase ? onBase.dx : 0;
+        const dy = onBase ? onBase.dy : 0;
+        shaped.push({ gid, dx, dy, isZeroAdvance: true });
+        return { gid, dx, dy };
     }
 
     function emitGlyph(gid: number, isZero: boolean, baseGid?: number): void {
@@ -240,40 +307,53 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
             }
         }
 
-        const ligResult = tryLig(stackGids);
-        if (ligResult) {
-            emitGlyph(ligResult.resultGid, false);
-            baseGid = ligResult.resultGid;
-            let gi = ligResult.consumed;
-            while (gi < stackGids.length) {
-                const subLig = tryLig(stackGids.slice(gi));
-                if (subLig) { emitGlyph(subLig.resultGid, false); gi += subLig.consumed; }
-                else {
-                    const origCi = stackEndIdx[gi];
-                    const ct = myanmarCharType(codepoints[origCi]);
-                    if (ct === 7 || ct === 8) emitGlyph(stackGids[gi], true, baseGid);
-                    else emitGlyph(stackGids[gi], false);
-                    gi++;
-                }
-            }
-        } else {
-            for (let gi = 0; gi < stackGids.length; gi++) {
+        // Compose the stack, trying a ligature at EVERY position rather than
+        // only at the start. The font keys its stacked forms on the virama —
+        // `virama + ka` is one glyph, and there is no `ka + virama + ka` — so
+        // a lookup anchored at index 0 finds nothing and the cluster falls
+        // apart into a virama drawn on the line followed by a full-size
+        // consonant. Kinzi and every subjoined stack were affected.
+        let gi = 0;
+        let first = true;
+        while (gi < stackGids.length) {
+            const lig = tryLig(stackGids.slice(gi));
+            const gid = lig ? lig.resultGid : stackGids[gi];
+            if (first) {
+                emitGlyph(gid, false);
+                if (lig) baseGid = gid;
+                first = false;
+            } else {
+                // A composed form is a subjoined glyph; a leftover one keeps
+                // the class-based decision this shaper has always made.
                 const origCi = stackEndIdx[gi];
                 const ct = myanmarCharType(codepoints[origCi]);
-                if (gi === 0) emitGlyph(stackGids[gi], false);
-                else if (ct === 7 || ct === 8) emitGlyph(stackGids[gi], true, baseGid);
-                else emitGlyph(stackGids[gi], false);
+                emitGlyph(gid, lig !== null || ct === 7 || ct === 8, baseGid);
             }
+            gi += lig ? lig.consumed : 1;
         }
 
-        // Emit remaining vowels and signs (pre-base already done).
+        // The kinzi is drawn above this cluster's base, so it is emitted once
+        // the base is on the page. The font composes its three code points
+        // into a single zero-width mark; when it does not, they fall through
+        // as the individual glyphs rather than vanishing.
+        let prevMark: { gid: number; dx: number; dy: number } | null = null;
+        if (cluster.kinzi) {
+            const kGids = cluster.kinzi.map(resolveGid);
+            const kLig = tryLig(kGids);
+            if (kLig && kLig.consumed === kGids.length) {
+                prevMark = emitMark(kLig.resultGid, baseGid, null);
+            } else {
+                for (const kg of kGids) prevMark = emitMark(kg, baseGid, prevMark);
+            }
+        }
         for (let ci = markStart; ci < codepoints.length; ci++) {
             const cp = codepoints[ci];
             const ct = myanmarCharType(cp);
-            if (ct === 2 || ct === 3 || ct === 6) emitGlyph(resolveGid(cp), true, baseGid);
-            else if (ct === 5) emitGlyph(resolveGid(cp), false);
+            if (ct === 2 || ct === 3 || ct === 6) {
+                prevMark = emitMark(resolveGid(cp), baseGid, prevMark);
+            } else if (ct === 5) { emitGlyph(resolveGid(cp), false); prevMark = null; }
             else if (ct === 4) { /* already emitted pre-base */ }
-            else emitGlyph(resolveGid(cp), false);
+            else { emitGlyph(resolveGid(cp), false); prevMark = null; }
         }
     }
 

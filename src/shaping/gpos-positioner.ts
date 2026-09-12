@@ -110,3 +110,33 @@ export function positionMarkOnBase(
         dy: base[1] - mark.y,
     };
 }
+
+/**
+ * Offset of one mark relative to the mark it sits on, from the font's
+ * MarkToMark table (GPOS LookupType 6).
+ *
+ * Without this, a second mark on the same base is anchored to the base just
+ * as the first one was, and the two are drawn in the same place. A Khmer
+ * vowel sign with a bantoc over it, or a Thai vowel with a tone mark, needs
+ * the upper mark lifted clear of the lower one — which is what the font's
+ * mark-to-mark anchors describe.
+ *
+ * Returns `null` when the font has no anchor for the pair, so the caller can
+ * fall back to anchoring on the base.
+ *
+ * @param prevMarkGid The mark already placed, which this one stacks onto.
+ * @param markGid     The mark being placed.
+ * @since 1.8.0
+ */
+export function positionMarkOnMark(
+    mark2mark: Mark2Mark | null | undefined,
+    prevMarkGid: number,
+    markGid: number,
+): { dx: number; dy: number } | null {
+    if (!mark2mark) return null;
+    const attaching = mark2mark.mark2Classes[markGid];
+    if (!attaching) return null;
+    const anchor = getMark2MarkAnchor(mark2mark, prevMarkGid, attaching[0]);
+    if (!anchor) return null;
+    return { dx: anchor[0] - attaching[1], dy: anchor[1] - attaching[2] };
+}
