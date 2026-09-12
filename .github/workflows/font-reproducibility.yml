@@ -1,0 +1,74 @@
+name: Font Reproducibility
+
+# Proves that every bundled fonts/*-data.js regenerates byte-for-byte from the
+# source font it declares, so the "DO NOT EDIT — Regenerate with: …" header in
+# each module is true and a contributor who follows it gets the committed file.
+#
+# The modules had silently drifted before v1.8.0: eleven carried no ligature
+# table at all, and three advertised roughly 2 650 code points their subsetted
+# font could not actually draw. Nothing detected it, because nobody
+# regenerated.
+#
+# Runs on a schedule and on demand rather than on every pull request: it
+# downloads tens of megabytes of TTFs from an external host, which is neither
+# fast nor something a pull request should depend on. Font data changes rarely,
+# and when it does the author runs `npm run verify:fonts` locally.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'fonts/**'
+      - 'tools/build-font-data.cjs'
+      - 'src/tools/font-compiler.ts'
+      - 'scripts/verify-fonts.ts'
+      - 'scripts/download-fonts.ts'
+      - '.github/workflows/font-reproducibility.yml'
+  schedule:
+    - cron: '37 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: font-reproducibility-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  font-reproducibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download source fonts
+        run: npm run fonts:download
+
+      - name: Verify every module reproduces from its source font
+        run: npm run verify:fonts
+
+      - name: Report divergences
+        if: failure()
+        run: |
+          {
+            echo '## Font reproducibility'
+            echo
+            echo 'A bundled font module no longer matches what the generator produces'
+            echo 'from the source font it declares. Regenerate it, then confirm nothing'
+            echo 'rendered differently with `npm run verify:samples`.'
+            echo
+            echo '```json'
+            npx tsx scripts/verify-fonts.ts --json || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

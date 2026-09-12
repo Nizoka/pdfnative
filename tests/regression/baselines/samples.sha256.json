@@ -1411,7 +1411,7 @@
     },
     "tools/font-compiler-report.pdf": {
       "mode": "bytes",
-      "hash": "82dfc93246d9eadcbf5d64b7b1aae38854a086e5cefe61bfb4b72955a30da07a",
+      "hash": "ae080a8502e9ea287b9cb4c3efe68bfd984128dda4e5579f274cb1ab83f0895f",
       "size": 6707,
       "since": "1.7.0"
     },

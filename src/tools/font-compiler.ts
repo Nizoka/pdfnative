@@ -230,6 +230,59 @@ function parseGSUBSingle(r: TTFReader, tables: TableDir): Record<number, number>
     return gsub;
 }
 
+// ── Glyph outline presence (loca) ────────────────────────────────────
+
+/**
+ * Code points that are *meant* to have no outline and must stay in the cmap
+ * even though their glyph is empty: controls and the whole space family,
+ * zero-width joiners, separators and the bidi isolates.
+ *
+ * Must match `isIntentionallyBlank` in `tools/build-font-data.cjs`.
+ */
+function isIntentionallyBlank(cp: number): boolean {
+    return cp <= 0x20
+        || cp === 0xA0
+        || (cp >= 0x2000 && cp <= 0x200F)
+        || (cp >= 0x2028 && cp <= 0x202F)
+        || (cp >= 0x205F && cp <= 0x206F)
+        || cp === 0x3000
+        || cp === 0xFEFF;
+}
+
+/**
+ * Flag, per glyph id, whether the glyph has an outline.
+ *
+ * A subsetted font routinely keeps its full glyph count and its full cmap
+ * while emptying the outlines it dropped. Trusting the cmap alone then makes
+ * the module advertise code points the font cannot draw, which renders blank
+ * instead of falling through to another registered font.
+ *
+ * Returns `null` for CFF fonts, where this cannot be determined.
+ */
+function readOutlineFlags(r: TTFReader, tables: TableDir, numGlyphs: number): Uint8Array | null {
+    if (!tables['loca'] || !tables['glyf'] || !tables['head']) return null;
+    try {
+        r.seek(tables['head'].offset + 50);
+        const indexToLocFormat = r.readInt16();
+        const loca = tables['loca'].offset;
+        const flags = new Uint8Array(numGlyphs);
+        for (let g = 0; g < numGlyphs; g++) {
+            let a: number, b: number;
+            if (indexToLocFormat === 0) {
+                r.seek(loca + g * 2); a = r.readUint16() * 2;
+                r.seek(loca + (g + 1) * 2); b = r.readUint16() * 2;
+            } else {
+                r.seek(loca + g * 4); a = r.readUint32();
+                r.seek(loca + (g + 1) * 4); b = r.readUint32();
+            }
+            if (b > a) flags[g] = 1;
+        }
+        return flags;
+    } catch {
+        return null;
+    }
+}
+
 // ── GSUB per-feature SingleSubst (LookupType 1) ──────────────────────
 
 /**
@@ -656,6 +709,12 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
     }
     if (bestSubtableOffset === -1) throw new Error('No suitable cmap subtable found (need format 4 or 12)');
 
+    // Outline presence, so a subsetted font cannot advertise glyphs whose
+    // outlines it has emptied (see readOutlineFlags).
+    const outlines = readOutlineFlags(r, tables, numGlyphs);
+    const keepGlyph = (cp: number, gid: number): boolean =>
+        outlines === null || outlines[gid] === 1 || isIntentionallyBlank(cp);
+
     const cmap: Record<number, number> = {};
     if (bestFormat === 12) {
         r.seek(bestSubtableOffset);
@@ -667,7 +726,7 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
             const startGlyphID = r.readUint32();
             for (let c = startCharCode; c <= endCharCode; c++) {
                 const gid = startGlyphID + (c - startCharCode);
-                if (gid > 0 && gid < numGlyphs) cmap[c] = gid;
+                if (gid > 0 && gid < numGlyphs && keepGlyph(c, gid)) cmap[c] = gid;
             }
         }
     } else {
@@ -699,7 +758,7 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
                     gid = r.readUint16();
                     if (gid !== 0) gid = (gid + idDeltas[i]) & 0xFFFF;
                 }
-                if (gid > 0 && gid < numGlyphs) cmap[c] = gid;
+                if (gid > 0 && gid < numGlyphs && keepGlyph(c, gid)) cmap[c] = gid;
             }
         }
     }

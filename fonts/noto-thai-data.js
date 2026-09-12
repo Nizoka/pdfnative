@@ -26,6 +26,11 @@ export const widths = {0:600,2:0,3:767,4:584,5:604,6:532,7:550,8:604,9:906,10:60
 // Used by the Thai mini-shaper to select below-clash variants of consonants.
 export const gsub = {10:27,31:32,34:84,37:38,39:40,42:43,45:46,47:48,50:51,53:54,59:60,61:2,63:37,67:2,75:1,82:3,92:93,94:95,97:2,99:100,101:102,112:113,118:119,124:1,137:138,140:1,201:2,220:221,252:169,345:4,353:380,374:186,419:420};
 
+// GSUB LigatureSubst: firstGid → [[resultGid, comp1, comp2, ...], ...]
+// Used by Indic shapers for conjunct formation (C + Halant + C → ligature).
+// Entries sorted longest-first for greedy matching.
+export const ligatures = {34:[[36,30]],82:[[84,30]],140:[[148,380]],160:[[169,380]],179:[[186,380]],226:[[234,380]],252:[[263,380]],307:[[320,380]],345:[[352,380]],435:[[444,380]]};
+
 // GSUB per-feature single substitutions (v1.8.0) — { tag: { fromGid: toGid } }.
 // Kept apart from the merged gsub table above, which unions every SingleSubst
 // lookup in the font, so a caller can ask for tabular figures alone.

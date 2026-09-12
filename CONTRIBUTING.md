@@ -193,6 +193,40 @@ docs: update README with font registration example
 4. If the script needs OpenType shaping (GSUB/GPOS), create a shaper in `src/shaping/` (see `bengali-shaper.ts` or `tamil-shaper.ts` as examples)
 5. Register the font in your test setup
 6. Add tests for the new script detection and encoding
+7. Run `npm run verify:fonts` — every committed module must regenerate byte
+   for byte from the source font it declares
+
+## Regenerating Font Data
+
+Each `fonts/*-data.js` carries a `DO NOT EDIT — Regenerate with: …` header,
+and that sentence is enforced:
+
+```bash
+npm run fonts:download   # populate fonts/ttf/ (git-ignored)
+npm run verify:fonts     # every module must reproduce exactly
+```
+
+The check skips with instructions when the TTFs are absent, so it never blocks
+local work. It also runs on a schedule and whenever `fonts/` or either
+generator changes.
+
+If you change a generator, expect module bytes to move. Regenerate, then prove
+nothing rendered differently:
+
+```bash
+node tools/build-font-data.cjs fonts/ttf/<Source>.ttf fonts/<module>-data.js
+npm run test:generate && npm run verify:samples
+```
+
+Two rules that are easy to get wrong:
+
+- **Two generators, one output.** `tools/build-font-data.cjs` (the
+  `pdfnative-build-font` CLI) and `src/tools/font-compiler.ts` (the in-browser
+  API) must emit byte-identical modules. Change both, or neither.
+- **The emoji modules are different.** `noto-emoji-data.js` and
+  `noto-color-emoji-data.js` come from `scripts/build-color-emoji-data.ts`,
+  which adds COLR/CPAL colour glyphs and the sequence table. The generic CLI
+  would strip them, so `verify:fonts` excludes both.
 
 ## Security
 

@@ -48,6 +48,62 @@ class TTFReader {
     }
 }
 
+// ── Glyph outline presence (loca) ────────────────────────────────────
+
+/**
+ * Code points that are *meant* to have no outline, and must stay in the cmap
+ * even though their glyph is empty: controls and the whole space family,
+ * zero-width joiners, separators and the bidi isolates.
+ *
+ * Everything else with an empty outline was stripped by a subsetter.
+ */
+function isIntentionallyBlank(cp) {
+    return cp <= 0x20                       // C0 controls + SPACE
+        || cp === 0xA0                      // NO-BREAK SPACE
+        || (cp >= 0x2000 && cp <= 0x200F)   // en/em spaces, ZWSP, ZWNJ, ZWJ, LRM/RLM
+        || (cp >= 0x2028 && cp <= 0x202F)   // separators, embedding controls, NNBSP
+        || (cp >= 0x205F && cp <= 0x206F)   // MMSP, word joiner, invisible operators
+        || cp === 0x3000                    // IDEOGRAPHIC SPACE
+        || cp === 0xFEFF;                   // ZERO WIDTH NO-BREAK SPACE
+}
+
+/**
+ * Flag, per glyph id, whether the glyph has an outline.
+ *
+ * A subsetted font routinely keeps its full glyph count and its full cmap
+ * while emptying the outlines it dropped — `pyftsubset --retain-gids` does
+ * exactly this. Trusting the cmap alone then makes the module advertise
+ * thousands of code points the font cannot draw: the text renders blank
+ * instead of falling through to another registered font.
+ *
+ * Returns `null` for fonts with no `glyf`/`loca` (CFF outlines), where this
+ * cannot be determined and every cmap entry is kept.
+ */
+function readOutlineFlags(r, tables, numGlyphs) {
+    if (!tables['loca'] || !tables['glyf'] || !tables['head']) return null;
+    try {
+        r.seek(tables['head'].offset + 50);
+        const indexToLocFormat = r.readInt16();
+        const loca = tables['loca'].offset;
+        const flags = new Uint8Array(numGlyphs);
+        for (let g = 0; g < numGlyphs; g++) {
+            let a, b;
+            if (indexToLocFormat === 0) {
+                r.seek(loca + g * 2); a = r.readUint16() * 2;
+                r.seek(loca + (g + 1) * 2); b = r.readUint16() * 2;
+            } else {
+                r.seek(loca + g * 4); a = r.readUint32();
+                r.seek(loca + (g + 1) * 4); b = r.readUint32();
+            }
+            if (b > a) flags[g] = 1;
+        }
+        return flags;
+    } catch (e) {
+        console.warn('[build-font-data] loca parse error (non-fatal):', e.message);
+        return null;
+    }
+}
+
 // ── TTF Table Parser ─────────────────────────────────────────────────
 
 function parseTTF(buffer) {
@@ -177,6 +233,11 @@ function parseTTF(buffer) {
         throw new Error('No suitable cmap subtable found (need format 4 or 12)');
     }
 
+    // Outline presence, so a subsetted font cannot advertise glyphs whose
+    // outlines it has emptied (see readOutlineFlags).
+    const outlines = readOutlineFlags(r, tables, numGlyphs);
+    const keepGlyph = (cp, gid) => outlines === null || outlines[gid] === 1 || isIntentionallyBlank(cp);
+
     const cmap = {};
 
     if (bestFormat === 12) {
@@ -193,7 +254,7 @@ function parseTTF(buffer) {
             const startGlyphID = r.readUint32();
             for (let c = startCharCode; c <= endCharCode; c++) {
                 const gid = startGlyphID + (c - startCharCode);
-                if (gid > 0 && gid < numGlyphs) {
+                if (gid > 0 && gid < numGlyphs && keepGlyph(c, gid)) {
                     cmap[c] = gid;
                 }
             }
@@ -233,7 +294,7 @@ function parseTTF(buffer) {
                         gid = (gid + idDeltas[i]) & 0xFFFF;
                     }
                 }
-                if (gid > 0 && gid < numGlyphs) {
+                if (gid > 0 && gid < numGlyphs && keepGlyph(c, gid)) {
                     cmap[c] = gid;
                 }
             }

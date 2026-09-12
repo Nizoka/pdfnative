@@ -65,6 +65,7 @@
     "test:generate": "npx tsx scripts/generate-samples.ts",
     "validate:pdfa": "npx tsx scripts/validate-pdfa.ts",
     "verify:samples": "npx tsx scripts/verify-samples.ts",
+    "verify:fonts": "npx tsx scripts/verify-fonts.ts",
     "verify:docs": "npx tsx scripts/verify-docs.ts",
     "docs:llms": "npx tsx scripts/build-llms-full.ts",
     "docs:guides": "npx tsx scripts/build-guides.ts",
