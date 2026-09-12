@@ -25,7 +25,7 @@ import type {
 import { buildImageXObject } from './pdf-image.js';
 import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaUnembeddedFormFontDiagnostic } from './pdf-diagnostics.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
-import { createEncodingContext } from './encoding-context.js';
+import { createEncodingContext, applyDocumentFeatures } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
@@ -164,7 +164,8 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
     }
 
-    const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false, layout?.typography?.metrics);
+    const encBase = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false, layout?.typography?.metrics);
+    const enc = applyDocumentFeatures(encBase, layout?.typography?.fontFeatures);
 
     // ── Encryption setup ──────────────────────
     const encryptionOpts = layout?.encryption;

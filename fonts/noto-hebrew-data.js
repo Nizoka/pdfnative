@@ -26,6 +26,11 @@ export const widths = {0:500,1:260,2:0,3:632,4:632,5:643,6:632,7:632,8:569,9:0,1
 // Used by the Thai mini-shaper to select below-clash variants of consonants.
 export const gsub = {};
 
+// GSUB per-feature single substitutions (v1.8.0) — { tag: { fromGid: toGid } }.
+// Kept apart from the merged gsub table above, which unions every SingleSubst
+// lookup in the font, so a caller can ask for tabular figures alone.
+export const features = null;
+
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)
 // bases[gid] = { classIdx: [anchorX, anchorY] }

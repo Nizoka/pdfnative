@@ -264,6 +264,11 @@ function parseTTF(buffer) {
     //   (used for Thai vowel+tone stacking: tone positioned relative to vowel)
     const markAnchors = parseTTFGPOS(r, tables);
 
+    // ── Parse GSUB per-feature SingleSubst (v1.8.0) ─────────────────
+    // Kept separate from `gsub` so a caller can request tabular figures
+    // without also getting every other single substitution in the face.
+    const features = parseTTFGSUBFeatures(r, tables);
+
     return {
         metrics: {
             unitsPerEm,
@@ -279,6 +284,7 @@ function parseTTF(buffer) {
         widths,
         gsub,
         ligatures,
+        features,
         markAnchors
     };
 }
@@ -378,6 +384,130 @@ function parseTTFGSUB(r, tables) {
         console.warn('[build-font-data] GSUB parse error (non-fatal):', e.message);
     }
     return gsub;
+}
+
+// ── GSUB Parser — per-feature SingleSubst (LookupType 1) ─────────────
+
+/**
+ * OpenType features extracted per tag, for declarative styling.
+ *
+ * Unlike {@link parseTTFGSUB}, which deliberately merges every SingleSubst
+ * lookup in the font because the Indic and Thai shapers want them all, this
+ * keeps each feature separate so a caller can ask for tabular figures
+ * without also getting every contextual alternate in the face.
+ *
+ * Only single substitutions (one glyph in, one glyph out) are extracted:
+ * they need no shaping engine, which is what makes them safe to apply to
+ * Latin text that currently takes a plain per-codepoint path.
+ */
+const FEATURE_TAGS = [
+    'tnum', // tabular figures — the one that matters for money columns
+    'pnum', // proportional figures
+    'lnum', // lining figures
+    'onum', // old-style figures
+    'zero', // slashed zero
+    'ordn', // ordinals
+    'sups', // superscripts
+    'subs', // subscripts
+    'smcp', // small capitals
+    'c2sc', // capitals to small capitals
+    'case', // case-sensitive forms
+];
+
+/**
+ * Parse GSUB and return `{ tag: { fromGid: toGid } }` for {@link FEATURE_TAGS}.
+ *
+ * Returns `null` when the font declares none of them, so fonts that gain
+ * nothing carry no extra bytes.
+ *
+ * OpenType spec: §5.2 FeatureList, §6.2.1 SingleSubstFormat1/2.
+ */
+function parseTTFGSUBFeatures(r, tables) {
+    if (!tables['GSUB']) return null;
+    const wanted = new Set(FEATURE_TAGS);
+
+    try {
+        const base = tables['GSUB'].offset;
+        r.seek(base);
+        r.skip(4); // version
+        r.readUint16(); // scriptListOffset — features apply across scripts here
+        const featureListOffset = r.readUint16();
+        const lookupListOffset = r.readUint16();
+
+        // ── FeatureList: tag → lookup indices ────────────────────────
+        r.seek(base + featureListOffset);
+        const featureCount = r.readUint16();
+        const lookupsByTag = new Map();
+        for (let fi = 0; fi < featureCount; fi++) {
+            const tag = r.readTag();
+            const featureOffset = r.readUint16();
+            if (!wanted.has(tag)) continue;
+            const saved = r.pos;
+            r.seek(base + featureListOffset + featureOffset);
+            r.skip(2); // featureParamsOffset
+            const lookupCount = r.readUint16();
+            const list = lookupsByTag.get(tag) ?? new Set();
+            for (let li = 0; li < lookupCount; li++) list.add(r.readUint16());
+            lookupsByTag.set(tag, list);
+            r.pos = saved;
+        }
+        if (lookupsByTag.size === 0) return null;
+
+        // ── LookupList offsets ───────────────────────────────────────
+        r.seek(base + lookupListOffset);
+        const lookupCount = r.readUint16();
+        const lookupOffsets = [];
+        for (let i = 0; i < lookupCount; i++) lookupOffsets.push(r.readUint16());
+
+        /** Collect the SingleSubst pairs of one lookup into `target`. */
+        const collect = (lookupIndex, target) => {
+            if (lookupIndex >= lookupCount) return;
+            const lkBase = base + lookupListOffset + lookupOffsets[lookupIndex];
+            r.seek(lkBase);
+            const lookupType = r.readUint16();
+            r.skip(2); // lookupFlag
+            const subtableCount = r.readUint16();
+            const subtableOffsets = [];
+            for (let si = 0; si < subtableCount; si++) subtableOffsets.push(r.readUint16());
+            if (lookupType !== 1) return; // single substitutions only
+
+            for (const stOffset of subtableOffsets) {
+                const stBase = lkBase + stOffset;
+                r.seek(stBase);
+                const substFormat = r.readUint16();
+                const coverageOffset = r.readUint16();
+                const covered = readCoverageTable(r, stBase + coverageOffset);
+
+                if (substFormat === 1) {
+                    r.seek(stBase + 4);
+                    const delta = r.readInt16();
+                    for (const gid of covered) {
+                        const sub = (gid + delta) & 0xFFFF;
+                        if (sub > 0) target[gid] = sub;
+                    }
+                } else if (substFormat === 2) {
+                    r.seek(stBase + 4);
+                    const glyphCount = r.readUint16();
+                    for (let gi = 0; gi < glyphCount && gi < covered.length; gi++) {
+                        const sub = r.readUint16();
+                        if (sub > 0) target[covered[gi]] = sub;
+                    }
+                }
+            }
+        };
+
+        const out = {};
+        for (const [tag, indices] of lookupsByTag) {
+            const map = {};
+            for (const idx of indices) collect(idx, map);
+            if (Object.keys(map).length > 0) out[tag] = map;
+        }
+        return Object.keys(out).length > 0 ? out : null;
+    } catch (e) {
+        // Non-fatal: a font without usable features simply offers none.
+        console.warn('[build-font-data] GSUB feature parse error (non-fatal):', e.message);
+        return null;
+    }
 }
 
 // ── GSUB Parser — LookupType 4 (LigatureSubst) ───────────────────────
@@ -640,7 +770,7 @@ function readCoverageTable(r, absOffset) {
 // ── JS Module Generator ──────────────────────────────────────────────
 
 function generateModule(fontName, parsed, ttfBase64) {
-    const { metrics, cmap, widths, gsub, ligatures, markAnchors } = parsed;
+    const { metrics, cmap, widths, gsub, ligatures, features, markAnchors } = parsed;
 
     // Compact cmap: only entries where glyph exists
     const cmapEntries = Object.entries(cmap)
@@ -665,6 +795,14 @@ function generateModule(fontName, parsed, ttfBase64) {
         .map(([gid, ligs]) => {
             const inner = ligs.map(lig => `[${lig.join(',')}]`).join(',');
             return `${gid}:[${inner}]`;
+        })
+        .join(',');
+
+    // Compact per-feature single substitutions: { tag: { fromGid: toGid } }
+    const featuresEntries = Object.entries(features || {})
+        .map(([tag, map]) => {
+            const inner = Object.entries(map).map(([k, v]) => `${k}:${v}`).join(',');
+            return `${JSON.stringify(tag)}:{${inner}}`;
         })
         .join(',');
 
@@ -736,6 +874,11 @@ export const gsub = {${gsubEntries}};
 // Used by Indic shapers for conjunct formation (C + Halant + C → ligature).
 // Entries sorted longest-first for greedy matching.
 export const ligatures = {${ligaturesEntries}};
+
+// GSUB per-feature single substitutions (v1.8.0) — { tag: { fromGid: toGid } }.
+// Kept apart from the merged gsub table above, which unions every SingleSubst
+// lookup in the font, so a caller can ask for tabular figures alone.
+export const features = ${features ? `{${featuresEntries}}` : 'null'};
 
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)

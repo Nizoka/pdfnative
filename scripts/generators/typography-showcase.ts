@@ -225,6 +225,52 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         buildDocumentPDFBytes(metricsDoc, { typography: { metrics: 'exact' } }),
     );
 
+    // ── OpenType features ────────────────────────────────────────
+    // Single substitutions the font itself declares. Needs a registered
+    // font: the base-14 faces carry no OpenType tables at all.
+    const featureLatin = await loadFontEntries('latin', '/F3');
+    const amounts = [
+        ['Janvier', '1 111,00', '8 888,00'],
+        ['Fevrier', '11 111,00', '88 888,00'],
+        ['Mars', '111 111,00', '888 888,00'],
+    ];
+
+    const featureDoc: DocumentParams = {
+        title: 'Fonctionnalites OpenType',
+        fontEntries: featureLatin,
+        blocks: [
+            { type: 'heading', text: 'Substitutions declaratives', level: 1 },
+            { type: 'paragraph', text: 'Noto Sans declare tnum, pnum, lnum, onum, zero, smcp, c2sc, case, sups et subs. Chacune remplace un glyphe par un autre, sans moteur de composition, ce qui les rend sures a appliquer sur du texte latin ordinaire.' },
+            { type: 'paragraph', text: 'Chiffres 1234567890 — comparez la largeur des colonnes ci-dessous entre les deux fichiers.' },
+            {
+                type: 'table',
+                headers: ['Mois', 'Debit', 'Credit'],
+                rows: amounts.map(cells => ({ cells, type: '', pointed: false })),
+                columns: [{ f: 0.34, a: 'l', mx: 20, mxH: 20 }, { f: 0.33, a: 'r', mx: 20, mxH: 20 }, { f: 0.33, a: 'r', mx: 20, mxH: 20 }],
+            },
+            { type: 'paragraph', text: 'Petites capitales : abcdefghijklmnop' },
+        ],
+        footerText: 'pdfnative – typography showcase',
+    };
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'features-default.pdf'),
+        'typography/features-default.pdf',
+        buildDocumentPDFBytes(featureDoc),
+    );
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'features-proportional.pdf'),
+        'typography/features-proportional.pdf',
+        buildDocumentPDFBytes(featureDoc, { typography: { fontFeatures: ['pnum'] } }),
+    );
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'features-oldstyle-smallcaps.pdf'),
+        'typography/features-oldstyle-smallcaps.pdf',
+        buildDocumentPDFBytes(featureDoc, { typography: { fontFeatures: ['onum', 'smcp'] } }),
+    );
+
     // ── Tagged: a split paragraph stays one /P element ───────────
     // PDF/A-2b, so veraPDF checks that splitting a paragraph across pages
     // leaves the structure tree conformant. Needs an embedded Latin font like

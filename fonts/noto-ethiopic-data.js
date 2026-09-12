@@ -31,6 +31,11 @@ export const gsub = {460:2,461:907,462:670,463:2,464:907,465:686,466:2,467:907,4
 // Entries sorted longest-first for greedy matching.
 export const ligatures = {641:[[648,907]],662:[[670,907]],678:[[686,907]],728:[[736,907]],754:[[761,907]],775:[[783,907]],791:[[799,907]],842:[[850,907]]};
 
+// GSUB per-feature single substitutions (v1.8.0) — { tag: { fromGid: toGid } }.
+// Kept apart from the merged gsub table above, which unions every SingleSubst
+// lookup in the font, so a caller can ask for tabular figures alone.
+export const features = null;
+
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)
 // bases[gid] = { classIdx: [anchorX, anchorY] }

@@ -56,6 +56,12 @@ export interface FontDataObject {
     readonly gsub: Record<number, number>;
     /** GSUB LigatureSubst: firstGid → [[resultGid, comp1, …], …]. */
     readonly ligatures: Record<number, number[][]>;
+    /**
+     * GSUB per-feature single substitutions: `{ tag: { fromGid: toGid } }`,
+     * or `null` when the font declares none of the supported tags.
+     * @since 1.8.0
+     */
+    readonly features: Record<string, Record<number, number>> | null;
     /** GPOS MarkToBase anchors. */
     readonly markAnchors: {
         readonly marks: Record<number, [number, number, number]>;
@@ -111,6 +117,7 @@ interface RawParsed {
     widths: Record<number, number>;
     gsub: Record<number, number>;
     ligatures: Record<number, number[][]>;
+    features: Record<string, Record<number, number>> | null;
     markAnchors: RawMarkAnchors;
     name?: string;
 }
@@ -221,6 +228,113 @@ function parseGSUBSingle(r: TTFReader, tables: TableDir): Record<number, number>
         // Non-fatal: GSUB parse failure degrades gracefully (no shaping).
     }
     return gsub;
+}
+
+// ── GSUB per-feature SingleSubst (LookupType 1) ──────────────────────
+
+/**
+ * Feature tags extracted per tag for declarative styling.
+ *
+ * Must stay identical to `FEATURE_TAGS` in `tools/build-font-data.cjs`, the
+ * reference CLI — the two generators emit byte-identical modules, and a
+ * divergence here would silently fork the bundled font data.
+ */
+const FEATURE_TAGS = [
+    'tnum', 'pnum', 'lnum', 'onum', 'zero', 'ordn',
+    'sups', 'subs', 'smcp', 'c2sc', 'case',
+];
+
+/**
+ * Parse GSUB and return `{ tag: { fromGid: toGid } }` for {@link FEATURE_TAGS}.
+ *
+ * Unlike {@link parseGSUBSingle}, which merges every SingleSubst lookup in the
+ * font because the Indic and Thai shapers want them all, this keeps each
+ * feature separate so a caller can request tabular figures without also
+ * getting every contextual alternate in the face.
+ *
+ * Returns `null` when the font declares none of them.
+ */
+function parseGSUBFeatures(r: TTFReader, tables: TableDir): Record<string, Record<number, number>> | null {
+    if (!tables['GSUB']) return null;
+    const wanted = new Set(FEATURE_TAGS);
+
+    try {
+        const base = tables['GSUB'].offset;
+        r.seek(base);
+        r.skip(4); // version
+        r.readUint16(); // scriptListOffset
+        const featureListOffset = r.readUint16();
+        const lookupListOffset = r.readUint16();
+
+        r.seek(base + featureListOffset);
+        const featureCount = r.readUint16();
+        const lookupsByTag = new Map<string, Set<number>>();
+        for (let fi = 0; fi < featureCount; fi++) {
+            const tag = r.readTag();
+            const featureOffset = r.readUint16();
+            if (!wanted.has(tag)) continue;
+            const saved = r.pos;
+            r.seek(base + featureListOffset + featureOffset);
+            r.skip(2); // featureParamsOffset
+            const lookupCount = r.readUint16();
+            const list = lookupsByTag.get(tag) ?? new Set<number>();
+            for (let li = 0; li < lookupCount; li++) list.add(r.readUint16());
+            lookupsByTag.set(tag, list);
+            r.pos = saved;
+        }
+        if (lookupsByTag.size === 0) return null;
+
+        r.seek(base + lookupListOffset);
+        const lookupCount = r.readUint16();
+        const lookupOffsets: number[] = [];
+        for (let i = 0; i < lookupCount; i++) lookupOffsets.push(r.readUint16());
+
+        const collect = (lookupIndex: number, target: Record<number, number>): void => {
+            if (lookupIndex >= lookupCount) return;
+            const lkBase = base + lookupListOffset + lookupOffsets[lookupIndex];
+            r.seek(lkBase);
+            const lookupType = r.readUint16();
+            r.skip(2); // lookupFlag
+            const subtableCount = r.readUint16();
+            const subtableOffsets: number[] = [];
+            for (let si = 0; si < subtableCount; si++) subtableOffsets.push(r.readUint16());
+            if (lookupType !== 1) return;
+
+            for (const stOffset of subtableOffsets) {
+                const stBase = lkBase + stOffset;
+                r.seek(stBase);
+                const substFormat = r.readUint16();
+                const coverageOffset = r.readUint16();
+                const covered = readCoverageTable(r, stBase + coverageOffset);
+
+                if (substFormat === 1) {
+                    r.seek(stBase + 4);
+                    const delta = r.readInt16();
+                    for (const gid of covered) {
+                        const sub = (gid + delta) & 0xFFFF;
+                        if (sub > 0) target[gid] = sub;
+                    }
+                } else if (substFormat === 2) {
+                    r.seek(stBase + 4);
+                    const glyphCount = r.readUint16();
+                    for (let gi = 0; gi < glyphCount && gi < covered.length; gi++) {
+                        const sub = r.readUint16();
+                        if (sub > 0) target[covered[gi]] = sub;
+                    }
+                }
+            }
+        };
+
+        const out: Record<string, Record<number, number>> = {};
+        for (const [tag, indices] of lookupsByTag) {
+            const map: Record<number, number> = {};
+            for (const idx of indices) collect(idx, map);
+            if (Object.keys(map).length > 0) out[tag] = map;
+        }
+        return Object.keys(out).length > 0 ? out : null;
+    } catch {
+        return null;
+    }
 }
 
 // ── GSUB LookupType 4 (LigatureSubst) ────────────────────────────────
@@ -596,6 +710,7 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
     const gsub = parseGSUBSingle(r, tables);
     const ligatures = parseGSUBLigatures(r, tables);
     const markAnchors = parseGPOS(r, tables);
+    const features = parseGSUBFeatures(r, tables);
     const name = parseName(r, tables);
 
     return {
@@ -603,7 +718,7 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
             unitsPerEm, ascent, descent, capHeight, stemV,
             bbox: [xMin, yMin, xMax, yMax], defaultWidth, numGlyphs,
         },
-        cmap, widths, gsub, ligatures, markAnchors, name,
+        cmap, widths, gsub, ligatures, features, markAnchors, name,
     };
 }
 
@@ -657,12 +772,19 @@ function sanitizeFontName(name: string): string {
 }
 
 function generateEsmModule(fontName: string, parsed: RawParsed, ttfBase64: string): string {
-    const { metrics, cmap, widths, gsub, ligatures, markAnchors } = parsed;
+    const { metrics, cmap, widths, gsub, ligatures, features, markAnchors } = parsed;
 
     const cmapEntries = Object.entries(cmap).map(([k, v]) => `${k}:${v}`).join(',');
     const defaultW = metrics.defaultWidth;
     const widthEntries = Object.entries(widths).filter(([, w]) => w !== defaultW).map(([k, v]) => `${k}:${v}`).join(',');
     const gsubEntries = Object.entries(gsub || {}).map(([k, v]) => `${k}:${v}`).join(',');
+    // Per-feature single substitutions: { tag: { fromGid: toGid } }. Must
+    // serialise exactly as the reference CLI does — the two generators emit
+    // byte-identical modules.
+    const featuresEntries = Object.entries(features || {})
+        .map(([tag, map]) => `${JSON.stringify(tag)}:{${Object.entries(map).map(([k, v]) => `${k}:${v}`).join(',')}}`)
+        .join(',');
+
     const ligaturesEntries = Object.entries(ligatures || {})
         .map(([gid, ligs]) => `${gid}:[${ligs.map((lig) => `[${lig.join(',')}]`).join(',')}]`)
         .join(',');
@@ -711,6 +833,11 @@ export const gsub = {${gsubEntries}};
 // Used by Indic shapers for conjunct formation (C + Halant + C → ligature).
 // Entries sorted longest-first for greedy matching.
 export const ligatures = {${ligaturesEntries}};
+
+// GSUB per-feature single substitutions (v1.8.0) — { tag: { fromGid: toGid } }.
+// Kept apart from the merged gsub table above, which unions every SingleSubst
+// lookup in the font, so a caller can ask for tabular figures alone.
+export const features = ${features ? `{${featuresEntries}}` : 'null'};
 
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)
@@ -813,6 +940,7 @@ export function parseFontData(buffer: Uint8Array, opts: ParseFontDataOptions = {
         widths: filteredWidths,
         gsub: parsed.gsub,
         ligatures: parsed.ligatures,
+        features: parsed.features,
         markAnchors: { marks, bases },
         mark2mark: { mark1Anchors, mark2Classes },
         pdfWidthArray: buildPDFWidthArray(parsed.widths, parsed.metrics.numGlyphs, parsed.metrics.defaultWidth),

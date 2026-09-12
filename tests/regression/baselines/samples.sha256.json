@@ -1411,7 +1411,7 @@
     },
     "tools/font-compiler-report.pdf": {
       "mode": "bytes",
-      "hash": "d8c8ceab2139e0ac3e82aef808bf4854734d70344b918cc2e02f9170b8860d6d",
+      "hash": "82dfc93246d9eadcbf5d64b7b1aae38854a086e5cefe61bfb4b72955a30da07a",
       "size": 6707,
       "since": "1.7.0"
     },
@@ -1449,6 +1449,24 @@
       "mode": "bytes",
       "hash": "1d8cc1564ed0d9ca81d42b41d771949c4c6bb81af34909b8c2858d1b411e4eb9",
       "size": 18311,
+      "since": "1.8.0"
+    },
+    "typography/features-default.pdf": {
+      "mode": "bytes",
+      "hash": "c7e7d1a926d7d8b406d1e8998984ee999455a8ade0efba54f0185b6ef92096a5",
+      "size": 122206,
+      "since": "1.8.0"
+    },
+    "typography/features-oldstyle-smallcaps.pdf": {
+      "mode": "bytes",
+      "hash": "c204d89b8f3b20abdc81b738cf82e8c17619063383042764e1a79e6e17e21dc8",
+      "size": 122206,
+      "since": "1.8.0"
+    },
+    "typography/features-proportional.pdf": {
+      "mode": "bytes",
+      "hash": "fd0c15dfe06181294b00cb58ad92ed5cdd00437bbaa31ed3e5411553f3d9f9cd",
+      "size": 122206,
       "since": "1.8.0"
     },
     "typography/keep-with-next-off.pdf": {

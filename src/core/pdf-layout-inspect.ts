@@ -20,7 +20,7 @@
 
 import type { PdfLayoutOptions, FontEntry, LayoutInspection, InspectedBlock, InspectedPage } from '../types/pdf-types.js';
 import type { DocumentParams } from '../types/pdf-document-types.js';
-import { createEncodingContext } from './encoding-context.js';
+import { createEncodingContext, applyDocumentFeatures } from './encoding-context.js';
 import { resolvePdfAConfig } from './pdf-tags.js';
 import { paginateDocument } from './pdf-pagination.js';
 import { prepareBlocks } from './pdf-typography.js';
@@ -52,7 +52,8 @@ export function inspectDocumentLayout(
 
     const fontEntries: FontEntry[] = params.fontEntries ? [...params.fontEntries] : [];
     const tagged = resolvePdfAConfig(layout?.tagged).enabled;
-    const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false, layout?.typography?.metrics);
+    const encBase = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false, layout?.typography?.metrics);
+    const enc = applyDocumentFeatures(encBase, layout?.typography?.fontFeatures);
 
     const headerH = layout?.headerTemplate ? HEADER_H : 0;
 

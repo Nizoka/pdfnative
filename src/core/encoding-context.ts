@@ -12,6 +12,7 @@
 import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics } from '../types/pdf-types.js';
 import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
+import { applyFeaturesToRuns, composeFeatureMap } from '../fonts/font-features.js';
 import { shapeThaiText } from '../shaping/thai-shaper.js';
 import { shapeBengaliText } from '../shaping/bengali-shaper.js';
 import { shapeTamilText } from '../shaping/tamil-shaper.js';
@@ -263,7 +264,7 @@ export function createEncodingContext(
         ? createColorEmojiCollector()
         : undefined;
 
-    return {
+    const ctx: EncodingContext = {
         isUnicode: true,
         fontEntries,
         metrics,
@@ -623,4 +624,59 @@ export function createEncodingContext(
             return total;
         },
     };
+
+    return withFeatureSupport(ctx);
+}
+
+/**
+ * Apply a document's configured OpenType features to its encoding context.
+ *
+ * A no-op when no tags are configured, when the context has no registered
+ * font (the base-14 faces carry no OpenType tables), or when no font in play
+ * declares any of the tags.
+ *
+ * @since 1.8.0
+ */
+export function applyDocumentFeatures(
+    enc: EncodingContext,
+    tags: readonly string[] | undefined,
+): EncodingContext {
+    if (!tags || tags.length === 0 || !enc.withFeatures) return enc;
+    return enc.withFeatures(tags);
+}
+
+/**
+ * Attach `withFeatures()` to a Unicode context.
+ *
+ * The derived context substitutes glyphs on the way out of `textRuns()`, so
+ * every caller — measurement, wrapping and emission alike — sees the same
+ * substituted glyphs without a single signature change. `ps()` is left
+ * alone: it serves the shaped and single-font hex paths, where a shaper has
+ * already chosen contextual forms that must not be overwritten.
+ */
+function withFeatureSupport(base: EncodingContext): EncodingContext {
+    function derive(tags: readonly string[]): EncodingContext {
+        // Nothing to do when no font in play declares any of the tags. Return
+        // the wrapper, not `base`, so callers can compare by identity to see
+        // that nothing changed.
+        const applies = base.fontEntries.some(fe => composeFeatureMap(fe.fontData, tags) !== null);
+        if (!applies) return wrapper;
+
+        const derived: EncodingContext = {
+            ...base,
+            textRuns: (str: string, sz: number) => applyFeaturesToRuns(base.textRuns(str, sz), tags, sz),
+            tw(str: string, sz: number): number {
+                if (!str) return 0;
+                let total = 0;
+                for (const run of derived.textRuns(str, sz)) total += run.widthPt;
+                return total;
+            },
+            // Deriving again replaces the feature set rather than stacking it.
+            withFeatures: derive,
+        };
+        return derived;
+    }
+
+    const wrapper: EncodingContext = { ...base, withFeatures: derive };
+    return wrapper;
 }

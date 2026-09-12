@@ -29,6 +29,21 @@ export interface FontData {
     readonly ttfBase64: string;
     readonly gsub: Record<number, number>;
     readonly ligatures?: Record<number, number[][]> | null;
+    /**
+     * OpenType single substitutions, kept apart per feature tag:
+     * `{ 'tnum': { fromGid: toGid }, … }`.
+     *
+     * Distinct from {@link gsub}, which unions every SingleSubst lookup in
+     * the font because the Indic and Thai shapers want them all. Splitting by
+     * tag is what allows a caller to ask for tabular figures without also
+     * getting every contextual alternate in the face.
+     *
+     * Absent or `null` on fonts built before v1.8.0, and on fonts declaring
+     * none of the supported tags — feature requests are then no-ops.
+     *
+     * @since 1.8.0
+     */
+    readonly features?: Record<string, Record<number, number>> | null;
     readonly markAnchors: {
         readonly bases: Record<number, Record<number, [number, number]>>;
         readonly marks: Record<number, [number, number, number]>;
@@ -231,6 +246,16 @@ export interface EncodingContext {
      * tables. (v1.8.0)
      */
     readonly metrics?: Base14Metrics;
+    /**
+     * Derive a context that applies the given OpenType features to every
+     * glyph it encodes and measures.
+     *
+     * Returns the same context when nothing would change — no registered
+     * font, or none of the tags declared by the fonts in play.
+     *
+     * @since 1.8.0
+     */
+    readonly withFeatures?: (tags: readonly string[]) => EncodingContext;
 }
 
 /**
@@ -553,6 +578,28 @@ export interface TypographyOptions {
      * Default: `'approximate'`.
      */
     readonly metrics?: Base14Metrics;
+    /**
+     * OpenType features to apply to the document's text, by tag.
+     *
+     * The one that earns its keep is `'tnum'`: proportional digits make a
+     * column of amounts ragged, because `1` is narrower than `8`. Tabular
+     * figures give every digit the same advance, which is the difference
+     * between a financial table that lines up and one that does not.
+     *
+     * Only single substitutions are supported — one glyph in, one glyph out.
+     * That is what makes them safe to apply without a shaping engine.
+     * Available tags: `tnum`, `pnum`, `lnum`, `onum`, `zero`, `ordn`, `sups`,
+     * `subs`, `smcp`, `c2sc`, `case`. Contextual and ligature features
+     * (`liga`, `calt`, `frac`) are out of scope.
+     *
+     * Requires a registered font: the non-embedded base-14 faces carry no
+     * OpenType tables. Asking for a tag a font does not declare is a silent
+     * no-op, since the same document may be built with different fonts.
+     * Later tags win where two features touch the same glyph.
+     *
+     * Default: none.
+     */
+    readonly fontFeatures?: readonly string[];
 }
 
 /** Built-in punctuation-spacing conventions. @since 1.8.0 */
