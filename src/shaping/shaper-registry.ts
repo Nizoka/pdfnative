@@ -28,11 +28,12 @@
 
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import {
-    containsThai, containsBengali, containsTamil, containsTelugu,
+    containsThai, containsLao, containsBengali, containsTamil, containsTelugu,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar,
     containsDevanagari,
 } from './script-registry.js';
 import { shapeThaiText } from './thai-shaper.js';
+import { shapeLaoText } from './lao-shaper.js';
 import { shapeBengaliText } from './bengali-shaper.js';
 import { shapeTamilText } from './tamil-shaper.js';
 import { shapeTeluguText } from './telugu-shaper.js';
@@ -63,6 +64,11 @@ export interface ScriptShaper {
  */
 export const SCRIPT_SHAPERS: readonly ScriptShaper[] = [
     { id: 'thai', detect: containsThai, shape: shapeThaiText },
+    // Lao sits next to Thai because it shares the mechanism, and after it
+    // because the Thai block ends at U+0E7F where Lao begins: neither
+    // predicate can claim the other's characters, so the order is a
+    // readability choice rather than a correctness one.
+    { id: 'lao', detect: containsLao, shape: shapeLaoText },
     { id: 'bengali', detect: containsBengali, shape: shapeBengaliText },
     { id: 'tamil', detect: containsTamil, shape: shapeTamilText },
     { id: 'telugu', detect: containsTelugu, shape: shapeTeluguText },

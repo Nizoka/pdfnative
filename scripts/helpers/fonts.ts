@@ -33,6 +33,8 @@ export function registerAllFonts(): void {
         bo: fl(() => import('../../fonts/noto-tibetan-data.js')),
         km: fl(() => import('../../fonts/noto-khmer-data.js')),
         my: fl(() => import('../../fonts/noto-myanmar-data.js')),
+        // v1.8.0 — Lao, the 23rd script
+        lo: fl(() => import('../../fonts/noto-lao-data.js')),
         // v1.1.0 — Latin VF (PDF/A non-WinAnsi fallback) + monochrome emoji
         latin: fl(() => import('../../fonts/noto-sans-data.js')),
         emoji: fl(() => import('../../fonts/noto-emoji-data.js')),
@@ -58,8 +60,20 @@ export async function loadSelectedFontEntries(langs: string[]): Promise<FontEntr
     return entries;
 }
 
+/**
+ * The multi-script sample's font inventory.
+ *
+ * Positional: each entry takes `/F{3 + index}`, so inserting a language
+ * renumbers every one after it and rewrites the whole sample. New languages
+ * are therefore appended, which keeps the existing pages byte-identical and
+ * leaves the regression harness reporting only the genuinely new content.
+ */
 export async function loadMultiFontEntries(): Promise<FontEntry[]> {
-    return loadSelectedFontEntries(['th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'bn', 'ta', 'te', 'si', 'bo', 'km', 'my', 'am']);
+    return loadSelectedFontEntries([
+        'th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru',
+        'ka', 'hy', 'bn', 'ta', 'te', 'si', 'bo', 'km', 'my', 'am',
+        'lo', // v1.8.0
+    ]);
 }
 
 export { loadFontData };

@@ -12,6 +12,7 @@ const thai = notoThai as unknown as FontData;
 /** One sample string per registered script, in the registry's own order. */
 const SAMPLES: Record<string, string> = {
     thai: 'สวัสดี',
+    lao: 'ລາວ',
     bengali: 'বাংলা',
     tamil: 'தமிழ்',
     telugu: 'తెలుగు',
@@ -25,7 +26,7 @@ const SAMPLES: Record<string, string> = {
 describe('SCRIPT_SHAPERS', () => {
     it('registers every script the engine shapes', () => {
         expect(SCRIPT_SHAPERS.map(s => s.id)).toEqual([
-            'thai', 'bengali', 'tamil', 'telugu', 'sinhala',
+            'thai', 'lao', 'bengali', 'tamil', 'telugu', 'sinhala',
             'tibetan', 'khmer', 'myanmar', 'devanagari',
         ]);
     });

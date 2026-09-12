@@ -557,5 +557,30 @@ export const ALPHABET_SAMPLES: LangSample[] = [
         ],
         footerText: 'pdfnative \u2013 Myanmar script coverage verification',
     },
+    // Lao Script — v1.8.0
+    {
+        lang: 'lo',
+        filename: 'alphabet-lao',
+        title: 'ອັກສອນລາວ – Lao Script Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Lao (U+0E80–U+0EFF)' },
+            { label: 'Font', value: 'Noto Sans Lao' },
+            { label: 'Test', value: 'Consonants, leading vowels, tone marks, pali virama' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '8 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Consonants 1', 'ກ ຂ ຄ ງ ຈ ສ ຊ ຍ ດ ຕ', '10', 'Base', 'Ko–To'], type: 'credit', pointed: false },
+            { cells: ['Consonants 2', 'ຖ ທ ນ ບ ປ ຜ ຝ ພ ຟ ມ', '10', 'Base', 'Tho–Mo'], type: 'credit', pointed: false },
+            { cells: ['Leading vowels', 'ເກ ແກ ໂກ ໃກ ໄກ', '5', 'Pre-base', 'Render left of the base'], type: 'debit', pointed: true },
+            { cells: ['Above / below', 'ກິ ກີ ກຶ ກື ກຸ ກູ', '6', 'Dependent', 'Anchored marks'], type: 'credit', pointed: true },
+            { cells: ['Variant forms', 'ປີ ກີ ຊຸ ກຸ', '4', 'Contextual', 'Tall and descender bases'], type: 'debit', pointed: true },
+            { cells: ['Tone marks', 'ກ່ ກ້ ກ໊ ກ໋', '4', 'Tone', 'Stack above a vowel'], type: 'debit', pointed: false },
+            { cells: ['Pali virama', 'ຣ຺ ພຣ຺ະ', '2', 'Below', 'U+0EBA, the Thai phinthu twin'], type: 'debit', pointed: false },
+            { cells: ['Digits', '໐ ໑ ໒ ໓ ໔ ໕ ໖ ໗ ໘ ໙', '10', 'Numerals', 'Lao digits'], type: 'credit', pointed: false },
+            { cells: ['Sample', 'ສະບາຍດີ – ພາສາລາວ', '2 words', 'Words', 'Hello + Lao language'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative – Lao script coverage verification',
+    },
 ];
-

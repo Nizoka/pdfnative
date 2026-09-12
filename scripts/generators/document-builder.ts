@@ -127,14 +127,14 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         }
     }
 
-    // ── Unicode: Multi-language (all 22 scripts) ─────────────────
+    // ── Unicode: Multi-language (all 23 scripts) ─────────────────
     {
         const fontEntries = await loadMultiFontEntries();
-        if (fontEntries.length === 22) {
+        if (fontEntries.length === 23) {
             const params: DocumentParams = {
-                title: 'Multi-Language Document – 22 Scripts',
+                title: 'Multi-Language Document – 23 Scripts',
                 blocks: [
-                    { type: 'heading', text: 'pdfnative – 22 Scripts, One Engine', level: 1 },
+                    { type: 'heading', text: 'pdfnative – 23 Scripts, One Engine', level: 1 },
                     { type: 'paragraph', text: 'This document renders every script supported by pdfnative in a single PDF. Each section contains a native heading, a sample paragraph, and uses automatic font switching via script-aware Unicode block detection. All content is produced from a single DocumentParams object with a shared fontEntries array.' },
 
                     { type: 'heading', text: 'Supported Scripts', level: 2 },
@@ -161,6 +161,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                         { cells: ['Tibetan', 'bo', 'LTR', 'Stacking'], type: 'credit', pointed: true },
                         { cells: ['Khmer', 'km', 'LTR', 'USE-lite'], type: 'credit', pointed: true },
                         { cells: ['Myanmar', 'my', 'LTR', 'USE-lite'], type: 'credit', pointed: true },
+                        { cells: ['Lao', 'lo', 'LTR', 'GSUB + GPOS'], type: 'credit', pointed: true },
                         { cells: ['Amharic (Ethiopic)', 'am', 'LTR', 'Syllabic'], type: 'credit', pointed: false },
                     ] },
 
@@ -238,6 +239,10 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { type: 'heading', text: '\u12A0\u121B\u122D\u129B \u2013 Amharic (Ethiopic)', level: 2 },
                     { type: 'paragraph', text: 'pdfnative \u1260\u12A0\u121B\u122D\u129B \u1241\u12CB\u1295\u124B \u12E8 PDF \u1230\u1290\u12F6\u127D\u1295 \u12ED\u134D\u1325\u122B\u120D\u1363 \u1208\u12A2\u1275\u12EE\u1335\u12EB \u1206\u1204\u12EB\u1275 \u1219\u1209 \u12F5\u130B\u134D \u130B\u122D\u1362' },
 
+                    // Lao (v1.8.0)
+                    { type: 'heading', text: '\u0EA5\u0EB2\u0EA7 \u2013 Lao', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u0EAA\u0EB2\u0EA1\u0EB2\u0E94\u0EAA\u0EC9\u0EB2\u0E87\u0EC0\u0EAD\u0E81\u0EAA\u0EB2\u0E99 PDF \u0E9E\u0EB2\u0EAA\u0EB2\u0EA5\u0EB2\u0EA7 \u0EC4\u0E94\u0EC9\u0E84\u0EBB\u0E9A\u0E96\u0EC9\u0EA7\u0E99.' },
+
                     // Japanese
                     { type: 'heading', text: '\u65E5\u672C\u8A9E \u2013 Japanese', level: 2 },
                     { type: 'paragraph', text: 'pdfnative\u306F\u65E5\u672C\u8A9E\u306EPDF\u6587\u66F8\u3092\u751F\u6210\u3057\u307E\u3059\u3002\u6F22\u5B57\u3001\u3072\u3089\u304C\u306A\u3001\u30AB\u30BF\u30AB\u30CA\u3092CIDFont Type2\u3068Identity-H\u30A8\u30F3\u30B3\u30FC\u30C7\u30A3\u30F3\u30B0\u3067\u5B8C\u5168\u306B\u30B5\u30DD\u30FC\u30C8\u3057\u307E\u3059\u3002' },
@@ -259,9 +264,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { type: 'paragraph', text: 'pdfnative \u05EA\u05D5\u05DE\u05DA \u05DE\u05DC\u05D0 \u05D1\u05E2\u05D1\u05E8\u05D9\u05EA \u05D5\u05D1\u05DB\u05EA\u05D9\u05D1\u05D4 \u05DE\u05D9\u05DE\u05D9\u05DF \u05DC\u05E9\u05DE\u05D0\u05DC \u05E2\u05DD \u05D9\u05D9\u05E9\u05D5\u05DD \u05D0\u05DC\u05D2\u05D5\u05E8\u05D9\u05EA\u05DD BiDi \u05DC\u05E4\u05D9 Unicode UAX #9.' },
 
                     { type: 'heading', text: 'Conclusion', level: 2 },
-                    { type: 'paragraph', text: 'pdfnative handles all 22 scripts with zero external dependencies, full BiDi support, OpenType shaping, and a single shared fontEntries array. This demonstrates the width of the library, not its depth – script-specific sample PDFs in the same folder show the depth of each implementation.' },
+                    { type: 'paragraph', text: 'pdfnative handles all 23 scripts with zero external dependencies, full BiDi support, OpenType shaping, and a single shared fontEntries array. This demonstrates the width of the library, not its depth – script-specific sample PDFs in the same folder show the depth of each implementation.' },
                 ],
-                footerText: 'pdfnative – Multi-language document sample (22 scripts)',
+                footerText: 'pdfnative – Multi-language document sample (23 scripts)',
                 fontEntries,
             };
             ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-multi-language.pdf'), 'document/doc-multi-language.pdf', buildDocumentPDFBytes(params));
@@ -777,7 +782,7 @@ function generateShowcase(ctx: GenerateContext): void {
             { type: 'paragraph', text: 'Standard paragraph with automatic text wrapping.' },
             { type: 'paragraph', text: 'Colored paragraph with custom formatting.', color: '#2563EB' },
             { type: 'heading', text: 'Bullet List', level: 2 },
-            { type: 'list', items: ['Zero external dependencies', '22 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
+            { type: 'list', items: ['Zero external dependencies', '23 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
             { type: 'heading', text: 'Numbered List', level: 2 },
             { type: 'list', items: ['Install: npm install pdfnative', 'Import the builder function', 'Define parameters', 'Generate bytes', 'Write to file'], style: 'numbered' },
             { type: 'heading', text: 'Embedded Table', level: 2 },

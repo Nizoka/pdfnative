@@ -25,6 +25,7 @@ function registerVisualFonts(): void {
         ar: fl(() => import('../../fonts/noto-arabic-data.js')),
         he: fl(() => import('../../fonts/noto-hebrew-data.js')),
         th: fl(() => import('../../fonts/noto-thai-data.js')),
+        lo: fl(() => import('../../fonts/noto-lao-data.js')),
     });
     registered = true;
 }
@@ -98,6 +99,28 @@ export const FIXTURES: readonly Fixture[] = [
                 fontEntries,
             };
             return buildDocumentPDFBytes(params);
+        },
+    },
+    {
+        name: 'lao',
+        build: async () => {
+            registerVisualFonts();
+            const fontEntries = await entries(['lo']);
+            const params: DocumentParams = {
+                title: 'Lao shaping fixture',
+                blocks: [
+                    { type: 'heading', text: 'Lao — leading vowels and contextual marks', level: 1 },
+                    // Leading vowels render left of a base that follows them in memory.
+                    { type: 'paragraph', text: 'ເກ ແກ ໂກ ໃກ ໄກ — ສະບາຍດີ ພາສາລາວ.' },
+                    // Tall and descender bases pull different mark variants.
+                    { type: 'paragraph', text: 'ປີ ກີ ຊຸ ກຸ ງຸ — ກ່ ກ້ ກ໊ ກ໋.' },
+                    // Sara am decomposes; the pali virama sits below its base.
+                    { type: 'paragraph', text: 'ກຳ ພຣ຺ະ — ໐ ໑ ໒ ໓ ໔.' },
+                ],
+                footerText: 'lao fixture',
+                fontEntries,
+            };
+            return buildDocumentPDFBytes(params, { creationDate: new Date('2026-01-01T00:00:00Z') });
         },
     },
 ];

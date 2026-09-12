@@ -2,7 +2,7 @@
  * Download Noto Sans + Noto Emoji TTF fonts for pdfnative development.
  *
  * Fetches Noto Sans variable-font TTFs (incl. Ethiopic, Sinhala, Tibetan,
- * Khmer, Myanmar) and Noto Emoji from the
+ * Khmer, Myanmar, Lao) and Noto Emoji from the
  * google/fonts repository and saves them to fonts/ttf/ with the local
  * filenames used by build-font-data.
  *
@@ -65,6 +65,8 @@ const FONTS: FontEntry[] = [
     { local: 'NotoSansTibetan-Regular.ttf', dir: 'notoseriftibetan', remote: 'NotoSerifTibetan%5Bwght%5D.ttf' },
     { local: 'NotoSansKhmer-Regular.ttf', dir: 'notosanskhmer', remote: 'NotoSansKhmer%5Bwdth%2Cwght%5D.ttf' },
     { local: 'NotoSansMyanmar-Regular.ttf', dir: 'notosansmyanmar', remote: 'NotoSansMyanmar%5Bwdth%2Cwght%5D.ttf' },
+    // ── Lao (v1.8.0) — shaped by the Thai mechanism ──────────────────
+    { local: 'NotoSansLao-Regular.ttf', dir: 'notosanslao', remote: 'NotoSansLao%5Bwdth%2Cwght%5D.ttf' },
     { local: 'NotoSansJP-Regular.ttf', dir: 'notosansjp', remote: 'NotoSansJP%5Bwght%5D.ttf' },
     { local: 'NotoSansKR-Regular.ttf', dir: 'notosanskr', remote: 'NotoSansKR%5Bwght%5D.ttf' },
     { local: 'NotoSansSC-Regular.ttf', dir: 'notosanssc', remote: 'NotoSansSC%5Bwght%5D.ttf' },

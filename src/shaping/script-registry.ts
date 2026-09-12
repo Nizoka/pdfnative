@@ -39,6 +39,18 @@ export const HEBREW_PRES_END = 0xFB4F;
 export const THAI_START = 0x0E00;
 export const THAI_END = 0x0E7F;
 
+// ── Lao (v1.8.0) ─────────────────────────────────────────────────────
+
+/**
+ * Lao Unicode block.
+ *
+ * It starts exactly where Thai ends, so {@link isThaiCodepoint} already
+ * excludes Lao and gains nothing from this addition — the two scripts share
+ * a shaping mechanism, not a range.
+ */
+export const LAO_START = 0x0E80;
+export const LAO_END = 0x0EFF;
+
 // ── Greek ────────────────────────────────────────────────────────────
 
 export const GREEK_START = 0x0370;
@@ -250,6 +262,15 @@ export function isThaiCodepoint(cp: number): boolean {
     return cp >= THAI_START && cp <= THAI_END;
 }
 
+/**
+ * Check if a codepoint falls in the Lao Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isLaoCodepoint(cp: number): boolean {
+    return cp >= LAO_START && cp <= LAO_END;
+}
+
 /** Check if a codepoint falls in any Cyrillic Unicode block. */
 export function isCyrillicCodepoint(cp: number): boolean {
     return (cp >= CYRILLIC_START && cp <= CYRILLIC_END) ||
@@ -403,6 +424,18 @@ export function containsHebrew(text: string): boolean {
 export function containsThai(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isThaiCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any Lao characters.
+ *
+ * @since 1.8.0
+ */
+export function containsLao(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isLaoCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }

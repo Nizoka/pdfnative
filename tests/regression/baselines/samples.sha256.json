@@ -83,6 +83,12 @@
       "size": 345741,
       "since": "1.7.0"
     },
+    "alphabet/alphabet-lao.pdf": {
+      "mode": "bytes",
+      "hash": "f03bcc0bb67f6f8f2e846256439b753b03f31b9cf1487dec36f65485f4e58f3a",
+      "size": 43332,
+      "since": "1.8.0"
+    },
     "alphabet/alphabet-myanmar.pdf": {
       "mode": "bytes",
       "hash": "daaa26636aeb9dd18d35c4a6271ee889eebe32a412408036e2bc77f3a82c5283",
@@ -493,9 +499,9 @@
     },
     "document/doc-multi-language.pdf": {
       "mode": "bytes",
-      "hash": "6c2154e1671e0accfa27a99d6b74f3f4034118f33ed9ee222afc3b6ba5b2c78c",
-      "size": 1952930,
-      "since": "1.7.0"
+      "hash": "1002cd357e28ddd5a6ba91d103e330f74e858329d8e20fd046c67a606855b39e",
+      "size": 1970869,
+      "since": "1.8.0"
     },
     "document/doc-myanmar.pdf": {
       "mode": "bytes",
@@ -745,9 +751,9 @@
     },
     "financial/sample-multi.pdf": {
       "mode": "bytes",
-      "hash": "2961bd49f2ce6ff81449cad62e9c813494044d97a1d2081ece7f1364f15eedfa",
-      "size": 9499223,
-      "since": "1.7.0"
+      "hash": "5bf5c51074bbc9bd8eb174d3d815f5507570e86c3cbdfaf59415f43655ba47bb",
+      "size": 9678677,
+      "since": "1.8.0"
     },
     "financial/sample-pagination.pdf": {
       "mode": "bytes",
@@ -1411,7 +1417,7 @@
     },
     "tools/font-compiler-report.pdf": {
       "mode": "bytes",
-      "hash": "8b2bc7e75e4a01491bd9977a2b51bd570b7f92d4578ae35a33c298e6eaa7b00f",
+      "hash": "4eb18cbb68f8645c9adf05ec75c5d3afeb3a9bc93cc16ddd3ee8fdb62de43a22",
       "size": 6707,
       "since": "1.8.0"
     },
