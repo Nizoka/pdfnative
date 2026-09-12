@@ -9,10 +9,21 @@
  *   - COLR v0 — layered solid fills.
  *   - COLR v1 — PaintColrLayers, PaintGlyph, PaintColrGlyph, PaintSolid,
  *     PaintLinearGradient, PaintRadialGradient, PaintSweepGradient,
- *     PaintTransform, PaintTranslate, PaintScale (+ around-center),
- *     PaintComposite (blend-mode-mappable composite modes).
+ *     **every transform paint** (formats 12–31: transform, translate, the
+ *     four scale forms, rotate, skew, each with its around-centre and
+ *     variable variant), and PaintComposite for the composite modes PDF can
+ *     express as a blend mode.
  *
- * Unsupported paints (variable paints, Porter-Duff structural composite
+ * Variable paints (v1.8.0). Each odd format 3–31 is the variable twin of the
+ * even one below it: the same fields plus an index into the font's variation
+ * store. At the default instance every delta is zero, so the stored values
+ * already are the resolved values and the index is never read. pdfnative
+ * resolves COLR exactly once, when a font module is compiled, against that
+ * default instance — the subsetter does not even keep `fvar`/`gvar` — so
+ * this is exact rather than approximate. Instantiating a colour font at some
+ * other axis position is not supported and would need the variation store.
+ *
+ * Unsupported paints (Porter-Duff structural composite
  * modes Clear/Src/Dest/Xor/…) cause the affected glyph to be skipped so the
  * caller can fall back to the monochrome emoji font. This keeps output
  * correct (never garbled) while covering the overwhelming majority of
@@ -133,11 +144,23 @@ function resolveColor(ctx: ColrContext, paletteIndex: number, alpha: number): Cp
 
 const EXTEND: GradientExtend[] = ['pad', 'repeat', 'reflect'];
 
-/** Read a ColorLine at `offset`, baking `m` into nothing (stops are scalar). */
-function readColorLine(ctx: ColrContext, offset: number): { stops: ColorStop[]; extend: GradientExtend } {
+/**
+ * Read a ColorLine at `offset`. Stops are scalar, so no matrix applies.
+ *
+ * A VarColorLine carries the same fields with four extra bytes per stop —
+ * that stop's index into the variation store — so the only difference here
+ * is the stride. See {@link readTransformPaint} for why the index itself is
+ * never read.
+ */
+function readColorLine(
+    ctx: ColrContext,
+    offset: number,
+    variable = false,
+): { stops: ColorStop[]; extend: GradientExtend } {
     const { view } = ctx;
     const extend = EXTEND[view.getUint8(offset)] ?? 'pad';
     const numStops = view.getUint16(offset + 1);
+    const stride = variable ? 10 : 6;
     const stops: ColorStop[] = [];
     let p = offset + 3;
     for (let i = 0; i < numStops; i++) {
@@ -145,9 +168,14 @@ function readColorLine(ctx: ColrContext, offset: number): { stops: ColorStop[]; 
         const paletteIndex = view.getUint16(p + 2);
         const alpha = f2dot14(view, p + 4);
         stops.push({ offset: stopOffset, color: resolveColor(ctx, paletteIndex, alpha) });
-        p += 6;
+        p += stride;
     }
     return { stops, extend };
+}
+
+/** Whether `m` is the identity, by value. */
+function isIdentity(m: Mat): boolean {
+    return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
 }
 
 /** Apply matrix `m` to a point. */
@@ -170,8 +198,18 @@ function avgScale(m: Mat): number {
 function resolveFill(ctx: ColrContext, offset: number, m: Mat): ColorPaint {
     const { view } = ctx;
     const format = view.getUint8(offset);
-    switch (format) {
-        case 2: { // PaintSolid
+
+    // Formats 12–31 are the transforms, plain and variable alike.
+    const transform = readTransformPaint(view, offset, format);
+    if (transform) return resolveFill(ctx, offset + transform.sub, compose(m, transform.t));
+
+    // Each odd format below is the variable twin of the even one above it:
+    // identical fields plus a trailing variation index, and a colour line
+    // whose stops are four bytes wider. See readTransformPaint for why the
+    // index is not read.
+    const variable = (format & 1) === 1;
+    switch (format & ~1) {
+        case 2: { // PaintSolid / PaintVarSolid
             const paletteIndex = view.getUint16(offset + 1);
             const alpha = f2dot14(view, offset + 3);
             return { kind: 'solid', color: resolveColor(ctx, paletteIndex, alpha) };
@@ -181,7 +219,7 @@ function resolveFill(ctx: ColrContext, offset: number, m: Mat): ColorPaint {
             const x0 = view.getInt16(offset + 4), y0 = view.getInt16(offset + 6);
             const x1 = view.getInt16(offset + 8), y1 = view.getInt16(offset + 10);
             // (x2,y2) is the rotation vector; for axial PDF shading we use p0→p1.
-            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset);
+            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset, variable);
             return { kind: 'linear', p0: apply(m, x0, y0), p1: apply(m, x1, y1), stops, extend };
         }
         case 6: { // PaintRadialGradient
@@ -190,17 +228,20 @@ function resolveFill(ctx: ColrContext, offset: number, m: Mat): ColorPaint {
             const r0 = view.getUint16(offset + 8);
             const x1 = view.getInt16(offset + 10), y1 = view.getInt16(offset + 12);
             const r1 = view.getUint16(offset + 14);
-            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset);
+            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset, variable);
             const s = avgScale(m);
             return { kind: 'radial', c0: apply(m, x0, y0), r0: r0 * s, c1: apply(m, x1, y1), r1: r1 * s, stops, extend };
         }
         case 8: { // PaintSweepGradient (conic) — v1.4.0
             const colorLineOffset = getUint24(view, offset + 1);
             const cx = view.getInt16(offset + 4), cy = view.getInt16(offset + 6);
-            // Angles: F2Dot14 value × 180° (counter-clockwise from +x axis).
-            const startAngle = f2dot14(view, offset + 8) * 180;
-            const endAngle = f2dot14(view, offset + 10) * 180;
-            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset);
+            // Sweep angles are BiasedAngles: F2Dot14 fractions of a half turn
+            // carrying a bias of 1.0, so that a full +360° can be encoded.
+            // Dropping the bias put every sweep gradient exactly half a turn
+            // out (fixed in v1.8.0).
+            const startAngle = (f2dot14(view, offset + 8) + 1) * 180;
+            const endAngle = (f2dot14(view, offset + 10) + 1) * 180;
+            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset, variable);
             // Fold the matrix rotation into the angles; translate the centre.
             const rot = Math.atan2(m[1], m[0]) * 180 / Math.PI;
             return {
@@ -212,24 +253,86 @@ function resolveFill(ctx: ColrContext, offset: number, m: Mat): ColorPaint {
                 extend,
             };
         }
-        case 12: { // PaintTransform → fold into inner transform
-            const subOffset = getUint24(view, offset + 1);
-            const transformOffset = getUint24(view, offset + 4);
-            const t = readAffine(view, offset + transformOffset);
-            return resolveFill(ctx, offset + subOffset, compose(m, t));
-        }
-        case 14: { // PaintTranslate
-            const subOffset = getUint24(view, offset + 1);
-            const dx = view.getInt16(offset + 4), dy = view.getInt16(offset + 6);
-            return resolveFill(ctx, offset + subOffset, compose(m, [1, 0, 0, 1, dx, dy]));
-        }
-        case 16: { // PaintScale
-            const subOffset = getUint24(view, offset + 1);
-            const sx = f2dot14(view, offset + 4), sy = f2dot14(view, offset + 6);
-            return resolveFill(ctx, offset + subOffset, compose(m, [sx, 0, 0, sy, 0, 0]));
-        }
         default:
             throw new UnsupportedPaint(`fill paint format ${format}`);
+    }
+}
+
+/**
+ * An `Angle`, in radians. COLR stores angles as F2Dot14 fractions of a half
+ * turn, so 1.0 is 180°.
+ */
+function angleRad(view: DataView, pos: number): number {
+    return f2dot14(view, pos) * Math.PI;
+}
+
+/** Rotation by `rad`, counter-clockwise. */
+function rotation(rad: number): Mat {
+    const c = Math.cos(rad);
+    const s = Math.sin(rad);
+    return [c, s, -s, c, 0, 0];
+}
+
+/** Skew by the two angles, in radians. */
+function skewing(xRad: number, yRad: number): Mat {
+    return [1, Math.tan(yRad), Math.tan(xRad), 1, 0, 0];
+}
+
+/** `t` applied about `(cx, cy)` rather than about the origin. */
+function aroundCenter(t: Mat, cx: number, cy: number): Mat {
+    return compose([1, 0, 0, 1, cx, cy], compose(t, [1, 0, 0, 1, -cx, -cy]));
+}
+
+/**
+ * Read any of the twenty transform paints (formats 12–31): the matrix it
+ * describes and the offset of the paint it wraps. Returns `null` for a
+ * format outside that range.
+ *
+ * Each odd format is the variable twin of the even one below it — the same
+ * fields followed by a `VarIndexBase`, an index into the font's variation
+ * store. **At the default instance every delta is zero**, so the stored
+ * values already are the resolved values and the index is never needed.
+ * pdfnative resolves COLR exactly once, when the font module is compiled,
+ * against that default instance — the subsetter does not even keep `fvar`
+ * or `gvar` — so reading a variable paint as its plain twin is exact here,
+ * not an approximation. Instantiating a colour font on a non-default axis
+ * position would need the variation store, and is not supported.
+ */
+function readTransformPaint(
+    view: DataView,
+    offset: number,
+    format: number,
+): { sub: number; t: Mat } | null {
+    if (format < 12 || format > 31) return null;
+    const sub = getUint24(view, offset + 1);
+    const i16 = (at: number): number => view.getInt16(offset + at);
+    const f14 = (at: number): number => f2dot14(view, offset + at);
+    const rad = (at: number): number => angleRad(view, offset + at);
+
+    // `format & ~1` folds each variable twin onto its plain form.
+    switch (format & ~1) {
+        case 12: // PaintTransform
+            return { sub, t: readAffine(view, offset + getUint24(view, offset + 4)) };
+        case 14: // PaintTranslate
+            return { sub, t: [1, 0, 0, 1, i16(4), i16(6)] };
+        case 16: // PaintScale
+            return { sub, t: [f14(4), 0, 0, f14(6), 0, 0] };
+        case 18: // PaintScaleAroundCenter
+            return { sub, t: aroundCenter([f14(4), 0, 0, f14(6), 0, 0], i16(8), i16(10)) };
+        case 20: // PaintScaleUniform
+            return { sub, t: [f14(4), 0, 0, f14(4), 0, 0] };
+        case 22: // PaintScaleUniformAroundCenter
+            return { sub, t: aroundCenter([f14(4), 0, 0, f14(4), 0, 0], i16(6), i16(8)) };
+        case 24: // PaintRotate
+            return { sub, t: rotation(rad(4)) };
+        case 26: // PaintRotateAroundCenter
+            return { sub, t: aroundCenter(rotation(rad(4)), i16(6), i16(8)) };
+        case 28: // PaintSkew
+            return { sub, t: skewing(rad(4), rad(6)) };
+        case 30: // PaintSkewAroundCenter
+            return { sub, t: aroundCenter(skewing(rad(4), rad(6)), i16(8), i16(10)) };
+        default:
+            return null;
     }
 }
 
@@ -254,6 +357,16 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
     if (depth > 16) throw new UnsupportedPaint('paint recursion too deep');
     const { view } = ctx;
     const format = view.getUint8(offset);
+
+    // Formats 12–31 are the transforms, plain and variable alike. They fold
+    // into the accumulated matrix and recurse; nothing else about them is
+    // structural.
+    const transform = readTransformPaint(view, offset, format);
+    if (transform) {
+        collectLayers(ctx, offset + transform.sub, compose(m, transform.t), out, depth + 1, blendMode);
+        return;
+    }
+
     switch (format) {
         case 1: { // PaintColrLayers
             const numLayers = view.getUint8(offset + 1);
@@ -270,7 +383,10 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
             const subOffset = getUint24(view, offset + 1);
             const glyphId = view.getUint16(offset + 4);
             const paint = resolveFill(ctx, offset + subOffset, IDENTITY);
-            const layer: ColorLayer = m === IDENTITY ? { glyphId, paint } : { glyphId, paint, transform: m };
+            // Structural, not `m === IDENTITY`: that only held because every
+            // matrix helper returns a fresh array, which is a property no
+            // future helper is obliged to keep.
+            const layer: ColorLayer = isIdentity(m) ? { glyphId, paint } : { glyphId, paint, transform: m };
             out.push(blendMode ? { ...layer, blendMode } : layer);
             return;
         }
@@ -281,25 +397,7 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
             collectLayers(ctx, paintOffset, m, out, depth + 1, blendMode);
             return;
         }
-        case 12: { // PaintTransform
-            const subOffset = getUint24(view, offset + 1);
-            const transformOffset = getUint24(view, offset + 4);
-            const t = readAffine(view, offset + transformOffset);
-            collectLayers(ctx, offset + subOffset, compose(m, t), out, depth + 1, blendMode);
-            return;
-        }
-        case 14: { // PaintTranslate
-            const subOffset = getUint24(view, offset + 1);
-            const dx = view.getInt16(offset + 4), dy = view.getInt16(offset + 6);
-            collectLayers(ctx, offset + subOffset, compose(m, [1, 0, 0, 1, dx, dy]), out, depth + 1, blendMode);
-            return;
-        }
-        case 16: { // PaintScale
-            const subOffset = getUint24(view, offset + 1);
-            const sx = f2dot14(view, offset + 4), sy = f2dot14(view, offset + 6);
-            collectLayers(ctx, offset + subOffset, compose(m, [sx, 0, 0, sy, 0, 0]), out, depth + 1, blendMode);
-            return;
-        }
+        // Formats 12–31 are handled before this switch; see below.
         case 32: { // PaintComposite — v1.4.0, source-degradation v1.7.0
             const sourceOffset = getUint24(view, offset + 1);
             const mode = view.getUint8(offset + 4);
