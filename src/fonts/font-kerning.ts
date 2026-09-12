@@ -16,7 +16,35 @@
  * @module fonts/font-kerning
  */
 
-import type { FontData, TextRun } from '../types/pdf-types.js';
+import type { FontData, TextRun, KernTable } from '../types/pdf-types.js';
+
+/**
+ * Adjustment for one glyph pair, in design units, or 0 when they do not kern.
+ *
+ * Explicit glyph pairs win over class-based subtables, and the first
+ * subtable that yields an adjustment wins — OpenType applies one lookup per
+ * pair, not the sum of all of them.
+ *
+ * @since 1.8.0
+ */
+export function kernPair(table: KernTable, left: number, right: number): number {
+    const direct = table.p?.[left]?.[right];
+    if (direct !== undefined) return direct;
+
+    if (table.c) {
+        for (const sub of table.c) {
+            // The left glyph is gated by the subtable's coverage, so absence
+            // means the subtable does not apply. The right glyph is not: a
+            // glyph the ClassDef omits is class 0 (OpenType §ClassDef).
+            const c1 = sub.l[left];
+            if (c1 === undefined) continue;
+            const c2 = sub.r[right] ?? 0;
+            const adjust = sub.m[c1 * sub.n + c2];
+            if (adjust !== undefined && adjust !== 0) return adjust;
+        }
+    }
+    return 0;
+}
 
 /**
  * PDF's `TJ` numbers are thousandths of an em, **subtracted** from the pen
@@ -64,7 +92,7 @@ export function buildKernedTJ(
     for (let i = 0; i < gids.length; i++) {
         run += hex4(gids[i]);
         const next = i + 1 < gids.length ? gids[i + 1] : -1;
-        const adjust = next >= 0 ? (table[gids[i]]?.[next] ?? 0) : 0;
+        const adjust = next >= 0 ? kernPair(table, gids[i], next) : 0;
         if (adjust !== 0) {
             parts.push(`<${run}>`);
             run = '';

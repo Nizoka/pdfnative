@@ -60,10 +60,18 @@ class TTFReader {
 function isIntentionallyBlank(cp) {
     return cp <= 0x20                       // C0 controls + SPACE
         || cp === 0xA0                      // NO-BREAK SPACE
+        || cp === 0x034F                    // COMBINING GRAPHEME JOINER
+        || cp === 0x061C                    // ARABIC LETTER MARK (bidi control)
+        || cp === 0x115F || cp === 0x1160   // Hangul choseong/jungseong fillers
+        || cp === 0x17B4 || cp === 0x17B5   // Khmer inherent vowels
+        || cp === 0x180E                    // MONGOLIAN VOWEL SEPARATOR
         || (cp >= 0x2000 && cp <= 0x200F)   // en/em spaces, ZWSP, ZWNJ, ZWJ, LRM/RLM
         || (cp >= 0x2028 && cp <= 0x202F)   // separators, embedding controls, NNBSP
         || (cp >= 0x205F && cp <= 0x206F)   // MMSP, word joiner, invisible operators
         || cp === 0x3000                    // IDEOGRAPHIC SPACE
+        || cp === 0x3164                    // HANGUL FILLER
+        || (cp >= 0xFE00 && cp <= 0xFE0F)   // variation selectors
+        || (cp >= 0xFFF9 && cp <= 0xFFFB)   // interlinear annotation
         || cp === 0xFEFF;                   // ZERO WIDTH NO-BREAK SPACE
 }
 
@@ -745,29 +753,41 @@ function readXAdvance(r, valueFormat) {
 }
 
 /**
- * Parse GPOS LookupType 2 (PairPos) into `{ leftGid: { rightGid: adjust } }`,
- * in design units.
+ * Parse GPOS LookupType 2 (PairPos) into a compact kerning table.
  *
  * Kerning is the most visible typographic refinement a font carries and
  * pdfnative extracted none of it: the generator skipped every GPOS lookup
  * that was not MarkToBase or MarkToMark, so "AV", "To" and "Yo" were set with
  * their nominal advances in every script.
  *
- * Both subtable formats are read. Format 1 lists glyph pairs directly;
- * format 2 is class-based and is expanded to glyph pairs here, so the runtime
- * needs nothing but a two-level lookup. Only non-zero adjustments are kept.
+ * The shape mirrors how OpenType stores it, deliberately:
+ *
+ *   { p: { leftGid: { rightGid: adjust } },
+ *     c: [ { l: { gid: class }, r: { gid: class }, n: class2Count,
+ *            m: { c1 * n + c2: adjust } } ] }
+ *
+ * `p` holds format-1 subtables, which list glyph pairs directly. `c` holds
+ * format-2 subtables, which are class-based, with a SPARSE matrix keyed by
+ * the flattened class index.
+ *
+ * Expanding the class matrix to glyph pairs was tried first and rejected: it
+ * turned Noto Sans's kerning into 71 094 pairs and 594 KB, a fifth of the
+ * module, paid at parse time by every consumer whether or not they enable
+ * kerning. Keeping the class form costs a second lookup and a fraction of the
+ * bytes.
  *
  * Returns `null` when the font carries no pair positioning.
  */
 function parseTTFGPOSKerning(r, tables) {
     if (!tables['GPOS']) return null;
-    const kern = {};
+    const pairMap = {};
+    const classSubtables = [];
     let pairs = 0;
 
     const add = (left, right, adjust) => {
         if (adjust === 0) return;
-        let row = kern[left];
-        if (row === undefined) { row = {}; kern[left] = row; }
+        let row = pairMap[left];
+        if (row === undefined) { row = {}; pairMap[left] = row; }
         if (row[right] === undefined) pairs++;
         row[right] = adjust;
     };
@@ -851,27 +871,50 @@ function parseTTFGPOSKerning(r, tables) {
                     const cd1 = readClassDef(r, stBase + classDef1Offset);
                     const cd2 = readClassDef(r, stBase + classDef2Offset);
 
-                    // Glyphs per class2, so class pairs expand to glyph pairs.
-                    const byClass2 = new Map();
-                    for (const [gidStr, c] of Object.entries(cd2)) {
-                        let list = byClass2.get(c);
-                        if (!list) { list = []; byClass2.set(c, list); }
-                        list.push(Number(gidStr));
-                    }
-
-                    const rec1Size = valueRecordSize(valueFormat1) + valueRecordSize(valueFormat2);
+                    // Only classes the coverage table can actually reach.
+                    const liveClass1 = new Set();
                     for (const left of covered) {
                         const c1 = cd1[left] ?? 0;
-                        if (c1 >= class1Count) continue;
-                        for (let c2 = 1; c2 < class2Count; c2++) { // class 0 is "everything else"
-                            const rights = byClass2.get(c2);
-                            if (!rights || rights.length === 0) continue;
-                            r.seek(recordsBase + (c1 * class2Count + c2) * rec1Size);
+                        if (c1 < class1Count) liveClass1.add(c1);
+                    }
+                    const liveClass2 = new Set(Object.values(cd2).filter(c => c < class2Count));
+
+                    const recSize = valueRecordSize(valueFormat1) + valueRecordSize(valueFormat2);
+                    const matrix = {};
+                    let cells = 0;
+                    for (const c1 of liveClass1) {
+                        for (const c2 of liveClass2) {
+                            r.seek(recordsBase + (c1 * class2Count + c2) * recSize);
                             const adjust = readXAdvance(r, valueFormat1);
                             if (adjust === 0) continue;
-                            for (const right of rights) add(left, right, adjust);
+                            matrix[c1 * class2Count + c2] = adjust;
+                            cells++;
                         }
                     }
+                    if (cells === 0) continue;
+
+                    // Keep only the class assignments the matrix can use.
+                    const usedC1 = new Set();
+                    const usedC2 = new Set();
+                    for (const key of Object.keys(matrix)) {
+                        const k = Number(key);
+                        usedC1.add(Math.floor(k / class2Count));
+                        usedC2.add(k % class2Count);
+                    }
+                    const left = {};
+                    for (const gid of covered) {
+                        const c1 = cd1[gid] ?? 0;
+                        if (usedC1.has(c1)) left[gid] = c1;
+                    }
+                    // Class 0 is the ClassDef default, so glyphs in it are
+                    // left out and the runtime falls back to 0. Spelling them
+                    // out would list most of the font for no information.
+                    const right = {};
+                    for (const [gidStr, c2] of Object.entries(cd2)) {
+                        if (c2 !== 0 && usedC2.has(c2)) right[Number(gidStr)] = c2;
+                    }
+                    classSubtables.push({ l: left, r: right, n: class2Count, m: matrix });
+                    pairs += cells;
                 }
             }
         }
@@ -879,7 +922,11 @@ function parseTTFGPOSKerning(r, tables) {
         console.warn('[build-font-data] GPOS kerning parse error (non-fatal):', e.message);
         return null;
     }
-    return pairs > 0 ? kern : null;
+    if (pairs === 0) return null;
+    return {
+        p: Object.keys(pairMap).length > 0 ? pairMap : null,
+        c: classSubtables.length > 0 ? classSubtables : null,
+    };
 }
 
 function parseTTFGPOS(r, tables) {
@@ -1055,13 +1102,15 @@ function generateModule(fontName, parsed, ttfBase64) {
         })
         .join(',');
 
-    // Compact kerning: { leftGid: { rightGid: adjustment } }, design units
-    const kernEntries = Object.entries(kern || {})
-        .map(([left, row]) => {
-            const inner = Object.entries(row).map(([k, v]) => `${k}:${v}`).join(',');
-            return `${left}:{${inner}}`;
-        })
-        .join(',');
+    // Compact kerning, mirroring the OpenType shape (see parseTTFGPOSKerning).
+    const numMap = (o) => `{${Object.entries(o).map(([k, v]) => `${k}:${v}`).join(',')}}`;
+    const kernLiteral = kern === null ? 'null' : (() => {
+        const p = kern.p === null ? 'null'
+            : `{${Object.entries(kern.p).map(([l, row]) => `${l}:${numMap(row)}`).join(',')}}`;
+        const c = kern.c === null ? 'null'
+            : `[${kern.c.map(s => `{l:${numMap(s.l)},r:${numMap(s.r)},n:${s.n},m:${numMap(s.m)}}`).join(',')}]`;
+        return `{p:${p},c:${c}}`;
+    })();
 
     // Compact per-feature single substitutions: { tag: { fromGid: toGid } }
     const featuresEntries = Object.entries(features || {})
@@ -1145,10 +1194,13 @@ export const ligatures = {${ligaturesEntries}};
 // lookup in the font, so a caller can ask for tabular figures alone.
 export const features = ${features ? `{${featuresEntries}}` : 'null'};
 
-// GPOS PairPos kerning (v1.8.0) — { leftGid: { rightGid: adjustment } } in
-// design units, negative to pull the pair together. Class-based subtables are
-// expanded to glyph pairs here so the runtime needs only a two-level lookup.
-export const kern = ${kern ? `{${kernEntries}}` : 'null'};
+// GPOS PairPos kerning (v1.8.0), design units, negative pulls a pair together.
+//   p = format-1 glyph pairs        { leftGid: { rightGid: adjust } }
+//   c = format-2 class subtables    [{ l, r, n, m }] with a sparse matrix
+//       keyed by (class1 * n + class2)
+// The class form is kept rather than expanded: expanding Noto Sans produced
+// 71 094 pairs and 594 KB, paid at parse time by every consumer.
+export const kern = ${kernLiteral};
 
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)

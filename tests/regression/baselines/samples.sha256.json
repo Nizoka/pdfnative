@@ -1,5 +1,5 @@
 {
-  "$comment": "Fingerprints of every sample in test-output/. Regenerate deliberately with `npx tsx scripts/verify-samples.ts --update`, and say why in the release notes: a changed hash means existing output changed. Mode `bytes` is a SHA-256 of the file; mode `semantic` is a SHA-256 of a canonical projection of the decrypted document, used for encrypted samples whose bytes are CSPRNG-derived and can never repeat. Each entry's `since` is the release its reference was captured at and is carried forward untouched, so the chain 1.7.0 -> 1.8.0 -> 1.9.0 stays auditable.",
+  "$comment": "Fingerprints of every sample in test-output/. Regenerate deliberately with `npx tsx scripts/verify-samples.ts --update`, and say why in the release notes: a changed hash means existing output changed. Mode `bytes` is a SHA-256 of the file; mode `semantic` is a SHA-256 of a canonical projection of the decrypted document, used for encrypted samples whose bytes are CSPRNG-derived and can never repeat. Each entry's `since` names the release whose output the hash is: it is carried forward untouched while the sample is unchanged, and moves to the release doing the rebaseline when the hash changes, so the chain 1.7.0 -> 1.8.0 -> 1.9.0 stays auditable and every re-anchoring is visible in the diff.",
   "baselineVersion": "1.8.0",
   "provenance": "The 1.7.0 entries were verified against a v1.7.0 git worktree carrying only the determinism plumbing (pinned creation instant, TZ=UTC): 233 of 242 samples fingerprinted identically. The nine stamped 1.8.0 are the ones whose v1.7.0 output was non-deterministic by construction (a Math.random() fixture, an unpinned incremental /ModDate, and seven signature samples whose /M and CMS signingTime defaulted to the wall clock), so no earlier reference could exist for them.",
   "creationDate": "2026-01-01T00:00:00.000Z",
@@ -1411,9 +1411,9 @@
     },
     "tools/font-compiler-report.pdf": {
       "mode": "bytes",
-      "hash": "05da7b7815f0fc346c3e795e1228fb6151ab6bad6c088142e853a0ce13461667",
+      "hash": "8b2bc7e75e4a01491bd9977a2b51bd570b7f92d4578ae35a33c298e6eaa7b00f",
       "size": 6707,
-      "since": "1.7.0"
+      "since": "1.8.0"
     },
     "typography/align-justified.pdf": {
       "mode": "bytes",

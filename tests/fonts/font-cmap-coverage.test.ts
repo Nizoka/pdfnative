@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { FontData } from '../../src/types/pdf-types.js';
+import { isIntentionallyBlank } from '../../src/tools/font-compiler.js';
 import * as notoPolish from '../../fonts/noto-polish-data.js';
 import * as notoGreek from '../../fonts/noto-greek-data.js';
 import * as notoSans from '../../fonts/noto-sans-data.js';
@@ -37,16 +38,8 @@ function outlineFlags(ttfPath: string): { numGlyphs: number; has: Uint8Array } {
     return { numGlyphs, has };
 }
 
-/** Characters that are meant to be blank; mirrors the generator's rule. */
-function intentionallyBlank(cp: number): boolean {
-    return cp <= 0x20
-        || cp === 0xA0
-        || (cp >= 0x2000 && cp <= 0x200F)
-        || (cp >= 0x2028 && cp <= 0x202F)
-        || (cp >= 0x205F && cp <= 0x206F)
-        || cp === 0x3000
-        || cp === 0xFEFF;
-}
+// The rule itself is imported, never restated: a second copy would drift the
+// moment the first one changes, which is the bug this file guards against.
 
 describe('bundled cmap coverage', () => {
     const cases: readonly [string, FontData, string][] = [
@@ -63,7 +56,7 @@ describe('bundled cmap coverage', () => {
             const offenders: string[] = [];
             for (const [cpStr, gid] of Object.entries(fd.cmap)) {
                 const cp = Number(cpStr);
-                if (has[gid] !== 1 && !intentionallyBlank(cp)) {
+                if (has[gid] !== 1 && !isIntentionallyBlank(cp)) {
                     offenders.push(`U+${cp.toString(16).toUpperCase().padStart(4, '0')}→${gid}`);
                 }
             }

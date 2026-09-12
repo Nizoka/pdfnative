@@ -63,11 +63,12 @@ export interface FontDataObject {
      */
     readonly features: Record<string, Record<number, number>> | null;
     /**
-     * GPOS pair kerning: `{ leftGid: { rightGid: adjustment } }` in design
-     * units, or `null` when the font carries no pair positioning.
+     * GPOS pair kerning in design units, or `null` when the font carries no
+     * pair positioning. `p` holds explicit glyph pairs, `c` the class-based
+     * subtables kept in their compact OpenType form.
      * @since 1.8.0
      */
-    readonly kern: Record<number, Record<number, number>> | null;
+    readonly kern: RawKern | null;
     /** GPOS MarkToBase anchors. */
     readonly markAnchors: {
         readonly marks: Record<number, [number, number, number]>;
@@ -113,6 +114,17 @@ interface RawMarkAnchors {
         mark2Classes: Record<number, MarkAnchorObj>;
     };
 }
+interface RawKernClass {
+    l: Record<number, number>;
+    r: Record<number, number>;
+    n: number;
+    m: Record<number, number>;
+}
+interface RawKern {
+    p: Record<number, Record<number, number>> | null;
+    c: RawKernClass[] | null;
+}
+
 interface RawParsed {
     metrics: {
         unitsPerEm: number; ascent: number; descent: number; capHeight: number;
@@ -124,7 +136,7 @@ interface RawParsed {
     gsub: Record<number, number>;
     ligatures: Record<number, number[][]>;
     features: Record<string, Record<number, number>> | null;
-    kern: Record<number, Record<number, number>> | null;
+    kern: RawKern | null;
     markAnchors: RawMarkAnchors;
     name?: string;
 }
@@ -240,19 +252,36 @@ function parseGSUBSingle(r: TTFReader, tables: TableDir): Record<number, number>
 // ── Glyph outline presence (loca) ────────────────────────────────────
 
 /**
- * Code points that are *meant* to have no outline and must stay in the cmap
- * even though their glyph is empty: controls and the whole space family,
- * zero-width joiners, separators and the bidi isolates.
+ * Whether a code point is *meant* to have no outline, and so must stay in a
+ * font's cmap even though its glyph is empty.
  *
- * Must match `isIntentionallyBlank` in `tools/build-font-data.cjs`.
+ * Covers controls and the whole space family, zero-width joiners, separators,
+ * the bidi isolates and marks (including U+061C ARABIC LETTER MARK), the
+ * Hangul and Khmer fillers, variation selectors and interlinear annotation.
+ *
+ * Exported because the rule must not be restated anywhere: a second copy that
+ * drifts silently re-creates the bug this exists to prevent. The reference
+ * CLI `tools/build-font-data.cjs` keeps its own copy only because it is
+ * CommonJS and cannot import this module; the two are held together by the
+ * byte-identity check between the generators.
+ *
+ * @since 1.8.0
  */
-function isIntentionallyBlank(cp: number): boolean {
+export function isIntentionallyBlank(cp: number): boolean {
     return cp <= 0x20
         || cp === 0xA0
+        || cp === 0x034F
+        || cp === 0x061C
+        || cp === 0x115F || cp === 0x1160
+        || cp === 0x17B4 || cp === 0x17B5
+        || cp === 0x180E
         || (cp >= 0x2000 && cp <= 0x200F)
         || (cp >= 0x2028 && cp <= 0x202F)
         || (cp >= 0x205F && cp <= 0x206F)
         || cp === 0x3000
+        || cp === 0x3164
+        || (cp >= 0xFE00 && cp <= 0xFE0F)
+        || (cp >= 0xFFF9 && cp <= 0xFFFB)
         || cp === 0xFEFF;
 }
 
@@ -518,15 +547,16 @@ function readXAdvance(r: TTFReader, valueFormat: number): number {
  * Parse GPOS LookupType 2 into `{ leftGid: { rightGid: adjust } }`, design
  * units. Must mirror `parseTTFGPOSKerning` in `tools/build-font-data.cjs`.
  */
-function parseGPOSKerning(r: TTFReader, tables: TableDir): Record<number, Record<number, number>> | null {
+function parseGPOSKerning(r: TTFReader, tables: TableDir): RawKern | null {
     if (!tables['GPOS']) return null;
-    const kern: Record<number, Record<number, number>> = {};
+    const pairMap: Record<number, Record<number, number>> = {};
+    const classSubtables: RawKernClass[] = [];
     let pairs = 0;
 
     const add = (left: number, right: number, adjust: number): void => {
         if (adjust === 0) return;
-        let row = kern[left];
-        if (row === undefined) { row = {}; kern[left] = row; }
+        let row = pairMap[left];
+        if (row === undefined) { row = {}; pairMap[left] = row; }
         if (row[right] === undefined) pairs++;
         row[right] = adjust;
     };
@@ -604,33 +634,59 @@ function parseGPOSKerning(r: TTFReader, tables: TableDir): Record<number, Record
                     const cd1 = readClassDef(r, stBase + classDef1Offset);
                     const cd2 = readClassDef(r, stBase + classDef2Offset);
 
-                    const byClass2 = new Map<number, number[]>();
-                    for (const [gidStr, c] of Object.entries(cd2)) {
-                        let list = byClass2.get(c);
-                        if (!list) { list = []; byClass2.set(c, list); }
-                        list.push(Number(gidStr));
+                    const liveClass1 = new Set<number>();
+                    for (const g of covered) {
+                        const c1 = cd1[g] ?? 0;
+                        if (c1 < class1Count) liveClass1.add(c1);
                     }
+                    const liveClass2 = new Set(Object.values(cd2).filter(c => c < class2Count));
 
                     const recSize = valueRecordSize(valueFormat1) + valueRecordSize(valueFormat2);
-                    for (const left of covered) {
-                        const c1 = cd1[left] ?? 0;
-                        if (c1 >= class1Count) continue;
-                        for (let c2 = 1; c2 < class2Count; c2++) {
-                            const rights = byClass2.get(c2);
-                            if (!rights || rights.length === 0) continue;
+                    const matrix: Record<number, number> = {};
+                    let cells = 0;
+                    for (const c1 of liveClass1) {
+                        for (const c2 of liveClass2) {
                             r.seek(recordsBase + (c1 * class2Count + c2) * recSize);
                             const adjust = readXAdvance(r, valueFormat1);
                             if (adjust === 0) continue;
-                            for (const right of rights) add(left, right, adjust);
+                            matrix[c1 * class2Count + c2] = adjust;
+                            cells++;
                         }
                     }
+                    if (cells === 0) continue;
+
+                    const usedC1 = new Set<number>();
+                    const usedC2 = new Set<number>();
+                    for (const key of Object.keys(matrix)) {
+                        const k = Number(key);
+                        usedC1.add(Math.floor(k / class2Count));
+                        usedC2.add(k % class2Count);
+                    }
+                    const left: Record<number, number> = {};
+                    for (const gid of covered) {
+                        const c1 = cd1[gid] ?? 0;
+                        if (usedC1.has(c1)) left[gid] = c1;
+                    }
+                    // Class 0 is the ClassDef default, so glyphs in it are
+                    // left out and the runtime falls back to 0. Spelling them
+                    // out would list most of the font for no information.
+                    const right: Record<number, number> = {};
+                    for (const [gidStr, c2] of Object.entries(cd2)) {
+                        if (c2 !== 0 && usedC2.has(c2)) right[Number(gidStr)] = c2;
+                    }
+                    classSubtables.push({ l: left, r: right, n: class2Count, m: matrix });
+                    pairs += cells;
                 }
             }
         }
     } catch {
         return null;
     }
-    return pairs > 0 ? kern : null;
+    if (pairs === 0) return null;
+    return {
+        p: Object.keys(pairMap).length > 0 ? pairMap : null,
+        c: classSubtables.length > 0 ? classSubtables : null,
+    };
 }
 
 function parseGPOS(r: TTFReader, tables: TableDir): RawMarkAnchors {
@@ -1018,10 +1074,16 @@ function generateEsmModule(fontName: string, parsed: RawParsed, ttfBase64: strin
         .map(([tag, map]) => `${JSON.stringify(tag)}:{${Object.entries(map).map(([k, v]) => `${k}:${v}`).join(',')}}`)
         .join(',');
 
-    // Pair kerning: { leftGid: { rightGid: adjustment } }, design units.
-    const kernEntries = Object.entries(kern || {})
-        .map(([left, row]) => `${left}:{${Object.entries(row).map(([k, v]) => `${k}:${v}`).join(',')}}`)
-        .join(',');
+    // Compact kerning, mirroring the OpenType shape (see parseGPOSKerning).
+    const numMap = (o: Record<number, number>): string =>
+        `{${Object.entries(o).map(([k, v]) => `${k}:${v}`).join(',')}}`;
+    const kernLiteral = kern === null ? 'null' : (() => {
+        const p = kern.p === null ? 'null'
+            : `{${Object.entries(kern.p).map(([l, row]) => `${l}:${numMap(row)}`).join(',')}}`;
+        const c = kern.c === null ? 'null'
+            : `[${kern.c.map(s => `{l:${numMap(s.l)},r:${numMap(s.r)},n:${s.n},m:${numMap(s.m)}}`).join(',')}]`;
+        return `{p:${p},c:${c}}`;
+    })();
 
     const ligaturesEntries = Object.entries(ligatures || {})
         .map(([gid, ligs]) => `${gid}:[${ligs.map((lig) => `[${lig.join(',')}]`).join(',')}]`)
@@ -1077,10 +1139,13 @@ export const ligatures = {${ligaturesEntries}};
 // lookup in the font, so a caller can ask for tabular figures alone.
 export const features = ${features ? `{${featuresEntries}}` : 'null'};
 
-// GPOS PairPos kerning (v1.8.0) — { leftGid: { rightGid: adjustment } } in
-// design units, negative to pull the pair together. Class-based subtables are
-// expanded to glyph pairs here so the runtime needs only a two-level lookup.
-export const kern = ${kern ? `{${kernEntries}}` : 'null'};
+// GPOS PairPos kerning (v1.8.0), design units, negative pulls a pair together.
+//   p = format-1 glyph pairs        { leftGid: { rightGid: adjust } }
+//   c = format-2 class subtables    [{ l, r, n, m }] with a sparse matrix
+//       keyed by (class1 * n + class2)
+// The class form is kept rather than expanded: expanding Noto Sans produced
+// 71 094 pairs and 594 KB, paid at parse time by every consumer.
+export const kern = ${kernLiteral};
 
 // GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
 // marks[gid] = [classIdx, anchorX, anchorY]  (design units)

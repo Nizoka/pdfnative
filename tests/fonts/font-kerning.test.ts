@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { buildDocumentPDFBytes } from '../../src/index.js';
 import { createEncodingContext, applyDocumentKerning } from '../../src/core/encoding-context.js';
-import { buildKernedTJ, applyKerningToRuns } from '../../src/fonts/font-kerning.js';
+import { buildKernedTJ, applyKerningToRuns, kernPair } from '../../src/fonts/font-kerning.js';
 import { txt } from '../../src/core/pdf-text.js';
 import * as notoSans from '../../fonts/noto-sans-data.js';
-import type { FontData, FontEntry, TextRun } from '../../src/types/pdf-types.js';
+import type { FontData, FontEntry, TextRun, KernTable } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
 // v1.8.0 — GPOS pair kerning.
@@ -18,25 +18,89 @@ const kerned = applyDocumentKerning(base, true);
 describe('bundled kern table', () => {
     it('ships pair kerning on the Latin face', () => {
         expect(latin.kern).toBeTruthy();
-        expect(Object.keys(latin.kern!).length).toBeGreaterThan(500);
+        expect(latin.kern!.c?.length).toBeGreaterThan(0);
+        expect(Object.keys(latin.kern!.p ?? {}).length).toBeGreaterThan(100);
     });
 
     it('kerns the pairs everyone checks', () => {
         const gid = (ch: string): number => latin.cmap[ch.codePointAt(0)!];
         for (const [l, r] of [['A', 'V'], ['T', 'o'], ['Y', 'o'], ['V', 'A']]) {
-            expect(latin.kern![gid(l)]?.[gid(r)], `${l}${r} should kern`).toBeLessThan(0);
+            expect(kernPair(latin.kern!, gid(l), gid(r)), `${l}${r} should kern`).toBeLessThan(0);
         }
     });
 
     it('holds integer design-unit adjustments, never zero', () => {
         let checked = 0;
-        for (const row of Object.values(latin.kern!)) {
+        for (const row of Object.values(latin.kern!.p ?? {})) {
             for (const v of Object.values(row)) {
                 expect(Number.isInteger(v)).toBe(true);
                 expect(v).not.toBe(0);
                 if (++checked > 500) return;
             }
         }
+        for (const sub of latin.kern!.c ?? []) {
+            for (const v of Object.values(sub.m)) {
+                expect(Number.isInteger(v)).toBe(true);
+                expect(v).not.toBe(0);
+                if (++checked > 500) return;
+            }
+        }
+    });
+
+    it('stays in class form rather than expanding to glyph pairs', () => {
+        // Expanding Noto Sans cost 594 KB — a fifth of the module — paid at
+        // parse time by every consumer, kerning enabled or not.
+        const pairs = Object.values(latin.kern!.p ?? {})
+            .reduce((n, row) => n + Object.keys(row).length, 0);
+        expect(pairs).toBeLessThan(2000);
+    });
+});
+
+describe('kernPair', () => {
+    const gid = (ch: string): number => latin.cmap[ch.codePointAt(0)!];
+
+    it('returns 0 for a pair in no subtable', () => {
+        expect(kernPair(latin.kern!, gid('n'), gid('n'))).toBe(0);
+    });
+
+    it('returns 0 for glyph ids outside every class', () => {
+        expect(kernPair(latin.kern!, 0xFFFE, 0xFFFF)).toBe(0);
+    });
+
+    it('lets an explicit glyph pair win over the class subtables', () => {
+        const table = {
+            p: { 10: { 20: -99 } },
+            c: [{ l: { 10: 1 }, r: { 20: 1 }, n: 2, m: { 3: -5 } }],
+        };
+        expect(kernPair(table, 10, 20)).toBe(-99);
+        expect(kernPair(table, 11, 20)).toBe(0);
+    });
+
+    it('treats a right glyph the ClassDef omits as class 0', () => {
+        const table: KernTable = {
+            p: null,
+            c: [{ l: { 7: 1 }, r: {}, n: 3, m: { 3: -8 } }],
+        };
+        expect(kernPair(table, 7, 4242)).toBe(-8);
+    });
+
+    it('reads the sparse matrix at leftClass * n + rightClass', () => {
+        const table = {
+            p: null,
+            c: [{ l: { 7: 2 }, r: { 8: 3 }, n: 4, m: { 11: -12 } }],
+        };
+        expect(kernPair(table, 7, 8)).toBe(-12);
+    });
+
+    it('falls through a subtable that yields no adjustment', () => {
+        const table: KernTable = {
+            p: null,
+            c: [
+                { l: { 7: 1 }, r: { 8: 1 }, n: 2, m: {} },
+                { l: { 7: 1 }, r: { 8: 1 }, n: 2, m: { 3: -7 } },
+            ],
+        };
+        expect(kernPair(table, 7, 8)).toBe(-7);
     });
 });
 

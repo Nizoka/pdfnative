@@ -60,7 +60,7 @@ export interface FontData {
      *
      * @since 1.8.0
      */
-    readonly kern?: Record<number, Record<number, number>> | null;
+    readonly kern?: KernTable | null;
     readonly markAnchors: {
         readonly bases: Record<number, Record<number, [number, number]>>;
         readonly marks: Record<number, [number, number, number]>;
@@ -245,6 +245,43 @@ export interface TextRun {
      * @since 1.8.0
      */
     readonly tjStr?: string;
+}
+
+/**
+ * One class-based PairPos subtable (OpenType format 2).
+ *
+ * Left and right glyphs are assigned classes, and the adjustment lives in a
+ * matrix indexed by the pair of classes. Only classes the subtable can
+ * actually reach are listed, and the matrix is sparse.
+ *
+ * @since 1.8.0
+ */
+export interface KernClassSubtable {
+    /** Left glyph → class index. An absent glyph is outside the coverage. */
+    readonly l: Record<number, number>;
+    /** Right glyph → class index. An absent glyph is class 0, the default. */
+    readonly r: Record<number, number>;
+    /** Number of right-hand classes, the matrix row stride. */
+    readonly n: number;
+    /** Sparse adjustments keyed by `leftClass * n + rightClass`. */
+    readonly m: Record<number, number>;
+}
+
+/**
+ * A font's pair kerning, mirroring the two OpenType PairPos formats.
+ *
+ * The class form is kept rather than expanded to glyph pairs: expanding
+ * Noto Sans produced 71 094 pairs and 594 KB — a fifth of the module — which
+ * every consumer would parse whether or not they enable kerning. In class
+ * form the same data is 46 KB.
+ *
+ * @since 1.8.0
+ */
+export interface KernTable {
+    /** Format-1 subtables: explicit glyph pairs. */
+    readonly p: Record<number, Record<number, number>> | null;
+    /** Format-2 subtables: class-based, consulted in order. */
+    readonly c: readonly KernClassSubtable[] | null;
 }
 
 /** Encoding context encapsulating text encoding and font reference logic. */
