@@ -243,3 +243,31 @@ export function compareToBaseline(entries: Record<string, Fingerprint>, baseline
     }
     return { changed, added, removed };
 }
+
+/**
+ * Stamp each fingerprint with the release whose output it is.
+ *
+ * An entry that still hashes to what the previous manifest recorded keeps its
+ * `since` untouched, which is what gives the chain meaning: an entry reading
+ * `1.7.0` really is being held to the bytes v1.7.0 emitted. An entry whose
+ * hash changed is being re-anchored to the tree under development, so it
+ * takes the current version — otherwise a deliberate rebaseline would hide
+ * inside a one-line hash diff instead of announcing itself.
+ *
+ * @since 1.8.0
+ */
+export function chainSince(
+    entries: Record<string, Fingerprint>,
+    previous: Baseline | null,
+    version: string,
+): Record<string, BaselineEntry> {
+    const out: Record<string, BaselineEntry> = {};
+    for (const key of Object.keys(entries).sort()) {
+        const before = previous?.entries[key];
+        const unchanged = before !== undefined
+            && before.mode === entries[key].mode
+            && before.hash === entries[key].hash;
+        out[key] = { ...entries[key], since: unchanged ? before.since : version };
+    }
+    return out;
+}

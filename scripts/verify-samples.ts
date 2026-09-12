@@ -7,9 +7,11 @@
  * existing output is caught before it ships.
  *
  * The baseline is a CHAIN, not a snapshot of the current tree. Each entry
- * records the release its reference was captured at (`since`) and keeps it
- * across every later rebaseline, so 1.8.0 is still held to the bytes v1.7.0
- * emitted, 1.9.0 will be held to 1.8.0's, and so on. A sample introduced by
+ * records the release whose output its hash is (`since`) and keeps it across
+ * every later rebaseline that leaves the sample alone, so 1.8.0 is still held
+ * to the bytes v1.7.0 emitted, 1.9.0 will be held to 1.8.0's, and so on. An
+ * entry whose hash is deliberately re-anchored moves to the release doing the
+ * re-anchoring, which is what makes it visible in review. A sample introduced by
  * the release under development has no earlier reference, so it is reported
  * but does not fail — pass `--strict` to require it to be baselined in the
  * same pull request.
@@ -48,27 +50,27 @@ import { dirname, relative } from 'node:path';
 
 import {
     REPO_ROOT, BASELINE_PATH,
-    fingerprintAll, loadBaseline, compareToBaseline, currentVersion,
-    type Fingerprint, type BaselineEntry, type Baseline,
+    fingerprintAll, loadBaseline, compareToBaseline, currentVersion, chainSince,
+    type Fingerprint, type Baseline,
 } from './lib/sample-fingerprint.js';
 import { SAMPLE_CREATION_DATE } from './helpers/io.js';
 
 /**
  * Write the manifest, carrying each sample's `since` forward.
  *
- * A sample keeps the release its reference was first captured at, however
- * many times the manifest is later rewritten — that is what makes the chain
- * meaningful: an entry reading `1.7.0` is still being held to the bytes
- * v1.7.0 emitted. Samples appearing for the first time are stamped with the
- * version under development, and have no earlier reference by definition.
+ * `since` names the release whose output the stored hash actually is. An
+ * unchanged sample keeps it however many times the manifest is rewritten, so
+ * an entry reading `1.7.0` really is still being held to the bytes v1.7.0
+ * emitted. A sample whose hash changed is being re-anchored, and its `since`
+ * moves to the version under development: the reference is no longer the
+ * older release's, and saying otherwise would hide the re-anchoring in a
+ * one-line diff instead of surfacing it for review. Samples appearing for the
+ * first time are stamped the same way, having no earlier reference at all.
  */
 function saveBaseline(entries: Record<string, Fingerprint>, previous: Baseline | null): void {
     mkdirSync(dirname(BASELINE_PATH), { recursive: true });
     const version = currentVersion();
-    const sorted: Record<string, BaselineEntry> = {};
-    for (const key of Object.keys(entries).sort()) {
-        sorted[key] = { ...entries[key], since: previous?.entries[key]?.since ?? version };
-    }
+    const sorted = chainSince(entries, previous, version);
     const payload: Baseline = {
         $comment:
             'Fingerprints of every sample in test-output/. Regenerate deliberately with '
@@ -76,8 +78,10 @@ function saveBaseline(entries: Record<string, Fingerprint>, previous: Baseline |
             + 'changed hash means existing output changed. Mode `bytes` is a SHA-256 of the file; '
             + 'mode `semantic` is a SHA-256 of a canonical projection of the decrypted document, '
             + 'used for encrypted samples whose bytes are CSPRNG-derived and can never repeat. '
-            + 'Each entry\'s `since` is the release its reference was captured at and is carried '
-            + 'forward untouched, so the chain 1.7.0 -> 1.8.0 -> 1.9.0 stays auditable.',
+            + 'Each entry\'s `since` names the release whose output the hash is: it is carried '
+            + 'forward untouched while the sample is unchanged, and moves to the release doing '
+            + 'the rebaseline when the hash changes, so the chain 1.7.0 -> 1.8.0 -> 1.9.0 stays '
+            + 'auditable and every re-anchoring is visible in the diff.',
         baselineVersion: version,
         provenance:
             'The 1.7.0 entries were verified against a v1.7.0 git worktree carrying only the '

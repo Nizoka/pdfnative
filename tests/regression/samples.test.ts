@@ -4,7 +4,8 @@ import { join, relative } from 'node:path';
 import {
     REPO_ROOT, OUTPUT_DIR, BASELINE_PATH, ENCRYPTED_SAMPLES,
     walkPdfs, relPath, fingerprintAll, loadBaseline, compareToBaseline,
-    canonicalJson, sha256Hex, semanticProjection,
+    canonicalJson, sha256Hex, semanticProjection, chainSince,
+    type Fingerprint, type Baseline,
 } from '../../scripts/lib/sample-fingerprint.js';
 
 // v1.8.0 — sample regression gate.
@@ -67,7 +68,7 @@ describe.runIf(havecorpus)('sample regression baseline', () => {
         const baseline = loadBaseline()!;
         const inherited = Object.values(baseline.entries)
             .filter(e => e.since !== baseline.baselineVersion).length;
-        expect(inherited).toBeGreaterThan(0);
+        expect(inherited).toBeGreaterThan(200);
     });
 
     it('uses semantic mode for exactly the encrypted samples', () => {
@@ -95,6 +96,41 @@ describe.runIf(havecorpus)('sample regression baseline', () => {
         const once = semanticProjection(bytes, ENCRYPTED_SAMPLES[rel]);
         const twice = semanticProjection(bytes, ENCRYPTED_SAMPLES[rel]);
         expect(twice).toBe(once);
+    });
+});
+
+describe('baseline chaining', () => {
+    const fp = (hash: string, mode = 'bytes'): Fingerprint =>
+        ({ mode, hash, size: 1 }) as unknown as Fingerprint;
+    const prior = {
+        baselineVersion: '1.7.0',
+        entries: { kept: { mode: 'bytes', hash: 'aa', size: 1, since: '1.6.0' } },
+    } as unknown as Baseline;
+
+    it('keeps the original release for an unchanged sample', () => {
+        expect(chainSince({ kept: fp('aa') }, prior, '1.8.0').kept.since).toBe('1.6.0');
+    });
+
+    it('re-anchors a sample whose hash changed, so the rebaseline is visible', () => {
+        expect(chainSince({ kept: fp('bb') }, prior, '1.8.0').kept.since).toBe('1.8.0');
+    });
+
+    it('stamps a sample the previous manifest never held', () => {
+        expect(chainSince({ fresh: fp('cc') }, prior, '1.8.0').fresh.since).toBe('1.8.0');
+    });
+
+    it('re-anchors when only the fingerprint mode changed', () => {
+        expect(chainSince({ kept: fp('aa', 'semantic') }, prior, '1.8.0').kept.since).toBe('1.8.0');
+    });
+
+    it('stamps everything when there is no previous manifest', () => {
+        const out = chainSince({ a: fp('1'), b: fp('2') }, null, '1.8.0');
+        expect(Object.values(out).every(e => e.since === '1.8.0')).toBe(true);
+    });
+
+    it('emits keys in sorted order, so the manifest diff stays readable', () => {
+        const out = chainSince({ z: fp('1'), a: fp('2'), m: fp('3') }, null, '1.8.0');
+        expect(Object.keys(out)).toEqual(['a', 'm', 'z']);
     });
 });
 
