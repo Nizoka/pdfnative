@@ -173,6 +173,8 @@ export {
     bindUnits, applyPunctuationSpacing,
     PUNCTUATION_SPACING_PRESETS, DEFAULT_UNITS,
 } from './core/pdf-typography.js';
+export type { HyphenationProvider } from './core/hyphenation.js';
+export { setHyphenationProvider, getHyphenationProvider } from './core/hyphenation.js';
 
 // ── Core — Barcodes & QR Codes ──────────────────────────────────────
 export type { BarcodeFormat, QRErrorLevel } from './core/pdf-barcode.js';

@@ -187,6 +187,44 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         }),
     );
 
+    // ── Base-14 metrics ─────────────────────────────────────────
+    // The estimate buckets every accented letter and most punctuation at 556
+    // units. Right-aligned French therefore misses its margin and lines wrap
+    // in the wrong places. The exact AFM tables fix both.
+    const metricsDoc: DocumentParams = {
+        title: 'Metriques base-14',
+        blocks: [
+            { type: 'heading', text: 'Estimation contre tables AFM', level: 1 },
+            { type: 'paragraph', text: 'Élégance, ÉTÉ, Ünterstützung, œuvre, 100 % — chacun de ces mots contient des caracteres que l\'estimation historique mesure a 556 unites alors qu\'ils valent 667, 722, 944 ou 889. Le texte aligne a droite manque alors sa marge.' },
+            { type: 'paragraph', text: 'Élégance ÉTÉ Ünterstützung œuvre 100 % @ & ( )', align: 'right' },
+            { type: 'paragraph', text: 'Élégance ÉTÉ Ünterstützung œuvre 100 % @ & ( )', align: 'center' },
+            {
+                type: 'table',
+                headers: ['Caractere', 'Estimation', 'AFM'],
+                rows: [
+                    { cells: ['@', '556', '1015'], type: '', pointed: false },
+                    { cells: ['%', '556', '889'], type: '', pointed: false },
+                    { cells: ['É', '556', '667'], type: '', pointed: false },
+                    { cells: ['œ', '556', '944'], type: '', pointed: false },
+                    { cells: ['(', '556', '333'], type: '', pointed: false },
+                ],
+            },
+        ],
+        footerText: 'pdfnative – typography showcase',
+    };
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'metrics-approximate.pdf'),
+        'typography/metrics-approximate.pdf',
+        buildDocumentPDFBytes(metricsDoc),
+    );
+
+    ctx.writeSafe(
+        resolve(ctx.outputDir, 'typography', 'metrics-exact.pdf'),
+        'typography/metrics-exact.pdf',
+        buildDocumentPDFBytes(metricsDoc, { typography: { metrics: 'exact' } }),
+    );
+
     // ── Tagged: a split paragraph stays one /P element ───────────
     // PDF/A-2b, so veraPDF checks that splitting a paragraph across pages
     // leaves the structure tree conformant. Needs an embedded Latin font like

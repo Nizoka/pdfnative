@@ -310,7 +310,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
     }
 
-    const enc = createEncodingContext(fontEntries, tagged, layoutOptions?.normalize ?? false);
+    const enc = createEncodingContext(fontEntries, tagged, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics);
 
     // ── Resolve header/footer templates ──────────────
     const footerTpl: PageTemplate = layoutOptions?.footerTemplate ?? {

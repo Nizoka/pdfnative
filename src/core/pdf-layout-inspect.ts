@@ -52,7 +52,7 @@ export function inspectDocumentLayout(
 
     const fontEntries: FontEntry[] = params.fontEntries ? [...params.fontEntries] : [];
     const tagged = resolvePdfAConfig(layout?.tagged).enabled;
-    const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false);
+    const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false, layout?.typography?.metrics);
 
     const headerH = layout?.headerTemplate ? HEADER_H : 0;
 

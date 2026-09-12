@@ -1463,6 +1463,18 @@
       "size": 19853,
       "since": "1.8.0"
     },
+    "typography/metrics-approximate.pdf": {
+      "mode": "bytes",
+      "hash": "563c8adbe28638b4bf89e215f70727e984eab4234f7297534f0ad335ee8f93ce",
+      "size": 7144,
+      "since": "1.8.0"
+    },
+    "typography/metrics-exact.pdf": {
+      "mode": "bytes",
+      "hash": "88f35f36717d56f8b67378ac948fed3e4f2c647844093873dce7774179ce8abf",
+      "size": 7144,
+      "since": "1.8.0"
+    },
     "typography/oversized-atomic.pdf": {
       "mode": "bytes",
       "hash": "9f2adacc38657783b2cac5309e716a7d01653132c28ba5c24c48b575153ea9e1",

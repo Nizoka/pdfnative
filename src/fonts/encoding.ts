@@ -5,9 +5,7 @@
  * and Unicode (CIDFont/Identity-H) modes.
  */
 
-import type { FontEntry, TextRun, EncodingContext } from '../types/pdf-types.js';
-import { shapeThaiText, containsThai } from '../shaping/thai-shaper.js';
-import { splitTextByFont } from '../shaping/multi-font.js';
+import type { EncodingContext } from '../types/pdf-types.js';
 import { stripBidiControls } from '../shaping/bidi.js';
 
 // ── WinAnsi Encoding ─────────────────────────────────────────────────
@@ -277,110 +275,7 @@ export function helveticaBoldWidth(str: string, sz: number): number {
     }
     return w * sz / 1000;
 }
-
-// ── Encoding Context Factory ─────────────────────────────────────────
-
-/**
- * Create an encoding context that encapsulates text encoding and font reference logic.
- * Latin mode uses WinAnsi/Helvetica, Unicode mode uses CIDFont/Identity-H.
- *
- * @param fontEntries - Array of font entries (primary first). Empty = Latin mode.
- */
-export function createEncodingContext(fontEntries: FontEntry[]): EncodingContext {
-    if (!fontEntries || fontEntries.length === 0) {
-        return {
-            isUnicode: false,
-            fontEntries: [],
-            ps: pdfString,
-            tw: helveticaWidth,
-            textRuns: () => [],
-            f1: '/F1',
-            f2: '/F2'
-        };
-    }
-
-    const primary = fontEntries[0];
-
-    // Track used glyph IDs per font for subsetting
-    const _usedGids = new Map<string, Set<number>>();
-    for (const fe of fontEntries) _usedGids.set(fe.fontRef, new Set());
-
-    function _trackGid(fontRef: string, gid: number): void {
-        const s = _usedGids.get(fontRef);
-        if (s) s.add(gid);
-    }
-
-    return {
-        isUnicode: true,
-        fontEntries,
-        fontData: primary.fontData,
-        f1: primary.fontRef,
-        f2: primary.fontRef,
-        getUsedGids() { return _usedGids; },
-
-        textRuns(str: string, sz: number): TextRun[] {
-            if (!str) return [];
-            const rawRuns = splitTextByFont(str, fontEntries);
-            return rawRuns.map(run => {
-                const fd = run.entry.fontData;
-                const upm = fd.metrics.unitsPerEm;
-                const fontRef = run.entry.fontRef;
-
-                if (containsThai(run.text)) {
-                    const shaped = shapeThaiText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return { text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm };
-                }
-
-                let hex = '';
-                let designW = 0;
-                for (let i = 0; i < run.text.length; i++) {
-                    const rawCp = run.text.codePointAt(i) ?? 0;
-                    if (rawCp > 0xFFFF) i++;
-                    const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
-                    const gid = fd.cmap[cp] || 0;
-                    _trackGid(fontRef, gid);
-                    hex += gid.toString(16).padStart(4, '0');
-                    const gw = fd.widths[gid];
-                    designW += gw !== undefined ? gw : fd.defaultWidth;
-                }
-                return { text: run.text, fontRef, fontData: fd, shaped: null, hexStr: '<' + hex.toUpperCase() + '>', widthPt: designW * sz / upm };
-            });
-        },
-
-        ps(str: string): string {
-            if (!str) return '<>';
-            const { cmap } = primary.fontData;
-            if (!containsThai(str)) {
-                let hex = '';
-                for (let i = 0; i < str.length; i++) {
-                    const rawCp = str.codePointAt(i) ?? 0;
-                    if (rawCp > 0xFFFF) i++;
-                    const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
-                    const gid = cmap[cp] || 0;
-                    _trackGid(primary.fontRef, gid);
-                    hex += gid.toString(16).padStart(4, '0');
-                }
-                return '<' + hex.toUpperCase() + '>';
-            }
-            const shaped = shapeThaiText(str, primary.fontData);
-            let hex = '';
-            for (const g of shaped) { _trackGid(primary.fontRef, g.gid); hex += g.gid.toString(16).padStart(4, '0'); }
-            return '<' + hex.toUpperCase() + '>';
-        },
-
-        tw(str: string, sz: number): number {
-            if (!str) return 0;
-            const runs = this.textRuns(str, sz);
-            let total = 0;
-            for (const run of runs) total += run.widthPt;
-            return total;
-        },
-    };
-}
+// The encoding-context factory lives in `core/encoding-context.ts`. A second,
+// never-imported copy used to sit here with its own Thai dispatch and its own
+// U+202F handling; it was dead code that still counted against coverage and
+// misled anyone grepping for "the encoding context". Removed in v1.8.0.

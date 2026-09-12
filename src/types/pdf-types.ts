@@ -224,7 +224,27 @@ export interface EncodingContext {
      * draw colour-emoji Form XObjects inline. (v1.3.0)
      */
     readonly colorEmoji?: ColorEmojiCollector;
+    /**
+     * Which base-14 advance widths the Latin path measures with.
+     * `'approximate'` (the default, and how it is left when absent) is the
+     * historical bucketed estimate; `'exact'` uses the Adobe Core 14 AFM
+     * tables. (v1.8.0)
+     */
+    readonly metrics?: Base14Metrics;
 }
+
+/**
+ * Base-14 measurement mode.
+ *
+ * - `'approximate'` — the historical estimate: 556 for digits, 680 for
+ *   capitals, 500 for lowercase and 556 for everything else. Fast, and what
+ *   every release up to 1.7.0 emitted.
+ * - `'exact'` — the Adobe Core 14 AFM advances, correct for punctuation,
+ *   accented letters and currency.
+ *
+ * @since 1.8.0
+ */
+export type Base14Metrics = 'approximate' | 'exact';
 
 // ── PDF Parameters ───────────────────────────────────────────────────
 
@@ -512,6 +532,27 @@ export interface TypographyOptions {
      * Default: `false`.
      */
     readonly opticalMargins?: boolean;
+    /**
+     * Which advance widths the base-14 (Latin, non-embedded) path measures
+     * with.
+     *
+     * The historical estimate buckets every digit at 556, every capital at
+     * 680, every lowercase at 500 and everything else at 556 — which covers
+     * most punctuation and every accented letter. A line of French or a
+     * column of currency therefore measures visibly wrong, showing up as
+     * mis-wrapped lines, truncation that cuts too early or too late, and
+     * right-aligned text that misses its margin.
+     *
+     * `'exact'` reads the Adobe Core 14 AFM advances instead. It is opt-in
+     * because better measurement necessarily moves line breaks: an existing
+     * document re-wraps, which is a change of output rather than a bug fix.
+     *
+     * Only affects the base-14 path. Registered (embedded) fonts always
+     * measure from their own `hmtx` table.
+     *
+     * Default: `'approximate'`.
+     */
+    readonly metrics?: Base14Metrics;
 }
 
 /** Built-in punctuation-spacing conventions. @since 1.8.0 */

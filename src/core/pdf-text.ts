@@ -7,6 +7,7 @@
 
 import type { FontData, ShapedGlyph, EncodingContext } from '../types/pdf-types.js';
 import { toWinAnsi, helveticaWidth, helveticaBoldWidth } from '../fonts/encoding.js';
+import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { wrapSpan } from './pdf-tags.js';
 
 /** Format a number as PDF operator value (2 decimal places). */
@@ -134,9 +135,7 @@ export function txtR(
     enc: EncodingContext,
     bold: boolean = false,
 ): string {
-    const width = enc.isUnicode
-        ? enc.tw(str, sz)
-        : (bold ? helveticaBoldWidth(str, sz) : helveticaWidth(toWinAnsi(str), sz));
+    const width = measureFor(str, sz, enc, bold);
     return txt(str, rightX - width, y, font, sz, enc);
 }
 
@@ -160,9 +159,7 @@ export function txtC(
     enc: EncodingContext,
     bold: boolean = false,
 ): string {
-    const width = enc.isUnicode
-        ? enc.tw(str, sz)
-        : (bold ? helveticaBoldWidth(str, sz) : helveticaWidth(toWinAnsi(str), sz));
+    const width = measureFor(str, sz, enc, bold);
     return txt(str, leftX + (colW - width) / 2, y, font, sz, enc);
 }
 
@@ -170,8 +167,10 @@ export function txtC(
  * Measure a string the way {@link txtR} and {@link txtC} do, so justified
  * placement agrees with right- and centre-alignment.
  */
-function measureFor(str: string, sz: number, enc: EncodingContext): number {
-    return enc.isUnicode ? enc.tw(str, sz) : helveticaWidth(toWinAnsi(str), sz);
+function measureFor(str: string, sz: number, enc: EncodingContext, bold: boolean = false): number {
+    if (enc.isUnicode) return enc.tw(str, sz);
+    if (enc.metrics === 'exact') return exactBase14Width(toWinAnsi(str), sz, bold);
+    return bold ? helveticaBoldWidth(str, sz) : helveticaWidth(toWinAnsi(str), sz);
 }
 
 /**

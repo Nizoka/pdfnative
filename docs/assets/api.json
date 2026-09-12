@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 453,
+  "exportCount": 456,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -507,6 +507,13 @@
       "module": "src/types/pdf-document-types.ts",
       "signature": "export interface HeadingBlock",
       "summary": "Heading block — rendered at a predefined size based on level."
+    },
+    {
+      "name": "HyphenationProvider",
+      "kind": "type",
+      "module": "src/core/hyphenation.ts",
+      "signature": "export type HyphenationProvider = (word: string) => readonly number[];",
+      "summary": "Returns the positions inside `word` where a hyphen may be inserted."
     },
     {
       "name": "INFO_LN",
@@ -1856,7 +1863,7 @@
       "name": "createEncodingContext",
       "kind": "value",
       "module": "src/core/encoding-context.ts",
-      "signature": "export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false): EncodingContext",
+      "signature": "export function createEncodingContext( fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false, metrics: Base14Metrics = 'approximate', ): EncodingContext",
       "summary": "Create an encoding context that encapsulates text encoding and font reference logic."
     },
     {
@@ -2215,6 +2222,13 @@
       "module": "src/core/pdf-reproducible.ts",
       "signature": "export function getDefaultCreationDate(): Date | null",
       "summary": "The currently pinned default creation instant, or `null` when unset."
+    },
+    {
+      "name": "getHyphenationProvider",
+      "kind": "value",
+      "module": "src/core/hyphenation.ts",
+      "signature": "export function getHyphenationProvider(): HyphenationProvider | null",
+      "summary": "The installed provider, or `null`."
     },
     {
       "name": "getMaxInflateOutputSize",
@@ -2859,6 +2873,13 @@
       "module": "src/core/pdf-compress.ts",
       "signature": "export function setDeflateRawImpl(fn: ((buf: Uint8Array) => Uint8Array) | null): void",
       "summary": "Inject a **raw** DEFLATE (RFC 1951) compressor; pdfnative adds the zlib wrapper itself."
+    },
+    {
+      "name": "setHyphenationProvider",
+      "kind": "value",
+      "module": "src/core/hyphenation.ts",
+      "signature": "export function setHyphenationProvider(fn: HyphenationProvider | null): void",
+      "summary": "Install a hyphenation provider, or `null` to remove it."
     },
     {
       "name": "setInflateImpl",

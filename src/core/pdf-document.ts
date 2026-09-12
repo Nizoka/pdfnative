@@ -164,7 +164,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
     }
 
-    const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false);
+    const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false, layout?.typography?.metrics);
 
     // ── Encryption setup ──────────────────────
     const encryptionOpts = layout?.encryption;

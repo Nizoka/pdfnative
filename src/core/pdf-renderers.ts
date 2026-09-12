@@ -39,6 +39,7 @@ import {
     protrusionLeft, protrusionRight, fmtNum,
 } from './pdf-text.js';
 import { wrapSpan } from './pdf-tags.js';
+import { hyphenateWord } from './hyphenation.js';
 import {
     ROW_H, TH_H,
     DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
@@ -166,7 +167,11 @@ export interface ResolvedImage {
  * Uses enc.tw() for Unicode mode, helveticaWidth() for Latin mode.
  */
 export function measureText(str: string, sz: number, enc: EncodingContext): number {
-    return enc.isUnicode ? enc.tw(str, sz) : helveticaWidth(str, sz);
+    // Always through the context. In Latin mode `tw` already *is* the
+    // base-14 width function the context was built with, so routing through
+    // it is what lets `layout.typography.metrics` reach wrapping, truncation
+    // and column fitting — measuring directly used to bypass the setting.
+    return enc.tw(str, sz);
 }
 
 /**
@@ -320,10 +325,14 @@ export function wrapText(
             continue;
         }
 
-        // Can part of this word finish the current line at a soft hyphen?
-        if (seg.includes(SHY)) {
+        // Can part of this word finish the current line at a break
+        // opportunity — one the author wrote, or one a hyphenation provider
+        // supplies? Both are expressed as soft hyphens, so one path handles
+        // them. Computed only for words that do not fit, never for the rest.
+        const hinted = seg.includes(SHY) ? seg : hyphenateWord(seg);
+        if (hinted.includes(SHY)) {
             const used = measureText(currentLine, fontSize, enc);
-            const brk = softHyphenBreak(seg, maxWidth - used, fontSize, enc);
+            const brk = softHyphenBreak(hinted, maxWidth - used, fontSize, enc);
             if (brk) {
                 push(currentLine + brk.head);
                 currentLine = '';
@@ -347,8 +356,9 @@ export function wrapText(
             continue;
         }
 
-        // Still overflows alone — try a soft-hyphen break across a full line.
-        const brk = softHyphenBreak(segTrim, maxWidth, fontSize, enc);
+        // Still overflows alone — try a break opportunity across a full line.
+        const hintedAlone = segTrim.includes(SHY) ? segTrim : hyphenateWord(segTrim);
+        const brk = softHyphenBreak(hintedAlone, maxWidth, fontSize, enc);
         if (brk) {
             push(brk.head);
             segments[si] = brk.tail;

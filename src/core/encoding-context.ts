@@ -9,8 +9,9 @@
  * independent of shaping/.
  */
 
-import type { FontEntry, FontData, TextRun, EncodingContext } from '../types/pdf-types.js';
-import { pdfString, helveticaWidth, stripSoftHyphens } from '../fonts/encoding.js';
+import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics } from '../types/pdf-types.js';
+import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi } from '../fonts/encoding.js';
+import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { shapeThaiText } from '../shaping/thai-shaper.js';
 import { shapeBengaliText } from '../shaping/bengali-shaper.js';
 import { shapeTamilText } from '../shaping/tamil-shaper.js';
@@ -213,17 +214,31 @@ function buildTextRunsCore(
  *   Latin mode is used as before — strict PDF/A conformance requires the caller
  *   to register a Latin font (e.g. Noto Sans VF).
  */
-export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false): EncodingContext {
+export function createEncodingContext(
+    fontEntries: FontEntry[],
+    pdfA: boolean = false,
+    normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false,
+    metrics: Base14Metrics = 'approximate',
+): EncodingContext {
     // Optional Unicode normalization applied at every text entry point. Off by
     // default so output stays byte-identical; opt in via `layout.normalize`.
     // Uses the native `String.prototype.normalize` (zero dependency).
     const _norm = normalize ? (s: string): string => s.normalize(normalize) : (s: string): string => s;
+
+    // Base-14 measurement. 'exact' reads the Adobe Core 14 AFM advances;
+    // 'approximate' keeps the historical bucketed estimate so output is
+    // byte-identical by default (see fonts/base14-metrics.ts).
+    const latinWidth = metrics === 'exact'
+        ? (s: string, sz: number): number => exactBase14Width(toWinAnsi(s), sz, false)
+        : helveticaWidth;
+
     if (!fontEntries || fontEntries.length === 0) {
         return {
             isUnicode: false,
             fontEntries: [],
+            metrics,
             ps: normalize ? (s: string): string => pdfString(_norm(s)) : pdfString,
-            tw: normalize ? (s: string, sz: number): number => helveticaWidth(_norm(s), sz) : helveticaWidth,
+            tw: normalize ? (s: string, sz: number): number => latinWidth(_norm(s), sz) : latinWidth,
             textRuns: () => [],
             f1: '/F1',
             f2: '/F2'
@@ -251,6 +266,7 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
     return {
         isUnicode: true,
         fontEntries,
+        metrics,
         fontData: primary.fontData,
         f1: primary.fontRef,
         f2: primary.fontRef,
