@@ -256,6 +256,116 @@ describe('keep-with-next', () => {
     });
 });
 
+/**
+ * keep-with-next and paragraph splitting have to agree on how much of the
+ * next paragraph must follow the heading. The 1.8.0 audit found the rule
+ * reserved one line while the splitter refused to place fewer than
+ * `orphans`, so with both options on — the documented configuration — the
+ * paragraph moved over and the heading stayed behind, stranded.
+ */
+describe('keep-with-next combined with splitParagraphs', () => {
+    /** Pages whose last placed item is a heading. */
+    function strandedPages(res: ReturnType<typeof paginateDocument>): number[] {
+        const out: number[] = [];
+        res.planned.forEach((page, i) => {
+            const last = page[page.length - 1];
+            if (last && last.type === 'heading') out.push(i);
+        });
+        return out;
+    }
+
+    /** Many short sections, so headings land at every position on the page. */
+    function sections(count: number, bodyRepeats: number): DocumentBlock[] {
+        const out: DocumentBlock[] = [];
+        for (let i = 1; i <= count; i++) {
+            out.push({ type: 'heading', level: 2, text: `Section ${i}` });
+            out.push({ type: 'paragraph', text: 'Body text that belongs with its heading and runs on for a while. '.repeat(bodyRepeats) });
+        }
+        return out;
+    }
+
+    for (const orphans of [1, 2, 3]) {
+        for (const widows of [1, 2, 3]) {
+            it(`never ends a page with a heading (orphans ${orphans}, widows ${widows})`, () => {
+                for (const repeats of [2, 5, 9, 14]) {
+                    const res = paginateDocument(input(
+                        sections(24, repeats),
+                        { splitParagraphs: true, keepHeadingsWithNext: true, orphans, widows },
+                        'Keep',
+                    ));
+                    expect(res.pages.length).toBeGreaterThan(1);
+                    expect(strandedPages(res)).toEqual([]);
+                }
+            });
+        }
+    }
+
+    it('still splits the paragraph after the heading when it cannot fit whole', () => {
+        const res = paginateDocument(input(
+            sections(24, 9),
+            { splitParagraphs: true, keepHeadingsWithNext: true },
+            'Keep',
+        ));
+        expect(res.pages.flat().filter(i => i.type === '__paraSlice'
+            && !(i as { slice: { isFinalSlice: boolean } }).slice.isFinalSlice).length).toBeGreaterThan(0);
+    });
+
+    it('reserves at least `orphans` lines of a paragraph that can split', () => {
+        const filler = Array.from({ length: 17 }, (): DocumentBlock => ({
+            type: 'paragraph', text: 'filler paragraph occupying vertical space. '.repeat(4),
+        }));
+        for (const orphans of [1, 2, 3, 4]) {
+            const body = longPara(60);
+            const res = paginateDocument(input(
+                [...filler, { type: 'heading', level: 2, text: 'H' }, body],
+                { splitParagraphs: true, keepHeadingsWithNext: true, orphans, widows: 1 },
+                'Keep',
+            ));
+            const flat = res.planned.flat();
+            const hIdx = flat.findIndex(p => p.type === 'heading');
+            const next = flat[hIdx + 1];
+            expect(next.page).toBe(flat[hIdx].page);
+            const slice = (res.pages.flat().find(i => i.type === '__paraSlice'
+                && (i as { block: DocumentBlock }).block === body) as { slice: { fromLine: number; toLine: number } }).slice;
+            expect(slice.toLine - slice.fromLine).toBeGreaterThanOrEqual(orphans);
+        }
+    });
+
+    it('keeps a heading with the table that follows it, trailer included', () => {
+        const table: DocumentBlock = {
+            type: 'table',
+            headers: ['A', 'B'],
+            rows: Array.from({ length: 40 }, (_, i) => ({ cells: [`r${i}`, `v${i}`], type: '', pointed: false })),
+        };
+        // Slide the heading down the page one filler at a time so every
+        // remaining height between "table fits whole" and "nothing fits" is hit.
+        for (let n = 10; n <= 26; n++) {
+            const filler = Array.from({ length: n }, (): DocumentBlock => ({
+                type: 'paragraph', text: 'filler line. '.repeat(3),
+            }));
+            const res = paginateDocument(input(
+                [...filler, { type: 'heading', level: 2, text: 'Table heading' }, table],
+                { keepHeadingsWithNext: true },
+                'Keep',
+            ));
+            expect(strandedPages(res)).toEqual([]);
+        }
+    });
+
+    it('shows the fix in a built document', () => {
+        const params: DocumentParams = {
+            title: 'Keep With Next',
+            blocks: sections(12, 2),
+        };
+        const typography: TypographyOptions = { splitParagraphs: true, keepHeadingsWithNext: true };
+        const layout = inspectDocumentLayout(params, { typography });
+        for (const page of layout.pages) {
+            const last = page.blocks[page.blocks.length - 1];
+            expect(last?.type).not.toBe('heading');
+        }
+    });
+});
+
 describe('split paragraphs in built documents', () => {
     const params: DocumentParams = { title: 'Split', blocks: [longPara(600)] };
     const typography: TypographyOptions = { splitParagraphs: true };

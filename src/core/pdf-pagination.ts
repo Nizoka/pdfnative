@@ -180,19 +180,32 @@ export function paginatePass(
     };
 
     /**
-     * Height of the smallest piece of a block that can stand alone on a page:
-     * one line of a splittable paragraph, a table's caption plus header plus
-     * first row, otherwise the whole block. Used by keep-with-next so a
-     * heading is only pushed over when its successor genuinely cannot follow.
+     * Height of the smallest piece of a block that the splitters below would
+     * actually agree to place at the foot of a page: the first `orphans`
+     * lines of a splittable paragraph (when enough lines remain for the
+     * widow rule, else the whole paragraph), a table's caption plus header
+     * plus first row plus trailer, otherwise the whole block. Used by
+     * keep-with-next so a heading is only pushed over when its successor
+     * genuinely cannot follow — and never held back when it cannot.
+     *
+     * The figure must match the splitters exactly: reserving less than they
+     * demand lets the heading stay while the paragraph walks to the next
+     * page, which is the stranding the rule exists to prevent.
      */
     const leadHeight = (b: DocumentBlock): number => {
         if (b.type === 'paragraph' && isSplittable(b)) {
-            return planParagraph(b, enc, cw).lineH;
+            const plan = planParagraph(b, enc, cw);
+            const total = plan.lines.length;
+            if (total === 0) return plan.trailerSpacing;
+            const canSplit = total - typo.orphans >= typo.widows;
+            return canSplit
+                ? typo.orphans * plan.lineH
+                : total * plan.lineH + plan.trailerSpacing;
         }
         if (b.type === 'table') {
             const plan = planTable(b, enc, mg.l, cw);
-            const firstRow = b.rows.length > 0 ? plan.rowHeights[0] : plan.trailerSpacing;
-            return plan.captionHeight + plan.headerHeight + firstRow;
+            const firstRow = b.rows.length > 0 ? plan.rowHeights[0] : 0;
+            return plan.captionHeight + plan.headerHeight + firstRow + plan.trailerSpacing;
         }
         return estimateBlockHeight(b, enc, cw, headingsIn);
     };

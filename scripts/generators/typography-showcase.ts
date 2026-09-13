@@ -35,14 +35,19 @@ function sections(count: number): DocumentBlock[] {
 
 export async function generate(ctx: GenerateContext): Promise<void> {
     // ── Atomic vs split, same content ────────────────────────────
+    // Each paragraph is a little over half a page, so the second one cannot
+    // fit under the first: atomically it moves over whole and leaves the
+    // foot of the page blank, split it continues where the page ends. (Two
+    // shorter paragraphs per page would give the splitter nothing to do and
+    // the pair would come out byte-identical.)
     const flowing: DocumentParams = {
         title: 'Paragraph Breaking',
         blocks: [
             { type: 'heading', text: 'Breaking paragraphs across pages', level: 1 },
-            body(6),
-            body(6),
-            body(6),
-            body(6),
+            body(9),
+            body(9),
+            body(9),
+            body(9),
         ],
         footerText: 'pdfnative – typography showcase',
     };
