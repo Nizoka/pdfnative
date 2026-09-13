@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 486,
+  "exportCount": 488,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -873,10 +873,24 @@
       "summary": "Relationship of an embedded file to the PDF document (ISO 19005-3 §6.8)."
     },
     {
+      "name": "PdfCmykString",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfCmykString = `${number} ${number} ${number} ${number}`;",
+      "summary": "PDF CMYK color string in operator format: \"C M Y K\" (values 0.0–1.0)."
+    },
+    {
+      "name": "PdfCmykTuple",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfCmykTuple = readonly [c: number, m: number, y: number, k: number];",
+      "summary": "CMYK color as a 4-tuple of ink coverage in percent, 0–100 — the unit print software uses."
+    },
+    {
       "name": "PdfColor",
       "kind": "type",
       "module": "src/types/pdf-types.ts",
-      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | (string & {});",
+      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | (string & {});",
       "summary": "Color input accepted by pdfnative."
     },
     {
@@ -2725,7 +2739,7 @@
       "kind": "value",
       "module": "src/core/pdf-color.ts",
       "signature": "export function parseColor(input: PdfColor): string",
-      "summary": "Parse a color input into a validated PDF RGB operator string."
+      "summary": "Parse a color input into validated PDF operands."
     },
     {
       "name": "parseColrCpal",

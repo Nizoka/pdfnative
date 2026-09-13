@@ -66,6 +66,8 @@ export type {
     PdfColor,
     PdfRgbString,
     PdfRgbTuple,
+    PdfCmykString,
+    PdfCmykTuple,
     ColumnDef,
     PdfLayoutOptions,
     EncryptionOptions,

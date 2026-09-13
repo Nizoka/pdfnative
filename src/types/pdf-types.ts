@@ -445,13 +445,28 @@ export type PdfRgbString = `${number} ${number} ${number}`;
 export type PdfRgbTuple = readonly [r: number, g: number, b: number];
 
 /**
+ * PDF CMYK color string in operator format: "C M Y K" (values 0.0–1.0).
+ * @since 1.8.0
+ */
+export type PdfCmykString = `${number} ${number} ${number} ${number}`;
+
+/**
+ * CMYK color as a 4-tuple of ink coverage in percent, 0–100 — the unit print
+ * software uses. `[0, 0, 0, 100]` is solid black.
+ * @since 1.8.0
+ */
+export type PdfCmykTuple = readonly [c: number, m: number, y: number, k: number];
+
+/**
  * Color input accepted by pdfnative.
  *
  * - Hex string: `"#2563EB"` or `"#26E"` (primary — standard web format)
  * - RGB tuple: `[37, 99, 235]` values 0–255 (alternative — programmatic)
  * - PDF operator string: `"0.145 0.388 0.922"` values 0.0–1.0 (advanced — native PDF format)
+ * - CMYK tuple: `[100, 60, 0, 10]` percent 0–100, emitted as DeviceCMYK (since 1.8.0)
+ * - PDF CMYK string: `"1 0.6 0 0.1"` values 0.0–1.0 (since 1.8.0)
  */
-export type PdfColor = PdfRgbString | PdfRgbTuple | (string & {});
+export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | (string & {});
 
 /**
  * Color palette for the PDF.

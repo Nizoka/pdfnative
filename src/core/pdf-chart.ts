@@ -22,7 +22,7 @@
 import type { ChartBlock, ChartSeries } from '../types/pdf-document-types.js';
 import type { EncodingContext } from '../types/pdf-types.js';
 import type { PdfColor } from '../types/pdf-types.js';
-import { parseColor, fillOp, strokeOp } from './pdf-color.js';
+import { parseColor, fillOp, strokeOp, tintOperands } from './pdf-color.js';
 import { txt, fmtNum } from './pdf-text.js';
 import { helveticaWidth } from '../fonts/encoding.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
@@ -496,11 +496,9 @@ function autoAlt(block: ChartBlock): string {
 
 // ── Cartesian (bar / barH / line / stacked / area / scatter) ─────────
 
-/** Mix an "R G B" operator colour toward white (0 = unchanged, 1 = white). */
-function mixTowardWhite(rgb: string, amount: number): string {
-    return rgb.split(' ')
-        .map(c => fmtNum(Number(c) + (1 - Number(c)) * amount))
-        .join(' ');
+/** Mix operator colour toward white (0 = unchanged, 1 = white), RGB or CMYK. */
+function mixTowardWhite(operands: string, amount: number): string {
+    return tintOperands(operands, amount, fmtNum);
 }
 
 /**

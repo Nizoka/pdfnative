@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseColor, isValidPdfRgb, normalizeColors, fillOp, strokeOp, resolveColor } from '../../src/core/pdf-color.js';
+import { parseColor, isValidPdfRgb, normalizeColors, fillOp, strokeOp, resolveColor, rgbOperands, tintOperands } from '../../src/core/pdf-color.js';
 import type { PdfColors } from '../../src/types/pdf-types.js';
 
 // ── parseColor — hex ─────────────────────────────────────────────────
@@ -118,8 +118,9 @@ describe('parseColor', () => {
             expect(() => parseColor([1, 2] as never)).toThrow('expected [r, g, b]');
         });
 
-        it('should reject tuple with 4 values', () => {
-            expect(() => parseColor([1, 2, 3, 4] as never)).toThrow('expected [r, g, b]');
+        it('should reject tuple with 5 values', () => {
+            // Four values became CMYK in v1.8.0; five still match nothing.
+            expect(() => parseColor([1, 2, 3, 4, 5] as never)).toThrow('expected [r, g, b]');
         });
 
         it('should reject tuple with value > 255', () => {
@@ -316,8 +317,93 @@ describe('resolveColor', () => {
     });
 
     it('returns operands identical to parseColor', () => {
-        for (const input of ['#2563EB', [1, 2, 3] as const, '0 0 0']) {
+        for (const input of ['#2563EB', [1, 2, 3] as const, '0 0 0', [100, 0, 0, 0] as const, '0 0 0 1']) {
             expect(resolveColor(input).operands).toBe(parseColor(input));
         }
+    });
+
+    it('reads CMYK from four components', () => {
+        expect(resolveColor([100, 60, 0, 10])).toEqual({ space: 'cmyk', operands: '1 0.6 0 0.1' });
+        expect(resolveColor('0 0 0 1')).toEqual({ space: 'cmyk', operands: '0 0 0 1' });
+    });
+});
+
+// ── CMYK (v1.8.0) ────────────────────────────────────────────────────
+
+describe('CMYK colours', () => {
+    it('parses a percent tuple to 0.0–1.0 operands', () => {
+        expect(parseColor([100, 60, 0, 10])).toBe('1 0.6 0 0.1');
+        expect(parseColor([0, 0, 0, 100])).toBe('0 0 0 1');
+        expect(parseColor([12.5, 0, 0, 0])).toBe('0.125 0 0 0');
+    });
+
+    it('passes a PDF CMYK string through', () => {
+        expect(parseColor('0.1 0.2 0.3 0.4')).toBe('0.1 0.2 0.3 0.4');
+    });
+
+    it('emits k and K', () => {
+        expect(fillOp([0, 0, 0, 100])).toBe('0 0 0 1 k');
+        expect(strokeOp('1 0 0 0')).toBe('1 0 0 0 K');
+    });
+
+    it('rejects a tuple value above 100 or below 0', () => {
+        expect(() => parseColor([0, 0, 0, 101])).toThrow('Expected a number 0–100');
+        expect(() => parseColor([0, -1, 0, 0])).toThrow('Expected a number 0–100');
+        expect(() => parseColor([0, NaN, 0, 0])).toThrow('Expected a number 0–100');
+    });
+
+    it('rejects a CMYK string value above 1, naming the space', () => {
+        expect(() => parseColor('0 0 0 1.5')).toThrow('Invalid PDF CMYK value');
+    });
+
+    it('keeps RGB validation messages unchanged', () => {
+        expect(() => parseColor('0 1.5 0')).toThrow('Invalid PDF RGB value');
+        expect(() => parseColor([0, 0, 256])).toThrow('Expected a number 0–255');
+    });
+
+    it('does not make isValidPdfRgb accept four components', () => {
+        expect(isValidPdfRgb('0 0 0 1')).toBe(false);
+    });
+
+    it('normalizes CMYK fields alongside RGB ones', () => {
+        const colors = normalizeColors({
+            title: [0, 0, 0, 100], credit: '#0F9179', debit: '0 1 1 0', text: '#333',
+            thBg: '#EEE', thBrd: '#CCC', rowBrd: '#DDD', ptdBg: '#FFF', balBg: '#FFF',
+            balBrd: '#CCC', label: '#666', footer: '#666',
+        });
+        expect(fillOp(colors.title)).toBe('0 0 0 1 k');
+        expect(fillOp(colors.debit)).toBe('0 1 1 0 k');
+        expect(fillOp(colors.credit)).toMatch(/ rg$/);
+    });
+});
+
+describe('rgbOperands', () => {
+    it('returns RGB input unchanged', () => {
+        expect(rgbOperands('#2563EB')).toBe('0.145 0.388 0.922');
+    });
+
+    it('converts CMYK with the device formula', () => {
+        expect(rgbOperands([0, 0, 0, 0])).toBe('1 1 1');
+        expect(rgbOperands([0, 0, 0, 100])).toBe('0 0 0');
+        expect(rgbOperands([100, 0, 0, 0])).toBe('0 1 1');
+        expect(rgbOperands([0, 50, 100, 20])).toBe('0.8 0.4 0');
+    });
+});
+
+describe('tintOperands', () => {
+    const fmt = (n: number): string => String(Math.round(n * 1000) / 1000);
+
+    it('moves RGB toward 1', () => {
+        expect(tintOperands('0 0.5 1', 0.5, fmt)).toBe('0.5 0.75 1');
+    });
+
+    it('removes CMYK ink rather than adding it', () => {
+        expect(tintOperands('1 0.5 0 0.2', 0.5, fmt)).toBe('0.5 0.25 0 0.1');
+        expect(tintOperands('1 1 1 1', 1, fmt)).toBe('0 0 0 0');
+    });
+
+    it('leaves colours unchanged at amount 0', () => {
+        expect(tintOperands('0.2 0.4 0.6', 0, fmt)).toBe('0.2 0.4 0.6');
+        expect(tintOperands('0.2 0.4 0.6 0.8', 0, fmt)).toBe('0.2 0.4 0.6 0.8');
     });
 });

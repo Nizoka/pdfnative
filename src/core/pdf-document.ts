@@ -35,7 +35,7 @@ import { toBytes } from './pdf-stream.js';
 import { buildOutlineObjects, type OutlineRenderItem } from './pdf-outline.js';
 import { buildPageLabelsDict } from './pdf-page-labels.js';
 import { buildViewerPreferences } from './pdf-viewer-prefs.js';
-import { parseColor, fillOp, strokeOp } from './pdf-color.js';
+import { rgbOperands, fillOp, strokeOp } from './pdf-color.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
     FT_H, HEADER_H,
@@ -1310,7 +1310,8 @@ function mapOutlineItem(item: OutlineItem): OutlineRenderItem {
         bold: item.bold,
         italic: item.italic,
         open: item.open,
-        color: item.color !== undefined ? parseColor(item.color) : undefined,
+        // An outline item's /C is DeviceRGB by definition (ISO 32000-1 Table 153).
+        color: item.color !== undefined ? rgbOperands(item.color) : undefined,
         children: item.children ? item.children.map(mapOutlineItem) : undefined,
     };
 }
