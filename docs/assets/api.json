@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 490,
+  "exportCount": 492,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -1109,6 +1109,13 @@
       "module": "src/core/pdf-tags.ts",
       "signature": "export type PdfXConformanceTarget = typeof PDF_X_CONFORMANCE_TARGETS[number];",
       "summary": "Type alias for the string literal members of PDF_X_CONFORMANCE_TARGETS."
+    },
+    {
+      "name": "PdfXValidationResult",
+      "kind": "type",
+      "module": "src/parser/pdf-x-validator.ts",
+      "signature": "export interface PdfXValidationResult",
+      "summary": "Result of a PDF/X structural validation."
     },
     {
       "name": "PrintOptions",
@@ -3370,6 +3377,13 @@
       "module": "src/parser/pdf-ua-validator.ts",
       "signature": "export function validatePdfUA(bytes: Uint8Array): PdfUAValidationResult",
       "summary": "Validate the PDF/UA (ISO 14289-1) structural prerequisites of a tagged PDF."
+    },
+    {
+      "name": "validatePdfX",
+      "kind": "value",
+      "module": "src/parser/pdf-x-validator.ts",
+      "signature": "export function validatePdfX(bytes: Uint8Array): PdfXValidationResult",
+      "summary": "Validate the PDF/X-4 (ISO 15930-7) structural prerequisites of a file."
     },
     {
       "name": "validatePrintOptions",

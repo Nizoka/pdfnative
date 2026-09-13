@@ -376,6 +376,8 @@ export type { ExtractTextOptions, ExtractedTextRun, ExtractedPageText } from './
 export { extractText } from './parser/pdf-text-extract.js';
 export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
 export { validatePdfUA } from './parser/pdf-ua-validator.js';
+export type { PdfXValidationResult } from './parser/pdf-x-validator.js';
+export { validatePdfX } from './parser/pdf-x-validator.js';
 export {
     inflateSync, setInflateImpl, initNodeDecompression as initNodeDecompression_parser,
     setMaxInflateOutputSize, getMaxInflateOutputSize, DEFAULT_MAX_INFLATE_OUTPUT,
