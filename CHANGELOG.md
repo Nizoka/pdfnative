@@ -5,6 +5,129 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] – 2026-09-13
+
+The typography and print release: paragraphs that break across pages
+under widow and orphan rules, justification and optical margins, pair
+kerning and OpenType features; five new scripts (27 in all) and a
+Universal Shaping Engine generated from the Unicode Character Database;
+COLRv1 transforms, variable paints and structural masks, so flags keep
+their shaded wave, and bundled skin tones; CMYK colour, CMYK
+OutputIntents and a PDF/X-4 conformance claim with `validatePdfX()`.
+Underneath, every sample is now deterministic and held byte for byte to
+the release that last changed it. Zero runtime dependencies, no breaking
+changes: 47 exports added, none removed, every new behaviour opt-in, and
+existing inputs render byte-identically except where the previous output
+was wrong (see Fixed). 3214 tests across 150 files; veraPDF-validated.
+
+### Added
+
+- **feat(samples): deterministic samples and a byte-level regression harness** —
+  `setDefaultCreationDate()` pins the creation instant process-wide and the
+  `{date}` placeholder now resolves against it; `npm run verify:samples`
+  fingerprints all 270 samples (SHA-256 of the bytes, or of a semantic
+  projection for the 14 encrypted ones) against a committed manifest whose
+  entries chain to the release that last changed them; blocking CI workflow.
+- **feat(core): typography** under `layout.typography`, all opt-in —
+  `splitParagraphs` with `widows` / `orphans`, `keepHeadingsWithNext` and
+  per-block `keepWithNext`; `align: 'justify'` and `opticalMargins`; soft
+  hyphens (U+00AD) and `setHyphenationProvider()`; ISO 80000-1
+  `unitBinding` (`bindUnits()`); `punctuationSpacing` presets `fr` / `fr-CA`
+  or explicit rules (`applyPunctuationSpacing()`); `metrics: 'exact'` Adobe
+  Core 14 advances; `kerning` from GPOS pair adjustment written as `TJ`
+  arrays; `fontFeatures` single substitutions (`tnum`, `pnum`, `lnum`,
+  `onum`, `zero`, `ordn`, `sups`, `subs`, `smcp`, `c2sc`, `case`).
+- **feat(shaping): Lao, Tai Tham, New Tai Lue, Tai Le and Cham** — 27 scripts.
+  Lao has a dedicated shaper (tall and descender contextual variants, sara am
+  decomposition, pali virama); Tai Tham and Cham are shaped by the new engine;
+  New Tai Lue and Tai Le need no shaper and take the plain path.
+- **feat(shaping): a data-driven Universal Shaping Engine** — categories
+  generated from UCD 17.0.0 plus the USE override tables (1057 ranges, 42
+  cluster categories), the cluster grammar, and pre-base and repha reordering
+  (`useCategory()`, `splitUseSyllables()`, `reorderUseCluster()`,
+  `shapeUseText()`); `npm run verify:unicode` checks the table against its
+  generator.
+- **feat(fonts): COLRv1 transforms, variable paints and masks** — every
+  transform paint (formats 12–31), variable paints read at the default
+  instance, and `SRC_IN` / `DEST_IN` masks rendered as clipping paths with
+  build-time clip compaction; uniform gradient-stop alpha kept through
+  `/ExtGState`.
+- **feat(fonts): bundled skin tones** — 20 gestures and 10 generic people in
+  all five tones (150 sequences); the curated module carries 1 189 glyphs and
+  223 sequences (4 969 KB of the 5 120 KB budget); CLI `--sequences skin`.
+- **feat(core): CMYK colours** — `[c, m, y, k]` tuples in percent and
+  `'C M Y K'` operand strings on every colour option, written with `k` / `K`
+  (`PdfCmykTuple`, `PdfCmykString`, `resolveColor()`, `fillOp()`,
+  `strokeOp()`).
+- **feat(core): CMYK and Gray OutputIntents** — `/N` taken from the profile;
+  RGB content under a non-RGB intent remapped through a calibrated inline
+  `/DefaultRGB` in every painting resource dictionary; new diagnostic
+  `PDFA_DEVICE_CMYK_CONTENT`.
+- **feat(core): PDF/X-4** — `pdfx: 'pdfx4'` writes a PDF 1.6 header, PDF/X-4
+  XMP identification, a `/GTS_PDFX` OutputIntent, TrimBoxes and `/Trapped`;
+  incoherent requests throw before writing; diagnostics
+  `PDFX_NO_FONT_ENTRIES`, `PDFX_DEVICE_CMYK`, `PDFX_ANNOTATIONS`
+  (`PDF_X_CONFORMANCE_TARGETS`).
+- **feat(parser): `validatePdfX()`** — structural PDF/X-4 validator returning
+  `{ valid, errors, warnings }`.
+- **feat(core): registration colour** — printer's marks use the `All`
+  separation under a CMYK OutputIntent.
+- **feat(core): `setDeflateRawImpl()` and `wrapZlib()`** — inject a raw
+  RFC 1951 compressor and let pdfnative add the RFC 1950 envelope.
+- **feat(samples): 28 new samples** (270), including typography pairs,
+  alphabets for the five new scripts, a form inside PDF/A-2b, CMYK under
+  PDF/X-4 and PDF/A-2b, and skin tones; two recipes (`typography-report`,
+  `print-pdfx4`).
+
+### Changed
+
+- **refactor(core): one pagination planner** shared by the builder and
+  `inspectDocumentLayout()`.
+- **refactor(shaping): one shaper registry** (`SCRIPT_SHAPERS`,
+  `findShaper()`) replaces three hand-written dispatch ladders.
+- **refactor(core): one colour-operator choke point** — 101 call sites
+  across eleven modules route through `fillOp()` / `strokeOp()`.
+- **perf(fonts): kerning kept in OpenType class form** — Noto Sans's pair
+  table is 46 KB instead of 594 KB expanded.
+- **feat(core): `parseColor()` accepts CMYK inputs** and returns their four
+  operands; every input it accepted before parses exactly as it did.
+- **feat(core): `outputIntent` accepts CMYK and Gray profiles**; the
+  resolution now happens before any byte is written.
+- **chore(deps): js-yaml pinned to 4.3.2** (GHSA-2883-xcg3-v3hh, reached only
+  through ESLint) via overrides.
+
+### Fixed
+
+- **fix(core): AcroForm fields under a PDF/A claim** embed their `/DR` font
+  instead of an unembedded base-14 `/Helv`, so interactive forms can be
+  archival ([#74]).
+- **fix(core): `inspectDocumentLayout()` page count with a table of
+  contents** — it measured the `toc` block as zero and ran one pass ([#75]).
+- **fix(core): `setDeflateImpl()` documentation** recommended raw DEFLATE
+  and asynchronous APIs that produce unreadable streams; injected
+  implementations are now validated with actionable errors ([#78]).
+- **fix(core): soft hyphens** rendered as permanent hyphens; no-break spaces
+  measured about twice their width.
+- **fix(fonts): GSUB single substitutions** were read from the wrong offset,
+  ignored extension lookups (most of Noto Sans JP / KR / SC's substitutions)
+  and merged discretionary features into the default table.
+- **fix(fonts): modules advertised undrawable glyphs** from subsetted fonts,
+  so Polish, Turkish and Vietnamese faces claimed coverage they drew as
+  blanks; intentionally blank characters stay mapped.
+- **fix(shaping): Khmer subscripts, Myanmar kinzi and stacked marks** —
+  coeng / virama ligatures at every stack position, kinzi emitted as a mark,
+  and mark-to-mark anchors applied.
+- **fix(shaping): U+061C ARABIC LETTER MARK** is stripped before measuring
+  and encoding.
+- **fix(fonts): COLRv1 sweep angles** ignored the `BiasedAngle` bias; seven
+  transform formats dropped their glyph to monochrome.
+- **fix(samples): locale-dependent sample output** — amounts formatted with
+  a bare `toLocaleString()` differed between machines.
+
+[#74]: https://github.com/Nizoka/pdfnative/issues/74
+[#75]: https://github.com/Nizoka/pdfnative/issues/75
+[#78]: https://github.com/Nizoka/pdfnative/issues/78
+
 ## [1.7.0] – 2026-08-21
 
 The long-term-validation release: complete PAdES LTV signing (B-B → B-LTA)
