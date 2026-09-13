@@ -130,7 +130,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
 - **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with isolates (LRI/RLI/FSI/PDI) and explicit embeddings (LRE/RLE/LRO/RLO/PDF) including character-level X4–X5 overrides (v1.3.0). **v1.7.0** implements I1/I2 even embedding levels so digit runs (European, Arabic-Indic, Extended Arabic-Indic) keep logical order in RTL text, and full rule-L4 glyph mirroring through the complete 428-pair `BidiMirroring.txt` table
 - **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` drive joiner classification across the Devanagari, Bengali, and Tamil shapers, fixing nukta+virama, half-form, eyelash-ra, and ya-phalaa edge cases (v1.3.0)
-- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.5 MB with the v1.7.0 sequence ligatures, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). [Guide →](docs/guides/colour-emoji.md)
+- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.5 MB with the v1.7.0 sequence ligatures, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). **Skin tones, transforms and masks** (v1.8.0): 30 gestures and people bundled in all five tones (1189 glyphs + 223 sequences, ~4.9 MB); every COLRv1 transform and variable paint is read, and `SRC_IN`/`DEST_IN` masks render as clipping paths, so flags keep their shaded wave. [Guide →](docs/guides/colour-emoji.md)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
 - **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments). **Conformance guards** (v1.7.0): configurations that would break the declared PDF/A level (no embedded fonts, DeviceCMYK images) surface a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`. [Guide →](docs/guides/pdfa.md)
@@ -4032,10 +4032,10 @@ If you use the CLI in research or academic pipelines, cite both repositories:
 <!-- source: docs/guides/colour-emoji-cli.md -->
 # Colour-emoji font CLI (`pdfnative-build-emoji-font`)
 
-> **New in v1.4.0, expanded in v1.6.0 and v1.7.0.** pdfnative ships a curated
-> 1167-glyph colour-emoji module by default (plus 73 flag/ZWJ sequences since
-> v1.7.0). When you need **more emoji — up to the full ~3 600-glyph set, or
-> skin-tone sequence variants** — the
+> **New in v1.4.0, expanded in v1.6.0, v1.7.0 and v1.8.0.** pdfnative ships a
+> curated 1189-glyph colour-emoji module by default (plus 223 flag, ZWJ and
+> skin-tone sequences). When you need **more emoji — up to the full ~3 600-glyph
+> set, or skin tones beyond the curated bases** — the
 > `pdfnative-build-emoji-font` CLI generates a data module containing exactly the
 > glyphs and sequences you choose. It's bundled with the `pdfnative` package, so
 > any user can run it with `npx` — no extra install, no editing library source.
@@ -4105,7 +4105,7 @@ pass none, the curated set is used.
 | Flag | Meaning |
 |---|---|
 | `--all` | Every colour glyph in the font (large module). |
-| `--preset curated` | pdfnative's lean 1167-glyph default set. |
+| `--preset curated` | pdfnative's lean 1189-glyph default set. |
 | `--preset all` | Same as `--all`. |
 | `--codepoints <list>` | Comma-separated hex scalars: `1F600,1F680,2764`. `U+`, `0x`, `#` prefixes are tolerated. |
 | `--ranges <list>` | Comma-separated **inclusive** hex ranges: `1F600-1F64F,2600-27BF`. |
@@ -4121,15 +4121,14 @@ pre-1.7 output shape, plus an inert `sequences = null` export).
 
 | Flag | Meaning |
 |---|---|
-| `--sequences <preset>` | `flags` (the curated 51-flag set), `zwj` (the curated 22-sequence ZWJ set), `all` (both), or `none`. |
+| `--sequences <preset>` | `flags` (the curated 51-flag set), `zwj` (the curated 22-sequence ZWJ set), `skin` (30 bases in five tones, 150 sequences, v1.8.0), `all` (the three), or `none`. |
 | `--sequence-list <list>` | Comma-separated entries: a 2-letter country code (`FR`, `DE`) and/or hyphen-joined hex scalars (`1F468-200D-1F680`, `1F469-1F3FD-200D-2695-FE0F`). Skin-tone forms welcome. |
 
 Selections merge and de-duplicate, so `--sequences flags --sequence-list
 1F469-1F3FB-200D-2695-FE0F` is valid. The bundled npm module already carries
-the curated 51 + 22 set — reach for the CLI when you need skin-tone variants
-or sequences beyond it. Note that flags render **flat** (Noto's wave-shading
-overlay uses a COLRv1 compositing mask with no PDF equivalent — see the
-[colour-emoji guide](colour-emoji.html)).
+the curated 51 + 22 + 150 set — reach for the CLI when you need skin tones on
+other bases, toned ZWJ forms, or sequences beyond it. Since v1.8.0 flags keep
+Noto's wave shading (see the [colour-emoji guide](colour-emoji.html)).
 
 ## Output options
 
@@ -4173,8 +4172,9 @@ Glyph selection (combine freely; default: --preset curated):
   --ranges <list>         Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
 
 Sequence selection (v1.7.0; default: none):
-  --sequences <preset>    flags | zwj | all | none — bundle the curated flag
-                          and/or ZWJ sequence sets (GSUB-resolved ligatures).
+  --sequences <preset>    flags | zwj | skin | all | none — bundle the curated
+                          flag, ZWJ and/or skin-tone sequence sets (GSUB-
+                          resolved ligatures; all = the three together).
   --sequence-list <list>  Comma-separated country codes and/or hyphen-joined
                           hex sequences, e.g. FR,DE,1F468-200D-1F680,
                           1F469-1F3FD-200D-2695-FE0F (skin tones welcome).
@@ -4213,7 +4213,7 @@ pdfnative ships.
 ```ts
 import { registerFont, loadFontData, buildDocumentPDFBytes } from 'pdfnative';
 
-// Opt in to the curated colour-emoji subset (1167 glyphs + 73 sequences, ~4.5 MB).
+// Opt in to the curated colour-emoji subset (1189 glyphs + 223 sequences, ~4.9 MB).
 registerFont('emoji', () => import('pdfnative/fonts/noto-color-emoji-data.js'));
 
 const emoji = await loadFontData('emoji');
@@ -4250,6 +4250,9 @@ and renders each colour glyph as a **PDF Form XObject**:
 | Radial gradient (`PaintRadialGradient`) | `/ShadingType 3` radial shading |
 | Sweep gradient (`PaintSweepGradient`) | flat-colour triangular wedges fanned around the centre (**v1.4.0**) |
 | Compositing (`PaintComposite`) | separable blend modes mapped to PDF `/BM` (Multiply, Screen, Overlay, Darken, Lighten, …) (**v1.4.0**) |
+| Transforms (`PaintTranslate`, `PaintScale`, `PaintRotate`, `PaintSkew`, around-centre forms) | folded into the layer matrix (**v1.8.0**) |
+| Masks (`PaintComposite` `SRC_IN` / `DEST_IN`) | nested `W n` clipping paths (**v1.8.0**) |
+| Variable paints (`PaintVar*`) | read at the font's default instance (**v1.8.0**) |
 | CPAL palette | per-stop RGB(A) colours |
 
 Each unique emoji produces **one indirect Form XObject**, deduplicated and
@@ -4264,12 +4267,24 @@ run emits `q s 0 0 s x y cm /CEm0 Do Q` to place the glyph.
 > keeps its backdrop layers (this is what makes flags render flat instead of
 > monochrome).
 
+> **Transforms, variable paints and masks (v1.8.0).** Every COLRv1 transform
+> paint is now read, including the scale, rotate and skew forms around a
+> centre, and sweep angles use the specification's bias. Variable paints are
+> read at the default instance — the only one a static PDF can show — so
+> they render exactly as a non-variable font would; no other instance of an
+> axis is reachable. `SRC_IN` and `DEST_IN` masks become clipping paths when
+> the mask is made of glyph outlines, which is how Noto builds them: flags
+> now show their shaded wave. A translucent mask layer is resolved to the
+> nearest binary shape, and a gradient whose stops all share one alpha keeps
+> it through `/ExtGState` `/ca`.
+
 ## Opt-in, not default
 
 Colour emoji is **opt-in** for two reasons:
 
-1. **Module size.** The curated subset is ~4.5 MB (expanded to 1167 glyphs in
-   v1.6.0, plus 73 flag/ZWJ sequences in v1.7.0); bundling it by default would
+1. **Module size.** The curated subset is ~4.9 MB (expanded to 1167 glyphs in
+   v1.6.0, plus 73 flag/ZWJ sequences in v1.7.0, then 1189 glyphs and 150
+   skin-tone sequences in v1.8.0); bundling it by default would
    bloat every consumer. Register it only when you need colour.
 2. **Byte stability.** When no colour-emoji font is registered, documents are
   byte-identical to the pre-colour-emoji path — the colour path is fully gated.
@@ -4282,27 +4297,30 @@ registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'));
 
 ## Coverage & limits
 
-The bundled module is a **curated subset** of **1167 common single-codepoint
-emoji** (expanded from 221 in v1.6.0): the complete Emoticons and Supplemental
-Symbols & Pictographs blocks, Miscellaneous Symbols & Pictographs through
-U+1F53D (nature, food, objects, hearts, office, av/ui symbols) plus clocks and
-the emoji-presentation stragglers, and the **complete assigned Transport & Map
-block** (U+1F680–1F6FF). Since v1.7.0 it also carries **73 multi-codepoint
-sequences** — 51 flags and 22 ZWJ sequences (see the next section). Symbols &
+The bundled module is a **curated subset** of **1189 common single-codepoint
+emoji**: every emoji the font draws in colour within the Emoticons, Supplemental
+Symbols & Pictographs, Miscellaneous Symbols, Dingbats, Miscellaneous Symbols &
+Pictographs and **Transport & Map** blocks. (It held 1167 from v1.6.0; the 22
+added in v1.8.0 were already selected but were dropped at build time, because
+their artwork uses COLRv1 transforms the parser did not read yet.) It also
+carries **223 multi-codepoint sequences** — 51 flags and 22 ZWJ sequences since
+v1.7.0, and 150 skin-tone forms since v1.8.0 (see the next section). Symbols &
 Pictographs Extended-A (U+1FA70–1FAFF) is
 not bundled — use the CLI below. It ships pre-built because every file under the package
 `files` allowlist is included in the npm tarball regardless of tree-shaking — the
 full Noto Color Emoji build (thousands of glyphs, ~32 MB) would weigh down
 *every* `npm install`, even for consumers who never touch emoji. The subset keeps
-the install within a 5120 KB budget (actual: ~4.5 MB) while the lazy
+the install within a 5120 KB budget (actual: ~4.9 MB) while the lazy
 `() => import(...)` keeps it out of bundles that don't reference it.
 
-> **Out of scope for the bundled subset:** skin-tone-modified forms
-> (`👍🏽`, `👩🏻‍🚀`, …) and any flag or ZWJ sequence beyond the curated 73. The
-> combinatorial skin-tone set is deliberately CLI territory — build a module
-> with `--sequences` / `--sequence-list` below to cover exactly the forms you
-> need. An uncovered sequence degrades to the per-codepoint behaviour
-> described further down (base emoji render, joiners drop) — never worse.
+> **Out of scope for the bundled subset:** skin tones on anything but the 30
+> curated bases (`🧑🏽‍🚀`, `🏃🏿`, …), and any flag or ZWJ sequence beyond the
+> curated ones. Unicode defines 667 modifier sequences and 1 365 toned ZWJ
+> sequences, about 3 KB each — the complete set would take the module past
+> 6 MB. Build a module with `--sequences` / `--sequence-list` below to cover
+> exactly the forms you need. An uncovered sequence degrades to the
+> per-codepoint behaviour described further down (base emoji render, joiners
+> drop) — never worse.
 
 To cover the **full** Noto Color Emoji set — or any custom selection — pdfnative
 ships an official generator CLI, `pdfnative-build-emoji-font`, so you never have
@@ -4339,6 +4357,10 @@ sequence produces exactly one COLR Form XObject:
 - **22 ZWJ sequences** — families (`👨‍👩‍👧`), professions (`👩‍🚀`, `👨‍💻`),
   `❤️‍🔥`, `🏳️‍🌈`, `🏳️‍⚧️`, `🏴‍☠️`, `🐻‍❄️`, `😮‍💨`, and friends —
   in their skin-tone-free RGI forms.
+- **150 skin-tone forms (v1.8.0)** — 20 everyday gestures (`👍🏽`, `🙏🏿`,
+  `🤝🏻`, `✌🏾`, …) and 10 generic people (`🧑🏼`, `👵🏾`, …), each in all
+  five Fitzpatrick tones, so a document never has to show one tone for lack
+  of the others.
 
 No API change is required: register the bundled colour-emoji module as usual
 and write the sequences in your text. Three behaviours worth knowing:
@@ -4352,13 +4374,12 @@ and write the sequences in your text. Three behaviours worth knowing:
   variation selectors, and skin-tone modifiers are dropped, and unmatched
   regional indicators pass through the normal cmap lookup. A module without a
   `sequences` table renders byte-identically to v1.6.0.
-- **Flags render flat.** Noto's flag glyphs stack a wave-shading overlay on
-  the flat artwork via a COLRv1 `PaintComposite` SRC_IN mask that has no PDF
-  equivalent. pdfnative degrades the composite to its supported backdrop, so
-  every flag renders as its flat (unwaved) artwork rather than falling back
-  to monochrome.
+- **Flags are shaded (v1.8.0).** Noto's flag glyphs stack a wave-shading
+  overlay on the flat artwork through a COLRv1 `SRC_IN` mask. The v1.7 line
+  rendered only the flat artwork; since v1.8.0 the mask becomes a clipping
+  path and the wave renders.
 
-Skin-tone-modified sequences stay CLI-only — generate a module with
+Other skin-tone forms stay CLI territory — generate a module with
 `--sequences` / `--sequence-list` (see the [CLI guide](colour-emoji-cli.html)).
 
 ## Advanced compositing (v1.4.0)
@@ -4370,7 +4391,7 @@ pdfnative now maps both where a faithful PDF translation exists:
 |---|---|
 | Sweep / conic gradient (`PaintSweepGradient`, format 8) | Flat-shaded triangular **wedges** fanned around the centre — no `/Shading` resource, pure path fills. Matrix rotation is folded into the start/end angles via `Math.atan2`. |
 | Composite (`PaintComposite`, format 32) — *separable* blend modes | Backdrop + source layers, with the source tagged via a `/BM` (blend mode) `/ExtGState`: Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference, Exclusion, Hue, Saturation, Color, Luminosity. |
-| Composite — *structural* Porter-Duff modes (`SrcOver`, `DestIn`, clipping masks, …) | No exact PDF equivalent → the glyph falls back to the **monochrome** outline. Since v1.7.0, when only the composite's *source* subtree is unsupported, its partial layers roll back and the **backdrop renders alone** (best-effort) — Noto's flags degrade to their flat artwork this way. |
+| Composite — *structural* Porter-Duff modes (`Clear`, `Xor`, `DestOut`, …) | No exact PDF equivalent → the glyph falls back to the **monochrome** outline. Since v1.7.0, when only the composite's *source* subtree is unsupported, its partial layers roll back and the **backdrop renders alone** (best-effort). Since v1.8.0, `SrcIn` and `DestIn` masks built from glyph outlines render as clipping paths instead. |
 
 Sweep wedges approximate the smooth conic sweep with a fan of flat-colour
 triangles whose count scales with the angular span — close enough for emoji at
@@ -4383,10 +4404,16 @@ faithfully in any conformant viewer.
 
 ## Limitations
 
-- **`PaintMask`** and COLRv1 variable (animated) paints are not yet rendered;
-  glyphs using them fall back gracefully — to the backdrop layers when the
-  unsupported paint sits inside a composite's source subtree (v1.7.0), to the
-  monochrome outline otherwise. Tracked for a future release.
+- **Masks that are not glyph shapes** — a mask built from a gradient or a
+  blended subtree has no clipping-path equivalent without a transparency
+  group. Those glyphs fall back as before: to the backdrop layers when the
+  mask sits inside a composite's source subtree (v1.7.0), to the monochrome
+  outline otherwise.
+- **Variable fonts** render at the default instance only. A PDF page is
+  static, and the subsetter drops `fvar` and `gvar`.
+- **Gradient alpha** is kept only when every stop shares it; a gradient that
+  fades from opaque to transparent renders opaque, because PDF shadings carry
+  colour, not opacity.
 - **PDF/A:** gradient transparency uses `/ExtGState` alpha, which PDF/A-1b
   forbids. Use solid-layer emoji or a non-PDF/A document for colour gradients.
 

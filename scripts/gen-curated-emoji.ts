@@ -1,8 +1,16 @@
 /**
  * Maintainer generator for the curated colour-emoji codepoint list.
- * Selects a priority-ordered ~850 single-codepoint emoji covering everyday
- * use, intersected with the glyphs NotoColorEmoji-Regular.ttf actually
- * provides, and rewrites scripts/lib/curated-emoji.ts.
+ * Selects every single-codepoint emoji in the ranges below that
+ * NotoColorEmoji-Regular.ttf resolves to a colour glyph, and rewrites
+ * scripts/lib/curated-emoji.ts.
+ *
+ * Until v1.8.0 this generator no longer reproduced the list it claimed to
+ * own: it capped the selection at 850 and included Extended-A, while the
+ * committed list held 1 167 code points and excluded that block. Anyone
+ * following the "regenerate, do not edit" instruction would have silently
+ * removed 326 emoji. It now encodes the rule the committed list follows —
+ * whole ranges, no cap, Extended-A left to the CLI — and the module's size
+ * budget is enforced where the module is built.
  *
  * Run this, then regenerate the bundled module:
  *   npx tsx scripts/gen-curated-emoji.ts
@@ -29,7 +37,8 @@ const RANGES: Array<{ from: number; to: number }> = [
     { from: 0x2700, to: 0x27bf },   // Dingbats (checks, stars, crosses)
     { from: 0x1f300, to: 0x1f5ff }, // Misc Symbols & Pictographs (nature, food, objects, symbols)
     { from: 0x1f680, to: 0x1f6ff }, // Transport & Map
-    { from: 0x1fa70, to: 0x1faff }, // Symbols & Pictographs Extended-A
+    // Symbols & Pictographs Extended-A (U+1FA70–1FAFF) is not bundled; build
+    // a custom module with `npx pdfnative-build-emoji-font` for it.
 ];
 const EXCLUDE = (cp: number) =>
     (cp >= 0x1f3fb && cp <= 0x1f3ff) || // skin-tone modifiers
@@ -40,11 +49,11 @@ const SELECT_BMP = [
     0x2764, 0x203c, 0x2049, 0x2122, 0x2139, 0x2611, 0x2714, 0x2716, 0x274c, 0x2753,
 ];
 
-const BUDGET = 850;
+// No count cap: the size budget belongs to build-color-emoji-data.ts, which
+// measures the real module and refuses to write one that is over it.
 const chosen: number[] = [];
 const seen = new Set<number>();
 const add = (cp: number): void => {
-    if (chosen.length >= BUDGET) return;
     if (seen.has(cp) || EXCLUDE(cp) || !available.has(cp)) return;
     seen.add(cp); chosen.push(cp);
 };
@@ -52,7 +61,6 @@ const add = (cp: number): void => {
 for (const cp of SELECT_BMP) add(cp);
 for (const { from, to } of RANGES) {
     for (let cp = from; cp <= to; cp++) add(cp);
-    if (chosen.length >= BUDGET) break;
 }
 
 chosen.sort((a, b) => a - b);
@@ -71,22 +79,20 @@ const file = `/**
  * \`scripts/build-color-emoji-data.ts\` (regenerates the bundled module) and the
  * public \`pdfnative-build-emoji-font\` CLI (\`--preset curated\`).
  *
- * Selection criteria (v1.6.0 — expanded from 221 to ~${chosen.length}):
- *   1. Complete Emoticons block (U+1F600–1F64F).
- *   2. Complete Supplemental Symbols & Pictographs (U+1F900–1F9FF): faces,
- *      hands, people, animals.
- *   3. Miscellaneous Symbols (U+2600–26FF) and Dingbats (U+2700–27BF).
- *   4. Miscellaneous Symbols & Pictographs (U+1F300–1F5FF): nature, food,
- *      objects, symbols.
- *   5. Transport & Map (U+1F680–1F6FF) and Extended-A (U+1FA70–1FAFF).
- * Only single-codepoint emoji that resolve to a COLR glyph are kept; the list
- * is capped to keep the bundled module within a ~3.5 MB budget.
+ * Selection (${chosen.length} code points): every single-codepoint emoji
+ * NotoColorEmoji-Regular.ttf resolves to a colour glyph in
+ *   1. Emoticons (U+1F600–1F64F);
+ *   2. Supplemental Symbols & Pictographs (U+1F900–1F9FF): faces, hands,
+ *      people, animals;
+ *   3. Miscellaneous Symbols (U+2600–26FF) and Dingbats (U+2700–27BF);
+ *   4. Miscellaneous Symbols & Pictographs (U+1F300–1F5FF);
+ *   5. Transport & Map (U+1F680–1F6FF).
+ * Symbols & Pictographs Extended-A (U+1FA70–1FAFF) is not bundled — build a
+ * custom module with \`npx pdfnative-build-emoji-font\` if you need it. The
+ * module's size budget (5 MB) is enforced by build-color-emoji-data.ts.
  *
- * OUT OF SCOPE (render as monochrome/tofu — build a full module with
- * \`npx pdfnative-build-emoji-font --download --all\` for these): flag
- * sequences (regional-indicator pairs), ZWJ sequences (e.g. family, roles),
- * and skin-tone-modified forms. These require GSUB ligature lookups the
- * generated single-codepoint cmap does not carry.
+ * Multi-codepoint emoji — flags, ZWJ sequences and a curated set of skin-tone
+ * forms — are bundled too, from scripts/lib/curated-emoji-sequences.ts.
  *
  * DO NOT EDIT BY HAND — regenerate the ranges via the maintainer generator,
  * then rebuild the module with: npx tsx scripts/build-color-emoji-data.ts

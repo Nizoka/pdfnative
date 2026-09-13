@@ -17,8 +17,8 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 531335,
-      "approxTokens": 132834
+      "bytes": 533568,
+      "approxTokens": 133392
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -47,8 +47,8 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 99304,
-      "approxTokens": 24826
+      "bytes": 99579,
+      "approxTokens": 24895
     }
   ],
   "guides": [
@@ -194,7 +194,7 @@
     },
     {
       "title": "Colour-emoji font CLI (pdfnative-build-emoji-font)",
-      "summary": "New in v1.4.0, expanded in v1.6.0 and v1.7.0. pdfnative ships a curated 1167-glyph colour-emoji module by default (plus 73 flag/ZWJ sequences since v1.7.0). When you need more emoji — up to the full ~3 600-glyph set, or skin-tone sequence variants — the `pdfnative-build-emoji-font` CLI generates a data module containing exactly the glyphs and sequences you choose.",
+      "summary": "New in v1.4.0, expanded in v1.6.0, v1.7.0 and v1.8.0. pdfnative ships a curated 1189-glyph colour-emoji module by default (plus 223 flag, ZWJ and skin-tone sequences). When you need more emoji — up to the full ~3 600-glyph set, or skin tones beyond the curated bases — the `pdfnative-build-emoji-font` CLI generates a data module containing exactly the glyphs and sequences you choose.",
       "html": "https://pdfnative.dev/guides/colour-emoji-cli.html",
       "markdown": "https://pdfnative.dev/guides/colour-emoji-cli.md",
       "anchors": [
@@ -209,8 +209,8 @@
         "licensing",
         "see-also"
       ],
-      "bytes": 7619,
-      "approxTokens": 1905
+      "bytes": 7727,
+      "approxTokens": 1932
     },
     {
       "title": "Colour emoji (COLRv1)",
@@ -228,8 +228,8 @@
         "variation-selectors--skin-tone-modifiers-v130",
         "see-also"
       ],
-      "bytes": 11715,
-      "approxTokens": 2929
+      "bytes": 13565,
+      "approxTokens": 3391
     },
     {
       "title": "Layout debugging & inspection",

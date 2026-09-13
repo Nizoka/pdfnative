@@ -65,10 +65,10 @@
 <!-- guide:render:start -->
 <h1 id="colour-emoji-font-cli-pdfnative-build-emoji-font">Colour-emoji font CLI (<code>pdfnative-build-emoji-font</code>)</h1>
 <blockquote>
-<p><strong>New in v1.4.0, expanded in v1.6.0 and v1.7.0.</strong> pdfnative ships a curated
-1167-glyph colour-emoji module by default (plus 73 flag/ZWJ sequences since
-v1.7.0). When you need <strong>more emoji — up to the full ~3 600-glyph set, or
-skin-tone sequence variants</strong> — the
+<p><strong>New in v1.4.0, expanded in v1.6.0, v1.7.0 and v1.8.0.</strong> pdfnative ships a
+curated 1189-glyph colour-emoji module by default (plus 223 flag, ZWJ and
+skin-tone sequences). When you need <strong>more emoji — up to the full ~3 600-glyph
+set, or skin tones beyond the curated bases</strong> — the
 <code>pdfnative-build-emoji-font</code> CLI generates a data module containing exactly the
 glyphs and sequences you choose. It&#39;s bundled with the <code>pdfnative</code> package, so
 any user can run it with <code>npx</code> — no extra install, no editing library source.</p>
@@ -138,7 +138,7 @@ pass none, the curated set is used.</p>
 </tr>
 <tr>
 <td><code>--preset curated</code></td>
-<td>pdfnative&#39;s lean 1167-glyph default set.</td>
+<td>pdfnative&#39;s lean 1189-glyph default set.</td>
 </tr>
 <tr>
 <td><code>--preset all</code></td>
@@ -169,7 +169,7 @@ pre-1.7 output shape, plus an inert <code>sequences = null</code> export).</p>
 </thead>
 <tbody><tr>
 <td><code>--sequences &lt;preset&gt;</code></td>
-<td><code>flags</code> (the curated 51-flag set), <code>zwj</code> (the curated 22-sequence ZWJ set), <code>all</code> (both), or <code>none</code>.</td>
+<td><code>flags</code> (the curated 51-flag set), <code>zwj</code> (the curated 22-sequence ZWJ set), <code>skin</code> (30 bases in five tones, 150 sequences, v1.8.0), <code>all</code> (the three), or <code>none</code>.</td>
 </tr>
 <tr>
 <td><code>--sequence-list &lt;list&gt;</code></td>
@@ -177,10 +177,9 @@ pre-1.7 output shape, plus an inert <code>sequences = null</code> export).</p>
 </tr>
 </tbody></table>
 <p>Selections merge and de-duplicate, so <code>--sequences flags --sequence-list 1F469-1F3FB-200D-2695-FE0F</code> is valid. The bundled npm module already carries
-the curated 51 + 22 set — reach for the CLI when you need skin-tone variants
-or sequences beyond it. Note that flags render <strong>flat</strong> (Noto&#39;s wave-shading
-overlay uses a COLRv1 compositing mask with no PDF equivalent — see the
-<a href="colour-emoji.html">colour-emoji guide</a>).</p>
+the curated 51 + 22 + 150 set — reach for the CLI when you need skin tones on
+other bases, toned ZWJ forms, or sequences beyond it. Since v1.8.0 flags keep
+Noto&#39;s wave shading (see the <a href="colour-emoji.html">colour-emoji guide</a>).</p>
 <h2 id="output-options">Output options<a class="heading-anchor" href="#output-options" aria-label="Link to this section">#</a></h2>
 <table>
 <thead>
@@ -233,8 +232,9 @@ Glyph selection (combine freely; default: --preset curated):
   --ranges &lt;list&gt;         Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
 
 Sequence selection (v1.7.0; default: none):
-  --sequences &lt;preset&gt;    flags | zwj | all | none — bundle the curated flag
-                          and/or ZWJ sequence sets (GSUB-resolved ligatures).
+  --sequences &lt;preset&gt;    flags | zwj | skin | all | none — bundle the curated
+                          flag, ZWJ and/or skin-tone sequence sets (GSUB-
+                          resolved ligatures; all = the three together).
   --sequence-list &lt;list&gt;  Comma-separated country codes and/or hyphen-joined
                           hex sequences, e.g. FR,DE,1F468-200D-1F680,
                           1F469-1F3FD-200D-2695-FE0F (skin tones welcome).

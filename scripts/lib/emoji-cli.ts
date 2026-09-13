@@ -7,7 +7,7 @@
  */
 
 import { CURATED_EMOJI } from './curated-emoji.js';
-import { CURATED_FLAGS, CURATED_ZWJ, CURATED_SEQUENCES, flagSequence } from './curated-emoji-sequences.js';
+import { CURATED_FLAGS, CURATED_ZWJ, CURATED_SEQUENCES, flagSequence, CURATED_SKIN_TONES } from './curated-emoji-sequences.js';
 
 export interface CliOptions {
     ttf?: string;
@@ -119,7 +119,7 @@ export function resolveCodepoints(opts: CliOptions, allColor: () => number[]): n
  * (plus an inert `sequences = null` export).
  *
  * `--sequences`: `flags` (curated flag set), `zwj` (curated ZWJ set),
- * `all` (both), `none`.
+ * `skin` (curated skin-tone set, v1.8.0), `all` (the three), `none`.
  * `--sequence-list`: comma-separated entries — a 2-letter country code
  * (`FR`, `DE`) or hyphen-joined hex scalars (`1F468-200D-1F680`,
  * `1F3F4-200D-2620-FE0F`).
@@ -130,10 +130,11 @@ export function resolveSequences(opts: CliOptions): number[][] {
         switch (opts.sequences) {
             case 'flags': out.push(...CURATED_FLAGS.map(c => [...flagSequence(c)])); break;
             case 'zwj': out.push(...CURATED_ZWJ.map(s => [...s])); break;
+            case 'skin': out.push(...CURATED_SKIN_TONES.map(s => [...s])); break;
             case 'all': out.push(...CURATED_SEQUENCES.map(s => [...s])); break;
             case 'none': break;
             default:
-                throw new Error(`Unknown --sequences preset: "${opts.sequences}" (use flags, zwj, all or none)`);
+                throw new Error(`Unknown --sequences preset: "${opts.sequences}" (use flags, zwj, skin, all or none)`);
         }
     }
     if (opts.sequenceList) {

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseArgs, resolveCodepoints, parseHex } from '../../scripts/lib/emoji-cli.js';
+import { parseArgs, resolveCodepoints, resolveSequences, parseHex } from '../../scripts/lib/emoji-cli.js';
+import { CURATED_FLAGS, CURATED_ZWJ, CURATED_SKIN_TONES, SKIN_TONE_BASES } from '../../scripts/lib/curated-emoji-sequences.js';
 import { CURATED_EMOJI } from '../../scripts/lib/curated-emoji.js';
 import { buildEmojiFontModule, allColorCodepoints } from '../../scripts/lib/emoji-font-core.js';
 
@@ -121,6 +122,35 @@ describe('emoji CLI — resolveCodepoints', () => {
 
     it('throws on an oversized range', () => {
         expect(() => resolveCodepoints(parseArgs(['--ranges', '0-30000']), noColor)).toThrow(/too large/);
+    });
+});
+
+describe('emoji CLI — resolveSequences', () => {
+    it('bundles no sequence by default', () => {
+        expect(resolveSequences(parseArgs([]))).toEqual([]);
+    });
+
+    it('skin preset expands every curated base into the five tones (v1.8.0)', () => {
+        const seqs = resolveSequences(parseArgs(['--sequences', 'skin']));
+        expect(seqs).toHaveLength(SKIN_TONE_BASES.length * 5);
+        expect(seqs.slice(0, 5)).toEqual([0x1F3FB, 0x1F3FC, 0x1F3FD, 0x1F3FE, 0x1F3FF].map(t => [SKIN_TONE_BASES[0], t]));
+    });
+
+    it('all preset is flags, then ZWJ, then skin tones', () => {
+        const seqs = resolveSequences(parseArgs(['--sequences', 'all']));
+        expect(seqs).toHaveLength(CURATED_FLAGS.length + CURATED_ZWJ.length + CURATED_SKIN_TONES.length);
+        expect(seqs.slice(-CURATED_SKIN_TONES.length)).toEqual(CURATED_SKIN_TONES);
+    });
+
+    it('names the skin preset when rejecting an unknown one', () => {
+        expect(() => resolveSequences(parseArgs(['--sequences', 'tones']))).toThrow(/flags, zwj, skin, all or none/);
+    });
+
+    it('accepts a hand-written toned ZWJ sequence', () => {
+        expect(resolveSequences(parseArgs(['--sequence-list', 'FR,1F469-1F3FD-200D-1F4BB']))).toEqual([
+            [0x1F1EB, 0x1F1F7],
+            [0x1F469, 0x1F3FD, 0x200D, 0x1F4BB],
+        ]);
     });
 });
 

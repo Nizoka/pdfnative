@@ -5,6 +5,7 @@ import * as colorEmoji from '../../fonts/noto-color-emoji-data.js';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { openPdf } from '../../src/parser/pdf-reader.js';
 import { CURATED_EMOJI } from '../../scripts/lib/curated-emoji.js';
+import { SKIN_TONE_BASES } from '../../scripts/lib/curated-emoji-sequences.js';
 import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
@@ -21,9 +22,10 @@ describe('noto-color-emoji-data module', () => {
         expect(Object.keys(colorEmoji.cmap).length).toBeGreaterThan(100);
     });
 
-    it('bundles the expanded curated set (~1170) within the size budget', () => {
+    it('bundles the expanded curated set (~1190) within the size budget', () => {
         // Expanded from 221 to ~850, then to 1167 (Misc S&P completion +
-        // full Transport & Map) in v1.6.0.
+        // full Transport & Map) in v1.6.0, then to 1189 in v1.8.0 once the
+        // COLRv1 parser stopped dropping glyphs built on transforms and masks.
         expect(CURATED_EMOJI.length).toBeGreaterThanOrEqual(1050);
         expect(CURATED_EMOJI.length).toBeLessThanOrEqual(1250);
         // No duplicates.
@@ -181,6 +183,36 @@ describe('noto-color-emoji-data module', () => {
             expect(has([0x1F1EA, 0x1F1FA])).toBe(true); // 🇪🇺
             expect(has([0x1F468, 0x200D, 0x1F4BB])).toBe(true); // 👨‍💻
             expect(has([0x1F3F4, 0x200D, 0x2620, 0xFE0F])).toBe(true); // 🏴‍☠️
+        });
+
+        it('bundles every curated skin-tone base in all five tones (v1.8.0)', () => {
+            const seqs = colorEmoji.sequences as NonNullable<FontData['sequences']>;
+            for (const base of SKIN_TONE_BASES) {
+                const gids = new Set<number>();
+                for (const tone of [0x1F3FB, 0x1F3FC, 0x1F3FD, 0x1F3FE, 0x1F3FF]) {
+                    const entry = seqs[base]?.find(e => e.length === 2 && e[1] === tone);
+                    const label = `U+${base.toString(16).toUpperCase()} U+${tone.toString(16).toUpperCase()}`;
+                    expect(entry, `${label} not bundled`).toBeDefined();
+                    const gid = (entry as readonly number[])[0];
+                    expect(colorEmoji.colorGlyphs[gid], `${label} has no colour glyph`).toBeDefined();
+                    // A toned form is its own glyph, never the untoned base.
+                    expect(gid).not.toBe(colorEmoji.cmap[base]);
+                    gids.add(gid);
+                }
+                expect(gids.size, `U+${base.toString(16).toUpperCase()} tones share glyphs`).toBe(5);
+            }
+        });
+
+        it('renders a toned gesture as one colour glyph, not base plus swatch', () => {
+            const fontData = colorEmoji as unknown as FontData;
+            const entry: FontEntry = { fontData, fontRef: '/F3', lang: 'emoji' };
+            const bytes = buildDocumentPDFBytes({
+                title: 'Skin tones',
+                blocks: [{ type: 'paragraph', text: '\u{1F44D}\u{1F3FD}' }],
+                fontEntries: [entry],
+            });
+            const doOps = Buffer.from(bytes).toString('latin1').match(/\/CEm\d+ Do/g) ?? [];
+            expect(doOps.length).toBe(1);
         });
 
         it('keeps joiners and regional indicators OUT of the cmap', () => {
