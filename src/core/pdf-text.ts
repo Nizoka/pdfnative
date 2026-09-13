@@ -6,8 +6,9 @@
  */
 
 import type { FontData, ShapedGlyph, EncodingContext } from '../types/pdf-types.js';
-import { toWinAnsi, helveticaWidth, helveticaBoldWidth } from '../fonts/encoding.js';
+import { toWinAnsi, helveticaWidth, helveticaBoldWidth, stripSoftHyphens } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
+import { stripBidiControls } from '../shaping/bidi.js';
 import { wrapSpan } from './pdf-tags.js';
 
 /** Format a number as PDF operator value (2 decimal places). */
@@ -171,11 +172,19 @@ export function txtC(
 /**
  * Measure a string the way {@link txtR} and {@link txtC} do, so justified
  * placement agrees with right- and centre-alignment.
+ *
+ * The estimate takes the Unicode string: it branches on the codepoints of
+ * the CP1252 punctuation (— … “ ” ‘ ’) and strips soft hyphens and bidi
+ * controls itself, so handing it WinAnsi bytes made every one of those
+ * characters measure at the 556-unit default. The AFM table is indexed by
+ * WinAnsi byte, so the invisible characters are stripped before mapping.
  */
 function measureFor(str: string, sz: number, enc: EncodingContext, bold: boolean = false): number {
     if (enc.isUnicode) return enc.tw(str, sz);
-    if (enc.metrics === 'exact') return exactBase14Width(toWinAnsi(str), sz, bold);
-    return bold ? helveticaBoldWidth(str, sz) : helveticaWidth(toWinAnsi(str), sz);
+    if (enc.metrics === 'exact') {
+        return exactBase14Width(toWinAnsi(stripSoftHyphens(stripBidiControls(str))), sz, bold);
+    }
+    return bold ? helveticaBoldWidth(str, sz) : helveticaWidth(str, sz);
 }
 
 /**

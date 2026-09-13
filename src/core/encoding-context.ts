@@ -270,8 +270,10 @@ export function createEncodingContext(
     // Base-14 measurement. 'exact' reads the Adobe Core 14 AFM advances;
     // 'approximate' keeps the historical bucketed estimate so output is
     // byte-identical by default (see fonts/base14-metrics.ts).
+    // The AFM table is indexed by WinAnsi byte; soft hyphens and bidi controls
+    // are invisible and must be stripped first, as helveticaWidth does itself.
     const latinWidth = metrics === 'exact'
-        ? (s: string, sz: number): number => exactBase14Width(toWinAnsi(s), sz, false)
+        ? (s: string, sz: number): number => exactBase14Width(toWinAnsi(stripSoftHyphens(stripBidiControls(s))), sz, false)
         : helveticaWidth;
 
     if (!fontEntries || fontEntries.length === 0) {

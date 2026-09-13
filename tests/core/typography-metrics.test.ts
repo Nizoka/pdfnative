@@ -4,8 +4,9 @@ import {
     setHyphenationProvider, getHyphenationProvider,
 } from '../../src/index.js';
 import { createEncodingContext } from '../../src/core/encoding-context.js';
+import { txtR, txtC, protrusionLeft } from '../../src/core/pdf-text.js';
 import { exactBase14Width, BASE14_TABLES } from '../../src/fonts/base14-metrics.js';
-import { helveticaWidth, toWinAnsi } from '../../src/fonts/encoding.js';
+import { helveticaWidth, helveticaBoldWidth, toWinAnsi } from '../../src/fonts/encoding.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
 // v1.8.0 — Adobe Core 14 metrics and the hyphenation provider seam.
@@ -112,6 +113,61 @@ describe('layout.typography.metrics', () => {
         const a = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { metrics: 'exact' } });
         const b = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { metrics: 'exact' } });
         expect(Buffer.from(b).equals(Buffer.from(a))).toBe(true);
+    });
+});
+
+/**
+ * Right- and centre-alignment, justification and optical margins all
+ * measure through one helper. The 1.8.0 audit found it handed WinAnsi
+ * bytes to the estimate, which branches on Unicode codepoints, so every
+ * CP1252 punctuation mark (— … “ ” ‘ ’) measured at the 556-unit default
+ * and a bidi control turned into a '?' before it could be stripped.
+ */
+describe('aligned text measures what it renders', () => {
+    const SZ = 10;
+    const originX = (ops: string): number => Number(/([\d.-]+) [\d.-]+ Td/.exec(ops)![1]);
+
+    it('lands CP1252 punctuation on the right margin in the estimate', () => {
+        for (const s of ['—', '…', '“quoted”', 'a–b', 'it’s']) {
+            const x = originX(txtR(s, 300, 700, '/F1', SZ, approx));
+            expect(x).toBeCloseTo(300 - helveticaWidth(s, SZ), 2);
+            expect(x).toBeCloseTo(300 - approx.tw(s, SZ), 2);
+        }
+    });
+
+    it('lands them on the right margin with exact metrics too', () => {
+        for (const s of ['—', '…', '“quoted”']) {
+            const x = originX(txtR(s, 300, 700, '/F1', SZ, exact));
+            expect(x).toBeCloseTo(300 - exact.tw(s, SZ), 2);
+        }
+    });
+
+    it('centres on the same width the line breaker used', () => {
+        const s = 'a — b … c';
+        expect(originX(txtC(s, 0, 700, '/F1', SZ, 400, approx))).toBeCloseTo((400 - approx.tw(s, SZ)) / 2, 2);
+        expect(originX(txtC(s, 0, 700, '/F1', SZ, 400, exact))).toBeCloseTo((400 - exact.tw(s, SZ)) / 2, 2);
+    });
+
+    it('hangs an opening quote by half its real advance', () => {
+        // Helvetica quotedblleft is 333 units: 0.5 × 3.33 pt at 10 pt.
+        expect(protrusionLeft('“quoted', SZ, approx)).toBeCloseTo(1.665, 2);
+        expect(protrusionLeft('“quoted', SZ, exact)).toBeCloseTo(1.665, 2);
+    });
+
+    it('ignores soft hyphens and bidi controls in both metric modes', () => {
+        for (const enc of [approx, exact]) {
+            const plain = originX(txtR('abcdef', 300, 700, '/F1', SZ, enc));
+            expect(originX(txtR('abc­def', 300, 700, '/F1', SZ, enc))).toBeCloseTo(plain, 2);
+            expect(originX(txtR('abc؜def', 300, 700, '/F1', SZ, enc))).toBeCloseTo(plain, 2);
+            expect(originX(txtR('abc‎def', 300, 700, '/F1', SZ, enc))).toBeCloseTo(plain, 2);
+            expect(enc.tw('abc­def', SZ)).toBeCloseTo(enc.tw('abcdef', SZ), 6);
+            expect(enc.tw('abc؜def', SZ)).toBeCloseTo(enc.tw('abcdef', SZ), 6);
+        }
+    });
+
+    it('measures bold text with the bold advances', () => {
+        const s = '“quoted” — done';
+        expect(originX(txtR(s, 300, 700, '/F2', SZ, approx, true))).toBeCloseTo(300 - helveticaBoldWidth(s, SZ), 2);
     });
 });
 
