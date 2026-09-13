@@ -13,8 +13,9 @@ npm run fonts:download   # fetch Noto Sans TTFs → fonts/ttf/
 
 ### Requirements
 
-- Node.js >= 22
-- npm >= 9
+- Node.js 22 — the line in `.nvmrc` (`nvm use` / `fnm use` picks it up; CI also runs the suite on 24, and `engines.node` allows `>=22`).
+- npm — the version pinned by `packageManager` in `package.json` (Corepack honours it).
+- Dev dependencies use caret ranges on purpose: `package-lock.json` plus `npm ci` is what makes an install reproducible, not narrow ranges. Let npm manage the lockfile.
 
 ## Build
 
@@ -54,23 +55,28 @@ Then open:
 ## Test
 
 ```bash
-npm run test           # vitest run (2691+ tests)
+npm run test           # vitest run (the count is `declared.tests` in docs/assets/ecosystem.json)
 npm run test:watch     # vitest (watch mode)
-npm run test:coverage  # vitest with v8 coverage (95%+ stmts measured at the v1.6.0 release; CI enforces ≥88%)
-npm run test:generate  # Generate 242 sample PDFs → test-output/
+npm run test:coverage  # vitest with v8 coverage (CI enforces the thresholds below)
+npm run test:generate  # Generate the sample PDFs → test-output/ (`derived.samplePdfs` in the manifest)
+npm run verify:samples # Fingerprint the samples against the committed baseline chain
 npm run validate:pdfa  # veraPDF validation of every PDF/A-claiming sample (see below)
+npm run verify:bundle  # Tree-shaking probes over dist/ (run `npm run build` first)
 npm run verify:docs    # 24 offline rules over docs/, playgrounds, README, llms files
+npm run gate           # Everything a pull request is held to, in one command (see below)
 npm run bench          # Performance benchmarks (vitest bench)
 ```
 
 All new code must include tests. Coverage thresholds (vitest.config.ts): statements 88%, branches 80%, functions 85%, lines 90%.
+
+The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, playgrounds, recipes) live in one place, `docs/assets/ecosystem.json`, and `npm run verify:docs` reports every document that disagrees with it — update the manifest, not the prose.
 
 ## PDF/A validation (veraPDF)
 
 pdfnative's PDF/A claims are backed by the official reference validator,
 [veraPDF](https://verapdf.org). `npm run validate:pdfa` scans `test-output/`
 (run `npm run test:generate` first), **auto-detects** every PDF that declares
-`pdfaid:part` in its XMP — currently the 20 PDF/A-claiming samples — and
+`pdfaid:part` in its XMP — currently the 21 PDF/A-claiming samples — and
 validates each against its declared profile (1b/2b/2u/3b). Detection is
 automatic: a new sample that claims PDF/A is validated without registering
 anything, and a coverage canary fails the run if the detected count drifts
@@ -143,10 +149,10 @@ src/
 ├── shaping/      # Script registry, Thai/Devanagari/Bengali/Tamil GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
-fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + mono and colour emoji)
+fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (48 generators, 242 PDFs)
-tests/            # 2691+ tests (123 files: unit + integration + fuzz + parser + docs), mirrors src/ structure
+scripts/          # Modular sample PDF generation (49 generators, 271 PDFs) and the verification scripts
+tests/            # 150+ test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -163,16 +169,17 @@ bench/            # Performance benchmarks (vitest bench)
 
 ## Pull Request Checklist
 
+- [ ] `npm run gate` passes — the CI profile in one command (`npm run gate -- --fast` for a quick loop while iterating; PowerShell swallows a bare `--`, so call `npx tsx scripts/gate.ts --fast` there)
 - [ ] All tests pass (`npm run test`)
 - [ ] Type check passes (`npm run typecheck:all`)
 - [ ] Lint passes (`npm run lint`)
 - [ ] New code has tests
 - [ ] No `any` types introduced
 - [ ] No new runtime dependencies added
-- [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A validation](#pdfa-validation-verapdf); new PDF/A-claiming samples bump `declared.pdfaSamples`)
+- [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run verify:samples && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A validation](#pdfa-validation-verapdf); new PDF/A-claiming samples bump `declared.pdfaSamples`; an intended output change is rebaselined with `npx tsx scripts/verify-samples.ts --update` and explained in the commit)
 - [ ] If docs/, playgrounds, README or llms files changed: `npm run verify:docs` passes
 - [ ] CHANGELOG.md updated if user-facing changes
-- [ ] For releases: `release-notes/vX.Y.Z.md` created from [release-notes/TEMPLATE.md](release-notes/TEMPLATE.md), and the full gate suite passes locally: `typecheck:all`, `lint`, `test:coverage`, `build`, `test:generate`, `validate:pdfa` (all PDF/A-claiming samples compliant), `verify:docs`
+- [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `verify:docs`
 
 ## Commit Messages
 
@@ -184,6 +191,32 @@ fix: correct xref byte offset for multi-page PDFs
 test: add integration tests for pagination
 docs: update README with font registration example
 ```
+
+## Release
+
+The version bump is scripted; the judgement goes into the release note.
+
+1. Branch from `main`: `feat/release-vX.Y.Z` (the form used so far) or `release/X.Y.Z`.
+2. `npx tsx scripts/release-prepare.ts --version X.Y.Z` — run it with `--dry-run` first to see the list. It bumps `package.json` and the lockfile; `docs/assets/ecosystem.json` (`packages.pdfnative.version`, `verifiedOn`) and the Verified-on stamps the verifier holds to that date; `CITATION.cff`; the SECURITY.md support table; every CDN pin (`pdfnative@<previous>` → `pdfnative@X.Y.Z`); the homepage JSON-LD; the architecture SVG; the sitemap `lastmod` of every page whose source changed since the previous tag; and scaffolds `release-notes/vX.Y.Z.md` from [release-notes/TEMPLATE.md](release-notes/TEMPLATE.md). The date defaults to today (UTC) and the previous tag to `git describe`; `--date` and `--previous` override them.
+3. `git diff --stat` — the diff must read as the bump and nothing else. Update the counts in the manifest (`derived`, `declared`) by hand; `verify:docs` reports the documents that disagree.
+4. Write the release note and the matching `CHANGELOG.md` entry (`## [X.Y.Z] – YYYY-MM-DD`). Every intentional sample rebaseline must be declared in the note's Upgrade section, with why the previous bytes were wrong — the `sample-regression` check holds the release to the previous release's output otherwise.
+5. `npm run docs:all && npm run verify:docs`, then `npm run gate -- --publish` (PowerShell: `npx tsx scripts/gate.ts --publish`): the full gate, veraPDF and the sample, font, Unicode and bundle checks included.
+6. Draft the pull-request body from [release-notes/PR_TEMPLATE.md](release-notes/PR_TEMPLATE.md) into `RELEASE_PR_vX.Y.Z.md` at the repository root (git-ignored scratch file); paste the numbers the gate printed into its Verification section.
+7. Squash-merge with the title `release: vX.Y.Z — <headline>`, where the headline is the release note's GitHub Release title.
+8. Tag `vX.Y.Z` on the merge commit and publish the GitHub Release (title `vX.Y.Z — <headline>`, body = the release note). `publish.yml` fires on the published release, runs the gate again and publishes to npm with provenance.
+9. After publication: `npm view pdfnative version`, then open a playground — the site's CDN pins (`pdfnative@X.Y.Z`) only resolve once the package exists on the registry.
+
+### Branch protection
+
+The rules for `main` are versioned in [.github/rulesets/main.json](.github/rulesets/main.json), GitHub's ruleset format: no deletion, no force-push, pull request required (single maintainer, so zero approvals — but every review thread resolved, stale reviews dismissed on push, squash merges only), and the status checks `ci (22)`, `ci (24)` and `sample-regression` required and up to date with `main`. `verapdf`, the Docs workflow and the other path-filtered workflows are deliberately not required: a required check that never reports leaves a pull request stuck on "Expected — waiting for status to be reported". For the same reason the repository Admin role may bypass the ruleset through a pull request only — `ci.yml` ignores documentation-only changes, so such a pull request has no `ci` run to wait for — never by pushing to `main` directly.
+
+Import the file after editing it: Settings → Rules → Rulesets → New ruleset → Import a ruleset, or from the shell:
+
+```bash
+gh api repos/Nizoka/pdfnative/rulesets --method POST --input .github/rulesets/main.json
+```
+
+To update the ruleset already in place, `gh api repos/Nizoka/pdfnative/rulesets` lists the ids and `--method PUT` on `rulesets/<id>` replaces it.
 
 ## Adding a New Language / Script
 

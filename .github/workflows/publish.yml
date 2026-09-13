@@ -25,7 +25,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version: '>=22.14.0'
+          # The release is built on the Node line .nvmrc names — the same one
+          # contributors develop on — not on whatever ">= floor" resolves to.
+          node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
           cache: npm
 
@@ -38,6 +40,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Verify the Unicode table matches its generator
+        run: npm run verify:unicode
+
       - name: Test with coverage
         run: npm run test:coverage
 
@@ -46,6 +51,9 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verify the bundle tree-shakes
+        run: npm run verify:bundle
 
       - name: Verify dist output
         run: |
@@ -90,6 +98,12 @@ jobs:
 
       - name: Generate sample PDFs
         run: npm run test:generate
+
+      # The published engine must emit what the baseline chain says the
+      # previous release emitted, byte for byte, unless the release note
+      # declared the rebaseline. Same check as sample-regression.yml.
+      - name: Verify samples against the baseline chain
+        run: npm run verify:samples
 
       - name: Validate PDF/A claims (blocking)
         run: npm run validate:pdfa

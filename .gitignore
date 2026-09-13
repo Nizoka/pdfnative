@@ -22,5 +22,9 @@ release-notes/draft-*.md
 !.github/drafts/README.md
 !.github/drafts/TEMPLATE.md
 
-# Release PR description scratchpads (per-version, never committed)
+# Release PR description scratchpads (per-version, never committed;
+# the committed template is release-notes/PR_TEMPLATE.md)
 RELEASE_PR_*.md
+
+# Claude Code per-machine settings (the shared ones are .claude/settings.json)
+.claude/settings.local.json

@@ -74,6 +74,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # `sideEffects: false` is a claim a bundler acts on; this probes dist/
+      # so a module-level side effect cannot silently ship to every consumer.
+      - name: Verify the bundle tree-shakes
+        run: npm run verify:bundle
+
       - name: Verify dist output
         run: |
           test -f dist/index.js
