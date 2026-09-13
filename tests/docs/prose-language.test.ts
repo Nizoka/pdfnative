@@ -45,6 +45,45 @@ describe('classifyLine', () => {
             expect(classifyLine(line), line).toBeNull();
         }
     });
+
+    it('flags Spanish, Italian, Portuguese and German prose under their own name', () => {
+        expect(classifyLine('El proyecto está en la fase final, pero todo funciona')).toMatch(/^Spanish/);
+        expect(classifyLine('La casa che sta sulla collina è molto bella, anche di notte')).toMatch(/^Italian/);
+        expect(classifyLine('A casa que fica na colina é muito bonita, mas também fria')).toMatch(/^Portuguese/);
+        expect(classifyLine('Die Marken liegen außerhalb der TrimBox und werden nicht beschnitten')).toMatch(/^German/);
+    });
+
+    it('never mistakes English for another language', () => {
+        for (const line of [
+            'The old APIs die when the shim is removed, per the deprecation policy.',
+            'Cast the die: the fallback is deterministic and the den of legacy code is gone.',
+            'The CLI is a pure dispatch layer over pdfnative, as documented.',
+            'Convert DER to PEM with openssl; the MIT licence applies.',
+            '<em>Validated</em> against npmjs.com as PDF/A-2b',
+            '<link rel="alternate" hreflang="en" href="https://pdfnative.dev/">',
+            "{ label: 'Font', value: 'Noto Sans Tai Le' }",
+            'Le Corbusier and Les Paul are proper names, not prose.',
+            'Under an unsupported intent the claim can die; a den of stale bytes remains.',
+        ]) {
+            expect(classifyLine(line), line).toBeNull();
+        }
+    });
+
+    it('uses Unicode word boundaries, so "est" does not match inside "está"', () => {
+        // Two Spanish function words, zero French ones: the label must say Spanish.
+        expect(classifyLine('está aquí')).toMatch(/^Spanish/);
+        expect(classifyLine('It is a test of the est, honestly.')).toBeNull();
+    });
+
+    it('does not detect Turkish, Vietnamese or Polish — by design, documented', () => {
+        for (const line of [
+            'Zażółć gęślą jaźń',
+            'Việt Nam đất nước tươi đẹp',
+            'Restoran Menüsü – Akşam Yemeği',
+        ]) {
+            expect(classifyLine(line), line).toBeNull();
+        }
+    });
 });
 
 describe('findNonEnglishProse', () => {

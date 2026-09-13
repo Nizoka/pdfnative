@@ -10,13 +10,26 @@
  *
  * This module is the one definition both guards share: the `prose-language`
  * rule of scripts/verify-docs.ts (docs, README, recipes, release notes) and
- * the regression suite's scan of generators, benchmarks and tests.
+ * the regression suite's scan of generators, sample data, benchmarks and
+ * tests.
  *
- * Detection is deliberately narrow — French is the language that has slipped
- * in — and cheap: a line is flagged when it carries two distinct French
- * function words, one French word from a short list of the terms that
- * appeared in the 1.8.0 samples, or UTF-8 read as Latin-1 (mojibake), which
- * is not a language but the same class of unreviewed text.
+ * What it detects, and what it does not
+ * -------------------------------------
+ * A line is flagged when it carries two distinct lowercase function words
+ * of one Latin-script language that shares an alphabet with English —
+ * French, Spanish, Italian, Portuguese or German — or one word from a short
+ * French list (the language that actually slipped into 1.8.0), or UTF-8
+ * decoded as Latin-1 (mojibake), which is not a language but the same class
+ * of unreviewed text. Every list is filtered against English homographs,
+ * HTML tag names and domain fragments (no `is`, `as`, `over`, `per`, `em`,
+ * `com`), and against this repository's own vocabulary (no `der` — DER
+ * encoding — and no `mit` — the licence). Word boundaries are Unicode-aware,
+ * so `est` never matches inside `está`. Only lowercase tokens count: a
+ * capitalised token mid-line is a proper name (`Noto Sans Tai Le`).
+ *
+ * Turkish, Vietnamese, Polish and every non-Latin script are NOT detected:
+ * they live in sample data records that carry their own `lang` label and
+ * are demonstration content by nature. The written rule (AGENTS.md) says so.
  *
  * Skipped by construction: comment lines in TypeScript (`//`, `*`, `/*`),
  * fenced code blocks in Markdown when the fence is preceded by a marker,
@@ -38,31 +51,71 @@ export interface ProseFinding {
 /** Marker that exempts a line (and the line after it) as demonstrated content. */
 export const DEMO_LANGUAGE_MARKER = 'demo-language:';
 
+interface LanguageProfile {
+    readonly tag: string;
+    readonly name: string;
+    /** Lowercase function words; two distinct hits on one line flag it. */
+    readonly words: readonly string[];
+}
+
 /**
- * French function words. Two distinct hits on one line flag it; a single one
- * does not, because English shares `par`, `sur`, `est`, `des` in names and
- * abbreviations.
+ * Function words per language. Shared articles (`la`, `que`, `una`, `des`)
+ * appear in several lists on purpose: the language with the most distinct
+ * hits wins the label, and a line flagged under the wrong sibling language
+ * is still correctly flagged as not English.
  */
-const FUNCTION_WORDS = /\b(le|la|les|des|une|est|sont|pour|avec|dans|sur|par|qui|que|ne|pas|nous|vous|cette|ces|leur|aussi|très|sans|sous|entre|chaque|tous|toutes|mais|donc|alors|comme|cela|ceci|notre|votre)\b/gi;
+const LANGUAGES: readonly LanguageProfile[] = [
+    {
+        tag: 'fr', name: 'French',
+        words: ['le', 'la', 'les', 'des', 'une', 'est', 'sont', 'pour', 'avec', 'dans', 'sur', 'par', 'qui', 'que', 'ne', 'pas',
+            'nous', 'vous', 'cette', 'ces', 'leur', 'aussi', 'très', 'sans', 'sous', 'entre', 'chaque', 'tous', 'toutes', 'mais',
+            'donc', 'alors', 'comme', 'cela', 'ceci', 'notre', 'votre'],
+    },
+    {
+        tag: 'es', name: 'Spanish',
+        words: ['el', 'la', 'los', 'las', 'una', 'unos', 'unas', 'está', 'están', 'pero', 'porque', 'muy', 'también', 'sobre',
+            'entre', 'cada', 'todo', 'todos', 'todas', 'hasta', 'desde', 'nosotros', 'ustedes', 'ellos', 'ellas', 'esta', 'estos',
+            'estas', 'aquí', 'allí', 'dónde', 'cuándo', 'cómo', 'qué', 'más', 'siempre', 'nunca', 'aún', 'que'],
+    },
+    {
+        tag: 'it', name: 'Italian',
+        words: ['lo', 'gli', 'una', 'uno', 'degli', 'delle', 'della', 'dello', 'nella', 'nello', 'nelle', 'negli', 'sono', 'però',
+            'perché', 'anche', 'molto', 'sempre', 'questo', 'questa', 'questi', 'queste', 'quello', 'quella', 'dove', 'quando',
+            'più', 'già', 'così', 'ogni', 'tutti', 'tutte', 'senza', 'che'],
+    },
+    {
+        tag: 'pt', name: 'Portuguese',
+        words: ['uma', 'umas', 'uns', 'são', 'também', 'muito', 'sempre', 'nunca', 'porque', 'sobre', 'entre', 'cada', 'todos',
+            'todas', 'até', 'desde', 'nós', 'eles', 'elas', 'esta', 'estes', 'estas', 'aqui', 'ali', 'onde', 'quando', 'mais',
+            'já', 'ainda', 'então', 'pelo', 'pela', 'pelos', 'pelas', 'não', 'está', 'estão', 'que'],
+    },
+    {
+        tag: 'de', name: 'German',
+        words: ['und', 'nicht', 'ist', 'sind', 'ein', 'eine', 'einer', 'eines', 'einem', 'einen', 'das', 'dem', 'auf', 'aus',
+            'für', 'von', 'zu', 'nach', 'über', 'unter', 'zwischen', 'wenn', 'aber', 'oder', 'auch', 'noch', 'nur', 'sehr',
+            'schon', 'immer', 'wird', 'werden', 'wurde', 'kann', 'können', 'muss', 'haben', 'sich', 'dieser', 'diese', 'dieses',
+            'jeder', 'jede', 'jedes', 'alle', 'keine', 'kein'],
+    },
+];
 
 /**
  * French words that have no English homograph and that appeared in the
- * samples, docs or fixtures the 1.8.0 audit found.
+ * samples, docs or fixtures the 1.8.0 audit found. One hit flags the line
+ * regardless of case: titles were the failure mode ("Crénage").
+ * "guillemets" is absent on purpose: it is the English typographic term too.
  */
-// "guillemets" is absent on purpose: it is the English typographic term too.
-const FRENCH_WORDS = /\b(césure|crénage|métriques?|fonctionnalités?|déclare|aligné|justifié|janvier|février|décembre|débit|crédit|référence|libellé|opérations?|généré|solde|montant|remise|facture|chiffres|ponctuation|paragraphe|colonne|espaces?\s+insécables?|texte|fournisseur|identité|autorisées?|inconnue|ajouter|résumé|relevé|révisé)\b/i;
+const FRENCH_WORDS = /(?<![\p{L}\p{N}])(césure|crénage|métriques?|fonctionnalités?|déclare|aligné|justifié|janvier|février|décembre|débit|crédit|référence|libellé|opérations?|généré|solde|montant|remise|facture|chiffres|ponctuation|paragraphe|colonne|espaces?\s+insécables?|texte|fournisseur|identité|autorisées?|inconnue|ajouter|relevé|révisé)(?![\p{L}\p{N}])/iu;
 
 /** UTF-8 bytes decoded as Latin-1: `â€”` for —, `â‚¬` for €, `Ã©` for é. */
 const MOJIBAKE = /â€|â‚¬|Ã[©¨  §ª«¢]/;
 
 const TS_COMMENT_LINE = /^\s*(\/\/|\*|\/\*)/;
 
-function distinctMatches(re: RegExp, text: string): Set<string> {
-    const seen = new Set<string>();
-    re.lastIndex = 0;
-    for (const m of text.matchAll(re)) seen.add(m[1].toLowerCase());
-    return seen;
-}
+/** Every lowercase word token of the line, with Unicode-aware boundaries. */
+const LOWER_TOKEN = /(?<![\p{L}\p{N}])(\p{Ll}[\p{Ll}\p{M}]*)(?![\p{L}\p{N}])/gu;
+
+const WORD_SETS: readonly { readonly profile: LanguageProfile; readonly set: ReadonlySet<string> }[] =
+    LANGUAGES.map(profile => ({ profile, set: new Set(profile.words) }));
 
 /**
  * Why a line is not English, or `null` when nothing suspicious is on it.
@@ -72,9 +125,18 @@ export function classifyLine(line: string): string | null {
     if (MOJIBAKE.test(line)) return 'UTF-8 text decoded as Latin-1 (mojibake)';
     const word = FRENCH_WORDS.exec(line);
     if (word) return `French word "${word[0]}"`;
-    const fn = distinctMatches(FUNCTION_WORDS, line);
-    if (fn.size >= 2) return `French function words ${[...fn].map(w => `"${w}"`).join(', ')}`;
-    return null;
+
+    const tokens = new Set<string>();
+    for (const m of line.matchAll(LOWER_TOKEN)) tokens.add(m[1]);
+    if (tokens.size < 2) return null;
+
+    let best: { readonly profile: LanguageProfile; readonly hits: string[] } | null = null;
+    for (const { profile, set } of WORD_SETS) {
+        const hits = [...tokens].filter(t => set.has(t));
+        if (hits.length >= 2 && (best === null || hits.length > best.hits.length)) best = { profile, hits };
+    }
+    if (best === null) return null;
+    return `${best.profile.name} function words ${best.hits.map(w => `"${w}"`).join(', ')}`;
 }
 
 export interface ProseScanOptions {

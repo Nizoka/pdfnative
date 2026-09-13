@@ -129,7 +129,7 @@ All must pass before opening a PR.
 
 ## Code Style
 
-- **English everywhere** — code, comments, messages, tests, samples, recipes, docs and release notes. Another language is only ever *demonstrated content* (a typographic convention, a script), framed in English and marked `demo-language: <tag> (reason)` on or above the line; `npm run verify:docs` and the regression suite fail on unmarked non-English prose.
+- **English everywhere** — code, comments, messages, tests, sample prose, recipes, docs and release notes. Other languages are only ever *demonstrated content*: sample data records and script-coverage tables carry a `lang` label and are demonstration content by nature; any other sentence in another language is framed in English and marked `demo-language: <tag> (reason)` on or above the line. `npm run verify:docs` and the regression suite detect French, Spanish, Italian, Portuguese and German prose (and mojibake); other languages rely on the marker and on review.
 - **TypeScript strict mode** — `strict: true`
 - **Pure functions only** — no classes. State passed explicitly as arguments
 - **ESM-first** — all internal imports use `.js` extension

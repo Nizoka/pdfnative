@@ -39,8 +39,9 @@ Other top-level directories: `fonts/` (generated font-data modules + git-ignored
 
 ## Code Style
 
-- **English everywhere** — code, comments, messages, tests, samples, recipes, docs, release notes. Another language is only demonstrated content,
-  framed in English and marked `demo-language: <tag> (reason)` on or above the line; `verify:docs` and the regression suite fail otherwise.
+- **English everywhere** — code, comments, messages, tests, sample prose, recipes, docs, release notes. Other languages are demonstrated content only:
+  sample data records and script-coverage tables carry a `lang` label; any other foreign-language sentence is framed in English and marked
+  `demo-language: <tag> (reason)` on or above the line. The guards detect fr/es/it/pt/de prose and mojibake; other languages rely on the marker and review.
 - **TypeScript strict mode** — `strict: true`, `noUnusedLocals`, `noUnusedParameters`. No `any`; use `unknown` with narrowing.
 - **ES2020 target** — no polyfills; native `BigInt`, optional chaining, nullish coalescing.
 - **ESM-first** — every internal import uses the `.js` extension (`import { x } from './foo.js'`). Type-only imports must be top-level (ESLint forbids inline `import()` types).

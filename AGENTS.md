@@ -15,9 +15,11 @@ pdfnative is a zero-runtime-dependency TypeScript library that writes and reads 
 - **No rasterization.** SVG → path operators, barcodes → `re f` rectangles, fonts → CIDFont Type2 subsets.
 - **Byte-identity.** Every opt-in feature leaves output byte-identical when unused; veraPDF is blocking in CI.
 - **Human-in-the-loop.** Agents draft and verify; the maintainer pushes, opens PRs/issues and publishes (see Governance).
-- **English everywhere.** Code, comments, messages, tests, samples, recipes, docs and release notes are written in English.
-  Another language appears only as *demonstrated content* (a typographic convention, a script), framed by an English title and
-  marked `demo-language: <tag> (reason)` on or above the line; `verify:docs` and the regression suite fail on unmarked non-English prose.
+- **English everywhere.** Everything the project writes — code, comments, messages, tests, sample prose, recipes, docs, release notes — is English.
+  Other languages appear only as *demonstrated content*: sample data records and script-coverage tables carry a `lang` label and are demonstration
+  content by nature (Thai, Arabic, CJK, Turkish, Vietnamese, Polish…); any other sentence in another language is framed by an English title and
+  marked `demo-language: <tag> (reason)` on or above the line. The guards (`verify:docs` rule `prose-language`, the regression suite) detect
+  French, Spanish, Italian, Portuguese and German prose and UTF-8-as-Latin-1 mojibake; they do not detect other languages — the marker and review do.
 
 ## The gate
 
