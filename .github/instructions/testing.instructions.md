@@ -31,13 +31,14 @@ tests/
 └── fixtures/       # test data, sample fonts, expected outputs
 scripts/
 ├── generate-samples.ts  # Orchestrator for modular PDF sample generation
-├── generators/          # Per-category sample generators (48 modules)
+├── generators/          # Per-category sample generators (one module per category; count: `derived.sampleGenerators` in docs/assets/ecosystem.json)
 └── helpers/             # Shared utilities (fonts, images, I/O)
 ```
 
 ## Current State (maintain these thresholds)
-- **2691+ tests** across 123 test files + 1 benchmark file
-- Statements: ~95% (threshold: 88%)
+- Test and test-file counts live in `docs/assets/ecosystem.json` (`declared.tests`, `derived.testFiles`; currently 150 test files + 1 benchmark file) and are enforced by `npm run verify:docs`
+- Sample PDFs: `derived.samplePdfs` in the same manifest (currently 271), byte-pinned by `tests/regression/baselines/samples.sha256.json`
+- Statements: ≥ 88 % enforced by CI (currently ≈ 90.9 % statements)
 - Branches: ~88% (threshold: 80%)
 - Functions: ~98% (threshold: 85%)
 - Lines: 90% threshold
@@ -58,7 +59,7 @@ scripts/
 - **Multi-font**: test font switching at script boundaries, continuation bias behavior
 
 ## Coverage Targets
-- Statements: CI threshold 88% (95%+ measured at the v1.6.0 release; full CI thresholds 88/80/85/90)
+- Statements: ≥ 88 % enforced by CI (currently ≈ 90.9 % statements; full CI thresholds 88/80/85/90 in `vitest.config.ts`)
 - Core modules (`src/core/`): >95% (currently >99%)
 - Font modules (`src/fonts/`): >90% (currently >99%)
 - Shaping modules (`src/shaping/`): >90% (currently >95%)

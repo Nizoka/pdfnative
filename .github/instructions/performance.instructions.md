@@ -1,5 +1,6 @@
 ---
 description: "Use when optimizing performance, profiling hot paths, reducing allocations, or benchmarking PDF generation speed. Covers zero-copy patterns, caching strategies, and memory efficiency."
+applyTo: "src/core/pdf-text.ts,src/core/pdf-renderers.ts,src/core/pdf-pagination.ts,src/fonts/font-subsetter.ts,src/shaping/**"
 ---
 # Performance Engineering Standards
 

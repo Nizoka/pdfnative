@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "pdfnative AI Governance Configuration",
   "description": "Machine-readable contract governing how AI coding agents may propose issues, contributions, and changes across the pdfnative monorepo. Agents that scan repository configuration on initialization MUST honour this file. See .github/AGENT_RULES.md for the human-and-agent-readable protocol.",
-  "version": "1.0.0",
-  "spec_updated": "2026-07-05",
+  "version": "1.1.0",
+  "spec_updated": "2026-09-13",
   "applies_to": [
     "pdfnative",
     "pdfnative-cli",
@@ -49,8 +49,12 @@
     "description": "Authoritative project context an agent SHOULD load before proposing changes.",
     "sources": [
       "AGENTS.md",
-      ".github/copilot-instructions.md",
       ".github/AGENT_RULES.md",
+      "docs/assets/ecosystem.json"
+    ],
+    "$comment": "on_demand: load lazily by topic",
+    "on_demand": [
+      ".github/instructions/",
       "ROADMAP.md",
       "SECURITY.md",
       "llms.txt"
