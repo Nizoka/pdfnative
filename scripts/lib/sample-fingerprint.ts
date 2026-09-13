@@ -271,3 +271,42 @@ export function chainSince(
     }
     return out;
 }
+
+/**
+ * Samples that are expected to be byte-identical: each group is one output
+ * produced two ways (the streaming and in-memory page-tree operations, a
+ * placeholder written twice). Any other pair sharing a hash is a showcase
+ * whose "with" and "without" variants collapsed into the same file — two
+ * typography pairs shipped that way before the 1.8.0 audit caught them.
+ *
+ * @since 1.8.0
+ */
+export const IDENTICAL_SAMPLE_GROUPS: ReadonlyArray<ReadonlyArray<string>> = [
+    ['manipulation/merged.pdf', 'manipulation/stream-merged.pdf'],
+    ['manipulation/split-invoice.pdf', 'manipulation/stream-split-1.pdf'],
+    ['manipulation/split-report.pdf', 'manipulation/stream-split-0.pdf'],
+    ['signature/signature-placeholder-idempotent.pdf', 'signature/signature-placeholder-unsigned.pdf'],
+];
+
+/**
+ * Groups of samples that share a fingerprint without being listed in
+ * {@link IDENTICAL_SAMPLE_GROUPS}. Empty when every duplicate is expected.
+ *
+ * @since 1.8.0
+ */
+export function unexpectedDuplicates(entries: Record<string, { readonly hash: string }>): string[][] {
+    const byHash = new Map<string, string[]>();
+    for (const [rel, entry] of Object.entries(entries)) {
+        const group = byHash.get(entry.hash) ?? [];
+        group.push(rel);
+        byHash.set(entry.hash, group);
+    }
+    const allowed = IDENTICAL_SAMPLE_GROUPS.map(g => [...g].sort().join('\n'));
+    const out: string[][] = [];
+    for (const group of byHash.values()) {
+        if (group.length < 2) continue;
+        const sorted = [...group].sort();
+        if (!allowed.includes(sorted.join('\n'))) out.push(sorted);
+    }
+    return out.sort((a, b) => a[0].localeCompare(b[0]));
+}

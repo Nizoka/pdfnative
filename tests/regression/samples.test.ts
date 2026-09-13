@@ -5,6 +5,7 @@ import {
     REPO_ROOT, OUTPUT_DIR, BASELINE_PATH, ENCRYPTED_SAMPLES,
     walkPdfs, relPath, fingerprintAll, loadBaseline, compareToBaseline,
     canonicalJson, sha256Hex, semanticProjection, chainSince,
+    unexpectedDuplicates, IDENTICAL_SAMPLE_GROUPS,
     type Fingerprint, type Baseline,
 } from '../../scripts/lib/sample-fingerprint.js';
 
@@ -36,6 +37,18 @@ describe.runIf(havecorpus)('sample regression baseline', { timeout: 120_000 }, (
         // `added` is deliberately not asserted: a sample introduced by the
         // release under development has no earlier reference to be held to.
         // `verify-samples --strict` is the opt-in gate for that.
+    });
+
+    it('never holds two samples meant to differ to the same bytes', () => {
+        // A showcase pair whose "with" and "without" variants are the same
+        // file demonstrates nothing; two typography pairs shipped that way
+        // before the 1.8.0 audit. The known-identical groups are listed.
+        const baseline = loadBaseline()!;
+        expect(unexpectedDuplicates(baseline.entries)).toEqual([]);
+        expect(unexpectedDuplicates(fingerprintAll().entries)).toEqual([]);
+        for (const group of IDENTICAL_SAMPLE_GROUPS) {
+            for (const path of group) expect(baseline.entries[path], `${path} listed as identical but absent`).toBeDefined();
+        }
     });
 
     it('pins the creation instant and timezone the baseline was built with', () => {

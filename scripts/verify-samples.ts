@@ -50,7 +50,7 @@ import { dirname, relative } from 'node:path';
 
 import {
     REPO_ROOT, BASELINE_PATH,
-    fingerprintAll, loadBaseline, compareToBaseline, currentVersion, chainSince,
+    fingerprintAll, loadBaseline, compareToBaseline, currentVersion, chainSince, unexpectedDuplicates,
     type Fingerprint, type Baseline,
 } from './lib/sample-fingerprint.js';
 import { SAMPLE_CREATION_DATE } from './helpers/io.js';
@@ -115,12 +115,15 @@ function main(): number {
         console.error('test-output/ holds no PDFs — run `npm run test:generate` first.');
         return 2;
     }
+    // Two samples meant to show a difference must not be the same file.
+    const duplicates = unexpectedDuplicates(entries);
 
     if (update) {
-        if (unreadable.length > 0 || missingEncrypted.length > 0) {
+        if (unreadable.length > 0 || missingEncrypted.length > 0 || duplicates.length > 0) {
             for (const u of unreadable) console.error(`✗ ${u.path}: ${u.error}`);
             for (const m of missingEncrypted) console.error(`✗ ${m}: listed in ENCRYPTED_SAMPLES but not generated`);
-            console.error('\nRefusing to write a baseline while samples are unreadable or missing.');
+            for (const g of duplicates) console.error(`✗ ${g.join(' == ')}: identical bytes (list the pair in IDENTICAL_SAMPLE_GROUPS if that is intended)`);
+            console.error('\nRefusing to write a baseline while samples are unreadable, missing or unexpectedly identical.');
             return 1;
         }
         const previous = loadBaseline();
@@ -144,11 +147,12 @@ function main(): number {
         console.log(JSON.stringify({
             baselineVersion: baseline.baselineVersion,
             currentVersion: currentVersion(),
-            total, changed, added, removed, unreadable, missingEncrypted,
+            total, changed, added, removed, unreadable, missingEncrypted, duplicates,
         }, null, 2));
     } else {
         for (const u of unreadable) console.error(`✗ unreadable  ${u.path}: ${u.error}`);
         for (const m of missingEncrypted) console.error(`✗ missing     ${m} (listed in ENCRYPTED_SAMPLES)`);
+        for (const g of duplicates) console.error(`✗ identical   ${g.join(' == ')} (a pair meant to differ emits the same bytes)`);
         for (const p of changed) {
             const b = baseline.entries[p];
             const c = entries[p];
@@ -166,7 +170,7 @@ function main(): number {
     }
 
     const failures = changed.length + removed.length + unreadable.length + missingEncrypted.length
-        + (strict ? added.length : 0);
+        + duplicates.length + (strict ? added.length : 0);
     if (failures === 0) {
         if (!jsonMode) {
             const semantic = Object.values(entries).filter(e => e.mode === 'semantic').length;

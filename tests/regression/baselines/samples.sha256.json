@@ -1,7 +1,7 @@
 {
   "$comment": "Fingerprints of every sample in test-output/. Regenerate deliberately with `npx tsx scripts/verify-samples.ts --update`, and say why in the release notes: a changed hash means existing output changed. Mode `bytes` is a SHA-256 of the file; mode `semantic` is a SHA-256 of a canonical projection of the decrypted document, used for encrypted samples whose bytes are CSPRNG-derived and can never repeat. Each entry's `since` names the release whose output the hash is: it is carried forward untouched while the sample is unchanged, and moves to the release doing the rebaseline when the hash changes, so the chain 1.7.0 -> 1.8.0 -> 1.9.0 stays auditable and every re-anchoring is visible in the diff.",
   "baselineVersion": "1.8.0",
-  "provenance": "The 1.7.0 entries were verified against a v1.7.0 git worktree carrying only the determinism plumbing (pinned creation instant, TZ=UTC): 233 of 242 samples fingerprinted identically. The nine stamped 1.8.0 are the ones whose v1.7.0 output was non-deterministic by construction (a Math.random() fixture, an unpinned incremental /ModDate, and seven signature samples whose /M and CMS signingTime defaulted to the wall clock), so no earlier reference could exist for them.",
+  "provenance": "The 1.7.0 entries were verified against a v1.7.0 git worktree carrying only the determinism plumbing (pinned creation instant, TZ=UTC). Entries stamped 1.8.0 are, in order: the 29 samples introduced by 1.8.0; the nine whose v1.7.0 output was non-deterministic by construction (a Math.random() fixture, an unpinned incremental /ModDate, seven signature samples whose /M and CMS signingTime defaulted to the wall clock); and the samples whose output 1.8.0 changed deliberately — Khmer, Myanmar, Lao, Tai Tham, New Tai Lue, Tai Le and Cham shaping, COLRv1 emoji, regenerated font modules, the no-break-space metric fix (three compression samples), the base-14 measurement fix (text-extract-report, table-micro-columns) and the no-break-space glyph fix (four pdfa-latin samples). Every re-anchoring is listed in the 1.8.0 release note. Counts: 1.7.0=214, 1.8.0=57.",
   "creationDate": "2026-01-01T00:00:00.000Z",
   "timezone": "UTC",
   "entries": {
@@ -261,7 +261,7 @@
       "mode": "bytes",
       "hash": "2c77ac8c79477b331b254f9b357f6fa348e4c67e8fb6a9a201aa2245f7af0234",
       "size": 27222,
-      "since": "1.7.0"
+      "since": "1.8.0"
     },
     "compression/compressed-encrypted-aes128.pdf": {
       "mode": "semantic",
@@ -273,7 +273,7 @@
       "mode": "bytes",
       "hash": "1b83e8a859579c253fdf130af9fd9a0139ef15a68b39959ffd481e1e870c5edd",
       "size": 117685,
-      "since": "1.7.0"
+      "since": "1.8.0"
     },
     "compression/compressed-latin-100rows.pdf": {
       "mode": "bytes",
@@ -291,7 +291,7 @@
       "mode": "bytes",
       "hash": "d8fab924c2cffac502da73823620a5c3f9c5af4289e835417f07b5b714a4aa2d",
       "size": 17419,
-      "since": "1.7.0"
+      "since": "1.8.0"
     },
     "compression/doc-compressed.pdf": {
       "mode": "bytes",
@@ -1093,9 +1093,9 @@
     },
     "parser/text-extract-report.pdf": {
       "mode": "bytes",
-      "hash": "116af6d88234308beeb10a940173cc5ae5cec2a2733a71fd212956526af924b3",
+      "hash": "dece0e102409a7165a561199b3a226dc5758661a256a316d8517e9526abdca5e",
       "size": 13831,
-      "since": "1.7.0"
+      "since": "1.8.0"
     },
     "parser/text-extract-source.pdf": {
       "mode": "bytes",
@@ -1105,27 +1105,27 @@
     },
     "pdfa-latin/pdfa-latin-pdfa1b.pdf": {
       "mode": "bytes",
-      "hash": "e6d0b99b495fc773047de4ffc7b74abf56734e7d7c09a5fb3ee00c6d121fab51",
-      "size": 138916,
-      "since": "1.7.0"
+      "hash": "56b668c5d998f9a5127f01384f0fa872e1880ebde7382379cd4d7858c3407358",
+      "size": 138941,
+      "since": "1.8.0"
     },
     "pdfa-latin/pdfa-latin-pdfa2b.pdf": {
       "mode": "bytes",
-      "hash": "72bcdd0f829751207fedc9609b09696177c06b627b7a10cc8ca3c08e98afbef8",
-      "size": 138916,
-      "since": "1.7.0"
+      "hash": "b70f2b3f6fef2bb94b2ab3c8609e80ebc2eced10cc02191591202210d700e023",
+      "size": 138941,
+      "since": "1.8.0"
     },
     "pdfa-latin/pdfa-latin-pdfa2u.pdf": {
       "mode": "bytes",
-      "hash": "f8eb21b53f5fad1376f71377c5c9637188303fa5480cd23d37b37705c19171ff",
-      "size": 138916,
-      "since": "1.7.0"
+      "hash": "08ebaac9b852f1e334306de734a25fcfe02025ccb5353457314984777bcb641e",
+      "size": 138941,
+      "since": "1.8.0"
     },
     "pdfa-latin/pdfa-latin-pdfa3b.pdf": {
       "mode": "bytes",
-      "hash": "ba6c3b6d37a3c6460024684502f22018479a11c8c1c3f31cd632756f0d90e23b",
-      "size": 138916,
-      "since": "1.7.0"
+      "hash": "86bf39801ad94e2371e376f8fe6212f61a103bb8639c526a49a3387d417aa43f",
+      "size": 138941,
+      "since": "1.8.0"
     },
     "print/print-bleed-marks.pdf": {
       "mode": "bytes",
@@ -1363,9 +1363,9 @@
     },
     "stress/table-micro-columns.pdf": {
       "mode": "bytes",
-      "hash": "146694fdc9be7c68b13610a7efb84c0918a760a7b83f70d1f042b88d5aca9405",
+      "hash": "0879ae841d857cb1a48fb8d8e396cabaecabaf9a1e2913a94ef6cde7c43cca8d",
       "size": 11222,
-      "since": "1.7.0"
+      "since": "1.8.0"
     },
     "stress/tagged-accessibility-complex.pdf": {
       "mode": "bytes",
@@ -1465,56 +1465,62 @@
     },
     "typography/align-justified.pdf": {
       "mode": "bytes",
-      "hash": "c536ab5cf0900c83233e9182969029e91b041198e1000e1ce38bd1e86b89abf6",
-      "size": 23945,
+      "hash": "cdd3f6d0b5dce646f27ddc1c349f2b644458a1b0299d974080bed509eb9500e6",
+      "size": 12764,
       "since": "1.8.0"
     },
     "typography/align-optical.pdf": {
       "mode": "bytes",
-      "hash": "efa44a01f29cd3929225eea06fffd28bd5ce99507f5659bc6f5b4a2877895b12",
-      "size": 22809,
+      "hash": "e00d16ad8567bd4f8c566bf70b74ed827465b0aa13c41b1ce61b70f5cc42a71e",
+      "size": 12764,
       "since": "1.8.0"
     },
     "typography/align-ragged.pdf": {
       "mode": "bytes",
-      "hash": "700c2ca9b7de656695c6b7afb11f32a8b1e8826d5f3ff72e2744782b8031a6da",
-      "size": 8204,
+      "hash": "506d5506ecd0c9de17f868297a7dc46b4cac98c1d0846fa63c1c9fcaff0e99c1",
+      "size": 8286,
       "since": "1.8.0"
     },
     "typography/breaks-atomic.pdf": {
       "mode": "bytes",
-      "hash": "1d8cc1564ed0d9ca81d42b41d771949c4c6bb81af34909b8c2858d1b411e4eb9",
-      "size": 18311,
+      "hash": "3979cd8710c04f447e44db44374da4f8c0b5d8b78dcf0610711220491fe616eb",
+      "size": 25864,
       "since": "1.8.0"
     },
     "typography/breaks-split-tagged.pdf": {
       "mode": "bytes",
-      "hash": "27bdf7d9790c94b6fbb42e19c1751fda34887bae5833fe5452a65f49015c1d9f",
-      "size": 210592,
+      "hash": "f30b4284a7a10de3dfffee9f01223021b677641c9b811a8da3ed5c8127ddc4f7",
+      "size": 257824,
       "since": "1.8.0"
     },
     "typography/breaks-split.pdf": {
       "mode": "bytes",
-      "hash": "1d8cc1564ed0d9ca81d42b41d771949c4c6bb81af34909b8c2858d1b411e4eb9",
-      "size": 18311,
+      "hash": "fac570e3925a0a7d43f296eef986bb5dff514c528e5ed2ea3c4551e36c97a4a9",
+      "size": 25525,
       "since": "1.8.0"
     },
     "typography/features-default.pdf": {
       "mode": "bytes",
-      "hash": "c7e7d1a926d7d8b406d1e8998984ee999455a8ade0efba54f0185b6ef92096a5",
-      "size": 122206,
+      "hash": "2681b01407c0e5bf7bf0d9ff4e551dc356361989c19194f6410b1de6c15b8633",
+      "size": 123121,
       "since": "1.8.0"
     },
     "typography/features-oldstyle-smallcaps.pdf": {
       "mode": "bytes",
-      "hash": "c204d89b8f3b20abdc81b738cf82e8c17619063383042764e1a79e6e17e21dc8",
-      "size": 122206,
+      "hash": "8f0959ceac8e2695d5b4ece6e37358ae909ae5d7c8f7973a7403fe2e6524fbd7",
+      "size": 127172,
       "since": "1.8.0"
     },
     "typography/features-proportional.pdf": {
       "mode": "bytes",
-      "hash": "fd0c15dfe06181294b00cb58ad92ed5cdd00437bbaa31ed3e5411553f3d9f9cd",
-      "size": 122206,
+      "hash": "d4f9712357b521c9c9fb364f3982f150db126183530a3382a143c78988eb0ce0",
+      "size": 124372,
+      "since": "1.8.0"
+    },
+    "typography/hyphenation-provider.pdf": {
+      "mode": "bytes",
+      "hash": "e6ced50ea33ec0d74fcb9565b404b90fabb643980b14e1a5042b37bec61cd88d",
+      "size": 119431,
       "since": "1.8.0"
     },
     "typography/keep-with-next-off.pdf": {
@@ -1525,32 +1531,32 @@
     },
     "typography/keep-with-next-on.pdf": {
       "mode": "bytes",
-      "hash": "0c786efbd055b500e47eac6b40535a69f6a94d303024db76d301ead4e58a84c2",
-      "size": 19853,
+      "hash": "34322fefa15d9590c5f6dd435236913714bbcf93ec19fd7b9fe9089cace8763a",
+      "size": 19874,
       "since": "1.8.0"
     },
     "typography/kerning-off.pdf": {
       "mode": "bytes",
-      "hash": "91c88c53614a43fd9f2f016267dd9b984dae040a6c55300ee4b8c8535537d29a",
-      "size": 120637,
+      "hash": "e419644b965ba60e29cdafc38ac141596937481728f58e5dd4f811dd377ce3a9",
+      "size": 120775,
       "since": "1.8.0"
     },
     "typography/kerning-on.pdf": {
       "mode": "bytes",
-      "hash": "e3fed19a4dc4c1c81eedfe4301064eb94ba4e345050bca1ba9e6548b141a3665",
-      "size": 122119,
+      "hash": "a100c12767cd6c9a6411d73df199810ff15729dfcf51d8e72742a85d9f8ffecc",
+      "size": 122257,
       "since": "1.8.0"
     },
     "typography/metrics-approximate.pdf": {
       "mode": "bytes",
-      "hash": "563c8adbe28638b4bf89e215f70727e984eab4234f7297534f0ad335ee8f93ce",
-      "size": 7144,
+      "hash": "92e8abd831a8231dd7d5dba3e1adf24214e574194bcdaf12166317e2e5a54e6a",
+      "size": 7199,
       "since": "1.8.0"
     },
     "typography/metrics-exact.pdf": {
       "mode": "bytes",
-      "hash": "88f35f36717d56f8b67378ac948fed3e4f2c647844093873dce7774179ce8abf",
-      "size": 7144,
+      "hash": "847889039e4fe05b452a4fd7b89e7292f031516660827f107ab8065703d0de53",
+      "size": 7199,
       "since": "1.8.0"
     },
     "typography/oversized-atomic.pdf": {
@@ -1567,14 +1573,14 @@
     },
     "typography/text-plain.pdf": {
       "mode": "bytes",
-      "hash": "7de13e06dda812fee333a9cf09a6f38773d9f2dd35b6b0351e33befe37ad18f1",
-      "size": 5452,
+      "hash": "6361aaa8893d1223441cca75f344ab670e416d611edc9a6131bc361fb078d474",
+      "size": 122230,
       "since": "1.8.0"
     },
     "typography/text-refined.pdf": {
       "mode": "bytes",
-      "hash": "bcd89f96d94325bbdfedcdb18243e2f09aa986705a901903099303d1be88b5f3",
-      "size": 5452,
+      "hash": "976229cb6c510c9c08e9f5affc29193ad27682aa0df28dae6225964856e2ace1",
+      "size": 122269,
       "since": "1.8.0"
     },
     "viewer/viewer-fullscreen-kiosk.pdf": {
