@@ -7,6 +7,7 @@ import {
     resolvePdfXConfig, resolveOutputIntent, pdfxDocumentId, buildPdfXXMPMetadata, PDF_X_CONFORMANCE_TARGETS,
 } from '../../src/core/pdf-tags.js';
 import { pdfxBoxes } from '../../src/core/pdf-print.js';
+import { validatePdfX } from '../../src/parser/pdf-x-validator.js';
 import type { FontData, FontEntry, PdfDiagnostic, PdfLayoutOptions, PdfParams } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
@@ -222,6 +223,42 @@ describe('PDF/X diagnostics', () => {
 
     it('throws the first one under strict', () => {
         expect(() => buildDocumentPDFBytes({ ...doc, fontEntries: [] }, { ...x4, strict: true })).toThrow(/PDF\/X-4/);
+    });
+});
+
+describe('pdfxBoxes and the BleedBox', () => {
+    const bleed: [number, number, number, number] = [10, 10, 585, 832];
+
+    it('declares the MediaBox as the TrimBox when nothing else is set', () => {
+        expect(pdfxBoxes(undefined, 595.28, 841.89)).toBe(' /TrimBox [0.00 0.00 595.28 841.89]');
+    });
+
+    it('declares the BleedBox as the TrimBox when only a BleedBox is set', () => {
+        // A TrimBox equal to the MediaBox would extend past the BleedBox,
+        // which ISO 15930-7 forbids and validatePdfX() rejects.
+        expect(pdfxBoxes({ bleedBox: bleed }, 595.28, 841.89)).toBe(' /TrimBox [10.00 10.00 585.00 832.00]');
+    });
+
+    it('adds nothing when the caller set a TrimBox or ArtBox', () => {
+        expect(pdfxBoxes({ bleed: 8.5 }, 595.28, 841.89)).toBe('');
+        expect(pdfxBoxes({ artBox: bleed }, 595.28, 841.89)).toBe('');
+    });
+
+    it('builds a file its own validator accepts for every box configuration', () => {
+        const configs: (Partial<PdfLayoutOptions>['print'] | undefined)[] = [
+            undefined,
+            { bleedBox: bleed },
+            { bleed: 8.5 },
+            { trimBox: [20, 20, 575, 822] },
+            { trimBox: [20, 20, 575, 822], bleedBox: bleed },
+            { artBox: [30, 30, 565, 812] },
+        ];
+        for (const print of configs) {
+            const bytes = buildDocumentPDFBytes(doc, { ...x4, print });
+            const report = validatePdfX(bytes);
+            expect(report.errors, JSON.stringify(print)).toEqual([]);
+            expect(report.valid).toBe(true);
+        }
     });
 });
 

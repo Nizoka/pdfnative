@@ -145,8 +145,11 @@ export const REGISTRATION_COLOR_SPACE_ENTRY = `/${REGISTRATION_COLOR_SPACE_NAME}
 /**
  * The page-box fragment PDF/X adds to {@link resolvePrintBoxes} (v1.8.0).
  * A PDF/X page defines its finished size with exactly one of TrimBox or
- * ArtBox. With neither set, the MediaBox is the finished size and is
- * declared as the TrimBox; both set is rejected.
+ * ArtBox. With neither set, the finished size is the BleedBox when the
+ * caller gave one and the MediaBox otherwise, declared as the TrimBox —
+ * ISO 15930-7 requires the TrimBox to lie within the BleedBox, so a
+ * synthesised TrimBox larger than an explicit BleedBox would make the file
+ * fail the claim it carries. Both set is rejected.
  *
  * @returns A fragment with a leading space, or `''`.
  */
@@ -156,7 +159,8 @@ export function pdfxBoxes(print: PrintOptions | undefined, pgW: number, pgH: num
     if (hasTrim && hasArt) {
         throw new Error('PDF/X pages carry a TrimBox or an ArtBox, not both — drop print.artBox, or print.trimBox and print.bleed');
     }
-    return hasTrim || hasArt ? '' : boxStr('TrimBox', [0, 0, pgW, pgH]);
+    if (hasTrim || hasArt) return '';
+    return boxStr('TrimBox', print?.bleedBox ?? [0, 0, pgW, pgH]);
 }
 
 /** One quarter-circle as a cubic Bézier (κ ≈ 0.5523). */
