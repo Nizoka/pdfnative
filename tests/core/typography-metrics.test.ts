@@ -251,3 +251,42 @@ describe('hyphenation provider', () => {
         expect(Buffer.from(b).equals(Buffer.from(a))).toBe(true);
     });
 });
+
+describe('hyphenation provider seam', () => {
+    afterEach(() => setHyphenationProvider(null));
+
+    it('receives the bare word, never the trailing separator the line breaker carries', () => {
+        const seen: string[] = [];
+        setHyphenationProvider((w) => { seen.push(w); return []; });
+        wrapText('extraordinarily long words here', 60, 11, approx);
+        expect(seen.length).toBeGreaterThan(0);
+        for (const w of seen) {
+            expect(w).toBe(w.trim());
+            expect(w).not.toContain(' ');
+        }
+    });
+
+    it('applies the positions to the bare word and keeps the separator', () => {
+        setHyphenationProvider((w) => (w === 'extraordinarily' ? [5, 9] : []));
+        const lines = wrapText('extraordinarily words', 60, 11, approx);
+        expect(lines[0]).toMatch(/^extra(ordi)?-$/);
+        expect(lines.join('').replace(/-/g, '')).toBe('extraordinarilywords');
+    });
+
+    it('passes typography.hyphenationLanguage through', () => {
+        const langs: (string | undefined)[] = [];
+        setHyphenationProvider((_w, lang) => { langs.push(lang); return []; });
+        wrapText('extraordinarily', 60, 11, approx);
+        expect(langs.length).toBeGreaterThan(0);
+        expect(langs.every(l => l === undefined)).toBe(true);
+        const fr = createEncodingContext([], false, false, 'approximate', 'fr');
+        wrapText('extraordinarily', 60, 11, fr);
+        expect(langs[langs.length - 1]).toBe('fr');
+        const params: DocumentParams = {
+            title: 'Lang',
+            blocks: [{ type: 'paragraph', text: 'anticonstitutionnellement '.repeat(4), indent: 380 }],
+        };
+        buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { hyphenationLanguage: 'fr-CA' } });
+        expect(langs).toContain('fr-CA');
+    });
+});

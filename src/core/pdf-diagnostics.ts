@@ -17,7 +17,7 @@
  * @module core/pdf-diagnostics
  */
 
-import type { PdfDiagnostic, PdfDiagnosticCode, PdfDiagnosticHandler } from '../types/pdf-types.js';
+import type { PdfDiagnostic, PdfDiagnosticCode, PdfDiagnosticHandler, EncodingContext, FontEntry } from '../types/pdf-types.js';
 
 /**
  * Create the per-build diagnostic emitter.
@@ -131,6 +131,46 @@ export function pdfxDeviceCmykDiagnostic(): PdfDiagnostic {
             + 'CMYK (ISO 15930-7 requires device colour to match the output intent). Supply a CMYK '
             + 'layout.outputIntent, use RGB colours and images, or drop layout.pdfx.',
     };
+}
+
+/**
+ * Diagnostic payload for a requested OpenType feature that changed nothing
+ * (v1.8.0): `undeclared` when no registered font carries the tag at all,
+ * `unused` when a font declares it but no glyph in the document was
+ * substituted — typically a tag asking for what the font already does by
+ * default.
+ */
+export function typographyFeatureIneffectiveDiagnostic(
+    tags: readonly string[],
+    reason: 'undeclared' | 'unused',
+): PdfDiagnostic {
+    const list = tags.map(t => `'${t}'`).join(', ');
+    const message = reason === 'undeclared'
+        ? `typography.fontFeatures ${list}: no registered font declares ${tags.length === 1 ? 'this feature' : 'these features'} `
+            + '(the base-14 faces carry no OpenType tables). Register a font that does, or drop the tag.'
+        : `typography.fontFeatures ${list}: the font declares ${tags.length === 1 ? 'the feature' : 'the features'} but no glyph `
+            + 'in the document was substituted — the requested form is already the default (Noto Sans figures '
+            + "are lining and tabular by default, so 'lnum' and 'tnum' change nothing). Drop the tag, or use "
+            + "'onum' / 'pnum' / 'smcp' for a visible change.";
+    return { code: 'TYPOGRAPHY_FEATURE_INEFFECTIVE', severity: 'warning', message };
+}
+
+/**
+ * After a document's content is laid out, report every requested OpenType
+ * feature tag that changed nothing (v1.8.0). Shared by both builders.
+ */
+export function reportIneffectiveFeatures(
+    tags: readonly string[] | undefined,
+    fontEntries: readonly FontEntry[],
+    enc: EncodingContext,
+    emit: (diagnostic: PdfDiagnostic) => void,
+): void {
+    if (!tags || tags.length === 0) return;
+    const undeclared = tags.filter(t => !fontEntries.some(fe => fe.fontData.features?.[t] !== undefined));
+    const usage = enc.getFeatureUsage?.();
+    const unused = tags.filter(t => !undeclared.includes(t) && (usage?.get(t) ?? 0) === 0);
+    if (undeclared.length > 0) emit(typographyFeatureIneffectiveDiagnostic(undeclared, 'undeclared'));
+    if (unused.length > 0) emit(typographyFeatureIneffectiveDiagnostic(unused, 'unused'));
 }
 
 /** Diagnostic payload for annotations or form fields under a PDF/X-4 claim (v1.8.0). */

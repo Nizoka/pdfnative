@@ -116,3 +116,93 @@ describe('validatePdfX', () => {
         expect(bad.errors[0]).toMatch(/header/);
     });
 });
+
+// ── Requirements added after the 1.8.0 audit ─────────────────────────
+
+function latin1Bytes(s: string): Uint8Array {
+    const buf = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) buf[i] = s.charCodeAt(i) & 0xFF;
+    return buf;
+}
+
+/** Assemble a classic-xref PDF from 1-based object bodies (obj 1 = /Root). */
+function assemblePdf(objects: readonly string[], header = '%PDF-1.6'): Uint8Array {
+    let body = `${header}\n`;
+    const offsets: number[] = [];
+    objects.forEach((content, idx) => {
+        offsets[idx] = body.length;
+        body += `${idx + 1} 0 obj\n${content}\nendobj\n`;
+    });
+    const xrefOff = body.length;
+    body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+    for (const off of offsets) body += `${String(off).padStart(10, '0')} 00000 n \n`;
+    body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R /ID [<01> <01>] >>\nstartxref\n${xrefOff}\n%%EOF\n`;
+    return latin1Bytes(body);
+}
+
+const stream = (dict: string, data: string): string => `<< ${dict} /Length ${data.length} >>\nstream\n${data}\nendstream`;
+
+describe('validatePdfX: annotations, actions, resources and filters', () => {
+    const linkDoc: DocumentParams = { ...doc, blocks: [{ type: 'link', text: 'site', url: 'https://example.com' }] };
+
+    it('exempts a Hidden annotation from the BleedBox rule', () => {
+        const bytes = buildDocumentPDFBytes(linkDoc, x4);
+        expect(validatePdfX(bytes).errors.join('\n')).toMatch(/\/Link annotation inside/);
+        const hidden = patch(bytes, '/F 4 ', '/F 2 ');
+        expect(validatePdfX(hidden).errors.join('\n')).not.toMatch(/annotation inside/);
+    });
+
+    it('warns, rather than errors, on a header below PDF 1.6', () => {
+        const bytes = patch(buildDocumentPDFBytes(doc, x4), '%PDF-1.6', '%PDF-1.4');
+        const { errors, warnings } = validatePdfX(bytes);
+        expect(errors).toEqual([]);
+        expect(warnings.join('\n')).toMatch(/expected to declare PDF 1\.6/);
+    });
+
+    it('rejects the LZWDecode filter anywhere in the file', () => {
+        const bytes = patch(buildDocumentPDFBytes(doc, { ...x4, compress: true }), '/FlateDecode', '/LZWDecode  ');
+        expect(validatePdfX(bytes).errors.join('\n')).toMatch(/LZWDecode/);
+    });
+
+    it('rejects actions, JavaScript and transfer functions, and sees fonts inside Form XObjects', () => {
+        const bytes = assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R /OpenAction [3 0 R /Fit] /AA << /WC 7 0 R >> /Names << /JavaScript << /Names [(init) 7 0 R] >> >> >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /TrimBox [0 0 612 792] /AA << /O 7 0 R >> '
+                + '/Resources << /XObject << /Fx 5 0 R >> /ExtGState << /GS0 6 0 R /GS1 8 0 R >> >> /Contents 4 0 R '
+                + '/Annots [9 0 R] >>',
+            stream('', '/Fx Do'),
+            stream('/Type /XObject /Subtype /Form /BBox [0 0 100 100] /Resources << /Font << /Fh 10 0 R >> >>', 'BT /Fh 12 Tf (x) Tj ET'),
+            '<< /Type /ExtGState /TR 11 0 R >>',
+            '<< /S /JavaScript /JS (app.alert\\(1\\)) >>',
+            '<< /Type /ExtGState /HT << /Type /Halftone /HalftoneType 1 /Frequency 60 /Angle 45 /SpotFunction /Round >> >>',
+            '<< /Type /Annot /Subtype /Link /Rect [0 0 0 0] /F 2 /A 7 0 R >>',
+            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+            '<< /FunctionType 2 /Domain [0 1] /C0 [0] /C1 [1] /N 1 >>',
+        ]);
+        const { errors, warnings } = validatePdfX(bytes);
+        const all = errors.join('\n');
+        expect(all).toMatch(/Catalog has an \/OpenAction/);
+        expect(all).toMatch(/Catalog has additional actions/);
+        expect(all).toMatch(/names tree carries \/JavaScript/);
+        expect(all).toMatch(/Page 1: page has additional actions/);
+        expect(all).toMatch(/JavaScript action/);
+        expect(all).toMatch(/xobject \/Fx: font \/Fh \(Helvetica\) is not embedded/);
+        expect(all).toMatch(/transfer function/);
+        expect(warnings.join('\n')).toMatch(/halftone other than \/Default/);
+    });
+
+    it('accepts /TR /Identity and /TR2 /Default', () => {
+        const bytes = assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /TrimBox [0 0 612 792] /Resources << /ExtGState << /A 5 0 R /B 6 0 R >> >> /Contents 4 0 R >>',
+            stream('', ''),
+            '<< /Type /ExtGState /TR /Identity >>',
+            '<< /Type /ExtGState /TR2 /Default /HT /Default >>',
+        ]);
+        const { errors, warnings } = validatePdfX(bytes);
+        expect(errors.join('\n')).not.toMatch(/transfer function/);
+        expect(warnings.join('\n')).not.toMatch(/halftone/);
+    });
+});

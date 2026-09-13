@@ -261,6 +261,7 @@ export function createEncodingContext(
     pdfA: boolean = false,
     normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false,
     metrics: Base14Metrics = 'approximate',
+    lang?: string,
 ): EncodingContext {
     // Optional Unicode normalization applied at every text entry point. Off by
     // default so output stays byte-identical; opt in via `layout.normalize`.
@@ -281,6 +282,7 @@ export function createEncodingContext(
             isUnicode: false,
             fontEntries: [],
             metrics,
+            lang,
             ps: normalize ? (s: string): string => pdfString(_norm(s)) : pdfString,
             tw: normalize ? (s: string, sz: number): number => latinWidth(_norm(s), sz) : latinWidth,
             textRuns: () => [],
@@ -338,6 +340,7 @@ export function createEncodingContext(
         isUnicode: true,
         fontEntries,
         metrics,
+        lang,
         fontData: primary.fontData,
         f1: primary.fontRef,
         f2: primary.fontRef,
@@ -569,15 +572,26 @@ function withFeatureSupport(
         const applies = base.fontEntries.some(fe => composeFeatureMap(fe.fontData, tags) !== null);
         if (!applies) return wrapper;
 
+        // Substitutions per tag, so a tag that asks for what the font already
+        // does by default can be reported instead of silently doing nothing.
+        const usage = new Map<string, number>(tags.map(t => [t, 0]));
+        const track = (fontRef: string, fromGid: number, toGid: number, fd: FontData): void => {
+            onSubstitute(fontRef, fromGid, toGid, fd);
+            for (const tag of tags) {
+                if (fd.features?.[tag]?.[fromGid] === toGid) usage.set(tag, (usage.get(tag) ?? 0) + 1);
+            }
+        };
+
         const derived: EncodingContext = {
             ...base,
-            textRuns: (str: string, sz: number) => applyFeaturesToRuns(base.textRuns(str, sz), tags, sz, onSubstitute),
+            textRuns: (str: string, sz: number) => applyFeaturesToRuns(base.textRuns(str, sz), tags, sz, track),
             tw(str: string, sz: number): number {
                 if (!str) return 0;
                 let total = 0;
                 for (const run of derived.textRuns(str, sz)) total += run.widthPt;
                 return total;
             },
+            getFeatureUsage: () => usage,
             // Deriving again replaces the feature set rather than stacking it.
             withFeatures: derive,
         };

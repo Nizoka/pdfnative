@@ -54,7 +54,7 @@ export function inspectDocumentLayout(
     // Same font rule as the builders: PDF/A and PDF/X both disable the
     // base-14 fallback, which changes how text measures.
     const embedFonts = resolvePdfAConfig(layout?.tagged).enabled || layout?.pdfx !== undefined;
-    const encBase = createEncodingContext(fontEntries, embedFonts, layout?.normalize ?? false, layout?.typography?.metrics);
+    const encBase = createEncodingContext(fontEntries, embedFonts, layout?.normalize ?? false, layout?.typography?.metrics, layout?.typography?.hyphenationLanguage);
     const encFeat = applyDocumentFeatures(encBase, layout?.typography?.fontFeatures);
     const enc = applyDocumentKerning(encFeat, layout?.typography?.kerning);
 

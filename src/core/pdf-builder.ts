@@ -24,7 +24,7 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
@@ -331,7 +331,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         emitDiagnostic(pdfxNoFontEntriesDiagnostic());
     }
 
-    const encBase = createEncodingContext(fontEntries, embedFonts, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics);
+    const encBase = createEncodingContext(fontEntries, embedFonts, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics, layoutOptions?.typography?.hyphenationLanguage);
     const encFeat = applyDocumentFeatures(encBase, layoutOptions?.typography?.fontFeatures);
     const enc = applyDocumentKerning(encFeat, layoutOptions?.typography?.kerning);
 
@@ -583,6 +583,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
         emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
     }
+    reportIneffectiveFeatures(layoutOptions?.typography?.fontFeatures, fontEntries, enc, emitDiagnostic);
 
     // Build the table structure element (inserted before footer /P elements)
     if (tagged && tableRows.length > 0) {

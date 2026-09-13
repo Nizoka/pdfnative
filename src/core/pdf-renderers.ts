@@ -329,7 +329,7 @@ export function wrapText(
         // opportunity — one the author wrote, or one a hyphenation provider
         // supplies? Both are expressed as soft hyphens, so one path handles
         // them. Computed only for words that do not fit, never for the rest.
-        const hinted = seg.includes(SHY) ? seg : hyphenateWord(seg);
+        const hinted = seg.includes(SHY) ? seg : hyphenateWord(seg, enc.lang);
         if (hinted.includes(SHY)) {
             const used = measureText(currentLine, fontSize, enc);
             const brk = softHyphenBreak(hinted, maxWidth - used, fontSize, enc);
@@ -357,7 +357,7 @@ export function wrapText(
         }
 
         // Still overflows alone — try a break opportunity across a full line.
-        const hintedAlone = segTrim.includes(SHY) ? segTrim : hyphenateWord(segTrim);
+        const hintedAlone = segTrim.includes(SHY) ? segTrim : hyphenateWord(segTrim, enc.lang);
         const brk = softHyphenBreak(hintedAlone, maxWidth, fontSize, enc);
         if (brk) {
             push(brk.head);

@@ -24,7 +24,7 @@
  *   - Non-Identity CMap `/Encoding`s (e.g. UTF-16 CJK CMaps) are decoded
  *     best-effort as 2-byte codes through `/ToUnicode`.
  *   - Vertical writing mode is treated as horizontal.
- *   - The structure tree / `/ActualText` is not consulted; order is
+ *   - The structure tree is not consulted; `/ActualText` on marked content is honoured; order is
  *     geometric. Ligature reversal is only as good as the embedded
  *     `/ToUnicode`.
  *   - Codes with no mapping anywhere decode to U+FFFD.
@@ -466,6 +466,22 @@ interface TextState {
     leading: number;
 }
 
+/**
+ * Decode a PDF text string (ISO 32000-1 §7.9.2.2): UTF-16BE behind a byte
+ * order mark, otherwise PDFDocEncoding, whose printable range coincides
+ * with Latin-1 for the characters an ActualText realistically carries.
+ */
+function decodeTextString(raw: string): string {
+    if (raw.length >= 2 && raw.charCodeAt(0) === 0xFE && raw.charCodeAt(1) === 0xFF) {
+        let out = '';
+        for (let i = 2; i + 1 < raw.length; i += 2) {
+            out += String.fromCharCode(((raw.charCodeAt(i) & 0xFF) << 8) | (raw.charCodeAt(i + 1) & 0xFF));
+        }
+        return out;
+    }
+    return raw;
+}
+
 /** Skip an inline image: scan past `ID` up to a whitespace-delimited `EI`. */
 function skipInlineImage(buf: Uint8Array, from: number): number {
     let i = from;
@@ -558,6 +574,24 @@ function interpretContent(
         const v = operands[operands.length + idx];
         return typeof v === 'number' ? v : 0;
     };
+
+    // Marked content. A /Span with /ActualText replaces whatever was shown
+    // inside it (ISO 32000-1 §14.9.4): that is how a writer states the
+    // characters behind a ligature, a justified line or a shaped cluster.
+    interface MarkedContent { actualText: string | null; runStart: number; chars: number }
+    const mcStack: MarkedContent[] = [];
+    let pendingActualText: string | null = null;
+    const propertiesDict = ((): PdfDict | null => {
+        if (resources === null) return null;
+        const p = reader.resolveValue(resources.get('Properties') ?? null);
+        return p !== null && isDict(p) ? p : null;
+    })();
+    const namedActualText = (name: string): string | null => {
+        const props = propertiesDict !== null ? reader.resolveValue(propertiesDict.get(name) ?? null) : null;
+        if (props === null || !isDict(props)) return null;
+        const at = reader.resolveValue(props.get('ActualText') ?? null);
+        return typeof at === 'string' ? decodeTextString(at) : null;
+    };
     const nextLine = (tx: number, ty: number): void => {
         st.tlm = matMul([1, 0, 0, 1, tx, ty], st.tlm);
         st.tm = st.tlm;
@@ -581,11 +615,22 @@ function interpretContent(
                 break;
             }
             case 'dictOpen': {
-                // Balanced skip (BDC/DP property dicts etc.).
+                // Inline property dict (BDC / DP). Only /ActualText is read;
+                // everything else is skipped with balanced nesting.
+                // The loop stops on the closing `>>` itself: fetching one
+                // more token would swallow the operator the dict belongs to.
                 let nesting = 1;
-                for (let inner = tok.next(); inner !== null && nesting > 0; inner = tok.next()) {
-                    if (inner.type === 'dictOpen') nesting++;
-                    else if (inner.type === 'dictClose') nesting--;
+                let key: string | null = null;
+                while (nesting > 0) {
+                    const inner = tok.next();
+                    if (inner === null) break;
+                    if (inner.type === 'dictOpen') { nesting++; key = null; }
+                    else if (inner.type === 'dictClose') { nesting--; key = null; }
+                    else if (nesting === 1 && inner.type === 'name') key = inner.value as string;
+                    else if (nesting === 1 && inner.type === 'string' && key === 'ActualText') {
+                        pendingActualText = decodeTextString(inner.value as string);
+                        key = null;
+                    } else key = null;
                 }
                 break;
             }
@@ -674,6 +719,41 @@ function interpretContent(
                     case 'BI':
                         tok.pos = skipInlineImage(content, tok.pos);
                         break;
+                    case 'BMC':
+                    case 'BDC': {
+                        let actualText = op === 'BDC' ? pendingActualText : null;
+                        if (op === 'BDC' && actualText === null) {
+                            const props = operands[operands.length - 1];
+                            if (typeof props === 'object' && props !== null && 'name' in props) actualText = namedActualText(props.name);
+                        }
+                        if (mcStack.length < MAX_GRAPHICS_STACK) {
+                            mcStack.push({ actualText, runStart: sink.runs.length, chars: sink.totalChars });
+                        }
+                        break;
+                    }
+                    case 'EMC': {
+                        const entry = mcStack.pop();
+                        if (entry !== undefined && entry.actualText !== null) {
+                            const shown = sink.runs.splice(entry.runStart);
+                            const first = shown[0];
+                            const trm = matMul(st.tm, ctm);
+                            const [dx, dy] = matApply(trm, 0, 0);
+                            sink.totalChars = entry.chars + entry.actualText.length;
+                            if (sink.totalChars > sink.maxChars) {
+                                throw new Error(`extractText output exceeded the ${sink.maxChars}-character maxTextLength limit — raise options.maxTextLength if this document is trusted`);
+                            }
+                            if (entry.actualText.length > 0) {
+                                sink.runs.push({
+                                    text: entry.actualText,
+                                    x: first?.x ?? dx,
+                                    y: first?.y ?? dy,
+                                    fontSize: first?.fontSize ?? st.size * Math.hypot(trm[2], trm[3]),
+                                    fontName: first?.fontName ?? st.fontName,
+                                });
+                            }
+                        }
+                        break;
+                    }
                     case 'Do': {
                         const nameOp = operands[operands.length - 1];
                         if (depth < MAX_FORM_DEPTH && typeof nameOp === 'object' && nameOp !== null && 'name' in nameOp && xobjDict !== null) {
@@ -701,6 +781,8 @@ function interpretContent(
                     default:
                         break; // painting/colour/shading operators — irrelevant to text
                 }
+                // An inline property dict belongs to the operator it precedes.
+                if (op !== 'BDC') pendingActualText = null;
                 operands.length = 0;
                 break;
             }

@@ -164,14 +164,14 @@ describe('layout.typography.fontFeatures', () => {
 
     it('is a no-op for a tag the font does not declare', () => {
         const plain = buildDocumentPDFBytes(doc(), { creationDate: PINNED });
-        const frac = buildDocumentPDFBytes(doc(), { creationDate: PINNED, typography: { fontFeatures: ['frac'] } });
+        const frac = buildDocumentPDFBytes(doc(), { creationDate: PINNED, typography: { fontFeatures: ['frac'] }, onDiagnostic: () => {} });
         expect(Buffer.from(frac).equals(Buffer.from(plain))).toBe(true);
     });
 
     it('is a no-op without a registered font', () => {
         const base14: DocumentParams = { title: 'F', blocks: [{ type: 'paragraph', text: '1111' }] };
         const plain = buildDocumentPDFBytes(base14, { creationDate: PINNED });
-        const asked = buildDocumentPDFBytes(base14, { creationDate: PINNED, typography: { fontFeatures: ['pnum'] } });
+        const asked = buildDocumentPDFBytes(base14, { creationDate: PINNED, typography: { fontFeatures: ['pnum'] }, onDiagnostic: () => {} });
         expect(Buffer.from(asked).equals(Buffer.from(plain))).toBe(true);
     });
 
@@ -299,5 +299,53 @@ describe('feature-substituted glyphs are embedded, measured and mapped', () => {
             expect(text).toContain('0123456789');
             expect(text.toLowerCase()).toContain('small caps abcdef');
         }
+    });
+});
+
+describe('TYPOGRAPHY_FEATURE_INEFFECTIVE', () => {
+    function diagnostics(fontFeatures: string[], fontEntries?: FontEntry[]): string[] {
+        const seen: string[] = [];
+        buildDocumentPDFBytes(
+            { title: 'D', blocks: [{ type: 'paragraph', text: 'Figures 0123456789 and letters abcdef' }], fontEntries },
+            { creationDate: PINNED, typography: { fontFeatures }, onDiagnostic: d => seen.push(`${d.code}:${d.message}`) },
+        );
+        return seen;
+    }
+
+    it('reports a tag no registered font declares', () => {
+        const seen = diagnostics(['frac'], entries);
+        expect(seen).toHaveLength(1);
+        expect(seen[0]).toMatch(/^TYPOGRAPHY_FEATURE_INEFFECTIVE:typography\.fontFeatures 'frac': no registered font declares/);
+    });
+
+    it('reports every tag when no font is registered at all', () => {
+        const seen = diagnostics(['pnum', 'smcp']);
+        expect(seen).toHaveLength(1);
+        expect(seen[0]).toMatch(/'pnum', 'smcp'.*base-14/);
+    });
+
+    it("reports 'tnum' and 'lnum' on Noto Sans, whose figures are already tabular and lining", () => {
+        const seen = diagnostics(['tnum', 'lnum'], entries);
+        expect(seen).toHaveLength(1);
+        expect(seen[0]).toMatch(/'tnum', 'lnum'.*no glyph in the document was substituted/);
+    });
+
+    it('stays silent for a tag that substitutes something', () => {
+        expect(diagnostics(['onum'], entries)).toEqual([]);
+        expect(diagnostics(['smcp', 'pnum'], entries)).toEqual([]);
+    });
+
+    it('separates the undeclared from the unused', () => {
+        const seen = diagnostics(['frac', 'tnum', 'onum'], entries);
+        expect(seen).toHaveLength(2);
+        expect(seen.some(s => /'frac'.*no registered font/.test(s))).toBe(true);
+        expect(seen.some(s => /'tnum'.*no glyph/.test(s))).toBe(true);
+    });
+
+    it('throws under strict', () => {
+        expect(() => buildDocumentPDFBytes(
+            { title: 'S', blocks: [{ type: 'paragraph', text: '1' }], fontEntries: entries },
+            { creationDate: PINNED, typography: { fontFeatures: ['tnum'] }, strict: true },
+        )).toThrow(/fontFeatures 'tnum'/);
     });
 });

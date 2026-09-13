@@ -23,7 +23,7 @@ import type {
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
@@ -186,7 +186,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         emitDiagnostic(pdfxNoFontEntriesDiagnostic());
     }
 
-    const encBase = createEncodingContext(fontEntries, embedFonts, layout?.normalize ?? false, layout?.typography?.metrics);
+    const encBase = createEncodingContext(fontEntries, embedFonts, layout?.normalize ?? false, layout?.typography?.metrics, layout?.typography?.hyphenationLanguage);
     const encFeat = applyDocumentFeatures(encBase, layout?.typography?.fontFeatures);
     const enc = applyDocumentKerning(encFeat, layout?.typography?.kerning);
 
@@ -522,6 +522,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
         emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
     }
+    reportIneffectiveFeatures(layout?.typography?.fontFeatures, fontEntries, enc, emitDiagnostic);
 
     // ── Group annotations by page ────────────────────────────────────
     const annotsByPage = new Map<number, PageAnnotation[]>();

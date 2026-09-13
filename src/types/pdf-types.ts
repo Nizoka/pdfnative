@@ -351,6 +351,17 @@ export interface EncodingContext {
      */
     readonly metrics?: Base14Metrics;
     /**
+     * Language tag passed to the hyphenation provider
+     * ({@link TypographyOptions.hyphenationLanguage}). (v1.8.0)
+     */
+    readonly lang?: string;
+    /**
+     * Substitutions performed per requested OpenType feature tag since the
+     * context was derived. Present only on a feature-derived context; lets
+     * the builders report a tag that changed nothing. (v1.8.0)
+     */
+    readonly getFeatureUsage?: () => ReadonlyMap<string, number>;
+    /**
      * Derive a context that applies the given OpenType features to every
      * glyph it encodes and measures.
      *
@@ -571,7 +582,14 @@ export type PdfDiagnosticCode =
     /** CMYK colour or image under a PDF/X-4 claim whose OutputIntent is not CMYK (ISO 15930-7). @since 1.8.0 */
     | 'PDFX_DEVICE_CMYK'
     /** Link annotations or form fields on a PDF/X-4 page (ISO 15930-7). @since 1.8.0 */
-    | 'PDFX_ANNOTATIONS';
+    | 'PDFX_ANNOTATIONS'
+    /**
+     * A `typography.fontFeatures` tag that changed nothing: no registered font
+     * declares it, or the font declares it but no glyph in the document was
+     * substituted (Noto Sans's default figures are already lining and
+     * tabular, so `lnum` and `tnum` have nothing to do). @since 1.8.0
+     */
+    | 'TYPOGRAPHY_FEATURE_INEFFECTIVE';
 
 /** A single conformance diagnostic surfaced by the builders. */
 export interface PdfDiagnostic {
@@ -643,9 +661,10 @@ export interface TypographyOptions {
      * line. ISO 80000-1 §7.1 asks for this in every language, so it carries
      * no locale and no cultural assumption.
      *
-     * Pass `true` for the built-in symbol list, or an object to extend it.
-     * Only an existing plain space is converted, and only before a recognised
-     * unit standing on its own — "150 personnes" stays breakable.
+     * Pass `true` for the built-in symbol list, or an object whose `units`
+     * replace that list. Only an existing plain space is converted, and only
+     * before a recognised unit standing on its own — "150 personnes" stays
+     * breakable.
      *
      * Default: `false`.
      */
@@ -744,6 +763,15 @@ export interface TypographyOptions {
      * Default: `false`.
      */
     readonly kerning?: boolean;
+    /**
+     * Language tag (BCP 47, e.g. `'fr'`, `'en-US'`) handed to the installed
+     * {@link setHyphenationProvider | hyphenation provider} with every word,
+     * so one provider can select the right pattern set. No effect without a
+     * provider; the library never assumes a language on its own.
+     *
+     * @since 1.8.0
+     */
+    readonly hyphenationLanguage?: string;
 }
 
 /** Built-in punctuation-spacing conventions. @since 1.8.0 */
