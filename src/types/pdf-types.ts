@@ -652,9 +652,20 @@ export interface TypographyOptions {
      *
      * Individual blocks can opt in or out with their own `keepWithNext`.
      *
+     * `true` reserves at least two lines of a following paragraph, what
+     * Word and InDesign do by default. `{ minLines }` raises that quota —
+     * three is a common house style. The reservation never drops below
+     * {@link orphans}, and a paragraph that cannot spare that many lines and
+     * still carry {@link widows} over follows the heading whole. Tables are
+     * unaffected: a heading is kept with a table's caption, header and first
+     * row.
+     *
      * Default: `false`.
      */
-    readonly keepHeadingsWithNext?: boolean;
+    readonly keepHeadingsWithNext?: boolean | {
+        /** Minimum lines of the following paragraph kept on the heading's page. Floored at 1. Default: `2`. */
+        readonly minLines?: number;
+    };
     /**
      * Bind a numerical value to the unit symbol that follows it with a
      * no-break space, so `150 €`, `12 kg` or `30 %` never break across a
@@ -669,6 +680,36 @@ export interface TypographyOptions {
      * Default: `false`.
      */
     readonly unitBinding?: boolean | UnitBindingOptions;
+    /**
+     * Bind short words to the word that follows them with a no-break space,
+     * so a line never ends on "a", "w" or "I".
+     *
+     * A house style, not a typographic law — which is why it is opt-in. It
+     * is orthography in Polish, Czech, Slovak, Russian, Ukrainian and
+     * Hungarian, whose one-letter prepositions and conjunctions must not
+     * close a line, and a preference elsewhere: Chicago and Bringhurst do
+     * not forbid an English line ending on an article.
+     *
+     * `true` binds words of one letter (letters only, case-insensitive).
+     * `maxLength` widens the rule to words of up to that many letters (three
+     * at most); `words` restricts it to an explicit list instead, for
+     * example `['w', 'z', 'i', 'a', 'o', 'u']` for Polish. Only an existing
+     * plain space is converted, never one at the end of the text or before
+     * punctuation; a digit is never a word, and a unit already bound to its
+     * number is left alone. Idempotent. Applies wherever
+     * {@link punctuationSpacing} does.
+     *
+     * The no-break space is visible to text extraction, and each binding
+     * removes a break opportunity a narrow column may need.
+     *
+     * Default: `false`.
+     */
+    readonly bindShortWords?: boolean | {
+        /** Longest word the rule applies to, 1 to 3 letters. Default: `1`. */
+        readonly maxLength?: number;
+        /** Explicit words to bind, replacing the letter-count rule. */
+        readonly words?: readonly string[];
+    };
     /**
      * Replace the plain spaces around punctuation with no-break ones.
      *

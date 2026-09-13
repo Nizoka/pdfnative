@@ -174,7 +174,7 @@ export { setDefaultCreationDate, getDefaultCreationDate } from './core/pdf-repro
 
 // ── Core — Typography ───────────────────────────────────────────────
 export {
-    bindUnits, applyPunctuationSpacing,
+    bindUnits, bindShortWords, applyPunctuationSpacing,
     PUNCTUATION_SPACING_PRESETS, DEFAULT_UNITS,
 } from './core/pdf-typography.js';
 export type { HyphenationProvider } from './core/hyphenation.js';

@@ -92,14 +92,19 @@ interface Typography {
     readonly orphans: number;
     readonly widows: number;
     readonly keepHeadingsWithNext: boolean;
+    /** Lines of the following paragraph a kept heading must be able to pull along. */
+    readonly headingMinLines: number;
 }
 
 function resolveTypography(opts: TypographyOptions | undefined): Typography {
+    const keep = opts?.keepHeadingsWithNext;
+    const keepObj = typeof keep === 'object' && keep !== null ? keep : undefined;
     return {
         splitParagraphs: opts?.splitParagraphs === true,
         orphans: Math.max(1, Math.floor(opts?.orphans ?? 2)),
         widows: Math.max(1, Math.floor(opts?.widows ?? 2)),
-        keepHeadingsWithNext: opts?.keepHeadingsWithNext === true,
+        keepHeadingsWithNext: keep === true || keepObj !== undefined,
+        headingMinLines: Math.max(1, Math.floor(keepObj?.minLines ?? 2)),
     };
 }
 
@@ -191,15 +196,24 @@ export function paginatePass(
      * The figure must match the splitters exactly: reserving less than they
      * demand lets the heading stay while the paragraph walks to the next
      * page, which is the stranding the rule exists to prevent.
+     *
+     * `keepHeadingsWithNext: { minLines }` raises the paragraph quota above
+     * `orphans`; the `max` is mandatory in both directions, because the
+     * splitter never places fewer than `orphans` lines, and reserving fewer
+     * than the quota would let the heading stay with a thinner lead than the
+     * house style asked for. The widow test runs on the raised figure for the
+     * same reason: when the paragraph cannot spare that many lines and still
+     * carry `widows` over, only the whole paragraph satisfies the quota.
      */
     const leadHeight = (b: DocumentBlock): number => {
         if (b.type === 'paragraph' && isSplittable(b)) {
             const plan = planParagraph(b, enc, cw);
             const total = plan.lines.length;
             if (total === 0) return plan.trailerSpacing;
-            const canSplit = total - typo.orphans >= typo.widows;
+            const lead = Math.max(typo.headingMinLines, typo.orphans);
+            const canSplit = total - lead >= typo.widows;
             return canSplit
-                ? typo.orphans * plan.lineH
+                ? lead * plan.lineH
                 : total * plan.lineH + plan.trailerSpacing;
         }
         if (b.type === 'table') {

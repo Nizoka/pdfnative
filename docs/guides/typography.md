@@ -39,7 +39,7 @@ Why opt-in: each option moves glyphs or line breaks, so turning one on changes a
 | `splitParagraphs` | `false` | A paragraph that does not fit breaks at a line boundary instead of moving to the next page whole. A paragraph taller than a page continues instead of running off the bottom. |
 | `orphans` | `2` | Minimum lines left at the foot of a page for a break to be allowed there. Requires `splitParagraphs`. |
 | `widows` | `2` | Minimum lines carried to the next page; the break is pulled earlier otherwise. Requires `splitParagraphs`. |
-| `keepHeadingsWithNext` | `false` | A heading that would end a page moves to the next one with its content. Works without `splitParagraphs`. |
+| `keepHeadingsWithNext` | `false` | A heading that would end a page moves to the next one with its content. Works without `splitParagraphs`. Pass `true`, or `{ minLines: N }` to reserve at least N lines of what follows (default 2; three is a common house style) — the reservation never drops below `orphans`, and a paragraph that cannot spare N lines and still carry `widows` over moves whole. |
 
 Blocks override the document setting: a heading or paragraph accepts `keepWithNext`, and a paragraph accepts its own split permission. Under a PDF/A claim a paragraph split across pages remains one `/P` structure element.
 
@@ -66,7 +66,7 @@ setHyphenationProvider((word, lang) => myHyphenator.positions(word, lang ?? 'en'
 buildDocumentPDFBytes(params, { typography: { hyphenationLanguage: 'fr' } });
 ```
 
-The provider receives the bare word (no surrounding space) and must be synchronous and pure: it may be called many times for the same word during layout, and a changing answer would make output irreproducible. A word that already contains soft hyphens keeps the author's choice, and a provider that throws is ignored for that word. Pass `null` to remove it. The sample `typography/hyphenation-provider.pdf` installs a small rule-based French provider for one document.
+The provider receives the bare word (no surrounding space) and must be synchronous and pure: it may be called many times for the same word during layout, and a changing answer would make output irreproducible. A word that already contains soft hyphens keeps the author's choice, and a provider that throws is ignored for that word. Pass `null` to remove it. The sample `typography/hyphenation-provider.pdf` installs a small rule-based English syllable provider for one document (with `hyphenationLanguage: 'en'`).
 
 ## Spacing rules
 
@@ -83,7 +83,9 @@ typography: {
 }
 ```
 
-Only existing spaces are converted; nothing is inserted where the author wrote none. It applies to headings, paragraphs, lists, link labels and table content. `bindUnits()` and `applyPunctuationSpacing()` expose the same transforms for text you lay out yourself.
+**Short-word binding** — `bindShortWords: true` replaces the space after a one-letter word with a no-break space, so a line never ends on "a", "w" or "I". It is opt-in because it is a house style, not a typographic law: orthography in Polish, Czech, Slovak, Russian, Ukrainian and Hungarian, whose one-letter prepositions and conjunctions must not close a line, and a preference elsewhere — Chicago and Bringhurst do not forbid an English line ending on an article. `{ maxLength: 2 }` widens the rule to words of up to two letters (three at most); `{ words: ['w', 'z', 'i', 'a', 'o', 'u'] }` restricts it to an explicit list, which is the right form for a language whose short words are a closed set. Words are letters only and matched case-insensitively; a digit is never a word, so `2 m` stays with unit binding. A short word at the end of the text or before punctuation keeps its space, and a unit already bound to its number is not taken for a lone short word. Two side effects to know about: the no-break space is visible to text extraction, and every binding removes a break opportunity, which a narrow column can feel.
+
+Only existing spaces are converted; nothing is inserted where the author wrote none. Each rule applies to headings, paragraphs, lists, link labels and table content. `bindUnits()`, `bindShortWords()` and `applyPunctuationSpacing()` expose the same transforms for text you lay out yourself.
 
 ## Metrics
 

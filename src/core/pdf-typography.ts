@@ -16,6 +16,12 @@
  *   rule about one-letter prepositions. The library ships only the presets it
  *   can state precisely and lets any other convention be described by hand,
  *   instead of pretending to know them all.
+ * - **Short-word binding** sits in between. Keeping a one-letter word off the
+ *   end of a line is orthography in Polish, Czech, Slovak, Russian, Ukrainian
+ *   and Hungarian, and a house-style preference elsewhere — Chicago and
+ *   Bringhurst do not forbid an English line ending on "a". It is therefore
+ *   a separate switch with an explicit word list, never a side effect of a
+ *   language flag.
  *
  * Everything here is opt-in through `layout.typography`. With it omitted
  * nothing runs and output is byte-identical.
@@ -110,6 +116,62 @@ export function bindUnits(text: string, units: readonly string[] = DEFAULT_UNITS
     return text.replace(re, `$1${NBSP}$2`);
 }
 
+/** Object form of {@link TypographyOptions.bindShortWords}. */
+type ShortWordBinding = Exclude<NonNullable<TypographyOptions['bindShortWords']>, boolean>;
+
+/** Longest word `maxLength` may ask for; beyond three letters the rule stops being about short words. */
+const SHORT_WORD_MAX = 3;
+
+/**
+ * Bind short words to the word that follows them with a no-break space, so
+ * a line never ends on "a", "w" or "I".
+ *
+ * A house style, not a typographic law. It is orthography in Polish, Czech,
+ * Slovak, Russian, Ukrainian and Hungarian, whose one-letter prepositions and
+ * conjunctions (`w z i a o u k s v`) must not close a line, and a preference
+ * elsewhere — Chicago and Bringhurst do not forbid an English line ending on
+ * an article. Hence opt-in, and hence the explicit `words` list for a
+ * language whose short words are a closed set.
+ *
+ * Only the single U+0020 after a qualifying word is converted, and only when
+ * the word starts the text or follows breakable white space or an opening
+ * bracket or quote, and the next token starts with a letter or digit — a
+ * short word at the end of the text or before punctuation keeps its space.
+ * Words are letters only (`\p{L}`), matched case-insensitively; a digit is
+ * never a word, so `2 m` is left to {@link bindUnits}. A word already glued
+ * to what precedes it by a no-break space — a unit symbol bound to its
+ * number — is not a lone short word and is left alone. Existing no-break
+ * spaces are never touched, which makes the transform idempotent.
+ *
+ * The no-break space is visible to text extraction, and it removes a break
+ * opportunity: in a narrow column, binding widens the pool of lines the
+ * wrapper cannot fill.
+ *
+ * @param text Text to transform.
+ * @param opts `maxLength` widens the rule to words of up to that many letters
+ *   (1 to 3, default 1); `words` restricts it to an explicit list instead.
+ *
+ * @since 1.8.0
+ */
+export function bindShortWords(text: string, opts?: ShortWordBinding): string {
+    if (!text) return text;
+    let word: string;
+    if (opts?.words !== undefined) {
+        const list = opts.words.filter(w => w.length > 0);
+        if (list.length === 0) return text;
+        // Longest first, so a longer entry is not shadowed by its own prefix.
+        word = [...list].sort((a, b) => b.length - a.length).map(escapeRe).join('|');
+    } else {
+        const max = Math.min(SHORT_WORD_MAX, Math.max(1, Math.floor(opts?.maxLength ?? 1)));
+        word = `\\p{L}{1,${max}}`;
+    }
+    // Lookbehind: start of text, breakable white space, or an opening
+    // bracket or quote (Ps, Pi and the straight double quote). A straight
+    // apostrophe is deliberately absent: "l'a" is one word, not an "a".
+    const re = new RegExp(`(?<=^|[ \\t\\r\\n\\p{Ps}\\p{Pi}"])(${word}) (?=[\\p{L}\\p{N}])`, 'giu');
+    return text.replace(re, `$1${NBSP}`);
+}
+
 /**
  * Replace the plain spaces adjacent to punctuation with no-break ones,
  * following an explicit set of rules.
@@ -157,16 +219,22 @@ function buildTransform(opts: TypographyOptions | undefined): ((s: string) => st
     const rules = resolvePunctuationRules(opts?.punctuationSpacing);
     const binding = opts?.unitBinding;
     const bindOn = binding === true || (typeof binding === 'object' && binding !== null);
-    if (rules.length === 0 && !bindOn) return null;
+    const short = opts?.bindShortWords;
+    const shortOn = short === true || (typeof short === 'object' && short !== null);
+    if (rules.length === 0 && !bindOn && !shortOn) return null;
 
     const units = typeof binding === 'object' && binding !== null
         ? (binding.units ?? DEFAULT_UNITS)
         : DEFAULT_UNITS;
+    const shortOpts = typeof short === 'object' && short !== null ? short : undefined;
 
     return (s: string): string => {
         let out = s;
         if (rules.length > 0) out = applyPunctuationSpacing(out, rules);
         if (bindOn) out = bindUnits(out, units);
+        // After unit binding on purpose: a unit already glued to its number
+        // must not be taken for a lone short word.
+        if (shortOn) out = bindShortWords(out, shortOpts);
         return out;
     };
 }

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { buildDocumentPDFBytes, bindUnits, applyPunctuationSpacing, PUNCTUATION_SPACING_PRESETS, wrapText } from '../../src/index.js';
+import {
+    buildDocumentPDFBytes, bindUnits, bindShortWords, applyPunctuationSpacing, PUNCTUATION_SPACING_PRESETS, wrapText,
+} from '../../src/index.js';
 import { extractText } from '../../src/parser/pdf-text-extract.js';
 import { createEncodingContext } from '../../src/core/encoding-context.js';
 import { helveticaWidth, helveticaBoldWidth, stripSoftHyphens } from '../../src/fonts/encoding.js';
@@ -212,6 +214,84 @@ describe('bindUnits (universal, ISO 80000-1)', () => {
     });
 });
 
+/**
+ * A reviewer saw a page-bottom line in `breaks-split.pdf` end on the article
+ * "A". Greedy filling has no content rule, and the wrapper breaks only on
+ * U+0020 and U+0009 — so gluing the short word to its successor with U+00A0
+ * in the preparation layer is all it takes, and it is a house style rather
+ * than a law, hence its own switch.
+ */
+describe('bindShortWords (house style, opt-in)', () => {
+    it('binds a one-letter word to the word that follows it', () => {
+        expect(bindShortWords('A paragraph that')).toBe(`A${NBSP}paragraph that`);
+        expect(bindShortWords('a paragraph that', { maxLength: 1 })).toBe(`a${NBSP}paragraph that`);
+    });
+
+    it('binds every qualifying word but never one at the end of the text', () => {
+        expect(bindShortWords('I a m', { maxLength: 1 })).toBe(`I${NBSP}a${NBSP}m`);
+        expect(bindShortWords('to a', { maxLength: 1 })).toBe('to a');
+        expect(bindShortWords('a')).toBe('a');
+    });
+
+    it('widens to two- and three-letter words on request, three at most', () => {
+        expect(bindShortWords('to be or not', { maxLength: 2 })).toBe(`to${NBSP}be${NBSP}or${NBSP}not`);
+        expect(bindShortWords('to be or not', { maxLength: 3 })).toBe(`to${NBSP}be${NBSP}or${NBSP}not`);
+        expect(bindShortWords('word after word', { maxLength: 3 })).toBe('word after word');
+        // 1..3 is the whole range: out-of-range values clamp rather than throw.
+        expect(bindShortWords('the four word', { maxLength: 9 })).toBe(`the${NBSP}four word`);
+        expect(bindShortWords('a to be', { maxLength: 0 })).toBe(`a${NBSP}to be`);
+    });
+
+    it('restricts itself to an explicit word list, case-insensitively', () => {
+        // demo-language: pl (one-letter prepositions that must not end a line)
+        const polish = ['w', 'z', 'i', 'a', 'o', 'u'];
+        expect(bindShortWords('Byłem w domu i w pracy', { words: polish })).toBe(`Byłem w${NBSP}domu i${NBSP}w${NBSP}pracy`);
+        expect(bindShortWords('W domu', { words: polish })).toBe(`W${NBSP}domu`);
+        // A one-letter word not on the list keeps its space; one on it binds
+        // whatever its case, so a sentence-initial "I" is the listed "i".
+        expect(bindShortWords('k a m', { words: polish })).toBe(`k a${NBSP}m`);
+        expect(bindShortWords('I a m', { words: polish })).toBe(`I${NBSP}a${NBSP}m`);
+        expect(bindShortWords('a b', { words: [] })).toBe('a b');
+    });
+
+    it('is idempotent and never touches an existing no-break space', () => {
+        const once = bindShortWords('A paragraph, a word and an end', { maxLength: 2 });
+        expect(bindShortWords(once, { maxLength: 2 })).toBe(once);
+        expect(bindShortWords(`a${NBSP}b`)).toBe(`a${NBSP}b`);
+        expect(bindShortWords(`a${NNBSP}b`)).toBe(`a${NNBSP}b`);
+    });
+
+    it('treats digits as numbers, not words, and leaves units to bindUnits', () => {
+        expect(bindShortWords('2 m')).toBe('2 m');
+        expect(bindShortWords('2 m long', { maxLength: 1 })).toBe(`2 m${NBSP}long`);
+        // A unit already glued to its number is not a lone short word.
+        expect(bindShortWords(bindUnits('a 5 m parcel'))).toBe(`a${NBSP}5${NBSP}m parcel`);
+    });
+
+    it('does not bind before punctuation or across a sentence boundary', () => {
+        expect(bindShortWords('a, b')).toBe('a, b');
+        expect(bindShortWords('a — b')).toBe('a — b');
+        expect(bindShortWords('a "quoted"')).toBe('a "quoted"');
+        // "l'a" is one word: the apostrophe does not open a new one.
+        expect(bindShortWords("l'a dit")).toBe("l'a dit");
+    });
+
+    it('recognises a word after an opening bracket or quote', () => {
+        expect(bindShortWords('(a note)')).toBe(`(a${NBSP}note)`);
+        expect(bindShortWords('"A quote"')).toBe(`"A${NBSP}quote"`);
+        expect(bindShortWords('«a citation»')).toBe(`«a${NBSP}citation»`);
+    });
+
+    it('does not mistake the tail of a longer word for a short one', () => {
+        expect(bindShortWords('sofa bed')).toBe('sofa bed');
+        expect(bindShortWords('Anna a Ola', { maxLength: 1 })).toBe(`Anna a${NBSP}Ola`);
+    });
+
+    it('is a no-op on empty input', () => {
+        expect(bindShortWords('')).toBe('');
+    });
+});
+
 describe('applyPunctuationSpacing (locale-specific, rule-driven)', () => {
     const fr = PUNCTUATION_SPACING_PRESETS.fr;
     const frCA = PUNCTUATION_SPACING_PRESETS['fr-CA'];
@@ -304,5 +384,58 @@ describe('prepareBlocks', () => {
         const on = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { unitBinding: true } });
         expect(Buffer.from(off).equals(Buffer.from(plain))).toBe(true);
         expect(Buffer.from(on).equals(Buffer.from(plain))).toBe(false);
+    });
+
+    describe('with bindShortWords', () => {
+        const short: DocumentBlock[] = [
+            { type: 'heading', level: 1, text: 'A heading' },
+            { type: 'paragraph', text: 'I am a paragraph' },
+            { type: 'list', style: 'bullet', items: ['a list', { text: 'o item', items: ['u nested'] }] },
+            { type: 'table', headers: ['A column', 'B'], rows: [{ cells: ['a cell', 'w domu'], type: '', pointed: false }], caption: 'A caption' },
+            { type: 'link', text: 'a link', url: 'https://example.com' },
+        ];
+
+        it('applies it to every block kind', () => {
+            const json = JSON.stringify(prepareBlocks(short, { bindShortWords: true }));
+            for (const bound of ['A heading', 'I am', 'a paragraph', 'a list', 'o item', 'u nested', 'A column', 'a cell', 'w domu', 'A caption', 'a link']) {
+                expect(json).toContain(bound.replace(' ', NBSP));
+            }
+            // "B" ends its header cell: nothing follows it to bind to.
+            expect(json).toContain('"B"');
+        });
+
+        it('honours the object form inside prepareBlocks', () => {
+            const json = JSON.stringify(prepareBlocks(short, { bindShortWords: { words: ['w'] } }));
+            expect(json).toContain(`w${NBSP}domu`);
+            expect(json).toContain('A heading');
+        });
+
+        it('returns the input untouched when off', () => {
+            expect(prepareBlocks(short, { bindShortWords: false })).toBe(short);
+        });
+
+        it('changes the built document only when set', () => {
+            const params: DocumentParams = { title: 'Short words', blocks: short };
+            const plain = buildDocumentPDFBytes(params, { creationDate: PINNED });
+            const off = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { bindShortWords: false } });
+            const on = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { bindShortWords: true } });
+            expect(Buffer.from(off).equals(Buffer.from(plain))).toBe(true);
+            expect(Buffer.from(on).equals(Buffer.from(plain))).toBe(false);
+        });
+
+        it('is visible to text extraction as a no-break space', () => {
+            const entries: FontEntry[] = [{ fontData: notoSans as unknown as FontData, fontRef: '/F3', lang: 'latin' }];
+            const params: DocumentParams = {
+                title: 'Short words',
+                fontEntries: entries,
+                blocks: [{ type: 'paragraph', text: 'A paragraph that ends on a short word' }],
+            };
+            const on = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { bindShortWords: true } });
+            const text = extractText(on).map(p => p.text).join('\n');
+            expect(text).toContain(`A${NBSP}paragraph`);
+            expect(text).toContain(`a${NBSP}short`);
+            const plain = extractText(buildDocumentPDFBytes(params, { creationDate: PINNED })).map(p => p.text).join('\n');
+            expect(plain).toContain('A paragraph');
+        });
     });
 });

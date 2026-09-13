@@ -3,7 +3,7 @@ import { buildDocumentPDFBytes, inspectDocumentLayout } from '../../src/index.js
 import { openPdf } from '../../src/parser/pdf-reader.js';
 import { paginateDocument } from '../../src/core/pdf-pagination.js';
 import { createEncodingContext } from '../../src/core/encoding-context.js';
-import { planParagraph } from '../../src/core/pdf-renderers.js';
+import { planParagraph, estimateBlockHeight } from '../../src/core/pdf-renderers.js';
 import { PG_H, DEFAULT_MARGINS, FT_H } from '../../src/core/pdf-layout.js';
 import type { DocumentParams, DocumentBlock } from '../../src/types/pdf-document-types.js';
 import type { TypographyOptions } from '../../src/types/pdf-types.js';
@@ -363,6 +363,162 @@ describe('keep-with-next combined with splitParagraphs', () => {
             const last = page.blocks[page.blocks.length - 1];
             expect(last?.type).not.toBe('heading');
         }
+    });
+});
+
+/**
+ * A heading kept with two lines is what Word and InDesign do by default; a
+ * house style often asks for three. `keepHeadingsWithNext: { minLines }`
+ * raises the quota the paragraph after a heading must meet on the same page.
+ */
+describe('keep-with-next with a minimum line quota', () => {
+    type Slice = { fromLine: number; toLine: number; isFinalSlice: boolean };
+    const CW = 495;
+
+    /** Pages whose last placed item is a heading. */
+    function strandedPages(res: ReturnType<typeof paginateDocument>): number[] {
+        const out: number[] = [];
+        res.planned.forEach((page, i) => {
+            const last = page[page.length - 1];
+            if (last && last.type === 'heading') out.push(i);
+        });
+        return out;
+    }
+
+    function sections(count: number, bodyRepeats: number): DocumentBlock[] {
+        const out: DocumentBlock[] = [];
+        for (let i = 1; i <= count; i++) {
+            out.push({ type: 'heading', level: 2, text: `Section ${i}` });
+            out.push({ type: 'paragraph', text: 'Body text that belongs with its heading and runs on for a while. '.repeat(bodyRepeats) });
+        }
+        return out;
+    }
+
+    /** Page of the first heading and the slice placed right after it. */
+    function afterHeading(res: ReturnType<typeof paginateDocument>): { page: number; nextPage: number; lines: number; final: boolean } {
+        const flat = res.planned.flat();
+        const hIdx = flat.findIndex(p => p.type === 'heading');
+        const next = flat[hIdx + 1];
+        const slice = (next.item as { slice: Slice }).slice;
+        return { page: flat[hIdx].page, nextPage: next.page, lines: slice.toLine - slice.fromLine, final: slice.isFinalSlice };
+    }
+
+    /**
+     * A spacer sized so that, after it and the heading, exactly two and a
+     * half body lines remain on the page: the default quota (two lines) is
+     * met in place, a quota of three is not.
+     */
+    function fixture(): { blocks: DocumentBlock[]; body: DocumentBlock } {
+        const heading: DocumentBlock = { type: 'heading', level: 2, text: 'Quota heading' };
+        const body = longPara(60);
+        const availableH = PG_H - DEFAULT_MARGINS.t - DEFAULT_MARGINS.b - FT_H;
+        const headingH = estimateBlockHeight(heading, enc, CW);
+        const plan = planParagraph(body as never, enc, CW);
+        const spacerH = availableH - headingH - 2.5 * plan.lineH;
+        // A one-line paragraph measures fontSize × lineHeight + its trailer.
+        const spacer: DocumentBlock = { type: 'paragraph', text: 'x', lineHeight: 1, fontSize: spacerH - plan.trailerSpacing };
+        expect(estimateBlockHeight(spacer, enc, CW)).toBeCloseTo(spacerH, 6);
+        return { blocks: [spacer, heading, body], body };
+    }
+
+    it('leaves a heading followed by two lines in place under the default quota', () => {
+        const { blocks } = fixture();
+        for (const keep of [true, { minLines: 2 }] as const) {
+            const res = paginateDocument(input(blocks, { splitParagraphs: true, keepHeadingsWithNext: keep }));
+            const got = afterHeading(res);
+            expect(got.page).toBe(0);
+            expect(got.nextPage).toBe(0);
+            expect(got.lines).toBe(2);
+            expect(got.final).toBe(false);
+        }
+    });
+
+    it('moves that same heading over when the quota is three', () => {
+        const { blocks } = fixture();
+        const res = paginateDocument(input(blocks, { splitParagraphs: true, keepHeadingsWithNext: { minLines: 3 } }));
+        const got = afterHeading(res);
+        expect(got.page).toBe(1);
+        expect(got.nextPage).toBe(1);
+        expect(got.lines).toBeGreaterThanOrEqual(3);
+        expect(strandedPages(res)).toEqual([]);
+    });
+
+    it('treats the object form as keep-with-next even without splitParagraphs', () => {
+        const { blocks } = fixture();
+        const res = paginateDocument(input(blocks, { keepHeadingsWithNext: { minLines: 3 } }));
+        // Atomic paragraph: the whole body must follow, so the heading moves.
+        expect(res.headings[0].pageIndex).toBe(1);
+        const flat = res.planned.flat();
+        const hIdx = flat.findIndex(p => p.type === 'heading');
+        expect(flat[hIdx + 1].type).toBe('paragraph');
+        expect(flat[hIdx + 1].page).toBe(1);
+        expect(strandedPages(res)).toEqual([]);
+    });
+
+    it('never drops the reservation below orphans', () => {
+        // orphans 3 with a quota of 1: the splitter would not place fewer
+        // than three lines, so the reservation must be three, not one.
+        const { blocks } = fixture();
+        const res = paginateDocument(input(blocks, {
+            splitParagraphs: true, keepHeadingsWithNext: { minLines: 1 }, orphans: 3, widows: 1,
+        }));
+        const got = afterHeading(res);
+        expect(got.page).toBe(1);
+        expect(got.lines).toBeGreaterThanOrEqual(3);
+        expect(strandedPages(res)).toEqual([]);
+    });
+
+    for (const orphans of [1, 2, 3]) {
+        for (const widows of [1, 2, 3]) {
+            it(`never ends a page with a heading and always meets the quota (orphans ${orphans}, widows ${widows})`, () => {
+                for (const repeats of [2, 5, 9, 14]) {
+                    const res = paginateDocument(input(
+                        sections(24, repeats),
+                        { splitParagraphs: true, keepHeadingsWithNext: { minLines: 3 }, orphans, widows },
+                        'Keep',
+                    ));
+                    expect(res.pages.length).toBeGreaterThan(1);
+                    expect(strandedPages(res)).toEqual([]);
+                    // Every heading is followed on its own page by at least
+                    // three lines, or by the whole of a shorter paragraph.
+                    for (const page of res.planned) {
+                        page.forEach((p, i) => {
+                            if (p.type !== 'heading') return;
+                            const next = page[i + 1];
+                            expect(next).toBeDefined();
+                            const slice = (next.item as { slice: Slice }).slice;
+                            expect(slice.isFinalSlice || slice.toLine - slice.fromLine >= 3).toBe(true);
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    it('produces byte-identical output for { minLines: 2 } and true', () => {
+        const params: DocumentParams = { title: 'Quota', blocks: sections(12, 2) };
+        const a = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { splitParagraphs: true, keepHeadingsWithNext: true } });
+        const b = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { splitParagraphs: true, keepHeadingsWithNext: { minLines: 2 } } });
+        const c = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { splitParagraphs: true, keepHeadingsWithNext: {} } });
+        expect(Buffer.from(b).equals(Buffer.from(a))).toBe(true);
+        expect(Buffer.from(c).equals(Buffer.from(a))).toBe(true);
+    });
+
+    it('floors a nonsensical quota at one line', () => {
+        const params: DocumentParams = { title: 'Quota', blocks: sections(12, 2) };
+        const a = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { splitParagraphs: true, keepHeadingsWithNext: { minLines: 1 } } });
+        const b = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { splitParagraphs: true, keepHeadingsWithNext: { minLines: -4 } } });
+        expect(Buffer.from(b).equals(Buffer.from(a))).toBe(true);
+    });
+
+    it('is reported identically by the inspector', () => {
+        const params: DocumentParams = { title: 'Quota', blocks: sections(24, 5) };
+        const typography: TypographyOptions = { splitParagraphs: true, keepHeadingsWithNext: { minLines: 3 } };
+        const layout = inspectDocumentLayout(params, { typography });
+        for (const page of layout.pages) {
+            expect(page.blocks[page.blocks.length - 1]?.type).not.toBe('heading');
+        }
+        expect(layout.totalPages).toBe(openPdf(buildDocumentPDFBytes(params, { creationDate: PINNED, typography })).pageCount);
     });
 });
 
