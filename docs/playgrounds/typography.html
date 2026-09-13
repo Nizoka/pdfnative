@@ -157,7 +157,7 @@
         <li><strong>Page breaking</strong> — <code>splitParagraphs</code> breaks at line boundaries; <code>widows</code> / <code>orphans</code> keep single lines from being stranded; <code>keepHeadingsWithNext</code> keeps a heading with its content.</li>
         <li><strong>Justification</strong> — <code>align: 'justify'</code> fills the measure word by word; <code>opticalMargins</code> hangs punctuation past the edge.</li>
         <li><strong>Spacing</strong> — <code>unitBinding</code> keeps <em>150 €</em> together (ISO 80000-1); <code>punctuationSpacing: 'fr'</code> sets French no-break spaces.</li>
-        <li><strong>Kerning and features</strong> — <code>kerning</code> applies the font's pair adjustments; <code>fontFeatures</code> selects OpenType figures such as <code>tnum</code> and <code>onum</code>. Both need a registered font.</li>
+        <li><strong>Kerning and features</strong> — <code>kerning</code> applies the font's pair adjustments; <code>fontFeatures</code> selects OpenType single substitutions such as <code>onum</code>, <code>pnum</code> and <code>smcp</code>. Both need a registered font.</li>
       </ul>
       <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/typography.html">Typography guide</a> for every option.</p>
     </div>
@@ -198,7 +198,7 @@ const DESCRIPTIONS = {
   justify: 'Two long paragraphs set justified. With optical margins on, the opening quote and the full stops at the edges hang into the margin so the column edge looks straight. Turn the option off to compare with plain justification.',
   spacing: 'A French paragraph with amounts and units. Unit binding keeps "150 €", "12 kg" and "30 %" on one line; the fr preset sets the no-break spaces French typography expects before : ; ! ? and inside guillemets.',
   kerning: 'Display headings where kerning is most visible: AV, To, Yo, Wa. Loads Noto Sans from the CDN, since the base-14 faces carry no kerning data.',
-  figures: 'A table of amounts. With tabular figures (tnum) every digit has the same advance, so columns line up; old-style figures (onum) and small capitals (smcp) show two more single-substitution features. Loads Noto Sans from the CDN.',
+  figures: 'A table of amounts and a line of prose. Noto Sans sets lining, tabular figures by default, so the variant turns on old-style figures (onum) and small capitals (smcp) — two single-substitution features whose effect is visible; tnum would change nothing here and would raise the TYPOGRAPHY_FEATURE_INEFFECTIVE diagnostic. Loads Noto Sans from the CDN.',
 };
 
 const CODE = {
@@ -235,7 +235,7 @@ const pdf = buildDocumentPDFBytes({
   typography: { kerning: true },
 });`,
   figures: `const pdf = buildDocumentPDFBytes({ title: 'Amounts', fontEntries, blocks }, {
-  typography: { fontFeatures: ['tnum'] },   // or ['onum', 'smcp']
+  typography: { fontFeatures: ['onum', 'smcp'] },   // pnum, zero, c2sc, sups, subs, case…
 });`,
 };
 
@@ -315,7 +315,7 @@ const BUILDERS = {
       ] },
       { type: 'paragraph', text: 'Small capitals and old-style figures: abcdefghijk 1234567890' },
     ] },
-    on ? { typography: { fontFeatures: ['tnum', 'onum', 'smcp'] } } : {},
+    on ? { typography: { fontFeatures: ['onum', 'smcp'] } } : {},
   ),
 };
 

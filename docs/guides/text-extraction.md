@@ -121,13 +121,18 @@ By design (documented, not bugs):
 - Non-Identity CMap `/Encoding`s (e.g. predefined UTF-16 CJK CMaps) are
   decoded best-effort as 2-byte codes through `/ToUnicode`.
 - Vertical writing mode is treated as horizontal.
-- The structure tree / `/ActualText` is not consulted — order is
-  geometric, and ligature reversal is only as good as the embedded
-  `/ToUnicode`. In practice this means **shaped Indic scripts**
-  (Devanagari, Bengali, Tamil, Telugu, Sinhala, …) extract with U+FFFD
-  for conjunct/ligature glyphs that have no single-codepoint mapping —
-  the PDF *renders* correctly; only extraction of those clusters is
-  lossy. Latin, CJK, Arabic and emoji round-trip cleanly.
+- The structure tree is not consulted — order is geometric. `/ActualText`
+  on marked content **is** honoured (v1.8.0): a `/Span` that declares
+  the characters behind a ligature, a shaped cluster or a justified line
+  extracts as those characters, outermost span first. Without it,
+  ligature reversal is only as good as the embedded `/ToUnicode`. In
+  practice this means **shaped Indic and South-East Asian scripts**
+  (Devanagari, Bengali, Tamil, Telugo, Sinhala, Khmer, Lao, Tai Tham, …)
+  extract with U+FFFD for conjunct/ligature glyphs that have no
+  single-codepoint mapping in an untagged document — the PDF *renders*
+  correctly; only extraction of those clusters is lossy. Build with
+  `tagged: 'pdfa2u'` (or any tagged level) and the spans carry the
+  source text. Latin, CJK, Arabic and emoji round-trip cleanly.
 
 ## Samples
 

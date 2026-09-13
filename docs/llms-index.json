@@ -5,8 +5,8 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 17515,
-      "approxTokens": 4379
+      "bytes": 17594,
+      "approxTokens": 4399
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -17,20 +17,20 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 548526,
-      "approxTokens": 137132
+      "bytes": 552548,
+      "approxTokens": 138137
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
       "description": "Executable recipes: CI-verified, copy-ready code for the most common tasks.",
-      "bytes": 31008,
-      "approxTokens": 7752
+      "bytes": 31003,
+      "approxTokens": 7751
     },
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 134874,
-      "approxTokens": 33719
+      "bytes": 134918,
+      "approxTokens": 33730
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
@@ -47,8 +47,8 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 100445,
-      "approxTokens": 25111
+      "bytes": 101227,
+      "approxTokens": 25307
     }
   ],
   "guides": [
@@ -403,8 +403,8 @@
         "hard-invariants-for-contributors",
         "see-also"
       ],
-      "bytes": 16595,
-      "approxTokens": 4149
+      "bytes": 16879,
+      "approxTokens": 4220
     },
     {
       "title": "Print production — bleed, trim & printer's marks",
@@ -423,8 +423,8 @@
         "large-formats--userunit",
         "limits--scope-v180"
       ],
-      "bytes": 10669,
-      "approxTokens": 2667
+      "bytes": 11155,
+      "approxTokens": 2789
     },
     {
       "title": "Quick Start",
@@ -444,8 +444,8 @@
         "command-line--pdfnative-cli",
         "next-steps"
       ],
-      "bytes": 8060,
-      "approxTokens": 2015
+      "bytes": 8067,
+      "approxTokens": 2017
     },
     {
       "title": "pdfnative-react — Declarative JSX Renderer Guide",
@@ -568,8 +568,8 @@
         "samples",
         "see-also"
       ],
-      "bytes": 6315,
-      "approxTokens": 1579
+      "bytes": 6678,
+      "approxTokens": 1670
     },
     {
       "title": "Troubleshooting",
@@ -605,8 +605,8 @@
         "limits--scope",
         "see-also"
       ],
-      "bytes": 8267,
-      "approxTokens": 2067
+      "bytes": 10288,
+      "approxTokens": 2572
     },
     {
       "title": "Ecosystem use cases",

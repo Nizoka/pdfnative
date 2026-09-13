@@ -720,7 +720,7 @@ import { buildDocumentPDFBytes, extractText, openPdf } from 'pdfnative';
 import type { DocumentParams, DocumentBlock } from 'pdfnative';
 
 const PASSAGE =
-    'The quarter closed with an order book of 150 € thousand and shipments of 12 kg of '
+    'The quarter closed with an order book of 150 000 € and shipments of 12 kg of '
     + 'samples per site. Breaking long paragraphs at line boundaries keeps pages full, and '
     + 'the widow and orphan rules keep single lines from being stranded at a page edge. ';
 

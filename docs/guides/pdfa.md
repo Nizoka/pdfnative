@@ -183,7 +183,7 @@ engine PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfn
 and again as a blocking gate before every npm publish.
 
 Detection is automatic and guarded: every sample declaring
-`pdfaid:part` — currently the 20 PDF/A-claiming samples — is validated
+`pdfaid:part` — currently the 21 PDF/A-claiming samples — is validated
 without any registration, and a **coverage canary** fails the run if the
 detected count drifts from `declared.pdfaSamples` in
 `docs/assets/ecosystem.json` (bump it when adding or removing a
@@ -308,7 +308,7 @@ pdfnative validates this at the build boundary — passing both
 |---------|----------|-------|
 | PDF/A-1b (`'pdfa1b'`) | PDF 1.4 | Most conservative — required by some legacy archival systems. No transparency, no JPEG2000, no AES. |
 | PDF/A-2b (`true` / `'pdfa2b'`) | PDF 1.7 | Default. Allows transparency, layers, embedded TrueType. |
-| PDF/A-2u (`'pdfa2u'`) | PDF 1.7 | 2b + Unicode mapping for every glyph. Required when `/ActualText` and ToUnicode CMap completeness matter (recommended for accessibility). |
+| PDF/A-2u (`'pdfa2u'`) | PDF 1.7 | 2b + Unicode mapping for every glyph. Required when `/ActualText` and ToUnicode CMap completeness matter (recommended for accessibility). Glyphs a shaper produces (Indic conjuncts, Khmer subscripts, Lao and Tai Tham forms) have no cmap entry and therefore no ToUnicode line; under a tagged level every marked-content span carries `/ActualText` with the source characters, which ISO 19005-2 accepts as the Unicode mapping. |
 | PDF/A-3b (`'pdfa3b'`) | PDF 1.7 | 2b + arbitrary `/EmbeddedFile` attachments (XML, source data, etc.). |
 
 All four flavours share the same XMP / OutputIntent / structure-tree

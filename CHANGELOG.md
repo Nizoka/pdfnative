@@ -15,17 +15,21 @@ COLRv1 transforms, variable paints and structural masks, so flags keep
 their shaded wave, and bundled skin tones; CMYK colour, CMYK
 OutputIntents and a PDF/X-4 conformance claim with `validatePdfX()`.
 Underneath, every sample is now deterministic and held byte for byte to
-the release that last changed it. Zero runtime dependencies, no breaking
-changes: 47 exports added, none removed, every new behaviour opt-in, and
-existing inputs render byte-identically except where the previous output
-was wrong (see Fixed). 3214 tests across 150 files; veraPDF-validated.
+the release that last changed it. Zero runtime dependencies; 47 exports
+added, none removed; every new behaviour opt-in; existing inputs render
+byte-identically except where the previous output was wrong (see Fixed),
+and three calls behave differently by design — `setDeflateImpl()` rejects
+a raw-DEFLATE compressor, `parseColor()` accepts a CMYK tuple,
+`extractText()` honours `/ActualText` — see the release note's Upgrade
+section. 3335+ tests across 151 files; veraPDF-validated; a consumer
+importing one helper bundles that helper alone.
 
 ### Added
 
 - **feat(samples): deterministic samples and a byte-level regression harness** —
   `setDefaultCreationDate()` pins the creation instant process-wide and the
   `{date}` placeholder now resolves against it; `npm run verify:samples`
-  fingerprints all 270 samples (SHA-256 of the bytes, or of a semantic
+  fingerprints all 271 samples (SHA-256 of the bytes, or of a semantic
   projection for the 14 encrypted ones) against a committed manifest whose
   entries chain to the release that last changed them; blocking CI workflow.
 - **feat(core): typography** under `layout.typography`, all opt-in —
@@ -74,7 +78,30 @@ was wrong (see Fixed). 3214 tests across 150 files; veraPDF-validated.
   separation under a CMYK OutputIntent.
 - **feat(core): `setDeflateRawImpl()` and `wrapZlib()`** — inject a raw
   RFC 1951 compressor and let pdfnative add the RFC 1950 envelope.
-- **feat(samples): 28 new samples** (270), including typography pairs,
+- **feat(parser): `validatePdfX()` covers fonts inside Form XObjects and
+  patterns, exempts Hidden, NoView and Popup annotations, rejects
+  `/OpenAction`, additional actions, JavaScript, `LZWDecode` and transfer
+  functions, and warns on halftones, interpolated images and a header
+  below 1.6.**
+- **feat(parser): `extractText()` honours `/ActualText`** on marked
+  content (inline or named property lists, UTF-16BE decoded, outermost
+  span first).
+- **feat(core): `TYPOGRAPHY_FEATURE_INEFFECTIVE`** diagnostic for a
+  `fontFeatures` tag no registered font declares, or that substitutes no
+  glyph in the document; **`typography.hyphenationLanguage`**, handed to
+  the hyphenation provider as its second argument.
+- **feat(tooling): `npm run gate`** (`--fast` / `--ci` / `--publish` /
+  `--only` / `--json`) as the one quality gate with a twenty-line summary;
+  **`npm run verify:bundle`** bundles three probes from `dist/` and fails
+  when an export drags unrelated code along; `verify:samples` refuses two
+  samples that come out byte-identical unless the pair is listed;
+  `--quiet` / `--json` on `generate-samples` and `validate-pdfa`; the dot
+  reporter, `TZ=UTC`, a fixed pool and timeouts pinned in the vitest
+  config; `scripts/release-prepare.ts` for the mechanical part of a bump;
+  `CLAUDE.md`, a committed `.claude/settings.json` and a human-in-the-loop
+  guard hook for Claude Code sessions.
+- **feat(samples): 29 new samples** (271), including typography pairs
+  and a hyphenation-provider sample,
   alphabets for the five new scripts, a form inside PDF/A-2b, CMYK under
   PDF/X-4 and PDF/A-2b, and skin tones; two recipes (`typography-report`,
   `print-pdfx4`).
@@ -93,8 +120,13 @@ was wrong (see Fixed). 3214 tests across 150 files; veraPDF-validated.
   operands; every input it accepted before parses exactly as it did.
 - **feat(core): `outputIntent` accepts CMYK and Gray profiles**; the
   resolution now happens before any byte is written.
+- **perf(bundle): tree-shakeable output** — the Universal Shaping Engine
+  builds its grammar on first use, `initCrypto()` imports statically and
+  hands `rsa` / `ecdsa` only the ASN.1 functions they call, and every
+  module-level table carries `/*#__PURE__*/`; a `parseColor`-only bundle
+  drops from 29.8 KB to 2.6 KB.
 - **chore(deps): js-yaml pinned to 4.3.2** (GHSA-2883-xcg3-v3hh, reached only
-  through ESLint) via overrides.
+  through ESLint) via overrides; `packageManager` pins npm.
 
 ### Fixed
 
@@ -123,6 +155,36 @@ was wrong (see Fixed). 3214 tests across 150 files; veraPDF-validated.
   transform formats dropped their glyph to monochrome.
 - **fix(samples): locale-dependent sample output** — amounts formatted with
   a bare `toLocaleString()` differed between machines.
+- **fix(fonts): glyphs introduced by `fontFeatures`** were dropped by the
+  subsetter (blank on the page), missing from `/W` (viewers fell back to
+  `/DW`) and from ToUnicode (extracted as U+FFFD); they are now tracked
+  like cmap-reached glyphs and map back to the character they replaced.
+- **fix(core): `keepHeadingsWithNext` with `splitParagraphs`** — the rule
+  reserved one line while the splitter refused fewer than `orphans`, so
+  the paragraph moved on and the heading stayed stranded; a table's
+  trailer spacing was likewise omitted.
+- **fix(core): justified text** wrote one text object per word without a
+  space glyph (4.8× the content, words glued on extraction); it is one
+  `TJ` array per line with the spaces kept.
+- **fix(core): no-break spaces** reaching a registered font were folded
+  to U+0020, so `punctuationSpacing: 'fr'` and `'fr-CA'` produced the same
+  bytes; the font's own U+00A0 / U+202F glyphs are used when present.
+- **fix(core): base-14 measurement** encoded the string to WinAnsi before
+  an estimate that branches on Unicode, so — … “ ” ‘ ’ measured at 556
+  units and bidi controls became `?`; right- and centre-aligned lines and
+  optical protrusion were off by the difference. The exact AFM branch now
+  strips soft hyphens and bidi controls first.
+- **fix(core): PDF/X TrimBox** synthesised for a page with a `bleedBox`
+  and no `trimBox` was the MediaBox, outside the BleedBox — the writer
+  produced a file `validatePdfX()` rejected.
+- **fix(parser): the inline-dict skip in `extractText`** consumed the
+  operator following `>>`.
+- **fix(samples): the typography showcase** used straight apostrophes and
+  quotes, stripped accents, breakable thousands separators and an
+  optical-margins variant that changed two other options; two of its
+  pairs were byte-identical files. The sample manifest's three
+  `compression/*` entries re-anchored in 062b864 without moving their
+  `since` now read 1.8.0.
 
 [#74]: https://github.com/Nizoka/pdfnative/issues/74
 [#75]: https://github.com/Nizoka/pdfnative/issues/75

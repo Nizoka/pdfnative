@@ -87,7 +87,7 @@ const pdf = buildDocumentPDFBytes(
       opticalMargins: true,         // hang punctuation past the measure
       unitBinding: true,            // &quot;150 €&quot; and &quot;12 kg&quot; never break
       kerning: true,                // AV, To, Yo set with the font&#39;s pair kerning
-      fontFeatures: [&#39;tnum&#39;],       // tabular figures: amounts line up
+      fontFeatures: [&#39;onum&#39;],       // old-style figures in running text
     },
   },
 );
@@ -125,7 +125,7 @@ const pdf = buildDocumentPDFBytes(
 </tbody></table>
 <p>Blocks override the document setting: a heading or paragraph accepts <code>keepWithNext</code>, and a paragraph accepts its own split permission. Under a PDF/A claim a paragraph split across pages remains one <code>/P</code> structure element.</p>
 <h2 id="justification-and-optical-margins">Justification and optical margins<a class="heading-anchor" href="#justification-and-optical-margins" aria-label="Link to this section">#</a></h2>
-<p><code>align: &#39;justify&#39;</code> on a paragraph spans every line except the last across the full measure by placing each word at its own position. A line that would need an implausible stretch is left ragged rather than opened into rivers of white space.</p>
+<p><code>align: &#39;justify&#39;</code> on a paragraph spans every line except the last across the full measure. Each line is written as one <code>TJ</code> array: every word keeps its space glyph and a negative adjustment opens the gap, so the line stays a single text object and viewers, search and <code>extractText()</code> still see word boundaries. (<code>Tw</code>, the word-spacing operator, is never used: it applies only to single-byte code 32 and does nothing for the Identity-H CID fonts every registered font uses.) A line that would need an implausible stretch is left ragged rather than opened into rivers of white space.</p>
 <p><code>opticalMargins: true</code> lets punctuation hang past the edge it sits against. An opening quote at the start of a line, or a full stop at the end, is mostly white space inside its own box, so a column whose glyph origins sit exactly on the margin still looks indented. Hanging the mark back out makes the optical edge straight. It applies to the leading mark of left-aligned and justified lines and the trailing mark of justified and right-aligned ones, with conservative offsets.</p>
 <h2 id="hyphenation">Hyphenation<a class="heading-anchor" href="#hyphenation" aria-label="Link to this section">#</a></h2>
 <p>Two sources of break opportunities inside a word:</p>
@@ -135,17 +135,20 @@ const pdf = buildDocumentPDFBytes(
 </ul>
 <pre><code class="language-ts">import { setHyphenationProvider } from &#39;pdfnative&#39;;
 
-// Return the indices inside `word` where a hyphen may go.
-setHyphenationProvider((word) =&gt; myHyphenator.positions(word));
+// Return the indices inside `word` where a hyphen may go. `lang` is the
+// document&#39;s typography.hyphenationLanguage, or undefined.
+setHyphenationProvider((word, lang) =&gt; myHyphenator.positions(word, lang ?? &#39;en&#39;));
+
+buildDocumentPDFBytes(params, { typography: { hyphenationLanguage: &#39;fr&#39; } });
 </code></pre>
-<p>The provider must be synchronous and pure: it may be called many times for the same word during layout, and a changing answer would make output irreproducible. A word that already contains soft hyphens keeps the author&#39;s choice, and a provider that throws is ignored for that word. Pass <code>null</code> to remove it.</p>
+<p>The provider receives the bare word (no surrounding space) and must be synchronous and pure: it may be called many times for the same word during layout, and a changing answer would make output irreproducible. A word that already contains soft hyphens keeps the author&#39;s choice, and a provider that throws is ignored for that word. Pass <code>null</code> to remove it. The sample <code>typography/hyphenation-provider.pdf</code> installs a small rule-based French provider for one document.</p>
 <h2 id="spacing-rules">Spacing rules<a class="heading-anchor" href="#spacing-rules" aria-label="Link to this section">#</a></h2>
 <p><strong>Unit binding</strong> — <code>unitBinding: true</code> replaces the space between a number and the unit symbol that follows with a no-break space, so <code>150 €</code>, <code>12 kg</code> or <code>30 %</code> never split across lines. ISO 80000-1 asks for this in every language, so it carries no locale assumption. Only an existing plain space before a recognised symbol standing on its own is converted — &quot;150 personnes&quot; stays breakable. Pass <code>{ units: [...] }</code> to replace the built-in symbol list.</p>
-<p><strong>Punctuation spacing</strong> — conventions differ by language, so this is never automatic. <code>punctuationSpacing</code> takes a preset the library can state precisely, or a list of rules for any other convention. <code>&#39;fr&#39;</code> sets a narrow no-break space before <code>;</code> <code>!</code> <code>?</code> and a no-break space before <code>:</code> and inside guillemets; <code>&#39;fr-CA&#39;</code> keeps only the colon and guillemet spaces, as Canadian French usage does.</p>
+<p><strong>Punctuation spacing</strong> — conventions differ by language, so this is never automatic. <code>punctuationSpacing</code> takes a preset the library can state precisely, or a list of rules for any other convention. <code>&#39;fr&#39;</code> sets a narrow no-break space (U+202F) before <code>;</code> <code>!</code> <code>?</code> and a no-break space (U+00A0) before <code>:</code> and inside guillemets; <code>&#39;fr-CA&#39;</code> keeps only the colon and guillemet spaces, as Canadian French usage does. A registered font that carries both glyphs (Noto Sans does) renders them as written, narrow space included; the base-14 faces have no narrow no-break space, so on that path U+202F degrades to an ordinary space and <code>&#39;fr&#39;</code> looks like <code>&#39;fr-CA&#39;</code>.</p>
 <pre><code class="language-ts">typography: {
   punctuationSpacing: [
     { char: &#39;:&#39;, side: &#39;before&#39;, space: &#39;nbsp&#39; },
-    { char: &#39;»&#39;, side: &#39;before&#39;, space: &#39;narrow&#39; },
+    { char: &#39;?&#39;, side: &#39;before&#39;, space: &#39;narrow&#39; },
   ],
 }
 </code></pre>
@@ -188,18 +191,18 @@ setHyphenationProvider((word) =&gt; myHyphenator.positions(word));
 <td>Case-sensitive forms</td>
 </tr>
 </tbody></table>
-<p><code>tnum</code> earns its keep in financial tables: proportional digits make a column of amounts ragged because <code>1</code> is narrower than <code>8</code>. Asking for a tag the font does not declare is a silent no-op, since the same document may be built with different fonts, and later tags win where two touch the same glyph. Ligatures and contextual features (<code>liga</code>, <code>calt</code>, <code>frac</code>) are out of scope. Features need a registered font.</p>
+<p>Which tags change anything depends on the font. Noto Sans, the bundled Latin face, sets lining, tabular figures <strong>by default</strong>: <code>tnum</code> and <code>lnum</code> therefore substitute nothing there, while <code>pnum</code> (proportional) and <code>onum</code> (old-style) do. <code>tnum</code> earns its keep with a font whose default figures are proportional, where <code>1</code> narrower than <code>8</code> makes a column of amounts ragged. A requested tag that no registered font declares, or that the font declares but that substitutes no glyph in the document, raises the <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code> diagnostic (<code>console.warn</code> by default, <code>onDiagnostic</code> to capture it, a thrown error under <code>strict</code>) — the same document may be built with different fonts, so it is a warning, not an error. Later tags win where two touch the same glyph. Ligatures and contextual features (<code>liga</code>, <code>calt</code>, <code>frac</code>) are out of scope. Features need a registered font.</p>
 <h2 id="limits--scope">Limits &amp; scope<a class="heading-anchor" href="#limits--scope" aria-label="Link to this section">#</a></h2>
 <ul>
 <li>No automatic hyphenation dictionary — install a provider, or write soft hyphens.</li>
-<li>Justification distributes space between words only; there is no letter-spacing or glyph scaling.</li>
-<li>Kerning and features read the registered font&#39;s tables: base-14 text gets neither.</li>
+<li>Justification distributes space between words only; there is no letter-spacing or glyph scaling. A justified line is one <code>TJ</code> array per line, so the content stream grows by the adjustments, not by a text object per word.</li>
+<li>Kerning and features read the registered font&#39;s tables: base-14 text gets neither, and the base-14 path has no narrow no-break space.</li>
 <li>Features are single substitutions; complex-script shaping is handled by the script shapers, independently of this option.</li>
 </ul>
-<p>See the <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/typography-showcase.ts" target="_blank" rel="noopener">typography samples</a>: each pairs the default behaviour with the typographic option on identical content — <code>typography/breaks-atomic.pdf</code> against <code>breaks-split.pdf</code>, <code>align-ragged.pdf</code> against <code>align-justified.pdf</code> and <code>align-optical.pdf</code>, <code>kerning-off.pdf</code> against <code>kerning-on.pdf</code>, and more.</p>
+<p>See the <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/typography-showcase.ts" target="_blank" rel="noopener">typography samples</a>: each pairs the default behaviour with the typographic option on identical content — <code>typography/breaks-atomic.pdf</code> against <code>breaks-split.pdf</code>, <code>keep-with-next-off.pdf</code> against <code>keep-with-next-on.pdf</code>, <code>align-ragged.pdf</code> against <code>align-justified.pdf</code> and <code>align-optical.pdf</code> (which differs from the justified file by <code>opticalMargins</code> alone), <code>text-plain.pdf</code> against <code>text-refined.pdf</code>, <code>kerning-off.pdf</code> against <code>kerning-on.pdf</code>, <code>features-default.pdf</code> against <code>features-proportional.pdf</code> and <code>features-oldstyle-smallcaps.pdf</code>, <code>metrics-approximate.pdf</code> against <code>metrics-exact.pdf</code>, and <code>hyphenation-provider.pdf</code>. The regression gate refuses two samples of a pair that come out byte-identical.</p>
 <h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
 <ul>
-<li><a href="tables.html">Tables</a> — column alignment, where <code>tnum</code> matters most</li>
+<li><a href="tables.html">Tables</a> — column alignment, where tabular figures matter most</li>
 <li><a href="print.html">Print production</a> — boxes, marks, CMYK and PDF/X-4</li>
 <li><a href="choose.html">Choosing your surface</a></li>
 </ul>

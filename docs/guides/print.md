@@ -150,7 +150,7 @@ What the claim writes:
 - a `%PDF-1.6` header (PDF/X-4 is based on PDF 1.6);
 - an XMP packet with `pdfxid:GTS_PDFXVersion` = `PDF/X-4`, `xmpMM:DocumentID`, `VersionID` and `RenditionClass`, and the XMP dates — and no PDF/A identification;
 - a `/GTS_PDFX` OutputIntent carrying your profile;
-- a TrimBox on every page — the MediaBox when `print` sets none;
+- a TrimBox on every page — the BleedBox when `print.bleedBox` is set and no TrimBox is, the MediaBox when `print` sets neither (a TrimBox must lie within the BleedBox);
 - `/Trapped` in `/Info` and XMP: `False` unless `metadata.trapped` says `True`.
 
 What throws before any byte is written: `pdfx` with a PDF/A `tagged` level (one claim per file), with `encryption`, without `outputIntent`, with a profile that is not an output (`prtr`) profile, with `trapped: 'Unknown'`, or with both a TrimBox and an ArtBox.
@@ -159,7 +159,7 @@ What raises a diagnostic: `PDFX_NO_FONT_ENTRIES` (every font must be embedded �
 
 ### Checking the result
 
-`validatePdfX(bytes)` checks what the structure can prove: header, encryption and `/ID`; the XMP identification and trapping, consistent with `/Info`; the OutputIntent and its embedded output profile; page boxes; embedded fonts; annotations in the print area; and device colour in page content against the intent. It does not inspect colour inside Form XObjects or images, and it does not render. veraPDF does not cover PDF/X, so confirm a file bound for press with a certified preflight (callas pdfToolbox, Acrobat Preflight).
+`validatePdfX(bytes)` checks what the structure can prove: header (a version above 1.6 is an error, below it a warning), encryption and `/ID`; the XMP identification and trapping, consistent with `/Info`; the OutputIntent and its embedded output profile; page boxes; embedded fonts, including those reached only through Form XObjects and patterns; annotations in the print area (Hidden, NoView, Popup, PrinterMark and TrapNet are exempt) and JavaScript actions; `/OpenAction`, additional actions and a JavaScript name tree; the `LZWDecode` filter and transfer functions anywhere in the file (halftones and interpolated images are warnings); and device colour in page content against the intent. It does not inspect colour inside Form XObjects or images, and it does not render. veraPDF does not cover PDF/X, so confirm a file bound for press with a certified preflight (callas pdfToolbox, Acrobat Preflight).
 
 ## Large formats — `/UserUnit`
 

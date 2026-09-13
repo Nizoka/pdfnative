@@ -131,6 +131,10 @@ _All v1.8.0 items have been merged. See Released above._
 - [ ] **COLRv1 luminosity masks and non-default instances** — masks built from gradients or blended subtrees need a transparency group; they still fall back to the backdrop or the monochrome outline. Variable COLR renders at the default instance only.
 - [ ] **Spot colours and colour bars** — `/Separation` inks beyond registration, `/DeviceN`, and colour bars in the printer's-marks set, on top of the v1.8.0 CMYK foundation.
 - [ ] **PDF/X variants and dual claims** — PDF/X-1a, X-3 and X-4p, and a single file claiming both PDF/A and PDF/X.
+- [ ] **ToUnicode for shaper-produced glyphs** — a conjunct, subscript or contextual form a shaper selects has no cmap entry, so its ToUnicode line is missing and an untagged document extracts it as U+FFFD (tagged output carries `/ActualText`, which `extractText()` honours since v1.8.0). Letting each shaper report the source codepoints behind every glyph it emits closes the gap for every complex script; it rewrites the ToUnicode stream of many 1.7.0-era samples, so it ships with a declared rebaseline.
+- [ ] **Page transparency group** — pages that paint with `/ca` or `/CA` (watermarks, COLRv1 emoji) carry no `/Group << /S /Transparency >>`; the OutputIntent determines the blending space, but certified preflight tools warn.
+- [ ] **Narrow no-break space on the base-14 path** — WinAnsi has no U+202F, so `punctuationSpacing: 'fr'` degrades to `'fr-CA'` without a registered font; a `TJ` offset in place of the missing glyph would render the narrow space there too.
+- [ ] **`validatePdfX()` inside XObjects** — device colour inside Form XObjects and images is not yet checked against the OutputIntent.
 
 ## How to Influence the Roadmap
 
