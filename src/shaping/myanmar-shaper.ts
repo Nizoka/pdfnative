@@ -102,7 +102,7 @@ function isConsonant(cp: number): boolean {
  * kinzi with a following asat and virama, and the result is drawn above the
  * consonant that comes *after* it, not beside the letter itself.
  */
-const KINZI_LETTERS = new Set([0x1004, 0x101B, 0x105A]);
+const KINZI_LETTERS = /*#__PURE__*/ new Set([0x1004, 0x101B, 0x105A]);
 
 /** Whether `cps` starts a kinzi prefix at `i` with a base to attach to. */
 function isKinziAt(cps: readonly number[], i: number): boolean {

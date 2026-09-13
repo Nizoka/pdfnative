@@ -76,7 +76,7 @@ const LAO_CLASS: Record<number, number> = {
  *
  * Read out of Noto Sans Lao's own chained-context rule, not guessed.
  */
-const TALL_CONSONANTS = new Set([0x0E9B, 0x0E9D, 0x0E9F, 0x0EA2]);
+const TALL_CONSONANTS = /*#__PURE__*/ new Set([0x0E9B, 0x0E9D, 0x0E9F, 0x0EA2]);
 
 /**
  * Consonants with a descender, below which a below mark must shift:
@@ -87,7 +87,7 @@ const TALL_CONSONANTS = new Set([0x0E9B, 0x0E9D, 0x0E9F, 0x0EA2]);
  * per mark, and applying it is right for the class it belongs to and no
  * worse than nothing for the other.
  */
-const DESCENDER_CONSONANTS = new Set([0x0E87, 0x0E8A, 0x0E8C, 0x0E90, 0x0E96]);
+const DESCENDER_CONSONANTS = /*#__PURE__*/ new Set([0x0E87, 0x0E8A, 0x0E8C, 0x0E90, 0x0E96]);
 
 /** Sara am — decomposes into niggahita plus sara aa. */
 const SARA_AM = 0x0EB3;

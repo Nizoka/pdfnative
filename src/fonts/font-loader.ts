@@ -11,17 +11,17 @@ import type { FontData } from '../types/pdf-types.js';
 export type FontLoader = () => Promise<FontData | { default: FontData }>;
 
 /** Global font registry: language code → loader function */
-const _fontRegistry = new Map<string, FontLoader>();
+const _fontRegistry = /*#__PURE__*/ new Map<string, FontLoader>();
 
 /** Cache for loaded font data */
-const _fontDataCache = new Map<string, FontData>();
+const _fontDataCache = /*#__PURE__*/ new Map<string, FontData>();
 
 /**
  * Per-FontData decoded binary cache. WeakMap ensures entries are GC'd when FontData
  * is no longer referenced (e.g., after clearFontCache / resetFontRegistry).
  * Avoids re-running base64 decode + charCodeAt loop on every buildPDF() call.
  */
-const _fontBinaryCache = new WeakMap<FontData, Uint8Array>();
+const _fontBinaryCache = /*#__PURE__*/ new WeakMap<FontData, Uint8Array>();
 
 /**
  * Decode the TTF binary for a FontData object and return a cached Uint8Array.

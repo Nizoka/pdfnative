@@ -285,14 +285,20 @@ export function decodeDerSignature(der: Uint8Array): { r: bigint; s: bigint } {
     };
 }
 
-// Lazy ASN.1 import
-let _asn1: typeof Asn1Module | undefined;
-function requireAsn1() {
+/**
+ * The ASN.1 functions DER signature encoding needs, injected to avoid a
+ * circular dependency at module load time and narrowed to what is used, so
+ * no bundler has to carry the whole module namespace as an object.
+ */
+export type EcdsaAsn1 = Pick<typeof Asn1Module, 'derDecode' | 'asn1Integer' | 'derSequence' | 'derInteger'>;
+
+let _asn1: EcdsaAsn1 | undefined;
+function requireAsn1(): EcdsaAsn1 {
     if (!_asn1) throw new Error('ASN.1 module must be initialized. Call initEcdsaAsn1() first.');
     return _asn1;
 }
 
 /** Initialize the ASN.1 dependency for DER signature encoding. */
-export function initEcdsaAsn1(asn1Module: typeof Asn1Module): void {
+export function initEcdsaAsn1(asn1Module: EcdsaAsn1): void {
     _asn1 = asn1Module;
 }

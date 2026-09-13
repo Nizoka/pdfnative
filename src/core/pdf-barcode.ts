@@ -362,7 +362,7 @@ const QR_CAPACITY: readonly { readonly L: number; readonly M: number; readonly Q
 ];
 
 /** Reed-Solomon EC codewords per block for each version+level. */
-const QR_EC_TABLE: readonly { readonly L: readonly number[]; readonly M: readonly number[]; readonly Q: readonly number[]; readonly H: readonly number[] }[] = _buildECTable();
+const QR_EC_TABLE: readonly { readonly L: readonly number[]; readonly M: readonly number[]; readonly Q: readonly number[]; readonly H: readonly number[] }[] = /*#__PURE__*/ _buildECTable();
 
 /** Alignment pattern positions per version (ISO 18004 Table E.1). */
 const QR_ALIGN_POS: readonly (readonly number[])[] = [
@@ -911,8 +911,8 @@ function _computePenalty(matrix: boolean[][], size: number): number {
 // ── Reed-Solomon GF(256) ─────────────────────────────────────────────
 
 /** GF(256) log/exp tables for Reed-Solomon. */
-const GF_EXP = new Uint8Array(512);
-const GF_LOG = new Uint8Array(256);
+const GF_EXP = /*#__PURE__*/ new Uint8Array(512);
+const GF_LOG = /*#__PURE__*/ new Uint8Array(256);
 
 // Initialize GF(256) tables
 (function initGF() {
@@ -1425,7 +1425,7 @@ function _pdf417RowIndicator(row: number, totalRows: number, cols: number, ecLev
 }
 
 /** PDF417 codeword bar patterns per cluster (simplified representative set). */
-const PDF417_CLUSTER_PATTERNS: readonly (readonly number[])[][] = _buildPDF417Patterns();
+const PDF417_CLUSTER_PATTERNS: readonly (readonly number[])[][] = /*#__PURE__*/ _buildPDF417Patterns();
 
 function _buildPDF417Patterns(): (readonly number[])[][] {
     // Simplified: generate basic 17-module patterns for codeword values 0-928

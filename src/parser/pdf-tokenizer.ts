@@ -32,8 +32,8 @@ export interface PdfToken {
 
 // ── Character Classification ─────────────────────────────────────────
 
-const WS = new Set([0, 9, 10, 12, 13, 32]); // NUL, TAB, LF, FF, CR, SP
-const DELIM = new Set([
+const WS = /*#__PURE__*/ new Set([0, 9, 10, 12, 13, 32]); // NUL, TAB, LF, FF, CR, SP
+const DELIM = /*#__PURE__*/ new Set([
     0x28, 0x29, // ( )
     0x3C, 0x3E, // < >
     0x5B, 0x5D, // [ ]

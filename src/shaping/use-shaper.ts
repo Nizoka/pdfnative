@@ -36,10 +36,10 @@ import { useCategories, splitUseSyllables, type UseClusterCategory } from './use
 import { tryLigature } from './gsub-driver.js';
 
 /** Categories that render before the base and move there when they stay separate. */
-const PRE_BASE = new Set<UseClusterCategory>(['VPre', 'VMPre', 'MPre']);
+const PRE_BASE = /*#__PURE__*/ new Set<UseClusterCategory>(['VPre', 'VMPre', 'MPre']);
 
 /** Categories drawn on the base rather than beside it. */
-const MARK = new Set<UseClusterCategory>([
+const MARK = /*#__PURE__*/ new Set<UseClusterCategory>([
     'VAbv', 'VBlw', 'VMAbv', 'VMBlw', 'MAbv', 'MBlw',
     'FAbv', 'FBlw', 'CMAbv', 'CMBlw', 'H', 'HVM', 'IS', 'Sk', 'SUB',
     'SMAbv', 'SMBlw', 'FMAbv', 'FMBlw',

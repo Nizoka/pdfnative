@@ -51,7 +51,7 @@ const THAI_CLASS: Record<number, number> = {
  * Tall consonants whose ascender may clash with above marks.
  * ป (U+0E1B), ฝ (U+0E1D), ฟ (U+0E1F), ฬ (U+0E2C)
  */
-const TALL_CONSONANTS = new Set([0x0E1B, 0x0E1D, 0x0E1F, 0x0E2C]);
+const TALL_CONSONANTS = /*#__PURE__*/ new Set([0x0E1B, 0x0E1D, 0x0E1F, 0x0E2C]);
 
 // ── Interface for cluster ────────────────────────────────────────────
 

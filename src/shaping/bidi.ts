@@ -367,7 +367,7 @@ export function mirrorCodePoint(cp: number): number {
 // ── Practical Fixups ─────────────────────────────────────────────────
 
 /** Sentence-terminating punctuation codepoints. */
-const SENTENCE_PUNCT = new Set([
+const SENTENCE_PUNCT = /*#__PURE__*/ new Set([
     0x002E, // .
     0x002C, // ,
     0x003B, // ;

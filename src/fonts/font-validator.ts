@@ -33,7 +33,7 @@ export interface FontValidationResult {
 }
 
 /** Known SFNT version tags (big-endian) accepted by PDF CIDFont embedding. */
-const SFNT_MAGIC = new Set<number>([
+const SFNT_MAGIC = /*#__PURE__*/ new Set<number>([
     0x00010000, // TrueType outlines
     0x4f54544f, // 'OTTO' — CFF/OpenType outlines
     0x74727565, // 'true' — legacy Apple TrueType

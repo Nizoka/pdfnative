@@ -156,6 +156,33 @@ const one = (...cats: UseClusterCategory[]): Matcher => (c, i) =>
 /** Any single code point. */
 const any: Matcher = (c, i) => (i < c.length ? i + 1 : -1);
 
+// tail = complex_syllable_tail | sakot_terminated_cluster_tail
+//      | symbol_cluster_tail | virama_terminated_cluster_tail
+//
+// Declaration order matters less than length here, so every alternative is
+// tried and the longest wins — the reference scanner is a longest-match
+// machine, not a first-match one.
+const longest = (...ms: Matcher[]): Matcher => (c, i) => {
+    let best = -1;
+    for (const m of ms) {
+        const n = m(c, i);
+        if (n > best) best = n;
+    }
+    return best;
+};
+
+type ClusterGrammar = ReadonlyArray<readonly [UseSyllableType, Matcher]>;
+
+/**
+ * Build the cluster grammar.
+ *
+ * Assembled on first use rather than at module load: the combinators above
+ * are calls, and a bundler cannot know a top-level call is pure, so every
+ * consumer of the library — even one importing a single colour helper —
+ * would otherwise carry the whole grammar. Inside a function there is
+ * nothing to evaluate until a shaper actually needs it.
+ */
+function buildGrammar(): ClusterGrammar {
 // h = H | HVM | IS | Sk
 const h = one('H', 'HVM', 'IS', 'Sk');
 
@@ -227,27 +254,12 @@ const symbolTail: Matcher = alt(
     plus(one('SMBlw')),
 );
 
-// tail = complex_syllable_tail | sakot_terminated_cluster_tail
-//      | symbol_cluster_tail | virama_terminated_cluster_tail
-//
-// Declaration order matters less than length here, so every alternative is
-// tried and the longest wins — the reference scanner is a longest-match
-// machine, not a first-match one.
-const longest = (...ms: Matcher[]): Matcher => (c, i) => {
-    let best = -1;
-    for (const m of ms) {
-        const n = m(c, i);
-        if (n > best) best = n;
-    }
-    return best;
-};
-
 const tail: Matcher = longest(
     complexSyllableTail, sakotTerminatedTail, symbolTail, viramaTerminatedTail,
 );
 
 /** Every top-level cluster alternative, in the order the grammar declares. */
-const CLUSTERS: ReadonlyArray<readonly [UseSyllableType, Matcher]> = [
+return [
     // virama_terminated_cluster ZWNJ?
     ['virama_terminated', seq(complexSyllableStart, viramaTerminatedTail, opt(one('ZWNJ')))],
     // sakot_terminated_cluster ZWNJ?
@@ -277,6 +289,10 @@ const CLUSTERS: ReadonlyArray<readonly [UseSyllableType, Matcher]> = [
     // other
     ['non_cluster', any],
 ];
+}
+
+let grammar: ClusterGrammar | undefined;
+const clusters = (): ClusterGrammar => grammar ?? (grammar = buildGrammar());
 
 /**
  * Split a code-point sequence into USE clusters.
@@ -296,7 +312,7 @@ export function splitUseSyllables(cps: readonly number[]): UseSyllable[] {
     while (i < cats.length) {
         let bestType: UseSyllableType = 'non_cluster';
         let bestEnd = -1;
-        for (const [type, matcher] of CLUSTERS) {
+        for (const [type, matcher] of clusters()) {
             const end = matcher(cats, i);
             if (end > bestEnd) { bestEnd = end; bestType = type; }
         }
@@ -315,7 +331,7 @@ export function splitUseSyllables(cps: readonly number[]): UseSyllable[] {
  * Categories that render to the left of their base and must therefore be
  * emitted before it, whatever their logical position.
  */
-const PRE_BASE = new Set<UseClusterCategory>(['VPre', 'VMPre', 'MPre']);
+const PRE_BASE = /*#__PURE__*/ new Set<UseClusterCategory>(['VPre', 'VMPre', 'MPre']);
 
 /**
  * Reorder one cluster into visual order.

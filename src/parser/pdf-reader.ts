@@ -441,7 +441,7 @@ export function openPdf(bytes: Uint8Array, options?: OpenPdfOptions): PdfReader 
 
 // ── Decryption-context access (internal) ─────────────────────────────
 
-const DECRYPTION_CONTEXTS = new WeakMap<PdfReader, DecryptionContext>();
+const DECRYPTION_CONTEXTS = /*#__PURE__*/ new WeakMap<PdfReader, DecryptionContext>();
 
 /**
  * The recovered {@link DecryptionContext} of an encrypted reader (carries the
