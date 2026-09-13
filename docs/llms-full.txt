@@ -62,7 +62,7 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 49 sample generators producing 271 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 3335+ tests across 151 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; about 90.9 % statements at v1.8.0.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 3346+ tests across 152 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; about 90.9 % statements at v1.8.0.
 
 ## Machine-readable artefacts
 
@@ -164,7 +164,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 3335+ tests across 151 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 90.93% statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 3346+ tests across 152 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 90.93% statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1301,7 +1301,7 @@ src/
 fonts/                    # Pre-built font data modules (27 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (49 generators, 271 PDFs)
-tests/                    # 3335+ tests (151 files: unit + integration + fuzz + parser + docs)
+tests/                    # 3346+ tests (152 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1313,7 +1313,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (3335+ tests)
+npm run test             # vitest run (3346+ tests)
 npm run test:coverage    # vitest with v8 coverage (90.93% statements at the v1.8.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate 271 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1328,7 +1328,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3335+ (151 files) |
+| Tests | 3346+ (152 files) |
 | Statement coverage | 90.93% (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |
@@ -8524,7 +8524,7 @@ npx pdfnative-cli verify --input signed.pdf --strict
 Two warnings commonly surface when testing the sample PDFs in Adobe Reader.
 Both are **expected by spec** — they are not pdfnative bugs.
 
-### "Validity unknown" / "Identité du signataire inconnue"
+### "Signature validity is unknown" / "Signer's identity is unknown"
 
 Adobe shows this whenever the signing certificate's issuer chain does
 not terminate in a root CA listed in Adobe's Approved Trust List (AATL)
@@ -8533,10 +8533,10 @@ or in the user's locally configured Trusted Identities.
 - The `scripts/generators/digital-signature.ts` sample uses a
   **self-signed demo CA** so it can ship deterministically. The
   cryptographic signature itself is valid (Adobe says so:
-  *"Le document n'a pas été modifié depuis l'apposition de la signature"*);
+  *"The document has not been modified since this signature was applied"*);
   only the identity link to a public root is missing.
 - To remove the warning in Adobe Reader: **Preferences → Signatures →
-  Identités → Identités autorisées → Ajouter** and import the demo
+  Identities & Trusted Certificates → More → Add** and import the demo
   certificate as a trusted root.
 - To verify the CMS independently of any trust store, use
   `openssl pkcs7 -in signed.pdf -inform DER -print_certs` and
@@ -9499,7 +9499,7 @@ Which tags change anything depends on the font. Noto Sans, the bundled Latin fac
 - Kerning and features read the registered font's tables: base-14 text gets neither, and the base-14 path has no narrow no-break space.
 - Features are single substitutions; complex-script shaping is handled by the script shapers, independently of this option.
 
-See the [typography samples](https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/typography-showcase.ts): each pairs the default behaviour with the typographic option on identical content — `typography/breaks-atomic.pdf` against `breaks-split.pdf`, `keep-with-next-off.pdf` against `keep-with-next-on.pdf`, `align-ragged.pdf` against `align-justified.pdf` and `align-optical.pdf` (which differs from the justified file by `opticalMargins` alone), `text-plain.pdf` against `text-refined.pdf`, `kerning-off.pdf` against `kerning-on.pdf`, `features-default.pdf` against `features-proportional.pdf` and `features-oldstyle-smallcaps.pdf`, `metrics-approximate.pdf` against `metrics-exact.pdf`, and `hyphenation-provider.pdf`. The regression gate refuses two samples of a pair that come out byte-identical.
+See the [typography samples](https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/typography-showcase.ts): each pairs the default behaviour with the typographic option on identical content, in English except for the sentences that demonstrate a French convention — `typography/breaks-atomic.pdf` against `breaks-split.pdf`, `keep-with-next-off.pdf` against `keep-with-next-on.pdf`, `align-ragged.pdf` against `align-justified.pdf` and `align-optical.pdf` (which differs from the justified file by `opticalMargins` alone), `text-plain.pdf` against `text-refined.pdf`, `kerning-off.pdf` against `kerning-on.pdf`, `features-default.pdf` against `features-proportional.pdf` and `features-oldstyle-smallcaps.pdf`, `metrics-approximate.pdf` against `metrics-exact.pdf`, and `hyphenation-provider.pdf`. The regression gate refuses two samples of a pair that come out byte-identical.
 
 ## See also
 

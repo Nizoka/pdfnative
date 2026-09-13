@@ -8,6 +8,7 @@ import {
     unexpectedDuplicates, IDENTICAL_SAMPLE_GROUPS,
     type Fingerprint, type Baseline,
 } from '../../scripts/lib/sample-fingerprint.js';
+import { findNonEnglishProse } from '../../scripts/lib/prose-language.js';
 
 // v1.8.0 — sample regression gate.
 //
@@ -202,6 +203,26 @@ describe('sample generation is environment-independent', () => {
             }
         }
         expect(offenders, 'pass an explicit locale, e.g. toLocaleString(\'en-US\')').toEqual([]);
+    });
+
+    it('keeps sample, benchmark and test prose in English', () => {
+        // The project language is English (AGENTS.md). Thirteen typography
+        // samples shipped French headings in 1.8.0 because nothing checked;
+        // demonstrated content stays allowed when marked `demo-language:`.
+        // The detector itself is skipped: its word lists are the offenders.
+        const offenders: string[] = [];
+        for (const dir of ['scripts', 'bench', 'tests', 'recipes']) {
+            const abs = join(REPO_ROOT, dir);
+            if (!existsSync(abs)) continue;
+            for (const file of walkTs(abs)) {
+                const rel = relative(REPO_ROOT, file).replace(/\\/g, '/');
+                if (rel === 'scripts/lib/prose-language.ts' || rel === 'tests/docs/prose-language.test.ts' || rel.startsWith('scripts/data/')) continue;
+                for (const f of findNonEnglishProse(readFileSync(file, 'utf8'), file)) {
+                    offenders.push(`${rel}:${f.line} ${f.reason}: ${f.snippet}`);
+                }
+            }
+        }
+        expect(offenders, 'write it in English, or mark demonstrated content with `// demo-language: <tag> (reason)` on or above the line').toEqual([]);
     });
 
     it('runs the generator in UTC', () => {

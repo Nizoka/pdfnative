@@ -351,7 +351,7 @@ npx pdfnative-cli verify --input signed.pdf --strict
 <h2 id="reading-the-validator-output">Reading the validator output<a class="heading-anchor" href="#reading-the-validator-output" aria-label="Link to this section">#</a></h2>
 <p>Two warnings commonly surface when testing the sample PDFs in Adobe Reader.
 Both are <strong>expected by spec</strong> — they are not pdfnative bugs.</p>
-<h3 id="validity-unknown--identité-du-signataire-inconnue">&quot;Validity unknown&quot; / &quot;Identité du signataire inconnue&quot;<a class="heading-anchor" href="#validity-unknown--identité-du-signataire-inconnue" aria-label="Link to this section">#</a></h3>
+<h3 id="signature-validity-is-unknown--signers-identity-is-unknown">&quot;Signature validity is unknown&quot; / &quot;Signer&#39;s identity is unknown&quot;<a class="heading-anchor" href="#signature-validity-is-unknown--signers-identity-is-unknown" aria-label="Link to this section">#</a></h3>
 <p>Adobe shows this whenever the signing certificate&#39;s issuer chain does
 not terminate in a root CA listed in Adobe&#39;s Approved Trust List (AATL)
 or in the user&#39;s locally configured Trusted Identities.</p>
@@ -359,10 +359,10 @@ or in the user&#39;s locally configured Trusted Identities.</p>
 <li>The <code>scripts/generators/digital-signature.ts</code> sample uses a
 <strong>self-signed demo CA</strong> so it can ship deterministically. The
 cryptographic signature itself is valid (Adobe says so:
-<em>&quot;Le document n&#39;a pas été modifié depuis l&#39;apposition de la signature&quot;</em>);
+<em>&quot;The document has not been modified since this signature was applied&quot;</em>);
 only the identity link to a public root is missing.</li>
 <li>To remove the warning in Adobe Reader: <strong>Preferences → Signatures →
-Identités → Identités autorisées → Ajouter</strong> and import the demo
+Identities &amp; Trusted Certificates → More → Add</strong> and import the demo
 certificate as a trusted root.</li>
 <li>To verify the CMS independently of any trust store, use
 <code>openssl pkcs7 -in signed.pdf -inform DER -print_certs</code> and

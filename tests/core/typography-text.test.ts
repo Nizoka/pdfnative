@@ -92,7 +92,7 @@ describe('no-break space metrics', () => {
     });
 
     it('keeps a number and its unit on one line', () => {
-        const lines = wrapText(`facture de 150${NBSP}€ payee`, helveticaWidth('facture de 150', 11) + 2, 11, enc);
+        const lines = wrapText(`invoice of 150${NBSP}€ paid`, helveticaWidth('invoice of 150', 11) + 2, 11, enc);
         const withUnit = lines.find(l => l.includes('150'));
         expect(withUnit).toContain('€');
     });
@@ -143,8 +143,9 @@ describe('no-break spaces reach the font', () => {
     });
 
     const spaced: DocumentParams = {
-        title: 'Ponctuation',
+        title: 'Punctuation',
         fontEntries: entries,
+        // demo-language: fr (the 'fr' preset is a French convention)
         blocks: [{ type: 'paragraph', text: 'Vraiment ? Oui ! Ainsi ; Total : 42. Et une « citation » pour finir.' }],
     };
 
@@ -247,11 +248,11 @@ describe('applyPunctuationSpacing (locale-specific, rule-driven)', () => {
 
 describe('prepareBlocks', () => {
     const blocks: DocumentBlock[] = [
-        { type: 'heading', level: 1, text: 'Facture : resume' },
-        { type: 'paragraph', text: 'Montant du : 150 €' },
-        { type: 'list', style: 'bullet', items: ['Poids : 12 kg', { text: 'Remise : 30 %' }] },
-        { type: 'table', headers: ['Article', 'Prix'], rows: [{ cells: ['Cable 2 m', '15 €'], type: '', pointed: false }], caption: 'Detail : lignes' },
-        { type: 'link', text: 'En savoir plus : ici', url: 'https://example.com' },
+        { type: 'heading', level: 1, text: 'Invoice : summary' },
+        { type: 'paragraph', text: 'Amount due : 150 €' },
+        { type: 'list', style: 'bullet', items: ['Weight : 12 kg', { text: 'Discount : 30 %' }] },
+        { type: 'table', headers: ['Article', 'Prix'], rows: [{ cells: ['Cable 2 m', '15 €'], type: '', pointed: false }], caption: 'Detail : lines' },
+        { type: 'link', text: 'Read more : here', url: 'https://example.com' },
     ];
 
     it('returns the input array untouched when not configured', () => {
@@ -266,24 +267,24 @@ describe('prepareBlocks', () => {
         expect(json).toContain(`12${NBSP}kg`);
         expect(json).toContain(`30${NBSP}%`);
         // No punctuation rules configured, so colons keep their plain space.
-        expect(json).toContain('Facture : resume');
+        expect(json).toContain('Invoice : summary');
     });
 
     it('transforms every kind of running text when both are on', () => {
         const out = prepareBlocks(blocks, { unitBinding: true, punctuationSpacing: 'fr' });
         const json = JSON.stringify(out);
         expect(json).not.toMatch(/ :/);
-        expect(json).toContain(`Facture${NBSP}:`);
+        expect(json).toContain(`Invoice${NBSP}:`);
         expect(json).toContain(`150${NBSP}€`);
         expect(json).toContain(`Detail${NBSP}:`);
-        expect(json).toContain(`plus${NBSP}:`);
+        expect(json).toContain(`more${NBSP}:`);
     });
 
     it('accepts an explicit rule list in place of a preset', () => {
         const json = JSON.stringify(prepareBlocks(blocks, {
             punctuationSpacing: [{ char: ':', side: 'before', space: 'narrow' }],
         }));
-        expect(json).toContain(`Facture${NNBSP}:`);
+        expect(json).toContain(`Invoice${NNBSP}:`);
     });
 
     it('rejects an unknown preset with an actionable message', () => {
@@ -293,11 +294,11 @@ describe('prepareBlocks', () => {
 
     it('leaves the originals untouched', () => {
         prepareBlocks(blocks, { unitBinding: true, punctuationSpacing: 'fr' });
-        expect((blocks[1] as { text: string }).text).toBe('Montant du : 150 €');
+        expect((blocks[1] as { text: string }).text).toBe('Amount due : 150 €');
     });
 
     it('changes the built document only when enabled', () => {
-        const params: DocumentParams = { title: 'Facture', blocks };
+        const params: DocumentParams = { title: 'Invoice', blocks };
         const plain = buildDocumentPDFBytes(params, { creationDate: PINNED });
         const off = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { unitBinding: false } });
         const on = buildDocumentPDFBytes(params, { creationDate: PINNED, typography: { unitBinding: true } });

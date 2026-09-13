@@ -124,11 +124,11 @@ describe('updateMetadata — plain PDF (/Info only)', () => {
     it('round-trips non-ASCII values through UTF-16BE', () => {
         const original = buildPDFBytes(tableParams(), { compress: false });
         const mod = createModifier(openPdf(original));
-        mod.updateMetadata({ title: 'Résumé — été', modDate: FIXED_DATE });
+        mod.updateMetadata({ title: 'Café — naïve', modDate: FIXED_DATE });
         const saved = mod.save();
 
         const info = openPdf(saved).getInfo();
-        expect(decodeText(info!.get('Title'))).toBe('Résumé — été');
+        expect(decodeText(info!.get('Title'))).toBe('Café — naïve');
     });
 
     it('does not touch XMP on a document without a /Metadata stream', () => {

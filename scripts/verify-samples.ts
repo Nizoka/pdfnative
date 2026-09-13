@@ -67,6 +67,11 @@ import { SAMPLE_CREATION_DATE } from './helpers/io.js';
  * one-line diff instead of surfacing it for review. Samples appearing for the
  * first time are stamped the same way, having no earlier reference at all.
  */
+/** Provenance written only when no manifest exists yet. */
+const INITIAL_PROVENANCE =
+    'Initial baseline: every entry is anchored to the release that created it. Replace this note '
+    + 'with the account of how the entries were verified; later rebaselines carry it forward.';
+
 function saveBaseline(entries: Record<string, Fingerprint>, previous: Baseline | null): void {
     mkdirSync(dirname(BASELINE_PATH), { recursive: true });
     const version = currentVersion();
@@ -83,13 +88,12 @@ function saveBaseline(entries: Record<string, Fingerprint>, previous: Baseline |
             + 'the rebaseline when the hash changes, so the chain 1.7.0 -> 1.8.0 -> 1.9.0 stays '
             + 'auditable and every re-anchoring is visible in the diff.',
         baselineVersion: version,
-        provenance:
-            'The 1.7.0 entries were verified against a v1.7.0 git worktree carrying only the '
-            + 'determinism plumbing (pinned creation instant, TZ=UTC): 233 of 242 samples '
-            + 'fingerprinted identically. The nine stamped 1.8.0 are the ones whose v1.7.0 output '
-            + 'was non-deterministic by construction (a Math.random() fixture, an unpinned '
-            + 'incremental /ModDate, and seven signature samples whose /M and CMS signingTime '
-            + 'defaulted to the wall clock), so no earlier reference could exist for them.',
+        // The provenance note is the maintainer's account of why each group of
+        // entries is anchored where it is. It is carried forward verbatim: an
+        // --update must never silently replace it (one did, and the note
+        // described a 242-sample snapshot for two rebaselines). Edit it by
+        // hand in the same commit as the rebaseline it explains.
+        provenance: previous?.provenance ?? INITIAL_PROVENANCE,
         creationDate: SAMPLE_CREATION_DATE.toISOString(),
         timezone: 'UTC',
         entries: sorted,

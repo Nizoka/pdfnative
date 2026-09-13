@@ -17,8 +17,8 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 552548,
-      "approxTokens": 138137
+      "bytes": 552629,
+      "approxTokens": 138157
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -512,8 +512,8 @@
         "full-example",
         "related-guides"
       ],
-      "bytes": 17676,
-      "approxTokens": 4419
+      "bytes": 17683,
+      "approxTokens": 4421
     },
     {
       "title": "Streaming output",
@@ -605,8 +605,8 @@
         "limits--scope",
         "see-also"
       ],
-      "bytes": 10288,
-      "approxTokens": 2572
+      "bytes": 10362,
+      "approxTokens": 2591
     },
     {
       "title": "Ecosystem use cases",

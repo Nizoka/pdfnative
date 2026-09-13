@@ -69,7 +69,7 @@ describe('slugify', () => {
     });
 
     it('should handle special PDF characters', () => {
-        expect(slugify('Relevé <2026>')).toBe('Relevé-2026');
+        expect(slugify('Café <2026>')).toBe('Café-2026');
     });
 });
 

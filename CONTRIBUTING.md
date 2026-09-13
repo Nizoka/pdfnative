@@ -62,7 +62,7 @@ npm run test:generate  # Generate the sample PDFs → test-output/ (`derived.sam
 npm run verify:samples # Fingerprint the samples against the committed baseline chain
 npm run validate:pdfa  # veraPDF validation of every PDF/A-claiming sample (see below)
 npm run verify:bundle  # Tree-shaking probes over dist/ (run `npm run build` first)
-npm run verify:docs    # 24 offline rules over docs/, playgrounds, README, llms files
+npm run verify:docs    # offline rules over docs/, playgrounds, README, llms files
 npm run gate           # Everything a pull request is held to, in one command (see below)
 npm run bench          # Performance benchmarks (vitest bench)
 ```
@@ -129,6 +129,7 @@ All must pass before opening a PR.
 
 ## Code Style
 
+- **English everywhere** — code, comments, messages, tests, samples, recipes, docs and release notes. Another language is only ever *demonstrated content* (a typographic convention, a script), framed in English and marked `demo-language: <tag> (reason)` on or above the line; `npm run verify:docs` and the regression suite fail on unmarked non-English prose.
 - **TypeScript strict mode** — `strict: true`
 - **Pure functions only** — no classes. State passed explicitly as arguments
 - **ESM-first** — all internal imports use `.js` extension
@@ -152,7 +153,7 @@ src/
 fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (49 generators, 271 PDFs) and the verification scripts
-tests/            # 151 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+tests/            # 152 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 

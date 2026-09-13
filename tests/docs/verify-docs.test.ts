@@ -454,6 +454,26 @@ describe('verify-docs', () => {
             });
         }, 120_000);
 
+        it('prose-language rejects an unmarked French heading in a guide', () => {
+            withSandbox((dir) => {
+                // demo-language: fr (the French heading is the fixture under test)
+                patch(dir, 'docs/guides/typography.md', '## Page breaking', '## Coupure des paragraphes entre les pages');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('prose-language');
+                expect(run.output).toContain('typography.md');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('prose-language accepts French that is marked as demonstrated content', () => {
+            withSandbox((dir) => {
+                // demo-language: fr (the marked French heading is the fixture under test)
+                patch(dir, 'docs/guides/typography.md', '## Page breaking', '<!-- demo-language: fr (test) -->\n## Coupure des paragraphes entre les pages');
+                const run = runVerifier(dir);
+                expect(run.output).not.toContain('prose-language');
+            });
+        }, 120_000);
+
         it('governance-sources rejects a capability_manifest path that does not exist', () => {
             withSandbox((dir) => {
                 patch(dir, '.github/ai-governance.json', '".github/AGENT_RULES.md"', '".github/AGENT_RULES_MOVED.md"');

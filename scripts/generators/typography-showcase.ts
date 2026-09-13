@@ -123,21 +123,26 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // the pair would differ by a handful of bytes only.
     const SHY = '­';
     const textLatin = await loadFontEntries('latin', '/F3');
+    // The demonstrated word is French on purpose: the French preset and the
+    // soft-hyphen sample share one page, and a 25-letter French word is the
+    // classic narrow-column case.
     const hyphenated =
-        `Les colonnes étroites sont le cas où la césure compte vraiment : un mot comme `
-        + `anti${SHY}consti${SHY}tution${SHY}nelle${SHY}ment déborde sans point de coupure, `
-        + `et se coupe proprement avec. Le tiret conditionnel reste invisible partout où la `
-        + `coupure n’est pas prise.`;
+        `Narrow columns are where hyphenation matters: a long word such as the French `
+        // demo-language: fr (soft hyphens inside a long French word)
+        + `anti${SHY}consti${SHY}tution${SHY}nelle${SHY}ment overflows without a break opportunity `
+        + `and breaks cleanly with one. A soft hyphen stays invisible wherever the break is not taken.`;
 
     const textDoc: DocumentParams = {
         title: 'Text Typography',
         fontEntries: textLatin,
         blocks: [
-            { type: 'heading', text: 'Césure douce et espaces insécables', level: 1 },
+            { type: 'heading', text: 'Soft hyphens and no-break spaces', level: 1 },
             { type: 'paragraph', text: hyphenated, indent: 300 },
-            { type: 'heading', text: 'Liaison nombre-unité (ISO 80000-1)', level: 2 },
-            { type: 'paragraph', text: 'Facture de 150 € pour 12 kg de matériel, remise de 30 %, stockage 500 Mo, température 21 °C. Aucune de ces paires ne doit se couper en fin de ligne, quelle que soit la langue.' },
-            { type: 'heading', text: 'Convention de ponctuation', level: 2 },
+            { type: 'heading', text: 'Number–unit binding (ISO 80000-1)', level: 2 },
+            { type: 'paragraph', text: 'An invoice of 150 € for 12 kg of material, a 30 % discount, 500 MB of storage, 21 °C. None of these pairs may break at the end of a line, whatever the language.' },
+            { type: 'heading', text: 'Punctuation spacing: the French convention', level: 2 },
+            { type: 'paragraph', text: 'French sets a narrow no-break space before ; ! ? and a no-break space before : and inside guillemets. The sample sentence below is French for that reason:' },
+            // demo-language: fr (punctuationSpacing 'fr' is a French convention)
             { type: 'paragraph', text: 'Vraiment ? Oui ! Total : 42. Et une « citation » pour finir.' },
         ],
         footerText: 'pdfnative – typography showcase',
@@ -162,16 +167,16 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // with punctuation hanging past the measure. The third differs from the
     // second by opticalMargins alone, so the pair isolates that option.
     const QUOTED =
-        '« La justification remplit la mesure, ce qui distingue une page composée '
-        + 'd’une page simplement générée. » Le débordement optique va plus loin : '
-        + 'la ponctuation qui borde une ligne déborde légèrement, de sorte que le bord '
-        + 'optique de la colonne paraisse droit. « Un guillemet ouvrant », un point '
-        + 'final, une virgule : chacun laisse un blanc qui se voit. ';
+        '“Justification fills the measure, which is what separates a typeset page '
+        + 'from a merely generated one.” Optical alignment goes one step further: '
+        + 'the punctuation that borders a line hangs slightly past it, so that the '
+        + 'optical edge of the column reads straight. “An opening quote,” a full stop, '
+        + 'a comma; each leaves a gap that shows. ';
 
     const alignDoc = (align: 'left' | 'justify'): DocumentParams => ({
-        title: align === 'justify' ? 'Justification' : 'Alignement au fer à gauche',
+        title: align === 'justify' ? 'Justification' : 'Ragged-right alignment',
         blocks: [
-            { type: 'heading', text: align === 'justify' ? 'Texte justifié' : 'Texte au fer à gauche', level: 1 },
+            { type: 'heading', text: align === 'justify' ? 'Justified text' : 'Ragged-right text', level: 1 },
             { type: 'paragraph', text: QUOTED.repeat(4), align },
             { type: 'paragraph', text: QUOTED.repeat(4), align },
         ],
@@ -218,8 +223,10 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         title: 'Hyphenation Provider',
         fontEntries: textLatin,
         blocks: [
-            { type: 'heading', text: 'Césure automatique par fournisseur', level: 1 },
-            { type: 'paragraph', text: 'Sans dictionnaire embarqué, la bibliothèque délègue la césure : le fournisseur reçoit chaque mot et la langue du document, et renvoie les positions de coupure. Dans cette colonne étroite, les mots anticonstitutionnellement, internationalisation et incompréhensiblement se coupent à la syllabe au lieu de déborder ou de laisser un trou.', indent: 320, align: 'justify' },
+            { type: 'heading', text: 'Automatic hyphenation through a provider', level: 1 },
+            { type: 'paragraph', text: 'The library ships no dictionary: a provider receives every word and the document language, and returns the break positions. This sample installs a small French syllable rule and sets hyphenationLanguage to fr, so the narrow French paragraph below breaks at syllables instead of overflowing or leaving gaps.' },
+            // demo-language: fr (hyphenationLanguage 'fr' with a French syllable provider)
+            { type: 'paragraph', text: 'Dans cette colonne étroite, les mots anticonstitutionnellement, internationalisation et incompréhensiblement se coupent à la syllabe au lieu de déborder ou de laisser un trou, parce que le fournisseur connaît la langue du document.', indent: 320, align: 'justify' },
         ],
         footerText: 'pdfnative – typography showcase',
     };
@@ -239,15 +246,17 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // units. Right-aligned French therefore misses its margin and lines wrap
     // in the wrong places. The exact AFM tables fix both.
     const metricsDoc: DocumentParams = {
-        title: 'Métriques base-14',
+        title: 'Base-14 metrics',
         blocks: [
-            { type: 'heading', text: 'Estimation contre tables AFM', level: 1 },
-            { type: 'paragraph', text: 'Élégance, ÉTÉ, Ünterstützung, œuvre, 100 % — chacun de ces mots contient des caractères que l’estimation historique mesure à 556 unités alors qu’ils valent 667, 722, 944 ou 889. Le texte aligné à droite manque alors sa marge.' },
+            { type: 'heading', text: 'Estimate versus AFM tables', level: 1 },
+            { type: 'paragraph', text: 'Élégance, ÉTÉ, Ünterstützung, œuvre, 100 % — each of these words contains characters the historical estimate measures at 556 units when they are 667, 722, 944 or 889 wide. Right-aligned text then misses its margin.' },
+            // demo-language: fr (accented words whose advances the estimate gets wrong)
             { type: 'paragraph', text: 'Élégance ÉTÉ Ünterstützung œuvre 100 % @ & ( )', align: 'right' },
+            // demo-language: fr (same line, centred)
             { type: 'paragraph', text: 'Élégance ÉTÉ Ünterstützung œuvre 100 % @ & ( )', align: 'center' },
             {
                 type: 'table',
-                headers: ['Caractère', 'Estimation', 'AFM'],
+                headers: ['Character', 'Estimate', 'AFM'],
                 rows: [
                     { cells: ['@', '556', '1015'], type: '', pointed: false },
                     { cells: ['%', '556', '889'], type: '', pointed: false },
@@ -280,25 +289,25 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // §7.3.1 asks, so an amount can never break across a line.
     const NNBSP = ' ';
     const amounts = [
-        ['Janvier', `1${NNBSP}111,00`, `8${NNBSP}888,00`],
-        ['Février', `11${NNBSP}111,00`, `88${NNBSP}888,00`],
-        ['Mars', `111${NNBSP}111,00`, `888${NNBSP}888,00`],
+        ['January', `1${NNBSP}111.00`, `8${NNBSP}888.00`],
+        ['February', `11${NNBSP}111.00`, `88${NNBSP}888.00`],
+        ['March', `111${NNBSP}111.00`, `888${NNBSP}888.00`],
     ];
 
     const featureDoc: DocumentParams = {
-        title: 'Fonctionnalités OpenType',
+        title: 'OpenType features',
         fontEntries: featureLatin,
         blocks: [
-            { type: 'heading', text: 'Substitutions déclaratives', level: 1 },
-            { type: 'paragraph', text: 'Noto Sans déclare tnum, pnum, lnum, onum, zero, smcp, c2sc, case, sups et subs. Chacune remplace un glyphe par un autre, sans moteur de composition, ce qui les rend sûres à appliquer sur du texte latin ordinaire. Ses chiffres sont tabulaires et alignés par défaut : tnum et lnum n’y changent rien, pnum et onum si.' },
-            { type: 'paragraph', text: 'Chiffres 1234567890 — comparez la largeur des colonnes ci-dessous entre les deux fichiers.' },
+            { type: 'heading', text: 'Declarative substitutions', level: 1 },
+            { type: 'paragraph', text: 'Noto Sans declares tnum, pnum, lnum, onum, zero, smcp, c2sc, case, sups and subs. Each replaces one glyph with another, without a shaping engine, which makes them safe to apply to ordinary Latin text. Its figures are tabular and lining by default: tnum and lnum change nothing, pnum and onum do.' },
+            { type: 'paragraph', text: 'Figures 1234567890 — compare the column widths below between the two files.' },
             {
                 type: 'table',
-                headers: ['Mois', 'Débit', 'Crédit'],
+                headers: ['Month', 'Debit', 'Credit'],
                 rows: amounts.map(cells => ({ cells, type: '', pointed: false })),
                 columns: [{ f: 0.34, a: 'l', mx: 20, mxH: 20 }, { f: 0.33, a: 'r', mx: 20, mxH: 20 }, { f: 0.33, a: 'r', mx: 20, mxH: 20 }],
             },
-            { type: 'paragraph', text: 'Petites capitales : abcdefghijklmnop' },
+            { type: 'paragraph', text: 'Small capitals: abcdefghijklmnop' },
         ],
         footerText: 'pdfnative – typography showcase',
     };
@@ -326,13 +335,13 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // set with their nominal advances, which reads loose at any size and
     // obvious at display sizes.
     const kernDoc: DocumentParams = {
-        title: 'Crénage',
+        title: 'Kerning',
         fontEntries: featureLatin,
         blocks: [
             { type: 'heading', text: 'AVATAR Yo To Wave', level: 1 },
             { type: 'heading', text: 'AWAY Toyota Vyborg Wavy', level: 2 },
             { type: 'paragraph', text: 'AVATAR To Yo Wave AWAY Toyota Vyborg Wavy LTAVA. ' .repeat(12) },
-            { type: 'paragraph', text: 'Le crénage rapproche les paires que le dessin des lettres laisse trop ouvertes. Les titres ci-dessus sont le cas le plus visible ; en texte courant l’effet est cumulatif sur la longueur de ligne.' },
+            { type: 'paragraph', text: 'Kerning closes the pairs that the letter shapes leave too open. The headings above are the most visible case; in running text the effect accumulates along the line.' },
         ],
         footerText: 'pdfnative – typography showcase',
     };

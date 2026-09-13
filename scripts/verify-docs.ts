@@ -27,6 +27,7 @@ import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, mkdtemp
 import { join, relative, resolve, dirname, posix, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
+import { findNonEnglishProse } from './lib/prose-language.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const MANIFEST_PATH = join(ROOT, 'docs', 'assets', 'ecosystem.json');
@@ -1825,6 +1826,28 @@ if (JSON_OUT) {
     process.exit(errors.length > 0 ? 1 : 0);
 }
 
+// ── prose-language: the project language is English ─────────────────
+//
+// Thirteen typography samples, the signature sample, the benchmark fixture
+// and a guide shipped French prose in 1.8.0 while every page declared
+// og:locale en_US. Another language is allowed only as demonstrated content
+// (a French punctuation convention, a script), marked `demo-language:` on
+// or above the line; scripts/lib/prose-language.ts is the shared detector,
+// also run by the regression suite over generators, benchmarks and tests.
+{
+    const releaseNotes = existsSync(join(ROOT, 'release-notes'))
+        ? walk(join(ROOT, 'release-notes'), (p) => p.endsWith('.md'))
+        : [];
+    for (const file of [...DOC_FILES, ...releaseNotes]) {
+        const relFile = rel(file);
+        const text = readFileSync(file, 'utf8');
+        for (const finding of findNonEnglishProse(text, file, { suppress: 'verify-docs:allow prose-language' })) {
+            fail(relFile, finding.line, 'prose-language',
+                `${finding.reason}: "${finding.snippet}" — write it in English, or mark demonstrated content with \`demo-language: <tag> (reason)\` on or above the line`);
+        }
+    }
+}
+
 const OFFLINE_RULES = [
     'manifest-shape', // manifest fields are well-formed; assertions' expectFrom agrees with declared/derived
     'derived-counts', // derived.* equals what the tree holds (test files, generators, guides, samples, categories)
@@ -1856,6 +1879,7 @@ const OFFLINE_RULES = [
     'guide-render-sync', // guide shells carry the current render of their Markdown
     'api-json-sync', // docs/assets/api.json regenerated
     'playground-syntax', // inline module scripts pass `node --check`
+    'prose-language', // docs, recipes and release notes are English unless marked demo-language
 ] as const;
 
 if (problems.length === 0) {

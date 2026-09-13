@@ -1,5 +1,5 @@
 ﻿/**
- * pdfnative â€” PDF Compression Tests
+ * pdfnative — PDF Compression Tests
  * ====================================
  * Unit tests for FlateDecode stream compression (pdf-compress.ts).
  *
@@ -334,7 +334,7 @@ describe('setDeflateRawImpl', () => {
 
     it('wraps raw output so the result inflates back to the input', () => {
         setDeflateRawImpl(toRaw);
-        const input = toBytes('Le vif renard brun saute par-dessus le chien paresseux.');
+        const input = toBytes('The quick brown fox jumps over the lazy dog.');
         const out = deflateSync(input);
         expect(out[0]).toBe(0x78);
         expect(((out[0] << 8) | out[1]) % 31).toBe(0);

@@ -1,7 +1,7 @@
 {
   "$comment": "Fingerprints of every sample in test-output/. Regenerate deliberately with `npx tsx scripts/verify-samples.ts --update`, and say why in the release notes: a changed hash means existing output changed. Mode `bytes` is a SHA-256 of the file; mode `semantic` is a SHA-256 of a canonical projection of the decrypted document, used for encrypted samples whose bytes are CSPRNG-derived and can never repeat. Each entry's `since` names the release whose output the hash is: it is carried forward untouched while the sample is unchanged, and moves to the release doing the rebaseline when the hash changes, so the chain 1.7.0 -> 1.8.0 -> 1.9.0 stays auditable and every re-anchoring is visible in the diff.",
   "baselineVersion": "1.8.0",
-  "provenance": "The 1.7.0 entries were verified against a v1.7.0 git worktree carrying only the determinism plumbing (pinned creation instant, TZ=UTC). Entries stamped 1.8.0 are, in order: the 29 samples introduced by 1.8.0; the nine whose v1.7.0 output was non-deterministic by construction (a Math.random() fixture, an unpinned incremental /ModDate, seven signature samples whose /M and CMS signingTime defaulted to the wall clock); and the samples whose output 1.8.0 changed deliberately — Khmer, Myanmar, Lao, Tai Tham, New Tai Lue, Tai Le and Cham shaping, COLRv1 emoji, regenerated font modules, the no-break-space metric fix (three compression samples), the base-14 measurement fix (text-extract-report, table-micro-columns) and the no-break-space glyph fix (four pdfa-latin samples). Every re-anchoring is listed in the 1.8.0 release note. Counts: 1.7.0=214, 1.8.0=57.",
+  "provenance": "The 1.7.0 entries were verified against a v1.7.0 git worktree carrying only the determinism plumbing (pinned creation instant, TZ=UTC). Entries stamped 1.8.0 are, in order: the 29 samples introduced by 1.8.0; the nine whose v1.7.0 output was non-deterministic by construction (a Math.random() fixture, an unpinned incremental /ModDate, seven signature samples whose /M and CMS signingTime defaulted to the wall clock); and the samples whose output 1.8.0 changed deliberately — Khmer, Myanmar, Lao, Tai Tham, New Tai Lue, Tai Le and Cham shaping, COLRv1 emoji, regenerated font modules, the no-break-space metric fix (three compression samples), the base-14 measurement fix (text-extract-report, table-micro-columns), the no-break-space glyph fix (four pdfa-latin samples) and the English-only pass over sample prose (digital-signature-info). Every re-anchoring is listed in the 1.8.0 release note. Counts: 1.7.0=213, 1.8.0=58.",
   "creationDate": "2026-01-01T00:00:00.000Z",
   "timezone": "UTC",
   "entries": {
@@ -1225,9 +1225,9 @@
     },
     "signature/digital-signature-info.pdf": {
       "mode": "bytes",
-      "hash": "3fa260f6294a4e7f6466b1fe9c09b9efe34f33ac70401240a594c1b1db43b9ec",
-      "size": 10115,
-      "since": "1.7.0"
+      "hash": "2d94f9c896e806bb7cfd5557cece550c78f6845fd5f46a6d3a84a673240a314f",
+      "size": 10120,
+      "since": "1.8.0"
     },
     "signature/digital-signature-provider.pdf": {
       "mode": "bytes",
@@ -1465,20 +1465,20 @@
     },
     "typography/align-justified.pdf": {
       "mode": "bytes",
-      "hash": "cdd3f6d0b5dce646f27ddc1c349f2b644458a1b0299d974080bed509eb9500e6",
-      "size": 12764,
+      "hash": "99da010c2ea8d447430c1162fb00b1896948f123715db6176f48f37ec6e29b06",
+      "size": 11964,
       "since": "1.8.0"
     },
     "typography/align-optical.pdf": {
       "mode": "bytes",
-      "hash": "e00d16ad8567bd4f8c566bf70b74ed827465b0aa13c41b1ce61b70f5cc42a71e",
-      "size": 12764,
+      "hash": "f5cab3ffa36a172f7875e89a57ff48ce9658555ebe94a34fc353be90ed7295c3",
+      "size": 11964,
       "since": "1.8.0"
     },
     "typography/align-ragged.pdf": {
       "mode": "bytes",
-      "hash": "506d5506ecd0c9de17f868297a7dc46b4cac98c1d0846fa63c1c9fcaff0e99c1",
-      "size": 8286,
+      "hash": "1f7fb8fa925093be5ca842769d8ad18e8770efbf6c5dea6c9981522fb0489d28",
+      "size": 7966,
       "since": "1.8.0"
     },
     "typography/breaks-atomic.pdf": {
@@ -1501,26 +1501,26 @@
     },
     "typography/features-default.pdf": {
       "mode": "bytes",
-      "hash": "2681b01407c0e5bf7bf0d9ff4e551dc356361989c19194f6410b1de6c15b8633",
-      "size": 123121,
+      "hash": "a2be55534b01ec7611809b1608af7de53e21ad806645cc044b92765ab397d7b9",
+      "size": 122411,
       "since": "1.8.0"
     },
     "typography/features-oldstyle-smallcaps.pdf": {
       "mode": "bytes",
-      "hash": "8f0959ceac8e2695d5b4ece6e37358ae909ae5d7c8f7973a7403fe2e6524fbd7",
-      "size": 127172,
+      "hash": "07fd3ab8ae060acb4218843d503d27789e1d2c75aa369af16ab543551b77f574",
+      "size": 126100,
       "since": "1.8.0"
     },
     "typography/features-proportional.pdf": {
       "mode": "bytes",
-      "hash": "d4f9712357b521c9c9fb364f3982f150db126183530a3382a143c78988eb0ce0",
-      "size": 124372,
+      "hash": "40e02dd9e89b7394750ea431b3f07782c18f8aa354eaa162d5fe778734136d21",
+      "size": 123662,
       "since": "1.8.0"
     },
     "typography/hyphenation-provider.pdf": {
       "mode": "bytes",
-      "hash": "e6ced50ea33ec0d74fcb9565b404b90fabb643980b14e1a5042b37bec61cd88d",
-      "size": 119431,
+      "hash": "3ba367faae5a75683b378c64cf182d0537746852b71ca949c3dba29bf14de444",
+      "size": 120133,
       "since": "1.8.0"
     },
     "typography/keep-with-next-off.pdf": {
@@ -1537,26 +1537,26 @@
     },
     "typography/kerning-off.pdf": {
       "mode": "bytes",
-      "hash": "e419644b965ba60e29cdafc38ac141596937481728f58e5dd4f811dd377ce3a9",
-      "size": 120775,
+      "hash": "569c8ddddb900780268ed66b068488a092f10f06527f74141d561e7a43f3089d",
+      "size": 120250,
       "since": "1.8.0"
     },
     "typography/kerning-on.pdf": {
       "mode": "bytes",
-      "hash": "a100c12767cd6c9a6411d73df199810ff15729dfcf51d8e72742a85d9f8ffecc",
-      "size": 122257,
+      "hash": "8d2cf2fe3d3c6c13b7ba76129f7ccd0a4726ccd45a8f0f5f727e7fb094d4d2e4",
+      "size": 121682,
       "since": "1.8.0"
     },
     "typography/metrics-approximate.pdf": {
       "mode": "bytes",
-      "hash": "92e8abd831a8231dd7d5dba3e1adf24214e574194bcdaf12166317e2e5a54e6a",
-      "size": 7199,
+      "hash": "997c47c954381c3d140ae46ce209db328eaea325a56a87374ad563403ce26b57",
+      "size": 7088,
       "since": "1.8.0"
     },
     "typography/metrics-exact.pdf": {
       "mode": "bytes",
-      "hash": "847889039e4fe05b452a4fd7b89e7292f031516660827f107ab8065703d0de53",
-      "size": 7199,
+      "hash": "fccd08b34499e720cbe3ab94276c2f6e151319d63b65bd442a28114551906d22",
+      "size": 7088,
       "since": "1.8.0"
     },
     "typography/oversized-atomic.pdf": {
@@ -1573,14 +1573,14 @@
     },
     "typography/text-plain.pdf": {
       "mode": "bytes",
-      "hash": "6361aaa8893d1223441cca75f344ab670e416d611edc9a6131bc361fb078d474",
-      "size": 122230,
+      "hash": "651228ef0b7dcaecc1b7d3f1240e4a711b2cb1bb6f796be1d8955fbea4b6bc8d",
+      "size": 122866,
       "since": "1.8.0"
     },
     "typography/text-refined.pdf": {
       "mode": "bytes",
-      "hash": "976229cb6c510c9c08e9f5affc29193ad27682aa0df28dae6225964856e2ace1",
-      "size": 122269,
+      "hash": "5e41adf3f3d2d76b76b11c828e8416c55ac7e8eee93420053c98bd521f2bd526",
+      "size": 122905,
       "since": "1.8.0"
     },
     "viewer/viewer-fullscreen-kiosk.pdf": {

@@ -15,6 +15,9 @@ pdfnative is a zero-runtime-dependency TypeScript library that writes and reads 
 - **No rasterization.** SVG → path operators, barcodes → `re f` rectangles, fonts → CIDFont Type2 subsets.
 - **Byte-identity.** Every opt-in feature leaves output byte-identical when unused; veraPDF is blocking in CI.
 - **Human-in-the-loop.** Agents draft and verify; the maintainer pushes, opens PRs/issues and publishes (see Governance).
+- **English everywhere.** Code, comments, messages, tests, samples, recipes, docs and release notes are written in English.
+  Another language appears only as *demonstrated content* (a typographic convention, a script), framed by an English title and
+  marked `demo-language: <tag> (reason)` on or above the line; `verify:docs` and the regression suite fail on unmarked non-English prose.
 
 ## The gate
 
@@ -86,7 +89,7 @@ import the `parser/` reader/modifier — they operate on existing PDFs by design
 
 ## Counts and versions
 
-3335 tests across 151 files, 271 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
+3346 tests across 152 files, 271 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
 `docs/assets/ecosystem.json` is the source of every count and version quoted in the docs; run `npm run verify:docs` after touching any of them.
 Coverage: ≥ 88 % statements enforced by CI (currently ≈ 90.9 % statements; the thresholds live once in `vitest.config.ts`).
 

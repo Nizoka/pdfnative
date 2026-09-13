@@ -1,5 +1,5 @@
 ﻿/**
- * pdfnative â€” Compression Integration Tests
+ * pdfnative — Compression Integration Tests
  * =============================================
  * End-to-end tests for FlateDecode compression in PDF output.
  *
@@ -29,7 +29,7 @@ function makeParams(overrides?: Partial<PdfParams>): PdfParams {
     return {
         title: 'Compression Test',
         infoItems: [{ label: 'Account', value: 'FR76 1234' }],
-        balanceText: 'â‚¬ 1,000.00',
+        balanceText: '€ 1,000.00',
         countText: '3 operations',
         headers: ['Date', 'Description', 'Debit', 'Credit', 'Balance'],
         rows: [
@@ -57,7 +57,7 @@ function makeDocParams(): DocumentParams {
     };
 }
 
-describe('Compressed PDF â€” Table Builder', () => {
+describe('Compressed PDF — Table Builder', () => {
     it('should contain /Filter /FlateDecode in streams when compress=true', () => {
         const pdf = buildPDF(makeParams(), { compress: true });
         expect(pdf).toContain('/Filter /FlateDecode');
@@ -132,7 +132,7 @@ describe('Compressed PDF â€” Table Builder', () => {
     });
 });
 
-describe('Compressed PDF â€” Document Builder', () => {
+describe('Compressed PDF — Document Builder', () => {
     it('should contain /Filter /FlateDecode when compress=true', () => {
         const pdf = buildDocumentPDF(makeDocParams(), { compress: true });
         expect(pdf).toContain('/Filter /FlateDecode');

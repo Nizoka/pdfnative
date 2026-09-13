@@ -239,7 +239,7 @@ npx pdfnative-cli verify --input signed.pdf --strict
 Two warnings commonly surface when testing the sample PDFs in Adobe Reader.
 Both are **expected by spec** — they are not pdfnative bugs.
 
-### "Validity unknown" / "Identité du signataire inconnue"
+### "Signature validity is unknown" / "Signer's identity is unknown"
 
 Adobe shows this whenever the signing certificate's issuer chain does
 not terminate in a root CA listed in Adobe's Approved Trust List (AATL)
@@ -248,10 +248,10 @@ or in the user's locally configured Trusted Identities.
 - The `scripts/generators/digital-signature.ts` sample uses a
   **self-signed demo CA** so it can ship deterministically. The
   cryptographic signature itself is valid (Adobe says so:
-  *"Le document n'a pas été modifié depuis l'apposition de la signature"*);
+  *"The document has not been modified since this signature was applied"*);
   only the identity link to a public root is missing.
 - To remove the warning in Adobe Reader: **Preferences → Signatures →
-  Identités → Identités autorisées → Ajouter** and import the demo
+  Identities & Trusted Certificates → More → Add** and import the demo
   certificate as a trusted root.
 - To verify the CMS independently of any trust store, use
   `openssl pkcs7 -in signed.pdf -inform DER -print_certs` and

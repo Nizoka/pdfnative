@@ -21,7 +21,7 @@ byte-identically except where the previous output was wrong (see Fixed),
 and three calls behave differently by design — `setDeflateImpl()` rejects
 a raw-DEFLATE compressor, `parseColor()` accepts a CMYK tuple,
 `extractText()` honours `/ActualText` — see the release note's Upgrade
-section. 3335+ tests across 151 files; veraPDF-validated; a consumer
+section. 3346+ tests across 152 files; veraPDF-validated; a consumer
 importing one helper bundles that helper alone.
 
 ### Added
@@ -179,6 +179,13 @@ importing one helper bundles that helper alone.
   produced a file `validatePdfX()` rejected.
 - **fix(parser): the inline-dict skip in `extractText`** consumed the
   operator following `>>`.
+- **docs(language): English everywhere** — the rule is written in
+  `AGENTS.md`, `CONTRIBUTING.md` and the Copilot rules and enforced by the
+  `prose-language` rule of `verify:docs` and by the regression suite; the
+  typography samples, the signature sample's Adobe Reader note, the
+  benchmark fixture and a few test fixtures are English, and the French
+  that remains is the demonstrated content of the `fr` presets, marked
+  `demo-language: fr`.
 - **fix(samples): the typography showcase** used straight apostrophes and
   quotes, stripped accents, breakable thousands separators and an
   optical-margins variant that changed two other options; two of its

@@ -291,9 +291,11 @@ const BUILDERS = {
     on ? { typography: { opticalMargins: true } } : {},
   ),
   spacing: (m, on) => m.buildDocumentPDFBytes(
-    { title: 'Espacement', blocks: [
-      { type: 'heading', text: 'Liaison nombre-unite et ponctuation', level: 1 },
-      { type: 'paragraph', text: 'Facture de 150 € pour 12 kg de materiel : remise de 30 % ; stockage de 500 Mo ! Vraiment ? Oui. Et une « citation » pour finir. '.repeat(6) },
+    { title: 'Spacing', blocks: [
+      { type: 'heading', text: 'Number–unit binding and French punctuation spacing', level: 1 },
+      { type: 'paragraph', text: 'Unit binding is universal: 150 € and 12 kg never break across a line. The French preset adds narrow no-break spaces before ; ! ? and no-break spaces before : and inside guillemets, so the sample sentence below is French.' },
+      // demo-language: fr (punctuationSpacing 'fr' is a French convention)
+      { type: 'paragraph', text: 'Facture de 150 € pour 12 kg de matériel : remise de 30 % ; stockage de 500 Mo ! Vraiment ? Oui. Et une « citation » pour finir. '.repeat(6) },
     ] },
     on ? { typography: { unitBinding: true, punctuationSpacing: 'fr' } } : {},
   ),

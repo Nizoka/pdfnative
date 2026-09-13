@@ -89,7 +89,7 @@ describe('txtJustified', () => {
     it('keeps a no-break space inside its word', () => {
         // "150 EUR" must stay one token, so justification cannot split
         // it: four words, not five.
-        const bound = 'facture de 150 € payee';
+        const bound = 'invoice of 150 € paid';
         const ops = txtJustified(bound, 0, 700, '/F1', SZ, enc, helveticaWidth(bound, SZ) + 8);
         expect(tjItems(ops).filter(it => typeof it === 'string').length).toBe(4);
     });
