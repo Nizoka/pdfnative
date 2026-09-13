@@ -330,6 +330,14 @@ export interface EncodingContext {
     readonly fontData?: FontData;
     readonly getUsedGids?: () => Map<string, Set<number>>;
     /**
+     * Glyphs reachable only through a substitution — an OpenType feature such
+     * as `smcp` or `onum` — mapped back to the codepoint of the glyph they
+     * replaced, per font ref. The font's cmap cannot name them, so without
+     * this table their ToUnicode entry would be missing and the text would
+     * extract as U+FFFD. Present only on Unicode contexts. (v1.8.0)
+     */
+    readonly getToUnicodeOverrides?: () => Map<string, Map<number, number>>;
+    /**
      * Colour-emoji collector — present only when an `'emoji-color'` font
      * (carrying `colorGlyphs`) is registered. Used by the text emitter to
      * draw colour-emoji Form XObjects inline. (v1.3.0)

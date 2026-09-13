@@ -31,8 +31,17 @@ export function base64ToByteString(b64: string): string {
  *
  * @param cmap - Unicode codepoint → glyph ID mapping
  * @param usedGids - Only include these glyph IDs (subset optimization)
+ * @param overrides - Glyph ID → codepoint for glyphs the cmap cannot name:
+ *   the output of an OpenType substitution (`smcp`, `onum`, …) is reached
+ *   through GSUB, not the cmap, and must map back to the character it
+ *   replaced. Consulted only for glyphs the cmap does not already cover.
+ *   (v1.8.0)
  */
-export function buildToUnicodeCMap(cmap: Record<number, number>, usedGids: Set<number>): string {
+export function buildToUnicodeCMap(
+    cmap: Record<number, number>,
+    usedGids: Set<number>,
+    overrides?: ReadonlyMap<number, number>,
+): string {
     // Invert cmap: glyphId → unicode codepoint (keep lowest codepoint).
     // Strict undefined check: a legitimately-mapped U+0000 must not be
     // overwritten by a later (higher) codepoint sharing the glyph.
@@ -41,6 +50,11 @@ export function buildToUnicodeCMap(cmap: Record<number, number>, usedGids: Set<n
         const cpNum = Number(cp);
         if (glyphToUnicode[gid] === undefined || cpNum < glyphToUnicode[gid]) {
             glyphToUnicode[gid] = cpNum;
+        }
+    }
+    if (overrides) {
+        for (const [gid, cp] of overrides) {
+            if (glyphToUnicode[gid] === undefined) glyphToUnicode[gid] = cp;
         }
     }
 

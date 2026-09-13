@@ -103,14 +103,24 @@ function toHex(gids: readonly number[]): string {
  * Widths are recomputed from the substituted glyphs — the whole point of
  * `tnum` is that the advances change.
  *
+ * A substituted glyph is reachable only through the feature, never through
+ * the font's cmap, so the glyph bookkeeping that the cmap path performs on
+ * the way in (`trackGid`) has to be redone here on the way out: the subsetter
+ * keeps only tracked glyphs, the `/W` array lists only tracked glyphs, and
+ * ToUnicode inverts the cmap. `onSubstitute` is the seam for all three.
+ *
  * @param runs Runs from `EncodingContext.textRuns()`.
  * @param tags Feature tags to apply, in order of increasing precedence.
  * @param sz   Font size in points, for the recomputed advances.
+ * @param onSubstitute Called once per substituted glyph occurrence with the
+ *   run's font ref, the glyph that was replaced and the glyph that replaced
+ *   it. Absent in pure measurement contexts.
  */
 export function applyFeaturesToRuns(
     runs: readonly TextRun[],
     tags: readonly string[],
     sz: number,
+    onSubstitute?: (fontRef: string, fromGid: number, toGid: number, fd: FontData) => void,
 ): TextRun[] {
     if (tags.length === 0) return runs as TextRun[];
 
@@ -130,15 +140,16 @@ export function applyFeaturesToRuns(
         if (gids === null) { out.push(run); continue; }
 
         let changed = false;
+        const fd = run.fontData;
         const substituted = gids.map(g => {
             const s = map[g];
             if (s === undefined || s === g) return g;
             changed = true;
+            onSubstitute?.(run.fontRef, g, s, fd);
             return s;
         });
         if (!changed) { out.push(run); continue; }
 
-        const fd = run.fontData;
         const upm = fd.metrics.unitsPerEm;
         let design = 0;
         for (const g of substituted) design += fd.widths[g] ?? fd.defaultWidth;

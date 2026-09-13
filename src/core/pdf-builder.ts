@@ -653,7 +653,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const fm = fd.metrics;
             const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
             const toUnicodeCMap = usedGids && usedGids.size > 0
-                ? buildToUnicodeCMap(fd.cmap, usedGids)
+                ? buildToUnicodeCMap(fd.cmap, usedGids, enc.getToUnicodeOverrides?.().get(fe.fontRef))
                 : buildToUnicodeCMap(fd.cmap, new Set());
 
             const subsetW = buildSubsetWidthArray(fd.widths, usedGids ?? new Set());

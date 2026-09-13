@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { buildDocumentPDFBytes } from '../../src/index.js';
+import { buildDocumentPDFBytes, openPdf, extractText } from '../../src/index.js';
+import { parseGlyfFont, extractGlyphContours } from '../../src/fonts/glyf-outline.js';
+import { getDecodedFontBytes } from '../../src/fonts/font-loader.js';
+import type { PdfDict, PdfRef, PdfStream, PdfValue } from '../../src/parser/pdf-object-parser.js';
 import { createEncodingContext } from '../../src/core/encoding-context.js';
 import {
     composeFeatureMap, applyFeaturesToRuns, SUPPORTED_FEATURES,
@@ -177,5 +180,124 @@ describe('layout.typography.fontFeatures', () => {
         const a = buildDocumentPDFBytes(doc(), opts);
         const b = buildDocumentPDFBytes(doc(), opts);
         expect(Buffer.from(b).equals(Buffer.from(a))).toBe(true);
+    });
+});
+
+/**
+ * A feature-substituted glyph is reachable only through GSUB, never through
+ * the cmap, so it has to be tracked explicitly or it silently vanishes from
+ * the subset (blank on the page), from `/W` (advance falls back to `/DW`) and
+ * from ToUnicode (extracts as U+FFFD). These tests read the emitted file back
+ * and assert all three, which is what the 1.8.0 release audit found missing.
+ */
+describe('feature-substituted glyphs are embedded, measured and mapped', () => {
+    const TEXT = 'Old Style Figures 0123456789 and Small Caps abcdef';
+    const FULL_FONT = parseGlyfFont(getDecodedFontBytes(latin));
+
+    function build(tags: string[]): Uint8Array {
+        return buildDocumentPDFBytes(
+            { title: 'Features', blocks: [{ type: 'paragraph', text: TEXT }], fontEntries: entries },
+            { creationDate: PINNED, typography: { fontFeatures: tags } },
+        );
+    }
+
+    interface FontFacts {
+        cids: Set<number>;          // every CID the page content shows
+        widths: Map<number, number>; // /W as CID → width
+        toUnicode: Map<number, number>; // bfchar CID → codepoint
+        glyf: ReturnType<typeof parseGlyfFont>;
+    }
+
+    function facts(bytes: Uint8Array): FontFacts {
+        const reader = openPdf(bytes);
+        const page = reader.getPage(0);
+        const res = reader.resolveValue(page.get('Resources') as PdfValue) as PdfDict;
+        const fonts = reader.resolveValue(res.get('Font') as PdfValue) as PdfDict;
+        const f3 = reader.resolveValue(fonts.get('F3') as PdfRef) as PdfDict;
+        const desc = reader.resolveValue((reader.resolveValue(f3.get('DescendantFonts') as PdfValue) as PdfValue[])[0]) as PdfDict;
+
+        const widths = new Map<number, number>();
+        const w = reader.resolveValue(desc.get('W') as PdfValue) as PdfValue[];
+        for (let i = 0; i < w.length; i += 2) {
+            const start = w[i] as number;
+            const arr = w[i + 1] as number[];
+            arr.forEach((wd, k) => widths.set(start + k, wd));
+        }
+
+        const fdesc = reader.resolveValue(desc.get('FontDescriptor') as PdfValue) as PdfDict;
+        const ff2 = reader.resolveValue(fdesc.get('FontFile2') as PdfValue) as PdfStream;
+        const glyf = parseGlyfFont(reader.decodeStream(ff2));
+
+        const tu = reader.resolveValue(f3.get('ToUnicode') as PdfValue) as PdfStream;
+        const cmapText = Buffer.from(reader.decodeStream(tu)).toString('latin1');
+        const toUnicode = new Map<number, number>();
+        for (const m of cmapText.matchAll(/<([0-9A-F]{4})> <([0-9A-F]{4,8})>/g)) {
+            toUnicode.set(parseInt(m[1], 16), parseInt(m[2].slice(0, 4), 16));
+        }
+
+        const contents = reader.resolveValue(page.get('Contents') as PdfValue) as PdfStream;
+        const stream = Buffer.from(reader.decodeStream(contents)).toString('latin1');
+        const cids = new Set<number>();
+        for (const m of stream.matchAll(/<([0-9A-Fa-f]+)>/g)) {
+            for (let i = 0; i + 4 <= m[1].length; i += 4) cids.add(parseInt(m[1].slice(i, i + 4), 16));
+        }
+        return { cids, widths, toUnicode, glyf };
+    }
+
+    for (const tags of [['onum'], ['smcp'], ['onum', 'smcp'], ['pnum']]) {
+        describe(`fontFeatures: ${JSON.stringify(tags)}`, () => {
+            const f = facts(build(tags));
+
+            it('substitutes at least one glyph', () => {
+                const plain = facts(build([]));
+                expect([...f.cids].some(c => !plain.cids.has(c))).toBe(true);
+            });
+
+            it('lists every shown CID in /W', () => {
+                // A glyph the font itself gives no width (the space, gid 3)
+                // is covered by /DW, which is the documented contract.
+                const missing = [...f.cids].filter(c => latin.widths[c] !== undefined && !f.widths.has(c));
+                expect(missing).toEqual([]);
+            });
+
+            it('declares the advance the layout engine measured with', () => {
+                for (const c of f.cids) {
+                    if (latin.widths[c] === undefined) continue;
+                    expect(f.widths.get(c)).toBe(latin.widths[c]);
+                }
+            });
+
+            it('maps every shown CID in ToUnicode', () => {
+                const missing = [...f.cids].filter(c => !f.toUnicode.has(c));
+                expect(missing).toEqual([]);
+            });
+
+            it('embeds an outline for every shown CID that has one in the source font', () => {
+                expect(f.glyf).not.toBeNull();
+                const blank = [...f.cids].filter(c =>
+                    extractGlyphContours(f.glyf!, c).length === 0
+                    && extractGlyphContours(FULL_FONT!, c).length > 0);
+                expect(blank).toEqual([]);
+            });
+        });
+    }
+
+    it('maps a substituted glyph back to the character it replaced', () => {
+        const f = facts(build(['smcp']));
+        // Every lowercase letter of the source text becomes a small capital;
+        // ToUnicode must still name the lowercase letter it stood for.
+        const recovered = new Set([...f.cids].map(c => f.toUnicode.get(c)));
+        for (const ch of new Set(TEXT.replace(/[^a-z]/g, ''))) {
+            expect(recovered.has(ch.codePointAt(0)!)).toBe(true);
+        }
+    });
+
+    it('round-trips through extractText under every tag', () => {
+        for (const tags of [['onum'], ['smcp'], ['pnum'], ['onum', 'smcp', 'zero']]) {
+            const text = extractText(build(tags)).map(p => p.text).join('\n');
+            expect(text).not.toContain('�');
+            expect(text).toContain('0123456789');
+            expect(text.toLowerCase()).toContain('small caps abcdef');
+        }
     });
 });

@@ -281,6 +281,33 @@ export function createEncodingContext(
         if (s) s.add(gid);
     }
 
+    // Glyphs produced by an OpenType substitution have no cmap entry, so
+    // ToUnicode must be told which character they stand for. Filled by the
+    // feature-derived context (see withFeatureSupport); empty otherwise.
+    const _toUnicodeOverrides = new Map<string, Map<number, number>>();
+    const _inverseCmaps = new WeakMap<FontData, Map<number, number>>();
+    function _codepointOf(fd: FontData, gid: number): number | undefined {
+        let inv = _inverseCmaps.get(fd);
+        if (!inv) {
+            inv = new Map();
+            for (const [cp, g] of Object.entries(fd.cmap)) {
+                const cpNum = Number(cp);
+                const prev = inv.get(g);
+                if (prev === undefined || cpNum < prev) inv.set(g, cpNum);
+            }
+            _inverseCmaps.set(fd, inv);
+        }
+        return inv.get(gid);
+    }
+    function _onSubstitute(fontRef: string, fromGid: number, toGid: number, fd: FontData): void {
+        _trackGid(fontRef, toGid);
+        const cp = _codepointOf(fd, fromGid);
+        if (cp === undefined) return;
+        let m = _toUnicodeOverrides.get(fontRef);
+        if (!m) { m = new Map(); _toUnicodeOverrides.set(fontRef, m); }
+        if (!m.has(toGid)) m.set(toGid, cp);
+    }
+
     // Colour-emoji collector: activated only when a registered font carries a
     // COLR/CPAL `colorGlyphs` table (the opt-in `'emoji-color'` font). When no
     // such font is present this stays undefined and the builders are unchanged.
@@ -296,6 +323,7 @@ export function createEncodingContext(
         f1: primary.fontRef,
         f2: primary.fontRef,
         getUsedGids() { return _usedGids; },
+        getToUnicodeOverrides() { return _toUnicodeOverrides; },
         colorEmoji: _colorEmoji,
 
         textRuns(str: string, sz: number): TextRun[] {
@@ -451,7 +479,7 @@ export function createEncodingContext(
         },
     };
 
-    return withFeatureSupport(ctx);
+    return withFeatureSupport(ctx, _onSubstitute);
 }
 
 /**
@@ -504,8 +532,17 @@ export function applyDocumentKerning(enc: EncodingContext, on: boolean | undefin
  * substituted glyphs without a single signature change. `ps()` is left
  * alone: it serves the shaped and single-font hex paths, where a shaper has
  * already chosen contextual forms that must not be overwritten.
+ *
+ * `onSubstitute` receives every glyph the features introduce, so the
+ * substituted glyphs join the subset, the `/W` array and the ToUnicode map
+ * exactly as cmap-reached glyphs do. Without it the emitted CIDs would name
+ * glyphs the subsetter dropped — blank on the page, `/DW` for the advance,
+ * U+FFFD on extraction.
  */
-function withFeatureSupport(base: EncodingContext): EncodingContext {
+function withFeatureSupport(
+    base: EncodingContext,
+    onSubstitute: (fontRef: string, fromGid: number, toGid: number, fd: FontData) => void,
+): EncodingContext {
     function derive(tags: readonly string[]): EncodingContext {
         // Nothing to do when no font in play declares any of the tags. Return
         // the wrapper, not `base`, so callers can compare by identity to see
@@ -515,7 +552,7 @@ function withFeatureSupport(base: EncodingContext): EncodingContext {
 
         const derived: EncodingContext = {
             ...base,
-            textRuns: (str: string, sz: number) => applyFeaturesToRuns(base.textRuns(str, sz), tags, sz),
+            textRuns: (str: string, sz: number) => applyFeaturesToRuns(base.textRuns(str, sz), tags, sz, onSubstitute),
             tw(str: string, sz: number): number {
                 if (!str) return 0;
                 let total = 0;
