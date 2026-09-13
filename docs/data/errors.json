@@ -38,6 +38,33 @@
       "standard": "ISO 19005-2 §6.2.4.3 (device colour must match the output intent; veraPDF rejects the file)",
       "remedy": "Supply a CMYK layout.outputIntent, use RGB colours, or drop the PDF/A level.",
       "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
+      "code": "PDFX_NO_FONT_ENTRIES",
+      "severity": "warning",
+      "since": "1.8.0",
+      "raisedWhen": "A document claims PDF/X-4 (layout.pdfx) while rendering text through the unembedded standard-14 Helvetica — no fontEntries were supplied.",
+      "standard": "ISO 15930-7 (every font embedded)",
+      "remedy": "Register an embedded Latin font (e.g. Noto Sans via registerFont('latin', …) + fontEntries) or drop layout.pdfx.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
+      "code": "PDFX_DEVICE_CMYK",
+      "severity": "warning",
+      "since": "1.8.0",
+      "raisedWhen": "A CMYK colour or a DeviceCMYK image is painted under a PDF/X-4 claim whose OutputIntent is RGB or Gray. RGB colours under a CMYK intent raise nothing: they are remapped through a calibrated /DefaultRGB.",
+      "standard": "ISO 15930-7 (device colour must match the output intent)",
+      "remedy": "Supply a CMYK layout.outputIntent, use RGB colours and images, or drop layout.pdfx.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
+      "code": "PDFX_ANNOTATIONS",
+      "severity": "warning",
+      "since": "1.8.0",
+      "raisedWhen": "Link annotations (link blocks, table of contents links) or form fields are placed on a page under a PDF/X-4 claim.",
+      "standard": "ISO 15930-7 (no annotations inside the BleedBox, no interactive forms)",
+      "remedy": "Remove links and form fields from the print version of the document, or drop layout.pdfx.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
     }
   ],
   "sink": {

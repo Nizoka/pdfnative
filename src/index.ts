@@ -163,8 +163,8 @@ export type { WatermarkState } from './core/pdf-watermark.js';
 export { validateWatermark, buildWatermarkState } from './core/pdf-watermark.js';
 
 // ── Core — Tagged PDF / PDF/A ───────────────────────────────────────
-export type { PdfAConfig, EmbeddedFilesResult, PdfAConformanceTarget } from './core/pdf-tags.js';
-export { resolvePdfAConfig, buildEmbeddedFiles, validateAttachments, PDF_A_CONFORMANCE_TARGETS } from './core/pdf-tags.js';
+export type { PdfAConfig, EmbeddedFilesResult, PdfAConformanceTarget, PdfXConformanceTarget } from './core/pdf-tags.js';
+export { resolvePdfAConfig, buildEmbeddedFiles, validateAttachments, PDF_A_CONFORMANCE_TARGETS, PDF_X_CONFORMANCE_TARGETS } from './core/pdf-tags.js';
 
 // ── Core — Stream Compression ───────────────────────────────────────
 export { initNodeCompression, setDeflateImpl, setDeflateRawImpl, wrapZlib } from './core/pdf-compress.js';

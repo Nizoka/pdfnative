@@ -110,3 +110,36 @@ export function pdfaDeviceCmykContentDiagnostic(): PdfDiagnostic {
             + 'the PDF/A level.',
     };
 }
+
+/** Diagnostic payload for a PDF/X-4 claim without embedded fonts (v1.8.0). */
+export function pdfxNoFontEntriesDiagnostic(): PdfDiagnostic {
+    return {
+        code: 'PDFX_NO_FONT_ENTRIES',
+        severity: 'warning',
+        message: "pdfx: 'pdfx4' with no fontEntries claims PDF/X-4 conformance while rendering through "
+            + 'unembedded standard-14 Helvetica (ISO 15930-7 requires every font embedded). Register an '
+            + 'embedded Latin font (e.g. Noto Sans) or drop layout.pdfx.',
+    };
+}
+
+/** Diagnostic payload for CMYK colour under a PDF/X-4 claim with a non-CMYK intent (v1.8.0). */
+export function pdfxDeviceCmykDiagnostic(): PdfDiagnostic {
+    return {
+        code: 'PDFX_DEVICE_CMYK',
+        severity: 'warning',
+        message: 'a CMYK colour or image was painted under a PDF/X-4 claim whose OutputIntent is not '
+            + 'CMYK (ISO 15930-7 requires device colour to match the output intent). Supply a CMYK '
+            + 'layout.outputIntent, use RGB colours and images, or drop layout.pdfx.',
+    };
+}
+
+/** Diagnostic payload for annotations or form fields under a PDF/X-4 claim (v1.8.0). */
+export function pdfxAnnotationsDiagnostic(): PdfDiagnostic {
+    return {
+        code: 'PDFX_ANNOTATIONS',
+        severity: 'warning',
+        message: 'link annotations or form fields sit on a page under a PDF/X-4 claim; PDF/X does not '
+            + 'allow annotations inside the BleedBox or interactive forms (ISO 15930-7). Remove the '
+            + 'links, table of contents links and form fields from the print version, or drop layout.pdfx.',
+    };
+}

@@ -11,6 +11,7 @@
  */
 
 import type { PdfAttachment } from '../types/pdf-types.js';
+import { md5 } from './pdf-encrypt.js';
 
 // ── Marked Content Operators ─────────────────────────────────────────
 
@@ -759,6 +760,135 @@ export const PDF_A_CONFORMANCE_TARGETS = ['pdfa1b', 'pdfa2b', 'pdfa2u', 'pdfa3b'
  * @since 1.2.0
  */
 export type PdfAConformanceTarget = typeof PDF_A_CONFORMANCE_TARGETS[number];
+
+/**
+ * PDF/X conformance targets accepted by the `pdfx` layout option.
+ * @since 1.8.0
+ */
+export const PDF_X_CONFORMANCE_TARGETS = ['pdfx4'] as const;
+
+/**
+ * Type alias for the string literal members of {@link PDF_X_CONFORMANCE_TARGETS}.
+ * @since 1.8.0
+ */
+export type PdfXConformanceTarget = typeof PDF_X_CONFORMANCE_TARGETS[number];
+
+/** What a PDF/X-4 build needs once its options are known to be coherent. */
+export interface PdfXConfig {
+    /** PDF/X-4 is based on PDF 1.6 (ISO 15930-7). */
+    readonly pdfVersion: '1.6';
+    /** `/Info /Trapped` and `pdf:Trapped`: PDF/X does not accept `Unknown`. */
+    readonly trapped: 'True' | 'False';
+}
+
+/**
+ * Check a PDF/X request against the other layout options and resolve it.
+ * Every incoherent combination throws before any byte is written, with the
+ * remedy in the message.
+ *
+ * - One conformance claim per file: PDF/X and a PDF/A level are exclusive.
+ * - No encryption.
+ * - An OutputIntent is mandatory and must be an output (`prtr`) profile —
+ *   the printing condition the file is prepared for. pdfnative ships none.
+ * - Trapping must be stated: `True` or `False`, defaulting to `False`,
+ *   which is accurate for pdfnative output (it never traps).
+ *
+ * @returns The resolved configuration, or `null` when `pdfx` is not set.
+ */
+export function resolvePdfXConfig(input: {
+    readonly pdfx: string | undefined;
+    readonly tagged: boolean | string | undefined;
+    readonly encrypted: boolean;
+    readonly outputIntent: ResolvedOutputIntent | null;
+    readonly trapped: 'True' | 'False' | 'Unknown' | undefined;
+}): PdfXConfig | null {
+    if (input.pdfx === undefined) return null;
+    if (!(PDF_X_CONFORMANCE_TARGETS as readonly string[]).includes(input.pdfx)) {
+        throw new Error(`layout.pdfx: unknown target '${input.pdfx}' — use one of ${PDF_X_CONFORMANCE_TARGETS.join(', ')}`);
+    }
+    if (input.tagged) {
+        throw new Error('layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them');
+    }
+    if (input.encrypted) {
+        throw new Error('PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx');
+    }
+    if (!input.outputIntent) {
+        throw new Error(
+            'PDF/X-4 requires layout.outputIntent: the ICC profile of the printing condition, e.g. '
+            + 'ISO Coated v2 or GRACoL from your printer. pdfnative ships no press profile',
+        );
+    }
+    if (input.outputIntent.deviceClass !== 'prtr') {
+        throw new Error(
+            `PDF/X-4 requires an output (printer) profile as layout.outputIntent — the supplied profile's `
+            + `class is '${input.outputIntent.deviceClass.trim()}'`,
+        );
+    }
+    if (input.trapped === 'Unknown') {
+        throw new Error("PDF/X requires the trapping state to be known — set metadata.trapped to 'True' or 'False', or omit it for 'False'");
+    }
+    return { pdfVersion: '1.6', trapped: input.trapped ?? 'False' };
+}
+
+/**
+ * A stable `uuid:` for `xmpMM:DocumentID`, derived like the trailer `/ID`
+ * so identical inputs produce identical files.
+ */
+export function pdfxDocumentId(seed: string): string {
+    const h = Array.from(md5(new TextEncoder().encode(`pdfnative-xmp|${seed}`)), b => b.toString(16).padStart(2, '0')).join('');
+    return `uuid:${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+}
+
+/**
+ * Build the XMP packet of a PDF/X-4 file. It carries no PDF/A identification.
+ *
+ * PDF/X-4 declares conformance in XMP (`pdfxid:GTS_PDFXVersion`) and needs
+ * the document identified (`xmpMM:DocumentID`, `VersionID`,
+ * `RenditionClass`), the title, the three XMP dates, and the trapping state,
+ * all consistent with `/Info`.
+ */
+export function buildPdfXXMPMetadata(
+    title: string,
+    createDate: string,
+    trapped: 'True' | 'False',
+    documentId: string,
+    author?: string,
+    subject?: string,
+    keywords?: string,
+): string {
+    const lines: string[] = [
+        '<?xpacket begin="\xEF\xBB\xBF" id="W5M0MpCehiHzreSzNTczkc9d"?>',
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
+        ' <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
+        '  <rdf:Description rdf:about=""',
+        '    xmlns:dc="http://purl.org/dc/elements/1.1/"',
+        '    xmlns:pdf="http://ns.adobe.com/pdf/1.3/"',
+        '    xmlns:xmp="http://ns.adobe.com/xap/1.0/"',
+        '    xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"',
+        '    xmlns:pdfxid="http://www.npes.org/pdfx/ns/id/">',
+        `   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">${escapeXml(title)}</rdf:li></rdf:Alt></dc:title>`,
+    ];
+    if (author) lines.push(`   <dc:creator><rdf:Seq><rdf:li>${escapeXml(author)}</rdf:li></rdf:Seq></dc:creator>`);
+    if (subject) lines.push(`   <dc:description><rdf:Alt><rdf:li xml:lang="x-default">${escapeXml(subject)}</rdf:li></rdf:Alt></dc:description>`);
+    lines.push('   <pdf:Producer>pdfnative</pdf:Producer>');
+    if (keywords) lines.push(`   <pdf:Keywords>${escapeXml(keywords)}</pdf:Keywords>`);
+    lines.push(
+        `   <pdf:Trapped>${trapped}</pdf:Trapped>`,
+        `   <xmp:CreateDate>${createDate}</xmp:CreateDate>`,
+        `   <xmp:ModifyDate>${createDate}</xmp:ModifyDate>`,
+        `   <xmp:MetadataDate>${createDate}</xmp:MetadataDate>`,
+        `   <xmpMM:DocumentID>${documentId}</xmpMM:DocumentID>`,
+        `   <xmpMM:InstanceID>${documentId}</xmpMM:InstanceID>`,
+        '   <xmpMM:VersionID>1</xmpMM:VersionID>',
+        '   <xmpMM:RenditionClass>default</xmpMM:RenditionClass>',
+        '   <pdfxid:GTS_PDFXVersion>PDF/X-4</pdfxid:GTS_PDFXVersion>',
+        '  </rdf:Description>',
+        ' </rdf:RDF>',
+        '</x:xmpmeta>',
+        '<?xpacket end="w"?>',
+    );
+    return lines.join('\n');
+}
 
 /**
  * Parse the `tagged` layout option into a resolved PDF/A configuration.

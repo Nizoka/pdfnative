@@ -24,7 +24,7 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
@@ -48,6 +48,9 @@ import {
     buildOutputIntentDict,
     resolveOutputIntent,
     defaultRgbResource,
+    resolvePdfXConfig,
+    pdfxDocumentId,
+    buildPdfXXMPMetadata,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -59,7 +62,7 @@ import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
-import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes } from './pdf-print.js';
 import { resolveCreationDate } from './pdf-reproducible.js';
 
 // ── Tagged Mode Helper Types ─────────────────────────────────────────
@@ -305,7 +308,18 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const pdfaConfig = resolvePdfAConfig(layoutOptions?.tagged);
     const tagged = pdfaConfig.enabled;
     // Resolved before any byte is written: an unusable profile throws here.
-    const outputIntent = tagged ? resolveOutputIntent(layoutOptions?.outputIntent) : null;
+    const outputIntent = (tagged || layoutOptions?.pdfx !== undefined) ? resolveOutputIntent(layoutOptions?.outputIntent) : null;
+    // PDF/X-4 (v1.8.0): one claim per file, no encryption, a printer profile.
+    const pdfxConfig = resolvePdfXConfig({
+        pdfx: layoutOptions?.pdfx,
+        tagged: layoutOptions?.tagged,
+        encrypted: layoutOptions?.encryption !== undefined,
+        outputIntent: layoutOptions?.outputIntent ? outputIntent : null,
+        trapped: params.metadata?.trapped,
+    });
+    const pdfx = pdfxConfig !== null;
+    // Both claims require every font embedded: no base-14 fallback.
+    const embedFonts = tagged || pdfx;
     const defaultRgbRes = defaultRgbResource(outputIntent);
 
     // Conformance diagnostics (v1.7.0): guard the PDF/A declaration (#69).
@@ -314,8 +328,11 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         const level = typeof layoutOptions?.tagged === 'string' ? layoutOptions.tagged : 'pdfa2b';
         emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
     }
+    if (pdfx && fontEntries.length === 0) {
+        emitDiagnostic(pdfxNoFontEntriesDiagnostic());
+    }
 
-    const encBase = createEncodingContext(fontEntries, tagged, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics);
+    const encBase = createEncodingContext(fontEntries, embedFonts, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics);
     const encFeat = applyDocumentFeatures(encBase, layoutOptions?.typography?.fontFeatures);
     const enc = applyDocumentKerning(encFeat, layoutOptions?.typography?.kerning);
 
@@ -384,7 +401,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const printOpts = layoutOptions?.print;
     if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layoutOptions?.tagged);
     const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
-    const printBoxesStr = printResolved?.boxesStr ?? '';
+    const printBoxesStr = (printResolved?.boxesStr ?? '') + (pdfx ? pdfxBoxes(printOpts, pgW, pgH) : '');
     const printMarksOps = printOpts?.marks && printResolved?.trim
         ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
         : '';
@@ -418,7 +435,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
         ? 4 + fontEntries.length * 5 + wmExtraObjs + totalPages * 2
         : 4 + wmExtraObjs + totalPages * 2;
-    const latinToUniObjNum = (!tagged || !enc.isUnicode) ? preBaseObjCount + 2 : 0; // infoObjNum + 1
+    const latinToUniObjNum = (!embedFonts || !enc.isUnicode) ? preBaseObjCount + 2 : 0; // infoObjNum + 1
     const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
 
     // Map page object numbers to /StructParents values for ParentTree (ISO 32000-1 §14.7.4.4)
@@ -561,7 +578,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
     // CMYK colour needs a CMYK OutputIntent (v1.8.0); see buildDocumentPDF.
     if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
-        emitDiagnostic(pdfaDeviceCmykContentDiagnostic());
+        emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
     }
 
     // Build the table structure element (inserted before footer /P elements)
@@ -578,8 +595,10 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
     // PDF Header. /UserUnit requires PDF 1.6+ — raise the declared version
     // only when the option is present (bytes unchanged otherwise).
-    const pdfVersion = printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
-        ? '1.7' : pdfaConfig.pdfVersion;
+    // PDF/X-4 is PDF 1.6, which /UserUnit also needs.
+    const pdfVersion = pdfxConfig ? pdfxConfig.pdfVersion
+        : printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
+            ? '1.7' : pdfaConfig.pdfVersion;
     emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 
@@ -599,8 +618,8 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
 
-        if (tagged) {
-            // PDF/A: /F1 and /F2 must reference embedded fonts. Alias both to
+        if (embedFonts) {
+            // PDF/A and PDF/X: /F1 and /F2 must reference embedded fonts. Alias both to
             // primary font's Type0 (sharing FontFile2 stream). Bold renders as
             // regular under PDF/A — register a separate Bold font for true bold.
             const pf = fontEntries[0];
@@ -776,8 +795,9 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     if (params.metadata?.keywords) {
         metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
     }
-    if (params.metadata?.trapped) {
-        metaParts.push(`/Trapped /${params.metadata.trapped}`);
+    const trapped = pdfxConfig?.trapped ?? params.metadata?.trapped;
+    if (trapped) {
+        metaParts.push(`/Trapped /${trapped}`);
     }
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
@@ -797,21 +817,25 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     let afArrayStr = '';
     let embeddedFilesNamesDict = '';
 
-    if (tagged) {
-        // Build document structure tree
-        const documentEl: StructElement = { type: 'Document', children: documentChildren };
-        const treeStart = totalObjs + 1;
-        const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
+    if (tagged || pdfx) {
+        if (tagged) {
+            // Build document structure tree
+            const documentEl: StructElement = { type: 'Document', children: documentChildren };
+            const treeStart = totalObjs + 1;
+            const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
 
-        for (const [objNum, content] of tree.objects) {
-            emitObj(objNum, content);
+            for (const [objNum, content] of tree.objects) {
+                emitObj(objNum, content);
+            }
+            structTreeRootObjNum = tree.structTreeRootObjNum;
+            totalObjs = treeStart + tree.totalObjects - 1;
         }
-        structTreeRootObjNum = tree.structTreeRootObjNum;
-        totalObjs = treeStart + tree.totalObjects - 1;
 
         // XMP metadata stream (skip compression for PDF/A validator compatibility)
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
+        const xmpContent = utf8EncodeBinaryString(pdfxConfig
+            ? buildPdfXXMPMetadata(infoTitle, isoDate, pdfxConfig.trapped, pdfxDocumentId(`${infoTitle}|${pdfDate}`), params.metadata?.author, params.metadata?.subject, params.metadata?.keywords)
+            : buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
@@ -827,7 +851,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
         // OutputIntent
         outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
+        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfx ? 'GTS_PDFX' : pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
         totalObjs = outputIntentObjNum;
 
         // Embedded file attachments (PDF/A-3 only)
@@ -848,13 +872,12 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     }
 
     // ── Rewrite Catalog with tagged attributes ──────────────────────
-    if (tagged) {
+    if (tagged || pdfx) {
         // Overwrite the catalog object in-place by rebuilding parts[catalogIdx]
         // We need to find and replace the catalog entry
         let catalogContent =
             `<< /Type /Catalog /Pages 2 0 R ` +
-            `/MarkInfo << /Marked true >> ` +
-            `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
+            (tagged ? `/MarkInfo << /Marked true >> /StructTreeRoot ${structTreeRootObjNum} 0 R ` : '') +
             `/Metadata ${xmpObjNum} 0 R ` +
             `/OutputIntents [${outputIntentObjNum} 0 R]`;
         if (afArrayStr) {

@@ -557,7 +557,13 @@ export type PdfDiagnosticCode =
     /** AcroForm fields under a PDF/A claim — form appearances use an unembedded base-14 /Helv font (ISO 19005 §6.2.11.4.1). */
     | 'PDFA_UNEMBEDDED_FORM_FONT'
     /** CMYK content colour under a PDF/A claim whose OutputIntent is not CMYK (ISO 19005-2 §6.2.4.3). @since 1.8.0 */
-    | 'PDFA_DEVICE_CMYK_CONTENT';
+    | 'PDFA_DEVICE_CMYK_CONTENT'
+    /** PDF/X-4 requested with no `fontEntries` — unembedded standard-14 fonts (ISO 15930-7). @since 1.8.0 */
+    | 'PDFX_NO_FONT_ENTRIES'
+    /** CMYK colour or image under a PDF/X-4 claim whose OutputIntent is not CMYK (ISO 15930-7). @since 1.8.0 */
+    | 'PDFX_DEVICE_CMYK'
+    /** Link annotations or form fields on a PDF/X-4 page (ISO 15930-7). @since 1.8.0 */
+    | 'PDFX_ANNOTATIONS';
 
 /** A single conformance diagnostic surfaced by the builders. */
 export interface PdfDiagnostic {
@@ -791,6 +797,18 @@ export interface PdfLayoutOptions {
      * Default: false (backward compatible).
      */
     readonly tagged?: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u' | 'pdfa3b';
+    /**
+     * Claim PDF/X-4 conformance (ISO 15930-7) for print production.
+     *
+     * Requires `outputIntent` with the printer's output ICC profile (CMYK,
+     * RGB or Gray), and writes a `%PDF-1.6` header, the PDF/X-4 XMP
+     * identification, a `/GTS_PDFX` OutputIntent, a TrimBox on every page
+     * (the MediaBox when `print` sets none), and `/Trapped` (`False` unless
+     * `metadata.trapped` says `True`). All fonts must be embedded, so pass
+     * `fontEntries`. Cannot be combined with `tagged` or `encryption`.
+     * Check the result with `validatePdfX()`. @since 1.8.0
+     */
+    readonly pdfx?: 'pdfx4';
     /**
      * Escalate conformance diagnostics (e.g. a PDF/A level requested with
      * no embedded fonts) to thrown errors instead of warnings, before any

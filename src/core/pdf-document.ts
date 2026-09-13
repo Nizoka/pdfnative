@@ -23,9 +23,9 @@ import type {
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaUnembeddedFormFontDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
-import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes } from './pdf-print.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
@@ -50,6 +50,9 @@ import {
     buildOutputIntentDict,
     resolveOutputIntent,
     defaultRgbResource,
+    resolvePdfXConfig,
+    pdfxDocumentId,
+    buildPdfXXMPMetadata,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -157,7 +160,18 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const pdfaConfig = resolvePdfAConfig(layout?.tagged);
     const tagged = pdfaConfig.enabled;
     // Resolved before any byte is written: an unusable profile throws here.
-    const outputIntent = tagged ? resolveOutputIntent(layout?.outputIntent) : null;
+    const outputIntent = (tagged || layout?.pdfx !== undefined) ? resolveOutputIntent(layout?.outputIntent) : null;
+    // PDF/X-4 (v1.8.0): one claim per file, no encryption, a printer profile.
+    const pdfxConfig = resolvePdfXConfig({
+        pdfx: layout?.pdfx,
+        tagged: layout?.tagged,
+        encrypted: layout?.encryption !== undefined,
+        outputIntent: layout?.outputIntent ? outputIntent : null,
+        trapped: params.metadata?.trapped,
+    });
+    const pdfx = pdfxConfig !== null;
+    // Both claims require every font embedded: no base-14 fallback.
+    const embedFonts = tagged || pdfx;
     const defaultRgbRes = defaultRgbResource(outputIntent);
 
     // ── Conformance diagnostics (v1.7.0) ─────────────────────────────
@@ -168,8 +182,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         const level = typeof layout?.tagged === 'string' ? layout.tagged : 'pdfa2b';
         emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
     }
+    if (pdfx && fontEntries.length === 0) {
+        emitDiagnostic(pdfxNoFontEntriesDiagnostic());
+    }
 
-    const encBase = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false, layout?.typography?.metrics);
+    const encBase = createEncodingContext(fontEntries, embedFonts, layout?.normalize ?? false, layout?.typography?.metrics);
     const encFeat = applyDocumentFeatures(encBase, layout?.typography?.fontFeatures);
     const enc = applyDocumentKerning(encFeat, layout?.typography?.kerning);
 
@@ -196,7 +213,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const printOpts = layout?.print;
     if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layout?.tagged);
     const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
-    const printBoxesStr = printResolved?.boxesStr ?? '';
+    const printBoxesStr = (printResolved?.boxesStr ?? '') + (pdfx ? pdfxBoxes(printOpts, pgW, pgH) : '');
     const printMarksOps = printOpts?.marks && printResolved?.trim
         ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
         : '';
@@ -260,7 +277,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 if (outputIntent && outputIntent.space !== 'cmyk' && resolved.parsed.colorSpace === '/DeviceCMYK') {
                     // A DeviceCMYK image needs a CMYK OutputIntent: without
                     // one it breaks the PDF/A claim (ISO 19005-2 §6.2.4.3).
-                    emitDiagnostic(pdfaDeviceCmykDiagnostic());
+                    emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykDiagnostic());
                 }
                 resolvedImages.push(resolved);
             }
@@ -499,7 +516,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // intent is remapped through /DefaultRGB; the reverse has no inline
     // equivalent. Checked here, before any byte is written.
     if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
-        emitDiagnostic(pdfaDeviceCmykContentDiagnostic());
+        emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
     }
 
     // ── Group annotations by page ────────────────────────────────────
@@ -527,11 +544,14 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // Without a PDF/A claim, or with no registered font to embed, the
     // historical unembedded base-14 /Helv is kept and the output stays
     // byte-identical.
-    const embeddedFormFont = (tagged && totalFormFields > 0)
+    const embeddedFormFont = (embedFonts && totalFormFields > 0)
         ? selectFormFont(fontEntries)
         : null;
     if (tagged && totalFormFields > 0 && embeddedFormFont === null) {
         emitDiagnostic(pdfaUnembeddedFormFontDiagnostic());
+    }
+    if (pdfx && (totalAnnots > 0 || totalFormFields > 0)) {
+        emitDiagnostic(pdfxAnnotationsDiagnostic());
     }
     // Each form field: button types (checkbox/radio) = 3 objects (widget + Yes AP + Off AP)
     // Other types = 2 objects (widget + AP XObject)
@@ -577,7 +597,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
         ? 4 + fontEntries.length * 5 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs
         : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
-    const latinToUniObjNum = (!tagged || !enc.isUnicode || formFontObjs > 0)
+    const latinToUniObjNum = (!embedFonts || !enc.isUnicode || formFontObjs > 0)
         ? preBaseObjCount + 2 // infoObjNum + 1
         : 0;
     const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
@@ -600,8 +620,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
     // PDF Header. /UserUnit requires PDF 1.6+ — raise the declared version
     // only when the option is present (bytes unchanged otherwise).
-    const pdfVersion = printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
-        ? '1.7' : pdfaConfig.pdfVersion;
+    // PDF/X-4 is PDF 1.6, which /UserUnit also needs.
+    const pdfVersion = pdfxConfig ? pdfxConfig.pdfVersion
+        : printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
+            ? '1.7' : pdfaConfig.pdfVersion;
     emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 
@@ -655,8 +677,8 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
 
-        if (tagged) {
-            // PDF/A: /F1 and /F2 alias to primary's Type0 (embedded). Bold = regular.
+        if (embedFonts) {
+            // PDF/A and PDF/X: /F1 and /F2 alias to primary's Type0 (embedded). Bold = regular.
             const pf = fontEntries[0];
             const bfName = `/${pf.fontData.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
             const primaryBase = 5;
@@ -1075,8 +1097,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     if (params.metadata?.keywords) {
         metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
     }
-    if (params.metadata?.trapped) {
-        metaParts.push(`/Trapped /${params.metadata.trapped}`);
+    const trapped = pdfxConfig?.trapped ?? params.metadata?.trapped;
+    if (trapped) {
+        metaParts.push(`/Trapped /${trapped}`);
     }
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
@@ -1116,19 +1139,23 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     let afArrayStr = '';
     let embeddedFilesNamesDict = '';
 
-    if (tagged) {
-        const documentEl: StructElement = { type: 'Document', children: documentChildren };
-        const treeStart = totalObjs + 1;
-        const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
+    if (tagged || pdfx) {
+        if (tagged) {
+            const documentEl: StructElement = { type: 'Document', children: documentChildren };
+            const treeStart = totalObjs + 1;
+            const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
 
-        for (const [objNum, content] of tree.objects) {
-            emitObj(objNum, content);
+            for (const [objNum, content] of tree.objects) {
+                emitObj(objNum, content);
+            }
+            structTreeRootObjNum = tree.structTreeRootObjNum;
+            totalObjs = treeStart + tree.totalObjects - 1;
         }
-        structTreeRootObjNum = tree.structTreeRootObjNum;
-        totalObjs = treeStart + tree.totalObjects - 1;
 
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
+        const xmpContent = utf8EncodeBinaryString(pdfxConfig
+            ? buildPdfXXMPMetadata(infoTitle, isoDate, pdfxConfig.trapped, pdfxDocumentId(`${infoTitle}|${pdfDate}`), params.metadata?.author, params.metadata?.subject, params.metadata?.keywords)
+            : buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
@@ -1143,7 +1170,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         totalObjs = iccObjNum;
 
         outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layout?.outputIntent));
+        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfx ? 'GTS_PDFX' : pdfaConfig.outputIntentSubtype, layout?.outputIntent));
         totalObjs = outputIntentObjNum;
 
         // Embedded file attachments (PDF/A-3 only)
@@ -1255,11 +1282,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     }
 
     // ── Rewrite Catalog ──────────────────────────────────────────────
-    if (tagged) {
+    if (tagged || pdfx) {
         let catalogContent =
             `<< /Type /Catalog /Pages 2 0 R ` +
-            `/MarkInfo << /Marked true >> ` +
-            `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
+            (tagged ? `/MarkInfo << /Marked true >> /StructTreeRoot ${structTreeRootObjNum} 0 R ` : '') +
             `/Metadata ${xmpObjNum} 0 R ` +
             `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr}${acroFormStr}${outlineCatalogStr}${pageLabelsStr}${viewerPrefsStr}`;
         if (afArrayStr) {

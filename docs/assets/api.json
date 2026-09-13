@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 488,
+  "exportCount": 490,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -719,6 +719,13 @@
       "summary": "Canonical list of PDF/A conformance targets accepted by the `tagged` layout option."
     },
     {
+      "name": "PDF_X_CONFORMANCE_TARGETS",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export const PDF_X_CONFORMANCE_TARGETS = ['pdfx4'] as const;",
+      "summary": "PDF/X conformance targets accepted by the `pdfx` layout option."
+    },
+    {
       "name": "PG_H",
       "kind": "value",
       "module": "src/core/pdf-layout.ts",
@@ -1095,6 +1102,13 @@
       "module": "src/parser/pdf-object-parser.ts",
       "signature": "export type PdfValue =",
       "summary": "Union of all PDF object types (ISO 32000-1 §7.3)."
+    },
+    {
+      "name": "PdfXConformanceTarget",
+      "kind": "type",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export type PdfXConformanceTarget = typeof PDF_X_CONFORMANCE_TARGETS[number];",
+      "summary": "Type alias for the string literal members of PDF_X_CONFORMANCE_TARGETS."
     },
     {
       "name": "PrintOptions",

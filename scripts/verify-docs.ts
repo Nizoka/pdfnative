@@ -1077,7 +1077,8 @@ if (!existsSync(LLMS_RECIPES)) {
 
 /**
  * `docs/data/errors.json` is the served registry of the engine's diagnostic
- * codes. Two-way check against reality: every `PDFA_*` token the docs mention
+ * codes. Two-way check against reality: every `PDFA_*` / `PDFX_*` (v1.8.0)
+ * token the docs mention
  * must exist both in the registry and in src/, and every registry entry must
  * exist in src/ — a registry entry for a code the engine no longer emits
  * teaches agents a ghost.
@@ -1091,7 +1092,7 @@ if (!existsSync(LLMS_RECIPES)) {
         const registered = new Set(registry.diagnostics.map((d) => d.code));
         const srcCodes = new Set<string>();
         for (const f of walk(join(ROOT, 'src'), (p) => p.endsWith('.ts'))) {
-            for (const m of read(f).matchAll(/\bPDFA_[A-Z_]+\b/g)) srcCodes.add(m[0]);
+            for (const m of read(f).matchAll(/\bPDF[AX]_[A-Z_]+\b/g)) srcCodes.add(m[0]);
         }
         for (const code of registered) {
             if (!srcCodes.has(code)) {
@@ -1107,7 +1108,7 @@ if (!existsSync(LLMS_RECIPES)) {
         }
         for (const file of DOC_FILES) {
             const text = read(file);
-            for (const m of text.matchAll(/\bPDFA_[A-Z_]+\b/g)) {
+            for (const m of text.matchAll(/\bPDF[AX]_[A-Z_]+\b/g)) {
                 if (registered.has(m[0])) continue;
                 fail(rel(file), lineOf(text, m.index!), 'error-parity', `diagnostic "${m[0]}" is not in docs/data/errors.json`);
             }
