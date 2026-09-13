@@ -4,7 +4,9 @@ import { extractText } from '../../src/parser/pdf-text-extract.js';
 import { createEncodingContext } from '../../src/core/encoding-context.js';
 import { helveticaWidth, helveticaBoldWidth, stripSoftHyphens } from '../../src/fonts/encoding.js';
 import { prepareBlocks } from '../../src/core/pdf-typography.js';
+import * as notoSans from '../../fonts/noto-sans-data.js';
 import type { DocumentParams, DocumentBlock } from '../../src/types/pdf-document-types.js';
+import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 
 // v1.8.0 — soft hyphens, no-break space metrics and French spacing.
 
@@ -93,6 +95,81 @@ describe('no-break space metrics', () => {
         const lines = wrapText(`facture de 150${NBSP}€ payee`, helveticaWidth('facture de 150', 11) + 2, 11, enc);
         const withUnit = lines.find(l => l.includes('150'));
         expect(withUnit).toContain('€');
+    });
+});
+
+/**
+ * A no-break space used to be folded to U+0020 before it reached any CID
+ * font, so the narrow no-break space the French preset inserts was neither
+ * narrow nor no-break in the output and `'fr'` produced the same bytes as
+ * `'fr-CA'`. A font that carries the glyph now gets it.
+ */
+describe('no-break spaces reach the font', () => {
+    const latin = notoSans as unknown as FontData;
+    const entries: FontEntry[] = [{ fontData: latin, fontRef: '/F3', lang: 'latin' }];
+    const gidOf = (cp: number): string => latin.cmap[cp].toString(16).toUpperCase().padStart(4, '0');
+    const advOf = (cp: number): number => latin.widths[latin.cmap[cp]] ?? latin.defaultWidth;
+
+    it('Noto Sans carries both no-break spaces, the narrow one narrower', () => {
+        expect(latin.cmap[0xA0]).toBeGreaterThan(0);
+        expect(latin.cmap[0x202F]).toBeGreaterThan(0);
+        expect(advOf(0x202F)).toBeLessThan(advOf(0x20));
+    });
+
+    it('encodes U+202F and U+00A0 as their own glyphs in a CID font', () => {
+        const uni = createEncodingContext(entries, false, false);
+        const hex = uni.textRuns(`a${NNBSP}b${NBSP}c`, 11).map(r => r.hexStr).join('');
+        expect(hex).toContain(gidOf(0x202F));
+        expect(hex).toContain(gidOf(0xA0));
+        expect(uni.ps(`a${NNBSP}b`)).toContain(gidOf(0x202F));
+    });
+
+    it('measures the narrow no-break space at its real advance', () => {
+        const uni = createEncodingContext(entries, false, false);
+        expect(uni.tw(`a${NNBSP}b`, 11)).toBeLessThan(uni.tw('a b', 11));
+        expect(uni.tw(`a${NBSP}b`, 11)).toBeCloseTo(uni.tw('a b', 11), 6);
+    });
+
+    it('falls back to the ordinary space in a font that lacks the glyph', () => {
+        const cmap = { ...latin.cmap };
+        delete cmap[0x202F];
+        delete cmap[0xA0];
+        const bare: FontData = { ...latin, cmap };
+        const uni = createEncodingContext([{ fontData: bare, fontRef: '/F3', lang: 'latin' }], true, false);
+        const hex = uni.textRuns(`a${NNBSP}b${NBSP}c`, 11).map(r => r.hexStr).join('');
+        expect(hex).not.toContain(gidOf(0x202F));
+        expect(hex).not.toContain(gidOf(0xA0));
+        expect(hex.match(new RegExp(gidOf(0x20), 'g'))?.length).toBe(2);
+    });
+
+    const spaced: DocumentParams = {
+        title: 'Ponctuation',
+        fontEntries: entries,
+        blocks: [{ type: 'paragraph', text: 'Vraiment ? Oui ! Ainsi ; Total : 42. Et une « citation » pour finir.' }],
+    };
+
+    it('makes the fr and fr-CA presets distinguishable in the output', () => {
+        const fr = buildDocumentPDFBytes(spaced, { creationDate: PINNED, typography: { punctuationSpacing: 'fr' } });
+        const ca = buildDocumentPDFBytes(spaced, { creationDate: PINNED, typography: { punctuationSpacing: 'fr-CA' } });
+        const none = buildDocumentPDFBytes(spaced, { creationDate: PINNED });
+        expect(Buffer.from(fr).equals(Buffer.from(ca))).toBe(false);
+        expect(Buffer.from(ca).equals(Buffer.from(none))).toBe(false);
+    });
+
+    it('extracts the spaces the preset inserted', () => {
+        const fr = buildDocumentPDFBytes(spaced, { creationDate: PINNED, typography: { punctuationSpacing: 'fr' } });
+        const text = extractText(fr).map(p => p.text).join('\n');
+        expect(text).toContain(`Vraiment${NNBSP}?`);
+        expect(text).toContain(`Total${NBSP}:`);
+        expect(text).toContain(`«${NBSP}citation${NBSP}»`);
+    });
+
+    it('degrades to the ordinary space on the base-14 path, where WinAnsi has no U+202F', () => {
+        const base14: DocumentParams = { ...spaced, fontEntries: undefined };
+        const fr = buildDocumentPDFBytes(base14, { creationDate: PINNED, typography: { punctuationSpacing: 'fr' } });
+        const s = new TextDecoder('latin1').decode(fr);
+        expect(s).toContain('Vraiment ?');
+        expect(s).toContain('Total :');
     });
 });
 

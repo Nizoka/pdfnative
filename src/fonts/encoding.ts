@@ -49,7 +49,10 @@ export function toWinAnsi(str: string): string {
         else if (c === 0x0153) r += '\x9C'; // œ ligature oe
         else if (c === 0x017E) r += '\x9E'; // ž z with caron
         else if (c === 0x0178) r += '\x9F'; // Ÿ Y with diaeresis
-        else if (c === 0xA0 || c === 0x202F) r += ' ';
+        // U+00A0 is WinAnsi byte 0xA0 and passes through above. WinAnsi has
+        // no narrow no-break space, so U+202F degrades to the ordinary space
+        // here; a registered CID font renders the real glyph instead.
+        else if (c === 0x202F) r += ' ';
         else if (c === 0x09 || c === 0x0A || c === 0x0D) r += ' ';
         else if (c < 0x20) { /* skip control chars */ }
         else r += '?';

@@ -40,6 +40,23 @@ function isWinAnsi(cp: number): boolean {
 }
 
 /**
+ * The codepoint a no-break space is shown as in a given font.
+ *
+ * A font that carries U+00A0 or U+202F gets the real glyph: a narrow no-break
+ * space is then actually narrow (166 units in Noto Sans against 260 for the
+ * space), and both extract as what the author wrote, which is what makes
+ * `punctuationSpacing: 'fr'` distinguishable from `'fr-CA'` in the output.
+ * A font without the glyph falls back to the ordinary space so the character
+ * never reaches the cmap as .notdef. Any other codepoint passes through.
+ *
+ * @since 1.8.0
+ */
+function spaceCodepoint(fd: FontData, rawCp: number): number {
+    if (rawCp !== 0x202F && rawCp !== 0xA0) return rawCp;
+    return (fd.cmap[rawCp] ?? 0) > 0 ? rawCp : 0x20;
+}
+
+/**
  * Shape one run with a registered shaper and measure it.
  *
  * Zero-advance glyphs — the combining marks a shaper stacks on their base —
@@ -195,7 +212,7 @@ function buildTextRunsCore(
         // as tofu (□) in CID-keyed fonts under PDF/A (Helvetica fallback is
         // disabled). (#58)
         if (rawCp < 0x20 || rawCp === 0x7F) { i += charLen; continue; }
-        const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
+        const cp = spaceCodepoint(fd, rawCp);
         const char = text.substring(i, i + charLen);
         const gid = fd.cmap[cp] ?? 0;
 
@@ -437,7 +454,7 @@ export function createEncodingContext(
                         for (let i = 0; i < bRun.text.length; i++) {
                             const rawCp = bRun.text.codePointAt(i) ?? 0;
                             if (rawCp > 0xFFFF) i++;
-                            const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
+                            const cp = spaceCodepoint(primary.fontData, rawCp);
                             const gid = cmap[cp] || 0;
                             _trackGid(primary.fontRef, gid);
                             hex += gid.toString(16).padStart(4, '0');
@@ -453,7 +470,7 @@ export function createEncodingContext(
                 for (let i = 0; i < str.length; i++) {
                     const rawCp = str.codePointAt(i) ?? 0;
                     if (rawCp > 0xFFFF) i++;
-                    const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
+                    const cp = spaceCodepoint(primary.fontData, rawCp);
                     const gid = cmap[cp] || 0;
                     _trackGid(primary.fontRef, gid);
                     hex += gid.toString(16).padStart(4, '0');
