@@ -58,7 +58,10 @@ function makeSandbox(): string {
     }
     // package.json declares "type": "module"; without it tsx compiles the
     // verifier as CJS and its top-level await fails to transform.
-    for (const file of ['package.json', 'README.md', 'ROADMAP.md', 'AGENTS.md', 'CONTRIBUTING.md', 'SECURITY.md', 'llms.txt']) {
+    // CLAUDE.md and .nvmrc feed claude-md-budget and node-pin-parity; the
+    // sandbox is not a git checkout, so sitemap-lastmod-vs-git skips itself
+    // there (it is exercised by the run against the committed tree above).
+    for (const file of ['package.json', 'README.md', 'ROADMAP.md', 'AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'SECURITY.md', 'llms.txt', '.nvmrc']) {
         const from = join(ROOT, file);
         if (existsSync(from)) cpSync(from, join(dir, file));
     }
@@ -391,6 +394,94 @@ describe('verify-docs', () => {
                 patch(dir, 'docs/learn/03-tables.html', 'rel="next" href="04-page-furniture.html"', 'rel="next" href="08-next-steps.html"');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('learn-chain');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('count-tokens rejects a test count the manifest contradicts, anywhere in the corpus', () => {
+            withSandbox((dir) => {
+                // The 1.8.0 drift: the same sentence carried three figures
+                // across README, homepage and llms.txt, and only the homepage
+                // had an assertion. Any "N tests" token is now checked.
+                const p = join(dir, 'CONTRIBUTING.md');
+                writeFileSync(p, readFileSync(p, 'utf8') + '\nThe suite holds 999999 tests across 3 files.\n');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('count-tokens');
+                expect(run.output).toContain('declared.tests');
+                expect(run.output).toContain('derived.testFiles');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('count-tokens rejects a coverage claim above the measured floor but accepts one at it', () => {
+            withSandbox((dir) => {
+                const manifest = JSON.parse(readFileSync(join(ROOT, 'docs', 'assets', 'ecosystem.json'), 'utf8')) as {
+                    declared: { coverageStatements: number };
+                };
+                const floor = manifest.declared.coverageStatements;
+                const p = join(dir, 'CONTRIBUTING.md');
+                writeFileSync(p, readFileSync(p, 'utf8') + `\nCoverage: ${floor}%+ statement coverage, and ${floor + 5}% statements.\n`);
+                const run = runVerifier(dir);
+                expect(run.output).toContain('count-tokens');
+                expect(run.output).toContain(`"${floor + 5}% statements"`);
+                expect(run.output).not.toContain(`"${floor}%+ statement coverage"`);
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('manifest-shape rejects an assertion whose literal expect disagrees with its expectFrom source', () => {
+            withSandbox((dir) => {
+                patch(
+                    dir,
+                    'docs/assets/ecosystem.json',
+                    '"expectFrom": "declared.pdfaSamples",',
+                    '"expectFrom": "declared.pdfaSamples",\n      "expect": 99,',
+                );
+                const run = runVerifier(dir);
+                expect(run.output).toContain('manifest-shape');
+                expect(run.output).toContain('says expect 99 but declared.pdfaSamples is');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('claude-md-budget requires CLAUDE.md to start by importing AGENTS.md', () => {
+            withSandbox((dir) => {
+                patch(dir, 'CLAUDE.md', '@AGENTS.md', '# A fork of AGENTS.md');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('claude-md-budget');
+                expect(run.output).toContain('must be "@AGENTS.md"');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('governance-sources rejects a capability_manifest path that does not exist', () => {
+            withSandbox((dir) => {
+                patch(dir, '.github/ai-governance.json', '".github/AGENT_RULES.md"', '".github/AGENT_RULES_MOVED.md"');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('governance-sources');
+                expect(run.output).toContain('AGENT_RULES_MOVED.md');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('node-pin-parity rejects an .nvmrc whose major disagrees with engines.node', () => {
+            withSandbox((dir) => {
+                const p = join(dir, '.nvmrc');
+                writeFileSync(p, '20\n');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('node-pin-parity');
+                expect(run.output).toContain('.nvmrc pins 20');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('ruleset-parity rejects a required status check that names no workflow job', () => {
+            withSandbox((dir) => {
+                patch(dir, '.github/rulesets/main.json', '"context": "sample-regression"', '"context": "sample-regresion"');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('ruleset-parity');
+                expect(run.output).toContain('"sample-regresion" names no job');
+                expect(run.output).toContain('"sample-regression" is not a required status check');
                 expect(run.status).toBe(1);
             });
         }, 120_000);

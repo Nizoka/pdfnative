@@ -49,11 +49,11 @@
     "description": "Authoritative project context an agent SHOULD load before proposing changes.",
     "sources": [
       "AGENTS.md",
-      ".github/AGENT_RULES.md",
-      "docs/assets/ecosystem.json"
+      ".github/AGENT_RULES.md"
     ],
-    "$comment": "on_demand: load lazily by topic",
+    "$comment": "on_demand: load lazily by topic. sources are loaded on every task and verify-docs (governance-sources) holds their total under 16 KiB; ecosystem.json is the counts manifest, needed only when a figure or version is touched.",
     "on_demand": [
+      "docs/assets/ecosystem.json",
       ".github/instructions/",
       "ROADMAP.md",
       "SECURITY.md",
