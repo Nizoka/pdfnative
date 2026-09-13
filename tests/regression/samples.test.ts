@@ -209,5 +209,9 @@ describe('sample generation is environment-independent', () => {
         // without this the same instant renders differently per machine.
         const tz = readFileSync(join(REPO_ROOT, 'scripts', 'helpers', 'tz.ts'), 'utf8');
         expect(tz).toContain("process.env.TZ = 'UTC'");
+        // And the test runner itself: vitest.config.ts sets `env.TZ`, so a
+        // date formatted inside a test renders the same on every machine.
+        expect(process.env.TZ).toBe('UTC');
+        expect(new Date(0).getTimezoneOffset()).toBe(0);
     });
 });

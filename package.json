@@ -62,6 +62,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:visual": "vitest run tests/visual/",
+    "gate": "npx tsx scripts/gate.ts",
+    "gate:fast": "npx tsx scripts/gate.ts --fast",
     "test:generate": "npx tsx scripts/generate-samples.ts",
     "validate:pdfa": "npx tsx scripts/validate-pdfa.ts",
     "verify:samples": "npx tsx scripts/verify-samples.ts",
@@ -198,6 +200,7 @@
   "engines": {
     "node": ">=22"
   },
+  "packageManager": "npm@10.9.2",
   "publishConfig": {
     "access": "public"
   },

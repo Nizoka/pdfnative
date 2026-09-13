@@ -1,6 +1,6 @@
-# scripts/ – Sample PDF Generation
+# scripts/ – Sample PDF Generation and the Quality Gate
 
-Generates 242 sample PDFs (48 generators) for visual inspection across all supported languages, features, and edge cases.
+Generates 271 sample PDFs (49 generators) for visual inspection across all supported languages, features, and edge cases, and hosts `gate.ts`, the one definition of what "green" means for this repository.
 
 Every sample that declares PDF/A conformance (`pdfaid:part` in XMP) is
 automatically validated by `npm run validate:pdfa` (veraPDF) — no
@@ -16,13 +16,58 @@ npm run test:generate
 
 Output: `test-output/*.pdf` (git-ignored).
 
+## Quality gate — `gate.ts`
+
+`scripts/gate.ts` runs the project's checks in order and prints one line per
+step, so a full passing run fits in under twenty lines. CI, CONTRIBUTING.md
+and the agent instructions all defer to this table rather than listing the
+commands themselves.
+
+```bash
+npm run gate            # --ci: everything except validate:pdfa and verify:fonts
+npm run gate:fast       # typecheck:all, lint, test, verify:docs
+npx tsx scripts/gate.ts --publish        # everything; the two optional steps SKIP with a reason when their tool is absent
+npx tsx scripts/gate.ts --only lint      # one step, whatever the profile
+npx tsx scripts/gate.ts --from build     # a profile, starting at a step
+npx tsx scripts/gate.ts --ci --json      # { ok, profile, steps: [{ id, status, seconds, note }] }
+```
+
+Steps, in order: `typecheck:all`, `lint`, `verify:unicode`, `test` (fast) /
+`test:coverage` (ci, publish), `build`, `dist-check` (the six files
+`npm run build` must leave in `dist/`), `verify:bundle`, `verify:docs`,
+`test:generate`, `verify:samples`, `validate:pdfa`, `verify:fonts`.
+
+Each step's complete output is captured to `test-output/.gate/<id>.log`; on
+the first failure the gate prints the last twelve lines of that log and
+stops with exit 1. The `test` steps run vitest with `GATE=1`, which adds a
+JSON reporter writing `test-output/.gate/vitest.json` — where the test count
+next to `PASS` comes from; the coverage percentage is read from
+`coverage/coverage-summary.json`. Unknown flags exit 2.
+
+PowerShell swallows a bare `--`, so pass flags by calling the script
+directly (`npx tsx scripts/gate.ts --fast`) or use `npm run gate:fast`.
+
+### Output modes of the sample scripts
+
+`generate-samples.ts` and `validate-pdfa.ts` accept `--quiet`, `--verbose`
+and `--json` (anything else exits 2). Quiet is implied when stdout is not a
+terminal — CI, the gate, an agent capturing output — unless `--verbose`
+asks for the full table; at a terminal nothing changes.
+
+| Script                | Quiet output                                                     | `--json`                                                  |
+|-----------------------|------------------------------------------------------------------|-----------------------------------------------------------|
+| `generate-samples.ts` | `271 PDFs, 41.2 MB, 12.4 s → …/test-output/` plus skipped files | `{ generated, bytes, seconds, outputDir, skipped, files }` |
+| `validate-pdfa.ts`    | one line per FAIL, then `21/21 PDF/A-claiming samples compliant` | `{ claimed, compliant, failures: [{ file, profile, rules }], veraPdf }` |
+
 ## Architecture
 
 ```
 scripts/
+├── gate.ts                  # Quality gate — the STEPS table, profiles, per-step logs (see above)
 ├── generate-samples.ts      # Orchestrator — registers fonts, inits compression, calls generators
+├── validate-pdfa.ts         # veraPDF runner for every PDF/A-claiming sample (+ coverage canary)
 ├── helpers/
-│   ├── io.ts                # I/O: createContext(), writeSafe(), printSummary(), OUTPUT_DIR
+│   ├── io.ts                # I/O: createContext(), writeSafe(), printSummary(), parseOutputMode(), OUTPUT_DIR
 │   ├── fonts.ts             # Font registration: registerAllFonts(), loadFontEntries(), loadMultiFontEntries()
 │   ├── images.ts            # Synthetic images: makeMinimalJPEG(), makeLargeJPEG(), makeSyntheticPNG()
 │   └── types.ts             # Shared interfaces: LangSample, PdfASample, EncryptSample, DocSample
