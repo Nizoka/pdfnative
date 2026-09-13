@@ -20,7 +20,7 @@ applyTo: "src/fonts/**"
 
 ## TTF Subsetting Rules
 - Always preserve GID 0 (`.notdef`) — required by PDF/A and most viewers
-- Subset tables required: `head`, `hhea`, `maxp`, `OS/2`, `name`, `cmap`, `loca`, `glyf`, `hmtx`, `post`
+- Subset tables required: `head`, `hhea`, `maxp`, `OS/2`, `name`, `cmap`, `loca`, `glyf`, `hmtx`, `post`; kept verbatim when the source has them: `prep`, `fpgm`, `cvt `, `gasp` (hinting and dropout control — outlines never change, and no table is ever synthesised)
 - Recalculate `checkSumAdjustment` in `head` table after subsetting
 - Table offsets must be 4-byte aligned (pad with zeros)
 - `loca` format (short/long) must match `head.indexToLocFormat`

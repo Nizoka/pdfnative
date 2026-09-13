@@ -1,9 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { subsetTTF, ttfChecksum, uint8ToBinaryString } from '../../src/fonts/font-subsetter.js';
+import { getDecodedFontBytes } from '../../src/fonts/font-loader.js';
+import * as notoSans from '../../fonts/noto-sans-data.js';
+import type { FontData } from '../../src/types/pdf-types.js';
 
 // ── Minimal TTF builder for subsetter testing ────────────────────────
 
 function align4(n: number): number { return (n + 3) & ~3; }
+
+/** Hinting tables added to the fixture when `hinting: true` (tags sorted, `cvt ` has a trailing space). */
+const FIXTURE_HINTING_TABLES: ReadonlyArray<{ tag: string; data: Uint8Array }> = [
+    { tag: 'cvt ', data: new Uint8Array([0x00, 0x2A, 0x00, 0x54, 0x01, 0x00]) },            // 3 FWords
+    { tag: 'fpgm', data: new Uint8Array([0xB0, 0x00, 0x2C, 0x21, 0x2D]) },                  // PUSHB 0; FDEF; POP; ENDF
+    { tag: 'gasp', data: new Uint8Array([0x00, 0x01, 0x00, 0x01, 0xFF, 0xFF, 0x00, 0x0F]) }, // v1, all sizes, all flags
+    { tag: 'prep', data: new Uint8Array([0xB8, 0x01, 0xFF, 0x85, 0xB0, 0x04, 0x8D]) },      // Noto Sans's dropout-control prep
+];
 
 /**
  * Build a minimal valid TTF binary string with 5 glyphs:
@@ -12,11 +23,13 @@ function align4(n: number): number { return (n + 3) & ~3; }
  *   GID 2: simple glyph (18 bytes)
  *   GID 3: compound glyph referencing GID 1 (single component)
  *   GID 4: compound glyph with 3 components covering all flag variants
+ * With `hinting: true` the four hinting tables of `FIXTURE_HINTING_TABLES` are added.
  */
-function buildMinimalTTF(options?: { longLoca?: boolean }): string {
+function buildMinimalTTF(options?: { longLoca?: boolean; hinting?: boolean }): string {
     const longLoca = options?.longLoca ?? false;
+    const hinting = options?.hinting ?? false;
     const numGlyphs = 5;
-    const numTables = 4; // glyf, head, loca, maxp (alphabetical)
+    const numTables = hinting ? 8 : 4; // glyf, head, loca, maxp (+ cvt , fpgm, gasp, prep), alphabetical
 
     // Simple glyph (18 bytes)
     function makeSimple(): Uint8Array {
@@ -110,7 +123,8 @@ function buildMinimalTTF(options?: { longLoca?: boolean }): string {
         { tag: 'head', data: headData },
         { tag: 'loca', data: locaData },
         { tag: 'maxp', data: maxpData },
-    ];
+        ...(hinting ? FIXTURE_HINTING_TABLES : []),
+    ].sort((a, b) => (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0));
     let off = headerSize;
     const offsets: number[] = [];
     for (const t of tables) { offsets.push(off); off = align4(off + t.data.length); }
@@ -118,7 +132,7 @@ function buildMinimalTTF(options?: { longLoca?: boolean }): string {
     const output = new Uint8Array(off);
     const ov = new DataView(output.buffer);
     ov.setUint32(0, 0x00010000); ov.setUint16(4, numTables);
-    ov.setUint16(6, 64); ov.setUint16(8, 2); ov.setUint16(10, 0);
+    ov.setUint16(6, hinting ? 128 : 64); ov.setUint16(8, hinting ? 3 : 2); ov.setUint16(10, 0);
 
     for (let i = 0; i < tables.length; i++) {
         const o = 12 + i * 16;
@@ -161,6 +175,53 @@ function parseSubset(binary: string): { numGlyphs: number; locaFormat: number; g
     const glyphSizes: number[] = [];
     for (let i = 0; i < numGlyphs; i++) glyphSizes.push(offsets[i + 1] - offsets[i]);
     return { numGlyphs, locaFormat, glyphSizes };
+}
+
+function binaryToU8(binary: string): Uint8Array {
+    const u8 = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) u8[i] = binary.charCodeAt(i);
+    return u8;
+}
+
+interface TableEntry { tag: string; checksum: number; offset: number; length: number }
+
+/** Parse an SFNT table directory: entries in file order plus a tag → bytes map. */
+function parseTableDirectory(u8: Uint8Array): { entries: TableEntry[]; tables: Record<string, Uint8Array> } {
+    const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    const numTables = view.getUint16(4);
+    const entries: TableEntry[] = [];
+    const tables: Record<string, Uint8Array> = {};
+    for (let i = 0; i < numTables; i++) {
+        const off = 12 + i * 16;
+        const tag = String.fromCharCode(u8[off], u8[off + 1], u8[off + 2], u8[off + 3]);
+        const entry = { tag, checksum: view.getUint32(off + 4), offset: view.getUint32(off + 8), length: view.getUint32(off + 12) };
+        entries.push(entry);
+        tables[tag] = u8.subarray(entry.offset, entry.offset + entry.length);
+    }
+    return { entries, tables };
+}
+
+/**
+ * Assert the structural invariants of a subset produced by `subsetTTF`: tags sorted and
+ * unique, offsets 4-byte aligned, non-overlapping and in bounds, directory checksums
+ * matching the table bytes, and `head.checkSumAdjustment` zeroed.
+ */
+function expectValidDirectory(u8: Uint8Array, expectedTags: string[]): Record<string, Uint8Array> {
+    const { entries, tables } = parseTableDirectory(u8);
+    const tags = entries.map(e => e.tag);
+    expect(tags).toEqual(expectedTags);
+    expect(tags).toEqual([...tags].sort());
+    expect(new Set(tags).size).toBe(tags.length);
+    let cursor = 12 + entries.length * 16;
+    for (const e of entries) {
+        expect(e.offset & 3).toBe(0);
+        expect(e.offset).toBeGreaterThanOrEqual(cursor);
+        expect(e.offset + e.length).toBeLessThanOrEqual(u8.length);
+        expect(e.checksum).toBe(ttfChecksum(tables[e.tag]));
+        cursor = align4(e.offset + e.length);
+    }
+    expect(new DataView(tables['head'].buffer, tables['head'].byteOffset).getUint32(8)).toBe(0);
+    return tables;
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -370,6 +431,104 @@ describe('subsetTTF', () => {
         const tiny = new Uint8Array([0x00, 0x01, 0x00, 0x00, 0x00, 0x02]);
         const result = subsetTTF(tiny, new Set([0]));
         expect(result).toBe(uint8ToBinaryString(tiny));
+    });
+});
+
+describe('subsetTTF — hinting tables (prep, fpgm, cvt , gasp)', () => {
+    const FIXTURE_CORE_TAGS = ['glyf', 'head', 'loca', 'maxp'];
+    const FIXTURE_HINTED_TAGS = ['cvt ', 'fpgm', 'gasp', 'glyf', 'head', 'loca', 'maxp', 'prep'];
+
+    it('should copy prep, fpgm, cvt and gasp verbatim when the source has them', () => {
+        const source = binaryToU8(buildMinimalTTF({ hinting: true }));
+        const subset = binaryToU8(subsetTTF(source, new Set([1])));
+        const tables = expectValidDirectory(subset, FIXTURE_HINTED_TAGS);
+        for (const { tag, data } of FIXTURE_HINTING_TABLES) {
+            expect(Array.from(tables[tag])).toEqual(Array.from(data));
+        }
+    });
+
+    it('should not invent hinting tables when the source has none', () => {
+        const source = binaryToU8(buildMinimalTTF());
+        const subset = binaryToU8(subsetTTF(source, new Set([1])));
+        const tables = expectValidDirectory(subset, FIXTURE_CORE_TAGS);
+        for (const tag of ['prep', 'fpgm', 'cvt ', 'gasp']) expect(tables[tag]).toBeUndefined();
+    });
+
+    it('should leave head.flags and maxp unmodified', () => {
+        const source = binaryToU8(buildMinimalTTF({ hinting: true }));
+        const src = parseTableDirectory(source).tables;
+        const subset = binaryToU8(subsetTTF(source, new Set([1, 3])));
+        const out = parseTableDirectory(subset).tables;
+        expect(Array.from(out['maxp'])).toEqual(Array.from(src['maxp']));
+        // head: identical except checkSumAdjustment (bytes 8–11) and indexToLocFormat (bytes 50–51)
+        const expectedHead = new Uint8Array(src['head']);
+        const hv = new DataView(expectedHead.buffer);
+        hv.setUint32(8, 0);
+        hv.setInt16(50, 1);
+        expect(Array.from(out['head'])).toEqual(Array.from(expectedHead));
+        expect(new DataView(out['head'].buffer, out['head'].byteOffset).getUint16(16))
+            .toBe(new DataView(src['head'].buffer, src['head'].byteOffset).getUint16(16)); // head.flags
+    });
+
+    describe('bundled Noto Sans', () => {
+        const NOTO_SANS_SUBSET_TAGS = ['OS/2', 'cmap', 'gasp', 'glyf', 'head', 'hhea', 'hmtx', 'loca', 'maxp', 'name', 'post', 'prep'];
+        const font = notoSans as unknown as FontData;
+        const gidOf = (ch: string): number => font.cmap[ch.codePointAt(0)!] ?? 0;
+        const usedGids = new Set(['H', 'e', 'l', 'o', 'w', 'r', 'd', ' '].map(gidOf));
+
+        it('should keep prep and gasp byte-identical to the source', () => {
+            const source = getDecodedFontBytes(font);
+            const src = parseTableDirectory(source).tables;
+            expect(src['prep']).toBeDefined();
+            expect(src['gasp']).toBeDefined();
+            const subset = binaryToU8(subsetTTF(source, usedGids));
+            const out = parseTableDirectory(subset).tables;
+            // Noto Sans's prep: PUSHW 511; SCANCTRL; PUSHB 4; SCANTYPE — TrueType dropout control
+            expect(Array.from(out['prep'])).toEqual(Array.from(src['prep']));
+            expect(Array.from(out['prep'])).toEqual([0xB8, 0x01, 0xFF, 0x85, 0xB0, 0x04, 0x8D]);
+            expect(Array.from(out['gasp'])).toEqual(Array.from(src['gasp']));
+        });
+
+        it('should not add cvt or fpgm when the source ships none', () => {
+            const source = getDecodedFontBytes(font);
+            const src = parseTableDirectory(source).tables;
+            expect(src['cvt ']).toBeUndefined();
+            expect(src['fpgm']).toBeUndefined();
+            const out = parseTableDirectory(binaryToU8(subsetTTF(source, usedGids))).tables;
+            expect(out['cvt ']).toBeUndefined();
+            expect(out['fpgm']).toBeUndefined();
+        });
+
+        it('should produce a sorted, checksummed directory with exactly the expected tables', () => {
+            const source = getDecodedFontBytes(font);
+            const subset = binaryToU8(subsetTTF(source, usedGids));
+            const src = parseTableDirectory(source).tables;
+            const out = expectValidDirectory(subset, NOTO_SANS_SUBSET_TAGS);
+            for (const tag of ['OS/2', 'cmap', 'hhea', 'hmtx', 'maxp', 'name', 'post']) {
+                expect(out[tag].length).toBe(src[tag].length);
+                expect(Array.from(out[tag])).toEqual(Array.from(src[tag]));
+            }
+            expect(subset.length).toBeLessThan(source.length / 10);
+        });
+
+        it('should copy the outline bytes of a kept glyph unchanged', () => {
+            const source = getDecodedFontBytes(font);
+            const subset = binaryToU8(subsetTTF(source, usedGids));
+            const src = parseTableDirectory(source).tables;
+            const out = parseTableDirectory(subset).tables;
+            const srcView = new DataView(src['head'].buffer, src['head'].byteOffset);
+            const srcLocaLong = srcView.getInt16(50) === 1;
+            const srcLoca = new DataView(src['loca'].buffer, src['loca'].byteOffset);
+            const outLoca = new DataView(out['loca'].buffer, out['loca'].byteOffset);
+            const gidW = gidOf('w');
+            expect(gidW).toBeGreaterThan(0);
+            const srcStart = srcLocaLong ? srcLoca.getUint32(gidW * 4) : srcLoca.getUint16(gidW * 2) * 2;
+            const srcEnd = srcLocaLong ? srcLoca.getUint32(gidW * 4 + 4) : srcLoca.getUint16(gidW * 2 + 2) * 2;
+            const outStart = outLoca.getUint32(gidW * 4);
+            expect(srcEnd).toBeGreaterThan(srcStart);
+            expect(Array.from(out['glyf'].subarray(outStart, outStart + (srcEnd - srcStart))))
+                .toEqual(Array.from(src['glyf'].subarray(srcStart, srcEnd)));
+        });
     });
 });
 

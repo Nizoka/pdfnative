@@ -4,6 +4,24 @@
  * Subset a TrueType font binary to contain only used glyphs.
  * Retains original GID numbering (Identity-H compatible).
  * Resolves compound glyph component dependencies recursively.
+ *
+ * Tables kept (see `PDF_TABLES`):
+ *   - `head`, `hhea`, `maxp`, `OS/2`, `cmap`, `hmtx`, `name`, `post` — copied verbatim
+ *     (`head` only gets `indexToLocFormat` = 1 and `checkSumAdjustment` = 0; `head.flags`
+ *     and `maxp` are untouched).
+ *   - `loca`, `glyf` — rebuilt with the used outlines; the bytes of a kept glyph are
+ *     copied unchanged, instructions included.
+ *   - `prep`, `fpgm`, `cvt `, `gasp` — copied verbatim when present, never invented.
+ *     These carry the font's rasterisation hints: `prep` runs before every glyph and
+ *     typically enables dropout control (`SCANCTRL` / `SCANTYPE`), which keeps thin
+ *     diagonals such as a lowercase `w` from losing pixels at small sizes in hinting
+ *     rasterisers; `gasp` tells the rasteriser when to grid-fit and anti-alias; `fpgm`
+ *     holds the functions `prep` and the glyph instructions call, and `cvt ` the control
+ *     values they read. Dropping any of them silently degrades rendering while adding
+ *     nothing to the outlines — they cost a few bytes (8 for `gasp`, 7 for Noto Sans's
+ *     `prep`, ~4 KB when `fpgm` is present) and are kept by every mainstream subsetter.
+ * Everything else (GSUB, GPOS, GDEF, kern, DSIG, colour tables, …) is dropped: the PDF
+ * text is already positioned and shaped, so a CIDFontType2 never consults them.
  */
 
 /**
@@ -145,8 +163,14 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>):
         for (let i = 0; i <= numGlyphs; i++) newLocaView.setUint32(i * 4, newOffsets[i]);
         const newLoca = new Uint8Array(newLocaBuf);
 
-        // Tables required for PDF CIDFontType2
-        const PDF_TABLES = new Set(['head', 'hhea', 'maxp', 'OS/2', 'cmap', 'hmtx', 'loca', 'glyf', 'name', 'post']);
+        // Tables required for PDF CIDFontType2, plus the hinting tables (`prep`, `fpgm`,
+        // `cvt ` — note the trailing space in the tag — and `gasp`) that rasterisers use for
+        // dropout control and grid-fitting. Each is copied verbatim when the source has it;
+        // absent tables are not synthesised (see the module header).
+        const PDF_TABLES = new Set([
+            'head', 'hhea', 'maxp', 'OS/2', 'cmap', 'hmtx', 'loca', 'glyf', 'name', 'post',
+            'prep', 'fpgm', 'cvt ', 'gasp',
+        ]);
         const tableTags = Object.keys(tables).filter(t => PDF_TABLES.has(t)).sort();
         const newTableData: Record<string, Uint8Array> = {};
         for (const tag of tableTags) {
