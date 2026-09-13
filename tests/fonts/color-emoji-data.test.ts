@@ -3,10 +3,13 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import * as colorEmoji from '../../fonts/noto-color-emoji-data.js';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
+import { isAlphaRamp, renderColorGlyph } from '../../src/core/pdf-color-glyph.js';
+import { extractGlyphContours, parseGlyfFont } from '../../src/fonts/glyf-outline.js';
 import { openPdf } from '../../src/parser/pdf-reader.js';
 import { CURATED_EMOJI } from '../../scripts/lib/curated-emoji.js';
 import { SKIN_TONE_BASES } from '../../scripts/lib/curated-emoji-sequences.js';
-import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
+import type { PdfDict, PdfValue } from '../../src/parser/pdf-object-parser.js';
+import type { ColorGlyph, FontData, FontEntry } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
 // Guards the committed curated colour-emoji data module
@@ -236,6 +239,147 @@ describe('noto-color-emoji-data module', () => {
             // 2 flags + 1 technologist = 3 colour form draws.
             expect(doOps.length).toBeGreaterThanOrEqual(3);
             expect(openPdf(bytes).pageCount).toBe(1);
+        });
+    });
+
+    // ── v1.8.0: alpha-ramp gradients ──────────────────────────────────
+    // Noto draws soft shadows as gradients whose stops share one RGB and
+    // fade only in alpha. A PDF shading has no per-stop alpha, so the
+    // renderer used to paint them as flat opaque discs — U+1F469 WOMAN's
+    // last layer covered the whole face. Such layers are now omitted.
+
+    describe('alpha-ramp gradients', () => {
+        const mod = colorEmoji as unknown as {
+            ttfBase64: string; colorGlyphs: Record<number, ColorGlyph>; cmap: Record<number, number>;
+            metrics: { unitsPerEm: number };
+        };
+        const glyf = parseGlyfFont(new Uint8Array(Buffer.from(mod.ttfBase64, 'base64')));
+        const outlines = (gid: number): ReturnType<typeof extractGlyphContours> =>
+            glyf ? extractGlyphContours(glyf, gid) : [];
+        const render = (gid: number): ReturnType<typeof renderColorGlyph> =>
+            renderColorGlyph(mod.colorGlyphs[gid], outlines, mod.metrics.unitsPerEm);
+        const paintOps = (content: string): string[] =>
+            content.split('\n').filter(l => l === 'f' || / sh$/.test(l));
+        const count = (content: string, op: 'f' | 'sh'): number =>
+            paintOps(content).filter(l => (op === 'f' ? l === 'f' : l !== 'f')).length;
+
+        /** `[C0, C1]` of every Type 2 segment of a shading function dict. */
+        const segments = (fn: PdfValue): [string, string][] => {
+            const d = fn instanceof Map ? fn : null;
+            if (!d) return [];
+            const subs = d.get('Functions');
+            if (Array.isArray(subs)) return subs.flatMap(segments);
+            const arr = (v: PdfValue | undefined): string => (Array.isArray(v) ? v.map(String).join(' ') : '');
+            return [[arr(d.get('C0')), arr(d.get('C1'))]];
+        };
+        const isName = (v: PdfValue | undefined, name: string): boolean =>
+            typeof v === 'object' && v !== null && 'type' in v && v.type === 'name' && v.value === name;
+        /** Every Form XObject of a document: its content and its shading functions. */
+        const formsOf = (bytes: Uint8Array): { content: string; functions: [string, string][][] }[] => {
+            const doc = openPdf(bytes);
+            const out: { content: string; functions: [string, string][][] }[] = [];
+            for (const num of doc.xref.entries.keys()) {
+                const obj = doc.getObject(num);
+                if (!obj || typeof obj !== 'object' || !('type' in obj) || obj.type !== 'stream') continue;
+                if (!isName(obj.dict.get('Subtype'), 'Form')) continue;
+                const res = obj.dict.get('Resources');
+                const shading = res instanceof Map ? res.get('Shading') : undefined;
+                const functions: [string, string][][] = [];
+                for (const dict of (shading instanceof Map ? shading : new Map<string, PdfValue>()).values()) {
+                    functions.push(segments((dict as PdfDict).get('Function') ?? null));
+                }
+                out.push({ content: Buffer.from(doc.decodeStream(obj)).toString('latin1'), functions });
+            }
+            return out;
+        };
+
+        it('renders WOMAN and its toned form without a flat shading over the face', () => {
+            const fontData = colorEmoji as unknown as FontData;
+            const entry: FontEntry = { fontData, fontRef: '/F3', lang: 'emoji' };
+            const bytes = buildDocumentPDFBytes({
+                title: 'Woman',
+                blocks: [{ type: 'paragraph', text: '\u{1F469} \u{1F469}\u{1F3FD}' }],
+                fontEntries: [entry],
+            });
+            const forms = formsOf(bytes);
+            expect(forms).toHaveLength(2);
+            // The `rg` operator of every solid layer of a glyph, as the renderer writes it.
+            const ch = (v: number): string => (v / 255).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+            const fillsOf = (gid: number): string[] => mod.colorGlyphs[gid].layers
+                .flatMap(l => (l.paint.kind === 'solid' ? [`${ch(l.paint.color[0])} ${ch(l.paint.color[1])} ${ch(l.paint.color[2])} rg`] : []));
+            // U+1F469 is gid 2207; its medium-tone form is gid 501. Face
+            // (gid 9938 or its toned twin), mouth (9941) and eyes (5868) are
+            // among their solid layers; before the fix the last layer, an
+            // alpha-ramp radial (gid 9945), was painted opaque over them all.
+            for (const { content, functions } of forms) {
+                // No shading whose function is constant across every segment.
+                for (const segs of functions) expect(segs.every(([c0, c1]) => c0 === c1)).toBe(false);
+                // The last painting op is a solid fill, not a shading.
+                const ops = paintOps(content);
+                expect(ops[ops.length - 1]).toBe('f');
+                // Every solid layer of the glyph is painted after every shading left.
+                const lines = content.split('\n');
+                const lastSh = lines.reduce((at, l, i) => (/ sh$/.test(l) ? i : at), -1);
+                const fills = [fillsOf(2207), fillsOf(501)].find(f => f.every(rgb => lines.includes(rgb)));
+                expect(fills, 'form matches neither WOMAN nor its medium-tone form').toBeDefined();
+                expect(fills?.length).toBeGreaterThanOrEqual(9);
+                for (const rgb of fills ?? []) expect(lines.indexOf(rgb), rgb).toBeGreaterThan(lastSh);
+            }
+        });
+
+        it('pins the op counts of a shadowed glyph and of an untouched one', () => {
+            // U+1F9D1 PERSON: its twelve shadings were all alpha ramps (12 `sh`
+            // before the fix); its ten solid fills are what remains.
+            const person = render(mod.cmap[0x1F9D1]).content;
+            expect(count(person, 'sh')).toBe(0);
+            expect(count(person, 'f')).toBe(10);
+            // U+1F386 FIREWORKS: 36 gradients whose RGB varies — unchanged.
+            const fireworks = render(mod.cmap[0x1F386]);
+            expect(count(fireworks.content, 'sh')).toBe(36);
+            expect(count(fireworks.content, 'f')).toBe(30);
+            expect(fireworks.shadings).toHaveLength(36);
+            const layers = mod.colorGlyphs[mod.cmap[0x1F386]].layers;
+            expect(layers.some(l => l.paint.kind !== 'solid' && l.paint.kind !== 'sweep' && isAlphaRamp(l.paint.stops))).toBe(false);
+        });
+
+        it('classifies WOMAN\'s last layer as an alpha ramp', () => {
+            const woman = mod.colorGlyphs[mod.cmap[0x1F469]];
+            const last = woman.layers[woman.layers.length - 1];
+            expect(last.glyphId).toBe(9945);
+            expect(last.paint.kind).toBe('radial');
+            expect(last.paint.kind !== 'solid' && last.paint.kind !== 'sweep' && isAlphaRamp(last.paint.stops)).toBe(true);
+        });
+
+        // Rendering all 1412 glyphs takes about two seconds bare; more under
+        // coverage instrumentation.
+        it('emits no constant shading anywhere in the bundled module', { timeout: 60_000 }, () => {
+            expect(glyf).not.toBeNull();
+            let ramps = 0;
+            let forms = 0;
+            const constantFn = (dict: string): boolean => {
+                const segs = [...dict.matchAll(/\/C0 \[([^\]]*)\] \/C1 \[([^\]]*)\]/g)];
+                return segs.length > 0 && segs.every(m => m[1] === m[2]);
+            };
+            for (const [gid, glyph] of Object.entries(mod.colorGlyphs)) {
+                for (const layer of glyph.layers) {
+                    const p = layer.paint;
+                    if ((p.kind === 'linear' || p.kind === 'radial') && isAlphaRamp(p.stops)) ramps++;
+                }
+                const form = renderColorGlyph(glyph, outlines, mod.metrics.unitsPerEm);
+                forms++;
+                for (const s of form.shadings) expect(constantFn(s.dict), `gid ${gid} ${s.name}`).toBe(false);
+                const ops = paintOps(form.content);
+                if (ops.length > 0 && ops[ops.length - 1] !== 'f') {
+                    // A form may still end on a shading — one whose RGB varies.
+                    const name = ops[ops.length - 1].replace(/^\/(\w+) sh$/, '$1');
+                    const last = form.shadings.find(s => s.name === name);
+                    expect(last, `gid ${gid} ends on ${name}`).toBeDefined();
+                }
+            }
+            expect(forms).toBe(Object.keys(mod.colorGlyphs).length);
+            // The module carries about a thousand of these layers; the count
+            // is a fact of the font, not of the renderer.
+            expect(ramps).toBeGreaterThan(900);
         });
     });
 });

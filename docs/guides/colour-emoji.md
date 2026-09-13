@@ -205,9 +205,18 @@ faithfully in any conformant viewer.
   outline otherwise.
 - **Variable fonts** render at the default instance only. A PDF page is
   static, and the subsetter drops `fvar` and `gvar`.
-- **Gradient alpha** is kept only when every stop shares it; a gradient that
-  fades from opaque to transparent renders opaque, because PDF shadings carry
-  colour, not opacity.
+- **Gradient alpha** is kept only when every stop shares it, because PDF
+  shadings carry colour, not opacity. A gradient whose colours *and* alphas
+  both vary renders opaque, as it always did.
+- **Alpha-only gradient layers are omitted (v1.8.0).** Noto draws its soft
+  shadows and vignettes as gradients whose stops share one colour and fade
+  only in alpha (brown, 0 → 255). A shading cannot carry that fade, and
+  before 1.8.0 such a layer was painted as a flat opaque disc over the
+  artwork: `👩` and about fifty other glyphs (`👨`, `😊`, `🌍`, `🎂`, `🏳️‍🌈`,
+  …) came out as an opaque silhouette. Since 1.8.0 these layers are left out,
+  so the glyph shows its flat artwork without its shadow. They will render
+  faithfully as `/SMask /Luminosity` soft masks once transparency groups
+  land (ROADMAP, "COLRv1 luminosity masks").
 - **PDF/A:** gradient transparency uses `/ExtGState` alpha, which PDF/A-1b
   forbids. Use solid-layer emoji or a non-PDF/A document for colour gradients.
 

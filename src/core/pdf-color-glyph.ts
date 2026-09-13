@@ -13,6 +13,9 @@
  *     clipped to the outline (PDF has no native conic shading). (v1.4.0)
  *   - Per-layer blend modes (`/BM`, from COLRv1 `PaintComposite`) via an
  *     ExtGState applied around the layer's fill. (v1.4.0)
+ *   - Alpha ramps — gradients whose stops share one colour and only vary in
+ *     opacity (Noto's soft shadows and vignettes) — are omitted, and a
+ *     gradient whose stops are all one colour paints as that solid. (v1.8.0)
  *
  * The Form XObject's user space is font units; the caller scales it onto the
  * page with a `cm` and draws it with `Do`.
@@ -30,7 +33,7 @@
  */
 
 import type { Contour } from '../fonts/glyf-outline.js';
-import type { ColorGlyph, ColorLayer, ColorStop, CpalColor, LinearGradientPaint, RadialGradientPaint, SweepGradientPaint } from '../types/pdf-types.js';
+import type { ColorGlyph, ColorLayer, ColorPaint, ColorStop, CpalColor, LinearGradientPaint, RadialGradientPaint, SweepGradientPaint } from '../types/pdf-types.js';
 
 /** A rendered colour glyph ready to be assembled into a Form XObject. */
 export interface ColorGlyphForm {
@@ -132,7 +135,55 @@ export function contoursToPath(contours: Contour[], m: Mat = ID): string {
     return ops.join('\n');
 }
 
-/** Build a `/Function` dict interpolating the gradient's colour stops. */
+/** True when every stop has the same RGB (alpha not considered). */
+function sameRgb(stops: readonly ColorStop[]): boolean {
+    const [r, g, b] = stops[0].color;
+    return stops.every(s => s.color[0] === r && s.color[1] === g && s.color[2] === b);
+}
+
+/**
+ * True for an alpha ramp: two or more stops that share one RGB and differ
+ * only in alpha. Noto Color Emoji builds its soft shadows and vignettes this
+ * way (one brown, alpha 0 → 255). A PDF `/Shading` carries colour and no
+ * per-stop opacity, so the only function such a ramp can produce has
+ * `C0 == C1`: a flat, opaque disc of that colour painted over the clip,
+ * which is what turned U+1F469 WOMAN and about fifty other glyphs into
+ * silhouettes. The renderer skips these layers — a missing shadow is a
+ * lesser fault than an opaque one. The faithful rendering is an
+ * `/SMask /Luminosity` soft mask over a transparency group, tracked in
+ * ROADMAP under "COLRv1 luminosity masks".
+ */
+export function isAlphaRamp(stops: readonly ColorStop[]): boolean {
+    if (stops.length < 2) return false;
+    if (!sameRgb(stops)) return false;
+    const a = stops[0].color[3];
+    return stops.some(s => s.color[3] !== a);
+}
+
+/**
+ * Resolve a layer's paint to what the renderer will emit: `null` for an
+ * alpha ramp (omitted), the equivalent {@link SolidPaint} for a linear or
+ * radial gradient whose stops are all one colour (a `/Function` with
+ * `C0 == C1` is a solid fill by another name), the paint itself otherwise.
+ * Gradients whose RGB varies are returned untouched, so their bytes are
+ * exactly what they were.
+ */
+function resolvePaint(paint: ColorPaint): ColorPaint | null {
+    if (paint.kind !== 'linear' && paint.kind !== 'radial') return paint;
+    const stops = paint.stops;
+    if (stops.length === 0 || !sameRgb(stops)) return paint;
+    if (isAlphaRamp(stops)) return null;
+    return { kind: 'solid', color: stops[0].color };
+}
+
+/**
+ * Build a `/Function` dict interpolating the gradient's colour stops.
+ *
+ * Only reached for gradients whose stops carry at least two RGB values:
+ * {@link resolvePaint} turns a single-colour gradient into a solid fill and
+ * drops an alpha ramp before a shading is built, so no shading emitted here
+ * has `C0 == C1` in every segment.
+ */
 function buildGradientFunction(stops: readonly ColorStop[]): string {
     const sorted = stops.slice().sort((a, b) => a.offset - b.offset);
     if (sorted.length === 0) return '<< /FunctionType 2 /Domain [0 1] /C0 [0 0 0] /C1 [0 0 0] /N 1 >>';
@@ -171,9 +222,12 @@ function extendFlags(extend: string): string {
  * before v1.8.0 that alpha was dropped and the wave was painted opaque.
  *
  * When stop alphas differ, one constant cannot represent them — that needs
- * a soft mask — and the gradient stays opaque, as it always was. A mean was
- * tried and rejected on sight: it washed out Noto's bath bubbles and the
- * iridescent segments of the minidisc, both of which read better opaque.
+ * a soft mask. A gradient whose RGB varies as well stays opaque, as it
+ * always was: a mean was tried and rejected on sight, it washed out Noto's
+ * bath bubbles and the iridescent segments of the minidisc, both of which
+ * read better opaque. A gradient whose RGB does not vary is an alpha ramp
+ * (see {@link isAlphaRamp}) and never reaches this function: painted opaque
+ * it is a flat disc over the artwork, so the renderer omits it instead.
  */
 function gradientAlpha(stops: readonly ColorStop[]): number {
     if (stops.length === 0) return 1;
@@ -325,6 +379,12 @@ export function renderColorGlyph(
         const m: Mat = layer.transform ?? ID;
         const bm = layer.blendMode;
 
+        // An alpha ramp is omitted before it touches the clip or the BBox: a
+        // PDF shading cannot carry its opacity, and the flat fill it would
+        // become paints over everything beneath (see `isAlphaRamp`).
+        const paint = resolvePaint(layer.paint);
+        if (paint === null) continue;
+
         // Clip sets (v1.8.0): each the union of its outlines, all intersected.
         // They express a COLRv1 structural mask exactly — SRC_IN keeps the
         // source only where the mask's shapes are — with nested `W n`, which
@@ -361,7 +421,6 @@ export function renderColorGlyph(
                 if (px > x1) x1 = px;
                 if (py > y1) y1 = py;
             }
-            const paint = layer.paint;
             body.push('q');
             openClips();
             if (paint.kind === 'solid') {
@@ -406,8 +465,8 @@ export function renderColorGlyph(
 
         if (clipPaths.length > 0) { body.push('q'); openClips(); }
 
-        if (layer.paint.kind === 'solid') {
-            const c: CpalColor = layer.paint.color;
+        if (paint.kind === 'solid') {
+            const c: CpalColor = paint.color;
             body.push('q');
             const gs = gsFor(c[3] / 255, bm);
             if (gs) body.push(`/${gs} gs`);
@@ -415,10 +474,10 @@ export function renderColorGlyph(
             body.push(path);
             body.push('f');
             body.push('Q');
-        } else if (layer.paint.kind === 'sweep') {
+        } else if (paint.kind === 'sweep') {
             // Clip to the outline, then fill angular wedges. Compute the
             // covering radius from this layer's transformed contour points.
-            const [cx, cy] = tx(m, layer.paint.center[0], layer.paint.center[1]);
+            const [cx, cy] = tx(m, paint.center[0], paint.center[1]);
             let r2 = 0;
             for (const contour of contours) {
                 for (const pt of contour) {
@@ -431,16 +490,16 @@ export function renderColorGlyph(
             body.push('q');
             body.push(path);
             body.push('W n');
-            emitSweep(layer.paint, cx, cy, maxR, body, gsFor, bm);
+            emitSweep(paint, cx, cy, maxR, body, gsFor, bm);
             body.push('Q');
         } else {
             const name = `Sh${shadingIdx++}`;
-            const dict = layer.paint.kind === 'linear'
-                ? linearShadingDict(layer.paint, m)
-                : radialShadingDict(layer.paint, m);
+            const dict = paint.kind === 'linear'
+                ? linearShadingDict(paint, m)
+                : radialShadingDict(paint, m);
             shadings.push({ name, dict });
             body.push('q');
-            const gs = gsFor(gradientAlpha(layer.paint.stops), bm);
+            const gs = gsFor(gradientAlpha(paint.stops), bm);
             if (gs) body.push(`/${gs} gs`);
             body.push(path);
             body.push('W n'); // clip to the outline
