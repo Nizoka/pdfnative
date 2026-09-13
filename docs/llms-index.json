@@ -5,8 +5,8 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 16976,
-      "approxTokens": 4244
+      "bytes": 17499,
+      "approxTokens": 4375
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -17,14 +17,14 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 533568,
-      "approxTokens": 133392
+      "bytes": 548056,
+      "approxTokens": 137014
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
       "description": "Executable recipes: CI-verified, copy-ready code for the most common tasks.",
-      "bytes": 26611,
-      "approxTokens": 6653
+      "bytes": 31008,
+      "approxTokens": 7752
     },
     {
       "url": "https://pdfnative.dev/assets/api.json",
@@ -47,8 +47,8 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 99579,
-      "approxTokens": 24895
+      "bytes": 100163,
+      "approxTokens": 25041
     }
   ],
   "guides": [
@@ -403,12 +403,12 @@
         "hard-invariants-for-contributors",
         "see-also"
       ],
-      "bytes": 15911,
-      "approxTokens": 3978
+      "bytes": 16595,
+      "approxTokens": 4149
     },
     {
       "title": "Print production — bleed, trim & printer's marks",
-      "summary": "New in v1.7.0. Print-ready PDFs with zero dependencies: page geometry boxes (`/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`), crop and registration marks drawn as pure vector operators, `/Trapped` metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format `/UserUnit`.",
+      "summary": "New in v1.7.0, extended in v1.8.0. Print-ready PDFs with zero dependencies: page geometry boxes (`/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`), crop and registration marks drawn as pure vector operators, `/Trapped` metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format `/UserUnit`.",
       "html": "https://pdfnative.dev/guides/print.html",
       "markdown": "https://pdfnative.dev/guides/print.md",
       "anchors": [
@@ -418,11 +418,13 @@
         "trapped-and-prepress-metadata",
         "print-dialog-defaults-viewerpreferences",
         "custom-outputintent-taggedpdf-a",
+        "cmyk-colours-v180",
+        "pdfx-4-v180",
         "large-formats--userunit",
-        "limits--scope-v170"
+        "limits--scope-v180"
       ],
-      "bytes": 6287,
-      "approxTokens": 1572
+      "bytes": 10669,
+      "approxTokens": 2667
     },
     {
       "title": "Quick Start",
@@ -585,6 +587,26 @@
       ],
       "bytes": 5303,
       "approxTokens": 1326
+    },
+    {
+      "title": "Typography — page breaks, justification, kerning & OpenType features",
+      "summary": "New in v1.8.0. Typeset-quality text with zero dependencies: paragraphs that break across pages under widow and orphan rules, headings kept with what follows, justification and optical margin alignment, soft hyphens and a hyphenation seam, number–unit binding and punctuation spacing, exact base-14 metrics, pair kerning, and OpenType single-substitution features such as tabular figures.",
+      "html": "https://pdfnative.dev/guides/typography.html",
+      "markdown": "https://pdfnative.dev/guides/typography.md",
+      "anchors": [
+        "tldr",
+        "page-breaking",
+        "justification-and-optical-margins",
+        "hyphenation",
+        "spacing-rules",
+        "metrics",
+        "kerning",
+        "opentype-features",
+        "limits--scope",
+        "see-also"
+      ],
+      "bytes": 8267,
+      "approxTokens": 2067
     },
     {
       "title": "Ecosystem use cases",

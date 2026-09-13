@@ -2,7 +2,7 @@
 
 > Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 27 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. PAdES digital signatures with long-term validation (B-B → B-LTA). Current version: 1.7.0.
 
-_Verified on 2026-08-29 against the source tree by `npm run verify:docs`; the canonical manifest is <https://pdfnative.dev/assets/ecosystem.json>._
+_Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the canonical manifest is <https://pdfnative.dev/assets/ecosystem.json>._
 
 ## Docs
 
@@ -21,7 +21,8 @@ _Verified on 2026-08-29 against the source tree by `npm run verify:docs`; the ca
 - [PDF/A conformance](https://pdfnative.dev/guides/pdfa.html): How `tagged: true` produces veraPDF-valid PDF/A-1b/2b/2u/3b.
 - [Digital signatures](https://pdfnative.dev/guides/signatures.html): CMS/PKCS#7 and PAdES + `addSignaturePlaceholder()` three-line workflow; multiple signatures, signature metadata, RSA SHA-256/384/512 + ECDSA P-256.
 - [Long-term validation](https://pdfnative.dev/guides/ltv.html): PAdES B-B → B-LTA — RFC 3161 signature timestamps, `/DSS` + `/VRI` revocation material, document timestamps, injected `TimestampProvider`/`RevocationProvider` (no built-in networking).
-- [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`.
+- [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`; since v1.8.0 CMYK colours (`[c, m, y, k]`), CMYK/Gray OutputIntents, registration-colour marks, `pdfx: 'pdfx4'` and `validatePdfX()`.
+- [Typography](https://pdfnative.dev/guides/typography.html): `layout.typography` (v1.8.0) — paragraph splitting with `widows`/`orphans`, `keepHeadingsWithNext`, `align: 'justify'` and `opticalMargins`, soft hyphens and `setHyphenationProvider()`, `unitBinding`, `punctuationSpacing`, `metrics: 'exact'`, `kerning`, `fontFeatures` (`tnum`, `smcp`, …). Opt-in, byte-identical when off.
 - [Accessibility](https://pdfnative.dev/guides/accessibility.html): Tagged PDF, /ActualText, PDF/UA structure tree.
 - [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
 - [Choosing your surface](https://pdfnative.dev/guides/choose.html): Library, CLI, MCP or React? The decision tree plus a verified capability × surface matrix, with an honest em-dash where a surface lacks a capability.
@@ -133,7 +134,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.5 MB with the v1.7.0 sequence ligatures, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). **Skin tones, transforms and masks** (v1.8.0): 30 gestures and people bundled in all five tones (1189 glyphs + 223 sequences, ~4.9 MB); every COLRv1 transform and variable paint is read, and `SRC_IN`/`DEST_IN` masks render as clipping paths, so flags keep their shaded wave. [Guide →](docs/guides/colour-emoji.md)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
-- **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments). **Conformance guards** (v1.7.0): configurations that would break the declared PDF/A level (no embedded fonts, DeviceCMYK images) surface a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`. [Guide →](docs/guides/pdfa.md)
+- **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments). **Conformance guards** (v1.7.0): configurations that would break the declared PDF/A level (no embedded fonts, DeviceCMYK images) surface a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`. **CMYK intents** (v1.8.0): CMYK and Gray OutputIntent profiles, with RGB content kept conforming through a calibrated `/DefaultRGB`. [Guide →](docs/guides/pdfa.md)
 - **PDF Encryption (round-trip)** — **write** AES-128 (V4/R4) and AES-256 (V5/R6) encrypted PDFs (RC4 is never emitted), and **read** all of AES-128, AES-256, and legacy RC4 (V1–V4); owner + user passwords, granular permissions. **v1.6.0** adds a Standard Security Handler **decryptor** — `openPdf(bytes, { password })` decrypts transparently, the merge/split API ingests encrypted sources **and re-encrypts its output** (`MergeOptions.encrypt`, AES only, fresh keys) — closing the full *open → edit → re-secure* round trip. [Guide →](docs/guides/pdf-manipulation.md)
 - **Native vector charts** (v1.6.0, **charts v2 in v1.7.0**) — bar, horizontal-bar, line, pie, donut, **stacked bars, area, and scatter** `chart` blocks rendered as pure PDF path operators (zero deps, no rasterisation); multi-series, legends, "nice" axis ticks, negative values, tagged `/Figure` + alt text. v1.7.0 adds a **secondary right axis**, **log and UTC-deterministic time scales**, **per-point data labels**, and x-label collision handling (automatic stride + `labelStride` / `labelRotation`). [Guide →](docs/guides/charts.md)
 - **Text extraction** (v1.6.0) — `extractText()` decodes page content streams into per-page reading-order Unicode text plus optional positioned runs; `/ToUnicode` CMap, `/Encoding /Differences`, and WinAnsi/MacRoman decoding; works on encrypted documents (`{ password }`); hard `maxTextLength` memory cap for untrusted input. [Guide →](docs/guides/text-extraction.md)
@@ -143,13 +144,13 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **SVG rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators, plus `<text>` elements rendered as upright PDF text with `x`/`y` positioning and `text-anchor` (start/middle/end) support (v1.5.0)
 - **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7). **v1.6.0** adds **fill & flatten of existing forms**: `readFormFields()`, `fillForm()` (regenerates appearances), and `flattenForm()` — non-destructive incremental update that preserves prior signatures, **including on encrypted documents** (appended objects are encrypted under the document's existing scheme). [Guide →](docs/guides/form-filling.md)
 - **Digital signatures** — CMS/PKCS#7 detached signatures with RSA (SHA-256/384/512, v1.7.0) + ECDSA-SHA256 (P-256) and X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0). Pluggable **native crypto provider** (`setCryptoProvider()` / `PdfSignOptions.provider`, v1.4.0) for constant-time, hardware-backed signing (`node:crypto` / Web Crypto / HSM). **v1.7.0**: PAdES baseline profile (`profile: 'pades'` — ESS signing-certificate-v2, `ETSI.CAdES.detached`), **multiple signatures** (`allowMultiple` + `fieldName` selector), and `listSignatures()` inspection. [Guide →](docs/guides/signatures.md)
-- **Print production** (v1.7.0) — bleed/trim/art/crop **page boxes** (`layout.print`, with a one-line `bleed` shorthand), **crop & registration marks** drawn as pure vector operators outside the TrimBox, `/Trapped` metadata with XMP parity, print-dialog defaults (**duplex**, tray pick, page range, copies), caller-supplied **OutputIntent ICC profile** (tagged mode), and large-format `/UserUnit` (banners, plans). Boxes survive `mergePdfs`/`splitPdf`. Byte-identical output when unused. [Guide →](docs/guides/print.md)
+- **Print production** (v1.7.0) — bleed/trim/art/crop **page boxes** (`layout.print`, with a one-line `bleed` shorthand), **crop & registration marks** drawn as pure vector operators outside the TrimBox, `/Trapped` metadata with XMP parity, print-dialog defaults (**duplex**, tray pick, page range, copies), caller-supplied **OutputIntent ICC profile** (tagged mode), and large-format `/UserUnit` (banners, plans). Boxes survive `mergePdfs`/`splitPdf`. Byte-identical output when unused. **CMYK & PDF/X-4** (v1.8.0): CMYK colours on every colour option (`[c, m, y, k]` in percent), CMYK and Gray OutputIntents with RGB content kept conforming, marks in the all-separation registration colour, a `pdfx: 'pdfx4'` conformance claim, and `validatePdfX()` to check it. [Guide →](docs/guides/print.md)
 - **Long-term validation (LTV, PAdES B-B → B-LTA)** (v1.7.0) — RFC 3161 **signature timestamps** (`signPdfBytesWithTimestamp()`), embedded revocation material in `/DSS` + per-signature `/VRI` (`addValidationInfo()` — OCSP RFC 6960 + CRL RFC 5280), and **document timestamps** (`addDocumentTimestamp()`). Network transport is injected (`TimestampProvider` / `RevocationProvider`) — the engine stays offline and zero-dependency; rejected or tampered TSA tokens are never embedded. [Guide →](docs/guides/ltv.md)
 - **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. One-call `streamToFile()` drains any stream to disk with back-pressure and `AbortSignal` support (v1.4.0). [Guide →](docs/guides/streaming.md)
 - **Document outline & page labels** — nested bookmarks (`/Outlines` tree, with bold/italic/colour, collapsible nodes via `open: false`, explicit or `outline: 'auto'` from headings) and logical page numbering (`/PageLabels`: decimal, roman, alpha, prefixes, custom start) (v1.4.0). [Guide →](docs/guides/outlines.md)
 - **Viewer preferences** — `PdfLayoutOptions.viewerPreferences` controls initial `/PageLayout` & `/PageMode` plus the `/ViewerPreferences` dict (hide toolbar/menubar, fit/center window, display doc title, non-full-screen mode, reading direction, print scaling) — PDF/A-safe (v1.4.0). **v1.7.0** adds the print-dialog defaults: `duplex`, `pickTrayByPDFSize`, `printPageRange`, `numCopies`. [Guide →](docs/guides/viewer-preferences.md)
 - **Font-data validator** — opt-in `validateFontData()` structurally checks custom font modules (SFNT magic, base64 integrity, cmap coverage, glyph-id range, width array, finite metrics) and returns `{ valid, errors, warnings }` (v1.4.0). [Guide →](docs/guides/font-validation.md)
-- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0). **Page-tree manipulation** (v1.4.0): `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a clean object graph (inherited attributes resolved, annotations/signatures optionally dropped, deterministic trailer `/ID`, bounded-depth copy, 256 MiB output cap via `maxOutputSize`). **Round-trip readers** (v1.5.0): `getPageLabels()` parses `/PageLabels` back into a typed `PageLabelRange[]`; `getAnnotations()` / `getPageRef()` read page annotations, and `PdfModifier.addAnnotation()` injects new ones incrementally. **v1.6.0**: a Standard Security Handler **decryptor** (`openPdf(bytes, { password })`, RC4/AES-128/AES-256) lets the reader and page-tree API ingest encrypted sources, and **constant-memory streaming** variants `streamMergedPdfs()` / `streamSplitPdf()` / `streamExtractPages()` emit merges/splits in fixed-size chunks (byte-identical to the buffered functions). [Guide →](docs/guides/pdf-manipulation.md)
+- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0), and its PDF/X-4 counterpart `validatePdfX()` (ISO 15930-7: header, XMP identification, OutputIntent profile, page boxes, embedded fonts, annotations, device colour) (v1.8.0). **Page-tree manipulation** (v1.4.0): `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a clean object graph (inherited attributes resolved, annotations/signatures optionally dropped, deterministic trailer `/ID`, bounded-depth copy, 256 MiB output cap via `maxOutputSize`). **Round-trip readers** (v1.5.0): `getPageLabels()` parses `/PageLabels` back into a typed `PageLabelRange[]`; `getAnnotations()` / `getPageRef()` read page annotations, and `PdfModifier.addAnnotation()` injects new ones incrementally. **v1.6.0**: a Standard Security Handler **decryptor** (`openPdf(bytes, { password })`, RC4/AES-128/AES-256) lets the reader and page-tree API ingest encrypted sources, and **constant-memory streaming** variants `streamMergedPdfs()` / `streamSplitPdf()` / `streamExtractPages()` emit merges/splits in fixed-size chunks (byte-identical to the buffered functions). [Guide →](docs/guides/pdf-manipulation.md)
 - **Markup annotations** — typed annotation model (text, highlight, underline, strikeout, squiggly, square, circle, line, freetext) via `buildAnnotation()` / `buildAnnotationBody()`, plus `PdfReader.getAnnotations()` and `PdfModifier.addAnnotation()` for round-trip read/write (v1.5.0); **v1.6.0** lets `addAnnotation()` operate on encrypted documents (RC4/AES sources, annotations stored encrypted). [Guide →](docs/guides/annotations.md)
 - **Layout debug & inspection** — opt-in `layout: { debug: true }` overlays margin / content / cell boxes for visual layout debugging; `inspectDocumentLayout()` returns a programmatic per-page block-geometry report. Byte-identical when debug is off (v1.5.0). [Guide →](docs/guides/debugging.md)
 - **Math & technical symbols** — bundleable math font under lang `'math'`; mathematical operators, Greek, arrows, and technical symbols route automatically via script detection (v1.5.0)
@@ -6844,7 +6845,10 @@ Every output written with `tagged` set ships:
   `/P`, `/L → /LI`, `/Figure`, `/Link`).
 - `/ActualText` UTF-16BE on every marked content `/Span`.
 - An XMP metadata stream with `pdfaid:part` and `pdfaid:conformance`.
-- An sRGB ICC `OutputIntent` (`GTS_PDFA1`).
+- An ICC `OutputIntent` (`GTS_PDFA1`): the built-in sRGB profile, or your own
+  RGB, CMYK (since v1.8.0) or Gray profile via `outputIntent`. Under a CMYK or
+  Gray intent, RGB content is remapped through a calibrated `/DefaultRGB` so
+  the claim holds — see the [print guide](print.html#custom-outputintent-taggedpdf-a).
 - `/MarkInfo << /Marked true >>` on the catalog.
 - A trailer `/ID` derived deterministically from the document title and
   creation timestamp.
@@ -6860,7 +6864,8 @@ them through a single diagnostics channel:
 | Code | Trigger |
 |------|---------|
 | `PDFA_NO_FONT_ENTRIES` | A `'pdfa*'` level (or `tagged: true`) requested with no `fontEntries` — the file would claim PDF/A while referencing unembedded standard-14 Helvetica (ISO 19005 §6.2.11.4.1). |
-| `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim with an sRGB `OutputIntent` (ISO 19005-2 §6.2.4.3). |
+| `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim whose `OutputIntent` is not CMYK (ISO 19005-2 §6.2.4.3). Silent under a CMYK intent since v1.8.0. |
+| `PDFA_DEVICE_CMYK_CONTENT` | A CMYK colour (`[c, m, y, k]` or `'C M Y K'`) painted under a PDF/A claim whose `OutputIntent` is not CMYK (same §6.2.4.3 rule). Since v1.8.0. |
 | `PDFA_UNEMBEDDED_FORM_FONT` | AcroForm fields under a PDF/A claim — form appearances render through an unembedded base-14 `/Helv` font (same §6.2.11.4.1 rule). Flatten the form or drop the level. |
 
 By default each diagnostic is a `console.warn`, deduplicated **once per code
@@ -6885,7 +6890,10 @@ Each `PdfDiagnostic` carries a machine-readable `code`, a `severity`
 (`'warning'`), and an actionable `message` that includes the remedy.
 `onDiagnostic` is ignored when `strict` is set — diagnostics throw instead.
 The code list is a stable, additions-only union (`PdfDiagnosticCode`), so a
-sink written today keeps compiling as future codes are added.
+sink written today keeps compiling as future codes are added. The PDF/X-4
+claim (v1.8.0) reports through the same channel with `PDFX_NO_FONT_ENTRIES`,
+`PDFX_DEVICE_CMYK` and `PDFX_ANNOTATIONS` — see the
+[print guide](print.html#pdfx-4-v180).
 
 > **On the MCP surface** _(pdfnative-mcp 1.6.0)_, the same honesty is exposed
 > as three opt-in inputs on every document tool: `embedFonts: true` embeds
@@ -7143,7 +7151,7 @@ These rules are documented in the contributor instruction file
 <!-- source: docs/guides/print.md -->
 # Print production — bleed, trim & printer's marks
 
-> **New in v1.7.0.** Print-ready PDFs with zero dependencies: page geometry boxes (`/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`), crop and registration marks drawn as pure vector operators, `/Trapped` metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format `/UserUnit`. Everything is opt-in — output is byte-identical when unused.
+> **New in v1.7.0, extended in v1.8.0.** Print-ready PDFs with zero dependencies: page geometry boxes (`/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`), crop and registration marks drawn as pure vector operators, `/Trapped` metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format `/UserUnit`. Since v1.8.0: CMYK colours, CMYK and Gray OutputIntents, marks in the registration colour, a PDF/X-4 conformance claim and `validatePdfX()`. Everything is opt-in — output is byte-identical when unused.
 
 ## TL;DR
 
@@ -7199,7 +7207,7 @@ Boxes are validated (within the MediaBox, trim within bleed) and are pure page-d
 
 Fine-tune with an object: `marks: { crop, registration, length, offset, weight }`.
 
-> Marks are stroked in RGB black. A true all-separation *registration colour* requires CMYK content support, which is on the roadmap together with PDF/X — see below.
+> Marks are stroked in black. Under a CMYK OutputIntent (v1.8.0) they use the *registration colour* instead — the `All` separation, which a RIP puts on every plate, so the marks register cyan, magenta, yellow and black against each other.
 
 ## /Trapped and prepress metadata
 
@@ -7238,7 +7246,71 @@ buildDocumentPDFBytes(params, {
 });
 ```
 
-RGB profiles only — pdfnative emits RGB content, and a mismatched intent fails PDF/A validation (a CMYK profile throws with an actionable message). Omitted, the historical built-in profile is used byte-identically.
+RGB profiles since v1.7.0; **CMYK and Gray profiles since v1.8.0**. The profile's ICC header decides the stream's `/N`. Omitted, the historical built-in sRGB profile is used byte-identically.
+
+pdfnative ships no CMYK profile — press profiles (ISO Coated v2, GRACoL, SWOP) are large and often licensed. Use the one your printer names.
+
+Under a CMYK or Gray intent, the colours pdfnative draws in RGB — default text, rules, charts, emoji, RGB images, form fields — are remapped through a calibrated sRGB `/DefaultRGB` in every resource dictionary that paints. Device RGB under a CMYK intent would otherwise break the conformance claim (ISO 19005-2 §6.2.4.3); remapping tells the print workflow what the colours mean rather than rewriting them as naive CMYK. veraPDF accepts the result under PDF/A-1b and PDF/A-2b.
+
+The reverse has no inline remedy: a CMYK colour under an RGB or Gray intent raises `PDFA_DEVICE_CMYK_CONTENT` (or `PDFX_DEVICE_CMYK` under PDF/X).
+
+## CMYK colours (v1.8.0)
+
+Every colour option accepts two CMYK forms besides the RGB ones:
+
+| Form | Example | Unit |
+|---|---|---|
+| Tuple | `[100, 60, 0, 10]` | ink coverage in percent, 0–100 — the unit print software states |
+| Operand string | `'1 0.6 0 0.1'` | PDF's own 0.0–1.0 |
+
+```ts
+buildDocumentPDFBytes({
+  title: 'Press sheet',
+  blocks: [
+    { type: 'paragraph', text: 'Process cyan', color: [100, 0, 0, 0] },
+    { type: 'paragraph', text: 'Rich black', color: [60, 40, 40, 100] },
+  ],
+}, layout);
+```
+
+The component count decides the space: three components write `rg`/`RG`, four write `k`/`K`. Every input accepted before v1.8.0 is RGB and renders as it did. Two places adapt: chart tints remove ink rather than mixing toward white, and an outline item's `/C` — DeviceRGB by definition — receives a device-formula RGB approximation. `resolveColor()`, `fillOp()` and `strokeOp()` expose the same resolution to your own content.
+
+## PDF/X-4 (v1.8.0)
+
+`pdfx: 'pdfx4'` claims PDF/X-4 (ISO 15930-7), the exchange format presses expect for colour-managed jobs with transparency:
+
+```ts
+import { readFileSync } from 'node:fs';
+import { buildDocumentPDFBytes, validatePdfX } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({ ...params, fontEntries }, {
+  pdfx: 'pdfx4',
+  outputIntent: {
+    iccProfile: new Uint8Array(readFileSync('ISOcoated_v2_eci.icc')),
+    outputConditionIdentifier: 'FOGRA39',
+    registryName: 'http://www.color.org',
+  },
+  print: { bleed: 8.5, marks: true },
+});
+
+const report = validatePdfX(pdf); // { valid, errors, warnings }
+```
+
+What the claim writes:
+
+- a `%PDF-1.6` header (PDF/X-4 is based on PDF 1.6);
+- an XMP packet with `pdfxid:GTS_PDFXVersion` = `PDF/X-4`, `xmpMM:DocumentID`, `VersionID` and `RenditionClass`, and the XMP dates — and no PDF/A identification;
+- a `/GTS_PDFX` OutputIntent carrying your profile;
+- a TrimBox on every page — the MediaBox when `print` sets none;
+- `/Trapped` in `/Info` and XMP: `False` unless `metadata.trapped` says `True`.
+
+What throws before any byte is written: `pdfx` with a PDF/A `tagged` level (one claim per file), with `encryption`, without `outputIntent`, with a profile that is not an output (`prtr`) profile, with `trapped: 'Unknown'`, or with both a TrimBox and an ArtBox.
+
+What raises a diagnostic: `PDFX_NO_FONT_ENTRIES` (every font must be embedded — pass `fontEntries`), `PDFX_DEVICE_CMYK` (CMYK colour under a non-CMYK profile) and `PDFX_ANNOTATIONS` (links and form fields have no place in a print file).
+
+### Checking the result
+
+`validatePdfX(bytes)` checks what the structure can prove: header, encryption and `/ID`; the XMP identification and trapping, consistent with `/Info`; the OutputIntent and its embedded output profile; page boxes; embedded fonts; annotations in the print area; and device colour in page content against the intent. It does not inspect colour inside Form XObjects or images, and it does not render. veraPDF does not cover PDF/X, so confirm a file bound for press with a certified preflight (callas pdfToolbox, Acrobat Preflight).
 
 ## Large formats — `/UserUnit`
 
@@ -7251,13 +7323,14 @@ buildDocumentPDFBytes(params, { pageWidth: 1417, pageHeight: 283, print: { userU
 
 `/UserUnit` needs PDF 1.6+, so the header is raised to `%PDF-1.7` when the option is set — and it is rejected under `tagged: 'pdfa1b'` (PDF/A-1 is PDF 1.4; use `pdfa2b` or later).
 
-## Limits & scope (v1.7.0)
+## Limits & scope (v1.8.0)
 
-- Marks are RGB black; **no CMYK content**, spot colours, colour bars or **PDF/X** conformance claims yet — all on the roadmap as one coherent CMYK workstream.
+- **Not yet:** spot colours (`/Separation` inks other than registration), colour bars, PDF/X-1a, PDF/X-3 and PDF/X-4p, and a single file carrying both a PDF/A and a PDF/X claim.
+- Colour emoji and CPAL palettes stay RGB; under a CMYK intent they are covered by `/DefaultRGB`.
 - One geometry per document (pages share the same boxes), matching the single-page-size layout model.
-- The OutputIntent (custom or built-in) is emitted under `tagged` modes only.
+- The OutputIntent (custom or built-in) is emitted under `tagged` modes and under `pdfx` only.
 
-See the [print samples](https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/print-showcase.ts): `print/print-bleed-marks.pdf`, `print/print-explicit-boxes.pdf`, `print/print-large-format.pdf`.
+See the [print samples](https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/print-showcase.ts): `print/print-bleed-marks.pdf`, `print/print-explicit-boxes.pdf`, `print/print-large-format.pdf`, `print/print-cmyk-pdfx4.pdf`, `print/print-cmyk-pdfa2b.pdf`. The CMYK samples embed a synthetic stand-in profile generated by the sample script; it characterises no printing condition.
 
 ---
 <!-- source: docs/guides/quickstart.md -->
@@ -9300,6 +9373,130 @@ import * as thaiData from 'pdfnative/fonts/noto-thai-data.js';
 ```
 
 **Browser vs Node.js:** The library works in both environments. For compression in Node.js, call `initNodeCompression()` once at startup.
+
+---
+<!-- source: docs/guides/typography.md -->
+# Typography — page breaks, justification, kerning & OpenType features
+
+> **New in v1.8.0.** Typeset-quality text with zero dependencies: paragraphs that break across pages under widow and orphan rules, headings kept with what follows, justification and optical margin alignment, soft hyphens and a hyphenation seam, number–unit binding and punctuation spacing, exact base-14 metrics, pair kerning, and OpenType single-substitution features such as tabular figures. Every option is opt-in under `layout.typography` — output is byte-identical when it is unset.
+
+## TL;DR
+
+```ts
+import { buildDocumentPDFBytes } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes(
+  {
+    title: 'Annual report',
+    fontEntries, // a registered font: kerning and features read its tables
+    blocks: [
+      { type: 'heading', text: 'Results', level: 1 },
+      { type: 'paragraph', text: longText, align: 'justify' },
+    ],
+  },
+  {
+    typography: {
+      splitParagraphs: true,        // break long paragraphs at line boundaries
+      orphans: 2, widows: 2,        // …never leaving a single stranded line
+      keepHeadingsWithNext: true,   // no heading alone at the foot of a page
+      opticalMargins: true,         // hang punctuation past the measure
+      unitBinding: true,            // "150 €" and "12 kg" never break
+      kerning: true,                // AV, To, Yo set with the font's pair kerning
+      fontFeatures: ['tnum'],       // tabular figures: amounts line up
+    },
+  },
+);
+```
+
+Why opt-in: each option moves glyphs or line breaks, so turning one on changes an existing document's output. Nothing changes until you ask.
+
+## Page breaking
+
+| Option | Default | Effect |
+|---|---|---|
+| `splitParagraphs` | `false` | A paragraph that does not fit breaks at a line boundary instead of moving to the next page whole. A paragraph taller than a page continues instead of running off the bottom. |
+| `orphans` | `2` | Minimum lines left at the foot of a page for a break to be allowed there. Requires `splitParagraphs`. |
+| `widows` | `2` | Minimum lines carried to the next page; the break is pulled earlier otherwise. Requires `splitParagraphs`. |
+| `keepHeadingsWithNext` | `false` | A heading that would end a page moves to the next one with its content. Works without `splitParagraphs`. |
+
+Blocks override the document setting: a heading or paragraph accepts `keepWithNext`, and a paragraph accepts its own split permission. Under a PDF/A claim a paragraph split across pages remains one `/P` structure element.
+
+## Justification and optical margins
+
+`align: 'justify'` on a paragraph spans every line except the last across the full measure by placing each word at its own position. A line that would need an implausible stretch is left ragged rather than opened into rivers of white space.
+
+`opticalMargins: true` lets punctuation hang past the edge it sits against. An opening quote at the start of a line, or a full stop at the end, is mostly white space inside its own box, so a column whose glyph origins sit exactly on the margin still looks indented. Hanging the mark back out makes the optical edge straight. It applies to the leading mark of left-aligned and justified lines and the trailing mark of justified and right-aligned ones, with conservative offsets.
+
+## Hyphenation
+
+Two sources of break opportunities inside a word:
+
+- **Soft hyphens** (U+00AD) you write in the text. They stay invisible unless the line breaks there, and they need no data.
+- **A hyphenation provider** you install. The library bundles no dictionary — Liang pattern sets are hundreds of kilobytes per language — so the algorithm stays in your code and the library provides the seam:
+
+```ts
+import { setHyphenationProvider } from 'pdfnative';
+
+// Return the indices inside `word` where a hyphen may go.
+setHyphenationProvider((word) => myHyphenator.positions(word));
+```
+
+The provider must be synchronous and pure: it may be called many times for the same word during layout, and a changing answer would make output irreproducible. A word that already contains soft hyphens keeps the author's choice, and a provider that throws is ignored for that word. Pass `null` to remove it.
+
+## Spacing rules
+
+**Unit binding** — `unitBinding: true` replaces the space between a number and the unit symbol that follows with a no-break space, so `150 €`, `12 kg` or `30 %` never split across lines. ISO 80000-1 asks for this in every language, so it carries no locale assumption. Only an existing plain space before a recognised symbol standing on its own is converted — "150 personnes" stays breakable. Pass `{ units: [...] }` to replace the built-in symbol list.
+
+**Punctuation spacing** — conventions differ by language, so this is never automatic. `punctuationSpacing` takes a preset the library can state precisely, or a list of rules for any other convention. `'fr'` sets a narrow no-break space before `;` `!` `?` and a no-break space before `:` and inside guillemets; `'fr-CA'` keeps only the colon and guillemet spaces, as Canadian French usage does.
+
+```ts
+typography: {
+  punctuationSpacing: [
+    { char: ':', side: 'before', space: 'nbsp' },
+    { char: '»', side: 'before', space: 'narrow' },
+  ],
+}
+```
+
+Only existing spaces are converted; nothing is inserted where the author wrote none. It applies to headings, paragraphs, lists, link labels and table content. `bindUnits()` and `applyPunctuationSpacing()` expose the same transforms for text you lay out yourself.
+
+## Metrics
+
+Text set in the non-embedded base-14 faces is measured with a historical estimate that buckets digits at 556 units, capitals at 680 and lowercase at 500 — and every accented letter and most punctuation at 556. French lines and currency columns therefore wrap and align slightly wrong. `metrics: 'exact'` reads the Adobe Core 14 AFM advances instead. It is opt-in because correct measurement moves line breaks. Registered fonts always measure from their own `hmtx` table.
+
+## Kerning
+
+`kerning: true` applies the font's pair kerning, so "AV", "To" and "Yo" are set as the type designer intended. Adjustments are written as `TJ` arrays, so a kerned run stays one text-showing operator and selection and extraction are unaffected. It needs a registered font that carries kerning data; the base-14 faces have none.
+
+## OpenType features
+
+`fontFeatures` applies OpenType features by tag. Only single substitutions are supported — one glyph in, one glyph out — which is what makes them safe without a full shaping engine:
+
+| Tag | Effect |
+|---|---|
+| `tnum` / `pnum` | Tabular (equal-width) / proportional figures |
+| `lnum` / `onum` | Lining / old-style figures |
+| `zero` | Slashed zero |
+| `ordn`, `sups`, `subs` | Ordinals, superiors, inferiors |
+| `smcp`, `c2sc` | Small capitals from lowercase / from capitals |
+| `case` | Case-sensitive forms |
+
+`tnum` earns its keep in financial tables: proportional digits make a column of amounts ragged because `1` is narrower than `8`. Asking for a tag the font does not declare is a silent no-op, since the same document may be built with different fonts, and later tags win where two touch the same glyph. Ligatures and contextual features (`liga`, `calt`, `frac`) are out of scope. Features need a registered font.
+
+## Limits & scope
+
+- No automatic hyphenation dictionary — install a provider, or write soft hyphens.
+- Justification distributes space between words only; there is no letter-spacing or glyph scaling.
+- Kerning and features read the registered font's tables: base-14 text gets neither.
+- Features are single substitutions; complex-script shaping is handled by the script shapers, independently of this option.
+
+See the [typography samples](https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/typography-showcase.ts): each pairs the default behaviour with the typographic option on identical content — `typography/breaks-atomic.pdf` against `breaks-split.pdf`, `align-ragged.pdf` against `align-justified.pdf` and `align-optical.pdf`, `kerning-off.pdf` against `kerning-on.pdf`, and more.
+
+## See also
+
+- [Tables](tables.html) — column alignment, where `tnum` matters most
+- [Print production](print.html) — boxes, marks, CMYK and PDF/X-4
+- [Choosing your surface](choose.html)
 
 ---
 <!-- source: docs/guides/use-cases.md -->

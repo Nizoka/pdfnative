@@ -111,19 +111,26 @@ This document outlines the planned development direction for pdfnative. Prioriti
 - [x] **LTV signatures (PAdES B-B → B-LTA)** (v1.7.0) — ESS signing-certificate-v2 + canonical DER SET OF, RFC 3161 signature timestamps via injected `TimestampProvider` (`signPdfBytesWithTimestamp`), OCSP/CRL revocation collection via injected `RevocationProvider`, `/DSS` + `/VRI` embedding (`addValidationInfo`), document timestamps (`addDocumentTimestamp`), and multi-signature flows (`allowMultiple`, `fieldName` selector, `listSignatures`). Network transport stays in user land — the engine is offline by default. ([src/core/pdf-dss.ts](src/core/pdf-dss.ts), [docs/guides/ltv.md](docs/guides/ltv.md))
 - [x] **Print production** (v1.7.0) — bleed/trim/art/crop page boxes (`layout.print` with a `bleed` shorthand, ISO 32000-1 §14.11.2), crop + registration marks as pure vector operators (§14.11.3), `/Trapped` with XMP parity, print-dialog viewer preferences (duplex, tray, page range, copies), caller-supplied OutputIntent ICC (tagged), large-format `/UserUnit`, and box preservation through merge/split. Byte-identical when unused. ([src/core/pdf-print.ts](src/core/pdf-print.ts), [docs/guides/print.md](docs/guides/print.md))
 
+- [x] **Deterministic samples + regression harness** (v1.8.0) — every sample generator is date-pinned, and a SHA-256 manifest chains each sample to the release that last changed it; `verify:samples` blocks any unannounced byte change in CI (byte-exact, or a semantic projection for encrypted samples). ([scripts/verify-samples.ts](scripts/verify-samples.ts))
+- [x] **Typography** (v1.8.0) — paragraph breaking with widows/orphans, keep-with-next, justification and optical margins, soft hyphens and a `setHyphenationProvider()` seam, ISO 80000-1 unit binding, punctuation-spacing presets and rules, exact Adobe Core 14 metrics, GPOS pair kerning (class form), and declarative OpenType single-substitution features (`tnum`, `smcp`, …). All opt-in under `layout.typography`. ([src/core/pdf-typography.ts](src/core/pdf-typography.ts), [docs/guides/typography.md](docs/guides/typography.md))
+- [x] **27 scripts and a data-driven Universal Shaping Engine** (v1.8.0) — Lao, Tai Tham, New Tai Lue, Tai Le and Cham join, the latter two families shaped by a USE engine whose categories are generated from UCD 17.0.0; a single shaper registry replaces three dispatch ladders; Khmer subscripts, Myanmar kinzi and stacked marks fixed. ([src/shaping/use-engine.ts](src/shaping/use-engine.ts), [src/shaping/shaper-registry.ts](src/shaping/shaper-registry.ts))
+- [x] **COLRv1 transforms, variable paints and structural masks** (v1.8.0) — every transform paint (formats 12–31), variable paints at the default instance, the sweep-angle bias, and `SRC_IN` / `DEST_IN` masks as clipping paths with build-time clip compaction — Noto's flags keep their wave shading. ([src/fonts/colr-parser.ts](src/fonts/colr-parser.ts))
+- [x] **Bundled skin-tone emoji** (v1.8.0) — 20 gestures and 10 generic people in all five Fitzpatrick tones (150 sequences) in the bundled module, plus a `--sequences skin` CLI preset. ([scripts/lib/curated-emoji-sequences.ts](scripts/lib/curated-emoji-sequences.ts))
+- [x] **CMYK & PDF/X-4** (v1.8.0) — CMYK content colours (`[c, m, y, k]` in percent, `k`/`K`), CMYK and Gray OutputIntents with RGB content kept conforming through a calibrated `/DefaultRGB`, all-separation registration colour for printer's marks, the `pdfx: 'pdfx4'` conformance claim, and the `validatePdfX()` structural validator. veraPDF-validated for the PDF/A side. ([src/core/pdf-color.ts](src/core/pdf-color.ts), [src/parser/pdf-x-validator.ts](src/parser/pdf-x-validator.ts), [docs/guides/print.md](docs/guides/print.md))
+
 ## In Progress
 
-_All v1.7.0 items have been merged. See Released above._
+_All v1.8.0 items have been merged. See Released above._
 
 ## Planned
 
 ### Long-Term
 
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression
-- [ ] **Full Universal Shaping Engine** — Khmer, Myanmar, complex Sinhala
-- [ ] **COLRv1 PaintMask / variable paints** — soft-mask groups (`PaintComposite` luminosity masks) and variable-font COLR. v1.4.0 ships solid + linear + radial + sweep gradients and blend-mode compositing; v1.7.0 adds a best-effort degradation (unsupported composite sources render their backdrop, so Noto's flags come out flat); full masks and variable paints still fall back to monochrome.
-- [ ] **Bundled skin-tone emoji sequences** — the combinatorial Fitzpatrick ZWJ forms stay CLI-generated (`--sequence-list`); evaluate a curated bundled subset if adoption demands it.
-- [ ] **CMYK & PDF/X** — CMYK content colours (`k`/`K` operators), spot colours/Separation, colour bars in the printer's-marks set, all-separation registration colour, CMYK OutputIntents and a PDF/X conformance claim with a validation story. One coherent workstream on top of the v1.7.0 print-production foundation (boxes, marks, `/Trapped`, custom ICC).
+- [ ] **Khmer, Myanmar and Sinhala on the USE engine** — the engine shapes Tai Tham and Cham since v1.8.0, but these three keep their dedicated shapers: their fonts rely on the shaper decomposing two-part vowels and on medial advances the engine does not reproduce yet. A migration must first match the visual baselines added in v1.8.0.
+- [ ] **COLRv1 luminosity masks and non-default instances** — masks built from gradients or blended subtrees need a transparency group; they still fall back to the backdrop or the monochrome outline. Variable COLR renders at the default instance only.
+- [ ] **Spot colours and colour bars** — `/Separation` inks beyond registration, `/DeviceN`, and colour bars in the printer's-marks set, on top of the v1.8.0 CMYK foundation.
+- [ ] **PDF/X variants and dual claims** — PDF/X-1a, X-3 and X-4p, and a single file claiming both PDF/A and PDF/X.
 
 ## How to Influence the Roadmap
 

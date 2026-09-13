@@ -60,7 +60,10 @@ Every output written with `tagged` set ships:
   `/P`, `/L → /LI`, `/Figure`, `/Link`).
 - `/ActualText` UTF-16BE on every marked content `/Span`.
 - An XMP metadata stream with `pdfaid:part` and `pdfaid:conformance`.
-- An sRGB ICC `OutputIntent` (`GTS_PDFA1`).
+- An ICC `OutputIntent` (`GTS_PDFA1`): the built-in sRGB profile, or your own
+  RGB, CMYK (since v1.8.0) or Gray profile via `outputIntent`. Under a CMYK or
+  Gray intent, RGB content is remapped through a calibrated `/DefaultRGB` so
+  the claim holds — see the [print guide](print.html#custom-outputintent-taggedpdf-a).
 - `/MarkInfo << /Marked true >>` on the catalog.
 - A trailer `/ID` derived deterministically from the document title and
   creation timestamp.
@@ -76,7 +79,8 @@ them through a single diagnostics channel:
 | Code | Trigger |
 |------|---------|
 | `PDFA_NO_FONT_ENTRIES` | A `'pdfa*'` level (or `tagged: true`) requested with no `fontEntries` — the file would claim PDF/A while referencing unembedded standard-14 Helvetica (ISO 19005 §6.2.11.4.1). |
-| `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim with an sRGB `OutputIntent` (ISO 19005-2 §6.2.4.3). |
+| `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim whose `OutputIntent` is not CMYK (ISO 19005-2 §6.2.4.3). Silent under a CMYK intent since v1.8.0. |
+| `PDFA_DEVICE_CMYK_CONTENT` | A CMYK colour (`[c, m, y, k]` or `'C M Y K'`) painted under a PDF/A claim whose `OutputIntent` is not CMYK (same §6.2.4.3 rule). Since v1.8.0. |
 | `PDFA_UNEMBEDDED_FORM_FONT` | AcroForm fields under a PDF/A claim — form appearances render through an unembedded base-14 `/Helv` font (same §6.2.11.4.1 rule). Flatten the form or drop the level. |
 
 By default each diagnostic is a `console.warn`, deduplicated **once per code
@@ -101,7 +105,10 @@ Each `PdfDiagnostic` carries a machine-readable `code`, a `severity`
 (`'warning'`), and an actionable `message` that includes the remedy.
 `onDiagnostic` is ignored when `strict` is set — diagnostics throw instead.
 The code list is a stable, additions-only union (`PdfDiagnosticCode`), so a
-sink written today keeps compiling as future codes are added.
+sink written today keeps compiling as future codes are added. The PDF/X-4
+claim (v1.8.0) reports through the same channel with `PDFX_NO_FONT_ENTRIES`,
+`PDFX_DEVICE_CMYK` and `PDFX_ANNOTATIONS` — see the
+[print guide](print.html#pdfx-4-v180).
 
 > **On the MCP surface** _(pdfnative-mcp 1.6.0)_, the same honesty is exposed
 > as three opt-in inputs on every document tool: `embedFonts: true` embeds

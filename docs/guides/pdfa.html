@@ -116,7 +116,10 @@ level — a complementary check to the core diagnostic.</p>
 <code>/P</code>, <code>/L → /LI</code>, <code>/Figure</code>, <code>/Link</code>).</li>
 <li><code>/ActualText</code> UTF-16BE on every marked content <code>/Span</code>.</li>
 <li>An XMP metadata stream with <code>pdfaid:part</code> and <code>pdfaid:conformance</code>.</li>
-<li>An sRGB ICC <code>OutputIntent</code> (<code>GTS_PDFA1</code>).</li>
+<li>An ICC <code>OutputIntent</code> (<code>GTS_PDFA1</code>): the built-in sRGB profile, or your own
+RGB, CMYK (since v1.8.0) or Gray profile via <code>outputIntent</code>. Under a CMYK or
+Gray intent, RGB content is remapped through a calibrated <code>/DefaultRGB</code> so
+the claim holds — see the <a href="print.html#custom-outputintent-taggedpdf-a">print guide</a>.</li>
 <li><code>/MarkInfo &lt;&lt; /Marked true &gt;&gt;</code> on the catalog.</li>
 <li>A trailer <code>/ID</code> derived deterministically from the document title and
 creation timestamp.</li>
@@ -140,7 +143,11 @@ them through a single diagnostics channel:</p>
 </tr>
 <tr>
 <td><code>PDFA_DEVICE_CMYK_IMAGE</code></td>
-<td>A DeviceCMYK image embedded under a PDF/A claim with an sRGB <code>OutputIntent</code> (ISO 19005-2 §6.2.4.3).</td>
+<td>A DeviceCMYK image embedded under a PDF/A claim whose <code>OutputIntent</code> is not CMYK (ISO 19005-2 §6.2.4.3). Silent under a CMYK intent since v1.8.0.</td>
+</tr>
+<tr>
+<td><code>PDFA_DEVICE_CMYK_CONTENT</code></td>
+<td>A CMYK colour (<code>[c, m, y, k]</code> or <code>&#39;C M Y K&#39;</code>) painted under a PDF/A claim whose <code>OutputIntent</code> is not CMYK (same §6.2.4.3 rule). Since v1.8.0.</td>
 </tr>
 <tr>
 <td><code>PDFA_UNEMBEDDED_FORM_FONT</code></td>
@@ -166,7 +173,10 @@ const pdf = buildPDFBytes(params, {
 (<code>&#39;warning&#39;</code>), and an actionable <code>message</code> that includes the remedy.
 <code>onDiagnostic</code> is ignored when <code>strict</code> is set — diagnostics throw instead.
 The code list is a stable, additions-only union (<code>PdfDiagnosticCode</code>), so a
-sink written today keeps compiling as future codes are added.</p>
+sink written today keeps compiling as future codes are added. The PDF/X-4
+claim (v1.8.0) reports through the same channel with <code>PDFX_NO_FONT_ENTRIES</code>,
+<code>PDFX_DEVICE_CMYK</code> and <code>PDFX_ANNOTATIONS</code> — see the
+<a href="print.html#pdfx-4-v180">print guide</a>.</p>
 <blockquote>
 <p><strong>On the MCP surface</strong> <em>(pdfnative-mcp 1.6.0)</em>, the same honesty is exposed
 as three opt-in inputs on every document tool: <code>embedFonts: true</code> embeds

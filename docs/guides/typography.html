@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typography — pdfnative</title>
+  <meta name="description" content="Typographic control in pdfnative — paragraph breaking with widows and orphans, keep-with-next, justification and optical margins, soft hyphens and hyphenation, unit binding, punctuation spacing, exact base-14 metrics, pair kerning and OpenType features.">
+  <link rel="canonical" href="https://pdfnative.dev/guides/typography.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/typography.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/typography.html">
+  <link rel="alternate" type="text/markdown" href="typography.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/guides/typography.html">
+  <meta property="og:title" content="Typography — pdfnative">
+  <meta property="og:description" content="Typographic control in pdfnative — paragraph breaking with widows and orphans, keep-with-next, justification and optical margins, soft hyphens and hyphenation, unit binding, punctuation spacing, exact base-14 metrics, pair kerning and OpenType features.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Typography — pdfnative">
+  <meta name="twitter:description" content="Page breaks, justification, kerning and OpenType features — typeset PDFs with zero dependencies.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Typography — page breaks, justification, kerning & OpenType features","item":"https://pdfnative.dev/guides/typography.html"}]},{"@type":"TechArticle","headline":"Typography — page breaks, justification, kerning & OpenType features","description":"Typographic control in pdfnative — paragraph breaking with widows and orphans, keep-with-next, justification and optical margins, soft hyphens and hyphenation, unit binding, punctuation spacing, exact base-14 metrics, pair kerning and OpenType features.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/typography.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
+      <li><a href="./">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Typography</p>
+  <article id="guide-content" class="guide-content" data-md="typography.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="typography--page-breaks-justification-kerning--opentype-features">Typography — page breaks, justification, kerning &amp; OpenType features</h1>
+<blockquote>
+<p><strong>New in v1.8.0.</strong> Typeset-quality text with zero dependencies: paragraphs that break across pages under widow and orphan rules, headings kept with what follows, justification and optical margin alignment, soft hyphens and a hyphenation seam, number–unit binding and punctuation spacing, exact base-14 metrics, pair kerning, and OpenType single-substitution features such as tabular figures. Every option is opt-in under <code>layout.typography</code> — output is byte-identical when it is unset.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+const pdf = buildDocumentPDFBytes(
+  {
+    title: &#39;Annual report&#39;,
+    fontEntries, // a registered font: kerning and features read its tables
+    blocks: [
+      { type: &#39;heading&#39;, text: &#39;Results&#39;, level: 1 },
+      { type: &#39;paragraph&#39;, text: longText, align: &#39;justify&#39; },
+    ],
+  },
+  {
+    typography: {
+      splitParagraphs: true,        // break long paragraphs at line boundaries
+      orphans: 2, widows: 2,        // …never leaving a single stranded line
+      keepHeadingsWithNext: true,   // no heading alone at the foot of a page
+      opticalMargins: true,         // hang punctuation past the measure
+      unitBinding: true,            // &quot;150 €&quot; and &quot;12 kg&quot; never break
+      kerning: true,                // AV, To, Yo set with the font&#39;s pair kerning
+      fontFeatures: [&#39;tnum&#39;],       // tabular figures: amounts line up
+    },
+  },
+);
+</code></pre>
+<p>Why opt-in: each option moves glyphs or line breaks, so turning one on changes an existing document&#39;s output. Nothing changes until you ask.</p>
+<h2 id="page-breaking">Page breaking<a class="heading-anchor" href="#page-breaking" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>splitParagraphs</code></td>
+<td><code>false</code></td>
+<td>A paragraph that does not fit breaks at a line boundary instead of moving to the next page whole. A paragraph taller than a page continues instead of running off the bottom.</td>
+</tr>
+<tr>
+<td><code>orphans</code></td>
+<td><code>2</code></td>
+<td>Minimum lines left at the foot of a page for a break to be allowed there. Requires <code>splitParagraphs</code>.</td>
+</tr>
+<tr>
+<td><code>widows</code></td>
+<td><code>2</code></td>
+<td>Minimum lines carried to the next page; the break is pulled earlier otherwise. Requires <code>splitParagraphs</code>.</td>
+</tr>
+<tr>
+<td><code>keepHeadingsWithNext</code></td>
+<td><code>false</code></td>
+<td>A heading that would end a page moves to the next one with its content. Works without <code>splitParagraphs</code>.</td>
+</tr>
+</tbody></table>
+<p>Blocks override the document setting: a heading or paragraph accepts <code>keepWithNext</code>, and a paragraph accepts its own split permission. Under a PDF/A claim a paragraph split across pages remains one <code>/P</code> structure element.</p>
+<h2 id="justification-and-optical-margins">Justification and optical margins<a class="heading-anchor" href="#justification-and-optical-margins" aria-label="Link to this section">#</a></h2>
+<p><code>align: &#39;justify&#39;</code> on a paragraph spans every line except the last across the full measure by placing each word at its own position. A line that would need an implausible stretch is left ragged rather than opened into rivers of white space.</p>
+<p><code>opticalMargins: true</code> lets punctuation hang past the edge it sits against. An opening quote at the start of a line, or a full stop at the end, is mostly white space inside its own box, so a column whose glyph origins sit exactly on the margin still looks indented. Hanging the mark back out makes the optical edge straight. It applies to the leading mark of left-aligned and justified lines and the trailing mark of justified and right-aligned ones, with conservative offsets.</p>
+<h2 id="hyphenation">Hyphenation<a class="heading-anchor" href="#hyphenation" aria-label="Link to this section">#</a></h2>
+<p>Two sources of break opportunities inside a word:</p>
+<ul>
+<li><strong>Soft hyphens</strong> (U+00AD) you write in the text. They stay invisible unless the line breaks there, and they need no data.</li>
+<li><strong>A hyphenation provider</strong> you install. The library bundles no dictionary — Liang pattern sets are hundreds of kilobytes per language — so the algorithm stays in your code and the library provides the seam:</li>
+</ul>
+<pre><code class="language-ts">import { setHyphenationProvider } from &#39;pdfnative&#39;;
+
+// Return the indices inside `word` where a hyphen may go.
+setHyphenationProvider((word) =&gt; myHyphenator.positions(word));
+</code></pre>
+<p>The provider must be synchronous and pure: it may be called many times for the same word during layout, and a changing answer would make output irreproducible. A word that already contains soft hyphens keeps the author&#39;s choice, and a provider that throws is ignored for that word. Pass <code>null</code> to remove it.</p>
+<h2 id="spacing-rules">Spacing rules<a class="heading-anchor" href="#spacing-rules" aria-label="Link to this section">#</a></h2>
+<p><strong>Unit binding</strong> — <code>unitBinding: true</code> replaces the space between a number and the unit symbol that follows with a no-break space, so <code>150 €</code>, <code>12 kg</code> or <code>30 %</code> never split across lines. ISO 80000-1 asks for this in every language, so it carries no locale assumption. Only an existing plain space before a recognised symbol standing on its own is converted — &quot;150 personnes&quot; stays breakable. Pass <code>{ units: [...] }</code> to replace the built-in symbol list.</p>
+<p><strong>Punctuation spacing</strong> — conventions differ by language, so this is never automatic. <code>punctuationSpacing</code> takes a preset the library can state precisely, or a list of rules for any other convention. <code>&#39;fr&#39;</code> sets a narrow no-break space before <code>;</code> <code>!</code> <code>?</code> and a no-break space before <code>:</code> and inside guillemets; <code>&#39;fr-CA&#39;</code> keeps only the colon and guillemet spaces, as Canadian French usage does.</p>
+<pre><code class="language-ts">typography: {
+  punctuationSpacing: [
+    { char: &#39;:&#39;, side: &#39;before&#39;, space: &#39;nbsp&#39; },
+    { char: &#39;»&#39;, side: &#39;before&#39;, space: &#39;narrow&#39; },
+  ],
+}
+</code></pre>
+<p>Only existing spaces are converted; nothing is inserted where the author wrote none. It applies to headings, paragraphs, lists, link labels and table content. <code>bindUnits()</code> and <code>applyPunctuationSpacing()</code> expose the same transforms for text you lay out yourself.</p>
+<h2 id="metrics">Metrics<a class="heading-anchor" href="#metrics" aria-label="Link to this section">#</a></h2>
+<p>Text set in the non-embedded base-14 faces is measured with a historical estimate that buckets digits at 556 units, capitals at 680 and lowercase at 500 — and every accented letter and most punctuation at 556. French lines and currency columns therefore wrap and align slightly wrong. <code>metrics: &#39;exact&#39;</code> reads the Adobe Core 14 AFM advances instead. It is opt-in because correct measurement moves line breaks. Registered fonts always measure from their own <code>hmtx</code> table.</p>
+<h2 id="kerning">Kerning<a class="heading-anchor" href="#kerning" aria-label="Link to this section">#</a></h2>
+<p><code>kerning: true</code> applies the font&#39;s pair kerning, so &quot;AV&quot;, &quot;To&quot; and &quot;Yo&quot; are set as the type designer intended. Adjustments are written as <code>TJ</code> arrays, so a kerned run stays one text-showing operator and selection and extraction are unaffected. It needs a registered font that carries kerning data; the base-14 faces have none.</p>
+<h2 id="opentype-features">OpenType features<a class="heading-anchor" href="#opentype-features" aria-label="Link to this section">#</a></h2>
+<p><code>fontFeatures</code> applies OpenType features by tag. Only single substitutions are supported — one glyph in, one glyph out — which is what makes them safe without a full shaping engine:</p>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tnum</code> / <code>pnum</code></td>
+<td>Tabular (equal-width) / proportional figures</td>
+</tr>
+<tr>
+<td><code>lnum</code> / <code>onum</code></td>
+<td>Lining / old-style figures</td>
+</tr>
+<tr>
+<td><code>zero</code></td>
+<td>Slashed zero</td>
+</tr>
+<tr>
+<td><code>ordn</code>, <code>sups</code>, <code>subs</code></td>
+<td>Ordinals, superiors, inferiors</td>
+</tr>
+<tr>
+<td><code>smcp</code>, <code>c2sc</code></td>
+<td>Small capitals from lowercase / from capitals</td>
+</tr>
+<tr>
+<td><code>case</code></td>
+<td>Case-sensitive forms</td>
+</tr>
+</tbody></table>
+<p><code>tnum</code> earns its keep in financial tables: proportional digits make a column of amounts ragged because <code>1</code> is narrower than <code>8</code>. Asking for a tag the font does not declare is a silent no-op, since the same document may be built with different fonts, and later tags win where two touch the same glyph. Ligatures and contextual features (<code>liga</code>, <code>calt</code>, <code>frac</code>) are out of scope. Features need a registered font.</p>
+<h2 id="limits--scope">Limits &amp; scope<a class="heading-anchor" href="#limits--scope" aria-label="Link to this section">#</a></h2>
+<ul>
+<li>No automatic hyphenation dictionary — install a provider, or write soft hyphens.</li>
+<li>Justification distributes space between words only; there is no letter-spacing or glyph scaling.</li>
+<li>Kerning and features read the registered font&#39;s tables: base-14 text gets neither.</li>
+<li>Features are single substitutions; complex-script shaping is handled by the script shapers, independently of this option.</li>
+</ul>
+<p>See the <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/typography-showcase.ts" target="_blank" rel="noopener">typography samples</a>: each pairs the default behaviour with the typographic option on identical content — <code>typography/breaks-atomic.pdf</code> against <code>breaks-split.pdf</code>, <code>align-ragged.pdf</code> against <code>align-justified.pdf</code> and <code>align-optical.pdf</code>, <code>kerning-off.pdf</code> against <code>kerning-on.pdf</code>, and more.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="tables.html">Tables</a> — column alignment, where <code>tnum</code> matters most</li>
+<li><a href="print.html">Print production</a> — boxes, marks, CMYK and PDF/X-4</li>
+<li><a href="choose.html">Choosing your surface</a></li>
+</ul>
+<!-- guide:render:end -->
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="./">All guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
+<script src="guide.js" defer></script>
+</body>
+</html>

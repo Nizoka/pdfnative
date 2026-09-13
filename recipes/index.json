@@ -92,6 +92,17 @@
     ]
   },
   {
+    "file": "print-pdfx4.ts",
+    "task": "Prepare a press-ready PDF/X-4 with CMYK colours and the printer's profile",
+    "surface": "library",
+    "since": "1.8.0",
+    "expects": [
+      "validatePdfX(bytes).valid === true",
+      "pdf contains '/S /GTS_PDFX'",
+      "pdf contains '0 0 0 1 k'"
+    ]
+  },
+  {
     "file": "signed-pades.ts",
     "task": "Sign a document with a PAdES B-B (ETSI.CAdES.detached) signature",
     "surface": "library",
@@ -132,6 +143,16 @@
       "pages === 3",
       "catalog has /Outlines",
       "text of page 0 contains 'Table of Contents'"
+    ]
+  },
+  {
+    "file": "typography-report.ts",
+    "task": "Typeset a long report with paragraph breaking, justification and unit binding",
+    "surface": "library",
+    "since": "1.8.0",
+    "expects": [
+      "splitPages <= atomicPages",
+      "text of page 0 contains '150'"
     ]
   },
   {

@@ -231,10 +231,13 @@ describe('verify-docs', () => {
 
         it('verified-on-parity rejects a stamp that disagrees with the manifest', () => {
             withSandbox((dir) => {
-                patch(dir, 'docs/agent-brief.md', '_Verified on 2026-08-29', '_Verified on 2026-08-25');
+                // Read the current stamp from the manifest: a literal date broke
+                // this test at every documentation re-audit.
+                const manifest = JSON.parse(readFileSync(join(ROOT, 'docs', 'assets', 'ecosystem.json'), 'utf8')) as { verifiedOn: string };
+                patch(dir, 'docs/agent-brief.md', `_Verified on ${manifest.verifiedOn}`, '_Verified on 2000-01-01');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('verified-on-parity');
-                expect(run.output).toContain('stamped 2026-08-25');
+                expect(run.output).toContain('stamped 2000-01-01');
                 expect(run.status).toBe(1);
             });
         }, 120_000);

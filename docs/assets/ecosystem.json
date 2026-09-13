@@ -1,6 +1,6 @@
 {
   "$comment": "Single source of truth for every version, count and inventory quoted anywhere in the documentation. Edit THIS file, then run `npm run verify:docs` — it reports every doc that disagrees. Never hand-edit a number in a doc without updating this manifest first.",
-  "verifiedOn": "2026-08-29",
+  "verifiedOn": "2026-09-13",
   "packages": {
     "pdfnative": {
       "version": "1.7.0",
@@ -112,14 +112,14 @@
     "testFiles": 150,
     "sampleGenerators": 49,
     "samplePdfs": 270,
-    "guides": 31,
+    "guides": 32,
     "playgrounds": 10,
     "learnSteps": 8,
-    "recipes": 15
+    "recipes": 17
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 3212,
+    "tests": 3214,
     "scripts": 27,
     "bundledFontModules": 31,
     "blockTypes": 13,
@@ -195,7 +195,7 @@
     {
       "id": "test-count-homepage",
       "$comment": "The homepage quoted a stale test count for a full release train; no assertion covered it. canonical-present pins the current figure where it is displayed.",
-      "canonical": "3212+ tests across 150 files",
+      "canonical": "3214+ tests across 150 files",
       "requireIn": [
         "docs/index.html"
       ]
