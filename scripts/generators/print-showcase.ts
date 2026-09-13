@@ -1,6 +1,8 @@
 /**
  * Print production showcase (v1.7.0) — bleed, trim, printer's marks,
- * /Trapped, print viewer preferences and large-format /UserUnit.
+ * /Trapped, print viewer preferences and large-format /UserUnit; since
+ * v1.8.0 also CMYK colour under a CMYK OutputIntent, as PDF/X-4 and as
+ * PDF/A-2b, with marks in the registration colour.
  *
  * The main sample is an A4 flyer designed at trim size + 3 mm bleed
  * (8.5 pt): the page is enlarged by the bleed on every side, a background
@@ -17,6 +19,7 @@ import type { DocumentParams } from '../../src/index.js';
 import { buildMinimalSRGBProfile } from '../../src/core/pdf-tags.js';
 import type { GenerateContext } from '../helpers/io.js';
 import { loadSelectedFontEntries } from '../helpers/fonts.js';
+import { buildSyntheticCmykProfile } from '../lib/synthetic-cmyk-profile.js';
 
 const BLEED = 8.5; // 3 mm
 
@@ -113,5 +116,54 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             },
         });
         ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-output-intent.pdf'), 'print/print-output-intent.pdf', intent);
+
+        // ── 5. CMYK press condition, claimed as PDF/X-4 (v1.8.0) ────
+        // CMYK content colours, a CMYK OutputIntent, bleed and marks in the
+        // registration colour. The profile is a synthetic stand-in built by
+        // the sample script; a real job embeds the printer's profile.
+        const cmykProfile = buildSyntheticCmykProfile();
+        const pressBlocks: DocumentParams['blocks'] = [
+            { type: 'heading', text: 'Print-ready PDF/X-4', level: 1 },
+            { type: 'paragraph', text: 'Process cyan, set as [100, 0, 0, 0]: four-component colours are written with the k operator.', color: [100, 0, 0, 0] },
+            { type: 'paragraph', text: 'Process magenta, [0, 100, 0, 0].', color: [0, 100, 0, 0] },
+            { type: 'paragraph', text: 'Rich black, [60, 40, 40, 100], for large type on press.', color: [60, 40, 40, 100] },
+            { type: 'paragraph', text: 'This line is RGB. Under a CMYK OutputIntent it is routed through a calibrated sRGB /DefaultRGB, so the print workflow knows what colour it means.' },
+            {
+                type: 'chart', chartType: 'bar', title: 'Ink coverage by plate', categories: ['Q1', 'Q2', 'Q3'],
+                series: [
+                    { label: 'Cyan', values: [40, 55, 48], color: [100, 0, 0, 0] },
+                    { label: 'Magenta', values: [30, 35, 52], color: [0, 100, 0, 0] },
+                ],
+            },
+            { type: 'paragraph', text: 'Crop and registration marks outside the TrimBox use the All separation, so they print on every plate.' },
+        ];
+        const pressLayout = {
+            pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
+            pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+            margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
+            print: { bleed: BLEED, marks: true },
+            outputIntent: {
+                iccProfile: cmykProfile,
+                outputConditionIdentifier: 'Synthetic CMYK',
+                outputCondition: 'Naive CMYK conversion (sample stand-in, not a press condition)',
+                registryName: 'http://www.color.org',
+            },
+        };
+        const pdfx = buildDocumentPDFBytes({
+            title: 'Print Production — PDF/X-4',
+            blocks: pressBlocks,
+            footerText: 'pdfnative - PDF/X-4',
+            fontEntries,
+        }, { ...pressLayout, pdfx: 'pdfx4' });
+        ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-cmyk-pdfx4.pdf'), 'print/print-cmyk-pdfx4.pdf', pdfx);
+
+        // ── 6. The same page as PDF/A-2b under the CMYK intent ──────
+        const pdfaCmyk = buildDocumentPDFBytes({
+            title: 'Print Production — PDF/A-2b, CMYK intent',
+            blocks: pressBlocks,
+            footerText: 'pdfnative - PDF/A-2b CMYK',
+            fontEntries,
+        }, { ...pressLayout, tagged: 'pdfa2b' });
+        ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-cmyk-pdfa2b.pdf'), 'print/print-cmyk-pdfa2b.pdf', pdfaCmyk);
     }
 }

@@ -19,7 +19,9 @@ import {
 const samples = [...walkPdfs(OUTPUT_DIR)];
 const havecorpus = samples.length > 0;
 
-describe.runIf(havecorpus)('sample regression baseline', () => {
+// Fingerprinting the whole corpus parses every sample, encrypted ones
+// included: well past the 5 s default under coverage instrumentation.
+describe.runIf(havecorpus)('sample regression baseline', { timeout: 120_000 }, () => {
     it('every tracked sample still emits what its reference release emitted', () => {
         const baseline = loadBaseline();
         expect(baseline, `missing baseline at ${BASELINE_PATH}`).not.toBeNull();

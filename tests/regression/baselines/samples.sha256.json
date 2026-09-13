@@ -647,6 +647,12 @@
       "size": 1501152,
       "since": "1.8.0"
     },
+    "emoji/color-emoji-skin-tones.pdf": {
+      "mode": "bytes",
+      "hash": "0d9524f6ae0947f8b297a113e5f1210d93becbb9cea625c601f2e0149c0a0136",
+      "size": 1382739,
+      "since": "1.8.0"
+    },
     "emoji/emoji-basic.pdf": {
       "mode": "bytes",
       "hash": "2e890d5af8f0bfb02963992b8a763ede73c709e9ec5e975e3e8c4d6c1c217fc2",
@@ -1126,6 +1132,18 @@
       "hash": "108c15f364ab1ad12b1bd4203b5b3ec55150343393d1596bd27e8837e864fc51",
       "size": 6837,
       "since": "1.7.0"
+    },
+    "print/print-cmyk-pdfa2b.pdf": {
+      "mode": "bytes",
+      "hash": "e880fbff0145f49125be7a5455a395bbfd545ef186105431769d2c5ecc1f727b",
+      "size": 136378,
+      "since": "1.8.0"
+    },
+    "print/print-cmyk-pdfx4.pdf": {
+      "mode": "bytes",
+      "hash": "5ae93c2269bcdd18da3fb9613bdcc58593cbbc7654168d79ba0c75e35966ae03",
+      "size": 132205,
+      "since": "1.8.0"
     },
     "print/print-explicit-boxes.pdf": {
       "mode": "bytes",

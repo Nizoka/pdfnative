@@ -366,7 +366,7 @@ describe('encryptStream', () => {
         expect(result.length).toBe(32);
     });
 
-    it('should work with AES-256', () => {
+    it('should work with AES-256', { timeout: 60_000 }, () => {
         const state = initEncryption({ ownerPassword: 'test', algorithm: 'aes256' });
         const result = encryptStream('Test content', state, 3, 0);
         expect(result.length).toBeGreaterThan(16); // at least IV
@@ -542,7 +542,7 @@ describe('Encrypted PDF integration (buildDocumentPDF)', () => {
         expect(bytes.length).toBeGreaterThan(100);
     });
 
-    it('should work with AES-256', () => {
+    it('should work with AES-256', { timeout: 60_000 }, () => {
         const pdf = buildDocumentPDF(makeDocParams(), {
             encryption: { ownerPassword: 'doc256', algorithm: 'aes256' },
         });

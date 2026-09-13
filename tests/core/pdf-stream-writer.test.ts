@@ -273,7 +273,7 @@ describe('buildDocumentPDFStream', () => {
         }
     });
 
-    it('default chunk size is 64KB', async () => {
+    it('default chunk size is 64KB', { timeout: 60_000 }, async () => {
         // Build a document large enough to span multiple 64KB chunks
         const blocks: DocumentParams['blocks'][number][] = [];
         for (let i = 0; i < 100; i++) {

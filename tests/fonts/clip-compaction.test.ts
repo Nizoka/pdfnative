@@ -21,7 +21,9 @@ function bodyOf(glyph: ColorGlyph): ClipOutline[] {
         .map(l => (l.transform ? { glyphId: l.glyphId, transform: l.transform } : { glyphId: l.glyphId }));
 }
 
-describe('the shipped module', () => {
+// Pruning every flag rasterises hundreds of outlines: seconds bare, beyond
+// the 5 s default under coverage instrumentation.
+describe('the shipped module', { timeout: 60_000 }, () => {
     it('carries clipped layers for the curated flags', () => {
         expect(flags.length).toBeGreaterThanOrEqual(50);
     });
