@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typography Playground — pdfnative</title>
+  <meta name="description" content="Try pdfnative's typography in your browser: paragraph breaking with widows and orphans, keep-with-next, justification and optical margins, unit binding, punctuation spacing, pair kerning and OpenType tabular figures — each compared with the default.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/typography.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/typography.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/typography.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/typography.html">
+  <meta property="og:title" content="Typography Playground — pdfnative">
+  <meta property="og:description" content="Paragraph breaking, justification, kerning and OpenType figures — generate each with and without the option, zero install.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Typography Playground — pdfnative">
+  <meta name="twitter:description" content="Typeset PDFs in the browser: breaks, justification, kerning, figures.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "inLanguage": "en",
+        "name": "pdfnative Typography Playground",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any (browser-based)",
+        "browserRequirements": "Requires JavaScript and ES modules",
+        "url": "https://pdfnative.dev/playgrounds/typography.html",
+        "description": "Generate PDFs with and without pdfnative's typography options — paragraph breaking, widows and orphans, justification, optical margins, unit binding, punctuation spacing, kerning and tabular figures — entirely in your browser.",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "pdfnative",
+          "url": "https://pdfnative.dev"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://github.com/Nizoka"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Playgrounds",
+            "item": "https://pdfnative.dev/playgrounds/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Typography"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Typography (v1.8.0)</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./inspect.html">Inspect &amp; verify</a>
+    <a href="./charts.html">Charts</a>
+    <a href="./authoring-plus.html">Authoring+</a>
+    <a href="./scale.html">Scale</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./typography.html" aria-current="page">Typography</a>
+    <a href="./print.html">Print &amp; PDF/X</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>Typography — since 1.8.0</h1>
+    <p>Every typographic option in pdfnative is opt-in under <code>layout.typography</code>, so a document built without them is byte-identical to earlier releases. Pick a preset, generate it <strong>with</strong> the option and <strong>without</strong>, and open the two PDFs side by side: the difference is the feature.</p>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
+      <label for="preset"><strong>Preset:</strong></label>
+      <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="breaks">Paragraph breaking — widows, orphans, keep-with-next</option>
+        <option value="justify">Justification and optical margins</option>
+        <option value="spacing">Unit binding and French punctuation spacing</option>
+        <option value="kerning">Pair kerning (Noto Sans)</option>
+        <option value="figures">Tabular and old-style figures (Noto Sans)</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px;"><input type="checkbox" id="apply" checked> Apply the option</label>
+      <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
+      <span id="timer" style="font-size:13px;color:#64748b;"></span>
+    </div>
+
+    <p id="desc" style="margin-top:20px;color:#475569;font-size:15px;line-height:1.6;"></p>
+
+    <details style="margin-top:16px;" open>
+      <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
+      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+    </details>
+
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">What the options do:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li><strong>Page breaking</strong> — <code>splitParagraphs</code> breaks at line boundaries; <code>widows</code> / <code>orphans</code> keep single lines from being stranded; <code>keepHeadingsWithNext</code> keeps a heading with its content.</li>
+        <li><strong>Justification</strong> — <code>align: 'justify'</code> fills the measure word by word; <code>opticalMargins</code> hangs punctuation past the edge.</li>
+        <li><strong>Spacing</strong> — <code>unitBinding</code> keeps <em>150 €</em> together (ISO 80000-1); <code>punctuationSpacing: 'fr'</code> sets French no-break spaces.</li>
+        <li><strong>Kerning and features</strong> — <code>kerning</code> applies the font's pair adjustments; <code>fontFeatures</code> selects OpenType figures such as <code>tnum</code> and <code>onum</code>. Both need a registered font.</li>
+      </ul>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/typography.html">Typography guide</a> for every option.</p>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/typography.html">Typography guide →</a></li>
+      <li><a href="./">All playgrounds →</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+const codeView = $('code-view');
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') { status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5'; }
+  else if (kind === 'success') { status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7'; }
+  else { status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd'; }
+}
+
+const PASSAGE = 'Long-form reports are where page breaking stops being cosmetic. A paragraph that cannot fit in the space left at the foot of a page used to move over whole, leaving a band of white space behind it. Breaking at line boundaries fixes that, and the widow and orphan rules keep the breaks from falling somewhere awkward. ';
+const QUOTED = '"Justification fills the measure, which is what separates a typeset page from a generated one." Optical margins go further: punctuation that borders a line hangs slightly outside it, so the optical edge of the column reads straight. An opening quote, a full stop, a comma: each leaves a gap you can see. ';
+
+const DESCRIPTIONS = {
+  breaks: 'Twelve sections of running text. Without the option, a paragraph that does not fit moves to the next page whole and headings can end a page alone. With it, paragraphs break at line boundaries, no page starts or ends with a single stranded line, and every heading stays with its text.',
+  justify: 'Two long paragraphs set justified. With optical margins on, the opening quote and the full stops at the edges hang into the margin so the column edge looks straight. Turn the option off to compare with plain justification.',
+  spacing: 'A French paragraph with amounts and units. Unit binding keeps "150 €", "12 kg" and "30 %" on one line; the fr preset sets the no-break spaces French typography expects before : ; ! ? and inside guillemets.',
+  kerning: 'Display headings where kerning is most visible: AV, To, Yo, Wa. Loads Noto Sans from the CDN, since the base-14 faces carry no kerning data.',
+  figures: 'A table of amounts. With tabular figures (tnum) every digit has the same advance, so columns line up; old-style figures (onum) and small capitals (smcp) show two more single-substitution features. Loads Noto Sans from the CDN.',
+};
+
+const CODE = {
+  breaks: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes(params, {
+  typography: {
+    splitParagraphs: true,      // break at line boundaries
+    orphans: 2, widows: 2,      // never strand a single line
+    keepHeadingsWithNext: true, // no heading alone at a page foot
+  },
+});
+downloadBlob(pdf, 'report.pdf');`,
+  justify: `const pdf = buildDocumentPDFBytes({
+  title: 'Essay',
+  blocks: [{ type: 'paragraph', text, align: 'justify' }],
+}, {
+  typography: { opticalMargins: true },
+});`,
+  spacing: `const pdf = buildDocumentPDFBytes(params, {
+  typography: {
+    unitBinding: true,          // "150 €" never splits (ISO 80000-1)
+    punctuationSpacing: 'fr',   // or an explicit rule list
+  },
+});`,
+  kerning: `registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin');
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Kerning',
+  fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }],
+  blocks: [{ type: 'heading', text: 'AVATAR Yo To Wave', level: 1 }],
+}, {
+  typography: { kerning: true },
+});`,
+  figures: `const pdf = buildDocumentPDFBytes({ title: 'Amounts', fontEntries, blocks }, {
+  typography: { fontFeatures: ['tnum'] },   // or ['onum', 'smcp']
+});`,
+};
+
+function applyPreset(id) {
+  $('desc').textContent = DESCRIPTIONS[id];
+  codeView.textContent = CODE[id];
+  if (window.Prism) window.Prism.highlightElement(codeView);
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
+let pdfMod = null;
+async function loadPdfnative() {
+  if (pdfMod) return pdfMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFBytes === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFBytes === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFBytes === 'function') { pdfMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not load pdfnative from CDN. ' + (lastErr ? lastErr.message : ''));
+}
+
+async function latinEntries(m) {
+  m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });
+  const fontData = await m.loadFontData('latin');
+  return [{ fontData, fontRef: '/F3', lang: 'latin' }];
+}
+
+function sections(count) {
+  const blocks = [{ type: 'heading', text: 'Quarterly report', level: 1 }];
+  for (let i = 1; i <= count; i++) {
+    blocks.push({ type: 'heading', text: i + '. Regional results', level: 2 });
+    blocks.push({ type: 'paragraph', text: PASSAGE.repeat(2 + (i % 3)) });
+  }
+  return blocks;
+}
+
+const BUILDERS = {
+  breaks: (m, on) => m.buildDocumentPDFBytes(
+    { title: 'Paragraph breaking', blocks: sections(12), footerText: 'pdfnative typography playground' },
+    on ? { typography: { splitParagraphs: true, orphans: 2, widows: 2, keepHeadingsWithNext: true } } : {},
+  ),
+  justify: (m, on) => m.buildDocumentPDFBytes(
+    { title: 'Justification', blocks: [
+      { type: 'heading', text: 'Justified text', level: 1 },
+      { type: 'paragraph', text: QUOTED.repeat(4), align: 'justify' },
+      { type: 'paragraph', text: QUOTED.repeat(4), align: 'justify' },
+    ] },
+    on ? { typography: { opticalMargins: true } } : {},
+  ),
+  spacing: (m, on) => m.buildDocumentPDFBytes(
+    { title: 'Espacement', blocks: [
+      { type: 'heading', text: 'Liaison nombre-unite et ponctuation', level: 1 },
+      { type: 'paragraph', text: 'Facture de 150 € pour 12 kg de materiel : remise de 30 % ; stockage de 500 Mo ! Vraiment ? Oui. Et une « citation » pour finir. '.repeat(6) },
+    ] },
+    on ? { typography: { unitBinding: true, punctuationSpacing: 'fr' } } : {},
+  ),
+  kerning: async (m, on) => m.buildDocumentPDFBytes(
+    { title: 'Kerning', fontEntries: await latinEntries(m), blocks: [
+      { type: 'heading', text: 'AVATAR Yo To Wave', level: 1 },
+      { type: 'heading', text: 'AWAY Toyota Vyborg Wavy', level: 2 },
+      { type: 'paragraph', text: 'AVATAR To Yo Wave AWAY Toyota Vyborg Wavy LTAVA. '.repeat(10) },
+    ] },
+    on ? { typography: { kerning: true } } : {},
+  ),
+  figures: async (m, on) => m.buildDocumentPDFBytes(
+    { title: 'Figures', fontEntries: await latinEntries(m), blocks: [
+      { type: 'heading', text: 'Amounts by month', level: 1 },
+      { type: 'table', headers: ['Month', 'Debit', 'Credit'], rows: [
+        { cells: ['January', '1,111.00', '8,888.00'], type: '', pointed: false },
+        { cells: ['February', '11,111.00', '88,888.00'], type: '', pointed: false },
+        { cells: ['March', '111,111.00', '888,888.00'], type: '', pointed: false },
+      ] },
+      { type: 'paragraph', text: 'Small capitals and old-style figures: abcdefghijk 1234567890' },
+    ] },
+    on ? { typography: { fontFeatures: ['tnum', 'onum', 'smcp'] } } : {},
+  ),
+};
+
+async function generate() {
+  const id = $('preset').value;
+  const on = $('apply').checked;
+  const t0 = performance.now();
+  try {
+    setStatus('Loading pdfnative from CDN…', 'info');
+    const mod = await loadPdfnative();
+    setStatus('Generating PDF…', 'info');
+    const bytes = await BUILDERS[id](mod, on);
+    mod.downloadBlob(bytes, 'typography-' + id + (on ? '-on' : '-off') + '.pdf');
+    const ms = (performance.now() - t0).toFixed(0);
+    $('timer').textContent = (bytes.length / 1024).toFixed(1) + ' KB · ' + ms + ' ms';
+    setStatus('PDF generated ' + (on ? 'with' : 'without') + ' the option and downloaded. Generate it the other way to compare.', 'success');
+  } catch (err) {
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  }
+}
+
+$('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('generate').addEventListener('click', generate);
+applyPreset('breaks');
+
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

@@ -17,8 +17,8 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 548335,
-      "approxTokens": 137084
+      "bytes": 548526,
+      "approxTokens": 137132
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -47,8 +47,8 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 100254,
-      "approxTokens": 25064
+      "bytes": 100445,
+      "approxTokens": 25111
     }
   ],
   "guides": [

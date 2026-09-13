@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Print &amp; PDF/X Playground — pdfnative</title>
+  <meta name="description" content="Prepare print-ready PDFs in your browser with pdfnative: bleed and printer's marks, CMYK colours, a CMYK OutputIntent from your own ICC profile, a PDF/X-4 claim, and the validatePdfX() report for the result.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/print.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/print.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/print.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/print.html">
+  <meta property="og:title" content="Print &amp; PDF/X Playground — pdfnative">
+  <meta property="og:description" content="Bleed, marks, CMYK colours, CMYK OutputIntents and PDF/X-4 with a structural validation report — zero install.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Print &amp; PDF/X Playground — pdfnative">
+  <meta name="twitter:description" content="Print-ready PDFs in the browser: bleed, CMYK, PDF/X-4, validation.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "inLanguage": "en",
+        "name": "pdfnative Print & PDF/X Playground",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any (browser-based)",
+        "browserRequirements": "Requires JavaScript and ES modules",
+        "url": "https://pdfnative.dev/playgrounds/print.html",
+        "description": "Generate print-ready PDFs with bleed and printer's marks, CMYK colours, a CMYK OutputIntent from a local ICC profile and a PDF/X-4 claim, then read the validatePdfX() report — entirely in your browser.",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "pdfnative",
+          "url": "https://pdfnative.dev"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://github.com/Nizoka"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Playgrounds",
+            "item": "https://pdfnative.dev/playgrounds/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Print & PDF/X"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Print &amp; PDF/X (v1.7.0 → v1.8.0)</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./inspect.html">Inspect &amp; verify</a>
+    <a href="./charts.html">Charts</a>
+    <a href="./authoring-plus.html">Authoring+</a>
+    <a href="./scale.html">Scale</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./typography.html">Typography</a>
+    <a href="./print.html" aria-current="page">Print &amp; PDF/X</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>Print production and PDF/X-4 — since 1.7.0, CMYK in 1.8.0</h1>
+    <p>Bleed boxes and printer's marks since 1.7.0; since 1.8.0, CMYK colours, CMYK OutputIntents, marks in the registration colour, a PDF/X-4 conformance claim and <code>validatePdfX()</code>. The last two presets need an <strong>output ICC profile</strong> — the one your printer names (ISO Coated v2, GRACoL, SWOP…). pdfnative ships none, and this page never uploads it anywhere: the file is read in your browser.</p>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
+      <label for="preset"><strong>Preset:</strong></label>
+      <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="bleed">Bleed and printer's marks (RGB)</option>
+        <option value="cmyk">CMYK colours</option>
+        <option value="pdfa">PDF/A-2b under a CMYK OutputIntent (needs a profile)</option>
+        <option value="pdfx">PDF/X-4 claim + validatePdfX() (needs a profile)</option>
+      </select>
+      <label for="icc" style="font-size:14px;">ICC profile:</label>
+      <input type="file" id="icc" accept=".icc,.icm" style="font-size:13px;">
+      <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
+      <span id="timer" style="font-size:13px;color:#64748b;"></span>
+    </div>
+
+    <p id="desc" style="margin-top:20px;color:#475569;font-size:15px;line-height:1.6;"></p>
+
+    <pre id="report" style="display:none;margin-top:12px;white-space:pre-wrap;"></pre>
+
+    <details style="margin-top:16px;" open>
+      <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
+      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+    </details>
+
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">Worth knowing:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li><strong>CMYK colours</strong> are <code>[c, m, y, k]</code> in percent, or a <code>'C M Y K'</code> string in 0–1; they are written with <code>k</code> / <code>K</code>.</li>
+        <li><strong>Under a CMYK intent</strong>, the RGB colours pdfnative draws by default are remapped through a calibrated <code>/DefaultRGB</code>, so the PDF/A or PDF/X claim holds.</li>
+        <li><strong>PDF/X-4</strong> rejects, before writing, a PDF/A level, encryption, a missing or non-output profile, and <code>trapped: 'Unknown'</code>.</li>
+        <li><strong><code>validatePdfX()</code></strong> checks the structure; veraPDF does not cover PDF/X, so confirm press files with a certified preflight.</li>
+      </ul>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/print.html">Print production guide</a> for the full options.</p>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/print.html">Print production guide →</a></li>
+      <li><a href="./">All playgrounds →</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+const codeView = $('code-view');
+const report = $('report');
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') { status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5'; }
+  else if (kind === 'success') { status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7'; }
+  else { status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd'; }
+}
+
+const BLEED = 8.5; // 3 mm in points
+
+const DESCRIPTIONS = {
+  bleed: 'An A4 page designed at trim size plus 3 mm bleed, with crop and registration marks drawn outside the TrimBox. Open it in Acrobat with "Show art, trim & bleed boxes" to see the geometry.',
+  cmyk: 'Text and a chart in process colours: [100, 0, 0, 0] is cyan, [60, 40, 40, 100] a rich black. No profile needed — the colours are written with the k and K operators.',
+  pdfa: 'The same page as PDF/A-2b with your CMYK profile as OutputIntent. RGB text is remapped through a calibrated /DefaultRGB and the marks use the registration colour, so the claim holds.',
+  pdfx: 'The same page claimed as PDF/X-4: PDF 1.6 header, PDF/X-4 XMP identification, a /GTS_PDFX OutputIntent, TrimBoxes and /Trapped. The validatePdfX() report is shown below after generation.',
+};
+
+const CODE = {
+  bleed: `import { buildDocumentPDFBytes, downloadBlob, PAGE_SIZES } from 'pdfnative';
+
+const BLEED = 8.5; // 3 mm
+const pdf = buildDocumentPDFBytes(params, {
+  pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  print: { bleed: BLEED, marks: true },
+});`,
+  cmyk: `const pdf = buildDocumentPDFBytes({
+  title: 'Press sheet',
+  blocks: [
+    { type: 'paragraph', text: 'Process cyan', color: [100, 0, 0, 0] },
+    { type: 'paragraph', text: 'Rich black', color: [60, 40, 40, 100] },
+  ],
+});`,
+  pdfa: `const iccProfile = new Uint8Array(await file.arrayBuffer());
+
+const pdf = buildDocumentPDFBytes({ ...params, fontEntries }, {
+  tagged: 'pdfa2b',
+  outputIntent: { iccProfile, outputConditionIdentifier: 'FOGRA39' },
+  print: { bleed: 8.5, marks: true },
+});`,
+  pdfx: `import { buildDocumentPDFBytes, validatePdfX } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({ ...params, fontEntries }, {
+  pdfx: 'pdfx4',
+  outputIntent: { iccProfile, outputConditionIdentifier: 'FOGRA39' },
+  print: { bleed: 8.5, marks: true },
+});
+const { valid, errors, warnings } = validatePdfX(pdf);`,
+};
+
+function applyPreset(id) {
+  $('desc').textContent = DESCRIPTIONS[id];
+  codeView.textContent = CODE[id];
+  if (window.Prism) window.Prism.highlightElement(codeView);
+  report.style.display = 'none';
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
+let pdfMod = null;
+async function loadPdfnative() {
+  if (pdfMod) return pdfMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFBytes === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFBytes === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFBytes === 'function') { pdfMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not load pdfnative from CDN. ' + (lastErr ? lastErr.message : ''));
+}
+
+async function latinEntries(m) {
+  m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });
+  const fontData = await m.loadFontData('latin');
+  return [{ fontData, fontRef: '/F3', lang: 'latin' }];
+}
+
+async function readProfile() {
+  const file = $('icc').files && $('icc').files[0];
+  if (!file) throw new Error('This preset needs an output ICC profile: choose your printer\'s .icc file above.');
+  return new Uint8Array(await file.arrayBuffer());
+}
+
+function pressBlocks() {
+  return [
+    { type: 'heading', text: 'Print-ready page', level: 1 },
+    { type: 'paragraph', text: 'Process cyan, [100, 0, 0, 0].', color: [100, 0, 0, 0] },
+    { type: 'paragraph', text: 'Process magenta, [0, 100, 0, 0].', color: [0, 100, 0, 0] },
+    { type: 'paragraph', text: 'Rich black, [60, 40, 40, 100].', color: [60, 40, 40, 100] },
+    { type: 'paragraph', text: 'This line is RGB. Under a CMYK intent it is remapped through a calibrated /DefaultRGB.' },
+    { type: 'chart', chartType: 'bar', title: 'Ink coverage', categories: ['Q1', 'Q2', 'Q3'],
+      series: [{ label: 'Cyan', values: [40, 55, 48], color: [100, 0, 0, 0] }, { label: 'Magenta', values: [30, 35, 52], color: [0, 100, 0, 0] }] },
+  ];
+}
+
+function pressLayout(m) {
+  return {
+    pageWidth: m.PAGE_SIZES.A4.width + 2 * BLEED,
+    pageHeight: m.PAGE_SIZES.A4.height + 2 * BLEED,
+    margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
+    print: { bleed: BLEED, marks: true },
+  };
+}
+
+const BUILDERS = {
+  bleed: (m) => m.buildDocumentPDFBytes(
+    { title: 'Bleed and marks', blocks: [
+      { type: 'heading', text: 'Print-ready PDF', level: 1 },
+      { type: 'paragraph', text: 'Designed at A4 trim size plus 3 mm bleed on every side. Crop and registration marks sit outside the TrimBox and are cut away with the bleed.' },
+    ] },
+    pressLayout(m),
+  ),
+  cmyk: (m) => m.buildDocumentPDFBytes({ title: 'CMYK colours', blocks: pressBlocks() }, pressLayout(m)),
+  pdfa: async (m) => {
+    const iccProfile = await readProfile();
+    return m.buildDocumentPDFBytes(
+      { title: 'PDF/A-2b, CMYK intent', fontEntries: await latinEntries(m), blocks: pressBlocks() },
+      { ...pressLayout(m), tagged: 'pdfa2b', outputIntent: { iccProfile, outputConditionIdentifier: 'Custom CMYK' } },
+    );
+  },
+  pdfx: async (m) => {
+    const iccProfile = await readProfile();
+    return m.buildDocumentPDFBytes(
+      { title: 'PDF/X-4', fontEntries: await latinEntries(m), blocks: pressBlocks() },
+      { ...pressLayout(m), pdfx: 'pdfx4', outputIntent: { iccProfile, outputConditionIdentifier: 'Custom CMYK', registryName: 'http://www.color.org' } },
+    );
+  },
+};
+
+async function generate() {
+  const id = $('preset').value;
+  const t0 = performance.now();
+  report.style.display = 'none';
+  try {
+    setStatus('Loading pdfnative from CDN…', 'info');
+    const mod = await loadPdfnative();
+    setStatus('Generating PDF…', 'info');
+    const bytes = await BUILDERS[id](mod);
+    mod.downloadBlob(bytes, 'print-' + id + '.pdf');
+    const ms = (performance.now() - t0).toFixed(0);
+    $('timer').textContent = (bytes.length / 1024).toFixed(1) + ' KB · ' + ms + ' ms';
+    if (id === 'pdfx') {
+      const result = mod.validatePdfX(bytes);
+      report.style.display = 'block';
+      report.textContent = 'validatePdfX: ' + (result.valid ? 'valid' : 'NOT valid')
+        + (result.errors.length ? '\n\nErrors:\n- ' + result.errors.join('\n- ') : '')
+        + (result.warnings.length ? '\n\nWarnings:\n- ' + result.warnings.join('\n- ') : '');
+    }
+    setStatus('PDF generated and downloaded.', 'success');
+  } catch (err) {
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  }
+}
+
+$('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('generate').addEventListener('click', generate);
+applyPreset('bleed');
+
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

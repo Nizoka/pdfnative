@@ -296,8 +296,11 @@ describe('buildDocumentPDFStream', () => {
 describe('buildPDFStream', () => {
     it('produces same bytes as buildPDFBytes', async () => {
         const params = makeTableParams();
-        const expected = buildPDFBytes(params);
-        const actual = await collectAll(buildPDFStream(params));
+        // Pin the date: unpinned, the two builds embed different /CreationDate
+        // values whenever they straddle a second boundary.
+        const layout = { creationDate: new Date('2026-01-01T00:00:00.000Z') };
+        const expected = buildPDFBytes(params, layout);
+        const actual = await collectAll(buildPDFStream(params, layout));
         expect(actual).toEqual(expected);
     });
 

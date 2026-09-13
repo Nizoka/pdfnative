@@ -393,6 +393,22 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://pdfnative.dev/playgrounds/typography.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/typography.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/typography.html"/>
+    <lastmod>2026-09-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/playgrounds/print.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/print.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/print.html"/>
+    <lastmod>2026-09-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://pdfnative.dev/playgrounds/scale.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/scale.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/scale.html"/>
