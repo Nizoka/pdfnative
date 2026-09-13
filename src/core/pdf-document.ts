@@ -25,7 +25,7 @@ import type {
 import { buildImageXObject } from './pdf-image.js';
 import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
-import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes } from './pdf-print.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
@@ -214,9 +214,13 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layout?.tagged);
     const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
     const printBoxesStr = (printResolved?.boxesStr ?? '') + (pdfx ? pdfxBoxes(printOpts, pgW, pgH) : '');
+    // Under a CMYK OutputIntent the marks use the registration colour (v1.8.0).
+    const registrationColour = outputIntent?.space === 'cmyk';
     const printMarksOps = printOpts?.marks && printResolved?.trim
-        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
+        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks, registrationColour)
         : '';
+    const pageColorSpaceRes = defaultRgbResource(
+        outputIntent, registrationColour && printMarksOps ? REGISTRATION_COLOR_SPACE_ENTRY : '');
 
     // ── Attachments setup (PDF/A-3 only) ─────────────────────────────
     const attachments = layout?.attachments;
@@ -806,7 +810,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes}${defaultRgbRes} >>${structParents}${annotsStr} >>`
+                `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes}${pageColorSpaceRes} >>${structParents}${annotsStr} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -977,7 +981,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes}${defaultRgbRes} >>${structParents}${annotsStr} >>`
+                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes}${pageColorSpaceRes} >>${structParents}${annotsStr} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }

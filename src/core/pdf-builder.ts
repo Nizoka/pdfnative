@@ -62,7 +62,7 @@ import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
-import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes } from './pdf-print.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
 import { resolveCreationDate } from './pdf-reproducible.js';
 
 // ── Tagged Mode Helper Types ─────────────────────────────────────────
@@ -320,7 +320,6 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const pdfx = pdfxConfig !== null;
     // Both claims require every font embedded: no base-14 fallback.
     const embedFonts = tagged || pdfx;
-    const defaultRgbRes = defaultRgbResource(outputIntent);
 
     // Conformance diagnostics (v1.7.0): guard the PDF/A declaration (#69).
     const emitDiagnostic = createDiagnosticEmitter(layoutOptions?.strict, layoutOptions?.onDiagnostic);
@@ -402,9 +401,13 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layoutOptions?.tagged);
     const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
     const printBoxesStr = (printResolved?.boxesStr ?? '') + (pdfx ? pdfxBoxes(printOpts, pgW, pgH) : '');
+    // Under a CMYK OutputIntent the marks use the registration colour (v1.8.0).
+    const registrationColour = outputIntent?.space === 'cmyk';
     const printMarksOps = printOpts?.marks && printResolved?.trim
-        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
+        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks, registrationColour)
         : '';
+    const pageColorSpaceRes = defaultRgbResource(
+        outputIntent, registrationColour && printMarksOps ? REGISTRATION_COLOR_SPACE_ENTRY : '');
 
     const mcidAlloc = tagged ? createMCIDAllocator() : undefined;
 
@@ -726,7 +729,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes}${defaultRgbRes} >>${structParents} >>`
+                `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes}${pageColorSpaceRes} >>${structParents} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -771,7 +774,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin}${defaultRgbRes} >>${structParents} >>`
+                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin}${pageColorSpaceRes} >>${structParents} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }

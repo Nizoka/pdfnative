@@ -1112,7 +1112,14 @@ export interface ViewerPreferences {
 /** A page box rectangle `[x0, y0, x1, y1]` in points, PDF user space. */
 export type PageBox = readonly [number, number, number, number];
 
-/** Printer's-marks options for {@link PrintOptions.marks}. */
+/**
+ * Printer's-marks options for {@link PrintOptions.marks}.
+ *
+ * Marks are stroked in black. Under a CMYK `outputIntent` (since 1.8.0)
+ * they use the registration colour instead — the `All` separation, which
+ * prints on every plate so each separation can be registered against the
+ * others.
+ */
 export interface PrinterMarksOptions {
     /** Draw corner crop (trim) marks. Default `true`. */
     readonly crop?: boolean;

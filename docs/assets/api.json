@@ -1765,7 +1765,7 @@
       "name": "buildPrinterMarksOps",
       "kind": "value",
       "module": "src/core/pdf-print.ts",
-      "signature": "export function buildPrinterMarksOps( trim: PageBox, pgW: number, pgH: number, marks: boolean | PrinterMarksOptions, ): string",
+      "signature": "export function buildPrinterMarksOps( trim: PageBox, pgW: number, pgH: number, marks: boolean | PrinterMarksOptions, registrationColour = false, ): string",
       "summary": "Build the printer's-marks operator block for one page geometry."
     },
     {

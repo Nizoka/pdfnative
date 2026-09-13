@@ -142,6 +142,60 @@ describe('buildPrinterMarksOps', () => {
         const heavy = buildPrinterMarksOps(trim, 600, 800, { weight: 1 });
         expect(heavy).toContain('1.00 w');
     });
+
+    it('strokes in the registration colour when asked (v1.8.0)', () => {
+        const reg = buildPrinterMarksOps(trim, 600, 800, true, true);
+        expect(reg).toContain('/CSReg CS 1 SCN 0.25 w');
+        expect(reg).not.toMatch(/ RG\b/);
+        expect(buildPrinterMarksOps(trim, 600, 800, true)).toContain('0 0 0 RG 0.25 w');
+    });
+});
+
+describe('registration colour in documents (v1.8.0)', () => {
+    const icc = (space: string): Uint8Array => {
+        const bytes = new Uint8Array(200);
+        for (let i = 0; i < 4; i++) {
+            bytes[12 + i] = 'prtr'.charCodeAt(i);
+            bytes[16 + i] = space.charCodeAt(i);
+        }
+        return bytes;
+    };
+    const pageDicts = (pdf: string): string[] => pdf.match(/\/Type \/Page \/Parent[^\n]*/g) ?? [];
+
+    it('declares /Separation /All beside /DefaultRGB, in a single /ColorSpace, under a CMYK intent', () => {
+        const pdf = latin1(buildDocumentPDFBytes(docParams, {
+            tagged: 'pdfa2b', onDiagnostic: () => {}, print: { bleed: 18, marks: true },
+            outputIntent: { iccProfile: icc('CMYK'), outputConditionIdentifier: 'CGATS TR 001' },
+        }));
+        expect(pdf).toContain('/CSReg CS 1 SCN');
+        const pages = pageDicts(pdf);
+        expect(pages.length).toBeGreaterThan(0);
+        for (const page of pages) {
+            expect(page.match(/\/ColorSpace/g)?.length).toBe(1);
+            expect(page).toContain('/DefaultRGB [/CalRGB');
+            expect(page).toContain('/CSReg [/Separation /All /DeviceCMYK << /FunctionType 2');
+        }
+    });
+
+    it('keeps black marks and no colour space without a CMYK intent', () => {
+        const pdf = latin1(buildDocumentPDFBytes(docParams, { print: { bleed: 18, marks: true } }));
+        expect(pdf).toContain('0 0 0 RG');
+        expect(pdf).not.toContain('CSReg');
+        const rgb = latin1(buildDocumentPDFBytes(docParams, {
+            tagged: 'pdfa2b', onDiagnostic: () => {}, print: { bleed: 18, marks: true },
+            outputIntent: { iccProfile: icc('RGB '), outputConditionIdentifier: 'RGB press' },
+        }));
+        expect(rgb).not.toContain('CSReg');
+    });
+
+    it('adds no registration colour space when there are no marks', () => {
+        const pdf = latin1(buildDocumentPDFBytes(docParams, {
+            tagged: 'pdfa2b', onDiagnostic: () => {}, print: { bleed: 18 },
+            outputIntent: { iccProfile: icc('CMYK'), outputConditionIdentifier: 'CGATS TR 001' },
+        }));
+        expect(pdf).not.toContain('CSReg');
+        expect(pdf).toContain('/DefaultRGB');
+    });
 });
 
 // ── Integration ──────────────────────────────────────────────────────

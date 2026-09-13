@@ -558,10 +558,15 @@ const CAL_RGB_SRGB = '[/CalRGB << /WhitePoint [0.9505 1 1.089] /Gamma [2.2 2.2 2
  * mean, rather than rewriting them as naive CMYK. With an RGB intent (the
  * default) nothing is added and the output stays byte-identical.
  *
+ * @param extraEntries - Further colour-space entries for the same dictionary
+ *   (a resource dictionary holds a single `/ColorSpace`), e.g. the
+ *   registration colour of printer's marks. Only written alongside
+ *   `/DefaultRGB`.
  * @returns A resource fragment with a leading space.
  */
-export function defaultRgbResource(intent: ResolvedOutputIntent | null): string {
-    return intent && intent.space !== 'rgb' ? ` /ColorSpace << /DefaultRGB ${CAL_RGB_SRGB} >>` : '';
+export function defaultRgbResource(intent: ResolvedOutputIntent | null, extraEntries = ''): string {
+    if (!intent || intent.space === 'rgb') return '';
+    return ` /ColorSpace << /DefaultRGB ${CAL_RGB_SRGB}${extraEntries ? ` ${extraEntries}` : ''} >>`;
 }
 
 /**

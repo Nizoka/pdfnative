@@ -11,8 +11,9 @@
  *   and appended to every page's content stream (the watermark model).
  *
  * Everything is opt-in: without `layout.print` the output is byte-identical.
- * Marks are stroked in RGB black — a true all-separation registration
- * colour requires CMYK content support (deferred).
+ * Marks are stroked in RGB black, except under a CMYK OutputIntent: there
+ * they use the registration colour, `/Separation /All`, which prints on
+ * every plate so the marks can register each separation (v1.8.0).
  *
  * @module core/pdf-print
  */
@@ -129,6 +130,18 @@ export function resolvePrintBoxes(print: PrintOptions, pgW: number, pgH: number)
     return { boxesStr, trim };
 }
 
+/** Resource name of the registration colour space in page resources. */
+export const REGISTRATION_COLOR_SPACE_NAME = 'CSReg';
+
+/**
+ * The registration colour (v1.8.0): the `All` separation, which a RIP puts
+ * on every plate, with 100 % of each process ink as its alternate for
+ * proofing. The `/ColorSpace` entry for page resources. Printer's marks
+ * use it at tint 1 under a CMYK OutputIntent.
+ */
+export const REGISTRATION_COLOR_SPACE_ENTRY = `/${REGISTRATION_COLOR_SPACE_NAME} [/Separation /All /DeviceCMYK `
+    + '<< /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [1 1 1 1] /N 1 >>]';
+
 /**
  * The page-box fragment PDF/X adds to {@link resolvePrintBoxes} (v1.8.0).
  * A PDF/X page defines its finished size with exactly one of TrimBox or
@@ -169,6 +182,7 @@ export function buildPrinterMarksOps(
     pgW: number,
     pgH: number,
     marks: boolean | PrinterMarksOptions,
+    registrationColour = false,
 ): string {
     const opts: PrinterMarksOptions = marks === true ? {} : (marks as PrinterMarksOptions);
     const drawCrop = opts.crop ?? true;
@@ -178,7 +192,8 @@ export function buildPrinterMarksOps(
     const weight = opts.weight ?? 0.25;
 
     const [tx0, ty0, tx1, ty1] = trim;
-    const ops: string[] = ['q', `${strokeOp('0 0 0')} ${fmtNum(weight)} w`];
+    const stroke = registrationColour ? `/${REGISTRATION_COLOR_SPACE_NAME} CS 1 SCN` : strokeOp('0 0 0');
+    const ops: string[] = ['q', `${stroke} ${fmtNum(weight)} w`];
     const line = (x1: number, y1: number, x2: number, y2: number): void => {
         ops.push(`${fmtNum(x1)} ${fmtNum(y1)} m ${fmtNum(x2)} ${fmtNum(y2)} l S`);
     };
