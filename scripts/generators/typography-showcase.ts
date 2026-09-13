@@ -123,13 +123,11 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // the pair would differ by a handful of bytes only.
     const SHY = '­';
     const textLatin = await loadFontEntries('latin', '/F3');
-    // The demonstrated word is French on purpose: the French preset and the
-    // soft-hyphen sample share one page, and a 25-letter French word is the
-    // classic narrow-column case.
+    // A 28-letter English word with author-written soft hyphens at its
+    // syllables: the classic narrow-column case.
     const hyphenated =
-        `Narrow columns are where hyphenation matters: a long word such as the French `
-        // demo-language: fr (soft hyphens inside a long French word)
-        + `anti${SHY}consti${SHY}tution${SHY}nelle${SHY}ment overflows without a break opportunity `
+        `Narrow columns are where hyphenation matters: a long word such as `
+        + `anti${SHY}dis${SHY}establish${SHY}ment${SHY}arian${SHY}ism overflows without a break opportunity `
         + `and breaks cleanly with one. A soft hyphen stays invisible wherever the break is not taken.`;
 
     const textDoc: DocumentParams = {
@@ -206,16 +204,17 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // ── Hyphenation provider ─────────────────────────────────────
     // The library ships no dictionary; a provider supplies break positions
     // and receives the document's language. This one is a deliberately
-    // small French rule — break before a consonant that starts a new
-    // syllable — installed for this sample only and removed after it.
-    const FR_VOWELS = 'aeiouyàâäéèêëîïôöùûüœ';
-    const FR_CONSONANTS = 'bcdfghjklmnpqrstvwxz';
-    const frSyllables = (word: string, lang?: string): number[] => {
-        if (lang !== 'fr') return [];
+    // small English rule — break before a consonant that starts a new
+    // syllable — installed for this sample only and removed after it. A
+    // real provider would use Liang patterns for the language it is given.
+    const EN_VOWELS = 'aeiouy';
+    const EN_CONSONANTS = 'bcdfghjklmnpqrstvwxz';
+    const enSyllables = (word: string, lang?: string): number[] => {
+        if (lang !== 'en') return [];
         const out: number[] = [];
         const w = word.toLowerCase();
         for (let i = 2; i < w.length - 2; i++) {
-            if (FR_VOWELS.includes(w[i - 1]) && FR_CONSONANTS.includes(w[i]) && FR_VOWELS.includes(w[i + 1])) out.push(i);
+            if (EN_VOWELS.includes(w[i - 1]) && EN_CONSONANTS.includes(w[i]) && EN_VOWELS.includes(w[i + 1])) out.push(i);
         }
         return out;
     };
@@ -224,18 +223,17 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         fontEntries: textLatin,
         blocks: [
             { type: 'heading', text: 'Automatic hyphenation through a provider', level: 1 },
-            { type: 'paragraph', text: 'The library ships no dictionary: a provider receives every word and the document language, and returns the break positions. This sample installs a small French syllable rule and sets hyphenationLanguage to fr, so the narrow French paragraph below breaks at syllables instead of overflowing or leaving gaps.' },
-            // demo-language: fr (hyphenationLanguage 'fr' with a French syllable provider)
-            { type: 'paragraph', text: 'Dans cette colonne étroite, les mots anticonstitutionnellement, internationalisation et incompréhensiblement se coupent à la syllabe au lieu de déborder ou de laisser un trou, parce que le fournisseur connaît la langue du document.', indent: 320, align: 'justify' },
+            { type: 'paragraph', text: 'The library ships no dictionary: a provider receives every word and the document language, and returns the break positions. This sample installs a small English syllable rule and sets hyphenationLanguage to en, so the narrow paragraph below breaks at syllables instead of overflowing or leaving gaps.' },
+            { type: 'paragraph', text: 'In this narrow column the words antidisestablishmentarianism, internationalization, incomprehensibilities and counterrevolutionaries break at a syllable instead of overflowing or leaving a gap, because the provider knows the language of the document.', indent: 320, align: 'justify' },
         ],
         footerText: 'pdfnative – typography showcase',
     };
-    setHyphenationProvider(frSyllables);
+    setHyphenationProvider(enSyllables);
     try {
         ctx.writeSafe(
             resolve(ctx.outputDir, 'typography', 'hyphenation-provider.pdf'),
             'typography/hyphenation-provider.pdf',
-            buildDocumentPDFBytes(hyphenDoc, { typography: { hyphenationLanguage: 'fr' } }),
+            buildDocumentPDFBytes(hyphenDoc, { typography: { hyphenationLanguage: 'en' } }),
         );
     } finally {
         setHyphenationProvider(null);
