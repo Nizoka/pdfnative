@@ -3,7 +3,7 @@
   "verifiedOn": "2026-09-13",
   "packages": {
     "pdfnative": {
-      "version": "1.7.0",
+      "version": "1.8.0",
       "pinField": null,
       "pin": null,
       "repo": "https://github.com/Nizoka/pdfnative"

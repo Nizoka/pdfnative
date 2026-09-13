@@ -485,7 +485,7 @@
         '// PDF/A requires EVERY font embedded (ISO 19005-2 §6.2.11.4.1). `tagged` writes',
         '// the XMP claim but embeds nothing by itself — without fontEntries the document',
         '// falls back to unembedded Helvetica and veraPDF rejects it.',
-        "registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-sans-data.js') });",
+        "registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });",
         "const fontData = await loadFontData('latin');",
         "if (!fontData) throw new Error('latin font failed to load');",
         '',
@@ -525,9 +525,9 @@
         '',
         '// Lazy font registration — only loaded when needed',
         'registerFonts({',
-        "  th: () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-thai-data.js'),",
-        "  ar: () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-arabic-data.js'),",
-        "  ja: () => import('https://esm.sh/pdfnative@1.7.0/fonts/noto-jp-data.js'),",
+        "  th: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-thai-data.js'),",
+        "  ar: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-arabic-data.js'),",
+        "  ja: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-jp-data.js'),",
         '});',
         '',
         "const langs = ['th', 'ar', 'ja'];",
@@ -665,8 +665,8 @@
 
   // CDN URLs to try in order (esm.sh, then unpkg as fallback)
   var CDN_URLS = [
-    'https://esm.sh/pdfnative@1.7.0',
-    'https://cdn.jsdelivr.net/npm/pdfnative@1.7.0/+esm'
+    'https://esm.sh/pdfnative@1.8.0',
+    'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'
   ];
 
   async function loadPdfnative() {

@@ -14,9 +14,9 @@ We will acknowledge receipt within 48 hours and target a fix within 7 days for C
 
 | Version | Supported |
 |---------|-----------|
-| 1.7.x   | ✅        |
-| 1.6.x   | ✅ (security fixes) |
-| < 1.6   | ❌        |
+| 1.8.x   | ✅        |
+| 1.7.x   | ✅ (security fixes) |
+| < 1.7   | ❌        |
 
 ## Security Model
 

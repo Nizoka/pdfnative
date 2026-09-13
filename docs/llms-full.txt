@@ -54,8 +54,8 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 
 - [Copilot instructions](https://github.com/Nizoka/pdfnative/blob/main/.github/copilot-instructions.md): Canonical project conventions — architecture, code style, build/test, PDF-specific invariants.
 - [AGENTS.md](https://github.com/Nizoka/pdfnative/blob/main/AGENTS.md): Editor-agnostic agent guidance (Cursor / Aider / Claude Code / Continue).
-- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.6.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 28 tools — the complete PAdES ladder B-B → B-LTA (`sign_pdf` with RFC 3161 timestamps, `add_ltv`, `timestamp_pdf`), `update_metadata`, the read-only `inspect_layout` pagination preview, all 13 block kinds in `generate_basic_pdf`, print production, charts v2, native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. MCP 2026-07-28 spec with legacy fallback. Built on pdfnative 1.7.0.
-- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.4.0 — 21 commands from the terminal — render, fill, annotate, metadata, merge / split / extract, sign (RFC 3161 `--timestamp`, B-T), ltv (B-LT, air-gapped collect → embed), doc-timestamp (B-LTA), verify, encrypt, decrypt, inspect, extract-text, compare, batch (incl. declarative `--manifest` pipelines), doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract (12 error codes, 19 schema subjects). Built on pdfnative 1.7.0 (pins `^1.7.0`), Node ≥ 22.
+- [MCP integration](https://pdfnative.dev/guides/mcp.html): `pdfnative-mcp` v1.6.0 — use pdfnative from Claude Desktop, Cursor, Continue, Zed via 28 tools — the complete PAdES ladder B-B → B-LTA (`sign_pdf` with RFC 3161 timestamps, `add_ltv`, `timestamp_pdf`), `update_metadata`, the read-only `inspect_layout` pagination preview, all 13 block kinds in `generate_basic_pdf`, print production, charts v2, native vector `add_chart`, `read_form_fields` / `fill_form`, `encrypt_pdf` / `decrypt_pdf`, markup `annotate_pdf`, the network-free `draft_governance_issue`, and the page-tree trio `merge_pdfs` / `split_pdf` / `extract_pages`. MCP 2026-07-28 spec with legacy fallback. Requires pdfnative ≥ 1.7.0.
+- [CLI](https://pdfnative.dev/guides/cli.html): `pdfnative-cli` v1.4.0 — 21 commands from the terminal — render, fill, annotate, metadata, merge / split / extract, sign (RFC 3161 `--timestamp`, B-T), ltv (B-LT, air-gapped collect → embed), doc-timestamp (B-LTA), verify, encrypt, decrypt, inspect, extract-text, compare, batch (incl. declarative `--manifest` pipelines), doctor, schema, completion, govern; agent-native `--json`/`E_*`/`--dry-run` contract (12 error codes, 19 schema subjects). Requires pdfnative ≥ 1.7.0 (pins `^1.7.0`), Node ≥ 22.
 - [React](https://pdfnative.dev/guides/react.html): `pdfnative-react` v1.2.0 — declarative JSX components compiled on-device to pdfnative blocks; charts v2, print production, PDF/A diagnostics channel, `renderToResponse` HTTP caching, 25 lint rules, render functions, client hooks, token-frugal DocSpec. Peers: React 19 + pdfnative `^1.7.0`.
 
 ## Source
@@ -77,8 +77,8 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 
 ## Ecosystem
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.4.0, built on pdfnative 1.7.0 — pins `^1.7.0`, Node ≥ 22) — render, fill, annotate, metadata, merge, split, extract, sign, verify, ltv, doc-timestamp, encrypt, decrypt, inspect, extract-text, compare, batch, doctor, schema, completion, govern.
-- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 28 AI tools (v1.6.0, built on pdfnative 1.7.0).
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.4.0, requires pdfnative ≥ 1.7.0 — pins `^1.7.0`, Node ≥ 22) — render, fill, annotate, metadata, merge, split, extract, sign, verify, ltv, doc-timestamp, encrypt, decrypt, inspect, extract-text, compare, batch, doctor, schema, completion, govern.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 28 AI tools (v1.6.0, requires pdfnative ≥ 1.7.0).
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v1.2.0, React 19 + pdfnative ^1.7.0 peers).
 
 ---
@@ -1114,7 +1114,7 @@ pdfnative ships as a library, but three official companion packages cover the mo
 
 **New in v1.3.0:** five more commands on the pdfnative 1.6 engine — **`fill`** (fill, flatten, and export existing AcroForms via incremental save, encrypted PDFs included), **`encrypt`** / **`decrypt`** (AES-128/256 re-securing and password removal; RC4 never emitted), **`extract-text`** (reading-order Unicode text as text/JSON/NDJSON, `--runs`, `--password`), and **`doctor`** (offline environment preflight). Also native vector charts in `render`, `--password` + `--encrypt` re-encryption on merge/split/extract, an agent capability manifest (`schema manifest` + `llms.txt`), and PowerShell completion.
 
-**New in v1.4.0:** the **complete PAdES ladder** from the shell — `sign --timestamp <tsa-url>` (RFC 3161, B-T), **`ltv`** (B-LT `/DSS`; `collect` gathers revocation evidence as replayable JSON so `embed` can run fully offline in air-gapped environments), and **`doc-timestamp`** (B-LTA document-timestamp revisions) — plus **`metadata`** (signature-safe `/Info` + XMP edits), **`compare`** (text + structure diff with CI exit codes), **`batch --manifest`** declarative pipelines with `@id` references and an `--allow-network` opt-in, `render --strict` PDF/A gating, `inspect --signatures`, RSA-SHA384/512, and a global `--max-inflate-size` zip-bomb cap. Every network path is an explicit opt-in behind an SSRF guard. Built on pdfnative 1.7.0, Node ≥ 22.
+**New in v1.4.0:** the **complete PAdES ladder** from the shell — `sign --timestamp <tsa-url>` (RFC 3161, B-T), **`ltv`** (B-LT `/DSS`; `collect` gathers revocation evidence as replayable JSON so `embed` can run fully offline in air-gapped environments), and **`doc-timestamp`** (B-LTA document-timestamp revisions) — plus **`metadata`** (signature-safe `/Info` + XMP edits), **`compare`** (text + structure diff with CI exit codes), **`batch --manifest`** declarative pipelines with `@id` references and an `--allow-network` opt-in, `render --strict` PDF/A gating, `inspect --signatures`, RSA-SHA384/512, and a global `--max-inflate-size` zip-bomb cap. Every network path is an explicit opt-in behind an SSRF guard. Requires pdfnative ≥ 1.7.0, Node ≥ 22.
 
 ```bash
 # render with full layout coverage (encryption + watermark + PDF/A-2b)
@@ -1156,7 +1156,7 @@ See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v1.4.0 r
 
 **v1.5.0:** adds `add_chart`, `read_form_fields`, `fill_form`, `encrypt_pdf`, `decrypt_pdf` (**24 tools**)<!-- verify-docs:allow stale-token (historical: MCP v1.5.0 total) -->, `password` support on the read-only and page-tree tools, MCP resources (`pdfnative://output/…`), and tool annotations — via the pdfnative 1.6.0 engine.
 
-**v1.6.0:** adds `add_ltv`, `timestamp_pdf`, `update_metadata`, `inspect_layout` (**28 tools**), all 13 block kinds in `generate_basic_pdf`, layout options and build-time `encrypt` on the document tools, image watermarks, print production, charts v2, honest PDF/A (`embedFonts` / `strict` / diagnostics), PAdES timestamps on `sign_pdf`, four new recipe prompts, and the MCP 2026-07-28 spec — via the pdfnative 1.7.0 engine.
+**v1.6.0:** adds `add_ltv`, `timestamp_pdf`, `update_metadata`, `inspect_layout` (**28 tools**), all 13 block kinds in `generate_basic_pdf`, layout options and build-time `encrypt` on the document tools, image watermarks, print production, charts v2, honest PDF/A (`embedFonts` / `strict` / diagnostics), PAdES timestamps on `sign_pdf`, four new recipe prompts, and the MCP 2026-07-28 spec — via the pdfnative 1.7.0 engine. <!-- verify-docs:allow version-token (historical engine reference) -->
 
 ```bash
 npx -y pdfnative-mcp
@@ -1215,7 +1215,7 @@ See the [MCP Integration Guide](https://pdfnative.dev/guides/mcp.html) and the [
 
 ### pdfnative-react — declarative JSX renderer
 
-[`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) v1.2.0 turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency pdfnative engine — no DOM, no headless browser, no SaaS round-trips. A custom React reconciler compiles your component tree synchronously into the pdfnative block model. v1.2.0 follows the pdfnative 1.7.0 engine: charts v2 (9 kinds, secondary axis, log/time scales, data labels), print production via `<Document print>`, the PDF/A diagnostics channel (`layout.strict` / `onDiagnostic`), HTTP caching on `renderToResponse` (`etag` / `cacheControl`), and 25 lint rules — all additive. Requires **React 19**, **pdfnative ^1.7.0** and **Node.js ≥ 22**. React and pdfnative are peer dependencies; the package itself adds one runtime dependency, `react-reconciler`. The pdfnative engine remains dependency-free.
+[`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) v1.2.0 turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency pdfnative engine — no DOM, no headless browser, no SaaS round-trips. A custom React reconciler compiles your component tree synchronously into the pdfnative block model. v1.2.0 (peer `pdfnative ^1.7.0`) follows the 1.7.0 engine: charts v2 (9 kinds, secondary axis, log/time scales, data labels), print production via `<Document print>`, the PDF/A diagnostics channel (`layout.strict` / `onDiagnostic`), HTTP caching on `renderToResponse` (`etag` / `cacheControl`), and 25 lint rules — all additive. Requires **React 19**, **pdfnative ^1.7.0** and **Node.js ≥ 22**. React and pdfnative are peer dependencies; the package itself adds one runtime dependency, `react-reconciler`. The pdfnative engine remains dependency-free.
 
 ```tsx
 import { Document, Heading, Text, Table, renderToBytes } from 'pdfnative-react';
@@ -2784,7 +2784,7 @@ document rewrite.
 <!-- source: docs/guides/cli.md -->
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks the latest published `pdfnative-cli`** (v1.4.0, built on pdfnative 1.7.0 — pins `^1.7.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
+> **Tracks the latest published `pdfnative-cli`** (v1.4.0, requires pdfnative ≥ 1.7.0 — pins `^1.7.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
 [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 21 commands in five groups — create & edit (`render`, `fill`, `annotate`, `metadata`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `ltv`, `doc-timestamp`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`, `compare`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — that together cover the full document lifecycle from JSON to a signed, timestamped, archive-grade PDF with the complete PAdES ladder (B-B → B-T → B-LT → B-LTA), plus page-tree editing, markup annotations, document comparison, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
@@ -3119,7 +3119,7 @@ pdfnative render --input report.json --inspect-layout > layout.json
 
 #### Print production, images from JSON &amp; charts v2 _(v1.4.0)_
 
-Everything here rides on the pdfnative 1.7.0 engine and is reachable through the existing `--layout` file and the document JSON — no new flags needed:
+Everything here needs pdfnative ≥ 1.7.0 and is reachable through the existing `--layout` file and the document JSON — no new flags needed:
 
 - **Image blocks in the document JSON** — `{ "type": "image", "src": "logo.png" }` (path resolved relative to the `--input` JSON, same validation as `--attachment`) or `{ "type": "image", "dataBase64": "…" }` for inline JPEG/PNG.
 - **`layout.print`** — `bleed`, `trimBox` / `bleedBox` / `artBox` / `cropBox`, vector printer's marks (`print.marks`), and `/UserUnit` (1–75 000). `merge` / `split` / `extract` now preserve these boxes too.
@@ -3815,7 +3815,7 @@ node samples/run-all.js
 
 ### What's new in v1.4.0
 
-v1.4.0 is built on **pdfnative 1.7.0** (pin `^1.7.0`) and completes the signature story: the full **PAdES ladder** (B-B → B-T → B-LT → B-LTA) is now writable from the command line, alongside signature-safe metadata edits, a CI-grade document diff, and a declarative batch pipeline. **No contract change** — every flag, default, exit code, error code and envelope from 1.x behaves identically on Node ≥ 22.
+v1.4.0 requires **pdfnative ≥ 1.7.0** (pin `^1.7.0`) and completes the signature story: the full **PAdES ladder** (B-B → B-T → B-LT → B-LTA) is now writable from the command line, alongside signature-safe metadata edits, a CI-grade document diff, and a declarative batch pipeline. **No contract change** — every flag, default, exit code, error code and envelope from 1.x behaves identically on Node ≥ 22.
 
 | Area | v1.3.0 | v1.4.0 |
 |---|---|---|
@@ -5247,7 +5247,7 @@ The repository ships a deterministic offline mock PKI (`scripts/helpers/mock-pki
 <!-- source: docs/guides/mcp.md -->
 # pdfnative-mcp — AI Client Integration Guide
 
-> **Tracks the latest published `pdfnative-mcp`** (v1.6.0, built on pdfnative 1.7.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
+> **Tracks the latest published `pdfnative-mcp`** (v1.6.0, requires pdfnative ≥ 1.7.0). Full release notes: [pdfnative-mcp releases](https://github.com/Nizoka/pdfnative-mcp/releases). Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html).
 
 [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) is an **MCP server** that exposes the full pdfnative library to any AI client supporting the [Model Context Protocol](https://modelcontextprotocol.io) — Claude Desktop, Cursor, Continue, Zed, ChatGPT, and more.
 
@@ -6054,7 +6054,7 @@ Split the content across multiple tool calls or reduce image/barcode count.
 
 ## Release history
 
-The current release is **v1.6.0** (28 tools, built on pdfnative 1.7.0 — see the header note). Per-release notes, oldest first:
+The current release is **v1.6.0** (28 tools, requires pdfnative ≥ 1.7.0 — see the header note). Per-release notes, oldest first:
 
 ### What's new in v1.0.0
 
@@ -7380,7 +7380,7 @@ const pdf = buildDocumentPDFBytes(params, { compress: true });
 
 ```html
 <script type="module">
-  import { buildDocumentPDFBytes, downloadBlob } from 'https://esm.sh/pdfnative@1.7.0';
+  import { buildDocumentPDFBytes, downloadBlob } from 'https://esm.sh/pdfnative@1.8.0';
 
   document.getElementById('go').addEventListener('click', () => {
     const pdf = buildDocumentPDFBytes({
@@ -7565,7 +7565,7 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 <!-- source: docs/guides/react.md -->
 # pdfnative-react — Declarative JSX Renderer Guide
 
-> **Tracks the latest published `pdfnative-react`** (v1.2.0, built on pdfnative 1.7.0), with **React 19** and `pdfnative` ^1.7.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
+> **Tracks the latest published `pdfnative-react`** (v1.2.0, requires pdfnative ≥ 1.7.0), with **React 19** and `pdfnative` ^1.7.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
 
 [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency [`pdfnative`](https://github.com/Nizoka/pdfnative) engine — no DOM, no headless browser, no SaaS round-trips. Your documents never leave the process.
 
@@ -7946,7 +7946,7 @@ try {
 
 ### What's new in v1.2.0
 
-v1.2.0 follows the pdfnative 1.7.0 engine — charts v2, print production, and the conformance channel — and is **100 % additive**: no component, hook or function was removed or changed shape. The only floor that moves is the `pdfnative` peer, `^1.6.0` → `^1.7.0`.
+v1.2.0 follows the pdfnative 1.7.0 engine — charts v2, print production, and the conformance channel — and is **100 % additive**: no component, hook or function was removed or changed shape. The only floor that moves is the `pdfnative` peer, `^1.6.0` → `^1.7.0`. <!-- verify-docs:allow version-token (historical: what v1.2.0 shipped with) -->
 
 | Area | v1.1.0 | v1.2.0 |
 |---|---|---|
@@ -9162,7 +9162,7 @@ mapped through their `/ToUnicode` CMap — which pdfnative's own CIDFont
 output always embeds, so **pdfnative-generated documents round-trip
 losslessly**, including CJK, Arabic, and emoji.
 
-Since pdfnative **1.7.0** the `/ToUnicode` coverage is complete across both
+Since pdfnative **1.7.0** the `/ToUnicode` coverage is complete across both <!-- verify-docs:allow version-token (historical: the release that completed it) -->
 builders: base-14 font dictionaries are reached under tagged mode and the
 AcroForm `/Helv` dictionary carries a CMap in every mode — so base-14 text in
 tagged documents and **text typed into form fields** now extract cleanly too.

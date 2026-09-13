@@ -5,8 +5,8 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 17499,
-      "approxTokens": 4375
+      "bytes": 17515,
+      "approxTokens": 4379
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -17,8 +17,8 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 548056,
-      "approxTokens": 137014
+      "bytes": 548335,
+      "approxTokens": 137084
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -47,8 +47,8 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 100163,
-      "approxTokens": 25041
+      "bytes": 100254,
+      "approxTokens": 25064
     }
   ],
   "guides": [
@@ -167,7 +167,7 @@
     },
     {
       "title": "pdfnative-cli — Command-Line Interface Guide",
-      "summary": "Tracks the latest published `pdfnative-cli` (v1.4.0, built on pdfnative 1.7.0 — pins `^1.7.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-cli releases.",
+      "summary": "Tracks the latest published `pdfnative-cli` (v1.4.0, requires pdfnative ≥ 1.7.0 — pins `^1.7.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-cli releases.",
       "html": "https://pdfnative.dev/guides/cli.html",
       "markdown": "https://pdfnative.dev/guides/cli.md",
       "anchors": [
@@ -189,8 +189,8 @@
         "resources",
         "citation"
       ],
-      "bytes": 79042,
-      "approxTokens": 19761
+      "bytes": 79037,
+      "approxTokens": 19759
     },
     {
       "title": "Colour-emoji font CLI (pdfnative-build-emoji-font)",
@@ -315,7 +315,7 @@
     },
     {
       "title": "pdfnative-mcp — AI Client Integration Guide",
-      "summary": "Tracks the latest published `pdfnative-mcp` (v1.6.0, built on pdfnative 1.7.0). Full release notes: pdfnative-mcp releases. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home.",
+      "summary": "Tracks the latest published `pdfnative-mcp` (v1.6.0, requires pdfnative ≥ 1.7.0). Full release notes: pdfnative-mcp releases. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home.",
       "html": "https://pdfnative.dev/guides/mcp.html",
       "markdown": "https://pdfnative.dev/guides/mcp.md",
       "anchors": [
@@ -334,8 +334,8 @@
         "release-history",
         "further-reading"
       ],
-      "bytes": 62596,
-      "approxTokens": 15649
+      "bytes": 62604,
+      "approxTokens": 15651
     },
     {
       "title": "Onboarding — the pdfnative ecosystem in 90 seconds",
@@ -449,7 +449,7 @@
     },
     {
       "title": "pdfnative-react — Declarative JSX Renderer Guide",
-      "summary": "Tracks the latest published `pdfnative-react` (v1.2.0, built on pdfnative 1.7.0), with React 19 and `pdfnative` ^1.7.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-react releases.",
+      "summary": "Tracks the latest published `pdfnative-react` (v1.2.0, requires pdfnative ≥ 1.7.0), with React 19 and `pdfnative` ^1.7.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-react releases.",
       "html": "https://pdfnative.dev/guides/react.html",
       "markdown": "https://pdfnative.dev/guides/react.md",
       "anchors": [
@@ -471,8 +471,8 @@
         "release-history",
         "resources"
       ],
-      "bytes": 22926,
-      "approxTokens": 5732
+      "bytes": 23010,
+      "approxTokens": 5753
     },
     {
       "title": "Self-verifying generation",
@@ -568,8 +568,8 @@
         "samples",
         "see-also"
       ],
-      "bytes": 6230,
-      "approxTokens": 1558
+      "bytes": 6315,
+      "approxTokens": 1579
     },
     {
       "title": "Troubleshooting",
