@@ -1590,7 +1590,7 @@
       "name": "buildAppearanceStreamDict",
       "kind": "value",
       "module": "src/core/pdf-form.ts",
-      "signature": "export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number): string",
+      "signature": "export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number, extraResources = ''): string",
       "summary": "Build the Form XObject dictionary header for an appearance stream."
     },
     {

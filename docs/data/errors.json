@@ -25,9 +25,18 @@
       "code": "PDFA_DEVICE_CMYK_IMAGE",
       "severity": "warning",
       "since": "1.7.0",
-      "raisedWhen": "A DeviceCMYK image is embedded under a PDF/A claim whose OutputIntent is sRGB.",
+      "raisedWhen": "A DeviceCMYK image is embedded under a PDF/A claim whose OutputIntent is not CMYK (the built-in sRGB intent, or a caller-supplied RGB or Gray profile).",
       "standard": "ISO 19005-2 §6.2.4.3 (device colour must match the output intent; veraPDF rejects the file)",
-      "remedy": "Convert the image to RGB or drop the PDF/A level.",
+      "remedy": "Supply a CMYK layout.outputIntent (accepted since 1.8.0), convert the image to RGB, or drop the PDF/A level.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
+      "code": "PDFA_DEVICE_CMYK_CONTENT",
+      "severity": "warning",
+      "since": "1.8.0",
+      "raisedWhen": "A CMYK colour ([c, m, y, k] or \"C M Y K\") is painted under a PDF/A claim whose OutputIntent is not CMYK. The reverse case, RGB colours under a CMYK intent, raises nothing: pdfnative remaps them through a calibrated /DefaultRGB.",
+      "standard": "ISO 19005-2 §6.2.4.3 (device colour must match the output intent; veraPDF rejects the file)",
+      "remedy": "Supply a CMYK layout.outputIntent, use RGB colours, or drop the PDF/A level.",
       "guide": "https://pdfnative.dev/guides/pdfa.md"
     }
   ],

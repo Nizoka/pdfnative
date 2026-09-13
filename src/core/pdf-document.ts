@@ -23,7 +23,8 @@ import type {
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaUnembeddedFormFontDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaUnembeddedFormFontDiagnostic } from './pdf-diagnostics.js';
+import { scanDeviceColour } from './pdf-content-colour.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
@@ -47,7 +48,8 @@ import {
     buildStructureTree,
     buildXMPMetadata,
     buildOutputIntentDict,
-    resolveOutputIntentProfile,
+    resolveOutputIntent,
+    defaultRgbResource,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -154,6 +156,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // ── Tagged mode setup ────────────────────────────────────────────
     const pdfaConfig = resolvePdfAConfig(layout?.tagged);
     const tagged = pdfaConfig.enabled;
+    // Resolved before any byte is written: an unusable profile throws here.
+    const outputIntent = tagged ? resolveOutputIntent(layout?.outputIntent) : null;
+    const defaultRgbRes = defaultRgbResource(outputIntent);
 
     // ── Conformance diagnostics (v1.7.0) ─────────────────────────────
     // Guard the PDF/A declaration: a conformance claim must not be stamped
@@ -252,9 +257,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 const idx = resolvedImages.length;
                 imageBlockMap.set(block, idx);
                 const resolved = resolveImage(block, cw);
-                if (tagged && resolved.parsed.colorSpace === '/DeviceCMYK') {
-                    // The document's OutputIntent is sRGB — a DeviceCMYK
-                    // image breaks the PDF/A claim (ISO 19005-2 §6.2.4.3).
+                if (outputIntent && outputIntent.space !== 'cmyk' && resolved.parsed.colorSpace === '/DeviceCMYK') {
+                    // A DeviceCMYK image needs a CMYK OutputIntent: without
+                    // one it breaks the PDF/A claim (ISO 19005-2 §6.2.4.3).
                     emitDiagnostic(pdfaDeviceCmykDiagnostic());
                 }
                 resolvedImages.push(resolved);
@@ -488,6 +493,13 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         }
 
         pageStreams.push(ops.join('\n'));
+    }
+
+    // CMYK colour needs a CMYK OutputIntent (v1.8.0). RGB under a CMYK
+    // intent is remapped through /DefaultRGB; the reverse has no inline
+    // equivalent. Checked here, before any byte is written.
+    if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
+        emitDiagnostic(pdfaDeviceCmykContentDiagnostic());
     }
 
     // ── Group annotations by page ────────────────────────────────────
@@ -772,7 +784,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
+                `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes}${defaultRgbRes} >>${structParents}${annotsStr} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -852,10 +864,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 if (isButton) {
                     const yesStream = result.apYesStream ?? '';
                     const offStream = result.apOffStream ?? '';
-                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum), yesStream);
-                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum), offStream);
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum, defaultRgbRes), yesStream);
+                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum, defaultRgbRes), offStream);
                 } else {
-                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum), result.appearanceStream);
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum, defaultRgbRes), result.appearanceStream);
                 }
             }
 
@@ -943,7 +955,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
+                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes}${defaultRgbRes} >>${structParents}${annotsStr} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -1023,10 +1035,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 if (isButton) {
                     const yesStream = result.apYesStream ?? '';
                     const offStream = result.apOffStream ?? '';
-                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum), yesStream);
-                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum), offStream);
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum, defaultRgbRes), yesStream);
+                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum, defaultRgbRes), offStream);
                 } else {
-                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum), result.appearanceStream);
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum, defaultRgbRes), result.appearanceStream);
                 }
             }
 
@@ -1085,7 +1097,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         for (let k = 0; k < colorEmojiForms.length; k++) {
             const f = colorEmojiForms[k];
             const objNum = colorEmojiStart + k;
-            const res = f.resources ? ` /Resources << ${f.resources} >>` : '';
+            // A Form XObject's own /Resources replaces the page's, so the
+            // calibrated /DefaultRGB has to be repeated here to apply inside.
+            const formRes = (f.resources ?? '') + defaultRgbRes;
+            const res = formRes ? ` /Resources << ${formRes} >>` : '';
             emitStreamObj(
                 objNum,
                 `<< /Type /XObject /Subtype /Form /BBox [${f.bbox.join(' ')}]${res} /Length ${f.content.length}`,
@@ -1119,11 +1134,12 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         totalObjs = xmpObjNum;
 
         // ICC profile stream — the built-in minimal sRGB profile, or the
-        // caller-supplied RGB profile (layout.outputIntent, v1.7.0).
+        // caller-supplied profile (layout.outputIntent, v1.7.0; CMYK and
+        // Gray since v1.8.0), with /N taken from its data colour space.
         const iccObjNum = totalObjs + 1;
-        const iccProfile = resolveOutputIntentProfile(layout?.outputIntent);
+        const intent = outputIntent ?? resolveOutputIntent(layout?.outputIntent);
         emitStreamObj(iccObjNum,
-            `<< /N 3 /Length ${iccProfile.length}`, iccProfile);
+            `<< /N ${intent.components} /Length ${intent.profile.length}`, intent.profile);
         totalObjs = iccObjNum;
 
         outputIntentObjNum = totalObjs + 1;

@@ -552,10 +552,12 @@ export interface WorkerGenerationOptions {
 export type PdfDiagnosticCode =
     /** PDF/A level requested with no `fontEntries` — unembedded standard-14 fonts (ISO 19005 §6.2.11.4.1). (#69) */
     | 'PDFA_NO_FONT_ENTRIES'
-    /** DeviceCMYK image under a PDF/A claim with an sRGB OutputIntent (ISO 19005-2 §6.2.4.3). */
+    /** DeviceCMYK image under a PDF/A claim whose OutputIntent is not CMYK (ISO 19005-2 §6.2.4.3). */
     | 'PDFA_DEVICE_CMYK_IMAGE'
     /** AcroForm fields under a PDF/A claim — form appearances use an unembedded base-14 /Helv font (ISO 19005 §6.2.11.4.1). */
-    | 'PDFA_UNEMBEDDED_FORM_FONT';
+    | 'PDFA_UNEMBEDDED_FORM_FONT'
+    /** CMYK content colour under a PDF/A claim whose OutputIntent is not CMYK (ISO 19005-2 §6.2.4.3). @since 1.8.0 */
+    | 'PDFA_DEVICE_CMYK_CONTENT';
 
 /** A single conformance diagnostic surfaced by the builders. */
 export interface PdfDiagnostic {
@@ -809,7 +811,8 @@ export interface PdfLayoutOptions {
     readonly print?: PrintOptions;
     /**
      * Caller-supplied OutputIntent ICC profile for tagged/PDF-A output —
-     * replaces the built-in minimal sRGB profile. RGB profiles only.
+     * replaces the built-in minimal sRGB profile. RGB profiles since 1.7.0;
+     * CMYK and Gray profiles since 1.8.0.
      * Ignored when `tagged` is off (no OutputIntent is emitted there).
      * See {@link CustomOutputIntent}. @since 1.7.0
      */
@@ -1148,12 +1151,20 @@ export interface PrintOptions {
 /**
  * Caller-supplied OutputIntent for tagged/PDF-A documents (v1.7.0):
  * replaces the built-in minimal sRGB profile with a real ICC profile
- * (e.g. sRGB IEC61966-2.1 v4, Adobe RGB). RGB profiles only — pdfnative
- * emits RGB content; a CMYK intent would contradict it (veraPDF rejects
- * mismatches). Omitted → the historical built-in profile, byte-identical.
+ * (e.g. sRGB IEC61966-2.1 v4, Adobe RGB, or — since 1.8.0 — a CMYK press
+ * profile such as ISO Coated v2 or GRACoL, or a Gray one).
+ *
+ * Under a CMYK or Gray intent, the RGB colours pdfnative draws by default
+ * (text, rules, charts, emoji, images) are remapped through a calibrated
+ * sRGB `/DefaultRGB`, which keeps the file conforming. CMYK colours under
+ * a non-CMYK intent raise `PDFA_DEVICE_CMYK_CONTENT`. pdfnative ships no
+ * CMYK profile: press profiles are large and often licensed, so the
+ * caller supplies the one their printer names.
+ *
+ * Omitted → the historical built-in profile, byte-identical.
  */
 export interface CustomOutputIntent {
-    /** Raw ICC profile bytes (must declare an RGB data colour space). */
+    /** Raw ICC profile bytes, declaring an RGB, CMYK or Gray data colour space. */
     readonly iccProfile: Uint8Array;
     /** `/OutputConditionIdentifier` — e.g. `"sRGB IEC61966-2.1"`. */
     readonly outputConditionIdentifier: string;

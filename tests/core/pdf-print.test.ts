@@ -270,12 +270,27 @@ describe('custom OutputIntent', () => {
         expect(doc).toContain('/N 3 /Length 200');
     });
 
-    it('rejects non-RGB profiles with an actionable message', () => {
+    it('takes /N from the profile: CMYK is 4 and Gray is 1 (v1.8.0)', () => {
+        const cmyk = latin1(buildDocumentPDFBytes(docParams, {
+            tagged: 'pdfa2b',
+            onDiagnostic: () => {},
+            outputIntent: { iccProfile: fakeIcc('CMYK'), outputConditionIdentifier: 'CGATS TR 001' },
+        }));
+        expect(cmyk).toContain('/N 4 /Length 200');
+        const gray = latin1(buildDocumentPDFBytes(docParams, {
+            tagged: 'pdfa2b',
+            onDiagnostic: () => {},
+            outputIntent: { iccProfile: fakeIcc('GRAY'), outputConditionIdentifier: 'Dot Gain 20%' },
+        }));
+        expect(gray).toContain('/N 1 /Length 200');
+    });
+
+    it('rejects a profile that is not RGB, CMYK or Gray, before writing', () => {
         expect(() => buildDocumentPDFBytes(docParams, {
             tagged: 'pdfa2b',
             onDiagnostic: () => {},
-            outputIntent: { iccProfile: fakeIcc('CMYK'), outputConditionIdentifier: 'x' },
-        })).toThrow(/only RGB profiles/);
+            outputIntent: { iccProfile: fakeIcc('Lab '), outputConditionIdentifier: 'x' },
+        })).toThrow(/must describe RGB, CMYK or Gray/);
     });
 
     it('keeps the built-in sRGB profile byte-identical when omitted', () => {

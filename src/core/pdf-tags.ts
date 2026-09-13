@@ -486,30 +486,81 @@ export function buildOutputIntentDict(
     return dict;
 }
 
+/** The data colour space an OutputIntent profile describes. @since 1.8.0 */
+export type OutputIntentSpace = 'rgb' | 'cmyk' | 'gray';
+
+/** An OutputIntent profile, read once and shared by everything that needs it. */
+export interface ResolvedOutputIntent {
+    /** The ICC profile as a binary string (1 char = 1 byte). */
+    readonly profile: string;
+    readonly space: OutputIntentSpace;
+    /** `/N` of the ICC stream: the profile's colour component count. */
+    readonly components: 1 | 3 | 4;
+    /** ICC profile/device class from header bytes 12–15, e.g. `prtr`, `mntr`. */
+    readonly deviceClass: string;
+}
+
+const ICC_DATA_SPACES: Readonly<Record<string, { readonly space: OutputIntentSpace; readonly components: 1 | 3 | 4 }>> = {
+    'RGB ': { space: 'rgb', components: 3 },
+    'CMYK': { space: 'cmyk', components: 4 },
+    'GRAY': { space: 'gray', components: 1 },
+};
+
 /**
- * Resolve the OutputIntent ICC profile: the caller-supplied RGB profile
- * (v1.7.0) or the built-in minimal sRGB one. A custom profile must declare
- * the `RGB ` data colour space in its ICC header (bytes 16–19) — pdfnative
- * emits RGB content, and a mismatched intent fails PDF/A validation.
- *
- * @returns The profile as a binary string (1 char = 1 byte).
+ * Resolve the OutputIntent ICC profile: the caller-supplied one (v1.7.0) or
+ * the built-in minimal sRGB one. The data colour space comes from the ICC
+ * header (bytes 16–19) and decides `/N`. Until v1.8.0 only RGB profiles were
+ * accepted, because every colour pdfnative wrote was RGB; with CMYK content
+ * colours a CMYK or Gray intent is meaningful, and RGB content under it is
+ * routed through a calibrated `/DefaultRGB` by the assemblers.
  */
-export function resolveOutputIntentProfile(custom?: { readonly iccProfile: Uint8Array }): string {
-    if (!custom) return buildMinimalSRGBProfile();
+export function resolveOutputIntent(custom?: { readonly iccProfile: Uint8Array }): ResolvedOutputIntent {
+    if (!custom) {
+        return { profile: buildMinimalSRGBProfile(), space: 'rgb', components: 3, deviceClass: 'mntr' };
+    }
     const icc = custom.iccProfile;
     if (icc.length < 128) {
         throw new Error('outputIntent.iccProfile is too short to be an ICC profile (128-byte header required)');
     }
-    const space = String.fromCharCode(icc[16], icc[17], icc[18], icc[19]);
-    if (space !== 'RGB ') {
+    const tag = String.fromCharCode(icc[16], icc[17], icc[18], icc[19]);
+    const data = ICC_DATA_SPACES[tag];
+    if (!data) {
         throw new Error(
-            `outputIntent.iccProfile declares data colour space '${space.trim()}' — only RGB profiles are `
-            + 'supported (pdfnative emits RGB content; CMYK output intents require CMYK content, deferred)',
+            `outputIntent.iccProfile declares data colour space '${tag.trim()}' — an OutputIntent `
+            + 'profile must describe RGB, CMYK or Gray',
         );
     }
-    let s = '';
-    for (let i = 0; i < icc.length; i++) s += String.fromCharCode(icc[i]);
-    return s;
+    let profile = '';
+    for (let i = 0; i < icc.length; i++) profile += String.fromCharCode(icc[i]);
+    const deviceClass = String.fromCharCode(icc[12], icc[13], icc[14], icc[15]);
+    return { profile, space: data.space, components: data.components, deviceClass };
+}
+
+/**
+ * sRGB as a calibrated, inline colour space: D65 white point, the sRGB
+ * primaries' RGB→XYZ matrix, and a 2.2 gamma approximating sRGB's
+ * piecewise curve. CalRGB is device-independent, so it can stand in as
+ * `/DefaultRGB` without an ICC stream object.
+ */
+const CAL_RGB_SRGB = '[/CalRGB << /WhitePoint [0.9505 1 1.089] /Gamma [2.2 2.2 2.2] '
+    + '/Matrix [0.4124 0.2126 0.0193 0.3576 0.7152 0.1192 0.1805 0.0722 0.9505] >>]';
+
+/**
+ * The `/ColorSpace` resource entry that keeps RGB content valid under a
+ * non-RGB OutputIntent, or `''` when none is needed.
+ *
+ * Every colour pdfnative writes by default — black text, rules, charts,
+ * emoji — is DeviceRGB. Under a CMYK or Gray intent, device RGB is only
+ * conforming when a device-independent `/DefaultRGB` is in the resources
+ * that use it (ISO 19005-2 §6.2.4.3, ISO 32000-1 §8.6.5.6). Remapping
+ * through calibrated sRGB tells the print workflow what those colours
+ * mean, rather than rewriting them as naive CMYK. With an RGB intent (the
+ * default) nothing is added and the output stays byte-identical.
+ *
+ * @returns A resource fragment with a leading space.
+ */
+export function defaultRgbResource(intent: ResolvedOutputIntent | null): string {
+    return intent && intent.space !== 'rgb' ? ` /ColorSpace << /DefaultRGB ${CAL_RGB_SRGB} >>` : '';
 }
 
 /**

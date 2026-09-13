@@ -24,7 +24,8 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic } from './pdf-diagnostics.js';
+import { scanDeviceColour } from './pdf-content-colour.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
@@ -45,7 +46,8 @@ import {
     buildStructureTree,
     buildXMPMetadata,
     buildOutputIntentDict,
-    resolveOutputIntentProfile,
+    resolveOutputIntent,
+    defaultRgbResource,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -302,6 +304,9 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     // Resolve PDF/A config early (required by encoding context)
     const pdfaConfig = resolvePdfAConfig(layoutOptions?.tagged);
     const tagged = pdfaConfig.enabled;
+    // Resolved before any byte is written: an unusable profile throws here.
+    const outputIntent = tagged ? resolveOutputIntent(layoutOptions?.outputIntent) : null;
+    const defaultRgbRes = defaultRgbResource(outputIntent);
 
     // Conformance diagnostics (v1.7.0): guard the PDF/A declaration (#69).
     const emitDiagnostic = createDiagnosticEmitter(layoutOptions?.strict, layoutOptions?.onDiagnostic);
@@ -554,6 +559,11 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         pageStreams.push(ops.join('\n'));
     }
 
+    // CMYK colour needs a CMYK OutputIntent (v1.8.0); see buildDocumentPDF.
+    if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
+        emitDiagnostic(pdfaDeviceCmykContentDiagnostic());
+    }
+
     // Build the table structure element (inserted before footer /P elements)
     if (tagged && tableRows.length > 0) {
         const tableEl: StructElement = { type: 'Table', children: tableRows };
@@ -697,7 +707,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes} >>${structParents} >>`
+                `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes}${defaultRgbRes} >>${structParents} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -742,7 +752,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin} >>${structParents} >>`
+                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin}${defaultRgbRes} >>${structParents} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -807,11 +817,12 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         totalObjs = xmpObjNum;
 
         // ICC profile stream — the built-in minimal sRGB profile, or the
-        // caller-supplied RGB profile (layout.outputIntent, v1.7.0).
+        // caller-supplied profile (layout.outputIntent, v1.7.0; CMYK and
+        // Gray since v1.8.0), with /N taken from its data colour space.
         const iccObjNum = totalObjs + 1;
-        const iccProfile = resolveOutputIntentProfile(layoutOptions?.outputIntent);
+        const intent = outputIntent ?? resolveOutputIntent(layoutOptions?.outputIntent);
         emitStreamObj(iccObjNum,
-            `<< /N 3 /Length ${iccProfile.length}`, iccProfile);
+            `<< /N ${intent.components} /Length ${intent.profile.length}`, intent.profile);
         totalObjs = iccObjNum;
 
         // OutputIntent

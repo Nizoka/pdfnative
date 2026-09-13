@@ -87,8 +87,26 @@ export function pdfaDeviceCmykDiagnostic(): PdfDiagnostic {
     return {
         code: 'PDFA_DEVICE_CMYK_IMAGE',
         severity: 'warning',
-        message: 'a DeviceCMYK image was embedded under a PDF/A conformance claim with an sRGB '
-            + 'OutputIntent (ISO 19005-2 §6.2.4.3 requires device colour to match the output '
-            + 'intent; veraPDF rejects the file). Convert the image to RGB or drop the PDF/A level.',
+        message: 'a DeviceCMYK image was embedded under a PDF/A conformance claim whose OutputIntent '
+            + 'is not CMYK (ISO 19005-2 §6.2.4.3 requires device colour to match the output '
+            + 'intent; veraPDF rejects the file). Supply a CMYK layout.outputIntent, convert the image '
+            + 'to RGB, or drop the PDF/A level.',
+    };
+}
+
+/**
+ * Diagnostic payload for a CMYK content colour under a PDF/A claim whose
+ * OutputIntent is not CMYK (v1.8.0). RGB content under a CMYK intent is
+ * handled by a calibrated `/DefaultRGB`; the reverse has no inline
+ * equivalent, because a calibrated CMYK space needs an ICC profile.
+ */
+export function pdfaDeviceCmykContentDiagnostic(): PdfDiagnostic {
+    return {
+        code: 'PDFA_DEVICE_CMYK_CONTENT',
+        severity: 'warning',
+        message: 'a CMYK colour was painted under a PDF/A conformance claim whose OutputIntent is '
+            + 'not CMYK (ISO 19005-2 §6.2.4.3 requires device colour to match the output intent; '
+            + 'veraPDF rejects the file). Supply a CMYK layout.outputIntent, use RGB colours, or drop '
+            + 'the PDF/A level.',
     };
 }

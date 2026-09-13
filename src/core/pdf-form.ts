@@ -499,13 +499,15 @@ export function buildAcroFormDict(fieldObjNums: readonly number[], fontObjNum?: 
  * @param h - Widget height in points.
  * @param streamLength - Byte length of the stream content.
  * @param fontObjNum - Optional object number for the /Helv font (indirect reference).
+ * @param extraResources - Additional resource entries with a leading space,
+ *   e.g. the calibrated `/DefaultRGB` under a non-RGB OutputIntent (v1.8.0).
  * @returns Stream dict header (for use with emitStreamObj).
  */
-export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number): string {
+export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number, extraResources = ''): string {
     const fontEntry = fontObjNum !== undefined
         ? `/Helv ${fontObjNum} 0 R`
         : '/Helv << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
-    return `<< /Type /XObject /Subtype /Form /BBox [0 0 ${fmtNum(w)} ${fmtNum(h)}] /Resources << /Font << ${fontEntry} >> >> /Length ${streamLength}`;
+    return `<< /Type /XObject /Subtype /Form /BBox [0 0 ${fmtNum(w)} ${fmtNum(h)}] /Resources << /Font << ${fontEntry} >>${extraResources} >> /Length ${streamLength}`;
 }
 
 /**

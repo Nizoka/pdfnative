@@ -29,8 +29,8 @@
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 133696,
-      "approxTokens": 33424
+      "bytes": 133717,
+      "approxTokens": 33429
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
@@ -41,8 +41,8 @@
     {
       "url": "https://pdfnative.dev/data/errors.json",
       "description": "The engine diagnostic registry (PDFA_* codes), two-way checked against src/ by the error-parity rule.",
-      "bytes": 2653,
-      "approxTokens": 663
+      "bytes": 3410,
+      "approxTokens": 853
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
