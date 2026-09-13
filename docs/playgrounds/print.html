@@ -140,6 +140,7 @@
       </select>
       <label for="icc" style="font-size:14px;">ICC profile:</label>
       <input type="file" id="icc" accept=".icc,.icm" style="font-size:13px;">
+      <label for="bars" style="font-size:14px;"><input type="checkbox" id="bars"> Colour bars (5 mm bleed)</label>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
       <span id="timer" style="font-size:13px;color:#64748b;"></span>
     </div>
@@ -160,6 +161,7 @@
         <li><strong>Under a CMYK intent</strong>, the RGB colours pdfnative draws by default are remapped through a calibrated <code>/DefaultRGB</code>, so the PDF/A or PDF/X claim holds.</li>
         <li><strong>PDF/X-4</strong> rejects, before writing, a PDF/A level, encryption, a missing or non-output profile, and <code>trapped: 'Unknown'</code>.</li>
         <li><strong><code>validatePdfX()</code></strong> checks the structure; veraPDF does not cover PDF/X, so confirm press files with a certified preflight.</li>
+        <li><strong>Colour bars</strong> (<code>marks: { colourBars: true }</code>) paint C, M, Y, K at 100 % and 50 % in the bottom bleed strip as DeviceCMYK fills. They need a 5 mm bleed to reach the 12 pt default patch — 3 mm would clamp them to 7.5 pt — and a CMYK intent under PDF/A or PDF/X.</li>
       </ul>
       <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/print.html">Print production guide</a> for the full options.</p>
     </div>
@@ -194,6 +196,8 @@ function setStatus(msg, kind) {
 }
 
 const BLEED = 8.5; // 3 mm in points
+const BLEED_BARS = 14.17; // 5 mm — room for a colour control bar
+const barsOn = () => $('bars').checked;
 
 const DESCRIPTIONS = {
   bleed: 'An A4 page designed at trim size plus 3 mm bleed, with crop and registration marks drawn outside the TrimBox. Open it in Acrobat with "Show art, trim & bleed boxes" to see the geometry.',
@@ -236,8 +240,13 @@ const { valid, errors, warnings } = validatePdfX(pdf);`,
 };
 
 function applyPreset(id) {
-  $('desc').textContent = DESCRIPTIONS[id];
-  codeView.textContent = CODE[id];
+  $('desc').textContent = DESCRIPTIONS[id] + (barsOn()
+    ? ' A colour control bar (C, M, Y, K at 100 % and 50 %) runs along the bottom bleed strip, which is widened to 5 mm.'
+    : '');
+  codeView.textContent = barsOn()
+    ? CODE[id].replace('8.5; // 3 mm', '14.17; // 5 mm').replace(/bleed: 8\.5/g, 'bleed: 14.17')
+        .replace(/marks: true/g, 'marks: { colourBars: true }')
+    : CODE[id];
   if (window.Prism) window.Prism.highlightElement(codeView);
   report.style.display = 'none';
 }
@@ -284,11 +293,12 @@ function pressBlocks() {
 }
 
 function pressLayout(m) {
+  const bleed = barsOn() ? BLEED_BARS : BLEED;
   return {
-    pageWidth: m.PAGE_SIZES.A4.width + 2 * BLEED,
-    pageHeight: m.PAGE_SIZES.A4.height + 2 * BLEED,
-    margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
-    print: { bleed: BLEED, marks: true },
+    pageWidth: m.PAGE_SIZES.A4.width + 2 * bleed,
+    pageHeight: m.PAGE_SIZES.A4.height + 2 * bleed,
+    margins: { t: 36 + bleed, r: 36 + bleed, b: 36 + bleed, l: 36 + bleed },
+    print: { bleed, marks: barsOn() ? { colourBars: true } : true },
   };
 }
 
@@ -344,6 +354,7 @@ async function generate() {
 }
 
 $('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('bars').addEventListener('change', () => applyPreset($('preset').value));
 $('generate').addEventListener('click', generate);
 applyPreset('bleed');
 

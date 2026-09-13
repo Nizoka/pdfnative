@@ -108,7 +108,7 @@ For a real-world test, open your PDF with **NVDA** (Windows, free), **VoiceOver*
 | Cell scope `/Scope` | Not yet exposed — flat table tags |
 | Reading order overrides | Implicit (block insertion order) — no explicit `/Order` array |
 | Language tags per text run | Document-level only (`/Lang` in catalog) |
-| Artifact tagging (decorative content) | Not yet exposed — header/footer/watermark are tagged as content |
+| Artifact tagging (decorative content) | Printer's marks (crop, registration, colour bars) are `/Artifact /Page` since v1.8.0 — header/footer/watermark are still tagged as content |
 
 Contributions to address these are welcome — see the [Roadmap](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md).
 

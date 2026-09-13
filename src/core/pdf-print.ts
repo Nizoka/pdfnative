@@ -6,21 +6,27 @@
  * - Page boxes — `/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`
  *   (ISO 32000-1 §14.11.2) plus large-format `/UserUnit`, resolved once
  *   into a page-dictionary fragment (pages share one geometry).
- * - Printer's marks (§14.11.3) — corner crop marks and edge registration
- *   targets drawn OUTSIDE the TrimBox as pure vector operators, built once
- *   and appended to every page's content stream (the watermark model).
+ * - Printer's marks (§14.11.3) — corner crop marks, edge registration
+ *   targets and, opt-in, colour control bars, drawn OUTSIDE the TrimBox as
+ *   pure vector operators, built once and appended to every page's content
+ *   stream (the watermark model). Every mark keeps a clearance of at least
+ *   0.5 pt from both the trim line and the sheet edge, so no ink touches
+ *   the cut or falls off the media.
  *
  * Everything is opt-in: without `layout.print` the output is byte-identical.
  * Marks are stroked in RGB black, except under a CMYK OutputIntent: there
  * they use the registration colour, `/Separation /All`, which prints on
- * every plate so the marks can register each separation (v1.8.0).
+ * every plate so the marks can register each separation (v1.8.0). In a
+ * tagged document the block is a `/Artifact` of type `/Page` — the type
+ * ISO 32000-1 Table 330 reserves for cut marks and colour bars — so
+ * assistive technology skips it.
  *
  * @module core/pdf-print
  */
 
 import type { PageBox, PrintOptions, PrinterMarksOptions } from '../types/pdf-types.js';
 import { fmtNum } from './pdf-text.js';
-import { strokeOp } from './pdf-color.js';
+import { fillOp, strokeOp } from './pdf-color.js';
 
 /** Resolved print geometry: the page-dict fragment and the trim rectangle. */
 export interface ResolvedPrintBoxes {
@@ -175,11 +181,58 @@ function circleOps(cx: number, cy: number, r: number): string {
         + `${fmtNum(cx + k)} ${fmtNum(cy - r)} ${fmtNum(cx + r)} ${fmtNum(cy - k)} ${fmtNum(cx + r)} ${fmtNum(cy)} c S`;
 }
 
+/** Cross arms of a registration target extend ARM × r from the centre. */
+const ARM = 1.4;
+/** Smallest gap kept between any mark and the trim line or the sheet edge. */
+const MIN_CLEARANCE = 0.5;
+/** Colour-bar defaults: patch side and the gap between patches, in points. */
+const COLOUR_BAR_SIZE = 12;
+const COLOUR_BAR_GUTTER = 1;
+/** Bottom strips narrower than this carry no colour bars. */
+const COLOUR_BAR_MIN_STRIP = 4;
+
+/** Process inks of the colour control bar at 100 %, then (tints) at 50 %. */
+const COLOUR_BAR_INKS: ReadonlyArray<readonly [number, number, number, number]> = [
+    [100, 0, 0, 0], [0, 100, 0, 0], [0, 0, 100, 0], [0, 0, 0, 100],
+];
+const COLOUR_BAR_TINTS: ReadonlyArray<readonly [number, number, number, number]> = [
+    [50, 0, 0, 0], [0, 50, 0, 0], [0, 0, 50, 0], [0, 0, 0, 50],
+];
+
+/**
+ * Colour control bar: one filled `size` × `size` DeviceCMYK patch per ink,
+ * laid out left to right from (`x`, `y`) with a gutter between patches.
+ * Fill only — a stroke would contaminate the patch edge on the plate.
+ */
+function colourBarOps(x: number, y: number, size: number, tints: boolean): string {
+    const inks = tints ? [...COLOUR_BAR_INKS, ...COLOUR_BAR_TINTS] : COLOUR_BAR_INKS;
+    const w = fmtNum(size);
+    return inks.map((ink, i) => {
+        const px = fmtNum(x + i * (size + COLOUR_BAR_GUTTER));
+        return `${fillOp(ink)} ${px} ${fmtNum(y)} ${w} ${w} re f`;
+    }).join('\n');
+}
+
+/** Width of a colour bar of `n` patches, gutters included. */
+const colourBarWidth = (n: number, size: number): number => n * size + (n - 1) * COLOUR_BAR_GUTTER;
+
 /**
  * Build the printer's-marks operator block for one page geometry. Called
  * once per document; the returned string is appended to every page's
  * content stream after the main content (the watermark/debug-overlay
- * precedent). All strokes stay strictly outside the TrimBox.
+ * precedent). Every mark stays strictly outside the TrimBox and strictly
+ * on the sheet: crop marks, registration targets and colour bars keep at
+ * least `max(weight, 0.5)` pt clear of both the trim line and the media
+ * edge, so nothing prints on the cut or is lost off the edge.
+ *
+ * Colour bars (`marks.colourBars`, v1.8.0) are pure DeviceCMYK fills in
+ * the bottom strip; under a non-CMYK OutputIntent the document builders'
+ * existing DeviceCMYK diagnostic (`PDFX_DEVICE_CMYK` /
+ * `PDFA_DEVICE_CMYK_CONTENT`) already covers them, so this function emits
+ * none. With `artifact` set (a tagged document) the whole block is wrapped
+ * in `/Artifact << /Type /Page >> BDC … EMC` — ISO 32000-1 §14.8.2.2.2,
+ * Table 330: page artifacts are "production aids extraneous to the
+ * document content itself, such as cut marks and colour bars".
  */
 export function buildPrinterMarksOps(
     trim: PageBox,
@@ -187,6 +240,7 @@ export function buildPrinterMarksOps(
     pgH: number,
     marks: boolean | PrinterMarksOptions,
     registrationColour = false,
+    artifact = false,
 ): string {
     const opts: PrinterMarksOptions = marks === true ? {} : (marks as PrinterMarksOptions);
     const drawCrop = opts.crop ?? true;
@@ -194,6 +248,7 @@ export function buildPrinterMarksOps(
     const length = opts.length ?? 14;
     const offset = opts.offset ?? 5;
     const weight = opts.weight ?? 0.25;
+    const CLEARANCE = Math.max(weight, MIN_CLEARANCE);
 
     const [tx0, ty0, tx1, ty1] = trim;
     const stroke = registrationColour ? `/${REGISTRATION_COLOR_SPACE_NAME} CS 1 SCN` : strokeOp('0 0 0');
@@ -204,43 +259,49 @@ export function buildPrinterMarksOps(
     const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
     if (drawCrop) {
-        // Two hairlines per corner, starting `offset` past the trim edge and
-        // extending `length` outward (clamped to the media edge).
+        // Two hairlines per corner, collinear with the trim edges, starting
+        // `offset` past the trim corner and extending `length` outward. Both
+        // ends are clamped to the strip minus the clearance: never nearer
+        // than CLEARANCE to the trim corner, never nearer to the media edge.
         for (const [cx, cy, dx, dy] of [
             [tx0, ty0, -1, -1], [tx1, ty0, 1, -1],
             [tx0, ty1, -1, 1], [tx1, ty1, 1, 1],
         ] as const) {
             // Horizontal stroke (aligned with the trim's horizontal edge).
-            const hx0 = clamp(cx + dx * offset, 0, pgW);
-            const hx1 = clamp(cx + dx * (offset + length), 0, pgW);
+            const hLo = dx < 0 ? CLEARANCE : cx + CLEARANCE;
+            const hHi = dx < 0 ? cx - CLEARANCE : pgW - CLEARANCE;
+            const hx0 = clamp(cx + dx * offset, hLo, hHi);
+            const hx1 = clamp(cx + dx * (offset + length), hLo, hHi);
             if (hx0 !== hx1) line(hx0, cy, hx1, cy);
             // Vertical stroke.
-            const vy0 = clamp(cy + dy * offset, 0, pgH);
-            const vy1 = clamp(cy + dy * (offset + length), 0, pgH);
+            const vLo = dy < 0 ? CLEARANCE : cy + CLEARANCE;
+            const vHi = dy < 0 ? cy - CLEARANCE : pgH - CLEARANCE;
+            const vy0 = clamp(cy + dy * offset, vLo, vHi);
+            const vy1 = clamp(cy + dy * (offset + length), vLo, vHi);
             if (vy0 !== vy1) line(cx, vy0, cx, vy1);
         }
     }
 
+    // Registration targets (circle + cross) on the four edge midpoints, in
+    // the strip between the trim edge and the media edge. Nominal placement
+    // is `offset` past the trim edge; in tighter strips the target is
+    // re-centred and shrunk (never below a 2 pt radius) so the whole circle
+    // + cross stays CLEARANCE inside both the trim line and the media edge
+    // — a target touching the cut or clipped by the sheet edge cannot serve
+    // registration, so one that cannot fit is dropped for that edge.
+    const rNominal = Math.min(4, Math.max(2, length / 4));
+    const midX = (tx0 + tx1) / 2;
+    const midY = (ty0 + ty1) / 2;
+    /** Centre distance from the trim edge + radius for a strip, or null. */
+    const fit = (strip: number): readonly [number, number] | null => {
+        const r = Math.min(rNominal, (strip - 2 * CLEARANCE) / (2 * ARM));
+        if (r < 2) return null;
+        const c = Math.max(ARM * r + CLEARANCE, Math.min(strip - ARM * r - CLEARANCE, offset + r));
+        return [c, r];
+    };
+    const bottom = drawReg ? fit(ty0) : null;
+
     if (drawReg) {
-        // Registration targets (circle + cross) on the four edge midpoints,
-        // in the strip between the trim edge and the media edge. Nominal
-        // placement is `offset` past the trim edge; in tighter strips the
-        // target is re-centred and shrunk (never below a 2pt radius) so the
-        // whole circle + cross stays on the sheet — a target clipped by the
-        // media edge cannot serve registration, so one that cannot fit is
-        // dropped for that edge.
-        const ARM = 1.4; // cross arms extend ARM × r from the centre
-        const rNominal = Math.min(4, Math.max(2, length / 4));
-        const midX = (tx0 + tx1) / 2;
-        const midY = (ty0 + ty1) / 2;
-        /** Centre distance from the trim edge + radius for a strip, or null. */
-        const fit = (strip: number): readonly [number, number] | null => {
-            const r = Math.min(rNominal, strip / (2 * ARM));
-            if (r < 2) return null;
-            const c = Math.max(ARM * r, Math.min(strip - ARM * r, offset + r));
-            return [c, r];
-        };
-        const bottom = fit(ty0);
         const top = fit(pgH - ty1);
         const left = fit(tx0);
         const right = fit(pgW - tx1);
@@ -259,6 +320,31 @@ export function buildPrinterMarksOps(
         }
     }
 
+    const bars = opts.colourBars;
+    if (bars !== undefined && bars !== false) {
+        // Colour control bar in the bottom strip, CLEARANCE above the sheet
+        // edge and starting just right of the bottom-left crop mark's
+        // vertical. Patches are clamped to the strip height minus the
+        // clearance on both sides; the bar is skipped silently when the
+        // strip is too narrow, when it would reach the bottom registration
+        // target or when it would run off the sheet.
+        const barOpts: Exclude<PrinterMarksOptions['colourBars'], boolean | undefined> = bars === true ? {} : bars;
+        const tints = barOpts.tints ?? true;
+        const strip = ty0;
+        const requested = barOpts.size !== undefined && Number.isFinite(barOpts.size) && barOpts.size > 0
+            ? barOpts.size : COLOUR_BAR_SIZE;
+        const size = Math.min(requested, strip - 2 * CLEARANCE);
+        const x = tx0 + CLEARANCE + COLOUR_BAR_GUTTER;
+        const width = colourBarWidth(tints ? 8 : 4, size);
+        const targetX0 = bottom ? midX - ARM * bottom[1] : Number.POSITIVE_INFINITY;
+        const fits = strip >= COLOUR_BAR_MIN_STRIP && size > 0
+            && x + width + CLEARANCE <= targetX0
+            && x + width + CLEARANCE <= pgW;
+        if (fits) ops.push(colourBarOps(x, CLEARANCE, size, tints));
+    }
+
     ops.push('Q');
-    return ops.length > 3 ? ops.join('\n') : '';
+    if (ops.length <= 3) return '';
+    const block = ops.join('\n');
+    return artifact ? `/Artifact << /Type /Page >> BDC\n${block}\nEMC` : block;
 }

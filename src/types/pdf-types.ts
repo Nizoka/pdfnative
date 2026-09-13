@@ -1208,6 +1208,21 @@ export interface PrinterMarksOptions {
     readonly offset?: number;
     /** Mark stroke weight in points. Default `0.25` (hairline). */
     readonly weight?: number;
+    /**
+     * Colour control bars in the bottom bleed strip: solid C, M, Y, K
+     * patches (and, with `tints`, the same four at 50 %), each `size` pt
+     * square with 1 pt gutters, painted in DeviceCMYK with no stroke.
+     * Default off. `size` defaults to 12 pt and is clamped to the strip
+     * height minus the 0.5 pt clearance on each side — a 3 mm bleed leaves
+     * ≈ 7.5 pt patches, below a densitometer aperture, so use a bleed of
+     * 5 mm (14.17 pt) or more. The bars are skipped silently when the
+     * strip is under 4 pt or when they would collide with the bottom
+     * registration target. Under a non-CMYK `outputIntent` the existing
+     * DeviceCMYK diagnostic fires (`PDFX_DEVICE_CMYK` /
+     * `PDFA_DEVICE_CMYK_CONTENT`); no additional diagnostic is emitted.
+     * @since 1.8.0
+     */
+    readonly colourBars?: boolean | { readonly tints?: boolean; readonly size?: number };
 }
 
 /**

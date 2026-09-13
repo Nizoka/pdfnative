@@ -401,10 +401,11 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layoutOptions?.tagged);
     const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
     const printBoxesStr = (printResolved?.boxesStr ?? '') + (pdfx ? pdfxBoxes(printOpts, pgW, pgH) : '');
-    // Under a CMYK OutputIntent the marks use the registration colour (v1.8.0).
+    // Under a CMYK OutputIntent the marks use the registration colour; in a
+    // tagged document the block is a /Page artifact (v1.8.0).
     const registrationColour = outputIntent?.space === 'cmyk';
     const printMarksOps = printOpts?.marks && printResolved?.trim
-        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks, registrationColour)
+        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks, registrationColour, tagged)
         : '';
     const pageColorSpaceRes = defaultRgbResource(
         outputIntent, registrationColour && printMarksOps ? REGISTRATION_COLOR_SPACE_ENTRY : '');

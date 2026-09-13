@@ -130,15 +130,29 @@ const pdf = buildDocumentPDFBytes(params, {
 <p>Boxes are validated (within the MediaBox, trim within bleed) and are pure page-dictionary metadata — the layout engine is untouched, so design the page at <em>trim + 2×bleed</em> and enlarge the margins by the bleed, letting backgrounds run to the page edge.</p>
 <p><code>mergePdfs</code> / <code>splitPdf</code> / <code>extractPages</code> preserve all four boxes (and <code>/UserUnit</code>).</p>
 <h2 id="printers-marks-14113">Printer&#39;s marks (§14.11.3)<a class="heading-anchor" href="#printers-marks-14113" aria-label="Link to this section">#</a></h2>
-<p><code>print.marks: true</code> draws, on every page, strictly <strong>outside</strong> the TrimBox:</p>
+<p><code>print.marks: true</code> draws, on every page, strictly <strong>outside</strong> the TrimBox and strictly <strong>on</strong> the sheet:</p>
 <ul>
 <li><strong>Crop marks</strong> — 8 corner hairlines (default 0.25 pt, 14 pt long, 5 pt clear of the trim edge) showing where to cut.</li>
 <li><strong>Registration targets</strong> — circle-and-cross targets on the four edge midpoints, used to align separations.</li>
 </ul>
-<p>Fine-tune with an object: <code>marks: { crop, registration, length, offset, weight }</code>.</p>
+<p>Every mark keeps at least 0.5 pt (or the stroke weight, if heavier) from both the trim line and the media edge, so no ink prints on the cut and nothing is lost off the edge. In a tight strip the registration target is re-centred and shrunk to fit; below a 6.6 pt strip it is dropped for that edge rather than drawn clipped. Fine-tune with an object: <code>marks: { crop, registration, length, offset, weight, colourBars }</code>.</p>
 <blockquote>
 <p>Marks are stroked in black. Under a CMYK OutputIntent (v1.8.0) they use the <em>registration colour</em> instead — the <code>All</code> separation, which a RIP puts on every plate, so the marks register cyan, magenta, yellow and black against each other.</p>
 </blockquote>
+<h3 id="colour-bars-v180">Colour bars (v1.8.0)<a class="heading-anchor" href="#colour-bars-v180" aria-label="Link to this section">#</a></h3>
+<p><code>marks: { colourBars: true }</code> adds a colour control bar to the bottom bleed strip: cyan, magenta, yellow and black at 100 %, then the same four at 50 %, as square DeviceCMYK fills with 1 pt gutters, starting just right of the bottom-left crop mark. <code>colourBars: { tints: false }</code> keeps the four solids only; <code>size</code> (default 12 pt) sets the patch side and is clamped to the strip height minus the clearance.</p>
+<p><strong>Use a bleed of 5 mm (14.17 pt) or more.</strong> A 3 mm bleed clamps the patches to ≈ 7.5 pt, below the aperture of a densitometer. The bar is skipped silently when the strip is under 4 pt or when it would reach the bottom registration target (very narrow pages). The patches are DeviceCMYK, so under a non-CMYK OutputIntent the usual <code>PDFA_DEVICE_CMYK_CONTENT</code> / <code>PDFX_DEVICE_CMYK</code> diagnostic applies — pair them with a CMYK profile.</p>
+<pre><code class="language-ts">const BLEED = 14.17; // 5 mm
+buildDocumentPDFBytes(params, {
+  pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  pdfx: &#39;pdfx4&#39;,
+  outputIntent: { iccProfile, outputConditionIdentifier: &#39;FOGRA39&#39;, registryName: &#39;http://www.color.org&#39; },
+  print: { bleed: BLEED, marks: { colourBars: true } },
+});
+</code></pre>
+<h3 id="marks-in-tagged-documents">Marks in tagged documents<a class="heading-anchor" href="#marks-in-tagged-documents" aria-label="Link to this section">#</a></h3>
+<p>Under <code>tagged</code> (PDF/A or plain tagged PDF) the whole marks block — crop marks, registration targets and colour bars — is wrapped in <code>/Artifact &lt;&lt; /Type /Page &gt;&gt; BDC … EMC</code>, the artifact type ISO 32000-1 Table 330 reserves for &quot;production aids such as cut marks and colour bars&quot;, so screen readers and text extractors skip it. Untagged output is unchanged.</p>
 <h2 id="trapped-and-prepress-metadata">/Trapped and prepress metadata<a class="heading-anchor" href="#trapped-and-prepress-metadata" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-ts">buildDocumentPDFBytes({ ...params, metadata: { trapped: &#39;False&#39; } }, { tagged: &#39;pdfa2b&#39; });
 </code></pre>
@@ -259,7 +273,7 @@ buildDocumentPDFBytes(params, { pageWidth: 1417, pageHeight: 283, print: { userU
 <p><code>/UserUnit</code> needs PDF 1.6+, so the header is raised to <code>%PDF-1.7</code> when the option is set — and it is rejected under <code>tagged: &#39;pdfa1b&#39;</code> (PDF/A-1 is PDF 1.4; use <code>pdfa2b</code> or later).</p>
 <h2 id="limits--scope-v180">Limits &amp; scope (v1.8.0)<a class="heading-anchor" href="#limits--scope-v180" aria-label="Link to this section">#</a></h2>
 <ul>
-<li><strong>Not yet:</strong> spot colours (<code>/Separation</code> inks other than registration), colour bars, PDF/X-1a, PDF/X-3 and PDF/X-4p, and a single file carrying both a PDF/A and a PDF/X claim.</li>
+<li><strong>Not yet:</strong> spot colours (<code>/Separation</code> inks other than registration), PDF/X-1a, PDF/X-3 and PDF/X-4p, and a single file carrying both a PDF/A and a PDF/X claim.</li>
 <li>Colour emoji and CPAL palettes stay RGB; under a CMYK intent they are covered by <code>/DefaultRGB</code>.</li>
 <li>One geometry per document (pages share the same boxes), matching the single-page-size layout model.</li>
 <li>The OutputIntent (custom or built-in) is emitted under <code>tagged</code> modes and under <code>pdfx</code> only.</li>

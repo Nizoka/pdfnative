@@ -2,7 +2,8 @@
  * Print production showcase (v1.7.0) — bleed, trim, printer's marks,
  * /Trapped, print viewer preferences and large-format /UserUnit; since
  * v1.8.0 also CMYK colour under a CMYK OutputIntent, as PDF/X-4 and as
- * PDF/A-2b, with marks in the registration colour.
+ * PDF/A-2b, with marks in the registration colour and, on the PDF/X-4
+ * sheet, a colour control bar in a 5 mm bleed.
  *
  * The main sample is an A4 flyer designed at trim size + 3 mm bleed
  * (8.5 pt): the page is enlarged by the bleed on every side, a background
@@ -22,6 +23,7 @@ import { loadSelectedFontEntries } from '../helpers/fonts.js';
 import { buildSyntheticCmykProfile } from '../lib/synthetic-cmyk-profile.js';
 
 const BLEED = 8.5; // 3 mm
+const BLEED_5MM = 14.17; // 5 mm — room for a colour control bar
 
 export async function generate(ctx: GenerateContext): Promise<void> {
     // ── 1. A4 flyer with bleed + printer's marks ────────────────────
@@ -56,7 +58,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         title: 'Print Production — Explicit Boxes',
         blocks: [
             { type: 'heading', text: 'Explicit page boxes', level: 1 },
-            { type: 'paragraph', text: 'TrimBox, BleedBox, ArtBox and CropBox set explicitly, with crop marks only (no registration targets).' },
+            { type: 'paragraph', text: 'TrimBox, BleedBox and ArtBox set explicitly, with crop marks only (no registration targets).' },
         ],
         footerText: 'pdfnative - print production',
     }, {
@@ -118,9 +120,12 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-output-intent.pdf'), 'print/print-output-intent.pdf', intent);
 
         // ── 5. CMYK press condition, claimed as PDF/X-4 (v1.8.0) ────
-        // CMYK content colours, a CMYK OutputIntent, bleed and marks in the
-        // registration colour. The profile is a synthetic stand-in built by
-        // the sample script; a real job embeds the printer's profile.
+        // CMYK content colours, a CMYK OutputIntent, a 5 mm bleed, marks in
+        // the registration colour and a colour control bar in the bottom
+        // strip (5 mm has room for the 12 pt default patch; 3 mm would clamp
+        // it to 7.5 pt, below a densitometer aperture). The profile is a
+        // synthetic stand-in built by the sample script; a real job embeds
+        // the printer's profile.
         const cmykProfile = buildSyntheticCmykProfile();
         const pressBlocks: DocumentParams['blocks'] = [
             { type: 'heading', text: 'Print-ready PDF/X-4', level: 1 },
@@ -137,33 +142,43 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             },
             { type: 'paragraph', text: 'Crop and registration marks outside the TrimBox use the All separation, so they print on every plate.' },
         ];
-        const pressLayout = {
-            pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
-            pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
-            margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
-            print: { bleed: BLEED, marks: true },
-            outputIntent: {
-                iccProfile: cmykProfile,
-                outputConditionIdentifier: 'Synthetic CMYK',
-                outputCondition: 'Naive CMYK conversion (sample stand-in, not a press condition)',
-                registryName: 'http://www.color.org',
-            },
+        const cmykIntent = {
+            iccProfile: cmykProfile,
+            outputConditionIdentifier: 'Synthetic CMYK',
+            outputCondition: 'Naive CMYK conversion (sample stand-in, not a press condition)',
+            registryName: 'http://www.color.org',
         };
+        const pressLayout = (bleed: number) => ({
+            pageWidth: PAGE_SIZES.A4.width + 2 * bleed,
+            pageHeight: PAGE_SIZES.A4.height + 2 * bleed,
+            margins: { t: 36 + bleed, r: 36 + bleed, b: 36 + bleed, l: 36 + bleed },
+            outputIntent: cmykIntent,
+        });
         const pdfx = buildDocumentPDFBytes({
             title: 'Print Production — PDF/X-4',
-            blocks: pressBlocks,
+            blocks: [
+                ...pressBlocks,
+                { type: 'paragraph', text: 'The bottom bleed strip carries a colour control bar: cyan, magenta, yellow and black at 100 % and at 50 %, for densitometer checks on press.' },
+            ],
             footerText: 'pdfnative - PDF/X-4',
             fontEntries,
-        }, { ...pressLayout, pdfx: 'pdfx4' });
+        }, {
+            ...pressLayout(BLEED_5MM),
+            print: { bleed: BLEED_5MM, marks: { colourBars: true } },
+            pdfx: 'pdfx4',
+        });
         ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-cmyk-pdfx4.pdf'), 'print/print-cmyk-pdfx4.pdf', pdfx);
 
         // ── 6. The same page as PDF/A-2b under the CMYK intent ──────
+        // A 3 mm bleed with default marks: the strip is too narrow for a
+        // useful colour bar, but the marks still keep their clearance from
+        // both the trim line and the sheet edge.
         const pdfaCmyk = buildDocumentPDFBytes({
             title: 'Print Production — PDF/A-2b, CMYK intent',
             blocks: pressBlocks,
             footerText: 'pdfnative - PDF/A-2b CMYK',
             fontEntries,
-        }, { ...pressLayout, tagged: 'pdfa2b' });
+        }, { ...pressLayout(BLEED), print: { bleed: BLEED, marks: true }, tagged: 'pdfa2b' });
         ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-cmyk-pdfa2b.pdf'), 'print/print-cmyk-pdfa2b.pdf', pdfaCmyk);
     }
 }

@@ -49,14 +49,35 @@ Boxes are validated (within the MediaBox, trim within bleed) and are pure page-d
 
 ## Printer's marks (§14.11.3)
 
-`print.marks: true` draws, on every page, strictly **outside** the TrimBox:
+`print.marks: true` draws, on every page, strictly **outside** the TrimBox and strictly **on** the sheet:
 
 - **Crop marks** — 8 corner hairlines (default 0.25 pt, 14 pt long, 5 pt clear of the trim edge) showing where to cut.
 - **Registration targets** — circle-and-cross targets on the four edge midpoints, used to align separations.
 
-Fine-tune with an object: `marks: { crop, registration, length, offset, weight }`.
+Every mark keeps at least 0.5 pt (or the stroke weight, if heavier) from both the trim line and the media edge, so no ink prints on the cut and nothing is lost off the edge. In a tight strip the registration target is re-centred and shrunk to fit; below a 6.6 pt strip it is dropped for that edge rather than drawn clipped. Fine-tune with an object: `marks: { crop, registration, length, offset, weight, colourBars }`.
 
 > Marks are stroked in black. Under a CMYK OutputIntent (v1.8.0) they use the *registration colour* instead — the `All` separation, which a RIP puts on every plate, so the marks register cyan, magenta, yellow and black against each other.
+
+### Colour bars (v1.8.0)
+
+`marks: { colourBars: true }` adds a colour control bar to the bottom bleed strip: cyan, magenta, yellow and black at 100 %, then the same four at 50 %, as square DeviceCMYK fills with 1 pt gutters, starting just right of the bottom-left crop mark. `colourBars: { tints: false }` keeps the four solids only; `size` (default 12 pt) sets the patch side and is clamped to the strip height minus the clearance.
+
+**Use a bleed of 5 mm (14.17 pt) or more.** A 3 mm bleed clamps the patches to ≈ 7.5 pt, below the aperture of a densitometer. The bar is skipped silently when the strip is under 4 pt or when it would reach the bottom registration target (very narrow pages). The patches are DeviceCMYK, so under a non-CMYK OutputIntent the usual `PDFA_DEVICE_CMYK_CONTENT` / `PDFX_DEVICE_CMYK` diagnostic applies — pair them with a CMYK profile.
+
+```ts
+const BLEED = 14.17; // 5 mm
+buildDocumentPDFBytes(params, {
+  pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  pdfx: 'pdfx4',
+  outputIntent: { iccProfile, outputConditionIdentifier: 'FOGRA39', registryName: 'http://www.color.org' },
+  print: { bleed: BLEED, marks: { colourBars: true } },
+});
+```
+
+### Marks in tagged documents
+
+Under `tagged` (PDF/A or plain tagged PDF) the whole marks block — crop marks, registration targets and colour bars — is wrapped in `/Artifact << /Type /Page >> BDC … EMC`, the artifact type ISO 32000-1 Table 330 reserves for "production aids such as cut marks and colour bars", so screen readers and text extractors skip it. Untagged output is unchanged.
 
 ## /Trapped and prepress metadata
 
@@ -174,7 +195,7 @@ buildDocumentPDFBytes(params, { pageWidth: 1417, pageHeight: 283, print: { userU
 
 ## Limits & scope (v1.8.0)
 
-- **Not yet:** spot colours (`/Separation` inks other than registration), colour bars, PDF/X-1a, PDF/X-3 and PDF/X-4p, and a single file carrying both a PDF/A and a PDF/X claim.
+- **Not yet:** spot colours (`/Separation` inks other than registration), PDF/X-1a, PDF/X-3 and PDF/X-4p, and a single file carrying both a PDF/A and a PDF/X claim.
 - Colour emoji and CPAL palettes stay RGB; under a CMYK intent they are covered by `/DefaultRGB`.
 - One geometry per document (pages share the same boxes), matching the single-page-size layout model.
 - The OutputIntent (custom or built-in) is emitted under `tagged` modes and under `pdfx` only.
