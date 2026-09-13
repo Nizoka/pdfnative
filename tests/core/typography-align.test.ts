@@ -1,36 +1,59 @@
 import { describe, it, expect } from 'vitest';
-import { buildDocumentPDFBytes } from '../../src/index.js';
+import { buildDocumentPDFBytes, extractText } from '../../src/index.js';
 import { txt, txtJustified, protrusionLeft, protrusionRight } from '../../src/core/pdf-text.js';
 import { createEncodingContext } from '../../src/core/encoding-context.js';
 import { helveticaWidth } from '../../src/fonts/encoding.js';
+import * as notoSans from '../../fonts/noto-sans-data.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
+import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 
 // v1.8.0 — justified paragraphs and optical margin alignment.
 
 const PINNED = new Date('2026-01-01T00:00:00Z');
 const enc = createEncodingContext([], false, false);
 const SZ = 11;
+const latinEntries: FontEntry[] = [{ fontData: notoSans as unknown as FontData, fontRef: '/F3', lang: 'latin' }];
 
 /** Every `x y Td` origin in a content-stream fragment, in order. */
 function origins(ops: string): number[] {
     return Array.from(ops.matchAll(/([\d.-]+) ([\d.-]+) Td/g), m => Number(m[1]));
 }
 
+/** The items of the first `[…] TJ` array: strings as text, numbers as numbers. */
+function tjItems(ops: string): (string | number)[] {
+    const m = ops.match(/\[(.*)\] TJ/);
+    if (!m) return [];
+    const items: (string | number)[] = [];
+    for (const t of m[1].matchAll(/\(((?:\\.|[^)\\])*)\)|<([0-9A-Fa-f]*)>|(-?[\d.]+)/g)) {
+        if (t[1] !== undefined) items.push(t[1]);
+        else if (t[2] !== undefined) items.push(`<${t[2]}>`);
+        else items.push(Number(t[3]));
+    }
+    return items;
+}
+
+/** Points the TJ array advances the pen by, base-14 Helvetica at `SZ`. */
+function tjSpan(ops: string): number {
+    return tjItems(ops).reduce<number>((n, it) =>
+        n + (typeof it === 'number' ? -it * SZ / 1000 : helveticaWidth(it, SZ)), 0);
+}
+
 describe('txtJustified', () => {
     const line = 'the quick brown fox jumps';
     const natural = helveticaWidth(line, SZ);
 
-    it('places each word at its own origin', () => {
+    it('shows the whole line as one TJ array, spaces included', () => {
         const ops = txtJustified(line, 50, 700, '/F1', SZ, enc, natural + 12);
-        expect(origins(ops).length).toBe(5);
+        expect(origins(ops).length).toBe(1);
+        expect((ops.match(/\bTJ\b/g) ?? []).length).toBe(1);
+        const strings = tjItems(ops).filter(it => typeof it === 'string');
+        expect(strings).toEqual(['the ', 'quick ', 'brown ', 'fox ', 'jumps']);
     });
 
     it('spans exactly the target width', () => {
         const target = natural + 12;
         const ops = txtJustified(line, 50, 700, '/F1', SZ, enc, target);
-        const xs = origins(ops);
-        const lastWordW = helveticaWidth('jumps', SZ);
-        expect(xs[xs.length - 1] + lastWordW).toBeCloseTo(50 + target, 1);
+        expect(tjSpan(ops)).toBeCloseTo(target, 1);
     });
 
     it('starts at the given left edge', () => {
@@ -38,14 +61,14 @@ describe('txtJustified', () => {
         expect(origins(ops)[0]).toBeCloseTo(50, 2);
     });
 
-    it('distributes the slack evenly', () => {
+    it('distributes the slack evenly, as negative adjustments', () => {
         const ops = txtJustified(line, 0, 700, '/F1', SZ, enc, natural + 12);
-        const xs = origins(ops);
-        const words = line.split(' ');
-        const gaps = xs.slice(1).map((x, i) => x - (xs[i] + helveticaWidth(words[i], SZ)));
-        // Coordinates are emitted to two decimals, so gaps agree to within
-        // that quantisation rather than exactly.
-        for (const g of gaps) expect(Math.abs(g - gaps[0])).toBeLessThanOrEqual(0.02);
+        const gaps = tjItems(ops).filter((it): it is number => typeof it === 'number');
+        expect(gaps.length).toBe(4);
+        for (const g of gaps) {
+            expect(g).toBeLessThan(0);
+            expect(g).toBe(gaps[0]);
+        }
     });
 
     it('falls back to plain placement for a single word', () => {
@@ -68,7 +91,75 @@ describe('txtJustified', () => {
         // it: four words, not five.
         const bound = 'facture de 150 € payee';
         const ops = txtJustified(bound, 0, 700, '/F1', SZ, enc, helveticaWidth(bound, SZ) + 8);
-        expect(origins(ops).length).toBe(4);
+        expect(tjItems(ops).filter(it => typeof it === 'string').length).toBe(4);
+    });
+
+    it('does the same with a registered font', () => {
+        const uni = createEncodingContext(latinEntries, false, false);
+        const natural = uni.tw(line, SZ);
+        const ops = txtJustified(line, 50, 700, '/F3', SZ, uni, natural + 12);
+        expect(origins(ops).length).toBe(1);
+        expect((ops.match(/\bTJ\b/g) ?? []).length).toBe(1);
+        const items = tjItems(ops);
+        expect(items.filter(it => typeof it === 'string').length).toBe(5);
+        const gaps = items.filter((it): it is number => typeof it === 'number');
+        expect(gaps.length).toBe(4);
+        // Pen advance: glyph widths from the font plus the four adjustments.
+        const fd = notoSans as unknown as FontData;
+        const glyphW = (hex: string): number => {
+            let w = 0;
+            for (let i = 1; i + 4 <= hex.length; i += 4) {
+                const gid = parseInt(hex.slice(i, i + 4), 16);
+                w += (fd.widths[gid] ?? fd.defaultWidth) * SZ / fd.metrics.unitsPerEm;
+            }
+            return w;
+        };
+        const span = items.reduce<number>((n, it) => n + (typeof it === 'number' ? -it * SZ / 1000 : glyphW(it)), 0);
+        expect(span).toBeCloseTo(natural + 12, 1);
+    });
+
+    it('keeps kerning adjustments inside the same array', () => {
+        const kerned = createEncodingContext(latinEntries, false, false);
+        const text = 'AVATAR To Yo Wave';
+        const ops = txtJustified(text, 50, 700, '/F3', SZ, kerned, kerned.tw(text, SZ) + 12);
+        // Still one text object even though every word kerns internally.
+        expect(origins(ops).length).toBe(1);
+    });
+});
+
+describe('justified text stays extractable', () => {
+    const text = ('Justified prose keeps its word boundaries: every space is still a glyph in the '
+        + 'content stream, only the gap after it grows. ').repeat(4);
+
+    function extracted(align: 'left' | 'justify', fontEntries?: FontEntry[]): string {
+        const bytes = buildDocumentPDFBytes(
+            { title: 'Extract', blocks: [{ type: 'paragraph', text, align }], fontEntries },
+            { creationDate: PINNED },
+        );
+        return extractText(bytes).map(p => p.text).join('\n').replace(/\s+/g, ' ').trim();
+    }
+
+    it('extracts identically to the ragged version in base-14 mode', () => {
+        expect(extracted('justify')).toBe(extracted('left'));
+        expect(extracted('justify')).toContain('boundaries: every space');
+    });
+
+    it('extracts identically to the ragged version with a registered font', () => {
+        expect(extracted('justify', latinEntries)).toBe(extracted('left', latinEntries));
+    });
+
+    it('emits one text object per justified line', () => {
+        const bytes = buildDocumentPDFBytes(
+            { title: 'Count', blocks: [{ type: 'paragraph', text, align: 'justify' }] },
+            { creationDate: PINNED, compress: false },
+        );
+        const s = new TextDecoder('latin1').decode(bytes);
+        const tj = (s.match(/\] TJ/g) ?? []).length;
+        const bt = (s.match(/\bBT\b/g) ?? []).length;
+        // Title, footer and the ragged last line are Tj; every other line is
+        // exactly one TJ, so BT never outnumbers lines + furniture.
+        expect(tj).toBeGreaterThan(2);
+        expect(bt).toBeLessThan(tj + 6);
     });
 });
 

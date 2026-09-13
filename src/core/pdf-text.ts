@@ -226,11 +226,15 @@ export function protrusionRight(line: string, sz: number, enc: EncodingContext):
 /**
  * Justified text: lay the line's words out so it spans exactly `targetWidth`.
  *
- * Each word is placed at its own absolute x rather than relying on the `Tw`
- * word-spacing operator, because `Tw` applies only to single-byte code 32 —
- * it has no effect at all on the Identity-H CID fonts every non-Latin script
- * uses (ISO 32000-1 §9.3.3). Explicit placement is the only approach that
- * behaves identically in both modes.
+ * The whole line is one `[…] TJ` array: each word keeps its trailing space
+ * glyph and is followed by a negative adjustment that opens the gap by the
+ * line's share of the slack. `Tw` would be the textbook operator, but it
+ * applies only to single-byte code 32 — it has no effect at all on the
+ * Identity-H CID fonts every non-Latin script uses (ISO 32000-1 §9.3.3).
+ * `TJ` adjustments behave identically in both modes, keep the space
+ * characters in the stream so viewers, search and `extractText()` still see
+ * word boundaries, and keep the line a single text object rather than one
+ * per word.
  *
  * Falls back to plain left-aligned output when the line has a single word,
  * already overruns, or would need an implausible stretch.
@@ -251,21 +255,77 @@ export function txtJustified(
     const words = str.split(' ').filter(w => w !== '');
     if (words.length < 2) return txt(str, x, y, font, sz, enc);
 
-    const spaceW = measureFor(' ', sz, enc);
-    const widths = words.map(w => measureFor(w, sz, enc));
-    const natural = widths.reduce((a, b) => a + b, 0) + spaceW * (words.length - 1);
+    // Each word carries its trailing space so the space glyph is emitted; the
+    // last word does not. Measured as emitted, so kerning across the word /
+    // space boundary is accounted for in Unicode mode.
+    const pieces = words.map((w, i) => (i === words.length - 1 ? w : `${w} `));
+    const runs = enc.isUnicode ? pieces.map(p => enc.textRuns(p, sz)) : null;
+    const pieceWidths = runs
+        ? runs.map(rs => rs.reduce((n, r) => n + r.widthPt, 0))
+        : pieces.map(p => measureFor(p, sz, enc));
+    const natural = pieceWidths.reduce((a, b) => a + b, 0);
     const extra = targetWidth - natural;
+    const spaceW = measureFor(' ', sz, enc);
     if (extra <= 0 || extra / (words.length - 1) > spaceW * MAX_JUSTIFY_STRETCH) {
         return txt(str, x, y, font, sz, enc);
     }
 
-    const gap = spaceW + extra / (words.length - 1);
+    const gapExtra = extra / (words.length - 1);
+    // TJ numbers are thousandths of the font size, subtracted from the pen
+    // (ISO 32000-1 §9.4.3): a negative number widens the gap.
+    const tjGap = fmtNum(-(gapExtra * 1000 / sz));
+
+    if (runs === null) {
+        const items: string[] = [];
+        for (let i = 0; i < pieces.length; i++) {
+            items.push(enc.ps(pieces[i]));
+            if (i < pieces.length - 1) items.push(tjGap);
+        }
+        return `BT ${font} ${sz} Tf ${fmtNum(x)} ${fmtNum(y)} Td [${items.join(' ')}] TJ ET`;
+    }
+
+    // Unicode: consecutive plain runs of one font share a TJ array; a shaped
+    // or colour-emoji run is placed on its own, as `txt()` does, and the
+    // array resumes after it.
     const parts: string[] = [];
     let penX = x;
-    for (let i = 0; i < words.length; i++) {
-        parts.push(txt(words[i], penX, y, font, sz, enc));
-        penX += widths[i] + gap;
+    let segFont: string | null = null;
+    let segStart = 0;
+    let segAdvance = 0;
+    let segItems: string[] = [];
+    const flush = (): void => {
+        if (segFont === null) return;
+        parts.push(`BT ${segFont} ${sz} Tf ${fmtNum(segStart)} ${fmtNum(y)} Td [${segItems.join(' ')}] TJ ET`);
+        penX = segStart + segAdvance;
+        segFont = null;
+        segAdvance = 0;
+        segItems = [];
+    };
+
+    for (let i = 0; i < pieces.length; i++) {
+        for (const run of runs[i]) {
+            const emoji = enc.colorEmoji !== undefined && run.fontData.colorGlyphs !== undefined && run.hexStr !== null;
+            if (run.shaped || emoji || run.hexStr === null) {
+                flush();
+                if (emoji) {
+                    penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
+                } else if (run.shaped) {
+                    parts.push(txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData));
+                    penX += run.widthPt;
+                }
+                continue;
+            }
+            if (segFont !== null && segFont !== run.fontRef) flush();
+            if (segFont === null) { segFont = run.fontRef; segStart = penX; }
+            segItems.push(run.tjStr ?? run.hexStr);
+            segAdvance += run.widthPt;
+        }
+        if (i < pieces.length - 1) {
+            if (segFont !== null) { segItems.push(tjGap); segAdvance += gapExtra; }
+            else penX += gapExtra;
+        }
     }
+    flush();
     return parts.join('\n');
 }
 
