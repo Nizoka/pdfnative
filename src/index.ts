@@ -342,7 +342,7 @@ export type {
 // ── Colour Glyphs — COLR/CPAL emoji (v1.3.0) ────────────────────────
 export type {
     CpalColor, ColorStop, GradientExtend, SolidPaint, LinearGradientPaint,
-    RadialGradientPaint, ColorPaint, ColorLayer, ColorGlyph,
+    RadialGradientPaint, ColorPaint, ColorLayer, ColorGlyph, ClipOutline,
 } from './types/pdf-types.js';
 export type { OutlinePoint, Contour, GlyfFont } from './fonts/glyf-outline.js';
 export { parseGlyfFont, extractGlyphContours } from './fonts/glyf-outline.js';

@@ -23,14 +23,20 @@
  * this is exact rather than approximate. Instantiating a colour font at some
  * other axis position is not supported and would need the variation store.
  *
- * Unsupported paints (Porter-Duff structural composite
- * modes Clear/Src/Dest/Xor/…) cause the affected glyph to be skipped so the
+ * Structural masks (v1.8.0). PaintComposite in SRC_IN or DEST_IN mode is
+ * carried without a transparency group: a mask made of glyph shapes becomes
+ * a clip set on the painted layers, and a uniform mask an alpha multiplier.
+ * A PDF clip is binary, so a partly translucent outline mask is replaced by
+ * its nearest binary mask — see `Mask` for the error bound and for why, on
+ * Noto's flags, the result is exact. This is what draws the shaded wave
+ * across every flag, which v1.7.0 had to drop.
+ *
+ * Unsupported paints (the remaining Porter-Duff structural composite modes
+ * Clear/Src/Dest/Xor/…) cause the affected glyph to be skipped so the
  * caller can fall back to the monochrome emoji font. This keeps output
- * correct (never garbled) while covering the overwhelming majority of
- * Noto Color Emoji glyphs. One best-effort degradation (v1.7.0): a
+ * correct (never garbled). One best-effort degradation (v1.7.0) remains: a
  * PaintComposite whose SOURCE subtree is unsupported renders its backdrop
- * alone — Noto's flags are exactly this shape (flat artwork backdrop +
- * SRC_IN-masked wave-shading source), so they render as flat flags.
+ * alone rather than losing the whole glyph.
  *
  * Zero external dependency.
  *
@@ -39,7 +45,7 @@
  *   - https://learn.microsoft.com/typography/opentype/spec/colr
  */
 
-import type { CpalColor, ColorGlyph, ColorLayer, ColorPaint, ColorStop, GradientExtend } from '../types/pdf-types.js';
+import type { CpalColor, ClipOutline, ColorGlyph, ColorLayer, ColorPaint, ColorStop, GradientExtend } from '../types/pdf-types.js';
 
 /** 6-tuple affine matrix `[a b c d e f]`: x' = a·x + c·y + e, y' = b·x + d·y + f. */
 type Mat = [number, number, number, number, number, number];
@@ -348,6 +354,122 @@ function readAffine(view: DataView, pos: number): Mat {
 }
 
 /**
+ * What the mask of a structural composite reduces to.
+ *
+ *   - `everywhere` — a fill with no outline covers the whole glyph at one
+ *     alpha. Masking by it multiplies the painted layers' alpha, which is
+ *     exact wherever those layers do not overlap one another.
+ *   - `outlines` — glyph shapes whose union is the mask.
+ *
+ * A PDF clip is a binary mask, so an outline mask whose layers are partly
+ * translucent has no exact clip. It is replaced by the **nearest binary
+ * mask**: a layer counts when its coverage reaches one half, and is left out
+ * below that. Wherever the true mask alpha is α, the rendered alpha is then
+ * off by at most min(α, 1 − α) — never more than the fallback, which drops
+ * the masked paint altogether and is off by α everywhere.
+ *
+ * Measured on Noto Color Emoji, where this matters: 254 of the 296 masks
+ * pair an opaque flag body with a 20 %-opacity dark layer of the same shape,
+ * whose bounding box matches the body's to within 0.1 %. The approximation
+ * therefore differs from the true composite only on that sliver, at 20 %.
+ *
+ * A blended mask, or a mask that is itself masked, yields `null`, and the
+ * caller falls back.
+ */
+type Mask =
+    | { readonly kind: 'everywhere'; readonly alpha: number }
+    | { readonly kind: 'outlines'; readonly outlines: ClipOutline[] };
+
+/** The alpha a paint is guaranteed to reach over its whole area, 0–1. */
+function coverage(paint: ColorPaint): number {
+    if (paint.kind === 'solid') return paint.color[3] / 255;
+    return Math.min(...paint.stops.map(s => s.color[3])) / 255;
+}
+
+/** A layer with its paint's alpha multiplied by `alpha`. */
+function withAlpha(layer: ColorLayer, alpha: number): ColorLayer {
+    const scale = (c: CpalColor): CpalColor => [c[0], c[1], c[2], Math.round(c[3] * alpha)];
+    const paint = layer.paint;
+    const scaled: ColorPaint = paint.kind === 'solid'
+        ? { ...paint, color: scale(paint.color) }
+        : { ...paint, stops: paint.stops.map(s => ({ offset: s.offset, color: scale(s.color) })) };
+    return { ...layer, paint: scaled };
+}
+
+/** Skip any chain of transform paints, folding them into `m`. */
+function stripTransforms(view: DataView, offset: number, m: Mat): { offset: number; m: Mat } {
+    let off = offset;
+    let mat = m;
+    for (let guard = 0; guard < 32; guard++) {
+        const t = readTransformPaint(view, off, view.getUint8(off));
+        if (!t) break;
+        mat = compose(mat, t.t);
+        off += t.sub;
+    }
+    return { offset: off, m: mat };
+}
+
+function resolveMask(ctx: ColrContext, offset: number, m: Mat, depth: number): Mask | null {
+    const { view } = ctx;
+    const inner = stripTransforms(view, offset, m);
+    const format = view.getUint8(inner.offset);
+    try {
+        if (format >= 2 && format <= 9) {
+            return { kind: 'everywhere', alpha: coverage(resolveFill(ctx, inner.offset, inner.m)) };
+        }
+        const layers: ColorLayer[] = [];
+        collectLayers(ctx, inner.offset, inner.m, layers, depth + 1);
+        const outlines: ClipOutline[] = [];
+        for (const layer of layers) {
+            if (layer.blendMode || layer.clip || layer.fillsClip) return null;
+            // Nearest binary mask: see Mask.
+            if (coverage(layer.paint) < 0.5) continue;
+            outlines.push(layer.transform
+                ? { glyphId: layer.glyphId, transform: layer.transform }
+                : { glyphId: layer.glyphId });
+        }
+        return outlines.length > 0 ? { kind: 'outlines', outlines } : null;
+    } catch (e) {
+        if (e instanceof UnsupportedPaint) return null;
+        throw e;
+    }
+}
+
+/**
+ * Collect a subtree painted through an outline mask. A bare fill — a
+ * gradient with no outline of its own, as in the wave over Noto's flags —
+ * becomes one layer that fills the mask region; anything else keeps its own
+ * layers, each gaining the mask as a further clip.
+ */
+function collectMasked(
+    ctx: ColrContext,
+    offset: number,
+    m: Mat,
+    out: ColorLayer[],
+    depth: number,
+    blendMode: string | undefined,
+    mask: ClipOutline[],
+): void {
+    const inner = stripTransforms(ctx.view, offset, m);
+    const format = ctx.view.getUint8(inner.offset);
+    if (format >= 2 && format <= 9) {
+        const layer: ColorLayer = {
+            glyphId: mask[0].glyphId,
+            paint: resolveFill(ctx, inner.offset, inner.m),
+            clip: [mask],
+            fillsClip: true,
+        };
+        out.push(blendMode ? { ...layer, blendMode } : layer);
+        return;
+    }
+    const start = out.length;
+    collectLayers(ctx, offset, m, out, depth, blendMode);
+    for (let i = start; i < out.length; i++) {
+        out[i] = { ...out[i], clip: [mask, ...(out[i].clip ?? [])] };
+    }
+}
+
+/**
  * Collect the flat layer list for a base-glyph paint subtree, applying the
  * accumulated *outline* transform `m` and recursing through structural paints.
  * `blendMode` is the PDF `/BM` name inherited from an enclosing
@@ -402,6 +524,29 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
             const sourceOffset = getUint24(view, offset + 1);
             const mode = view.getUint8(offset + 4);
             const backdropOffset = getUint24(view, offset + 5);
+            // Structural masks (v1.8.0). SRC_IN keeps the source only where the
+            // backdrop is; DEST_IN keeps the backdrop only where the source is.
+            // An outline mask becomes a PDF clip and a uniform one an alpha
+            // multiplier — no transparency group, no extra indirect object.
+            // Noto Color Emoji uses SRC_IN to lay a shaded wave across every
+            // flag; until now the wave was dropped and the flag drawn flat.
+            if (mode === 5 || mode === 6) {
+                const painted = offset + (mode === 5 ? sourceOffset : backdropOffset);
+                const masking = offset + (mode === 5 ? backdropOffset : sourceOffset);
+                const mask = resolveMask(ctx, masking, m, depth);
+                if (mask === null) throw new UnsupportedPaint(`composite mode ${mode} with a mask PDF cannot clip to`);
+                if (mask.kind === 'outlines') {
+                    collectMasked(ctx, painted, m, out, depth + 1, blendMode, mask.outlines);
+                } else {
+                    const start = out.length;
+                    collectLayers(ctx, painted, m, out, depth + 1, blendMode);
+                    if (mask.alpha < 1) {
+                        for (let i = start; i < out.length; i++) out[i] = withAlpha(out[i], mask.alpha);
+                    }
+                }
+                return;
+            }
+
             const bm = compositeModeToBlendMode(mode);
             if (bm === null) throw new UnsupportedPaint(`composite mode ${mode}`);
             // Paint the backdrop first (inheriting any outer blend), then the

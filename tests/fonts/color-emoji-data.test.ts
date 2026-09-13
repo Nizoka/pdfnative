@@ -29,8 +29,12 @@ describe('noto-color-emoji-data module', () => {
         // No duplicates.
         expect(new Set(CURATED_EMOJI).size).toBe(CURATED_EMOJI.length);
         // Module stays within the npm-tarball budget (raised 4096 → 5120 KB
-        // in v1.7.0 for the curated flag/ZWJ sequence set).
-        const sizeKb = Buffer.byteLength(colorEmoji.ttfBase64) / 1024;
+        // in v1.7.0 for the curated flag/ZWJ sequence set). This measures
+        // the shipped file. It used to measure only the embedded font
+        // (`ttfBase64`), about half the module, so it passed with twice the
+        // headroom the budget really had and could not catch a regression.
+        const moduleUrl = new URL('../../fonts/noto-color-emoji-data.js', import.meta.url);
+        const sizeKb = readFileSync(fileURLToPath(moduleUrl)).byteLength / 1024;
         expect(sizeKb).toBeLessThan(5120);
     });
 

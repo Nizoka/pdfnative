@@ -162,6 +162,25 @@ function extendFlags(extend: string): string {
     return extend === 'pad' ? '[true true]' : '[true true]';
 }
 
+/**
+ * The constant alpha a linear or radial gradient carries in PDF.
+ *
+ * A `/Shading` is colour-only, so stop alpha has to travel through the
+ * ExtGState. When every stop shares one alpha that is exact, and it is the
+ * case of the shaded wave across Noto's flags, whose stops all sit at 50 %:
+ * before v1.8.0 that alpha was dropped and the wave was painted opaque.
+ *
+ * When stop alphas differ, one constant cannot represent them — that needs
+ * a soft mask — and the gradient stays opaque, as it always was. A mean was
+ * tried and rejected on sight: it washed out Noto's bath bubbles and the
+ * iridescent segments of the minidisc, both of which read better opaque.
+ */
+function gradientAlpha(stops: readonly ColorStop[]): number {
+    if (stops.length === 0) return 1;
+    const first = stops[0].color[3];
+    return stops.every(s => s.color[3] === first) ? first / 255 : 1;
+}
+
 function linearShadingDict(p: LinearGradientPaint, m: Mat): string {
     const [x0, y0] = tx(m, p.p0[0], p.p0[1]);
     const [x1, y1] = tx(m, p.p1[0], p.p1[1]);
@@ -295,9 +314,85 @@ export function renderColorGlyph(
     // guaranteed superset of the rendered curves.
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
+    const grow = (px: number, py: number): void => {
+        if (px < minX) minX = px;
+        if (py < minY) minY = py;
+        if (px > maxX) maxX = px;
+        if (py > maxY) maxY = py;
+    };
+
     for (const layer of glyph.layers as ColorLayer[]) {
         const m: Mat = layer.transform ?? ID;
         const bm = layer.blendMode;
+
+        // Clip sets (v1.8.0): each the union of its outlines, all intersected.
+        // They express a COLRv1 structural mask exactly — SRC_IN keeps the
+        // source only where the mask's shapes are — with nested `W n`, which
+        // PDF intersects by construction.
+        const clipPaths: string[] = [];
+        const region: [number, number][] = [];
+        let clippedAway = false;
+        for (const set of layer.clip ?? []) {
+            const parts: string[] = [];
+            for (const outline of set) {
+                const oc = outlines(outline.glyphId);
+                if (oc.length === 0) continue;
+                const om: Mat = outline.transform ?? ID;
+                parts.push(contoursToPath(oc, om));
+                for (const contour of oc) for (const pt of contour) region.push(tx(om, pt.x, pt.y));
+            }
+            // An empty mask clips everything away.
+            if (parts.length === 0) { clippedAway = true; break; }
+            clipPaths.push(parts.join('\n'));
+        }
+        if (clippedAway) continue;
+        const openClips = (): void => {
+            for (const p of clipPaths) { body.push(p); body.push('W n'); }
+        };
+
+        if (layer.fillsClip) {
+            // A masked fill with no outline of its own: paint the clip region.
+            if (clipPaths.length === 0 || region.length === 0) continue;
+            let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+            for (const [px, py] of region) {
+                grow(px, py);
+                if (px < x0) x0 = px;
+                if (py < y0) y0 = py;
+                if (px > x1) x1 = px;
+                if (py > y1) y1 = py;
+            }
+            const paint = layer.paint;
+            body.push('q');
+            openClips();
+            if (paint.kind === 'solid') {
+                const gs = gsFor(paint.color[3] / 255, bm);
+                if (gs) body.push(`/${gs} gs`);
+                body.push(`${ch(paint.color[0])} ${ch(paint.color[1])} ${ch(paint.color[2])} rg`);
+                body.push(`${n(x0)} ${n(y0)} ${n(x1 - x0)} ${n(y1 - y0)} re`);
+                body.push('f');
+            } else if (paint.kind === 'sweep') {
+                const [cx, cy] = paint.center;
+                let r2 = 0;
+                for (const [px, py] of region) {
+                    const d = (px - cx) * (px - cx) + (py - cy) * (py - cy);
+                    if (d > r2) r2 = d;
+                }
+                emitSweep(paint, cx, cy, Math.sqrt(r2) || 1, body, gsFor, bm);
+            } else {
+                // The paint geometry is already in glyph space.
+                const name = `Sh${shadingIdx++}`;
+                shadings.push({
+                    name,
+                    dict: paint.kind === 'linear' ? linearShadingDict(paint, ID) : radialShadingDict(paint, ID),
+                });
+                const gs = gsFor(gradientAlpha(paint.stops), bm);
+                if (gs) body.push(`/${gs} gs`);
+                body.push(`/${name} sh`);
+            }
+            body.push('Q');
+            continue;
+        }
+
         const contours = outlines(layer.glyphId);
         if (contours.length === 0) continue;
         const path = contoursToPath(contours, m);
@@ -305,12 +400,11 @@ export function renderColorGlyph(
         for (const contour of contours) {
             for (const pt of contour) {
                 const [px, py] = tx(m, pt.x, pt.y);
-                if (px < minX) minX = px;
-                if (py < minY) minY = py;
-                if (px > maxX) maxX = px;
-                if (py > maxY) maxY = py;
+                grow(px, py);
             }
         }
+
+        if (clipPaths.length > 0) { body.push('q'); openClips(); }
 
         if (layer.paint.kind === 'solid') {
             const c: CpalColor = layer.paint.color;
@@ -346,13 +440,15 @@ export function renderColorGlyph(
                 : radialShadingDict(layer.paint, m);
             shadings.push({ name, dict });
             body.push('q');
-            const gs = gsFor(1, bm);
+            const gs = gsFor(gradientAlpha(layer.paint.stops), bm);
             if (gs) body.push(`/${gs} gs`);
             body.push(path);
             body.push('W n'); // clip to the outline
             body.push(`/${name} sh`);
             body.push('Q');
         }
+
+        if (clipPaths.length > 0) body.push('Q');
     }
 
     // Fall back to the em square when there were no drawable points, and pad the

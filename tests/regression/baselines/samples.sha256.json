@@ -643,9 +643,9 @@
     },
     "emoji/color-emoji-sequences.pdf": {
       "mode": "bytes",
-      "hash": "88dba03b4f7a67c216f53fb8e4cf07beb25091b7c82433ceea67bb4526df899c",
-      "size": 1453516,
-      "since": "1.7.0"
+      "hash": "3db455354dbf89900d260d221d6ba2de191fd0084a2a3ac0ff2a1bf8798b82ba",
+      "size": 1501152,
+      "since": "1.8.0"
     },
     "emoji/emoji-basic.pdf": {
       "mode": "bytes",

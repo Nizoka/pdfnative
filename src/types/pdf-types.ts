@@ -152,6 +152,18 @@ export interface SweepGradientPaint {
 /** A paint used to fill a colour-glyph layer. */
 export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint | SweepGradientPaint;
 
+/**
+ * One outline taking part in a colour-layer clip.
+ *
+ * @since 1.8.0
+ */
+export interface ClipOutline {
+    /** Glyph id of the outline (in the font's `glyf` table). */
+    readonly glyphId: number;
+    /** Affine transform `[a b c d e f]` of the outline, identity when absent. */
+    readonly transform?: readonly [number, number, number, number, number, number];
+}
+
 /** A single colour-glyph layer: a base outline filled by a paint. */
 export interface ColorLayer {
     /** Glyph id of the base outline (in the font's `glyf` table). */
@@ -176,6 +188,28 @@ export interface ColorLayer {
      * @since 1.4.0
      */
     readonly blendMode?: string;
+    /**
+     * Optional clip sets applied before the layer is painted: each set is the
+     * union of the outlines it lists, and the sets are intersected. Flattened
+     * from a COLRv1 `PaintComposite` in `SRC_IN` or `DEST_IN` mode whose mask
+     * is made of glyph shapes, with no transparency group. A PDF clip is a
+     * binary mask, so a partly translucent mask is carried as its nearest
+     * binary mask: its layers at or above half opacity.
+     *
+     * @since 1.8.0
+     */
+    readonly clip?: readonly (readonly ClipOutline[])[];
+    /**
+     * When true, the layer paints the whole region its {@link clip} allows
+     * rather than the outline of {@link glyphId}, and its paint geometry is
+     * already in glyph space, so {@link transform} is absent. This carries a
+     * masked fill with no outline of its own — the shaded wave across Noto's
+     * flags. `glyphId` still names one of the mask outlines, so a consumer
+     * unaware of this field draws something plausible rather than nothing.
+     *
+     * @since 1.8.0
+     */
+    readonly fillsClip?: boolean;
 }
 
 /** A resolved colour glyph: ordered layers painted back-to-front. */

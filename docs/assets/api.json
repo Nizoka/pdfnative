@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 485,
+  "exportCount": 486,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -101,6 +101,13 @@
       "module": "src/types/pdf-document-types.ts",
       "signature": "export type ChartType = 'bar' | 'barH' | 'line' | 'pie' | 'donut'",
       "summary": "Supported chart types (v1.6.0; `stackedBar`/`stackedBarH`/`area`/`scatter` since v1.7.0)."
+    },
+    {
+      "name": "ClipOutline",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ClipOutline",
+      "summary": "One outline taking part in a colour-layer clip."
     },
     {
       "name": "CmsDigestAlgorithm",
