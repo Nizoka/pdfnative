@@ -79,12 +79,17 @@ describe.runIf(havecorpus)('sample regression baseline', { timeout: 120_000 }, (
     });
 
     it('carries forward references from the previous release', () => {
-        // The chain is the point: most 1.8.0 entries must still be held to
-        // what 1.7.0 emitted, not silently re-anchored to the current tree.
+        // The chain is the point: a large share of the entries must still be
+        // held to what 1.7.0 emitted, not silently re-anchored to the current
+        // tree (which is what a rebaseline with no previous manifest does).
+        // 1.8.0 keeps 122 of 271: every sample embedding a hinted TrueType
+        // face was re-anchored once, deliberately, when the subsetter started
+        // keeping the hinting tables. The provenance note in the manifest
+        // accounts for each group.
         const baseline = loadBaseline()!;
         const inherited = Object.values(baseline.entries)
             .filter(e => e.since !== baseline.baselineVersion).length;
-        expect(inherited).toBeGreaterThan(200);
+        expect(inherited).toBeGreaterThan(100);
     });
 
     it('uses semantic mode for exactly the encrypted samples', () => {

@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 492,
+  "exportCount": 493,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -1580,6 +1580,13 @@
       "summary": "Replace the plain spaces adjacent to punctuation with no-break ones, following an explicit set of rules."
     },
     {
+      "name": "bindShortWords",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export function bindShortWords(text: string, opts?: ShortWordBinding): string",
+      "summary": "Bind short words to the word that follows them with a no-break space, so a line never ends on \"a\", \"w\" or \"I\"."
+    },
+    {
       "name": "bindUnits",
       "kind": "value",
       "module": "src/core/pdf-typography.ts",
@@ -1765,7 +1772,7 @@
       "name": "buildPrinterMarksOps",
       "kind": "value",
       "module": "src/core/pdf-print.ts",
-      "signature": "export function buildPrinterMarksOps( trim: PageBox, pgW: number, pgH: number, marks: boolean | PrinterMarksOptions, registrationColour = false, ): string",
+      "signature": "export function buildPrinterMarksOps( trim: PageBox, pgW: number, pgH: number, marks: boolean | PrinterMarksOptions, registrationColour = false, artifact = false, ): string",
       "summary": "Build the printer's-marks operator block for one page geometry."
     },
     {

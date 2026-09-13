@@ -128,13 +128,14 @@ _All v1.8.0 items have been merged. See Released above._
 
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression
 - [ ] **Khmer, Myanmar and Sinhala on the USE engine** — the engine shapes Tai Tham and Cham since v1.8.0, but these three keep their dedicated shapers: their fonts rely on the shaper decomposing two-part vowels and on medial advances the engine does not reproduce yet. A migration must first match the visual baselines added in v1.8.0.
-- [ ] **COLRv1 luminosity masks and non-default instances** — masks built from gradients or blended subtrees need a transparency group; they still fall back to the backdrop or the monochrome outline. Variable COLR renders at the default instance only.
-- [ ] **Spot colours and colour bars** — `/Separation` inks beyond registration, `/DeviceN`, and colour bars in the printer's-marks set, on top of the v1.8.0 CMYK foundation.
+- [ ] **COLRv1 luminosity masks and non-default instances** — masks built from gradients or blended subtrees need a transparency group; they still fall back to the backdrop or the monochrome outline. The same mechanism (`/SMask /Luminosity`) is what alpha-ramp gradient layers need: a gradient whose stops share one colour and fade only in alpha — Noto's soft shadows and vignettes — is omitted since 1.8.0 rather than painted flat, so those glyphs miss their shading until the mask lands. Variable COLR renders at the default instance only.
+- [ ] **Spot colours** — `/Separation` inks beyond registration and `/DeviceN`, on top of the v1.8.0 CMYK foundation. Colour bars shipped in 1.8.0 (`print.marks.colourBars`); a bar built from spot inks would follow the inks.
 - [ ] **PDF/X variants and dual claims** — PDF/X-1a, X-3 and X-4p, and a single file claiming both PDF/A and PDF/X.
 - [ ] **ToUnicode for shaper-produced glyphs** — a conjunct, subscript or contextual form a shaper selects has no cmap entry, so its ToUnicode line is missing and an untagged document extracts it as U+FFFD (tagged output carries `/ActualText`, which `extractText()` honours since v1.8.0). Letting each shaper report the source codepoints behind every glyph it emits closes the gap for every complex script; it rewrites the ToUnicode stream of many 1.7.0-era samples, so it ships with a declared rebaseline.
 - [ ] **Page transparency group** — pages that paint with `/ca` or `/CA` (watermarks, COLRv1 emoji) carry no `/Group << /S /Transparency >>`; the OutputIntent determines the blending space, but certified preflight tools warn.
 - [ ] **Narrow no-break space on the base-14 path** — WinAnsi has no U+202F, so `punctuationSpacing: 'fr'` degrades to `'fr-CA'` without a registered font; a `TJ` offset in place of the missing glyph would render the narrow space there too.
 - [ ] **`validatePdfX()` inside XObjects** — device colour inside Form XObjects and images is not yet checked against the OutputIntent.
+- [ ] **Amount column by declaration in the table builder** — `buildPDF` still treats column 3 as the amount column and paints `credit`/`debit` rows green/red by position; a `ColumnDef.kind: 'amount'` opt-in (as `renderTable` already has) would end the heuristic without moving the bytes of the fourteen financial samples.
 
 ## How to Influence the Roadmap
 

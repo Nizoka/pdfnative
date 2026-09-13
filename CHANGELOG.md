@@ -15,13 +15,13 @@ COLRv1 transforms, variable paints and structural masks, so flags keep
 their shaded wave, and bundled skin tones; CMYK colour, CMYK
 OutputIntents and a PDF/X-4 conformance claim with `validatePdfX()`.
 Underneath, every sample is now deterministic and held byte for byte to
-the release that last changed it. Zero runtime dependencies; 47 exports
+the release that last changed it. Zero runtime dependencies; 48 exports
 added, none removed; every new behaviour opt-in; existing inputs render
 byte-identically except where the previous output was wrong (see Fixed),
 and three calls behave differently by design — `setDeflateImpl()` rejects
 a raw-DEFLATE compressor, `parseColor()` accepts a CMYK tuple,
 `extractText()` honours `/ActualText` — see the release note's Upgrade
-section. 3346+ tests across 152 files; veraPDF-validated; a consumer
+section. 3411+ tests across 152 files; veraPDF-validated; a consumer
 importing one helper bundles that helper alone.
 
 ### Added
@@ -76,6 +76,12 @@ importing one helper bundles that helper alone.
   `{ valid, errors, warnings }`.
 - **feat(core): registration colour** — printer's marks use the `All`
   separation under a CMYK OutputIntent.
+- **feat(core): colour control bars** — `print.marks.colourBars` (`true`,
+  or `{ tints, size }`) paints C, M, Y, K at 100 % then 50 % as DeviceCMYK
+  patches in the bottom bleed strip (12 pt, clamped to the strip; a 5 mm
+  bleed is recommended). Off by default; existing marks byte-identical.
+  Under `tagged` the marks block is an `/Artifact << /Type /Page >>`
+  (ISO 32000-1 Table 330), skipped by assistive technology.
 - **feat(core): `setDeflateRawImpl()` and `wrapZlib()`** — inject a raw
   RFC 1951 compressor and let pdfnative add the RFC 1950 envelope.
 - **feat(parser): `validatePdfX()` covers fonts inside Form XObjects and
@@ -90,6 +96,15 @@ importing one helper bundles that helper alone.
   `fontFeatures` tag no registered font declares, or that substitutes no
   glyph in the document; **`typography.hyphenationLanguage`**, handed to
   the hyphenation provider as its second argument.
+- **feat(core): `typography.bindShortWords`** (`true`, or
+  `{ maxLength, words }`) glues a one-letter word — or each word of an
+  explicit list, e.g. Polish `['w', 'z', 'i', 'a', 'o', 'u']` — to the word
+  that follows it with a no-break space; a house style, opt-in, visible to
+  text extraction. `bindShortWords()` is exported alongside `bindUnits()`.
+  **`typography.keepHeadingsWithNext`** also accepts `{ minLines }` to
+  reserve at least N lines of the following paragraph on the heading's page
+  (default 2, never below `orphans`; `{ minLines: 2 }` is byte-identical to
+  `true`).
 - **feat(tooling): `npm run gate`** (`--fast` / `--ci` / `--publish` /
   `--only` / `--json`) as the one quality gate with a twenty-line summary;
   **`npm run verify:bundle`** bundles three probes from `dist/` and fails
@@ -155,6 +170,19 @@ importing one helper bundles that helper alone.
   transform formats dropped their glyph to monochrome.
 - **fix(samples): locale-dependent sample output** — amounts formatted with
   a bare `toLocaleString()` differed between machines.
+- **fix(core): colour-emoji alpha ramps** — a COLRv1 gradient whose stops
+  share one RGB and fade only in alpha (Noto's soft shadows) reached the
+  PDF as a shading with `C0 == C1`, a flat opaque fill painted over the
+  artwork; 👩, 👨, 🧑, 😊, 🌍, 🎂, 🏳️‍🌈 and about fifty other glyphs came
+  out as silhouettes. Such layers are omitted (`/SMask /Luminosity` is the
+  correct rendering, tracked in ROADMAP) and a single-colour gradient
+  paints as the equivalent solid.
+- **fix(fonts): embedded subsets keep the hinting tables** (`prep`, `fpgm`,
+  `cvt `, `gasp`) of the source font, copied verbatim, so hinting
+  rasterisers retain dropout control and grid-fitting — the lowercase `w`
+  of Noto Sans, whose inner diagonals are 12 % thinner than its stems by
+  design, no longer renders greyish at small sizes. Outlines unchanged;
+  48 bytes for most faces, up to 4.2 KB for the hinted ones.
 - **fix(fonts): glyphs introduced by `fontFeatures`** were dropped by the
   subsetter (blank on the page), missing from `/W` (viewers fell back to
   `/DW`) and from ToUnicode (extracted as U+FFFD); they are now tracked
@@ -163,6 +191,11 @@ importing one helper bundles that helper alone.
   reserved one line while the splitter refused fewer than `orphans`, so
   the paragraph moved on and the heading stayed stranded; a table's
   trailer spacing was likewise omitted.
+- **fix(core): printer's marks clearance** — crop marks and registration
+  targets keep at least `max(weight, 0.5)` pt clear of the trim line and
+  the sheet edge; at a 3 mm bleed they ended exactly on both, so a viewer
+  border or the guillotine took their outer half. Targets are re-centred
+  and shrunk to fit, and dropped below a 6.6 pt strip rather than clipped.
 - **fix(core): justified text** wrote one text object per word without a
   space glyph (4.8× the content, words glued on extraction); it is one
   `TJ` array per line with the spaces kept.
@@ -181,11 +214,19 @@ importing one helper bundles that helper alone.
   operator following `>>`.
 - **docs(language): English everywhere** — the rule is written in
   `AGENTS.md`, `CONTRIBUTING.md` and the Copilot rules and enforced by the
-  `prose-language` rule of `verify:docs` and by the regression suite; the
-  typography samples, the signature sample's Adobe Reader note, the
-  benchmark fixture and a few test fixtures are English, and the French
-  that remains is the demonstrated content of the `fr` presets, marked
-  `demo-language: fr`.
+  `prose-language` rule of `verify:docs` and by the regression suite over
+  generators, sample data, benchmarks and tests; the typography samples
+  (hyphenation demonstrated on English words), the signature sample's
+  Adobe Reader note, the benchmark fixture and a few test fixtures are
+  English, and the only French left is the sentence the `fr` punctuation
+  preset acts on, marked `demo-language: fr`. The detector recognises
+  French, Spanish, Italian, Portuguese and German prose and mojibake, with
+  Unicode word boundaries and lowercase-only function words; other
+  languages and scripts are demonstration content in labelled data records.
+- **docs(samples): alphabet plates** size their five columns to the widest
+  label across all 27 scripts and paint the glyph-category column in the
+  text colour — the financial builder's amount heuristic had truncated
+  labels with `…` and painted `Ligature`, `Subjoined` or `Tone` in red.
 - **fix(samples): the typography showcase** used straight apostrophes and
   quotes, stripped accents, breakable thousands separators and an
   optical-margins variant that changed two other options; two of its

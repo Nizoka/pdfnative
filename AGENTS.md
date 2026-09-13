@@ -91,7 +91,7 @@ import the `parser/` reader/modifier — they operate on existing PDFs by design
 
 ## Counts and versions
 
-3346 tests across 152 files, 271 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
+3411 tests across 152 files, 271 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
 `docs/assets/ecosystem.json` is the source of every count and version quoted in the docs; run `npm run verify:docs` after touching any of them.
 Coverage: ≥ 88 % statements enforced by CI (currently ≈ 90.9 % statements; the thresholds live once in `vitest.config.ts`).
 

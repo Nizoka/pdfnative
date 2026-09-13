@@ -21,8 +21,8 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 - [PDF/A conformance](https://pdfnative.dev/guides/pdfa.html): How `tagged: true` produces veraPDF-valid PDF/A-1b/2b/2u/3b.
 - [Digital signatures](https://pdfnative.dev/guides/signatures.html): CMS/PKCS#7 and PAdES + `addSignaturePlaceholder()` three-line workflow; multiple signatures, signature metadata, RSA SHA-256/384/512 + ECDSA P-256.
 - [Long-term validation](https://pdfnative.dev/guides/ltv.html): PAdES B-B → B-LTA — RFC 3161 signature timestamps, `/DSS` + `/VRI` revocation material, document timestamps, injected `TimestampProvider`/`RevocationProvider` (no built-in networking).
-- [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`; since v1.8.0 CMYK colours (`[c, m, y, k]`), CMYK/Gray OutputIntents, registration-colour marks, `pdfx: 'pdfx4'` and `validatePdfX()`.
-- [Typography](https://pdfnative.dev/guides/typography.html): `layout.typography` (v1.8.0) — paragraph splitting with `widows`/`orphans`, `keepHeadingsWithNext`, `align: 'justify'` and `opticalMargins`, soft hyphens and `setHyphenationProvider()`, `unitBinding`, `punctuationSpacing`, `metrics: 'exact'`, `kerning`, `fontFeatures` (`tnum`, `smcp`, …). Opt-in, byte-identical when off.
+- [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`; since v1.8.0 CMYK colours (`[c, m, y, k]`), CMYK/Gray OutputIntents, registration-colour marks kept clear of trim and sheet edge, opt-in colour control bars (`marks.colourBars`), marks tagged as a `/Page` artifact, `pdfx: 'pdfx4'` and `validatePdfX()`.
+- [Typography](https://pdfnative.dev/guides/typography.html): `layout.typography` (v1.8.0) — paragraph splitting with `widows`/`orphans`, `keepHeadingsWithNext` (with a `minLines` quota), `bindShortWords`, `align: 'justify'` and `opticalMargins`, soft hyphens and `setHyphenationProvider()`, `unitBinding`, `punctuationSpacing`, `metrics: 'exact'`, `kerning`, `fontFeatures` (`tnum`, `smcp`, …). Opt-in, byte-identical when off.
 - [Accessibility](https://pdfnative.dev/guides/accessibility.html): Tagged PDF, /ActualText, PDF/UA structure tree.
 - [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
 - [Choosing your surface](https://pdfnative.dev/guides/choose.html): Library, CLI, MCP or React? The decision tree plus a verified capability × surface matrix, with an honest em-dash where a surface lacks a capability.
@@ -62,7 +62,7 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 49 sample generators producing 271 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 3346+ tests across 152 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; about 90.9 % statements at v1.8.0.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 3411+ tests across 152 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; about 90.9 % statements at v1.8.0.
 
 ## Machine-readable artefacts
 
@@ -144,8 +144,8 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **SVG rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators, plus `<text>` elements rendered as upright PDF text with `x`/`y` positioning and `text-anchor` (start/middle/end) support (v1.5.0)
 - **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7). **v1.6.0** adds **fill & flatten of existing forms**: `readFormFields()`, `fillForm()` (regenerates appearances), and `flattenForm()` — non-destructive incremental update that preserves prior signatures, **including on encrypted documents** (appended objects are encrypted under the document's existing scheme). [Guide →](docs/guides/form-filling.md)
 - **Digital signatures** — CMS/PKCS#7 detached signatures with RSA (SHA-256/384/512, v1.7.0) + ECDSA-SHA256 (P-256) and X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0). Pluggable **native crypto provider** (`setCryptoProvider()` / `PdfSignOptions.provider`, v1.4.0) for constant-time, hardware-backed signing (`node:crypto` / Web Crypto / HSM). **v1.7.0**: PAdES baseline profile (`profile: 'pades'` — ESS signing-certificate-v2, `ETSI.CAdES.detached`), **multiple signatures** (`allowMultiple` + `fieldName` selector), and `listSignatures()` inspection. [Guide →](docs/guides/signatures.md)
-- **Print production** (v1.7.0) — bleed/trim/art/crop **page boxes** (`layout.print`, with a one-line `bleed` shorthand), **crop & registration marks** drawn as pure vector operators outside the TrimBox, `/Trapped` metadata with XMP parity, print-dialog defaults (**duplex**, tray pick, page range, copies), caller-supplied **OutputIntent ICC profile** (tagged mode), and large-format `/UserUnit` (banners, plans). Boxes survive `mergePdfs`/`splitPdf`. Byte-identical output when unused. **CMYK & PDF/X-4** (v1.8.0): CMYK colours on every colour option (`[c, m, y, k]` in percent), CMYK and Gray OutputIntents with RGB content kept conforming, marks in the all-separation registration colour, a `pdfx: 'pdfx4'` conformance claim, and `validatePdfX()` to check it. [Guide →](docs/guides/print.md)
-- **Typography** (v1.8.0) — paragraphs that break across pages under **widow and orphan** rules, headings **kept with** what they introduce, `align: 'justify'` written as one `TJ` array per line (spaces preserved for search and extraction), **optical margin** alignment, soft hyphens plus a `setHyphenationProvider()` seam with a document language, ISO 80000-1 **number–unit binding**, French and Canadian-French **punctuation spacing** (narrow no-break spaces rendered with a registered font), exact Adobe Core 14 **metrics**, GPOS pair **kerning** and OpenType single-substitution **features** (`onum`, `pnum`, `smcp`, …) with a diagnostic when a tag changes nothing. All opt-in under `layout.typography`; byte-identical when unset. [Guide →](docs/guides/typography.md)
+- **Print production** (v1.7.0) — bleed/trim/art/crop **page boxes** (`layout.print`, with a one-line `bleed` shorthand), **crop & registration marks** drawn as pure vector operators outside the TrimBox, `/Trapped` metadata with XMP parity, print-dialog defaults (**duplex**, tray pick, page range, copies), caller-supplied **OutputIntent ICC profile** (tagged mode), and large-format `/UserUnit` (banners, plans). Boxes survive `mergePdfs`/`splitPdf`. Byte-identical output when unused. **CMYK & PDF/X-4** (v1.8.0): CMYK colours on every colour option (`[c, m, y, k]` in percent), CMYK and Gray OutputIntents with RGB content kept conforming, marks in the all-separation registration colour and clear of both the trim line and the sheet edge, opt-in **colour control bars** (`marks: { colourBars: true }`), marks tagged as a `/Page` artifact in accessible output, a `pdfx: 'pdfx4'` conformance claim, and `validatePdfX()` to check it. [Guide →](docs/guides/print.md)
+- **Typography** (v1.8.0) — paragraphs that break across pages under **widow and orphan** rules, headings **kept with** what they introduce (with a `minLines` quota), opt-in **short-word binding** so a line never ends on "a" or "I", `align: 'justify'` written as one `TJ` array per line (spaces preserved for search and extraction), **optical margin** alignment, soft hyphens plus a `setHyphenationProvider()` seam with a document language, ISO 80000-1 **number–unit binding**, French and Canadian-French **punctuation spacing** (narrow no-break spaces rendered with a registered font), exact Adobe Core 14 **metrics**, GPOS pair **kerning** and OpenType single-substitution **features** (`onum`, `pnum`, `smcp`, …) with a diagnostic when a tag changes nothing. All opt-in under `layout.typography`; byte-identical when unset. [Guide →](docs/guides/typography.md)
 - **Long-term validation (LTV, PAdES B-B → B-LTA)** (v1.7.0) — RFC 3161 **signature timestamps** (`signPdfBytesWithTimestamp()`), embedded revocation material in `/DSS` + per-signature `/VRI` (`addValidationInfo()` — OCSP RFC 6960 + CRL RFC 5280), and **document timestamps** (`addDocumentTimestamp()`). Network transport is injected (`TimestampProvider` / `RevocationProvider`) — the engine stays offline and zero-dependency; rejected or tampered TSA tokens are never embedded. [Guide →](docs/guides/ltv.md)
 - **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. One-call `streamToFile()` drains any stream to disk with back-pressure and `AbortSignal` support (v1.4.0). [Guide →](docs/guides/streaming.md)
 - **Document outline & page labels** — nested bookmarks (`/Outlines` tree, with bold/italic/colour, collapsible nodes via `open: false`, explicit or `outline: 'auto'` from headings) and logical page numbering (`/PageLabels`: decimal, roman, alpha, prefixes, custom start) (v1.4.0). [Guide →](docs/guides/outlines.md)
@@ -164,7 +164,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 3346+ tests across 152 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 90.93% statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 3411+ tests across 152 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 90.93% statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1301,7 +1301,7 @@ src/
 fonts/                    # Pre-built font data modules (27 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (49 generators, 271 PDFs)
-tests/                    # 3346+ tests (152 files: unit + integration + fuzz + parser + docs)
+tests/                    # 3411+ tests (152 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1313,7 +1313,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (3346+ tests)
+npm run test             # vitest run (3411+ tests)
 npm run test:coverage    # vitest with v8 coverage (90.93% statements at the v1.8.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate 271 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1328,7 +1328,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3346+ (152 files) |
+| Tests | 3411+ (152 files) |
 | Statement coverage | 90.93% (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |
@@ -1681,7 +1681,7 @@ For a real-world test, open your PDF with **NVDA** (Windows, free), **VoiceOver*
 | Cell scope `/Scope` | Not yet exposed — flat table tags |
 | Reading order overrides | Implicit (block insertion order) — no explicit `/Order` array |
 | Language tags per text run | Document-level only (`/Lang` in catalog) |
-| Artifact tagging (decorative content) | Not yet exposed — header/footer/watermark are tagged as content |
+| Artifact tagging (decorative content) | Printer's marks (crop, registration, colour bars) are `/Artifact /Page` since v1.8.0 — header/footer/watermark are still tagged as content |
 
 Contributions to address these are welcome — see the [Roadmap](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md).
 
@@ -4413,9 +4413,18 @@ faithfully in any conformant viewer.
   outline otherwise.
 - **Variable fonts** render at the default instance only. A PDF page is
   static, and the subsetter drops `fvar` and `gvar`.
-- **Gradient alpha** is kept only when every stop shares it; a gradient that
-  fades from opaque to transparent renders opaque, because PDF shadings carry
-  colour, not opacity.
+- **Gradient alpha** is kept only when every stop shares it, because PDF
+  shadings carry colour, not opacity. A gradient whose colours *and* alphas
+  both vary renders opaque, as it always did.
+- **Alpha-only gradient layers are omitted (v1.8.0).** Noto draws its soft
+  shadows and vignettes as gradients whose stops share one colour and fade
+  only in alpha (brown, 0 → 255). A shading cannot carry that fade, and
+  before 1.8.0 such a layer was painted as a flat opaque disc over the
+  artwork: `👩` and about fifty other glyphs (`👨`, `😊`, `🌍`, `🎂`, `🏳️‍🌈`,
+  …) came out as an opaque silhouette. Since 1.8.0 these layers are left out,
+  so the glyph shows its flat artwork without its shadow. They will render
+  faithfully as `/SMask /Luminosity` soft masks once transparency groups
+  land (ROADMAP, "COLRv1 luminosity masks").
 - **PDF/A:** gradient transparency uses `/ExtGState` alpha, which PDF/A-1b
   forbids. Use solid-layer emoji or a non-PDF/A document for colour gradients.
 
@@ -7201,14 +7210,35 @@ Boxes are validated (within the MediaBox, trim within bleed) and are pure page-d
 
 ## Printer's marks (§14.11.3)
 
-`print.marks: true` draws, on every page, strictly **outside** the TrimBox:
+`print.marks: true` draws, on every page, strictly **outside** the TrimBox and strictly **on** the sheet:
 
 - **Crop marks** — 8 corner hairlines (default 0.25 pt, 14 pt long, 5 pt clear of the trim edge) showing where to cut.
 - **Registration targets** — circle-and-cross targets on the four edge midpoints, used to align separations.
 
-Fine-tune with an object: `marks: { crop, registration, length, offset, weight }`.
+Every mark keeps at least 0.5 pt (or the stroke weight, if heavier) from both the trim line and the media edge, so no ink prints on the cut and nothing is lost off the edge. In a tight strip the registration target is re-centred and shrunk to fit; below a 6.6 pt strip it is dropped for that edge rather than drawn clipped. Fine-tune with an object: `marks: { crop, registration, length, offset, weight, colourBars }`.
 
 > Marks are stroked in black. Under a CMYK OutputIntent (v1.8.0) they use the *registration colour* instead — the `All` separation, which a RIP puts on every plate, so the marks register cyan, magenta, yellow and black against each other.
+
+### Colour bars (v1.8.0)
+
+`marks: { colourBars: true }` adds a colour control bar to the bottom bleed strip: cyan, magenta, yellow and black at 100 %, then the same four at 50 %, as square DeviceCMYK fills with 1 pt gutters, starting just right of the bottom-left crop mark. `colourBars: { tints: false }` keeps the four solids only; `size` (default 12 pt) sets the patch side and is clamped to the strip height minus the clearance.
+
+**Use a bleed of 5 mm (14.17 pt) or more.** A 3 mm bleed clamps the patches to ≈ 7.5 pt, below the aperture of a densitometer. The bar is skipped silently when the strip is under 4 pt or when it would reach the bottom registration target (very narrow pages). The patches are DeviceCMYK, so under a non-CMYK OutputIntent the usual `PDFA_DEVICE_CMYK_CONTENT` / `PDFX_DEVICE_CMYK` diagnostic applies — pair them with a CMYK profile.
+
+```ts
+const BLEED = 14.17; // 5 mm
+buildDocumentPDFBytes(params, {
+  pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  pdfx: 'pdfx4',
+  outputIntent: { iccProfile, outputConditionIdentifier: 'FOGRA39', registryName: 'http://www.color.org' },
+  print: { bleed: BLEED, marks: { colourBars: true } },
+});
+```
+
+### Marks in tagged documents
+
+Under `tagged` (PDF/A or plain tagged PDF) the whole marks block — crop marks, registration targets and colour bars — is wrapped in `/Artifact << /Type /Page >> BDC … EMC`, the artifact type ISO 32000-1 Table 330 reserves for "production aids such as cut marks and colour bars", so screen readers and text extractors skip it. Untagged output is unchanged.
 
 ## /Trapped and prepress metadata
 
@@ -7326,7 +7356,7 @@ buildDocumentPDFBytes(params, { pageWidth: 1417, pageHeight: 283, print: { userU
 
 ## Limits & scope (v1.8.0)
 
-- **Not yet:** spot colours (`/Separation` inks other than registration), colour bars, PDF/X-1a, PDF/X-3 and PDF/X-4p, and a single file carrying both a PDF/A and a PDF/X claim.
+- **Not yet:** spot colours (`/Separation` inks other than registration), PDF/X-1a, PDF/X-3 and PDF/X-4p, and a single file carrying both a PDF/A and a PDF/X claim.
 - Colour emoji and CPAL palettes stay RGB; under a CMYK intent they are covered by `/DefaultRGB`.
 - One geometry per document (pages share the same boxes), matching the single-page-size layout model.
 - The OutputIntent (custom or built-in) is emitted under `tagged` modes and under `pdfx` only.
@@ -9423,7 +9453,7 @@ Why opt-in: each option moves glyphs or line breaks, so turning one on changes a
 | `splitParagraphs` | `false` | A paragraph that does not fit breaks at a line boundary instead of moving to the next page whole. A paragraph taller than a page continues instead of running off the bottom. |
 | `orphans` | `2` | Minimum lines left at the foot of a page for a break to be allowed there. Requires `splitParagraphs`. |
 | `widows` | `2` | Minimum lines carried to the next page; the break is pulled earlier otherwise. Requires `splitParagraphs`. |
-| `keepHeadingsWithNext` | `false` | A heading that would end a page moves to the next one with its content. Works without `splitParagraphs`. |
+| `keepHeadingsWithNext` | `false` | A heading that would end a page moves to the next one with its content. Works without `splitParagraphs`. Pass `true`, or `{ minLines: N }` to reserve at least N lines of what follows (default 2; three is a common house style) — the reservation never drops below `orphans`, and a paragraph that cannot spare N lines and still carry `widows` over moves whole. |
 
 Blocks override the document setting: a heading or paragraph accepts `keepWithNext`, and a paragraph accepts its own split permission. Under a PDF/A claim a paragraph split across pages remains one `/P` structure element.
 
@@ -9450,7 +9480,7 @@ setHyphenationProvider((word, lang) => myHyphenator.positions(word, lang ?? 'en'
 buildDocumentPDFBytes(params, { typography: { hyphenationLanguage: 'fr' } });
 ```
 
-The provider receives the bare word (no surrounding space) and must be synchronous and pure: it may be called many times for the same word during layout, and a changing answer would make output irreproducible. A word that already contains soft hyphens keeps the author's choice, and a provider that throws is ignored for that word. Pass `null` to remove it. The sample `typography/hyphenation-provider.pdf` installs a small rule-based French provider for one document.
+The provider receives the bare word (no surrounding space) and must be synchronous and pure: it may be called many times for the same word during layout, and a changing answer would make output irreproducible. A word that already contains soft hyphens keeps the author's choice, and a provider that throws is ignored for that word. Pass `null` to remove it. The sample `typography/hyphenation-provider.pdf` installs a small rule-based English syllable provider for one document (with `hyphenationLanguage: 'en'`).
 
 ## Spacing rules
 
@@ -9467,7 +9497,9 @@ typography: {
 }
 ```
 
-Only existing spaces are converted; nothing is inserted where the author wrote none. It applies to headings, paragraphs, lists, link labels and table content. `bindUnits()` and `applyPunctuationSpacing()` expose the same transforms for text you lay out yourself.
+**Short-word binding** — `bindShortWords: true` replaces the space after a one-letter word with a no-break space, so a line never ends on "a", "w" or "I". It is opt-in because it is a house style, not a typographic law: orthography in Polish, Czech, Slovak, Russian, Ukrainian and Hungarian, whose one-letter prepositions and conjunctions must not close a line, and a preference elsewhere — Chicago and Bringhurst do not forbid an English line ending on an article. `{ maxLength: 2 }` widens the rule to words of up to two letters (three at most); `{ words: ['w', 'z', 'i', 'a', 'o', 'u'] }` restricts it to an explicit list, which is the right form for a language whose short words are a closed set. Words are letters only and matched case-insensitively; a digit is never a word, so `2 m` stays with unit binding. A short word at the end of the text or before punctuation keeps its space, and a unit already bound to its number is not taken for a lone short word. Two side effects to know about: the no-break space is visible to text extraction, and every binding removes a break opportunity, which a narrow column can feel.
+
+Only existing spaces are converted; nothing is inserted where the author wrote none. Each rule applies to headings, paragraphs, lists, link labels and table content. `bindUnits()`, `bindShortWords()` and `applyPunctuationSpacing()` expose the same transforms for text you lay out yourself.
 
 ## Metrics
 

@@ -59,8 +59,8 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **SVG rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators, plus `<text>` elements rendered as upright PDF text with `x`/`y` positioning and `text-anchor` (start/middle/end) support (v1.5.0)
 - **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7). **v1.6.0** adds **fill & flatten of existing forms**: `readFormFields()`, `fillForm()` (regenerates appearances), and `flattenForm()` — non-destructive incremental update that preserves prior signatures, **including on encrypted documents** (appended objects are encrypted under the document's existing scheme). [Guide →](docs/guides/form-filling.md)
 - **Digital signatures** — CMS/PKCS#7 detached signatures with RSA (SHA-256/384/512, v1.7.0) + ECDSA-SHA256 (P-256) and X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0). Pluggable **native crypto provider** (`setCryptoProvider()` / `PdfSignOptions.provider`, v1.4.0) for constant-time, hardware-backed signing (`node:crypto` / Web Crypto / HSM). **v1.7.0**: PAdES baseline profile (`profile: 'pades'` — ESS signing-certificate-v2, `ETSI.CAdES.detached`), **multiple signatures** (`allowMultiple` + `fieldName` selector), and `listSignatures()` inspection. [Guide →](docs/guides/signatures.md)
-- **Print production** (v1.7.0) — bleed/trim/art/crop **page boxes** (`layout.print`, with a one-line `bleed` shorthand), **crop & registration marks** drawn as pure vector operators outside the TrimBox, `/Trapped` metadata with XMP parity, print-dialog defaults (**duplex**, tray pick, page range, copies), caller-supplied **OutputIntent ICC profile** (tagged mode), and large-format `/UserUnit` (banners, plans). Boxes survive `mergePdfs`/`splitPdf`. Byte-identical output when unused. **CMYK & PDF/X-4** (v1.8.0): CMYK colours on every colour option (`[c, m, y, k]` in percent), CMYK and Gray OutputIntents with RGB content kept conforming, marks in the all-separation registration colour, a `pdfx: 'pdfx4'` conformance claim, and `validatePdfX()` to check it. [Guide →](docs/guides/print.md)
-- **Typography** (v1.8.0) — paragraphs that break across pages under **widow and orphan** rules, headings **kept with** what they introduce, `align: 'justify'` written as one `TJ` array per line (spaces preserved for search and extraction), **optical margin** alignment, soft hyphens plus a `setHyphenationProvider()` seam with a document language, ISO 80000-1 **number–unit binding**, French and Canadian-French **punctuation spacing** (narrow no-break spaces rendered with a registered font), exact Adobe Core 14 **metrics**, GPOS pair **kerning** and OpenType single-substitution **features** (`onum`, `pnum`, `smcp`, …) with a diagnostic when a tag changes nothing. All opt-in under `layout.typography`; byte-identical when unset. [Guide →](docs/guides/typography.md)
+- **Print production** (v1.7.0) — bleed/trim/art/crop **page boxes** (`layout.print`, with a one-line `bleed` shorthand), **crop & registration marks** drawn as pure vector operators outside the TrimBox, `/Trapped` metadata with XMP parity, print-dialog defaults (**duplex**, tray pick, page range, copies), caller-supplied **OutputIntent ICC profile** (tagged mode), and large-format `/UserUnit` (banners, plans). Boxes survive `mergePdfs`/`splitPdf`. Byte-identical output when unused. **CMYK & PDF/X-4** (v1.8.0): CMYK colours on every colour option (`[c, m, y, k]` in percent), CMYK and Gray OutputIntents with RGB content kept conforming, marks in the all-separation registration colour and clear of both the trim line and the sheet edge, opt-in **colour control bars** (`marks: { colourBars: true }`), marks tagged as a `/Page` artifact in accessible output, a `pdfx: 'pdfx4'` conformance claim, and `validatePdfX()` to check it. [Guide →](docs/guides/print.md)
+- **Typography** (v1.8.0) — paragraphs that break across pages under **widow and orphan** rules, headings **kept with** what they introduce (with a `minLines` quota), opt-in **short-word binding** so a line never ends on "a" or "I", `align: 'justify'` written as one `TJ` array per line (spaces preserved for search and extraction), **optical margin** alignment, soft hyphens plus a `setHyphenationProvider()` seam with a document language, ISO 80000-1 **number–unit binding**, French and Canadian-French **punctuation spacing** (narrow no-break spaces rendered with a registered font), exact Adobe Core 14 **metrics**, GPOS pair **kerning** and OpenType single-substitution **features** (`onum`, `pnum`, `smcp`, …) with a diagnostic when a tag changes nothing. All opt-in under `layout.typography`; byte-identical when unset. [Guide →](docs/guides/typography.md)
 - **Long-term validation (LTV, PAdES B-B → B-LTA)** (v1.7.0) — RFC 3161 **signature timestamps** (`signPdfBytesWithTimestamp()`), embedded revocation material in `/DSS` + per-signature `/VRI` (`addValidationInfo()` — OCSP RFC 6960 + CRL RFC 5280), and **document timestamps** (`addDocumentTimestamp()`). Network transport is injected (`TimestampProvider` / `RevocationProvider`) — the engine stays offline and zero-dependency; rejected or tampered TSA tokens are never embedded. [Guide →](docs/guides/ltv.md)
 - **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. One-call `streamToFile()` drains any stream to disk with back-pressure and `AbortSignal` support (v1.4.0). [Guide →](docs/guides/streaming.md)
 - **Document outline & page labels** — nested bookmarks (`/Outlines` tree, with bold/italic/colour, collapsible nodes via `open: false`, explicit or `outline: 'auto'` from headings) and logical page numbering (`/PageLabels`: decimal, roman, alpha, prefixes, custom start) (v1.4.0). [Guide →](docs/guides/outlines.md)
@@ -79,7 +79,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 3346+ tests across 152 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 90.93% statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 3411+ tests across 152 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 90.93% statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1216,7 +1216,7 @@ src/
 fonts/                    # Pre-built font data modules (27 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (49 generators, 271 PDFs)
-tests/                    # 3346+ tests (152 files: unit + integration + fuzz + parser + docs)
+tests/                    # 3411+ tests (152 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1228,7 +1228,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (3346+ tests)
+npm run test             # vitest run (3411+ tests)
 npm run test:coverage    # vitest with v8 coverage (90.93% statements at the v1.8.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate 271 sample PDFs → test-output/
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1243,7 +1243,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3346+ (152 files) |
+| Tests | 3411+ (152 files) |
 | Statement coverage | 90.93% (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |

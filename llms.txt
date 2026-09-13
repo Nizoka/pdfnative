@@ -21,8 +21,8 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 - [PDF/A conformance](https://pdfnative.dev/guides/pdfa.html): How `tagged: true` produces veraPDF-valid PDF/A-1b/2b/2u/3b.
 - [Digital signatures](https://pdfnative.dev/guides/signatures.html): CMS/PKCS#7 and PAdES + `addSignaturePlaceholder()` three-line workflow; multiple signatures, signature metadata, RSA SHA-256/384/512 + ECDSA P-256.
 - [Long-term validation](https://pdfnative.dev/guides/ltv.html): PAdES B-B → B-LTA — RFC 3161 signature timestamps, `/DSS` + `/VRI` revocation material, document timestamps, injected `TimestampProvider`/`RevocationProvider` (no built-in networking).
-- [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`; since v1.8.0 CMYK colours (`[c, m, y, k]`), CMYK/Gray OutputIntents, registration-colour marks, `pdfx: 'pdfx4'` and `validatePdfX()`.
-- [Typography](https://pdfnative.dev/guides/typography.html): `layout.typography` (v1.8.0) — paragraph splitting with `widows`/`orphans`, `keepHeadingsWithNext`, `align: 'justify'` and `opticalMargins`, soft hyphens and `setHyphenationProvider()`, `unitBinding`, `punctuationSpacing`, `metrics: 'exact'`, `kerning`, `fontFeatures` (`tnum`, `smcp`, …). Opt-in, byte-identical when off.
+- [Print production](https://pdfnative.dev/guides/print.html): Bleed/trim/art/crop page boxes (`layout.print`), crop + registration marks, `/Trapped` with XMP parity, duplex/tray/copies print defaults, custom OutputIntent ICC, large-format `/UserUnit`; since v1.8.0 CMYK colours (`[c, m, y, k]`), CMYK/Gray OutputIntents, registration-colour marks kept clear of trim and sheet edge, opt-in colour control bars (`marks.colourBars`), marks tagged as a `/Page` artifact, `pdfx: 'pdfx4'` and `validatePdfX()`.
+- [Typography](https://pdfnative.dev/guides/typography.html): `layout.typography` (v1.8.0) — paragraph splitting with `widows`/`orphans`, `keepHeadingsWithNext` (with a `minLines` quota), `bindShortWords`, `align: 'justify'` and `opticalMargins`, soft hyphens and `setHyphenationProvider()`, `unitBinding`, `punctuationSpacing`, `metrics: 'exact'`, `kerning`, `fontFeatures` (`tnum`, `smcp`, …). Opt-in, byte-identical when off.
 - [Accessibility](https://pdfnative.dev/guides/accessibility.html): Tagged PDF, /ActualText, PDF/UA structure tree.
 - [Onboarding](https://pdfnative.dev/guides/onboarding.html): 90-second ecosystem tour — library + CLI + MCP.
 - [Choosing your surface](https://pdfnative.dev/guides/choose.html): Library, CLI, MCP or React? The decision tree plus a verified capability × surface matrix, with an honest em-dash where a surface lacks a capability.
@@ -62,7 +62,7 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 49 sample generators producing 271 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 3346+ tests across 152 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; about 90.9 % statements at v1.8.0.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 3411+ tests across 152 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; about 90.9 % statements at v1.8.0.
 
 ## Machine-readable artefacts
 

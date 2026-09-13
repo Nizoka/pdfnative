@@ -5,8 +5,8 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 17594,
-      "approxTokens": 4399
+      "bytes": 17757,
+      "approxTokens": 4439
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -17,8 +17,8 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 552629,
-      "approxTokens": 138157
+      "bytes": 557239,
+      "approxTokens": 139310
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -29,8 +29,8 @@
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 134918,
-      "approxTokens": 33730
+      "bytes": 135286,
+      "approxTokens": 33822
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
@@ -47,8 +47,8 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 101227,
-      "approxTokens": 25307
+      "bytes": 101491,
+      "approxTokens": 25373
     }
   ],
   "guides": [
@@ -67,8 +67,8 @@
         "testing-your-pdfs-are-accessible",
         "further-reading"
       ],
-      "bytes": 7410,
-      "approxTokens": 1853
+      "bytes": 7485,
+      "approxTokens": 1871
     },
     {
       "title": "Agentic workflows",
@@ -228,8 +228,8 @@
         "variation-selectors--skin-tone-modifiers-v130",
         "see-also"
       ],
-      "bytes": 13565,
-      "approxTokens": 3391
+      "bytes": 14248,
+      "approxTokens": 3562
     },
     {
       "title": "Layout debugging & inspection",
@@ -423,8 +423,8 @@
         "large-formats--userunit",
         "limits--scope-v180"
       ],
-      "bytes": 11155,
-      "approxTokens": 2789
+      "bytes": 13122,
+      "approxTokens": 3281
     },
     {
       "title": "Quick Start",
@@ -605,8 +605,8 @@
         "limits--scope",
         "see-also"
       ],
-      "bytes": 10362,
-      "approxTokens": 2591
+      "bytes": 11820,
+      "approxTokens": 2955
     },
     {
       "title": "Ecosystem use cases",
