@@ -1,7 +1,7 @@
 {
   "$comment": "Machine-readable registry of the diagnostic codes the pdfnative ENGINE emits (src/core/pdf-diagnostics.ts). Meanings and remedies are restated from the source messages; the error-parity rule of scripts/verify-docs.ts checks that every code named in the documentation exists here and in src/, and vice versa. The CLI's E_* codes and the MCP server's tool error codes belong to their own repositories (pdfnative-cli llms.txt / schema manifest, and the MCP guide's error table, checked against the published package by the weekly --online run) and are deliberately not mirrored here.",
   "package": "pdfnative",
-  "verifiedOn": "2026-09-13",
+  "verifiedOn": "2026-09-14",
   "diagnostics": [
     {
       "code": "PDFA_NO_FONT_ENTRIES",
@@ -65,11 +65,183 @@
       "standard": "ISO 15930-7 (no annotations inside the BleedBox, no interactive forms)",
       "remedy": "Remove links and form fields from the print version of the document, or drop layout.pdfx.",
       "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
+      "code": "TYPOGRAPHY_FEATURE_INEFFECTIVE",
+      "severity": "warning",
+      "since": "1.8.0",
+      "raisedWhen": "A typography.fontFeatures tag changed nothing: no registered font declares it, or the font declares it but no glyph in the document was substituted (Noto Sans's figures are already lining and tabular, so lnum and tnum have nothing to do).",
+      "standard": "Not a conformance rule — an authoring diagnostic (OpenType feature tags, ISO/IEC 14496-22 §6.2)",
+      "remedy": "Drop the tag, or register a font whose GSUB declares it for the characters you set; the effective tags are the keys of the font module's features table.",
+      "guide": "https://pdfnative.dev/guides/typography.md"
     }
   ],
   "sink": {
     "default": "console.warn, deduplicated once per code per build",
     "custom": "layout.onDiagnostic receives every diagnostic (no deduplication)",
     "strict": "layout.strict: true throws instead (onDiagnostic is then ignored)"
-  }
+  },
+  "buildErrors": [
+    {
+      "message": "layout.pdfx: unknown target '${target}' — use one of ${PDF_X_CONFORMANCE_TARGETS}",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolvePdfXConfig)",
+      "since": "1.8.0",
+      "when": "layout.pdfx names a target that is not in PDF_X_CONFORMANCE_TARGETS.",
+      "remedy": "Use 'pdfx4'."
+    },
+    {
+      "message": "layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolvePdfXConfig)",
+      "since": "1.8.0",
+      "when": "A PDF/X claim and a PDF/A or tagged claim are requested together.",
+      "remedy": "Build the print file and the archival file as two documents."
+    },
+    {
+      "message": "PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolvePdfXConfig)",
+      "since": "1.8.0",
+      "when": "layout.pdfx is set together with layout.encryption.",
+      "remedy": "Drop one of the two."
+    },
+    {
+      "message": "PDF/X-4 requires layout.outputIntent: the ICC profile of the printing condition, e.g. ISO Coated v2 or GRACoL from your printer. pdfnative ships no press profile",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolvePdfXConfig)",
+      "since": "1.8.0",
+      "when": "layout.pdfx is set without layout.outputIntent.",
+      "remedy": "Pass the output ICC profile your printer names."
+    },
+    {
+      "message": "PDF/X-4 requires an output (printer) profile as layout.outputIntent — the supplied profile's class is '${deviceClass}'",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolvePdfXConfig)",
+      "since": "1.8.0",
+      "when": "The OutputIntent profile's device class (ICC header bytes 12–15) is not prtr — a monitor (mntr) profile such as sRGB, for instance.",
+      "remedy": "Use a press profile (device class prtr)."
+    },
+    {
+      "message": "PDF/X requires the trapping state to be known — set metadata.trapped to 'True' or 'False', or omit it for 'False'",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolvePdfXConfig)",
+      "since": "1.8.0",
+      "when": "metadata.trapped is 'Unknown' under a PDF/X claim.",
+      "remedy": "State 'True' or 'False'; pdfnative never traps, so 'False' is accurate for its output."
+    },
+    {
+      "message": "PDF/X pages carry a TrimBox or an ArtBox, not both — drop print.artBox, or print.trimBox and print.bleed",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (pdfxBoxes)",
+      "since": "1.8.0",
+      "when": "print.artBox is set together with print.trimBox or print.bleed under a PDF/X claim.",
+      "remedy": "Keep one of the two boxes."
+    },
+    {
+      "message": "outputIntent.iccProfile is too short to be an ICC profile (128-byte header required)",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolveOutputIntent)",
+      "since": "1.7.0",
+      "when": "The supplied profile is under 128 bytes.",
+      "remedy": "Pass the full .icc file."
+    },
+    {
+      "message": "outputIntent.iccProfile is not an ICC profile (no `acsp` signature at byte 36)",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolveOutputIntent)",
+      "since": "1.8.0",
+      "when": "Bytes 36–39 of the supplied profile are not the ICC signature.",
+      "remedy": "Pass a real ICC profile; check the file was not truncated or re-encoded."
+    },
+    {
+      "message": "outputIntent.iccProfile header declares ${declaredSize} bytes but ${supplied} were supplied — the profile is truncated or corrupt",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolveOutputIntent)",
+      "since": "1.8.0",
+      "when": "The size field at bytes 0–3 is under 128 or larger than the buffer.",
+      "remedy": "Re-export the profile; a partial download is the usual cause."
+    },
+    {
+      "message": "outputIntent.iccProfile declares data colour space '${space}' — an OutputIntent profile must describe RGB, CMYK or Gray",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolveOutputIntent)",
+      "since": "1.7.0",
+      "when": "ICC header bytes 16–19 name a colour space other than RGB, CMYK or GRAY (Lab, XYZ, n-colour).",
+      "remedy": "Use an RGB, CMYK or Gray output profile."
+    },
+    {
+      "message": "print.marks requires a TrimBox — set print.bleed or print.trimBox",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (print geometry)",
+      "since": "1.7.0",
+      "when": "Printer's marks are requested on a page with no trim geometry.",
+      "remedy": "Set print.bleed (recommended) or an explicit print.trimBox."
+    },
+    {
+      "message": "print.bleed and print.trimBox are mutually exclusive — the shorthand derives the TrimBox",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (print geometry)",
+      "since": "1.7.0",
+      "when": "Both the bleed shorthand and an explicit TrimBox are set.",
+      "remedy": "Keep one of the two."
+    },
+    {
+      "message": "PDF/A and encryption are mutually exclusive (ISO 19005-1 §6.3.2)",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes",
+      "since": "1.1.0",
+      "when": "layout.tagged names a PDF/A level together with layout.encryption.",
+      "remedy": "Drop one of the two."
+    },
+    {
+      "message": "File attachments require tagged: 'pdfa3b' (PDF/A-3, ISO 19005-3)",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (buildEmbeddedFiles)",
+      "since": "1.1.0",
+      "when": "attachments are supplied under no claim or a PDF/A-1 / PDF/A-2 claim.",
+      "remedy": "Set layout.tagged to 'pdfa3b', or drop the attachments."
+    },
+    {
+      "message": "print.bleed must be a positive number of points",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (print geometry)",
+      "since": "1.7.0",
+      "when": "print.bleed is zero, negative or not a number.",
+      "remedy": "Give the bleed in points (3 mm = 8.5 pt, 5 mm = 14.17 pt)."
+    },
+    {
+      "message": "print.bleed leaves no trim area — it must be less than half the smaller page dimension",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (print geometry)",
+      "since": "1.7.0",
+      "when": "Twice the bleed reaches the page's smaller dimension.",
+      "remedy": "Design the page as trim size + 2 × bleed (pageWidth / pageHeight) and keep the bleed a few millimetres."
+    },
+    {
+      "message": "print.${box} must be [x0, y0, x1, y1] with x1 > x0 and y1 > y0",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (print geometry)",
+      "since": "1.7.0",
+      "when": "print.trimBox, bleedBox, artBox or cropBox is not a four-number array with a positive extent.",
+      "remedy": "Pass [x0, y0, x1, y1] in points, lower-left to upper-right."
+    },
+    {
+      "message": "print.${box} must lie within the MediaBox [0 0 ${width} ${height}]",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (print geometry)",
+      "since": "1.7.0",
+      "when": "A page box extends beyond the page.",
+      "remedy": "Keep every box inside pageWidth × pageHeight (ISO 32000-1 §14.11.2)."
+    },
+    {
+      "message": "print.trimBox must lie within the BleedBox",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (print geometry)",
+      "since": "1.7.0",
+      "when": "An explicit trimBox is not nested in the bleedBox.",
+      "remedy": "Enlarge the BleedBox or shrink the TrimBox; PDF/X validators reject the inverse nesting."
+    },
+    {
+      "message": "print.userUnit must be between 1 and ${max}",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (print geometry)",
+      "since": "1.7.0",
+      "when": "print.userUnit is outside the range ISO 32000-1 allows for /UserUnit.",
+      "remedy": "Use a value from 1 to 75 000."
+    },
+    {
+      "message": "Watermark transparency is not allowed with PDF/A-1b (ISO 19005-1 §6.4)",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (watermark)",
+      "since": "1.1.0",
+      "when": "A watermark with opacity below 1 is requested under tagged: 'pdfa1b'.",
+      "remedy": "Use opacity 1, or claim PDF/A-2b or later, where transparency is allowed."
+    },
+    {
+      "message": "print.userUnit requires PDF 1.6+ and is not allowed under PDF/A-1 (PDF 1.4) — use pdfa2b or later",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (print geometry)",
+      "since": "1.7.0",
+      "when": "print.userUnit is set together with tagged: 'pdfa1b'.",
+      "remedy": "Claim PDF/A-2b or later, or drop userUnit."
+    }
+  ]
 }

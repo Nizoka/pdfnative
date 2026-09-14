@@ -2,13 +2,14 @@
 
 > Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 27 Unicode scripts with OpenType GSUB/GPOS shaping and full UAX #9 BiDi. PAdES digital signatures with long-term validation (B-B → B-LTA). Current version: 1.8.0.
 
-_Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the canonical manifest is <https://pdfnative.dev/assets/ecosystem.json>._
+_Verified on 2026-09-14 against the source tree by `npm run verify:docs`; the canonical manifest is <https://pdfnative.dev/assets/ecosystem.json>._
 
 ## Docs
 
 - [README](https://github.com/Nizoka/pdfnative/blob/main/README.md): Full feature list, install, quick start, API surface, examples.
-- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.7; v1.7: PAdES LTV B-B → B-LTA, charts v2, colour-emoji flag/ZWJ sequences, UAX #9 conformance, print production, PDF/A declaration guards, `updateMetadata`; v1.6: parser-side decryptor, streaming merge/split/extract, fill & flatten AcroForms, native vector charts, `extractText`, re-encrypt output; v1.5: math/technical-symbols font, `pdfnative/tools` font compiler/parser, SVG `<text>`, page-labels reader, layout debug overlay + `inspectDocumentLayout`, markup annotation read/write, AI-agent governance; v1.4: document outline/bookmarks, page labels, page-tree manipulation (merge/split/extract), streamToFile, COLRv1 advanced compositing; v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, validatePdfUA) + long-term (WASM, full USE).
+- [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.8; v1.8: typography layer (paragraph breaking, justification, hyphenation seam, kerning, OpenType features), 27 scripts with a Universal Shaping Engine, COLRv1 transforms/masks/skin tones, CMYK colours + CMYK/Gray OutputIntents + PDF/X-4 with `validatePdfX`, deterministic samples and a byte-regression harness; v1.7: PAdES LTV B-B → B-LTA, charts v2, colour-emoji flag/ZWJ sequences, UAX #9 conformance, print production, PDF/A declaration guards, `updateMetadata`; v1.6: parser-side decryptor, streaming merge/split/extract, fill & flatten AcroForms, native vector charts, `extractText`, re-encrypt output; v1.5: math/technical-symbols font, `pdfnative/tools` font compiler/parser, SVG `<text>`, page-labels reader, layout debug overlay + `inspectDocumentLayout`, markup annotation read/write, AI-agent governance; v1.4: document outline/bookmarks, page labels, page-tree manipulation (merge/split/extract), streamToFile, COLRv1 advanced compositing; v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, validatePdfUA) + long-term (WASM, full USE).
 - [CHANGELOG](https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md): Per-version changes.
+- [Release notes v1.8.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.8.0.md): the typography and print release — `layout.typography` (paragraph splitting with `widows`/`orphans`, `keepHeadingsWithNext` incl. `{ minLines }`, `bindShortWords`, `align: 'justify'`, `opticalMargins`, soft hyphens + `setHyphenationProvider` with `hyphenationLanguage`, `unitBinding`, `punctuationSpacing`, `metrics: 'exact'`, `kerning`, `fontFeatures`), five new scripts (Lao, Tai Tham, New Tai Lue, Tai Le, Cham) on a generated Universal Shaping Engine, COLRv1 transform/variable/mask paints and 150 skin-tone forms, CMYK colours (`[c, m, y, k]`), CMYK/Gray OutputIntents with RGB kept conforming, registration-colour marks, colour control bars, `pdfx: 'pdfx4'` + `validatePdfX()`, `setDefaultCreationDate()` and `npm run verify:samples`. Four behaviour changes: `setDeflateImpl()` rejects raw DEFLATE (use `setDeflateRawImpl` / `wrapZlib`), `parseColor()` accepts four-value CMYK input, `extractText()` honours `/ActualText`, `{date}` follows `layout.creationDate`. 54 exports added, none removed.
 - [Release notes v1.7.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.7.0.md): PAdES LTV signing B-B → B-LTA (`signPdfBytesWithTimestamp` RFC 3161 timestamps, `addValidationInfo` `/DSS` + `/VRI` OCSP/CRL material, `addDocumentTimestamp`, `listSignatures`, multi-signature via `addSignaturePlaceholder({ allowMultiple })` — network transport injected through `setTimestampProvider`/`setRevocationProvider`, the engine never opens a socket), charts v2 (stackedBar/stackedBarH/area/scatter, secondary right axis, log + UTC time scales, data labels, x-label collision handling), colour-emoji flag & ZWJ sequences (51 flags + 22 ZWJ as COLR ligatures), UAX #9 conformance fixes (RTL digit order, glyph mirroring, ALEF joining, Persian presentation forms), PDF/A declaration guards (`strict`/`onDiagnostic`), incremental writer/xref hardening, `PdfModifier.updateMetadata()`.
 - [Release notes v1.6.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.6.0.md): Standard Security Handler reader/decryptor (`openPdf(bytes, { password })`, RC4/AES-128/AES-256; `PdfSourceInput`/`MergeOptions.password` for encrypted merge/split sources), streaming page-tree manipulation (`streamMergedPdfs`/`streamSplitPdf`/`streamExtractPages`), fill & flatten existing AcroForm PDFs (`readFormFields`/`fillForm`/`flattenForm`) — encrypted documents included (encrypted incremental update), native vector charts (`chart` block: bar/barH/line/pie/donut), text extraction (`extractText`: per-page reading-order text + positioned runs, encrypted PDFs supported), re-encrypt merge/split output (`MergeOptions.encrypt`, AES-128/256), expanded colour-emoji subset (221 → 1167 incl. complete Transport & Map). Fixes: spec-compliant R6 hash + all-strings encryption on the writer; incremental trailer carries `/Encrypt` forward.
 - [Release notes v1.5.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.5.0.md): math/technical-symbols font (lang `'math'`, `registerFont`), `pdfnative/tools` (`compileFontData`/`parseFontData`), SVG `<text>` rendering, page-labels reader (`getPageLabels()`), layout debug overlay (`layout: { debug: true }`) + `inspectDocumentLayout()`, markup annotation read/write (`buildAnnotation`/`getAnnotations`/`addAnnotation`), control-character hardening (#58), table descender fix (#59), AI-agent governance (#56).
@@ -30,7 +31,7 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 - [Troubleshooting](https://pdfnative.dev/guides/troubleshooting.html): Missing glyphs, RTL appearing backwards, oversized PDFs, parser errors.
 - [Colour-emoji CLI](https://pdfnative.dev/guides/colour-emoji-cli.html): `npx pdfnative-build-emoji-font` — generate a colour-emoji data module covering any glyph subset up to the full ~3,600-glyph Noto Color Emoji set, plus flag & ZWJ sequences via `--sequences` / `--sequence-list`; pinned download + SHA-256 verification.
 - [Charts](https://pdfnative.dev/guides/charts.html): Native vector `chart` blocks — 9 kinds (bar, horizontal bar, stacked bar, stacked horizontal bar, line, area, scatter, pie, donut) with secondary right axis, log and time scales, data labels, x-label collision handling. Path operators, no rasterisation; `/Figure` tagging with alt text.
-- [Text extraction](https://pdfnative.dev/guides/text-extraction.html): `extractText()` — reading-order Unicode via `/ToUnicode`, optional positioned runs, works on encrypted PDFs with a password. The RAG / agent-ingestion entry point.
+- [Text extraction](https://pdfnative.dev/guides/text-extraction.html): `extractText()` — reading-order Unicode via `/ToUnicode`, `/ActualText` honoured on tagged spans (v1.8.0), optional positioned runs, works on encrypted PDFs with a password. The RAG / agent-ingestion entry point.
 - [Form filling](https://pdfnative.dev/guides/form-filling.html): `readFormFields()` / `fillForm()` / `flattenForm()` on existing AcroForms, including encrypted PDFs via incremental update.
 - [PDF manipulation](https://pdfnative.dev/guides/pdf-manipulation.html): `openPdf()` (with `{ password }`), merge / split / extract pages, re-encrypt on output, and their streaming variants.
 - [Streaming output](https://pdfnative.dev/guides/streaming.html): `buildDocumentPDFStream` vs `buildDocumentPDFStreamTrue`, `streamToFile`, and the exact memory profile of each.
@@ -38,7 +39,7 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 - [Annotations](https://pdfnative.dev/guides/annotations.html): Markup annotations (highlight, underline, note, shape, freetext) applied by incremental update so signatures stay valid.
 - [Outlines & page labels](https://pdfnative.dev/guides/outlines.html): Document bookmarks (`outline: 'auto'` or an explicit tree) and `/PageLabels` numbering.
 - [Viewer preferences](https://pdfnative.dev/guides/viewer-preferences.html): `/ViewerPreferences` — page layout, page mode, and display hints.
-- [Colour emoji](https://pdfnative.dev/guides/colour-emoji.html): COLRv1 rendering — solid, linear and radial gradient layers as native PDF Form XObjects; flag & ZWJ sequences (51 flags + 22 ZWJ bundled) render as single ligature glyphs.
+- [Colour emoji](https://pdfnative.dev/guides/colour-emoji.html): COLRv1 rendering — solid, linear, radial and sweep gradient layers as native PDF Form XObjects; since v1.8.0 every transform paint (formats 12–31), variable paints at the default instance, `SRC_IN` / `DEST_IN` masks as clipping paths, and 150 bundled skin-tone forms; flag & ZWJ sequences (51 flags + 22 ZWJ bundled) render as single ligature glyphs. Alpha-only gradient layers (soft shadows) are omitted until luminosity masks land.
 - [Layout debugging](https://pdfnative.dev/guides/debugging.html): `inspectDocumentLayout()` and the `debug: true` overlay for diagnosing pagination.
 - [Font validation](https://pdfnative.dev/guides/font-validation.html): `validateFontData()` — check a font module before registering it.
 - [Self-verifying generation](https://pdfnative.dev/guides/self-verify.html): The generate → inspect → assert → correct loop — `inspectDocumentLayout()` before building, then `extractText()` / `validatePdfUA()` / `listSignatures()` against the emitted bytes; the same loop on the CLI (`inspect --check`, stable exit codes) and MCP (`inspect_pdf`).
@@ -62,7 +63,16 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 49 sample generators producing 271 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 3411+ tests across 152 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; about 90.9 % statements at v1.8.0.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 3460+ tests across 154 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; 91.4 % statements at v1.8.0.
+
+## Playgrounds (zero-install, the engine runs in the browser from a CDN)
+
+- [Typography](https://pdfnative.dev/playgrounds/typography.html): each `layout.typography` option generated with and without it — breaks, justification, spacing, kerning, figures, short words, hyphenation, exact metrics — with the reproducing code and the diagnostics channel.
+- [Print](https://pdfnative.dev/playgrounds/print.html): bleed and marks, CMYK colours, a CMYK OutputIntent (bundled synthetic profile or your own `.icc`), PDF/X-4 with the `validatePdfX()` report, and the PDF/X coherence errors.
+- [All scripts](https://pdfnative.dev/playgrounds/all-scripts.html): every one of the 27 scripts plus colour emoji in one document. [Extreme scripts](https://pdfnative.dev/playgrounds/extreme-scripts.html): BiDi, Indic, Arabic and USE stress tests.
+- [Inspect](https://pdfnative.dev/playgrounds/inspect.html): drop any PDF — metadata, text, PDF/UA and PDF/X-4 checks, signatures, forms, encryption. [Toolkit](https://pdfnative.dev/playgrounds/toolkit.html): outlines, page labels, merge/split/extract, forms, encryption.
+- [Charts](https://pdfnative.dev/playgrounds/charts.html), [Authoring+](https://pdfnative.dev/playgrounds/authoring-plus.html), [Scale](https://pdfnative.dev/playgrounds/scale.html) (1k–100k pages in a Worker), and the ecosystem explorers [CLI](https://pdfnative.dev/playgrounds/cli.html), [MCP](https://pdfnative.dev/playgrounds/mcp.html), [React](https://pdfnative.dev/playgrounds/react.html).
+- Machine-readable inventory: [playgrounds.json](https://pdfnative.dev/data/playgrounds.json).
 
 ## Machine-readable artefacts
 
@@ -71,7 +81,8 @@ _Verified on 2026-09-13 against the source tree by `npm run verify:docs`; the ca
 - [llms-recipes.txt](https://pdfnative.dev/llms-recipes.txt): The executable recipe corpus — standalone TypeScript files importing from `pdfnative`, each executed in CI with its `@expect` assertions verified, so the code you copy is proven to compile and to produce exactly the artefact its header describes.
 - [api.json](https://pdfnative.dev/assets/api.json): The public API surface, derived mechanically from the export statements of `src/index.ts` — name, kind, source module, signature and TSDoc summary where extractable. The substitute for the unpublished `index.d.ts`.
 - [surfaces.json](https://pdfnative.dev/data/surfaces.json): The capability × surface matrix (library / CLI / MCP / React) behind the [Choosing your surface](https://pdfnative.dev/guides/choose.html) guide.
-- [errors.json](https://pdfnative.dev/data/errors.json): The engine's diagnostic registry — every `PDFA_` diagnostic code with its meaning and remedy, two-way verified against `src/` by the `error-parity` rule.
+- [errors.json](https://pdfnative.dev/data/errors.json): The engine's error registry — every diagnostic code of the `PdfDiagnosticCode` union (`PDFA_*`, `PDFX_*`, `TYPOGRAPHY_FEATURE_INEFFECTIVE`) with its meaning and remedy, plus `buildErrors`, the build-time messages the builders throw (PDF/X coherence, print geometry, OutputIntent profile) for downstream error mapping; two-way verified against `src/` by the `error-parity` rule.
+- [playgrounds.json](https://pdfnative.dev/data/playgrounds.json): Inventory of the twelve live playgrounds — URL, purpose, DOM control ids, the options and exports each exercises, preconditions — so an agent can drive one, or reproduce it outside the browser from the code view, without scraping the page.
 - [llms-index.json](https://pdfnative.dev/llms-index.json): Per-page machine index — HTML and raw-Markdown URL, title, summary, section anchors, and exact byte / approximate token sizes for every artefact, so you can decide what to fetch before spending the tokens.
 - Every guide serves its raw Markdown at the same URL with `.md` instead of `.html`, declared via `<link rel="alternate" type="text/markdown">` in each page head. All of these URLs are listed in the sitemap.
 
@@ -107,7 +118,7 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 
 | Package | Latest | Use it for |
 |---|:---:|---|
-| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.7.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
+| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.8.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
 | [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.4.0** | Render JSON → PDF, sign with the **complete PAdES ladder** (`sign --timestamp` B-T, `ltv` B-LT with air-gapped collect → embed, `doc-timestamp` B-LTA; RSA-SHA256/384/512 + ECDSA, native constant-time crypto by default), inspect, verify, **compare** (CI text + structure diff), signature-safe **metadata** edits, **merge / split / extract** pages, **annotate**, **govern** (AI-governance / HITL gate), declarative **batch `--manifest`** pipelines, and emit JSON Schemas from the shell. Pins pdfnative `^1.7.0`: 27 scripts + COLRv1 emoji, `--font math`, charts v2, print production, `render --strict` PDF/A gating, and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. Node ≥ 22. |
 | [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.6.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any MCP client, stdio or HTTP) — **28 production tools** spanning the engine's full document model: all 13 block kinds in `generate_basic_pdf`, layout options, build-time `encrypt` that keeps the AcroForm, image watermarks, print production (page boxes, bleed, marks, `/UserUnit`, OutputIntent), charts v2 (stacked / area / scatter, dual axis, log & time scales), the complete PAdES ladder B-B → B-LTA (`sign_pdf` with RFC 3161 timestamps, `add_ltv`, `timestamp_pdf`, `verify_pdf ltv: true`), `update_metadata`, the read-only `inspect_layout` pagination preview, honest PDF/A (`embedFonts` / `strict` / diagnostics), six MCP prompts, token-frugal read modes (`verbosity` / `fields`), the network-free `draft_governance_issue` (AI-governance / HITL), and the MCP **2026-07-28** spec with automatic legacy fallback. No outbound request by default — the only permitted egress is operator-configured TSA / OCSP / CRL. Pins pdfnative `^1.7.0`. |
 | [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v1.2.0** | Write PDFs as declarative JSX — `<Document>`, `<Page>`, `<Table>`, `<Barcode>`, `<Svg>`, `<FormField>`… compiled on-device to pdfnative blocks by a custom React 19 reconciler. Charts v2 (9 kinds, dual axes, log/time scales), print production (`<Document print>`), the PDF/A diagnostics channel (`layout.strict` / `onDiagnostic`), HTTP caching on `renderToResponse` (`etag` / `cacheControl`), 25 lint rules, client hooks & components (`usePdf`, `PDFViewer`, `PDFDownloadLink`), and a versioned `DocSpec` grammar (`docSpecSchema()`) for AI agents. Peer: pdfnative ^1.7.0, React ^19.0.0, Node ≥22. (A 1.6 engine would throw mid-render on the charts-v2 fields.) |
@@ -164,7 +175,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 3411+ tests across 152 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 90.93% statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 3460+ tests across 154 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.4 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -186,10 +197,12 @@ npm install pdfnative
 - 📘 **Quick Start:** [docs/guides/quickstart.md](docs/guides/quickstart.md) — Node.js, browser, Web Worker, streaming.
 - 🏛️ **Architecture:** [docs/guides/architecture.md](docs/guides/architecture.md) — modules, builders, generation pipeline.
 - ♿ **Accessibility:** [docs/guides/accessibility.md](docs/guides/accessibility.md) — tagged PDF, PDF/UA, PDF/A.
+- ✍️ **Typography:** [docs/guides/typography.md](docs/guides/typography.md) — page breaking under widow and orphan rules, justification, hyphenation, spacing rules, kerning, OpenType features (v1.8.0).
+- 🖨️ **Print production:** [docs/guides/print.md](docs/guides/print.md) — page boxes, printer's marks and colour bars, CMYK colours and OutputIntents, PDF/X-4 and `validatePdfX()`.
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
-- 🎮 **Playgrounds:** twelve interactive demos at [docs/playgrounds/](docs/playgrounds/) — [typography](docs/playgrounds/typography.html) (each v1.8.0 typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
+- 🎮 **Playgrounds:** twelve interactive demos at [docs/playgrounds/](docs/playgrounds/) — [typography](docs/playgrounds/typography.html) (each typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
 - 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 271 sample PDFs across 38 categories (49 generators) (see [Sample PDFs](#sample-pdfs) below).
 - 🎓 **Learn:** [docs/learn/](docs/learn/) — an eight-step guided path from installing the package to generating 100,000 pages, live at [pdfnative.dev/learn/](https://pdfnative.dev/learn/).
 - 🤖 **Machine-readable:** [llms.txt](llms.txt) (doc index for LLMs), [AGENTS.md](AGENTS.md) (agent guidance), and [docs/assets/ecosystem.json](docs/assets/ecosystem.json) — the canonical manifest of ecosystem versions and counts, enforced by `npm run verify:docs`.
@@ -434,13 +447,15 @@ const pdf = buildPDFBytes(params, {
 
 ### Color Formats
 
-All color values accept three formats:
+All color values accept five formats — three RGB, two CMYK (v1.8.0):
 
 | Format | Example | Description |
 |--------|---------|-------------|
 | Hex string | `'#2563EB'` or `'#26E'` | Primary format — `#RRGGBB` or `#RGB` |
 | RGB tuple | `[37, 99, 235]` | Array with values 0–255 |
 | PDF operator | `'0.145 0.388 0.922'` | Raw PDF RGB string (0.0–1.0) |
+| CMYK tuple | `[100, 60, 0, 10]` | Four-element array, ink coverage in percent 0–100 (v1.8.0) |
+| CMYK operand | `'1 0.6 0 0.1'` | Raw PDF CMYK string (0.0–1.0) (v1.8.0) |
 
 ```typescript
 import { parseColor } from 'pdfnative';
@@ -448,9 +463,10 @@ import { parseColor } from 'pdfnative';
 parseColor('#2563EB');           // '0.145 0.388 0.922'
 parseColor([37, 99, 235]);       // '0.145 0.388 0.922'
 parseColor('0.145 0.388 0.922'); // '0.145 0.388 0.922'
+parseColor([0, 0, 0, 100]);      // '0 0 0 1'  (CMYK, v1.8.0)
 ```
 
-All inputs are validated and normalized before interpolation into PDF content streams, preventing operator injection.
+The component count decides the colour space: three components write `rg` / `RG`, four write `k` / `K`. All inputs are validated and normalized before interpolation into PDF content streams, preventing operator injection. Under a PDF/A or PDF/X claim whose OutputIntent is not CMYK, a CMYK colour raises `PDFA_DEVICE_CMYK_CONTENT` / `PDFX_DEVICE_CMYK` — see the [print guide](docs/guides/print.md#cmyk-colours-v180).
 
 ### Font Sizes
 
@@ -1024,27 +1040,70 @@ const pdf = buildPDFBytes(params, {
 
 | Function | Description |
 |----------|-------------|
-| `parseColor(input)` | Parse hex / tuple / PDF string → validated PDF RGB string |
+| `parseColor(input)` | Parse hex / RGB tuple / CMYK tuple / PDF string → validated PDF RGB **or CMYK** operand string (CMYK inputs since v1.8.0) |
+| `resolveColor(input)` | Resolve any `PdfColor` to a `ResolvedColor` — `{ space: 'rgb' \| 'cmyk', operands }` (v1.8.0) |
+| `fillOp(input)` / `strokeOp(input)` | Complete fill (`rg` / `k`) or stroke (`RG` / `K`) operator for any `PdfColor`, space chosen by component count (v1.8.0) |
 | `isValidPdfRgb(str)` | Check if string is valid `"R G B"` format (0.0–1.0) |
 | `normalizeColors(colors)` | Validate and normalize all fields in a PdfColors object |
+
+Types (v1.8.0): `PdfCmykTuple` (`readonly [c, m, y, k]`, percent), `PdfCmykString` (`'c m y k'`, 0.0–1.0), `PdfColorSpace` (`'rgb' | 'cmyk'`), `ResolvedColor`. `PdfColor` is the union of every accepted form.
+
+### Typography (v1.8.0)
+
+Everything is opt-in under `layout.typography` (`TypographyOptions`) and byte-identical when absent. The helpers below are the same transforms the builder applies, exposed for text you lay out yourself.
+
+| Function | Description |
+|----------|-------------|
+| `bindUnits(text, units?)` | Bind a number to the unit symbol that follows it with a no-break space (ISO 80000-1); `units` defaults to `DEFAULT_UNITS` |
+| `bindShortWords(text, opts?)` | Bind one-letter words — or `{ maxLength, words }` — to the word that follows with a no-break space (house style, opt-in) |
+| `applyPunctuationSpacing(text, rules)` | Turn the plain spaces around punctuation into no-break or narrow no-break spaces per `PunctuationSpacingRule[]` |
+| `DEFAULT_UNITS` | Built-in unit-symbol list used by `bindUnits()` and `unitBinding: true` |
+| `PUNCTUATION_SPACING_PRESETS` | The `'fr'` and `'fr-CA'` rule sets, keyed by `PunctuationSpacingPreset` |
+| `setHyphenationProvider(fn)` / `getHyphenationProvider()` | Install (or clear with `null`) the process-wide `HyphenationProvider` — `(word, lang?) => readonly number[]` break indices, `lang` being `typography.hyphenationLanguage`; the library bundles no dictionary |
+
+Types (block-level `keepWithNext` on headings and paragraphs, and `splittable` on paragraphs, override the document setting): `TypographyOptions` (`splitParagraphs`, `orphans`, `widows`, `keepHeadingsWithNext` — `true` or `{ minLines }`, `bindShortWords`, `unitBinding`, `punctuationSpacing`, `opticalMargins`, `metrics`, `fontFeatures`, `kerning`, `hyphenationLanguage`), `HyphenationProvider`, `UnitBindingOptions` (`{ units }`), `PunctuationSpacingRule` (`{ char, side, space }`), `PunctuationSpacingPreset` (`'fr' | 'fr-CA'`), `Base14Metrics` (`'approximate' | 'exact'`). A `fontFeatures` tag that changes nothing raises the `TYPOGRAPHY_FEATURE_INEFFECTIVE` diagnostic. [Guide →](docs/guides/typography.md)
+
+### Print & PDF/X (v1.8.0)
+
+| Function | Description |
+|----------|-------------|
+| `validatePdfX(bytes)` | Read-only PDF/X-4 structural checker (ISO 15930-7) — header, XMP identification, OutputIntent profile, page boxes, embedded fonts, annotations, actions, `LZWDecode`, transfer functions, device colour; returns `PdfXValidationResult` `{ valid, errors, warnings }`. Not a certified preflight |
+| `PDF_X_CONFORMANCE_TARGETS` | `['pdfx4']` — the accepted `layout.pdfx` values, the single source of truth for downstream tooling; `PdfXConformanceTarget` is its element type |
+
+Types: `PrintOptions` (`layout.print`: `bleed`, `trimBox`, `bleedBox`, `artBox`, `cropBox`, `marks`, `userUnit`), `PrinterMarksOptions` (`crop`, `registration`, `length`, `offset`, `weight`, `colourBars`), `ColourBarOptions` (`tints`, `size`), `CustomOutputIntent` (`iccProfile`, `outputConditionIdentifier`, `registryName`, `outputCondition`, `info` — RGB, CMYK or Gray), `PdfXConformanceTarget`, `PdfXValidationResult`. The build-time coherence errors a PDF/X claim can throw are listed verbatim in [docs/data/errors.json](docs/data/errors.json) (`buildErrors`). [Guide →](docs/guides/print.md)
+
+### Reproducible builds (v1.8.0)
+
+| Function | Description |
+|----------|-------------|
+| `setDefaultCreationDate(date)` | Pin the instant every subsequent build is stamped with when `layout.creationDate` is absent (`null` restores the wall clock) — fixes `/CreationDate`, `/ModDate`, the XMP dates and therefore the trailer `/ID`, so unencrypted output becomes a pure function of its inputs |
+| `getDefaultCreationDate()` | The pinned date, or `null` |
+
+**Reproducible bytes.** Precedence is `layout.creationDate`, then the pinned default, then `new Date()`. The date is formatted in the host time zone (the offset is part of `/CreationDate` and `xmp:CreateDate`), so pin `TZ` as well — the sample harness runs under `TZ=UTC` — when two hosts must produce identical bytes. Encryption keys and IVs stay random by design; `PdfSignOptions.signingTime` and the modifier's modification dates keep their own options. `npm run verify:samples` is the byte-regression pattern a consumer can copy.
 
 ### Compression
 
 | Function | Description |
 |----------|-------------|
 | `initNodeCompression()` | Initialize native zlib (async, call once in ESM before `compress: true`) |
-| `setDeflateImpl(fn)` | Inject custom DEFLATE function (e.g. for browser polyfill) |
+| `setDeflateImpl(fn)` | Inject a synchronous **zlib-wrapped** (RFC 1950) deflate — fflate's `zlibSync`, pako's `deflate`, `node:zlib` `deflateSync`. Since v1.8.0 the result is validated and a raw-DEFLATE function throws at build time ([#78](https://github.com/Nizoka/pdfnative/issues/78)) |
+| `setDeflateRawImpl(fn)` | Inject a synchronous **raw** DEFLATE (RFC 1951) compressor — fflate's `deflateSync`, zipnative, anything built for ZIP; pdfnative adds the zlib envelope itself (v1.8.0) |
+| `wrapZlib(raw, source)` | Wrap a raw DEFLATE payload in the zlib envelope — 2-byte header plus an Adler-32 computed over `source`, the uncompressed input (RFC 1950 §2.2); the adapter `setDeflateRawImpl` applies (v1.8.0) |
 
-**Browser compression** — In browser environments without native zlib, inject a third-party DEFLATE via `setDeflateImpl`:
+**Browser compression** — In browser environments without native zlib, inject a synchronous third-party compressor. Pick the entry point that matches what the compressor returns:
 
 ```typescript
-import { setDeflateImpl, buildPDFBytes } from 'pdfnative';
-import { deflateSync } from 'fflate'; // or pako
+import { setDeflateImpl, setDeflateRawImpl, buildPDFBytes } from 'pdfnative';
+import { zlibSync, deflateSync } from 'fflate'; // pako.deflate is zlib-wrapped too
 
-setDeflateImpl(deflateSync);
+setDeflateImpl(zlibSync);          // zlib-wrapped output (RFC 1950) — what /FlateDecode expects
+// or, for a raw-DEFLATE function (RFC 1951): pdfnative wraps it with wrapZlib() for you
+setDeflateRawImpl(deflateSync);
 
 const pdf = buildPDFBytes(params, { compress: true });
 ```
+
+Passing fflate's raw `deflateSync` to `setDeflateImpl()` — what the v1.7.0 README recommended — produced pages that rendered blank; v1.8.0 rejects it with an error naming the fix. `CompressionStream` cannot be adapted: it is asynchronous and PDF assembly is synchronous.
 
 ### Fonts
 
@@ -1057,6 +1116,8 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `getRegisteredLangs()` | List registered language codes |
 | `createEncodingContext(fontEntries)` | Create encoding context |
 | `validateFontData(data)` | Opt-in structural validation of custom font data — returns `{ valid, errors, warnings }` (v1.4.0) |
+
+Colour-glyph types (`ColorLayer`, `ColorPaint`, …) describe the bundled COLRv1 data; `ClipOutline` (v1.8.0) is one outline of a colour-layer clip — `{ glyphId, transform? }` — used by the `SRC_IN` / `DEST_IN` masks rendered as clipping paths.
 
 ### Shaping
 
@@ -1071,6 +1132,13 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `shapeTibetanText(str, fontData)` | Tibetan vertical subjoined stacking (v1.3.0) |
 | `shapeKhmerText(str, fontData)` | Khmer USE-lite — coeng subscripts + pre-base vowels (v1.3.0) |
 | `shapeMyanmarText(str, fontData)` | Myanmar USE-lite — medials + virama stacking (v1.3.0) |
+| `shapeLaoText(str, fontData)` | Lao OpenType shaping — GSUB + GPOS mark positioning (v1.8.0) |
+| `buildLaoClusters(str)` | Lao syllable clusters (base + marks) before shaping (v1.8.0) |
+| `shapeUseText(str, fontData)` | Universal Shaping Engine — Tai Tham, Cham, and any registered font's script with no dedicated shaper (v1.8.0) |
+| `splitUseSyllables(cps)` / `reorderUseCluster(cps)` | USE syllable segmentation (`UseSyllable[]`) and cluster reordering (v1.8.0) |
+| `useCategory(cp)` / `useCategories(cps)` | USE cluster category of one codepoint / a sequence, from the tables generated out of the Unicode Character Database (v1.8.0) |
+| `USE_UNICODE_VERSION` | The UCD version the generated USE data was derived from (v1.8.0) |
+| `SCRIPT_SHAPERS` / `findShaper(text)` | The shaper registry (`readonly ScriptShaper[]`, in dispatch order) and its single dispatch — the first shaper whose script the text contains, or `null` (v1.8.0) |
 | `detectFallbackLangs(texts, primaryLang)` | Detect needed fallback fonts |
 | `detectCharLang(codePoint)` | Map codepoint to preferred font language |
 | `splitTextByFont(str, fontEntries)` | Multi-font text run splitting |
@@ -1086,6 +1154,10 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `containsSinhala(text)` / `containsTibetan(text)` / `containsKhmer(text)` / `containsMyanmar(text)` / `containsEthiopic(text)` | Detect script content (v1.3.0) |
 | `isSinhalaCodepoint(cp)` / `isTibetanCodepoint(cp)` / `isKhmerCodepoint(cp)` / `isMyanmarCodepoint(cp)` / `isEthiopicCodepoint(cp)` | Codepoint predicates (v1.3.0) |
 | `containsMath(text)` / `isMathCodepoint(cp)` | Detect / test mathematical symbols → lang `'math'` (v1.5.0) |
+| `containsLao(text)` / `containsTaiTham(text)` / `containsNewTaiLue(text)` / `containsTaiLe(text)` / `containsCham(text)` | Detect script content (v1.8.0) |
+| `isLaoCodepoint(cp)` / `isTaiThamCodepoint(cp)` / `isNewTaiLueCodepoint(cp)` / `isTaiLeCodepoint(cp)` / `isChamCodepoint(cp)` | Codepoint predicates (v1.8.0) |
+
+Types (v1.8.0): `ScriptShaper` (`{ id, detect, shape }`), `UseClusterCategory`, `UseSyllable` (`{ type, start, end }`), `UseSyllableType`.
 
 ### Layout Constants
 
@@ -1301,7 +1373,7 @@ src/
 fonts/                    # Pre-built font data modules (27 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (49 generators, 271 PDFs)
-tests/                    # 3411+ tests (152 files: unit + integration + fuzz + parser + docs)
+tests/                    # 3460+ tests (154 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1313,9 +1385,9 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (3411+ tests)
-npm run test:coverage    # vitest with v8 coverage (90.93% statements at the v1.8.0 release; CI gates: 88/80/85/90)
-npm run test:generate       # Generate 271 sample PDFs → test-output/
+npm run test             # vitest run (3460+ tests)
+npm run test:coverage    # vitest with v8 coverage (91.4 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
+npm run test:generate       # Generate 271 sample PDFs → test-output/ (set TZ=UTC for cross-host byte identity, see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -1328,8 +1400,8 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3411+ (152 files) |
-| Statement coverage | 90.93% (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
+| Tests | 3460+ (154 files) |
+| Statement coverage | 91.4 % (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |
 | Fuzz tests | 89 cases in 5 suites (`tests/fuzzing/`) |
@@ -1373,7 +1445,7 @@ const pdf2u = buildPDFBytes(params, { tagged: 'pdfa2u' }); // PDF/A-2u (Unicode)
 When `tagged` is set, the output includes:
 
 - **Tagged PDF (PDF/UA)** — full structure tree (`/Document → /Table → /TR → /TH|/TD`, `/H1-H3`, `/P`, `/L → /LI`, `/Figure`, `/Link`) with `/Span` marked content operators and `/StructParents` on every page
-- **/ActualText** — original Unicode string attached as UTF-16BE hex to every `/Span BDC...EMC` sequence, solving text extraction for GPOS-repositioned glyphs (Thai, Arabic, Devanagari)
+- **/ActualText** — original Unicode string attached as UTF-16BE hex to every `/Span BDC...EMC` sequence, solving text extraction for GPOS-repositioned glyphs (Thai, Arabic, Devanagari). Since v1.8.0 `extractText()` returns the `/ActualText` of a span instead of the glyphs shown inside it, so text extracted from tagged output matches what the writer declared
 - **PDF/A-2b compliance** (default) — PDF 1.7, XMP metadata with `pdfaid:part=2` + `pdfaid:conformance=B`, sRGB ICC OutputIntent (`GTS_PDFA1`), `/MarkInfo << /Marked true >>` on Catalog
 - **PDF/A-1b compatibility** — explicit `tagged: 'pdfa1b'` uses PDF 1.4, `pdfaid:part=1`
 - **PDF/A-2u variant** — `tagged: 'pdfa2u'` uses PDF 1.7, `pdfaid:conformance=U`
@@ -1496,7 +1568,7 @@ const pdf = buildPDFBytes(params, {
 | Browser | Stored-block fallback (valid FlateDecode) | No size reduction |
 | Deno / Bun | CJS require fallback | Depends on compat layer |
 
-For browser contexts with full compression, call `setDeflateImpl()` with a custom DEFLATE function.
+For browser contexts with full compression, call `setDeflateImpl()` with a synchronous zlib-wrapped (RFC 1950) deflate such as fflate's `zlibSync`, or `setDeflateRawImpl()` (v1.8.0) with a raw RFC 1951 one such as fflate's `deflateSync` — pdfnative adds the zlib envelope. A raw function handed to `setDeflateImpl()` throws at build time since v1.8.0 instead of producing blank pages.
 
 ## Browser & Runtime Compatibility
 
@@ -1720,19 +1792,22 @@ A pragmatic checklist for solo developers:
 > **How AI agents compose with pdfnative.** pdfnative is designed so an autonomous
 > agent can do more than *call* the engine — it can **extend** it at runtime and
 > **feed it content it generated itself**, all without waiting for a library
-> release. This guide documents two concrete, factual patterns and the exact
+> release. This guide documents three concrete, factual patterns and the exact
 > public APIs they rely on.
 
-Both patterns are built entirely on already-shipped, public API surfaces:
+All three patterns are built entirely on already-shipped, public API surfaces:
 
 - The library's `registerFont()` / `loadFontData()` font registry, the
   `pdfnative/tools` sub-path (`parseFontData` / `compileFontData`, since v1.5.0),
   and the bundled `pdfnative-build-font` CLI.
 - The image entry points: the `image` document block (library + CLI) and the
   `embed_image` MCP tool.
+- The typography, PDF/X and self-verification surfaces of v1.8.0:
+  `layout.typography`, `layout.pdfx`, `validatePdfX()`, and the machine
+  contracts under `docs/data/` that an agent reads before it writes.
 
-There is **no new API** here — the point is that the existing surfaces were
-shaped so agents can use them autonomously, under the project's
+There is **no agent-specific API** here — the point is that the existing
+surfaces were shaped so agents can use them autonomously, under the project's
 [AI-governance / human-in-the-loop contract](ai-governance.md).
 
 ---
@@ -1904,10 +1979,94 @@ subject to the CLI's path-validation rules).
 
 ---
 
-## How the two patterns fit together
+## Pattern 3 — typeset and self-verify a print-ready document
 
-A single agent turn can combine both: register a brand font, generate a cover
-image, and assemble a signed, archive-grade PDF — in one MCP conversation or one
+An agent producing a document for press has two problems a chat transcript
+cannot solve: the text must *typeset* (no heading stranded at the foot of a
+page, no single line orphaned, figures that line up) and the file must be
+something a printer accepts. v1.8.0 gives both as plain layout options plus a
+read-back verifier, so the agent can loop on facts instead of on a rendered
+preview it cannot see.
+
+### Read the machine contracts first
+
+Four files under `docs/` are written for exactly this and are verified by the
+documentation CI against the source they describe. An agent should load them
+into context before authoring, not after the first failure:
+
+| File | What it tells the agent |
+|---|---|
+| [`docs/assets/api.json`](../assets/api.json) | Every public export with its module and signature — the authoritative answer to "does this option exist and what does it take". |
+| [`docs/data/errors.json`](../data/errors.json) | Every diagnostic code (`diagnostics`: when it fires, the standard it cites, the remedy) and every build-time message a tool must classify (`buildErrors`, including the seven PDF/X coherence errors). |
+| [`docs/data/surfaces.json`](../data/surfaces.json) | Which capability each surface (library, CLI, MCP, React) offers, with the exact call, command or tool name — or the honest note when it does not. |
+| [`docs/data/playgrounds.json`](../data/playgrounds.json) | The browser playgrounds and the engine version each one pins, for a visual check a human can open. |
+
+### The loop
+
+```ts
+import { readFileSync } from 'node:fs';
+import { buildDocumentPDFBytes, validatePdfX, inspectDocumentLayout } from 'pdfnative';
+import type { PdfDiagnostic } from 'pdfnative';
+
+const diagnostics: PdfDiagnostic[] = [];
+const doc = { ...params, fontEntries, metadata: { trapped: 'False' as const } };
+const layout = {
+  typography: {
+    splitParagraphs: true, orphans: 2, widows: 2,   // no stranded lines
+    keepHeadingsWithNext: { minLines: 3 },          // a heading takes three lines with it
+    unitBinding: true, opticalMargins: true,
+    kerning: true, fontFeatures: ['pnum'],          // pair kerning; proportional figures
+  },
+  pdfx: 'pdfx4',
+  outputIntent: {
+    iccProfile: new Uint8Array(readFileSync('ISOcoated_v2_eci.icc')),  // the printer's profile
+    outputConditionIdentifier: 'FOGRA39',
+  },
+  print: { bleed: 14.17, marks: { colourBars: true } },   // 5 mm bleed: room for 12 pt patches
+  onDiagnostic: (d: PdfDiagnostic) => { diagnostics.push(d); }, // PDFX_*, TYPOGRAPHY_* codes
+};
+
+// 1. Plan: page count and block geometry, no bytes produced.
+const plan = inspectDocumentLayout(doc, layout);
+
+// 2. Build. Incoherent PDF/X input throws here, with a message from errors.json buildErrors.
+const pdf = buildDocumentPDFBytes(doc, layout);
+
+// 3. Verify what the structure can prove, then branch.
+const report = validatePdfX(pdf);      // { valid, errors, warnings }
+if (!report.valid || diagnostics.length > 0) {
+  // correct the input — embed the missing font, remove the link block,
+  // switch the colour to CMYK — and rebuild; never hand over an unverified file
+}
+```
+
+The decision points are all machine-readable: a thrown build error names the
+conflicting options (`layout.pdfx and layout.tagged cannot be combined`,
+`PDF/X-4 requires layout.outputIntent`, …); a diagnostic carries a stable
+code (`PDFX_NO_FONT_ENTRIES` → pass `fontEntries`; `PDFX_ANNOTATIONS` →
+remove links and form fields; `PDFX_DEVICE_CMYK` → CMYK colour under a
+non-CMYK profile; `TYPOGRAPHY_FEATURE_INEFFECTIVE` → the tag substitutes
+nothing with this font, drop it); and `validatePdfX()` returns the errors as
+strings the agent can act on. Pin `layout.creationDate` (or
+`setDefaultCreationDate()`) and `TZ` when the loop must produce identical
+bytes across runs.
+
+> **Honest caveat.** `validatePdfX()` checks the ISO 15930-7 prerequisites
+> that structure can prove and does not render; a certified preflight
+> remains the last step before press. On the CLI, `layout.typography` and
+> `layout.pdfx` travel in the document JSON or a `--layout` file (`render`
+> forwards the layout object to the installed engine), but `inspect --check`
+> knows `pdfua` only; on MCP, neither option is in the document tools' layout
+> schema yet — [`surfaces.json`](../data/surfaces.json) states this per
+> capability.
+
+---
+
+## How the patterns fit together
+
+A single agent turn can combine all three: register a brand font, generate a
+cover image, typeset the body under widow and orphan rules, and hand over a
+PDF/X-4 file that the agent itself verified — in one MCP conversation or one
 CLI pipeline, without a pdfnative release in the loop.
 
 ![Agentic workflows: an AI agent generates images (embedded via the image block / embed_image) and compiles fonts (registered at runtime via registerFont + parseFontData), both feeding the pdfnative public API to produce an ISO 32000-1 PDF. Repository changes stay human-gated under the AI-governance / HITL contract.](../assets/agentic-workflows.svg)
@@ -1928,6 +2087,10 @@ under the [AI-governance / human-in-the-loop contract](ai-governance.md).
 - [CLI guide](cli.md) — driving pdfnative from the shell.
 - [Font validation](font-validation.md) — `validateFontData()` for sanity-checking
   a font module before registering it.
+- [Typography](typography.md) and [Print production](print.md) — the options
+  Pattern 3 sets, and what `validatePdfX()` checks.
+- [Self-verifying generation](self-verify.md) — the generate → inspect →
+  assert → correct loop on every surface.
 
 ---
 <!-- source: docs/guides/ai-governance.md -->
@@ -2729,6 +2892,13 @@ means the surface does not offer it.
 | Update metadata (signature-safe) | `PdfModifier.updateMetadata` _(v1.7.0)_ | `metadata` _(v1.4.0)_ | `update_metadata` _(v1.6.0)_ | — |
 | Compare two PDFs (text + structure) | — (compose `openPdf` / `extractText` / the readers) | `compare` _(v1.4.0)_ | — | — |
 | Runtime font registration | `registerFont` / `registerFonts` _(v1.5.0, any loader — incl. fonts you compile with `compileFontData`)_ | `render --font` (bundled fonts only) _(v1.1.0)_ | — (fixed `lang` enum; fonts resolved from the local `pdfnative` install) | `registerFont` / `registerFonts` (re-exported) |
+| Typography (paragraph breaking, justification, hyphenation, kerning, OpenType features) | `layout.typography` (`TypographyOptions`) + `setHyphenationProvider` / `bindUnits` / `bindShortWords` / `applyPunctuationSpacing` _(v1.8.0; every option opt-in and byte-identical when absent)_ | `render` (`layout.typography` in the document JSON or a `--layout` file — no dedicated flag) _(v1.4.0)_ | — (the document tools validate a fixed layout schema; typography is not in it yet) | — (no typography prop yet) |
+| CMYK content colours | `[c, m, y, k]` tuples (percent) or `'c m y k'` strings on any colour field; `parseColor` / `resolveColor` / `fillOp` / `strokeOp` _(v1.8.0)_ | `render` (four-element colour fields in the document JSON) _(v1.4.0)_ | — (colour fields are validated as hex strings or RGB tuples) | — (colour props are typed for RGB) |
+| CMYK / Gray OutputIntent with RGB content kept conforming | `layout.outputIntent` with a CMYK or Gray ICC profile _(v1.8.0; RGB content routed through a calibrated `/DefaultRGB`; no press profile shipped)_ | `render` (`layout.outputIntent` in a `--layout` file with the profile bytes) _(v1.4.0)_ | — (RGB OutputIntent only) | — |
+| PDF/X-4 conformance claim | `layout: { pdfx: 'pdfx4', outputIntent, metadata.trapped }` _(v1.8.0; exclusive with `tagged` and encryption)_ | `render` (`layout.pdfx` in the document JSON or a `--layout` file; the `PDF/X` / `layout.pdfx` errors surface as runtime failures until mapped to `E_INPUT`) _(v1.4.0)_ | — (`pdfx` is not in the layout schema) | — |
+| Validate PDF/X-4 | `validatePdfX` _(v1.8.0; structural ISO 15930-7 prerequisites, not a certified preflight)_ | — (`inspect --check` knows `pdfua` only) | — (`validate_pdf` checks PDF/UA only) | — |
+| Printer's marks: registration colour and colour control bars | `layout.print.marks` (`true`, or `{ colourBars: true \| { tints, size } }`) _(v1.8.0; bars off by default and byte-neutral when off)_ | `render` (`print.marks` in the document JSON or a `--layout` file) _(v1.4.0)_ | `generate_basic_pdf` (`marks: true` only) _(v1.6.0)_ | `<Document print={{ marks: true }}>` (boolean marks only) |
+| Reproducible bytes | `layout.creationDate`, or `setDefaultCreationDate(date)` once per process; `getDefaultCreationDate` _(v1.8.0; pin `TZ` too for cross-host identity)_ | `render` (`layout.creationDate` in the document JSON or a `--layout` file) _(v1.4.0)_ | `generate_basic_pdf` (`creationDate`, ISO-8601, on all nine document tools) _(v1.6.0)_ | `layout.creationDate` render option |
 
 ## Honest notes
 
@@ -3008,7 +3178,7 @@ Renders a JSON document into a PDF. Supports both renderer variants exposed by `
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--input <file>` | stdin | JSON file ([`DocumentParams`](https://pdfnative.dev/#api) for `--variant document`, `PdfParams` for `--variant table`) |
+| `--input <file>` | stdin | JSON file ([`DocumentParams`](https://pdfnative.dev/assets/api.json) for `--variant document`, `PdfParams` for `--variant table`) |
 | `--output <file>` | stdout | Output PDF path |
 | `--variant document\|table` | `document` | Selects `buildDocumentPDFBytes` (free-form) or `buildPDFBytes` (table-centric) |
 | `--stream` | off | Streaming output via `buildDocumentPDFStream` (`AsyncGenerator<Uint8Array>`) — recommended for >100-page documents |
@@ -4555,6 +4725,67 @@ block — including table slicing across page breaks.
   "is my table overflowing the margin?" Open the PDF and *see* the boxes.
 - **Inspection** — automate it: assert block positions in a test, drive a
   layout linter, or feed geometry to another tool.
+
+## Diagnostics and build-time errors (v1.8.0)
+
+Geometry is one thing to debug; the other is a build that warns or refuses.
+Every engine diagnostic code and every build-time message a downstream tool
+must classify is listed in [`docs/data/errors.json`](../data/errors.json)
+(`diagnostics` and `buildErrors`) — read that file first when a message is
+unfamiliar.
+
+**`TYPOGRAPHY_FEATURE_INEFFECTIVE`** — a `typography.fontFeatures` tag
+changed nothing: no registered font declares it, or the font declares it but
+no glyph in the document was substituted. The classic case is `tnum` or
+`lnum` with the bundled Noto Sans, whose figures are tabular and lining by
+default, so there is nothing to substitute (`pnum` and `onum` do change
+glyphs there). It is a warning — `console.warn` once per build by default,
+every occurrence through `layout.onDiagnostic`, a thrown error under
+`layout.strict` — because the same document may be built with different
+fonts. Drop the tag, or register a font whose GSUB declares it; the effective
+tags are the keys of the font module's `features` table.
+
+```ts
+buildDocumentPDFBytes(params, {
+  typography: { fontFeatures: ['tnum'] },
+  onDiagnostic: (d) => console.error(d.code, d.message), // TYPOGRAPHY_FEATURE_INEFFECTIVE
+});
+```
+
+**PDF/X coherence errors** — `pdfx: 'pdfx4'` is checked before any byte is
+written, and an incoherent layout throws one of seven messages (each with
+its remedy):
+
+| Message | Remedy |
+|---|---|
+| `layout.pdfx: unknown target '${target}' — use one of ${PDF_X_CONFORMANCE_TARGETS}` | Use `'pdfx4'`. |
+| `layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them` | Build the print file and the archival file as two documents. |
+| `PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx` | Drop one of the two. |
+| `PDF/X-4 requires layout.outputIntent: the ICC profile of the printing condition, e.g. ISO Coated v2 or GRACoL from your printer. pdfnative ships no press profile` | Pass the output ICC profile your printer names. |
+| `PDF/X-4 requires an output (printer) profile as layout.outputIntent — the supplied profile's class is '${deviceClass}'` | Use a press profile (device class `prtr`), not a monitor profile such as sRGB. |
+| `PDF/X requires the trapping state to be known — set metadata.trapped to 'True' or 'False', or omit it for 'False'` | State `'True'` or `'False'`; pdfnative never traps, so `'False'` is accurate for its output. |
+| `PDF/X pages carry a TrimBox or an ArtBox, not both — drop print.artBox, or print.trimBox and print.bleed` | Keep one of the two boxes. |
+
+The messages start with `PDF/X` or `layout.pdfx`; a CLI or server that maps
+`print.`, `chart:` and `outputIntent.` prefixes to an input-error code should
+add those two.
+
+**`setDeflateImpl()` throws on raw DEFLATE** — since v1.8.0 the injected
+compressor is validated, and a function that returns a raw RFC 1951 payload
+(fflate's `deflateSync`, `CompressionStream`'s `'deflate-raw'`) fails at
+build time instead of producing pages that render blank
+([#78](https://github.com/Nizoka/pdfnative/issues/78)). Pass a
+zlib-wrapping function to `setDeflateImpl()` — fflate's `zlibSync`, pako's
+`deflate`, `node:zlib` `deflateSync` — or hand the raw one to
+`setDeflateRawImpl()` and let pdfnative add the envelope. An asynchronous
+compressor cannot be adapted at all; PDF assembly is synchronous.
+
+**`punctuationSpacing: 'fr'` looks like `'fr-CA'`** — the `'fr'` preset
+sets a narrow no-break space (U+202F) before `;` `!` `?`. WinAnsi has no
+such character, so on the base-14 (non-embedded) path it degrades to an
+ordinary space and the two presets become indistinguishable. Register a
+Latin font that carries the glyph — Noto Sans does — and pass it in
+`fontEntries`; the narrow space is then rendered and extracts as U+202F.
 
 ## Sample
 
@@ -6859,6 +7090,11 @@ Every output written with `tagged` set ships:
   RGB, CMYK (since v1.8.0) or Gray profile via `outputIntent`. Under a CMYK or
   Gray intent, RGB content is remapped through a calibrated `/DefaultRGB` so
   the claim holds — see the [print guide](print.html#custom-outputintent-taggedpdf-a).
+  Mind the profile version: PDF/A-1b requires an ICC v2 profile
+  (ISO 19005-1 §6.2.2); v4 profiles are allowed from PDF/A-2 on
+  (ISO 19005-2 §6.2.4.2). pdfnative checks the profile's signature, size
+  field and data colour space but not its version — supply a v2 profile for
+  a 1b claim.
 - `/MarkInfo << /Marked true >>` on the catalog.
 - A trailer `/ID` derived deterministically from the document title and
   creation timestamp.
@@ -7277,9 +7513,9 @@ buildDocumentPDFBytes(params, {
 });
 ```
 
-RGB profiles since v1.7.0; **CMYK and Gray profiles since v1.8.0**. The profile's ICC header decides the stream's `/N`. Omitted, the historical built-in sRGB profile is used byte-identically.
+RGB profiles since v1.7.0; **CMYK and Gray profiles since v1.8.0**. The profile's ICC header decides the stream's `/N`. Omitted, the historical built-in sRGB profile is used byte-identically. The profile is checked before any byte is written: it must be at least 128 bytes, carry the `acsp` signature at byte 36 (v1.8.0), declare a size field that fits the supplied buffer (v1.8.0 — a partial download is the usual cause of a mismatch) and name RGB, CMYK or Gray as its data colour space; each failure throws with the message listed under `buildErrors` in [`docs/data/errors.json`](../data/errors.json). The ICC *version* is not checked — PDF/A-1b needs a v2 profile, see the [PDF/A guide](pdfa.html).
 
-pdfnative ships no CMYK profile — press profiles (ISO Coated v2, GRACoL, SWOP) are large and often licensed. Use the one your printer names.
+pdfnative ships no CMYK profile — press profiles (ISO Coated v2, GRACoL, SWOP) are large and often licensed. Use the one your printer names. For tests and demos only, a synthetic output profile (`prtr`, CMYK, structurally complete, characterising no printing condition) is served at <https://pdfnative.dev/assets/synthetic-cmyk.icc>; the repository builds it with `scripts/lib/synthetic-cmyk-profile.ts` and the print playground embeds it.
 
 Under a CMYK or Gray intent, the colours pdfnative draws in RGB — default text, rules, charts, emoji, RGB images, form fields — are remapped through a calibrated sRGB `/DefaultRGB` in every resource dictionary that paints. Device RGB under a CMYK intent would otherwise break the conformance claim (ISO 19005-2 §6.2.4.3); remapping tells the print workflow what the colours mean rather than rewriting them as naive CMYK. veraPDF accepts the result under PDF/A-1b and PDF/A-2b.
 
@@ -7341,7 +7577,7 @@ What raises a diagnostic: `PDFX_NO_FONT_ENTRIES` (every font must be embedded �
 
 ### Checking the result
 
-`validatePdfX(bytes)` checks what the structure can prove: header (a version above 1.6 is an error, below it a warning), encryption and `/ID`; the XMP identification and trapping, consistent with `/Info`; the OutputIntent and its embedded output profile; page boxes; embedded fonts, including those reached only through Form XObjects and patterns; annotations in the print area (Hidden, NoView, Popup, PrinterMark and TrapNet are exempt) and JavaScript actions; `/OpenAction`, additional actions and a JavaScript name tree; the `LZWDecode` filter and transfer functions anywhere in the file (halftones and interpolated images are warnings); and device colour in page content against the intent. It does not inspect colour inside Form XObjects or images, and it does not render. veraPDF does not cover PDF/X, so confirm a file bound for press with a certified preflight (callas pdfToolbox, Acrobat Preflight).
+`validatePdfX(bytes)` checks what the structure can prove: header (a version above 1.6 is an error, below it a warning), encryption and `/ID`; the XMP identification and trapping, consistent with `/Info`; the OutputIntent and its embedded output profile; page boxes; embedded fonts, including those reached only through Form XObjects and patterns; annotations in the print area (Hidden, NoView, Popup, PrinterMark and TrapNet are exempt) and JavaScript actions; `/OpenAction`, additional actions and a JavaScript name tree; the `LZWDecode` filter and transfer functions anywhere in the file (halftones and interpolated images are warnings); and device colour in page content against the intent. Not checked: fonts inside annotation appearance streams, colour inside Form XObjects and images, OPI and PostScript XObjects, reference XObjects, embedded files, transparency blend spaces, optional content, and anything that needs rendering — the validator parses, it does not render. veraPDF does not cover PDF/X, so a `valid` result means the structural prerequisites hold; confirm a file bound for press with a certified preflight (callas pdfToolbox, Acrobat Preflight).
 
 ## Large formats — `/UserUnit`
 
@@ -8201,6 +8437,56 @@ document (or the right field) and re-check. `isDocTimestamp` distinguishes
 > the MCP `verify_pdf` tool, below. See
 > [Long-term validation (LTV)](ltv.html).
 
+## Verifier 5 — `validatePdfX()`: structural PDF/X-4 for print
+
+`validatePdfX()` _(v1.8.0)_ is the print counterpart of Verifier 3: a
+read-only ISO 15930-7 check over the emitted bytes — the `%PDF-1.6` header,
+no encryption, a trailer `/ID`; the XMP identification (`GTS_PDFXVersion`,
+`DocumentID`, `VersionID`, `RenditionClass`, `dc:title`, `Trapped` consistent
+with `/Info`); a `/GTS_PDFX` OutputIntent whose embedded profile is an output
+(`prtr`) profile with the `acsp` signature and a size field within the
+stream; a TrimBox or an ArtBox on every page, nested in the BleedBox and the
+MediaBox; every font embedded, in page resources and in the Form XObjects and
+patterns they reach; no annotation inside the BleedBox other than PrinterMark,
+TrapNet, Popup, Hidden or NoView; no JavaScript, `/OpenAction` or `/AA`; no
+`LZWDecode`, no transfer function; device colour in page content matching the
+intent.
+
+```ts
+import { buildDocumentPDFBytes, validatePdfX } from 'pdfnative';
+
+const bytes = buildDocumentPDFBytes({ ...params, fontEntries }, {
+  pdfx: 'pdfx4',
+  outputIntent: { iccProfile: pressProfile, outputConditionIdentifier: 'FOGRA39' },
+  print: { bleed: 14.17, marks: { colourBars: true } },
+});
+
+const report = validatePdfX(bytes);   // { valid, errors, warnings }
+if (!report.valid) {
+  throw new Error(`PDF/X-4 structure: ${report.errors.join('; ')}`);
+}
+```
+
+**Failure → fix.** Most failures never reach the validator: `pdfx` with a
+PDF/A `tagged` level, with `encryption`, without `outputIntent`, with a
+monitor (`mntr`) profile such as sRGB, with `trapped: 'Unknown'`, or with
+both a TrimBox and an ArtBox throw at build time, with the messages listed
+under `buildErrors` in [`docs/data/errors.json`](../data/errors.json). What
+the validator itself reports is usually an unembedded font (pass
+`fontEntries`; the build also raised `PDFX_NO_FONT_ENTRIES`), a link or form
+field inside the print area (`PDFX_ANNOTATIONS`), or a CMYK colour under an
+RGB intent (`PDFX_DEVICE_CMYK`). Warnings — a header below 1.6, a halftone
+other than `/Default`, an interpolated image — are non-blocking.
+
+> **Honest caveat.** `validatePdfX()` checks what the structure can prove and
+> does not render. It does not check fonts inside annotation appearance
+> streams, colour inside Form XObjects and images, OPI and PostScript
+> XObjects, reference XObjects, embedded files, transparency blend spaces,
+> optional content, or anything that needs rendering. veraPDF does not cover
+> PDF/X, and a `valid` result means the structural prerequisites hold — a
+> certified preflight (callas pdfToolbox, Acrobat Preflight) remains
+> necessary before a file goes to press. See [Print production](print.html).
+
 ## The same loop on the CLI
 
 `pdfnative-cli` turns the assertions into exit codes, which is what a shell or
@@ -8287,6 +8573,24 @@ pdfnative verify  --input signed.pdf  --strict --trust ca-root.pem
 which makes a cheap first CI stage; `--summary` / `--fields` keep logs and
 agent context small.
 
+**Reproducible bytes.** _(v1.8.0)_ Unencrypted output is a pure function of
+its inputs plus one instant: the creation date, which stamps `/CreationDate`,
+`/ModDate`, the XMP dates and, through them, the trailer `/ID`. Pin it with
+`layout.creationDate` per call, or once per process with
+`setDefaultCreationDate(date)` (`getDefaultCreationDate()` reads it back,
+`null` restores the wall clock). The date is formatted in the host time zone,
+so pin `TZ` as well — the sample harness runs under `TZ=UTC` — before
+comparing bytes across machines. Encryption keys and IVs stay random by
+design, and `PdfSignOptions.signingTime` keeps its own option.
+
+**Byte regression.** With the date pinned, a SHA-256 of each artefact is a
+sufficient CI assertion. pdfnative's own `npm run verify:samples` is the
+pattern to copy: regenerate the documents, hash them, compare against a
+committed manifest that records which release last changed each hash, and
+refuse two documents of a pair that come out identical. A `--update` is a
+deliberate rebaseline, declared in the release note with the reason the
+previous bytes were wrong.
+
 **Agent loops.** Treat every generation as unfinished until a read tool
 confirms it: after `generate_basic_pdf` (or any document tool), call
 `inspect_pdf` with the `check` list that encodes the user's requirements and
@@ -8306,6 +8610,8 @@ into a paste-into-context form.
   documented limits.
 - [PDF/A conformance](pdfa.html) — validating archival claims with veraPDF,
   and the build-time `PDFA_*` diagnostics.
+- [Print production](print.html) — CMYK, OutputIntents, PDF/X-4 and what
+  `validatePdfX()` does and does not check.
 - [Long-term validation (LTV)](ltv.html) — the PAdES ladder the signature
   assertions climb.
 - [CLI guide](cli.html) · [MCP guide](mcp.html) — the complete surface
@@ -9248,7 +9554,7 @@ By design (documented, not bugs):
   extracts as those characters, outermost span first. Without it,
   ligature reversal is only as good as the embedded `/ToUnicode`. In
   practice this means **shaped Indic and South-East Asian scripts**
-  (Devanagari, Bengali, Tamil, Telugo, Sinhala, Khmer, Lao, Tai Tham, …)
+  (Devanagari, Bengali, Tamil, Telugu, Sinhala, Khmer, Lao, Tai Tham, …)
   extract with U+FFFD for conjunct/ligature glyphs that have no
   single-codepoint mapping in an untagged document — the PDF *renders*
   correctly; only extraction of those clusters is lossy. Build with
@@ -9276,7 +9582,7 @@ Generated by `npm run test:generate`:
 <!-- source: docs/guides/troubleshooting.md -->
 # Troubleshooting
 
-> **Symptom-first fixes for the classic failures** — tofu boxes (a font registered but never loaded), RTL text appearing backwards, oversized files, PDF/A validation errors, parser rejections — each with the check that identifies it and the change that fixes it.
+> **Symptom-first fixes for the classic failures** — tofu boxes (a font registered but never loaded), RTL text appearing backwards, oversized files, PDF/A validation errors, PDF/X-4 builds that throw, a font feature that does nothing, a compressor that produced blank pages, parser rejections — each with the check that identifies it and the change that fixes it.
 
 ## Font Not Rendering (Boxes or Blank)
 
@@ -9370,6 +9676,55 @@ renders `)X(`. If you see either symptom, upgrade pdfnative.
 
 3. **Transparency in PDF/A-1b:** Watermarks with opacity < 1.0 are blocked in PDF/A-1b (ISO 19005-1 §6.4). Use PDF/A-2b or remove transparency.
 
+## PDF/X-4 Build Throws (v1.8.0)
+
+**Symptom:** `buildDocumentPDFBytes()` with `pdfx: 'pdfx4'` throws before producing bytes.
+
+**Cause:** the PDF/X claim is checked for coherence up front. The message names the conflict — one of these seven, listed with every other build-time message in [`docs/data/errors.json`](../data/errors.json):
+
+1. `layout.pdfx: unknown target '${target}' — use one of ${PDF_X_CONFORMANCE_TARGETS}` — use `'pdfx4'`.
+2. `layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them` — build the print file and the archival file separately.
+3. `PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx` — drop one.
+4. `PDF/X-4 requires layout.outputIntent: the ICC profile of the printing condition, e.g. ISO Coated v2 or GRACoL from your printer. pdfnative ships no press profile` — pass the profile your printer names.
+5. `PDF/X-4 requires an output (printer) profile as layout.outputIntent — the supplied profile's class is '${deviceClass}'` — sRGB is a monitor (`mntr`) profile; use a press (`prtr`) profile.
+6. `PDF/X requires the trapping state to be known — set metadata.trapped to 'True' or 'False', or omit it for 'False'` — pdfnative never traps, so `'False'` is accurate.
+7. `PDF/X pages carry a TrimBox or an ArtBox, not both — drop print.artBox, or print.trimBox and print.bleed` — keep one box.
+
+Once the build succeeds, `validatePdfX(bytes)` reports what the structure can prove (`{ valid, errors, warnings }`); a certified preflight remains necessary before press. See [Print production](print.html).
+
+## Font Feature Has No Effect (v1.8.0)
+
+**Symptom:** `typography: { fontFeatures: ['tnum'] }` changes nothing and the console shows `TYPOGRAPHY_FEATURE_INEFFECTIVE`.
+
+**Cause:** no registered font declares the tag, or it declares it but no glyph in the document was substituted. With the bundled Noto Sans, `tnum` and `lnum` are no-ops because its figures are already tabular and lining; `pnum` and `onum` do substitute. Features need a registered font — the base-14 faces carry no OpenType tables.
+
+**Fix:** drop the tag, or register a font whose GSUB declares it for the characters you set (the effective tags are the keys of the font module's `features` table). Capture the diagnostic with `layout.onDiagnostic`, or make it fatal with `layout.strict: true`.
+
+## Blank Pages After `setDeflateImpl()` / Build Throws Naming It
+
+**Symptom:** on v1.7.0, every page rendered blank and `extractText()` returned `''`; on v1.8.0 the build throws a message pointing at `setDeflateImpl()`.
+
+**Cause:** the injected compressor returns raw DEFLATE (RFC 1951) — fflate's `deflateSync`, `CompressionStream`'s `'deflate-raw'` — while `/FlateDecode` needs the zlib envelope (RFC 1950). The v1.7.0 README recommended the raw function; v1.8.0 validates the result and refuses it ([#78](https://github.com/Nizoka/pdfnative/issues/78)).
+
+**Fix:**
+```typescript
+import { setDeflateImpl, setDeflateRawImpl } from 'pdfnative';
+import { zlibSync, deflateSync } from 'fflate';
+
+setDeflateImpl(zlibSync);        // zlib-wrapped — the contract of setDeflateImpl()
+// or keep the raw function and let pdfnative add the envelope (v1.8.0):
+setDeflateRawImpl(deflateSync);
+```
+An asynchronous compressor (callback, Promise or `CompressionStream`) cannot be adapted; use `initNodeCompression()` on Node or a synchronous library elsewhere.
+
+## French Punctuation Spacing Looks Canadian
+
+**Symptom:** `typography: { punctuationSpacing: 'fr' }` renders no space before `;` `!` `?`, exactly like `'fr-CA'`.
+
+**Cause:** `'fr'` inserts a narrow no-break space (U+202F), which WinAnsi cannot encode. On the base-14 (non-embedded) path it degrades to an ordinary space.
+
+**Fix:** register a Latin font that carries the glyph (Noto Sans does) and pass it in `fontEntries`; the narrow space is then rendered as written and extracts as U+202F.
+
 ## "Document has too many blocks" / Very Large Documents
 
 **Symptom:** Generating a multi-thousand-page report throws a "too many blocks" error.
@@ -9455,7 +9810,7 @@ Why opt-in: each option moves glyphs or line breaks, so turning one on changes a
 | `widows` | `2` | Minimum lines carried to the next page; the break is pulled earlier otherwise. Requires `splitParagraphs`. |
 | `keepHeadingsWithNext` | `false` | A heading that would end a page moves to the next one with its content. Works without `splitParagraphs`. Pass `true`, or `{ minLines: N }` to reserve at least N lines of what follows (default 2; three is a common house style) — the reservation never drops below `orphans`, and a paragraph that cannot spare N lines and still carry `widows` over moves whole. |
 
-Blocks override the document setting: a heading or paragraph accepts `keepWithNext`, and a paragraph accepts its own split permission. Under a PDF/A claim a paragraph split across pages remains one `/P` structure element.
+Blocks override the document setting: a heading or paragraph accepts `keepWithNext`, and a paragraph accepts `splittable` (its own split permission, `false` to keep one paragraph atomic while `splitParagraphs` is on). Under a PDF/A claim a paragraph split across pages remains one `/P` structure element.
 
 ## Justification and optical margins
 
