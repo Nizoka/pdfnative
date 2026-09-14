@@ -13,9 +13,25 @@ npm run fonts:download   # fetch Noto Sans TTFs → fonts/ttf/
 
 ### Requirements
 
-- Node.js 22 — the line in `.nvmrc` (`nvm use` / `fnm use` picks it up; CI also runs the suite on 24, and `engines.node` allows `>=22`).
-- npm — the version pinned by `packageManager` in `package.json` (Corepack honours it).
+- Node.js 22 — the line in `.nvmrc` and `.node-version` (`nvm use` / `fnm use` / `volta` pick it up; CI also runs the suite on 24, and `engines.node` allows `>=22`).
+- npm — the version pinned by `packageManager` in `package.json` (Corepack honours it). The repository's `.npmrc` sets `ignore-scripts=true` (no dependency runs an install script here — esbuild resolves its platform binary from an optional dependency), `fund=false` and `audit-level=high`; `npm run <script>` still runs the script you name, but lifecycle hooks such as `prepublishOnly` do not fire, which is why the publish workflow builds explicitly before it packs.
 - Dev dependencies use caret ranges on purpose: `package-lock.json` plus `npm ci` is what makes an install reproducible, not narrow ranges. Let npm manage the lockfile.
+- Source fonts: `npm run fonts:download` fetches every TTF at the google/fonts commit pinned in [fonts/SOURCES.json](fonts/SOURCES.json) and refuses a file whose SHA-256 differs from the manifest; nine TTFs are committed under `fonts/ttf/` because no google/fonts revision serves them — the five Latin subsets (Cyrillic, Greek, Polish, Turkish, Vietnamese) and the four static instances (Arabic, Armenian, Georgian, Hebrew) the modules were built from; the manifest records them with `origin: "tree"`.
+
+### First pull request in ten minutes
+
+```bash
+npm ci                     # reproducible install from the lockfile
+npm run hooks:install      # optional: pre-commit lint + CRLF check, pre-push fast gate (core.hooksPath → .githooks)
+npm run gate -- --fast     # typecheck, lint, tests, docs checks — the loop while you work
+git switch -c fix/<what>   # feat/, fix/, docs/, chore/ (see Branch Strategy)
+```
+
+Edit, add a test beside the code you touched (`tests/` mirrors `src/`), run the fast gate, commit with a [Conventional Commits](#commit-messages) message, push your branch and open the pull request — its template is the [checklist below](#pull-request-checklist). `npm run gate` (the CI profile) before you ask for review; `npm run hooks:uninstall` removes the hooks.
+
+Sign your commits if you can: with an SSH key already registered on GitHub, `git config gpg.format ssh`, `git config user.signingkey ~/.ssh/id_ed25519.pub`, `git config commit.gpgsign true` and `git config tag.gpgSign true` make every commit and tag verifiable; the rulesets do not require signatures yet, so an unsigned contribution is still welcome.
+
+Every file the project writes uses LF line endings (`.gitattributes` says `* text=auto eol=lf`); on Windows, Git converts on checkout and the pre-commit hook refuses a staged CRLF file. Do not run `git add --renormalize` in a feature branch — the maintainer does that in one dedicated commit.
 
 ## Build
 
@@ -69,7 +85,7 @@ npm run bench          # Performance benchmarks (vitest bench)
 
 All new code must include tests. Coverage thresholds (vitest.config.ts): statements 88%, branches 80%, functions 85%, lines 90%.
 
-The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, playgrounds, recipes, scripts) live in one place, `docs/assets/ecosystem.json`, and `npm run verify:docs` reports every document that disagrees with it — update the manifest, not the prose. Its rules, each named in the failure line: `derived-counts` (the manifest against the file tree), `count-tokens` ("N tests", "N scripts" / "N Unicode scripts", "N playgrounds" — word numerals included — in every document), `version-token` (every version quoted in prose, tables and badges against the manifest), `error-parity` (every diagnostic code named in the docs exists in `docs/data/errors.json` and in `src/`, and vice versa), `playgrounds-manifest` (`docs/data/playgrounds.json` against the playground pages and their engine pins), `guide-render-sync` (every `docs/guides/*.md` has an up-to-date `.html` from `npm run docs:guides`), `llms-sync` (the llms files, the release-note link included, regenerated from their sources), `sitemap-parity`, `switcher-parity`, `bench-parity`, `claude-md-budget` (`AGENTS.md` and `CLAUDE.md` ≤ 120 lines, the Copilot file ≤ 16 KiB, no line over 240 characters) and `prose-language` (English only, see Code Style).
+The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, playgrounds, recipes, scripts) live in one place, `docs/assets/ecosystem.json`, and `npm run verify:docs` reports every document that disagrees with it — update the manifest, not the prose. Its rules, each named in the failure line: `derived-counts` (the manifest against the file tree), `count-tokens` ("N tests", "N scripts" / "N Unicode scripts", "N playgrounds" — word numerals included — in every document), `version-token` (every version quoted in prose, tables and badges against the manifest), `error-parity` (every diagnostic code named in the docs exists in `docs/data/errors.json` and in `src/`, and vice versa), `playgrounds-manifest` (`docs/data/playgrounds.json` against the playground pages and their engine pins), `guide-render-sync` (every `docs/guides/*.md` has an up-to-date `.html` from `npm run docs:guides`), `llms-sync` (the llms files, the release-note link included, regenerated from their sources), `sitemap-parity`, `switcher-parity`, `bench-parity`, `claude-md-budget` (`AGENTS.md` and `CLAUDE.md` ≤ 120 lines, the Copilot file ≤ 16 KiB, no line over 240 characters), `prose-language` (English only, see Code Style), and since the 1.8.0 hardening pass `agent-config-parity` (`.claude/settings.json`, the guard hook and `CLAUDE.md` agree), `claude-rules-sync` / `claude-rules-budget` (`.claude/rules/*.md` regenerate from `.github/instructions/` by `npm run agents:rules` and stay within budget), `skills-shape`, `pr-template-parity` (the pull-request template mirrors the checklist below word for word) and `eol-lf` (tracked text files stored with CRLF — a warning until the renormalisation commit, then a failure).
 
 ## PDF/A validation (veraPDF)
 
@@ -152,8 +168,8 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (49 generators, 271 PDFs) and the verification scripts
-tests/            # 154 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+scripts/          # Modular sample PDF generation (49 generators, 279 PDFs) and the verification scripts
+tests/            # 159 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -201,11 +217,11 @@ The version bump is scripted; the judgement goes into the release note.
 2. `npx tsx scripts/release-prepare.ts --version X.Y.Z` — run it with `--dry-run` first to see the list. It bumps `package.json` and the lockfile; `docs/assets/ecosystem.json` (`packages.pdfnative.version`, `verifiedOn`) and the Verified-on stamps the verifier holds to that date; `CITATION.cff`; the SECURITY.md support table; every CDN pin (`pdfnative@<previous>` → `pdfnative@X.Y.Z`); the homepage JSON-LD; the architecture SVG; the sitemap `lastmod` of every page whose source changed since the previous tag; and scaffolds `release-notes/vX.Y.Z.md` from [release-notes/TEMPLATE.md](release-notes/TEMPLATE.md). The date defaults to today (UTC) and the previous tag to `git describe`; `--date` and `--previous` override them.
 3. `git diff --stat` — the diff must read as the bump and nothing else. Update the counts in the manifest (`derived`, `declared`) by hand; `verify:docs` reports the documents that disagree.
 4. Write the release note and the matching `CHANGELOG.md` entry (`## [X.Y.Z] – YYYY-MM-DD`). Every intentional sample rebaseline must be declared in the note's Upgrade section, with why the previous bytes were wrong — the `sample-regression` check holds the release to the previous release's output otherwise.
-5. `npm run docs:all && npm run verify:docs`, then run the three-agent final review before the publish gate: two independent auditors read the release (code, samples, docs, release note) and file findings in a shared ledger; one adversarial verifier re-checks every finding against the sources of truth (`docs/assets/api.json`, `src/types/`, `docs/data/*.json`, the sample manifest) and rejects the ones that do not hold. Fix what survives, in batches by owner. The 1.8.0 review found six unexported option types, a README compression recipe that produced unreadable files and a false architecture block this way — none of which the gate detects.
-6. `npm run gate -- --publish` (PowerShell: `npx tsx scripts/gate.ts --publish`): the full gate, veraPDF and the sample, font, Unicode and bundle checks included.
+5. `npm run docs:all && npm run verify:docs`, then run the three-agent final review before the publish gate — in Claude Code it is the `release-audit` skill (`/release-audit release-notes/vX.Y.Z.md vPREV`, defined in `.claude/skills/release-audit/`): two independent auditors read the release (code, samples, docs, release note) and file findings in a shared ledger; one adversarial verifier re-checks every finding against the sources of truth (`docs/assets/api.json`, `src/types/`, `docs/data/*.json`, the sample manifest) and stamps each `CONFIRMED`, `DOWNGRADED`, `REJECTED` or `DUPLICATE`; a docs/autonomy pass and its own verification follow; the ledger ends in GO / NO-GO. Fix what survives, in batches by owner. The 1.8.0 review found six unexported option types, a README compression recipe that produced unreadable files, a false architecture block and, on the second pass, the mispositioned Indic vowel signs this way — none of which the gate detects.
+6. `npm run gate -- --publish` (PowerShell: `npx tsx scripts/gate.ts --publish`): the full gate, veraPDF and the sample, font, Unicode and bundle checks included. `--require-all` (what `publish.yml` passes) turns a skipped step — veraPDF or the source fonts missing — into a failure.
 7. Draft the pull-request body from [release-notes/PR_TEMPLATE.md](release-notes/PR_TEMPLATE.md) into `RELEASE_PR_vX.Y.Z.md` at the repository root (git-ignored scratch file); paste the numbers the gate printed into its Verification section.
 8. Squash-merge with the title `release: vX.Y.Z — <headline>`, where the headline is the release note's GitHub Release title.
-9. Tag `vX.Y.Z` on the merge commit and publish the GitHub Release (title `vX.Y.Z — <headline>`, body = the release note). `publish.yml` fires on the published release, runs the gate again and publishes to npm with provenance.
+9. Tag `vX.Y.Z` on the merge commit and publish the GitHub Release (title `vX.Y.Z — <headline>`, body = the release note). `publish.yml` fires on the published release: it waits for the `npm-publish` environment's reviewer, installs a checksummed veraPDF and the pinned source fonts, runs `gate --publish --require-all`, publishes to npm with provenance through an exact npm 11, then a second job attaches the CycloneDX SBOM, the tarball and their build-provenance attestations to the release. The tag ruleset ([.github/rulesets/tags.json](.github/rulesets/tags.json)) forbids deleting or moving a `v*` tag.
 10. After publication: `npm view pdfnative version`, then open a playground — the site's CDN pins (`pdfnative@X.Y.Z`) only resolve once the package exists on the registry.
 
 ### Branch protection
@@ -222,10 +238,11 @@ To update the ruleset already in place, `gh api repos/Nizoka/pdfnative/rulesets`
 
 ## Adding a New Language / Script
 
+0. Decide whether it is a new **script** or a new **language on a script already bundled**. Hausa, Yoruba, Igbo and Swahili (v1.8.0) needed no module, no `lang` key and no shaper: the bundled `latin` module (Noto Sans) carries their letters and anchors, `detectCharLang()` routes Latin Extended-B, IPA and the combining-mark blocks to it, and the `latin-marks` shaper composes the tone marks. For such a language, add a `LangSample` plate to `scripts/data/alphabet-data.ts`, a `LanguageDoc` to `scripts/data/language-docs-data.ts` (one page, edge-case table — `tests/regression/language-docs.test.ts` enforces one page and no missing glyph), an alias in `scripts/helpers/fonts.ts`, and the README rows; stop there. The steps below are for a new script.
 1. Obtain a Noto Sans TTF for the target script — download the raw `.ttf` directly from [github.com/notofonts](https://github.com/notofonts) (click the file → **Download raw file**, no zip needed) and save to `fonts/ttf/`
 2. Run `node tools/build-font-data.cjs fonts/ttf/NotoSans-<Script>.ttf`
 3. Add script ranges to `src/shaping/script-registry.ts` (centralized constants) and detection in `src/shaping/script-detect.ts`
-4. If the script needs OpenType shaping (GSUB/GPOS), create a shaper in `src/shaping/` (see `bengali-shaper.ts` or `tamil-shaper.ts` as examples)
+4. If the script needs OpenType shaping (GSUB/GPOS): an Indic script (Gujarati, Gurmukhi, Kannada, Malayalam, Odia) is an `IndicScriptConfig` for `src/shaping/indic-engine.ts` plus a one-line wrapper (see `telugu-shaper.ts`); a script the Universal Shaping Engine covers needs nothing beyond registration; anything else is a shaper in `src/shaping/` registered in `shaper-registry.ts`
 5. Register the font in your test setup
 6. Add tests for the new script detection and encoding
 7. Run `npm run verify:fonts` — every committed module must regenerate byte
