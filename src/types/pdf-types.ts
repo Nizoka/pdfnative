@@ -61,14 +61,34 @@ export interface FontData {
      * @since 1.8.0
      */
     readonly kern?: KernTable | null;
+    /**
+     * GPOS MarkToBase anchors. `marks[gid]` is `[classIdx, x, y, …]` — one
+     * triple per GPOS subtable that covers the mark, in lookup order (a font
+     * anchors the same vowel sign on plain consonants in one subtable and on
+     * conjunct ligatures in another); `bases[gid][classIdx]` is the matching
+     * attachment point. Mark classes are unique across subtables since
+     * v1.8.0; modules built before carry a single triple per mark.
+     */
     readonly markAnchors: {
         readonly bases: Record<number, Record<number, [number, number]>>;
-        readonly marks: Record<number, [number, number, number]>;
+        readonly marks: Record<number, readonly number[]>;
     } | null;
+    /** GPOS MarkToMark anchors, with the same per-subtable triples in `mark2Classes`. */
     readonly mark2mark: {
         readonly mark1Anchors: Record<number, Record<number, [number, number]>>;
-        readonly mark2Classes: Record<number, [number, number, number]>;
+        readonly mark2Classes: Record<number, readonly number[]>;
     } | null;
+    /**
+     * OpenType Layout kept per script and feature: the GSUB lookups the Indic
+     * engine applies in specification order (`rphf`, `blwf`, `half`, `pstf`,
+     * `pres`, …) and `ccmp` for Latin combining marks, plus the GDEF mark
+     * class. Absent or `null` on modules built before v1.8.0, on fonts with
+     * no such features, and on font-data objects a caller assembled by hand —
+     * the shapers then fall back to {@link ligatures} and {@link gsub}.
+     *
+     * @since 1.8.0
+     */
+    readonly otl?: OtlTables | null;
     /**
      * Colour glyph table (COLR/CPAL), keyed by base glyph id. Present only
      * for colour fonts such as Noto Color Emoji (opt-in via the
@@ -88,6 +108,61 @@ export interface FontData {
      * the historical per-codepoint behaviour. (v1.7.0)
      */
     readonly sequences?: Record<number, number[][]> | null;
+}
+
+// ── OpenType Layout tables (v1.8.0) ───────────────────────────────────
+
+/**
+ * One GSUB lookup as a font-data module serialises it: `t` is the OpenType
+ * lookup type, `f` the raw lookupFlag (bit 3 = IgnoreMarks), `m` the
+ * substitutions keyed by first glyph id.
+ *
+ * @since 1.8.0
+ */
+export type OtlLookup =
+    | { readonly t: 1; readonly f: number; readonly m: Readonly<Record<number, number>> }
+    | { readonly t: 2; readonly f: number; readonly m: Readonly<Record<number, readonly number[]>> }
+    | { readonly t: 4; readonly f: number; readonly m: Readonly<Record<number, readonly (readonly number[])[]>> }
+    | { readonly t: 6; readonly f: number; readonly m: readonly OtlChainRule[] };
+
+/**
+ * One contextual substitution rule (GSUB LookupType 5 or 6): the glyph sets
+ * the backtrack (`b`, closest glyph first), input (`i`, first glyph
+ * included) and lookahead (`l`) must match — each an index into
+ * {@link OtlTables.gsub.sets} — and the lookups to apply at the matched
+ * input positions (`a`, `[inputIndex, lookupIndex]` pairs in order).
+ *
+ * @since 1.8.0
+ */
+export interface OtlChainRule {
+    readonly b: readonly number[];
+    readonly i: readonly number[];
+    readonly l: readonly number[];
+    readonly a: readonly (readonly number[])[];
+}
+
+/**
+ * OpenType Layout data a font-data module carries for the shapers: GSUB
+ * lookups indexed per script and feature tag (in application order) and the
+ * GDEF mark-class ranges.
+ *
+ * @since 1.8.0
+ */
+export interface OtlTables {
+    readonly gsub: {
+        /** `scripts[scriptTag][featureTag]` → ascending lookup indices. */
+        readonly scripts: Readonly<Record<string, Readonly<Record<string, readonly number[]>>>>;
+        /** Each lookup once, keyed by its index in the font's LookupList. */
+        readonly lookups: Readonly<Record<number, OtlLookup>>;
+        /**
+         * Glyph sets the contextual rules share, each a flat list of
+         * inclusive glyph-id ranges `[s1, e1, s2, e2, …]`. Present when the
+         * font has contextual lookups.
+         */
+        readonly sets?: readonly (readonly number[])[];
+    };
+    /** GDEF GlyphClassDef class 3 (marks) as inclusive glyph-id ranges. */
+    readonly gdef?: { readonly marks: readonly (readonly [number, number])[] };
 }
 
 // ── Colour Glyph Types (COLR/CPAL — v1.3.0) ──────────────────────────
@@ -255,12 +330,23 @@ export interface FontEntry {
 
 // ── Shaping Types ────────────────────────────────────────────────────
 
-/** A single positioned glyph output from the Thai shaper. */
+/** A single positioned glyph output by a shaper, in visual order. */
 export interface ShapedGlyph {
     readonly gid: number;
     readonly dx: number;
     readonly dy: number;
     readonly isZeroAdvance: boolean;
+    /**
+     * The source code points this glyph stands for — every component of a
+     * ligature, the composed vowel sign behind a decomposed one, nothing for
+     * a glyph that only carries part of a code point already reported by its
+     * neighbour. Set by the Indic engine and the Latin combining-mark shaper
+     * so the ToUnicode CMap can name conjuncts and contextual forms that have
+     * no cmap entry of their own; older shapers leave it unset.
+     *
+     * @since 1.8.0
+     */
+    readonly cps?: readonly number[];
 }
 
 /** A text run produced by the encoding context's textRuns() method. */
@@ -336,7 +422,7 @@ export interface EncodingContext {
      * this table their ToUnicode entry would be missing and the text would
      * extract as U+FFFD. Present only on Unicode contexts. (v1.8.0)
      */
-    readonly getToUnicodeOverrides?: () => Map<string, Map<number, number>>;
+    readonly getToUnicodeOverrides?: () => Map<string, Map<number, number | readonly number[]>>;
     /**
      * Colour-emoji collector — present only when an `'emoji-color'` font
      * (carrying `colorGlyphs`) is registered. Used by the text emitter to
@@ -577,6 +663,8 @@ export type PdfDiagnosticCode =
     | 'PDFA_UNEMBEDDED_FORM_FONT'
     /** CMYK content colour under a PDF/A claim whose OutputIntent is not CMYK (ISO 19005-2 §6.2.4.3). @since 1.8.0 */
     | 'PDFA_DEVICE_CMYK_CONTENT'
+    /** An ICC v4 OutputIntent profile under a PDF/A-1 claim, which admits v2 only (ISO 19005-1 §6.2.2). @since 1.8.0 */
+    | 'PDFA_ICC_PROFILE_VERSION'
     /** PDF/X-4 requested with no `fontEntries` — unembedded standard-14 fonts (ISO 15930-7). @since 1.8.0 */
     | 'PDFX_NO_FONT_ENTRIES'
     /** CMYK colour or image under a PDF/X-4 claim whose OutputIntent is not CMYK (ISO 15930-7). @since 1.8.0 */

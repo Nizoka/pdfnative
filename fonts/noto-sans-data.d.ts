@@ -20,5 +20,6 @@ export declare const kern: { p: Record<number, Record<number, number>> | null; c
 export declare const features: Record<string, Record<number, number>> | null;
 export declare const markAnchors: Record<number, unknown>;
 export declare const mark2mark: Record<string, unknown>;
+export declare const otl: { gsub: { scripts: Record<string, Record<string, number[]>>; lookups: Record<number, { t: number; f: number; m: unknown }> }; gdef?: { marks: [number, number][] } } | null;
 export declare const pdfWidthArray: string;
 export declare const ttfBase64: string;

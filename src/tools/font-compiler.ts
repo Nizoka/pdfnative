@@ -21,6 +21,8 @@
  * @since 1.5.0
  */
 
+import type { OtlTables } from '../types/pdf-types.js';
+
 // ── Public types ─────────────────────────────────────────────────────
 
 /** Font metrics extracted from `head` / `hhea` / `maxp` / `OS/2`. */
@@ -69,16 +71,27 @@ export interface FontDataObject {
      * @since 1.8.0
      */
     readonly kern: RawKern | null;
-    /** GPOS MarkToBase anchors. */
+    /**
+     * GPOS MarkToBase anchors. A mark carries `[classIdx, x, y, …]` — one
+     * triple per subtable that covers it, in lookup order — and mark classes
+     * are unique across subtables (v1.8.0; a single triple before).
+     */
     readonly markAnchors: {
-        readonly marks: Record<number, [number, number, number]>;
+        readonly marks: Record<number, number[]>;
         readonly bases: Record<number, Record<number, [number, number]>>;
     };
-    /** GPOS MarkToMark anchors. */
+    /** GPOS MarkToMark anchors, with the same per-subtable triples for `mark2Classes`. */
     readonly mark2mark: {
         readonly mark1Anchors: Record<number, Record<number, [number, number]>>;
-        readonly mark2Classes: Record<number, [number, number, number]>;
+        readonly mark2Classes: Record<number, number[]>;
     };
+    /**
+     * OpenType Layout kept per script and feature for the Indic engine and
+     * the Latin combining-mark shaper, or `null` when the font declares none
+     * of the wanted script/feature pairs.
+     * @since 1.8.0
+     */
+    readonly otl: OtlTables | null;
     /** Pre-formatted PDF `/W` array string for the CIDFont object. */
     readonly pdfWidthArray: string;
     /** Raw TTF binary as base64 (for PDF `FontFile2` embedding). */
@@ -107,12 +120,22 @@ export interface ParseFontDataOptions {
 
 interface MarkAnchorObj { classIdx: number; x: number; y: number; }
 interface RawMarkAnchors {
-    marks: Record<number, MarkAnchorObj>;
+    marks: Record<number, MarkAnchorObj[]>;
     bases: Record<number, Record<number, { x: number; y: number }>>;
     mark2mark: {
         mark1Anchors: Record<number, Record<number, { x: number; y: number }>>;
-        mark2Classes: Record<number, MarkAnchorObj>;
+        mark2Classes: Record<number, MarkAnchorObj[]>;
     };
+}
+interface RawChainRule { b: number[]; i: number[]; l: number[]; a: [number, number][]; }
+type RawOtlLookup =
+    | { t: 1; f: number; m: Record<number, number> }
+    | { t: 2; f: number; m: Record<number, number[]> }
+    | { t: 4; f: number; m: Record<number, number[][]> }
+    | { t: 6; f: number; m: RawChainRule[] };
+interface RawOtl {
+    gsub: { scripts: Record<string, Record<string, number[]>>; lookups: Record<number, RawOtlLookup>; sets?: number[][] };
+    gdef?: { marks: [number, number][] };
 }
 interface RawKernClass {
     l: Record<number, number>;
@@ -138,6 +161,7 @@ interface RawParsed {
     features: Record<string, Record<number, number>> | null;
     kern: RawKern | null;
     markAnchors: RawMarkAnchors;
+    otl: RawOtl | null;
     name?: string;
 }
 
@@ -553,6 +577,415 @@ function parseGSUBLigatures(r: TTFReader, tables: TableDir): Record<number, numb
     return ligatures;
 }
 
+// ── OpenType Layout — per-script, per-feature GSUB + GDEF marks (v1.8.0) ──
+
+/**
+ * Scripts whose GSUB features are kept per tag. Must stay identical to
+ * `OTL_SCRIPT_TAGS` in `tools/build-font-data.cjs`, the reference CLI.
+ */
+const OTL_SCRIPT_TAGS = [
+    'DFLT',
+    'dev2', 'deva', 'bng2', 'beng', 'tml2', 'taml', 'tel2', 'telu', 'sinh',
+    'gur2', 'guru', 'gjr2', 'gujr', 'ory2', 'orya', 'knd2', 'knda', 'mlm2', 'mlym',
+    'latn',
+];
+
+/** Indic feature tags in specification order. Must mirror the CLI. */
+const OTL_FEATURE_TAGS = [
+    'locl', 'ccmp', 'nukt', 'akhn', 'rphf', 'rkrf', 'pref', 'blwf', 'abvf', 'half',
+    'pstf', 'vatu', 'cjct', 'pres', 'abvs', 'blws', 'psts', 'haln', 'calt',
+];
+
+/** Under `DFLT` and `latn` only glyph composition is kept. */
+const OTL_LATIN_FEATURE_TAGS = ['ccmp'];
+
+function readOtlSingleSubst(r: TTFReader, stBase: number, m: Record<number, number>): void {
+    r.seek(stBase);
+    const substFormat = r.readUint16();
+    const coverageOffset = r.readUint16();
+    const covered = readCoverageTable(r, stBase + coverageOffset);
+    if (substFormat === 1) {
+        r.seek(stBase + 4);
+        const delta = r.readInt16();
+        for (const gid of covered) {
+            const sub = (gid + delta) & 0xFFFF;
+            if (sub > 0 && m[gid] === undefined) m[gid] = sub;
+        }
+    } else if (substFormat === 2) {
+        r.seek(stBase + 4);
+        const glyphCount = r.readUint16();
+        for (let gi = 0; gi < glyphCount && gi < covered.length; gi++) {
+            const sub = r.readUint16();
+            if (sub > 0 && m[covered[gi]] === undefined) m[covered[gi]] = sub;
+        }
+    }
+}
+
+function readOtlMultipleSubst(r: TTFReader, stBase: number, m: Record<number, number[]>): void {
+    r.seek(stBase);
+    const substFormat = r.readUint16();
+    if (substFormat !== 1) return;
+    const coverageOffset = r.readUint16();
+    const sequenceCount = r.readUint16();
+    const sequenceOffsets: number[] = [];
+    for (let i = 0; i < sequenceCount; i++) sequenceOffsets.push(r.readUint16());
+    const covered = readCoverageTable(r, stBase + coverageOffset);
+    for (let i = 0; i < sequenceCount && i < covered.length; i++) {
+        if (m[covered[i]] !== undefined) continue;
+        r.seek(stBase + sequenceOffsets[i]);
+        const glyphCount = r.readUint16();
+        const seq: number[] = [];
+        for (let g = 0; g < glyphCount; g++) seq.push(r.readUint16());
+        m[covered[i]] = seq;
+    }
+}
+
+function readOtlLigatureSubst(r: TTFReader, stBase: number, m: Record<number, number[][]>): void {
+    r.seek(stBase);
+    const substFormat = r.readUint16();
+    if (substFormat !== 1) return;
+    const coverageOffset = r.readUint16();
+    const ligSetCount = r.readUint16();
+    const ligSetOffsets: number[] = [];
+    for (let i = 0; i < ligSetCount; i++) ligSetOffsets.push(r.readUint16());
+    const covered = readCoverageTable(r, stBase + coverageOffset);
+    for (let lsi = 0; lsi < ligSetCount && lsi < covered.length; lsi++) {
+        const firstGid = covered[lsi];
+        if (m[firstGid] !== undefined) continue;
+        const ligSetBase = stBase + ligSetOffsets[lsi];
+        r.seek(ligSetBase);
+        const ligCount = r.readUint16();
+        const ligOffsets: number[] = [];
+        for (let i = 0; i < ligCount; i++) ligOffsets.push(r.readUint16());
+        const ligs: number[][] = [];
+        for (const ligOff of ligOffsets) {
+            r.seek(ligSetBase + ligOff);
+            const ligatureGlyph = r.readUint16();
+            const componentCount = r.readUint16();
+            const entry = [ligatureGlyph];
+            for (let ci = 0; ci < componentCount - 1; ci++) entry.push(r.readUint16());
+            ligs.push(entry);
+        }
+        if (ligs.length > 0) m[firstGid] = ligs;
+    }
+}
+
+/** Sorted, de-duplicated glyph ids → flat inclusive ranges. Mirrors the CLI. */
+function toRanges(glyphs: readonly number[]): number[] {
+    const sorted = [...glyphs].sort((a, b) => a - b);
+    const out: number[] = [];
+    for (const g of sorted) {
+        if (out.length > 0 && out[out.length - 1] === g) continue;
+        if (out.length > 0 && out[out.length - 1] === g - 1) out[out.length - 1] = g;
+        else out.push(g, g);
+    }
+    return out;
+}
+
+function classRanges(classes: Record<number, number>, cls: number, numGlyphs: number): number[] {
+    const glyphs: number[] = [];
+    if (cls === 0) {
+        for (let g = 0; g < numGlyphs; g++) if (classes[g] === undefined) glyphs.push(g);
+    } else {
+        for (const [gid, c] of Object.entries(classes)) if (c === cls) glyphs.push(Number(gid));
+    }
+    return toRanges(glyphs);
+}
+
+/** Read one Context / ChainContext subtable into `rules`. Mirrors `readOtlContextSubst` in the CLI. */
+function readOtlContextSubst(
+    r: TTFReader, stBase: number, chained: boolean, rules: RawChainRule[], numGlyphs: number,
+    intern: (ranges: number[]) => number,
+): void {
+    r.seek(stBase);
+    const format = r.readUint16();
+    const readRecords = (count: number): [number, number][] => {
+        const a: [number, number][] = [];
+        for (let k = 0; k < count; k++) { const seq = r.readUint16(); const li = r.readUint16(); a.push([seq, li]); }
+        return a;
+    };
+    const readList = (): number[] => {
+        const count = r.readUint16();
+        const list: number[] = [];
+        for (let k = 0; k < count; k++) list.push(r.readUint16());
+        return list;
+    };
+
+    if (format === 3) {
+        let bt: number[] = [], la: number[] = [], a: [number, number][] = [];
+        const inp: number[] = [];
+        if (chained) {
+            bt = readList();
+            inp.push(...readList());
+            la = readList();
+            a = readRecords(r.readUint16());
+        } else {
+            // ContextSubstFormat3 puts both counts before the coverage offsets.
+            const glyphCount = r.readUint16();
+            const substCount = r.readUint16();
+            for (let k = 0; k < glyphCount; k++) inp.push(r.readUint16());
+            a = readRecords(substCount);
+        }
+        const sets = (offs: number[]): number[] => offs.map(o => intern(toRanges(readCoverageTable(r, stBase + o))));
+        if (inp.length > 0) rules.push({ b: sets(bt), i: sets(inp), l: sets(la), a });
+        return;
+    }
+    if (format !== 1 && format !== 2) return;
+
+    const coverageOffset = r.readUint16();
+    let btClassDef = 0, inClassDef = 0, laClassDef = 0;
+    if (format === 2) {
+        if (chained) btClassDef = r.readUint16();
+        inClassDef = r.readUint16();
+        if (chained) laClassDef = r.readUint16();
+    }
+    const setOffsets = readList();
+    const covered = readCoverageTable(r, stBase + coverageOffset);
+    const classesBt = format === 2 && chained ? readClassDef(r, stBase + btClassDef) : {};
+    const classesIn = format === 2 ? readClassDef(r, stBase + inClassDef) : {};
+    const classesLa = format === 2 && chained ? readClassDef(r, stBase + laClassDef) : {};
+
+    for (let si = 0; si < setOffsets.length; si++) {
+        if (setOffsets[si] === 0) continue;
+        const first = format === 1
+            ? (covered[si] === undefined ? [] : [covered[si]])
+            : covered.filter(g => (classesIn[g] ?? 0) === si);
+        if (first.length === 0) continue;
+        const setBase = stBase + setOffsets[si];
+        r.seek(setBase);
+        const ruleOffsets = readList();
+        for (const ro of ruleOffsets) {
+            r.seek(setBase + ro);
+            let bt: number[] = [], la: number[] = [], a: [number, number][] = [];
+            const inp: number[] = [];
+            if (chained) {
+                bt = readList();
+                const inCount = r.readUint16();
+                for (let k = 1; k < inCount; k++) inp.push(r.readUint16());
+                la = readList();
+                a = readRecords(r.readUint16());
+            } else {
+                const glyphCount = r.readUint16();
+                const substCount = r.readUint16();
+                for (let k = 1; k < glyphCount; k++) inp.push(r.readUint16());
+                a = readRecords(substCount);
+            }
+            const conv = (list: number[], classes: Record<number, number>): number[] =>
+                list.map(v => intern(format === 1 ? [v, v] : classRanges(classes, v, numGlyphs)));
+            rules.push({ b: conv(bt, classesBt), i: [intern(toRanges(first)), ...conv(inp, classesIn)], l: conv(la, classesLa), a });
+        }
+    }
+}
+
+/**
+ * Parse GSUB by script. Mirrors `parseTTFGSUBLayout` in the reference CLI:
+ * see that function for the shape and the reasoning.
+ */
+function parseGSUBLayout(r: TTFReader, tables: TableDir, numGlyphs: number): RawOtl['gsub'] | null {
+    if (!tables['GSUB']) return null;
+    try {
+        const base = tables['GSUB'].offset;
+        r.seek(base);
+        r.skip(4); // version
+        const scriptListOffset = r.readUint16();
+        const featureListOffset = r.readUint16();
+        const lookupListOffset = r.readUint16();
+
+        r.seek(base + featureListOffset);
+        const featureCount = r.readUint16();
+        const features: { tag: string; lookups: number[] }[] = [];
+        for (let fi = 0; fi < featureCount; fi++) {
+            const tag = r.readTag();
+            const featureOffset = r.readUint16();
+            const saved = r.pos;
+            r.seek(base + featureListOffset + featureOffset);
+            r.skip(2); // featureParamsOffset
+            const lookupCount = r.readUint16();
+            const lookups: number[] = [];
+            for (let li = 0; li < lookupCount; li++) lookups.push(r.readUint16());
+            features.push({ tag, lookups });
+            r.pos = saved;
+        }
+
+        r.seek(base + scriptListOffset);
+        const scriptCount = r.readUint16();
+        const scriptRecords: { tag: string; offset: number }[] = [];
+        for (let si = 0; si < scriptCount; si++) {
+            const tag = r.readTag();
+            const offset = r.readUint16();
+            scriptRecords.push({ tag, offset });
+        }
+        const scripts: Record<string, Record<string, number[]>> = {};
+        const wanted = new Set<number>();
+        for (const { tag, offset } of scriptRecords) {
+            if (!OTL_SCRIPT_TAGS.includes(tag)) continue;
+            const scriptBase = base + scriptListOffset + offset;
+            r.seek(scriptBase);
+            let langSysOffset = r.readUint16(); // defaultLangSysOffset
+            const langSysCount = r.readUint16();
+            if (langSysOffset === 0) {
+                if (langSysCount === 0) continue;
+                r.skip(4); // first LangSysRecord tag
+                langSysOffset = r.readUint16();
+            }
+            r.seek(scriptBase + langSysOffset);
+            r.skip(2); // lookupOrderOffset (reserved)
+            const requiredFeatureIndex = r.readUint16();
+            const featureIndexCount = r.readUint16();
+            const featureIndices: number[] = [];
+            if (requiredFeatureIndex !== 0xFFFF) featureIndices.push(requiredFeatureIndex);
+            for (let i = 0; i < featureIndexCount; i++) featureIndices.push(r.readUint16());
+
+            const allowed = (tag === 'DFLT' || tag === 'latn') ? OTL_LATIN_FEATURE_TAGS : OTL_FEATURE_TAGS;
+            const byTag: Record<string, number[]> = {};
+            for (const fi of featureIndices) {
+                const feature = features[fi];
+                if (!feature || !allowed.includes(feature.tag)) continue;
+                const list = byTag[feature.tag] ?? [];
+                for (const li of feature.lookups) if (!list.includes(li)) list.push(li);
+                byTag[feature.tag] = list;
+            }
+            if (Object.keys(byTag).length === 0) continue;
+            for (const t of Object.keys(byTag)) {
+                byTag[t].sort((a, b) => a - b);
+                for (const li of byTag[t]) wanted.add(li);
+            }
+            scripts[tag] = byTag;
+        }
+        if (Object.keys(scripts).length === 0) return null;
+
+        r.seek(base + lookupListOffset);
+        const lookupCount = r.readUint16();
+        const lookupOffsets: number[] = [];
+        for (let i = 0; i < lookupCount; i++) lookupOffsets.push(r.readUint16());
+
+        const lookups: Record<number, RawOtlLookup> = {};
+        const sets: number[][] = [];
+        const setIndex = new Map<string, number>();
+        const intern = (ranges: number[]): number => {
+            const key = ranges.join(',');
+            let idx = setIndex.get(key);
+            if (idx === undefined) { idx = sets.length; sets.push(ranges); setIndex.set(key, idx); }
+            return idx;
+        };
+        const pending = [...wanted].sort((a, b) => a - b);
+        const seen = new Set<number>();
+        for (;;) {
+            const next = pending.shift();
+            if (next === undefined) break;
+            const li = next;
+            if (seen.has(li) || li >= lookupCount) continue;
+            seen.add(li);
+            const lookupBase = base + lookupListOffset + lookupOffsets[li];
+            r.seek(lookupBase);
+            let lookupType = r.readUint16();
+            const lookupFlag = r.readUint16();
+            const subtableCount = r.readUint16();
+            const rawOffsets: number[] = [];
+            for (let si = 0; si < subtableCount; si++) rawOffsets.push(r.readUint16());
+            let subtables = rawOffsets.map(o => lookupBase + o);
+            if (lookupType === 7) {
+                const resolved: number[] = [];
+                let innerType = 0;
+                for (const abs of subtables) {
+                    r.seek(abs);
+                    r.skip(2); // substFormat (1)
+                    innerType = r.readUint16();
+                    resolved.push(abs + r.readUint32());
+                }
+                lookupType = innerType;
+                subtables = resolved;
+            }
+            if (lookupType === 5 || lookupType === 6) {
+                const rules: RawChainRule[] = [];
+                for (const stBase of subtables) readOtlContextSubst(r, stBase, lookupType === 6, rules, numGlyphs, intern);
+                if (rules.length === 0) continue;
+                lookups[li] = { t: 6, f: lookupFlag, m: rules };
+                for (const rule of rules) for (const [, nested] of rule.a) if (!seen.has(nested)) pending.push(nested);
+            } else if (lookupType === 1) {
+                const m: Record<number, number> = {};
+                for (const stBase of subtables) readOtlSingleSubst(r, stBase, m);
+                if (Object.keys(m).length > 0) lookups[li] = { t: 1, f: lookupFlag, m };
+            } else if (lookupType === 2) {
+                const m: Record<number, number[]> = {};
+                for (const stBase of subtables) readOtlMultipleSubst(r, stBase, m);
+                if (Object.keys(m).length > 0) lookups[li] = { t: 2, f: lookupFlag, m };
+            } else if (lookupType === 4) {
+                const m: Record<number, number[][]> = {};
+                for (const stBase of subtables) readOtlLigatureSubst(r, stBase, m);
+                if (Object.keys(m).length > 0) lookups[li] = { t: 4, f: lookupFlag, m };
+            }
+        }
+
+        // Keep the index lists self-consistent: a contextual lookup that was
+        // not serialised is dropped, and a feature or script left with nothing
+        // to apply goes with it.
+        const keptScripts: Record<string, Record<string, number[]>> = {};
+        for (const tag of Object.keys(scripts)) {
+            const byTag: Record<string, number[]> = {};
+            for (const feature of Object.keys(scripts[tag])) {
+                const kept = scripts[tag][feature].filter(li => lookups[li] !== undefined);
+                if (kept.length > 0) byTag[feature] = kept;
+            }
+            if (Object.keys(byTag).length > 0) keptScripts[tag] = byTag;
+        }
+        if (Object.keys(keptScripts).length === 0) return null;
+        return sets.length > 0 ? { scripts: keptScripts, lookups, sets } : { scripts: keptScripts, lookups };
+    } catch {
+        return null;
+    }
+}
+
+/** Glyph-id ranges of one class in a ClassDef table, consecutive ranges merged. */
+function readClassDefRanges(r: TTFReader, absOffset: number, wantedClass: number): [number, number][] {
+    const ranges: [number, number][] = [];
+    const push = (s: number, e: number): void => {
+        const last = ranges[ranges.length - 1];
+        if (last && last[1] + 1 === s) last[1] = e; else ranges.push([s, e]);
+    };
+    r.seek(absOffset);
+    const format = r.readUint16();
+    if (format === 1) {
+        const startGid = r.readUint16();
+        const count = r.readUint16();
+        for (let i = 0; i < count; i++) {
+            if (r.readUint16() === wantedClass) push(startGid + i, startGid + i);
+        }
+    } else if (format === 2) {
+        const rangeCount = r.readUint16();
+        for (let i = 0; i < rangeCount; i++) {
+            const start = r.readUint16();
+            const end = r.readUint16();
+            const cls = r.readUint16();
+            if (cls === wantedClass) push(start, end);
+        }
+    }
+    return ranges;
+}
+
+/** GDEF class 3 (marks) as glyph-id ranges, or `null`. Mirrors the CLI. */
+function parseGDEFMarks(r: TTFReader, tables: TableDir): { marks: [number, number][] } | null {
+    if (!tables['GDEF']) return null;
+    try {
+        const base = tables['GDEF'].offset;
+        r.seek(base);
+        r.skip(4); // version
+        const glyphClassDefOffset = r.readUint16();
+        if (glyphClassDefOffset === 0) return null;
+        const marks = readClassDefRanges(r, base + glyphClassDefOffset, 3);
+        return marks.length > 0 ? { marks } : null;
+    } catch {
+        return null;
+    }
+}
+
+function parseOtl(r: TTFReader, tables: TableDir, numGlyphs: number): RawOtl | null {
+    const gsub = parseGSUBLayout(r, tables, numGlyphs);
+    if (gsub === null) return null;
+    const gdef = parseGDEFMarks(r, tables);
+    return gdef === null ? { gsub } : { gsub, gdef };
+}
+
 // ── GPOS LookupType 4 (MarkToBase) + 6 (MarkToMark) ──────────────────
 
 // ── GPOS LookupType 2 (PairPos / kerning) ────────────────────────────
@@ -764,17 +1197,37 @@ function parseGPOS(r: TTFReader, tables: TableDir): RawMarkAnchors {
         const lookupOffsets: number[] = [];
         for (let i = 0; i < lookupCount; i++) lookupOffsets.push(r.readUint16());
 
+        // Mark classes are numbered per subtable; offset each subtable's
+        // classes by the classes seen so far (see the CLI for the reasoning).
+        let classBase = 0;
+        let m2mClassBase = 0;
+
         for (let li = 0; li < lookupCount; li++) {
-            r.seek(base + lookupListOffset + lookupOffsets[li]);
-            const lookupType = r.readUint16();
+            const lookupBase = base + lookupListOffset + lookupOffsets[li];
+            r.seek(lookupBase);
+            let lookupType = r.readUint16();
             r.skip(2);
             const subtableCount = r.readUint16();
-            const stOffsets: number[] = [];
-            for (let si = 0; si < subtableCount; si++) stOffsets.push(r.readUint16());
+            const rawOffsets: number[] = [];
+            for (let si = 0; si < subtableCount; si++) rawOffsets.push(r.readUint16());
+
+            let subtables = rawOffsets.map(o => lookupBase + o);
+            if (lookupType === 9) {
+                const resolved: number[] = [];
+                let innerType = 0;
+                for (const abs of subtables) {
+                    r.seek(abs);
+                    r.skip(2); // posFormat (1)
+                    innerType = r.readUint16();
+                    resolved.push(abs + r.readUint32());
+                }
+                lookupType = innerType;
+                subtables = resolved;
+            }
             if (lookupType !== 4 && lookupType !== 6) continue;
 
-            for (const stOff of stOffsets) {
-                const stBase = base + lookupListOffset + lookupOffsets[li] + stOff;
+            for (const stBase of subtables) {
+                const cls = lookupType === 4 ? classBase : m2mClassBase;
                 r.seek(stBase);
                 r.skip(2); // posFormat
                 const mark1CoverageOffset = r.readUint16();
@@ -812,11 +1265,12 @@ function parseGPOS(r: TTFReader, tables: TableDir): RawMarkAnchors {
 
                 if (lookupType === 4) {
                     for (const md of mark1Entries) {
-                        result.marks[md.gid] = { classIdx: md.classIdx, x: md.x, y: md.y };
+                        if (!result.marks[md.gid]) result.marks[md.gid] = [];
+                        result.marks[md.gid].push({ classIdx: cls + md.classIdx, x: md.x, y: md.y });
                     }
                     for (let bi = 0; bi < baseCount && bi < mark2Glyphs.length; bi++) {
                         const baseGid = mark2Glyphs[bi];
-                        result.bases[baseGid] = {};
+                        if (!result.bases[baseGid]) result.bases[baseGid] = {};
                         for (let mc = 0; mc < markClassCount; mc++) {
                             const anchorOff = baseRecords[bi][mc];
                             if (!anchorOff) continue;
@@ -824,16 +1278,18 @@ function parseGPOS(r: TTFReader, tables: TableDir): RawMarkAnchors {
                             r.skip(2);
                             const bx = r.readInt16();
                             const by = r.readInt16();
-                            result.bases[baseGid][mc] = { x: bx, y: by };
+                            result.bases[baseGid][cls + mc] = { x: bx, y: by };
                         }
                     }
+                    classBase += markClassCount;
                 } else {
                     for (const md of mark1Entries) {
-                        result.mark2mark.mark2Classes[md.gid] = { classIdx: md.classIdx, x: md.x, y: md.y };
+                        if (!result.mark2mark.mark2Classes[md.gid]) result.mark2mark.mark2Classes[md.gid] = [];
+                        result.mark2mark.mark2Classes[md.gid].push({ classIdx: cls + md.classIdx, x: md.x, y: md.y });
                     }
                     for (let bi = 0; bi < baseCount && bi < mark2Glyphs.length; bi++) {
                         const m1Gid = mark2Glyphs[bi];
-                        result.mark2mark.mark1Anchors[m1Gid] = {};
+                        if (!result.mark2mark.mark1Anchors[m1Gid]) result.mark2mark.mark1Anchors[m1Gid] = {};
                         for (let mc = 0; mc < markClassCount; mc++) {
                             const anchorOff = baseRecords[bi][mc];
                             if (!anchorOff) continue;
@@ -841,9 +1297,10 @@ function parseGPOS(r: TTFReader, tables: TableDir): RawMarkAnchors {
                             r.skip(2);
                             const mx = r.readInt16();
                             const my = r.readInt16();
-                            result.mark2mark.mark1Anchors[m1Gid][mc] = { x: mx, y: my };
+                            result.mark2mark.mark1Anchors[m1Gid][cls + mc] = { x: mx, y: my };
                         }
                     }
+                    m2mClassBase += markClassCount;
                 }
             }
         }
@@ -1059,6 +1516,7 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
     const markAnchors = parseGPOS(r, tables);
     const features = parseGSUBFeatures(r, tables);
     const kern = parseGPOSKerning(r, tables);
+    const otl = parseOtl(r, tables, numGlyphs);
     const name = parseName(r, tables);
 
     return {
@@ -1066,7 +1524,7 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
             unitsPerEm, ascent, descent, capHeight, stemV,
             bbox: [xMin, yMin, xMax, yMax], defaultWidth, numGlyphs,
         },
-        cmap, widths, gsub, ligatures, features, kern, markAnchors, name,
+        cmap, widths, gsub, ligatures, features, kern, markAnchors, otl, name,
     };
 }
 
@@ -1120,7 +1578,7 @@ function sanitizeFontName(name: string): string {
 }
 
 function generateEsmModule(fontName: string, parsed: RawParsed, ttfBase64: string): string {
-    const { metrics, cmap, widths, gsub, ligatures, features, kern, markAnchors } = parsed;
+    const { metrics, cmap, widths, gsub, ligatures, features, kern, markAnchors, otl } = parsed;
 
     const cmapEntries = Object.entries(cmap).map(([k, v]) => `${k}:${v}`).join(',');
     const defaultW = metrics.defaultWidth;
@@ -1147,8 +1605,9 @@ function generateEsmModule(fontName: string, parsed: RawParsed, ttfBase64: strin
     const ligaturesEntries = Object.entries(ligatures || {})
         .map(([gid, ligs]) => `${gid}:[${ligs.map((lig) => `[${lig.join(',')}]`).join(',')}]`)
         .join(',');
+    const triples = (list: MarkAnchorObj[]): string => list.map(a => `${a.classIdx},${a.x},${a.y}`).join(',');
     const marksEntries = Object.entries(markAnchors.marks || {})
-        .map(([gid, a]) => `${gid}:[${a.classIdx},${a.x},${a.y}]`).join(',');
+        .map(([gid, a]) => `${gid}:[${triples(a)}]`).join(',');
     const basesEntries = Object.entries(markAnchors.bases || {})
         .map(([gid, anchors]) => `${gid}:{${Object.entries(anchors).map(([mc, a]) => `${mc}:[${a.x},${a.y}]`).join(',')}}`)
         .join(',');
@@ -1157,7 +1616,33 @@ function generateEsmModule(fontName: string, parsed: RawParsed, ttfBase64: strin
         .map(([gid, anchors]) => `${gid}:{${Object.entries(anchors).map(([mc, a]) => `${mc}:[${a.x},${a.y}]`).join(',')}}`)
         .join(',');
     const m2mMark2Entries = Object.entries(m2m.mark2Classes)
-        .map(([gid, a]) => `${gid}:[${a.classIdx},${a.x},${a.y}]`).join(',');
+        .map(([gid, a]) => `${gid}:[${triples(a)}]`).join(',');
+
+    // Compact OpenType Layout (v1.8.0) — must serialise exactly as the CLI.
+    const numList = (a: readonly number[]): string => `[${a.join(',')}]`;
+    const otlLiteral = otl === null ? 'null' : (() => {
+        const scripts = Object.entries(otl.gsub.scripts)
+            .map(([s, byTag]) => `${JSON.stringify(s)}:{${Object.entries(byTag)
+                .map(([t, idx]) => `${JSON.stringify(t)}:${numList(idx)}`).join(',')}}`)
+            .join(',');
+        const lookups = Object.entries(otl.gsub.lookups)
+            .map(([li, lk]) => {
+                if (lk.t === 6) {
+                    const rules = lk.m.map(rule => `{b:${numList(rule.b)},i:${numList(rule.i)},l:${numList(rule.l)},a:[${rule.a.map(numList).join(',')}]}`).join(',');
+                    return `${li}:{t:6,f:${lk.f},m:[${rules}]}`;
+                }
+                const m = lk.t === 1
+                    ? Object.entries(lk.m).map(([g, v]) => `${g}:${v}`).join(',')
+                    : lk.t === 2
+                        ? Object.entries(lk.m).map(([g, v]) => `${g}:${numList(v)}`).join(',')
+                        : Object.entries(lk.m).map(([g, v]) => `${g}:[${v.map(numList).join(',')}]`).join(',');
+                return `${li}:{t:${lk.t},f:${lk.f},m:{${m}}}`;
+            })
+            .join(',');
+        const sets = otl.gsub.sets ? `,sets:[${otl.gsub.sets.map(numList).join(',')}]` : '';
+        const gdef = otl.gdef ? `,gdef:{marks:[${otl.gdef.marks.map(numList).join(',')}]}` : '';
+        return `{gsub:{scripts:{${scripts}},lookups:{${lookups}}${sets}}${gdef}}`;
+    })();
     const wArray = buildPDFWidthArray(widths, metrics.numGlyphs, defaultW);
 
     return `/**
@@ -1206,21 +1691,37 @@ export const features = ${features ? `{${featuresEntries}}` : 'null'};
 // 71 094 pairs and 594 KB, paid at parse time by every consumer.
 export const kern = ${kernLiteral};
 
-// GPOS MarkToBase anchors — used by the Thai mini-shaper for mark positioning.
-// marks[gid] = [classIdx, anchorX, anchorY]  (design units)
-// bases[gid] = { classIdx: [anchorX, anchorY] }
+// GPOS MarkToBase anchors — mark positioning for every shaped script.
+// marks[gid] = [classIdx, anchorX, anchorY, …]  (design units; one triple per
+//              subtable that covers the mark, in lookup order — v1.8.0)
+// bases[gid] = { classIdx: [anchorX, anchorY] }  (classes are unique across subtables)
 export const markAnchors = {
   marks: {${marksEntries}},
   bases: {${basesEntries}}
 };
 
-// GPOS MarkToMark anchors — used for Thai vowel+tone stacking.
+// GPOS MarkToMark anchors — mark stacking (Thai tone over vowel, Yoruba tone over dot).
 // mark1Anchors[mark1Gid] = { classIdx: [anchorX, anchorY] }  (base mark, e.g. above vowel)
-// mark2Classes[mark2Gid] = [classIdx, anchorX, anchorY]       (combining mark, e.g. tone)
+// mark2Classes[mark2Gid] = [classIdx, anchorX, anchorY, …]    (combining mark, e.g. tone)
 export const mark2mark = {
   mark1Anchors: {${m2mMark1Entries}},
   mark2Classes: {${m2mMark2Entries}}
 };
+
+// OpenType Layout (v1.8.0) — GSUB lookups kept per script and feature, in
+// application order, for the Indic engine and Latin combining marks.
+//   gsub.scripts[script][feature] = [lookupIndex, …]
+//   gsub.lookups[index] = { t, f, m }   t = 1 single { from: to }
+//                                        t = 2 multiple { from: [gid, …] }
+//                                        t = 4 ligature { first: [[result, c2, …], …] }
+//                                        t = 6 context [{ b, i, l, a }, …]: backtrack,
+//                                            input, lookahead as indices into gsub.sets,
+//                                            a = [[inputIndex, lookupIndex], …]
+//                                        f = lookupFlag (bit 3 = IgnoreMarks)
+//   gsub.sets[index] = [start, end, …]  glyph-range sets shared by the contextual rules
+//   gdef.marks = [[start, end], …]       GDEF class 3 glyph ranges
+// null when the font declares none of the wanted script/feature pairs.
+export const otl = ${otlLiteral};
 
 // PDF /W array string (pre-formatted for CIDFont object)
 export const pdfWidthArray = '${wArray}';
@@ -1245,8 +1746,8 @@ function generateCjsModule(fontName: string, parsed: RawParsed, ttfBase64: strin
     const esm = generateEsmModule(fontName, parsed, ttfBase64);
     const names = [
         'metrics', 'fontName', 'cmap', 'defaultWidth', 'widths', 'gsub',
-        'ligatures', 'markAnchors', 'mark2mark', 'pdfWidthArray', 'ttfBase64',
-        'getGlyphWidth', 'getGlyphId',
+        'ligatures', 'features', 'kern', 'markAnchors', 'mark2mark', 'otl',
+        'pdfWidthArray', 'ttfBase64', 'getGlyphWidth', 'getGlyphId',
     ];
     const body = esm
         .replace(/export const /g, 'const ')
@@ -1272,9 +1773,10 @@ export function parseFontData(buffer: Uint8Array, opts: ParseFontDataOptions = {
     const ttfBase64 = encodeBase64(buffer);
 
     // Convert object-anchor form → array form (runtime module shape).
-    const marks: Record<number, [number, number, number]> = {};
+    const flatten = (list: MarkAnchorObj[]): number[] => list.flatMap(a => [a.classIdx, a.x, a.y]);
+    const marks: Record<number, number[]> = {};
     for (const [gid, a] of Object.entries(parsed.markAnchors.marks)) {
-        marks[gid as unknown as number] = [a.classIdx, a.x, a.y];
+        marks[gid as unknown as number] = flatten(a);
     }
     const bases: Record<number, Record<number, [number, number]>> = {};
     for (const [gid, anchors] of Object.entries(parsed.markAnchors.bases)) {
@@ -1288,9 +1790,9 @@ export function parseFontData(buffer: Uint8Array, opts: ParseFontDataOptions = {
         for (const [mc, a] of Object.entries(anchors)) inner[mc as unknown as number] = [a.x, a.y];
         mark1Anchors[gid as unknown as number] = inner;
     }
-    const mark2Classes: Record<number, [number, number, number]> = {};
+    const mark2Classes: Record<number, number[]> = {};
     for (const [gid, a] of Object.entries(parsed.markAnchors.mark2mark.mark2Classes)) {
-        mark2Classes[gid as unknown as number] = [a.classIdx, a.x, a.y];
+        mark2Classes[gid as unknown as number] = flatten(a);
     }
 
     // Filter widths to non-default only (matches module runtime shape).
@@ -1311,6 +1813,7 @@ export function parseFontData(buffer: Uint8Array, opts: ParseFontDataOptions = {
         kern: parsed.kern,
         markAnchors: { marks, bases },
         mark2mark: { mark1Anchors, mark2Classes },
+        otl: parsed.otl,
         pdfWidthArray: buildPDFWidthArray(parsed.widths, parsed.metrics.numGlyphs, parsed.metrics.defaultWidth),
         ttfBase64,
     };
