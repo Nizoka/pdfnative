@@ -272,7 +272,7 @@ describe('dependency review and audit', () => {
 describe('fonts/SOURCES.json', () => {
     const manifest = JSON.parse(readText('fonts', 'SOURCES.json')) as {
         upstream: { repo: string; commit: string; resolvedOn: string };
-        fonts: Array<{ local: string; sha256: string; bytes: number; dir?: string; remote?: string; origin?: string; commit?: string }>;
+        fonts: Array<{ local: string; sha256: string; bytes: number; dir?: string; remote?: string; origin?: string; commit?: string; repo?: string; tag?: string; asset?: string; path?: string }>;
         derived: Array<{ local: string; from: string; tool: string; sha256: string; bytes: number }>;
     };
     const listed = new Set([...manifest.fonts, ...manifest.derived].map((f) => f.local));
@@ -284,7 +284,18 @@ describe('fonts/SOURCES.json', () => {
         for (const f of manifest.fonts) {
             expect(f.sha256, f.local).toMatch(/^[0-9a-f]{64}$/);
             expect(f.bytes, f.local).toBeGreaterThan(0);
-            if (f.origin === 'tree') { expect(f.dir).toBeUndefined(); } else { expect(f.dir, f.local).toBeTruthy(); expect(f.remote, f.local).toBeTruthy(); }
+            if (f.origin === 'release') {
+                // A hinted static instance from a notofonts release archive: repository, tag, asset and entry path.
+                expect(f.repo, f.local).toMatch(/^notofonts\/[a-z]+$/);
+                expect(f.tag, f.local).toMatch(/^NotoSans[A-Za-z]+-v\d+\.\d{3}$/);
+                expect(f.asset, f.local).toBe(`${f.tag}.zip`);
+                expect(f.path, f.local).toMatch(new RegExp(`^NotoSans[A-Za-z]+/hinted/ttf/${f.local.replace('.', '\\.')}$`));
+                expect(f.dir).toBeUndefined();
+            } else {
+                expect(f.origin, f.local).toBeUndefined();
+                expect(f.dir, f.local).toBeTruthy();
+                expect(f.remote, f.local).toBeTruthy();
+            }
             if (f.commit !== undefined) expect(f.commit, f.local).toMatch(/^[0-9a-f]{40}$/);
         }
     });
@@ -302,7 +313,7 @@ describe('fonts/SOURCES.json', () => {
         }
     });
 
-    it('records the five derived Latin subsets and commits them with the static instances', () => {
+    it('records the five derived Latin subsets as the only committed TTFs, and the four static instances as release assets', () => {
         expect(manifest.derived.map((d) => d.local).sort()).toEqual([
             'NotoSans-Cyrillic.ttf', 'NotoSans-Greek.ttf', 'NotoSans-Polish.ttf', 'NotoSans-Turkish.ttf', 'NotoSans-Vietnamese.ttf',
         ]);
@@ -310,11 +321,14 @@ describe('fonts/SOURCES.json', () => {
             expect(d.from).toBe('NotoSans-VF.ttf');
             expect(d.tool).toContain('pyftsubset');
         }
+        expect(manifest.fonts.filter((f) => f.origin === 'release').map((f) => f.local).sort()).toEqual([
+            'NotoSansArabic-Regular.ttf', 'NotoSansArmenian-Regular.ttf', 'NotoSansGeorgian-Regular.ttf', 'NotoSansHebrew-Regular.ttf',
+        ]);
         const gitignore = readText('.gitignore');
         expect(gitignore).toMatch(/^fonts\/ttf\/\*$/m);
-        const committed = [...manifest.derived, ...manifest.fonts.filter((f) => f.origin === 'tree')].map((f) => f.local);
-        for (const name of committed) {
-            expect(gitignore, name).toContain(`!fonts/ttf/${name}`);
+        const exceptions = [...gitignore.matchAll(/^!fonts\/ttf\/(\S+)$/gm)].map((m) => m[1]).sort();
+        expect(exceptions).toEqual(manifest.derived.map((d) => d.local).sort());
+        for (const name of exceptions) {
             expect(existsSync(join(ROOT, 'fonts', 'ttf', name)), `${name} is not in the tree`).toBe(true);
         }
     });

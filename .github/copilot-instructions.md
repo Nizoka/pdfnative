@@ -90,7 +90,7 @@ npm run docs:all         # docs:api + docs:guides + docs:llms
 - Generated files are regenerated, never hand-edited: `fonts/*-data.js` + `.d.ts`, `src/shaping/use-data.ts`, `scripts/data/*.txt` (vendored UCD), `docs/assets/api.json`,
   `docs/guides/*.html`, `docs/llms*.txt` / `llms-index.json`, `tests/regression/baselines/samples.sha256.json` (`verify:samples --update`, only with a declared rebaseline),
   `dist/`, `coverage/`, `test-output/`, `package-lock.json`. Regenerate commands: AGENTS.md §Generated files.
-- All new code must have tests. Coverage ≥ 88 % statements is enforced by CI (currently 91.4 % statements); the thresholds (88/80/85/90) live once in `vitest.config.ts`.
+- All new code must have tests. Coverage ≥ 88 % statements is enforced by CI (currently 91.5 % statements); the thresholds (88/80/85/90) live once in `vitest.config.ts`.
 
 ## Quality Standards
 

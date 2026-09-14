@@ -10,18 +10,14 @@ Thumbs.db
 
 # Raw TTF source fonts (large binaries, downloaded by `npm run fonts:download`
 # at the commit and SHA-256 pinned in fonts/SOURCES.json). Only the contents
-# are ignored, so the small files no upstream URL reproduces can be committed:
-# the five pyftsubset Latin subsets and four static Regular instances.
+# are ignored, so the five files no upstream URL reproduces can be committed:
+# the pyftsubset Latin subsets (static instances come from notofonts release archives).
 fonts/ttf/*
 !fonts/ttf/NotoSans-Cyrillic.ttf
 !fonts/ttf/NotoSans-Greek.ttf
 !fonts/ttf/NotoSans-Polish.ttf
 !fonts/ttf/NotoSans-Turkish.ttf
 !fonts/ttf/NotoSans-Vietnamese.ttf
-!fonts/ttf/NotoSansArabic-Regular.ttf
-!fonts/ttf/NotoSansArmenian-Regular.ttf
-!fonts/ttf/NotoSansGeorgian-Regular.ttf
-!fonts/ttf/NotoSansHebrew-Regular.ttf
 
 # Generated sample PDFs for visual inspection
 test-output/

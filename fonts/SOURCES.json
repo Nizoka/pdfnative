@@ -164,31 +164,47 @@
     },
     {
       "local": "NotoSansArabic-Regular.ttf",
-      "origin": "tree",
+      "origin": "release",
+      "repo": "notofonts/arabic",
+      "tag": "NotoSansArabic-v2.013",
+      "asset": "NotoSansArabic-v2.013.zip",
+      "path": "NotoSansArabic/hinted/ttf/NotoSansArabic-Regular.ttf",
       "sha256": "bdff3e5659d67e67def05b33f749683b9376ae819d65d3dd62ac4640b3aaef48",
       "bytes": 234892,
-      "note": "Static Regular instance of Noto Sans Arabic (OFL-1.1) that predates this manifest; no revision of google/fonts serves these bytes (the repository only carries the [wdth,wght] variable font, which is several times larger). Committed to fonts/ttf/ so the module stays reproducible."
+      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed."
     },
     {
       "local": "NotoSansArmenian-Regular.ttf",
-      "origin": "tree",
+      "origin": "release",
+      "repo": "notofonts/armenian",
+      "tag": "NotoSansArmenian-v2.008",
+      "asset": "NotoSansArmenian-v2.008.zip",
+      "path": "NotoSansArmenian/hinted/ttf/NotoSansArmenian-Regular.ttf",
       "sha256": "720df88c332417a235b4d6209d14ec2e2bf4bfe2a954b7453d869ea593bfce1e",
       "bytes": 30752,
-      "note": "Static Regular instance of Noto Sans Armenian (OFL-1.1) that predates this manifest; no revision of google/fonts serves these bytes (the repository only carries the [wdth,wght] variable font, which is several times larger). Committed to fonts/ttf/ so the module stays reproducible."
+      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed."
     },
     {
       "local": "NotoSansGeorgian-Regular.ttf",
-      "origin": "tree",
+      "origin": "release",
+      "repo": "notofonts/georgian",
+      "tag": "NotoSansGeorgian-v2.005",
+      "asset": "NotoSansGeorgian-v2.005.zip",
+      "path": "NotoSansGeorgian/hinted/ttf/NotoSansGeorgian-Regular.ttf",
       "sha256": "d3e33254b09e7bb2c5cf0f17e554b80462056c5a107097f258d495168c3a9346",
       "bytes": 52888,
-      "note": "Static Regular instance of Noto Sans Georgian (OFL-1.1) that predates this manifest; no revision of google/fonts serves these bytes (the repository only carries the [wdth,wght] variable font, which is several times larger). Committed to fonts/ttf/ so the module stays reproducible."
+      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed."
     },
     {
       "local": "NotoSansHebrew-Regular.ttf",
-      "origin": "tree",
+      "origin": "release",
+      "repo": "notofonts/hebrew",
+      "tag": "NotoSansHebrew-v3.001",
+      "asset": "NotoSansHebrew-v3.001.zip",
+      "path": "NotoSansHebrew/hinted/ttf/NotoSansHebrew-Regular.ttf",
       "sha256": "cdefaf8efd47045f6820928eba84db5bed7557539328952b5f828315485e02ee",
       "bytes": 26860,
-      "note": "Static Regular instance of Noto Sans Hebrew (OFL-1.1) that predates this manifest; no revision of google/fonts serves these bytes (the repository only carries the [wdth,wght] variable font, which is several times larger). Committed to fonts/ttf/ so the module stays reproducible."
+      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed."
     }
   ],
   "derived": [

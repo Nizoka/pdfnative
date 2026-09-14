@@ -44,7 +44,7 @@ import { readFileSync, readdirSync, existsSync, mkdtempSync, rmSync } from 'node
 import { join, resolve, dirname, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { expectedHashes, isTreeFont, readManifest, sha256Of } from './download-fonts.js';
+import { expectedHashes, readManifest, sha256Of } from './download-fonts.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
@@ -125,7 +125,9 @@ function main(): number {
 
     const manifest = readManifest();
     const expected = expectedHashes(manifest);
-    const downloadable = manifest.fonts.filter(f => !isTreeFont(f)).map(f => f.local);
+    // Every `fonts[]` entry is downloadable (google/fonts or a notofonts release);
+    // only the derived subsets live in the tree, so they cannot prove a download ran.
+    const downloadable = manifest.fonts.map(f => f.local);
     if (!downloadable.some(f => existsSync(join(TTF_DIR, f)))) {
         printMissingFontsHelp();
         return 0;

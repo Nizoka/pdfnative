@@ -98,9 +98,9 @@ function sourceFontsPresent(): boolean {
     const ttf = join(REPO_ROOT, 'fonts', 'ttf');
     const manifest = join(REPO_ROOT, 'fonts', 'SOURCES.json');
     if (!existsSync(ttf) || !existsSync(manifest)) return false;
-    const { fonts } = JSON.parse(readFileSync(manifest, 'utf8')) as { fonts: Array<{ local: string; origin?: string }> };
+    const { fonts } = JSON.parse(readFileSync(manifest, 'utf8')) as { fonts: Array<{ local: string }> };
     const present = new Set(readdirSync(ttf));
-    return fonts.some(f => f.origin !== 'tree' && present.has(f.local));
+    return fonts.some(f => present.has(f.local));
 }
 
 // ── Notes (figures shown next to PASS) ──────────────────────────────

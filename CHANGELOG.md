@@ -27,7 +27,7 @@ byte-identically except where the previous output was wrong (see Fixed),
 and four calls behave differently by design — `setDeflateImpl()` rejects
 a raw-DEFLATE compressor, `parseColor()` accepts CMYK input,
 `extractText()` honours `/ActualText`, `{date}` follows `creationDate` —
-see the release note's Upgrade section. 3717+ tests across 159 files; veraPDF-validated; a consumer
+see the release note's Upgrade section. 3748+ tests across 159 files; veraPDF-validated; a consumer
 importing one helper bundles that helper alone.
 
 ### Added
@@ -210,8 +210,10 @@ importing one helper bundles that helper alone.
   `dependency-review.yml` and weekly `audit.yml`; a `v*` tag ruleset.
 - **chore(fonts): pinned sources** — `fonts/SOURCES.json` (google/fonts
   commit + SHA-256 per TTF), verified by `fonts:download` and
-  `verify:fonts`; the nine TTFs no upstream revision serves are committed
-  under `fonts/ttf/`, outside the tarball.
+  `verify:fonts`; the four hinted static instances are pinned to their
+  notofonts release archives and extracted by the script; only the five
+  Latin subsets no upstream file produces are committed under
+  `fonts/ttf/`, outside the tarball.
 - **chore(repo):** `.gitattributes` `* text=auto eol=lf` and
   `linguist-generated` on the generated bulk; the `eol-lf` rule warns on
   the 315 CRLF-stored files until the renormalisation commit; opt-in git

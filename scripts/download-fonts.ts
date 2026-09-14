@@ -11,10 +11,14 @@
  *     every byte is SHA-256-checked before the file is written. A mismatch
  *     is an error, not a warning: a silently different source font would
  *     make `npm run verify:fonts` fail for a reason nobody could see.
- *   - `fonts[]` entries with `"origin": "tree"` and every `derived[]` entry
- *     are committed to fonts/ttf/ (small static instances and the five
- *     pyftsubset Latin subsets that no upstream URL reproduces); they are
- *     only verified here, never downloaded.
+ *   - `fonts[]` entries with `"origin": "release"` are the hinted static
+ *     instances the notofonts project publishes as release archives
+ *     (google/fonts carries only the variable font of those families): the
+ *     pinned asset is downloaded, the one entry `path` names is extracted
+ *     with node:zlib, hash-checked and written.
+ *   - `derived[]` entries are committed to fonts/ttf/ (the five pyftsubset
+ *     Latin subsets that no upstream URL reproduces); they are only verified
+ *     here, never downloaded.
  *
  * Usage:
  *   npm run fonts:download                       # fetch what is missing, verify the rest
@@ -37,6 +41,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { inflateRawSync } from 'node:zlib';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = join(REPO_ROOT, 'fonts', 'SOURCES.json');
@@ -59,12 +64,21 @@ export interface UpstreamFont {
     readonly note?: string;
 }
 
-export interface TreeFont {
+/** A static instance served inside a GitHub release archive of the notofonts project. */
+export interface ReleaseFont {
     readonly local: string;
-    readonly origin: 'tree';
+    readonly origin: 'release';
+    /** GitHub repository, e.g. `notofonts/arabic`. */
+    readonly repo: string;
+    /** Release tag, e.g. `NotoSansArabic-v2.013`. */
+    readonly tag: string;
+    /** Asset file name attached to that release. */
+    readonly asset: string;
+    /** Entry inside the archive, e.g. `NotoSansArabic/hinted/ttf/NotoSansArabic-Regular.ttf`. */
+    readonly path: string;
     readonly sha256: string;
     readonly bytes: number;
-    readonly note: string;
+    readonly note?: string;
 }
 
 export interface DerivedFont {
@@ -83,12 +97,12 @@ export interface SourcesManifest {
         readonly resolvedOn: string;
         readonly note?: string;
     };
-    readonly fonts: readonly (UpstreamFont | TreeFont)[];
+    readonly fonts: readonly (UpstreamFont | ReleaseFont)[];
     readonly derived: readonly DerivedFont[];
 }
 
-export function isTreeFont(f: UpstreamFont | TreeFont): f is TreeFont {
-    return (f as TreeFont).origin === 'tree';
+export function isReleaseFont(f: UpstreamFont | ReleaseFont): f is ReleaseFont {
+    return (f as ReleaseFont).origin === 'release';
 }
 
 export function readManifest(path: string = MANIFEST_PATH): SourcesManifest {
@@ -109,6 +123,57 @@ export function expectedHashes(manifest: SourcesManifest): Map<string, { sha256:
 function upstreamUrl(manifest: SourcesManifest, font: UpstreamFont): string {
     const commit = font.commit ?? manifest.upstream.commit;
     return `${RAW_BASE}/${manifest.upstream.repo}/${commit}/ofl/${font.dir}/${font.remote}`;
+}
+
+export function releaseUrl(font: ReleaseFont): string {
+    return `https://github.com/${font.repo}/releases/download/${font.tag}/${font.asset}`;
+}
+
+// ── Minimal ZIP reader (stored and deflate entries, no zip64) ───────
+
+const EOCD_SIG = 0x06054b50;
+const CENTRAL_SIG = 0x02014b50;
+const LOCAL_SIG = 0x04034b50;
+
+/**
+ * The bytes of one entry of a ZIP archive, located through the central
+ * directory (APPNOTE.TXT §4.3); `null` when the archive has no such entry.
+ * Throws on a structure the reader does not handle.
+ */
+export function extractZipEntry(zip: Uint8Array, entryPath: string): Uint8Array | null {
+    const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+    let eocd = -1;
+    for (let i = zip.length - 22; i >= Math.max(0, zip.length - 22 - 0xFFFF); i--) {
+        if (view.getUint32(i, true) === EOCD_SIG) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('not a ZIP archive (no end-of-central-directory record)');
+    const count = view.getUint16(eocd + 10, true);
+    let p = view.getUint32(eocd + 16, true);
+    const decoder = new TextDecoder();
+    for (let k = 0; k < count; k++) {
+        if (view.getUint32(p, true) !== CENTRAL_SIG) throw new Error('corrupt central directory');
+        const method = view.getUint16(p + 10, true);
+        const compressed = view.getUint32(p + 20, true);
+        const uncompressed = view.getUint32(p + 24, true);
+        const nameLen = view.getUint16(p + 28, true);
+        const extraLen = view.getUint16(p + 30, true);
+        const commentLen = view.getUint16(p + 32, true);
+        const localOffset = view.getUint32(p + 42, true);
+        const name = decoder.decode(zip.subarray(p + 46, p + 46 + nameLen));
+        p += 46 + nameLen + extraLen + commentLen;
+        if (name !== entryPath) continue;
+        if (view.getUint32(localOffset, true) !== LOCAL_SIG) throw new Error(`corrupt local header for ${name}`);
+        const start = localOffset + 30 + view.getUint16(localOffset + 26, true) + view.getUint16(localOffset + 28, true);
+        const raw = zip.subarray(start, start + compressed);
+        if (method === 0) return raw;
+        if (method === 8) {
+            const data = new Uint8Array(inflateRawSync(raw));
+            if (data.length !== uncompressed) throw new Error(`${name}: inflated ${data.length} B, expected ${uncompressed}`);
+            return data;
+        }
+        throw new Error(`${name}: unsupported compression method ${method}`);
+    }
+    return null;
 }
 
 // ── Reporting ───────────────────────────────────────────────────────
@@ -147,6 +212,29 @@ async function fetchUpstream(manifest: SourcesManifest, font: UpstreamFont, dest
     return null;
 }
 
+async function fetchRelease(font: ReleaseFont, dest: string): Promise<string | null> {
+    const url = releaseUrl(font);
+    const res = await fetch(url);
+    if (!res.ok) return `HTTP ${res.status} for ${url}`;
+    const zip = new Uint8Array(await res.arrayBuffer());
+    let data: Uint8Array | null;
+    try {
+        data = extractZipEntry(zip, font.path);
+    } catch (e) {
+        return `${url}: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    if (data === null) return `${font.path} is not in ${url}`;
+    const actual = sha256Of(data);
+    if (actual !== font.sha256) {
+        return `extracted bytes differ from fonts/SOURCES.json — not written\n` +
+            `         expected ${font.sha256} (${font.bytes} B)\n` +
+            `         actual   ${actual} (${data.length} B)\n` +
+            `         ${url} :: ${font.path}`;
+    }
+    writeFileSync(dest, data);
+    return null;
+}
+
 async function syncFonts(manifest: SourcesManifest, ttfDir: string, force: boolean): Promise<Tally> {
     const tally: Tally = { downloaded: 0, verified: 0, failed: 0 };
     mkdirSync(ttfDir, { recursive: true });
@@ -155,16 +243,6 @@ async function syncFonts(manifest: SourcesManifest, ttfDir: string, force: boole
 
     for (const font of manifest.fonts) {
         const dest = join(ttfDir, font.local);
-        if (isTreeFont(font)) {
-            if (!existsSync(dest)) {
-                err(`  FAIL ${font.local}: committed to the tree but missing — git checkout -- fonts/ttf/${font.local}`);
-                tally.failed++;
-                continue;
-            }
-            const problem = checkOnDisk(dest, font);
-            if (problem) { err(`  FAIL ${font.local}: ${problem}`); tally.failed++; } else { out(`  OK   ${font.local} (tree, ${kb(font.bytes)})`); tally.verified++; }
-            continue;
-        }
         if (!force && existsSync(dest)) {
             const problem = checkOnDisk(dest, font);
             if (problem) {
@@ -176,8 +254,9 @@ async function syncFonts(manifest: SourcesManifest, ttfDir: string, force: boole
             }
             continue;
         }
-        const problem = await fetchUpstream(manifest, font, dest);
-        if (problem) { err(`  FAIL ${font.local}: ${problem}`); tally.failed++; } else { out(`  GET  ${font.local} (${kb(font.bytes)})`); tally.downloaded++; }
+        const problem = isReleaseFont(font) ? await fetchRelease(font, dest) : await fetchUpstream(manifest, font, dest);
+        const from = isReleaseFont(font) ? `${font.repo} ${font.tag}` : 'google/fonts';
+        if (problem) { err(`  FAIL ${font.local}: ${problem}`); tally.failed++; } else { out(`  GET  ${font.local} (${kb(font.bytes)}, ${from})`); tally.downloaded++; }
     }
 
     out('');

@@ -38,7 +38,7 @@ scripts/
 ## Current State (maintain these thresholds)
 - Test and test-file counts live in `docs/assets/ecosystem.json` (`declared.tests`, `derived.testFiles`; currently 159 test files + 1 benchmark file) and are enforced by `npm run verify:docs`
 - Sample PDFs: `derived.samplePdfs` in the same manifest (currently 292), byte-pinned by `tests/regression/baselines/samples.sha256.json`
-- Statements: ≥ 88 % enforced by CI (currently ≈ 91.4 % statements)
+- Statements: ≥ 88 % enforced by CI (currently ≈ 91.5 % statements)
 - Branches: ~88% (threshold: 80%)
 - Functions: ~98% (threshold: 85%)
 - Lines: 90% threshold
@@ -59,7 +59,7 @@ scripts/
 - **Multi-font**: test font switching at script boundaries, continuation bias behavior
 
 ## Coverage Targets
-- Statements: ≥ 88 % enforced by CI (currently ≈ 91.4 % statements; full CI thresholds 88/80/85/90 in `vitest.config.ts`)
+- Statements: ≥ 88 % enforced by CI (currently ≈ 91.5 % statements; full CI thresholds 88/80/85/90 in `vitest.config.ts`)
 - Core modules (`src/core/`): >95% (currently >99%)
 - Font modules (`src/fonts/`): >90% (currently >99%)
 - Shaping modules (`src/shaping/`): >90% (currently >95%)
