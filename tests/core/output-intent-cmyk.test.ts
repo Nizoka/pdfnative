@@ -15,6 +15,8 @@ import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 /** Minimal fake ICC: a 128-byte header with class and data space set. */
 function fakeIcc(space: string, deviceClass = 'prtr'): Uint8Array {
     const icc = new Uint8Array(200);
+    icc[3] = 200; // size field (bytes 0-3, big-endian)
+    for (let i = 0; i < 4; i++) icc[36 + i] = 'acsp'.charCodeAt(i);
     for (let i = 0; i < 4; i++) {
         icc[12 + i] = deviceClass.charCodeAt(i);
         icc[16 + i] = space.charCodeAt(i);
@@ -44,6 +46,27 @@ describe('resolveOutputIntent', () => {
     it('rejects a truncated profile and an unsupported space', () => {
         expect(() => resolveOutputIntent({ iccProfile: new Uint8Array(40) })).toThrow(/too short/);
         expect(() => resolveOutputIntent({ iccProfile: fakeIcc('XYZ ') })).toThrow(/RGB, CMYK or Gray/);
+    });
+
+    it('A-004: rejects a buffer without the acsp signature, and a size field beyond the buffer', () => {
+        // A 200-byte buffer that merely spells CMYK at byte 16 was accepted until 1.8.0.
+        const noSignature = fakeIcc('CMYK');
+        noSignature.fill(0, 36, 40);
+        expect(() => resolveOutputIntent({ iccProfile: noSignature })).toThrow(/acsp/);
+
+        const truncated = fakeIcc('CMYK');
+        truncated[0] = 0; truncated[1] = 0; truncated[2] = 0x10; truncated[3] = 0; // declares 4096 bytes
+        expect(() => resolveOutputIntent({ iccProfile: truncated })).toThrow(/declares 4096 bytes but 200 were supplied/);
+
+        const tooSmall = fakeIcc('CMYK');
+        tooSmall[3] = 64; // declares 64 bytes, under the 128-byte header
+        expect(() => resolveOutputIntent({ iccProfile: tooSmall })).toThrow(/truncated or corrupt/);
+    });
+
+    it('A-004: accepts a profile whose size field is smaller than the buffer (trailing padding)', () => {
+        const padded = fakeIcc('CMYK');
+        padded[3] = 160;
+        expect(resolveOutputIntent({ iccProfile: padded })).toMatchObject({ space: 'cmyk', components: 4 });
     });
 });
 

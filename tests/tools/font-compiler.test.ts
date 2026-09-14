@@ -168,3 +168,110 @@ describe('parseFontData / compileFontData from committed subset (#60)', () => {
         expect(src).not.toContain('module.exports');
     });
 });
+
+// ── B-007 — GSUB SingleSubst parser locked on a synthetic font ────────
+//
+// The 1.8.0 fix (single substitutions read from the wrong offset, extension
+// lookups missed, discretionary features merged) had no parser-level lock:
+// the only guard was `verify:fonts`, which skips when fonts/ttf is absent.
+// This font is built in memory — eight glyphs, one cmap group, and a GSUB
+// with three lookups reached through `locl` (default) and `smcp`
+// (discretionary): a format-1 delta, a LookupType 7 extension wrapping a
+// format-2 list, and a format-2 list only a discretionary feature wants.
+
+class Sfnt {
+    private readonly bytes: number[] = [];
+    get length(): number { return this.bytes.length; }
+    u8(v: number): this { this.bytes.push(v & 0xFF); return this; }
+    u16(v: number): this { return this.u8(v >> 8).u8(v); }
+    i16(v: number): this { return this.u16(v < 0 ? v + 0x10000 : v); }
+    u32(v: number): this { return this.u16(v >>> 16).u16(v & 0xFFFF); }
+    tag(s: string): this { for (let i = 0; i < 4; i++) this.u8(s.charCodeAt(i)); return this; }
+    zeros(n: number): this { for (let i = 0; i < n; i++) this.u8(0); return this; }
+    toUint8Array(): Uint8Array { return new Uint8Array(this.bytes); }
+}
+
+function sfnt(tables: Record<string, Uint8Array>): Uint8Array {
+    const tags = Object.keys(tables);
+    const dir = 12 + tags.length * 16;
+    let size = dir;
+    for (const t of tags) size += (tables[t].length + 3) & ~3;
+    const out = new Uint8Array(size);
+    const v = new DataView(out.buffer);
+    v.setUint32(0, 0x00010000);
+    v.setUint16(4, tags.length);
+    let off = dir;
+    tags.forEach((tag, i) => {
+        for (let c = 0; c < 4; c++) out[12 + i * 16 + c] = tag.charCodeAt(c);
+        v.setUint32(12 + i * 16 + 8, off);
+        v.setUint32(12 + i * 16 + 12, tables[tag].length);
+        out.set(tables[tag], off);
+        off += (tables[tag].length + 3) & ~3;
+    });
+    return out;
+}
+
+/** GSUB: locl → lookups 0 (fmt 1, +4) and 1 (ext → fmt 2, 2→6); smcp → lookup 2 (fmt 2, 3→7). */
+function syntheticGsub(): Uint8Array {
+    const g = new Sfnt();
+    g.u32(0x00010000).u16(10).u16(12).u16(40);      // header: script 10, feature 12, lookup 40
+    g.u16(0);                                        // ScriptList (10): no scripts
+    g.u16(2).tag('locl').u16(14).tag('smcp').u16(22); // FeatureList (12): two records
+    g.u16(0).u16(2).u16(0).u16(1);                   // locl (FL+14): lookups 0, 1
+    g.u16(0).u16(1).u16(2);                          // smcp (FL+22): lookup 2
+    g.u16(3).u16(8).u16(28).u16(58);                 // LookupList (40): three lookups
+    // Lookup 0 (LL+8): type 1, one subtable at +8 — format 1, coverage at +6, delta +4, covers gid 1.
+    g.u16(1).u16(0).u16(1).u16(8);
+    g.u16(1).u16(6).i16(4);
+    g.u16(1).u16(1).u16(1);
+    // Lookup 1 (LL+28): type 7 extension → inner type 1 format 2 at ext+8, covers gid 2 → 6.
+    g.u16(7).u16(0).u16(1).u16(8);
+    g.u16(1).u16(1).u32(8);
+    g.u16(2).u16(8).u16(1).u16(6);
+    g.u16(1).u16(1).u16(2);
+    // Lookup 2 (LL+58): type 1 format 2, covers gid 3 → 7 — wanted by smcp only.
+    g.u16(1).u16(0).u16(1).u16(8);
+    g.u16(2).u16(8).u16(1).u16(7);
+    g.u16(1).u16(1).u16(3);
+    return g.toUint8Array();
+}
+
+function syntheticFont(): Uint8Array {
+    const head = new Sfnt().zeros(18).u16(1000).zeros(16).i16(0).i16(-200).i16(1000).i16(800).zeros(10).toUint8Array();
+    const hhea = new Sfnt().u32(0x00010000).i16(800).i16(-200).zeros(26).u16(8).toUint8Array();
+    const maxp = new Sfnt().u32(0x00005000).u16(8).zeros(26).toUint8Array();
+    const hmtx = new Sfnt();
+    for (let i = 0; i < 8; i++) hmtx.u16(600).i16(0);
+    // cmap: one (3, 10) format-12 subtable mapping U+0041–U+0047 to gids 1–7.
+    const cmap = new Sfnt().u16(0).u16(1).u16(3).u16(10).u32(12)
+        .u16(12).u16(0).u32(28).u32(0).u32(1).u32(0x41).u32(0x47).u32(1).toUint8Array();
+    return sfnt({ head, hhea, maxp, hmtx: hmtx.toUint8Array(), cmap, GSUB: syntheticGsub() });
+}
+
+describe('GSUB SingleSubst parsing (B-007, v1.8.0 parser fix)', () => {
+    const data = parseFontData(syntheticFont(), { fontName: 'Synthetic' });
+
+    it('B-007: reads a format-1 delta substitution from the subtable, not from the coverage table', () => {
+        expect(data.gsub[1]).toBe(5);
+    });
+
+    it('B-007: resolves a LookupType 7 extension to its inner format-2 list', () => {
+        expect(data.gsub[2]).toBe(6);
+    });
+
+    it('B-007: keeps a lookup wanted only by a discretionary feature out of the default table', () => {
+        expect(data.gsub[3]).toBeUndefined();
+        expect(Object.keys(data.gsub).sort()).toEqual(['1', '2']);
+    });
+
+    it('B-007: exposes the discretionary substitution under its own feature tag', () => {
+        expect(data.features).not.toBeNull();
+        expect(data.features!['smcp']).toEqual({ 3: 7 });
+        expect(data.features!['locl']).toBeUndefined();
+    });
+
+    it('B-007: maps the cmap group to the eight glyphs', () => {
+        expect(data.cmap[0x41]).toBe(1);
+        expect(data.cmap[0x47]).toBe(7);
+    });
+});

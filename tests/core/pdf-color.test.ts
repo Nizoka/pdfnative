@@ -341,6 +341,13 @@ describe('CMYK colours', () => {
         expect(parseColor('0.1 0.2 0.3 0.4')).toBe('0.1 0.2 0.3 0.4');
     });
 
+    it('A-014: accepts the four-operand string form that 1.7.0 rejected', () => {
+        // Documented in the 1.8.0 Upgrade section next to the tuple form:
+        // both shapes threw in 1.7.0 and are CMYK now.
+        expect(parseColor('0 0 0 1')).toBe('0 0 0 1');
+        expect(parseColor('0.5 0.2 0 0.1')).toBe('0.5 0.2 0 0.1');
+    });
+
     it('emits k and K', () => {
         expect(fillOp([0, 0, 0, 100])).toBe('0 0 0 1 k');
         expect(strokeOp('1 0 0 0')).toBe('1 0 0 0 K');

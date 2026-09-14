@@ -7,6 +7,8 @@ import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
 function fakeIcc(space: string, deviceClass = 'prtr'): Uint8Array {
     const icc = new Uint8Array(200);
+    icc[3] = 200; // size field (bytes 0-3, big-endian)
+    for (let i = 0; i < 4; i++) icc[36 + i] = 'acsp'.charCodeAt(i);
     for (let i = 0; i < 4; i++) {
         icc[12 + i] = deviceClass.charCodeAt(i);
         icc[16 + i] = space.charCodeAt(i);
@@ -100,6 +102,11 @@ describe('validatePdfX', () => {
     it('rejects a monitor profile as the press condition', () => {
         const bytes = patch(buildDocumentPDFBytes(doc, x4), 'prtrCMYK', 'mntrCMYK');
         expect(validatePdfX(bytes).errors.join('\n')).toMatch(/class is 'mntr'/);
+    });
+
+    it('A-004: rejects an embedded profile without the acsp signature', () => {
+        const bytes = patch(buildDocumentPDFBytes(doc, x4), 'acsp', 'xxxx');
+        expect(validatePdfX(bytes).errors.join('\n')).toMatch(/no `acsp` signature/);
     });
 
     it('rejects a TrimBox outside the BleedBox', () => {

@@ -311,6 +311,8 @@ describe('colour bars (v1.8.0)', () => {
 describe('registration colour in documents (v1.8.0)', () => {
     const icc = (space: string): Uint8Array => {
         const bytes = new Uint8Array(200);
+        bytes[3] = 200; // size field
+        for (let i = 0; i < 4; i++) bytes[36 + i] = 'acsp'.charCodeAt(i);
         for (let i = 0; i < 4; i++) {
             bytes[12 + i] = 'prtr'.charCodeAt(i);
             bytes[16 + i] = space.charCodeAt(i);
@@ -510,6 +512,8 @@ describe('custom OutputIntent', () => {
     /** Minimal fake ICC: 128-byte header with a colour space at bytes 16–19. */
     const fakeIcc = (space: string): Uint8Array => {
         const icc = new Uint8Array(200);
+        icc[3] = 200; // size field
+        for (let i = 0; i < 4; i++) icc[36 + i] = 'acsp'.charCodeAt(i);
         for (let i = 0; i < 4; i++) icc[16 + i] = space.charCodeAt(i);
         icc[40] = 0x61; // arbitrary non-zero content
         return icc;
