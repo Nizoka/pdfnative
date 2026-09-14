@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 493,
+  "exportCount": 499,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -66,6 +66,13 @@
       "module": "src/core/pdf-barcode.ts",
       "signature": "export type BarcodeFormat = 'code128' | 'ean13' | 'qr' | 'datamatrix' | 'pdf417';",
       "summary": "Supported barcode formats."
+    },
+    {
+      "name": "Base14Metrics",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type Base14Metrics = 'approximate' | 'exact';",
+      "summary": "Base-14 measurement mode."
     },
     {
       "name": "BidiRun",
@@ -171,6 +178,13 @@
       "module": "src/types/pdf-types.ts",
       "signature": "export interface ColorStop",
       "summary": "A gradient colour stop: `offset` in [0,1] with a resolved colour."
+    },
+    {
+      "name": "ColourBarOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColourBarOptions",
+      "summary": "Configuration for PrinterMarksOptions.colourBars — the object form of the option."
     },
     {
       "name": "ColumnDef",
@@ -1132,6 +1146,20 @@
       "summary": "Printer's-marks options for PrintOptions.marks."
     },
     {
+      "name": "PunctuationSpacingPreset",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PunctuationSpacingPreset = 'fr' | 'fr-CA';",
+      "summary": "Built-in punctuation-spacing conventions."
+    },
+    {
+      "name": "PunctuationSpacingRule",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PunctuationSpacingRule",
+      "summary": "One punctuation-spacing rule: the plain space on `side` of `char` becomes the given no-break space."
+    },
+    {
       "name": "QRErrorLevel",
       "kind": "type",
       "module": "src/core/pdf-barcode.ts",
@@ -1391,11 +1419,25 @@
       "summary": "Parsed TSTInfo from a TimeStampToken (RFC 3161 §2.4.2)."
     },
     {
+      "name": "TypographyOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface TypographyOptions",
+      "summary": "Fine typographic control over how text blocks break across pages."
+    },
+    {
       "name": "USE_UNICODE_VERSION",
       "kind": "value",
       "module": "src/shaping/use-engine.ts",
       "signature": null,
       "summary": null
+    },
+    {
+      "name": "UnitBindingOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface UnitBindingOptions",
+      "summary": "Configuration for TypographyOptions.unitBinding."
     },
     {
       "name": "UseCategory",

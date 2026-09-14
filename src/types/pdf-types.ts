@@ -1222,15 +1222,28 @@ export interface PrinterMarksOptions {
      * `PDFA_DEVICE_CMYK_CONTENT`); no additional diagnostic is emitted.
      * @since 1.8.0
      */
-    readonly colourBars?: boolean | { readonly tints?: boolean; readonly size?: number };
+    readonly colourBars?: boolean | ColourBarOptions;
+}
+
+/**
+ * Configuration for {@link PrinterMarksOptions.colourBars} — the object form
+ * of the option. `true` is `{ tints: true, size: 12 }`.
+ * @since 1.8.0
+ */
+export interface ColourBarOptions {
+    /** Also paint the 50 % tint of each process colour. Default `true`. */
+    readonly tints?: boolean;
+    /** Patch edge in points, clamped to the bleed strip. Default 12. */
+    readonly size?: number;
 }
 
 /**
  * Professional print-production options (`layout.print`, v1.7.0): page
  * geometry boxes (ISO 32000-1 §14.11.2), printer's marks (§14.11.3) and
  * large-format `/UserUnit`. Purely additive — output is byte-identical
- * when the option is absent. Marks are drawn in RGB black; true
- * all-separation registration colour arrives with CMYK content support.
+ * when the option is absent. Marks are drawn in RGB black, or — since
+ * v1.8.0, under a CMYK `outputIntent` — in the all-separation registration
+ * colour (`/Separation /All`).
  */
 export interface PrintOptions {
     /**

@@ -523,6 +523,19 @@ export function resolveOutputIntent(custom?: { readonly iccProfile: Uint8Array }
     if (icc.length < 128) {
         throw new Error('outputIntent.iccProfile is too short to be an ICC profile (128-byte header required)');
     }
+    // ICC.1 §7.2: bytes 36–39 are the `acsp` signature and bytes 0–3 the
+    // profile size. A buffer that merely spells a colour space at byte 16
+    // is not a profile, and a viewer that trusts the size field would read
+    // past a truncated one — both were accepted until 1.8.0.
+    if (String.fromCharCode(icc[36], icc[37], icc[38], icc[39]) !== 'acsp') {
+        throw new Error('outputIntent.iccProfile is not an ICC profile (no `acsp` signature at byte 36)');
+    }
+    const declaredSize = ((icc[0] << 24) | (icc[1] << 16) | (icc[2] << 8) | icc[3]) >>> 0;
+    if (declaredSize < 128 || declaredSize > icc.length) {
+        throw new Error(
+            `outputIntent.iccProfile header declares ${declaredSize} bytes but ${icc.length} were supplied — the profile is truncated or corrupt`,
+        );
+    }
     const tag = String.fromCharCode(icc[16], icc[17], icc[18], icc[19]);
     const data = ICC_DATA_SPACES[tag];
     if (!data) {

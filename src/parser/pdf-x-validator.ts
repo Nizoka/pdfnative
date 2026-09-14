@@ -12,7 +12,9 @@
  *     `xmpMM:VersionID`, `xmpMM:RenditionClass`, `dc:title`, and
  *     `pdf:Trapped` of True or False, consistent with `/Info /Trapped`
  *   - A `/GTS_PDFX` OutputIntent with `/OutputConditionIdentifier` and an
- *     embedded output (`prtr`) ICC profile whose `/N` matches its header
+ *     embedded output (`prtr`) ICC profile that carries the `acsp`
+ *     signature, a size field within the stream, and whose `/N` matches
+ *     its header
  *   - Every page: a TrimBox or an ArtBox, not both, nested in the BleedBox
  *     and the MediaBox
  *   - Every font embedded, in page resources and in the resources of the
@@ -27,8 +29,10 @@
  *   - Device colour in page content matching the OutputIntent, or covered
  *     by a `/DefaultRGB` / `/DefaultCMYK` colour space in page resources
  *
- * Not checked: colour inside Form XObjects and images, transparency blend
- * spaces, optional content, and anything that needs rendering. veraPDF does
+ * Not checked: fonts inside annotation appearance streams, colour inside
+ * Form XObjects and images, OPI and PostScript XObjects, reference
+ * XObjects, embedded files, transparency blend spaces, optional content,
+ * and anything that needs rendering. veraPDF does
  * not cover PDF/X; before sending a file to press, confirm it with a
  * certified preflight tool (callas pdfToolbox, Acrobat Preflight). A `valid`
  * result means the structural prerequisites hold.
@@ -56,6 +60,8 @@ type Reader = ReturnType<typeof openPdf>;
 
 const STANDARD = 'ISO 15930-7';
 const latin1 = (data: Uint8Array): string => new TextDecoder('latin1').decode(data);
+const readU32 = (data: Uint8Array, at: number): number =>
+    ((data[at] << 24) | (data[at + 1] << 16) | (data[at + 2] << 8) | data[at + 3]) >>> 0;
 
 function readBox(reader: Reader, page: PdfDict, key: string): Box | null {
     const v = reader.resolveValue(page.get(key) ?? null);
@@ -234,6 +240,10 @@ export function validatePdfX(bytes: Uint8Array): PdfXValidationResult {
             try { icc = reader.decodeStream(profile); } catch { icc = null; }
             if (!icc || icc.length < 128) {
                 errors.push('The OutputIntent ICC profile is unreadable or shorter than its 128-byte header.');
+            } else if (latin1(icc.subarray(36, 40)) !== 'acsp') {
+                errors.push('The OutputIntent ICC profile carries no `acsp` signature at byte 36; it is not an ICC profile.');
+            } else if (readU32(icc, 0) < 128 || readU32(icc, 0) > icc.length) {
+                errors.push(`The OutputIntent ICC profile header declares ${readU32(icc, 0)} bytes but the stream holds ${icc.length}; the profile is truncated or corrupt.`);
             } else {
                 const deviceClass = latin1(icc.subarray(12, 16));
                 const space = latin1(icc.subarray(16, 20));

@@ -91,7 +91,13 @@ export type {
     PageBox,
     PrintOptions,
     PrinterMarksOptions,
+    ColourBarOptions,
     CustomOutputIntent,
+    TypographyOptions,
+    UnitBindingOptions,
+    PunctuationSpacingRule,
+    PunctuationSpacingPreset,
+    Base14Metrics,
 } from './types/pdf-types.js';
 
 // ── Core — Print Production (v1.7.0) ────────────────────────────────
