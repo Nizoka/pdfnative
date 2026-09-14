@@ -137,6 +137,10 @@
         <tr><td lang="tr">Türkçe</td><td lang="tr">Merhaba</td></tr>
         <tr><td lang="vi">Tiếng Việt</td><td lang="vi">Xin chào</td></tr>
         <tr><td lang="pl">Polski</td><td lang="pl">Dzień dobry</td></tr>
+        <tr><td lang="ha">Hausa</td><td lang="ha">Sannu, ɓarka da zuwa</td></tr>
+        <tr><td lang="yo">Yorùbá</td><td lang="yo">Ẹ n lẹ́ o, ẹ káàbọ̀</td></tr>
+        <tr><td lang="ig">Igbo</td><td lang="ig">Ndeewo, nnọọ</td></tr>
+        <tr><td lang="sw">Kiswahili</td><td lang="sw">Habari, karibu</td></tr>
         <tr><td lang="ar" dir="rtl">العربية</td><td lang="ar" dir="rtl">السلام عليكم</td></tr>
         <tr><td lang="he" dir="rtl">עברית</td><td lang="he" dir="rtl">שלום</td></tr>
         <tr><td lang="am">አማርኛ</td><td lang="am">ሰላም</td></tr>
@@ -209,6 +213,8 @@ const GREETINGS = [...document.querySelectorAll('#greetings-table tbody tr')].ma
 const REGION_PARAS = [
   'Europe & the Caucasus:  English Hello · Ελληνικά Γειά σου · Русский Здравствуйте · ქართული გამარჯობა · Հայերեն Բարև · Türkçe Merhaba · Tiếng Việt Xin chào · Polski Dzień dobry',
   'Middle East & Africa (RTL + BiDi):  العربية السلام عليكم · فارسی سلام · עברית שלום · አማርኛ ሰላም — mixed with Latin 12345 and back.',
+  // Latin-script Africa, 1.8.0: hooked letters and combining tone marks on the bundled Noto Sans (no extra module).
+  'Latin-script Africa:  Hausa Sannu, ɓarka da zuwa · Yorùbá Ẹ n lẹ́ o, ẹ káàbọ̀ · Igbo Ndeewo, nnọọ · Kiswahili Habari, karibu',
   'South Asia:  हिन्दी नमस्ते · বাংলা নমস্কার · தமிழ் வணக்கம் · తెలుగు నమస్తే · සිංහල ආයුබෝවන්',
   'Southeast Asia & the Himalayas:  ไทย สวัสดี · ខ្មែរ សួស្តី · မြန်မာ မင်္ဂလာပါ · བོད་ཡིག བཀྲ་ཤིས་བདེ་ལེགས།',
   // Mainland South-East Asia, new in 1.8.0: Lao (GSUB + GPOS), Tai Tham and Cham (Universal Shaping

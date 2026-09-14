@@ -125,14 +125,19 @@ By design (documented, not bugs):
   on marked content **is** honoured (v1.8.0): a `/Span` that declares
   the characters behind a ligature, a shaped cluster or a justified line
   extracts as those characters, outermost span first. Without it,
-  ligature reversal is only as good as the embedded `/ToUnicode`. In
-  practice this means **shaped Indic and South-East Asian scripts**
-  (Devanagari, Bengali, Tamil, Telugu, Sinhala, Khmer, Lao, Tai Tham, …)
-  extract with U+FFFD for conjunct/ligature glyphs that have no
-  single-codepoint mapping in an untagged document — the PDF *renders*
-  correctly; only extraction of those clusters is lossy. Build with
-  `tagged: 'pdfa2u'` (or any tagged level) and the spans carry the
-  source text. Latin, CJK, Arabic and emoji round-trip cleanly.
+  ligature reversal is only as good as the embedded `/ToUnicode`. Since
+  v1.8.0 the Indic engine (Devanagari, Bengali, Tamil, Telugu, Sinhala)
+  and the Latin combining-mark shaper report the code points behind every
+  glyph they emit, and pdfnative writes them into `/ToUnicode` as
+  multi-code-point entries, so a conjunct such as क्ष or a composed ẹ́
+  extracts as its letters even in an untagged document. The **other
+  shaped scripts** (Thai, Lao, Khmer, Myanmar, Tibetan, Tai Tham, Cham,
+  Arabic presentation forms) still extract with U+FFFD for a ligature or
+  contextual glyph that has no single-code-point mapping in an untagged
+  document — the PDF *renders* correctly; only extraction of those
+  clusters is lossy. Build with `tagged: 'pdfa2u'` (or any tagged level)
+  and the spans carry the source text. Latin, CJK and emoji round-trip
+  cleanly.
 
 ## Samples
 

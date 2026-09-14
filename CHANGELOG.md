@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.8.0] – 2026-09-14
+## [1.8.0] – 2026-09-15
 
 The typography and print release: paragraphs that break across pages
 under widow and orphan rules, justification and optical margins, pair
@@ -14,14 +14,20 @@ Universal Shaping Engine generated from the Unicode Character Database;
 COLRv1 transforms, variable paints and structural masks, so flags keep
 their shaded wave, and bundled skin tones; CMYK colour, CMYK
 OutputIntents and a PDF/X-4 conformance claim with `validatePdfX()`.
+Devanagari, Bengali, Tamil, Telugu and Sinhala are shaped by one Indic
+OpenType engine that applies the font's own features in specification
+order, every font module keeps one mark-anchor class per subtable, Hausa,
+Yoruba, Igbo and Swahili render on the bundled Noto Sans with their tone
+marks attached, and sixteen one-page language documents put every
+construction of a script in front of a reader who can judge it.
 Underneath, every sample is now deterministic and held byte for byte to
-the release that last changed it. Zero runtime dependencies; 54 exports
+the release that last changed it. Zero runtime dependencies; 58 exports
 added, none removed; every new behaviour opt-in; existing inputs render
 byte-identically except where the previous output was wrong (see Fixed),
 and four calls behave differently by design — `setDeflateImpl()` rejects
 a raw-DEFLATE compressor, `parseColor()` accepts CMYK input,
 `extractText()` honours `/ActualText`, `{date}` follows `creationDate` —
-see the release note's Upgrade section. 3460+ tests across 154 files; veraPDF-validated; a consumer
+see the release note's Upgrade section. 3717+ tests across 159 files; veraPDF-validated; a consumer
 importing one helper bundles that helper alone.
 
 ### Added
@@ -29,7 +35,7 @@ importing one helper bundles that helper alone.
 - **feat(samples): deterministic samples and a byte-level regression harness** —
   `setDefaultCreationDate()` pins the creation instant process-wide and the
   `{date}` placeholder now resolves against it; `npm run verify:samples`
-  fingerprints all 271 samples (SHA-256 of the bytes, or of a semantic
+  fingerprints all 279 samples (SHA-256 of the bytes, or of a semantic
   projection for the 14 encrypted ones) against a committed manifest whose
   entries chain to the release that last changed them; blocking CI workflow.
 - **feat(core): typography** under `layout.typography`, all opt-in —
@@ -92,6 +98,45 @@ importing one helper bundles that helper alone.
 - **feat(parser): `extractText()` honours `/ActualText`** on marked
   content (inline or named property lists, UTF-16BE decoded, outermost
   span first).
+- **feat(shaping): Indic OpenType engine** behind `shapeDevanagariText()`,
+  `shapeBengaliText()`, `shapeTamilText()`, `shapeTeluguText()` and
+  `shapeSinhalaText()` — syllables from the UCD cluster categories, base
+  and reph found by asking the font, per-glyph feature masks, the basic
+  features `locl ccmp nukt akhn rphf rkrf pref blwf abvf half pstf vatu
+  cjct` one stage each, final reordering, the presentation features
+  `pres abvs blws psts haln calt`, mark attachment; GSUB types 1, 2, 4, 5
+  and 6, IgnoreMarks through GDEF; a font without `otl` takes the same
+  path over its flat `ligatures` and `gsub`.
+- **feat(shaping): `shapeLatinMarksText()`** and the `latin-marks` shaper
+  (last in dispatch order): `ccmp`, mark-to-base, mark-to-mark for
+  free-standing combining marks (Yoruba ẹ́ ọ̀, Igbo ị́, NFD text).
+  `detectCharLang()` routes Latin Extended-B, IPA and the combining-mark
+  blocks to `latin`, Bengali to `bn` and Tamil to `ta`; a base followed
+  by a mark stays in one font run when that font anchors the mark.
+- **feat(fonts): `otl` in every font module** — per-script, per-feature
+  GSUB layout with Extension lookups resolved, GDEF mark ranges
+  (`OtlTables`, `OtlLookup`, `OtlChainRule`; `FontData.otl` optional);
+  `compileFontData()` and `tools/build-font-data.cjs` proven
+  byte-identical by a synthetic-font test that runs the CLI.
+- **feat(core): `ShapedGlyph.cps`** — source code points behind a shaped
+  glyph, written into the ToUnicode CMap as multi-code-point `bfchar`
+  destinations, so conjuncts and composed marks extract as their letters
+  in untagged output.
+- **feat(core): `PDFA_ICC_PROFILE_VERSION`** — an ICC v4 OutputIntent
+  under a PDF/A-1b claim (ISO 19005-1 §6.2.2 restricts 1b to v2); silent
+  from PDF/A-2 on.
+- **feat(parser): `validatePdfX()` also checks** fonts inside annotation
+  appearance streams, OPI, PostScript and reference XObjects and embedded
+  files (name tree, `/FileAttachment`, `/EmbeddedFile` streams).
+- **feat(samples): sixteen one-page language conformance documents**
+  generated from `scripts/data/language-docs-data.ts` (edge-case table
+  per script), held to one page and to no missing glyph by
+  `tests/regression/language-docs.test.ts` and to pixels by visual
+  baselines; four alphabet plates and four documents for Hausa, Yoruba,
+  Igbo and Swahili on the bundled `latin` module — 279 samples.
+- **feat(tooling): `scripts/glyph-names.ts`** names glyph ids from a
+  font's `post` table; `shapeIndicTextTraced()` prints one line per
+  lookup that changed a syllable.
 - **feat(core): `TYPOGRAPHY_FEATURE_INEFFECTIVE`** diagnostic for a
   `fontFeatures` tag no registered font declares, or that substitutes no
   glyph in the document; **`typography.hyphenationLanguage`**, handed to
@@ -115,7 +160,7 @@ importing one helper bundles that helper alone.
   config; `scripts/release-prepare.ts` for the mechanical part of a bump;
   `CLAUDE.md`, a committed `.claude/settings.json` and a human-in-the-loop
   guard hook for Claude Code sessions.
-- **feat(samples): 29 new samples** (271), including typography pairs
+- **feat(samples): 37 new samples** (279), including typography pairs
   and a hyphenation-provider sample,
   alphabets for the five new scripts, a form inside PDF/A-2b, CMYK under
   PDF/X-4 and PDF/A-2b, and skin tones; two recipes (`typography-report`,
@@ -140,8 +185,44 @@ importing one helper bundles that helper alone.
   hands `rsa` / `ecdsa` only the ASN.1 functions they call, and every
   module-level table carries `/*#__PURE__*/`; a `parseColor`-only bundle
   drops from 29.8 KB to 2.6 KB.
+- **feat(core): dates written in UTC** — `/CreationDate`, `/ModDate`, the
+  XMP dates, `{date}` and therefore the trailer `/ID` carry a literal
+  `+00'00'` / `+00:00` offset whatever the host zone; a pinned
+  `creationDate` yields the same bytes on every machine, and output under
+  `TZ=UTC` is byte-identical to 1.7.0.
+- **feat(parser): `validatePdfX()` rejects any `/TR`** and any `/TR2`
+  other than `/Default` (1.7.0 tolerated `/TR /Identity`).
 - **chore(deps): js-yaml pinned to 4.3.2** (GHSA-2883-xcg3-v3hh, reached only
   through ESLint) via overrides; `packageManager` pins npm.
+- **chore(deps): vitest and @vitest/coverage-v8 4.1.11, @humanfs/node
+  0.16.8** — the two moderate advisories `npm audit` reported against the
+  development tree (GHSA-82fw-gwwq-j7x9, GHSA-p498-v437-472g) are closed
+  on the same 4.x line; nothing ships to consumers.
+- **chore(ci): CI and publish on the gate** — `ci.yml` and `publish.yml`
+  run `scripts/gate.ts` with the new `--require-all` flag (a skipped step
+  fails); harden-runner (audit) first in every job; `npm ci
+  --ignore-scripts`, `.npmrc`, `.node-version`; the publish job waits for
+  the `npm-publish` environment, checks the tag, installs a checksummed
+  veraPDF through a composite action, downloads the pinned source fonts,
+  upgrades npm to exactly 11.19.1 and publishes with `--provenance`; an
+  `attest` job attaches a CycloneDX SBOM, the tarball and their
+  build-provenance attestations to the maintainer's release; new
+  `dependency-review.yml` and weekly `audit.yml`; a `v*` tag ruleset.
+- **chore(fonts): pinned sources** — `fonts/SOURCES.json` (google/fonts
+  commit + SHA-256 per TTF), verified by `fonts:download` and
+  `verify:fonts`; the nine TTFs no upstream revision serves are committed
+  under `fonts/ttf/`, outside the tarball.
+- **chore(repo):** `.gitattributes` `* text=auto eol=lf` and
+  `linguist-generated` on the generated bulk; the `eol-lf` rule warns on
+  the 315 CRLF-stored files until the renormalisation commit; opt-in git
+  hooks (`npm run hooks:install`); PR template mirrored from CONTRIBUTING
+  (`pr-template-parity`); `tsup --silent`.
+- **chore(agents):** `.claude/settings.json` env limits and deny list
+  (generated bulk, `git push`); fail-closed, import-safe guard hook with
+  108 test cases; `.claude/rules/*.md` generated from the instruction
+  files (`npm run agents:rules`, `claude-rules-sync`,
+  `claude-rules-budget`); the `release-audit` skill; `agent-config-parity`
+  and `skills-shape` rules; `ai-governance.json` capability manifest.
 
 ### Fixed
 
@@ -158,6 +239,27 @@ importing one helper bundles that helper alone.
 - **fix(fonts): GSUB single substitutions** were read from the wrong offset,
   ignored extension lookups (most of Noto Sans JP / KR / SC's substitutions)
   and merged discretionary features into the default table.
+- **fix(fonts): GPOS mark classes** — the generators collapsed every mark
+  class to 0, kept only the last MarkToBase subtable's bases and skipped
+  Extension positioning lookups, so in twelve modules an above-base vowel
+  sign took a below-base anchor (Devanagari े on the baseline, Tamil ூ
+  floating onto the next glyph, Khmer and Myanmar above marks 630 units
+  low). Classes are unique across subtables; a mark carries one anchor
+  triple per subtable that covers it.
+- **fix(shaping): Indic shapers** — Tamil ி treated as pre-base (விலை drawn
+  as வெலை); Devanagari and Bengali reph emitted before the base with a
+  post-base offset (प्रदर्शन lost its reph, समर्थन read समथन); Telugu never
+  consulted GSUB (no subjoined forms); Devanagari ो / ौ split into two
+  glyphs the font draws as one; a greedy ligature driver could not tell
+  `rphf` from `blwf` on the same input pair. All five shapers run on the
+  Indic engine; `tests/shaping/indic-real-font.test.ts` holds the words of
+  the rendering report on the bundled fonts.
+- **fix(shaping): Bengali and Tamil** had no branch in `detectCharLang()`,
+  so a multi-font document sent them to the first covering font.
+- **fix(fonts): `head.checkSumAdjustment`** in every embedded subset is
+  computed instead of written as zero (ISO/IEC 14496-22 §5.2.3).
+- **fix(tools): `compileFontData()` CommonJS output** omitted the
+  `features` and `kern` tables its ESM output carried.
 - **fix(fonts): modules advertised undrawable glyphs** from subsetted fonts,
   so Polish, Turkish and Vietnamese faces claimed coverage they drew as
   blanks; intentionally blank characters stay mapped.
@@ -258,8 +360,15 @@ importing one helper bundles that helper alone.
   synthetic press profile, PDF/X errors, `validatePdfX` on a dropped file,
   copy buttons); the README compression recipe corrected (#78) and the API
   reference completed.
+- **docs(instructions): text-shaping rules** describe the Indic OpenType
+  engine (pipeline, masks, reordering, limits), the Latin combining-mark
+  shaper, the `otl` module format and the anchor-triple format; the
+  README, FAQ, text-extraction, PDF/A, print and self-verify guides, the
+  homepage, the learn path, the agent brief and `llms.txt` say what 1.8.0
+  shapes, which diagnostics exist, what `validatePdfX()` checks and that
+  dates are UTC.
 - **docs(meta):** roadmap moves six closed workstreams to Released and
-  restates what remains, with a 1.8.1 methodology bucket; `AGENTS.md`
+  restates what remains; `AGENTS.md`
   condensed, `CLAUDE.md` added, `CONTRIBUTING.md` gains the release
   procedure and the final-review protocol; counts and versions verified
   against `docs/assets/ecosystem.json` in every agent-facing file.

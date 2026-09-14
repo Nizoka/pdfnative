@@ -268,10 +268,11 @@ RGB intent (<code>PDFX_DEVICE_CMYK</code>). Warnings — a header below 1.6, a h
 other than <code>/Default</code>, an interpolated image — are non-blocking.</p>
 <blockquote>
 <p><strong>Honest caveat.</strong> <code>validatePdfX()</code> checks what the structure can prove and
-does not render. It does not check fonts inside annotation appearance
-streams, colour inside Form XObjects and images, OPI and PostScript
-XObjects, reference XObjects, embedded files, transparency blend spaces,
-optional content, or anything that needs rendering. veraPDF does not cover
+does not render. It does not check colour inside Form XObjects and images,
+transparency blend spaces, optional content, or anything that needs
+rendering (fonts inside annotation appearances, OPI, PostScript and
+reference XObjects, embedded files and transfer functions are checked
+since v1.8.0). veraPDF does not cover
 PDF/X, and a <code>valid</code> result means the structural prerequisites hold — a
 certified preflight (callas pdfToolbox, Acrobat Preflight) remains
 necessary before a file goes to press. See <a href="print.html">Print production</a>.</p>
@@ -371,10 +372,10 @@ its inputs plus one instant: the creation date, which stamps <code>/CreationDate
 <code>/ModDate</code>, the XMP dates and, through them, the trailer <code>/ID</code>. Pin it with
 <code>layout.creationDate</code> per call, or once per process with
 <code>setDefaultCreationDate(date)</code> (<code>getDefaultCreationDate()</code> reads it back,
-<code>null</code> restores the wall clock). The date is formatted in the host time zone,
-so pin <code>TZ</code> as well — the sample harness runs under <code>TZ=UTC</code> — before
-comparing bytes across machines. Encryption keys and IVs stay random by
-design, and <code>PdfSignOptions.signingTime</code> keeps its own option.</p>
+<code>null</code> restores the wall clock). Every date is written in UTC with an
+explicit <code>+00&#39;00&#39;</code> offset, so a pinned instant yields the same bytes on any
+host without a <code>TZ</code> pin. Encryption keys and IVs stay random by design, and
+<code>PdfSignOptions.signingTime</code> keeps its own option.</p>
 <p><strong>Byte regression.</strong> With the date pinned, a SHA-256 of each artefact is a
 sufficient CI assertion. pdfnative&#39;s own <code>npm run verify:samples</code> is the
 pattern to copy: regenerate the documents, hash them, compare against a

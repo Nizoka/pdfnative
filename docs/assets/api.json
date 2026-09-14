@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 499,
+  "exportCount": 503,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -698,6 +698,27 @@
       "summary": "Options for openPdf."
     },
     {
+      "name": "OtlChainRule",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface OtlChainRule",
+      "summary": "One contextual substitution rule (GSUB LookupType 5 or 6): the glyph sets the backtrack (`b`, closest glyph first), input (`i`, first glyph included) and lookahead (`l`) must match — each an index into OtlTables.gsub.sets — and the lookups "
+    },
+    {
+      "name": "OtlLookup",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type OtlLookup =",
+      "summary": "One GSUB lookup as a font-data module serialises it: `t` is the OpenType lookup type, `f` the raw lookupFlag (bit 3 = IgnoreMarks), `m` the substitutions keyed by first glyph id."
+    },
+    {
+      "name": "OtlTables",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface OtlTables",
+      "summary": "OpenType Layout data a font-data module carries for the shapers: GSUB lookups indexed per script and feature tag (in application order) and the GDEF mark-class ranges."
+    },
+    {
       "name": "OutlineItem",
       "kind": "type",
       "module": "src/types/pdf-document-types.ts",
@@ -1255,7 +1276,7 @@
       "kind": "type",
       "module": "src/types/pdf-types.ts",
       "signature": "export interface ShapedGlyph",
-      "summary": "A single positioned glyph output from the Thai shaper."
+      "summary": "A single positioned glyph output by a shaper, in visual order."
     },
     {
       "name": "SigDictMetadata",
@@ -3216,6 +3237,13 @@
       "module": "src/shaping/lao-shaper.ts",
       "signature": "export function shapeLaoText(str: string, fontData: FontData): ShapedGlyph[]",
       "summary": "Shape a string of Lao text into positioned glyphs."
+    },
+    {
+      "name": "shapeLatinMarksText",
+      "kind": "value",
+      "module": "src/shaping/latin-marks.ts",
+      "signature": "export function shapeLatinMarksText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a Latin (or Greek, or Cyrillic) run that carries combining marks."
     },
     {
       "name": "shapeMyanmarText",

@@ -45,7 +45,9 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **Thai and Lao OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
 - **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with isolates (LRI/RLI/FSI/PDI) and explicit embeddings (LRE/RLE/LRO/RLO/PDF) including character-level X4–X5 overrides (v1.3.0). **v1.7.0** implements I1/I2 even embedding levels so digit runs (European, Arabic-Indic, Extended Arabic-Indic) keep logical order in RTL text, and full rule-L4 glyph mirroring through the complete 428-pair `BidiMirroring.txt` table
-- **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` drive joiner classification across the Devanagari, Bengali, and Tamil shapers, fixing nukta+virama, half-form, eyelash-ra, and ya-phalaa edge cases (v1.3.0)
+- **Indic OpenType engine** (v1.8.0) — Devanagari, Bengali, Tamil, Telugu and Sinhala share one engine that applies the font's own GSUB features per syllable in specification order (`rphf`, `half`, `blwf`, `pstf`, `vatu`, `cjct`, `pres` … `haln`, contextual lookups included) and attaches every vowel sign to the anchor its font declares: reph over the consonant after the base, half forms, subjoined consonants, pre-base matras in front. Fed by the `otl` layout tables every font module now carries; the words of a rendering report on the Hindi, Tamil and Telugu samples are golden tests on the bundled fonts
+- **Latin combining marks** (v1.8.0) — free-standing marks (Yoruba ẹ́ ọ̀, Igbo ị́, NFD accents, Greek and Cyrillic diacritics) compose through the font's `ccmp` and GPOS anchors; Hausa, Yoruba, Igbo and Swahili render on the bundled `latin` module with no new font
+- **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` classify joiners for the Indic engine and the Khmer, Myanmar and Tibetan shapers (v1.3.0)
 - **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.5 MB with the v1.7.0 sequence ligatures, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). **Skin tones, transforms and masks** (v1.8.0): 30 gestures and people bundled in all five tones (1189 glyphs + 223 sequences, ~4.9 MB); every COLRv1 transform and variable paint is read, and `SRC_IN`/`DEST_IN` masks render as clipping paths, so flags keep their shaded wave. [Guide →](docs/guides/colour-emoji.md)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
@@ -79,7 +81,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 3460+ tests across 154 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.4 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 3717+ tests across 159 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.4 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -107,7 +109,7 @@ npm install pdfnative
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
 - 🎮 **Playgrounds:** twelve interactive demos at [docs/playgrounds/](docs/playgrounds/) — [typography](docs/playgrounds/typography.html) (each typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 271 sample PDFs across 38 categories (49 generators) (see [Sample PDFs](#sample-pdfs) below).
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 279 sample PDFs across 38 categories (49 generators) (see [Sample PDFs](#sample-pdfs) below).
 - 🎓 **Learn:** [docs/learn/](docs/learn/) — an eight-step guided path from installing the package to generating 100,000 pages, live at [pdfnative.dev/learn/](https://pdfnative.dev/learn/).
 - 🤖 **Machine-readable:** [llms.txt](llms.txt) (doc index for LLMs), [AGENTS.md](AGENTS.md) (agent guidance), and [docs/assets/ecosystem.json](docs/assets/ecosystem.json) — the canonical manifest of ecosystem versions and counts, enforced by `npm run verify:docs`.
 
@@ -122,7 +124,7 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | PDF/A (ISO 19005) | 1b, 2b, 2u, 3b | — | — | — | — |
 | Tagged PDF / PDF/UA | ✅ | — | ✅ | — | — |
 | Encryption (read + write) | AES-128/256 + RC4 read | write (RC4) | write | — | write |
-| Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic, Devanagari, Bengali, Tamil | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
+| Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Khmer, Myanmar, Tibetan, Lao, USE, Latin marks | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
 | BiDi (RTL) layout | ✅ | — | — | — | — |
 | Modify existing PDFs | ✅ (incremental) | — | — | ✅ | — |
 | Forms (create + fill + flatten) | ✅ all three | create | create | create + fill | — |
@@ -234,7 +236,9 @@ registerFonts({
   my: () => import('pdfnative/fonts/noto-myanmar-data.js'), // v1.3.0
   am: () => import('pdfnative/fonts/noto-ethiopic-data.js'), // v1.3.0
   // v1.1.0+ — optional Latin fallback for PDF/A documents with curly quotes,
-  // em-dash, ellipsis, etc. (activates automatically when needed):
+  // em-dash, ellipsis, etc. (activates automatically when needed). Since
+  // v1.8.0 it also carries Hausa ɓ ɗ ƙ ƴ, Yoruba and Igbo tone marks (ẹ́ ọ̀ ị́)
+  // and Swahili — no separate module or lang key for those languages:
   latin: () => import('pdfnative/fonts/noto-sans-data.js'),
   // v1.1.0+ — optional monochrome emoji:
   emoji: () => import('pdfnative/fonts/noto-emoji-data.js'),
@@ -258,7 +262,7 @@ const pdf = buildPDFBytes({
 | Chinese (Simplified) | `zh` | Noto Sans SC | CJK ideographs |
 | Korean | `ko` | Noto Sans KR | Hangul syllables |
 | Greek | `el` | Noto Sans Greek | Greek alphabet |
-| Hindi (Devanagari) | `hi` | Noto Sans Devanagari | GSUB conjuncts + GPOS marks |
+| Hindi (Devanagari) | `hi` | Noto Sans Devanagari | Indic OpenType engine — conjuncts, reph, half forms, matras (v1.8.0) |
 | Turkish | `tr` | Noto Sans Turkish | Latin extended (İ/ı) |
 | Vietnamese | `vi` | Noto Sans Vietnamese | Latin + combining marks |
 | Polish | `pl` | Noto Sans Polish | Latin extended (Ł/ł) |
@@ -267,8 +271,14 @@ const pdf = buildPDFBytes({
 | Russian (Cyrillic) | `ru` | Noto Sans | Cyrillic alphabet |
 | Georgian | `ka` | Noto Sans Georgian | Mkhedruli script |
 | Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |
-| Bengali | `bn` | Noto Sans Bengali | GSUB conjuncts + GPOS marks |
-| Tamil | `ta` | Noto Sans Tamil | GSUB ligatures + split vowels |
+| Bengali | `bn` | Noto Sans Bengali | Indic OpenType engine — conjuncts, reph, ya-phala, split vowels (v1.8.0) |
+| Tamil | `ta` | Noto Sans Tamil | Indic OpenType engine — ligatures, pre-base and split vowels (v1.8.0) |
+| Telugu | `te` | Noto Sans Telugu | Indic OpenType engine — subjoined consonants, vattu (v1.3.0; engine v1.8.0) |
+| Sinhala | `si` | Noto Sans Sinhala | Indic OpenType engine — kombuva, rakaransaya, two-part vowels (v1.3.0; engine v1.8.0) |
+| Hausa | `latin` | Noto Sans VF | Latin with ɓ ɗ ƙ ƴ ʼ — no dedicated module (v1.8.0) |
+| Yoruba | `latin` | Noto Sans VF | Latin with ẹ ọ ṣ and combining tone marks, composed by the Latin-marks shaper (v1.8.0) |
+| Igbo | `latin` | Noto Sans VF | Latin with ị ọ ụ ṅ and combining tone marks (v1.8.0) |
+| Swahili | `latin` | Noto Sans VF | Plain Latin — renders with the base-14 fonts too (v1.8.0) |
 | Latin (PDF/A) | `latin` | Noto Sans VF | WinAnsi-extended Latin (curly quotes, em-dash, ellipsis…) |
 | Emoji | `emoji` | Noto Emoji | Monochrome emoji (BMP/SMP, Fitzpatrick, ZWJ, VS-15/16) |
 
@@ -490,7 +500,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **271 sample PDFs** in `test-output/` (git-ignored), organized in 38 categories produced by 49 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
+This creates **279 sample PDFs** in `test-output/` (git-ignored), organized in 38 categories produced by 49 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -554,6 +564,10 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `alphabet-armenian.pdf` | 38 letters, ligatures |
 | `alphabet-bengali.pdf` | Vowels, consonants, conjuncts, digits |
 | `alphabet-tamil.pdf` | Vowels, consonants, compound characters, digits |
+| `alphabet-hausa.pdf` | Boko alphabet, hooked letters ɓ ɗ ƙ ƴ, digraphs, ʼy (v1.8.0) |
+| `alphabet-yoruba.pdf` | ẹ ọ ṣ, tone marks on ẹ / ọ, syllabic ń ǹ (v1.8.0) |
+| `alphabet-igbo.pdf` | ị ọ ụ ṅ, tone marks, digraphs (v1.8.0) |
+| `alphabet-swahili.pdf` | Plain Latin — proof that no module is required (v1.8.0) |
 
 ### PDF/A Conformance Variants
 
@@ -603,18 +617,22 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-image.pdf` | Image embedding (JPEG, centered) |
 | `doc-custom-colors.pdf` | Color formats (hex, tuple, PDF operator) |
 | `doc-japanese.pdf` | Japanese Unicode document (headings, lists, table) |
-| `doc-arabic.pdf` | Arabic RTL document (headings, lists, table, BiDi) |
-| `doc-hebrew.pdf` | Hebrew RTL document (headings, lists, table, BiDi) |
-| `doc-thai.pdf` | Thai user manual (GSUB+GPOS shaping, pricing table) |
-| `doc-bengali.pdf` | Bengali document (GSUB conjuncts + GPOS marks) |
-| `doc-tamil.pdf` | Tamil document (GSUB substitution + split vowels) |
-| `doc-devanagari.pdf` | Hindi (Devanagari) document — GSUB conjuncts, reph reordering, matra reordering, split vowels |
-| `doc-telugu.pdf` | Telugu document (virama conjuncts + GPOS marks, no reph) |
-| `doc-sinhala.pdf` | Sinhala document (virama conjuncts + pre-base kombuva reordering) |
-| `doc-tibetan.pdf` | Tibetan document (vertical subjoined-consonant stacking) |
-| `doc-khmer.pdf` | Khmer document (USE-lite: coeng subscripts, pre-base vowels) |
-| `doc-myanmar.pdf` | Myanmar document (USE-lite: medials, pre-base reordering) |
-| `doc-amharic.pdf` | Amharic/Ethiopic document (syllabic abugida, no reordering) |
+| `doc-arabic.pdf` | Arabic one-page conformance document — stacked harakat, lam-alef, Persian/Urdu letters in mixed BiDi, Arabic-Indic digits (rewritten v1.8.0) |
+| `doc-hebrew.pdf` | Hebrew one-page conformance document — niqqud, dagesh, shin/sin dots, mixed LTR (rewritten v1.8.0) |
+| `doc-thai.pdf` | Thai one-page conformance document — tone marks over vowels, sara am, stacked marks (rewritten v1.8.0) |
+| `doc-bengali.pdf` | Bengali one-page conformance document — reph, ya-phala, ra-phala, ক্ষ জ্ঞ, split vowels ো ৌ, chandrabindu (rewritten v1.8.0) |
+| `doc-tamil.pdf` | Tamil one-page conformance document — ி after its consonant, ெ ே ை before, split ொ ோ ௌ, pulli, ரூ ஸ்ரீ ligatures (rewritten v1.8.0) |
+| `doc-devanagari.pdf` | Hindi one-page conformance document — ि reordering, reph, rakar, half forms, क्ष ज्ञ त्र, nukta, anusvara, digits (rewritten v1.8.0) |
+| `doc-telugu.pdf` | Telugu one-page conformance document — subjoined consonants, vattu, ై, anusvara, digits (rewritten v1.8.0) |
+| `doc-sinhala.pdf` | Sinhala one-page conformance document — kombuva, rakaransaya ශ්‍රී, yansaya, two-part vowels, hal kirima (rewritten v1.8.0) |
+| `doc-tibetan.pdf` | Tibetan one-page conformance document — consonant stacks, vowel signs, tsheg and shad (rewritten v1.8.0) |
+| `doc-khmer.pdf` | Khmer one-page conformance document — coeng subscripts, pre-base vowels, series (rewritten v1.8.0) |
+| `doc-myanmar.pdf` | Myanmar one-page conformance document — kinzi, medials, stacked consonants (rewritten v1.8.0) |
+| `doc-amharic.pdf` | Amharic one-page conformance document — syllabary orders, ። ፣ punctuation, Ethiopic digits (rewritten v1.8.0) |
+| `doc-hausa.pdf` | Hausa one-page conformance document — ɓ ɗ ƙ ƴ, capitals Ɓ Ɗ Ƙ Ƴ, ʼy, digraphs, on the `latin` module (v1.8.0) |
+| `doc-yoruba.pdf` | Yoruba one-page conformance document — ẹ ọ ṣ, acute and grave tone marks on ẹ / ọ, syllabic ń ǹ (v1.8.0) |
+| `doc-igbo.pdf` | Igbo one-page conformance document — ị ọ ụ ṅ with tone marks, digraphs (v1.8.0) |
+| `doc-swahili.pdf` | Swahili one-page conformance document — plain Latin, numbers and dates (v1.8.0) |
 | `doc-chinese-catalog.pdf` | Chinese product catalog (tables, ordering info) |
 | `doc-multi-language.pdf` | Multi-language showcase: all 27 Unicode scripts in one PDF |
 | `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
@@ -983,7 +1001,7 @@ Types: `PrintOptions` (`layout.print`: `bleed`, `trimBox`, `bleedBox`, `artBox`,
 | `setDefaultCreationDate(date)` | Pin the instant every subsequent build is stamped with when `layout.creationDate` is absent (`null` restores the wall clock) — fixes `/CreationDate`, `/ModDate`, the XMP dates and therefore the trailer `/ID`, so unencrypted output becomes a pure function of its inputs |
 | `getDefaultCreationDate()` | The pinned date, or `null` |
 
-**Reproducible bytes.** Precedence is `layout.creationDate`, then the pinned default, then `new Date()`. The date is formatted in the host time zone (the offset is part of `/CreationDate` and `xmp:CreateDate`), so pin `TZ` as well — the sample harness runs under `TZ=UTC` — when two hosts must produce identical bytes. Encryption keys and IVs stay random by design; `PdfSignOptions.signingTime` and the modifier's modification dates keep their own options. `npm run verify:samples` is the byte-regression pattern a consumer can copy.
+**Reproducible bytes.** Precedence is `layout.creationDate`, then the pinned default, then `new Date()`. Every date is written in UTC with an explicit `+00'00'` offset (v1.8.0), so a pinned instant yields identical bytes on any host without a `TZ` pin. Encryption keys and IVs stay random by design; `PdfSignOptions.signingTime` and the modifier's modification dates keep their own options. `npm run verify:samples` is the byte-regression pattern a consumer can copy.
 
 ### Compression
 
@@ -1028,11 +1046,12 @@ Colour-glyph types (`ColorLayer`, `ColorPaint`, …) describe the bundled COLRv1
 | Function | Description |
 |----------|-------------|
 | `shapeThaiText(str, fontData)` | Thai OpenType shaping (GSUB + GPOS) |
-| `shapeBengaliText(str, fontData)` | Bengali GSUB conjuncts + GPOS marks |
-| `shapeTamilText(str, fontData)` | Tamil GSUB + split vowel decomposition |
-| `shapeDevanagariText(str, fontData)` | Devanagari cluster shaping + GSUB/GPOS |
-| `shapeTeluguText(str, fontData)` | Telugu GSUB conjuncts + GPOS marks (v1.3.0) |
-| `shapeSinhalaText(str, fontData)` | Sinhala conjuncts + pre-base reorder + GSUB/GPOS (v1.3.0) |
+| `shapeBengaliText(str, fontData)` | Bengali on the Indic OpenType engine — reph, ya-phala, conjuncts, split vowels (engine v1.8.0) |
+| `shapeTamilText(str, fontData)` | Tamil on the Indic OpenType engine — pre-base and split vowels, ligatures (engine v1.8.0) |
+| `shapeDevanagariText(str, fontData)` | Devanagari on the Indic OpenType engine — reph, rakar, half forms, conjuncts, matras (engine v1.8.0) |
+| `shapeTeluguText(str, fontData)` | Telugu on the Indic OpenType engine — subjoined consonants, vattu (v1.3.0; engine v1.8.0) |
+| `shapeSinhalaText(str, fontData)` | Sinhala on the Indic OpenType engine — kombuva, rakaransaya, two-part vowels (v1.3.0; engine v1.8.0) |
+| `shapeLatinMarksText(str, fontData)` | Latin combining marks — `ccmp`, mark-to-base, mark-to-mark for Yoruba, Igbo and NFD text (v1.8.0) |
 | `shapeTibetanText(str, fontData)` | Tibetan vertical subjoined stacking (v1.3.0) |
 | `shapeKhmerText(str, fontData)` | Khmer USE-lite — coeng subscripts + pre-base vowels (v1.3.0) |
 | `shapeMyanmarText(str, fontData)` | Myanmar USE-lite — medials + virama stacking (v1.3.0) |
@@ -1264,8 +1283,10 @@ src/
 ├── shaping/
 │   ├── script-registry.ts # Centralized Unicode range constants & script predicates
 │   ├── thai-shaper.ts    # Thai GSUB + GPOS shaping pipeline
-│   ├── bengali-shaper.ts # Bengali GSUB conjuncts + GPOS mark positioning
-│   ├── tamil-shaper.ts   # Tamil GSUB + split vowel decomposition
+│   ├── indic-engine.ts   # Indic OpenType engine (Devanagari, Bengali, Tamil, Telugu, Sinhala configs)
+│   ├── bengali-shaper.ts # Bengali cluster analysis + engine config
+│   ├── tamil-shaper.ts   # Tamil cluster analysis + engine config
+│   ├── latin-marks.ts    # Latin combining marks (ccmp + GPOS anchors)
 │   ├── script-detect.ts  # Unicode script range detection (uses script-registry)
 │   ├── multi-font.ts     # Cross-script font run splitting
 │   ├── bidi.ts           # Unicode Bidirectional Algorithm (UAX #9)
@@ -1276,8 +1297,8 @@ src/
 
 fonts/                    # Pre-built font data modules (27 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (49 generators, 271 PDFs)
-tests/                    # 3460+ tests (154 files: unit + integration + fuzz + parser + docs)
+scripts/                  # Modular sample PDF generation (49 generators, 279 PDFs)
+tests/                    # 3717+ tests (159 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1289,9 +1310,9 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (3460+ tests)
+npm run test             # vitest run (3717+ tests)
 npm run test:coverage    # vitest with v8 coverage (91.4 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
-npm run test:generate       # Generate 271 sample PDFs → test-output/ (set TZ=UTC for cross-host byte identity, see §Reproducible builds)
+npm run test:generate       # Generate 279 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -1304,7 +1325,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3460+ (154 files) |
+| Tests | 3717+ (159 files) |
 | Statement coverage | 91.4 % (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |
@@ -1328,13 +1349,14 @@ For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tone
 | CJK (Japanese, Chinese, Korean) | ✅ Perfect | ✅ Perfect |
 | Vietnamese (combining diacritics) | ✅ Perfect | ⚠️ May show Win-1252 fallback artifacts |
 | Thai (GSUB + GPOS shaping) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Devanagari (matras, conjuncts) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Tamil (split vowels, GSUB) | ✅ Perfect | ⚠️ Split vowel recomposition may fail |
+| Devanagari (matras, conjuncts) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); marks may be reordered by spatial extractors |
+| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); marks may be reordered by spatial extractors |
+| Tamil (split vowels, GSUB) | ✅ Perfect | ✅ Ligatures map to their letters (v1.8.0); split vowels may be reordered by spatial extractors |
+| Yoruba / Igbo (Latin combining marks) | ✅ Perfect | ✅ Composed marks map to base + mark (v1.8.0) |
 
 ### Why this happens
 
-This is an inherent limitation of the PDF spec (ISO 32000-1), not a bug in pdfnative. The ToUnicode CMap correctly maps glyph IDs back to Unicode code points, but extractors that rely on spatial reconstruction rather than CMap lookup will produce artifacts. This behavior is shared by most PDF generators that don't use Tagged PDF.
+This is an inherent limitation of the PDF spec (ISO 32000-1), not a bug in pdfnative. The ToUnicode CMap correctly maps glyph IDs back to Unicode code points — since v1.8.0 a conjunct, a subjoined form or a composed mark produced by the Indic engine or the Latin-marks shaper maps to all of its source code points — but extractors that rely on spatial reconstruction rather than CMap lookup will produce artifacts. This behavior is shared by most PDF generators that don't use Tagged PDF.
 
 ### Tagged PDF, /ActualText & PDF/A — Implemented ✅
 

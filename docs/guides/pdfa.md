@@ -67,13 +67,15 @@ Every output written with `tagged` set ships:
   Mind the profile version: PDF/A-1b requires an ICC v2 profile
   (ISO 19005-1 §6.2.2); v4 profiles are allowed from PDF/A-2 on
   (ISO 19005-2 §6.2.4.2). pdfnative checks the profile's signature, size
-  field and data colour space but not its version — supply a v2 profile for
-  a 1b claim.
+  field and data colour space, and since v1.8.0 raises
+  `PDFA_ICC_PROFILE_VERSION` when a v4 (or later) profile is combined with
+  a `pdfa1b` claim — supply a v2 profile for 1b, or claim `pdfa2b`.
 - `/MarkInfo << /Marked true >>` on the catalog.
 - A trailer `/ID` derived deterministically from the document title and
   creation timestamp.
-- `/Info CreationDate` byte-equivalent to `xmp:CreateDate`, both with
-  timezone offsets.
+- `/Info CreationDate` byte-equivalent to `xmp:CreateDate`, both in UTC
+  with an explicit `+00'00'` / `+00:00` offset (since v1.8.0; the host
+  time zone no longer appears in the file).
 
 ## Conformance diagnostics (v1.7.0)
 
@@ -87,6 +89,7 @@ them through a single diagnostics channel:
 | `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim whose `OutputIntent` is not CMYK (ISO 19005-2 §6.2.4.3). Silent under a CMYK intent since v1.8.0. |
 | `PDFA_DEVICE_CMYK_CONTENT` | A CMYK colour (`[c, m, y, k]` or `'C M Y K'`) painted under a PDF/A claim whose `OutputIntent` is not CMYK (same §6.2.4.3 rule). Since v1.8.0. |
 | `PDFA_UNEMBEDDED_FORM_FONT` | AcroForm fields under a PDF/A claim — form appearances render through an unembedded base-14 `/Helv` font (same §6.2.11.4.1 rule). Flatten the form or drop the level. |
+| `PDFA_ICC_PROFILE_VERSION` | An ICC v4 (or later) `outputIntent` profile under a `pdfa1b` claim — ISO 19005-1 §6.2.2 restricts PDF/A-1 to v2 profiles; v4 is allowed from PDF/A-2 on (ISO 19005-2 §6.2.4.2). Supply a v2 profile or claim `pdfa2b`. Since v1.8.0. |
 
 By default each diagnostic is a `console.warn`, deduplicated **once per code
 per build**. Two layout options change that:

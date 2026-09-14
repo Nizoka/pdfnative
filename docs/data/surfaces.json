@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable form of the capability × surface table in docs/guides/choose.md. Hand-maintained, verified against the sources on the date below: library `call` names against src/index.ts exports, CLI `command` names against packages.pdfnative-cli.commandGroups and MCP `tool` names against packages.pdfnative-mcp.tools in docs/assets/ecosystem.json (the single source of truth for names and counts — regenerate nothing from this file), React entries against docs/guides/react.md. Each `since` is a version of that surface's OWN package (pdfnative, pdfnative-cli, pdfnative-mcp or pdfnative-react); it is omitted where the capability predates 1.0.0 or the introducing release is not documented. `supported: false` cells carry a note naming the honest alternative where one exists.",
-  "verifiedOn": "2026-09-14",
+  "verifiedOn": "2026-09-15",
   "capabilities": [
     {
       "id": "generate",
@@ -157,7 +157,7 @@
     {
       "id": "validate-pdfx",
       "label": "Validate PDF/X-4",
-      "library": { "supported": true, "call": "validatePdfX", "since": "1.8.0", "notes": "Structural check of the ISO 15930-7 prerequisites (header, XMP identification, OutputIntent profile, page boxes, embedded fonts in page resources and reached XObjects, annotations, actions, LZW, transfer functions, device colour). It does not replace a certified preflight." },
+      "library": { "supported": true, "call": "validatePdfX", "since": "1.8.0", "notes": "Structural check of the ISO 15930-7 prerequisites (header, XMP identification, OutputIntent profile, page boxes, embedded fonts in page resources, reached XObjects and annotation appearances, annotations, actions, embedded files, OPI / PostScript / reference XObjects, LZW, any /TR transfer function, device colour). It does not replace a certified preflight." },
       "cli": { "supported": false, "notes": "inspect --check knows pdfua only; a pdfx check is not exposed yet." },
       "mcp": { "supported": false, "notes": "validate_pdf checks PDF/UA only." },
       "react": { "supported": false }
@@ -173,7 +173,7 @@
     {
       "id": "deterministic-output",
       "label": "Reproducible bytes",
-      "library": { "supported": true, "call": "layout.creationDate, or setDefaultCreationDate(date) once per process; getDefaultCreationDate", "since": "1.8.0", "notes": "Pins /CreationDate, /ModDate, the XMP dates and therefore the trailer /ID. The date is formatted in the host time zone, so pin TZ (the sample harness runs under TZ=UTC) for cross-host identity. The {date} header/footer placeholder follows the pinned date since 1.8.0." },
+      "library": { "supported": true, "call": "layout.creationDate, or setDefaultCreationDate(date) once per process; getDefaultCreationDate", "since": "1.8.0", "notes": "Pins /CreationDate, /ModDate, the XMP dates and therefore the trailer /ID. Dates are written in UTC with an explicit +00'00' offset, so a pinned instant is byte-identical across hosts without a TZ pin. The {date} header/footer placeholder follows the pinned date since 1.8.0." },
       "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "layout.creationDate in the document JSON or a --layout file." },
       "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.6.0", "notes": "creationDate (ISO-8601) on all nine document tools." },
       "react": { "supported": true, "call": "layout.creationDate render option" }

@@ -228,10 +228,11 @@ RGB intent (`PDFX_DEVICE_CMYK`). Warnings — a header below 1.6, a halftone
 other than `/Default`, an interpolated image — are non-blocking.
 
 > **Honest caveat.** `validatePdfX()` checks what the structure can prove and
-> does not render. It does not check fonts inside annotation appearance
-> streams, colour inside Form XObjects and images, OPI and PostScript
-> XObjects, reference XObjects, embedded files, transparency blend spaces,
-> optional content, or anything that needs rendering. veraPDF does not cover
+> does not render. It does not check colour inside Form XObjects and images,
+> transparency blend spaces, optional content, or anything that needs
+> rendering (fonts inside annotation appearances, OPI, PostScript and
+> reference XObjects, embedded files and transfer functions are checked
+> since v1.8.0). veraPDF does not cover
 > PDF/X, and a `valid` result means the structural prerequisites hold — a
 > certified preflight (callas pdfToolbox, Acrobat Preflight) remains
 > necessary before a file goes to press. See [Print production](print.html).
@@ -327,10 +328,10 @@ its inputs plus one instant: the creation date, which stamps `/CreationDate`,
 `/ModDate`, the XMP dates and, through them, the trailer `/ID`. Pin it with
 `layout.creationDate` per call, or once per process with
 `setDefaultCreationDate(date)` (`getDefaultCreationDate()` reads it back,
-`null` restores the wall clock). The date is formatted in the host time zone,
-so pin `TZ` as well — the sample harness runs under `TZ=UTC` — before
-comparing bytes across machines. Encryption keys and IVs stay random by
-design, and `PdfSignOptions.signingTime` keeps its own option.
+`null` restores the wall clock). Every date is written in UTC with an
+explicit `+00'00'` offset, so a pinned instant yields the same bytes on any
+host without a `TZ` pin. Encryption keys and IVs stay random by design, and
+`PdfSignOptions.signingTime` keeps its own option.
 
 **Byte regression.** With the date pinned, a SHA-256 of each artefact is a
 sufficient CI assertion. pdfnative's own `npm run verify:samples` is the

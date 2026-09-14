@@ -6,7 +6,7 @@
 > Longer forms: [llms.txt](https://pdfnative.dev/llms.txt) (index),
 > [llms-full.txt](https://pdfnative.dev/llms-full.txt) (full corpus),
 > [llms-index.json](https://pdfnative.dev/llms-index.json) (per-page sizes and anchors).
-> _Verified on 2026-09-14 against the source tree by `npm run verify:docs`._
+> _Verified on 2026-09-15 against the source tree by `npm run verify:docs`._
 
 ## What it is
 
@@ -20,7 +20,9 @@ decrypt, extract text, read/fill/flatten forms, merge/split/extract pages,
 verify PDF/UA and PDF/X-4 structure) — 27 Unicode scripts, with
 OpenType GSUB/GPOS shaping for the complex ones (Thai, Arabic, Devanagari,
 Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Lao, Tai Tham,
-New Tai Lue, Tai Le, Cham) and full UAX #9 BiDi.
+New Tai Lue, Tai Le, Cham; the five Indic scripts on one OpenType engine
+since 1.8.0), Latin combining marks (Yoruba, Igbo, NFD text) on the
+bundled `latin` module, and full UAX #9 BiDi.
 
 ## Choose your surface
 
@@ -163,9 +165,8 @@ OutputIntent profile) are in
     can differ from 1.7.0, and now matches the source text.
 11. **`{date}` in a header or footer follows `layout.creationDate`** (or the
     pinned default) since 1.8.0, not the wall clock; a pinned build renders
-    the pinned date. The pinned date is formatted in the host time zone, so
-    pin `TZ` (the sample harness uses `TZ=UTC`) for identical bytes across
-    machines.
+    the pinned date. Every date is written in UTC (`+00'00'`), so a pinned
+    build is byte-identical across machines without a `TZ` pin.
 
 ## Verify your own output
 

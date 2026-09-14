@@ -200,7 +200,7 @@ Produces a multi-page document from a list of content blocks.
 
 **Honest PDF/A** _(v1.6.0)_: text rendered through the viewer's base-14 Helvetica is not embedded, so a PDF/A claim on such a file is rejected by veraPDF. `embedFonts: true` embeds Noto Sans Latin for a valid claim; `strict: true` fails instead of producing a non-conformant file; `includeDiagnostics: true` echoes the engine's diagnostics (`PDFA_NO_FONT_ENTRIES`, `PDFA_UNEMBEDDED_FORM_FONT`, `PDFA_DEVICE_CMYK_IMAGE`).
 
-**Reproducible output** _(v1.6.0)_: `creationDate` (ISO-8601) on all nine document tools pins `/Info /CreationDate`, the XMP dates and therefore the trailer `/ID` — byte-identical output on the same host time zone.
+**Reproducible output** _(v1.6.0)_: `creationDate` (ISO-8601) on all nine document tools pins `/Info /CreationDate`, the XMP dates and therefore the trailer `/ID` — byte-identical output on any host since the engine writes dates in UTC (pdfnative 1.8.0; on 1.7.0 the host time zone had to match).
 
 ---
 

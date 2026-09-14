@@ -215,7 +215,7 @@ applyTo: "src/core/**"
 - `pdf-color.ts` is the one colour-operator choke point: `parseColor` (hex, RGB tuple, CMYK percent tuple, `'r g b'` / `'c m y k'` operand strings) → `resolveColor` (`{ space, operands }`) → `fillOp` / `strokeOp`, which pick `rg`/`RG` or `k`/`K` by component count. Every call site (101 at the 1.8.0 refactor) emits colour through these; never format a colour operator inline
 - CMYK never leaves its space silently: chart tints remove ink instead of mixing toward white, and an outline `/C` (DeviceRGB by definition) gets a device-formula approximation
 - `pdf-content-colour.ts` (`scanDeviceColour`) is a content-stream **tokenizer** (strings, comments, names and inline-image data skipped as ISO 32000-1 §7.2 defines them), used by the builders to check content against the OutputIntent before writing (`PDFA_DEVICE_CMYK_CONTENT`, `PDFX_DEVICE_CMYK`) and by `validatePdfX` afterwards. Never replace it with a regular expression over the stream
-- Reproducibility: `pdf-reproducible.ts` (`setDefaultCreationDate`) sits between `layout.creationDate` and `new Date()`; the date is formatted in the host time zone, so byte tests pin `TZ=UTC`
+- Reproducibility: `pdf-reproducible.ts` (`setDefaultCreationDate`) sits between `layout.creationDate` and `new Date()`; every date is formatted in UTC by `buildPdfMetadata` and the builders' `dateStr` (`getUTC*` getters, literal `+00'00'` / `+00:00` offsets — never `Z`, never the host's zone offset), so bytes are host-independent; `tests/core/pdf-reproducible.test.ts` builds the same document under two `TZ` values and compares
 
 ## Header/Footer Template Model
 - `PageTemplate` type: `{ left?: string; center?: string; right?: string; fontSize?: number; color?: PdfColor }`

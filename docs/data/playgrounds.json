@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable inventory of the live playgrounds (docs/playgrounds/*.html, redirect stubs excluded). Hand-maintained; the playgrounds-manifest rule of scripts/verify-docs.ts checks that every live page is listed and every listed page exists, and that the count equals derived.playgrounds in docs/assets/ecosystem.json. Control ids are DOM ids on the page. selfContained: true means every code view of the page (the CODE object shown in #code-view and copied by the Copy button) declares all it uses and imports only from 'pdfnative', so it reproduces the result outside the browser; tests/docs/playgrounds.test.ts runs each such view in Node and locks that promise. false carries a note saying why the page is not covered.",
-  "verifiedOn": "2026-09-14",
+  "verifiedOn": "2026-09-15",
   "engine": "pdfnative@1.8.0 loaded from a CDN (esm.sh, jsdelivr or unpkg); nothing runs server-side",
   "playgrounds": [
     {
@@ -42,7 +42,7 @@
         { "id": "generate", "kind": "button" },
         { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
       ],
-      "exercises": ["registerFonts", "loadFontData", "buildDocumentPDFBytes", "downloadBlob", "params.fontEntries", "font routing across 27 scripts", "shaping.use (nod, cjm)", "shaping.lao", "shaping.emoji (COLRv1 and monochrome)", "font subsetting (CIDFont Type2, Identity-H)"],
+      "exercises": ["registerFonts", "loadFontData", "buildDocumentPDFBytes", "downloadBlob", "params.fontEntries", "font routing across 27 scripts", "shaping.indic (hi, bn, ta, te, si — one OpenType engine since 1.8.0)", "shaping.use (nod, cjm)", "shaping.lao", "shaping.latin-marks (Yoruba and Igbo tone marks on the latin module)", "shaping.emoji (COLRv1 and monochrome)", "font subsetting (CIDFont Type2, Identity-H)"],
       "codeView": "#code-view",
       "selfContained": false,
       "note": "The code view is assembled from the form inputs at runtime and registers its fonts from esm.sh URLs, so it is not run by tests/docs/playgrounds.test.ts; it reproduces the result once those URLs are replaced by pdfnative/fonts/* imports.",

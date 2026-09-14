@@ -108,7 +108,7 @@ const pdf = buildDocumentPDFBytes({
 });
 ```
 
-The `lang` property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Thai, Lao, Tai Tham, and Cham.
+The `lang` property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Thai, Lao, Tai Tham, and Cham. Since v1.8.0 the five Indic scripts share one OpenType engine that applies the font's own features in specification order (reph, half forms, subjoined consonants, pre-base vowel signs), and Latin text with free-standing combining marks — Yoruba ẹ́ ọ̀, Igbo ị́, NFD accents — is composed through the font's `ccmp` and anchors when set in a registered font such as the bundled `latin` module.
 
 ### Why does my Arabic text appear backwards?
 
@@ -116,7 +116,7 @@ The most common cause: missing `lang: 'ar'` on the font entry. Without it, BiDi 
 
 ### Which scripts are supported out of the box?
 
-31 Noto font-data modules ship with the package: the 27 scripts — Amharic/Ethiopic, Arabic, Armenian, Bengali, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Myanmar, Polish, Simplified Chinese, Sinhala, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese — plus Latin (Noto Sans), math (Noto Sans Math), and monochrome + COLRv1 colour emoji.
+31 Noto font-data modules ship with the package: the 27 scripts — Amharic/Ethiopic, Arabic, Armenian, Bengali, Cham, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Lao, Myanmar, New Tai Lue, Polish, Simplified Chinese, Sinhala, Tai Le, Tai Tham, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese — plus Latin (Noto Sans), math (Noto Sans Math), and monochrome + COLRv1 colour emoji. Latin-script languages with extended letters or tone marks — Hausa, Yoruba, Igbo, Swahili — need only the `latin` module.
 
 ---
 

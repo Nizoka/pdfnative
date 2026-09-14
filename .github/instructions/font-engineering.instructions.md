@@ -21,7 +21,7 @@ applyTo: "src/fonts/**"
 ## TTF Subsetting Rules
 - Always preserve GID 0 (`.notdef`) — required by PDF/A and most viewers
 - Subset tables required: `head`, `hhea`, `maxp`, `OS/2`, `name`, `cmap`, `loca`, `glyf`, `hmtx`, `post`; kept verbatim when the source has them: `prep`, `fpgm`, `cvt `, `gasp` (hinting and dropout control — outlines never change, and no table is ever synthesised)
-- Recalculate `checkSumAdjustment` in `head` table after subsetting
+- Recalculate `checkSumAdjustment` in `head` table after subsetting: written as `0xB1B0AFBA − checksum(whole file)` with the field itself zeroed during the sum (ISO/IEC 14496-22 §5.2.3) — since v1.8.0; the table-directory checksum of `head` is computed with the field at zero, which is what `tests/fonts/font-subsetter.test.ts` reproduces
 - Table offsets must be 4-byte aligned (pad with zeros)
 - `loca` format (short/long) must match `head.indexToLocFormat`
 - Compound glyphs: recursively include component GIDs with iteration limit to prevent infinite loops
@@ -30,8 +30,9 @@ applyTo: "src/fonts/**"
 ## Font Data Modules
 - Lazy-loaded via `registerFont()` / `loadFontData()` pattern
 - Base64 TTF decoded once, cached — never decode twice
-- Font data shape: `{ metrics, fontName, cmap, widths, pdfWidthArray, ttfBase64, gsub, ligatures, markAnchors, mark2mark }` — `pdfWidthArray` is required (`validateFontData()` reports it when missing)
-- Build with: `npx pdfnative-build-font <input.ttf> <output.js>`
+- Font data shape: `{ metrics, fontName, cmap, widths, pdfWidthArray, ttfBase64, gsub, ligatures, markAnchors, mark2mark, features, kern, otl }` — `pdfWidthArray` is required (`validateFontData()` reports it when missing); `otl` (v1.8.0, `null` when the font has no layout the shapers use) is the per-script, per-feature GSUB layout plus GDEF mark ranges the Indic engine and the Latin-marks shaper consume; `markAnchors.marks[gid]` / `mark2Classes[gid]` are flat triples `[class, x, y, …]`, one per GPOS subtable covering the mark, with classes unique across subtables — see `text-shaping.instructions.md` §GSUB/GPOS Data Format
+- Build with: `npx pdfnative-build-font <input.ttf> <output.js>`; `tools/build-font-data.cjs` (reference) and `src/tools/font-compiler.ts` (`compileFontData`) must stay byte-identical — extend both, and `tests/tools/font-compiler.test.ts` runs the CLI on a synthetic font to prove it
+- Source fonts are pinned in `fonts/SOURCES.json` (google/fonts commit, SHA-256 per TTF); `npm run fonts:download` verifies them and `npm run verify:fonts` refuses a source whose hash drifted
 
 ## CMap Builder
 - `/CMapName /Adobe-Identity-UCS def`

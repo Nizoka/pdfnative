@@ -123,13 +123,15 @@ the claim holds — see the <a href="print.html#custom-outputintent-taggedpdf-a"
 Mind the profile version: PDF/A-1b requires an ICC v2 profile
 (ISO 19005-1 §6.2.2); v4 profiles are allowed from PDF/A-2 on
 (ISO 19005-2 §6.2.4.2). pdfnative checks the profile&#39;s signature, size
-field and data colour space but not its version — supply a v2 profile for
-a 1b claim.</li>
+field and data colour space, and since v1.8.0 raises
+<code>PDFA_ICC_PROFILE_VERSION</code> when a v4 (or later) profile is combined with
+a <code>pdfa1b</code> claim — supply a v2 profile for 1b, or claim <code>pdfa2b</code>.</li>
 <li><code>/MarkInfo &lt;&lt; /Marked true &gt;&gt;</code> on the catalog.</li>
 <li>A trailer <code>/ID</code> derived deterministically from the document title and
 creation timestamp.</li>
-<li><code>/Info CreationDate</code> byte-equivalent to <code>xmp:CreateDate</code>, both with
-timezone offsets.</li>
+<li><code>/Info CreationDate</code> byte-equivalent to <code>xmp:CreateDate</code>, both in UTC
+with an explicit <code>+00&#39;00&#39;</code> / <code>+00:00</code> offset (since v1.8.0; the host
+time zone no longer appears in the file).</li>
 </ul>
 <h2 id="conformance-diagnostics-v170">Conformance diagnostics (v1.7.0)<a class="heading-anchor" href="#conformance-diagnostics-v170" aria-label="Link to this section">#</a></h2>
 <p>Configurations that produce a PDF/A claim veraPDF would reject no longer fail
@@ -157,6 +159,10 @@ them through a single diagnostics channel:</p>
 <tr>
 <td><code>PDFA_UNEMBEDDED_FORM_FONT</code></td>
 <td>AcroForm fields under a PDF/A claim — form appearances render through an unembedded base-14 <code>/Helv</code> font (same §6.2.11.4.1 rule). Flatten the form or drop the level.</td>
+</tr>
+<tr>
+<td><code>PDFA_ICC_PROFILE_VERSION</code></td>
+<td>An ICC v4 (or later) <code>outputIntent</code> profile under a <code>pdfa1b</code> claim — ISO 19005-1 §6.2.2 restricts PDF/A-1 to v2 profiles; v4 is allowed from PDF/A-2 on (ISO 19005-2 §6.2.4.2). Supply a v2 profile or claim <code>pdfa2b</code>. Since v1.8.0.</td>
 </tr>
 </tbody></table>
 <p>By default each diagnostic is a <code>console.warn</code>, deduplicated <strong>once per code

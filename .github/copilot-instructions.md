@@ -127,8 +127,8 @@ npm run docs:all         # docs:api + docs:guides + docs:llms
 - Typography: en-dash `–` (U+2013) with spaces as title/footer separator, not em-dash — WinAnsi-encodable and 44 % narrower. Uniform `•` bullet at every list depth (zero-tofu choice).
 - BiDi: UAX #9 with isolates, embeddings normalised to isolates, full L4 mirroring (generated `bidi-mirroring-data.ts`, applied before any cmap lookup), I1/I2 digit levels;
   `resolveBidiRuns()` returns runs in visual order. Arabic: GSUB positional forms + lam-alef; Hebrew: BiDi order only.
-- Shaping: `tryLigature()` in `gsub-driver.ts` and the mark positioners in `gpos-positioner.ts` are shared by every Indic/Arabic shaper;
-  `classifyUseCategory()` (`use-lite.ts`) is the joiner-classification authority. Colour-emoji sequences are matched longest-first and fall back per codepoint.
+- Shaping: the five Indic scripts are `IndicScriptConfig`s for `indic-engine.ts` (`otl` features, `attachMarks()`); `latin-marks.ts` composes
+  combining marks; `classifyUseCategory()` (`use-lite.ts`) classifies joiners. Colour-emoji sequences are matched longest-first and fall back per codepoint.
   Dispatch is `findShaper()` over `SCRIPT_SHAPERS` (`shaper-registry.ts`), never a per-script `if` ladder; unmatched scripts go to `use-shaper.ts` (USE; `use-data.ts` is generated, `verify:unicode`).
 - Typography (`pdf-typography`, `pdf-pagination`) and PDF/X (`pdf-print`, `resolvePdfXConfig`, `parser/pdf-x-validator`) are opt-in: absent, output is byte-identical.
   New diagnostic codes go in `PdfDiagnosticCode` AND `docs/data/errors.json`; thrown build messages a downstream tool classifies go in `errors.json` `buildErrors`.
