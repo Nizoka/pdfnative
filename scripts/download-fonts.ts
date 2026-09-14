@@ -1,167 +1,262 @@
+#!/usr/bin/env tsx
 /**
- * Download Noto Sans + Noto Emoji TTF fonts for pdfnative development.
+ * pdfnative — Pinned source-font download (v1.8.0)
+ * ==================================================
+ * Populates fonts/ttf/ with the exact TTFs the bundled `fonts/*-data.js`
+ * modules were built from, as recorded in fonts/SOURCES.json:
  *
- * Fetches Noto Sans variable-font TTFs (incl. Ethiopic, Sinhala, Tibetan,
- * Khmer, Myanmar, Lao, Tai Tham, New Tai Lue, Tai Le, Cham) and Noto Emoji from the
- * google/fonts repository and saves them to fonts/ttf/ with the local
- * filenames used by build-font-data.
+ *   - `fonts[]` entries are fetched from the google/fonts repository at the
+ *     commit the manifest pins (`upstream.commit`, or an entry's own `commit`
+ *     when a later upstream release replaced the file the module uses), and
+ *     every byte is SHA-256-checked before the file is written. A mismatch
+ *     is an error, not a warning: a silently different source font would
+ *     make `npm run verify:fonts` fail for a reason nobody could see.
+ *   - `fonts[]` entries with `"origin": "tree"` and every `derived[]` entry
+ *     are committed to fonts/ttf/ (small static instances and the five
+ *     pyftsubset Latin subsets that no upstream URL reproduces); they are
+ *     only verified here, never downloaded.
  *
  * Usage:
- *   npx tsx scripts/download-fonts.ts           # skip existing files
- *   npx tsx scripts/download-fonts.ts --force    # re-download all
+ *   npm run fonts:download                       # fetch what is missing, verify the rest
+ *   npx tsx scripts/download-fonts.ts --force    # re-download every upstream font
+ *   npx tsx scripts/download-fonts.ts --dir <path>
+ *   npx tsx scripts/download-fonts.ts --update-manifest --commit <40-hex sha>
+ *       rewrites fonts/SOURCES.json from the files on disk (hashes, sizes,
+ *       the new commit and today's date). Run `--force` afterwards to prove
+ *       the pinned commit really serves those bytes.
  *
- * The 5 Latin-subset fonts (Cyrillic, Greek, Polish, Turkish, Vietnamese) are
- * derived from NotoSans and must be subsetted separately — see CONTRIBUTING.md.
- * This script downloads the full NotoSans VF as a development placeholder for
- * each. NotoSans-VF.ttf also doubles as the source for `noto-sans-data.js`
- * (the v1.1.0 Latin fallback for PDF/A documents).
+ * Exit codes:
+ *   0 — every manifest entry is on disk with the recorded hash
+ *   1 — a download failed, a hash differed, or a committed file is missing
+ *   2 — bad usage
  *
- * NotoEmoji-Regular.ttf is the source for `noto-emoji-data.js` (v1.1.0
- * monochrome emoji — OFL-1.1, no COLRv1).
- *
- * License: All Noto fonts are distributed under the SIL Open Font License 1.1.
+ * License: all Noto fonts are distributed under the SIL Open Font License 1.1.
  */
 
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const TTF_DIR = join(__dirname, '..', 'fonts', 'ttf');
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const MANIFEST_PATH = join(REPO_ROOT, 'fonts', 'SOURCES.json');
+const DEFAULT_TTF_DIR = join(REPO_ROOT, 'fonts', 'ttf');
+const RAW_BASE = 'https://raw.githubusercontent.com';
 
-// ── Font manifest ────────────────────────────────────────────────────
+// ── Manifest ────────────────────────────────────────────────────────
 
-const BASE = 'https://raw.githubusercontent.com/google/fonts/main/ofl';
-
-interface FontEntry {
-    /** Local filename saved to fonts/ttf/ */
-    local: string;
-    /** Remote filename in google/fonts repo (URL-encoded) */
-    remote: string;
-    /** google/fonts ofl subdirectory */
-    dir: string;
+export interface UpstreamFont {
+    /** Local filename in fonts/ttf/ — the name the module's "Source:" header names. */
+    readonly local: string;
+    /** google/fonts `ofl/<dir>` subdirectory. */
+    readonly dir: string;
+    /** Remote filename, URL-encoded (`%5B`/`%5D` around the axis list). */
+    readonly remote: string;
+    readonly sha256: string;
+    readonly bytes: number;
+    /** Pins this file to a different google/fonts commit than `upstream.commit`. */
+    readonly commit?: string;
+    readonly note?: string;
 }
 
-/**
- * Noto Sans font families + Noto Emoji.
- * CJK / Tibetan / Myanmar fonts use [wght] axis only; others use [wdth,wght].
- */
-const FONTS: FontEntry[] = [
-    // ── Base Latin / Greek / Cyrillic ────────────────────────────────
-    { local: 'NotoSans-VF.ttf', dir: 'notosans', remote: 'NotoSans%5Bwdth%2Cwght%5D.ttf' },
-    // ── Script-specific ──────────────────────────────────────────────
-    { local: 'NotoSansArabic-Regular.ttf', dir: 'notosansarabic', remote: 'NotoSansArabic%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansArmenian-Regular.ttf', dir: 'notosansarmenian', remote: 'NotoSansArmenian%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansBengali-Regular.ttf', dir: 'notosansbengali', remote: 'NotoSansBengali%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansDevanagari-Regular.ttf', dir: 'notosansdevanagari', remote: 'NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansGeorgian-Regular.ttf', dir: 'notosansgeorgian', remote: 'NotoSansGeorgian%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansHebrew-Regular.ttf', dir: 'notosanshebrew', remote: 'NotoSansHebrew%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansTamil-Regular.ttf', dir: 'notosanstamil', remote: 'NotoSansTamil%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansTelugu-Regular.ttf', dir: 'notosanstelugu', remote: 'NotoSansTelugu%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansThai-Regular.ttf', dir: 'notosansthai', remote: 'NotoSansThai%5Bwdth%2Cwght%5D.ttf' },
-    // ── Linguistic expansion (v1.3.0) — often-underserved scripts ────
-    { local: 'NotoSansEthiopic-Regular.ttf', dir: 'notosansethiopic', remote: 'NotoSansEthiopic%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansSinhala-Regular.ttf', dir: 'notosanssinhala', remote: 'NotoSansSinhala%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansTibetan-Regular.ttf', dir: 'notoseriftibetan', remote: 'NotoSerifTibetan%5Bwght%5D.ttf' },
-    { local: 'NotoSansKhmer-Regular.ttf', dir: 'notosanskhmer', remote: 'NotoSansKhmer%5Bwdth%2Cwght%5D.ttf' },
-    { local: 'NotoSansMyanmar-Regular.ttf', dir: 'notosansmyanmar', remote: 'NotoSansMyanmar%5Bwdth%2Cwght%5D.ttf' },
-    // ── Lao (v1.8.0) — shaped by the Thai mechanism ──────────────────
-    { local: 'NotoSansLao-Regular.ttf', dir: 'notosanslao', remote: 'NotoSansLao%5Bwdth%2Cwght%5D.ttf' },
-    // ── Tai scripts and Cham (v1.8.0) ────────────────────────────────
-    { local: 'NotoSansTaiTham-Regular.ttf', dir: 'notosanstaitham', remote: 'NotoSansTaiTham%5Bwght%5D.ttf' },
-    { local: 'NotoSansNewTaiLue-Regular.ttf', dir: 'notosansnewtailue', remote: 'NotoSansNewTaiLue%5Bwght%5D.ttf' },
-    { local: 'NotoSansTaiLe-Regular.ttf', dir: 'notosanstaile', remote: 'NotoSansTaiLe-Regular.ttf' },
-    { local: 'NotoSansCham-Regular.ttf', dir: 'notosanscham', remote: 'NotoSansCham%5Bwght%5D.ttf' },
-    { local: 'NotoSansJP-Regular.ttf', dir: 'notosansjp', remote: 'NotoSansJP%5Bwght%5D.ttf' },
-    { local: 'NotoSansKR-Regular.ttf', dir: 'notosanskr', remote: 'NotoSansKR%5Bwght%5D.ttf' },
-    { local: 'NotoSansSC-Regular.ttf', dir: 'notosanssc', remote: 'NotoSansSC%5Bwght%5D.ttf' },
-    // ── Mathematical typography (v1.5.0) — static Regular, no axes ────
-    { local: 'NotoSansMath-Regular.ttf', dir: 'notosansmath', remote: 'NotoSansMath-Regular.ttf' },
-    // ── Emoji (monochrome, wght-only axis) ───────────────────────────
-    { local: 'NotoEmoji-Regular.ttf', dir: 'notoemoji', remote: 'NotoEmoji%5Bwght%5D.ttf' },
-    // ── Colour Emoji (COLRv1/CPAL, source for noto-color-emoji-data.js) ──
-    { local: 'NotoColorEmoji-Regular.ttf', dir: 'notocoloremoji', remote: 'NotoColorEmoji-Regular.ttf' },
-];
+export interface TreeFont {
+    readonly local: string;
+    readonly origin: 'tree';
+    readonly sha256: string;
+    readonly bytes: number;
+    readonly note: string;
+}
 
-/**
- * Latin-subset fonts derived from NotoSans-VF.ttf.
- * The download script copies the base VF as a placeholder; for production
- * data modules, subset with pyftsubset or fonttools to keep modules small.
- */
-const LATIN_SUBSETS = [
-    'NotoSans-Cyrillic.ttf',
-    'NotoSans-Greek.ttf',
-    'NotoSans-Polish.ttf',
-    'NotoSans-Turkish.ttf',
-    'NotoSans-Vietnamese.ttf',
-];
+export interface DerivedFont {
+    readonly local: string;
+    readonly from: string;
+    readonly tool: string;
+    readonly sha256: string;
+    readonly bytes: number;
+    readonly note: string;
+}
 
-// ── Download logic ───────────────────────────────────────────────────
+export interface SourcesManifest {
+    readonly upstream: {
+        readonly repo: string;
+        readonly commit: string;
+        readonly resolvedOn: string;
+        readonly note?: string;
+    };
+    readonly fonts: readonly (UpstreamFont | TreeFont)[];
+    readonly derived: readonly DerivedFont[];
+}
 
-async function download(url: string, dest: string, label: string): Promise<boolean> {
+export function isTreeFont(f: UpstreamFont | TreeFont): f is TreeFont {
+    return (f as TreeFont).origin === 'tree';
+}
+
+export function readManifest(path: string = MANIFEST_PATH): SourcesManifest {
+    return JSON.parse(readFileSync(path, 'utf8')) as SourcesManifest;
+}
+
+export function sha256Of(data: Uint8Array): string {
+    return createHash('sha256').update(data).digest('hex');
+}
+
+/** Every file the manifest expects in fonts/ttf/, keyed by local name. */
+export function expectedHashes(manifest: SourcesManifest): Map<string, { sha256: string; bytes: number }> {
+    const m = new Map<string, { sha256: string; bytes: number }>();
+    for (const f of [...manifest.fonts, ...manifest.derived]) m.set(f.local, { sha256: f.sha256, bytes: f.bytes });
+    return m;
+}
+
+function upstreamUrl(manifest: SourcesManifest, font: UpstreamFont): string {
+    const commit = font.commit ?? manifest.upstream.commit;
+    return `${RAW_BASE}/${manifest.upstream.repo}/${commit}/ofl/${font.dir}/${font.remote}`;
+}
+
+// ── Reporting ───────────────────────────────────────────────────────
+
+const out = (line: string): void => { process.stdout.write(`${line}\n`); };
+const err = (line: string): void => { process.stderr.write(`${line}\n`); };
+
+function kb(n: number): string {
+    return `${Math.round(n / 1024)} KB`;
+}
+
+// ── Verification and download ───────────────────────────────────────
+
+interface Tally { downloaded: number; verified: number; failed: number }
+
+function checkOnDisk(path: string, expected: { sha256: string; bytes: number }): string | null {
+    const data = readFileSync(path);
+    const actual = sha256Of(data);
+    if (actual === expected.sha256) return null;
+    return `hash mismatch\n         expected ${expected.sha256} (${expected.bytes} B)\n         actual   ${actual} (${data.length} B)`;
+}
+
+async function fetchUpstream(manifest: SourcesManifest, font: UpstreamFont, dest: string): Promise<string | null> {
+    const url = upstreamUrl(manifest, font);
     const res = await fetch(url);
-    if (!res.ok) {
-        console.error(`  FAIL ${label} — HTTP ${res.status}`);
-        return false;
+    if (!res.ok) return `HTTP ${res.status} for ${url}`;
+    const data = new Uint8Array(await res.arrayBuffer());
+    const actual = sha256Of(data);
+    if (actual !== font.sha256) {
+        return `downloaded bytes differ from fonts/SOURCES.json — not written\n` +
+            `         expected ${font.sha256} (${font.bytes} B)\n` +
+            `         actual   ${actual} (${data.length} B)\n` +
+            `         ${url}`;
     }
-    const buf = Buffer.from(await res.arrayBuffer());
-    writeFileSync(dest, buf);
-    const kb = Math.round(buf.length / 1024);
-    console.log(`  OK   ${label} (${kb} KB)`);
-    return true;
+    writeFileSync(dest, data);
+    return null;
 }
 
-async function main(): Promise<void> {
-    const force = process.argv.includes('--force');
+async function syncFonts(manifest: SourcesManifest, ttfDir: string, force: boolean): Promise<Tally> {
+    const tally: Tally = { downloaded: 0, verified: 0, failed: 0 };
+    mkdirSync(ttfDir, { recursive: true });
+    const relDir = relative(REPO_ROOT, ttfDir).replace(/\\/g, '/') || '.';
+    out(`Source fonts → ${relDir}/ (google/fonts @ ${manifest.upstream.commit.slice(0, 12)}, resolved ${manifest.upstream.resolvedOn})\n`);
 
-    mkdirSync(TTF_DIR, { recursive: true });
-
-    console.log(`Downloading Noto Sans fonts to fonts/ttf/ …\n`);
-
-    let ok = 0;
-    let skipped = 0;
-    let failed = 0;
-
-    // ── 1. Download 12 distinct font families ────────────────────────
-    for (const font of FONTS) {
-        const dest = join(TTF_DIR, font.local);
-        if (!force && existsSync(dest)) {
-            console.log(`  SKIP ${font.local} (exists)`);
-            skipped++;
-            continue;
-        }
-        const url = `${BASE}/${font.dir}/${font.remote}`;
-        if (await download(url, dest, font.local)) {
-            ok++;
-        } else {
-            failed++;
-        }
-    }
-
-    // ── 2. Copy NotoSans VF as placeholder for Latin subsets ─────────
-    const vfPath = join(TTF_DIR, 'NotoSans-VF.ttf');
-    if (existsSync(vfPath)) {
-        console.log('');
-        for (const subset of LATIN_SUBSETS) {
-            const dest = join(TTF_DIR, subset);
-            if (!force && existsSync(dest)) {
-                console.log(`  SKIP ${subset} (exists)`);
-                skipped++;
+    for (const font of manifest.fonts) {
+        const dest = join(ttfDir, font.local);
+        if (isTreeFont(font)) {
+            if (!existsSync(dest)) {
+                err(`  FAIL ${font.local}: committed to the tree but missing — git checkout -- fonts/ttf/${font.local}`);
+                tally.failed++;
                 continue;
             }
-            const { copyFileSync } = await import('node:fs');
-            copyFileSync(vfPath, dest);
-            console.log(`  COPY ${subset} (from NotoSans-VF.ttf)`);
-            ok++;
+            const problem = checkOnDisk(dest, font);
+            if (problem) { err(`  FAIL ${font.local}: ${problem}`); tally.failed++; } else { out(`  OK   ${font.local} (tree, ${kb(font.bytes)})`); tally.verified++; }
+            continue;
         }
-    } else {
-        console.log(`\n  WARN Cannot create Latin subsets — NotoSans-VF.ttf not available`);
-        failed += LATIN_SUBSETS.length;
+        if (!force && existsSync(dest)) {
+            const problem = checkOnDisk(dest, font);
+            if (problem) {
+                err(`  FAIL ${font.local}: ${problem}\n         (re-download with --force, or update the manifest if the module was rebuilt from this file)`);
+                tally.failed++;
+            } else {
+                out(`  OK   ${font.local} (present, ${kb(font.bytes)})`);
+                tally.verified++;
+            }
+            continue;
+        }
+        const problem = await fetchUpstream(manifest, font, dest);
+        if (problem) { err(`  FAIL ${font.local}: ${problem}`); tally.failed++; } else { out(`  GET  ${font.local} (${kb(font.bytes)})`); tally.downloaded++; }
     }
 
-    // ── Summary ──────────────────────────────────────────────────────
-    console.log(`\nDone: ${ok} downloaded, ${skipped} skipped, ${failed} failed`);
-    if (failed > 0) process.exit(1);
+    out('');
+    for (const font of manifest.derived) {
+        const dest = join(ttfDir, font.local);
+        if (!existsSync(dest)) {
+            err(`  FAIL ${font.local}: derived subset committed to the tree but missing — git checkout -- fonts/ttf/${font.local}`);
+            tally.failed++;
+            continue;
+        }
+        const problem = checkOnDisk(dest, font);
+        if (problem) { err(`  FAIL ${font.local}: ${problem}`); tally.failed++; } else { out(`  OK   ${font.local} (derived from ${font.from}, ${kb(font.bytes)})`); tally.verified++; }
+    }
+    return tally;
 }
 
-main();
+// ── --update-manifest ───────────────────────────────────────────────
+
+function updateManifest(manifest: SourcesManifest, ttfDir: string, commit: string): number {
+    const today = new Date().toISOString().slice(0, 10);
+    const measure = <T extends { local: string }>(entry: T): T & { sha256: string; bytes: number } => {
+        const path = join(ttfDir, entry.local);
+        if (!existsSync(path)) throw new Error(`${entry.local} is not in ${ttfDir}`);
+        const data = readFileSync(path);
+        return { ...entry, sha256: sha256Of(data), bytes: data.length };
+    };
+    try {
+        const next: SourcesManifest = {
+            upstream: { ...manifest.upstream, commit, resolvedOn: today },
+            fonts: manifest.fonts.map(measure),
+            derived: manifest.derived.map(measure),
+        };
+        writeFileSync(MANIFEST_PATH, `${JSON.stringify(next, null, 2)}\n`);
+        out(`fonts/SOURCES.json rewritten: ${next.fonts.length} fonts + ${next.derived.length} derived, commit ${commit.slice(0, 12)}, ${today}.`);
+        out('Prove the pin with: npx tsx scripts/download-fonts.ts --force');
+        return 0;
+    } catch (e) {
+        err(`update-manifest: ${e instanceof Error ? e.message : String(e)}`);
+        return 1;
+    }
+}
+
+// ── CLI ─────────────────────────────────────────────────────────────
+
+interface Options { force: boolean; dir: string; updateManifest: boolean; commit: string | null }
+
+function parseArgs(argv: readonly string[]): Options | { error: string } {
+    const opts: Options = { force: false, dir: DEFAULT_TTF_DIR, updateManifest: false, commit: null };
+    for (let i = 0; i < argv.length; i++) {
+        const a = argv[i];
+        if (a === '--force') opts.force = true;
+        else if (a === '--update-manifest') opts.updateManifest = true;
+        else if (a === '--dir' || a === '--commit') {
+            const v = argv[i + 1];
+            if (v === undefined || v.startsWith('--')) return { error: `${a} needs a value` };
+            if (a === '--dir') opts.dir = resolve(REPO_ROOT, v); else opts.commit = v;
+            i++;
+        } else return { error: `unknown argument "${a}"` };
+    }
+    if (opts.updateManifest && (opts.commit === null || !/^[0-9a-f]{40}$/.test(opts.commit))) {
+        return { error: '--update-manifest needs --commit <40-hex google/fonts commit sha>' };
+    }
+    if (!opts.updateManifest && opts.commit !== null) return { error: '--commit only makes sense with --update-manifest' };
+    return opts;
+}
+
+async function main(): Promise<number> {
+    const parsed = parseArgs(process.argv.slice(2));
+    if ('error' in parsed) {
+        err(`download-fonts: ${parsed.error}`);
+        err('Usage: npx tsx scripts/download-fonts.ts [--force] [--dir <path>] | --update-manifest --commit <sha>');
+        return 2;
+    }
+    const manifest = readManifest();
+    if (parsed.updateManifest) return updateManifest(manifest, parsed.dir, parsed.commit as string);
+
+    const tally = await syncFonts(manifest, parsed.dir, parsed.force);
+    out(`\nDone: ${tally.downloaded} downloaded, ${tally.verified} verified, ${tally.failed} failed`);
+    return tally.failed > 0 ? 1 : 0;
+}
+
+main().then(code => process.exit(code), e => { err(String(e)); process.exit(1); });
