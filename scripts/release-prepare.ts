@@ -13,7 +13,8 @@
  *   2. docs/assets/ecosystem.json `packages.pdfnative.version` + `verifiedOn`,
  *      and the "Verified on" stamps that the verified-on-parity rule holds
  *      to that date (llms.txt, docs/llms.txt, docs/agent-brief.md,
- *      docs/data/surfaces.json, docs/data/errors.json)
+ *      docs/data/surfaces.json, docs/data/errors.json,
+ *      docs/data/playgrounds.json)
  *   3. CITATION.cff `version` + `date-released`
  *   4. SECURITY.md supported-versions table
  *   5. CDN pins `pdfnative@<previous>` → `pdfnative@<version>` across docs/,
@@ -423,7 +424,7 @@ function main(): number {
 
     console.log('\n2. Ecosystem manifest and the Verified-on stamps it governs');
     edit('docs/assets/ecosystem.json', `packages.pdfnative.version + verifiedOn ${date}`, (t) => bumpManifest(t, version, date));
-    for (const stamped of ['llms.txt', 'docs/llms.txt', 'docs/agent-brief.md', 'docs/data/surfaces.json', 'docs/data/errors.json']) {
+    for (const stamped of ['llms.txt', 'docs/llms.txt', 'docs/agent-brief.md', 'docs/data/surfaces.json', 'docs/data/errors.json', 'docs/data/playgrounds.json']) {
         edit(stamped, `Verified on ${date}`, (t) => restampVerifiedOn(t, date));
     }
 

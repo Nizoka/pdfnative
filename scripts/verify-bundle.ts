@@ -52,19 +52,23 @@ const MARKERS = {
 };
 
 const PROBES: readonly Probe[] = [
+    // Budgets sit about 50 % above the sizes measured at 1.8.0 (2.6 KB,
+    // 1.9 KB, 52 KB): loose enough for a bug fix, tight enough that a
+    // dependency creeping back into a leaf export fails the gate — the
+    // original 8 / 8 / 96 KB budgets would have let a 3× regression through.
     {
         exports: ['parseColor'],
-        maxBytes: 8 * 1024,
+        maxBytes: 4 * 1024,
         mustNotContain: [MARKERS.useGrammar, MARKERS.aes, MARKERS.sha256, MARKERS.fontData],
     },
     {
         exports: ['bindUnits', 'applyPunctuationSpacing'],
-        maxBytes: 8 * 1024,
+        maxBytes: 3 * 1024,
         mustNotContain: [MARKERS.useGrammar, MARKERS.aes, MARKERS.sha256, MARKERS.fontData],
     },
     {
         exports: ['validatePdfX'],
-        maxBytes: 96 * 1024,
+        maxBytes: 64 * 1024,
         mustNotContain: [MARKERS.useGrammar, MARKERS.fontData],
     },
 ];
