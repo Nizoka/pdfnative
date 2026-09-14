@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Typography Playground — pdfnative</title>
-  <meta name="description" content="Try pdfnative's typography in your browser: paragraph breaking with widows and orphans, keep-with-next, justification and optical margins, unit binding, punctuation spacing, pair kerning and OpenType tabular figures — each compared with the default.">
+  <meta name="description" content="Try pdfnative's typography in your browser: paragraph breaking with widows and orphans, keep-with-next line quotas, short-word binding, justification and optical margins, unit binding, punctuation spacing, a hyphenation provider with soft hyphens, exact base-14 metrics, pair kerning and OpenType figures — each compared with the default, with the onDiagnostic output shown.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/typography.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/typography.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/typography.html">
@@ -13,13 +13,13 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/typography.html">
   <meta property="og:title" content="Typography Playground — pdfnative">
-  <meta property="og:description" content="Paragraph breaking, justification, kerning and OpenType figures — generate each with and without the option, zero install.">
+  <meta property="og:description" content="Paragraph breaking, short-word binding, justification, hyphenation, exact metrics, kerning and OpenType figures — generate each with and without the option, zero install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Typography Playground — pdfnative">
-  <meta name="twitter:description" content="Typeset PDFs in the browser: breaks, justification, kerning, figures.">
+  <meta name="twitter:description" content="Typeset PDFs in the browser: breaks, justification, hyphenation, metrics, kerning, figures.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -36,7 +36,7 @@
         "operatingSystem": "Any (browser-based)",
         "browserRequirements": "Requires JavaScript and ES modules",
         "url": "https://pdfnative.dev/playgrounds/typography.html",
-        "description": "Generate PDFs with and without pdfnative's typography options — paragraph breaking, widows and orphans, justification, optical margins, unit binding, punctuation spacing, kerning and tabular figures — entirely in your browser.",
+        "description": "Generate PDFs with and without pdfnative's typography options — paragraph breaking, widows and orphans, keep-with-next line quotas, short-word binding, justification, optical margins, unit binding, punctuation spacing, a hyphenation provider, exact base-14 metrics, kerning and OpenType figures — entirely in your browser, with the onDiagnostic output of every build.",
         "isAccessibleForFree": true,
         "offers": {
           "@type": "Offer",
@@ -134,10 +134,14 @@
       <label for="preset"><strong>Preset:</strong></label>
       <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
         <option value="breaks">Paragraph breaking — widows, orphans, keep-with-next</option>
+        <option value="shortwords">Short-word binding and a three-line heading quota (1.8.0)</option>
         <option value="justify">Justification and optical margins</option>
         <option value="spacing">Unit binding and French punctuation spacing</option>
+        <option value="hyphenation">Hyphenation provider and soft hyphens (1.8.0)</option>
+        <option value="metrics">Exact base-14 metrics — dashes, ellipses, quotes (1.8.0)</option>
         <option value="kerning">Pair kerning (Noto Sans)</option>
         <option value="figures">Tabular and old-style figures (Noto Sans)</option>
+        <option value="figures-tnum">Ineffective feature: tnum on Noto Sans → TYPOGRAPHY_FEATURE_INEFFECTIVE (1.8.0)</option>
       </select>
       <label style="display:flex;align-items:center;gap:6px;font-size:14px;"><input type="checkbox" id="apply" checked> Apply the option</label>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
@@ -148,16 +152,23 @@
 
     <details style="margin-top:16px;" open>
       <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
-      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="copy-btn" id="copy" type="button" style="padding:4px 10px;font-size:12px;background:var(--c-primary);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Copy</button></div>
+      <pre style="margin-top:8px;"><code id="code-view" class="language-typescript"></code></pre>
     </details>
+
+    <p style="margin-top:16px;font-weight:600;">Diagnostics (<code>layout.onDiagnostic</code>)</p>
+    <pre id="diagnostics" style="margin-top:8px;white-space:pre-wrap;font-size:13px;line-height:1.5;">Generate a PDF to see the diagnostics its build raised. Every preset wires layout.onDiagnostic; most builds raise none.</pre>
 
     <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
       <strong style="color:#065f46;">What the options do:</strong>
       <ul style="margin-top:8px;color:#065f46;">
-        <li><strong>Page breaking</strong> — <code>splitParagraphs</code> breaks at line boundaries; <code>widows</code> / <code>orphans</code> keep single lines from being stranded; <code>keepHeadingsWithNext</code> keeps a heading with its content.</li>
+        <li><strong>Page breaking</strong> — <code>splitParagraphs</code> breaks at line boundaries; <code>widows</code> / <code>orphans</code> keep single lines from being stranded; <code>keepHeadingsWithNext</code> keeps a heading with its content — <code>true</code> reserves two lines of the following paragraph, <code>{ minLines: 3 }</code> a house-style three (1.8.0).</li>
+        <li><strong>Short words</strong> — <code>bindShortWords</code> converts the space after a one-letter word into a no-break space, so no line ends on "a" or "I" (1.8.0; a house style, and orthography in Polish, Czech or Russian).</li>
         <li><strong>Justification</strong> — <code>align: 'justify'</code> fills the measure word by word; <code>opticalMargins</code> hangs punctuation past the edge.</li>
         <li><strong>Spacing</strong> — <code>unitBinding</code> keeps <em>150 €</em> together (ISO 80000-1); <code>punctuationSpacing: 'fr'</code> sets French no-break spaces.</li>
-        <li><strong>Kerning and features</strong> — <code>kerning</code> applies the font's pair adjustments; <code>fontFeatures</code> selects OpenType single substitutions such as <code>onum</code>, <code>pnum</code> and <code>smcp</code>. Both need a registered font.</li>
+        <li><strong>Hyphenation</strong> — the library ships no dictionary; <code>setHyphenationProvider()</code> installs a function that returns break positions per word and receives <code>typography.hyphenationLanguage</code>; soft hyphens (U+00AD) the author wrote need no provider (1.8.0).</li>
+        <li><strong>Metrics</strong> — <code>metrics: 'exact'</code> measures base-14 text with the Adobe Core 14 AFM advances instead of the historical estimate, which buckets every dash, ellipsis, quote and accented letter at 556 units (1.8.0). Opt-in because better measurement moves line breaks.</li>
+        <li><strong>Kerning and features</strong> — <code>kerning</code> applies the font's pair adjustments; <code>fontFeatures</code> selects OpenType single substitutions such as <code>onum</code>, <code>pnum</code> and <code>smcp</code>. Both need a registered font. A tag the font does not declare, or one that substitutes nothing (<code>tnum</code> on Noto Sans), raises the <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code> diagnostic (1.8.0).</li>
       </ul>
       <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/typography.html">Typography guide</a> for every option.</p>
     </div>
@@ -195,48 +206,217 @@ const QUOTED = '"Justification fills the measure, which is what separates a type
 
 const DESCRIPTIONS = {
   breaks: 'Twelve sections of running text. Without the option, a paragraph that does not fit moves to the next page whole and headings can end a page alone. With it, paragraphs break at line boundaries, no page starts or ends with a single stranded line, and every heading stays with its text.',
+  shortwords: 'Two options on one document; both variants split paragraphs at line boundaries so the pair isolates them. Page 1: a heading lands at the page foot with two lines of its paragraph below it — enough for keepHeadingsWithNext: true, not for { minLines: 3 }, so with the option the heading moves to the next page. Then a paragraph full of "a" and "I": without the option some of its lines end on that single letter; with bindShortWords a no-break space binds each one to the word that follows.',
   justify: 'Two long paragraphs set justified. With optical margins on, the opening quote and the full stops at the edges hang into the margin so the column edge looks straight. Turn the option off to compare with plain justification.',
   spacing: 'A French paragraph with amounts and units. Unit binding keeps "150 €", "12 kg" and "30 %" on one line; the fr preset sets the no-break spaces French typography expects before : ; ! ? and inside guillemets.',
+  hyphenation: 'The library ships no dictionary. setHyphenationProvider() installs a small English rule — break before a consonant that sits between two vowels — and hyphenationLanguage: \'en\' is what the provider receives with every word, so the narrow justified column breaks its long words at syllables instead of leaving gaps. The second paragraph carries soft hyphens (U+00AD) the author wrote: those break with or without the option and stay invisible where no break is taken.',
+  metrics: 'Right-aligned and centred base-14 lines full of em dashes, ellipses and curly quotes. The historical estimate measures each of those at 556 units; the Helvetica AFM table says 1000, 1000 and 333. With metrics: \'exact\' every line lands on its margin; without it the lines overshoot or fall short by the accumulated error.',
   kerning: 'Display headings where kerning is most visible: AV, To, Yo, Wa. Loads Noto Sans from the CDN, since the base-14 faces carry no kerning data.',
-  figures: 'A table of amounts and a line of prose. Noto Sans sets lining, tabular figures by default, so the variant turns on old-style figures (onum) and small capitals (smcp) — two single-substitution features whose effect is visible; tnum would change nothing here and would raise the TYPOGRAPHY_FEATURE_INEFFECTIVE diagnostic. Loads Noto Sans from the CDN.',
+  figures: 'A table of amounts and a line of prose. Noto Sans sets lining, tabular figures by default, so the variant turns on old-style figures (onum) and small capitals (smcp) — two single-substitution features whose effect is visible; tnum would change nothing here and would raise the TYPOGRAPHY_FEATURE_INEFFECTIVE diagnostic (see the next preset). Loads Noto Sans from the CDN.',
+  'figures-tnum': 'The same table with fontFeatures: [\'tnum\']. Noto Sans figures are tabular already, so no glyph is substituted and the build raises TYPOGRAPHY_FEATURE_INEFFECTIVE (severity warning) through layout.onDiagnostic — read it in the diagnostics box below the code. The PDF is byte-identical to the one built without the tag. Turn the option off and no diagnostic is raised. Loads Noto Sans from the CDN.',
 };
 
+// Every view is self-contained: it declares the content the page renders and imports only from
+// 'pdfnative', so what the Copy button hands over runs unchanged in Node, Deno, Bun or a bundler.
+// tests/docs/playgrounds.test.ts runs each one outside the browser.
 const CODE = {
   breaks: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
 
-const pdf = buildDocumentPDFBytes(params, {
-  typography: {
+const PASSAGE = 'Long-form reports are where page breaking stops being cosmetic. A paragraph that cannot fit in the space left at the foot of a page used to move over whole, leaving a band of white space behind it. Breaking at line boundaries fixes that, and the widow and orphan rules keep the breaks from falling somewhere awkward. ';
+const blocks = [{ type: 'heading', text: 'Quarterly report', level: 1 }];
+for (let i = 1; i <= 12; i++) {
+  blocks.push({ type: 'heading', text: i + '. Regional results', level: 2 });
+  blocks.push({ type: 'paragraph', text: PASSAGE.repeat(2 + (i % 3)) });
+}
+
+const pdf = buildDocumentPDFBytes({ title: 'Paragraph breaking', blocks, footerText: 'pdfnative typography playground' }, {
+  typography: {                 // without the option: omit typography entirely
     splitParagraphs: true,      // break at line boundaries
     orphans: 2, widows: 2,      // never strand a single line
     keepHeadingsWithNext: true, // no heading alone at a page foot
   },
+  onDiagnostic: (d) => console.warn(d.code, d.message),
 });
 downloadBlob(pdf, 'report.pdf');`,
-  justify: `const pdf = buildDocumentPDFBytes({
-  title: 'Essay',
-  blocks: [{ type: 'paragraph', text, align: 'justify' }],
-}, {
-  typography: { opticalMargins: true },
-});`,
-  spacing: `const pdf = buildDocumentPDFBytes(params, {
+  shortwords: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+// The filler avoids one-letter words so that binding cannot move it; with 5 filler paragraphs and
+// 10 spacer sentences the H2 lands at the foot of page 1 with two lines of its paragraph below it
+// (A4, default margins, base-14 Helvetica).
+const FILL = 'The quota rule reserves lines of the paragraph that follows the heading. Two lines is what word processors keep by default; three is the common house style. This filler paragraph avoids one-letter words so that the binding rule cannot move it. ';
+const SPACER = 'One more sentence of filler moves the heading down the page. ';
+const TAIL = 'This paragraph runs to several lines. With the option off, the heading above it stays on this page with two lines of the paragraph below it. With keepHeadingsWithNext set to three lines, the heading moves to the next page together with its text. ';
+const SHORT = 'I wrote a note to a friend, and I kept a copy for a while. A line that ends on a single letter reads as a stumble: the eye sees a word, then a gap, then the word it belonged to a line later. I set a rule for it, and a house style is a rule you keep. When a report is a long one, a reader meets a great many lines, and a fair number of them end on a or on I unless a no-break space binds the short word to the next. ';
+const blocks = [{ type: 'heading', text: 'Keeping headings with their text', level: 1 }];
+for (let i = 0; i < 5; i++) blocks.push({ type: 'paragraph', text: FILL.repeat(3) });
+blocks.push(
+  { type: 'paragraph', text: SPACER.repeat(10) },
+  { type: 'heading', text: 'The heading near the page foot', level: 2 },
+  { type: 'paragraph', text: TAIL.repeat(3) },
+  { type: 'paragraph', text: FILL.repeat(2) },
+  { type: 'heading', text: 'Short words at line ends', level: 2 },
+  { type: 'paragraph', text: SHORT.repeat(3) },
+);
+
+const pdf = buildDocumentPDFBytes({ title: 'Short words and heading quotas', blocks }, {
   typography: {
+    splitParagraphs: true,                 // both variants break at line boundaries
+    keepHeadingsWithNext: { minLines: 3 }, // true keeps two lines; a house style keeps three
+    bindShortWords: true,                  // "a", "I": a no-break space binds them to the next word
+  },                                       // without the option: keep splitParagraphs, drop the other two
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+downloadBlob(pdf, 'short-words.pdf');`,
+  justify: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const QUOTED = '"Justification fills the measure, which is what separates a typeset page from a generated one." Optical margins go further: punctuation that borders a line hangs slightly outside it, so the optical edge of the column reads straight. An opening quote, a full stop, a comma: each leaves a gap you can see. ';
+const pdf = buildDocumentPDFBytes({
+  title: 'Justification',
+  blocks: [
+    { type: 'heading', text: 'Justified text', level: 1 },
+    { type: 'paragraph', text: QUOTED.repeat(4), align: 'justify' },
+    { type: 'paragraph', text: QUOTED.repeat(4), align: 'justify' },
+  ],
+}, {
+  typography: { opticalMargins: true },   // without the option: omit typography entirely
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+downloadBlob(pdf, 'essay.pdf');`,
+  spacing: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Spacing',
+  blocks: [
+    { type: 'heading', text: 'Number–unit binding and French punctuation spacing', level: 1 },
+    { type: 'paragraph', text: 'Unit binding is universal: 150 € and 12 kg never break across a line. The French preset adds narrow no-break spaces before ; ! ? and no-break spaces before : and inside guillemets, so the sample sentence below is French.' },
+    // demo-language: fr (punctuationSpacing 'fr' is a French convention)
+    { type: 'paragraph', text: 'Facture de 150 € pour 12 kg de matériel : remise de 30 % ; stockage de 500 Mo ! Vraiment ? Oui. Et une « citation » pour finir. '.repeat(6) },
+  ],
+}, {
+  typography: {                 // without the option: omit typography entirely
     unitBinding: true,          // "150 €" never splits (ISO 80000-1)
     punctuationSpacing: 'fr',   // or an explicit rule list
   },
-});`,
-  kerning: `registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+downloadBlob(pdf, 'spacing.pdf');`,
+  hyphenation: `import { buildDocumentPDFBytes, setHyphenationProvider, downloadBlob } from 'pdfnative';
+
+// The library ships no dictionary. A deliberately small English rule: break before a consonant
+// that sits between two vowels. A real provider would use Liang patterns for the language it is given.
+const VOWELS = 'aeiouy', CONSONANTS = 'bcdfghjklmnpqrstvwxz';
+setHyphenationProvider((word, lang) => {
+  if (lang !== 'en') return [];
+  const out = [], w = word.toLowerCase();
+  for (let i = 2; i < w.length - 2; i++) {
+    if (VOWELS.includes(w[i - 1]) && CONSONANTS.includes(w[i]) && VOWELS.includes(w[i + 1])) out.push(i);
+  }
+  return out;
+});
+
+const SHY = '\\u00AD'; // author-written soft hyphens need no provider
+const pdf = buildDocumentPDFBytes({
+  title: 'Hyphenation',
+  blocks: [
+    { type: 'heading', text: 'Hyphenation through a provider', level: 1 },
+    { type: 'paragraph', text: 'The library ships no dictionary: a provider receives every word and the document language, and returns the break positions. This preset installs a small English syllable rule and sets hyphenationLanguage to en, so the narrow column below breaks its long words at syllables.' },
+    { type: 'paragraph', text: 'In this narrow column the words antidisestablishmentarianism, internationalization, incomprehensibilities and counterrevolutionaries break at a syllable instead of overflowing or leaving a gap, because the provider knows the language of the document.', indent: 320, align: 'justify' },
+    { type: 'heading', text: 'Soft hyphens the author wrote', level: 2 },
+    { type: 'paragraph', text: 'A soft hyphen (U+00AD) needs no provider: anti' + SHY + 'dis' + SHY + 'establish' + SHY + 'ment' + SHY + 'arian' + SHY + 'ism breaks where the author allowed it, with or without the option, and stays invisible wherever the break is not taken.', indent: 320, align: 'justify' },
+  ],
+}, {
+  typography: { hyphenationLanguage: 'en' },   // handed to the provider with every word; without the option: no provider, no language
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+setHyphenationProvider(null);                  // remove it once the document is built
+downloadBlob(pdf, 'hyphenation.pdf');`,
+  metrics: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Base-14 metrics',
+  blocks: [
+    { type: 'heading', text: 'Estimate versus AFM tables', level: 1 },
+    { type: 'paragraph', text: 'The historical estimate measures every em dash, ellipsis and curly quote at 556 units; Helvetica sets them at 1000, 1000 and 333. Each right-aligned line below accumulates that error and misses the margin unless metrics is exact.' },
+    { type: 'paragraph', text: 'Right-aligned — with an em dash, an ellipsis … and “curly quotes” — 100 % @ (AFM)', align: 'right' },
+    { type: 'paragraph', text: '“Quoted” … — @ % ( ) — the marks the estimate buckets at 556', align: 'right' },
+    { type: 'paragraph', text: '— … — … — … — … — six dashes and ellipses, 1000 units each —', align: 'right' },
+    { type: 'paragraph', text: 'Centred — “exact” … 100 % @ (AFM)', align: 'center' },
+    { type: 'table', headers: ['Character', 'Estimate', 'Helvetica AFM'], rows: [
+      { cells: ['— (em dash)', '556', '1000'], type: '', pointed: false },
+      { cells: ['… (ellipsis)', '556', '1000'], type: '', pointed: false },
+      { cells: ['“ ” (curly quotes)', '556', '333'], type: '', pointed: false },
+      { cells: ['@', '556', '1015'], type: '', pointed: false },
+      { cells: ['%', '556', '889'], type: '', pointed: false },
+      { cells: ['(', '556', '333'], type: '', pointed: false },
+    ] },
+  ],
+}, {
+  typography: { metrics: 'exact' },   // Adobe Core 14 AFM advances instead of the estimate; without the option: omit typography
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+downloadBlob(pdf, 'metrics.pdf');`,
+  kerning: `import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });   // the base-14 faces carry no kerning data
 const fontData = await loadFontData('latin');
 
 const pdf = buildDocumentPDFBytes({
   title: 'Kerning',
   fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }],
-  blocks: [{ type: 'heading', text: 'AVATAR Yo To Wave', level: 1 }],
+  blocks: [
+    { type: 'heading', text: 'AVATAR Yo To Wave', level: 1 },
+    { type: 'heading', text: 'AWAY Toyota Vyborg Wavy', level: 2 },
+    { type: 'paragraph', text: 'AVATAR To Yo Wave AWAY Toyota Vyborg Wavy LTAVA. '.repeat(10) },
+  ],
 }, {
-  typography: { kerning: true },
-});`,
-  figures: `const pdf = buildDocumentPDFBytes({ title: 'Amounts', fontEntries, blocks }, {
-  typography: { fontFeatures: ['onum', 'smcp'] },   // pnum, zero, c2sc, sups, subs, case…
-});`,
+  typography: { kerning: true },   // without the option: omit typography entirely
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+downloadBlob(pdf, 'kerning.pdf');`,
+  figures: `import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin');
+const fontEntries = [{ fontData, fontRef: '/F3', lang: 'latin' }];
+
+const blocks = [
+  { type: 'heading', text: 'Amounts by month', level: 1 },
+  { type: 'table', headers: ['Month', 'Debit', 'Credit'], rows: [
+    { cells: ['January', '1,111.00', '8,888.00'], type: '', pointed: false },
+    { cells: ['February', '11,111.00', '88,888.00'], type: '', pointed: false },
+    { cells: ['March', '111,111.00', '888,888.00'], type: '', pointed: false },
+  ] },
+  { type: 'paragraph', text: 'Small capitals and old-style figures: abcdefghijk 1234567890' },
+];
+
+const pdf = buildDocumentPDFBytes({ title: 'Figures', fontEntries, blocks }, {
+  typography: { fontFeatures: ['onum', 'smcp'] },   // pnum, zero, c2sc, sups, subs, case…; without the option: omit typography
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+downloadBlob(pdf, 'figures.pdf');`,
+  'figures-tnum': `import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin');
+const fontEntries = [{ fontData, fontRef: '/F3', lang: 'latin' }];
+
+const blocks = [
+  { type: 'heading', text: 'Amounts by month', level: 1 },
+  { type: 'table', headers: ['Month', 'Debit', 'Credit'], rows: [
+    { cells: ['January', '1,111.00', '8,888.00'], type: '', pointed: false },
+    { cells: ['February', '11,111.00', '88,888.00'], type: '', pointed: false },
+    { cells: ['March', '111,111.00', '888,888.00'], type: '', pointed: false },
+  ] },
+  { type: 'paragraph', text: 'Small capitals and old-style figures: abcdefghijk 1234567890' },
+];
+
+const diagnostics = [];
+const pdf = buildDocumentPDFBytes({ title: 'Figures', fontEntries, blocks }, {
+  typography: { fontFeatures: ['tnum'] },      // Noto Sans figures are tabular already; without the option: no diagnostic
+  onDiagnostic: (d) => diagnostics.push(d),    // pass strict: true to throw instead
+});
+for (const d of diagnostics) console.warn(d.code, d.message);   // TYPOGRAPHY_FEATURE_INEFFECTIVE (severity warning)
+downloadBlob(pdf, 'figures-tnum.pdf');                          // byte-identical to the build without the tag`,
 };
 
 function applyPreset(id) {
@@ -277,10 +457,98 @@ function sections(count) {
   return blocks;
 }
 
+// ── Every build reports through layout.onDiagnostic; the box under the code shows what it raised. ──
+let diagnostics = [];
+const onDiagnostic = (d) => { diagnostics.push(d); };
+// `typography` applies only with the option on; `base` (if any) applies to both variants.
+function layout(on, typography, base) {
+  const t = on ? Object.assign({}, base || {}, typography) : base;
+  return t ? { typography: t, onDiagnostic } : { onDiagnostic };
+}
+function renderDiagnostics() {
+  $('diagnostics').textContent = diagnostics.length === 0
+    ? 'onDiagnostic: no diagnostics for this build.'
+    : diagnostics.map(d => '[' + d.severity + '] ' + d.code + '\n' + d.message).join('\n\n');
+}
+
+// Short words and heading quota. The filler avoids one-letter words so that binding cannot move it;
+// with 5 filler paragraphs and 10 spacer sentences the H2 lands at the foot of page 1 with two lines
+// of its paragraph below it (A4, default margins, base-14 Helvetica).
+const FILL = 'The quota rule reserves lines of the paragraph that follows the heading. Two lines is what word processors keep by default; three is the common house style. This filler paragraph avoids one-letter words so that the binding rule cannot move it. ';
+const SPACER = 'One more sentence of filler moves the heading down the page. ';
+const TAIL = 'This paragraph runs to several lines. With the option off, the heading above it stays on this page with two lines of the paragraph below it. With keepHeadingsWithNext set to three lines, the heading moves to the next page together with its text. ';
+const SHORT = 'I wrote a note to a friend, and I kept a copy for a while. A line that ends on a single letter reads as a stumble: the eye sees a word, then a gap, then the word it belonged to a line later. I set a rule for it, and a house style is a rule you keep. When a report is a long one, a reader meets a great many lines, and a fair number of them end on a or on I unless a no-break space binds the short word to the next. ';
+function quotaBlocks() {
+  const blocks = [{ type: 'heading', text: 'Keeping headings with their text', level: 1 }];
+  for (let i = 0; i < 5; i++) blocks.push({ type: 'paragraph', text: FILL.repeat(3) });
+  blocks.push({ type: 'paragraph', text: SPACER.repeat(10) });
+  blocks.push({ type: 'heading', text: 'The heading near the page foot', level: 2 });
+  blocks.push({ type: 'paragraph', text: TAIL.repeat(3) });
+  blocks.push({ type: 'paragraph', text: FILL.repeat(2) });
+  blocks.push({ type: 'heading', text: 'Short words at line ends', level: 2 });
+  blocks.push({ type: 'paragraph', text: SHORT.repeat(3) });
+  return blocks;
+}
+
+// The hyphenation provider: the same vowel-consonant-vowel English rule as the repository's
+// hyphenation-provider sample. Installed for the build and removed afterwards.
+const EN_VOWELS = 'aeiouy';
+const EN_CONSONANTS = 'bcdfghjklmnpqrstvwxz';
+const enSyllables = (word, lang) => {
+  if (lang !== 'en') return [];
+  const out = [];
+  const w = word.toLowerCase();
+  for (let i = 2; i < w.length - 2; i++) {
+    if (EN_VOWELS.includes(w[i - 1]) && EN_CONSONANTS.includes(w[i]) && EN_VOWELS.includes(w[i + 1])) out.push(i);
+  }
+  return out;
+};
+const SHY = '­';
+const HYPHEN_BLOCKS = [
+  { type: 'heading', text: 'Hyphenation through a provider', level: 1 },
+  { type: 'paragraph', text: 'The library ships no dictionary: a provider receives every word and the document language, and returns the break positions. This preset installs a small English syllable rule and sets hyphenationLanguage to en, so the narrow column below breaks its long words at syllables.' },
+  { type: 'paragraph', text: 'In this narrow column the words antidisestablishmentarianism, internationalization, incomprehensibilities and counterrevolutionaries break at a syllable instead of overflowing or leaving a gap, because the provider knows the language of the document.', indent: 320, align: 'justify' },
+  { type: 'heading', text: 'Soft hyphens the author wrote', level: 2 },
+  { type: 'paragraph', text: 'A soft hyphen (U+00AD) needs no provider: anti' + SHY + 'dis' + SHY + 'establish' + SHY + 'ment' + SHY + 'arian' + SHY + 'ism breaks where the author allowed it, with or without the option, and stays invisible wherever the break is not taken.', indent: 320, align: 'justify' },
+];
+
+const METRICS_BLOCKS = [
+  { type: 'heading', text: 'Estimate versus AFM tables', level: 1 },
+  { type: 'paragraph', text: 'The historical estimate measures every em dash, ellipsis and curly quote at 556 units; Helvetica sets them at 1000, 1000 and 333. Each right-aligned line below accumulates that error and misses the margin unless metrics is exact.' },
+  { type: 'paragraph', text: 'Right-aligned — with an em dash, an ellipsis … and “curly quotes” — 100 % @ (AFM)', align: 'right' },
+  { type: 'paragraph', text: '“Quoted” … — @ % ( ) — the marks the estimate buckets at 556', align: 'right' },
+  { type: 'paragraph', text: '— … — … — … — … — six dashes and ellipses, 1000 units each —', align: 'right' },
+  { type: 'paragraph', text: 'Centred — “exact” … 100 % @ (AFM)', align: 'center' },
+  { type: 'table', headers: ['Character', 'Estimate', 'Helvetica AFM'], rows: [
+    { cells: ['— (em dash)', '556', '1000'], type: '', pointed: false },
+    { cells: ['… (ellipsis)', '556', '1000'], type: '', pointed: false },
+    { cells: ['“ ” (curly quotes)', '556', '333'], type: '', pointed: false },
+    { cells: ['@', '556', '1015'], type: '', pointed: false },
+    { cells: ['%', '556', '889'], type: '', pointed: false },
+    { cells: ['(', '556', '333'], type: '', pointed: false },
+  ] },
+];
+
+function figuresParams(fontEntries) {
+  return { title: 'Figures', fontEntries, blocks: [
+    { type: 'heading', text: 'Amounts by month', level: 1 },
+    { type: 'table', headers: ['Month', 'Debit', 'Credit'], rows: [
+      { cells: ['January', '1,111.00', '8,888.00'], type: '', pointed: false },
+      { cells: ['February', '11,111.00', '88,888.00'], type: '', pointed: false },
+      { cells: ['March', '111,111.00', '888,888.00'], type: '', pointed: false },
+    ] },
+    { type: 'paragraph', text: 'Small capitals and old-style figures: abcdefghijk 1234567890' },
+  ] };
+}
+
 const BUILDERS = {
   breaks: (m, on) => m.buildDocumentPDFBytes(
     { title: 'Paragraph breaking', blocks: sections(12), footerText: 'pdfnative typography playground' },
-    on ? { typography: { splitParagraphs: true, orphans: 2, widows: 2, keepHeadingsWithNext: true } } : {},
+    layout(on, { splitParagraphs: true, orphans: 2, widows: 2, keepHeadingsWithNext: true }),
+  ),
+  shortwords: (m, on) => m.buildDocumentPDFBytes(
+    { title: 'Short words and heading quotas', blocks: quotaBlocks() },
+    layout(on, { keepHeadingsWithNext: { minLines: 3 }, bindShortWords: true }, { splitParagraphs: true }),
   ),
   justify: (m, on) => m.buildDocumentPDFBytes(
     { title: 'Justification', blocks: [
@@ -288,7 +556,7 @@ const BUILDERS = {
       { type: 'paragraph', text: QUOTED.repeat(4), align: 'justify' },
       { type: 'paragraph', text: QUOTED.repeat(4), align: 'justify' },
     ] },
-    on ? { typography: { opticalMargins: true } } : {},
+    layout(on, { opticalMargins: true }),
   ),
   spacing: (m, on) => m.buildDocumentPDFBytes(
     { title: 'Spacing', blocks: [
@@ -297,7 +565,19 @@ const BUILDERS = {
       // demo-language: fr (punctuationSpacing 'fr' is a French convention)
       { type: 'paragraph', text: 'Facture de 150 € pour 12 kg de matériel : remise de 30 % ; stockage de 500 Mo ! Vraiment ? Oui. Et une « citation » pour finir. '.repeat(6) },
     ] },
-    on ? { typography: { unitBinding: true, punctuationSpacing: 'fr' } } : {},
+    layout(on, { unitBinding: true, punctuationSpacing: 'fr' }),
+  ),
+  hyphenation: (m, on) => {
+    m.setHyphenationProvider(on ? enSyllables : null);
+    try {
+      return m.buildDocumentPDFBytes({ title: 'Hyphenation', blocks: HYPHEN_BLOCKS }, layout(on, { hyphenationLanguage: 'en' }));
+    } finally {
+      m.setHyphenationProvider(null);
+    }
+  },
+  metrics: (m, on) => m.buildDocumentPDFBytes(
+    { title: 'Base-14 metrics', blocks: METRICS_BLOCKS },
+    layout(on, { metrics: 'exact' }),
   ),
   kerning: async (m, on) => m.buildDocumentPDFBytes(
     { title: 'Kerning', fontEntries: await latinEntries(m), blocks: [
@@ -305,19 +585,15 @@ const BUILDERS = {
       { type: 'heading', text: 'AWAY Toyota Vyborg Wavy', level: 2 },
       { type: 'paragraph', text: 'AVATAR To Yo Wave AWAY Toyota Vyborg Wavy LTAVA. '.repeat(10) },
     ] },
-    on ? { typography: { kerning: true } } : {},
+    layout(on, { kerning: true }),
   ),
   figures: async (m, on) => m.buildDocumentPDFBytes(
-    { title: 'Figures', fontEntries: await latinEntries(m), blocks: [
-      { type: 'heading', text: 'Amounts by month', level: 1 },
-      { type: 'table', headers: ['Month', 'Debit', 'Credit'], rows: [
-        { cells: ['January', '1,111.00', '8,888.00'], type: '', pointed: false },
-        { cells: ['February', '11,111.00', '88,888.00'], type: '', pointed: false },
-        { cells: ['March', '111,111.00', '888,888.00'], type: '', pointed: false },
-      ] },
-      { type: 'paragraph', text: 'Small capitals and old-style figures: abcdefghijk 1234567890' },
-    ] },
-    on ? { typography: { fontFeatures: ['onum', 'smcp'] } } : {},
+    figuresParams(await latinEntries(m)),
+    layout(on, { fontFeatures: ['onum', 'smcp'] }),
+  ),
+  'figures-tnum': async (m, on) => m.buildDocumentPDFBytes(
+    figuresParams(await latinEntries(m)),
+    layout(on, { fontFeatures: ['tnum'] }),
   ),
 };
 
@@ -325,16 +601,20 @@ async function generate() {
   const id = $('preset').value;
   const on = $('apply').checked;
   const t0 = performance.now();
+  diagnostics = [];
   try {
     setStatus('Loading pdfnative from CDN…', 'info');
     const mod = await loadPdfnative();
     setStatus('Generating PDF…', 'info');
     const bytes = await BUILDERS[id](mod, on);
+    renderDiagnostics();
     mod.downloadBlob(bytes, 'typography-' + id + (on ? '-on' : '-off') + '.pdf');
     const ms = (performance.now() - t0).toFixed(0);
     $('timer').textContent = (bytes.length / 1024).toFixed(1) + ' KB · ' + ms + ' ms';
-    setStatus('PDF generated ' + (on ? 'with' : 'without') + ' the option and downloaded. Generate it the other way to compare.', 'success');
+    setStatus('PDF generated ' + (on ? 'with' : 'without') + ' the option and downloaded'
+      + (diagnostics.length ? ' — ' + diagnostics.length + ' diagnostic(s) raised, see below.' : '. Generate it the other way to compare.'), 'success');
   } catch (err) {
+    renderDiagnostics();
     setStatus('Error: ' + (err.message || err), 'error');
     console.error(err);
   }
@@ -342,6 +622,13 @@ async function generate() {
 
 $('preset').addEventListener('change', e => applyPreset(e.target.value));
 $('generate').addEventListener('click', generate);
+$('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(codeView.textContent);
+    const btn = $('copy'); const old = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = old; }, 1500);
+  } catch (e) { alert('Clipboard write failed: ' + (e && e.message ? e.message : e)); }
+});
 applyPreset('breaks');
 
 const themeBtn = document.querySelector('.theme-toggle');

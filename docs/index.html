@@ -212,7 +212,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">3411+</div>
+    <div class="metric-value">3460+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -252,7 +252,7 @@
 
       <div class="feature-card">
         <div class="feature-icon fi-unicode"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
-        <h3>22 Unicode Scripts</h3>
+        <h3>27 Unicode Scripts</h3>
         <p>Thai, Lao, Tai Tham, New Tai Lue, Tai Le, Cham, Arabic, Hebrew, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Amharic, CJK, Cyrillic, Greek, Devanagari, and more. Full UAX #9 BiDi — isolates + explicit embeddings (LRE/RLE/LRO/RLO/PDF). OpenType GSUB/GPOS shaping for Thai, Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, and Myanmar. Plus COLRv1 colour emoji — with 51 flag and 22 ZWJ sequences as single colour ligatures since v1.7.0. <a href="guides/colour-emoji.html">Emoji guide →</a></p>
       </div>
 
@@ -275,9 +275,15 @@
       </div>
 
       <div class="feature-card">
+        <div class="feature-icon fi-content"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></div>
+        <h3>Typography, CMYK &amp; PDF/X-4</h3>
+        <p><strong>Typeset, not just generated</strong> (v1.8.0): paragraphs break across pages under <code>widows</code> / <code>orphans</code> rules, headings stay with what they introduce, body text justifies with hanging punctuation, soft hyphens and a pluggable hyphenation provider, ISO 80000-1 unit binding, punctuation-spacing presets, exact base-14 metrics, pair kerning and OpenType <code>fontFeatures</code> — every option opt-in and byte-identical when off. <strong>Press-ready</strong>: <code>[c, m, y, k]</code> colours, CMYK and Gray OutputIntents that keep a PDF/A claim valid, registration-colour marks and colour control bars, a <code>pdfx: 'pdfx4'</code> claim, and <code>validatePdfX()</code> to check the file before it leaves. <a href="guides/typography.html">Typography guide →</a> &middot; <a href="guides/print.html">Print guide →</a> &middot; <a href="playgrounds/typography.html">Playground →</a></p>
+      </div>
+
+      <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 3411+ tests across 152 files, 90%+ statement coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 3460+ tests across 154 files, 90%+ statement coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -475,7 +481,7 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Four adoption paths — pick the one that fits your stack. All four are zero-config and zero-build.</p>
     <div class="onboarding-grid">
       <div class="onboarding-card">
-        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.7.0</span></h3>
+        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.8.0</span></h3>
         <p class="ob-tag">For TypeScript / JavaScript apps.</p>
 <pre><code class="language-bash">npm install pdfnative</code></pre>
 <pre><code class="language-typescript">import { buildDocumentPDFBytes, extractText } from 'pdfnative';

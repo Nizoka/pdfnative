@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playgrounds — pdfnative</title>
-  <meta name="description" content="Ten zero-install pdfnative playgrounds: extreme scripts, all 27 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, and React.">
+  <meta name="description" content="Twelve zero-install pdfnative playgrounds: extreme scripts, all 27 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, and print &amp; PDF/X.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/">
@@ -14,13 +14,13 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/">
   <meta property="og:title" content="Playgrounds — pdfnative">
-  <meta property="og:description" content="Ten zero-install pdfnative playgrounds: extreme scripts, all 27 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, and React.">
+  <meta property="og:description" content="Twelve zero-install pdfnative playgrounds: extreme scripts, all 27 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, and print &amp; PDF/X.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Playgrounds — pdfnative">
-  <meta name="twitter:description" content="Ten zero-install pdfnative playgrounds — scripts, emoji, toolkit, inspect &amp; verify, charts, 100k-page scale test, CLI, MCP, React.">
+  <meta name="twitter:description" content="Twelve zero-install pdfnative playgrounds — scripts, emoji, toolkit, inspect &amp; verify, charts, 100k-page scale test, CLI, MCP, React, typography, print &amp; PDF/X.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -52,7 +52,7 @@
         "inLanguage": "en",
         "@id": "https://pdfnative.dev/playgrounds/#collection",
         "name": "pdfnative interactive playgrounds",
-        "description": "10 zero-install playgrounds that generate and inspect real PDFs in your browser.",
+        "description": "12 zero-install playgrounds that generate and inspect real PDFs in your browser.",
         "url": "https://pdfnative.dev/playgrounds/",
         "isPartOf": {
           "@type": "WebSite",
@@ -190,7 +190,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Playgrounds</p>
   <article class="guide-content">
     <h1>Interactive playgrounds</h1>
-    <p>Ten hands-on environments that exercise the entire pdfnative ecosystem in your browser — from generating documents to inspecting the ones you already have. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
+    <p>Twelve hands-on environments that exercise the entire pdfnative ecosystem in your browser — from generating documents to inspecting the ones you already have. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
 
     <div class="pg-grid">
       <a class="pg-card" href="./extreme-scripts.html">
@@ -296,9 +296,9 @@
       <a class="pg-card" href="./typography.html">
         <div class="pg-icon" aria-hidden="true">🔤</div>
         <h3>Typography <span class="badge">Library</span> <span class="badge alt">1.8.0</span></h3>
-        <p>Generate the same document <strong>with and without</strong> each typographic option: paragraph breaking with widows and orphans, keep-with-next, justification and optical margins, unit binding and French punctuation spacing, pair kerning, and tabular or old-style figures.</p>
+        <p>Generate the same document <strong>with and without</strong> each typographic option: paragraph breaking with widows and orphans, keep-with-next line quotas, short-word binding, justification and optical margins, unit binding and French punctuation spacing, a hyphenation provider with soft hyphens, exact base-14 metrics, pair kerning, and tabular or old-style figures — with the <code>onDiagnostic</code> output shown for every run.</p>
         <div class="pg-tags">
-          <span class="pg-tag">Widows/orphans</span><span class="pg-tag">Justify</span><span class="pg-tag">Kerning</span><span class="pg-tag">tnum</span>
+          <span class="pg-tag">Widows/orphans</span><span class="pg-tag">Justify</span><span class="pg-tag">Hyphenation</span><span class="pg-tag">Kerning</span><span class="pg-tag">Diagnostics</span>
         </div>
         <div class="pg-cta">Open Typography playground →</div>
       </a>
@@ -306,7 +306,7 @@
       <a class="pg-card" href="./print.html">
         <div class="pg-icon" aria-hidden="true">🖨️</div>
         <h3>Print &amp; PDF/X <span class="badge">Library</span> <span class="badge alt">1.7.0 → 1.8.0</span></h3>
-        <p>Bleed and printer's marks, <strong>CMYK colours</strong>, a CMYK OutputIntent from your own ICC profile (read locally, never uploaded), a <strong>PDF/X-4</strong> claim, and the <code>validatePdfX()</code> report for the file you just built.</p>
+        <p>Bleed and printer's marks, <strong>CMYK colours</strong>, a CMYK OutputIntent from your own ICC profile (read locally, never uploaded) or from the inlined synthetic profile, a <strong>PDF/X-4</strong> claim, the <code>validatePdfX()</code> report for the file you just built, and the coherence errors the builder throws for an impossible PDF/X configuration.</p>
         <div class="pg-tags">
           <span class="pg-tag">Bleed</span><span class="pg-tag">CMYK</span><span class="pg-tag">PDF/X-4</span><span class="pg-tag">Validation</span>
         </div>

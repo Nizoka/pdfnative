@@ -88,10 +88,10 @@
   </nav>
   <article class="guide-content">
     <h1>All 27 Scripts + Emoji</h1>
-    <p>The flagship stress test. One <code>buildDocumentPDFBytes()</code> call, <strong>every Unicode script pdfnative supports</strong> — 22 writing systems with full BiDi reordering and OpenType GSUB/GPOS shaping — plus native <strong>COLRv1 colour emoji</strong>, composed into a single PDF entirely in your browser. The text-routing engine inspects every code point and dispatches it to the right embedded font automatically, so a single paragraph can freely mix Arabic, Tamil, Japanese and emoji.</p>
+    <p>The flagship stress test. One <code>buildDocumentPDFBytes()</code> call, <strong>every Unicode script pdfnative supports</strong> — 27 writing systems with full BiDi reordering and OpenType GSUB/GPOS shaping, five of them (Lao, Tai Tham, New Tai Lue, Tai Le, Cham) new in 1.8.0 — plus native <strong>COLRv1 colour emoji</strong>, composed into a single PDF entirely in your browser. The text-routing engine inspects every code point and dispatches it to the right embedded font automatically, so a single paragraph can freely mix Arabic, Tamil, Japanese and emoji.</p>
 
     <div class="callout" style="margin:16px 0;padding:12px 16px;border-radius:8px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:14px;">
-      <strong>Heads-up:</strong> this preset embeds up to <strong>24 fonts</strong> (27 scripts + Latin + colour emoji). The first run fetches several megabytes of font data from the CDN — give it a few seconds. Everything after that is instant.
+      <strong>Heads-up:</strong> this preset embeds up to <strong>29 fonts</strong> (27 scripts + Latin + colour emoji). The first run fetches several megabytes of font data from the CDN — give it a few seconds. Everything after that is instant.
     </div>
 
     <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
@@ -118,14 +118,15 @@
 
     <details style="margin-top:24px;">
       <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
-      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="copy-btn" id="copy" type="button" style="padding:4px 10px;font-size:12px;background:var(--c-primary);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Copy</button></div>
+      <pre style="margin-top:8px;"><code id="code-view" class="language-typescript"></code></pre>
     </details>
 
     <h2 style="margin-top:32px;">The 27 scripts at a glance</h2>
-    <p>Every writing system below ships as a bundled Noto font module and renders through the same shaping engine. The demo reads this table directly — what you see here is what lands in the PDF.</p>
+    <p>Every writing system below ships as a bundled Noto font module and renders through the same shaping engine. The demo reads this table directly — what you see here is what lands in the PDF. For Tai Tham, New Tai Lue, Tai Le and Cham the second column shows the sample words the repository's generators use rather than a greeting.</p>
     <table id="greetings-table">
       <thead>
-        <tr><th scope="col">Script (autonym)</th><th scope="col">Greeting</th></tr>
+        <tr><th scope="col">Script (autonym)</th><th scope="col">Greeting or sample words</th></tr>
       </thead>
       <tbody>
         <tr><td lang="en">English</td><td lang="en">Hello</td></tr>
@@ -147,6 +148,11 @@
         <tr><td lang="th">ไทย</td><td lang="th">สวัสดี</td></tr>
         <tr><td lang="km">ខ្មែរ</td><td lang="km">សួស្តី</td></tr>
         <tr><td lang="my">မြန်မာ</td><td lang="my">မင်္ဂလာပါ</td></tr>
+        <tr><td lang="lo">ພາສາລາວ</td><td lang="lo">ສະບາຍດີ</td></tr>
+        <tr><td lang="nod">ᨤᩮᨻ᩠ᨸᩉ</td><td lang="nod">ᨲ᩠ᩅ ᨠᩮ ᨿᩢ᩠ᨿ</td></tr>
+        <tr><td lang="khb">ᦀᦱᦖᦱ</td><td lang="khb">ᦀᦱ ᦖᦱ ᧐᧑᧒</td></tr>
+        <tr><td lang="tdd">ᥖᥦᥰᥒᥭ</td><td lang="tdd">ᥖᥦᥰ ᥒᥭ ᥐᥥᥲ</td></tr>
+        <tr><td lang="cjm">ꨀꨪꨌꨲ</td><td lang="cjm">ꨀꨯ ꨀꨵꨶ ꨀꩌ</td></tr>
         <tr><td lang="bo">བོད་ཡིག</td><td lang="bo">བཀྲ་ཤིས་བདེ་ལེགས།</td></tr>
         <tr><td lang="zh">中文</td><td lang="zh">你好</td></tr>
         <tr><td lang="ja">日本語</td><td lang="ja">こんにちは</td></tr>
@@ -159,9 +165,9 @@
       <ul style="margin-top:8px;color:#065f46;">
         <li><strong>Automatic per-code-point font routing</strong> — one mixed paragraph is split into runs and each run dispatched to its embedded CIDFont; Latin stays on Helvetica/Noto Sans.</li>
         <li><strong>BiDi (UAX #9)</strong> — Arabic, Hebrew, and Ethiopic runs are reordered right-to-left and correctly interleaved with left-to-right neighbours and digits.</li>
-        <li><strong>OpenType shaping</strong> — GSUB ligatures/conjuncts and GPOS mark positioning for the Indic, Thai, Khmer, Myanmar, Tibetan and Sinhala runs; Arabic joining forms.</li>
+        <li><strong>OpenType shaping</strong> — GSUB ligatures/conjuncts and GPOS mark positioning for the Indic, Thai, Lao, Khmer, Myanmar, Tibetan and Sinhala runs; Arabic joining forms; the Universal Shaping Engine for Tai Tham and Cham (1.8.0).</li>
         <li><strong>COLRv1 colour emoji</strong> — Noto Color Emoji layers rendered as native PDF vector fills (no rasterization), or monochrome via Noto Emoji.</li>
-        <li><strong>Subsetting</strong> — each of the 22+ fonts is subset to only the glyphs used, then embedded as a CIDFont Type2 with Identity-H.</li>
+        <li><strong>Subsetting</strong> — each of the 29 fonts is subset to only the glyphs used, then embedded as a CIDFont Type2 with Identity-H.</li>
       </ul>
       <p style="color:#065f46;margin-top:8px;font-size:14px;">All zero-dependency, all in the browser. The exact same code runs in Node.js, Deno, Bun and Web Workers.</p>
     </div>
@@ -182,10 +188,12 @@
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script type="module">
-// Canonical 22-script order (matches pdfnative's font registry) + Latin baseline.
+// The 27 script lang keys of pdfnative's font registry, by region, + Latin baseline.
+// lo, nod, khb, tdd and cjm are the five scripts added in 1.8.0.
 const ALL_LANGS = [
   'el', 'ru', 'ka', 'hy', 'tr', 'vi', 'pl', 'ar', 'he', 'am',
-  'hi', 'bn', 'ta', 'te', 'si', 'th', 'km', 'my', 'bo', 'zh', 'ja', 'ko', 'latin'
+  'hi', 'bn', 'ta', 'te', 'si', 'th', 'km', 'my', 'lo', 'nod', 'khb', 'tdd', 'cjm',
+  'bo', 'zh', 'ja', 'ko', 'latin'
 ];
 
 // Autonym (script name in its own script) + a native greeting, routed automatically.
@@ -203,6 +211,10 @@ const REGION_PARAS = [
   'Middle East & Africa (RTL + BiDi):  العربية السلام عليكم · فارسی سلام · עברית שלום · አማርኛ ሰላም — mixed with Latin 12345 and back.',
   'South Asia:  हिन्दी नमस्ते · বাংলা নমস্কার · தமிழ் வணக்கம் · తెలుగు నమస్తే · සිංහල ආයුබෝවන්',
   'Southeast Asia & the Himalayas:  ไทย สวัสดี · ខ្មែរ សួស្តី · မြန်မာ မင်္ဂလာပါ · བོད་ཡིག བཀྲ་ཤིས་བདེ་ལེགས།',
+  // Mainland South-East Asia, new in 1.8.0: Lao (GSUB + GPOS), Tai Tham and Cham (Universal Shaping
+  // Engine), New Tai Lue and Tai Le (spacing vowels, font routing only). Sample words from the
+  // repository's generators — an autonym followed by a greeting or sample words per script.
+  'Mainland South-East Asia (1.8.0, Universal Shaping Engine):  ລາວ ສະບາຍດີ · ᨤᩮᨻ᩠ᨸᩉ ᨲ᩠ᩅ ᨠᩮ ᨿᩢ᩠ᨿ · ᦀᦱᦖᦱ ᦀᦱ ᦖᦱ ᧐᧑᧒ · ᥖᥦᥰᥒᥭ ᥖᥦᥰ ᥒᥭ ᥐᥥᥲ · ꨀꨪꨌꨲ ꨀꨯ ꨀꨵꨶ ꨀꩌ',
   'East Asia:  中文 你好 · 日本語 こんにちは · 한국어 안녕하세요',
   'And native colour emoji, composited as PDF vectors:  🌍 🌏 🌎 ✨ 🚀 📄 ⚡ 🔒 ✅ ❤️ 🎉 🥳 👋 — including flag & ZWJ sequences (new in 1.7.0): 🇫🇷 🇩🇪 🇯🇵 🇧🇷 🇪🇺 👨‍💻 👩‍🚀',
 ];
@@ -214,7 +226,7 @@ const PRESETS = {
     langs: [...ALL_LANGS, 'emoji'],
     emojiColor: true,
     body: [
-      'pdfnative renders all 22 of its supported Unicode scripts and native COLRv1 colour emoji into a single PDF — no Cairo, no HarfBuzz, no fontkit, no rasterization. Each code point below is routed to the correct embedded font automatically.',
+      'pdfnative renders all 27 of its supported Unicode scripts and native COLRv1 colour emoji into a single PDF — no Cairo, no HarfBuzz, no fontkit, no rasterization. Each code point below is routed to the correct embedded font automatically.',
       '',
       ...REGION_PARAS.flatMap(p => [p, '']),
     ].join('\n').trimEnd()
@@ -225,7 +237,7 @@ const PRESETS = {
     langs: [...ALL_LANGS, 'emoji'],
     emojiColor: false,
     body: [
-      'Same 22-script world tour, this time with the lighter monochrome Noto Emoji glyphs instead of the full COLRv1 colour set — ideal when file size matters.',
+      'Same 27-script world tour, this time with the lighter monochrome Noto Emoji glyphs instead of the full COLRv1 colour set — ideal when file size matters.',
       '',
       ...REGION_PARAS.flatMap(p => [p, '']),
     ].join('\n').trimEnd()
@@ -262,6 +274,12 @@ const FONT_MODULE_BY_LANG = {
   km: 'noto-khmer-data.js',
   my: 'noto-myanmar-data.js',
   am: 'noto-ethiopic-data.js',
+  // 1.8.0
+  lo: 'noto-lao-data.js',
+  nod: 'noto-taitham-data.js',
+  khb: 'noto-newtailue-data.js',
+  tdd: 'noto-taile-data.js',
+  cjm: 'noto-cham-data.js',
   latin: 'noto-sans-data.js',
 };
 
@@ -302,6 +320,9 @@ function updateCodeView(id) {
     '',
     '// 27 scripts + Latin + emoji — each lazy-loaded from the package fonts/ subpath.',
     `const langs = ${JSON.stringify(p.langs)};`,
+    'const MODULE = {',
+    ...p.langs.map(l => `  ${JSON.stringify(l)}: ${JSON.stringify(moduleFor(l, p.emojiColor))},`),
+    '};',
     'registerFonts(Object.fromEntries(langs.map(l => [l,',
     '  () => import(`https://esm.sh/pdfnative@1.8.0/fonts/${MODULE[l]}`)])));',
     '',
@@ -321,7 +342,7 @@ function updateCodeView(id) {
     '  fontEntries,',
     '});',
     '',
-    "downloadBlob(pdf, 'pdfnative-22-scripts.pdf');"
+    "downloadBlob(pdf, 'pdfnative-27-scripts.pdf');"
   ].join('\n');
   codeView.textContent = code;
   if (window.Prism) window.Prism.highlightElement(codeView);
@@ -387,6 +408,13 @@ async function generate() {
 
 $('preset').addEventListener('change', e => applyPreset(e.target.value));
 $('generate').addEventListener('click', generate);
+$('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(codeView.textContent);
+    const btn = $('copy'); const old = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = old; }, 1500);
+  } catch (e) { alert('Clipboard write failed: ' + (e && e.message ? e.message : e)); }
+});
 applyPreset('world-color');
 
 // Theme + hamburger parity with the rest of the site.
