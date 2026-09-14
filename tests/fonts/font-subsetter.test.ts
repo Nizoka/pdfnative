@@ -204,7 +204,8 @@ function parseTableDirectory(u8: Uint8Array): { entries: TableEntry[]; tables: R
 /**
  * Assert the structural invariants of a subset produced by `subsetTTF`: tags sorted and
  * unique, offsets 4-byte aligned, non-overlapping and in bounds, directory checksums
- * matching the table bytes, and `head.checkSumAdjustment` zeroed.
+ * matching the table bytes, and `head.checkSumAdjustment` set so the whole file sums to
+ * 0xB1B0AFBA (v1.8.0; written as 0 before).
  */
 function expectValidDirectory(u8: Uint8Array, expectedTags: string[]): Record<string, Uint8Array> {
     const { entries, tables } = parseTableDirectory(u8);
@@ -217,10 +218,17 @@ function expectValidDirectory(u8: Uint8Array, expectedTags: string[]): Record<st
         expect(e.offset & 3).toBe(0);
         expect(e.offset).toBeGreaterThanOrEqual(cursor);
         expect(e.offset + e.length).toBeLessThanOrEqual(u8.length);
-        expect(e.checksum).toBe(ttfChecksum(tables[e.tag]));
+        // The directory checksum of `head` is computed with checkSumAdjustment at 0 (OpenType spec).
+        let table = tables[e.tag];
+        if (e.tag === 'head') {
+            table = new Uint8Array(table);
+            new DataView(table.buffer, table.byteOffset, table.byteLength).setUint32(8, 0);
+        }
+        expect(e.checksum).toBe(ttfChecksum(table));
         cursor = align4(e.offset + e.length);
     }
-    expect(new DataView(tables['head'].buffer, tables['head'].byteOffset).getUint32(8)).toBe(0);
+    expect(new DataView(tables['head'].buffer, tables['head'].byteOffset).getUint32(8)).not.toBe(0);
+    expect(ttfChecksum(u8)).toBe(0xB1B0AFBA);
     return tables;
 }
 
@@ -364,13 +372,13 @@ describe('subsetTTF', () => {
         expect(metrics.glyphSizes[1]).toBeGreaterThanOrEqual(18);
     });
 
-    it('should set checkSumAdjustment to 0 in output head table', () => {
+    it('computes checkSumAdjustment so the whole file sums to 0xB1B0AFBA', () => {
         const ttf = buildMinimalTTF();
         const result = subsetTTF(ttf, new Set([1]));
-        // Parse head table and verify checksumAdjust = 0
         const buf = new ArrayBuffer(result.length);
         const u8 = new Uint8Array(buf);
         for (let i = 0; i < result.length; i++) u8[i] = result.charCodeAt(i);
+        expect(ttfChecksum(u8)).toBe(0xB1B0AFBA);
         const view = new DataView(buf);
         const numTables = view.getUint16(4);
         for (let i = 0; i < numTables; i++) {
@@ -378,7 +386,11 @@ describe('subsetTTF', () => {
             const tag = String.fromCharCode(u8[off], u8[off + 1], u8[off + 2], u8[off + 3]);
             if (tag === 'head') {
                 const headOff = view.getUint32(off + 8);
-                expect(view.getUint32(headOff + 8)).toBe(0); // checkSumAdjustment
+                // The field holds 0xB1B0AFBA minus the checksum of the file with it zeroed.
+                const adjustment = view.getUint32(headOff + 8);
+                expect(adjustment).not.toBe(0);
+                view.setUint32(headOff + 8, 0);
+                expect((0xB1B0AFBA - ttfChecksum(u8)) >>> 0).toBe(adjustment);
                 break;
             }
         }
@@ -460,10 +472,10 @@ describe('subsetTTF — hinting tables (prep, fpgm, cvt , gasp)', () => {
         const subset = binaryToU8(subsetTTF(source, new Set([1, 3])));
         const out = parseTableDirectory(subset).tables;
         expect(Array.from(out['maxp'])).toEqual(Array.from(src['maxp']));
-        // head: identical except checkSumAdjustment (bytes 8–11) and indexToLocFormat (bytes 50–51)
+        // head: identical except checkSumAdjustment (bytes 8–11, recomputed) and indexToLocFormat (bytes 50–51)
         const expectedHead = new Uint8Array(src['head']);
         const hv = new DataView(expectedHead.buffer);
-        hv.setUint32(8, 0);
+        hv.setUint32(8, new DataView(out['head'].buffer, out['head'].byteOffset).getUint32(8));
         hv.setInt16(50, 1);
         expect(Array.from(out['head'])).toEqual(Array.from(expectedHead));
         expect(new DataView(out['head'].buffer, out['head'].byteOffset).getUint16(16))

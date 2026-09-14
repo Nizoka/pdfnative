@@ -180,7 +180,9 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>):
         newTableData['glyf'] = newGlyf;
         newTableData['loca'] = newLoca;
 
-        // Update head: indexToLocFormat = 1 (long), zero checkSumAdjustment
+        // Update head: indexToLocFormat = 1 (long); checkSumAdjustment is
+        // zeroed here so the table checksum below excludes it, and computed
+        // once the whole file is assembled (OpenType `head` table spec).
         const headCopy = new Uint8Array(newTableData['head']);
         new DataView(headCopy.buffer, headCopy.byteOffset, headCopy.byteLength).setInt16(50, 1);
         new DataView(headCopy.buffer, headCopy.byteOffset, headCopy.byteLength).setUint32(8, 0);
@@ -222,6 +224,12 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>):
 
         // Write table data
         for (const tag of tableTags) output.set(newTableData[tag], tableFileOffsets[tag]);
+
+        // head.checkSumAdjustment = 0xB1B0AFBA − (checksum of the whole font
+        // with the field at 0), so the file sums to the magic value. Written
+        // as 0 from 1.0 to 1.7 — every rasteriser ignores it, font validators
+        // flag it (v1.8.0).
+        outView.setUint32(tableFileOffsets['head'] + 8, (0xB1B0AFBA - ttfChecksum(output)) >>> 0);
 
         // Convert Uint8Array back to binary string
         let result = '';
