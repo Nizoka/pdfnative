@@ -59,13 +59,16 @@ describe('language conformance documents', () => {
         }
     });
 
+    // Loading a CJK module (Noto Sans KR is 14 MB of data) under coverage
+    // instrumentation exceeds vitest's 5 s default; the per-test timeout is
+    // raised here rather than globally (testing.instructions.md).
     for (const doc of LANGUAGE_DOCS) {
         describe(doc.filename, () => {
             it('fits on one page', async () => {
                 const entry = await entryFor(doc.lang);
                 const report = inspectDocumentLayout(languageDocParams(doc, [entry]));
                 expect(report.pages.length).toBe(1);
-            });
+            }, 60_000);
 
             it('draws every sample with real glyphs', async () => {
                 const entry = await entryFor(doc.lang);
@@ -80,7 +83,7 @@ describe('language conformance documents', () => {
                         expect(notdef, `${doc.filename}: "${text}"`).toBe(0);
                     }
                 }
-            });
+            }, 60_000);
         });
     }
 });

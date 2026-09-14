@@ -306,11 +306,14 @@ const actualDerived: Record<string, number> = {
     const newestTest = walk(join(ROOT, 'tests'), (p) => p.endsWith('.test.ts'))
         .reduce((max, p) => Math.max(max, statSync(p).mtimeMs), 0);
     if (existsSync(vitestJson) && statSync(vitestJson).mtimeMs >= newestTest) {
-        // numPassedTests is the figure the gate prints ("3459 tests"); the
-        // total also counts skipped placeholders.
+        // The tests that ran: passed plus failed, which is the figure the gate
+        // prints on a green run ("3459 tests") and stays the same on a red one,
+        // so a single failing test does not also turn this rule red. The
+        // total would count skipped placeholders as well.
         let total: number | undefined;
         try {
-            total = (JSON.parse(read(vitestJson)) as { numPassedTests?: number }).numPassedTests;
+            const report = JSON.parse(read(vitestJson)) as { numPassedTests?: number; numFailedTests?: number };
+            total = typeof report.numPassedTests === 'number' ? report.numPassedTests + (report.numFailedTests ?? 0) : undefined;
         } catch {
             total = undefined;
         }
