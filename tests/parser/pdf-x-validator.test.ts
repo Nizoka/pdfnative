@@ -199,17 +199,44 @@ describe('validatePdfX: annotations, actions, resources and filters', () => {
         expect(warnings.join('\n')).toMatch(/halftone other than \/Default/);
     });
 
-    it('accepts /TR /Identity and /TR2 /Default', () => {
-        const bytes = assemblePdf([
+    it('accepts /TR2 /Default and rejects /TR /Identity, which ISO 15930-7 does not name', () => {
+        const build = (gs: string): Uint8Array => assemblePdf([
             '<< /Type /Catalog /Pages 2 0 R >>',
             '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /TrimBox [0 0 612 792] /Resources << /ExtGState << /A 5 0 R /B 6 0 R >> >> /Contents 4 0 R >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /TrimBox [0 0 612 792] /Resources << /ExtGState << /A 5 0 R >> >> /Contents 4 0 R >>',
             stream('', ''),
-            '<< /Type /ExtGState /TR /Identity >>',
-            '<< /Type /ExtGState /TR2 /Default /HT /Default >>',
+            gs,
         ]);
-        const { errors, warnings } = validatePdfX(bytes);
-        expect(errors.join('\n')).not.toMatch(/transfer function/);
-        expect(warnings.join('\n')).not.toMatch(/halftone/);
+        const ok = validatePdfX(build('<< /Type /ExtGState /TR2 /Default /HT /Default >>'));
+        expect(ok.errors.join('\n')).not.toMatch(/transfer function/);
+        expect(ok.warnings.join('\n')).not.toMatch(/halftone/);
+        expect(validatePdfX(build('<< /Type /ExtGState /TR /Identity >>')).errors.join('\n')).toMatch(/1 graphics state carries a transfer function/);
+        expect(validatePdfX(build('<< /Type /ExtGState /TR2 /Identity >>')).errors.join('\n')).toMatch(/transfer function/);
+    });
+
+    it('rejects OPI, PostScript and reference XObjects, embedded files, and sees fonts in annotation appearances', () => {
+        const bytes = assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [(a.txt) 12 0 R] >> >> >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /TrimBox [0 0 612 792] '
+                + '/Resources << /XObject << /Im 5 0 R /Ps 6 0 R /Rf 7 0 R >> >> /Contents 4 0 R /Annots [8 0 R 9 0 R] >>',
+            stream('', ''),
+            stream('/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 /OPI << /2.0 << /Version 2.0 >> >>', 'x'),
+            stream('/Type /XObject /Subtype /PS', ''),
+            stream('/Type /XObject /Subtype /Form /BBox [0 0 1 1] /Ref << /F (other.pdf) /Page 0 >>', ''),
+            '<< /Type /Annot /Subtype /Widget /Rect [0 0 0 0] /F 2 /AP << /N 10 0 R >> >>',
+            '<< /Type /Annot /Subtype /FileAttachment /Rect [0 0 0 0] /F 2 /FS << /Type /Filespec /F (a.txt) /EF << /F 12 0 R >> >> >>',
+            stream('/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << /Font << /Fa 11 0 R >> >>', 'BT /Fa 12 Tf (x) Tj ET'),
+            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+            stream('/Type /EmbeddedFile', 'payload'),
+        ]);
+        const all = validatePdfX(bytes).errors.join('\n');
+        expect(all).toMatch(/names tree carries \/EmbeddedFiles/);
+        expect(all).toMatch(/\/FileAttachment annotation; PDF\/X-4 forbids embedded files/);
+        expect(all).toMatch(/Page 1, \/Widget annotation appearance: font \/Fa \(Helvetica\) is not embedded/);
+        expect(all).toMatch(/1 XObject carries an \/OPI dictionary/);
+        expect(all).toMatch(/1 PostScript XObject/);
+        expect(all).toMatch(/1 reference XObject/);
+        expect(all).toMatch(/1 embedded file stream/);
     });
 });

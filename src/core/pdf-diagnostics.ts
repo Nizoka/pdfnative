@@ -82,6 +82,22 @@ export function pdfaUnembeddedFormFontDiagnostic(): PdfDiagnostic {
     };
 }
 
+/**
+ * Diagnostic payload for an ICC v4 OutputIntent under a PDF/A-1 claim
+ * (v1.8.0). ISO 19005-1 §6.2.2 admits ICC v2 profiles only; v4 is allowed
+ * from PDF/A-2 (ISO 19005-2 §6.2.4.2). A diagnostic, not a throw: the file
+ * is well-formed, only its claim is wrong.
+ */
+export function pdfaIccProfileVersionDiagnostic(version: number): PdfDiagnostic {
+    return {
+        code: 'PDFA_ICC_PROFILE_VERSION',
+        severity: 'warning',
+        message: `the OutputIntent ICC profile is version ${version} but PDF/A-1 requires an ICC v2 `
+            + 'profile (ISO 19005-1 §6.2.2; veraPDF rejects the file). Supply an ICC v2 profile, or claim '
+            + "PDF/A-2b or later ('pdfa2b', 'pdfa3b'), where v4 profiles are allowed (ISO 19005-2 §6.2.4.2).",
+    };
+}
+
 /** Diagnostic payload for a DeviceCMYK image under a PDF/A claim. */
 export function pdfaDeviceCmykDiagnostic(): PdfDiagnostic {
     return {

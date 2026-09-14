@@ -23,7 +23,7 @@ import type {
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
@@ -182,6 +182,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         const level = typeof layout?.tagged === 'string' ? layout.tagged : 'pdfa2b';
         emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
     }
+    // PDF/A-1 admits ICC v2 OutputIntent profiles only (v1.8.0).
+    if (tagged && pdfaConfig.pdfaPart === 1 && layout?.outputIntent && outputIntent && outputIntent.iccVersion > 2) {
+        emitDiagnostic(pdfaIccProfileVersionDiagnostic(outputIntent.iccVersion));
+    }
     if (pdfx && fontEntries.length === 0) {
         emitDiagnostic(pdfxNoFontEntriesDiagnostic());
     }
@@ -245,7 +249,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // wall-clock read that no option could override.
     const dateNow = resolveCreationDate(layout?.creationDate);
     const pad2d = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${dateNow.getFullYear()}-${pad2d(dateNow.getMonth() + 1)}-${pad2d(dateNow.getDate())}`;
+    // UTC, like /CreationDate (v1.8.0): the {date} placeholder and the file's
+    // own date name the same day on every host.
+    const dateStr = `${dateNow.getUTCFullYear()}-${pad2d(dateNow.getUTCMonth() + 1)}-${pad2d(dateNow.getUTCDate())}`;
     const docTitle = params.title ?? '';
 
     // ── Pagination ───────────────────────────────────────────────────

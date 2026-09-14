@@ -270,23 +270,21 @@ export interface PdfMetadata {
  * @returns `{ pdfDate, xmpDate }` representing the same moment.
  */
 export function buildPdfMetadata(now: Date = new Date()): PdfMetadata {
+    // Formatted in UTC whatever the host's zone (v1.8.0): the same pinned
+    // instant used to yield a different /CreationDate, XMP date and trailer
+    // /ID on hosts in different zones, which defeated reproducible builds
+    // unless TZ was pinned too. The offset is spelt +00'00' / +00:00 rather
+    // than Z, so a build that always ran under TZ=UTC is byte-identical.
     const pad2 = (n: number) => String(n).padStart(2, '0');
-    const yyyy = now.getFullYear();
-    const mm = pad2(now.getMonth() + 1);
-    const dd = pad2(now.getDate());
-    const hh = pad2(now.getHours());
-    const mi = pad2(now.getMinutes());
-    const ss = pad2(now.getSeconds());
+    const yyyy = now.getUTCFullYear();
+    const mm = pad2(now.getUTCMonth() + 1);
+    const dd = pad2(now.getUTCDate());
+    const hh = pad2(now.getUTCHours());
+    const mi = pad2(now.getUTCMinutes());
+    const ss = pad2(now.getUTCSeconds());
 
-    // Timezone offset in minutes, west of UTC is positive in JS — invert sign for output.
-    const tzMinutes = -now.getTimezoneOffset();
-    const tzSign = tzMinutes >= 0 ? '+' : '-';
-    const tzAbs = Math.abs(tzMinutes);
-    const tzH = pad2(Math.floor(tzAbs / 60));
-    const tzM = pad2(tzAbs % 60);
-
-    const pdfDate = `D:${yyyy}${mm}${dd}${hh}${mi}${ss}${tzSign}${tzH}'${tzM}'`;
-    const xmpDate = `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}${tzSign}${tzH}:${tzM}`;
+    const pdfDate = `D:${yyyy}${mm}${dd}${hh}${mi}${ss}+00'00'`;
+    const xmpDate = `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}+00:00`;
 
     return { pdfDate, xmpDate };
 }
@@ -499,6 +497,12 @@ export interface ResolvedOutputIntent {
     readonly components: 1 | 3 | 4;
     /** ICC profile/device class from header bytes 12–15, e.g. `prtr`, `mntr`. */
     readonly deviceClass: string;
+    /**
+     * Major ICC specification version from header byte 8 (2 or 4). PDF/A-1
+     * accepts v2 profiles only (ISO 19005-1 §6.2.2); v4 is allowed from
+     * PDF/A-2 (ISO 19005-2 §6.2.4.2). @since 1.8.0
+     */
+    readonly iccVersion: number;
 }
 
 const ICC_DATA_SPACES: Readonly<Record<string, { readonly space: OutputIntentSpace; readonly components: 1 | 3 | 4 }>> = {
@@ -517,7 +521,7 @@ const ICC_DATA_SPACES: Readonly<Record<string, { readonly space: OutputIntentSpa
  */
 export function resolveOutputIntent(custom?: { readonly iccProfile: Uint8Array }): ResolvedOutputIntent {
     if (!custom) {
-        return { profile: buildMinimalSRGBProfile(), space: 'rgb', components: 3, deviceClass: 'mntr' };
+        return { profile: buildMinimalSRGBProfile(), space: 'rgb', components: 3, deviceClass: 'mntr', iccVersion: 2 };
     }
     const icc = custom.iccProfile;
     if (icc.length < 128) {
@@ -547,7 +551,7 @@ export function resolveOutputIntent(custom?: { readonly iccProfile: Uint8Array }
     let profile = '';
     for (let i = 0; i < icc.length; i++) profile += String.fromCharCode(icc[i]);
     const deviceClass = String.fromCharCode(icc[12], icc[13], icc[14], icc[15]);
-    return { profile, space: data.space, components: data.components, deviceClass };
+    return { profile, space: data.space, components: data.components, deviceClass, iccVersion: icc[8] };
 }
 
 /**

@@ -17,22 +17,24 @@
  *     its header
  *   - Every page: a TrimBox or an ArtBox, not both, nested in the BleedBox
  *     and the MediaBox
- *   - Every font embedded, in page resources and in the resources of the
- *     Form XObjects and patterns they reach
+ *   - Every font embedded, in page resources, in the resources of the
+ *     Form XObjects and patterns they reach, and in the appearance streams
+ *     of the page's annotations
  *   - No annotations inside the BleedBox other than PrinterMark / TrapNet,
- *     Popup, or ones flagged Hidden or NoView; no JavaScript actions
+ *     Popup, or ones flagged Hidden or NoView; no JavaScript actions; no
+ *     FileAttachment annotation
  *   - No `/OpenAction`, no additional actions (`/AA`), no JavaScript name
- *     tree
- *   - No `LZWDecode` filter, no transfer function (`/TR`, `/TR2` other
- *     than `/Default`) in any ExtGState; a halftone other than `/Default`
- *     and an image with `/Interpolate true` are warnings
+ *     tree, no `/EmbeddedFiles` name tree, no embedded file stream
+ *   - No OPI dictionary, no PostScript XObject, no reference XObject
+ *   - No `LZWDecode` filter; no transfer function at all — `/TR` in any
+ *     form, `/TR2` other than `/Default` — in any ExtGState; a halftone
+ *     other than `/Default` and an image with `/Interpolate true` are
+ *     warnings
  *   - Device colour in page content matching the OutputIntent, or covered
  *     by a `/DefaultRGB` / `/DefaultCMYK` colour space in page resources
  *
- * Not checked: fonts inside annotation appearance streams, colour inside
- * Form XObjects and images, OPI and PostScript XObjects, reference
- * XObjects, embedded files, transparency blend spaces, optional content,
- * and anything that needs rendering. veraPDF does
+ * Not checked: colour inside Form XObjects and images, transparency blend
+ * spaces, optional content, and anything that needs rendering. veraPDF does
  * not cover PDF/X; before sending a file to press, confirm it with a
  * certified preflight tool (callas pdfToolbox, Acrobat Preflight). A `valid`
  * result means the structural prerequisites hold.
@@ -209,6 +211,7 @@ export function validatePdfX(bytes: Uint8Array): PdfXValidationResult {
     if (catalog.has('AA')) errors.push(`Catalog has additional actions (/AA); PDF/X forbids actions (${STANDARD}).`);
     const names = resolveDict(reader, catalog.get('Names'));
     if (names?.has('JavaScript')) errors.push(`Catalog names tree carries /JavaScript; PDF/X forbids JavaScript (${STANDARD}).`);
+    if (names?.has('EmbeddedFiles')) errors.push(`Catalog names tree carries /EmbeddedFiles; PDF/X-4 forbids embedded files (${STANDARD}).`);
 
     const infoRef = reader.trailer.get('Info');
     const info = infoRef !== undefined ? resolveDict(reader, infoRef) : null;
@@ -293,7 +296,8 @@ export function validatePdfX(bytes: Uint8Array): PdfXValidationResult {
         // Fonts, including those reached only through Form XObjects and
         // patterns — an appearance stream or a colour-emoji form carries its
         // own resource dictionary.
-        checkFonts(reader, resources, at, errors, new Set());
+        const seenResources = new Set<PdfDict>();
+        checkFonts(reader, resources, at, errors, seenResources);
 
         // Annotations. Hidden and NoView ones are never printed, and a Popup
         // is the on-screen window of its parent markup annotation.
@@ -307,6 +311,14 @@ export function validatePdfX(bytes: Uint8Array): PdfXValidationResult {
                 const action = resolveDict(reader, annot.get('A'));
                 if (action && dictGetName(action, 'S') === 'JavaScript') {
                     errors.push(`${at}: /${subtype} annotation carries a JavaScript action; PDF/X forbids JavaScript (${STANDARD}).`);
+                }
+                if (subtype === 'FileAttachment') {
+                    errors.push(`${at}: /FileAttachment annotation; PDF/X-4 forbids embedded files (${STANDARD}).`);
+                }
+                // The appearance streams are printed (a printer's mark or a
+                // trap network too), so their fonts must be embedded.
+                for (const stream of appearanceStreams(reader, annot)) {
+                    checkFonts(reader, resolveDict(reader, stream.dict.get('Resources')), `${at}, /${subtype} annotation appearance`, errors, seenResources);
                 }
                 if (subtype === 'PrinterMark' || subtype === 'TrapNet' || subtype === 'Popup') continue;
                 const flags = reader.resolveValue(annot.get('F') ?? null);
@@ -378,6 +390,28 @@ function checkFonts(reader: Reader, resources: PdfDict | null, at: string, error
     }
 }
 
+/**
+ * Every appearance stream of an annotation: the `/N`, `/R` and `/D` entries
+ * of `/AP`, each either a stream or a dictionary of streams keyed by
+ * appearance state (ISO 32000-1 §12.5.5).
+ */
+function appearanceStreams(reader: Reader, annot: PdfDict): PdfStream[] {
+    const ap = resolveDict(reader, annot.get('AP'));
+    if (!ap) return [];
+    const out: PdfStream[] = [];
+    for (const key of ['N', 'R', 'D'] as const) {
+        const v = reader.resolveValue(ap.get(key) ?? null);
+        if (isStream(v)) { out.push(v); continue; }
+        if (isDict(v)) {
+            for (const [, state] of v) {
+                const s = reader.resolveValue(state);
+                if (isStream(s)) out.push(s);
+            }
+        }
+    }
+    return out;
+}
+
 /** Filter names of a stream, whether `/Filter` is a name or an array. */
 function filterNames(reader: Reader, stream: PdfStream): string[] {
     const f = reader.resolveValue(stream.dict.get('Filter') ?? null);
@@ -394,7 +428,8 @@ function isName(v: PdfValue | undefined): v is { readonly type: 'name'; readonly
 /**
  * Walk every indirect object once for the requirements that are not tied
  * to a page: the LZW filter, transfer functions and halftones in extended
- * graphics states, and image interpolation. Each finding is reported once
+ * graphics states, image interpolation, OPI dictionaries, PostScript and
+ * reference XObjects, embedded file streams. Each finding is reported once
  * with the number of objects concerned.
  */
 function sweepObjects(reader: Reader, errors: string[], warnings: string[]): void {
@@ -402,6 +437,10 @@ function sweepObjects(reader: Reader, errors: string[], warnings: string[]): voi
     let transfer = 0;
     let halftone = 0;
     let interpolate = 0;
+    let opi = 0;
+    let postScript = 0;
+    let reference = 0;
+    let embeddedFiles = 0;
     let visited = 0;
     for (const num of reader.xref.entries.keys()) {
         if (++visited > MAX_SWEEP_OBJECTS) break;
@@ -412,18 +451,29 @@ function sweepObjects(reader: Reader, errors: string[], warnings: string[]): voi
 
         if (isStream(obj) && filterNames(reader, obj).includes('LZWDecode')) lzw++;
 
+        // ISO 15930-7 allows no transfer function: the 1.8.0 pre-release
+        // tolerated /TR /Identity, which the standard does not name.
         const tr = reader.resolveValue(dict.get('TR') ?? null);
         const tr2 = reader.resolveValue(dict.get('TR2') ?? null);
-        if ((tr !== null && !(isName(tr) && tr.value === 'Identity')) || (tr2 !== null && !(isName(tr2) && (tr2.value === 'Default' || tr2.value === 'Identity')))) {
+        if (tr !== null || (tr2 !== null && !(isName(tr2) && tr2.value === 'Default'))) {
             transfer++;
         }
         const ht = reader.resolveValue(dict.get('HT') ?? null);
         if (ht !== null && !(isName(ht) && ht.value === 'Default')) halftone++;
 
-        if (dictGetName(dict, 'Subtype') === 'Image' && reader.resolveValue(dict.get('Interpolate') ?? null) === true) interpolate++;
+        const subtype = dictGetName(dict, 'Subtype');
+        if (subtype === 'Image' && reader.resolveValue(dict.get('Interpolate') ?? null) === true) interpolate++;
+        if ((subtype === 'Image' || subtype === 'Form') && dict.has('OPI')) opi++;
+        if (subtype === 'PS' || (subtype === 'Form' && dictGetName(dict, 'Subtype2') === 'PS')) postScript++;
+        if (subtype === 'Form' && dict.has('Ref')) reference++;
+        if (dictGetName(dict, 'Type') === 'EmbeddedFile') embeddedFiles++;
     }
     if (lzw > 0) errors.push(`${lzw} stream${lzw > 1 ? 's use' : ' uses'} the LZWDecode filter; PDF/X-4 forbids LZW (${STANDARD}).`);
-    if (transfer > 0) errors.push(`${transfer} graphics state${transfer > 1 ? 's carry' : ' carries'} a transfer function (/TR or /TR2); PDF/X-4 allows only /Default (${STANDARD}).`);
+    if (transfer > 0) errors.push(`${transfer} graphics state${transfer > 1 ? 's carry' : ' carries'} a transfer function (/TR, or /TR2 other than /Default); PDF/X-4 allows none (${STANDARD}).`);
+    if (opi > 0) errors.push(`${opi} XObject${opi > 1 ? 's carry' : ' carries'} an /OPI dictionary; PDF/X-4 forbids OPI (${STANDARD}).`);
+    if (postScript > 0) errors.push(`${postScript} PostScript XObject${postScript > 1 ? 's' : ''}; PDF/X-4 forbids PostScript XObjects (${STANDARD}).`);
+    if (reference > 0) errors.push(`${reference} reference XObject${reference > 1 ? 's' : ''} (/Ref); PDF/X-4 forbids reference XObjects (${STANDARD}).`);
+    if (embeddedFiles > 0) errors.push(`${embeddedFiles} embedded file stream${embeddedFiles > 1 ? 's' : ''}; PDF/X-4 forbids embedded files (${STANDARD}).`);
     if (halftone > 0) warnings.push(`${halftone} graphics state${halftone > 1 ? 's carry' : ' carries'} a halftone other than /Default; PDF/X-4 restricts halftones — confirm with a certified preflight (${STANDARD}).`);
     if (interpolate > 0) warnings.push(`${interpolate} image${interpolate > 1 ? 's set' : ' sets'} /Interpolate true; some PDF/X preflight profiles reject it.`);
 }

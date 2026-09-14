@@ -40,6 +40,15 @@
       "guide": "https://pdfnative.dev/guides/pdfa.md"
     },
     {
+      "code": "PDFA_ICC_PROFILE_VERSION",
+      "severity": "warning",
+      "since": "1.8.0",
+      "raisedWhen": "A document claims PDF/A-1b (layout.tagged: 'pdfa1b') with a caller-supplied layout.outputIntent whose ICC profile declares specification version 4 or later in header byte 8. The built-in sRGB profile is v2 and never raises it.",
+      "standard": "ISO 19005-1 §6.2.2 (PDF/A-1 admits ICC v2 OutputIntent profiles only; veraPDF rejects the file); ISO 19005-2 §6.2.4.2 (v4 allowed from PDF/A-2)",
+      "remedy": "Supply an ICC v2 profile, or claim PDF/A-2b or later ('pdfa2b', 'pdfa3b'), where v4 profiles are allowed.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
       "code": "PDFX_NO_FONT_ENTRIES",
       "severity": "warning",
       "since": "1.8.0",

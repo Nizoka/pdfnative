@@ -24,7 +24,7 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
@@ -330,6 +330,10 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     if (pdfx && fontEntries.length === 0) {
         emitDiagnostic(pdfxNoFontEntriesDiagnostic());
     }
+    // PDF/A-1 admits ICC v2 OutputIntent profiles only (v1.8.0).
+    if (tagged && pdfaConfig.pdfaPart === 1 && layoutOptions?.outputIntent && outputIntent && outputIntent.iccVersion > 2) {
+        emitDiagnostic(pdfaIccProfileVersionDiagnostic(outputIntent.iccVersion));
+    }
 
     const encBase = createEncodingContext(fontEntries, embedFonts, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics, layoutOptions?.typography?.hyphenationLanguage);
     const encFeat = applyDocumentFeatures(encBase, layoutOptions?.typography?.fontFeatures);
@@ -349,7 +353,9 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     // wall-clock read that no option could override.
     const dateNow = resolveCreationDate(layoutOptions?.creationDate);
     const pad2d = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${dateNow.getFullYear()}-${pad2d(dateNow.getMonth() + 1)}-${pad2d(dateNow.getDate())}`;
+    // UTC, like /CreationDate (v1.8.0): the {date} placeholder and the file's
+    // own date name the same day on every host.
+    const dateStr = `${dateNow.getUTCFullYear()}-${pad2d(dateNow.getUTCMonth() + 1)}-${pad2d(dateNow.getUTCDate())}`;
 
     // ── Pagination ───────────────────────────────────────────────────
     const infoCount = infoItems.length;

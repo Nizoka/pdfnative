@@ -141,6 +141,58 @@ describe('RGB content under a CMYK OutputIntent', () => {
     });
 });
 
+// v1.8.0 — PDF/A-1 admits ICC v2 OutputIntent profiles only (ISO 19005-1
+// §6.2.2); a v4 profile was accepted silently before.
+describe('PDFA_ICC_PROFILE_VERSION', () => {
+    /** The fake profile with its ICC specification version set in header byte 8. */
+    const versioned = (major: number): Uint8Array => {
+        const icc = fakeIcc('RGB ', 'mntr');
+        icc[8] = major;
+        icc[9] = major === 4 ? 0x30 : 0x10; // minor/bugfix as BCD: 4.3 / 2.1
+        return icc;
+    };
+    const intent = (major: number): { iccProfile: Uint8Array; outputConditionIdentifier: string } =>
+        ({ iccProfile: versioned(major), outputConditionIdentifier: 'sRGB' });
+    const plainDoc: DocumentParams = { title: 'ICC', blocks: [{ type: 'paragraph', text: 'x' }], fontEntries: [latin] };
+
+    const codes = (layout: Record<string, unknown>): string[] => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(plainDoc, { ...layout, creationDate: pinned.creationDate, onDiagnostic: d => seen.push(d) });
+        return seen.map(d => d.code);
+    };
+
+    it('reports the ICC version from the header, 2 for the built-in profile', () => {
+        expect(resolveOutputIntent().iccVersion).toBe(2);
+        expect(resolveOutputIntent({ iccProfile: versioned(4) }).iccVersion).toBe(4);
+        expect(resolveOutputIntent({ iccProfile: versioned(2) }).iccVersion).toBe(2);
+    });
+
+    it('fires for a v4 profile under PDF/A-1b, in both builders', () => {
+        expect(codes({ tagged: 'pdfa1b', outputIntent: intent(4) })).toContain('PDFA_ICC_PROFILE_VERSION');
+        const seen: PdfDiagnostic[] = [];
+        const params: PdfParams = {
+            title: 'T', infoItems: [], balanceText: '', countText: '',
+            headers: ['A'], rows: [{ cells: ['1'], type: 'credit', pointed: false }], footerText: 'f', fontEntries: [latin],
+        };
+        buildPDFBytes(params, { tagged: 'pdfa1b', outputIntent: intent(4), creationDate: pinned.creationDate, onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).toContain('PDFA_ICC_PROFILE_VERSION');
+        expect(seen.find(d => d.code === 'PDFA_ICC_PROFILE_VERSION')?.message).toMatch(/version 4.*ISO 19005-1 §6\.2\.2/);
+    });
+
+    it('stays silent under PDF/A-2b and 3b, for a v2 profile, for the built-in profile, and without a claim', () => {
+        expect(codes({ tagged: 'pdfa2b', outputIntent: intent(4) })).not.toContain('PDFA_ICC_PROFILE_VERSION');
+        expect(codes({ tagged: 'pdfa3b', outputIntent: intent(4) })).not.toContain('PDFA_ICC_PROFILE_VERSION');
+        expect(codes({ tagged: 'pdfa1b', outputIntent: intent(2) })).not.toContain('PDFA_ICC_PROFILE_VERSION');
+        expect(codes({ tagged: 'pdfa1b' })).not.toContain('PDFA_ICC_PROFILE_VERSION');
+        expect(codes({ outputIntent: intent(4) })).not.toContain('PDFA_ICC_PROFILE_VERSION');
+    });
+
+    it('throws before writing under strict', () => {
+        expect(() => buildDocumentPDFBytes(plainDoc, { tagged: 'pdfa1b', outputIntent: intent(4), strict: true }))
+            .toThrow(/ICC profile is version 4/);
+    });
+});
+
 describe('PDFA_DEVICE_CMYK_CONTENT', () => {
     const cmykDoc: DocumentParams = {
         title: 'CMYK colour',

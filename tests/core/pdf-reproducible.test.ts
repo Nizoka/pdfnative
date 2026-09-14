@@ -5,6 +5,7 @@ import {
     setDefaultCreationDate,
     getDefaultCreationDate,
 } from '../../src/index.js';
+import { buildPdfMetadata } from '../../src/core/pdf-tags.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 import type { PdfParams } from '../../src/types/pdf-types.js';
 
@@ -41,6 +42,49 @@ function latin1(bytes: Uint8Array): string {
 
 afterEach(() => {
     setDefaultCreationDate(null);
+});
+
+// v1.8.0 — dates are written in UTC whatever the host zone, so a pinned
+// instant yields the same bytes on every machine (the last host-dependent
+// input to a pinned build until then).
+describe('time-zone independence', () => {
+    const savedTz = process.env.TZ;
+    afterEach(() => { process.env.TZ = savedTz; });
+
+    /** Run `fn` under a host time zone; Node re-reads TZ on assignment. */
+    function underTz<T>(tz: string, fn: () => T): T {
+        process.env.TZ = tz;
+        try { return fn(); } finally { process.env.TZ = savedTz; }
+    }
+
+    it('formats /CreationDate and the XMP dates in UTC under any host zone', () => {
+        const at = new Date('2026-01-01T12:00:00Z');
+        for (const tz of ['Pacific/Auckland', 'America/Los_Angeles', 'UTC']) {
+            const { pdfDate, xmpDate } = underTz(tz, () => buildPdfMetadata(at));
+            expect(pdfDate).toBe("D:20260101120000+00'00'");
+            expect(xmpDate).toBe('2026-01-01T12:00:00+00:00');
+        }
+    });
+
+    it('builds byte-identical documents from one pinned instant under two zones', () => {
+        const a = underTz('America/Los_Angeles', () => buildDocumentPDFBytes(doc(), { creationDate: PINNED }));
+        const b = underTz('Asia/Tokyo', () => buildDocumentPDFBytes(doc(), { creationDate: PINNED }));
+        expect(Buffer.from(a).equals(Buffer.from(b))).toBe(true);
+        const t1 = underTz('America/Los_Angeles', () => buildPDFBytes(table(), { creationDate: PINNED }));
+        const t2 = underTz('Asia/Tokyo', () => buildPDFBytes(table(), { creationDate: PINNED }));
+        expect(Buffer.from(t1).equals(Buffer.from(t2))).toBe(true);
+    });
+
+    it('renders the {date} placeholder on the UTC day of the pinned instant', () => {
+        // 02:00Z on 1 January is still 31 December in Los Angeles.
+        const bytes = underTz('America/Los_Angeles', () => buildDocumentPDFBytes(
+            { ...doc(), footerText: 'Built {date}' },
+            { creationDate: new Date('2026-01-01T02:00:00Z') },
+        ));
+        const text = latin1(bytes);
+        expect(text).toContain('2026-01-01');
+        expect(text).not.toContain('2025-12-31');
+    });
 });
 
 describe('setDefaultCreationDate', () => {
