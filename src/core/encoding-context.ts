@@ -72,11 +72,13 @@ function shapedRun(
     fd: FontData,
     sz: number,
     trackGid: (ref: string, gid: number) => void,
+    onGlyph?: (ref: string, gid: number, cps: readonly number[]) => void,
 ): TextRun {
     const shaped = shaper.shape(text, fd);
     let designW = 0;
     for (const g of shaped) {
         trackGid(fontRef, g.gid);
+        if (onGlyph && g.cps && g.cps.length > 0) onGlyph(fontRef, g.gid, g.cps);
         if (!g.isZeroAdvance) {
             designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
         }
@@ -304,8 +306,15 @@ export function createEncodingContext(
 
     // Glyphs produced by an OpenType substitution have no cmap entry, so
     // ToUnicode must be told which character they stand for. Filled by the
-    // feature-derived context (see withFeatureSupport); empty otherwise.
-    const _toUnicodeOverrides = new Map<string, Map<number, number>>();
+    // feature-derived context (see withFeatureSupport) and by the shapers
+    // that report source code points (a conjunct names every letter it
+    // fused, v1.8.0); empty otherwise.
+    const _toUnicodeOverrides = new Map<string, Map<number, number | readonly number[]>>();
+    function _onShapedGlyph(fontRef: string, gid: number, cps: readonly number[]): void {
+        let m = _toUnicodeOverrides.get(fontRef);
+        if (!m) { m = new Map(); _toUnicodeOverrides.set(fontRef, m); }
+        if (!m.has(gid)) m.set(gid, cps.length === 1 ? cps[0] : [...cps]);
+    }
     const _inverseCmaps = new WeakMap<FontData, Map<number, number>>();
     function _codepointOf(fd: FontData, gid: number): number | undefined {
         let inv = _inverseCmaps.get(fd);
@@ -409,7 +418,7 @@ export function createEncodingContext(
                             // LTR run: standard path
                             const shaper = findShaper(fRun.text);
                             if (shaper) {
-                                result.push(shapedRun(fRun.text, shaper, fontRef, fd, sz, _trackGid));
+                                result.push(shapedRun(fRun.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph));
                             } else {
                                 // LTR non-shaped: use fallback helper
                                 const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA);
@@ -428,7 +437,7 @@ export function createEncodingContext(
                 const fontRef = run.entry.fontRef;
 
                 const shaper = findShaper(run.text);
-                if (shaper) return [shapedRun(run.text, shaper, fontRef, fd, sz, _trackGid)];
+                if (shaper) return [shapedRun(run.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph)];
 
                 return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid, pdfA);
             });

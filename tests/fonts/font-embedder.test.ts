@@ -84,6 +84,26 @@ describe('buildToUnicodeCMap', () => {
         const result = buildToUnicodeCMap(cmap, usedGids);
         expect((result.match(/beginbfchar/g) || []).length).toBe(2); // 2 blocks
     });
+
+    it('names a shaper-produced glyph with every code point it stands for (v1.8.0)', () => {
+        // Devanagari क्ष: gid 90 has no cmap entry; the engine reports
+        // [क, ्, ष] and the bfchar destination carries the three of them.
+        const cmap: Record<number, number> = { 0x0915: 56, 0x094D: 103, 0x0937: 86 };
+        const overrides = new Map<number, number | readonly number[]>([
+            [90, [0x0915, 0x094D, 0x0937]],
+            [56, 0x0041], // ignored: the cmap already names gid 56
+        ]);
+        const result = buildToUnicodeCMap(cmap, new Set([56, 90]), overrides);
+        expect(result).toContain('<005A> <0915094D0937>');
+        expect(result).toContain('<0038> <0915>');
+        expect(result).not.toContain('<0041>');
+    });
+
+    it('spells a supplementary code point inside a multi-code-point destination as surrogates', () => {
+        const overrides = new Map<number, number | readonly number[]>([[7, [0x1F600, 0x0301]]]);
+        const result = buildToUnicodeCMap({}, new Set([7]), overrides);
+        expect(result).toContain('<0007> <D83DDE000301>');
+    });
 });
 
 describe('buildSubsetWidthArray', () => {

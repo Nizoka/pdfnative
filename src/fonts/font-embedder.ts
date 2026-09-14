@@ -31,24 +31,27 @@ export function base64ToByteString(b64: string): string {
  *
  * @param cmap - Unicode codepoint → glyph ID mapping
  * @param usedGids - Only include these glyph IDs (subset optimization)
- * @param overrides - Glyph ID → codepoint for glyphs the cmap cannot name:
- *   the output of an OpenType substitution (`smcp`, `onum`, …) is reached
- *   through GSUB, not the cmap, and must map back to the character it
- *   replaced. Consulted only for glyphs the cmap does not already cover.
- *   (v1.8.0)
+ * @param overrides - Glyph ID → code point(s) for glyphs the cmap cannot
+ *   name: the output of an OpenType substitution (`smcp`, `onum`, …) is
+ *   reached through GSUB, not the cmap, and must map back to the character
+ *   it replaced; a conjunct or a contextual form a shaper produced names
+ *   every code point it stands for (a `bfchar` destination may hold several,
+ *   ISO 32000-1 §9.10.3). Consulted only for glyphs the cmap does not
+ *   already cover. (v1.8.0)
  */
 export function buildToUnicodeCMap(
     cmap: Record<number, number>,
     usedGids: Set<number>,
-    overrides?: ReadonlyMap<number, number>,
+    overrides?: ReadonlyMap<number, number | readonly number[]>,
 ): string {
     // Invert cmap: glyphId → unicode codepoint (keep lowest codepoint).
     // Strict undefined check: a legitimately-mapped U+0000 must not be
     // overwritten by a later (higher) codepoint sharing the glyph.
-    const glyphToUnicode: Record<number, number> = {};
+    const glyphToUnicode: Record<number, number | readonly number[]> = {};
     for (const [cp, gid] of Object.entries(cmap)) {
         const cpNum = Number(cp);
-        if (glyphToUnicode[gid] === undefined || cpNum < glyphToUnicode[gid]) {
+        const prev = glyphToUnicode[gid];
+        if (prev === undefined || (typeof prev === 'number' && cpNum < prev)) {
             glyphToUnicode[gid] = cpNum;
         }
     }
@@ -59,22 +62,26 @@ export function buildToUnicodeCMap(
     }
 
     // Build bfchar entries (max 100 per block per PDF spec)
-    const entries: [number, number][] = Object.entries(glyphToUnicode)
-        .map(([gid, cp]) => [Number(gid), cp] as [number, number])
+    const entries: [number, number | readonly number[]][] = Object.entries(glyphToUnicode)
+        .map(([gid, cp]) => [Number(gid), cp] as [number, number | readonly number[]])
         .filter(([gid]) => !usedGids || usedGids.has(gid))
         .sort((a, b) => a[0] - b[0]);
 
+    const utf16 = (cp: number): string => {
+        if (cp > 0xFFFF) {
+            const hi = 0xD800 + ((cp - 0x10000) >> 10);
+            const lo = 0xDC00 + ((cp - 0x10000) & 0x3FF);
+            return `${hi.toString(16).toUpperCase()}${lo.toString(16).toUpperCase()}`;
+        }
+        return cp.toString(16).padStart(4, '0').toUpperCase();
+    };
     const chunks: string[] = [];
     for (let i = 0; i < entries.length; i += 100) {
         const batch = entries.slice(i, i + 100);
         const lines = batch.map(([gid, cp]) => {
             const gidHex = gid.toString(16).padStart(4, '0').toUpperCase();
-            if (cp > 0xFFFF) {
-                const hi = 0xD800 + ((cp - 0x10000) >> 10);
-                const lo = 0xDC00 + ((cp - 0x10000) & 0x3FF);
-                return `<${gidHex}> <${hi.toString(16).toUpperCase()}${lo.toString(16).toUpperCase()}>`;
-            }
-            return `<${gidHex}> <${cp.toString(16).padStart(4, '0').toUpperCase()}>`;
+            const dst = typeof cp === 'number' ? utf16(cp) : cp.map(utf16).join('');
+            return `<${gidHex}> <${dst}>`;
         });
         chunks.push(`${batch.length} beginbfchar\n${lines.join('\n')}\nendbfchar`);
     }
