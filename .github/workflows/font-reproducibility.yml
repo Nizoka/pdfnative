@@ -9,16 +9,31 @@ name: Font Reproducibility
 # font could not actually draw. Nothing detected it, because nobody
 # regenerated.
 #
-# Runs on a schedule and on demand rather than on every pull request: it
-# downloads tens of megabytes of TTFs from an external host, which is neither
-# fast nor something a pull request should depend on. Font data changes rarely,
-# and when it does the author runs `npm run verify:fonts` locally.
+# The source fonts are pinned by google/fonts commit and SHA-256 in
+# fonts/SOURCES.json; `npm run fonts:download` refuses any byte that differs,
+# and `npm run verify:fonts` checks every TTF against the manifest before it
+# regenerates a module. The download is tens of megabytes, so the job runs on
+# pull requests only when a font-related path changes, plus a weekly schedule
+# that catches an upstream URL going away.
 
 on:
   push:
     branches: [main, master]
     paths:
       - 'fonts/**'
+      - 'fonts/SOURCES.json'
+      - 'fonts/ttf/*.ttf'
+      - 'tools/build-font-data.cjs'
+      - 'src/tools/font-compiler.ts'
+      - 'scripts/verify-fonts.ts'
+      - 'scripts/download-fonts.ts'
+      - '.github/workflows/font-reproducibility.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'fonts/**'
+      - 'fonts/SOURCES.json'
+      - 'fonts/ttf/*.ttf'
       - 'tools/build-font-data.cjs'
       - 'src/tools/font-compiler.ts'
       - 'scripts/verify-fonts.ts'
@@ -41,6 +56,11 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
@@ -52,9 +72,9 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
-      - name: Download source fonts
+      - name: Download the source fonts (pinned commit, SHA-256 checked)
         run: npm run fonts:download
 
       - name: Verify every module reproduces from its source font
@@ -67,8 +87,9 @@ jobs:
             echo '## Font reproducibility'
             echo
             echo 'A bundled font module no longer matches what the generator produces'
-            echo 'from the source font it declares. Regenerate it, then confirm nothing'
-            echo 'rendered differently with `npm run verify:samples`.'
+            echo 'from the source font it declares, or a source font no longer matches'
+            echo 'fonts/SOURCES.json. Regenerate it, then confirm nothing rendered'
+            echo 'differently with `npm run verify:samples`.'
             echo
             echo '```json'
             npx tsx scripts/verify-fonts.ts --json || true

@@ -20,6 +20,7 @@
  *   npx tsx scripts/gate.ts --only lint
  *   npx tsx scripts/gate.ts --from build
  *   npx tsx scripts/gate.ts --ci --json
+ *   npx tsx scripts/gate.ts --publish --require-all   # what publish.yml runs
  *
  * (PowerShell swallows a bare `--`, so call the script directly when passing
  * flags rather than `npm run gate -- --fast`; `npm run gate:fast` exists for
@@ -31,9 +32,16 @@
  *   --publish  every step; validate:pdfa and verify:fonts SKIP with a reason
  *              when veraPDF or fonts/ttf/ is absent, like the scripts they wrap
  *
+ * Flags:
+ *   --require-all  a step that would SKIP fails instead, with
+ *                  `required by --require-all: <reason>`. CI and the release
+ *                  workflow pass it: a runner without veraPDF or without the
+ *                  source fonts must go red, never quietly skip a check.
+ *
  * Exit codes:
  *   0 — every selected step passed or was skipped with a reason
- *   1 — a step failed (its log tail is printed; the full log is on disk)
+ *   1 — a step failed (its log tail is printed; the full log is on disk),
+ *       or a step would have skipped under --require-all
  *   2 — bad usage
  */
 
@@ -81,9 +89,18 @@ function veraPdfInstalled(): boolean {
     return probe.status === 0 && probe.stdout.trim().length > 0;
 }
 
+/**
+ * Mirrors the skip condition of scripts/verify-fonts.ts: at least one of the
+ * fonts `npm run fonts:download` fetches is present. The subsets and static
+ * instances committed to fonts/ttf/ do not count — they are always there.
+ */
 function sourceFontsPresent(): boolean {
     const ttf = join(REPO_ROOT, 'fonts', 'ttf');
-    return existsSync(ttf) && readdirSync(ttf).some(f => f.endsWith('.ttf'));
+    const manifest = join(REPO_ROOT, 'fonts', 'SOURCES.json');
+    if (!existsSync(ttf) || !existsSync(manifest)) return false;
+    const { fonts } = JSON.parse(readFileSync(manifest, 'utf8')) as { fonts: Array<{ local: string; origin?: string }> };
+    const present = new Set(readdirSync(ttf));
+    return fonts.some(f => f.origin !== 'tree' && present.has(f.local));
 }
 
 // ── Notes (figures shown next to PASS) ──────────────────────────────
@@ -201,11 +218,13 @@ interface Options {
     readonly only: string | null;
     readonly from: string | null;
     readonly json: boolean;
+    /** Turn every SKIP into a FAIL (CI and the release workflow). */
+    readonly requireAll: boolean;
 }
 
 function usage(): string {
     return [
-        'Usage: npx tsx scripts/gate.ts [--fast | --ci | --publish] [--only <id>] [--from <id>] [--json]',
+        'Usage: npx tsx scripts/gate.ts [--fast | --ci | --publish] [--only <id>] [--from <id>] [--require-all] [--json]',
         '',
         `Steps: ${STEPS.map(s => s.id).join(', ')}`,
     ].join('\n');
@@ -216,6 +235,7 @@ function parseArgs(argv: readonly string[]): Options | { error: string } {
     let only: string | null = null;
     let from: string | null = null;
     let json = false;
+    let requireAll = false;
     const ids = new Set(STEPS.map(s => s.id));
 
     for (let i = 0; i < argv.length; i++) {
@@ -232,11 +252,13 @@ function parseArgs(argv: readonly string[]): Options | { error: string } {
             i++;
         } else if (a === '--json') {
             json = true;
+        } else if (a === '--require-all') {
+            requireAll = true;
         } else {
             return { error: `unknown argument "${a}"` };
         }
     }
-    return { profile: profile ?? 'ci', only, from, json };
+    return { profile: profile ?? 'ci', only, from, json, requireAll };
 }
 
 interface StepOutcome {
@@ -283,6 +305,13 @@ function main(): number {
     for (const step of steps) {
         const reason = step.skipWhen?.() ?? null;
         if (reason !== null) {
+            if (opts.requireAll) {
+                const note = `required by --require-all: ${reason}`;
+                outcomes.push({ id: step.id, status: 'fail', seconds: 0, note });
+                say(`FAIL  ${step.id.padEnd(width)}          ${note}`);
+                failedAt = step.id;
+                break;
+            }
             outcomes.push({ id: step.id, status: 'skip', seconds: 0, note: reason });
             say(`SKIP  ${step.id.padEnd(width)}          (${reason})`);
             continue;

@@ -95,7 +95,9 @@ setCryptoProvider({
 - No `eval()`, `Function()`, or dynamic code execution
 - No external crypto dependencies
 - Tree-shakeable (`sideEffects: false`) — no module-level side effects
-- NPM provenance — signed builds via GitHub Actions OIDC
+- NPM provenance — every release is published by `.github/workflows/publish.yml` from the protected `npm-publish` GitHub environment, with npm Trusted Publishing (OIDC, no long-lived token), an exactly pinned npm client, and `npm publish --provenance` (SLSA build provenance signed through Sigstore); the same run attests a CycloneDX SBOM and the tarball with `actions/attest-build-provenance` and attaches both to the GitHub release
+- Release gate — the publish job installs a checksummed veraPDF (`.github/checksums/`), downloads the source fonts pinned by commit and SHA-256 (`fonts/SOURCES.json`), and runs `scripts/gate.ts --publish --require-all`, so no check can be skipped on the runner
+- Hardened workflows — every action pinned to a commit SHA, `persist-credentials: false` on every checkout, `step-security/harden-runner` on every job, `npm ci --ignore-scripts` (also `ignore-scripts=true` in `.npmrc`), Dependency Review and a weekly `npm audit`
 
 ## Disclosure Policy
 

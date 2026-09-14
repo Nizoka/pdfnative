@@ -1,0 +1,77 @@
+name: Setup veraPDF
+description: >-
+  Installs a pinned veraPDF greenfield release (the PDF/A reference validator)
+  on the runner, after checking the installer against the SHA-256 recorded in
+  .github/checksums/. Exports VERAPDF_HOME and puts `verapdf` on the PATH.
+  pdfnative stays a zero-runtime-dependency library; veraPDF is a CI tool.
+
+inputs:
+  version:
+    description: >-
+      veraPDF release to install. Bumping it means downloading the new
+      installer, recording its SHA-256 as
+      .github/checksums/verapdf-greenfield-<version>-installer.zip.sha256
+      and re-validating the PDF/A-claiming samples. Release index:
+      https://software.verapdf.org/rel/
+    required: false
+    default: '1.30.2'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Java (Temurin 17 LTS)
+      uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4.9.0
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - name: Download and verify the veraPDF installer
+      shell: bash
+      env:
+        VERAPDF_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        MINOR="${VERAPDF_VERSION%.*}"
+        ARCHIVE="verapdf-greenfield-${VERAPDF_VERSION}-installer.zip"
+        URL="https://software.verapdf.org/rel/${MINOR}/${ARCHIVE}"
+        CHECKSUM="${GITHUB_WORKSPACE}/.github/checksums/${ARCHIVE}.sha256"
+        if [ ! -f "${CHECKSUM}" ]; then
+          echo "::error::No checksum recorded for ${ARCHIVE}: add ${CHECKSUM#"${GITHUB_WORKSPACE}"/}"
+          exit 1
+        fi
+        mkdir -p "$HOME/verapdf-installer"
+        cd "$HOME/verapdf-installer"
+        curl -fsSL -o "${ARCHIVE}" "${URL}"
+        # The checksum file names the archive, so it must be checked from the
+        # directory that holds it.
+        sha256sum -c "${CHECKSUM}"
+        unzip -q "${ARCHIVE}" -d "$HOME/verapdf-installer"
+
+    - name: Install veraPDF CLI
+      shell: bash
+      run: |
+        set -euo pipefail
+        INSTALLER_JAR=$(find "$HOME/verapdf-installer" -name 'verapdf-izpack-installer-*.jar' | head -n1)
+        if [ -z "${INSTALLER_JAR}" ]; then
+          echo "::error::veraPDF installer jar not found"; exit 1
+        fi
+        mkdir -p "$HOME/verapdf"
+        # Auto-install via izpack XML descriptor (headless).
+        cat > "$HOME/verapdf/auto-install.xml" <<XML
+        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <AutomatedInstallation langpack="eng">
+          <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
+          <com.izforge.izpack.panels.target.TargetPanel id="install_dir"><installpath>$HOME/verapdf</installpath></com.izforge.izpack.panels.target.TargetPanel>
+          <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select"><pack index="0" name="veraPDF GUI" selected="true"/><pack index="1" name="veraPDF Mac and *nix Scripts" selected="true"/><pack index="2" name="veraPDF Documentation" selected="false"/><pack index="3" name="veraPDF Sample Plugins" selected="false"/></com.izforge.izpack.panels.packs.PacksPanel>
+          <com.izforge.izpack.panels.install.InstallPanel id="install"/>
+          <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
+        </AutomatedInstallation>
+        XML
+        java -jar "${INSTALLER_JAR}" "$HOME/verapdf/auto-install.xml"
+        echo "VERAPDF_HOME=$HOME/verapdf" >> "$GITHUB_ENV"
+        echo "$HOME/verapdf" >> "$GITHUB_PATH"
+
+    - name: Verify veraPDF
+      shell: bash
+      run: |
+        "$HOME/verapdf/verapdf" --version

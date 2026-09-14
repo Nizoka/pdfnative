@@ -205,7 +205,8 @@
   },
   "packageManager": "npm@10.9.2",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
