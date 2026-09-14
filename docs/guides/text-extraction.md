@@ -127,7 +127,7 @@ By design (documented, not bugs):
   extracts as those characters, outermost span first. Without it,
   ligature reversal is only as good as the embedded `/ToUnicode`. In
   practice this means **shaped Indic and South-East Asian scripts**
-  (Devanagari, Bengali, Tamil, Telugo, Sinhala, Khmer, Lao, Tai Tham, …)
+  (Devanagari, Bengali, Tamil, Telugu, Sinhala, Khmer, Lao, Tai Tham, …)
   extract with U+FFFD for conjunct/ligature glyphs that have no
   single-codepoint mapping in an untagged document — the PDF *renders*
   correctly; only extraction of those clusters is lossy. Build with

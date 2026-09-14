@@ -69,7 +69,7 @@ npm run bench          # Performance benchmarks (vitest bench)
 
 All new code must include tests. Coverage thresholds (vitest.config.ts): statements 88%, branches 80%, functions 85%, lines 90%.
 
-The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, playgrounds, recipes) live in one place, `docs/assets/ecosystem.json`, and `npm run verify:docs` reports every document that disagrees with it — update the manifest, not the prose.
+The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, playgrounds, recipes, scripts) live in one place, `docs/assets/ecosystem.json`, and `npm run verify:docs` reports every document that disagrees with it — update the manifest, not the prose. Its rules, each named in the failure line: `derived-counts` (the manifest against the file tree), `count-tokens` ("N tests", "N scripts" / "N Unicode scripts", "N playgrounds" — word numerals included — in every document), `version-token` (every version quoted in prose, tables and badges against the manifest), `error-parity` (every diagnostic code named in the docs exists in `docs/data/errors.json` and in `src/`, and vice versa), `playgrounds-manifest` (`docs/data/playgrounds.json` against the playground pages and their engine pins), `guide-render-sync` (every `docs/guides/*.md` has an up-to-date `.html` from `npm run docs:guides`), `llms-sync` (the llms files, the release-note link included, regenerated from their sources), `sitemap-parity`, `switcher-parity`, `bench-parity`, `claude-md-budget` (`AGENTS.md` and `CLAUDE.md` ≤ 120 lines, the Copilot file ≤ 16 KiB, no line over 240 characters) and `prose-language` (English only, see Code Style).
 
 ## PDF/A validation (veraPDF)
 
@@ -153,7 +153,7 @@ src/
 fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (49 generators, 271 PDFs) and the verification scripts
-tests/            # 152 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+tests/            # 154 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -201,11 +201,12 @@ The version bump is scripted; the judgement goes into the release note.
 2. `npx tsx scripts/release-prepare.ts --version X.Y.Z` — run it with `--dry-run` first to see the list. It bumps `package.json` and the lockfile; `docs/assets/ecosystem.json` (`packages.pdfnative.version`, `verifiedOn`) and the Verified-on stamps the verifier holds to that date; `CITATION.cff`; the SECURITY.md support table; every CDN pin (`pdfnative@<previous>` → `pdfnative@X.Y.Z`); the homepage JSON-LD; the architecture SVG; the sitemap `lastmod` of every page whose source changed since the previous tag; and scaffolds `release-notes/vX.Y.Z.md` from [release-notes/TEMPLATE.md](release-notes/TEMPLATE.md). The date defaults to today (UTC) and the previous tag to `git describe`; `--date` and `--previous` override them.
 3. `git diff --stat` — the diff must read as the bump and nothing else. Update the counts in the manifest (`derived`, `declared`) by hand; `verify:docs` reports the documents that disagree.
 4. Write the release note and the matching `CHANGELOG.md` entry (`## [X.Y.Z] – YYYY-MM-DD`). Every intentional sample rebaseline must be declared in the note's Upgrade section, with why the previous bytes were wrong — the `sample-regression` check holds the release to the previous release's output otherwise.
-5. `npm run docs:all && npm run verify:docs`, then `npm run gate -- --publish` (PowerShell: `npx tsx scripts/gate.ts --publish`): the full gate, veraPDF and the sample, font, Unicode and bundle checks included.
-6. Draft the pull-request body from [release-notes/PR_TEMPLATE.md](release-notes/PR_TEMPLATE.md) into `RELEASE_PR_vX.Y.Z.md` at the repository root (git-ignored scratch file); paste the numbers the gate printed into its Verification section.
-7. Squash-merge with the title `release: vX.Y.Z — <headline>`, where the headline is the release note's GitHub Release title.
-8. Tag `vX.Y.Z` on the merge commit and publish the GitHub Release (title `vX.Y.Z — <headline>`, body = the release note). `publish.yml` fires on the published release, runs the gate again and publishes to npm with provenance.
-9. After publication: `npm view pdfnative version`, then open a playground — the site's CDN pins (`pdfnative@X.Y.Z`) only resolve once the package exists on the registry.
+5. `npm run docs:all && npm run verify:docs`, then run the three-agent final review before the publish gate: two independent auditors read the release (code, samples, docs, release note) and file findings in a shared ledger; one adversarial verifier re-checks every finding against the sources of truth (`docs/assets/api.json`, `src/types/`, `docs/data/*.json`, the sample manifest) and rejects the ones that do not hold. Fix what survives, in batches by owner. The 1.8.0 review found six unexported option types, a README compression recipe that produced unreadable files and a false architecture block this way — none of which the gate detects.
+6. `npm run gate -- --publish` (PowerShell: `npx tsx scripts/gate.ts --publish`): the full gate, veraPDF and the sample, font, Unicode and bundle checks included.
+7. Draft the pull-request body from [release-notes/PR_TEMPLATE.md](release-notes/PR_TEMPLATE.md) into `RELEASE_PR_vX.Y.Z.md` at the repository root (git-ignored scratch file); paste the numbers the gate printed into its Verification section.
+8. Squash-merge with the title `release: vX.Y.Z — <headline>`, where the headline is the release note's GitHub Release title.
+9. Tag `vX.Y.Z` on the merge commit and publish the GitHub Release (title `vX.Y.Z — <headline>`, body = the release note). `publish.yml` fires on the published release, runs the gate again and publishes to npm with provenance.
+10. After publication: `npm view pdfnative version`, then open a playground — the site's CDN pins (`pdfnative@X.Y.Z`) only resolve once the package exists on the registry.
 
 ### Branch protection
 

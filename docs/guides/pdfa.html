@@ -119,7 +119,12 @@ level — a complementary check to the core diagnostic.</p>
 <li>An ICC <code>OutputIntent</code> (<code>GTS_PDFA1</code>): the built-in sRGB profile, or your own
 RGB, CMYK (since v1.8.0) or Gray profile via <code>outputIntent</code>. Under a CMYK or
 Gray intent, RGB content is remapped through a calibrated <code>/DefaultRGB</code> so
-the claim holds — see the <a href="print.html#custom-outputintent-taggedpdf-a">print guide</a>.</li>
+the claim holds — see the <a href="print.html#custom-outputintent-taggedpdf-a">print guide</a>.
+Mind the profile version: PDF/A-1b requires an ICC v2 profile
+(ISO 19005-1 §6.2.2); v4 profiles are allowed from PDF/A-2 on
+(ISO 19005-2 §6.2.4.2). pdfnative checks the profile&#39;s signature, size
+field and data colour space but not its version — supply a v2 profile for
+a 1b claim.</li>
 <li><code>/MarkInfo &lt;&lt; /Marked true &gt;&gt;</code> on the catalog.</li>
 <li>A trailer <code>/ID</code> derived deterministically from the document title and
 creation timestamp.</li>

@@ -13,7 +13,7 @@ pdfnative is a zero-runtime-dependency TypeScript library that writes and reads 
 - **No `console.log`** in library code. `console.warn` only inside `src/core/pdf-diagnostics.ts`, the single sanctioned diagnostics sink (`onDiagnostic` / `strict`).
 - **No `eval` / `Function()` / dynamic code.** URLs validated, control characters rejected, CSPRNG-only keys, real CMS signatures, no sockets (transports are injected).
 - **No rasterization.** SVG → path operators, barcodes → `re f` rectangles, fonts → CIDFont Type2 subsets.
-- **Byte-identity.** Every opt-in feature leaves output byte-identical when unused; veraPDF is blocking in CI.
+- **Byte-identity.** Every opt-in feature leaves output byte-identical when unused; veraPDF is blocking at publish (`publish.yml`) and on the `verapdf` workflow — not a required status check of the ruleset.
 - **Human-in-the-loop.** Agents draft and verify; the maintainer pushes, opens PRs/issues and publishes (see Governance).
 - **English everywhere.** Everything the project writes — code, comments, messages, tests, sample prose, recipes, docs, release notes — is English.
   Other languages appear only as *demonstrated content*: sample data records and script-coverage tables carry a `lang` label and are demonstration
@@ -37,10 +37,10 @@ pdfnative is a zero-runtime-dependency TypeScript library that writes and reads 
 
 | Path | Purpose | Read first |
 |---|---|---|
-| `src/core/` | Document/table builders, text, images, tags/XMP, encryption, compression, forms, signatures/LTV, streaming, print | `.github/instructions/pdf-core.instructions.md` |
-| `src/parser/` | Tokenizer → object parser → xref → reader/modifier; decrypt, text extraction, page-tree merge/split, PDF/UA check | `.github/instructions/pdf-core.instructions.md` |
+| `src/core/` | Document/table builders, text, images, tags/XMP, encryption, compression, forms, signatures/LTV, streaming, print, typography, colour, reproducible dates | `.github/instructions/pdf-core.instructions.md` |
+| `src/parser/` | Tokenizer → object parser → xref → reader/modifier; decrypt, text extraction, page-tree merge/split, PDF/UA check, PDF/X-4 check (`pdf-x-validator`) | `.github/instructions/pdf-core.instructions.md` |
 | `src/fonts/` | WinAnsi + CIDFont encoding, lazy font registry, TTF subsetter, CMap builder, font-data validator | `.github/instructions/font-engineering.instructions.md` |
-| `src/shaping/` | GSUB/GPOS shapers (Thai, Arabic, Indic, …), UAX #9 BiDi, script detection, emoji sequences, generated USE data | `.github/instructions/text-shaping.instructions.md` |
+| `src/shaping/` | GSUB/GPOS shapers (Thai, Arabic, Indic, Lao, …), USE engine, shaper registry, UAX #9 BiDi, script detection, emoji sequences | `.github/instructions/text-shaping.instructions.md` |
 | `src/crypto/` | SHA, ASN.1/DER, RSA, ECDSA, X.509, CMS, RFC 3161, OCSP/CRL, injected timestamp/revocation providers | `.github/instructions/pdf-core.instructions.md` |
 | `src/worker/` | Web Worker dispatch + self-contained worker entry | `.github/instructions/worker.instructions.md` |
 | `src/tools/` | `pdfnative/tools` entry: `compileFontData` / `parseFontData` | `.github/instructions/font-engineering.instructions.md` |
@@ -50,6 +50,8 @@ pdfnative is a zero-runtime-dependency TypeScript library that writes and reads 
 | `docs/` | pdfnative.dev site: guides (`.md` + generated `.html`), playgrounds, learn path, llms files, `assets/ecosystem.json` | `.github/instructions/api-design.instructions.md` |
 | `recipes/` | Executable documentation (`recipes/*.ts`, indexed by `recipes/index.json`), scanned by `verify:docs` | `.github/instructions/api-design.instructions.md` |
 
+1.8.0 modules — core: `pdf-typography` + `hyphenation`, `pdf-pagination` (the one planner for builder and `inspectDocumentLayout`), `pdf-print`, `pdf-color` (`fillOp`/`strokeOp` choke point),
+`pdf-content-colour`, `pdf-reproducible`; shaping: `shaper-registry` (`SCRIPT_SHAPERS`/`findShaper`), `use-engine` + generated `use-data`, `use-shaper` (Tai Tham, Cham), `lao-shaper`; parser: `pdf-x-validator`.
 Cross-cutting: public API → `api-design.instructions.md`; PDF/A metadata, XMP, OutputIntent → `pdfa-conformance.instructions.md`; hot paths → `performance.instructions.md`.
 
 ## Architecture
@@ -58,8 +60,8 @@ Strict unidirectional dependency flow:
 
 ```
 types → core ← fonts ← shaping ← worker
-crypto is standalone
-parser depends on core/compress for inflate
+crypto imports core/pdf-encrypt (sha256) and nothing else outside crypto/
+parser depends on core: pdf-compress (inflate), pdf-encrypt, pdf-tags, pdf-page-labels, pdf-content-colour
 ```
 
 One sanctioned reverse edge: incremental-update features in `core/` (`pdf-sig-placeholder`, `pdf-form-fill`, `pdf-dss`, `pdf-sig-utils`, `pdf-doc-timestamp`)
@@ -91,9 +93,9 @@ import the `parser/` reader/modifier — they operate on existing PDFs by design
 
 ## Counts and versions
 
-3411 tests across 152 files, 271 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
+3460 tests across 154 files, 271 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
 `docs/assets/ecosystem.json` is the source of every count and version quoted in the docs; run `npm run verify:docs` after touching any of them.
-Coverage: ≥ 88 % statements enforced by CI (currently ≈ 90.9 % statements; the thresholds live once in `vitest.config.ts`).
+Coverage: ≥ 88 % statements enforced by CI (currently 91.4 % statements; the thresholds live once in `vitest.config.ts`).
 
 ## Releasing
 

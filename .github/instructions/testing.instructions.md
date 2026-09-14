@@ -36,9 +36,9 @@ scripts/
 ```
 
 ## Current State (maintain these thresholds)
-- Test and test-file counts live in `docs/assets/ecosystem.json` (`declared.tests`, `derived.testFiles`; currently 152 test files + 1 benchmark file) and are enforced by `npm run verify:docs`
+- Test and test-file counts live in `docs/assets/ecosystem.json` (`declared.tests`, `derived.testFiles`; currently 154 test files + 1 benchmark file) and are enforced by `npm run verify:docs`
 - Sample PDFs: `derived.samplePdfs` in the same manifest (currently 271), byte-pinned by `tests/regression/baselines/samples.sha256.json`
-- Statements: ≥ 88 % enforced by CI (currently ≈ 90.9 % statements)
+- Statements: ≥ 88 % enforced by CI (currently ≈ 91.4 % statements)
 - Branches: ~88% (threshold: 80%)
 - Functions: ~98% (threshold: 85%)
 - Lines: 90% threshold
@@ -59,7 +59,7 @@ scripts/
 - **Multi-font**: test font switching at script boundaries, continuation bias behavior
 
 ## Coverage Targets
-- Statements: ≥ 88 % enforced by CI (currently ≈ 90.9 % statements; full CI thresholds 88/80/85/90 in `vitest.config.ts`)
+- Statements: ≥ 88 % enforced by CI (currently ≈ 91.4 % statements; full CI thresholds 88/80/85/90 in `vitest.config.ts`)
 - Core modules (`src/core/`): >95% (currently >99%)
 - Font modules (`src/fonts/`): >90% (currently >99%)
 - Shaping modules (`src/shaping/`): >90% (currently >95%)
@@ -83,11 +83,18 @@ scripts/
   emoji used by `scripts/generators/color-emoji-showcase.ts` against the bundled
   cmap — never weaken these to conditional (`if (gid !== undefined)`) checks
 
+## Locking tests for fixes
+- A fix's locking test asserts the **emitted structure** — the objects, operators, dictionary entries or tables the fix changes (`/W` array contains the glyph, one `TJ` per line, `/Artifact << /Type /Page >>` around the marks, `/TrimBox` equals the BleedBox) — never only "bytes differ from before" or "does not throw". A byte-difference assertion passes for any change, including the wrong one
+- Byte-identity tests are the complement, not the substitute: the option-absent build equals the pre-feature bytes, and the option-present build carries the asserted structure
+- Parser fixes get a **synthetic fixture built in the test** — a minimal PDF or font table assembled from constants that exhibits exactly the malformed or edge-case input, not a committed binary and not a full sample (see the hand-built GSUB tables in `tests/tools/font-compiler.test.ts`, the 1.8.0 fix B-007 for single substitutions read from the wrong offset, and `buildRC4Pdf` in `tests/parser/pdf-decrypt.test.ts`)
+- Diagnostics: assert the code through `onDiagnostic` (and the throw under `strict`), not the `console.warn` text; every code asserted must exist in `docs/data/errors.json`
+
 ## Anti-Patterns
 - Tests that depend on execution order
 - Shared mutable state between tests (use `beforeEach` for fresh state)
 - Testing implementation details instead of behavior
 - Snapshot tests for binary output (fragile — use structural validation)
+- "Bytes differ" or "does not throw" as the only assertion of a fix (see Locking tests for fixes)
 
 ## Tagged PDF Testing
 - Verify `/StructTreeRoot` reference in Catalog dictionary

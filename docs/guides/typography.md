@@ -41,7 +41,7 @@ Why opt-in: each option moves glyphs or line breaks, so turning one on changes a
 | `widows` | `2` | Minimum lines carried to the next page; the break is pulled earlier otherwise. Requires `splitParagraphs`. |
 | `keepHeadingsWithNext` | `false` | A heading that would end a page moves to the next one with its content. Works without `splitParagraphs`. Pass `true`, or `{ minLines: N }` to reserve at least N lines of what follows (default 2; three is a common house style) — the reservation never drops below `orphans`, and a paragraph that cannot spare N lines and still carry `widows` over moves whole. |
 
-Blocks override the document setting: a heading or paragraph accepts `keepWithNext`, and a paragraph accepts its own split permission. Under a PDF/A claim a paragraph split across pages remains one `/P` structure element.
+Blocks override the document setting: a heading or paragraph accepts `keepWithNext`, and a paragraph accepts `splittable` (its own split permission, `false` to keep one paragraph atomic while `splitParagraphs` is on). Under a PDF/A claim a paragraph split across pages remains one `/P` structure element.
 
 ## Justification and optical margins
 

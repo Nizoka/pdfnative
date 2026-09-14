@@ -64,6 +64,11 @@ Every output written with `tagged` set ships:
   RGB, CMYK (since v1.8.0) or Gray profile via `outputIntent`. Under a CMYK or
   Gray intent, RGB content is remapped through a calibrated `/DefaultRGB` so
   the claim holds — see the [print guide](print.html#custom-outputintent-taggedpdf-a).
+  Mind the profile version: PDF/A-1b requires an ICC v2 profile
+  (ISO 19005-1 §6.2.2); v4 profiles are allowed from PDF/A-2 on
+  (ISO 19005-2 §6.2.4.2). pdfnative checks the profile's signature, size
+  field and data colour space but not its version — supply a v2 profile for
+  a 1b claim.
 - `/MarkInfo << /Marked true >>` on the catalog.
 - A trailer `/ID` derived deterministically from the document title and
   creation timestamp.

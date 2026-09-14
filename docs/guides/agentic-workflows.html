@@ -68,19 +68,22 @@
 <p><strong>How AI agents compose with pdfnative.</strong> pdfnative is designed so an autonomous
 agent can do more than <em>call</em> the engine — it can <strong>extend</strong> it at runtime and
 <strong>feed it content it generated itself</strong>, all without waiting for a library
-release. This guide documents two concrete, factual patterns and the exact
+release. This guide documents three concrete, factual patterns and the exact
 public APIs they rely on.</p>
 </blockquote>
-<p>Both patterns are built entirely on already-shipped, public API surfaces:</p>
+<p>All three patterns are built entirely on already-shipped, public API surfaces:</p>
 <ul>
 <li>The library&#39;s <code>registerFont()</code> / <code>loadFontData()</code> font registry, the
 <code>pdfnative/tools</code> sub-path (<code>parseFontData</code> / <code>compileFontData</code>, since v1.5.0),
 and the bundled <code>pdfnative-build-font</code> CLI.</li>
 <li>The image entry points: the <code>image</code> document block (library + CLI) and the
 <code>embed_image</code> MCP tool.</li>
+<li>The typography, PDF/X and self-verification surfaces of v1.8.0:
+<code>layout.typography</code>, <code>layout.pdfx</code>, <code>validatePdfX()</code>, and the machine
+contracts under <code>docs/data/</code> that an agent reads before it writes.</li>
 </ul>
-<p>There is <strong>no new API</strong> here — the point is that the existing surfaces were
-shaped so agents can use them autonomously, under the project&#39;s
+<p>There is <strong>no agent-specific API</strong> here — the point is that the existing
+surfaces were shaped so agents can use them autonomously, under the project&#39;s
 <a href="ai-governance.md">AI-governance / human-in-the-loop contract</a>.</p>
 <hr>
 <h2 id="pattern-1--extend-the-engine-at-runtime-without-a-release">Pattern 1 — extend the engine at runtime, without a release<a class="heading-anchor" href="#pattern-1--extend-the-engine-at-runtime-without-a-release" aria-label="Link to this section">#</a></h2>
@@ -239,9 +242,102 @@ JPEG/PNG structure natively and rejects malformed or unsupported payloads
 a well-formed image before embedding.</p>
 </blockquote>
 <hr>
-<h2 id="how-the-two-patterns-fit-together">How the two patterns fit together<a class="heading-anchor" href="#how-the-two-patterns-fit-together" aria-label="Link to this section">#</a></h2>
-<p>A single agent turn can combine both: register a brand font, generate a cover
-image, and assemble a signed, archive-grade PDF — in one MCP conversation or one
+<h2 id="pattern-3--typeset-and-self-verify-a-print-ready-document">Pattern 3 — typeset and self-verify a print-ready document<a class="heading-anchor" href="#pattern-3--typeset-and-self-verify-a-print-ready-document" aria-label="Link to this section">#</a></h2>
+<p>An agent producing a document for press has two problems a chat transcript
+cannot solve: the text must <em>typeset</em> (no heading stranded at the foot of a
+page, no single line orphaned, figures that line up) and the file must be
+something a printer accepts. v1.8.0 gives both as plain layout options plus a
+read-back verifier, so the agent can loop on facts instead of on a rendered
+preview it cannot see.</p>
+<h3 id="read-the-machine-contracts-first">Read the machine contracts first<a class="heading-anchor" href="#read-the-machine-contracts-first" aria-label="Link to this section">#</a></h3>
+<p>Four files under <code>docs/</code> are written for exactly this and are verified by the
+documentation CI against the source they describe. An agent should load them
+into context before authoring, not after the first failure:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What it tells the agent</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="../assets/api.json"><code>docs/assets/api.json</code></a></td>
+<td>Every public export with its module and signature — the authoritative answer to &quot;does this option exist and what does it take&quot;.</td>
+</tr>
+<tr>
+<td><a href="../data/errors.json"><code>docs/data/errors.json</code></a></td>
+<td>Every diagnostic code (<code>diagnostics</code>: when it fires, the standard it cites, the remedy) and every build-time message a tool must classify (<code>buildErrors</code>, including the seven PDF/X coherence errors).</td>
+</tr>
+<tr>
+<td><a href="../data/surfaces.json"><code>docs/data/surfaces.json</code></a></td>
+<td>Which capability each surface (library, CLI, MCP, React) offers, with the exact call, command or tool name — or the honest note when it does not.</td>
+</tr>
+<tr>
+<td><a href="../data/playgrounds.json"><code>docs/data/playgrounds.json</code></a></td>
+<td>The browser playgrounds and the engine version each one pins, for a visual check a human can open.</td>
+</tr>
+</tbody></table>
+<h3 id="the-loop">The loop<a class="heading-anchor" href="#the-loop" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-ts">import { readFileSync } from &#39;node:fs&#39;;
+import { buildDocumentPDFBytes, validatePdfX, inspectDocumentLayout } from &#39;pdfnative&#39;;
+import type { PdfDiagnostic } from &#39;pdfnative&#39;;
+
+const diagnostics: PdfDiagnostic[] = [];
+const doc = { ...params, fontEntries, metadata: { trapped: &#39;False&#39; as const } };
+const layout = {
+  typography: {
+    splitParagraphs: true, orphans: 2, widows: 2,   // no stranded lines
+    keepHeadingsWithNext: { minLines: 3 },          // a heading takes three lines with it
+    unitBinding: true, opticalMargins: true,
+    kerning: true, fontFeatures: [&#39;pnum&#39;],          // pair kerning; proportional figures
+  },
+  pdfx: &#39;pdfx4&#39;,
+  outputIntent: {
+    iccProfile: new Uint8Array(readFileSync(&#39;ISOcoated_v2_eci.icc&#39;)),  // the printer&#39;s profile
+    outputConditionIdentifier: &#39;FOGRA39&#39;,
+  },
+  print: { bleed: 14.17, marks: { colourBars: true } },   // 5 mm bleed: room for 12 pt patches
+  onDiagnostic: (d: PdfDiagnostic) =&gt; { diagnostics.push(d); }, // PDFX_*, TYPOGRAPHY_* codes
+};
+
+// 1. Plan: page count and block geometry, no bytes produced.
+const plan = inspectDocumentLayout(doc, layout);
+
+// 2. Build. Incoherent PDF/X input throws here, with a message from errors.json buildErrors.
+const pdf = buildDocumentPDFBytes(doc, layout);
+
+// 3. Verify what the structure can prove, then branch.
+const report = validatePdfX(pdf);      // { valid, errors, warnings }
+if (!report.valid || diagnostics.length &gt; 0) {
+  // correct the input — embed the missing font, remove the link block,
+  // switch the colour to CMYK — and rebuild; never hand over an unverified file
+}
+</code></pre>
+<p>The decision points are all machine-readable: a thrown build error names the
+conflicting options (<code>layout.pdfx and layout.tagged cannot be combined</code>,
+<code>PDF/X-4 requires layout.outputIntent</code>, …); a diagnostic carries a stable
+code (<code>PDFX_NO_FONT_ENTRIES</code> → pass <code>fontEntries</code>; <code>PDFX_ANNOTATIONS</code> →
+remove links and form fields; <code>PDFX_DEVICE_CMYK</code> → CMYK colour under a
+non-CMYK profile; <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code> → the tag substitutes
+nothing with this font, drop it); and <code>validatePdfX()</code> returns the errors as
+strings the agent can act on. Pin <code>layout.creationDate</code> (or
+<code>setDefaultCreationDate()</code>) and <code>TZ</code> when the loop must produce identical
+bytes across runs.</p>
+<blockquote>
+<p><strong>Honest caveat.</strong> <code>validatePdfX()</code> checks the ISO 15930-7 prerequisites
+that structure can prove and does not render; a certified preflight
+remains the last step before press. On the CLI, <code>layout.typography</code> and
+<code>layout.pdfx</code> travel in the document JSON or a <code>--layout</code> file (<code>render</code>
+forwards the layout object to the installed engine), but <code>inspect --check</code>
+knows <code>pdfua</code> only; on MCP, neither option is in the document tools&#39; layout
+schema yet — <a href="../data/surfaces.json"><code>surfaces.json</code></a> states this per
+capability.</p>
+</blockquote>
+<hr>
+<h2 id="how-the-patterns-fit-together">How the patterns fit together<a class="heading-anchor" href="#how-the-patterns-fit-together" aria-label="Link to this section">#</a></h2>
+<p>A single agent turn can combine all three: register a brand font, generate a
+cover image, typeset the body under widow and orphan rules, and hand over a
+PDF/X-4 file that the agent itself verified — in one MCP conversation or one
 CLI pipeline, without a pdfnative release in the loop.</p>
 <p><img src="../assets/agentic-workflows.svg" alt="Agentic workflows: an AI agent generates images (embedded via the image block / embed_image) and compiles fonts (registered at runtime via registerFont + parseFontData), both feeding the pdfnative public API to produce an ISO 32000-1 PDF. Repository changes stay human-gated under the AI-governance / HITL contract."></p>
 <p>The engine stays zero-dependency and unchanged; the agent supplies fonts and
@@ -258,6 +354,10 @@ repository changes human-gated.</li>
 <li><a href="cli.md">CLI guide</a> — driving pdfnative from the shell.</li>
 <li><a href="font-validation.md">Font validation</a> — <code>validateFontData()</code> for sanity-checking
 a font module before registering it.</li>
+<li><a href="typography.md">Typography</a> and <a href="print.md">Print production</a> — the options
+Pattern 3 sets, and what <code>validatePdfX()</code> checks.</li>
+<li><a href="self-verify.md">Self-verifying generation</a> — the generate → inspect →
+assert → correct loop on every surface.</li>
 </ul>
 <!-- guide:render:end -->
   </article>

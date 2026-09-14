@@ -5,17 +5,18 @@
 
 ## Overview
 
-Pure native PDF generation and parsing library. Zero runtime dependencies. ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) conformant output; veraPDF is blocking in CI.
+Pure native PDF generation and parsing library. Zero runtime dependencies. ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) conformant output.
+veraPDF blocks at publish (`publish.yml`) and on the `verapdf` workflow, not as a required ruleset check.
 Target: exceed GAFAM-grade quality standards in code, testing, performance, and documentation.
 
 ## Architecture
 
 | Path | Purpose | Read first |
 |---|---|---|
-| `src/core/` | Document/table builders, text, images, tags/XMP, encryption, compression, forms, signatures/LTV, streaming, print | `instructions/pdf-core.instructions.md` |
-| `src/parser/` | Tokenizer → object parser → xref → reader/modifier; decrypt, text extraction, page-tree merge/split, PDF/UA check | `instructions/pdf-core.instructions.md` |
+| `src/core/` | Document/table builders, text, images, tags/XMP, encryption, compression, forms, signatures/LTV, streaming, print, typography, colour, reproducible dates | `instructions/pdf-core.instructions.md` |
+| `src/parser/` | Tokenizer → object parser → xref → reader/modifier; decrypt, text extraction, page-tree merge/split, PDF/UA check, PDF/X-4 check (`pdf-x-validator`) | `instructions/pdf-core.instructions.md` |
 | `src/fonts/` | WinAnsi + CIDFont encoding, lazy font registry, TTF subsetter, CMap builder, font-data validator | `instructions/font-engineering.instructions.md` |
-| `src/shaping/` | GSUB/GPOS shapers (Thai, Arabic, Indic, …), UAX #9 BiDi, script detection, emoji sequences, generated USE data | `instructions/text-shaping.instructions.md` |
+| `src/shaping/` | GSUB/GPOS shapers (Thai, Arabic, Indic, Lao, …), USE engine, shaper registry, UAX #9 BiDi, script detection, emoji sequences | `instructions/text-shaping.instructions.md` |
 | `src/crypto/` | SHA, ASN.1/DER, RSA, ECDSA, X.509, CMS, RFC 3161, OCSP/CRL, injected timestamp/revocation providers | `instructions/pdf-core.instructions.md` |
 | `src/worker/` | Web Worker dispatch + self-contained worker entry | `instructions/worker.instructions.md` |
 | `src/tools/` | `pdfnative/tools` entry: `compileFontData` / `parseFontData` | `instructions/font-engineering.instructions.md` |
@@ -27,11 +28,14 @@ Target: exceed GAFAM-grade quality standards in code, testing, performance, and 
 
 Other top-level directories: `fonts/` (generated font-data modules + git-ignored TTF sources), `tools/` (`build-font-data.cjs`, the TTF → data-module CLI),
 `bench/` (vitest bench), `release-notes/` (per-version notes; shipped ones are read-only history).
+1.8.0 modules — core: `pdf-typography` + `hyphenation`, `pdf-pagination` (one planner), `pdf-print`, `pdf-color` (`fillOp`/`strokeOp`), `pdf-content-colour`,
+`pdf-reproducible`; shaping: `shaper-registry` (`SCRIPT_SHAPERS`/`findShaper`), `use-engine` + generated `use-data`, `use-shaper` (Tai Tham, Cham), `lao-shaper`; parser: `pdf-x-validator`.
 
 ### Dependency rules
 
 - **Single entry point**: `src/index.ts` re-exports everything public. **Types-first**: domain types live in `src/types/`; consumers import them from the root.
-- **Strict unidirectional flow**: `types → core ← fonts ← shaping ← worker`; `crypto` is near-standalone (imports `sha256` from `core/pdf-encrypt`); `parser` imports from `core` (`pdf-compress`, `pdf-encrypt`, `pdf-tags`).
+- **Strict unidirectional flow**: `types → core ← fonts ← shaping ← worker`; `crypto` imports only `sha256` from `core/pdf-encrypt`;
+  `parser` imports from `core` (`pdf-compress`, `pdf-encrypt`, `pdf-tags`, `pdf-page-labels`, `pdf-content-colour`).
 - **One sanctioned reverse edge**: the incremental-update modules in `core/` (`pdf-sig-placeholder`, `pdf-form-fill`, `pdf-dss`, `pdf-sig-utils`, `pdf-doc-timestamp`)
   import the `parser/` reader/modifier because they operate on existing PDFs. Keep new reverse edges to that feature family.
 - `encoding-context.ts` lives in `core/` (dependency inversion that broke the `fonts/ → shaping/` cycle); `script-registry.ts` in `shaping/` is the single source of Unicode range constants and script predicates.
@@ -54,39 +58,39 @@ Other top-level directories: `fonts/` (generated font-data modules + git-ignored
 
 ## Build & Test
 
-`npm run gate` is THE quality gate (`scripts/gate.ts`; its `STEPS` table is the step list; logs in `test-output/.gate/<step>.log`; summary ≤ 20 lines).
+`npm run gate` is THE quality gate (`scripts/gate.ts`, step list in its `STEPS` table; logs in `test-output/.gate/<step>.log`; summary ≤ 20 lines).
 
 ```bash
 npm run gate                 # CI profile (default)
 npm run gate -- --fast       # typecheck:all, lint, test, verify:docs — before every commit
 npm run gate -- --publish    # everything incl. test:generate, verify:samples, validate:pdfa, verify:fonts, verify:bundle
-npm run gate -- --only <step>   # one step; --json for machine-readable output
+npm run gate -- --only <step>   # one step; --json for machine output
 ```
 
 Individual commands still exist:
 
 ```bash
-npm run build            # tsup → dist/ (ESM + CJS + .d.ts; worker and tools entries)
+npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test             # vitest run (dot reporter); one suite: npx vitest run tests/<path>.test.ts
-npm run test:coverage    # vitest with v8 coverage (thresholds in vitest.config.ts)
+npm run test:coverage    # v8 coverage (thresholds in vitest.config.ts)
 npm run test:generate    # regenerate the sample PDFs → test-output/
 npm run typecheck:all    # src/ + tests/ + scripts/
-npm run lint             # eslint src/ (ESLint 9 + typescript-eslint strict)
-npm run validate:pdfa    # veraPDF over every PDF/A-claiming sample (coverage canary vs declared.pdfaSamples; skips when veraPDF is absent, blocking in CI)
-npm run verify:samples   # byte manifest of test-output/ vs tests/regression/baselines/samples.sha256.json; refuses identical pairs unless listed in IDENTICAL_SAMPLE_GROUPS
+npm run lint             # ESLint 9 + typescript-eslint strict
+npm run validate:pdfa    # veraPDF over every PDF/A-claiming sample (canary vs declared.pdfaSamples; skips when veraPDF is absent)
+npm run verify:samples   # byte manifest of test-output/ vs tests/regression/baselines/samples.sha256.json; refuses identical pairs
 npm run verify:fonts     # fonts/*-data.js reproduce byte-identically from the TTF sources
-npm run verify:unicode   # src/shaping/use-data.ts matches scripts/data/*.txt (generate-use-data.ts --check)
+npm run verify:unicode   # src/shaping/use-data.ts matches scripts/data/*.txt
 npm run verify:bundle    # tree-shaking probe from dist/
-npm run verify:docs      # offline doc-consistency rules; docs/assets/ecosystem.json is the source of truth
-npm run docs:all         # docs:api + docs:guides + docs:llms (regenerates api.json, guides/*.html, llms files)
+npm run verify:docs      # offline doc-consistency rules against docs/assets/ecosystem.json
+npm run docs:all         # docs:api + docs:guides + docs:llms
 ```
 
-- Build tool **tsup**; test runner **vitest**; CI is GitHub Actions on Node 22/24 (lint, typecheck, test, build, veraPDF, sample regression, font reproducibility, docs).
+- Build tool **tsup**; test runner **vitest**; CI is GitHub Actions on Node 22/24 (lint, typecheck, test, build, veraPDF, samples, fonts, docs).
 - Publish: GitHub Actions OIDC Trusted Publishing (`npm publish --access public`; provenance attached via `id-token: write`). Agents never publish.
-- Generated files are regenerated, never hand-edited: `fonts/*-data.js` + `.d.ts`, `src/shaping/use-data.ts`, `scripts/data/*.txt` (vendored UCD, never edited),
-  `docs/assets/api.json`, `docs/guides/*.html`, `docs/llms*.txt` / `llms-index.json`, `tests/regression/baselines/samples.sha256.json` (`verify:samples --update`,
-  only with a declared rebaseline), `dist/`, `coverage/`, `test-output/`, `package-lock.json`. The regenerate commands are tabulated in AGENTS.md §Generated files.
-- All new code must have tests. Coverage ≥ 88 % statements is enforced by CI (currently ≈ 90.9 % statements); the full thresholds (88/80/85/90 statements/branches/functions/lines) are declared once in `vitest.config.ts`.
+- Generated files are regenerated, never hand-edited: `fonts/*-data.js` + `.d.ts`, `src/shaping/use-data.ts`, `scripts/data/*.txt` (vendored UCD), `docs/assets/api.json`,
+  `docs/guides/*.html`, `docs/llms*.txt` / `llms-index.json`, `tests/regression/baselines/samples.sha256.json` (`verify:samples --update`, only with a declared rebaseline),
+  `dist/`, `coverage/`, `test-output/`, `package-lock.json`. Regenerate commands: AGENTS.md §Generated files.
+- All new code must have tests. Coverage ≥ 88 % statements is enforced by CI (currently 91.4 % statements); the thresholds (88/80/85/90) live once in `vitest.config.ts`.
 
 ## Quality Standards
 
@@ -106,7 +110,8 @@ npm run docs:all         # docs:api + docs:guides + docs:llms (regenerates api.j
 ### PDF-specific invariants
 
 - PDF operators are built as plain strings, not an AST: `"BT /F1 10 Tf ... ET"`. Binary offsets use `byteLength()` (never `.length`) — critical for the xref table.
-- All colour values are PDF operator RGB strings (`"0.145 0.388 0.922"`); `parseColor()` validates hex / tuple / PDF string and `normalizeColors()` runs at the layout boundary.
+- Colours are PDF operand strings — RGB `"0.145 0.388 0.922"` or CMYK `"0 0 0 1"` (1.8.0, from `[c, m, y, k]` percent); `parseColor()` validates, `normalizeColors()` runs at the layout boundary,
+  and every colour operator goes through `fillOp()` / `strokeOp()` in `pdf-color.ts` (`rg`/`RG` or `k`/`K` by component count).
 - Tagged PDF: marked content `/Span << /MCID n /ActualText <hex> >> BDC…EMC`; MCIDs restart at 0 per page (`/StructParents`).
   Structure tree: `/Document → /Table → /TR → /TH|/TD`, `/H1–H3`, `/P`, `/L → /LI`, `/Figure`, `/Link`, `/TOC → /TOCI`, `/Form`.
 - XMP: `<?xpacket begin="\xEF\xBB\xBF"` uses raw UTF-8 BOM bytes (not `﻿`). XMP streams are never compressed. `dc:creator` is emitted only when `metadata.author` is set and mirrors `/Info /Author`.
@@ -124,6 +129,9 @@ npm run docs:all         # docs:api + docs:guides + docs:llms (regenerates api.j
   `resolveBidiRuns()` returns runs in visual order. Arabic: GSUB positional forms + lam-alef; Hebrew: BiDi order only.
 - Shaping: `tryLigature()` in `gsub-driver.ts` and the mark positioners in `gpos-positioner.ts` are shared by every Indic/Arabic shaper;
   `classifyUseCategory()` (`use-lite.ts`) is the joiner-classification authority. Colour-emoji sequences are matched longest-first and fall back per codepoint.
+  Dispatch is `findShaper()` over `SCRIPT_SHAPERS` (`shaper-registry.ts`), never a per-script `if` ladder; unmatched scripts go to `use-shaper.ts` (USE; `use-data.ts` is generated, `verify:unicode`).
+- Typography (`pdf-typography`, `pdf-pagination`) and PDF/X (`pdf-print`, `resolvePdfXConfig`, `parser/pdf-x-validator`) are opt-in: absent, output is byte-identical.
+  New diagnostic codes go in `PdfDiagnosticCode` AND `docs/data/errors.json`; thrown build messages a downstream tool classifies go in `errors.json` `buildErrors`.
 - Streaming: `buildPDFStream` / `buildDocumentPDFStream` chunk an assembled binary; the `…StreamTrue` variants never materialise it and are the ones to use at scale; `streamToFile()` honours back-pressure and `AbortSignal`.
 - Parser: tokenizer → object parser → xref parser → reader → modifier (`openPdf()` / `createModifier()`); page-tree surgery only via `mergePdfs` / `splitPdf` / `extractPages`.
   Hardening caps: `MAX_PARSE_DEPTH`, `MAX_XREF_CHAIN`, `MAX_INFLATE_OUTPUT`, `MAX_COPY_DEPTH`, `MAX_MERGE_SOURCES`, `maxOutputSize`.
@@ -134,6 +142,7 @@ npm run docs:all         # docs:api + docs:guides + docs:llms (regenerates api.j
 ### API
 
 - Public API is stable and backward-compatible; every public function/type is exported from `src/index.ts` and documented in README §API reference and `docs/assets/api.json`.
+  Option object types referenced by public options are exported too (six were missing in the 1.8.0 review).
 - Font data modules are lazy-loaded via `registerFont()` + `loadFontData()`; the worker threshold defaults to 500 rows.
 - Downstream-impacting changes are documented in the **Downstream integration notes** of the relevant `release-notes/vX.Y.Z.md`.
 
