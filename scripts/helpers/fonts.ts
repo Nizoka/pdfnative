@@ -41,6 +41,14 @@ export function registerAllFonts(): void {
         cjm: fl(() => import('../../fonts/noto-cham-data.js')),
         // v1.1.0 — Latin VF (PDF/A non-WinAnsi fallback) + monochrome emoji
         latin: fl(() => import('../../fonts/noto-sans-data.js')),
+        // v1.8.0 — Latin-script African languages under a language key, so a
+        // sample is labelled by language; the engine routes their letters
+        // (hooked ɓ ɗ ƙ ƴ, dotted ẹ ọ ṣ ị ụ ṅ, combining tone marks) to
+        // `latin`. Same module, no new font.
+        ha: fl(() => import('../../fonts/noto-sans-data.js')),
+        yo: fl(() => import('../../fonts/noto-sans-data.js')),
+        ig: fl(() => import('../../fonts/noto-sans-data.js')),
+        sw: fl(() => import('../../fonts/noto-sans-data.js')),
         emoji: fl(() => import('../../fonts/noto-emoji-data.js')),
         // v1.3.0 — COLR/CPAL colour emoji (curated subset)
         'emoji-color': fl(() => import('../../fonts/noto-color-emoji-data.js')),

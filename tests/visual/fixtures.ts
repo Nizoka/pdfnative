@@ -12,6 +12,8 @@
 
 import { registerFonts, loadFontData, buildDocumentPDFBytes } from '../../src/index.js';
 import type { FontLoader, FontEntry, DocumentParams } from '../../src/index.js';
+import { LANGUAGE_DOCS } from '../../scripts/data/language-docs-data.js';
+import { languageDocParams } from '../../scripts/generators/document-builder.js';
 
 const fl = (loader: () => Promise<unknown>): FontLoader => loader as FontLoader;
 
@@ -31,6 +33,8 @@ function registerVisualFonts(): void {
         km: fl(() => import('../../fonts/noto-khmer-data.js')),
         my: fl(() => import('../../fonts/noto-myanmar-data.js')),
         si: fl(() => import('../../fonts/noto-sinhala-data.js')),
+        te: fl(() => import('../../fonts/noto-telugu-data.js')),
+        yo: fl(() => import('../../fonts/noto-sans-data.js')),
     });
     registered = true;
 }
@@ -214,4 +218,17 @@ export const FIXTURES: readonly Fixture[] = [
             return buildDocumentPDFBytes(params, { creationDate: new Date('2026-01-01T00:00:00Z') });
         },
     },
+    // v1.8.0 — the language conformance documents the samples ship, pixel-
+    // locked here: the 1.8.0 report's three scripts, Bengali, and the Latin
+    // combining-mark shaper (Yoruba). Built from the same data as the samples.
+    ...(['ta', 'hi', 'te', 'bn', 'yo'] as const).map((lang) => ({
+        name: `doc-${LANGUAGE_DOCS.find(d => d.lang === lang)?.filename.replace(/^doc-/, '') ?? lang}`,
+        build: async (): Promise<Uint8Array> => {
+            registerVisualFonts();
+            const doc = LANGUAGE_DOCS.find(d => d.lang === lang);
+            if (!doc) throw new Error(`no language document for ${lang}`);
+            const fontEntries = await entries([lang]);
+            return buildDocumentPDFBytes(languageDocParams(doc, fontEntries), { creationDate: new Date('2026-01-01T00:00:00Z') });
+        },
+    })),
 ];

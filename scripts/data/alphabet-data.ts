@@ -674,4 +674,96 @@ export const ALPHABET_SAMPLES: LangSample[] = [
         ],
         footerText: 'pdfnative \u2013 Cham script coverage verification',
     },
+    // \u2500\u2500 Latin-script African languages (v1.8.0) \u2014 no new module, the bundled
+    //    Noto Sans under a language key; the tone-marked rows exercise the
+    //    Latin combining-mark shaper. Appended, so every plate above keeps its bytes.
+    // Hausa (boko alphabet)
+    {
+        lang: 'ha',
+        filename: 'alphabet-hausa',
+        title: 'Haruffan Hausa \u2013 Hausa Alphabet Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Latin, Extended-B and IPA hooked letters' },
+            { label: 'Font', value: 'Noto Sans (no dedicated module)' },
+            { label: 'Test', value: 'Hooked letters, digraphs, tone marks' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '6 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Hooked consonants', '\u0253 \u0257 \u0199 \u01B4', '4', 'Base', 'U+0253 U+0257 U+0199 U+01B4'], type: 'credit', pointed: false },
+            { cells: ['Hooked capitals', '\u0181 \u018A \u0198 \u01B3', '4', 'Base', 'U+0181 U+018A U+0198 U+01B3'], type: 'credit', pointed: false },
+            { cells: ['Digraphs', 'sh ts gw kw ky \u02BCy', '6', 'Base', 'Modifier apostrophe U+02BC'], type: 'credit', pointed: true },
+            { cells: ['Vowels', 'a e i o u \u0101 \u0113 \u012B \u014D \u016B', '10', 'Base', 'Long vowels with macron'], type: 'credit', pointed: false },
+            { cells: ['Tone marks', 'k\u00E0r\u00E1t\u00F9 d\u00E0 \u0199\u00E0s\u00E1 \u0257\u00E0', '4', 'Mark', 'Precomposed and combining'], type: 'debit', pointed: true },
+            { cells: ['Words', '\u0253aure \u0257aki \u0199asa \u01B4anci Najeriya', '5', 'Sample', 'Everyday words'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Hausa alphabet coverage verification',
+    },
+    // Yoruba
+    {
+        lang: 'yo',
+        filename: 'alphabet-yoruba',
+        title: '\u00C1b\u00EDd\u00ED Yor\u00F9b\u00E1 \u2013 Yoruba Alphabet Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Latin, dotted vowels and combining tone marks' },
+            { label: 'Font', value: 'Noto Sans (no dedicated module)' },
+            { label: 'Test', value: 'Tone marks on \u1EB9 \u1ECD through GPOS' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '6 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Dotted letters', '\u1EB9 \u1ECD \u1E63 \u1EB8 \u1ECC \u1E62', '6', 'Base', 'Precomposed dot below'], type: 'credit', pointed: false },
+            { cells: ['Tone on plain vowels', '\u00E1 \u00E0 \u0101 \u00E9 \u00E8 \u00ED \u00EC \u00F3 \u00F2 \u00FA \u00F9', '11', 'Base', 'Precomposed'], type: 'credit', pointed: false },
+            { cells: ['Tone on dotted vowels', '\u1EB9\u0301 \u1EB9\u0300 \u1ECD\u0301 \u1ECD\u0300', '4', 'Mark', 'Combining U+0301 U+0300 anchored'], type: 'debit', pointed: true },
+            { cells: ['Stacked marks', '\u1ECD\u0303\u0301 \u1EB9\u0303\u0300', '2', 'Mark', 'Mark-to-mark'], type: 'debit', pointed: true },
+            { cells: ['Syllabic nasals', '\u0144 \u01F9 m\u0300 \u1E3F', '4', 'Base', 'Tone on a consonant'], type: 'credit', pointed: false },
+            { cells: ['Words', '\u1EB8 n l\u1EB9\u0301 o, Yor\u00F9b\u00E1, \u1ECCj\u1ECD\u0301 \u00E0\u00ECk\u00FA', '4', 'Sample', 'Greeting, names'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Yoruba alphabet coverage verification',
+    },
+    // Igbo
+    {
+        lang: 'ig',
+        filename: 'alphabet-igbo',
+        title: 'Mkp\u1EE5r\u1EE5edemede Igbo \u2013 Igbo Alphabet Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Latin, dotted letters and combining tone marks' },
+            { label: 'Font', value: 'Noto Sans (no dedicated module)' },
+            { label: 'Test', value: 'Dotted \u1ECB \u1ECD \u1EE5 \u1E45, tone marks' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '5 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Dotted letters', '\u1ECB \u1ECD \u1EE5 \u1ECA \u1ECC \u1EE4', '6', 'Base', 'Precomposed dot below'], type: 'credit', pointed: false },
+            { cells: ['n with dot above', '\u1E45 \u1E44', '2', 'Base', 'Precomposed'], type: 'credit', pointed: false },
+            { cells: ['Tone marks', '\u1ECB\u0301 \u1EE5\u0300 \u1ECD\u0301 \u1ECD\u0300', '4', 'Mark', 'Combining marks anchored'], type: 'debit', pointed: true },
+            { cells: ['Digraphs', 'gb kp nw ny gw kw ch sh', '8', 'Base', 'Two-letter consonants'], type: 'credit', pointed: true },
+            { cells: ['Words', 'Ndeewo Ked\u1EE5 \u1EE4m\u1EE5aka Nne na Nna', '5', 'Sample', 'Greeting, kinship'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Igbo alphabet coverage verification',
+    },
+    // Swahili
+    {
+        lang: 'sw',
+        filename: 'alphabet-swahili',
+        title: 'Alfabeti ya Kiswahili \u2013 Swahili Alphabet Coverage',
+        infoItems: [
+            { label: 'Script', value: 'Latin, ASCII only' },
+            { label: 'Font', value: 'Noto Sans (Helvetica suffices outside PDF/A)' },
+            { label: 'Test', value: 'No combining marks, digraphs, apostrophe' },
+        ],
+        balanceText: 'Character Coverage Test',
+        countText: '4 character groups',
+        headers: ['Group', 'Characters', 'Count', 'Type', 'Notes'],
+        rows: [
+            { cells: ['Consonants', 'b ch d dh f g gh h j k l m n ng ng\u2019 ny p r s sh t th v w y z', '24', 'Base', 'Digraphs included'], type: 'credit', pointed: false },
+            { cells: ['Vowels', 'a e i o u', '5', 'Base', 'Five, no length marks'], type: 'credit', pointed: false },
+            { cells: ['Apostrophe', 'ng\u2019ombe ng\u2019ambo', '2', 'Sample', 'U+2019 after ng'], type: 'credit', pointed: true },
+            { cells: ['Words', 'Habari Karibu Asante Jambo Kwaheri', '5', 'Sample', 'Greetings'], type: 'credit', pointed: false },
+        ],
+        footerText: 'pdfnative \u2013 Swahili alphabet coverage verification',
+    },
 ];
