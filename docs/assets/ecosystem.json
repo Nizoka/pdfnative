@@ -111,7 +111,7 @@
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
     "testFiles": 159,
     "sampleGenerators": 49,
-    "samplePdfs": 279,
+    "samplePdfs": 292,
     "sampleCategories": 38,
     "guides": 32,
     "playgrounds": 12,

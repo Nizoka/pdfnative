@@ -219,9 +219,10 @@ export const FIXTURES: readonly Fixture[] = [
         },
     },
     // v1.8.0 — the language conformance documents the samples ship, pixel-
-    // locked here: the 1.8.0 report's three scripts, Bengali, and the Latin
-    // combining-mark shaper (Yoruba). Built from the same data as the samples.
-    ...(['ta', 'hi', 'te', 'bn', 'yo'] as const).map((lang) => ({
+    // locked here: the 1.8.0 report's three scripts, Bengali, the Latin
+    // combining-mark shaper (Yoruba), Lao and Cham (the 1.8.0 shapers).
+    // Built from the same data as the samples.
+    ...(['ta', 'hi', 'te', 'bn', 'yo', 'lo', 'cjm'] as const).map((lang) => ({
         name: `doc-${LANGUAGE_DOCS.find(d => d.lang === lang)?.filename.replace(/^doc-/, '') ?? lang}`,
         build: async (): Promise<Uint8Array> => {
             registerVisualFonts();

@@ -109,7 +109,7 @@ npm install pdfnative
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
 - 🎮 **Playgrounds:** twelve interactive demos at [docs/playgrounds/](docs/playgrounds/) — [typography](docs/playgrounds/typography.html) (each typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 279 sample PDFs across 38 categories (49 generators) (see [Sample PDFs](#sample-pdfs) below).
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 292 sample PDFs across 38 categories (49 generators) (see [Sample PDFs](#sample-pdfs) below).
 - 🎓 **Learn:** [docs/learn/](docs/learn/) — an eight-step guided path from installing the package to generating 100,000 pages, live at [pdfnative.dev/learn/](https://pdfnative.dev/learn/).
 - 🤖 **Machine-readable:** [llms.txt](llms.txt) (doc index for LLMs), [AGENTS.md](AGENTS.md) (agent guidance), and [docs/assets/ecosystem.json](docs/assets/ecosystem.json) — the canonical manifest of ecosystem versions and counts, enforced by `npm run verify:docs`.
 
@@ -500,7 +500,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **279 sample PDFs** in `test-output/` (git-ignored), organized in 38 categories produced by 49 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
+This creates **292 sample PDFs** in `test-output/` (git-ignored), organized in 38 categories produced by 49 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -633,6 +633,19 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-yoruba.pdf` | Yoruba one-page conformance document — ẹ ọ ṣ, acute and grave tone marks on ẹ / ọ, syllabic ń ǹ (v1.8.0) |
 | `doc-igbo.pdf` | Igbo one-page conformance document — ị ọ ụ ṅ with tone marks, digraphs (v1.8.0) |
 | `doc-swahili.pdf` | Swahili one-page conformance document — plain Latin, numbers and dates (v1.8.0) |
+| `doc-lao.pdf` | Lao one-page conformance document — leading vowels, tone marks over vowels, tall and descender variants, sara am, ຫຼ ໜ ໝ ligatures (v1.8.0) |
+| `doc-taitham.pdf` | Northern Thai (Tai Tham) one-page conformance document — sakot stacks, pre-base vowels, medials, tone marks, Hora digits (v1.8.0) |
+| `doc-newtailue.pdf` | Tai Lue (New Tai Lue) one-page conformance document — spacing vowels before and after, combining finals, tone letters (v1.8.0) |
+| `doc-taile.pdf` | Tai Nüa (Tai Le) one-page conformance document — spacing vowels, tone letters, finals (v1.8.0) |
+| `doc-cham.pdf` | Cham one-page conformance document — pre-base vowels, medials, finals, Cham digits (v1.8.0) |
+| `doc-korean.pdf` | Korean one-page conformance document — precomposed syllables, complex batchim, compatibility jamo, Hanja, character-level wrapping (v1.8.0) |
+| `doc-greek.pdf` | Greek one-page conformance document — tonos, dialytika, final sigma, polytonic, Greek punctuation (v1.8.0) |
+| `doc-cyrillic.pdf` | Russian one-page conformance document — ё й щ, stress marks (U+0301), Ukrainian and Serbian letters, guillemets (v1.8.0) |
+| `doc-georgian.pdf` | Georgian one-page conformance document — Mkhedruli, Mtavruli, Asomtavruli, Nuskhuri, consonant clusters (v1.8.0) |
+| `doc-armenian.pdf` | Armenian one-page conformance document — both cases, և ligature, Armenian punctuation, dram sign (v1.8.0) |
+| `doc-turkish.pdf` | Turkish one-page conformance document — İ ı, ğ ş ç ö ü, circumflex, capitalisation, lira sign (v1.8.0) |
+| `doc-vietnamese.pdf` | Vietnamese one-page conformance document — six tones, stacked diacritics, ơ ư đ, capitals with tones, dong sign (v1.8.0) |
+| `doc-polish.pdf` | Polish one-page conformance document — ogonek, kreska, ł ż, digraphs, pangram, low-high quotes (v1.8.0) |
 | `doc-chinese-catalog.pdf` | Chinese product catalog (tables, ordering info) |
 | `doc-multi-language.pdf` | Multi-language showcase: all 27 Unicode scripts in one PDF |
 | `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
@@ -1297,7 +1310,7 @@ src/
 
 fonts/                    # Pre-built font data modules (27 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (49 generators, 279 PDFs)
+scripts/                  # Modular sample PDF generation (49 generators, 292 PDFs)
 tests/                    # 3717+ tests (159 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
@@ -1312,7 +1325,7 @@ npm install
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test             # vitest run (3717+ tests)
 npm run test:coverage    # vitest with v8 coverage (91.4 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
-npm run test:generate       # Generate 279 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
+npm run test:generate       # Generate 292 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json

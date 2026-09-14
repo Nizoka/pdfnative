@@ -18,7 +18,7 @@ Devanagari, Bengali, Tamil, Telugu and Sinhala are shaped by one Indic
 OpenType engine that applies the font's own features in specification
 order, every font module keeps one mark-anchor class per subtable, Hausa,
 Yoruba, Igbo and Swahili render on the bundled Noto Sans with their tone
-marks attached, and sixteen one-page language documents put every
+marks attached, and twenty-nine one-page language documents put every
 construction of a script in front of a reader who can judge it.
 Underneath, every sample is now deterministic and held byte for byte to
 the release that last changed it. Zero runtime dependencies; 58 exports
@@ -35,7 +35,7 @@ importing one helper bundles that helper alone.
 - **feat(samples): deterministic samples and a byte-level regression harness** —
   `setDefaultCreationDate()` pins the creation instant process-wide and the
   `{date}` placeholder now resolves against it; `npm run verify:samples`
-  fingerprints all 279 samples (SHA-256 of the bytes, or of a semantic
+  fingerprints all 292 samples (SHA-256 of the bytes, or of a semantic
   projection for the 14 encrypted ones) against a committed manifest whose
   entries chain to the release that last changed them; blocking CI workflow.
 - **feat(core): typography** under `layout.typography`, all opt-in —
@@ -128,12 +128,12 @@ importing one helper bundles that helper alone.
 - **feat(parser): `validatePdfX()` also checks** fonts inside annotation
   appearance streams, OPI, PostScript and reference XObjects and embedded
   files (name tree, `/FileAttachment`, `/EmbeddedFile` streams).
-- **feat(samples): sixteen one-page language conformance documents**
+- **feat(samples): twenty-nine one-page language conformance documents**
   generated from `scripts/data/language-docs-data.ts` (edge-case table
   per script), held to one page and to no missing glyph by
   `tests/regression/language-docs.test.ts` and to pixels by visual
   baselines; four alphabet plates and four documents for Hausa, Yoruba,
-  Igbo and Swahili on the bundled `latin` module — 279 samples.
+  Igbo and Swahili on the bundled `latin` module — 292 samples.
 - **feat(tooling): `scripts/glyph-names.ts`** names glyph ids from a
   font's `post` table; `shapeIndicTextTraced()` prints one line per
   lookup that changed a syllable.
@@ -160,7 +160,7 @@ importing one helper bundles that helper alone.
   config; `scripts/release-prepare.ts` for the mechanical part of a bump;
   `CLAUDE.md`, a committed `.claude/settings.json` and a human-in-the-loop
   guard hook for Claude Code sessions.
-- **feat(samples): 37 new samples** (279), including typography pairs
+- **feat(samples): 50 new samples** (292), including typography pairs
   and a hyphenation-provider sample,
   alphabets for the five new scripts, a form inside PDF/A-2b, CMYK under
   PDF/X-4 and PDF/A-2b, and skin tones; two recipes (`typography-report`,
@@ -360,6 +360,8 @@ importing one helper bundles that helper alone.
   synthetic press profile, PDF/X errors, `validatePdfX` on a dropped file,
   copy buttons); the README compression recipe corrected (#78) and the API
   reference completed.
+- **docs(site): OG and social-preview images** re-rasterised from their
+  SVG sources, whose subtitle now names typography and CMYK / PDF/X-4.
 - **docs(instructions): text-shaping rules** describe the Indic OpenType
   engine (pipeline, masks, reordering, limits), the Latin combining-mark
   shaper, the `otl` module format and the anchor-triple format; the

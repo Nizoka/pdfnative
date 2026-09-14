@@ -5,9 +5,9 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 22226,
-      "approxTokens": 5557,
-      "sha256": "f80325bfe7522f0be877580e96006d85b60ffceb7db0a7be5460e3f99e0e9b6f"
+      "bytes": 22255,
+      "approxTokens": 5564,
+      "sha256": "f5845379c6964150ce296e8399b6605748903c1555fc9a2535cfc289083f197a"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 597689,
-      "approxTokens": 149422,
-      "sha256": "f332dc723c70da845cede0e39ffd6ddee600cfa4726cd8d48e29422319148e1e"
+      "bytes": 599575,
+      "approxTokens": 149894,
+      "sha256": "ffa16bbbf4e7fae7bae3b1492f997f1e29dac2ebc4f361cebd2a0334bd2042e9"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -61,9 +61,9 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 114986,
-      "approxTokens": 28747,
-      "sha256": "eee762fa6f8d0c0678418c3e342d2fda9fb78ee8b5ba79407270d5611ffd7956"
+      "bytes": 116843,
+      "approxTokens": 29211,
+      "sha256": "10649f62759883ae5b33c7e8df2ccbbf3a1a62894c3fbf9e0072d83c96a2fcf7"
     }
   ],
   "guides": [
@@ -84,7 +84,7 @@
       ],
       "bytes": 7485,
       "approxTokens": 1871,
-      "sha256": "91defc92d03cd0ba97809851c52bc2f9dd11dca09337bc1a3e7d51c0ecefb19c"
+      "sha256": "87c8b82b8cc3c82b8c046e9b1515acc8820d928b0e4b38e2a03241eba256967c"
     },
     {
       "title": "Agentic workflows",
@@ -484,7 +484,7 @@
       ],
       "bytes": 8067,
       "approxTokens": 2017,
-      "sha256": "2768edd58e5bb939b7379fe550b28b30fa79c6b246732015da55ec1a84e00493"
+      "sha256": "cedced3c992e20bafc065abf2337f847fa007178d4d35d507203a84fc162873f"
     },
     {
       "title": "pdfnative-react — Declarative JSX Renderer Guide",

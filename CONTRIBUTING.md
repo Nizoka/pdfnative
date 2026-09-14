@@ -168,7 +168,7 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (49 generators, 279 PDFs) and the verification scripts
+scripts/          # Modular sample PDF generation (49 generators, 292 PDFs) and the verification scripts
 tests/            # 159 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```

@@ -9,7 +9,7 @@ _Verified on 2026-09-15 against the source tree by `npm run verify:docs`; the ca
 - [README](https://github.com/Nizoka/pdfnative/blob/main/README.md): Full feature list, install, quick start, API surface, examples.
 - [ROADMAP](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md): Shipped milestones (v1.0 → v1.8; v1.8: typography layer (paragraph breaking, justification, hyphenation seam, kerning, OpenType features), 27 scripts with a Universal Shaping Engine, COLRv1 transforms/masks/skin tones, CMYK colours + CMYK/Gray OutputIntents + PDF/X-4 with `validatePdfX`, deterministic samples and a byte-regression harness; v1.7: PAdES LTV B-B → B-LTA, charts v2, colour-emoji flag/ZWJ sequences, UAX #9 conformance, print production, PDF/A declaration guards, `updateMetadata`; v1.6: parser-side decryptor, streaming merge/split/extract, fill & flatten AcroForms, native vector charts, `extractText`, re-encrypt output; v1.5: math/technical-symbols font, `pdfnative/tools` font compiler/parser, SVG `<text>`, page-labels reader, layout debug overlay + `inspectDocumentLayout`, markup annotation read/write, AI-agent governance; v1.4: document outline/bookmarks, page labels, page-tree manipulation (merge/split/extract), streamToFile, COLRv1 advanced compositing; v1.3: COLRv1 colour emoji, USE-lite shaper integration, true constant-memory streaming, UAX #9 X4–X5 overrides, Telugu + Amharic/Sinhala/Tibetan/Khmer/Myanmar scripts, validatePdfUA) + long-term (WASM, full USE).
 - [CHANGELOG](https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md): Per-version changes.
-- [Release notes v1.8.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.8.0.md): the typography and print release — `layout.typography` (paragraph splitting with `widows`/`orphans`, `keepHeadingsWithNext` incl. `{ minLines }`, `bindShortWords`, `align: 'justify'`, `opticalMargins`, soft hyphens + `setHyphenationProvider` with `hyphenationLanguage`, `unitBinding`, `punctuationSpacing`, `metrics: 'exact'`, `kerning`, `fontFeatures`), five new scripts (Lao, Tai Tham, New Tai Lue, Tai Le, Cham) on a generated Universal Shaping Engine, COLRv1 transform/variable/mask paints and 150 skin-tone forms, CMYK colours (`[c, m, y, k]`), CMYK/Gray OutputIntents with RGB kept conforming, registration-colour marks, colour control bars, `pdfx: 'pdfx4'` + `validatePdfX()`, `setDefaultCreationDate()` and `npm run verify:samples`; an Indic OpenType engine for Devanagari, Bengali, Tamil, Telugu and Sinhala (per-feature GSUB from the font's `otl` tables, reph, half forms, subjoined consonants, pre-base matras), corrected GPOS mark classes in every font module, `shapeLatinMarksText()` for Yoruba/Igbo tone marks, Hausa/Yoruba/Igbo/Swahili samples on the bundled Noto Sans, sixteen one-page language conformance documents, `ShapedGlyph.cps` → multi-code-point ToUnicode, `PDFA_ICC_PROFILE_VERSION`, wider `validatePdfX()` (annotation appearances, OPI/PS/Ref XObjects, embedded files, any `/TR`), UTC dates, computed `head.checkSumAdjustment`. Four behaviour changes: `setDeflateImpl()` rejects raw DEFLATE (use `setDeflateRawImpl` / `wrapZlib`), `parseColor()` accepts four-value CMYK input, `extractText()` honours `/ActualText`, `{date}` follows `layout.creationDate`. 58 exports added, none removed.
+- [Release notes v1.8.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.8.0.md): the typography and print release — `layout.typography` (paragraph splitting with `widows`/`orphans`, `keepHeadingsWithNext` incl. `{ minLines }`, `bindShortWords`, `align: 'justify'`, `opticalMargins`, soft hyphens + `setHyphenationProvider` with `hyphenationLanguage`, `unitBinding`, `punctuationSpacing`, `metrics: 'exact'`, `kerning`, `fontFeatures`), five new scripts (Lao, Tai Tham, New Tai Lue, Tai Le, Cham) on a generated Universal Shaping Engine, COLRv1 transform/variable/mask paints and 150 skin-tone forms, CMYK colours (`[c, m, y, k]`), CMYK/Gray OutputIntents with RGB kept conforming, registration-colour marks, colour control bars, `pdfx: 'pdfx4'` + `validatePdfX()`, `setDefaultCreationDate()` and `npm run verify:samples`; an Indic OpenType engine for Devanagari, Bengali, Tamil, Telugu and Sinhala (per-feature GSUB from the font's `otl` tables, reph, half forms, subjoined consonants, pre-base matras), corrected GPOS mark classes in every font module, `shapeLatinMarksText()` for Yoruba/Igbo tone marks, Hausa/Yoruba/Igbo/Swahili samples on the bundled Noto Sans, twenty-nine one-page language conformance documents (one per bundled script), `ShapedGlyph.cps` → multi-code-point ToUnicode, `PDFA_ICC_PROFILE_VERSION`, wider `validatePdfX()` (annotation appearances, OPI/PS/Ref XObjects, embedded files, any `/TR`), UTC dates, computed `head.checkSumAdjustment`. Four behaviour changes: `setDeflateImpl()` rejects raw DEFLATE (use `setDeflateRawImpl` / `wrapZlib`), `parseColor()` accepts four-value CMYK input, `extractText()` honours `/ActualText`, `{date}` follows `layout.creationDate`. 58 exports added, none removed.
 - [Release notes v1.7.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.7.0.md): PAdES LTV signing B-B → B-LTA (`signPdfBytesWithTimestamp` RFC 3161 timestamps, `addValidationInfo` `/DSS` + `/VRI` OCSP/CRL material, `addDocumentTimestamp`, `listSignatures`, multi-signature via `addSignaturePlaceholder({ allowMultiple })` — network transport injected through `setTimestampProvider`/`setRevocationProvider`, the engine never opens a socket), charts v2 (stackedBar/stackedBarH/area/scatter, secondary right axis, log + UTC time scales, data labels, x-label collision handling), colour-emoji flag & ZWJ sequences (51 flags + 22 ZWJ as COLR ligatures), UAX #9 conformance fixes (RTL digit order, glyph mirroring, ALEF joining, Persian presentation forms), PDF/A declaration guards (`strict`/`onDiagnostic`), incremental writer/xref hardening, `PdfModifier.updateMetadata()`.
 - [Release notes v1.6.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.6.0.md): Standard Security Handler reader/decryptor (`openPdf(bytes, { password })`, RC4/AES-128/AES-256; `PdfSourceInput`/`MergeOptions.password` for encrypted merge/split sources), streaming page-tree manipulation (`streamMergedPdfs`/`streamSplitPdf`/`streamExtractPages`), fill & flatten existing AcroForm PDFs (`readFormFields`/`fillForm`/`flattenForm`) — encrypted documents included (encrypted incremental update), native vector charts (`chart` block: bar/barH/line/pie/donut), text extraction (`extractText`: per-page reading-order text + positioned runs, encrypted PDFs supported), re-encrypt merge/split output (`MergeOptions.encrypt`, AES-128/256), expanded colour-emoji subset (221 → 1167 incl. complete Transport & Map). Fixes: spec-compliant R6 hash + all-strings encryption on the writer; incremental trailer carries `/Encrypt` forward.
 - [Release notes v1.5.0](https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.5.0.md): math/technical-symbols font (lang `'math'`, `registerFont`), `pdfnative/tools` (`compileFontData`/`parseFontData`), SVG `<text>` rendering, page-labels reader (`getPageLabels()`), layout debug overlay (`layout: { debug: true }`) + `inspectDocumentLayout()`, markup annotation read/write (`buildAnnotation`/`getAnnotations`/`addAnnotation`), control-character hardening (#58), table descender fix (#59), AI-agent governance (#56).
@@ -62,7 +62,7 @@ _Verified on 2026-09-15 against the source tree by `npm run verify:docs`; the ca
 ## Source
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
-- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 49 sample generators producing 279 reference PDFs.
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 49 sample generators producing 292 reference PDFs.
 - [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 3717+ tests across 159 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; 91.4 % statements at v1.8.0.
 
 ## Playgrounds (zero-install, the engine runs in the browser from a CDN)
@@ -205,7 +205,7 @@ npm install pdfnative
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
 - 🎮 **Playgrounds:** twelve interactive demos at [docs/playgrounds/](docs/playgrounds/) — [typography](docs/playgrounds/typography.html) (each typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 279 sample PDFs across 38 categories (49 generators) (see [Sample PDFs](#sample-pdfs) below).
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 292 sample PDFs across 38 categories (49 generators) (see [Sample PDFs](#sample-pdfs) below).
 - 🎓 **Learn:** [docs/learn/](docs/learn/) — an eight-step guided path from installing the package to generating 100,000 pages, live at [pdfnative.dev/learn/](https://pdfnative.dev/learn/).
 - 🤖 **Machine-readable:** [llms.txt](llms.txt) (doc index for LLMs), [AGENTS.md](AGENTS.md) (agent guidance), and [docs/assets/ecosystem.json](docs/assets/ecosystem.json) — the canonical manifest of ecosystem versions and counts, enforced by `npm run verify:docs`.
 
@@ -596,7 +596,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **279 sample PDFs** in `test-output/` (git-ignored), organized in 38 categories produced by 49 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
+This creates **292 sample PDFs** in `test-output/` (git-ignored), organized in 38 categories produced by 49 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -729,6 +729,19 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-yoruba.pdf` | Yoruba one-page conformance document — ẹ ọ ṣ, acute and grave tone marks on ẹ / ọ, syllabic ń ǹ (v1.8.0) |
 | `doc-igbo.pdf` | Igbo one-page conformance document — ị ọ ụ ṅ with tone marks, digraphs (v1.8.0) |
 | `doc-swahili.pdf` | Swahili one-page conformance document — plain Latin, numbers and dates (v1.8.0) |
+| `doc-lao.pdf` | Lao one-page conformance document — leading vowels, tone marks over vowels, tall and descender variants, sara am, ຫຼ ໜ ໝ ligatures (v1.8.0) |
+| `doc-taitham.pdf` | Northern Thai (Tai Tham) one-page conformance document — sakot stacks, pre-base vowels, medials, tone marks, Hora digits (v1.8.0) |
+| `doc-newtailue.pdf` | Tai Lue (New Tai Lue) one-page conformance document — spacing vowels before and after, combining finals, tone letters (v1.8.0) |
+| `doc-taile.pdf` | Tai Nüa (Tai Le) one-page conformance document — spacing vowels, tone letters, finals (v1.8.0) |
+| `doc-cham.pdf` | Cham one-page conformance document — pre-base vowels, medials, finals, Cham digits (v1.8.0) |
+| `doc-korean.pdf` | Korean one-page conformance document — precomposed syllables, complex batchim, compatibility jamo, Hanja, character-level wrapping (v1.8.0) |
+| `doc-greek.pdf` | Greek one-page conformance document — tonos, dialytika, final sigma, polytonic, Greek punctuation (v1.8.0) |
+| `doc-cyrillic.pdf` | Russian one-page conformance document — ё й щ, stress marks (U+0301), Ukrainian and Serbian letters, guillemets (v1.8.0) |
+| `doc-georgian.pdf` | Georgian one-page conformance document — Mkhedruli, Mtavruli, Asomtavruli, Nuskhuri, consonant clusters (v1.8.0) |
+| `doc-armenian.pdf` | Armenian one-page conformance document — both cases, և ligature, Armenian punctuation, dram sign (v1.8.0) |
+| `doc-turkish.pdf` | Turkish one-page conformance document — İ ı, ğ ş ç ö ü, circumflex, capitalisation, lira sign (v1.8.0) |
+| `doc-vietnamese.pdf` | Vietnamese one-page conformance document — six tones, stacked diacritics, ơ ư đ, capitals with tones, dong sign (v1.8.0) |
+| `doc-polish.pdf` | Polish one-page conformance document — ogonek, kreska, ł ż, digraphs, pangram, low-high quotes (v1.8.0) |
 | `doc-chinese-catalog.pdf` | Chinese product catalog (tables, ordering info) |
 | `doc-multi-language.pdf` | Multi-language showcase: all 27 Unicode scripts in one PDF |
 | `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
@@ -1393,7 +1406,7 @@ src/
 
 fonts/                    # Pre-built font data modules (27 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (49 generators, 279 PDFs)
+scripts/                  # Modular sample PDF generation (49 generators, 292 PDFs)
 tests/                    # 3717+ tests (159 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
@@ -1408,7 +1421,7 @@ npm install
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
 npm run test             # vitest run (3717+ tests)
 npm run test:coverage    # vitest with v8 coverage (91.4 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
-npm run test:generate       # Generate 279 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
+npm run test:generate       # Generate 292 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -1756,7 +1769,7 @@ The `label` is drawn as a visible text label next to the widget. pdfnative does 
 docker run --rm -v "$PWD:/data" verapdf/cli --format text /data/my-document.pdf
 ```
 
-veraPDF is the reference PDF/A validator. The pdfnative test suite generates 279 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
+veraPDF is the reference PDF/A validator. The pdfnative test suite generates 292 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
 
 ### PAC 2024 (PDF/UA)
 
@@ -7851,7 +7864,7 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 - [Accessibility](accessibility.html) — tagged PDF, PDF/UA, PDF/A.
 - [FAQ](faq.html) — fonts, encryption, signatures, comparisons.
 - [Troubleshooting](troubleshooting.html) — common pitfalls and fixes.
-- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — 279 sample PDFs across 38 categories (49 generators).
+- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — 292 sample PDFs across 38 categories (49 generators).
 
 ---
 <!-- source: docs/guides/react.md -->
