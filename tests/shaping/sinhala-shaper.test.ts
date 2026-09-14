@@ -79,29 +79,41 @@ describe('shapeSinhalaText', () => {
         const khaGid = 0x0D9B - SINHALA_START + 100;
         const gaGid = 0x0D9C - SINHALA_START + 100;
 
+        // Sinhala consonants join only across al-lakuna + ZWJ (the encoding
+        // of a bandi akura); without the joiner the sequence is two letters,
+        // the first carrying its hal kirima. The joiner takes part in the
+        // ligature, as it does in the font's own `akhn` rules.
+        const zwjGid = 4;
+
         it('uses a GSUB ligature when the font provides one', () => {
-            const font = mockFontData({ ligatures: { [kaGid]: [[500, virGid, khaGid]] } });
-            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u0D9B', font);
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, virGid, zwjGid, khaGid]] } });
+            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u200D\u0D9B', font);
             expect(shaped.some((g) => g.gid === 500)).toBe(true);
         });
 
+        it('leaves Ka + al-lakuna + Kha unjoined without a ZWJ', () => {
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, virGid, zwjGid, khaGid]] } });
+            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u0D9B', font);
+            expect(shaped.map((g) => g.gid)).toEqual([kaGid, virGid, khaGid]);
+        });
+
         it('resolves remaining glyphs after ligature match (else sub-branch)', () => {
-            // Ka+virama+Kha → 500; remaining virama is standalone (no sub-lig)
-            const font = mockFontData({ ligatures: { [kaGid]: [[500, virGid, khaGid]] } });
-            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u0D9B\u0DCA', font);
+            // Ka+virama+ZWJ+Kha → 500; the trailing virama stays standalone
+            const font = mockFontData({ ligatures: { [kaGid]: [[500, virGid, zwjGid, khaGid]] } });
+            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u200D\u0D9B\u0DCA', font);
             expect(shaped.some((g) => g.gid === 500)).toBe(true);
             expect(shaped.length).toBeGreaterThan(1);
         });
 
         it('handles sub-ligature within remaining cluster glyphs', () => {
-            // Ka+virama+Kha → 500; virama+Ga → 501
+            // Ka+virama+ZWJ+Kha → 500; virama+ZWJ+Ga → 501
             const font = mockFontData({
                 ligatures: {
-                    [kaGid]: [[500, virGid, khaGid]],
-                    [virGid]: [[501, gaGid]],
+                    [kaGid]: [[500, virGid, zwjGid, khaGid]],
+                    [virGid]: [[501, zwjGid, gaGid]],
                 },
             });
-            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u0D9B\u0DCA\u0D9C', font);
+            const shaped = shapeSinhalaText('\u0D9A\u0DCA\u200D\u0D9B\u0DCA\u200D\u0D9C', font);
             expect(shaped.some((g) => g.gid === 500)).toBe(true);
             expect(shaped.some((g) => g.gid === 501)).toBe(true);
         });

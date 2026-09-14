@@ -9,7 +9,8 @@
  * Anchor tables are pre-baked at font compile time
  * (see `tools/build-font-data.cjs`) as:
  *
- *   markAnchors.marks[markGid] = [classIdx, anchorX, anchorY]   (design units)
+ *   markAnchors.marks[markGid] = [classIdx, anchorX, anchorY, …]   (design units;
+ *                                one triple per GPOS subtable covering the mark — v1.8.0)
  *   markAnchors.bases[baseGid] = { [classIdx]: [anchorX, anchorY] }
  *
  * The PDF text matrix advances by the base glyph's metric width; when a mark
@@ -22,7 +23,7 @@
  *   - HarfBuzz: hb-ot-layout-gpos-table.hh::MarkBasePosFormat1
  */
 
-import type { FontData } from '../types/pdf-types.js';
+import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 
 type MarkAnchors = NonNullable<FontData['markAnchors']>;
 type Mark2Mark = NonNullable<FontData['mark2mark']>;
@@ -136,7 +137,105 @@ export function positionMarkOnMark(
     if (!mark2mark) return null;
     const attaching = mark2mark.mark2Classes[markGid];
     if (!attaching) return null;
-    const anchor = getMark2MarkAnchor(mark2mark, prevMarkGid, attaching[0]);
-    if (!anchor) return null;
-    return { dx: anchor[0] - attaching[1], dy: anchor[1] - attaching[2] };
+    // One triple per subtable covering the mark (v1.8.0); the first whose
+    // class the lower mark carries an anchor for wins.
+    for (let t = 0; t + 2 < attaching.length; t += 3) {
+        const anchor = getMark2MarkAnchor(mark2mark, prevMarkGid, attaching[t]);
+        if (anchor) return { dx: anchor[0] - attaching[t + 1], dy: anchor[1] - attaching[t + 2] };
+    }
+    return null;
+}
+
+/**
+ * The mark-to-base attachment of `markGid` on `baseGid`, trying every
+ * subtable triple the mark carries (v1.8.0) — a font anchors the same vowel
+ * sign on plain consonants in one subtable and on conjunct ligatures in
+ * another, and only one of the two classes exists on a given base.
+ *
+ * Returns the base and mark anchor points, or `null` when no subtable
+ * covers the pair.
+ *
+ * @since 1.8.0
+ */
+export function findMarkToBase(
+    markAnchors: MarkAnchors | null | undefined,
+    markGid: number,
+    baseGid: number,
+): { readonly base: AnchorPoint; readonly mark: AnchorPoint } | null {
+    if (!markAnchors) return null;
+    const mark = markAnchors.marks[markGid];
+    const base = markAnchors.bases[baseGid];
+    if (!mark || !base) return null;
+    for (let t = 0; t + 2 < mark.length; t += 3) {
+        const anchor = base[mark[t]];
+        if (anchor) return { base: anchor, mark: [mark[t + 1], mark[t + 2]] };
+    }
+    return null;
+}
+
+/** One glyph handed to {@link attachMarks}: its id, whether it is a mark, and the code points behind it. */
+export interface AttachItem {
+    readonly gid: number;
+    readonly isMark: boolean;
+    readonly cps?: readonly number[];
+    /**
+     * When the font has no anchor for this mark, keep the glyph's own advance
+     * if it has one (the font's GDEF called it a mark, so its width is what
+     * the designer meant). Without GDEF the class came from the character,
+     * and an unanchored mark sits at the pen with no advance, as before.
+     */
+    readonly keepAdvance?: boolean;
+}
+
+/**
+ * Position a visual-order glyph sequence: every mark attaches to the nearest
+ * preceding non-mark glyph through the font's MarkToBase anchors, or to the
+ * mark placed just before it through MarkToMark when the font stacks the
+ * pair. A mark the font has no anchor for keeps its own advance when it has
+ * one (a spacing vowel sign drawn beside the base) and sits at the pen
+ * position when it has none.
+ *
+ * The offsets follow the renderer's contract: a zero-advance glyph is drawn
+ * relative to the pen after every spacing glyph before it, so `dx` subtracts
+ * the advance accumulated since the base's origin.
+ *
+ * @since 1.8.0
+ */
+export function attachMarks(items: readonly AttachItem[], fontData: FontData): ShapedGlyph[] {
+    const { widths, defaultWidth, markAnchors, mark2mark } = fontData;
+    const out: ShapedGlyph[] = [];
+    let baseGid = -1;
+    let advSinceBase = 0;
+    let prev: { gid: number; dx: number; dy: number } | null = null;
+
+    for (const item of items) {
+        const adv = widths[item.gid] !== undefined ? widths[item.gid] : defaultWidth;
+        if (!item.isMark) {
+            out.push({ gid: item.gid, dx: 0, dy: 0, isZeroAdvance: false, cps: item.cps });
+            baseGid = item.gid;
+            advSinceBase = adv;
+            prev = null;
+            continue;
+        }
+        let placed: { dx: number; dy: number } | null = null;
+        if (prev) {
+            const stacked = positionMarkOnMark(mark2mark, prev.gid, item.gid);
+            if (stacked) placed = { dx: prev.dx + stacked.dx, dy: prev.dy + stacked.dy };
+        }
+        if (!placed && baseGid >= 0) {
+            const found = findMarkToBase(markAnchors, item.gid, baseGid);
+            if (found) placed = { dx: found.base[0] - found.mark[0] - advSinceBase, dy: found.base[1] - found.mark[1] };
+        }
+        if (placed) {
+            out.push({ gid: item.gid, dx: placed.dx, dy: placed.dy, isZeroAdvance: true, cps: item.cps });
+            prev = { gid: item.gid, dx: placed.dx, dy: placed.dy };
+        } else if (adv === 0 || !item.keepAdvance) {
+            out.push({ gid: item.gid, dx: 0, dy: 0, isZeroAdvance: true, cps: item.cps });
+        } else {
+            out.push({ gid: item.gid, dx: 0, dy: 0, isZeroAdvance: false, cps: item.cps });
+            advSinceBase += adv;
+            prev = null;
+        }
+    }
+    return out;
 }

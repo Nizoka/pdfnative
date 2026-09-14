@@ -90,6 +90,17 @@ export const TAI_LE_END = 0x197F;
 export const CHAM_START = 0xAA00;
 export const CHAM_END = 0xAA5F;
 
+// ── Combining marks (Latin, Greek, Cyrillic diacritics) ───────────────
+
+export const COMBINING_MARKS_START = 0x0300;
+export const COMBINING_MARKS_END = 0x036F;
+export const COMBINING_MARKS_EXT_START = 0x1AB0;
+export const COMBINING_MARKS_EXT_END = 0x1AFF;
+export const COMBINING_MARKS_SUPP_START = 0x1DC0;
+export const COMBINING_MARKS_SUPP_END = 0x1DFF;
+export const COMBINING_MARKS_SYMBOLS_START = 0x20D0;
+export const COMBINING_MARKS_SYMBOLS_END = 0x20FF;
+
 // ── Greek ────────────────────────────────────────────────────────────
 
 export const GREEK_START = 0x0370;
@@ -346,6 +357,22 @@ export function isChamCodepoint(cp: number): boolean {
     return cp >= CHAM_START && cp <= CHAM_END;
 }
 
+/**
+ * Whether a code point is a combining diacritical mark of the four generic
+ * blocks (U+0300–036F, U+1AB0–1AFF, U+1DC0–1DFF, U+20D0–20FF): the tone
+ * marks of Yoruba and Igbo, the accents of any NFD Latin text, the marks
+ * Greek and Cyrillic borrow. Script-specific marks (Arabic harakat, Indic
+ * vowel signs) belong to their scripts and are not counted here.
+ *
+ * @since 1.8.0
+ */
+export function isCombiningMarkCodepoint(cp: number): boolean {
+    return (cp >= COMBINING_MARKS_START && cp <= COMBINING_MARKS_END)
+        || (cp >= COMBINING_MARKS_EXT_START && cp <= COMBINING_MARKS_EXT_END)
+        || (cp >= COMBINING_MARKS_SUPP_START && cp <= COMBINING_MARKS_SUPP_END)
+        || (cp >= COMBINING_MARKS_SYMBOLS_START && cp <= COMBINING_MARKS_SYMBOLS_END);
+}
+
 /** Check if a codepoint falls in any Cyrillic Unicode block. */
 export function isCyrillicCodepoint(cp: number): boolean {
     return (cp >= CYRILLIC_START && cp <= CYRILLIC_END) ||
@@ -559,6 +586,18 @@ export function containsTaiLe(str: string): boolean {
 export function containsCham(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isChamCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Fast O(n) check for a generic combining mark (see {@link isCombiningMarkCodepoint}).
+ *
+ * @since 1.8.0
+ */
+export function containsCombiningMarks(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isCombiningMarkCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }

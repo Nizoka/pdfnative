@@ -32,6 +32,9 @@ export { shapeKhmerText } from './khmer-shaper.js';
 export { shapeMyanmarText } from './myanmar-shaper.js';
 export { shapeDevanagariText } from './devanagari-shaper.js';
 export { shapeArabicText } from './arabic-shaper.js';
+export { shapeLatinMarksText } from './latin-marks.js';
+export { shapeIndicText, splitIndicSyllables, applyGsubFeatures } from './indic-engine.js';
+export type { IndicScriptConfig, IndicSyllable, IndicRephMode, IndicRephPosition, GlyphWithSource } from './indic-engine.js';
 
 // ── Script identification ────────────────────────────────────────────
 export {
@@ -42,7 +45,7 @@ export {
     containsTaiTham, containsNewTaiLue, containsTaiLe, containsCham,
     containsBengali, containsTamil, containsTelugu, containsDevanagari,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar,
-    containsEthiopic, containsMath,
+    containsEthiopic, containsMath, containsCombiningMarks, isCombiningMarkCodepoint,
     isArabicCodepoint, isHebrewCodepoint, isThaiCodepoint, isLaoCodepoint,
     isTaiThamCodepoint, isNewTaiLueCodepoint, isTaiLeCodepoint, isChamCodepoint,
     isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,

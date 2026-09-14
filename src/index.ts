@@ -55,6 +55,9 @@
 export type {
     FontMetrics,
     FontData,
+    OtlTables,
+    OtlLookup,
+    OtlChainRule,
     FontEntry,
     ShapedGlyph,
     TextRun,
@@ -306,6 +309,7 @@ export { shapeTibetanText } from './shaping/tibetan-shaper.js';
 export { shapeKhmerText } from './shaping/khmer-shaper.js';
 export { shapeMyanmarText } from './shaping/myanmar-shaper.js';
 export { shapeDevanagariText } from './shaping/devanagari-shaper.js';
+export { shapeLatinMarksText } from './shaping/latin-marks.js';
 export {
     containsThai, containsLao, containsArabic, containsHebrew,
     containsTaiTham, containsNewTaiLue, containsTaiLe, containsCham,

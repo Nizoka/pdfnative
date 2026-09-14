@@ -30,6 +30,7 @@ describe('SCRIPT_SHAPERS', () => {
         expect(SCRIPT_SHAPERS.map(s => s.id)).toEqual([
             'thai', 'lao', 'bengali', 'tamil', 'telugu', 'sinhala',
             'tibetan', 'khmer', 'myanmar', 'devanagari', 'taitham', 'cham',
+            'latin-marks',
         ]);
     });
 

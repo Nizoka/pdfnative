@@ -113,10 +113,18 @@ describe('buildTamilClusters', () => {
     });
 
     it('should recognize pre-base matras', () => {
-        // கி = Ka + i-matra (0x0BBF) — pre-base
-        const clusters = buildTamilClusters('\u0B95\u0BBF');
+        // கை = Ka + ai-matra (0x0BC8) — pre-base
+        const clusters = buildTamilClusters('\u0B95\u0BC8');
         expect(clusters).toHaveLength(1);
         expect(clusters[0].preBaseMatras.length).toBeGreaterThan(0);
+    });
+
+    it('keeps the i-matra ி after its base (it is not pre-base)', () => {
+        // கி = Ka + i-matra (0x0BBF) sits to the right of Ka; classing it
+        // pre-base drew "வெலை" for "விலை" until v1.8.0.
+        const clusters = buildTamilClusters('\u0B95\u0BBF');
+        expect(clusters).toHaveLength(1);
+        expect(clusters[0].preBaseMatras).toEqual([]);
     });
 
     it('should handle pre-base e-matra', () => {
@@ -209,11 +217,16 @@ describe('shapeTamilText', () => {
 
     it('should handle pre-base matra reordering', () => {
         const fd = mockFontData();
-        // கி = Ka + i-matra (0x0BBF pre-base, should appear before Ka visually)
-        const shaped = shapeTamilText('\u0B95\u0BBF', fd);
-        expect(shaped.length).toBeGreaterThanOrEqual(2);
-        const matraGid = fd.cmap[0x0BBF];
-        expect(shaped[0].gid).toBe(matraGid);
+        // கெ = Ka + e-matra (0x0BC6 pre-base, appears before Ka visually)
+        const shaped = shapeTamilText('\u0B95\u0BC6', fd);
+        expect(shaped.map(g => g.gid)).toEqual([fd.cmap[0x0BC6], fd.cmap[0x0B95]]);
+    });
+
+    it('keeps the i-matra ி to the right of its base', () => {
+        const fd = mockFontData();
+        // விலை: ி after வ, ை before ல — the word the 1.8.0 report showed garbled.
+        const shaped = shapeTamilText('\u0BB5\u0BBF\u0BB2\u0BC8', fd);
+        expect(shaped.map(g => g.gid)).toEqual([fd.cmap[0x0BB5], fd.cmap[0x0BBF], fd.cmap[0x0BC8], fd.cmap[0x0BB2]]);
     });
 
     it('should handle split vowel o (ொ = ெ + ா)', () => {
@@ -243,10 +256,11 @@ describe('shapeTamilText', () => {
 
     it('should mark combining marks as zero-advance', () => {
         const fd = mockFontData();
-        // கு = Ka + u-matra (0x0BC1, above mark should be zero-advance)
-        const shaped = shapeTamilText('\u0B95\u0BC1', fd);
-        const zeroAdv = shaped.filter(g => g.isZeroAdvance);
-        expect(zeroAdv.length).toBeGreaterThan(0);
+        // கீ = Ka + ii-matra (0x0BC0, an above mark) is zero-advance;
+        // ு (0x0BC1) is a right-side sign and keeps its advance.
+        const shaped = shapeTamilText('\u0B95\u0BC0', fd);
+        expect(shaped.map(g => g.isZeroAdvance)).toEqual([false, true]);
+        expect(shapeTamilText('\u0B95\u0BC1', fd).map(g => g.isZeroAdvance)).toEqual([false, false]);
     });
 
     it('should handle empty string', () => {
@@ -353,11 +367,12 @@ describe('shapeTamilText', () => {
         expect(shaped.length).toBeGreaterThan(0);
     });
 
-    it('should handle visarga modifier', () => {
+    it('should handle the aytham (visarga) as a spacing sign', () => {
         const fd = mockFontData();
+        // \u0B95\u0B83 \u2014 the aytham is a letter-sized sign set beside the consonant.
         const shaped = shapeTamilText('\u0B95\u0B83', fd);
-        const zeroAdv = shaped.filter(g => g.isZeroAdvance);
-        expect(zeroAdv.length).toBeGreaterThan(0);
+        expect(shaped.map(g => g.gid)).toEqual([fd.cmap[0x0B95], fd.cmap[0x0B83]]);
+        expect(shaped.every(g => !g.isZeroAdvance)).toBe(true);
     });
 
     it('should handle OM character', () => {

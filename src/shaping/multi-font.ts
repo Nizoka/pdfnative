@@ -8,7 +8,7 @@
 
 import type { FontEntry } from '../types/pdf-types.js';
 import { detectCharLang } from './script-detect.js';
-import { isZeroWidthFormat } from './script-registry.js';
+import { isZeroWidthFormat, isCombiningMarkCodepoint } from './script-registry.js';
 import { isSequenceCodepoint } from './emoji-sequences.js';
 
 /** A text run with its assigned font entry */
@@ -47,7 +47,25 @@ export function splitTextByFont(str: string, fontEntries: FontEntry[]): FontRun[
         // variation selectors, skin tones and regional indicators in its
         // run — plus the codepoint right after a ZWJ — so the emoji-sequence
         // matcher sees the intact sequence.
-        if (currentEntry && (currentEntry.fontData.cmap[normCp]
+        // A base followed by a combining mark wants a font that has the mark
+        // AND can attach it (GPOS anchors): the Vietnamese subset carries
+        // ẹ and U+0301 but no anchors, Noto Sans has both, so Yoruba ẹ́ goes
+        // to Noto Sans in one run. Ranks: 0 no base glyph, 1 base only,
+        // 2 base and mark, 3 base and an anchored mark. Text without a
+        // following mark ranks every covering font 3, exactly as before. (v1.8.0)
+        const nextCp = i + charLen < str.length ? (str.codePointAt(i + charLen) ?? 0) : 0;
+        const nextIsMark = isCombiningMarkCodepoint(nextCp);
+        const rank = (fe: FontEntry): number => {
+            const fd = fe.fontData;
+            if (!(fd.cmap[normCp] || fd.sequences?.[normCp])) return 0;
+            if (!nextIsMark) return 3;
+            const markGid = fd.cmap[nextCp];
+            if (!markGid) return 1;
+            return fd.markAnchors?.marks[markGid] ? 3 : 2;
+        };
+
+        const keepsMark = !nextIsMark || (currentEntry !== null && rank(currentEntry) === 3);
+        if (currentEntry && keepsMark && (currentEntry.fontData.cmap[normCp]
             || (currentEntry.fontData.sequences && (isSequenceCodepoint(normCp) || afterZwj)))) {
             afterZwj = Boolean(currentEntry.fontData.sequences) && normCp === 0x200D;
             currentText += char;
@@ -65,23 +83,18 @@ export function splitTextByFont(str: string, fontEntries: FontEntry[]): FontRun[
             continue;
         }
 
-        // Find best font entry whose cmap covers this codepoint.
-        // Prefer font whose lang matches the codepoint's script. A sequence
+        // Find the best font entry for this codepoint: the highest rank, a
+        // language match breaking ties, then registration order. A sequence
         // table keyed by this codepoint counts as coverage (flag pairs start
         // on a regional indicator that deliberately has no cmap entry).
         let newEntry: FontEntry | null = null;
         const charLang = detectCharLang(normCp);
-        const covers = (fe: FontEntry): boolean =>
-            Boolean(fe.fontData.cmap[normCp] || fe.fontData.sequences?.[normCp]);
-        if (charLang) {
-            for (const fe of fontEntries) {
-                if (fe.lang === charLang && covers(fe)) { newEntry = fe; break; }
-            }
-        }
-        if (!newEntry) {
-            for (const fe of fontEntries) {
-                if (covers(fe)) { newEntry = fe; break; }
-            }
+        let bestScore = 0;
+        for (const fe of fontEntries) {
+            const r = rank(fe);
+            if (r === 0) continue;
+            const score = r * 2 + (charLang !== null && fe.lang === charLang ? 1 : 0);
+            if (score > bestScore) { bestScore = score; newEntry = fe; }
         }
         // If no font covers it, fall back to primary (will render .notdef)
         if (!newEntry) newEntry = fontEntries[0];

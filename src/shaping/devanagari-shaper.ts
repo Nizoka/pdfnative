@@ -1,8 +1,14 @@
 /**
- * pdfnative — Devanagari Mini-Shaper
- * ====================================
+ * pdfnative — Devanagari Shaper
+ * ===============================
  * Pure JS OpenType GSUB + GPOS shaping for Devanagari script.
  * Zero external dependency.
+ *
+ * Since v1.8.0 the shaping itself runs in `indic-engine.ts`: this module
+ * owns the Devanagari `IndicScriptConfig` (script tags `dev2` / `deva`,
+ * implicit reph placed before post-base matras, below-base forms on both
+ * sides of the base, no split vowel signs — ो and ौ are single glyphs in
+ * every Noto face) and the cluster analyser the tests and callers use.
  *
  * Handles:
  *   - Syllable cluster building (base + halant-mediated conjuncts)
@@ -21,8 +27,7 @@
 
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { DEVANAGARI_START, DEVANAGARI_END, containsDevanagari } from './script-registry.js';
-import { tryLigature } from './gsub-driver.js';
-import { getBaseAnchor, getMarkAnchor } from './gpos-positioner.js';
+import { shapeIndicText, type IndicScriptConfig } from './indic-engine.js';
 import { classifyUseCategory } from './use-lite.js';
 
 // Re-export range constants
@@ -239,195 +244,38 @@ export function buildDevanagariClusters(str: string): DevanagariCluster[] {
 // ── Devanagari Shaper ────────────────────────────────────────────────
 
 /**
+ * Devanagari as the Indic engine sees it: an implicit reph (Ra + virama at
+ * the head of a syllable) that lands before the post-base vowel signs;
+ * `blwf` may reach a consonant on either side of the base; no two-part
+ * vowel sign to decompose — U+094B ो and U+094C ौ are single glyphs.
+ *
+ * @since 1.8.0
+ */
+export const DEVANAGARI_CONFIG: IndicScriptConfig = {
+    id: 'devanagari',
+    scriptTags: ['dev2', 'deva', 'DFLT'],
+    consonants: [[0x0915, 0x0939], [0x0958, 0x095F], [0x0979, 0x097F]],
+    virama: HALANT,
+    ra: RA,
+    rephMode: 'implicit',
+    rephPosition: 'beforePost',
+    blwfMode: 'preAndPost',
+    splitMatras: {},
+};
+
+/**
  * Shape a string of Devanagari text into an array of positioned glyphs.
  *
+ * Since v1.8.0 the work is done by the shared Indic engine over the font's
+ * per-feature OpenType tables (`FontData.otl`): syllable analysis from the
+ * UCD, base finding, reph and pre-base vowel reordering, the `rphf`, `half`,
+ * `blwf`, `akhn` and presentation stages in specification order, then GPOS
+ * mark attachment. See `indic-engine.ts`.
+ *
  * @param str - Raw Devanagari string
- * @param fontData - Font data with cmap, gsub, ligatures, markAnchors, widths
- * @returns Array of positioned glyphs
+ * @param fontData - Font data with cmap, otl, markAnchors, widths
+ * @returns Array of positioned glyphs in visual order
  */
 export function shapeDevanagariText(str: string, fontData: FontData): ShapedGlyph[] {
-    const { cmap, gsub, ligatures, markAnchors, widths, defaultWidth } = fontData;
-    const shaped: ShapedGlyph[] = [];
-
-    function resolveGid(cp: number): number {
-        const normCp = (cp === 0x202F || cp === 0xA0) ? 0x20 : cp;
-        return cmap[normCp] || 0;
-    }
-
-    /**
-     * Try to match a GID sequence against the GSUB ligature table.
-     * Delegates to the shared driver in `gsub-driver.ts` (v1.1.0).
-     */
-    function tryLig(gids: number[]) {
-        return tryLigature(gids, ligatures);
-    }
-
-    function getAdv(gid: number): number {
-        return widths[gid] !== undefined ? widths[gid] : defaultWidth;
-    }
-
-    function emitGlyph(gid: number, isZero: boolean, baseGid?: number): void {
-        if (isZero && baseGid !== undefined) {
-            const markAnchor = getMarkAnchor(markAnchors, gid);
-            if (markAnchor) {
-                const baseAnchorPt = getBaseAnchor(markAnchors, baseGid, markAnchor.classIdx);
-                if (baseAnchorPt) {
-                    const baseAdv = getAdv(baseGid);
-                    shaped.push({
-                        gid, dx: baseAnchorPt[0] - markAnchor.x - baseAdv,
-                        dy: baseAnchorPt[1] - markAnchor.y, isZeroAdvance: true,
-                    });
-                    return;
-                }
-            }
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: true });
-        } else {
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: false });
-        }
-    }
-
-    const clusters = buildDevanagariClusters(str);
-
-    for (const cluster of clusters) {
-        const { codepoints, hasReph, preBaseMatras } = cluster;
-
-        // Determine base glyph index (adjusted for reph)
-        const baseStart = hasReph ? 2 : 0;
-        let baseGid = 0;
-
-        // Find the effective base consonant GID
-        for (let ci = baseStart; ci < codepoints.length; ci++) {
-            const ct = devanagariCharType(codepoints[ci]);
-            if (ct === 0) {
-                baseGid = resolveGid(codepoints[ci]);
-            } else if (ct >= 2) {
-                break;
-            }
-        }
-
-        // Track split vowel post-base components
-        const splitPostComponents: number[] = [];
-
-        // Emit pre-base matras first (before the consonant cluster)
-        for (const mIdx of preBaseMatras) {
-            if (mIdx < codepoints.length) {
-                const mCp = codepoints[mIdx];
-                // Split vowel signs: ो (U+094B) = े (U+0947) + ा (U+093E)
-                // ौ (U+094C) = े (U+0947) + ौ-component
-                if (mCp === 0x094B) {
-                    emitGlyph(resolveGid(0x0947), false);
-                    splitPostComponents.push(0x093E);
-                } else if (mCp === 0x094C) {
-                    emitGlyph(resolveGid(0x0947), false);
-                    splitPostComponents.push(0x094C);
-                } else {
-                    emitGlyph(resolveGid(mCp), false);
-                }
-            }
-        }
-
-        // Emit reph (Ra + Halant) — positioned as zero-advance mark above base
-        if (hasReph) {
-            // Reph pair: try GSUB for reph form
-            const raGid = resolveGid(RA);
-            const halantGid = resolveGid(HALANT);
-            const rephLig = tryLig([raGid, halantGid]);
-            if (rephLig) {
-                emitGlyph(rephLig.resultGid, true, baseGid);
-            } else {
-                const raGsubbed = gsub[raGid] !== undefined ? gsub[raGid] : raGid;
-                emitGlyph(raGsubbed, true, baseGid);
-            }
-        }
-
-        // Emit consonant cluster — try ligature matching first
-        const clusterGids: number[] = [];
-        const clusterEndIdx: number[] = [];
-        let matraStart = codepoints.length;
-        for (let ci = baseStart; ci < codepoints.length; ci++) {
-            const ct = devanagariCharType(codepoints[ci]);
-            if (ct === 0 || ct === 7 || ct === 8) {
-                clusterGids.push(resolveGid(codepoints[ci]));
-                clusterEndIdx.push(ci);
-            } else if (ct < 0 || ct === 1 || ct === 9) {
-                // Non-Devanagari char, independent vowel, or digit — emit directly
-                emitGlyph(resolveGid(codepoints[ci]), false);
-            } else {
-                matraStart = ci;
-                break;
-            }
-        }
-
-        // Try ligature substitution on the full consonant+halant GID sequence
-        const ligResult = tryLig(clusterGids);
-        if (ligResult) {
-            emitGlyph(ligResult.resultGid, false);
-            baseGid = ligResult.resultGid;
-
-            // Emit remaining unconsumed glyphs
-            let gi = ligResult.consumed;
-            while (gi < clusterGids.length) {
-                const subSeq = clusterGids.slice(gi);
-                const subLig = tryLig(subSeq);
-                if (subLig) {
-                    emitGlyph(subLig.resultGid, false);
-                    gi += subLig.consumed;
-                } else {
-                    const origCi = clusterEndIdx[gi];
-                    const ct = devanagariCharType(codepoints[origCi]);
-                    if (ct === 7) {
-                        emitGlyph(clusterGids[gi], true, baseGid);
-                    } else {
-                        emitGlyph(clusterGids[gi], false);
-                    }
-                    gi++;
-                }
-            }
-        } else {
-            // No ligature match — emit individual consonant+halant glyphs
-            for (let ci = baseStart; ci < matraStart; ci++) {
-                const cp = codepoints[ci];
-                const ct = devanagariCharType(cp);
-                if (ct === 0) {
-                    emitGlyph(resolveGid(cp), false);
-                } else if (ct === 7) {
-                    emitGlyph(resolveGid(cp), true, baseGid);
-                } else if (ct === 8) {
-                    emitGlyph(resolveGid(cp), true, baseGid);
-                }
-            }
-        }
-
-        // Emit matras and modifiers
-        for (let ci = matraStart; ci < codepoints.length; ci++) {
-            const cp = codepoints[ci];
-            const ct = devanagariCharType(cp);
-
-            // Skip pre-base matras (already emitted above)
-            if (ct === 4) continue;
-
-            if (ct === 2 || ct === 3) {
-                // Above/below mark — GPOS positioned
-                emitGlyph(resolveGid(cp), true, baseGid);
-            } else if (ct === 5) {
-                // Post-base matra — normal advance
-                emitGlyph(resolveGid(cp), false);
-            } else if (ct === 6) {
-                // Modifiers — zero-advance marks
-                emitGlyph(resolveGid(cp), true, baseGid);
-            } else if (ct === 9) {
-                // Digit — normal advance
-                emitGlyph(resolveGid(cp), false);
-            } else {
-                emitGlyph(resolveGid(cp), false);
-            }
-        }
-
-        // Emit split vowel post-base components
-        for (const postCp of splitPostComponents) {
-            emitGlyph(resolveGid(postCp), false);
-        }
-    }
-
-    return shaped;
+    return shapeIndicText(str, fontData, DEVANAGARI_CONFIG);
 }

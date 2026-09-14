@@ -1,8 +1,14 @@
 /**
- * pdfnative — Tamil Mini-Shaper
- * ===============================
+ * pdfnative — Tamil Shaper
+ * ==========================
  * Pure JS OpenType GSUB + GPOS shaping for Tamil script.
  * Zero external dependency.
+ *
+ * Since v1.8.0 the shaping itself runs in `indic-engine.ts`: this module
+ * owns the Tamil `IndicScriptConfig` (script tags `tml2` / `taml`, no reph,
+ * split vowel signs ொ / ோ / ௌ decomposed around the base) and the cluster
+ * analyser the tests use. Only ெ ே ை (and the pre-base halves of the split
+ * signs) move before the base; ி and ீ stay to the right of their consonant.
  *
  * Handles:
  *   - Syllable cluster building (base + pulli-mediated conjuncts)
@@ -23,7 +29,7 @@
 
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { TAMIL_START, TAMIL_END, containsTamil } from './script-registry.js';
-import { tryLigature } from './gsub-driver.js';
+import { shapeIndicText, type IndicScriptConfig } from './indic-engine.js';
 import { classifyUseCategory } from './use-lite.js';
 
 // Re-export range constants
@@ -55,8 +61,10 @@ function tamilCharType(cp: number): number {
     // Consonants U+0B95–U+0BB9
     if (cp >= 0x0B95 && cp <= 0x0BB9) return 0;
     // Dependent vowel signs — classify by position
-    // Pre-base matras (render left of base)
-    if (cp === 0x0BBF) return 4; // ி (i)
+    // Pre-base matras (render left of base): only ெ ே ை and the left half
+    // of the two-part signs. ி and ீ sit to the right of the base (Unicode
+    // Indic_Positional_Category: Right) — classing ி pre-base was the bug
+    // behind "வெலை for விலை" until v1.8.0.
     if (cp === 0x0BC6) return 4; // ெ (e)
     if (cp === 0x0BC7) return 4; // ே (ee)
     if (cp === 0x0BC8) return 4; // ை (ai)
@@ -66,6 +74,7 @@ function tamilCharType(cp: number): number {
     if (cp === 0x0BCC) return 4; // ௌ (au) = ெ + ௗ
     // Post-base matras
     if (cp === 0x0BBE) return 5; // ா (aa)
+    if (cp === 0x0BBF) return 5; // ி (i)
     if (cp === 0x0BC0) return 5; // ீ (ii)
     // Above-base marks
     if (cp === 0x0BC1 || cp === 0x0BC2) return 2; // ு (u), ூ (uu)
@@ -214,194 +223,41 @@ export function buildTamilClusters(str: string): TamilCluster[] {
 // ── Tamil Shaper ─────────────────────────────────────────────────────
 
 /**
+ * Tamil as the Indic engine sees it: no reph, no below-base forms; the
+ * pre-base vowel signs ெ ே ை move before the base and the two-part signs
+ * ொ ோ ௌ split into their left and right halves. ி and ீ stay to the right
+ * of the base — Unicode puts them there, and so does every Tamil hand.
+ *
+ * @since 1.8.0
+ */
+export const TAMIL_CONFIG: IndicScriptConfig = {
+    id: 'tamil',
+    scriptTags: ['tml2', 'taml', 'DFLT'],
+    consonants: [[0x0B95, 0x0BB9]],
+    virama: PULLI,
+    ra: 0x0BB0,
+    rephMode: 'none',
+    rephPosition: 'afterPost',
+    blwfMode: 'preAndPost',
+    splitMatras: {
+        0x0BCA: [0x0BC6, 0x0BBE], // ொ = ெ + ா
+        0x0BCB: [0x0BC7, 0x0BBE], // ோ = ே + ா
+        0x0BCC: [0x0BC6, 0x0BD7], // ௌ = ெ + ௗ
+    },
+};
+
+/**
  * Shape a string of Tamil text into an array of positioned glyphs.
  *
+ * Since v1.8.0 the work is done by the shared Indic engine over the font's
+ * per-feature OpenType tables (`FontData.otl`): the `akhn` conjuncts
+ * (க்ஷ, ஸ்ரீ), the `haln` pulli forms and the `psts` vowel ligatures
+ * (ரூ) all come from the font. See `indic-engine.ts`.
+ *
  * @param str - Raw Tamil string
- * @param fontData - Font data with cmap, gsub, markAnchors, mark2mark, metrics, widths
- * @returns Array of positioned glyphs
+ * @param fontData - Font data with cmap, otl, markAnchors, widths
+ * @returns Array of positioned glyphs in visual order
  */
 export function shapeTamilText(str: string, fontData: FontData): ShapedGlyph[] {
-    const { cmap, ligatures, markAnchors, widths, defaultWidth } = fontData;
-    const shaped: ShapedGlyph[] = [];
-
-    function resolveGid(cp: number): number {
-        const normCp = (cp === 0x202F || cp === 0xA0) ? 0x20 : cp;
-        return cmap[normCp] || 0;
-    }
-
-    /**
-     * Try to match a GID sequence against the GSUB ligature table.
-     * Delegates to the shared driver in `gsub-driver.ts` (v1.1.0).
-     */
-    function tryLig(gids: number[]) {
-        return tryLigature(gids, ligatures);
-    }
-
-    function getAdv(gid: number): number {
-        return widths[gid] !== undefined ? widths[gid] : defaultWidth;
-    }
-
-    function getBaseAnchor(baseGid: number, markClass: number): [number, number] | null {
-        const base = markAnchors && markAnchors.bases && markAnchors.bases[baseGid];
-        if (!base) return null;
-        return base[markClass] ?? null;
-    }
-
-    function getMarkAnchor(markGid: number): { classIdx: number; x: number; y: number } | null {
-        const mark = markAnchors && markAnchors.marks && markAnchors.marks[markGid];
-        if (!mark) return null;
-        return { classIdx: mark[0], x: mark[1], y: mark[2] };
-    }
-
-    function emitGlyph(gid: number, isZero: boolean, baseGid?: number): void {
-        if (isZero && baseGid !== undefined) {
-            const markAnchor = getMarkAnchor(gid);
-            if (markAnchor) {
-                const baseAnchorPt = getBaseAnchor(baseGid, markAnchor.classIdx);
-                if (baseAnchorPt) {
-                    const baseAdv = getAdv(baseGid);
-                    shaped.push({
-                        gid, dx: baseAnchorPt[0] - markAnchor.x - baseAdv,
-                        dy: baseAnchorPt[1] - markAnchor.y, isZeroAdvance: true,
-                    });
-                    return;
-                }
-            }
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: true });
-        } else {
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: false });
-        }
-    }
-
-    const clusters = buildTamilClusters(str);
-
-    for (const cluster of clusters) {
-        const { codepoints, preBaseMatras } = cluster;
-
-        // Find the effective base consonant GID
-        let baseGid = 0;
-        for (let ci = 0; ci < codepoints.length; ci++) {
-            const ct = tamilCharType(codepoints[ci]);
-            if (ct === 0) {
-                baseGid = resolveGid(codepoints[ci]);
-            } else if (ct >= 2) {
-                break;
-            }
-        }
-
-        // Track split vowel post-base components that need emitting after base
-        const splitPostComponents: number[] = [];
-
-        // Emit pre-base matras first
-        for (const mIdx of preBaseMatras) {
-            if (mIdx < codepoints.length) {
-                const mCp = codepoints[mIdx];
-                // Split vowel signs: ொ (U+0BCA) = ெ (U+0BC6) + ா (U+0BBE)
-                // ோ (U+0BCB) = ே (U+0BC7) + ா (U+0BBE)
-                // ௌ (U+0BCC) = ெ (U+0BC6) + ௗ (U+0BD7)
-                if (mCp === 0x0BCA) {
-                    emitGlyph(resolveGid(0x0BC6), false);
-                    splitPostComponents.push(0x0BBE);
-                } else if (mCp === 0x0BCB) {
-                    emitGlyph(resolveGid(0x0BC7), false);
-                    splitPostComponents.push(0x0BBE);
-                } else if (mCp === 0x0BCC) {
-                    emitGlyph(resolveGid(0x0BC6), false);
-                    splitPostComponents.push(0x0BD7);
-                } else {
-                    emitGlyph(resolveGid(mCp), false);
-                }
-            }
-        }
-
-        // Emit consonant cluster — try ligature matching first
-        // Collect the consonant+pulli sequence as GIDs for ligature lookup
-        const clusterGids: number[] = [];
-        const clusterEndIdx: number[] = [];
-        let matraStart = codepoints.length;
-        for (let ci = 0; ci < codepoints.length; ci++) {
-            const ct = tamilCharType(codepoints[ci]);
-            if (ct === 0 || ct === 7) {
-                clusterGids.push(resolveGid(codepoints[ci]));
-                clusterEndIdx.push(ci);
-            } else if (ct >= 2) {
-                matraStart = ci;
-                break;
-            } else if (ct < 0) {
-                // Non-Tamil character (space, punctuation) — emit directly
-                emitGlyph(resolveGid(codepoints[ci]), false);
-            } else if (ct === 1) {
-                // Independent vowel — emit directly
-                emitGlyph(resolveGid(codepoints[ci]), false);
-            }
-        }
-
-        // Try ligature substitution on the full consonant+pulli GID sequence
-        let ligConsumed = 0;
-        const ligResult = tryLig(clusterGids);
-        if (ligResult) {
-            emitGlyph(ligResult.resultGid, false);
-            baseGid = ligResult.resultGid;
-            ligConsumed = ligResult.consumed;
-
-            // Emit remaining unconsumed glyphs
-            let gi = ligConsumed;
-            while (gi < clusterGids.length) {
-                const subSeq = clusterGids.slice(gi);
-                const subLig = tryLig(subSeq);
-                if (subLig) {
-                    emitGlyph(subLig.resultGid, false);
-                    gi += subLig.consumed;
-                } else {
-                    const origCi = clusterEndIdx[gi];
-                    const ct = tamilCharType(codepoints[origCi]);
-                    if (ct === 7) {
-                        emitGlyph(clusterGids[gi], true, baseGid);
-                    } else {
-                        emitGlyph(clusterGids[gi], false);
-                    }
-                    gi++;
-                }
-            }
-        } else {
-            // No ligature match — emit individual glyphs
-            for (let ci = 0; ci < matraStart; ci++) {
-                const cp = codepoints[ci];
-                const ct = tamilCharType(cp);
-                if (ct === 0) {
-                    emitGlyph(resolveGid(cp), false);
-                } else if (ct === 7) {
-                    emitGlyph(resolveGid(cp), true, baseGid);
-                }
-            }
-        }
-
-        // Emit matras and modifiers
-        for (let ci = matraStart; ci < codepoints.length; ci++) {
-            const cp = codepoints[ci];
-            const ct = tamilCharType(cp);
-
-            // Skip pre-base matras (already emitted)
-            if (ct === 4) continue;
-
-            if (ct === 2 || ct === 3) {
-                emitGlyph(resolveGid(cp), true, baseGid);
-            } else if (ct === 5) {
-                emitGlyph(resolveGid(cp), false);
-            } else if (ct === 6) {
-                emitGlyph(resolveGid(cp), true, baseGid);
-            } else if (ct === 9) {
-                emitGlyph(resolveGid(cp), false);
-            } else {
-                emitGlyph(resolveGid(cp), false);
-            }
-        }
-
-        // Emit split vowel post-base components
-        for (const postCp of splitPostComponents) {
-            emitGlyph(resolveGid(postCp), false);
-        }
-    }
-
-    return shaped;
+    return shapeIndicText(str, fontData, TAMIL_CONFIG);
 }

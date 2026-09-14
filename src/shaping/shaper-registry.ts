@@ -30,8 +30,9 @@ import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import {
     containsThai, containsLao, containsBengali, containsTamil, containsTelugu,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar,
-    containsDevanagari, containsTaiTham, containsCham,
+    containsDevanagari, containsTaiTham, containsCham, containsCombiningMarks,
 } from './script-registry.js';
+import { shapeLatinMarksText } from './latin-marks.js';
 import { shapeThaiText } from './thai-shaper.js';
 import { shapeLaoText } from './lao-shaper.js';
 import { shapeUseText } from './use-shaper.js';
@@ -84,6 +85,12 @@ export const SCRIPT_SHAPERS: readonly ScriptShaper[] = [
     // and nothing else, exactly like Greek or Georgian.
     { id: 'taitham', detect: containsTaiTham, shape: shapeUseText },
     { id: 'cham', detect: containsCham, shape: shapeUseText },
+    // v1.8.0 — last on purpose: a generic combining mark inside a run of any
+    // script above belongs to that script's shaper; only a run no other
+    // entry claims (Latin, Greek, Cyrillic with diacritics — Yoruba ẹ́, NFD
+    // text) reaches this one. A run without such a mark never does, which
+    // keeps every existing document byte-identical.
+    { id: 'latin-marks', detect: containsCombiningMarks, shape: shapeLatinMarksText },
 ];
 
 /**
