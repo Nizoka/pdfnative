@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.8.0] – 2026-09-13
+## [1.8.0] – 2026-09-14
 
 The typography and print release: paragraphs that break across pages
 under widow and orphan rules, justification and optical margins, pair
@@ -15,13 +15,13 @@ COLRv1 transforms, variable paints and structural masks, so flags keep
 their shaded wave, and bundled skin tones; CMYK colour, CMYK
 OutputIntents and a PDF/X-4 conformance claim with `validatePdfX()`.
 Underneath, every sample is now deterministic and held byte for byte to
-the release that last changed it. Zero runtime dependencies; 48 exports
+the release that last changed it. Zero runtime dependencies; 54 exports
 added, none removed; every new behaviour opt-in; existing inputs render
 byte-identically except where the previous output was wrong (see Fixed),
-and three calls behave differently by design — `setDeflateImpl()` rejects
-a raw-DEFLATE compressor, `parseColor()` accepts a CMYK tuple,
-`extractText()` honours `/ActualText` — see the release note's Upgrade
-section. 3411+ tests across 152 files; veraPDF-validated; a consumer
+and four calls behave differently by design — `setDeflateImpl()` rejects
+a raw-DEFLATE compressor, `parseColor()` accepts CMYK input,
+`extractText()` honours `/ActualText`, `{date}` follows `creationDate` —
+see the release note's Upgrade section. 3460+ tests across 154 files; veraPDF-validated; a consumer
 importing one helper bundles that helper alone.
 
 ### Added
@@ -212,6 +212,57 @@ importing one helper bundles that helper alone.
   produced a file `validatePdfX()` rejected.
 - **fix(parser): the inline-dict skip in `extractText`** consumed the
   operator following `>>`.
+- **fix(samples): the typography showcase** used straight apostrophes and
+  quotes, stripped accents, breakable thousands separators and an
+  optical-margins variant that changed two other options; two of its
+  pairs were byte-identical files. The sample manifest's three
+  `compression/*` entries re-anchored in 062b864 without moving their
+  `since` now read 1.8.0.
+
+- **fix(core): OutputIntent profiles are validated** — the ICC `acsp`
+  signature and a size field within the buffer are required by the writer
+  and by `validatePdfX()`; a stub that only spelt `CMYK` at byte 16 was
+  accepted as a press profile.
+- **fix(fonts): the GSUB single-substitution parser is locked** by a
+  synthetic-font test (format-1 delta, extension lookup, discretionary
+  feature kept out of the default table) instead of the publish-only font
+  rebuild.
+- **chore(ci): Trusted Publishing on Node 22** — publish.yml upgrades npm
+  to ≥ 11.5.1 before `npm publish`; every checkout sets
+  `persist-credentials: false`; both locked by `tests/tools/workflows.test.ts`.
+- **chore(verify): more of the docs' claims are checked** — the diagnostic
+  registry against the whole `PdfDiagnosticCode` union and the thrown
+  build-time messages (`buildErrors`), package versions in table rows and
+  the homepage badge, script and playground counts (word numerals too),
+  `declared.tests` against the last gate run, `bundledFontModules` against
+  `fonts/`, the current release note in `llms.txt`, the playgrounds
+  manifest; `llms-index.json` carries a SHA-256 per page; bundle budgets
+  tightened to 4 / 3 / 64 KB.
+
+### Documentation
+
+- **docs(guides): typography guide**; the print guide covers CMYK, CMYK
+  OutputIntents, registration colour, PDF/X-4, `validatePdfX()` and what it
+  does not check; the PDF/A, colour-emoji and text-extraction guides
+  describe what 1.8.0 renders and extracts; self-verify, debugging,
+  troubleshooting and agentic-workflows cover `validatePdfX()`,
+  reproducible bytes, `TYPOGRAPHY_FEATURE_INEFFECTIVE`, the PDF/X errors
+  and the `setDeflateImpl()` change.
+- **docs(agents): machine contracts for autonomous agents** —
+  `errors.json` (every union code + `buildErrors`), `surfaces.json` and the
+  choose guide (1.8.0 rows), a new `playgrounds.json`, `agent-brief.md`
+  and `llms.txt` at 1.8.0 with the four behaviour changes.
+- **docs(site): typography / CMYK / PDF/X-4 card**, 27 scripts everywhere,
+  playgrounds covering the 1.8.0 scope (27-script tour, short words,
+  `minLines`, hyphenation, exact metrics, diagnostics channel, bundled
+  synthetic press profile, PDF/X errors, `validatePdfX` on a dropped file,
+  copy buttons); the README compression recipe corrected (#78) and the API
+  reference completed.
+- **docs(meta):** roadmap moves six closed workstreams to Released and
+  restates what remains, with a 1.8.1 methodology bucket; `AGENTS.md`
+  condensed, `CLAUDE.md` added, `CONTRIBUTING.md` gains the release
+  procedure and the final-review protocol; counts and versions verified
+  against `docs/assets/ecosystem.json` in every agent-facing file.
 - **docs(language): English everywhere** — the rule is written in
   `AGENTS.md`, `CONTRIBUTING.md` and the Copilot rules and enforced by the
   `prose-language` rule of `verify:docs` and by the regression suite over
@@ -227,12 +278,6 @@ importing one helper bundles that helper alone.
   label across all 27 scripts and paint the glyph-category column in the
   text colour — the financial builder's amount heuristic had truncated
   labels with `…` and painted `Ligature`, `Subjoined` or `Tone` in red.
-- **fix(samples): the typography showcase** used straight apostrophes and
-  quotes, stripped accents, breakable thousands separators and an
-  optical-margins variant that changed two other options; two of its
-  pairs were byte-identical files. The sample manifest's three
-  `compression/*` entries re-anchored in 062b864 without moving their
-  `since` now read 1.8.0.
 
 [#74]: https://github.com/Nizoka/pdfnative/issues/74
 [#75]: https://github.com/Nizoka/pdfnative/issues/75
@@ -1574,9 +1619,9 @@ multi-file object-graph rewrites:
   date parity, XMP ↔ /Info equivalence, and `dc:creator` escaping.
 - **release-notes:** [release-notes/v1.0.4.md](release-notes/v1.0.4.md)
   full release notes; tracking issue draft at
-  [release-notes/draft-issue-v1.0.4-pdfa-conformance.md](release-notes/draft-issue-v1.0.4-pdfa-conformance.md);
+  [release-notes/v1.0.4.md](release-notes/v1.0.4.md);
   v1.0.5 epic for full Latin font embedding at
-  [release-notes/draft-issue-v1.0.5-latin-embedding.md](release-notes/draft-issue-v1.0.5-latin-embedding.md).
+  [release-notes/v1.0.5.md](release-notes/v1.0.5.md).
 - **scripts(validation):** `validate:pdfa` wrapper now prints per-OS
   install hints (macOS / Linux / Windows / online demo) when the
   veraPDF CLI is missing, and reports a `Scanned N PDF(s); M claim
@@ -1606,7 +1651,7 @@ multi-file object-graph rewrites:
   6.3.4 today. v1.0.4 fixes the upstream metadata and trailer issues
   that were independently flagged; the embedded-Helvetica fix is
   tracked as a v1.0.5 epic — see
-  [release-notes/draft-issue-v1.0.5-latin-embedding.md](release-notes/draft-issue-v1.0.5-latin-embedding.md).
+  [release-notes/v1.0.5.md](release-notes/v1.0.5.md).
   Until then, the PDF/A claim in XMP must be considered aspirational,
   not validated. The new CI guardrail will turn green once v1.0.5
   lands.
@@ -1712,7 +1757,7 @@ a SemVer-patch:
   + Latin + digits) may exhibit non-canonical run ordering at boundaries
   with neutrals.
 
-See [release-notes/draft-issue-v1.1.0-shaping-epic.md](release-notes/draft-issue-v1.1.0-shaping-epic.md)
+See [release-notes/v1.1.0.md](release-notes/v1.1.0.md)
 for the full follow-up tracking issue.
 
 [#24]: https://github.com/Nizoka/pdfnative/issues/24

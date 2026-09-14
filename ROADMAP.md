@@ -124,6 +124,17 @@ _All v1.8.0 items have been merged. See Released above._
 
 ## Planned
 
+### Next minor (1.8.1)
+
+Deferred from the 1.8.0 final review — each is small, none moves sample bytes except where stated:
+
+- [ ] **Pinned dates formatted in UTC** — `setDefaultCreationDate()` and `layout.creationDate` are formatted in the host time zone, so the same pinned instant yields different `/CreationDate`, XMP dates and trailer `/ID` on hosts in different zones (the sample harness pins `TZ=UTC`). Formatting the pinned instant with its own offset is byte-neutral under UTC and a declared behaviour change elsewhere.
+- [ ] **ICC version check for PDF/A-1b** — ISO 19005-1 §6.2.2 requires an ICC v2 OutputIntent; a v4 profile is accepted silently today (v4 is allowed from PDF/A-2, ISO 19005-2 §6.2.4.2). A diagnostic, not a throw.
+- [ ] **`validatePdfX()` coverage** — fonts inside annotation appearance streams, `/OPI`, PostScript and reference XObjects, embedded files; `/TR /Identity` is tolerated today where ISO 15930-7 allows only `/TR2 /Default`.
+- [ ] **`head.checkSumAdjustment` in embedded subsets** — written as 0 since 1.0 (every rasteriser ignores it); computing it moves every embedded-font sample, so it ships with a declared rebaseline.
+- [ ] **Dev-tooling advisories** — `npm audit` reports four moderate advisories in development dependencies only (vitest ≤ 4.1.10 mocker path traversal, `@humanfs/node` through ESLint); nothing ships to consumers (the package has zero runtime dependencies), and the pinned test runtime moves in a patch release rather than inside a release freeze.
+- [ ] **Release-audit skill and generated `.claude/rules`** — the three-agent protocol (two auditors, one adversarial verifier) that reviewed 1.8.0 twice, as a reusable skill; pinned font sources for `verify:fonts` in CI, EOL renormalisation, CI rewired onto `npm run gate`.
+
 ### Long-Term
 
 - [ ] **WASM acceleration** — optional WebAssembly module for font subsetting and compression
@@ -135,6 +146,10 @@ _All v1.8.0 items have been merged. See Released above._
 - [ ] **Page transparency group** — pages that paint with `/ca` or `/CA` (watermarks, COLRv1 emoji) carry no `/Group << /S /Transparency >>`; the OutputIntent determines the blending space, but certified preflight tools warn.
 - [ ] **Narrow no-break space on the base-14 path** — WinAnsi has no U+202F, so `punctuationSpacing: 'fr'` degrades to `'fr-CA'` without a registered font; a `TJ` offset in place of the missing glyph would render the narrow space there too.
 - [ ] **`validatePdfX()` inside XObjects** — device colour inside Form XObjects and images is not yet checked against the OutputIntent.
+- [ ] **CFF / OpenType-CFF embedding** — `compileFontData` and the subsetter handle `glyf` outlines only; a CFF face (most commercial OpenType fonts) cannot be registered without conversion. iText, PDFBox and mupdf embed CFF directly.
+- [ ] **JPEG 2000, TIFF and WebP images** — `parseImage` reads JPEG and PNG; JPX (`/JPXDecode`) and TIFF are common in scanned and press workflows.
+- [ ] **Table header scope in tagged output** — `/TH` cells carry no `/Scope` (Row / Column) attribute and `/TD` cells no `/Headers` array, which PDF/UA readers use to announce headers; the structure tree is otherwise complete.
+- [ ] **ICC-based RGB → CMYK conversion** — RGB content under a CMYK intent is kept conforming through `/DefaultRGB`, not converted; a press workflow that wants CMYK-only content must author it in CMYK today.
 - [ ] **Amount column by declaration in the table builder** — `buildPDF` still treats column 3 as the amount column and paints `credit`/`debit` rows green/red by position; a `ColumnDef.kind: 'amount'` opt-in (as `renderTable` already has) would end the heuristic without moving the bytes of the fourteen financial samples.
 
 ## How to Influence the Roadmap

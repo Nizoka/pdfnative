@@ -1,6 +1,6 @@
 {
   "$comment": "Single source of truth for every version, count and inventory quoted anywhere in the documentation. Edit THIS file, then run `npm run verify:docs` — it reports every doc that disagrees. Never hand-edit a number in a doc without updating this manifest first.",
-  "verifiedOn": "2026-09-13",
+  "verifiedOn": "2026-09-14",
   "packages": {
     "pdfnative": {
       "version": "1.8.0",
@@ -109,7 +109,7 @@
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 152,
+    "testFiles": 154,
     "sampleGenerators": 49,
     "samplePdfs": 271,
     "sampleCategories": 38,
@@ -120,8 +120,9 @@
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 3411,
+    "tests": 3460,
     "coverageStatements": 90,
+    "coverageMeasured": 91.4,
     "scripts": 27,
     "bundledFontModules": 31,
     "blockTypes": 13,
