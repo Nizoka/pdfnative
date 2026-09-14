@@ -58,11 +58,29 @@
       "ROADMAP.md",
       "SECURITY.md",
       "llms.txt"
-    ]
+    ],
+    "claude_code": {
+      "description": "How the policy is enforced inside a Claude Code session (settings, hook, rules, skills); verify-docs rules agent-config-parity, claude-rules-sync, claude-rules-budget and skills-shape keep these files consistent.",
+      "settings": ".claude/settings.json",
+      "hooks": [
+        {
+          "event": "PreToolUse",
+          "matcher": "Bash",
+          "command": "node .claude/hooks/guard.mjs",
+          "denies": ["npm publish|unpublish|deprecate|dist-tag|version <bump>", "npx npm publish", "gh pr create|edit|close|merge|comment", "gh issue create|edit|close|comment", "gh release *", "gh api with --method POST|PUT|PATCH|DELETE, --input, -f/-F", "git push (any form)", "git add --renormalize", "git tag (except list forms)"],
+          "scope": "whole command, every shell segment, $( ) and backtick bodies, sh/bash/zsh -c, pwsh/powershell -Command, node -e and npx -c payloads; fails closed on unreadable input",
+          "tests": "tests/tools/guard.test.ts"
+        }
+      ],
+      "permissions_deny": "Read on generated and vendored bulk files (fonts/*.js, fonts/ttf/**, scripts/data/*.txt, package-lock.json, coverage/**, dist/**, test-output/**, node_modules/**, docs/llms-full.txt, docs/llms-recipes.txt, docs/llms-index.json, social images, visual baselines) and Bash on the HITL commands above",
+      "env_limits": { "BASH_MAX_OUTPUT_LENGTH": "16000", "BASH_DEFAULT_TIMEOUT_MS": "300000", "BASH_MAX_TIMEOUT_MS": "1800000", "NO_COLOR": "1" },
+      "rules": { "directory": ".claude/rules/", "generated_from": ".github/instructions/*.instructions.md", "generator": "npm run agents:rules", "scoped": "every rule carries paths: (the source applyTo); none loads unconditionally" },
+      "skills": [{ "name": "release-audit", "path": ".claude/skills/release-audit/SKILL.md", "model_invocable": false }]
+    }
   },
   "verification": {
     "command": "node scripts/verify-issue.mjs <draft.md>",
-    "advisory_in_ci": true,
+    "validator_covered_by": "tests/tools/verify-issue.test.ts",
     "blocks_submission_on_failure": true
   },
   "references": {

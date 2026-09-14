@@ -52,7 +52,9 @@ function runVerifier(root: string): Run {
  */
 function makeSandbox(): string {
     const dir = mkdtempSync(join(tmpdir(), 'pdfnative-verify-'));
-    for (const entry of ['docs', 'src', 'tests', 'scripts', 'bench', 'recipes', '.github']) {
+    // .claude feeds agent-config-parity, claude-rules-sync, claude-rules-budget
+    // and skills-shape (settings, hook, generated rules, skills).
+    for (const entry of ['docs', 'src', 'tests', 'scripts', 'bench', 'recipes', '.github', '.claude']) {
         const from = join(ROOT, entry);
         if (existsSync(from)) cpSync(from, join(dir, entry), { recursive: true });
     }
@@ -64,7 +66,7 @@ function makeSandbox(): string {
     // internal-links also walks README.md, CHANGELOG.md and the current release
     // note, whose links reach LICENSE, CITATION.cff, THIRD-PARTY-NOTICES.md and
     // release-notes/ — copied so the sandbox resolves them like the tree does.
-    for (const file of ['package.json', 'README.md', 'ROADMAP.md', 'AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'SECURITY.md', 'llms.txt', '.nvmrc', 'CHANGELOG.md', 'LICENSE', 'CITATION.cff', 'THIRD-PARTY-NOTICES.md']) {
+    for (const file of ['package.json', 'README.md', 'ROADMAP.md', 'AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'SECURITY.md', 'llms.txt', '.nvmrc', '.node-version', '.gitattributes', 'CHANGELOG.md', 'LICENSE', 'CITATION.cff', 'THIRD-PARTY-NOTICES.md']) {
         const from = join(ROOT, file);
         if (existsSync(from)) cpSync(from, join(dir, file));
     }
@@ -606,6 +608,27 @@ describe('verify-docs', () => {
                 expect(run.output).toContain('ruleset-parity');
                 expect(run.output).toContain('"sample-regresion" names no job');
                 expect(run.output).toContain('"sample-regression" is not a required status check');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('agent-config-parity rejects a CLAUDE.md "Never Read" glob that settings.json does not deny', () => {
+            withSandbox((dir) => {
+                patch(dir, '.claude/settings.json', '      "Read(coverage/**)",\n', '');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('agent-config-parity');
+                expect(run.output).toContain('Read(coverage/**)');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('claude-rules-sync rejects a rule edited by hand instead of regenerated', () => {
+            withSandbox((dir) => {
+                patch(dir, '.claude/rules/worker.md', '# ', '# Edited by hand: ');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('claude-rules-sync');
+                expect(run.output).toContain('.claude/rules/worker.md');
+                expect(run.output).toContain('npm run agents:rules');
                 expect(run.status).toBe(1);
             });
         }, 120_000);

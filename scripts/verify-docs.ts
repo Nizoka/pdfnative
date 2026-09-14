@@ -28,6 +28,18 @@ import { join, relative, resolve, dirname, posix, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { findNonEnglishProse } from './lib/prose-language.js';
+import {
+    INSTRUCTIONS_DIR,
+    RULES_DIR,
+    checkAgentConfigParity,
+    checkClaudeRulesBudget,
+    checkEol,
+    checkNodeVersionPin,
+    checkPrTemplateParity,
+    checkSkillShape,
+    checkTagRuleset,
+    type Finding,
+} from './lib/agent-config.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const MANIFEST_PATH = join(ROOT, 'docs', 'assets', 'ecosystem.json');
@@ -814,6 +826,92 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
             if (!contexts.includes('sample-regression')) {
                 fail('.github/rulesets/main.json', 1, 'ruleset-parity', '"sample-regression" is not a required status check — the byte manifest must block merges');
             }
+        }
+    }
+}
+
+// ── Rules: agent-config-parity, claude-rules-sync, claude-rules-budget,
+//           pr-template-parity, eol-lf, skills-shape, and the .node-version /
+//           tags.json extensions of node-pin-parity and ruleset-parity ─────
+
+/**
+ * The Claude Code configuration is a second copy of the governance policy:
+ * the "Never Read" bullet of CLAUDE.md and the deny list of settings.json,
+ * the HITL commands and the guard hook, the instruction files and the rules
+ * generated from them, the skills and the templates they hand to agents. Each
+ * pair drifts silently — a glob added to the prose but not to the deny list
+ * is read anyway; a stale rule teaches last release's contract. The checks
+ * are pure functions in scripts/lib/agent-config.ts; this block only reads
+ * files and spawns `node --check` and `git ls-files --eol`.
+ */
+{
+    const report = (findings: readonly Finding[], rule: string): void => {
+        for (const f of findings) (f.severity === 'error' ? fail : warn)(f.file, f.line, rule, f.message);
+    };
+    const readOr = (p: string): string | null => (existsSync(join(ROOT, p)) ? read(join(ROOT, p)) : null);
+    const claudeMd = readOr('CLAUDE.md') ?? '';
+
+    // agent-config-parity
+    const hookPath = join(ROOT, '.claude', 'hooks', 'guard.mjs');
+    const hookExists = existsSync(hookPath);
+    const hookCheck = hookExists ? spawnSync(process.execPath, ['--check', hookPath], { encoding: 'utf8', windowsHide: true }) : null;
+    report(
+        checkAgentConfigParity({
+            settingsText: readOr('.claude/settings.json'),
+            claudeMd,
+            hook: { exists: hookExists, checkStatus: hookCheck?.status ?? null, checkStderr: hookCheck?.stderr ?? '' },
+        }),
+        'agent-config-parity',
+    );
+
+    // claude-rules-sync — the generator's own check mode.
+    const { diffClaudeRules, readRuleFiles } = await import('./build-claude-rules.ts');
+    const diff = diffClaudeRules(ROOT);
+    for (const bad of diff.invalid) fail(`${INSTRUCTIONS_DIR}/${bad.source}`, 1, 'claude-rules-sync', `${bad.error} — the generator refuses it`);
+    for (const f of diff.missing) fail(`${RULES_DIR}/${f}`, 1, 'claude-rules-sync', 'missing — run `npm run agents:rules`');
+    for (const f of diff.stale) fail(`${RULES_DIR}/${f}`, 1, 'claude-rules-sync', 'differs from its instruction file — edit the .github/instructions/ source, then run `npm run agents:rules`');
+    for (const f of diff.extra) fail(`${RULES_DIR}/${f}`, 1, 'claude-rules-sync', 'has no instruction source — delete it, or add the .github/instructions/<area>.instructions.md it should come from');
+
+    // claude-rules-budget
+    report(checkClaudeRulesBudget({ claudeMd, resolveImport: (name) => readOr(name), rules: readRuleFiles(ROOT) }), 'claude-rules-budget');
+
+    // pr-template-parity
+    report(checkPrTemplateParity(readOr('.github/pull_request_template.md'), readOr('CONTRIBUTING.md') ?? ''), 'pr-template-parity');
+
+    // eol-lf — git checkouts only (the test sandbox is a plain directory).
+    const gitOut = (...args: string[]): string | null => {
+        const r = spawnSync('git', ['-C', ROOT, ...args], { encoding: 'utf8', windowsHide: true });
+        return r.status === 0 ? r.stdout : null;
+    };
+    const top = gitOut('rev-parse', '--show-toplevel')?.trim().replace(/\\/g, '/');
+    if (top !== undefined && top === ROOT.replace(/\\/g, '/')) {
+        report(checkEol(gitOut('ls-files', '--eol') ?? ''), 'eol-lf');
+    }
+
+    // node-pin-parity — .node-version agrees with engines.node and the CI floor.
+    const pkgText = readOr('package.json');
+    const engines = pkgText === null ? null : ((JSON.parse(pkgText) as { engines?: { node?: string } }).engines?.node ?? null);
+    const ciMatrix = /node-version:\s*\[([^\]]*)\]/.exec(readOr('.github/workflows/ci.yml') ?? '')?.[1]
+        .split(',').map((s) => Number(s.trim().replace(/['"]/g, ''))).filter((n) => Number.isFinite(n)) ?? [];
+    report(checkNodeVersionPin({ nodeVersion: readOr('.node-version'), enginesNode: engines, ciMatrix }), 'node-pin-parity');
+
+    // ruleset-parity — the tag protection is committed too.
+    report(checkTagRuleset(readOr('.github/rulesets/tags.json')), 'ruleset-parity');
+
+    // skills-shape — walk() skips dot-directories, so .claude/skills is listed here.
+    const skillsDir = join(ROOT, '.claude', 'skills');
+    if (existsSync(skillsDir)) {
+        for (const dir of readdirSync(skillsDir).sort()) {
+            if (!statSync(join(skillsDir, dir)).isDirectory()) continue;
+            report(
+                checkSkillShape({
+                    dir,
+                    text: readOr(`.claude/skills/${dir}/SKILL.md`),
+                    existsInSkill: (name) => existsSync(join(skillsDir, dir, name)),
+                    existsInRepo: (p) => existsSync(join(ROOT, p)),
+                }),
+                'skills-shape',
+            );
         }
     }
 }
@@ -2076,8 +2174,14 @@ const OFFLINE_RULES = [
     'count-tokens', // tests / files / sample PDFs / generators / categories / coverage / "Current version" tokens equal the manifest
     'claude-md-budget', // CLAUDE.md imports AGENTS.md; both ≤ 120 lines, Copilot file ≤ 16 KiB, no line > 240 chars
     'governance-sources', // ai-governance.json sources/on_demand exist; always-loaded sources < 16 KiB
-    'node-pin-parity', // .nvmrc, engines.node and every setup-node step agree; packageManager is npm@
-    'ruleset-parity', // every required status check in rulesets/main.json names a real job; sample-regression required
+    'node-pin-parity', // .nvmrc, .node-version, engines.node, the CI floor and every setup-node step agree; packageManager is npm@
+    'ruleset-parity', // every required status check in rulesets/main.json names a real job; sample-regression required; tags.json protects refs/tags/v*
+    'agent-config-parity', // settings.json parses; every CLAUDE.md "Never Read" glob is denied; HITL Bash denies present; guard hook passes node --check
+    'claude-rules-sync', // .claude/rules/ equals a fresh render of .github/instructions/ (npm run agents:rules)
+    'claude-rules-budget', // CLAUDE.md + its @imports + unscoped rules ≤ 16 KiB; a scoped rule > 32 KiB warns
+    'pr-template-parity', // every PR-template checklist item is verbatim in CONTRIBUTING.md; the template mentions npm run gate
+    'eol-lf', // (git checkouts only) tracked text blobs are LF — warn until the renormalisation commit flips EOL_LF_MODE
+    'skills-shape', // every .claude/skills/*/SKILL.md names its directory, has a description, and its referenced templates exist
     'api-exists', // no phantom API identifier anywhere in docs or src
     'jsonld-version', // JSON-LD softwareVersion equals the manifest
     'internal-links', // every href/src and Markdown link resolves on disk
@@ -2102,8 +2206,16 @@ const OFFLINE_RULES = [
     'prose-language', // docs, recipes and release notes are English unless marked demo-language
 ] as const;
 
-if (problems.length === 0) {
-    console.log(`verify-docs: ${OFFLINE_RULES.length} rules passed across ${DOC_FILES.length} files.`);
+if (errors.length === 0) {
+    // Warnings never fail the run and are summarised per rule rather than
+    // listed — the `eol-lf` rule alone names every CRLF-stored file until the
+    // renormalisation commit, and a gate log is not the place for that list.
+    const perRule = new Map<string, number>();
+    for (const w of warnings) perRule.set(w.rule, (perRule.get(w.rule) ?? 0) + 1);
+    const suffix = warnings.length === 0
+        ? ''
+        : ` (${warnings.length} warning${warnings.length === 1 ? '' : 's'}: ${[...perRule.entries()].map(([r, n]) => `${r} ×${n}`).join(', ')})`;
+    console.log(`verify-docs: ${OFFLINE_RULES.length} rules passed across ${DOC_FILES.length} files${suffix}.`);
     console.log(`             source of truth: ${MANIFEST_REL} (verified ${manifest.verifiedOn})`);
     process.exit(0);
 }

@@ -56,7 +56,7 @@
     "pdfnative-build-emoji-font": "./dist/tools/build-emoji-font.js"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup --silent",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -77,6 +77,9 @@
     "docs:all": "npm run docs:api && npm run docs:guides && npm run docs:llms",
     "fonts:download": "npx tsx scripts/download-fonts.ts",
     "verify:issue": "node scripts/verify-issue.mjs",
+    "agents:rules": "npx tsx scripts/build-claude-rules.ts",
+    "hooks:install": "node scripts/install-git-hooks.mjs",
+    "hooks:uninstall": "node scripts/install-git-hooks.mjs --uninstall",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc --project tsconfig.test.json --noEmit",

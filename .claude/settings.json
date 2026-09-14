@@ -2,6 +2,12 @@
   "attribution": {
     "commit": ""
   },
+  "env": {
+    "BASH_MAX_OUTPUT_LENGTH": "16000",
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "BASH_MAX_TIMEOUT_MS": "1800000",
+    "NO_COLOR": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(npm run *)",
@@ -28,12 +34,19 @@
       "Read(node_modules/**)",
       "Read(docs/llms-full.txt)",
       "Read(docs/llms-recipes.txt)",
+      "Read(docs/llms-index.json)",
+      "Read(docs/assets/og-image.png)",
+      "Read(docs/assets/social-preview.png)",
+      "Read(tests/visual/baselines/**/*.png)",
       "Bash(npm publish*)",
       "Bash(git push --force*)",
       "Bash(git push -f*)",
+      "Bash(git push *)",
+      "Bash(git push)",
       "Bash(gh pr create*)",
       "Bash(gh issue create*)",
-      "Bash(gh release *)"
+      "Bash(gh release *)",
+      "Bash(gh api *--method POST*)"
     ]
   },
   "hooks": {
