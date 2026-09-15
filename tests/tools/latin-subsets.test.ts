@@ -147,10 +147,16 @@ describe('fonts/SOURCES.json derived entries', () => {
 });
 
 // The proof itself needs the 2 MB variable font, which `npm run fonts:download`
-// fetches; without it these tests skip, like `npm run verify:fonts`.
+// fetches; without it these tests skip, like `npm run verify:fonts`. Parsing
+// the variable font (a 244 KB GPOS) takes seconds under coverage
+// instrumentation, so it is parsed once and the tests get a 60 s budget
+// (testing.instructions.md: per test, never a global bump).
 describe.runIf(existsSync(VF))('the derived subsets, re-cut from NotoSans-VF.ttf', () => {
     const builds = buildAllLatinSubsets(manifest, TTF_DIR);
     const byName = new Map(builds.map(b => [b.entry.local, b]));
+    const vfBytes = new Uint8Array(readFileSync(VF));
+    let vfParsed: FontDataObject | null = null;
+    const vfData = (): FontDataObject => (vfParsed ??= parseFontData(vfBytes));
 
     it('hash exactly as fonts/SOURCES.json records', () => {
         for (const b of builds) {
@@ -178,14 +184,14 @@ describe.runIf(existsSync(VF))('the derived subsets, re-cut from NotoSans-VF.ttf
             const advertised = Object.keys(compiled.cmap).map(Number).sort((a, c) => a - c);
             expect(advertised, b.entry.local).toEqual(declared);
         }
-    });
+    }, 60_000);
 
     it('keep the variable font\'s glyph ids, so the modules\' widths and cmaps do not move', () => {
-        const vf = parseFontData(new Uint8Array(readFileSync(VF)));
+        const vf = vfData();
         const polish = parseFontData(byName.get('NotoSans-Polish.ttf')!.bytes);
         expect(polish.metrics.numGlyphs).toBe(vf.metrics.numGlyphs);
         for (const cp of [0x41, 0x105, 0x141, 0x20AC]) expect(polish.cmap[cp]).toBe(vf.cmap[cp]);
-    });
+    }, 60_000);
 
     it('carry the upstream copyright statement, which the manifest records', () => {
         const upstream = manifest.fonts.find(f => f.local === 'NotoSans-VF.ttf')!;
@@ -195,11 +201,10 @@ describe.runIf(existsSync(VF))('the derived subsets, re-cut from NotoSans-VF.ttf
 
     it('is what subsetTTF produces for the same glyph set — the recorded command, not a fixture', () => {
         const b = byName.get('NotoSans-Greek.ttf')!;
-        const vfBytes = new Uint8Array(readFileSync(VF));
-        const vf = parseFontData(vfBytes);
+        const vf = vfData();
         const gids = new Set<number>([0]);
         for (const cp of parseCodepointList(readFileSync(codepointsPath(b.entry), 'utf8'))) gids.add(vf.cmap[cp]);
         const again = new Uint8Array(Buffer.from(subsetTTF(vfBytes, gids), 'latin1'));
         expect(sha256Of(again)).toBe(b.sha256);
-    });
+    }, 60_000);
 });
