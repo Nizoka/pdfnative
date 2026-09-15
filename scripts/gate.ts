@@ -107,8 +107,12 @@ function sourceFontsPresent(): boolean {
 
 function testCount(): string | null {
     if (!existsSync(VITEST_JSON)) return null;
-    const report = JSON.parse(readFileSync(VITEST_JSON, 'utf8')) as { numPassedTests?: number };
-    return typeof report.numPassedTests === 'number' ? `${report.numPassedTests} tests` : null;
+    // The whole suite, skipped tests included — the figure `declared.tests`
+    // in docs/assets/ecosystem.json is held to, identical on a machine with
+    // the source fonts downloaded and on CI without them.
+    const report = JSON.parse(readFileSync(VITEST_JSON, 'utf8')) as { numTotalTests?: number; numPassedTests?: number };
+    const total = report.numTotalTests ?? report.numPassedTests;
+    return typeof total === 'number' ? `${total} tests` : null;
 }
 
 function coverageFigure(): string | null {

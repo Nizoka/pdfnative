@@ -27,7 +27,7 @@ byte-identically except where the previous output was wrong (see Fixed),
 and four calls behave differently by design — `setDeflateImpl()` rejects
 a raw-DEFLATE compressor, `parseColor()` accepts CMYK input,
 `extractText()` honours `/ActualText`, `{date}` follows `creationDate` —
-see the release note's Upgrade section. 3823+ tests across 160 files; veraPDF-validated; a consumer
+see the release note's Upgrade section. 3824+ tests across 160 files; veraPDF-validated; a consumer
 importing one helper bundles that helper alone.
 
 ### Added

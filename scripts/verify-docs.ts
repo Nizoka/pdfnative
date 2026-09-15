@@ -306,14 +306,19 @@ const actualDerived: Record<string, number> = {
     const newestTest = walk(join(ROOT, 'tests'), (p) => p.endsWith('.test.ts'))
         .reduce((max, p) => Math.max(max, statSync(p).mtimeMs), 0);
     if (existsSync(vitestJson) && statSync(vitestJson).mtimeMs >= newestTest) {
-        // The tests that ran: passed plus failed, which is the figure the gate
-        // prints on a green run ("3459 tests") and stays the same on a red one,
-        // so a single failing test does not also turn this rule red. The
-        // total would count skipped placeholders as well.
+        // Every test of the suite — passed, failed and skipped — which is the
+        // figure the gate prints. Passed-plus-failed would depend on the
+        // environment: the tests that need a downloaded source font (`runIf`)
+        // are skipped on CI, where `fonts:download` never runs, and counted
+        // locally, so the same tree would report two different numbers.
         let total: number | undefined;
         try {
-            const report = JSON.parse(read(vitestJson)) as { numPassedTests?: number; numFailedTests?: number };
-            total = typeof report.numPassedTests === 'number' ? report.numPassedTests + (report.numFailedTests ?? 0) : undefined;
+            const report = JSON.parse(read(vitestJson)) as { numTotalTests?: number; numPassedTests?: number; numFailedTests?: number; numPendingTests?: number; numTodoTests?: number };
+            total = typeof report.numTotalTests === 'number'
+                ? report.numTotalTests
+                : typeof report.numPassedTests === 'number'
+                    ? report.numPassedTests + (report.numFailedTests ?? 0) + (report.numPendingTests ?? 0) + (report.numTodoTests ?? 0)
+                    : undefined;
         } catch {
             total = undefined;
         }
