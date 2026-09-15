@@ -2,7 +2,7 @@
   "upstream": {
     "repo": "google/fonts",
     "commit": "5fb648bb932bf1cdcd5fd71a73b79097e8666c36",
-    "resolvedOn": "2026-09-14",
+    "resolvedOn": "2026-09-15",
     "note": "google/fonts main was 809e4d8b8d7e9364a914909bb777679606c178b8 on 2026-09-14; it carries Noto Sans Devanagari 2.007 (commit 2bc5d431, 2026-09-09) while noto-devanagari-data.js was built from 2.006, so the manifest pins the parent of that update, at which 21 of the 22 downloadable files were re-downloaded and matched the local tree byte for byte (Color Emoji is pinned separately, see its entry). Every sha256 is the hash of the local file that reproduces the committed module (npm run verify:fonts)."
   },
   "fonts": [
@@ -11,147 +11,168 @@
       "dir": "notosans",
       "remote": "NotoSans%5Bwdth%2Cwght%5D.ttf",
       "sha256": "bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d",
-      "bytes": 2049096
+      "bytes": 2049096,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)"
     },
     {
       "local": "NotoSansBengali-Regular.ttf",
       "dir": "notosansbengali",
       "remote": "NotoSansBengali%5Bwdth%2Cwght%5D.ttf",
       "sha256": "dcd42978094e584a849c84a51450eeac40c8826057d566ea6d4b9627a403a05a",
-      "bytes": 463668
+      "bytes": 463668,
+      "copyright": "Copyright 2025 The Noto Project Authors (https://github.com/notofonts/bengali)"
     },
     {
       "local": "NotoSansDevanagari-Regular.ttf",
       "dir": "notosansdevanagari",
       "remote": "NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf",
       "sha256": "9ce7b04f60e363d8870e5997744cf85cf69d38a4d7d129d364d92a3b14b461d7",
-      "bytes": 647144
+      "bytes": 647144,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/devanagari)"
     },
     {
       "local": "NotoSansTamil-Regular.ttf",
       "dir": "notosanstamil",
       "remote": "NotoSansTamil%5Bwdth%2Cwght%5D.ttf",
       "sha256": "aa3a9b321f4b0bb2c40203ffbde9af89713227866e0e13f76e5b9eeea727cf88",
-      "bytes": 340668
+      "bytes": 340668,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tamil)"
     },
     {
       "local": "NotoSansTelugu-Regular.ttf",
       "dir": "notosanstelugu",
       "remote": "NotoSansTelugu%5Bwdth%2Cwght%5D.ttf",
       "sha256": "e618af7bf999df192ed4f388eba2e563f2b5015034e9cbb317b5bd793bd7334d",
-      "bytes": 888808
+      "bytes": 888808,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/telugu)"
     },
     {
       "local": "NotoSansThai-Regular.ttf",
       "dir": "notosansthai",
       "remote": "NotoSansThai%5Bwdth%2Cwght%5D.ttf",
       "sha256": "5a1c559bb539583c8a1fd99d1c5b9491e5e14478c9cd2bd0970d5c3096cc9ef8",
-      "bytes": 218652
+      "bytes": 218652,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/thai)"
     },
     {
       "local": "NotoSansEthiopic-Regular.ttf",
       "dir": "notosansethiopic",
       "remote": "NotoSansEthiopic%5Bwdth%2Cwght%5D.ttf",
       "sha256": "0dbccc00b22d180ebd6a4bd8a733918a29e709fa6798023adc3e6cd40da65077",
-      "bytes": 1143168
+      "bytes": 1143168,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/ethiopic)"
     },
     {
       "local": "NotoSansSinhala-Regular.ttf",
       "dir": "notosanssinhala",
       "remote": "NotoSansSinhala%5Bwdth%2Cwght%5D.ttf",
       "sha256": "9bd93e407a278075be403324063bc94a7e306c44de4df81214e932330c22eecf",
-      "bytes": 1181956
+      "bytes": 1181956,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/sinhala)"
     },
     {
       "local": "NotoSansTibetan-Regular.ttf",
       "dir": "notoseriftibetan",
       "remote": "NotoSerifTibetan%5Bwght%5D.ttf",
       "sha256": "060ec022b04c306de3f58d051fb0e1cf81a5b610c5910fbfc43bba154c057cda",
-      "bytes": 2063504
+      "bytes": 2063504,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tibetan)"
     },
     {
       "local": "NotoSansKhmer-Regular.ttf",
       "dir": "notosanskhmer",
       "remote": "NotoSansKhmer%5Bwdth%2Cwght%5D.ttf",
       "sha256": "f37a8431a0c5d5ed2f81a767417546aca576a81fb7eff9c924d46aecf828f2ca",
-      "bytes": 359788
+      "bytes": 359788,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/khmer)"
     },
     {
       "local": "NotoSansMyanmar-Regular.ttf",
       "dir": "notosansmyanmar",
       "remote": "NotoSansMyanmar%5Bwdth%2Cwght%5D.ttf",
       "sha256": "7abbbfbe2514105d7ce94937aee3feb2ba89b73a256c8b77b5866bd9b83e32ec",
-      "bytes": 784832
+      "bytes": 784832,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/myanmar)"
     },
     {
       "local": "NotoSansLao-Regular.ttf",
       "dir": "notosanslao",
       "remote": "NotoSansLao%5Bwdth%2Cwght%5D.ttf",
       "sha256": "9608b94603a82d09a8038946f9775242f99e3b3459b7f1e4d5b335b578cd7ab3",
-      "bytes": 176620
+      "bytes": 176620,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/lao)"
     },
     {
       "local": "NotoSansTaiTham-Regular.ttf",
       "dir": "notosanstaitham",
       "remote": "NotoSansTaiTham%5Bwght%5D.ttf",
       "sha256": "a053b99fc5ed0a3e5fb14eecbbf137245cb0b8c34c2cb4ffd0872db3097bcd0a",
-      "bytes": 172864
+      "bytes": 172864,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tai-tham)"
     },
     {
       "local": "NotoSansNewTaiLue-Regular.ttf",
       "dir": "notosansnewtailue",
       "remote": "NotoSansNewTaiLue%5Bwght%5D.ttf",
       "sha256": "5362f7ab42089804beb05c936bef575f08ab27cf26109c71df99bfa28bda1cb4",
-      "bytes": 78872
+      "bytes": 78872,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/new-tai-lue)"
     },
     {
       "local": "NotoSansTaiLe-Regular.ttf",
       "dir": "notosanstaile",
       "remote": "NotoSansTaiLe-Regular.ttf",
       "sha256": "eeb4c41d8e1a6075f7e580cc159dff424e2f61e64f5edcd57b5e8ca57d58a2ea",
-      "bytes": 57620
+      "bytes": 57620,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tai-le)"
     },
     {
       "local": "NotoSansCham-Regular.ttf",
       "dir": "notosanscham",
       "remote": "NotoSansCham%5Bwght%5D.ttf",
       "sha256": "0b4db93cffadd22de4668cdf8238725f0eedf5c2fcbf89a36bb24ccc82a1d889",
-      "bytes": 126600
+      "bytes": 126600,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/cham)"
     },
     {
       "local": "NotoSansJP-Regular.ttf",
       "dir": "notosansjp",
       "remote": "NotoSansJP%5Bwght%5D.ttf",
       "sha256": "c2f3b4d463500a2ddcd3849cded1fceeb9fd6d1c32e6cbecd568453ba50fc68f",
-      "bytes": 9589900
+      "bytes": 9589900,
+      "copyright": "(c) 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'."
     },
     {
       "local": "NotoSansKR-Regular.ttf",
       "dir": "notosanskr",
       "remote": "NotoSansKR%5Bwght%5D.ttf",
       "sha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
-      "bytes": 10414588
+      "bytes": 10414588,
+      "copyright": "(c) 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'."
     },
     {
       "local": "NotoSansSC-Regular.ttf",
       "dir": "notosanssc",
       "remote": "NotoSansSC%5Bwght%5D.ttf",
       "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da",
-      "bytes": 17772300
+      "bytes": 17772300,
+      "copyright": "(c) 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'."
     },
     {
       "local": "NotoSansMath-Regular.ttf",
       "dir": "notosansmath",
       "remote": "NotoSansMath-Regular.ttf",
       "sha256": "3f495fe933c06786e4d5f6d86b8ee70b6753a68ee3b9d87528726de0f6e2c47d",
-      "bytes": 1015396
+      "bytes": 1015396,
+      "copyright": "Copyright 2022 Google LLC. All Rights Reserved."
     },
     {
       "local": "NotoEmoji-Regular.ttf",
       "dir": "notoemoji",
       "remote": "NotoEmoji%5Bwght%5D.ttf",
       "sha256": "de6c18832938afc99caf132b39d6a30a19bac7f2e812e28db2535b4608d27551",
-      "bytes": 1982596
+      "bytes": 1982596,
+      "copyright": "Copyright 2013 Google LLC"
     },
     {
       "local": "NotoColorEmoji-Regular.ttf",
@@ -160,7 +181,8 @@
       "sha256": "be73479ba4fa277c89b85cd6c71717df30d9d0eff6da8c1e1a201e5b95459299",
       "bytes": 24271604,
       "commit": "f265cc2d8e08067dac782ba633458b97661ab85d",
-      "note": "Noto Color Emoji v2.048. Upstream moved to Emoji 18 on 2026-09-03 (commit 205859f6); noto-color-emoji-data.js was built from v2.048, so this file is pinned to the parent of that update."
+      "note": "Noto Color Emoji v2.048. Upstream moved to Emoji 18 on 2026-09-03 (commit 205859f6); noto-color-emoji-data.js was built from v2.048, so this file is pinned to the parent of that update.",
+      "copyright": "Copyright 2022 Google Inc."
     },
     {
       "local": "NotoSansArabic-Regular.ttf",
@@ -171,7 +193,8 @@
       "path": "NotoSansArabic/hinted/ttf/NotoSansArabic-Regular.ttf",
       "sha256": "bdff3e5659d67e67def05b33f749683b9376ae819d65d3dd62ac4640b3aaef48",
       "bytes": 234892,
-      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed."
+      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed.",
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/arabic)"
     },
     {
       "local": "NotoSansArmenian-Regular.ttf",
@@ -182,7 +205,8 @@
       "path": "NotoSansArmenian/hinted/ttf/NotoSansArmenian-Regular.ttf",
       "sha256": "720df88c332417a235b4d6209d14ec2e2bf4bfe2a954b7453d869ea593bfce1e",
       "bytes": 30752,
-      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed."
+      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed.",
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/armenian)"
     },
     {
       "local": "NotoSansGeorgian-Regular.ttf",
@@ -193,7 +217,8 @@
       "path": "NotoSansGeorgian/hinted/ttf/NotoSansGeorgian-Regular.ttf",
       "sha256": "d3e33254b09e7bb2c5cf0f17e554b80462056c5a107097f258d495168c3a9346",
       "bytes": 52888,
-      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed."
+      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed.",
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/georgian)"
     },
     {
       "local": "NotoSansHebrew-Regular.ttf",
@@ -204,49 +229,65 @@
       "path": "NotoSansHebrew/hinted/ttf/NotoSansHebrew-Regular.ttf",
       "sha256": "cdefaf8efd47045f6820928eba84db5bed7557539328952b5f828315485e02ee",
       "bytes": 26860,
-      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed."
+      "note": "Hinted static Regular instance from the notofonts release archive (OFL-1.1) — the bytes the module was built from; google/fonts carries only the [wdth,wght] variable font of this family, so the file is fetched from the release asset and extracted, never committed.",
+      "copyright": "Copyright 2024 The Noto Project Authors (https://github.com/notofonts/hebrew)"
     }
   ],
   "derived": [
     {
       "local": "NotoSans-Cyrillic.ttf",
       "from": "NotoSans-VF.ttf",
-      "tool": "fonttools pyftsubset",
-      "sha256": "478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823",
-      "bytes": 621572,
-      "note": "Cyrillic subset of NotoSans-VF.ttf. The exact pyftsubset invocation predates this manifest; the committed file is the contract that reproduces noto-cyrillic-data.js, so it is committed to fonts/ttf/ rather than regenerated."
+      "tool": "pdfnative subsetTTF (src/fonts/font-subsetter.ts)",
+      "codepoints": "fonts/subsets/NotoSans-Cyrillic.codepoints.txt",
+      "layout": true,
+      "command": "npx tsx scripts/build-latin-subsets.ts",
+      "sha256": "744663f53c54135b999165ef4a14ae8e8728713de9e028c3ef3fee88c244a4d0",
+      "bytes": 706028,
+      "note": "Cyrillic subset of the pinned NotoSans-VF.ttf, cut by the library itself: the code points listed, their GSUB closure, and GSUB/GPOS/GDEF kept verbatim (the module carries kern, otl and mark anchors); the variation tables are dropped, which leaves the default instance. Regenerated by npm run fonts:download and re-derived by npm run verify:fonts before noto-cyrillic-data.js is compared — never committed."
     },
     {
       "local": "NotoSans-Greek.ttf",
       "from": "NotoSans-VF.ttf",
-      "tool": "fonttools pyftsubset",
-      "sha256": "56c26f71101d7d7c4a51aa70b75f4a5eb361b7cfdb401b796ec20ad5100133b8",
-      "bytes": 140932,
-      "note": "Greek subset of NotoSans-VF.ttf. The exact pyftsubset invocation predates this manifest; the committed file is the contract that reproduces noto-greek-data.js, so it is committed to fonts/ttf/ rather than regenerated."
+      "tool": "pdfnative subsetTTF (src/fonts/font-subsetter.ts)",
+      "codepoints": "fonts/subsets/NotoSans-Greek.codepoints.txt",
+      "layout": false,
+      "command": "npx tsx scripts/build-latin-subsets.ts",
+      "sha256": "d3808ec1a04bd6c72409ccfa7bc63ec43330fe9db5665c06ecca352cf56c26b2",
+      "bytes": 141412,
+      "note": "Greek subset of the pinned NotoSans-VF.ttf, cut by the library itself: the code points listed, no layout tables (the module carries none, so this face never claims a combining mark another registered font anchors); the variation tables are dropped, which leaves the default instance. Regenerated by npm run fonts:download and re-derived by npm run verify:fonts before noto-greek-data.js is compared — never committed."
     },
     {
       "local": "NotoSans-Polish.ttf",
       "from": "NotoSans-VF.ttf",
-      "tool": "fonttools pyftsubset",
-      "sha256": "0b8eb1f24413dd826fd68c520fdc791262f4010d262d5d03de33c32ba859e261",
-      "bytes": 130984,
-      "note": "Polish subset of NotoSans-VF.ttf. The exact pyftsubset invocation predates this manifest; the committed file is the contract that reproduces noto-polish-data.js, so it is committed to fonts/ttf/ rather than regenerated."
+      "tool": "pdfnative subsetTTF (src/fonts/font-subsetter.ts)",
+      "codepoints": "fonts/subsets/NotoSans-Polish.codepoints.txt",
+      "layout": false,
+      "command": "npx tsx scripts/build-latin-subsets.ts",
+      "sha256": "77cd4f56eb01f1a2dbcbf0407a81116dff444aacd5d6b501d6896e9e22fcff1d",
+      "bytes": 131468,
+      "note": "Polish subset of the pinned NotoSans-VF.ttf, cut by the library itself: the code points listed, no layout tables (the module carries none, so this face never claims a combining mark another registered font anchors); the variation tables are dropped, which leaves the default instance. Regenerated by npm run fonts:download and re-derived by npm run verify:fonts before noto-polish-data.js is compared — never committed."
     },
     {
       "local": "NotoSans-Turkish.ttf",
       "from": "NotoSans-VF.ttf",
-      "tool": "fonttools pyftsubset",
-      "sha256": "9e9d753698f5f5ba7267f7a06851bee50d595496516e06925f95b458851c53fb",
-      "bytes": 131080,
-      "note": "Turkish subset of NotoSans-VF.ttf. The exact pyftsubset invocation predates this manifest; the committed file is the contract that reproduces noto-turkish-data.js, so it is committed to fonts/ttf/ rather than regenerated."
+      "tool": "pdfnative subsetTTF (src/fonts/font-subsetter.ts)",
+      "codepoints": "fonts/subsets/NotoSans-Turkish.codepoints.txt",
+      "layout": false,
+      "command": "npx tsx scripts/build-latin-subsets.ts",
+      "sha256": "183e332f098fd604cf69caaeafc405da8b716cdab63b039d33e183aa201e7c80",
+      "bytes": 131564,
+      "note": "Turkish subset of the pinned NotoSans-VF.ttf, cut by the library itself: the code points listed, no layout tables (the module carries none, so this face never claims a combining mark another registered font anchors); the variation tables are dropped, which leaves the default instance. Regenerated by npm run fonts:download and re-derived by npm run verify:fonts before noto-turkish-data.js is compared — never committed."
     },
     {
       "local": "NotoSans-Vietnamese.ttf",
       "from": "NotoSans-VF.ttf",
-      "tool": "fonttools pyftsubset",
-      "sha256": "0aee96e7b3797562ef09befc4228794bb89b1fb2a6ce6eb5cc2ea62df08d7ce7",
-      "bytes": 170560,
-      "note": "Vietnamese subset of NotoSans-VF.ttf. The exact pyftsubset invocation predates this manifest; the committed file is the contract that reproduces noto-vietnamese-data.js, so it is committed to fonts/ttf/ rather than regenerated."
+      "tool": "pdfnative subsetTTF (src/fonts/font-subsetter.ts)",
+      "codepoints": "fonts/subsets/NotoSans-Vietnamese.codepoints.txt",
+      "layout": false,
+      "command": "npx tsx scripts/build-latin-subsets.ts",
+      "sha256": "fb3c3cc522a12b173933dd5088e47facd38ce2694689f3d3ff88d90f74b5cbdb",
+      "bytes": 170608,
+      "note": "Vietnamese subset of the pinned NotoSans-VF.ttf, cut by the library itself: the code points listed, no layout tables (the module carries none, so this face never claims a combining mark another registered font anchors); the variation tables are dropped, which leaves the default instance. Regenerated by npm run fonts:download and re-derived by npm run verify:fonts before noto-vietnamese-data.js is compared — never committed."
     }
   ]
 }

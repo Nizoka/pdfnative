@@ -20,9 +20,34 @@
  *     values they read. Dropping any of them silently degrades rendering while adding
  *     nothing to the outlines — they cost a few bytes (8 for `gasp`, 7 for Noto Sans's
  *     `prep`, ~4 KB when `fpgm` is present) and are kept by every mainstream subsetter.
- * Everything else (GSUB, GPOS, GDEF, kern, DSIG, colour tables, …) is dropped: the PDF
- * text is already positioned and shaped, so a CIDFontType2 never consults them.
+ * Everything else (GSUB, GPOS, GDEF, kern, DSIG, colour tables, the variation tables
+ * `fvar`/`gvar`/`HVAR`/`avar`/`STAT`/`MVAR`, …) is dropped: the PDF text is already
+ * positioned and shaped, so a CIDFontType2 never consults them. Dropping the variation
+ * tables of a variable font leaves its default instance, which is what `glyf` and `hmtx`
+ * hold.
+ *
+ * `SubsetTTFOptions` (v1.8.0) opens one opt-in for a subset meant as a *source* font
+ * rather than a PDF embed — the Latin subsets the repository derives from Noto Sans
+ * with `scripts/build-latin-subsets.ts`: `keepLayoutTables` copies `GSUB`, `GPOS` and
+ * `GDEF` verbatim, which is valid because glyph ids are retained. Without options the
+ * output is byte-identical to every earlier release.
  */
+
+/**
+ * Opt-ins for a subset compiled into a font-data module by `pdfnative-build-font`,
+ * not embedded in a PDF. Every option defaults to `false`; with none set the output
+ * is byte-identical to the two-argument call.
+ *
+ * @since 1.8.0
+ */
+export interface SubsetTTFOptions {
+    /**
+     * Copy `GSUB`, `GPOS` and `GDEF` verbatim. Valid because glyph ids are retained;
+     * the caller must keep every glyph those tables can produce (the GSUB closure of
+     * the kept set), or a substitution may land on an emptied outline.
+     */
+    readonly keepLayoutTables?: boolean;
+}
 
 /**
  * Subset a TTF binary to contain only used glyphs.
@@ -33,9 +58,10 @@
  *
  * @param ttfInput - Full TTF as Uint8Array (preferred) or binary string
  * @param usedGids - Set of glyph IDs used in the document
+ * @param options - Source-font opt-ins (v1.8.0); omit for a PDF embed
  * @returns Subset TTF as binary string
  */
-export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>): string {
+export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>, options?: SubsetTTFOptions): string {
     try {
         let u8: Uint8Array;
         let len: number;
@@ -171,6 +197,9 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>):
             'head', 'hhea', 'maxp', 'OS/2', 'cmap', 'hmtx', 'loca', 'glyf', 'name', 'post',
             'prep', 'fpgm', 'cvt ', 'gasp',
         ]);
+        // Source-font mode (v1.8.0): the layout tables stay valid because glyph ids are
+        // retained, so they are copied as they are — never rewritten.
+        if (options?.keepLayoutTables) { PDF_TABLES.add('GSUB'); PDF_TABLES.add('GPOS'); PDF_TABLES.add('GDEF'); }
         const tableTags = Object.keys(tables).filter(t => PDF_TABLES.has(t)).sort();
         const newTableData: Record<string, Uint8Array> = {};
         for (const tag of tableTags) {

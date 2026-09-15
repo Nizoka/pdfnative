@@ -9,10 +9,13 @@ import * as notoSans from '../../fonts/noto-sans-data.js';
 
 // v1.8.0 — a bundled module must not advertise glyphs its font cannot draw.
 //
-// Subsetted fonts routinely keep their full glyph count and full cmap while
-// emptying the outlines they dropped (pyftsubset --retain-gids). Trusting the
-// cmap alone made three modules advertise roughly 2 650 code points each that
-// rendered blank instead of falling through to another registered font.
+// Subsetters that retain glyph ids — pyftsubset --retain-gids, and the
+// project's own subsetTTF() that cuts the Latin subsets since 1.8.0 — keep
+// the full glyph count and full cmap while emptying the outlines they
+// dropped. Trusting the cmap alone made three modules advertise roughly
+// 2 650 code points each that rendered blank instead of falling through to
+// another registered font. The TTFs read here are derived into fonts/ttf/
+// by `npm run fonts:download`; the tests skip when they are absent.
 
 const REPO = join(process.cwd());
 const TTF_DIR = join(REPO, 'fonts', 'ttf');

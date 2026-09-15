@@ -76,6 +76,7 @@
     "docs:api": "npx tsx scripts/build-api-json.ts",
     "docs:all": "npm run docs:api && npm run docs:guides && npm run docs:llms",
     "fonts:download": "npx tsx scripts/download-fonts.ts",
+    "fonts:subsets": "npx tsx scripts/build-latin-subsets.ts",
     "verify:issue": "node scripts/verify-issue.mjs",
     "agents:rules": "npx tsx scripts/build-claude-rules.ts",
     "hooks:install": "node scripts/install-git-hooks.mjs",

@@ -224,7 +224,7 @@ export const FIXTURES: readonly Fixture[] = [
     // combining-mark shaper (Yoruba), Lao and Cham (the 1.8.0 shapers), Thai
     // (sara am under a tone mark) and Polish (a Latin subset the library
     // derives from Noto Sans itself). Built from the same data as the samples.
-    ...(['ta', 'hi', 'te', 'bn', 'yo', 'lo', 'cjm', 'th'] as const).map((lang) => ({
+    ...(['ta', 'hi', 'te', 'bn', 'yo', 'lo', 'cjm', 'th', 'pl'] as const).map((lang) => ({
         name: `doc-${LANGUAGE_DOCS.find(d => d.lang === lang)?.filename.replace(/^doc-/, '') ?? lang}`,
         build: async (): Promise<Uint8Array> => {
             registerVisualFonts();

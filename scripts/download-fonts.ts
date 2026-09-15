@@ -16,109 +16,49 @@
  *     (google/fonts carries only the variable font of those families): the
  *     pinned asset is downloaded, the one entry `path` names is extracted
  *     with node:zlib, hash-checked and written.
- *   - `derived[]` entries are committed to fonts/ttf/ (the five pyftsubset
- *     Latin subsets that no upstream URL reproduces); they are only verified
- *     here, never downloaded.
+ *   - `derived[]` entries are the five Latin subsets the repository cuts
+ *     itself from the pinned `NotoSans-VF.ttf` with the library's own
+ *     `subsetTTF()` (scripts/lib/latin-subsets.ts, code-point lists under
+ *     fonts/subsets/): they are derived here once the variable font has been
+ *     verified, and checked against the recorded hash — never downloaded and
+ *     never committed.
  *
  * Usage:
- *   npm run fonts:download                       # fetch what is missing, verify the rest
+ *   npm run fonts:download                       # fetch what is missing, verify the rest, derive the subsets
  *   npx tsx scripts/download-fonts.ts --force    # re-download every upstream font
  *   npx tsx scripts/download-fonts.ts --dir <path>
  *   npx tsx scripts/download-fonts.ts --update-manifest --commit <40-hex sha>
  *       rewrites fonts/SOURCES.json from the files on disk (hashes, sizes,
- *       the new commit and today's date). Run `--force` afterwards to prove
- *       the pinned commit really serves those bytes.
+ *       copyright statements, the new commit and today's date) and from the
+ *       freshly derived subsets. Run `--force` afterwards to prove the pinned
+ *       commit really serves those bytes.
  *
  * Exit codes:
  *   0 — every manifest entry is on disk with the recorded hash
- *   1 — a download failed, a hash differed, or a committed file is missing
+ *   1 — a download failed, a hash differed, or a subset no longer reproduces
  *   2 — bad usage
  *
  * License: all Noto fonts are distributed under the SIL Open Font License 1.1.
  */
 
-import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateRawSync } from 'node:zlib';
+import {
+    DEFAULT_TTF_DIR, MANIFEST_PATH, REPO_ROOT,
+    expectedHashes, isReleaseFont, readManifest, readNameRecord, sha256Of,
+} from './lib/font-sources.js';
+import type { DerivedFont, ReleaseFont, SourcesManifest, UpstreamFont } from './lib/font-sources.js';
+import { buildAllLatinSubsets, withDerivedHashes } from './lib/latin-subsets.js';
+import type { DerivedBuild } from './lib/latin-subsets.js';
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const MANIFEST_PATH = join(REPO_ROOT, 'fonts', 'SOURCES.json');
-const DEFAULT_TTF_DIR = join(REPO_ROOT, 'fonts', 'ttf');
+// The manifest types and helpers moved to scripts/lib/font-sources.ts in
+// 1.8.0; they stay importable from here.
+export { expectedHashes, isReleaseFont, readManifest, sha256Of };
+export type { DerivedFont, ReleaseFont, SourcesManifest, UpstreamFont };
+
 const RAW_BASE = 'https://raw.githubusercontent.com';
-
-// ── Manifest ────────────────────────────────────────────────────────
-
-export interface UpstreamFont {
-    /** Local filename in fonts/ttf/ — the name the module's "Source:" header names. */
-    readonly local: string;
-    /** google/fonts `ofl/<dir>` subdirectory. */
-    readonly dir: string;
-    /** Remote filename, URL-encoded (`%5B`/`%5D` around the axis list). */
-    readonly remote: string;
-    readonly sha256: string;
-    readonly bytes: number;
-    /** Pins this file to a different google/fonts commit than `upstream.commit`. */
-    readonly commit?: string;
-    readonly note?: string;
-}
-
-/** A static instance served inside a GitHub release archive of the notofonts project. */
-export interface ReleaseFont {
-    readonly local: string;
-    readonly origin: 'release';
-    /** GitHub repository, e.g. `notofonts/arabic`. */
-    readonly repo: string;
-    /** Release tag, e.g. `NotoSansArabic-v2.013`. */
-    readonly tag: string;
-    /** Asset file name attached to that release. */
-    readonly asset: string;
-    /** Entry inside the archive, e.g. `NotoSansArabic/hinted/ttf/NotoSansArabic-Regular.ttf`. */
-    readonly path: string;
-    readonly sha256: string;
-    readonly bytes: number;
-    readonly note?: string;
-}
-
-export interface DerivedFont {
-    readonly local: string;
-    readonly from: string;
-    readonly tool: string;
-    readonly sha256: string;
-    readonly bytes: number;
-    readonly note: string;
-}
-
-export interface SourcesManifest {
-    readonly upstream: {
-        readonly repo: string;
-        readonly commit: string;
-        readonly resolvedOn: string;
-        readonly note?: string;
-    };
-    readonly fonts: readonly (UpstreamFont | ReleaseFont)[];
-    readonly derived: readonly DerivedFont[];
-}
-
-export function isReleaseFont(f: UpstreamFont | ReleaseFont): f is ReleaseFont {
-    return (f as ReleaseFont).origin === 'release';
-}
-
-export function readManifest(path: string = MANIFEST_PATH): SourcesManifest {
-    return JSON.parse(readFileSync(path, 'utf8')) as SourcesManifest;
-}
-
-export function sha256Of(data: Uint8Array): string {
-    return createHash('sha256').update(data).digest('hex');
-}
-
-/** Every file the manifest expects in fonts/ttf/, keyed by local name. */
-export function expectedHashes(manifest: SourcesManifest): Map<string, { sha256: string; bytes: number }> {
-    const m = new Map<string, { sha256: string; bytes: number }>();
-    for (const f of [...manifest.fonts, ...manifest.derived]) m.set(f.local, { sha256: f.sha256, bytes: f.bytes });
-    return m;
-}
 
 function upstreamUrl(manifest: SourcesManifest, font: UpstreamFont): string {
     const commit = font.commit ?? manifest.upstream.commit;
@@ -260,35 +200,64 @@ async function syncFonts(manifest: SourcesManifest, ttfDir: string, force: boole
     }
 
     out('');
-    for (const font of manifest.derived) {
-        const dest = join(ttfDir, font.local);
-        if (!existsSync(dest)) {
-            err(`  FAIL ${font.local}: derived subset committed to the tree but missing — git checkout -- fonts/ttf/${font.local}`);
+    deriveSubsets(manifest, ttfDir, tally);
+    return tally;
+}
+
+/**
+ * Derive the `derived[]` subsets from the verified upstream font and write
+ * the ones that are absent or differ. A derived file whose bytes no longer
+ * match the manifest is a failure: the subsetter or a code-point list moved,
+ * and the manifest, the modules and the samples have to move with it.
+ */
+function deriveSubsets(manifest: SourcesManifest, ttfDir: string, tally: Tally): DerivedBuild[] {
+    if (manifest.derived.length === 0) return [];
+    let results: DerivedBuild[];
+    try {
+        results = buildAllLatinSubsets(manifest, ttfDir);
+    } catch (e) {
+        err(`  FAIL derived subsets: ${e instanceof Error ? e.message : String(e)}`);
+        tally.failed += manifest.derived.length;
+        return [];
+    }
+    for (const r of results) {
+        const dest = join(ttfDir, r.entry.local);
+        if (r.sha256 !== r.entry.sha256) {
+            err(`  FAIL ${r.entry.local}: derived subset no longer reproduces fonts/SOURCES.json — not written\n` +
+                `         expected ${r.entry.sha256} (${r.entry.bytes} B)\n` +
+                `         derived  ${r.sha256} (${r.bytes.length} B)\n` +
+                `         the subsetter or ${r.entry.codepoints} changed: npx tsx scripts/build-latin-subsets.ts --update-manifest, then rebuild the module`);
             tally.failed++;
             continue;
         }
-        const problem = checkOnDisk(dest, font);
-        if (problem) { err(`  FAIL ${font.local}: ${problem}`); tally.failed++; } else { out(`  OK   ${font.local} (derived from ${font.from}, ${kb(font.bytes)})`); tally.verified++; }
+        const present = existsSync(dest) && Buffer.from(readFileSync(dest)).equals(Buffer.from(r.bytes));
+        if (!present) writeFileSync(dest, r.bytes);
+        out(`  ${present ? 'OK  ' : 'GEN '} ${r.entry.local} (derived from ${r.entry.from} by subsetTTF, ${kb(r.bytes.length)})`);
+        if (present) tally.verified++; else tally.downloaded++;
     }
-    return tally;
+    return results;
 }
 
 // ── --update-manifest ───────────────────────────────────────────────
 
 function updateManifest(manifest: SourcesManifest, ttfDir: string, commit: string): number {
     const today = new Date().toISOString().slice(0, 10);
-    const measure = <T extends { local: string }>(entry: T): T & { sha256: string; bytes: number } => {
+    const measure = <T extends { local: string; copyright?: string }>(entry: T): T => {
         const path = join(ttfDir, entry.local);
         if (!existsSync(path)) throw new Error(`${entry.local} is not in ${ttfDir}`);
-        const data = readFileSync(path);
-        return { ...entry, sha256: sha256Of(data), bytes: data.length };
+        const data = new Uint8Array(readFileSync(path));
+        const copyright = readNameRecord(data, 0) ?? entry.copyright;
+        return { ...entry, sha256: sha256Of(data), bytes: data.length, ...(copyright ? { copyright } : {}) };
     };
     try {
-        const next: SourcesManifest = {
+        const fonts = manifest.fonts.map(measure);
+        const derived = buildAllLatinSubsets({ ...manifest, fonts }, ttfDir);
+        for (const r of derived) writeFileSync(join(ttfDir, r.entry.local), r.bytes);
+        const next = withDerivedHashes({
             upstream: { ...manifest.upstream, commit, resolvedOn: today },
-            fonts: manifest.fonts.map(measure),
-            derived: manifest.derived.map(measure),
-        };
+            fonts,
+            derived: manifest.derived,
+        }, derived);
         writeFileSync(MANIFEST_PATH, `${JSON.stringify(next, null, 2)}\n`);
         out(`fonts/SOURCES.json rewritten: ${next.fonts.length} fonts + ${next.derived.length} derived, commit ${commit.slice(0, 12)}, ${today}.`);
         out('Prove the pin with: npx tsx scripts/download-fonts.ts --force');
@@ -338,4 +307,8 @@ async function main(): Promise<number> {
     return tally.failed > 0 ? 1 : 0;
 }
 
-main().then(code => process.exit(code), e => { err(String(e)); process.exit(1); });
+// Run only as a script: verify-fonts.ts imports the helpers above and must
+// not trigger a download.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    main().then(code => process.exit(code), e => { err(String(e)); process.exit(1); });
+}

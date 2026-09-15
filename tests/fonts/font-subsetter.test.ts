@@ -16,6 +16,13 @@ const FIXTURE_HINTING_TABLES: ReadonlyArray<{ tag: string; data: Uint8Array }> =
     { tag: 'prep', data: new Uint8Array([0xB8, 0x01, 0xFF, 0x85, 0xB0, 0x04, 0x8D]) },      // Noto Sans's dropout-control prep
 ];
 
+/** Layout tables added when `layout: true`: opaque byte patterns, copied verbatim or dropped, never parsed. */
+const FIXTURE_LAYOUT_TABLES: ReadonlyArray<{ tag: string; data: Uint8Array }> = [
+    { tag: 'GDEF', data: new Uint8Array([0x00, 0x01, 0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDE, 0xF0]) },
+    { tag: 'GPOS', data: new Uint8Array([0x00, 0x01, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x1E, 0x00, 0x2C, 0x90, 0x05]) },
+    { tag: 'GSUB', data: new Uint8Array([0x00, 0x01, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x1E, 0x00, 0x2C, 0x5B, 0xB5, 0x00]) },
+];
+
 /**
  * Build a minimal valid TTF binary string with 5 glyphs:
  *   GID 0: .notdef (empty)
@@ -23,13 +30,15 @@ const FIXTURE_HINTING_TABLES: ReadonlyArray<{ tag: string; data: Uint8Array }> =
  *   GID 2: simple glyph (18 bytes)
  *   GID 3: compound glyph referencing GID 1 (single component)
  *   GID 4: compound glyph with 3 components covering all flag variants
- * With `hinting: true` the four hinting tables of `FIXTURE_HINTING_TABLES` are added.
+ * With `hinting: true` the four hinting tables of `FIXTURE_HINTING_TABLES` are added;
+ * with `layout: true` the three layout tables of `FIXTURE_LAYOUT_TABLES`.
  */
-function buildMinimalTTF(options?: { longLoca?: boolean; hinting?: boolean }): string {
+function buildMinimalTTF(options?: { longLoca?: boolean; hinting?: boolean; layout?: boolean }): string {
     const longLoca = options?.longLoca ?? false;
     const hinting = options?.hinting ?? false;
+    const layout = options?.layout ?? false;
     const numGlyphs = 5;
-    const numTables = hinting ? 8 : 4; // glyf, head, loca, maxp (+ cvt , fpgm, gasp, prep), alphabetical
+    const numTables = 4 + (hinting ? 4 : 0) + (layout ? 3 : 0); // glyf, head, loca, maxp (+ cvt , fpgm, gasp, prep) (+ GDEF, GPOS, GSUB)
 
     // Simple glyph (18 bytes)
     function makeSimple(): Uint8Array {
@@ -124,6 +133,7 @@ function buildMinimalTTF(options?: { longLoca?: boolean; hinting?: boolean }): s
         { tag: 'loca', data: locaData },
         { tag: 'maxp', data: maxpData },
         ...(hinting ? FIXTURE_HINTING_TABLES : []),
+        ...(layout ? FIXTURE_LAYOUT_TABLES : []),
     ].sort((a, b) => (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0));
     let off = headerSize;
     const offsets: number[] = [];
@@ -132,7 +142,9 @@ function buildMinimalTTF(options?: { longLoca?: boolean; hinting?: boolean }): s
     const output = new Uint8Array(off);
     const ov = new DataView(output.buffer);
     ov.setUint32(0, 0x00010000); ov.setUint16(4, numTables);
-    ov.setUint16(6, hinting ? 128 : 64); ov.setUint16(8, hinting ? 3 : 2); ov.setUint16(10, 0);
+    let entrySelector = 0, searchRange = 1;
+    while (searchRange * 2 <= numTables) { searchRange *= 2; entrySelector++; }
+    ov.setUint16(6, searchRange * 16); ov.setUint16(8, entrySelector); ov.setUint16(10, numTables * 16 - searchRange * 16);
 
     for (let i = 0; i < tables.length; i++) {
         const o = 12 + i * 16;
@@ -484,6 +496,7 @@ describe('subsetTTF — hinting tables (prep, fpgm, cvt , gasp)', () => {
 
     describe('bundled Noto Sans', () => {
         const NOTO_SANS_SUBSET_TAGS = ['OS/2', 'cmap', 'gasp', 'glyf', 'head', 'hhea', 'hmtx', 'loca', 'maxp', 'name', 'post', 'prep'];
+        const NOTO_SANS_SOURCE_TAGS = ['GDEF', 'GPOS', 'GSUB', ...NOTO_SANS_SUBSET_TAGS];
         const font = notoSans as unknown as FontData;
         const gidOf = (ch: string): number => font.cmap[ch.codePointAt(0)!] ?? 0;
         const usedGids = new Set(['H', 'e', 'l', 'o', 'w', 'r', 'd', ' '].map(gidOf));
@@ -541,6 +554,66 @@ describe('subsetTTF — hinting tables (prep, fpgm, cvt , gasp)', () => {
             expect(Array.from(out['glyf'].subarray(outStart, outStart + (srcEnd - srcStart))))
                 .toEqual(Array.from(src['glyf'].subarray(srcStart, srcEnd)));
         });
+
+        // v1.8.0 — the source-font opt-in the Latin subsets are cut with.
+        it('keeps GSUB, GPOS and GDEF byte-identical to the source under keepLayoutTables', () => {
+            const source = getDecodedFontBytes(font);
+            const src = parseTableDirectory(source).tables;
+            const out = expectValidDirectory(binaryToU8(subsetTTF(source, usedGids, { keepLayoutTables: true })), NOTO_SANS_SOURCE_TAGS);
+            for (const tag of ['GDEF', 'GPOS', 'GSUB']) {
+                expect(out[tag].length).toBe(src[tag].length);
+                expect(Array.from(out[tag])).toEqual(Array.from(src[tag]));
+            }
+            // The variation tables are still dropped: the subset is the default instance.
+            for (const tag of ['fvar', 'gvar', 'HVAR', 'avar', 'STAT', 'MVAR']) expect(out[tag]).toBeUndefined();
+        });
+
+        it('is byte-identical to the two-argument call when no option is set', () => {
+            const source = getDecodedFontBytes(font);
+            const plain = subsetTTF(source, usedGids);
+            expect(subsetTTF(source, usedGids, {})).toBe(plain);
+            expect(subsetTTF(source, usedGids, { keepLayoutTables: false })).toBe(plain);
+        });
+    });
+});
+
+describe('subsetTTF — source-font options (v1.8.0)', () => {
+    const CORE = ['glyf', 'head', 'loca', 'maxp'];
+    const WITH_LAYOUT = ['GDEF', 'GPOS', 'GSUB', 'glyf', 'head', 'loca', 'maxp'];
+
+    it('drops the layout tables by default', () => {
+        const source = binaryToU8(buildMinimalTTF({ layout: true }));
+        const tables = expectValidDirectory(binaryToU8(subsetTTF(source, new Set([1]))), CORE);
+        for (const { tag } of FIXTURE_LAYOUT_TABLES) expect(tables[tag]).toBeUndefined();
+    });
+
+    it('copies GSUB, GPOS and GDEF verbatim under keepLayoutTables', () => {
+        const source = binaryToU8(buildMinimalTTF({ layout: true }));
+        const tables = expectValidDirectory(binaryToU8(subsetTTF(source, new Set([1]), { keepLayoutTables: true })), WITH_LAYOUT);
+        for (const { tag, data } of FIXTURE_LAYOUT_TABLES) expect(Array.from(tables[tag])).toEqual(Array.from(data));
+    });
+
+    it('never invents a layout table the source lacks', () => {
+        const source = binaryToU8(buildMinimalTTF({ hinting: true }));
+        const tables = expectValidDirectory(binaryToU8(subsetTTF(source, new Set([1]), { keepLayoutTables: true })),
+            ['cvt ', 'fpgm', 'gasp', 'glyf', 'head', 'loca', 'maxp', 'prep']);
+        for (const { tag } of FIXTURE_LAYOUT_TABLES) expect(tables[tag]).toBeUndefined();
+    });
+
+    it('leaves the glyph selection untouched: outlines, loca and checksum behave as without options', () => {
+        const source = buildMinimalTTF({ layout: true, longLoca: true });
+        const plain = parseSubset(subsetTTF(source, new Set([1, 3])));
+        const kept = parseSubset(subsetTTF(source, new Set([1, 3]), { keepLayoutTables: true }));
+        expect(kept).toEqual(plain);
+    });
+
+    it('is byte-identical to the two-argument call for every fixture when no option is set', () => {
+        for (const opts of [{}, { hinting: true }, { layout: true }, { layout: true, hinting: true, longLoca: true }]) {
+            const source = buildMinimalTTF(opts);
+            const plain = subsetTTF(source, new Set([1, 4]));
+            expect(subsetTTF(source, new Set([1, 4]), {})).toBe(plain);
+            expect(subsetTTF(source, new Set([1, 4]), { keepLayoutTables: false })).toBe(plain);
+        }
     });
 });
 

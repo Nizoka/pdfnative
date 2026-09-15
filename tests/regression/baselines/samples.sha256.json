@@ -1,7 +1,7 @@
 {
   "$comment": "Fingerprints of every sample in test-output/. Regenerate deliberately with `npx tsx scripts/verify-samples.ts --update`, and say why in the release notes: a changed hash means existing output changed. Mode `bytes` is a SHA-256 of the file; mode `semantic` is a SHA-256 of a canonical projection of the decrypted document, used for encrypted samples whose bytes are CSPRNG-derived and can never repeat. Each entry's `since` names the release whose output the hash is: it is carried forward untouched while the sample is unchanged, and moves to the release doing the rebaseline when the hash changes, so the chain 1.7.0 -> 1.8.0 -> 1.9.0 stays auditable and every re-anchoring is visible in the diff.",
   "baselineVersion": "1.8.0",
-  "provenance": "The 1.7.0 entries were verified against a v1.7.0 git worktree carrying only the determinism plumbing (pinned creation instant, TZ=UTC). Entries stamped 1.8.0 are, in order: the 29 samples introduced by 1.8.0; the nine whose v1.7.0 output was non-deterministic by construction (a Math.random() fixture, an unpinned incremental /ModDate, seven signature samples whose /M and CMS signingTime defaulted to the wall clock); and the samples whose output 1.8.0 changed deliberately — Khmer, Myanmar, Lao, Tai Tham, New Tai Lue, Tai Le and Cham shaping, COLRv1 emoji (transforms, then the alpha-ramp layers), regenerated font modules, the no-break-space metric fix (three compression samples), the base-14 measurement fix (text-extract-report, table-micro-columns), the no-break-space glyph fix (four pdfa-latin samples), the English-only pass over sample prose (digital-signature-info, then the three typography samples that demonstrated hyphenation on French words), the 27 alphabet plates (column widths and neutral labels), the four printer's-marks samples (clearance and colour bars) and every sample embedding a TrueType face whose source carries hinting tables (prep, fpgm, cvt, gasp are now kept in the subset; outlines unchanged). The Indic and mark-positioning pass then re-anchored, in order: every sample set with a font module that carries GPOS mark anchors (the 29 regenerated modules keep one anchor class per subtable instead of collapsing them all to class 0, so above-base vowel signs, harakat, niqqud, tone marks and stacked marks land where the font designed them — alphabet, document, shaping, extreme, bidi, diverse, financial, compression, tagged, pdfa-latin, print, emoji, typography, math and tools samples that embed those faces); the five Indic scripts shaped by the OpenType engine (Tamil i-matra after its consonant, reph after the base, Telugu subjoined forms, per-feature conjuncts, one glyph for Devanagari o and au); the sixteen one-page language conformance documents whose content was rewritten around the script's edge cases (doc-thai, doc-bengali, doc-tamil, doc-devanagari, doc-telugu, doc-sinhala, doc-tibetan, doc-khmer, doc-myanmar, doc-amharic, doc-arabic, doc-hebrew, and the four new doc-hausa, doc-yoruba, doc-igbo, doc-swahili), then the thirteen documents that gave every remaining bundled script one (doc-lao, doc-taitham, doc-newtailue, doc-taile, doc-cham, doc-korean, doc-greek, doc-cyrillic, doc-georgian, doc-armenian, doc-turkish, doc-vietnamese, doc-polish); the four new Latin-script African alphabet plates; the ToUnicode CMap of every document whose shaper reports multi-code-point glyphs; and every sample embedding a TrueType subset, whose head.checkSumAdjustment is now computed instead of written as zero — this last change also moves the eight Greek, Polish, Turkish and Vietnamese samples that the hinting-table change had left at 1.7.0. Every re-anchoring is listed in the 1.8.0 release note. Counts: 1.7.0=114, 1.8.0=178.",
+  "provenance": "The 1.7.0 entries were verified against a v1.7.0 git worktree carrying only the determinism plumbing (pinned creation instant, TZ=UTC). Entries stamped 1.8.0 are, in order: the 29 samples introduced by 1.8.0; the nine whose v1.7.0 output was non-deterministic by construction (a Math.random() fixture, an unpinned incremental /ModDate, seven signature samples whose /M and CMS signingTime defaulted to the wall clock); and the samples whose output 1.8.0 changed deliberately — Khmer, Myanmar, Lao, Tai Tham, New Tai Lue, Tai Le and Cham shaping, COLRv1 emoji (transforms, then the alpha-ramp layers), regenerated font modules, the no-break-space metric fix (three compression samples), the base-14 measurement fix (text-extract-report, table-micro-columns), the no-break-space glyph fix (four pdfa-latin samples), the English-only pass over sample prose (digital-signature-info, then the three typography samples that demonstrated hyphenation on French words), the 27 alphabet plates (column widths and neutral labels), the four printer's-marks samples (clearance and colour bars) and every sample embedding a TrueType face whose source carries hinting tables (prep, fpgm, cvt, gasp are now kept in the subset; outlines unchanged). The Indic and mark-positioning pass then re-anchored, in order: every sample set with a font module that carries GPOS mark anchors (the 29 regenerated modules keep one anchor class per subtable instead of collapsing them all to class 0, so above-base vowel signs, harakat, niqqud, tone marks and stacked marks land where the font designed them — alphabet, document, shaping, extreme, bidi, diverse, financial, compression, tagged, pdfa-latin, print, emoji, typography, math and tools samples that embed those faces); the five Indic scripts shaped by the OpenType engine (Tamil i-matra after its consonant, reph after the base, Telugu subjoined forms, per-feature conjuncts, one glyph for Devanagari o and au); the sixteen one-page language conformance documents whose content was rewritten around the script's edge cases (doc-thai, doc-bengali, doc-tamil, doc-devanagari, doc-telugu, doc-sinhala, doc-tibetan, doc-khmer, doc-myanmar, doc-amharic, doc-arabic, doc-hebrew, and the four new doc-hausa, doc-yoruba, doc-igbo, doc-swahili), then the thirteen documents that gave every remaining bundled script one (doc-lao, doc-taitham, doc-newtailue, doc-taile, doc-cham, doc-korean, doc-greek, doc-cyrillic, doc-georgian, doc-armenian, doc-turkish, doc-vietnamese, doc-polish); the four new Latin-script African alphabet plates; the ToUnicode CMap of every document whose shaper reports multi-code-point glyphs; and every sample embedding a TrueType subset, whose head.checkSumAdjustment is now computed instead of written as zero — this last change also moves the eight Greek, Polish, Turkish and Vietnamese samples that the hinting-table change had left at 1.7.0. The conformance-review pass then re-anchored: the Thai and Lao sara am ordering fix and the Lao pali virama advance (diverse-recipe-th, doc-thai, doc-lao, alphabet-lao), and the twenty samples embedding the Cyrillic, Greek, Polish, Turkish or Vietnamese modules, whose source subsets are now cut from the pinned NotoSans-VF.ttf by the library's own subsetTTF() instead of the historical pyftsubset files (same outlines; the Cyrillic face is the unhinted default instance with the variable font's glyph ids). Every re-anchoring is listed in the 1.8.0 release note. Counts: 1.7.0=114, 1.8.0=178.",
   "creationDate": "2026-01-01T00:00:00.000Z",
   "timezone": "UTC",
   "entries": {
@@ -37,8 +37,8 @@
     },
     "alphabet/alphabet-cyrillic.pdf": {
       "mode": "bytes",
-      "hash": "68bffb1d07e78c2a9ccca3837c827fdfcc7bfaf0dcac141c6edbe1ae921bbeb0",
-      "size": 125513,
+      "hash": "ff5f5e6a04cc85d526d9621f1c5dda847aa7d68500cf31b03013387b03b05f21",
+      "size": 133053,
       "since": "1.8.0"
     },
     "alphabet/alphabet-devanagari.pdf": {
@@ -61,8 +61,8 @@
     },
     "alphabet/alphabet-greek.pdf": {
       "mode": "bytes",
-      "hash": "93d603994f6be6b743cc098b7130d05ce41cb5638f58496644ade612f05ef1b5",
-      "size": 131593,
+      "hash": "e96081734809e1f59467bc4413a5e33ace0e4e77deb73fe6c1f8183f9d499477",
+      "size": 131641,
       "since": "1.8.0"
     },
     "alphabet/alphabet-hausa.pdf": {
@@ -121,8 +121,8 @@
     },
     "alphabet/alphabet-polish.pdf": {
       "mode": "bytes",
-      "hash": "601e1dcf963db88c8c26fc1fdbc0c3ef67e1235a1a4d16dbc84e64dd2f447f6e",
-      "size": 127584,
+      "hash": "71e009276f4bff1a522dfd72700a4d8f4c4724246af8a3393da80917c0c06ddf",
+      "size": 127632,
       "since": "1.8.0"
     },
     "alphabet/alphabet-sinhala.pdf": {
@@ -175,14 +175,14 @@
     },
     "alphabet/alphabet-turkish.pdf": {
       "mode": "bytes",
-      "hash": "0ab98ea90afd010661b316cb8d71636dbd114d3faf9ea29b4e9e8e6cd36165f5",
-      "size": 127944,
+      "hash": "79f325342096471795f67dfa1d615b44ae4baafd3a48517d9db632ea9a251d16",
+      "size": 127992,
       "since": "1.8.0"
     },
     "alphabet/alphabet-vietnamese.pdf": {
       "mode": "bytes",
-      "hash": "90872a020087b52868ef0cf58ea19d584529d923e71973d4b0f7395c1c7cdecc",
-      "size": 135625,
+      "hash": "1a91678e0aba339b0209261240ec12eb0a94b0abec53ed0ba8763f32bfeca2cd",
+      "size": 135673,
       "since": "1.8.0"
     },
     "alphabet/alphabet-yoruba.pdf": {
@@ -379,8 +379,8 @@
     },
     "diverse/diverse-library-el.pdf": {
       "mode": "bytes",
-      "hash": "7f247d0e1da86f92bba69fc79620ea437c007749faa5ac648ecc75d5cf017b4a",
-      "size": 126306,
+      "hash": "294cd215c1e329ab068c66215a568b406e78aee2bdd6dd7a8adc3760883fd4f2",
+      "size": 126354,
       "since": "1.8.0"
     },
     "diverse/diverse-marketplace-ar.pdf": {
@@ -397,8 +397,8 @@
     },
     "diverse/diverse-menu-tr.pdf": {
       "mode": "bytes",
-      "hash": "a0984a1e9e720bdacfa3689ebc54562f1de6542385631db204aca179b194bd42",
-      "size": 126674,
+      "hash": "e8ae65b04ea0f60db54c302a018b869ee62779e3dc7957ea5917b0f0dd418836",
+      "size": 126722,
       "since": "1.8.0"
     },
     "diverse/diverse-museum-he.pdf": {
@@ -433,14 +433,14 @@
     },
     "diverse/diverse-train-pl.pdf": {
       "mode": "bytes",
-      "hash": "678816736ccc392035530caf8afa91a03e6e30849b42d479d5702f44f0020348",
-      "size": 126077,
+      "hash": "92c6876750c7e0d19bd3d4b7231c74ec3892745ffb562f71e594c969adb065a0",
+      "size": 126125,
       "since": "1.8.0"
     },
     "diverse/diverse-weather-vi.pdf": {
       "mode": "bytes",
-      "hash": "c484a7c84db766d058c3f67364e5a2d01e396ef37dc6dee0da19dec21b29df12",
-      "size": 126728,
+      "hash": "321341115603fc02638c38a2c62129eb16d5785ea925dac2bbc2cb025b062760",
+      "size": 126776,
       "since": "1.8.0"
     },
     "document/doc-amharic.pdf": {
@@ -493,8 +493,8 @@
     },
     "document/doc-cyrillic.pdf": {
       "mode": "bytes",
-      "hash": "b3084a609bff169e5bca46de8997d53da7ca1203d51234dcefa4d2a1e1e4926c",
-      "size": 126726,
+      "hash": "8ed77e6fe01caa8badd1c06b5532457290836111e00a613e6714dd4b3ad49c67",
+      "size": 135138,
       "since": "1.8.0"
     },
     "document/doc-devanagari.pdf": {
@@ -523,8 +523,8 @@
     },
     "document/doc-greek.pdf": {
       "mode": "bytes",
-      "hash": "3f086916df86f2309f4070c1c673f842da0abc35ee44a608eec570d9abe61c52",
-      "size": 132529,
+      "hash": "30799aa7b91de3ee3920ffdfda978d11f6faf51ed9dfeb869e1eaa60a16d12d1",
+      "size": 132577,
       "since": "1.8.0"
     },
     "document/doc-hausa.pdf": {
@@ -601,8 +601,8 @@
     },
     "document/doc-multi-language.pdf": {
       "mode": "bytes",
-      "hash": "556d7aec177b1cb6c4555e14dc066a193b1784c298f76f112103250f11b2cfb1",
-      "size": 2098270,
+      "hash": "b0da801608ef96614257624675516edfa25e66f27a837fca87728935b39276fa",
+      "size": 2111460,
       "since": "1.8.0"
     },
     "document/doc-myanmar.pdf": {
@@ -625,8 +625,8 @@
     },
     "document/doc-polish.pdf": {
       "mode": "bytes",
-      "hash": "bcfd7fe03cd42947c80bb0d595036e76119509109c03ee79cbf42f0e4ac9a835",
-      "size": 128060,
+      "hash": "77adfe943dd87f5fa9dfa9f439829b3d31e27f0c91c4df9310b370eea429bb36",
+      "size": 128108,
       "since": "1.8.0"
     },
     "document/doc-report-multipage.pdf": {
@@ -703,14 +703,14 @@
     },
     "document/doc-turkish.pdf": {
       "mode": "bytes",
-      "hash": "b373f4910a8bb43060b34ea6ac2bc96aef81841a0894375b756f753fe957f94f",
-      "size": 129240,
+      "hash": "b2bc5913213ad639f3bfa7814fa41e46983da226e504c44cdd5e803457e73534",
+      "size": 129288,
       "since": "1.8.0"
     },
     "document/doc-vietnamese.pdf": {
       "mode": "bytes",
-      "hash": "0fbc92a308c345cf0458cdcf16bddacf80c589db6a156b285804fcc393700fce",
-      "size": 134825,
+      "hash": "951ab9e5b89fe23aa6607ff30cb4a1d48ab2ff89ded56eb787175f897aed5127",
+      "size": 134873,
       "since": "1.8.0"
     },
     "document/doc-yoruba.pdf": {
@@ -871,8 +871,8 @@
     },
     "financial/sample-el.pdf": {
       "mode": "bytes",
-      "hash": "01b653f51edbf3c2fa80a541f42a0783964cbdff469b8d4e5911f77f2c5cfdd0",
-      "size": 124969,
+      "hash": "d62c652ecf3160474e5df292f029d67053b3fd74a743c61abc0ab10ae76d9185",
+      "size": 125017,
       "since": "1.8.0"
     },
     "financial/sample-he.pdf": {
@@ -907,8 +907,8 @@
     },
     "financial/sample-multi.pdf": {
       "mode": "bytes",
-      "hash": "a518d1c37d6a9322734275432c7e6fc64d34bedfae95a1d2cd00678a1be19d38",
-      "size": 10137090,
+      "hash": "55a2ea5bc0a1d92b0244d0d3b3d2856ac000937dcc39c3444a76b341aebea232",
+      "size": 10224928,
       "since": "1.8.0"
     },
     "financial/sample-pagination.pdf": {
@@ -919,8 +919,8 @@
     },
     "financial/sample-pl.pdf": {
       "mode": "bytes",
-      "hash": "3b33f9591bd10bc66d652f2e9f6ba59fb5a88c6e224532cea1abd77bd0bdd9ee",
-      "size": 123772,
+      "hash": "b978310d5dfcc6c526a1fec4f350033b14d007e6658fe43d0bb86f56e15fb50f",
+      "size": 123820,
       "since": "1.8.0"
     },
     "financial/sample-th.pdf": {
@@ -931,14 +931,14 @@
     },
     "financial/sample-tr.pdf": {
       "mode": "bytes",
-      "hash": "80008714438233021cbee3d8c014ebba13c695fb75bf9ab8b291b42bc91e84d6",
-      "size": 123563,
+      "hash": "48b43c68495d00539cc38b957d88b77899e4f9bfada8ff2636bd3d7c7e9747bf",
+      "size": 123611,
       "since": "1.8.0"
     },
     "financial/sample-vi.pdf": {
       "mode": "bytes",
-      "hash": "85be5bc678d42107e5f095b7a4463247625dc33616e229741fa5e3f0b25cf562",
-      "size": 125622,
+      "hash": "8cdc5b1445b726edb67785db7787347253dd3238cdeaf2995589e9603ec4bdd5",
+      "size": 125670,
       "since": "1.8.0"
     },
     "financial/sample-zh.pdf": {

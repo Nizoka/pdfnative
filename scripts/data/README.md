@@ -41,8 +41,10 @@ The UCD files are © Unicode, Inc., distributed under the
 [Unicode License v3](https://www.unicode.org/license.txt) — a permissive,
 OSI-approved, MIT-compatible license that allows redistribution as long as the
 copyright notice is retained (each file keeps its original header). This
-mirrors the precedent of the Noto source fonts committed under `fonts/ttf/`
-(SIL OFL 1.1, see `fonts/LICENSE`).
+mirrors the treatment of the Noto fonts (SIL OFL 1.1, see `fonts/LICENSE` and
+`THIRD-PARTY-NOTICES.md`), whose sources are pinned in `fonts/SOURCES.json`
+and downloaded rather than committed. The engine's UCD release is
+`USE_UNICODE_VERSION` in `src/shaping/use-data.ts` (17.0.0).
 
 The two `-Additional` files are distributed by HarfBuzz under the
 [Old MIT license](https://github.com/harfbuzz/harfbuzz/blob/main/COPYING),

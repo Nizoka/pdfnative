@@ -8,16 +8,12 @@ Thumbs.db
 .env.*
 .vscode/
 
-# Raw TTF source fonts (large binaries, downloaded by `npm run fonts:download`
-# at the commit and SHA-256 pinned in fonts/SOURCES.json). Only the contents
-# are ignored, so the five files no upstream URL reproduces can be committed:
-# the pyftsubset Latin subsets (static instances come from notofonts release archives).
+# Raw TTF source fonts (large binaries): downloaded by `npm run fonts:download`
+# at the commit, release tag and SHA-256 pinned in fonts/SOURCES.json, or — for
+# the five Latin subsets — derived by the same script from NotoSans-VF.ttf with
+# the library's own subsetTTF() (fonts/subsets/ holds their code-point lists).
+# Nothing under fonts/ttf/ is committed.
 fonts/ttf/*
-!fonts/ttf/NotoSans-Cyrillic.ttf
-!fonts/ttf/NotoSans-Greek.ttf
-!fonts/ttf/NotoSans-Polish.ttf
-!fonts/ttf/NotoSans-Turkish.ttf
-!fonts/ttf/NotoSans-Vietnamese.ttf
 
 # Generated sample PDFs for visual inspection
 test-output/

@@ -9,12 +9,15 @@ name: Font Reproducibility
 # font could not actually draw. Nothing detected it, because nobody
 # regenerated.
 #
-# The source fonts are pinned by google/fonts commit and SHA-256 in
-# fonts/SOURCES.json; `npm run fonts:download` refuses any byte that differs,
-# and `npm run verify:fonts` checks every TTF against the manifest before it
-# regenerates a module. The download is tens of megabytes, so the job runs on
-# pull requests only when a font-related path changes, plus a weekly schedule
-# that catches an upstream URL going away.
+# The source fonts are pinned by google/fonts commit, notofonts release tag and
+# SHA-256 in fonts/SOURCES.json; `npm run fonts:download` refuses any byte that
+# differs and derives the five Latin subsets from the pinned variable font with
+# the library's own subsetTTF() (code-point lists under fonts/subsets/), and
+# `npm run verify:fonts` checks every TTF against the manifest — re-deriving
+# the subsets — before it regenerates a module. Nothing under fonts/ttf/ is
+# committed. The download is tens of megabytes, so the job runs on pull
+# requests only when a font-related path changes, plus a weekly schedule that
+# catches an upstream URL going away.
 
 on:
   push:
@@ -22,22 +25,30 @@ on:
     paths:
       - 'fonts/**'
       - 'fonts/SOURCES.json'
-      - 'fonts/ttf/*.ttf'
+      - 'fonts/subsets/*.txt'
       - 'tools/build-font-data.cjs'
       - 'src/tools/font-compiler.ts'
+      - 'src/fonts/font-subsetter.ts'
       - 'scripts/verify-fonts.ts'
       - 'scripts/download-fonts.ts'
+      - 'scripts/build-latin-subsets.ts'
+      - 'scripts/lib/latin-subsets.ts'
+      - 'scripts/lib/font-sources.ts'
       - '.github/workflows/font-reproducibility.yml'
   pull_request:
     branches: [main, master]
     paths:
       - 'fonts/**'
       - 'fonts/SOURCES.json'
-      - 'fonts/ttf/*.ttf'
+      - 'fonts/subsets/*.txt'
       - 'tools/build-font-data.cjs'
       - 'src/tools/font-compiler.ts'
+      - 'src/fonts/font-subsetter.ts'
       - 'scripts/verify-fonts.ts'
       - 'scripts/download-fonts.ts'
+      - 'scripts/build-latin-subsets.ts'
+      - 'scripts/lib/latin-subsets.ts'
+      - 'scripts/lib/font-sources.ts'
       - '.github/workflows/font-reproducibility.yml'
   schedule:
     - cron: '37 4 * * 1'
@@ -74,7 +85,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Download the source fonts (pinned commit, SHA-256 checked)
+      - name: Download the source fonts (pinned commit, SHA-256 checked) and derive the Latin subsets
         run: npm run fonts:download
 
       - name: Verify every module reproduces from its source font

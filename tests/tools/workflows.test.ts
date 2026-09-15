@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { USE_UNICODE_VERSION } from '../../src/shaping/use-data.js';
 
 // ── Workflow, supply-chain and contributor invariants ─────────────────
 //
@@ -272,8 +274,8 @@ describe('dependency review and audit', () => {
 describe('fonts/SOURCES.json', () => {
     const manifest = JSON.parse(readText('fonts', 'SOURCES.json')) as {
         upstream: { repo: string; commit: string; resolvedOn: string };
-        fonts: Array<{ local: string; sha256: string; bytes: number; dir?: string; remote?: string; origin?: string; commit?: string; repo?: string; tag?: string; asset?: string; path?: string }>;
-        derived: Array<{ local: string; from: string; tool: string; sha256: string; bytes: number }>;
+        fonts: Array<{ local: string; sha256: string; bytes: number; dir?: string; remote?: string; origin?: string; commit?: string; repo?: string; tag?: string; asset?: string; path?: string; copyright?: string }>;
+        derived: Array<{ local: string; from: string; tool: string; codepoints: string; layout: boolean; command: string; sha256: string; bytes: number }>;
     };
     const listed = new Set([...manifest.fonts, ...manifest.derived].map((f) => f.local));
 
@@ -313,31 +315,89 @@ describe('fonts/SOURCES.json', () => {
         }
     });
 
-    it('records the five derived Latin subsets as the only committed TTFs, and the four static instances as release assets', () => {
+    it('records the five Latin subsets as derived by the library from the pinned variable font, and the four static instances as release assets', () => {
         expect(manifest.derived.map((d) => d.local).sort()).toEqual([
             'NotoSans-Cyrillic.ttf', 'NotoSans-Greek.ttf', 'NotoSans-Polish.ttf', 'NotoSans-Turkish.ttf', 'NotoSans-Vietnamese.ttf',
         ]);
         for (const d of manifest.derived) {
             expect(d.from).toBe('NotoSans-VF.ttf');
-            expect(d.tool).toContain('pyftsubset');
+            expect(d.tool).toContain('subsetTTF');
+            expect(d.tool).not.toContain('pyftsubset');
+            expect(d.codepoints).toMatch(/^fonts\/subsets\/NotoSans-[A-Za-z]+\.codepoints\.txt$/);
+            expect(existsSync(join(ROOT, ...d.codepoints.split('/'))), `${d.codepoints} is not in the tree`).toBe(true);
+            expect(typeof d.layout).toBe('boolean');
+            expect(d.command).toContain('build-latin-subsets');
+            expect(d.sha256).toMatch(/^[0-9a-f]{64}$/);
         }
+        // Only the Cyrillic module carries layout tables (kern, otl, mark anchors).
+        expect(manifest.derived.filter((d) => d.layout).map((d) => d.local)).toEqual(['NotoSans-Cyrillic.ttf']);
         expect(manifest.fonts.filter((f) => f.origin === 'release').map((f) => f.local).sort()).toEqual([
             'NotoSansArabic-Regular.ttf', 'NotoSansArmenian-Regular.ttf', 'NotoSansGeorgian-Regular.ttf', 'NotoSansHebrew-Regular.ttf',
         ]);
+    });
+
+    it('commits no font binary: fonts/ttf/ is ignored whole', () => {
         const gitignore = readText('.gitignore');
         expect(gitignore).toMatch(/^fonts\/ttf\/\*$/m);
-        const exceptions = [...gitignore.matchAll(/^!fonts\/ttf\/(\S+)$/gm)].map((m) => m[1]).sort();
-        expect(exceptions).toEqual(manifest.derived.map((d) => d.local).sort());
-        for (const name of exceptions) {
-            expect(existsSync(join(ROOT, 'fonts', 'ttf', name)), `${name} is not in the tree`).toBe(true);
+        expect(gitignore).not.toMatch(/^!fonts\/ttf\//m);
+        const tracked = execFileSync('git', ['ls-files', 'fonts/ttf'], { cwd: ROOT, encoding: 'utf8' }).trim();
+        expect(tracked).toBe('');
+    });
+
+    // Third-party notices: every source font, its upstream and its copyright
+    // statement are named, and fonts/LICENSE carries every statement (OFL §2).
+    it('is mirrored by THIRD-PARTY-NOTICES.md and fonts/LICENSE', () => {
+        const notices = readText('THIRD-PARTY-NOTICES.md');
+        const licence = readText('fonts', 'LICENSE');
+        for (const f of [...manifest.fonts, ...manifest.derived]) {
+            expect(notices, f.local).toContain(`\`${f.local}\``);
         }
+        for (const f of manifest.fonts) {
+            expect(f.copyright, `${f.local} has no copyright statement in fonts/SOURCES.json`).toBeTruthy();
+            expect(notices, f.local).toContain(f.copyright!);
+            expect(licence, f.local).toContain(f.copyright!);
+            if (f.origin === 'release') {
+                expect(notices).toContain(f.repo!);
+                expect(notices).toContain(`\`${f.tag}\``);
+            } else {
+                expect(notices).toContain(`\`ofl/${f.dir}\``);
+            }
+            if (f.commit) expect(notices).toContain(f.commit.slice(0, 12));
+        }
+        expect(notices).toContain(manifest.upstream.commit);
+        expect(notices).toContain('Modified Version');
+        expect(notices).toContain('subsetTTF');
+        expect(notices).toContain('fonts/subsets/');
+        expect(licence).toContain('Modified');
+        expect(licence).toContain('The Noto Project Authors');
+        // The CJK fonts declare a Reserved Font Name; the notices must say so.
+        const reserved = manifest.fonts.filter((f) => /Reserved Font Name/.test(f.copyright ?? ''));
+        expect(reserved.map((f) => f.local).sort()).toEqual(['NotoSansJP-Regular.ttf', 'NotoSansKR-Regular.ttf', 'NotoSansSC-Regular.ttf']);
+        expect(notices).toMatch(/Reserved\s+Font Name \*\*"Source"\*\*/);
+        expect(licence).toContain('Reserved Font Name "Source"');
+    });
+
+    it('names the other third-party material: Unicode data, the HarfBuzz overrides and the Adobe Core 14 metrics', () => {
+        const notices = readText('THIRD-PARTY-NOTICES.md');
+        expect(notices).toContain(`Unicode ${USE_UNICODE_VERSION}`);
+        expect(readText('scripts', 'data', 'README.md')).toContain(USE_UNICODE_VERSION);
+        expect(notices).toMatch(/HarfBuzz.*cdbe72ca8bf2c077e91ae10c4e428e1183d7d5ec/is);
+        expect(readText('scripts', 'data', 'README.md')).toContain('cdbe72ca8bf2c077e91ae10c4e428e1183d7d5ec');
+        expect(notices).toContain('Helvetica.afm');
+        expect(notices).toContain('Helvetica-Bold.afm');
+        expect(readText('src', 'fonts', 'base14-metrics.ts')).toContain('Helvetica.afm');
+        // Nothing binary is committed under fonts/ttf/, and the notices say so.
+        expect(notices).toContain('No font file is committed');
     });
 
     it('is what the font-reproducibility workflow watches', () => {
         const wf = readWorkflow('font-reproducibility.yml');
         expect(wf).toMatch(/pull_request:/);
         expect(wf).toContain("'fonts/SOURCES.json'");
-        expect(wf).toContain("'fonts/ttf/*.ttf'");
+        expect(wf).toContain("'fonts/subsets/*.txt'");
+        expect(wf).toContain("'src/fonts/font-subsetter.ts'");
+        expect(wf).toContain("'scripts/lib/latin-subsets.ts'");
+        expect(wf).not.toContain("'fonts/ttf/*.ttf'");
         expect(wf).toMatch(/run: npm run fonts:download/);
         expect(wf).toMatch(/run: npm run verify:fonts/);
     });

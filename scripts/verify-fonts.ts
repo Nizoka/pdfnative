@@ -19,6 +19,12 @@
  * or whose bytes differ from the manifest, fails the check — a module that
  * "reproduces" from an unknown font proves nothing.
  *
+ * The five Latin subsets (`derived[]`) are themselves re-derived here from the
+ * pinned variable font with the library's `subsetTTF()` and compared with the
+ * manifest before their modules are compiled from the fresh bytes, so the
+ * whole chain — upstream bytes → subset → module — is proven, and a stale
+ * file in fonts/ttf/ can never mask drift. (v1.8.0)
+ *
  * Usage:
  *   npm run fonts:download     # populate fonts/ttf/ from the pinned manifest
  *   npm run verify:fonts
@@ -40,11 +46,13 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { expectedHashes, readManifest, sha256Of } from './download-fonts.js';
+import { expectedHashes, readManifest, sha256Of } from './lib/font-sources.js';
+import { buildAllLatinSubsets } from './lib/latin-subsets.js';
+import type { DerivedBuild } from './lib/latin-subsets.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
@@ -126,7 +134,7 @@ function main(): number {
     const manifest = readManifest();
     const expected = expectedHashes(manifest);
     // Every `fonts[]` entry is downloadable (google/fonts or a notofonts release);
-    // only the derived subsets live in the tree, so they cannot prove a download ran.
+    // the derived subsets are cut from one of them, so they cannot prove a download ran.
     const downloadable = manifest.fonts.map(f => f.local);
     if (!downloadable.some(f => existsSync(join(TTF_DIR, f)))) {
         printMissingFontsHelp();
@@ -141,20 +149,51 @@ function main(): number {
     const diverged: Divergence[] = [];
     let checked = 0;
 
+    // The derived subsets are rebuilt once, lazily, from the pinned variable
+    // font; their modules are then compiled from the fresh bytes in `work/`.
+    const derivedEntries = new Map(manifest.derived.map(d => [d.local, d]));
+    let derivedBuilds: Map<string, DerivedBuild> | { error: string } | null = null;
+    const deriveAll = (): Map<string, DerivedBuild> | { error: string } => {
+        if (derivedBuilds) return derivedBuilds;
+        try {
+            derivedBuilds = new Map(buildAllLatinSubsets(manifest, TTF_DIR).map(r => [r.entry.local, r]));
+        } catch (e) {
+            derivedBuilds = { error: e instanceof Error ? e.message : String(e) };
+        }
+        return derivedBuilds;
+    };
+
     try {
         for (const mod of modules) {
             const committed = readFileSync(join(FONTS_DIR, mod), 'utf8');
             const src = sourceOf(committed);
             if (!src) { diverged.push({ module: mod, reason: 'no "Source:" header' }); continue; }
 
-            const ttf = join(TTF_DIR, src);
-            if (!existsSync(ttf)) {
-                // Some upstream fonts are present, so this one should be too.
-                diverged.push({ module: mod, reason: `source font ${src} is missing — npm run fonts:download` });
-                continue;
+            let ttf = join(TTF_DIR, src);
+            const derived = derivedEntries.get(src);
+            if (derived) {
+                const builds = deriveAll();
+                if ('error' in builds) { diverged.push({ module: mod, reason: `cannot derive ${src}: ${builds.error}` }); continue; }
+                const built = builds.get(src);
+                if (!built) { diverged.push({ module: mod, reason: `${src} was not derived` }); continue; }
+                if (built.sha256 !== derived.sha256) {
+                    diverged.push({
+                        module: mod,
+                        reason: `derived subset ${src} no longer reproduces from ${derived.from} (expected ${derived.sha256.slice(0, 16)}…/${derived.bytes} B, got ${built.sha256.slice(0, 16)}…/${built.bytes.length} B) — npx tsx scripts/build-latin-subsets.ts --update-manifest, then regenerate ${mod}`,
+                    });
+                    continue;
+                }
+                ttf = join(work, src);
+                writeFileSync(ttf, built.bytes);
+            } else {
+                if (!existsSync(ttf)) {
+                    // Some upstream fonts are present, so this one should be too.
+                    diverged.push({ module: mod, reason: `source font ${src} is missing — npm run fonts:download` });
+                    continue;
+                }
+                const sourceProblem = checkSource(src, ttf, expected);
+                if (sourceProblem) { diverged.push({ module: mod, reason: sourceProblem }); continue; }
             }
-            const sourceProblem = checkSource(src, ttf, expected);
-            if (sourceProblem) { diverged.push({ module: mod, reason: sourceProblem }); continue; }
 
             const out = join(work, mod);
             execFileSync('node', [GENERATOR, ttf, out], { stdio: 'pipe' });
@@ -190,6 +229,11 @@ function main(): number {
                 'or, if the module was deliberately rebuilt from a new font, record it:',
                 '  npx tsx scripts/download-fonts.ts --update-manifest --commit <google/fonts sha>',
                 '',
+                'A derived-subset problem means subsetTTF() or a fonts/subsets/ list changed,',
+                'so the five Latin subsets no longer hash as fonts/SOURCES.json records:',
+                '  npx tsx scripts/build-latin-subsets.ts --update-manifest',
+                'then regenerate their modules and rebaseline the samples, as below.',
+                '',
                 'A generator mismatch means the module must be regenerated — and the',
                 'release notes must say why the bytes changed:',
                 '  node tools/build-font-data.cjs fonts/ttf/<Source>.ttf fonts/<module>.js',
@@ -204,7 +248,8 @@ function main(): number {
 
     if (!jsonMode) {
         process.stdout.write(
-            `✓ ${checked} font module(s) reproduce exactly from ${relative(REPO_ROOT, TTF_DIR)}, every source font matching fonts/SOURCES.json.\n`,
+            `✓ ${checked} font module(s) reproduce exactly from ${relative(REPO_ROOT, TTF_DIR)}, every source font matching fonts/SOURCES.json` +
+            `${manifest.derived.length > 0 ? ` and the ${manifest.derived.length} derived subsets re-cut from their upstream font` : ''}.\n`,
         );
     }
     return 0;
