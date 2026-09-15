@@ -28,8 +28,11 @@
  *   - Leading vowels ເ ແ ໂ ໃ ໄ — logically after, visually before the base
  *   - Above marks: vowels, tone marks, niggahita, cancellation
  *   - Below marks: vowels, the pali virama U+0EBA, semivowel lo U+0EBC
+ *     (a below sign the font leaves unanchored but gives an advance — Noto
+ *     Sans Lao's U+0EBA — keeps that advance beside its base)
  *   - GPOS MarkToBase anchoring and MarkToMark stacking
- *   - Sara am U+0EB3 decomposed into niggahita U+0ECD + sara aa U+0EB2
+ *   - Sara am U+0EB3 decomposed into niggahita U+0ECD + sara aa U+0EB2,
+ *     the niggahita ordered before the cluster's tone marks
  *   - Spacing signs ະ າ ຽ ໆ treated as bases, never as marks
  *
  * References:
@@ -94,6 +97,17 @@ const SARA_AM = 0x0EB3;
 const NIGGAHITA = 0x0ECD;
 const SARA_AA = 0x0EB2;
 
+/**
+ * The above marks a niggahita split off from sara am must be placed before:
+ * ນ້ຳ is stored consonant, tone, sara am and drawn consonant, niggahita,
+ * tone, sara aa, so the tone stacks on the niggahita through the font's
+ * mark-to-mark anchors. HarfBuzz's Lao `is_tone_mark` set: the above vowels
+ * ິ ີ ຶ ື and the signs ່ ້ ໊ ໋ ໌ ໍ. ັ (U+0EB1) is deliberately absent, as there.
+ */
+function isLaoToneMark(cp: number): boolean {
+    return (cp >= 0x0EB4 && cp <= 0x0EB7) || (cp >= 0x0EC8 && cp <= 0x0ECD);
+}
+
 interface LaoCluster {
     base: number;
     aboves: number[];
@@ -105,9 +119,10 @@ interface LaoCluster {
  * Split Lao text into clusters of `{ base, aboves, belows, leadings }`.
  *
  * Sara am is decomposed as it is read: its niggahita joins the preceding
- * cluster's above marks and its sara aa becomes a new spacing base, which
- * is what makes ຳ measure and render as two pieces rather than one wide
- * glyph the font may not have.
+ * cluster's above marks — ahead of any tone mark already there, so the tone
+ * stacks on it (`isLaoToneMark`) — and its sara aa becomes a new spacing
+ * base, which is what makes ຳ measure and render as two pieces rather than
+ * one wide glyph the font may not have.
  *
  * @since 1.8.0
  */
@@ -122,8 +137,15 @@ export function buildLaoClusters(str: string): LaoCluster[] {
         const step = cp > 0xFFFF ? 2 : 1;
 
         if (cp === SARA_AM) {
-            if (clusters.length > 0) clusters[clusters.length - 1].aboves.push(NIGGAHITA);
-            else clusters.push(newCluster(NIGGAHITA));
+            if (clusters.length > 0) {
+                const aboves = clusters[clusters.length - 1].aboves;
+                let at = aboves.length;
+                while (at > 0 && isLaoToneMark(aboves[at - 1])) at--;
+                if (at === aboves.length) aboves.push(NIGGAHITA);
+                else aboves.splice(at, 0, NIGGAHITA);
+            } else {
+                clusters.push(newCluster(NIGGAHITA));
+            }
             clusters.push(newCluster(SARA_AA));
             i += step;
             continue;
@@ -250,6 +272,9 @@ export function shapeLaoText(str: string, fontData: FontData): ShapedGlyph[] {
         let prevBelowGid: number | null = null;
         let prevBelowDx = 0;
         let prevBelowDy = 0;
+        // Advance since the base's origin — the base's own, plus any sign the
+        // guard below let through as a spacing glyph.
+        let advSinceBase = baseAdv;
         for (let bi = 0; bi < cluster.belows.length; bi++) {
             const markGid = resolveMarkGid(cluster.belows[bi], hasDescender || bi > 0);
             const markAnchor = getMarkAnchor(markGid);
@@ -265,8 +290,21 @@ export function shapeLaoText(str: string, fontData: FontData): ShapedGlyph[] {
             } else if (markAnchor) {
                 const baseAnchor = getBaseAnchor(baseGid, markAnchor.classIdx);
                 if (baseAnchor) {
-                    dx = baseAnchor[0] - markAnchor.x - baseAdv;
+                    dx = baseAnchor[0] - markAnchor.x - advSinceBase;
                     dy = baseAnchor[1] - markAnchor.y;
+                }
+            } else {
+                // The font anchors nothing for this glyph and gave it an
+                // advance: Noto Sans Lao draws the pali virama U+0EBA as a
+                // 210-unit spacing sign, outside its GDEF mark class. Set it
+                // beside the base rather than at zero advance under the next
+                // glyph — the rule `attachMarks()` applies in gpos-positioner.
+                const adv = getAdv(markGid);
+                if (adv > 0) {
+                    shaped.push({ gid: markGid, dx: 0, dy: 0, isZeroAdvance: false });
+                    advSinceBase += adv;
+                    prevBelowGid = null;
+                    continue;
                 }
             }
 

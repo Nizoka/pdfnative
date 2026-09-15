@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildThaiClusters, containsThai, shapeThaiText, THAI_START, THAI_END } from '../../src/shaping/thai-shaper.js';
+import * as notoThai from '../../fonts/noto-thai-data.js';
 import type { FontData } from '../../src/types/pdf-types.js';
 
 describe('containsThai', () => {
@@ -69,9 +70,33 @@ describe('buildThaiClusters', () => {
         expect(clusters).toHaveLength(2);
         // First cluster: ko kai with nikhahit above
         expect(clusters[0].base).toBe(0x0E01);
-        expect(clusters[0].aboves).toContain(0x0E4D);
+        expect(clusters[0].aboves).toEqual([0x0E4D]);
         // Second cluster: sara aa
         expect(clusters[1].base).toBe(0x0E32);
+    });
+
+    // The Thai OpenType specification (and HarfBuzz's preprocess_text_thai)
+    // draws น้ำ as น ํ ้ า: the nikhahit split off from sara am goes before
+    // the tone mark so that the tone stacks on it. Until v1.8.0 the nikhahit
+    // was appended after the tone and ended up drawn on top of it.
+    it('orders the nikhahit of sara am before a tone mark already on the base', () => {
+        // น้ำ = no nu + mai tho + sara am
+        const clusters = buildThaiClusters('น้ำ');
+        expect(clusters).toHaveLength(2);
+        expect(clusters[0].aboves).toEqual([0x0E4D, 0x0E49]);
+        expect(clusters[1].base).toBe(0x0E32);
+        // ก่ำ = ko kai + mai ek + sara am
+        expect(buildThaiClusters('ก่ำ')[0].aboves).toEqual([0x0E4D, 0x0E48]);
+    });
+
+    it('moves the nikhahit before the whole trailing run of tone-class marks', () => {
+        // กิ่ำ (ill-formed, but the walk-back covers every mark in HarfBuzz's set)
+        expect(buildThaiClusters('กิ่ำ')[0].aboves).toEqual([0x0E4D, 0x0E34, 0x0E48]);
+    });
+
+    it('stops the walk-back at mai han-akat, which is not in the tone-mark set', () => {
+        // กั้ำ → ั stays first, the nikhahit lands between it and the tone
+        expect(buildThaiClusters('กั้ำ')[0].aboves).toEqual([0x0E31, 0x0E4D, 0x0E49]);
     });
 
     it('should attach tone mark as above mark', () => {
@@ -260,6 +285,31 @@ describe('shapeThaiText', () => {
         expect(tone.dx).toBe(-447);
     });
 
+    it('stacks the tone mark on the nikhahit of sara am, not the other way round', () => {
+        // ก่ำ with a font that anchors the nikhahit on the base and the tone on the nikhahit
+        const fontWithSaraAmStack: FontData = {
+            ...mockThaiFont,
+            markAnchors: {
+                bases: { 6: { 0: [297, 800] } },
+                marks: { 42: [0, 150, 500], 59: [0, 150, 500] },
+            },
+            mark2mark: {
+                mark1Anchors: { 59: { 0: [200, 700] } }, // nikhahit carries the mark-to-mark anchor
+                mark2Classes: { 42: [0, 150, 500] },     // the tone attaches to it
+            },
+        };
+        const result = shapeThaiText('ก่ำ', fontWithSaraAmStack);
+        expect(result.map(g => g.gid)).toEqual([6, 59, 42, 85]);
+        const [, nikhahit, tone, saraAa] = result;
+        expect(nikhahit.isZeroAdvance).toBe(true);
+        expect(tone.isZeroAdvance).toBe(true);
+        expect(saraAa.isZeroAdvance).toBe(false);
+        // nikhahit → base: dy = 800 - 500 = 300; tone → nikhahit: dy = 300 + (700 - 500) = 500
+        expect(nikhahit.dy).toBe(300);
+        expect(tone.dy).toBe(500);
+        expect(tone.dy).toBeGreaterThan(nikhahit.dy);
+    });
+
     it('should apply GSUB substitution for tall consonant', () => {
         const fontWithGsub: FontData = {
             ...mockThaiFont,
@@ -296,5 +346,32 @@ describe('shapeThaiText', () => {
         const gids = result.map(g => g.gid);
         expect(gids).toContain(59); // nikhahit
         expect(gids).toContain(85); // sara aa
+    });
+});
+
+describe('shapeThaiText on Noto Sans Thai', () => {
+    const fd = notoThai as unknown as FontData;
+    const gid = (cp: number): number => fd.cmap[cp] ?? 0;
+
+    it('draws น้ำ as no nu, nikhahit, mai tho, sara aa', () => {
+        const shaped = shapeThaiText('น้ำ', fd);
+        expect(shaped.map(g => g.gid)).toEqual([gid(0x0E19), gid(0x0E4D), gid(0x0E49), gid(0x0E32)]);
+        expect(shaped.map(g => g.isZeroAdvance)).toEqual([false, true, true, false]);
+    });
+
+    it('sets the tone mark on the nikhahit through the font\'s own mark-to-mark anchor', () => {
+        const [, nikhahit, tone] = shapeThaiText('น้ำ', fd);
+        // The nikhahit carries a mark-to-mark anchor of the tone's class; the
+        // tone's vertical offset is exactly that anchor minus its own anchor.
+        const toneClass = fd.mark2mark!.mark2Classes[tone.gid];
+        const nikhahitAnchor = fd.mark2mark!.mark1Anchors[nikhahit.gid][toneClass[0]];
+        expect(nikhahitAnchor).toBeDefined();
+        expect(tone.dy - nikhahit.dy).toBe(nikhahitAnchor[1] - toneClass[2]);
+        expect(tone.dy).toBeGreaterThan(nikhahit.dy);
+    });
+
+    it('leaves a sara am with no tone mark exactly as before', () => {
+        const shaped = shapeThaiText('ทำ', fd); // ทำ
+        expect(shaped.map(g => g.gid)).toEqual([gid(0x0E17), gid(0x0E4D), gid(0x0E32)]);
     });
 });

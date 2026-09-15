@@ -70,6 +70,34 @@ describe('language conformance documents', () => {
                 expect(report.pages.length).toBe(1);
             }, 60_000);
 
+            // A glyph the font neither anchors (mark-to-base or mark-to-mark)
+            // nor made zero-width is a spacing sign; emitted at zero advance it
+            // is drawn under the next glyph and disappears — Noto Sans Lao's
+            // pali virama U+0EBA did until v1.8.0. Held for the Thai and Lao
+            // shapers, whose marks are all anchored or zero-width by contract.
+            // Run over every shaper it also trips on Khmer subjoined, Myanmar
+            // medial and Tai Tham medial-ra glyphs, which those shapers emit
+            // at zero advance although the font gives them one — an open
+            // audit item (ROADMAP), not asserted here.
+            it('swallows no spacing sign as a mark', async () => {
+                const entry = await entryFor(doc.lang);
+                const fd = entry.fontData;
+                const texts = [doc.title, doc.intro, ...doc.edgeCases.map(c => c.sample), ...doc.list, doc.footer];
+                for (const text of texts) {
+                    for (const run of splitTextByFont(text, [entry])) {
+                        const shaper = findShaper(run.text);
+                        if (!shaper || (shaper.id !== 'thai' && shaper.id !== 'lao')) continue;
+                        for (const g of shaper.shape(run.text, fd)) {
+                            if (!g.isZeroAdvance) continue;
+                            const width = fd.widths[g.gid] ?? fd.defaultWidth;
+                            const anchored = fd.markAnchors?.marks[g.gid] !== undefined
+                                || fd.mark2mark?.mark2Classes[g.gid] !== undefined;
+                            expect(width > 0 && !anchored, `${doc.filename}: "${text}" gid ${g.gid} (width ${width}) is a spacing glyph emitted at zero advance`).toBe(false);
+                        }
+                    }
+                }
+            }, 60_000);
+
             it('draws every sample with real glyphs', async () => {
                 const entry = await entryFor(doc.lang);
                 const texts = [doc.title, doc.intro, ...doc.edgeCases.map(c => c.sample), ...doc.list, doc.footer];

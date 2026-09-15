@@ -577,7 +577,7 @@ export const ALPHABET_SAMPLES: LangSample[] = [
             { cells: ['Above / below', 'ກິ ກີ ກຶ ກື ກຸ ກູ', '6', 'Dependent', 'Anchored marks'], type: 'credit', pointed: true },
             { cells: ['Variant forms', 'ປີ ກີ ຊຸ ກຸ', '4', 'Contextual', 'Tall and descender bases'], type: 'debit', pointed: true },
             { cells: ['Tone marks', 'ກ່ ກ້ ກ໊ ກ໋', '4', 'Tone', 'Stack above a vowel'], type: 'debit', pointed: false },
-            { cells: ['Pali virama', 'ຣ຺ ພຣ຺ະ', '2', 'Below', 'U+0EBA, the Thai phinthu twin'], type: 'debit', pointed: false },
+            { cells: ['Pali virama', 'ຣ຺ ພຣ຺ະ', '2', 'Below', 'U+0EBA, the Thai phinthu twin; Noto Sans Lao sets it beside the base'], type: 'debit', pointed: false },
             { cells: ['Digits', '໐ ໑ ໒ ໓ ໔ ໕ ໖ ໗ ໘ ໙', '10', 'Numerals', 'Lao digits'], type: 'credit', pointed: false },
             { cells: ['Sample', 'ສະບາຍດີ – ພາສາລາວ', '2 words', 'Words', 'Hello + Lao language'], type: 'credit', pointed: false },
         ],

@@ -12,6 +12,9 @@ import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { extractText } from '../../src/parser/pdf-text-extract.js';
 import { PdfPasswordError } from '../../src/parser/pdf-decrypt.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
+import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
+import * as notoThai from '../../fonts/noto-thai-data.js';
+import * as notoLao from '../../fonts/noto-lao-data.js';
 
 // ── Mini-PDF assembly helpers ────────────────────────────────────────
 
@@ -443,5 +446,45 @@ describe('extractText honours /ActualText', () => {
         const tagged = extractText(buildDocumentPDFBytes(params, { tagged: true }))[0].text.replace(/\s+/g, ' ');
         expect(tagged).toBe(plain);
         expect(tagged).toContain('carries the characters with their spaces');
+    });
+});
+
+// ── Thai and Lao sara am: what a decomposed vowel extracts as ────────
+//
+// The shapers set ำ / ຳ as nikhahit + sara aa, with the nikhahit ordered
+// before the cluster's tone marks (v1.8.0). A ToUnicode CMap maps one glyph
+// to its code points and cannot fold two glyphs back into one, so an
+// untagged document extracts the four glyphs of น้ำ — the two stacked marks
+// in the extractor's geometric (left-to-right) order — never ำ itself and
+// never U+FFFD; a tagged one carries the source text as /ActualText.
+
+describe('extractText on Thai and Lao sara am', () => {
+    const thaiEntries: FontEntry[] = [{ fontData: notoThai as unknown as FontData, fontRef: '/F3', lang: 'th' }];
+    const laoEntries: FontEntry[] = [{ fontData: notoLao as unknown as FontData, fontRef: '/F3', lang: 'lo' }];
+    const build = (text: string, fontEntries: FontEntry[], tagged: boolean): string => {
+        const params: DocumentParams = { title: 'sara am', blocks: [{ type: 'paragraph', text }], fontEntries };
+        return extractText(buildDocumentPDFBytes(params, tagged ? { tagged: true } : {}))[0].text;
+    };
+
+    it('extracts untagged น้ำ as no nu, its two stacked marks, sara aa — decomposed, never U+FFFD', () => {
+        const text = build('น้ำ', thaiEntries, false);
+        expect(text).toMatch(/น[้ํ]{2}า/);
+        expect(text).toContain('ํ');
+        expect(text).not.toContain('ำ');
+        expect(text).not.toContain('�');
+    });
+
+    it('extracts tagged น้ำ exactly, through /ActualText', () => {
+        const text = build('น้ำ', thaiEntries, true);
+        expect(text).toContain('น้ำ');
+        expect(text).not.toContain('ํ');
+    });
+
+    it('extracts untagged ນ້ຳ decomposed and tagged ນ້ຳ exactly', () => {
+        const plain = build('ນ້ຳ', laoEntries, false);
+        expect(plain).toMatch(/ນ[້ໍ]{2}າ/);
+        expect(plain).not.toContain('ຳ');
+        expect(plain).not.toContain('�');
+        expect(build('ນ້ຳ', laoEntries, true)).toContain('ນ້ຳ');
     });
 });

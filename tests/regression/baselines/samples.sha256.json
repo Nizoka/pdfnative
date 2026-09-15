@@ -103,8 +103,8 @@
     },
     "alphabet/alphabet-lao.pdf": {
       "mode": "bytes",
-      "hash": "78a18f55ead58da086f4b73cdd51a3680f25c340f6dd59e55ae4ebffc00ca732",
-      "size": 43366,
+      "hash": "de9fc966631c6427ec67c6edc64817d43d69f2f1399fff9d6d05337fb5e04b35",
+      "size": 43580,
       "since": "1.8.0"
     },
     "alphabet/alphabet-myanmar.pdf": {
@@ -409,7 +409,7 @@
     },
     "diverse/diverse-recipe-th.pdf": {
       "mode": "bytes",
-      "hash": "e50196098720c49bdbef1a10afc6b6cbfde2dc97a1188545a9f714e3ef8f6177",
+      "hash": "4d9094a3b2159196fe0103f653ef8874c14031e427298b6d3d0bc31e74bfebdc",
       "size": 45578,
       "since": "1.8.0"
     },
@@ -583,8 +583,8 @@
     },
     "document/doc-lao.pdf": {
       "mode": "bytes",
-      "hash": "05ea4b37f1e1d0bd4c7b0e86df61f326f41f61e08d51de7f34f9afefac003ff3",
-      "size": 60220,
+      "hash": "ecee032a3028f63e82b4c02e1422e959b7418e6581d3acbafbb5cdf9c3241ea9",
+      "size": 63841,
       "since": "1.8.0"
     },
     "document/doc-links.pdf": {
@@ -691,8 +691,8 @@
     },
     "document/doc-thai.pdf": {
       "mode": "bytes",
-      "hash": "c0e33c3ac53fd81cc88f494bbe3eae23ceb88465f3b3f54902f161e5e556e818",
-      "size": 62278,
+      "hash": "5a94a424bb1a9ce788b3bdea83b92a97596a19b7cdc834b33b663976d2f8fa0f",
+      "size": 65546,
       "since": "1.8.0"
     },
     "document/doc-tibetan.pdf": {

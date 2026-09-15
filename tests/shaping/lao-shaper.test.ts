@@ -122,6 +122,18 @@ describe('buildLaoClusters', () => {
         expect(clusters[1].base).toBe(0x0EB2);
     });
 
+    it('orders the niggahita of sara am before a tone mark already on the base', () => {
+        // ນ້ຳ is stored no, mai tho, sara am and drawn no, niggahita, mai tho, sara aa
+        const clusters = buildLaoClusters('ນ້ຳ');
+        expect(clusters).toHaveLength(2);
+        expect(clusters[0].aboves).toEqual([0x0ECD, 0x0EC9]);
+        expect(clusters[1].base).toBe(0x0EB2);
+    });
+
+    it('stops the walk-back at mai kan, which is not in the tone-mark set', () => {
+        expect(buildLaoClusters('ກັ້ຳ')[0].aboves).toEqual([0x0EB1, 0x0ECD, 0x0EC9]);
+    });
+
     it('treats a leading sara am as its own cluster', () => {
         const clusters = buildLaoClusters('ຳ');
         expect(clusters[0].base).toBe(0x0ECD);
@@ -211,10 +223,40 @@ describe('shapeLaoText', () => {
         expect(shaped[2].gid).toBe(gid(0x0EB2));
     });
 
-    it('renders the pali virama as a below mark, not a spacing base', () => {
+    it('draws ນ້ຳ as no, niggahita, mai tho, sara aa with the tone stacked on the niggahita', () => {
+        const shaped = shapeLaoText('ນ້ຳ', fd);
+        expect(shaped.map(g => g.gid)).toEqual([gid(0x0E99), gid(0x0ECD), gid(0x0EC9), gid(0x0EB2)]);
+        expect(shaped.map(g => g.isZeroAdvance)).toEqual([false, true, true, false]);
+        const [, niggahita, tone] = shaped;
+        const toneClass = fd.mark2mark!.mark2Classes[tone.gid];
+        const niggahitaAnchor = fd.mark2mark!.mark1Anchors[niggahita.gid][toneClass[0]];
+        expect(niggahitaAnchor).toBeDefined();
+        expect(tone.dy - niggahita.dy).toBe(niggahitaAnchor[1] - toneClass[2]);
+        expect(tone.dy).toBeGreaterThan(niggahita.dy);
+    });
+
+    it('keeps the advance of a below sign the font leaves unanchored', () => {
+        // Noto Sans Lao sets the pali virama U+0EBA as a 210-unit spacing sign,
+        // outside its GDEF mark class and with no anchor. Drawn at zero advance
+        // it would land under the next glyph; it stays beside its base instead.
+        const virama = gid(0x0EBA);
+        expect(fd.markAnchors?.marks[virama]).toBeUndefined();
+        expect(fd.widths[virama]).toBeGreaterThan(0);
         const shaped = shapeLaoText('ຣ຺', fd);
         expect(shaped).toHaveLength(2);
+        expect(shaped[1].gid).toBe(virama);
+        expect(shaped[1].isZeroAdvance).toBe(false);
+        // ພຣ຺ະ: four glyphs, every one drawn
+        const word = shapeLaoText('ພຣ຺ະ', fd);
+        expect(word).toHaveLength(4);
+        expect(word.every(g => g.gid > 0)).toBe(true);
+        expect(word.filter(g => g.isZeroAdvance)).toHaveLength(0);
+    });
+
+    it('still anchors the below vowels at zero advance', () => {
+        const shaped = shapeLaoText('ກຸ', fd);
         expect(shaped[1].isZeroAdvance).toBe(true);
+        expect(shaped[1].dx).not.toBe(0);
     });
 
     it('is deterministic', () => {

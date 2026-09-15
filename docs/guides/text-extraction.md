@@ -137,7 +137,12 @@ By design (documented, not bugs):
   document — the PDF *renders* correctly; only extraction of those
   clusters is lossy. Build with `tagged: 'pdfa2u'` (or any tagged level)
   and the spans carry the source text. Latin, CJK and emoji round-trip
-  cleanly.
+  cleanly. One decomposition extracts as *text* rather than U+FFFD: Thai
+  and Lao sara am (ำ U+0E33, ຳ U+0EB3) is set as nikhahit + sara aa, so
+  an untagged document yields two code points where the author wrote one
+  — น้ำ extracts as no nu, its two stacked marks in geometric order, sara
+  aa. Under any tagged level the span's `/ActualText` carries ำ and
+  extraction is exact.
 
 ## Samples
 

@@ -35,6 +35,7 @@ function registerVisualFonts(): void {
         si: fl(() => import('../../fonts/noto-sinhala-data.js')),
         te: fl(() => import('../../fonts/noto-telugu-data.js')),
         yo: fl(() => import('../../fonts/noto-sans-data.js')),
+        pl: fl(() => import('../../fonts/noto-polish-data.js')),
     });
     registered = true;
 }
@@ -220,9 +221,10 @@ export const FIXTURES: readonly Fixture[] = [
     },
     // v1.8.0 — the language conformance documents the samples ship, pixel-
     // locked here: the 1.8.0 report's three scripts, Bengali, the Latin
-    // combining-mark shaper (Yoruba), Lao and Cham (the 1.8.0 shapers).
-    // Built from the same data as the samples.
-    ...(['ta', 'hi', 'te', 'bn', 'yo', 'lo', 'cjm'] as const).map((lang) => ({
+    // combining-mark shaper (Yoruba), Lao and Cham (the 1.8.0 shapers), Thai
+    // (sara am under a tone mark) and Polish (a Latin subset the library
+    // derives from Noto Sans itself). Built from the same data as the samples.
+    ...(['ta', 'hi', 'te', 'bn', 'yo', 'lo', 'cjm', 'th'] as const).map((lang) => ({
         name: `doc-${LANGUAGE_DOCS.find(d => d.lang === lang)?.filename.replace(/^doc-/, '') ?? lang}`,
         build: async (): Promise<Uint8Array> => {
             registerVisualFonts();

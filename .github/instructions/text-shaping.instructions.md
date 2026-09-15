@@ -5,10 +5,10 @@ applyTo: "src/shaping/**"
 # Text Shaping & Multi-Script Standards
 
 ## Thai OpenType Shaping Pipeline
-1. **Cluster building**: group base + above/below marks into syllable clusters
-2. **GSUB SingleSubst**: substitute marks to positional variants (e.g., sara am → nikhahit + sara aa)
+1. **Cluster building**: group base + above/below marks into syllable clusters; sara am (U+0E33, Lao U+0EB3) decomposes into nikhahit + sara aa, the nikhahit inserted **before** the cluster's trailing tone marks — HarfBuzz's `is_tone_mark` set, U+0E34–0E37 ∪ U+0E47–0E4E (Lao U+0EB4–0EB7 ∪ U+0EC8–0ECD) — so น้ำ is drawn น ํ ้ า and the tone stacks on the nikhahit (fixed in v1.8.0; it was appended after the tone before)
+2. **GSUB SingleSubst**: substitute marks to positional variants (tall-consonant forms)
 3. **GPOS MarkToBase**: position combining marks relative to base glyph anchors
-4. **GPOS MarkToMark**: stack marks on top of other marks (e.g., tone on nikhahit)
+4. **GPOS MarkToMark**: stack marks on top of other marks (e.g., tone on nikhahit). A below sign the font leaves unanchored but gives an advance — Noto Sans Lao's pali virama U+0EBA, outside its GDEF mark class — keeps that advance beside its base instead of being emitted at zero advance under the next glyph (the `attachMarks()` rule; Lao only, every Thai mark is anchored)
 5. Output: `ShapedGlyph[]` with `{ gid, dx, dy, isZeroAdvance }`
 
 ## GSUB/GPOS Data Format
