@@ -17,6 +17,8 @@ const WORKFLOWS = join(ROOT, '.github', 'workflows');
 const workflowFiles = readdirSync(WORKFLOWS).filter((f) => f.endsWith('.yml')).sort();
 const readWorkflow = (f: string): string => readFileSync(join(WORKFLOWS, f), 'utf8');
 const readText = (...parts: string[]): string => readFileSync(join(ROOT, ...parts), 'utf8');
+/** Escape every regular-expression metacharacter, backslash included, of a literal. */
+const escapeRegExp = (s: string): string => s.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
 
 const COMPOSITE_ACTIONS = ['.github/actions/setup-verapdf/action.yml'];
 
@@ -224,7 +226,7 @@ describe('setup-verapdf composite action', () => {
         expect(version).toBeDefined();
         expect(action).toMatch(/sha256sum -c/);
         const checksum = readText('.github', 'checksums', `verapdf-greenfield-${version}-installer.zip.sha256`);
-        expect(checksum).toMatch(new RegExp(`^[0-9a-f]{64}  verapdf-greenfield-${version!.replace(/\./g, '\\.')}-installer\\.zip\\n$`));
+        expect(checksum).toMatch(new RegExp(`^[0-9a-f]{64}  verapdf-greenfield-${escapeRegExp(version!)}-installer\\.zip\\n$`));
     });
 
     it('is what verapdf.yml and publish.yml use', () => {

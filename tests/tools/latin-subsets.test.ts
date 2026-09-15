@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { subsetTTF } from '../../src/fonts/font-subsetter.js';
@@ -147,16 +147,25 @@ describe('fonts/SOURCES.json derived entries', () => {
 });
 
 // The proof itself needs the 2 MB variable font, which `npm run fonts:download`
-// fetches; without it these tests skip, like `npm run verify:fonts`. Parsing
-// the variable font (a 244 KB GPOS) takes seconds under coverage
-// instrumentation, so it is parsed once and the tests get a 60 s budget
+// fetches; without it these tests skip, like `npm run verify:fonts` (the CI
+// profile does not download the fonts; the font-reproducibility workflow
+// does). The derivation runs in `beforeAll`, not in the describe body: vitest
+// still executes a skipped describe's body to collect its tests. Parsing the
+// variable font (a 244 KB GPOS) takes seconds under coverage instrumentation,
+// so it is parsed once and the tests get a 60 s budget
 // (testing.instructions.md: per test, never a global bump).
 describe.runIf(existsSync(VF))('the derived subsets, re-cut from NotoSans-VF.ttf', () => {
-    const builds = buildAllLatinSubsets(manifest, TTF_DIR);
-    const byName = new Map(builds.map(b => [b.entry.local, b]));
-    const vfBytes = new Uint8Array(readFileSync(VF));
+    let builds: ReturnType<typeof buildAllLatinSubsets> = [];
+    let byName = new Map<string, (typeof builds)[number]>();
+    let vfBytes = new Uint8Array(0);
     let vfParsed: FontDataObject | null = null;
     const vfData = (): FontDataObject => (vfParsed ??= parseFontData(vfBytes));
+
+    beforeAll(() => {
+        builds = buildAllLatinSubsets(manifest, TTF_DIR);
+        byName = new Map(builds.map(b => [b.entry.local, b]));
+        vfBytes = new Uint8Array(readFileSync(VF));
+    }, 60_000);
 
     it('hash exactly as fonts/SOURCES.json records', () => {
         for (const b of builds) {

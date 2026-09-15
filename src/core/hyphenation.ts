@@ -78,6 +78,8 @@ export function getHyphenationProvider(): HyphenationProvider | null {
 
 /** SOFT HYPHEN — the internal representation of a break opportunity. */
 const SHY = '­';
+/** One character of JavaScript's `\s` class — tested one character at a time, never as a run. */
+const WS_CHAR = /\s/;
 
 /**
  * Rewrite a word with soft hyphens at the provider's break positions, so the
@@ -95,10 +97,15 @@ export function hyphenateWord(word: string, lang?: string): string {
 
     // The line breaker hands over tokens with their trailing separator; the
     // provider is given the bare word and its positions index into that.
-    const m = /^(\s*)([^]*?)(\s*)$/.exec(word);
-    const lead = m?.[1] ?? '';
-    const core = m?.[2] ?? word;
-    const trail = m?.[3] ?? '';
+    // Trimmed by index rather than by `^(\s*)(.*?)(\s*)$`, whose two greedy
+    // runs are quadratic on a long run of blanks (CodeQL js/polynomial-redos).
+    let start = 0;
+    while (start < word.length && WS_CHAR.test(word[start])) start++;
+    let end = word.length;
+    while (end > start && WS_CHAR.test(word[end - 1])) end--;
+    const lead = word.slice(0, start);
+    const core = word.slice(start, end);
+    const trail = word.slice(end);
     if (core.length < 4) return word;
 
     let positions: readonly number[];

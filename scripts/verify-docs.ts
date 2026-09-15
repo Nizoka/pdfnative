@@ -1856,7 +1856,13 @@ if (!existsSync(LLMS_RECIPES)) {
         const registeredText = normalise(buildErrors.map((e) => e.message).join('\n'));
         for (const f of srcFiles) {
             const text = read(f);
-            const throwRe = /throw new Error\(\s*((?:`[^`]*`|'[^'\n]*'|\s*\+\s*|\n)+)\s*\)/g;
+            // A throw with one or more concatenated literals. Whitespace is
+            // matched as "lines of blanks ending in a newline, then blanks",
+            // each newline consumed exactly once, so the expression backtracks
+            // linearly (CodeQL js/redos on the earlier `\s*\+\s*|\n` form).
+            const ws = String.raw`(?:[^\S\n]*\n)*[^\S\n]*`;
+            const lit = String.raw`(?:\`[^\`]*\`|'[^'\n]*')`;
+            const throwRe = new RegExp(String.raw`throw new Error\(${ws}(${lit}(?:${ws}\+${ws}${lit})*)${ws}\)`, 'g');
             for (const m of text.matchAll(throwRe)) {
                 const literals = [...m[1].matchAll(/'([^'\n]*)'|`([^`]*)`/g)].map((l) => l[1] ?? l[2]);
                 const joined = literals.join('');
