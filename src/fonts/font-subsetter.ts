@@ -4,7 +4,50 @@
  * Subset a TrueType font binary to contain only used glyphs.
  * Retains original GID numbering (Identity-H compatible).
  * Resolves compound glyph component dependencies recursively.
+ *
+ * Tables kept (see `PDF_TABLES`):
+ *   - `head`, `hhea`, `maxp`, `OS/2`, `cmap`, `hmtx`, `name`, `post` — copied verbatim
+ *     (`head` only gets `indexToLocFormat` = 1 and `checkSumAdjustment` = 0; `head.flags`
+ *     and `maxp` are untouched).
+ *   - `loca`, `glyf` — rebuilt with the used outlines; the bytes of a kept glyph are
+ *     copied unchanged, instructions included.
+ *   - `prep`, `fpgm`, `cvt `, `gasp` — copied verbatim when present, never invented.
+ *     These carry the font's rasterisation hints: `prep` runs before every glyph and
+ *     typically enables dropout control (`SCANCTRL` / `SCANTYPE`), which keeps thin
+ *     diagonals such as a lowercase `w` from losing pixels at small sizes in hinting
+ *     rasterisers; `gasp` tells the rasteriser when to grid-fit and anti-alias; `fpgm`
+ *     holds the functions `prep` and the glyph instructions call, and `cvt ` the control
+ *     values they read. Dropping any of them silently degrades rendering while adding
+ *     nothing to the outlines — they cost a few bytes (8 for `gasp`, 7 for Noto Sans's
+ *     `prep`, ~4 KB when `fpgm` is present) and are kept by every mainstream subsetter.
+ * Everything else (GSUB, GPOS, GDEF, kern, DSIG, colour tables, the variation tables
+ * `fvar`/`gvar`/`HVAR`/`avar`/`STAT`/`MVAR`, …) is dropped: the PDF text is already
+ * positioned and shaped, so a CIDFontType2 never consults them. Dropping the variation
+ * tables of a variable font leaves its default instance, which is what `glyf` and `hmtx`
+ * hold.
+ *
+ * `SubsetTTFOptions` (v1.8.0) opens one opt-in for a subset meant as a *source* font
+ * rather than a PDF embed — the Latin subsets the repository derives from Noto Sans
+ * with `scripts/build-latin-subsets.ts`: `keepLayoutTables` copies `GSUB`, `GPOS` and
+ * `GDEF` verbatim, which is valid because glyph ids are retained. Without options the
+ * output is byte-identical to every earlier release.
  */
+
+/**
+ * Opt-ins for a subset compiled into a font-data module by `pdfnative-build-font`,
+ * not embedded in a PDF. Every option defaults to `false`; with none set the output
+ * is byte-identical to the two-argument call.
+ *
+ * @since 1.8.0
+ */
+export interface SubsetTTFOptions {
+    /**
+     * Copy `GSUB`, `GPOS` and `GDEF` verbatim. Valid because glyph ids are retained;
+     * the caller must keep every glyph those tables can produce (the GSUB closure of
+     * the kept set), or a substitution may land on an emptied outline.
+     */
+    readonly keepLayoutTables?: boolean;
+}
 
 /**
  * Subset a TTF binary to contain only used glyphs.
@@ -15,9 +58,10 @@
  *
  * @param ttfInput - Full TTF as Uint8Array (preferred) or binary string
  * @param usedGids - Set of glyph IDs used in the document
+ * @param options - Source-font opt-ins (v1.8.0); omit for a PDF embed
  * @returns Subset TTF as binary string
  */
-export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>): string {
+export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>, options?: SubsetTTFOptions): string {
     try {
         let u8: Uint8Array;
         let len: number;
@@ -145,8 +189,17 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>):
         for (let i = 0; i <= numGlyphs; i++) newLocaView.setUint32(i * 4, newOffsets[i]);
         const newLoca = new Uint8Array(newLocaBuf);
 
-        // Tables required for PDF CIDFontType2
-        const PDF_TABLES = new Set(['head', 'hhea', 'maxp', 'OS/2', 'cmap', 'hmtx', 'loca', 'glyf', 'name', 'post']);
+        // Tables required for PDF CIDFontType2, plus the hinting tables (`prep`, `fpgm`,
+        // `cvt ` — note the trailing space in the tag — and `gasp`) that rasterisers use for
+        // dropout control and grid-fitting. Each is copied verbatim when the source has it;
+        // absent tables are not synthesised (see the module header).
+        const PDF_TABLES = new Set([
+            'head', 'hhea', 'maxp', 'OS/2', 'cmap', 'hmtx', 'loca', 'glyf', 'name', 'post',
+            'prep', 'fpgm', 'cvt ', 'gasp',
+        ]);
+        // Source-font mode (v1.8.0): the layout tables stay valid because glyph ids are
+        // retained, so they are copied as they are — never rewritten.
+        if (options?.keepLayoutTables) { PDF_TABLES.add('GSUB'); PDF_TABLES.add('GPOS'); PDF_TABLES.add('GDEF'); }
         const tableTags = Object.keys(tables).filter(t => PDF_TABLES.has(t)).sort();
         const newTableData: Record<string, Uint8Array> = {};
         for (const tag of tableTags) {
@@ -156,7 +209,9 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>):
         newTableData['glyf'] = newGlyf;
         newTableData['loca'] = newLoca;
 
-        // Update head: indexToLocFormat = 1 (long), zero checkSumAdjustment
+        // Update head: indexToLocFormat = 1 (long); checkSumAdjustment is
+        // zeroed here so the table checksum below excludes it, and computed
+        // once the whole file is assembled (OpenType `head` table spec).
         const headCopy = new Uint8Array(newTableData['head']);
         new DataView(headCopy.buffer, headCopy.byteOffset, headCopy.byteLength).setInt16(50, 1);
         new DataView(headCopy.buffer, headCopy.byteOffset, headCopy.byteLength).setUint32(8, 0);
@@ -198,6 +253,12 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>):
 
         // Write table data
         for (const tag of tableTags) output.set(newTableData[tag], tableFileOffsets[tag]);
+
+        // head.checkSumAdjustment = 0xB1B0AFBA − (checksum of the whole font
+        // with the field at 0), so the file sums to the magic value. Written
+        // as 0 from 1.0 to 1.7 — every rasteriser ignores it, font validators
+        // flag it (v1.8.0).
+        outView.setUint32(tableFileOffsets['head'] + 8, (0xB1B0AFBA - ttfChecksum(output)) >>> 0);
 
         // Convert Uint8Array back to binary string
         let result = '';

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Print &amp; PDF/X Playground — pdfnative</title>
+  <meta name="description" content="Prepare print-ready PDFs in your browser with pdfnative: bleed and printer's marks, CMYK colours, a CMYK OutputIntent from your own ICC profile or the inlined synthetic one, a PDF/X-4 claim, the validatePdfX() report for the result, and the coherence errors the builder throws.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/print.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/print.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/print.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/print.html">
+  <meta property="og:title" content="Print &amp; PDF/X Playground — pdfnative">
+  <meta property="og:description" content="Bleed, marks, CMYK colours, CMYK OutputIntents and PDF/X-4 with a structural validation report — zero install.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Print &amp; PDF/X Playground — pdfnative">
+  <meta name="twitter:description" content="Print-ready PDFs in the browser: bleed, CMYK, PDF/X-4, validation.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "inLanguage": "en",
+        "name": "pdfnative Print & PDF/X Playground",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any (browser-based)",
+        "browserRequirements": "Requires JavaScript and ES modules",
+        "url": "https://pdfnative.dev/playgrounds/print.html",
+        "description": "Generate print-ready PDFs with bleed and printer's marks, CMYK colours, a CMYK OutputIntent from a local ICC profile (or the inlined synthetic one) and a PDF/X-4 claim, then read the validatePdfX() report and the coherence errors the builder throws — entirely in your browser.",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "pdfnative",
+          "url": "https://pdfnative.dev"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://github.com/Nizoka"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Playgrounds",
+            "item": "https://pdfnative.dev/playgrounds/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Print & PDF/X"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Print &amp; PDF/X (v1.7.0 → v1.8.0)</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./inspect.html">Inspect &amp; verify</a>
+    <a href="./charts.html">Charts</a>
+    <a href="./authoring-plus.html">Authoring+</a>
+    <a href="./scale.html">Scale</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./typography.html">Typography</a>
+    <a href="./print.html" aria-current="page">Print &amp; PDF/X</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>Print production and PDF/X-4 — since 1.7.0, CMYK in 1.8.0</h1>
+    <p>Bleed boxes and printer's marks since 1.7.0; since 1.8.0, CMYK colours, CMYK OutputIntents, marks in the registration colour, a PDF/X-4 conformance claim and <code>validatePdfX()</code>. The CMYK-intent presets take an <strong>output ICC profile</strong>. Choose the one your printer names (ISO Coated v2, GRACoL, SWOP…) — the file is read in your browser and never uploaded — or choose none and the page falls back to the <strong>synthetic CMYK profile</strong> inlined below, the same one the repository's samples use. The synthetic profile is structurally complete (a <code>prtr</code> profile validators accept) but <strong>characterises no press</strong>: a real job needs your printer's profile. pdfnative itself ships none.</p>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
+      <label for="preset"><strong>Preset:</strong></label>
+      <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="bleed">Bleed and printer's marks (RGB)</option>
+        <option value="cmyk">CMYK colours</option>
+        <option value="pdfa">PDF/A-2b under a CMYK OutputIntent (your profile, or the synthetic one)</option>
+        <option value="pdfx">PDF/X-4 claim + validatePdfX() (your profile, or the synthetic one)</option>
+        <option value="errors">PDF/X coherence errors — what the builder refuses (no PDF)</option>
+      </select>
+      <label for="icc" style="font-size:14px;">ICC profile (optional):</label>
+      <input type="file" id="icc" accept=".icc,.icm" style="font-size:13px;">
+      <label for="bars" style="font-size:14px;"><input type="checkbox" id="bars"> Colour bars (5 mm bleed)</label>
+      <label for="claim" style="font-size:14px;"><input type="checkbox" id="claim"> Claim PDF/A-2b under the default sRGB intent (CMYK preset → <code>PDFA_DEVICE_CMYK_CONTENT</code>)</label>
+      <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
+      <span id="timer" style="font-size:13px;color:#64748b;"></span>
+    </div>
+
+    <p id="desc" style="margin-top:20px;color:#475569;font-size:15px;line-height:1.6;"></p>
+
+    <pre id="report" style="display:none;margin-top:12px;white-space:pre-wrap;"></pre>
+
+    <details style="margin-top:16px;" open>
+      <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="copy-btn" id="copy" type="button" style="padding:4px 10px;font-size:12px;background:var(--c-primary);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Copy</button></div>
+      <pre style="margin-top:8px;"><code id="code-view" class="language-typescript"></code></pre>
+    </details>
+
+    <p style="margin-top:16px;font-weight:600;">Diagnostics (<code>layout.onDiagnostic</code>)</p>
+    <pre id="diagnostics" style="margin-top:8px;white-space:pre-wrap;font-size:13px;line-height:1.5;">Generate a PDF to see the diagnostics its build raised. Every preset wires layout.onDiagnostic; a coherent print job raises none. Tick the PDF/A-2b claim on the CMYK preset to see PDFA_DEVICE_CMYK_CONTENT: CMYK colour under a claim whose OutputIntent is not CMYK.</pre>
+
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">Worth knowing:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li><strong>The synthetic profile</strong> is built by <code>scripts/lib/synthetic-cmyk-profile.ts</code> in the repository: an ICC v2 output profile (<code>prtr</code>, CMYK data, Lab connection space) with a naive device transform. It exists so that samples and this page can be self-sufficient; it describes no printing condition, so never send a file built with it to a press.</li>
+        <li><strong>CMYK colours</strong> are <code>[c, m, y, k]</code> in percent, or a <code>'C M Y K'</code> string in 0–1; they are written with <code>k</code> / <code>K</code>.</li>
+        <li><strong>Under a CMYK intent</strong>, the RGB colours pdfnative draws by default are remapped through a calibrated <code>/DefaultRGB</code>, so the PDF/A or PDF/X claim holds.</li>
+        <li><strong>PDF/X-4</strong> rejects, before writing, a PDF/A level, encryption, a missing or non-output profile, and <code>trapped: 'Unknown'</code>.</li>
+        <li><strong><code>validatePdfX()</code></strong> checks the structure; veraPDF does not cover PDF/X, so confirm press files with a certified preflight.</li>
+        <li><strong>Colour bars</strong> (<code>marks: { colourBars: true }</code>) paint C, M, Y, K at 100 % and 50 % in the bottom bleed strip as DeviceCMYK fills. They need a 5 mm bleed to reach the 12 pt default patch — 3 mm would clamp them to 7.5 pt — and a CMYK intent under PDF/A or PDF/X.</li>
+      </ul>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/print.html">Print production guide</a> for the full options.</p>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/print.html">Print production guide →</a></li>
+      <li><a href="./">All playgrounds →</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+const codeView = $('code-view');
+const report = $('report');
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') { status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5'; }
+  else if (kind === 'success') { status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7'; }
+  else { status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd'; }
+}
+
+const BLEED = 8.5; // 3 mm in points
+const BLEED_BARS = 14.17; // 5 mm — room for a colour control bar
+const barsOn = () => $('bars').checked;
+const claimOn = () => $('claim').checked;
+
+// ── Every build reports through layout.onDiagnostic; the box under the code shows what it raised. ──
+let diagnostics = [];
+const onDiagnostic = (d) => { diagnostics.push(d); };
+function renderDiagnostics() {
+  $('diagnostics').textContent = diagnostics.length === 0
+    ? 'onDiagnostic: no diagnostics for this build.'
+    : diagnostics.map(d => '[' + d.severity + '] ' + d.code + '\n' + d.message).join('\n\n');
+}
+
+const DESCRIPTIONS = {
+  bleed: 'An A4 page designed at trim size plus 3 mm bleed, with crop and registration marks drawn outside the TrimBox. Open it in Acrobat with "Show art, trim & bleed boxes" to see the geometry.',
+  cmyk: 'Text and a chart in process colours: [100, 0, 0, 0] is cyan, [60, 40, 40, 100] a rich black. No profile needed — the colours are written with the k and K operators. Tick the PDF/A-2b claim to add tagged: \'pdfa2b\' without a CMYK OutputIntent: the file is still written, and layout.onDiagnostic reports PDFA_DEVICE_CMYK_CONTENT (and PDFA_NO_FONT_ENTRIES, since the text is base-14 Helvetica) in the diagnostics box below the code.',
+  pdfa: 'The same page as PDF/A-2b with a CMYK profile as OutputIntent — yours if you chose a file, otherwise the synthetic one inlined in this page. RGB text is remapped through a calibrated /DefaultRGB and the marks use the registration colour, so the claim holds.',
+  pdfx: 'The same page claimed as PDF/X-4: PDF 1.6 header, PDF/X-4 XMP identification, a /GTS_PDFX OutputIntent (your profile, or the synthetic one), TrimBoxes and /Trapped. The validatePdfX() report is shown below after generation.',
+  errors: 'No PDF is produced. Four deliberately incoherent PDF/X configurations — a PDF/A level next to the PDF/X claim, encryption, a missing OutputIntent, and metadata.trapped: \'Unknown\' — are each passed to buildDocumentPDFBytes() inside a try/catch, and the exact message the builder throws is shown below. Every one of them is rejected before a byte is written.',
+};
+
+// Every view is self-contained: it declares the content the page renders and imports only from
+// 'pdfnative', so what the Copy button hands over runs unchanged in Node, Deno, Bun or a bundler.
+// The CMYK-intent views fetch the synthetic profile this page inlines from pdfnative.dev.
+// tests/docs/playgrounds.test.ts runs each one outside the browser.
+const CODE = {
+  bleed: `import { buildDocumentPDFBytes, downloadBlob, PAGE_SIZES } from 'pdfnative';
+
+const BLEED = 8.5; // 3 mm
+const pdf = buildDocumentPDFBytes({
+  title: 'Bleed and marks',
+  blocks: [
+    { type: 'heading', text: 'Print-ready PDF', level: 1 },
+    { type: 'paragraph', text: 'Designed at A4 trim size plus 3 mm bleed on every side. Crop and registration marks sit outside the TrimBox and are cut away with the bleed.' },
+  ],
+}, {
+  pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,    // MediaBox = trim size + bleed on every side
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
+  print: { bleed: BLEED, marks: true },          // TrimBox, BleedBox, crop and registration marks
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+downloadBlob(pdf, 'bleed.pdf');`,
+  cmyk: `import { buildDocumentPDFBytes, downloadBlob, PAGE_SIZES } from 'pdfnative';
+
+const BLEED = 8.5; // 3 mm
+const pdf = buildDocumentPDFBytes({
+  title: 'CMYK colours',
+  blocks: [
+    { type: 'heading', text: 'Print-ready page', level: 1 },
+    { type: 'paragraph', text: 'Process cyan, [100, 0, 0, 0].', color: [100, 0, 0, 0] },
+    { type: 'paragraph', text: 'Process magenta, [0, 100, 0, 0].', color: [0, 100, 0, 0] },
+    { type: 'paragraph', text: 'Rich black, [60, 40, 40, 100].', color: [60, 40, 40, 100] },
+    { type: 'paragraph', text: 'This line is RGB. Under a CMYK intent it is remapped through a calibrated /DefaultRGB.' },
+    { type: 'chart', chartType: 'bar', title: 'Ink coverage', categories: ['Q1', 'Q2', 'Q3'],
+      series: [{ label: 'Cyan', values: [40, 55, 48], color: [100, 0, 0, 0] }, { label: 'Magenta', values: [30, 35, 52], color: [0, 100, 0, 0] }] },
+  ],
+}, {
+  pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
+  print: { bleed: BLEED, marks: true },
+  // tagged: 'pdfa2b',   // a PDF/A claim without a CMYK outputIntent still builds, and raises PDFA_DEVICE_CMYK_CONTENT
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+downloadBlob(pdf, 'cmyk.pdf');`,
+  pdfa: `import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob, PAGE_SIZES } from 'pdfnative';
+
+const iccProfile = new Uint8Array(await (await fetch('https://pdfnative.dev/assets/synthetic-cmyk.icc')).arrayBuffer()); // a synthetic prtr profile for tests — a real job uses your printer's .icc
+
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin');   // PDF/A needs every font embedded
+const fontEntries = [{ fontData, fontRef: '/F3', lang: 'latin' }];
+
+const BLEED = 8.5; // 3 mm
+const pdf = buildDocumentPDFBytes({
+  title: 'PDF/A-2b, CMYK intent',
+  fontEntries,
+  blocks: [
+    { type: 'heading', text: 'Print-ready page', level: 1 },
+    { type: 'paragraph', text: 'Process cyan, [100, 0, 0, 0].', color: [100, 0, 0, 0] },
+    { type: 'paragraph', text: 'Process magenta, [0, 100, 0, 0].', color: [0, 100, 0, 0] },
+    { type: 'paragraph', text: 'Rich black, [60, 40, 40, 100].', color: [60, 40, 40, 100] },
+    { type: 'paragraph', text: 'This line is RGB. Under a CMYK intent it is remapped through a calibrated /DefaultRGB.' },
+    { type: 'chart', chartType: 'bar', title: 'Ink coverage', categories: ['Q1', 'Q2', 'Q3'],
+      series: [{ label: 'Cyan', values: [40, 55, 48], color: [100, 0, 0, 0] }, { label: 'Magenta', values: [30, 35, 52], color: [0, 100, 0, 0] }] },
+  ],
+}, {
+  pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
+  print: { bleed: BLEED, marks: true },          // under a CMYK intent the marks use the registration colour
+  tagged: 'pdfa2b',
+  outputIntent: { iccProfile, outputConditionIdentifier: 'Synthetic CMYK (characterises no press)' },   // e.g. 'FOGRA39' with the matching profile
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+downloadBlob(pdf, 'pdfa-cmyk.pdf');`,
+  pdfx: `import { registerFonts, loadFontData, buildDocumentPDFBytes, validatePdfX, downloadBlob, PAGE_SIZES } from 'pdfnative';
+
+const iccProfile = new Uint8Array(await (await fetch('https://pdfnative.dev/assets/synthetic-cmyk.icc')).arrayBuffer()); // a synthetic prtr profile for tests — a real job uses your printer's .icc
+
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin');   // PDF/X needs every font embedded
+const fontEntries = [{ fontData, fontRef: '/F3', lang: 'latin' }];
+
+const BLEED = 8.5; // 3 mm
+const pdf = buildDocumentPDFBytes({
+  title: 'PDF/X-4',
+  fontEntries,
+  blocks: [
+    { type: 'heading', text: 'Print-ready page', level: 1 },
+    { type: 'paragraph', text: 'Process cyan, [100, 0, 0, 0].', color: [100, 0, 0, 0] },
+    { type: 'paragraph', text: 'Process magenta, [0, 100, 0, 0].', color: [0, 100, 0, 0] },
+    { type: 'paragraph', text: 'Rich black, [60, 40, 40, 100].', color: [60, 40, 40, 100] },
+    { type: 'paragraph', text: 'This line is RGB. Under a CMYK intent it is remapped through a calibrated /DefaultRGB.' },
+    { type: 'chart', chartType: 'bar', title: 'Ink coverage', categories: ['Q1', 'Q2', 'Q3'],
+      series: [{ label: 'Cyan', values: [40, 55, 48], color: [100, 0, 0, 0] }, { label: 'Magenta', values: [30, 35, 52], color: [0, 100, 0, 0] }] },
+  ],
+}, {
+  pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  margins: { t: 36 + BLEED, r: 36 + BLEED, b: 36 + BLEED, l: 36 + BLEED },
+  print: { bleed: BLEED, marks: true },
+  pdfx: 'pdfx4',                                 // PDF 1.6 header, PDF/X-4 XMP, /GTS_PDFX OutputIntent, /Trapped
+  outputIntent: { iccProfile, outputConditionIdentifier: 'Synthetic CMYK (characterises no press)', registryName: 'http://www.color.org' },
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+});
+const { valid, errors, warnings } = validatePdfX(pdf);   // structural check, ISO 15930-7; press files still need a certified preflight
+console.log('validatePdfX:', valid ? 'valid' : 'NOT valid', errors, warnings);
+downloadBlob(pdf, 'pdfx4.pdf');`,
+  errors: `import { registerFonts, loadFontData, buildDocumentPDFBytes } from 'pdfnative';
+
+const iccProfile = new Uint8Array(await (await fetch('https://pdfnative.dev/assets/synthetic-cmyk.icc')).arrayBuffer()); // a synthetic prtr profile for tests — a real job uses your printer's .icc
+const outputIntent = { iccProfile, outputConditionIdentifier: 'Synthetic CMYK (characterises no press)' };
+
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin');
+const params = {
+  title: 'PDF/X coherence',
+  fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }],
+  blocks: [{ type: 'paragraph', text: 'Process cyan, [100, 0, 0, 0].', color: [100, 0, 0, 0] }],
+};
+
+// PDF/X-4 is one claim per file: the builder refuses each of these before writing a byte.
+const attempts = [
+  ["pdfx: 'pdfx4' + tagged: 'pdfa2b'",             params, { pdfx: 'pdfx4', tagged: 'pdfa2b', outputIntent }],
+  ["pdfx: 'pdfx4' + encryption: { ownerPassword }", params, { pdfx: 'pdfx4', encryption: { ownerPassword: 'press' }, outputIntent }],
+  ["pdfx: 'pdfx4' without outputIntent",           params, { pdfx: 'pdfx4' }],
+  ["pdfx: 'pdfx4' + metadata.trapped: 'Unknown'",  { ...params, metadata: { trapped: 'Unknown' } }, { pdfx: 'pdfx4', outputIntent }],
+];
+for (const [label, p, layout] of attempts) {
+  try {
+    buildDocumentPDFBytes(p, { ...layout, onDiagnostic: (d) => console.warn(d.code, d.message) });
+    console.error(label, '→ built without an error (unexpected — please report it)');
+  } catch (err) {
+    console.error(label, '→', err.message);
+  }
+}`,
+};
+
+function applyPreset(id) {
+  $('desc').textContent = DESCRIPTIONS[id] + (barsOn()
+    ? ' A colour control bar (C, M, Y, K at 100 % and 50 %) runs along the bottom bleed strip, which is widened to 5 mm.'
+    : '');
+  let code = CODE[id];
+  if (barsOn()) code = code.replace('8.5; // 3 mm', '14.17; // 5 mm').replace(/marks: true/g, 'marks: { colourBars: true }');
+  if (id === 'cmyk' && claimOn()) code = code.replace("  // tagged: 'pdfa2b',   //", "  tagged: 'pdfa2b',      //");
+  codeView.textContent = code;
+  if (window.Prism) window.Prism.highlightElement(codeView);
+  report.style.display = 'none';
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
+let pdfMod = null;
+async function loadPdfnative() {
+  if (pdfMod) return pdfMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFBytes === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFBytes === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFBytes === 'function') { pdfMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not load pdfnative from CDN. ' + (lastErr ? lastErr.message : ''));
+}
+
+async function latinEntries(m) {
+  m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });
+  const fontData = await m.loadFontData('latin');
+  return [{ fontData, fontRef: '/F3', lang: 'latin' }];
+}
+
+// The repository's synthetic CMYK output profile (scripts/lib/synthetic-cmyk-profile.ts), inlined so
+// the CMYK-intent presets run without a file: an ICC v2 'prtr' profile with CMYK data and a Lab
+// connection space, structurally complete so validators accept it. Its transform is the naive device
+// conversion — it characterises no printing condition. A real job needs your printer's profile.
+const SYNTHETIC_CMYK_PROFILE_B64 = 'AAAm8AAAAAACEAAAcHJ0ckNNWUtMYWIgB+oAAQABAAAAAAAAYWNzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPbWAAEAAAAA0y0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGZGVzYwAAAMwAAACZY3BydAAAAWgAAAAhd3RwdAAAAYwAAAAUQTJCMAAAAaAAAA6DQjJBMAAAECQAABKUZ2FtdAAAIrgAAAQ4ZGVzYwAAAAAAAAA/cGRmbmF0aXZlIHN5bnRoZXRpYyBDTVlLIChzYW1wbGVzIG9ubHksIG5vdCBhIHByZXNzIGNvbmRpdGlvbikAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdGV4dAAAAABObyBjb3B5cmlnaHQsIHVzZSBmcmVlbHkAAAAAWFlaIAAAAAAAAPbWAAEAAAAA0y1tZnQxAAAAAAQDBQAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7//4CAxYCAiICARYCAAICA/Hmfw3qYhnyRRH6KAICA+nS8wXawhXmiQ3yUAICA+XHTwXTChHewQ3ucAICA+XDdwHPLhHe4Q3qiAICA2J9qp5lucpJzOYp5AICA1JiJpJOHb42FN4iDAICA0pKqoo6hboqXNoaNAICA0ZDFoIy3bYmoNoWXAICA0I/ToIvDbYiyNoSeAICAt75WjLFfX6NoLZRyAICAsrd2iKt4XJ96LJJ8AICAr7KYhqeTWpyNK5CHAICAra+4hKWsWZqgKo+RAICArK7LhKS8WJqtKo6YAICAodVJe8NUUbFgJZ1tAICAm85pdr5tTq1yI5p3AICAl8qLcruJS6uGIpmCAICAlcevcLmkSqmZIZiNAICAlMfHcLi5SaipIJeUAICAmd5Dc8tPS7hcH6NqAICAk9hjbsdpR7VuHaF0AICAjtSGasSERLKCG59/AICAi9KraMKhQ7GWGp+JAICAitHGZ8G4QrCnGp6QAICA9Gt5vXB7gXR8Qnl+AICA8WKYumiTgG+OQHaIAICA71y2uGOrfmufQHSRAICA7ljNuGG+fmmtP3OaAICA7lfYt2DHfWi0P3KgAICAyopgm4hnaYZuNIN2AICAxYCAmICAZ4CAM4CAAICAwnmglXqaZXySMn6KAICAwXW9lHewZHmjMXyUAICAwHPLlHa9ZHitMXubAICAo6tJfaJUVJhhJ45uAICAnaFpeJpuUJNzJot5AICAmZqLdZSITo6GJIiDAICAl5Wsc5GjTIyZJIaOAICAlpTAco+0TIunI4WUAICAiMc4Z7hHQ6lXHZdoAICAgL5XYLFfP6RoG5VyAICAerd5W6x6O6B8GZJ9AICAdrSeWamXOZ2QGJGIAICAdbK6WKivOZyhGJCOAICAfdMxXcNBO7JRFp9kAICAc8tPVb1ZNq1jE51tAICAbcZyULh0Mqp2EZt4AICAacKXTbaRL6iLEJmDAICAZ8G4TLWsLqecD5iJAICA7Vt0t2J3fWt5P3R8AICA6VCTtFqPe2WLPnCGAICA50ixslSnemCcPW6QAICA5kTJsVC6eV2qPWyYAICA5kPUsU/EeVyyPGufAICAv3hZk3piY3tqMH10AICAumt5j297YXR8L3l+AICAt2GajGeUX26OLnaIAICAtVu3i2OrXmufLXSSAICAtVrFimG4XWqqLXOZAICAlJo/cZRNS45bI4hrAICAjYxea4llR4ZtIYN1AICAiICAZ4CARICAH4CAAICAhXmiZXqbQ3yTHn6KAICAhHe4ZHitQnqiHnyRAICAcrsqVq48N6FPF5NkAICAZ65HTaRTMZpgFI9uAICAX6NoR5xtLZRyEot4AICAWpyNQ5aKKpCHEYiDAICAWZmtQpSkKY6YEIaJAICAZMsgSbwzLa1ID5teAICAVsA8PrRJJadYC5ZoAICAS7hcNq1jH6JqCZJzAICARLKBMKmAG59+CI9+AICAQrCnLqecGZ6QB42FAICA6VFys1p1emR4PXB7AICA5UWRsVGNeV6JPGyFAICA4zyvr0qld1maO2mPAICA4jfHrka4d1apO2eXAICA4TXSrUTCdlSxO2aeAICAuWxWjnBeYHRoLnlyAICAtFx1imR3XWt6LXR8AICAsVGWh1qRW2WMLHCHAICAr0qzhlWoWmGdK26QAICArkfChVO2WV+oKmyXAICAi445aYtIRodYH4NpAICAg3tYY3xgQX1pHX5zAICAfWt5X297PnR8HHl+AICAemCcXGeWPG6PGnaIAICAeV2yW2SpPGufGnSPAICAZLIgS6c0L5tJEo9hAICAV6A8QJlKKJFZD4hrAICATI5cOItjI4hsDYN1AICARYCAM4CAH4CADICAAICAQ3qiMXubHnyRC36HAICAUsYVO7gqIqpBCpZbAICAP7ktLK49F6NPB49lAICALa1IHqVTDptfBYpwAICAH6NqE51tCZJzA4Z7AICAGp6QD5iJB42FA4WCAICA501xsld0eWJ3PG16AICA5EGQr02Md1uJO2mEAICA4jeurkakdlWaOmaOAICA4DLGrUK4dVKoOmSXAICA4DHRrEDBdVGwOmOeAICAt2hUjGxdXnFnLXZxAICAsld0iF92W2d5K3B7AICAr0qVhVWQWWCLKmyGAICArUOyhE+nWFucKWmQAICArEDBg0y1WFmnKWiWAICAiIk3Z4ZGQ4NWHYBoAICAf3RWYHZeP3hoG3lyAICAeWJ3W2d5O216GXR8AICAdlWZWV2UOmaOGHCHAICAdVGwWFmnOWOdGG+NAICAX64dRqQxLJhHEItfAICAUJo4OpRHJI1XDYRpAICARINXMYFfHYBoC350AICAPG16K3B7GXR8CXt+AICAOmOeKWiWGG+NCXqFAICAS8QQNbcmHak9B5JaAICANbcmI6w3EKFKBIpjAICAHak9EKFKB5FaAoVvAICAB5JaBIpjAoVvAYJ5AICAAICAAICAAICAAICAAICAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AG1mdDEAAAAAAwQJAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+//+xADz/nQBx/3IAov8AD83/AP/O/wD/zv8A/8//AP/P/wD/0P+5ADz/qQBx/4UAov8ZAND/AP/V/wD/1f8A/9b/AP/X/wD/1//BADz/tgBx/5sAov9JAM//AP/e/wD/3v8A/9//AP/g/wD/4f/LADz/xgBw/7gAof+HAM//AP/q/wD/6/8A/+z/AP/tAD//6f/YADz/3QBw/+cAof/yAM4AAAD/AP//6QD//90A///TAP//zP/pADz//wBw//8AoWL/AM4A//TUAP//zQD//8YA///BAP//u///ADz//wBwof8AoQD/KsMA/++8AP//uAD//7MA//+vAP//q///ADzP/wBwOf8AoAD/aqgA/+mjAP//oAD//50A//+aAP//l///ADts/wBvAP8ZlQD/i4wA/+KJAP//hgD//4QA//+CAP//f/+vABj/ngBO/3wAgv8wALP/AITC/wD/wv8A/8P/AP/D/wD/w/+0ABj/pQBO/4cAgv9CALL/AHXH/wD/yP8A/8j/AP/J/wD/yf+5ABj/rABO/5MAgv9XALL/AGDN/wD/zv8A/87/AP/P/wD/z/+/ABf/tQBO/6AAgf9uALL/AEDV/wD/1bMA/9ZLAP/WBgD/1//GABf/wABO/7IAgf+OALEAAADeAD//1QBg/80Adv/HAIb/wf/UABf/1wBO/9sAgU7hALEA7oC7APb/tgD9/7IA//+tAP//qv//ABf//wBNdv8AgAD/IqQA/6OcAP//mQD//5YA//+TAP//kP//ABeT/wBNJP8AgAD/WoQA/7R+AP//ewD//3kA//93AP//daz/ABZP/wBMAP8dbwD/eWQA/71gAP//XgD//1wA//9bAP//Wf+fAAD/kQAq/3EAYP8xAJT/AFSq/wD/qv8A/6v/AP+r/wD/q/+iAAD/lQAq/3cAYP86AJT/AEut/wD/rv8A/67/AP+u/wD/r/+lAAD/mQAq/30AYP9EAJT/AEGx/wD/sv8A/7L/AP+y/wD/s/+rAAD/oAAq/4cAYP9TAJP/AC24/wD3uLUA/7mGAP+5YwD/uf+0AAD/rQAq/5gAYM5vAJMAAADDACXmugA0/7UAQf+xAEz/rf/EAAD/wgAqvrgAXziiAJIAoWSbAKnglQCt/5MAsP+QALT/jf/pAADI/wApWf8AXwD/IIEA/4l3AP/cdAD//3IA//9wAP//btv/AABz/wApFv8AXgD/UF0A/51WAP/ZUwD//1IA//9QAP//ToH/AAA8/wAoAP8gRgD/bTsA/6o1AP/XMwD//zIA//8wAP//L/9+AAD/fwAG/14APv8jAHT/AEeI/wDCif8A/4n/AP+J/wD/if+BAAD/ggAG/2IAPv8pAHT/AEGL/wC+jP8A/4z/AP+M/wD/jf+GAAD/iAAG/2kAPv8zAHT/ADeR/wC3kf8A/5L/AP+S/wD/kv+NAAD/kAAF/3QAPf9DAHP/ACSZnwCrmoMA/5pyAP+aYwD/m/+ZAAD/nAAF/4UAPZdbAHMAAACmAB+imwAp/5cAL/+UADX/kf+qAAD/rwAFlZ8APCuCAHIAf1N6AIi3cwCL/3AAjf9uAI//bP/LAACd1wAESN0APADrHl4A/3hSAP/ATQD//0sA//9KAP//SJf/AABf/wAEDv8AOwD/STYA/40uAP/FKgD//ygA//8nAP//JlT/AAAv/wADAP8gHQD/ZBEA/5sKAP/IBwD/8QYA//8FAP//BP9aAAD/XgAA/04AG/8WAFP/AEFj/wCfZP8A/2T/AP9k/wD/ZP9fAAD/YgAA/1MAGv8dAFP/ADpo/wCaaf8A/2n/AP9p/wD/af9lAAD/aQAA/1sAGv8oAFL/AC9v/wCScP8A/3D/AP9w/wD/cP9uAAD/cgAA/2YAGv83AFK7AB55dwCGemAA/3pYAP96UQD/e/97AAD/gAAA/3YAGXpNAFEAAACIABuBewAl/3UAKf9zACz/cf+OAAD/kwAAfY0AGSNtAFAAakdXAHOcTwB3/0sAeP9JAHr/SPWsAAB2tQAAPbUAGACvHDkAuWotAL6rJgDA/iMAwf8iAML/IWj/AAA6/wAACf8AFwD/Qw8A/4AFAP+0AAD/6gAA//8AAP//ACj/AAAJ/wAAAP8WAAD/TAAA/4AAAP+vAAD/3QAA//8AAP//AP82AAD/OQAA/zwAAP8OADL/ADw//wCKP/8A/0D/AP9A/wD/QP88AAD/PwAA/0IAAP8WADL/ADVF/wCERv8A/0b/AP9G/wD/Rv9EAAD/RwAA/0oAAP8hADH/ACpN/wB8Tv8A/07/AP9P8wD/T/9OAAD/UgAA/1UAAP8wADCOABpZYABwWkwA/1pFAP9aQQD/Wv9dAAD/YQAAzGQAAGhEADAAAABoABhsWgAi6FMAJv9QACj/Tv9wAACrdQAAZ3kAAB5eAC8AXD81AGWKKwBp3iYAa/8kAGz/I5iNAABPlAAAK5kAAACVGxUAnmAIAKKbAACj2QAApP8AAKT/AD3GAAAT1wAAAO0AAAD/LAAA/2MAAP+XAAD/0AAA//8AAP//AAD/AAAA/wAAAP8AAAD/KwAA/2EAAP+TAAD/xwAA//8AAP//AP8QAAD/EwAA/xUAAP8JAA//ADgY/wB6Gf8A1Rr/AP8a/wD/Gv8XAAD/GgAA/x0AAP8RAA7/ADAg/wB0If8AziH/AP8h/wD/Iv8gAAD/JAAA/yYAAP8cAA7/ACYp/wBsKsMAxiuqAP8rowD/K/8sAAD/MAAA/zIAAOgqAA11ABc2UQBgNz8AvDg2AP84MwD/OP88AAD/QAAAmUMAAFs8AAwAAABHABVdNwAguC4AJf8qACf/Kf9QAAB7VAAAQ1gAABpTAAsAUTgRAFp7BgBevwAAX/8AAF//AGRsAAAocgAABXYAAAB6CgAAfUQAAH57AAB/uQAAgP8AAID/ABKaAAAAowAAAKsAAACyCAAAt0IAALt4AAC9swAAv/8AAL//AAD/AAAA/wAAAP8AAAD/BwAA/z8AAP91AAD/rAAA//sAAP//AP8AAAD/AAAA/wAAAP8AAAD/ACgA/wBmAP8AsAD/AP8A/wD/AP8AAAD/AAAA/wAAAP8AAAD/ACcA/wBlAP8ArQD/AP8A/wD/AP8AAAD/AAAA/wEAAP8DAAD/ACIFxwBfBpsAqAaJAP8HggD/B/8JAAD/DAAA/w8AAKgRAABjABQSRgBUFDUAnxQsAP8VKAD/Ff8ZAAD/HQAAcCAAAD8iAAAAAAAkABNSFAAenwkAI/8EACb/AdguAABQMgAAHjUAAAA4AAAAOiIAADtdAAA8ngAAPf8AAD3/ADZKAAABTwAAAFMAAABWAAAAWSEAAFpaAABbmQAAXP8AAFz/AABzAAAAegAAAIAAAACEAAAAiB8AAItXAACNlAAAjucAAI7/AADIAAAA5AAAAP8AAAD/AAAA/x0AAP9UAAD/jgAA/9IAAP//AP8AAAD/AAAA/wAAAP8AAAD/AAUA/wBEAP8AjAD/AP8A/wD/AP8AAAD/AAAA/wAAAP8AAAD/AAQA/wBCAP8AiQD/AP8A/wD/AP8AAAD/AAAA/wAAAP8AAAD/AAMAlgBBAHQAhgBkAP8AXAD/AP8AAAD/AAAA/wAAAHsAAABLAAEAMQA/ACEAgwAYAP8AEwD/AP8AAACpAAAASAAAABsAAAAAAAAAAAE9AAACgAAAA+kAAAP/AH8LAAAmDwAAABIAAAAUAAAAFgAAABg7AAAZfAAAGdYAABr/AAomAAAAKwAAAC8AAAAyAAAANAAAADY4AAA3eAAAOMgAADj/AABNAAAAUgAAAFcAAABbAAAAXwAAAGE2AABjcwAAZLwAAGT/AACKAAAAlQAAAJ4AAACnAAAArgAAALMzAAC3bwAAurEAALz/AAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v9tZnQxAAAAAAMBAgAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAAAAAAAAAAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=';
+function syntheticProfile() {
+  const bin = atob(SYNTHETIC_CMYK_PROFILE_B64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// Your profile when a file is chosen, the synthetic one otherwise. `note` is shown in the status line.
+async function readProfile() {
+  const file = $('icc').files && $('icc').files[0];
+  if (file) {
+    return {
+      iccProfile: new Uint8Array(await file.arrayBuffer()),
+      outputConditionIdentifier: 'Custom CMYK',
+      note: 'OutputIntent: your profile (' + file.name + ', ' + (file.size / 1024).toFixed(1) + ' KB).',
+    };
+  }
+  return {
+    iccProfile: syntheticProfile(),
+    outputConditionIdentifier: 'Synthetic CMYK (characterises no press)',
+    note: 'OutputIntent: the synthetic CMYK profile inlined in this page — it characterises no press; a real job needs your printer\'s profile.',
+  };
+}
+
+function pressBlocks() {
+  return [
+    { type: 'heading', text: 'Print-ready page', level: 1 },
+    { type: 'paragraph', text: 'Process cyan, [100, 0, 0, 0].', color: [100, 0, 0, 0] },
+    { type: 'paragraph', text: 'Process magenta, [0, 100, 0, 0].', color: [0, 100, 0, 0] },
+    { type: 'paragraph', text: 'Rich black, [60, 40, 40, 100].', color: [60, 40, 40, 100] },
+    { type: 'paragraph', text: 'This line is RGB. Under a CMYK intent it is remapped through a calibrated /DefaultRGB.' },
+    { type: 'chart', chartType: 'bar', title: 'Ink coverage', categories: ['Q1', 'Q2', 'Q3'],
+      series: [{ label: 'Cyan', values: [40, 55, 48], color: [100, 0, 0, 0] }, { label: 'Magenta', values: [30, 35, 52], color: [0, 100, 0, 0] }] },
+  ];
+}
+
+function pressLayout(m) {
+  const bleed = barsOn() ? BLEED_BARS : BLEED;
+  return {
+    pageWidth: m.PAGE_SIZES.A4.width + 2 * bleed,
+    pageHeight: m.PAGE_SIZES.A4.height + 2 * bleed,
+    margins: { t: 36 + bleed, r: 36 + bleed, b: 36 + bleed, l: 36 + bleed },
+    print: { bleed, marks: barsOn() ? { colourBars: true } : true },
+    onDiagnostic,
+  };
+}
+
+const BUILDERS = {
+  bleed: (m) => m.buildDocumentPDFBytes(
+    { title: 'Bleed and marks', blocks: [
+      { type: 'heading', text: 'Print-ready PDF', level: 1 },
+      { type: 'paragraph', text: 'Designed at A4 trim size plus 3 mm bleed on every side. Crop and registration marks sit outside the TrimBox and are cut away with the bleed.' },
+    ] },
+    pressLayout(m),
+  ),
+  // With the claim ticked: PDF/A-2b under the default sRGB intent, so the CMYK colour raises
+  // PDFA_DEVICE_CMYK_CONTENT (and the base-14 text PDFA_NO_FONT_ENTRIES). The file is still written.
+  cmyk: (m) => m.buildDocumentPDFBytes(
+    { title: 'CMYK colours', blocks: pressBlocks() },
+    claimOn() ? { ...pressLayout(m), tagged: 'pdfa2b' } : pressLayout(m),
+  ),
+  pdfa: async (m) => {
+    const { iccProfile, outputConditionIdentifier, note } = await readProfile();
+    const bytes = m.buildDocumentPDFBytes(
+      { title: 'PDF/A-2b, CMYK intent', fontEntries: await latinEntries(m), blocks: pressBlocks() },
+      { ...pressLayout(m), tagged: 'pdfa2b', outputIntent: { iccProfile, outputConditionIdentifier } },
+    );
+    return { bytes, note };
+  },
+  pdfx: async (m) => {
+    const { iccProfile, outputConditionIdentifier, note } = await readProfile();
+    const bytes = m.buildDocumentPDFBytes(
+      { title: 'PDF/X-4', fontEntries: await latinEntries(m), blocks: pressBlocks() },
+      { ...pressLayout(m), pdfx: 'pdfx4', outputIntent: { iccProfile, outputConditionIdentifier, registryName: 'http://www.color.org' } },
+    );
+    return { bytes, note };
+  },
+  // No PDF: each incoherent configuration is tried inside a try/catch and the thrown message is reported.
+  errors: async (m) => {
+    const { iccProfile, outputConditionIdentifier } = await readProfile();
+    const outputIntent = { iccProfile, outputConditionIdentifier };
+    const params = {
+      title: 'PDF/X coherence',
+      fontEntries: await latinEntries(m),
+      blocks: [{ type: 'paragraph', text: 'Process cyan, [100, 0, 0, 0].', color: [100, 0, 0, 0] }],
+    };
+    const attempts = [
+      ["pdfx: 'pdfx4' + tagged: 'pdfa2b'", params, { pdfx: 'pdfx4', tagged: 'pdfa2b', outputIntent }],
+      ["pdfx: 'pdfx4' + encryption: { ownerPassword }", params, { pdfx: 'pdfx4', encryption: { ownerPassword: 'press' }, outputIntent }],
+      ["pdfx: 'pdfx4' without outputIntent", params, { pdfx: 'pdfx4' }],
+      ["pdfx: 'pdfx4' + metadata.trapped: 'Unknown'", { ...params, metadata: { trapped: 'Unknown' } }, { pdfx: 'pdfx4', outputIntent }],
+    ];
+    const lines = [];
+    for (const [label, p, layout] of attempts) {
+      try {
+        m.buildDocumentPDFBytes(p, { ...pressLayout(m), ...layout });
+        lines.push(label + '\n  → built without an error (unexpected — please report it)');
+      } catch (err) {
+        lines.push(label + '\n  → Error: ' + (err && err.message ? err.message : err));
+      }
+    }
+    return { report: 'buildDocumentPDFBytes() refuses each of these before writing a byte:\n\n' + lines.join('\n\n') };
+  },
+};
+
+async function generate() {
+  const id = $('preset').value;
+  const t0 = performance.now();
+  report.style.display = 'none';
+  diagnostics = [];
+  try {
+    setStatus('Loading pdfnative from CDN…', 'info');
+    const mod = await loadPdfnative();
+    setStatus(id === 'errors' ? 'Trying the incoherent configurations…' : 'Generating PDF…', 'info');
+    const result = await BUILDERS[id](mod);
+    renderDiagnostics();
+    const ms = (performance.now() - t0).toFixed(0);
+    if (result && result.report !== undefined) {
+      report.style.display = 'block';
+      report.textContent = result.report;
+      $('timer').textContent = ms + ' ms';
+      setStatus('Four PDF/X configurations rejected, as expected — the thrown messages are below. No PDF was produced.', 'success');
+      return;
+    }
+    const bytes = result instanceof Uint8Array ? result : result.bytes;
+    mod.downloadBlob(bytes, 'print-' + id + '.pdf');
+    $('timer').textContent = (bytes.length / 1024).toFixed(1) + ' KB · ' + ms + ' ms';
+    if (id === 'pdfx') {
+      const check = mod.validatePdfX(bytes);
+      report.style.display = 'block';
+      report.textContent = 'validatePdfX: ' + (check.valid ? 'valid' : 'NOT valid')
+        + (check.errors.length ? '\n\nErrors:\n- ' + check.errors.join('\n- ') : '')
+        + (check.warnings.length ? '\n\nWarnings:\n- ' + check.warnings.join('\n- ') : '');
+    }
+    setStatus('PDF generated and downloaded.' + (result.note ? ' ' + result.note : '')
+      + (diagnostics.length ? ' ' + diagnostics.length + ' diagnostic(s) raised, see below.' : ''), 'success');
+  } catch (err) {
+    renderDiagnostics();
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  }
+}
+
+$('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('bars').addEventListener('change', () => applyPreset($('preset').value));
+$('claim').addEventListener('change', () => applyPreset($('preset').value));
+$('generate').addEventListener('click', generate);
+$('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(codeView.textContent);
+    const btn = $('copy'); const old = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = old; }, 1500);
+  } catch (e) { alert('Clipboard write failed: ' + (e && e.message ? e.message : e)); }
+});
+applyPreset('bleed');
+
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

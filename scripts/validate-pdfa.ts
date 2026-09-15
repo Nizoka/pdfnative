@@ -6,7 +6,13 @@
  * the official veraPDF reference validator (https://verapdf.org).
  *
  * Usage:
- *   npm run validate:pdfa
+ *   npm run validate:pdfa                          # PASS/FAIL per file at a terminal
+ *   npx tsx scripts/validate-pdfa.ts --quiet      # failures + the one-line footer
+ *   npx tsx scripts/validate-pdfa.ts --verbose    # per-file lines, even through a pipe
+ *   npx tsx scripts/validate-pdfa.ts --json       # { claimed, compliant, failures: [{ file, profile, rules }] }
+ *
+ * Quiet is the default when stdout is not a terminal (CI, `scripts/gate.ts`,
+ * an agent capturing the output).
  *
  * Requirements:
  *   - veraPDF CLI on $PATH OR `VERAPDF_HOME` env var pointing at a veraPDF install.
@@ -19,6 +25,7 @@
  *       `declared.pdfaSamples` in docs/assets/ecosystem.json (coverage
  *       canary: a silent drop in claim detection or sample generation must
  *       fail loudly, and a new PDF/A-claiming sample must bump the counter).
+ *   2 — veraPDF is installed but could not run (broken Java), or bad usage.
  *
  * Skipping veraPDF locally:
  *   If `verapdf` is missing this script prints install instructions and exits
@@ -29,6 +36,8 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+
+import { parseOutputMode, type OutputMode } from './helpers/io.js';
 
 // ── Locate veraPDF CLI ──────────────────────────────────────────────
 
@@ -97,6 +106,14 @@ interface ValidationResult {
     readonly profile: string;
     readonly compliant: boolean;
     readonly failedRules: readonly string[];
+    /**
+     * Set when veraPDF could not run at all (rather than running and
+     * rejecting the file) — a broken Java runtime, a missing plugin, a
+     * corrupt install. Without this, every file reports FAIL with no rules
+     * listed, which reads as "the library broke PDF/A" when in fact nothing
+     * was validated.
+     */
+    readonly infraError?: string;
 }
 
 function validateFile(verapdf: string, file: string, profile: string): ValidationResult {
@@ -108,6 +125,7 @@ function validateFile(verapdf: string, file: string, profile: string): Validatio
     const isBatch = /\.(bat|cmd)$/i.test(verapdf);
     const quote = (s: string): string => (isBatch ? `"${s}"` : s);
     let xml: string;
+    let stderr = '';
     try {
         xml = execFileSync(quote(verapdf), ['--format', 'xml', '--flavour', profile, quote(file)], {
             encoding: 'utf8',
@@ -115,9 +133,23 @@ function validateFile(verapdf: string, file: string, profile: string): Validatio
             shell: isBatch,
         });
     } catch (err) {
-        const e = err as { stdout?: string };
+        const e = err as { stdout?: string; stderr?: string; message?: string };
         xml = e.stdout ?? '';
+        stderr = (e.stderr ?? e.message ?? '').trim();
     }
+
+    // No report element at all means veraPDF never validated anything.
+    // Distinguish that from a genuine rejection, which always emits a report.
+    if (!/<report|<validationReport|isCompliant=/i.test(xml)) {
+        return {
+            file,
+            profile,
+            compliant: false,
+            failedRules: [],
+            infraError: stderr || 'veraPDF produced no validation report',
+        };
+    }
+
     const compliant = /isCompliant="true"/i.test(xml);
     const failedRules = Array.from(xml.matchAll(/<rule[^>]*specification="[^"]*"[^>]*clause="([^"]+)"[^>]*testNumber="([^"]+)"[^>]*status="failed"/gi))
         .map(m => `${m[1]} t${m[2]}`);
@@ -149,13 +181,43 @@ function printMissingVeraPdfHelp(): void {
     for (const l of lines) process.stderr.write(`${l}\n`);
 }
 
-function main(): number {
+interface Failure {
+    readonly file: string;
+    readonly profile: string;
+    readonly rules: readonly string[];
+}
+
+/** The `--json` document. `error` is set when nothing (or not everything) was validated. */
+interface JsonReport {
+    readonly claimed: number;
+    readonly compliant: number;
+    readonly failures: readonly Failure[];
+    readonly veraPdf: string | null;
+    readonly error?: string;
+}
+
+function emitJson(report: JsonReport): void {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+}
+
+function main(mode: OutputMode): number {
+    // Progress chatter goes to stderr and only when a human is watching.
+    const progress = (line: string): void => { if (!mode.quiet) process.stderr.write(`${line}\n`); };
+    // Diagnostics that explain a non-zero exit are always shown, unless --json owns stdout.
+    const explain = (text: string): void => { if (!mode.json) process.stderr.write(text); };
+
     const verapdf = locateVeraPdf();
     if (!verapdf) {
-        printMissingVeraPdfHelp();
+        if (mode.json) {
+            emitJson({ claimed: 0, compliant: 0, failures: [], veraPdf: null, error: 'veraPDF not installed' });
+        } else if (mode.quiet) {
+            process.stderr.write('veraPDF CLI not found — skipping PDF/A validation (exit 0).\n');
+        } else {
+            printMissingVeraPdfHelp();
+        }
         return 0;
     }
-    process.stderr.write(`Using veraPDF: ${verapdf}\n`);
+    progress(`Using veraPDF: ${verapdf}`);
 
     const root = resolve(process.cwd(), 'test-output');
     const claimed: Array<[string, Claim]> = [];
@@ -167,11 +229,15 @@ function main(): number {
     }
     const skipped = totalSeen - claimed.length;
     if (totalSeen === 0) {
-        process.stderr.write('No PDFs found in test-output/. Run `npm run test:generate` first.\n');
+        if (mode.json) {
+            emitJson({ claimed: 0, compliant: 0, failures: [], veraPdf: verapdf, error: 'test-output/ is empty' });
+        } else {
+            process.stderr.write('No PDFs found in test-output/. Run `npm run test:generate` first.\n');
+        }
         return 0;
     }
 
-    process.stderr.write(`Scanned ${totalSeen} PDF(s); ${claimed.length} claim PDF/A, ${skipped} skipped (not PDF/A).\n`);
+    progress(`Scanned ${totalSeen} PDF(s); ${claimed.length} claim PDF/A, ${skipped} skipped (not PDF/A).`);
 
     // Coverage canary: the ecosystem manifest declares how many samples
     // claim PDF/A. A mismatch means either a new claiming sample was added
@@ -183,36 +249,79 @@ function main(): number {
     ) as { declared?: { pdfaSamples?: number } };
     const expected = manifest.declared?.pdfaSamples;
     if (typeof expected === 'number' && claimed.length !== expected) {
-        process.stderr.write(
-            `\nCoverage canary: detected ${claimed.length} PDF/A-claiming sample(s) but `
-            + `docs/assets/ecosystem.json declares pdfaSamples: ${expected}.\n`
-            + 'Added or removed a PDF/A-claiming sample? Update declared.pdfaSamples.\n'
-            + 'Neither added nor removed one? Claim detection or sample generation regressed.\n',
-        );
+        const why = `Coverage canary: detected ${claimed.length} PDF/A-claiming sample(s) but `
+            + `docs/assets/ecosystem.json declares pdfaSamples: ${expected}.`;
+        if (mode.json) {
+            emitJson({ claimed: claimed.length, compliant: 0, failures: [], veraPdf: verapdf, error: why });
+        } else {
+            explain(
+                `\n${why}\n`
+                + 'Added or removed a PDF/A-claiming sample? Update declared.pdfaSamples.\n'
+                + 'Neither added nor removed one? Claim detection or sample generation regressed.\n',
+            );
+        }
         return 1;
     }
 
-    process.stderr.write(`Validating ${claimed.length} PDF/A-claiming file(s)…\n`);
+    progress(`Validating ${claimed.length} PDF/A-claiming file(s)…`);
 
-    let failed = 0;
+    const failures: Failure[] = [];
     for (const [file, claim] of claimed) {
-        const rel = relative(process.cwd(), file);
+        const rel = relative(process.cwd(), file).replace(/\\/g, '/');
         const result = validateFile(verapdf, file, claim.profile);
-        if (result.compliant) {
-            process.stdout.write(`  PASS  [${claim.profile}]  ${rel}\n`);
-        } else {
-            failed++;
-            process.stdout.write(`  FAIL  [${claim.profile}]  ${rel}\n`);
-            const unique = Array.from(new Set(result.failedRules)).slice(0, 5);
-            for (const rule of unique) process.stdout.write(`        - ${rule}\n`);
-            if (result.failedRules.length > unique.length) {
-                process.stdout.write(`        … (${result.failedRules.length - unique.length} more)\n`);
+        if (result.infraError !== undefined) {
+            // Abort rather than mark every remaining file FAIL: nothing was
+            // validated, so reporting failures would be actively misleading.
+            if (mode.json) {
+                emitJson({
+                    claimed: claimed.length, compliant: 0, failures: [], veraPdf: verapdf,
+                    error: `veraPDF could not run: ${result.infraError}`,
+                });
+            } else {
+                explain(
+                    `\nveraPDF could not run — no file was validated.\n\n`
+                    + `  ${result.infraError.split('\n').join('\n  ')}\n\n`
+                    + '  Most often a broken Java runtime: veraPDF needs a working JRE/JDK on\n'
+                    + '  PATH, and JAVA_HOME must point at one that still exists. Check with\n'
+                    + '  `java -version`, then re-run.\n',
+                );
             }
+            return 2;
+        }
+        if (result.compliant) {
+            if (!mode.quiet) process.stdout.write(`  PASS  [${claim.profile}]  ${rel}\n`);
+            continue;
+        }
+        const rules = Array.from(new Set(result.failedRules));
+        failures.push({ file: rel, profile: claim.profile, rules });
+        if (mode.json) continue;
+        if (mode.quiet) {
+            // One line per failure: the first rules inline, so the log
+            // tail that scripts/gate.ts prints already says what broke.
+            const shown = rules.slice(0, 3).join(', ');
+            const more = rules.length > 3 ? ` (+${rules.length - 3} more)` : '';
+            process.stdout.write(`FAIL  [${claim.profile}]  ${rel} — ${shown}${more}\n`);
+        } else {
+            process.stdout.write(`  FAIL  [${claim.profile}]  ${rel}\n`);
+            for (const rule of rules.slice(0, 5)) process.stdout.write(`        - ${rule}\n`);
+            if (rules.length > 5) process.stdout.write(`        … (${rules.length - 5} more)\n`);
         }
     }
 
-    process.stderr.write(`\n${claimed.length - failed}/${claimed.length} compliant (${skipped} non-PDF/A files skipped).\n`);
-    return failed === 0 ? 0 : 1;
+    const compliant = claimed.length - failures.length;
+    if (mode.json) {
+        emitJson({ claimed: claimed.length, compliant, failures, veraPdf: verapdf });
+    } else if (mode.quiet) {
+        process.stdout.write(`${compliant}/${claimed.length} PDF/A-claiming samples compliant\n`);
+    } else {
+        process.stderr.write(`\n${compliant}/${claimed.length} compliant (${skipped} non-PDF/A files skipped).\n`);
+    }
+    return failures.length === 0 ? 0 : 1;
 }
 
-process.exit(main());
+const mode = parseOutputMode(process.argv.slice(2));
+if ('error' in mode) {
+    process.stderr.write(`${mode.error}\n`);
+    process.exit(2);
+}
+process.exit(main(mode));

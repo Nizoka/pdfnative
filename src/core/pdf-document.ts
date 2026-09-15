@@ -19,15 +19,14 @@ import type {
 } from '../types/pdf-types.js';
 import type {
     DocumentParams,
-    DocumentBlock,
     ImageBlock,
-    TableBlock,
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaUnembeddedFormFontDiagnostic } from './pdf-diagnostics.js';
-import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
-import { createEncodingContext } from './encoding-context.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
+import { scanDeviceColour } from './pdf-content-colour.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
+import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
@@ -37,7 +36,7 @@ import { toBytes } from './pdf-stream.js';
 import { buildOutlineObjects, type OutlineRenderItem } from './pdf-outline.js';
 import { buildPageLabelsDict } from './pdf-page-labels.js';
 import { buildViewerPreferences } from './pdf-viewer-prefs.js';
-import { parseColor } from './pdf-color.js';
+import { rgbOperands, fillOp, strokeOp } from './pdf-color.js';
 import {
     PG_W, PG_H, DEFAULT_MARGINS,
     FT_H, HEADER_H,
@@ -49,7 +48,11 @@ import {
     buildStructureTree,
     buildXMPMetadata,
     buildOutputIntentDict,
-    resolveOutputIntentProfile,
+    resolveOutputIntent,
+    defaultRgbResource,
+    resolvePdfXConfig,
+    pdfxDocumentId,
+    buildPdfXXMPMetadata,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -61,10 +64,13 @@ import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
+import { resolveCreationDate } from './pdf-reproducible.js';
+import { paginateDocument } from './pdf-pagination.js';
+import { prepareBlocks } from './pdf-typography.js';
 import { resolveDebugOptions, marginBoxOps, blockBoundsOps, tableCellOps } from './pdf-layout-debug.js';
 import { buildFormWidget, buildAcroFormDict, buildAppearanceStreamDict, buildRadioGroupParent } from './pdf-form.js';
+import { selectFormFont, buildFormFontObjects, FORM_FONT_OBJ_COUNT } from './pdf-form-font.js';
 import {
-    estimateBlockHeight,
     renderHeading,
     renderParagraph,
     renderList,
@@ -86,7 +92,6 @@ import type {
     PageAnnotation,
     PageFormField,
     ResolvedImage,
-    TableSlice,
 } from './pdf-renderers.js';
 
 // Re-export wrapText as public API
@@ -95,19 +100,11 @@ export { wrapText } from './pdf-renderers.js';
 // ── Internal Pagination Types ────────────────────────────────────────
 
 /**
- * Synthetic block produced by `_paginateBlocks()` when a table is sliced
- * across multiple pages. Carries the original `TableBlock` plus the
- * pre-computed slice that the renderer consumes. Internal only — never
- * appears in the public `DocumentBlock` union.
+ * Pagination placements. The declarations live in `pdf-pagination.ts`, the
+ * single planner shared with `inspectDocumentLayout()`, and are re-exported
+ * here for the renderers that consume them.
  */
-interface TableSliceItem {
-    readonly type: '__tableSlice';
-    readonly block: TableBlock;
-    readonly slice: TableSlice;
-}
-
-/** Any item the paginator can place on a page. */
-type PaginatedItem = DocumentBlock | TableSliceItem;
+export type { TableSliceItem, PaginatedItem } from './pdf-pagination.js';
 
 // ── Main Builder ─────────────────────────────────────────────────────
 
@@ -162,6 +159,20 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // ── Tagged mode setup ────────────────────────────────────────────
     const pdfaConfig = resolvePdfAConfig(layout?.tagged);
     const tagged = pdfaConfig.enabled;
+    // Resolved before any byte is written: an unusable profile throws here.
+    const outputIntent = (tagged || layout?.pdfx !== undefined) ? resolveOutputIntent(layout?.outputIntent) : null;
+    // PDF/X-4 (v1.8.0): one claim per file, no encryption, a printer profile.
+    const pdfxConfig = resolvePdfXConfig({
+        pdfx: layout?.pdfx,
+        tagged: layout?.tagged,
+        encrypted: layout?.encryption !== undefined,
+        outputIntent: layout?.outputIntent ? outputIntent : null,
+        trapped: params.metadata?.trapped,
+    });
+    const pdfx = pdfxConfig !== null;
+    // Both claims require every font embedded: no base-14 fallback.
+    const embedFonts = tagged || pdfx;
+    const defaultRgbRes = defaultRgbResource(outputIntent);
 
     // ── Conformance diagnostics (v1.7.0) ─────────────────────────────
     // Guard the PDF/A declaration: a conformance claim must not be stamped
@@ -171,8 +182,17 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         const level = typeof layout?.tagged === 'string' ? layout.tagged : 'pdfa2b';
         emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
     }
+    // PDF/A-1 admits ICC v2 OutputIntent profiles only (v1.8.0).
+    if (tagged && pdfaConfig.pdfaPart === 1 && layout?.outputIntent && outputIntent && outputIntent.iccVersion > 2) {
+        emitDiagnostic(pdfaIccProfileVersionDiagnostic(outputIntent.iccVersion));
+    }
+    if (pdfx && fontEntries.length === 0) {
+        emitDiagnostic(pdfxNoFontEntriesDiagnostic());
+    }
 
-    const enc = createEncodingContext(fontEntries, tagged, layout?.normalize ?? false);
+    const encBase = createEncodingContext(fontEntries, embedFonts, layout?.normalize ?? false, layout?.typography?.metrics, layout?.typography?.hyphenationLanguage);
+    const encFeat = applyDocumentFeatures(encBase, layout?.typography?.fontFeatures);
+    const enc = applyDocumentKerning(encFeat, layout?.typography?.kerning);
 
     // ── Encryption setup ──────────────────────
     const encryptionOpts = layout?.encryption;
@@ -197,10 +217,15 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const printOpts = layout?.print;
     if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layout?.tagged);
     const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
-    const printBoxesStr = printResolved?.boxesStr ?? '';
+    const printBoxesStr = (printResolved?.boxesStr ?? '') + (pdfx ? pdfxBoxes(printOpts, pgW, pgH) : '');
+    // Under a CMYK OutputIntent the marks use the registration colour; in a
+    // tagged document the block is a /Page artifact (v1.8.0).
+    const registrationColour = outputIntent?.space === 'cmyk';
     const printMarksOps = printOpts?.marks && printResolved?.trim
-        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
+        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks, registrationColour, tagged)
         : '';
+    const pageColorSpaceRes = defaultRgbResource(
+        outputIntent, registrationColour && printMarksOps ? REGISTRATION_COLOR_SPACE_ENTRY : '');
 
     // ── Attachments setup (PDF/A-3 only) ─────────────────────────────
     const attachments = layout?.attachments;
@@ -218,205 +243,36 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const headerTpl: PageTemplate | undefined = layout?.headerTemplate;
     const headerH = headerTpl ? HEADER_H : 0;
 
-    const dateNow = new Date();
+    // The `{date}` header/footer placeholder resolves against the same instant
+    // as `/Info /CreationDate` when `layout.creationDate` pins it, so a pinned
+    // build is reproducible in full. Previously this was a second, independent
+    // wall-clock read that no option could override.
+    const dateNow = resolveCreationDate(layout?.creationDate);
     const pad2d = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${dateNow.getFullYear()}-${pad2d(dateNow.getMonth() + 1)}-${pad2d(dateNow.getDate())}`;
+    // UTC, like /CreationDate (v1.8.0): the {date} placeholder and the file's
+    // own date name the same day on every host.
+    const dateStr = `${dateNow.getUTCFullYear()}-${pad2d(dateNow.getUTCMonth() + 1)}-${pad2d(dateNow.getUTCDate())}`;
     const docTitle = params.title ?? '';
 
-    // ── Pagination: build pages from blocks ──────────────────────────
-    const availableH = pgH - mg.t - mg.b - FT_H - headerH;
-
+    // ── Pagination ───────────────────────────────────────────────────
+    // One planner, shared with `inspectDocumentLayout()` so the two can no
+    // longer disagree about page count or placement (issue #75).
     const hasToc = params.blocks.some(b => b.type === 'toc');
-
-    /**
-     * Run a pagination pass to assign blocks to pages and collect heading positions.
-     * Returns page blocks array and collected headings.
-     *
-     * Tables that don't fit on a single page are sliced row-by-row into
-     * {@link PaginatedItem}s of type `'__tableSlice'`; the renderer emits each
-     * slice with optional repeated header and a shared `/Table` struct-tree
-     * accumulator threaded through every slice.
-     */
-    function _paginateBlocks(
-        headingsIn?: readonly HeadingDestination[],
-    ): { pages: PaginatedItem[][]; headings: HeadingDestination[] } {
-        const pages: PaginatedItem[][] = [[]];
-        const headings: HeadingDestination[] = [];
-        let remainH = availableH;
-        let headingIdx = 0;
-        // Track Y per page for heading destination positions
-        let curY = pgH - mg.t - headerH;
-
-        // Account for title on page 0
-        if (params.title) {
-            const titleH = 22 + 12; // TITLE_LN + underline spacing
-            remainH -= titleH;
-            curY -= titleH;
-        }
-
-        for (const block of params.blocks) {
-            if (block.type === 'pageBreak') {
-                pages.push([]);
-                remainH = availableH;
-                curY = pgH - mg.t - headerH;
-                continue;
-            }
-
-            // Tables get sliced row-by-row across pages with optional header
-            // repetition and one shared `/Table` struct accumulator per table.
-            if (block.type === 'table') {
-                const plan = planTable(block, enc, mg.l, cw);
-                const repeatHeader = block.repeatHeader !== false; // default true
-                const sharedAccum: (StructElement | MCRef)[] = [];
-                const totalRows = block.rows.length;
-                let rowIdx = 0;
-                let isFirstSlice = true;
-
-                // Empty-rows table: still emit caption + header + trailer on one slice.
-                if (totalRows === 0) {
-                    const totalH = plan.captionHeight + plan.headerHeight + plan.trailerSpacing;
-                    if (totalH > remainH && pages[pages.length - 1].length > 0) {
-                        pages.push([]);
-                        remainH = availableH;
-                        curY = pgH - mg.t - headerH;
-                    }
-                    pages[pages.length - 1].push({
-                        type: '__tableSlice',
-                        block,
-                        slice: {
-                            plan,
-                            fromRow: 0,
-                            toRow: 0,
-                            drawCaption: true,
-                            drawHeader: true,
-                            isFinalSlice: true,
-                            tableStructAccum: sharedAccum,
-                        },
-                    });
-                    remainH -= totalH;
-                    curY -= totalH;
-                    continue;
-                }
-
-                while (rowIdx < totalRows) {
-                    const drawCaption = isFirstSlice;
-                    const drawHeader = isFirstSlice || repeatHeader;
-                    const tCapH = drawCaption ? plan.captionHeight : 0;
-                    const tHdrH = drawHeader ? plan.headerHeight : 0;
-                    const availableForRows = remainH - tCapH - tHdrH - plan.trailerSpacing;
-
-                    let usedH = 0;
-                    let count = 0;
-                    while (
-                        rowIdx + count < totalRows
-                        && usedH + plan.rowHeights[rowIdx + count] <= availableForRows
-                    ) {
-                        usedH += plan.rowHeights[rowIdx + count];
-                        count++;
-                    }
-
-                    // No rows fit AND page has prior content → move to a new page.
-                    if (count === 0 && pages[pages.length - 1].length > 0) {
-                        pages.push([]);
-                        remainH = availableH;
-                        curY = pgH - mg.t - headerH;
-                        continue;
-                    }
-                    // No rows fit even on a fresh page (single row taller than
-                    // the page): force one row through; clipCells clips overflow.
-                    if (count === 0) count = 1;
-
-                    const fromRow = rowIdx;
-                    const toRow = rowIdx + count;
-                    rowIdx = toRow;
-                    const isFinalSlice = rowIdx >= totalRows;
-
-                    pages[pages.length - 1].push({
-                        type: '__tableSlice',
-                        block,
-                        slice: {
-                            plan,
-                            fromRow,
-                            toRow,
-                            drawCaption,
-                            drawHeader,
-                            isFinalSlice,
-                            tableStructAccum: sharedAccum,
-                        },
-                    });
-
-                    const sliceH = tCapH + tHdrH + usedH + (isFinalSlice ? plan.trailerSpacing : 0);
-                    remainH -= sliceH;
-                    curY -= sliceH;
-                    isFirstSlice = false;
-
-                    if (!isFinalSlice) {
-                        pages.push([]);
-                        remainH = availableH;
-                        curY = pgH - mg.t - headerH;
-                    }
-                }
-                continue;
-            }
-
-            const blockH = estimateBlockHeight(block, enc, cw, headingsIn);
-            if (blockH > remainH && pages[pages.length - 1].length > 0) {
-                pages.push([]);
-                remainH = availableH;
-                curY = pgH - mg.t - headerH;
-            }
-
-            pages[pages.length - 1].push(block);
-
-            if (block.type === 'heading') {
-                headings.push({
-                    destName: `toc_h_${headingIdx++}`,
-                    text: block.text,
-                    level: block.level,
-                    pageIndex: pages.length - 1,
-                    y: curY,
-                });
-            }
-
-            remainH -= blockH;
-            curY -= blockH;
-        }
-
-        return { pages, headings };
-    }
-
-    // Multi-pass pagination for TOC support (max 3 iterations)
-    let headingDests: HeadingDestination[] = [];
-    let pageBlocks: PaginatedItem[][];
-
-    if (hasToc) {
-        // Pass 1: paginate without TOC content to collect headings
-        const pass1 = _paginateBlocks();
-        headingDests = pass1.headings;
-
-        // Pass 2: re-paginate with TOC height included
-        const pass2 = _paginateBlocks(headingDests);
-
-        // Check if heading page assignments changed
-        const pagesChanged = pass2.headings.some((h, i) =>
-            i < headingDests.length && h.pageIndex !== headingDests[i].pageIndex
-        );
-
-        if (pagesChanged) {
-            // Pass 3: final re-pagination with updated heading positions
-            headingDests = pass2.headings;
-            const pass3 = _paginateBlocks(headingDests);
-            headingDests = pass3.headings;
-            pageBlocks = pass3.pages;
-        } else {
-            headingDests = pass2.headings;
-            pageBlocks = pass2.pages;
-        }
-    } else {
-        const result = _paginateBlocks();
-        pageBlocks = result.pages;
-        headingDests = result.headings;
-    }
+    // Typographic text transforms run once, here, so the planner and every
+    // renderer below see the same strings. Returns the input untouched when
+    // nothing is configured.
+    const opticalMargins = layout?.typography?.opticalMargins === true;
+    const preparedBlocks = prepareBlocks(params.blocks, layout?.typography);
+    const { pages: pageBlocks, headings: headingDests } = paginateDocument({
+        blocks: preparedBlocks,
+        title: params.title,
+        enc,
+        pgH,
+        mg,
+        cw,
+        headerH,
+        typography: layout?.typography,
+    });
 
     const totalPages = Math.max(1, pageBlocks.length);
 
@@ -429,10 +285,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 const idx = resolvedImages.length;
                 imageBlockMap.set(block, idx);
                 const resolved = resolveImage(block, cw);
-                if (tagged && resolved.parsed.colorSpace === '/DeviceCMYK') {
-                    // The document's OutputIntent is sRGB — a DeviceCMYK
-                    // image breaks the PDF/A claim (ISO 19005-2 §6.2.4.3).
-                    emitDiagnostic(pdfaDeviceCmykDiagnostic());
+                if (outputIntent && outputIntent.space !== 'cmyk' && resolved.parsed.colorSpace === '/DeviceCMYK') {
+                    // A DeviceCMYK image needs a CMYK OutputIntent: without
+                    // one it breaks the PDF/A claim (ISO 19005-2 §6.2.4.3).
+                    emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykDiagnostic());
                 }
                 resolvedImages.push(resolved);
             }
@@ -503,7 +359,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         if (p === 0 && params.title) {
             const titleSz = 16;
             const titleColor = '0.145 0.388 0.922';
-            ops.push(`${titleColor} rg`);
+            ops.push(`${fillOp(titleColor)}`);
             if (tagCtx?.tagged) {
                 const mcid = tagCtx.mcidAlloc.next(pageObjNum);
                 ops.push(txtTagged(params.title, mg.l, y - titleSz, enc.f2, titleSz, enc, mcid));
@@ -514,7 +370,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             y -= 22; // TITLE_LN
 
             // Title underline
-            ops.push(`0.75 w ${titleColor} RG`);
+            ops.push(`0.75 w ${strokeOp(titleColor)}`);
             ops.push(`${fmtNum(mg.l)} ${fmtNum(y)} m ${fmtNum(pgW - mg.r)} ${fmtNum(y)} l S`);
             y -= 12;
         }
@@ -537,7 +393,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                     break;
                 }
                 case 'paragraph': {
-                    const result = renderParagraph(block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren);
+                    const result = renderParagraph(block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, undefined, opticalMargins);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
@@ -560,6 +416,14 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 case '__tableSlice': {
                     const result = renderTable(
                         block.block, y, enc, mg.l, mg.r, pgW, cw, tagCtx, documentChildren, block.slice,
+                    );
+                    ops.push(...result.ops);
+                    y = result.y;
+                    break;
+                }
+                case '__paraSlice': {
+                    const result = renderParagraph(
+                        block.block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, block.slice, opticalMargins,
                     );
                     ops.push(...result.ops);
                     y = result.y;
@@ -659,6 +523,14 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         pageStreams.push(ops.join('\n'));
     }
 
+    // CMYK colour needs a CMYK OutputIntent (v1.8.0). RGB under a CMYK
+    // intent is remapped through /DefaultRGB; the reverse has no inline
+    // equivalent. Checked here, before any byte is written.
+    if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
+        emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
+    }
+    reportIneffectiveFeatures(layout?.typography?.fontFeatures, fontEntries, enc, emitDiagnostic);
+
     // ── Group annotations by page ────────────────────────────────────
     const annotsByPage = new Map<number, PageAnnotation[]>();
     for (const pa of pageAnnotations) {
@@ -676,11 +548,22 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         formFieldsByPage.set(pf.page, list);
     }
     const totalFormFields = pageFormFields.length;
-    // Form appearances render through a dedicated UNEMBEDDED base-14 /Helv
-    // font — under a PDF/A claim that violates the same ISO 19005
-    // §6.2.11.4.1 rule the no-fonts guard covers (#69), so surface it.
-    if (tagged && totalFormFields > 0) {
+
+    // AcroForm default resources (issue #74). Under a PDF/A claim the form's
+    // /DR font must be embedded like any other (ISO 19005 §6.2.11.4.1), so
+    // when a suitable Latin font is registered we embed a simple TrueType
+    // subset of it and point /DR plus every appearance stream at that.
+    // Without a PDF/A claim, or with no registered font to embed, the
+    // historical unembedded base-14 /Helv is kept and the output stays
+    // byte-identical.
+    const embeddedFormFont = (embedFonts && totalFormFields > 0)
+        ? selectFormFont(fontEntries)
+        : null;
+    if (tagged && totalFormFields > 0 && embeddedFormFont === null) {
         emitDiagnostic(pdfaUnembeddedFormFontDiagnostic());
+    }
+    if (pdfx && (totalAnnots > 0 || totalFormFields > 0)) {
+        emitDiagnostic(pdfxAnnotationsDiagnostic());
     }
     // Each form field: button types (checkbox/radio) = 3 objects (widget + Yes AP + Off AP)
     // Other types = 2 objects (widget + AP XObject)
@@ -707,7 +590,11 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const numRadioGroups = radioGroups.size;
     // Radio group parents sit after all field objects, before the font object
     const totalFormObjs = totalFieldObjs + numRadioGroups;
-    const formFontObjs = totalFormFields > 0 ? 1 : 0; // dedicated /Helv font object for forms
+    // One object for the unembedded base-14 /Helv, or three when the font is
+    // embedded (font dict + descriptor + FontFile2 stream).
+    const formFontObjs = totalFormFields > 0
+        ? (embeddedFormFont ? FORM_FONT_OBJ_COUNT : 1)
+        : 0;
 
     // Base-14 /ToUnicode CMap (issue #48): Helvetica/Helvetica-Bold carry no
     // ToUnicode by default, so the CP1252 0x80–0x9F band (Euro, curly
@@ -722,7 +609,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
         ? 4 + fontEntries.length * 5 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs
         : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
-    const latinToUniObjNum = (!tagged || !enc.isUnicode || formFontObjs > 0)
+    const latinToUniObjNum = (!embedFonts || !enc.isUnicode || formFontObjs > 0)
         ? preBaseObjCount + 2 // infoObjNum + 1
         : 0;
     const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
@@ -745,8 +632,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
     // PDF Header. /UserUnit requires PDF 1.6+ — raise the declared version
     // only when the option is present (bytes unchanged otherwise).
-    const pdfVersion = printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
-        ? '1.7' : pdfaConfig.pdfVersion;
+    // PDF/X-4 is PDF 1.6, which /UserUnit also needs.
+    const pdfVersion = pdfxConfig ? pdfxConfig.pdfVersion
+        : printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
+            ? '1.7' : pdfaConfig.pdfVersion;
     emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 
@@ -800,8 +689,8 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
 
-        if (tagged) {
-            // PDF/A: /F1 and /F2 alias to primary's Type0 (embedded). Bold = regular.
+        if (embedFonts) {
+            // PDF/A and PDF/X: /F1 and /F2 alias to primary's Type0 (embedded). Bold = regular.
             const pf = fontEntries[0];
             const bfName = `/${pf.fontData.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
             const primaryBase = 5;
@@ -829,7 +718,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const fm = fd.metrics;
             const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
             const toUnicodeCMap = usedGids && usedGids.size > 0
-                ? buildToUnicodeCMap(fd.cmap, usedGids)
+                ? buildToUnicodeCMap(fd.cmap, usedGids, enc.getToUnicodeOverrides?.().get(fe.fontRef))
                 : buildToUnicodeCMap(fd.cmap, new Set());
 
             const subsetW = buildSubsetWidthArray(fd.widths, usedGids ?? new Set());
@@ -929,7 +818,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
+                `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes}${pageColorSpaceRes} >>${structParents}${annotsStr} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -970,7 +859,17 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
             const radioGroupParentStart = formObjStart + totalFieldObjs;
             const formFontObjNum = formObjStart + totalFormObjs;
-            emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
+            if (embeddedFormFont) {
+                // PDF/A: embed the /DR font (issue #74). The appearance
+                // streams are unchanged — they address a byte-encoded simple
+                // font under the same /Helv resource name.
+                const ff = buildFormFontObjects(embeddedFormFont, formFontObjNum, latinToUniObjNum);
+                emitObj(formFontObjNum, ff.fontDict);
+                emitObj(formFontObjNum + 1, ff.descriptorDict);
+                emitStreamObj(formFontObjNum + 2, `<< /Length ${ff.fontFile.length} /Length1 ${ff.fontFile.length}`, ff.fontFile);
+            } else {
+                emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
+            }
 
             // Build radio group parent object map: group name → parent obj num + selected value
             const radioGroupObjNums = new Map<string, number>();
@@ -999,10 +898,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 if (isButton) {
                     const yesStream = result.apYesStream ?? '';
                     const offStream = result.apOffStream ?? '';
-                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum), yesStream);
-                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum), offStream);
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum, defaultRgbRes), yesStream);
+                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum, defaultRgbRes), offStream);
                 } else {
-                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum), result.appearanceStream);
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum, defaultRgbRes), result.appearanceStream);
                 }
             }
 
@@ -1090,7 +989,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes} >>${structParents}${annotsStr} >>`
+                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes}${pageColorSpaceRes} >>${structParents}${annotsStr} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -1131,7 +1030,17 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const formObjStart = pageObjStart + totalPages * 2 + totalAnnots;
             const radioGroupParentStart = formObjStart + totalFieldObjs;
             const formFontObjNum = formObjStart + totalFormObjs;
-            emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
+            if (embeddedFormFont) {
+                // PDF/A: embed the /DR font (issue #74). The appearance
+                // streams are unchanged — they address a byte-encoded simple
+                // font under the same /Helv resource name.
+                const ff = buildFormFontObjects(embeddedFormFont, formFontObjNum, latinToUniObjNum);
+                emitObj(formFontObjNum, ff.fontDict);
+                emitObj(formFontObjNum + 1, ff.descriptorDict);
+                emitStreamObj(formFontObjNum + 2, `<< /Length ${ff.fontFile.length} /Length1 ${ff.fontFile.length}`, ff.fontFile);
+            } else {
+                emitObj(formFontObjNum, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode ${latinToUniObjNum} 0 R >>`);
+            }
 
             // Build radio group parent object map
             const radioGroupObjNums = new Map<string, number>();
@@ -1160,10 +1069,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 if (isButton) {
                     const yesStream = result.apYesStream ?? '';
                     const offStream = result.apOffStream ?? '';
-                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum), yesStream);
-                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum), offStream);
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, yesStream.length, formFontObjNum, defaultRgbRes), yesStream);
+                    emitStreamObj(apObjNum + 1, buildAppearanceStreamDict(w, h, offStream.length, formFontObjNum, defaultRgbRes), offStream);
                 } else {
-                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum), result.appearanceStream);
+                    emitStreamObj(apObjNum, buildAppearanceStreamDict(w, h, result.appearanceStream.length, formFontObjNum, defaultRgbRes), result.appearanceStream);
                 }
             }
 
@@ -1187,7 +1096,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         : 4 + imageCount + wmExtraObjs + totalPages * 2 + totalAnnots + totalFormObjs + formFontObjs;
     const infoObjNum = baseObjCount + 1;
 
-    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(layout?.creationDate);
+    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(dateNow);
     const infoTitle = params.title ?? '';
 
     const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];
@@ -1200,8 +1109,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     if (params.metadata?.keywords) {
         metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
     }
-    if (params.metadata?.trapped) {
-        metaParts.push(`/Trapped /${params.metadata.trapped}`);
+    const trapped = pdfxConfig?.trapped ?? params.metadata?.trapped;
+    if (trapped) {
+        metaParts.push(`/Trapped /${trapped}`);
     }
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
@@ -1222,7 +1132,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
         for (let k = 0; k < colorEmojiForms.length; k++) {
             const f = colorEmojiForms[k];
             const objNum = colorEmojiStart + k;
-            const res = f.resources ? ` /Resources << ${f.resources} >>` : '';
+            // A Form XObject's own /Resources replaces the page's, so the
+            // calibrated /DefaultRGB has to be repeated here to apply inside.
+            const formRes = (f.resources ?? '') + defaultRgbRes;
+            const res = formRes ? ` /Resources << ${formRes} >>` : '';
             emitStreamObj(
                 objNum,
                 `<< /Type /XObject /Subtype /Form /BBox [${f.bbox.join(' ')}]${res} /Length ${f.content.length}`,
@@ -1238,33 +1151,38 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     let afArrayStr = '';
     let embeddedFilesNamesDict = '';
 
-    if (tagged) {
-        const documentEl: StructElement = { type: 'Document', children: documentChildren };
-        const treeStart = totalObjs + 1;
-        const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
+    if (tagged || pdfx) {
+        if (tagged) {
+            const documentEl: StructElement = { type: 'Document', children: documentChildren };
+            const treeStart = totalObjs + 1;
+            const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
 
-        for (const [objNum, content] of tree.objects) {
-            emitObj(objNum, content);
+            for (const [objNum, content] of tree.objects) {
+                emitObj(objNum, content);
+            }
+            structTreeRootObjNum = tree.structTreeRootObjNum;
+            totalObjs = treeStart + tree.totalObjects - 1;
         }
-        structTreeRootObjNum = tree.structTreeRootObjNum;
-        totalObjs = treeStart + tree.totalObjects - 1;
 
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
+        const xmpContent = utf8EncodeBinaryString(pdfxConfig
+            ? buildPdfXXMPMetadata(infoTitle, isoDate, pdfxConfig.trapped, pdfxDocumentId(`${infoTitle}|${pdfDate}`), params.metadata?.author, params.metadata?.subject, params.metadata?.keywords)
+            : buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
 
         // ICC profile stream — the built-in minimal sRGB profile, or the
-        // caller-supplied RGB profile (layout.outputIntent, v1.7.0).
+        // caller-supplied profile (layout.outputIntent, v1.7.0; CMYK and
+        // Gray since v1.8.0), with /N taken from its data colour space.
         const iccObjNum = totalObjs + 1;
-        const iccProfile = resolveOutputIntentProfile(layout?.outputIntent);
+        const intent = outputIntent ?? resolveOutputIntent(layout?.outputIntent);
         emitStreamObj(iccObjNum,
-            `<< /N 3 /Length ${iccProfile.length}`, iccProfile);
+            `<< /N ${intent.components} /Length ${intent.profile.length}`, intent.profile);
         totalObjs = iccObjNum;
 
         outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layout?.outputIntent));
+        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfx ? 'GTS_PDFX' : pdfaConfig.outputIntentSubtype, layout?.outputIntent));
         totalObjs = outputIntentObjNum;
 
         // Embedded file attachments (PDF/A-3 only)
@@ -1376,11 +1294,10 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     }
 
     // ── Rewrite Catalog ──────────────────────────────────────────────
-    if (tagged) {
+    if (tagged || pdfx) {
         let catalogContent =
             `<< /Type /Catalog /Pages 2 0 R ` +
-            `/MarkInfo << /Marked true >> ` +
-            `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
+            (tagged ? `/MarkInfo << /Marked true >> /StructTreeRoot ${structTreeRootObjNum} 0 R ` : '') +
             `/Metadata ${xmpObjNum} 0 R ` +
             `/OutputIntents [${outputIntentObjNum} 0 R]${destsStr}${acroFormStr}${outlineCatalogStr}${pageLabelsStr}${viewerPrefsStr}`;
         if (afArrayStr) {
@@ -1447,7 +1364,8 @@ function mapOutlineItem(item: OutlineItem): OutlineRenderItem {
         bold: item.bold,
         italic: item.italic,
         open: item.open,
-        color: item.color !== undefined ? parseColor(item.color) : undefined,
+        // An outline item's /C is DeviceRGB by definition (ISO 32000-1 Table 153).
+        color: item.color !== undefined ? rgbOperands(item.color) : undefined,
         children: item.children ? item.children.map(mapOutlineItem) : undefined,
     };
 }

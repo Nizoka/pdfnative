@@ -9,6 +9,9 @@ applyTo: "src/index.ts"
 - Every exported function must have a JSDoc comment with `@param` and `@returns`
 - Type exports use `export type { ... }` — zero runtime cost
 - Never export internal helpers — if it's not in `src/index.ts`, it's private
+- **Every option object type a public option refers to is exported** — a `layout.foo?: FooOptions` whose `FooOptions` is not in `src/index.ts` cannot be typed by a consumer. The 1.8.0 review found six such types missing (`TypographyOptions`, `UnitBindingOptions`, `PunctuationSpacingRule`, `PunctuationSpacingPreset`, `Base14Metrics`, `ColourBarOptions`); check `docs/assets/api.json` (`npm run docs:api`) lists the type before the feature is called done
+- **Every new diagnostic code** goes in the `PdfDiagnosticCode` union (`src/core/pdf-diagnostics.ts`) AND in `docs/data/errors.json` `diagnostics` — the `error-parity` rule of `verify:docs` fails on either side missing
+- **Every thrown build-time message a downstream tool must classify** (a CLI mapping it to `E_INPUT`, an MCP server to a tool error) goes in `docs/data/errors.json` `buildErrors`, quoted verbatim, and is listed in the release note's Downstream integration notes; change the message and the JSON in the same commit
 
 ## Backward Compatibility
 - No breaking changes within a major version
@@ -51,7 +54,11 @@ applyTo: "src/index.ts"
 20. Parser — Read & Modify (`openPdf`/`PdfReader`, `createModifier`/`PdfModifier`, `createTokenizer`/`PdfTokenizer`, `parseValue`, `parseIndirectObject`, `parseXrefTable`, `PdfValue`, `ParsedDict`, `PdfRef`, `extractText`, `readFormFields`-family lives in core, `mergePdfs`/`splitPdf`/`extractPages` + streaming variants, `validatePdfUA`, decode filters, `PdfModifier.updateMetadata` (v1.7.0))
 21. Core — LTV / PAdES (v1.7.0: `signPdfBytesWithTimestamp`, `collectValidationInfo`, `embedValidationInfo`, `addValidationInfo`, `addDocumentTimestamp`, `listSignatures`, `vriKeyForContents`, `buildDocTimeStampDict`; injected transports: `setTimestampProvider`/`getTimestampProvider`, `setRevocationProvider`/`getRevocationProvider`, `TimestampProvider`, `RevocationProvider` — the engine itself never opens a socket)
 22. Core — Print Production (v1.7.0: `layout.print` page boxes + `bleed` shorthand + `marks`, `/Trapped` metadata with XMP parity, custom OutputIntent ICC, `/UserUnit`, print-dialog `viewerPreferences`: `duplex`, `pickTrayByPDFSize`, `printPageRange`, `numCopies`)
-23. Core — PDF/A Diagnostics (v1.7.0: `strict`, `onDiagnostic`, `PdfDiagnostic`, `PdfDiagnosticCode` — codes `PDFA_NO_FONT_ENTRIES`, `PDFA_UNEMBEDDED_FORM_FONT`, `PDFA_DEVICE_CMYK_IMAGE`)
+23. Core — Diagnostics (v1.7.0: `strict`, `onDiagnostic`, `PdfDiagnostic`, `PdfDiagnosticCode` — codes `PDFA_NO_FONT_ENTRIES`, `PDFA_UNEMBEDDED_FORM_FONT`, `PDFA_DEVICE_CMYK_IMAGE`; v1.8.0 adds `PDFA_DEVICE_CMYK_CONTENT`, `PDFA_ICC_PROFILE_VERSION`, `PDFX_NO_FONT_ENTRIES`, `PDFX_DEVICE_CMYK`, `PDFX_ANNOTATIONS`, `TYPOGRAPHY_FEATURE_INEFFECTIVE` — the union is additions-only by contract; every code is also an entry of `docs/data/errors.json`, checked both ways by `verify:docs`)
+24. Core — Typography (v1.8.0: `bindUnits`, `bindShortWords`, `applyPunctuationSpacing`, `DEFAULT_UNITS`, `PUNCTUATION_SPACING_PRESETS`, `setHyphenationProvider` / `getHyphenationProvider`; types `TypographyOptions`, `HyphenationProvider`, `UnitBindingOptions`, `PunctuationSpacingRule`, `PunctuationSpacingPreset`, `Base14Metrics`)
+25. Core — Colour & PDF/X (v1.8.0: `resolveColor`, `fillOp`, `strokeOp`, `PDF_X_CONFORMANCE_TARGETS`; types `PdfCmykTuple`, `PdfCmykString`, `PdfColorSpace`, `ResolvedColor`, `PdfXConformanceTarget`, `PrintOptions`, `PrinterMarksOptions`, `ColourBarOptions`, `CustomOutputIntent`; parser: `validatePdfX`, `PdfXValidationResult`)
+26. Core — Reproducible builds & compression (v1.8.0: `setDefaultCreationDate` / `getDefaultCreationDate`, `setDeflateRawImpl`, `wrapZlib`)
+27. Shaping — Registry & USE (v1.8.0: `SCRIPT_SHAPERS`, `findShaper`, `shapeLaoText`, `buildLaoClusters`, `shapeUseText`, `splitUseSyllables`, `reorderUseCluster`, `useCategory`, `useCategories`, `USE_UNICODE_VERSION`, the Lao / Tai Tham / New Tai Lue / Tai Le / Cham predicates; types `ScriptShaper`, `UseClusterCategory`, `UseSyllable`, `UseSyllableType`; fonts: `ClipOutline`)
 
 ## Parser Option-Type Precedent
 - Parser-module option/result types live in the module itself (`MergeOptions`,

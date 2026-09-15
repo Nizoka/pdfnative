@@ -100,7 +100,9 @@ describe('buildDocumentPDFStreamTrue', () => {
 });
 
 describe('buildPDFStreamTrue', () => {
-    it('yields byte-identical output to buildPDFBytes', async () => {
+    // Builds the same document twice in full and compares every byte:
+    // past the 5 s default when the whole suite runs in parallel.
+    it('yields byte-identical output to buildPDFBytes', { timeout: 60_000 }, async () => {
         const params = makeTableParams();
         const layout = { creationDate: FIXED_DATE };
         const expected = buildPDFBytes(params, layout);

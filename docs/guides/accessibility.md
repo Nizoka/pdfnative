@@ -89,7 +89,7 @@ The `label` is drawn as a visible text label next to the widget. pdfnative does 
 docker run --rm -v "$PWD:/data" verapdf/cli --format text /data/my-document.pdf
 ```
 
-veraPDF is the reference PDF/A validator. The pdfnative test suite generates 242 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
+veraPDF is the reference PDF/A validator. The pdfnative test suite generates 292 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
 
 ### PAC 2024 (PDF/UA)
 
@@ -108,7 +108,7 @@ For a real-world test, open your PDF with **NVDA** (Windows, free), **VoiceOver*
 | Cell scope `/Scope` | Not yet exposed — flat table tags |
 | Reading order overrides | Implicit (block insertion order) — no explicit `/Order` array |
 | Language tags per text run | Document-level only (`/Lang` in catalog) |
-| Artifact tagging (decorative content) | Not yet exposed — header/footer/watermark are tagged as content |
+| Artifact tagging (decorative content) | Printer's marks (crop, registration, colour bars) are `/Artifact /Page` since v1.8.0 — header/footer/watermark are still tagged as content |
 
 Contributions to address these are welcome — see the [Roadmap](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md).
 

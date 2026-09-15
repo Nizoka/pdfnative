@@ -34,14 +34,24 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         footerText: 'pdfnative - LTV showcase',
     });
 
+    // Pinned so the samples are byte-reproducible: the /Sig dictionary's /M
+    // and the CMS signingTime attribute both default to the wall clock, which
+    // would otherwise change every run. Inside the mock PKI's validity window.
+    const SIGNED_AT = new Date('2026-06-15T12:00:00Z');
+
     const signOpts = {
         signerCert: pki.signerCert,
         certChain: [pki.rootCert],
         rsaKey: pki.signerKey,
         profile: 'pades' as const,
+        signingTime: SIGNED_AT,
     };
     const placeholderOpts = {
-        metadata: { subFilter: 'ETSI.CAdES.detached' as const, reason: 'LTV showcase' },
+        metadata: {
+            subFilter: 'ETSI.CAdES.detached' as const,
+            reason: 'LTV showcase',
+            signingTime: SIGNED_AT,
+        },
         placeholderBytes: estimateContentsSize([2048, 2048], 'rsa-sha256', { timestamp: true }),
     };
 
@@ -69,11 +79,11 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── Multi-signature: two fields signed sequentially ──────────────
     const one = signPdfBytes(
-        addSignaturePlaceholder(buildDocumentPDFBytes(doc('multi-signature', 'Two signature fields signed sequentially: Author first, Reviewer second - the first CMS stays byte-identical.')), { fieldName: 'Author' }),
+        addSignaturePlaceholder(buildDocumentPDFBytes(doc('multi-signature', 'Two signature fields signed sequentially: Author first, Reviewer second - the first CMS stays byte-identical.')), { fieldName: 'Author', metadata: { signingTime: SIGNED_AT } }),
         signOpts,
     );
     const multi = signPdfBytes(
-        addSignaturePlaceholder(one, { fieldName: 'Reviewer', allowMultiple: true }),
+        addSignaturePlaceholder(one, { fieldName: 'Reviewer', allowMultiple: true, metadata: { signingTime: SIGNED_AT } }),
         { ...signOpts, fieldName: 'Reviewer' },
     );
     ctx.writeSafe(resolve(ctx.outputDir, 'signature', 'signature-multi.pdf'), 'signature/signature-multi.pdf', multi);

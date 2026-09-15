@@ -73,7 +73,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./all-scripts.html">All 27 scripts</a>
     <a href="./toolkit.html" aria-current="page">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -82,6 +82,8 @@
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html">React renderer</a>
+    <a href="./typography.html">Typography</a>
+    <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
@@ -112,7 +114,8 @@
 
     <details style="margin-top:16px;" open>
       <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
-      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="copy-btn" id="copy" type="button" style="padding:4px 10px;font-size:12px;background:var(--c-primary);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Copy</button></div>
+      <pre style="margin-top:8px;"><code id="code-view" class="language-typescript"></code></pre>
     </details>
 
     <div id="extract-result" style="display:none;margin-top:16px;">
@@ -144,7 +147,7 @@
     <ul class="footer-links" role="list">
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
       <li><a href="../guides/">All guides</a></li>
-      <li><a href="./all-scripts.html">All 22 scripts playground →</a></li>
+      <li><a href="./all-scripts.html">All 27 scripts playground →</a></li>
     </ul>
   </div>
 </footer>
@@ -337,7 +340,7 @@ function applyPreset(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.7.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.7.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -526,6 +529,13 @@ async function generate() {
 
 $('preset').addEventListener('change', e => applyPreset(e.target.value));
 $('generate').addEventListener('click', generate);
+$('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(codeView.textContent);
+    const btn = $('copy'); const old = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = old; }, 1500);
+  } catch (e) { alert('Clipboard write failed: ' + (e && e.message ? e.message : e)); }
+});
 applyPreset('bookmarks');
 
 // Theme + hamburger parity with the rest of the site.

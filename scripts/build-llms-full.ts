@@ -25,6 +25,7 @@
 
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 
 function lf(text: string): string {
     return text.replace(/\r\n/g, '\n');
@@ -168,14 +169,18 @@ interface IndexPage {
     anchors: string[];
     bytes: number;
     approxTokens: number;
+    /** SHA-256 of the served Markdown (LF), so a same-size edit is still detected. */
+    sha256: string;
 }
 
 interface LlmsIndex {
     $comment: string;
     site: string;
-    artefacts: Array<{ url: string; description: string; bytes: number; approxTokens: number }>;
+    artefacts: Array<{ url: string; description: string; bytes: number; approxTokens: number; sha256: string }>;
     guides: IndexPage[];
 }
+
+const sha256 = (text: string): string => createHash('sha256').update(text, 'utf8').digest('hex');
 
 /** Build the machine index for the repo rooted at `root`. */
 export function buildLlmsIndex(root: string): string {
@@ -205,6 +210,7 @@ export function buildLlmsIndex(root: string): string {
             anchors,
             bytes,
             approxTokens: approxTokens(bytes),
+            sha256: sha256(md),
         });
     }
 
@@ -216,7 +222,8 @@ export function buildLlmsIndex(root: string): string {
         [`${site}/llms-recipes.txt`, join(root, 'docs', 'llms-recipes.txt'), 'Executable recipes: CI-verified, copy-ready code for the most common tasks.'],
         [`${site}/assets/api.json`, join(root, 'docs', 'assets', 'api.json'), 'The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.'],
         [`${site}/data/surfaces.json`, join(root, 'docs', 'data', 'surfaces.json'), 'The capability × surface matrix (library / CLI / MCP / React) behind the choose guide, with an honest note on every unsupported cell.'],
-        [`${site}/data/errors.json`, join(root, 'docs', 'data', 'errors.json'), 'The engine diagnostic registry (PDFA_* codes), two-way checked against src/ by the error-parity rule.'],
+        [`${site}/data/errors.json`, join(root, 'docs', 'data', 'errors.json'), 'The engine error registry: every diagnostic code of the PdfDiagnosticCode union and every build-time error message (PDF/X, print, OutputIntent), two-way checked against src/ by the error-parity rule.'],
+        [`${site}/data/playgrounds.json`, join(root, 'docs', 'data', 'playgrounds.json'), 'Inventory of the live playgrounds — URL, purpose, DOM controls, options exercised, preconditions — so an agent can drive or reproduce one without scraping the page.'],
         ['https://github.com/Nizoka/pdfnative/blob/main/README.md', join(root, 'README.md'), 'Complete feature and API reference (also embedded in llms-full.txt).'],
     ];
     for (const [url, path, description] of artefactSources) {
@@ -225,8 +232,9 @@ export function buildLlmsIndex(root: string): string {
         // blob GitHub Pages serves. statSync().size would measure the working
         // tree, which is CRLF-inflated on autocrlf Windows clones and would
         // make llms-index-sync fail on a pristine checkout.
-        const bytes = Buffer.byteLength(lf(readFileSync(path, 'utf8')), 'utf8');
-        artefactList.push({ url, description, bytes, approxTokens: approxTokens(bytes) });
+        const content = lf(readFileSync(path, 'utf8'));
+        const bytes = Buffer.byteLength(content, 'utf8');
+        artefactList.push({ url, description, bytes, approxTokens: approxTokens(bytes), sha256: sha256(content) });
     }
 
     const out: LlmsIndex = {

@@ -23,8 +23,9 @@ import type {
     PageTemplate,
     PdfColor,
 } from '../types/pdf-types.js';
-import { createEncodingContext } from './encoding-context.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic } from './pdf-diagnostics.js';
+import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
+import { scanDeviceColour } from './pdf-content-colour.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
@@ -38,14 +39,18 @@ import {
     computeColumnPositions,
     resolveTemplate,
 } from './pdf-layout.js';
-import { normalizeColors, parseColor } from './pdf-color.js';
+import { normalizeColors, parseColor, fillOp, strokeOp } from './pdf-color.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
 import {
     createMCIDAllocator,
     buildStructureTree,
     buildXMPMetadata,
     buildOutputIntentDict,
-    resolveOutputIntentProfile,
+    resolveOutputIntent,
+    defaultRgbResource,
+    resolvePdfXConfig,
+    pdfxDocumentId,
+    buildPdfXXMPMetadata,
     buildPdfMetadata,
     resolvePdfAConfig,
     buildEmbeddedFiles,
@@ -57,7 +62,8 @@ import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
 import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
-import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps } from './pdf-print.js';
+import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
+import { resolveCreationDate } from './pdf-reproducible.js';
 
 // ── Tagged Mode Helper Types ─────────────────────────────────────────
 
@@ -86,11 +92,11 @@ function _buildTableHeader(
     tagCtx?: TagContext,
 ): { ops: string[]; y: number; structRow?: StructElement } {
     const ops: string[] = [];
-    ops.push(`${colors.thBg} rg`);
+    ops.push(`${fillOp(colors.thBg)}`);
     ops.push(`${fmtNum(mgL)} ${fmtNum(y - TH_H)} ${fmtNum(cw)} ${fmtNum(TH_H)} re f`);
-    ops.push(`0.75 w ${colors.thBrd} RG`);
+    ops.push(`0.75 w ${strokeOp(colors.thBrd)}`);
     ops.push(`${fmtNum(mgL)} ${fmtNum(y - TH_H)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - TH_H)} l S`);
-    ops.push(`${colors.text} rg`);
+    ops.push(`${fillOp(colors.text)}`);
 
     const thChildren: (StructElement | MCRef)[] = [];
 
@@ -142,10 +148,10 @@ function _buildDataRow(
 ): { ops: string[]; y: number; structRow?: StructElement } {
     const ops: string[] = [];
     if (pointed) {
-        ops.push(`${colors.ptdBg} rg`);
+        ops.push(`${fillOp(colors.ptdBg)}`);
         ops.push(`${fmtNum(mgL)} ${fmtNum(y - ROW_H)} ${fmtNum(cw)} ${fmtNum(ROW_H)} re f`);
     }
-    ops.push(`0.25 w ${colors.rowBrd} RG`);
+    ops.push(`0.25 w ${strokeOp(colors.rowBrd)}`);
     ops.push(`${fmtNum(mgL)} ${fmtNum(y - ROW_H)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - ROW_H)} l S`);
 
     const tdChildren: (StructElement | MCRef)[] = [];
@@ -155,7 +161,7 @@ function _buildDataRow(
         const isAmount = (i === 3);
         const color = isAmount ? (type === 'credit' ? colors.credit : colors.debit) : colors.text;
         const font = isAmount ? enc.f2 : enc.f1;
-        ops.push(`${color} rg`);
+        ops.push(`${fillOp(color)}`);
 
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
@@ -205,7 +211,7 @@ function _buildPageTemplate(
     const sz = template.fontSize ?? defaultFontSize;
     const color = parseColor(template.color ?? defaultColor);
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     if (template.left) {
         const text = resolveTemplate(template.left, page, pages, title, date);
@@ -301,6 +307,19 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     // Resolve PDF/A config early (required by encoding context)
     const pdfaConfig = resolvePdfAConfig(layoutOptions?.tagged);
     const tagged = pdfaConfig.enabled;
+    // Resolved before any byte is written: an unusable profile throws here.
+    const outputIntent = (tagged || layoutOptions?.pdfx !== undefined) ? resolveOutputIntent(layoutOptions?.outputIntent) : null;
+    // PDF/X-4 (v1.8.0): one claim per file, no encryption, a printer profile.
+    const pdfxConfig = resolvePdfXConfig({
+        pdfx: layoutOptions?.pdfx,
+        tagged: layoutOptions?.tagged,
+        encrypted: layoutOptions?.encryption !== undefined,
+        outputIntent: layoutOptions?.outputIntent ? outputIntent : null,
+        trapped: params.metadata?.trapped,
+    });
+    const pdfx = pdfxConfig !== null;
+    // Both claims require every font embedded: no base-14 fallback.
+    const embedFonts = tagged || pdfx;
 
     // Conformance diagnostics (v1.7.0): guard the PDF/A declaration (#69).
     const emitDiagnostic = createDiagnosticEmitter(layoutOptions?.strict, layoutOptions?.onDiagnostic);
@@ -308,8 +327,17 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         const level = typeof layoutOptions?.tagged === 'string' ? layoutOptions.tagged : 'pdfa2b';
         emitDiagnostic(pdfaNoFontEntriesDiagnostic(level));
     }
+    if (pdfx && fontEntries.length === 0) {
+        emitDiagnostic(pdfxNoFontEntriesDiagnostic());
+    }
+    // PDF/A-1 admits ICC v2 OutputIntent profiles only (v1.8.0).
+    if (tagged && pdfaConfig.pdfaPart === 1 && layoutOptions?.outputIntent && outputIntent && outputIntent.iccVersion > 2) {
+        emitDiagnostic(pdfaIccProfileVersionDiagnostic(outputIntent.iccVersion));
+    }
 
-    const enc = createEncodingContext(fontEntries, tagged, layoutOptions?.normalize ?? false);
+    const encBase = createEncodingContext(fontEntries, embedFonts, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics, layoutOptions?.typography?.hyphenationLanguage);
+    const encFeat = applyDocumentFeatures(encBase, layoutOptions?.typography?.fontFeatures);
+    const enc = applyDocumentKerning(encFeat, layoutOptions?.typography?.kerning);
 
     // ── Resolve header/footer templates ──────────────
     const footerTpl: PageTemplate = layoutOptions?.footerTemplate ?? {
@@ -319,9 +347,15 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const headerTpl: PageTemplate | undefined = layoutOptions?.headerTemplate;
     const headerH = headerTpl ? HEADER_H : 0;
 
-    const dateNow = new Date();
+    // The `{date}` header/footer placeholder resolves against the same instant
+    // as `/Info /CreationDate` when `layout.creationDate` pins it, so a pinned
+    // build is reproducible in full. Previously this was a second, independent
+    // wall-clock read that no option could override.
+    const dateNow = resolveCreationDate(layoutOptions?.creationDate);
     const pad2d = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${dateNow.getFullYear()}-${pad2d(dateNow.getMonth() + 1)}-${pad2d(dateNow.getDate())}`;
+    // UTC, like /CreationDate (v1.8.0): the {date} placeholder and the file's
+    // own date name the same day on every host.
+    const dateStr = `${dateNow.getUTCFullYear()}-${pad2d(dateNow.getUTCMonth() + 1)}-${pad2d(dateNow.getUTCDate())}`;
 
     // ── Pagination ───────────────────────────────────────────────────
     const infoCount = infoItems.length;
@@ -372,10 +406,15 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const printOpts = layoutOptions?.print;
     if (printOpts) validatePrintOptions(printOpts, pgW, pgH, layoutOptions?.tagged);
     const printResolved = printOpts ? resolvePrintBoxes(printOpts, pgW, pgH) : null;
-    const printBoxesStr = printResolved?.boxesStr ?? '';
+    const printBoxesStr = (printResolved?.boxesStr ?? '') + (pdfx ? pdfxBoxes(printOpts, pgW, pgH) : '');
+    // Under a CMYK OutputIntent the marks use the registration colour; in a
+    // tagged document the block is a /Page artifact (v1.8.0).
+    const registrationColour = outputIntent?.space === 'cmyk';
     const printMarksOps = printOpts?.marks && printResolved?.trim
-        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks)
+        ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks, registrationColour, tagged)
         : '';
+    const pageColorSpaceRes = defaultRgbResource(
+        outputIntent, registrationColour && printMarksOps ? REGISTRATION_COLOR_SPACE_ENTRY : '');
 
     const mcidAlloc = tagged ? createMCIDAllocator() : undefined;
 
@@ -406,7 +445,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const preBaseObjCount = (enc.isUnicode && fontEntries.length > 0)
         ? 4 + fontEntries.length * 5 + wmExtraObjs + totalPages * 2
         : 4 + wmExtraObjs + totalPages * 2;
-    const latinToUniObjNum = (!tagged || !enc.isUnicode) ? preBaseObjCount + 2 : 0; // infoObjNum + 1
+    const latinToUniObjNum = (!embedFonts || !enc.isUnicode) ? preBaseObjCount + 2 : 0; // infoObjNum + 1
     const baseFontToUniRef = latinToUniObjNum ? ` /ToUnicode ${latinToUniObjNum} 0 R` : '';
 
     // Map page object numbers to /StructParents values for ParentTree (ISO 32000-1 §14.7.4.4)
@@ -441,7 +480,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
         if (p === 0) {
             // Title
-            ops.push(`${colors.title} rg`);
+            ops.push(`${fillOp(colors.title)}`);
             if (tagCtx) {
                 const mcid = tagCtx.mcidAlloc.next(pageObjNum);
                 ops.push(txtTagged(title, mg.l, y - fs.title, enc.f2, fs.title, enc, mcid));
@@ -452,18 +491,18 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             y -= TITLE_LN;
 
             // Title underline
-            ops.push(`0.75 w ${colors.title} RG`);
+            ops.push(`0.75 w ${strokeOp(colors.title)}`);
             ops.push(`${fmtNum(mg.l)} ${fmtNum(y)} m ${fmtNum(pgW - mg.r)} ${fmtNum(y)} l S`);
             y -= 14;
 
             // Info section
             for (const item of infoItems) {
-                ops.push(`${colors.label} rg`);
+                ops.push(`${fillOp(colors.label)}`);
                 if (tagCtx) {
                     const mcidLabel = tagCtx.mcidAlloc.next(pageObjNum);
                     const mcidValue = tagCtx.mcidAlloc.next(pageObjNum);
                     ops.push(txtTagged(`${item.label} :`, mg.l, y, enc.f2, fs.info, enc, mcidLabel));
-                    ops.push(`${colors.text} rg`);
+                    ops.push(`${fillOp(colors.text)}`);
                     ops.push(txtTagged(item.value, mg.l + 100, y, enc.f1, fs.info, enc, mcidValue));
                     documentChildren.push({
                         type: 'P',
@@ -474,7 +513,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                     });
                 } else {
                     ops.push(txt(`${item.label} :`, mg.l, y, enc.f2, fs.info, enc));
-                    ops.push(`${colors.text} rg`);
+                    ops.push(`${fillOp(colors.text)}`);
                     ops.push(txt(item.value, mg.l + 100, y, enc.f1, fs.info, enc));
                 }
                 y -= INFO_LN;
@@ -482,16 +521,16 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             y -= 6;
 
             // Balance box
-            ops.push(`${colors.balBg} rg`);
+            ops.push(`${fillOp(colors.balBg)}`);
             ops.push(`${fmtNum(mg.l)} ${fmtNum(y - BAL_H)} ${fmtNum(cw)} ${fmtNum(BAL_H)} re f`);
-            ops.push(`0.5 w ${colors.balBrd} RG`);
+            ops.push(`0.5 w ${strokeOp(colors.balBrd)}`);
             ops.push(`${fmtNum(mg.l)} ${fmtNum(y - BAL_H)} ${fmtNum(cw)} ${fmtNum(BAL_H)} re S`);
-            ops.push(`${colors.title} rg`);
+            ops.push(`${fillOp(colors.title)}`);
             if (tagCtx) {
                 const mcidBal = tagCtx.mcidAlloc.next(pageObjNum);
                 const mcidCnt = tagCtx.mcidAlloc.next(pageObjNum);
                 ops.push(txtTagged(balanceText, mg.l + 8, y - 14, enc.f2, 12, enc, mcidBal));
-                ops.push(`${colors.footer} rg`);
+                ops.push(`${fillOp(colors.footer)}`);
                 ops.push(txtTagged(countText, mg.l + 8, y - 26, enc.f1, 7, enc, mcidCnt));
                 documentChildren.push({
                     type: 'P',
@@ -502,7 +541,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                 });
             } else {
                 ops.push(txt(balanceText, mg.l + 8, y - 14, enc.f2, 12, enc));
-                ops.push(`${colors.footer} rg`);
+                ops.push(`${fillOp(colors.footer)}`);
                 ops.push(txt(countText, mg.l + 8, y - 26, enc.f1, 7, enc));
             }
             y -= BAL_H + 8;
@@ -547,6 +586,12 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         pageStreams.push(ops.join('\n'));
     }
 
+    // CMYK colour needs a CMYK OutputIntent (v1.8.0); see buildDocumentPDF.
+    if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
+        emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
+    }
+    reportIneffectiveFeatures(layoutOptions?.typography?.fontFeatures, fontEntries, enc, emitDiagnostic);
+
     // Build the table structure element (inserted before footer /P elements)
     if (tagged && tableRows.length > 0) {
         const tableEl: StructElement = { type: 'Table', children: tableRows };
@@ -561,8 +606,10 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
     // PDF Header. /UserUnit requires PDF 1.6+ — raise the declared version
     // only when the option is present (bytes unchanged otherwise).
-    const pdfVersion = printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
-        ? '1.7' : pdfaConfig.pdfVersion;
+    // PDF/X-4 is PDF 1.6, which /UserUnit also needs.
+    const pdfVersion = pdfxConfig ? pdfxConfig.pdfVersion
+        : printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
+            ? '1.7' : pdfaConfig.pdfVersion;
     emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 
@@ -582,8 +629,8 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
 
-        if (tagged) {
-            // PDF/A: /F1 and /F2 must reference embedded fonts. Alias both to
+        if (embedFonts) {
+            // PDF/A and PDF/X: /F1 and /F2 must reference embedded fonts. Alias both to
             // primary font's Type0 (sharing FontFile2 stream). Bold renders as
             // regular under PDF/A — register a separate Bold font for true bold.
             const pf = fontEntries[0];
@@ -614,7 +661,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const fm = fd.metrics;
             const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
             const toUnicodeCMap = usedGids && usedGids.size > 0
-                ? buildToUnicodeCMap(fd.cmap, usedGids)
+                ? buildToUnicodeCMap(fd.cmap, usedGids, enc.getToUnicodeOverrides?.().get(fe.fontRef))
                 : buildToUnicodeCMap(fd.cmap, new Set());
 
             const subsetW = buildSubsetWidthArray(fd.widths, usedGids ?? new Set());
@@ -690,7 +737,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes} >>${structParents} >>`
+                `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes}${pageColorSpaceRes} >>${structParents} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -735,7 +782,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
                 `<< /Type /Page /Parent 2 0 R ` +
                 `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
                 `/Contents ${streamObjNum} 0 R ` +
-                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin} >>${structParents} >>`
+                `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin}${pageColorSpaceRes} >>${structParents} >>`
             );
             emitStreamObj(streamObjNum, `<< /Length ${stream.length}`, stream);
         }
@@ -747,7 +794,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         : 4 + wmExtraObjs + totalPages * 2;
     const infoObjNum = baseObjCount + 1;
 
-    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(layoutOptions?.creationDate);
+    const { pdfDate, xmpDate: isoDate } = buildPdfMetadata(dateNow);
     const infoTitle = params.docTitle || title || '';
     const metaParts: string[] = [`/Title ${encodePdfTextString(infoTitle)}`, '/Producer (pdfnative)', `/CreationDate (${pdfDate})`];
     if (params.metadata?.author) {
@@ -759,8 +806,9 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     if (params.metadata?.keywords) {
         metaParts.push(`/Keywords ${encodePdfTextString(params.metadata.keywords)}`);
     }
-    if (params.metadata?.trapped) {
-        metaParts.push(`/Trapped /${params.metadata.trapped}`);
+    const trapped = pdfxConfig?.trapped ?? params.metadata?.trapped;
+    if (trapped) {
+        metaParts.push(`/Trapped /${trapped}`);
     }
     emitObj(infoObjNum, `<< ${metaParts.join(' ')} >>`);
 
@@ -780,36 +828,41 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     let afArrayStr = '';
     let embeddedFilesNamesDict = '';
 
-    if (tagged) {
-        // Build document structure tree
-        const documentEl: StructElement = { type: 'Document', children: documentChildren };
-        const treeStart = totalObjs + 1;
-        const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
+    if (tagged || pdfx) {
+        if (tagged) {
+            // Build document structure tree
+            const documentEl: StructElement = { type: 'Document', children: documentChildren };
+            const treeStart = totalObjs + 1;
+            const tree = buildStructureTree(documentEl, treeStart, pageObjToStructParents);
 
-        for (const [objNum, content] of tree.objects) {
-            emitObj(objNum, content);
+            for (const [objNum, content] of tree.objects) {
+                emitObj(objNum, content);
+            }
+            structTreeRootObjNum = tree.structTreeRootObjNum;
+            totalObjs = treeStart + tree.totalObjects - 1;
         }
-        structTreeRootObjNum = tree.structTreeRootObjNum;
-        totalObjs = treeStart + tree.totalObjects - 1;
 
         // XMP metadata stream (skip compression for PDF/A validator compatibility)
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
+        const xmpContent = utf8EncodeBinaryString(pdfxConfig
+            ? buildPdfXXMPMetadata(infoTitle, isoDate, pdfxConfig.trapped, pdfxDocumentId(`${infoTitle}|${pdfDate}`), params.metadata?.author, params.metadata?.subject, params.metadata?.keywords)
+            : buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
 
         // ICC profile stream — the built-in minimal sRGB profile, or the
-        // caller-supplied RGB profile (layout.outputIntent, v1.7.0).
+        // caller-supplied profile (layout.outputIntent, v1.7.0; CMYK and
+        // Gray since v1.8.0), with /N taken from its data colour space.
         const iccObjNum = totalObjs + 1;
-        const iccProfile = resolveOutputIntentProfile(layoutOptions?.outputIntent);
+        const intent = outputIntent ?? resolveOutputIntent(layoutOptions?.outputIntent);
         emitStreamObj(iccObjNum,
-            `<< /N 3 /Length ${iccProfile.length}`, iccProfile);
+            `<< /N ${intent.components} /Length ${intent.profile.length}`, intent.profile);
         totalObjs = iccObjNum;
 
         // OutputIntent
         outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
+        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfx ? 'GTS_PDFX' : pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
         totalObjs = outputIntentObjNum;
 
         // Embedded file attachments (PDF/A-3 only)
@@ -830,13 +883,12 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     }
 
     // ── Rewrite Catalog with tagged attributes ──────────────────────
-    if (tagged) {
+    if (tagged || pdfx) {
         // Overwrite the catalog object in-place by rebuilding parts[catalogIdx]
         // We need to find and replace the catalog entry
         let catalogContent =
             `<< /Type /Catalog /Pages 2 0 R ` +
-            `/MarkInfo << /Marked true >> ` +
-            `/StructTreeRoot ${structTreeRootObjNum} 0 R ` +
+            (tagged ? `/MarkInfo << /Marked true >> /StructTreeRoot ${structTreeRootObjNum} 0 R ` : '') +
             `/Metadata ${xmpObjNum} 0 R ` +
             `/OutputIntents [${outputIntentObjNum} 0 R]`;
         if (afArrayStr) {

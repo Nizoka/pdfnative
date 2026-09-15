@@ -311,7 +311,7 @@ function authenticateLegacy(
 
 // ── R6 authentication (ISO 32000-2 Algorithm 2.A) ────────────────────
 
-const ZERO_IV = new Uint8Array(16);
+const ZERO_IV = /*#__PURE__*/ new Uint8Array(16);
 
 function authenticateR6(enc: ParsedEncryptDict, password: string): DecryptionContext {
     if (enc.u.length < 48 || enc.o.length < 48 || !enc.ue || !enc.oe) {

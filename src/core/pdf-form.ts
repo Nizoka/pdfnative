@@ -8,6 +8,8 @@
  * complexity needed for form field display values.
  */
 
+import { fillOp, strokeOp } from './pdf-color.js';
+
 // ── P
 /** Supported AcroForm field types (ISO 32000-1 §12.7.3–12.7.4). */
 export type FormFieldType =
@@ -113,9 +115,9 @@ export function buildTextAppearance(
 
     const ops: string[] = [];
     // Background + border (static chrome — outside /Tx BMC)
-    ops.push(`${BG_COLOR} rg`);
+    ops.push(`${fillOp(BG_COLOR)}`);
     ops.push(`0 0 ${fmtNum(w)} ${fmtNum(h)} re f`);
-    ops.push(`${BORDER_COLOR} RG`);
+    ops.push(`${strokeOp(BORDER_COLOR)}`);
     ops.push('0.5 w');
     ops.push(`0.5 0.5 ${fmtNum(w - 1)} ${fmtNum(h - 1)} re S`);
 
@@ -125,7 +127,7 @@ export function buildTextAppearance(
     ops.push('q');
     if (value) {
         ops.push('BT');
-        ops.push(`0 0 0 rg`);
+        ops.push(fillOp('0 0 0'));
         ops.push(`/Helv ${fmtNum(fontSize)} Tf`);
 
         if (multiline) {
@@ -161,16 +163,16 @@ function buildCheckboxAppearance(
 
     const ops: string[] = [];
     // Background
-    ops.push(`${BG_COLOR} rg`);
+    ops.push(`${fillOp(BG_COLOR)}`);
     ops.push(`0 0 ${fmtNum(w)} ${fmtNum(h)} re f`);
     // Border
-    ops.push(`${BORDER_COLOR} RG`);
+    ops.push(`${strokeOp(BORDER_COLOR)}`);
     ops.push('0.5 w');
     ops.push(`0.5 0.5 ${fmtNum(w - 1)} ${fmtNum(h - 1)} re S`);
 
     if (checked) {
         // Draw checkmark
-        ops.push(`${CHECK_COLOR} RG`);
+        ops.push(`${strokeOp(CHECK_COLOR)}`);
         ops.push('1.5 w');
         const x1 = w * 0.2, y1 = h * 0.5;
         const x2 = w * 0.4, y2 = h * 0.25;
@@ -195,8 +197,8 @@ function buildRadioAppearance(
 
     const ops: string[] = [];
     // Background circle (approximated with Bézier)
-    ops.push(`${BG_COLOR} rg`);
-    ops.push(`${BORDER_COLOR} RG`);
+    ops.push(`${fillOp(BG_COLOR)}`);
+    ops.push(`${strokeOp(BORDER_COLOR)}`);
     ops.push('0.5 w');
     ops.push(circlePathOps(cx, cy, r));
     ops.push('B');
@@ -204,7 +206,7 @@ function buildRadioAppearance(
     if (selected) {
         // Filled inner circle
         const ir = r * 0.5;
-        ops.push(`${CHECK_COLOR} rg`);
+        ops.push(`${fillOp(CHECK_COLOR)}`);
         ops.push(circlePathOps(cx, cy, ir));
         ops.push('f');
     }
@@ -223,21 +225,21 @@ export function buildDropdownAppearance(
 
     const ops: string[] = [];
     // Background
-    ops.push(`${BG_COLOR} rg`);
+    ops.push(`${fillOp(BG_COLOR)}`);
     ops.push(`0 0 ${fmtNum(w)} ${fmtNum(h)} re f`);
     // Border
-    ops.push(`${BORDER_COLOR} RG`);
+    ops.push(`${strokeOp(BORDER_COLOR)}`);
     ops.push('0.5 w');
     ops.push(`0.5 0.5 ${fmtNum(w - 1)} ${fmtNum(h - 1)} re S`);
 
     // Dropdown arrow area
     const arrowW = 16;
     const arrowX = w - arrowW;
-    ops.push(`${BORDER_COLOR} rg`);
+    ops.push(`${fillOp(BORDER_COLOR)}`);
     ops.push(`${fmtNum(arrowX)} 0 ${fmtNum(arrowW)} ${fmtNum(h)} re f`);
 
     // Arrow triangle
-    ops.push('1 1 1 rg');
+    ops.push(fillOp('1 1 1'));
     const ax = arrowX + arrowW / 2;
     const ay1 = h * 0.6, ay2 = h * 0.35;
     ops.push(`${fmtNum(ax - 3)} ${fmtNum(ay1)} m`);
@@ -250,7 +252,7 @@ export function buildDropdownAppearance(
     ops.push('q');
     if (value) {
         ops.push('BT');
-        ops.push('0 0 0 rg');
+        ops.push(fillOp('0 0 0'));
         ops.push(`/Helv ${fmtNum(fontSize)} Tf`);
         const yBase = (h - fontSize) / 2;
         ops.push(`${fmtNum(pad)} ${fmtNum(yBase)} Td`);
@@ -276,10 +278,10 @@ export function buildListboxAppearance(
 
     const ops: string[] = [];
     // Background
-    ops.push(`${BG_COLOR} rg`);
+    ops.push(`${fillOp(BG_COLOR)}`);
     ops.push(`0 0 ${fmtNum(w)} ${fmtNum(h)} re f`);
     // Border
-    ops.push(`${BORDER_COLOR} RG`);
+    ops.push(`${strokeOp(BORDER_COLOR)}`);
     ops.push('0.5 w');
     ops.push(`0.5 0.5 ${fmtNum(w - 1)} ${fmtNum(h - 1)} re S`);
 
@@ -292,12 +294,12 @@ export function buildListboxAppearance(
 
         // Highlight selected
         if (opt === value) {
-            ops.push('0.8 0.85 1 rg');
+            ops.push(fillOp('0.8 0.85 1'));
             ops.push(`${fmtNum(pad)} ${fmtNum(yPos - 2)} ${fmtNum(w - pad * 2)} ${fmtNum(lineH)} re f`);
         }
 
         ops.push('BT');
-        ops.push('0 0 0 rg');
+        ops.push(fillOp('0 0 0'));
         ops.push(`/Helv ${fmtNum(fontSize)} Tf`);
         ops.push(`${fmtNum(pad)} ${fmtNum(yPos)} Td`);
         ops.push(`(${pdfStr(opt)}) Tj`);
@@ -419,7 +421,7 @@ export function buildFormWidget(field: FormField, apObjNum: number, radioCtx?: R
                 parts.push('/FT /Tx');
                 if (field.fieldType === 'multilineText') ff |= FF_MULTILINE;
                 if (field.value) parts.push(`/V (${pdfStr(field.value)})`);
-                parts.push(`/DA (/Helv ${fmtNum(field.fontSize)} Tf 0 0 0 rg)`);
+                parts.push(`/DA (/Helv ${fmtNum(field.fontSize)} Tf ${fillOp('0 0 0')})`);
                 if (field.maxLength !== null) parts.push(`/MaxLen ${field.maxLength}`);
                 break;
 
@@ -441,7 +443,7 @@ export function buildFormWidget(field: FormField, apObjNum: number, radioCtx?: R
                 parts.push('/FT /Ch');
                 ff |= FF_COMBO;
                 if (field.value) parts.push(`/V (${pdfStr(field.value)})`);
-                parts.push(`/DA (/Helv ${fmtNum(field.fontSize)} Tf 0 0 0 rg)`);
+                parts.push(`/DA (/Helv ${fmtNum(field.fontSize)} Tf ${fillOp('0 0 0')})`);
                 if (field.options.length > 0) {
                     const optArr = field.options.map(o => `(${pdfStr(o)})`).join(' ');
                     parts.push(`/Opt [${optArr}]`);
@@ -451,7 +453,7 @@ export function buildFormWidget(field: FormField, apObjNum: number, radioCtx?: R
             case 'listbox':
                 parts.push('/FT /Ch');
                 if (field.value) parts.push(`/V (${pdfStr(field.value)})`);
-                parts.push(`/DA (/Helv ${fmtNum(field.fontSize)} Tf 0 0 0 rg)`);
+                parts.push(`/DA (/Helv ${fmtNum(field.fontSize)} Tf ${fillOp('0 0 0')})`);
                 if (field.options.length > 0) {
                     const optArr = field.options.map(o => `(${pdfStr(o)})`).join(' ');
                     parts.push(`/Opt [${optArr}]`);
@@ -497,13 +499,15 @@ export function buildAcroFormDict(fieldObjNums: readonly number[], fontObjNum?: 
  * @param h - Widget height in points.
  * @param streamLength - Byte length of the stream content.
  * @param fontObjNum - Optional object number for the /Helv font (indirect reference).
+ * @param extraResources - Additional resource entries with a leading space,
+ *   e.g. the calibrated `/DefaultRGB` under a non-RGB OutputIntent (v1.8.0).
  * @returns Stream dict header (for use with emitStreamObj).
  */
-export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number): string {
+export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number, extraResources = ''): string {
     const fontEntry = fontObjNum !== undefined
         ? `/Helv ${fontObjNum} 0 R`
         : '/Helv << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
-    return `<< /Type /XObject /Subtype /Form /BBox [0 0 ${fmtNum(w)} ${fmtNum(h)}] /Resources << /Font << ${fontEntry} >> >> /Length ${streamLength}`;
+    return `<< /Type /XObject /Subtype /Form /BBox [0 0 ${fmtNum(w)} ${fmtNum(h)}] /Resources << /Font << ${fontEntry} >>${extraResources} >> /Length ${streamLength}`;
 }
 
 /**

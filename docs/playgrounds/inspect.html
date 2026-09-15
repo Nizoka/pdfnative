@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inspect &amp; Verify Playground — pdfnative</title>
-  <meta name="description" content="Drop a PDF and read a full report — metadata, text, PDF/UA structure, signatures, form fields — produced entirely in your browser. Nothing is uploaded.">
+  <meta name="description" content="Drop a PDF and read a full report — metadata, text, PDF/UA and PDF/X structure, signatures, form fields — produced entirely in your browser. Nothing is uploaded.">
   <meta name="keywords" content="inspect PDF, PDF metadata reader, PDF/UA validator, PDF signature inventory, AcroForm fields, extract PDF text, encrypted PDF, PDF report, browser PDF inspector, pdfnative">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/inspect.html">
@@ -74,7 +74,7 @@
     "operatingSystem": "Any (browser-based)",
     "browserRequirements": "Requires JavaScript and HTML5",
     "url": "https://pdfnative.dev/playgrounds/inspect.html",
-    "description": "Drop a PDF and read a full report — metadata, text, PDF/UA structure, signatures, form fields — produced entirely in your browser. Nothing is uploaded.",
+    "description": "Drop a PDF and read a full report — metadata, text, PDF/UA and PDF/X structure, signatures, form fields — produced entirely in your browser. Nothing is uploaded.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
@@ -112,7 +112,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./all-scripts.html">All 27 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html" aria-current="page">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -121,11 +121,13 @@
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html">React renderer</a>
+    <a href="./typography.html">Typography</a>
+    <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
     <h1>Inspect &amp; verify — drop a PDF, nothing leaves your machine</h1>
-    <p>Drop any PDF below and read a full report — document metadata, extracted text, PDF/UA structure, a signature inventory, and form fields — produced by the same pdfnative reader APIs that run in Node, Deno and Bun. Open your browser's Network panel before dropping a file: the only requests this page ever makes happen while it loads — its stylesheets, the Prism highlighter, and the pdfnative engine from the CDN — before you drop anything. The file is read with the standard FileReader API and never leaves this tab. Nothing is stored either: reload the page and the report is gone.</p>
+    <p>Drop any PDF below and read a full report — document metadata, extracted text, PDF/UA structure, PDF/X structure (1.8.0), a signature inventory, and form fields — produced by the same pdfnative reader APIs that run in Node, Deno and Bun. Open your browser's Network panel before dropping a file: the only requests this page ever makes happen while it loads — its stylesheets, the Prism highlighter, and the pdfnative engine from the CDN — before you drop anything. The file is read with the standard FileReader API and never leaves this tab. Nothing is stored either: reload the page and the report is gone.</p>
     <p style="font-size:14px;color:var(--c-text-dim);">In the spirit of the <a href="../responsibility.html">responsibility page</a>, every card below links the source file in the repository that produced it — the report is only as trustworthy as the code you can read.</p>
 
     <p id="loader-status" role="status" aria-live="polite" style="font-size:13px;color:var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once, at page load.</p>
@@ -138,7 +140,7 @@
         <span aria-hidden="true" style="color:var(--c-text-dim);">·</span>
         <button id="sample-btn" class="btn btn-primary" type="button" style="padding:8px 18px;" disabled>Try a generated sample</button>
       </div>
-      <p style="margin:12px 0 0;">The sample is a small two-page tagged document with form fields, built in this tab by <code>buildDocumentPDFBytes()</code> — so the page can demonstrate itself without needing a file of yours.</p>
+      <p style="margin:12px 0 0;">The sample is a small two-page tagged document with a justified paragraph, a figure with alt text and form fields, built in this tab by <code>buildDocumentPDFBytes()</code> under a pinned <code>setDefaultCreationDate()</code> — so the page can demonstrate itself without needing a file of yours.</p>
     </div>
 
     <div id="password-row" class="insp-pwrow" hidden>
@@ -161,6 +163,7 @@
       <section class="insp-card" aria-labelledby="h-text">
         <h2 id="h-text">Text</h2>
         <div id="text-body"></div>
+        <p class="insp-caveat">Since 1.8.0 <code>extractText()</code> honours <code>/ActualText</code> on marked content (ISO 32000-1 §14.9.4): a span that declares the characters behind a ligature, a shaped cluster or a justified line extracts as those characters. In the generated sample every tagged line is such a span, the justified paragraph's word gaps come back as plain spaces, and the figure's alt text — a span carrying <code>/ActualText</code> and no glyphs — appears in the text as well.</p>
         <p class="rs-verify">Read the source: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/parser/pdf-text-extract.ts" target="_blank" rel="noopener">src/parser/pdf-text-extract.ts</a></p>
       </section>
 
@@ -169,6 +172,13 @@
         <div id="ua-body"></div>
         <p class="insp-caveat">Structural checks only (ISO 14289-1) — a passing result is not an accessibility audit. Whether the reading order makes sense or the alt text is meaningful remains the author's judgement; no validator substitutes for it.</p>
         <p class="rs-verify">Read the source: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/parser/pdf-ua-validator.ts" target="_blank" rel="noopener">src/parser/pdf-ua-validator.ts</a></p>
+      </section>
+
+      <section class="insp-card" aria-labelledby="h-x">
+        <h2 id="h-x">PDF/X structure <span id="x-verdict"></span></h2>
+        <div id="x-body"></div>
+        <p class="insp-caveat">Structural checks only (ISO 15930-7, PDF/X-4): header version, XMP identification, a /GTS_PDFX OutputIntent, page boxes and /Trapped. veraPDF does not cover PDF/X, so a press file still needs a certified preflight. A document that never claimed PDF/X — the generated sample, most PDFs — is reported as not valid, which is the correct answer.</p>
+        <p class="rs-verify">Read the source: <a href="https://github.com/Nizoka/pdfnative/blob/main/src/parser/pdf-x-validator.ts" target="_blank" rel="noopener">src/parser/pdf-x-validator.ts</a></p>
       </section>
 
       <section class="insp-card" aria-labelledby="h-sigs">
@@ -266,7 +276,7 @@ function displayValue(mod, reader, raw) {
 }
 
 // ── pdfnative loader — eager, at page load, so no request follows a drop ──
-const CDN_URLS = ['https://esm.sh/pdfnative@1.7.0', 'https://unpkg.com/pdfnative@1.7.0?module'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://unpkg.com/pdfnative@1.8.0?module'];
 let pdfnativeMod = null;
 let loadErr = null;
 
@@ -397,6 +407,31 @@ function renderUA(mod, bytes, encrypted) {
   body.appendChild(rawJsonDetails(res));
 }
 
+function renderPdfX(mod, bytes) {
+  const body = $('x-body');
+  const verdict = $('x-verdict');
+  body.replaceChildren();
+  verdict.replaceChildren();
+  const res = mod.validatePdfX(bytes);
+  verdict.appendChild(el('span', 'insp-verdict ' + (res.valid ? 'pass' : 'fail'), res.valid ? 'structurally valid' : 'not valid'));
+  if (res.errors.length === 0 && res.warnings.length === 0) {
+    body.appendChild(el('p', '', 'No structural errors and no warnings: the PDF/X-4 identification, OutputIntent, page boxes and trapping state all check out.'));
+  }
+  if (res.errors.length > 0) {
+    body.appendChild(el('p', '', String(res.errors.length) + ' blocking error(s):'));
+    const ul = document.createElement('ul');
+    for (const err of res.errors) ul.appendChild(el('li', '', err));
+    body.appendChild(ul);
+  }
+  if (res.warnings.length > 0) {
+    body.appendChild(el('p', '', String(res.warnings.length) + ' warning(s):'));
+    const ul = document.createElement('ul');
+    for (const w of res.warnings) ul.appendChild(el('li', '', w));
+    body.appendChild(ul);
+  }
+  body.appendChild(rawJsonDetails(res));
+}
+
 function renderSignatures(mod, bytes) {
   const body = $('sigs-body');
   body.replaceChildren();
@@ -462,7 +497,7 @@ async function inspect(password) {
   if (!mod || !current) return;
   const t0 = performance.now();
   sectionFailures = 0;
-  // The five readers run synchronously on the main thread; yield between
+  // The six readers run synchronously on the main thread; yield between
   // cards so a large file does not freeze the tab wholesale.
   const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -495,6 +530,10 @@ async function inspect(password) {
   catch (err) { $('ua-verdict').replaceChildren(); sectionError('ua-body', err); }
 
   await tick();
+  try { renderPdfX(mod, current.bytes); }
+  catch (err) { $('x-verdict').replaceChildren(); sectionError('x-body', err); }
+
+  await tick();
   try { renderSignatures(mod, current.bytes); }
   catch (err) {
     if (isPasswordError(mod, err)) {
@@ -512,11 +551,11 @@ async function inspect(password) {
   const meta = $('file-meta');
   meta.hidden = false;
   meta.textContent = current.name + ' · ' + (current.bytes.length / 1024).toFixed(1) + ' KB · inspected in ' + ms + ' ms, entirely in this tab.';
-  // Honest tally: a green "ready" banner over five failed cards would lie.
+  // Honest tally: a green "ready" banner over six failed cards would lie.
   if (sectionFailures === 0) {
     setStatus('Report ready.', 'success');
   } else {
-    setStatus('Report ready — ' + sectionFailures + ' of 5 sections could not run on this file (details in the cards below).', 'error');
+    setStatus('Report ready — ' + sectionFailures + ' of 6 sections could not run on this file (details in the cards below).', 'error');
   }
 }
 
@@ -540,7 +579,7 @@ async function acceptFile(file) {
     const bytes = await readFileBytes(file);
     if (bytes.length > 25 * 1024 * 1024) {
       setStatus('This file is ' + (bytes.length / 1024 / 1024).toFixed(0) +
-        ' MB — the five readers run in this tab and may be slow on a file this large. Proceeding…', 'info');
+        ' MB — the six readers run in this tab and may be slow on a file this large. Proceeding…', 'info');
     }
     current = { bytes, name: file.name };
     $('pdf-password').value = '';
@@ -579,23 +618,37 @@ $('sample-btn').addEventListener('click', () => {
   if (!mod) return;
   try {
     setStatus('Building the sample document in this tab…', 'info');
-    const bytes = mod.buildDocumentPDFBytes({
-      title: 'Inspection sample',
-      metadata: { author: 'pdfnative playground', subject: 'A document generated in your browser for inspection' },
-      blocks: [
-        { type: 'heading', text: 'Inspection sample', level: 1 },
-        { type: 'paragraph', text: 'This two-page document was generated in your browser a moment ago. It is tagged, so the PDF/UA card has structure to check, and it carries two form fields for the form-field card. It has no signature fields — the signatures card should say exactly that. One honest note: its PDF/A-2b claim is deliberately NOT conformant — the text uses unembedded base-14 Helvetica and form fields sit under the claim, the two documented limitations the engine’s diagnostics guard against. Run it through veraPDF to see both; the PDF/A guide explains the conformant recipe (embedFonts, no form fields under a claim).' },
-        { type: 'list', style: 'bullet', items: [
-          'Overview reads the header, page tree, xref and /Info dictionary.',
-          'Text extraction returns reading-order text plus positioned runs.',
-          'Nothing about this file exists outside this tab.',
-        ]},
-        { type: 'pageBreak' },
-        { type: 'heading', text: 'Form fields', level: 1 },
-        { type: 'formField', fieldType: 'text', name: 'fullName', label: 'Full name' },
-        { type: 'formField', fieldType: 'checkbox', name: 'subscribe', label: 'Subscribe to the newsletter' },
-      ],
-    }, { tagged: true });
+    // A pinned creation instant (1.8.0): the same sample built twice is byte-identical, and the
+    // Overview card shows the pinned /CreationDate rather than the wall clock. Restored afterwards.
+    mod.setDefaultCreationDate(new Date('2026-09-14T00:00:00Z'));
+    let bytes;
+    try {
+      bytes = mod.buildDocumentPDFBytes({
+        title: 'Inspection sample',
+        metadata: { author: 'pdfnative playground', subject: 'A document generated in your browser for inspection' },
+        blocks: [
+          { type: 'heading', text: 'Inspection sample', level: 1 },
+          { type: 'paragraph', text: 'This two-page document was generated in your browser a moment ago. It is tagged, so the PDF/UA card has structure to check, and it carries two form fields for the form-field card. It has no signature fields — the signatures card should say exactly that. It claims no PDF/X conformance either, so the PDF/X card reports it as not valid. One honest note: its PDF/A-2b claim is deliberately NOT conformant — the text uses unembedded base-14 Helvetica and form fields sit under the claim, the two documented limitations the engine’s diagnostics guard against. Run it through veraPDF to see both; the PDF/A guide explains the conformant recipe (embedFonts, no form fields under a claim).' },
+          // Tagged output wraps every justified line in a /Span whose /ActualText carries the
+          // characters with their spaces; extractText() (1.8.0) returns them from the span.
+          { type: 'paragraph', text: 'This paragraph is justified. In a tagged document every line of it is written inside a marked-content span whose /ActualText carries the characters with their plain spaces, so the text card shows the sentence exactly as authored rather than the stretched word gaps the page paints. '.repeat(2), align: 'justify' },
+          // A figure's alt text is written as /ActualText on its span (no glyphs inside), so it
+          // surfaces in the extracted text — look for it in the text card.
+          { type: 'svg', data: '<svg viewBox="0 0 120 40"><rect x="0" y="0" width="120" height="40" fill="#2563eb"/><rect x="8" y="8" width="104" height="24" fill="#ffffff"/></svg>', width: 120, height: 40, alt: 'Figure alt text, carried as /ActualText: a blue frame around a white bar.' },
+          { type: 'list', style: 'bullet', items: [
+            'Overview reads the header, page tree, xref and /Info dictionary — including the pinned /CreationDate from setDefaultCreationDate().',
+            'Text extraction returns reading-order text plus positioned runs, honouring /ActualText.',
+            'Nothing about this file exists outside this tab.',
+          ]},
+          { type: 'pageBreak' },
+          { type: 'heading', text: 'Form fields', level: 1 },
+          { type: 'formField', fieldType: 'text', name: 'fullName', label: 'Full name' },
+          { type: 'formField', fieldType: 'checkbox', name: 'subscribe', label: 'Subscribe to the newsletter' },
+        ],
+      }, { tagged: true });
+    } finally {
+      mod.setDefaultCreationDate(null);
+    }
     current = { bytes, name: 'generated-sample.pdf' };
     $('pdf-password').value = '';
     inspect(undefined);

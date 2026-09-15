@@ -233,15 +233,32 @@ describe('shapeDevanagariText', () => {
         expect(shaped[2].gid).toBe(gid(0x0930)); // Ra
     });
 
-    it('should shape reph (Ra + Halant + Ka)', () => {
+    it('keeps Ra + Halant as a dead consonant when the font has no reph form', () => {
+        // A reph exists only where the font's `rphf` feature makes one
+        // (HarfBuzz's would_substitute); without it the Ra stays before Ka
+        // with its halant, which is what a font without the form draws.
         const fd = mockFontData();
         const shaped = shapeDevanagariText('\u0930\u094D\u0915', fd);
-        // Reph should be emitted as zero-advance mark after base Ka
-        expect(shaped.length >= 2).toBe(true);
-        // First shaped glyph should be reph (Ra form, zero-advance)
-        expect(shaped[0].isZeroAdvance).toBe(true);
-        // Second should be the base Ka
-        expect(shaped[1].gid).toBe(gid(0x0915));
+        expect(shaped.map(g => g.gid)).toEqual([gid(0x0930), gid(0x094D), gid(0x0915)]);
+        expect(shaped[1].isZeroAdvance).toBe(true);
+    });
+
+    it('should shape reph (Ra + Halant + Ka) after the base when the font provides rphf', () => {
+        const rephGid = 900;
+        const fd = mockFontData({
+            otl: {
+                gsub: {
+                    scripts: { dev2: { rphf: [0] } },
+                    lookups: { 0: { t: 4, f: 0, m: { [gid(0x0930)]: [[rephGid, gid(0x094D)]] } } },
+                },
+            },
+        });
+        const shaped = shapeDevanagariText('\u0930\u094D\u0915', fd);
+        // The reph glyph follows its base Ka as a zero-advance mark.
+        expect(shaped.map(g => g.gid)).toEqual([gid(0x0915), rephGid]);
+        expect(shaped[1].isZeroAdvance).toBe(true);
+        // ToUnicode: the reph reports the Ra and the halant it stands for.
+        expect(shaped[1].cps).toEqual([0x0930, 0x094D]);
     });
 
     it('should shape consonant + nukta', () => {
@@ -292,14 +309,13 @@ describe('shapeDevanagariText', () => {
         expect(shaped[1].gid).toBe(kaGid);
     });
 
-    it('should handle split vowel ो (e + aa)', () => {
+    it('should keep ो as one post-base glyph (no canonical decomposition)', () => {
         const fd = mockFontData();
         const shaped = shapeDevanagariText('\u0915\u094B', fd); // Ka + ो
-        // Should split: े (pre) + Ka + ा (post)
-        expect(shaped.length).toBe(3);
-        expect(shaped[0].gid).toBe(gid(0x0947)); // े pre-base
-        expect(shaped[1].gid).toBe(gid(0x0915)); // Ka
-        expect(shaped[2].gid).toBe(gid(0x093E)); // ा post-base
+        // U+094B has no canonical decomposition and Unicode positions it to
+        // the right of the base; splitting it into े + ा (as before 1.8.0)
+        // drew a glyph the font never asked for.
+        expect(shaped.map(g => g.gid)).toEqual([gid(0x0915), gid(0x094B)]);
     });
 
     it('should handle partial ligature match with remainder', () => {

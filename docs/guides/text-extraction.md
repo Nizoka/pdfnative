@@ -72,7 +72,7 @@ mapped through their `/ToUnicode` CMap — which pdfnative's own CIDFont
 output always embeds, so **pdfnative-generated documents round-trip
 losslessly**, including CJK, Arabic, and emoji.
 
-Since pdfnative **1.7.0** the `/ToUnicode` coverage is complete across both
+Since pdfnative **1.7.0** the `/ToUnicode` coverage is complete across both <!-- verify-docs:allow version-token (historical: the release that completed it) -->
 builders: base-14 font dictionaries are reached under tagged mode and the
 AcroForm `/Helv` dictionary carries a CMap in every mode — so base-14 text in
 tagged documents and **text typed into form fields** now extract cleanly too.
@@ -121,13 +121,28 @@ By design (documented, not bugs):
 - Non-Identity CMap `/Encoding`s (e.g. predefined UTF-16 CJK CMaps) are
   decoded best-effort as 2-byte codes through `/ToUnicode`.
 - Vertical writing mode is treated as horizontal.
-- The structure tree / `/ActualText` is not consulted — order is
-  geometric, and ligature reversal is only as good as the embedded
-  `/ToUnicode`. In practice this means **shaped Indic scripts**
-  (Devanagari, Bengali, Tamil, Telugu, Sinhala, …) extract with U+FFFD
-  for conjunct/ligature glyphs that have no single-codepoint mapping —
-  the PDF *renders* correctly; only extraction of those clusters is
-  lossy. Latin, CJK, Arabic and emoji round-trip cleanly.
+- The structure tree is not consulted — order is geometric. `/ActualText`
+  on marked content **is** honoured (v1.8.0): a `/Span` that declares
+  the characters behind a ligature, a shaped cluster or a justified line
+  extracts as those characters, outermost span first. Without it,
+  ligature reversal is only as good as the embedded `/ToUnicode`. Since
+  v1.8.0 the Indic engine (Devanagari, Bengali, Tamil, Telugu, Sinhala)
+  and the Latin combining-mark shaper report the code points behind every
+  glyph they emit, and pdfnative writes them into `/ToUnicode` as
+  multi-code-point entries, so a conjunct such as क्ष or a composed ẹ́
+  extracts as its letters even in an untagged document. The **other
+  shaped scripts** (Thai, Lao, Khmer, Myanmar, Tibetan, Tai Tham, Cham,
+  Arabic presentation forms) still extract with U+FFFD for a ligature or
+  contextual glyph that has no single-code-point mapping in an untagged
+  document — the PDF *renders* correctly; only extraction of those
+  clusters is lossy. Build with `tagged: 'pdfa2u'` (or any tagged level)
+  and the spans carry the source text. Latin, CJK and emoji round-trip
+  cleanly. One decomposition extracts as *text* rather than U+FFFD: Thai
+  and Lao sara am (ำ U+0E33, ຳ U+0EB3) is set as nikhahit + sara aa, so
+  an untagged document yields two code points where the author wrote one
+  — น้ำ extracts as no nu, its two stacked marks in geometric order, sara
+  aa. Under any tagged level the span's `/ActualText` carries ำ and
+  extraction is exact.
 
 ## Samples
 

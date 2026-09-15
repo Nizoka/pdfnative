@@ -1,0 +1,46 @@
+# NotoSans-Greek.ttf — code points kept from NotoSans-VF.ttf (fonts/SOURCES.json derived[])
+# One inclusive range per line: U+XXXX or U+XXXX-U+YYYY. Lines starting with # are comments.
+# Seeded from the cmap of fonts/noto-greek-data.js at 1.8.0, so coverage is unchanged; edit deliberately,
+# then: npx tsx scripts/build-latin-subsets.ts --update-manifest, rebuild the module, rebaseline.
+U+0000
+U+000D
+U+0020-U+007E
+U+00A0-U+00FF
+U+0131
+U+0138
+U+0186
+U+0254
+U+02C6
+U+02C9
+U+02D8-U+02DA
+U+02DC
+U+034F
+U+0370-U+0377
+U+037A-U+037F
+U+0384-U+038A
+U+038C
+U+038E-U+03A1
+U+03A3-U+03E1
+U+03F0-U+03FF
+U+0472
+U+1F00-U+1F15
+U+1F18-U+1F1D
+U+1F20-U+1F45
+U+1F48-U+1F4D
+U+1F50-U+1F57
+U+1F59
+U+1F5B
+U+1F5D
+U+1F5F-U+1F7D
+U+1F80-U+1FB4
+U+1FB6-U+1FC4
+U+1FC6-U+1FD3
+U+1FD6-U+1FDB
+U+1FDD-U+1FEF
+U+1FF2-U+1FF4
+U+1FF6-U+1FFE
+U+2000-U+2064
+U+2066-U+206F
+U+20AC
+U+FE00
+U+FEFF

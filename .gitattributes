@@ -4,7 +4,13 @@
 # page-tree fixtures grew by 305-616 bytes each while `git status` stayed
 # clean, which is how the corruption went unnoticed. The blobs in git were
 # always intact; only the working copy was damaged.
-* text=auto
+#
+# Text files are LF in the repository AND in every working copy (eol=lf), so
+# a Windows checkout produces the same bytes as CI and the byte manifests of
+# generated files (llms, api.json, guides, rules) do not depend on the OS.
+# Blobs committed as CRLF before this line are rewritten by the maintainer's
+# renormalisation commit; `verify:docs` (rule eol-lf) lists them until then.
+* text=auto eol=lf
 
 *.pdf   binary
 *.ttf   binary
@@ -15,3 +21,17 @@
 *.jpg   binary
 *.jpeg  binary
 *.ico   binary
+
+# Generated files: collapsed in GitHub diffs and excluded from language stats.
+fonts/*-data.js         linguist-generated=true -diff
+fonts/*-data.d.ts       linguist-generated=true
+src/shaping/use-data.ts linguist-generated=true
+docs/llms-full.txt      linguist-generated=true -diff
+docs/llms-recipes.txt   linguist-generated=true
+docs/llms-index.json    linguist-generated=true
+docs/assets/api.json    linguist-generated=true
+docs/guides/*.html      linguist-generated=true
+package-lock.json       linguist-generated=true
+
+# Vendored Unicode Character Database: bytes are the upstream's, never converted.
+scripts/data/*.txt      -text linguist-vendored=true

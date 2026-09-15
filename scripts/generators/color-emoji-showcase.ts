@@ -110,8 +110,8 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
     // ── 4. Multi-codepoint sequences: flags + ZWJ (v1.7.0) ──────────
     // Each sequence renders as ONE colour ligature glyph resolved from the
-    // font's GSUB at build time — flags are flat (the wave-shading overlay
-    // uses a COLRv1 SRC_IN mask, approximated by its flat backdrop).
+    // font's GSUB at build time. Since v1.8.0 flags keep their wave shading:
+    // the COLRv1 SRC_IN mask becomes a clipping path.
     const params4: DocumentParams = {
         title: 'Colour Emoji - Flag & ZWJ Sequences',
         blocks: [
@@ -128,5 +128,33 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         fontEntries,
     };
     ctx.writeSafe(resolve(ctx.outputDir, 'emoji', 'color-emoji-sequences.pdf'), 'emoji/color-emoji-sequences.pdf', buildDocumentPDFBytes(params4));
+
+    // ── 5. Skin tones (v1.8.0) ──────────────────────────────────────
+    // The bundled set carries 20 gestures and 10 generic people in all five
+    // Fitzpatrick tones; each toned form is its own colour glyph.
+    const tones = ['\u{1F3FB}', '\u{1F3FC}', '\u{1F3FD}', '\u{1F3FE}', '\u{1F3FF}'];
+    const toned = (base: string): string => [base, ...tones.map(t => base + t)].join(' ');
+    const params5: DocumentParams = {
+        title: 'Colour Emoji - Skin Tones',
+        blocks: [
+            { type: 'heading', level: 1, text: 'Emoji skin tones' },
+            { type: 'paragraph', text: 'Each row: the untoned emoji, then light, medium-light, medium, medium-dark and dark.' },
+            { type: 'paragraph', text: `Thumbs up: ${toned('👍')}` },
+            { type: 'paragraph', text: `Folded hands: ${toned('🙏')}` },
+            { type: 'paragraph', text: `Handshake: ${toned('🤝')}` },
+            { type: 'paragraph', text: `Waving hand: ${toned('👋')}` },
+            { type: 'paragraph', text: `Victory hand: ${toned('✌')}` },
+            { type: 'paragraph', text: `Flexed biceps: ${toned('💪')}` },
+            { type: 'paragraph', text: `Writing hand: ${toned('✍')}` },
+            { type: 'paragraph', text: `Person: ${toned('🧑')}` },
+            { type: 'paragraph', text: `Woman: ${toned('👩')}` },
+            { type: 'paragraph', text: `Old man: ${toned('👴')}` },
+            { type: 'paragraph', text: `Baby: ${toned('👶')}` },
+            { type: 'paragraph', text: 'Fallback: a toned base outside the bundled set (🏃🏽) renders the untoned emoji and drops the modifier - build a module with the CLI to bundle it.' },
+        ],
+        footerText: 'pdfnative - emoji skin tones',
+        fontEntries,
+    };
+    ctx.writeSafe(resolve(ctx.outputDir, 'emoji', 'color-emoji-skin-tones.pdf'), 'emoji/color-emoji-skin-tones.pdf', buildDocumentPDFBytes(params5));
 }
 

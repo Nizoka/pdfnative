@@ -31,10 +31,15 @@ import type {
 import { parseImage, buildImageOperators } from './pdf-image.js';
 import type { ParsedImage } from './pdf-image.js';
 import { validateURL } from './pdf-annot.js';
-import { parseColor } from './pdf-color.js';
+import { parseColor, fillOp, strokeOp } from './pdf-color.js';
 import type { LinkAnnotation } from './pdf-annot.js';
 import { truncate, helveticaWidth, helveticaBoldWidth } from '../fonts/encoding.js';
-import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum } from './pdf-text.js';
+import {
+    txt, txtR, txtC, txtJustified, txtTagged, txtRTagged, txtCTagged,
+    protrusionLeft, protrusionRight, fmtNum,
+} from './pdf-text.js';
+import { wrapSpan } from './pdf-tags.js';
+import { hyphenateWord } from './hyphenation.js';
 import {
     ROW_H, TH_H,
     DEFAULT_FONT_SIZES, DEFAULT_COLORS, DEFAULT_COLUMNS,
@@ -162,7 +167,11 @@ export interface ResolvedImage {
  * Uses enc.tw() for Unicode mode, helveticaWidth() for Latin mode.
  */
 export function measureText(str: string, sz: number, enc: EncodingContext): number {
-    return enc.isUnicode ? enc.tw(str, sz) : helveticaWidth(str, sz);
+    // Always through the context. In Latin mode `tw` already *is* the
+    // base-14 width function the context was built with, so routing through
+    // it is what lets `layout.typography.metrics` reach wrapping, truncation
+    // and column fitting — measuring directly used to bypass the setting.
+    return enc.tw(str, sz);
 }
 
 /**
@@ -238,11 +247,49 @@ function hardBreakSegment(
     return pieces.length > 0 ? pieces : [seg];
 }
 
+/** SOFT HYPHEN — a break opportunity, invisible unless the break is taken. */
+const SHY = '­';
+
+/**
+ * Split a word at the last soft hyphen whose leading part still fits in
+ * `maxWidth`, materialising a real hyphen there.
+ *
+ * Returns `null` when the word carries no soft hyphen, or when even its
+ * first fragment is too wide — in which case the caller falls back to the
+ * ordinary word-wrapping path.
+ */
+function softHyphenBreak(
+    seg: string,
+    maxWidth: number,
+    fontSize: number,
+    enc: EncodingContext,
+): { head: string; tail: string } | null {
+    if (!seg.includes(SHY)) return null;
+
+    let best = -1;
+    let bestHead = '';
+    for (let i = 0; i < seg.length; i++) {
+        if (seg[i] !== SHY) continue;
+        const head = `${seg.slice(0, i).split(SHY).join('')}-`;
+        if (measureText(head, fontSize, enc) > maxWidth) break; // later ones only get wider
+        best = i;
+        bestHead = head;
+    }
+    if (best < 0) return null;
+    return { head: bestHead, tail: seg.slice(best + 1) };
+}
+
 /**
  * Wrap text into lines that fit within maxWidth.
  * Greedy line-filling algorithm with CJK character-level breaking.
  * Latin text breaks at word boundaries (spaces).
  * CJK characters break individually (no spaces needed).
+ *
+ * A SOFT HYPHEN (U+00AD) marks an optional break inside a word: when a word
+ * does not fit, it is split at the last soft hyphen that does and a real
+ * hyphen is written there. Soft hyphens where no break is taken disappear —
+ * they are invisible and zero-width by definition (Unicode §23.2), which is
+ * what makes them safe to sprinkle through narrow table cells and captions.
  *
  * If a single segment exceeds maxWidth (e.g. a long word, URL, or
  * non-breaking-space-joined compound), it is hard-broken at character
@@ -262,9 +309,15 @@ export function wrapText(
     if (segments.length === 0) return [''];
 
     const lines: string[] = [];
+    // Any soft hyphen still present is one where no break was taken, so it
+    // must vanish. Guarded: wrapping is hot and most text has none.
+    const push = (line: string): void => {
+        lines.push((line.includes(SHY) ? line.split(SHY).join('') : line).trimEnd());
+    };
     let currentLine = '';
 
-    for (const seg of segments) {
+    for (let si = 0; si < segments.length; si++) {
+        const seg = segments[si];
         const candidate = currentLine + seg;
         const w = measureText(candidate, fontSize, enc);
         if (w <= maxWidth) {
@@ -272,9 +325,26 @@ export function wrapText(
             continue;
         }
 
+        // Can part of this word finish the current line at a break
+        // opportunity — one the author wrote, or one a hyphenation provider
+        // supplies? Both are expressed as soft hyphens, so one path handles
+        // them. Computed only for words that do not fit, never for the rest.
+        const hinted = seg.includes(SHY) ? seg : hyphenateWord(seg, enc.lang);
+        if (hinted.includes(SHY)) {
+            const used = measureText(currentLine, fontSize, enc);
+            const brk = softHyphenBreak(hinted, maxWidth - used, fontSize, enc);
+            if (brk) {
+                push(currentLine + brk.head);
+                currentLine = '';
+                segments[si] = brk.tail; // re-process the remainder
+                si--;
+                continue;
+            }
+        }
+
         // Flush whatever fit so far on the current line.
         if (currentLine !== '') {
-            lines.push(currentLine.trimEnd());
+            push(currentLine);
             currentLine = '';
         }
 
@@ -286,14 +356,24 @@ export function wrapText(
             continue;
         }
 
-        // Segment alone still overflows — hard-break at character boundaries.
+        // Still overflows alone — try a break opportunity across a full line.
+        const hintedAlone = segTrim.includes(SHY) ? segTrim : hyphenateWord(segTrim, enc.lang);
+        const brk = softHyphenBreak(hintedAlone, maxWidth, fontSize, enc);
+        if (brk) {
+            push(brk.head);
+            segments[si] = brk.tail;
+            si--;
+            continue;
+        }
+
+        // No break opportunity — hard-break at character boundaries.
         const pieces = hardBreakSegment(segTrim, maxWidth, fontSize, enc);
         for (let pi = 0; pi < pieces.length - 1; pi++) {
-            lines.push(pieces[pi].trimEnd());
+            push(pieces[pi]);
         }
         currentLine = pieces[pieces.length - 1];
     }
-    if (currentLine) lines.push(currentLine.trimEnd());
+    if (currentLine) push(currentLine);
 
     return lines;
 }
@@ -316,7 +396,7 @@ export function renderHeading(
     const structTag = block.level === 1 ? 'H1' : block.level === 2 ? 'H2' : 'H3';
 
     y -= spacing.top;
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     const lines = wrapText(block.text, cw, sz, enc);
     const lineH = sz * 1.3;
@@ -336,6 +416,60 @@ export function renderHeading(
     return { ops, y };
 }
 
+/**
+ * Measurement pass for a {@link ParagraphBlock}: the wrapped lines and the
+ * geometry the renderer will use, computed once so the planner can split the
+ * paragraph across pages without the renderer re-wrapping it.
+ *
+ * The symmetric counterpart of {@link planTable}. Pure — safe to call during
+ * multi-pass pagination.
+ *
+ * @since 1.8.0
+ */
+export interface ParagraphPlan {
+    readonly lines: readonly string[];
+    /** Font size in points. */
+    readonly size: number;
+    /** Distance between successive baselines, in points. */
+    readonly lineH: number;
+    /** Left indent in points. */
+    readonly indent: number;
+    /** Spacing emitted after the paragraph's last line. */
+    readonly trailerSpacing: number;
+}
+
+/** One run of consecutive lines of a paragraph, placed on a single page. */
+export interface ParagraphSlice {
+    readonly plan: ParagraphPlan;
+    readonly fromLine: number;
+    /** Exclusive. */
+    readonly toLine: number;
+    readonly isFinalSlice: boolean;
+    /** Shared accumulator collecting the `/P` element's children across slices. */
+    readonly paraStructAccum: MCRef[];
+}
+
+/** Spacing emitted below every paragraph. */
+const PARA_TRAILER = 4;
+
+/**
+ * Wrap a paragraph and describe its geometry.
+ *
+ * @since 1.8.0
+ */
+export function planParagraph(block: ParagraphBlock, enc: EncodingContext, cw: number): ParagraphPlan {
+    const size = block.fontSize ?? DEFAULT_PARA_SIZE;
+    const lhMul = block.lineHeight ?? DEFAULT_LINE_HEIGHT;
+    const indent = block.indent ?? 0;
+    return {
+        lines: wrapText(block.text, cw - indent, size, enc),
+        size,
+        lineH: size * lhMul,
+        indent,
+        trailerSpacing: PARA_TRAILER,
+    };
+}
+
 export function renderParagraph(
     block: ParagraphBlock,
     y: number,
@@ -346,6 +480,8 @@ export function renderParagraph(
     mgR: number,
     tagCtx: TagContext | undefined,
     documentChildren: (StructElement | MCRef)[],
+    slice?: ParagraphSlice,
+    optical: boolean = false,
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
     const sz = block.fontSize ?? DEFAULT_PARA_SIZE;
@@ -356,40 +492,69 @@ export function renderParagraph(
     const align = block.align ?? 'left';
 
     const availW = cw - indent;
-    const lines = wrapText(block.text, availW, sz, enc);
+    // Unsliced (the historical path) renders the whole paragraph; a slice
+    // renders its own run of lines and defers the `/P` element to the last one.
+    const allLines = slice ? slice.plan.lines : wrapText(block.text, availW, sz, enc);
+    const lines = slice ? allLines.slice(slice.fromLine, slice.toLine) : allLines;
+    const isFinalSlice = slice ? slice.isFinalSlice : true;
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
-    const pChildren: MCRef[] = [];
+    const pChildren: MCRef[] = slice ? slice.paraStructAccum : [];
 
-    for (const line of lines) {
+    // A justified paragraph leaves its LAST line ragged — the line that ends
+    // the paragraph, not merely the last of this slice.
+    const firstLineIdx = slice ? slice.fromLine : 0;
+    const lastLineIdx = allLines.length - 1;
+
+    for (let li = 0; li < lines.length; li++) {
+        const line = lines[li];
+        const justifyThis = align === 'justify' && (firstLineIdx + li) !== lastLineIdx;
+
+        // Optical margins: punctuation hangs past the edge it sits against, so
+        // the optical edge reads straight. Left-aligned and justified lines
+        // hang their leading mark left; justified and right-aligned lines hang
+        // their trailing mark right.
+        const hangL = optical && align !== 'right' ? protrusionLeft(line, sz, enc) : 0;
+        const hangR = optical && (justifyThis || align === 'right')
+            ? protrusionRight(line, sz, enc)
+            : 0;
+        const lineX = mgL + indent - hangL;
+        const lineW = availW + hangL + hangR;
+
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             pChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
             if (align === 'right') {
-                ops.push(txtRTagged(line, pgW - mgR, y - sz, enc.f1, sz, enc, mcid));
+                ops.push(txtRTagged(line, pgW - mgR + hangR, y - sz, enc.f1, sz, enc, mcid));
             } else if (align === 'center') {
                 ops.push(txtCTagged(line, mgL + indent, y - sz, enc.f1, sz, availW, enc, mcid));
+            } else if (justifyThis) {
+                ops.push(wrapSpan(txtJustified(line, lineX, y - sz, enc.f1, sz, enc, lineW), line, mcid));
             } else {
-                ops.push(txtTagged(line, mgL + indent, y - sz, enc.f1, sz, enc, mcid));
+                ops.push(txtTagged(line, lineX, y - sz, enc.f1, sz, enc, mcid));
             }
         } else {
             if (align === 'right') {
-                ops.push(txtR(line, pgW - mgR, y - sz, enc.f1, sz, enc));
+                ops.push(txtR(line, pgW - mgR + hangR, y - sz, enc.f1, sz, enc));
             } else if (align === 'center') {
                 ops.push(txtC(line, mgL + indent, y - sz, enc.f1, sz, availW, enc));
+            } else if (justifyThis) {
+                ops.push(txtJustified(line, lineX, y - sz, enc.f1, sz, enc, lineW));
             } else {
-                ops.push(txt(line, mgL + indent, y - sz, enc.f1, sz, enc));
+                ops.push(txt(line, lineX, y - sz, enc.f1, sz, enc));
             }
         }
         y -= lineH;
     }
 
-    if (tagCtx?.tagged && pChildren.length > 0) {
+    // A split paragraph stays one `/P` element: its marked-content references
+    // accumulate across slices and are emitted once, with the final one.
+    if (isFinalSlice && tagCtx?.tagged && pChildren.length > 0) {
         documentChildren.push({ type: 'P', children: pChildren });
     }
 
-    y -= 4; // post-paragraph spacing
+    if (isFinalSlice) y -= PARA_TRAILER; // post-paragraph spacing
     return { ops, y };
 }
 
@@ -407,7 +572,7 @@ export function renderList(
     const lineH = sz * DEFAULT_LINE_HEIGHT;
     const color = '0.216 0.255 0.318';
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     // Render the (possibly nested) list recursively. The fill colour is set
     // once above and persists across levels via PDF graphics state.
@@ -768,7 +933,7 @@ export function renderTable(
             return [];
         }
         const o: string[] = [];
-        o.push(`${fmtNum(borderWidth)} w ${borderColor} RG${borderDash ? ' ' + borderDash : ''}`);
+        o.push(`${fmtNum(borderWidth)} w ${strokeOp(borderColor)}${borderDash ? ' ' + borderDash : ''}`);
         const x0 = cellX, x1 = cellX + cellW, y0 = top - h, y1 = top;
         if (borderSides.top) o.push(`${fmtNum(x0)} ${fmtNum(y1)} m ${fmtNum(x1)} ${fmtNum(y1)} l S`);
         if (borderSides.bottom) o.push(`${fmtNum(x0)} ${fmtNum(y0)} m ${fmtNum(x1)} ${fmtNum(y0)} l S`);
@@ -870,7 +1035,7 @@ export function renderTable(
 
     // ── Caption (first slice only) ───────────────────────────────────
     if (drawCaption && plan.captionLines.length > 0) {
-        ops.push(`${colors.text} rg`);
+        ops.push(`${fillOp(colors.text)}`);
         const lineH = CAPTION_FONT_SIZE * TABLE_LINE_HEIGHT;
         let cy = y - CAPTION_FONT_SIZE;
         const captionRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
@@ -892,11 +1057,11 @@ export function renderTable(
 
     // ── Header ───────────────────────────────────────────────────────
     if (drawHeader) {
-        ops.push(`${colors.thBg} rg`);
+        ops.push(`${fillOp(colors.thBg)}`);
         ops.push(`${fmtNum(mgL)} ${fmtNum(y - headerHeight)} ${fmtNum(cw)} ${fmtNum(headerHeight)} re f`);
-        ops.push(`0.75 w ${colors.thBrd} RG`);
+        ops.push(`0.75 w ${strokeOp(colors.thBrd)}`);
         ops.push(`${fmtNum(mgL)} ${fmtNum(y - headerHeight)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - headerHeight)} l S`);
-        ops.push(`${colors.text} rg`);
+        ops.push(`${fillOp(colors.text)}`);
 
         const thChildren: (StructElement | MCRef)[] = [];
         for (let i = 0; i < block.headers.length && i < columns.length; i++) {
@@ -920,12 +1085,12 @@ export function renderTable(
 
         // Zebra fill (even data rows, counting from 0 across the entire table).
         if (zebraColor && r % 2 === 1) {
-            ops.push(`${zebraColor} rg`);
+            ops.push(`${fillOp(zebraColor)}`);
             ops.push(`${fmtNum(mgL)} ${fmtNum(y - rowH)} ${fmtNum(cw)} ${fmtNum(rowH)} re f`);
         }
 
         // Row separator
-        ops.push(`0.25 w ${colors.rowBrd} RG`);
+        ops.push(`0.25 w ${strokeOp(colors.rowBrd)}`);
         ops.push(`${fmtNum(mgL)} ${fmtNum(y - rowH)} m ${fmtNum(pgW - mgR)} ${fmtNum(y - rowH)} l S`);
 
         const tdChildren: (StructElement | MCRef)[] = [];
@@ -938,7 +1103,7 @@ export function renderTable(
             const isAmount = columns[i].kind === 'amount';
             const color = isAmount ? (row.type === 'credit' ? colors.credit : colors.debit) : colors.text;
             const font = isAmount ? enc.f2 : enc.f1;
-            ops.push(`${color} rg`);
+            ops.push(`${fillOp(color)}`);
 
             const cellRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
             ops.push(...emitCell(cells[i] ?? [''], i, y, rowH, font, fs.td, cellRefs, false));
@@ -981,7 +1146,7 @@ export function renderPageTemplate(
     const sz = template.fontSize ?? DEFAULT_FONT_SIZES.ft;
     const color = parseColor(template.color ?? '0.612 0.639 0.682');
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     if (template.left) {
         const text = resolveTemplate(template.left, page, pages, title, date);
@@ -1118,7 +1283,7 @@ export function renderLink(
 
     const lines = wrapText(block.text, cw, sz, enc);
 
-    ops.push(`${color} rg`);
+    ops.push(`${fillOp(color)}`);
 
     for (const line of lines) {
         const textW = measureText(line, sz, enc);
@@ -1135,7 +1300,7 @@ export function renderLink(
 
         // Underline
         const ulY = textY - LINK_UNDERLINE_OFFSET;
-        ops.push(`${color} RG 0.5 w`);
+        ops.push(`${strokeOp(color)} 0.5 w`);
         ops.push(`${fmtNum(textX)} ${fmtNum(ulY)} m ${fmtNum(textX + textW)} ${fmtNum(ulY)} l S`);
 
         if (isValid) {
@@ -1192,7 +1357,7 @@ export function renderToc(
     // TOC Title
     const titleSz = 14;
     const titleColor = '0.145 0.388 0.922';
-    ops.push(`${titleColor} rg`);
+    ops.push(`${fillOp(titleColor)}`);
     if (tagCtx?.tagged) {
         const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
         ops.push(txtTagged(title, mgL, y - titleSz, enc.f2, titleSz, enc, mcid));
@@ -1204,7 +1369,7 @@ export function renderToc(
 
     // TOC entries
     const textColor = '0.216 0.255 0.318';
-    ops.push(`${textColor} rg`);
+    ops.push(`${fillOp(textColor)}`);
 
     for (const heading of headings) {
         if (heading.level > maxLevel) continue;
@@ -1240,9 +1405,9 @@ export function renderToc(
         const dotStart = entryX + textW + 4;
         if (dotStart < dotLeaderEnd) {
             const dotStr = '.'.repeat(Math.max(1, Math.floor((dotLeaderEnd - dotStart) / (measureText('.', sz, enc) + 0.5))));
-            ops.push(`0.6 0.6 0.6 rg`);
+            ops.push(fillOp('0.6 0.6 0.6'));
             ops.push(txt(dotStr, dotStart, textY, enc.f1, sz, enc));
-            ops.push(`${textColor} rg`);
+            ops.push(`${fillOp(textColor)}`);
         }
 
         ops.push(txtR(pageNumStr, mgL + cw, textY, enc.f1, sz, enc));

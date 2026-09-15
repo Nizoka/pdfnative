@@ -6,7 +6,9 @@
  */
 
 import type { FontData, ShapedGlyph, EncodingContext } from '../types/pdf-types.js';
-import { toWinAnsi, helveticaWidth, helveticaBoldWidth } from '../fonts/encoding.js';
+import { toWinAnsi, helveticaWidth, helveticaBoldWidth, stripSoftHyphens } from '../fonts/encoding.js';
+import { exactBase14Width } from '../fonts/base14-metrics.js';
+import { stripBidiControls } from '../shaping/bidi.js';
 import { wrapSpan } from './pdf-tags.js';
 
 /** Format a number as PDF operator value (2 decimal places). */
@@ -106,6 +108,11 @@ export function txt(
         } else if (run.shaped) {
             parts.push(txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData));
             penX += run.widthPt;
+        } else if (run.tjStr) {
+            // Kerned: one TJ array keeps the run a single text-showing
+            // operator, so viewer selection and extraction stay intact.
+            parts.push(`BT ${run.fontRef} ${sz} Tf ${fmtNum(penX)} ${fmtNum(y)} Td [${run.tjStr}] TJ ET`);
+            penX += run.widthPt;
         } else {
             parts.push(`BT ${run.fontRef} ${sz} Tf ${fmtNum(penX)} ${fmtNum(y)} Td ${run.hexStr} Tj ET`);
             penX += run.widthPt;
@@ -134,9 +141,7 @@ export function txtR(
     enc: EncodingContext,
     bold: boolean = false,
 ): string {
-    const width = enc.isUnicode
-        ? enc.tw(str, sz)
-        : (bold ? helveticaBoldWidth(str, sz) : helveticaWidth(toWinAnsi(str), sz));
+    const width = measureFor(str, sz, enc, bold);
     return txt(str, rightX - width, y, font, sz, enc);
 }
 
@@ -160,10 +165,177 @@ export function txtC(
     enc: EncodingContext,
     bold: boolean = false,
 ): string {
-    const width = enc.isUnicode
-        ? enc.tw(str, sz)
-        : (bold ? helveticaBoldWidth(str, sz) : helveticaWidth(toWinAnsi(str), sz));
+    const width = measureFor(str, sz, enc, bold);
     return txt(str, leftX + (colW - width) / 2, y, font, sz, enc);
+}
+
+/**
+ * Measure a string the way {@link txtR} and {@link txtC} do, so justified
+ * placement agrees with right- and centre-alignment.
+ *
+ * The estimate takes the Unicode string: it branches on the codepoints of
+ * the CP1252 punctuation (— … “ ” ‘ ’) and strips soft hyphens and bidi
+ * controls itself, so handing it WinAnsi bytes made every one of those
+ * characters measure at the 556-unit default. The AFM table is indexed by
+ * WinAnsi byte, so the invisible characters are stripped before mapping.
+ */
+function measureFor(str: string, sz: number, enc: EncodingContext, bold: boolean = false): number {
+    if (enc.isUnicode) return enc.tw(str, sz);
+    if (enc.metrics === 'exact') {
+        return exactBase14Width(toWinAnsi(stripSoftHyphens(stripBidiControls(str))), sz, bold);
+    }
+    return bold ? helveticaBoldWidth(str, sz) : helveticaWidth(str, sz);
+}
+
+/**
+ * A gap wider than this multiple of the natural space is a river down the
+ * page, not justification. Such a line is left ragged instead.
+ */
+const MAX_JUSTIFY_STRETCH = 3;
+
+/**
+ * How far a character may hang past the measure, as a fraction of its own
+ * advance.
+ *
+ * Punctuation is mostly white space inside its own box, so a line beginning
+ * with an opening quote or ending in a full stop *looks* indented even though
+ * its glyph origin is exactly on the margin. Letting those glyphs protrude
+ * makes the optical edge straight — the difference between a page that looks
+ * typeset and one that looks generated.
+ *
+ * Values are conservative: a half advance for the marks that are almost all
+ * white, a third for dashes, less for the taller marks.
+ */
+const PROTRUSION: Readonly<Record<string, number>> = {
+    '"': 0.5, "'": 0.5,
+    '‘': 0.5, '’': 0.5, // ‘ ’
+    '“': 0.5, '”': 0.5, // “ ”
+    '«': 0.4, '»': 0.4, // « »
+    '.': 0.5, ',': 0.5,
+    '-': 0.33, '–': 0.33, '—': 0.33, // - – —
+    ':': 0.25, ';': 0.25,
+    '!': 0.2, '?': 0.2,
+    '(': 0.2, ')': 0.2, '[': 0.2, ']': 0.2,
+};
+
+/** Points by which a line's first character should hang left of the measure. */
+export function protrusionLeft(line: string, sz: number, enc: EncodingContext): number {
+    const ch = line[0];
+    const frac = ch === undefined ? undefined : PROTRUSION[ch];
+    return frac === undefined ? 0 : measureFor(ch as string, sz, enc) * frac;
+}
+
+/** Points by which a line's last character may hang right of the measure. */
+export function protrusionRight(line: string, sz: number, enc: EncodingContext): number {
+    const ch = line[line.length - 1];
+    const frac = ch === undefined ? undefined : PROTRUSION[ch];
+    return frac === undefined ? 0 : measureFor(ch as string, sz, enc) * frac;
+}
+
+/**
+ * Justified text: lay the line's words out so it spans exactly `targetWidth`.
+ *
+ * The whole line is one `[…] TJ` array: each word keeps its trailing space
+ * glyph and is followed by a negative adjustment that opens the gap by the
+ * line's share of the slack. `Tw` would be the textbook operator, but it
+ * applies only to single-byte code 32 — it has no effect at all on the
+ * Identity-H CID fonts every non-Latin script uses (ISO 32000-1 §9.3.3).
+ * `TJ` adjustments behave identically in both modes, keep the space
+ * characters in the stream so viewers, search and `extractText()` still see
+ * word boundaries, and keep the line a single text object rather than one
+ * per word.
+ *
+ * Falls back to plain left-aligned output when the line has a single word,
+ * already overruns, or would need an implausible stretch.
+ *
+ * @since 1.8.0
+ */
+export function txtJustified(
+    str: string,
+    x: number,
+    y: number,
+    font: string,
+    sz: number,
+    enc: EncodingContext,
+    targetWidth: number,
+): string {
+    // Split on plain spaces only: a no-break space is part of its word, which
+    // is precisely what makes "150 €" survive justification intact.
+    const words = str.split(' ').filter(w => w !== '');
+    if (words.length < 2) return txt(str, x, y, font, sz, enc);
+
+    // Each word carries its trailing space so the space glyph is emitted; the
+    // last word does not. Measured as emitted, so kerning across the word /
+    // space boundary is accounted for in Unicode mode.
+    const pieces = words.map((w, i) => (i === words.length - 1 ? w : `${w} `));
+    const runs = enc.isUnicode ? pieces.map(p => enc.textRuns(p, sz)) : null;
+    const pieceWidths = runs
+        ? runs.map(rs => rs.reduce((n, r) => n + r.widthPt, 0))
+        : pieces.map(p => measureFor(p, sz, enc));
+    const natural = pieceWidths.reduce((a, b) => a + b, 0);
+    const extra = targetWidth - natural;
+    const spaceW = measureFor(' ', sz, enc);
+    if (extra <= 0 || extra / (words.length - 1) > spaceW * MAX_JUSTIFY_STRETCH) {
+        return txt(str, x, y, font, sz, enc);
+    }
+
+    const gapExtra = extra / (words.length - 1);
+    // TJ numbers are thousandths of the font size, subtracted from the pen
+    // (ISO 32000-1 §9.4.3): a negative number widens the gap.
+    const tjGap = fmtNum(-(gapExtra * 1000 / sz));
+
+    if (runs === null) {
+        const items: string[] = [];
+        for (let i = 0; i < pieces.length; i++) {
+            items.push(enc.ps(pieces[i]));
+            if (i < pieces.length - 1) items.push(tjGap);
+        }
+        return `BT ${font} ${sz} Tf ${fmtNum(x)} ${fmtNum(y)} Td [${items.join(' ')}] TJ ET`;
+    }
+
+    // Unicode: consecutive plain runs of one font share a TJ array; a shaped
+    // or colour-emoji run is placed on its own, as `txt()` does, and the
+    // array resumes after it.
+    const parts: string[] = [];
+    let penX = x;
+    let segFont: string | null = null;
+    let segStart = 0;
+    let segAdvance = 0;
+    let segItems: string[] = [];
+    const flush = (): void => {
+        if (segFont === null) return;
+        parts.push(`BT ${segFont} ${sz} Tf ${fmtNum(segStart)} ${fmtNum(y)} Td [${segItems.join(' ')}] TJ ET`);
+        penX = segStart + segAdvance;
+        segFont = null;
+        segAdvance = 0;
+        segItems = [];
+    };
+
+    for (let i = 0; i < pieces.length; i++) {
+        for (const run of runs[i]) {
+            const emoji = enc.colorEmoji !== undefined && run.fontData.colorGlyphs !== undefined && run.hexStr !== null;
+            if (run.shaped || emoji || run.hexStr === null) {
+                flush();
+                if (emoji) {
+                    penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
+                } else if (run.shaped) {
+                    parts.push(txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData));
+                    penX += run.widthPt;
+                }
+                continue;
+            }
+            if (segFont !== null && segFont !== run.fontRef) flush();
+            if (segFont === null) { segFont = run.fontRef; segStart = penX; }
+            segItems.push(run.tjStr ?? run.hexStr);
+            segAdvance += run.widthPt;
+        }
+        if (i < pieces.length - 1) {
+            if (segFont !== null) { segItems.push(tjGap); segAdvance += gapExtra; }
+            else penX += gapExtra;
+        }
+    }
+    flush();
+    return parts.join('\n');
 }
 
 /** Tagged text at absolute position — wraps in /Span BDC…EMC with /ActualText. */

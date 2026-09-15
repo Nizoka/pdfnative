@@ -10,8 +10,9 @@
  *   - Free-form document builder (headings, paragraphs, lists, tables, images, links, barcodes)
  *   - Built-in Helvetica (Latin/WinAnsi) — no font embedding needed
  *   - CIDFont Type2/Identity-H embedding for Unicode scripts
- *   - 22 Unicode scripts: Thai, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
- *   - Thai OpenType shaping (GSUB + GPOS)
+ *   - 27 Unicode scripts: Thai, Lao, Tai Tham, New Tai Lue, Tai Le, Cham, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
+ *   - Thai and Lao OpenType shaping (GSUB + GPOS)
+ *   - Universal Shaping Engine for Tai Tham and Cham, driven by Unicode data
  *   - Arabic positional shaping (GSUB isolated/initial/medial/final forms)
  *   - BiDi text layout (simplified UAX #9) with glyph mirroring
  *   - Multi-font cross-script fallback
@@ -54,6 +55,9 @@
 export type {
     FontMetrics,
     FontData,
+    OtlTables,
+    OtlLookup,
+    OtlChainRule,
     FontEntry,
     ShapedGlyph,
     TextRun,
@@ -65,6 +69,8 @@ export type {
     PdfColor,
     PdfRgbString,
     PdfRgbTuple,
+    PdfCmykString,
+    PdfCmykTuple,
     ColumnDef,
     PdfLayoutOptions,
     EncryptionOptions,
@@ -88,7 +94,13 @@ export type {
     PageBox,
     PrintOptions,
     PrinterMarksOptions,
+    ColourBarOptions,
     CustomOutputIntent,
+    TypographyOptions,
+    UnitBindingOptions,
+    PunctuationSpacingRule,
+    PunctuationSpacingPreset,
+    Base14Metrics,
 } from './types/pdf-types.js';
 
 // ── Core — Print Production (v1.7.0) ────────────────────────────────
@@ -152,18 +164,30 @@ export type {
 export { buildAnnotation, buildAnnotationBody } from './core/pdf-annot-markup.js';
 
 // ── Core — Color Utilities ──────────────────────────────────────────
-export { parseColor, isValidPdfRgb, normalizeColors } from './core/pdf-color.js';
+export { parseColor, isValidPdfRgb, normalizeColors, fillOp, strokeOp, resolveColor } from './core/pdf-color.js';
+export type { PdfColorSpace, ResolvedColor } from './core/pdf-color.js';
 
 // ── Core — Watermark ────────────────────────────────────────────────
 export type { WatermarkState } from './core/pdf-watermark.js';
 export { validateWatermark, buildWatermarkState } from './core/pdf-watermark.js';
 
 // ── Core — Tagged PDF / PDF/A ───────────────────────────────────────
-export type { PdfAConfig, EmbeddedFilesResult, PdfAConformanceTarget } from './core/pdf-tags.js';
-export { resolvePdfAConfig, buildEmbeddedFiles, validateAttachments, PDF_A_CONFORMANCE_TARGETS } from './core/pdf-tags.js';
+export type { PdfAConfig, EmbeddedFilesResult, PdfAConformanceTarget, PdfXConformanceTarget } from './core/pdf-tags.js';
+export { resolvePdfAConfig, buildEmbeddedFiles, validateAttachments, PDF_A_CONFORMANCE_TARGETS, PDF_X_CONFORMANCE_TARGETS } from './core/pdf-tags.js';
 
 // ── Core — Stream Compression ───────────────────────────────────────
-export { initNodeCompression, setDeflateImpl } from './core/pdf-compress.js';
+export { initNodeCompression, setDeflateImpl, setDeflateRawImpl, wrapZlib } from './core/pdf-compress.js';
+
+// ── Core — Reproducible builds ──────────────────────────────────────
+export { setDefaultCreationDate, getDefaultCreationDate } from './core/pdf-reproducible.js';
+
+// ── Core — Typography ───────────────────────────────────────────────
+export {
+    bindUnits, bindShortWords, applyPunctuationSpacing,
+    PUNCTUATION_SPACING_PRESETS, DEFAULT_UNITS,
+} from './core/pdf-typography.js';
+export type { HyphenationProvider } from './core/hyphenation.js';
+export { setHyphenationProvider, getHyphenationProvider } from './core/hyphenation.js';
 
 // ── Core — Barcodes & QR Codes ──────────────────────────────────────
 export type { BarcodeFormat, QRErrorLevel } from './core/pdf-barcode.js';
@@ -273,8 +297,10 @@ export type { FontLoader } from './fonts/font-loader.js';
 export type { FontValidationResult } from './fonts/font-validator.js';
 export { validateFontData } from './fonts/font-validator.js';
 
-// ── Shaping — Thai, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari & Multi-Script ─
+// ── Shaping — Thai, Lao, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari, Tai Tham, Cham & Multi-Script ─
 export { shapeThaiText } from './shaping/thai-shaper.js';
+export { shapeLaoText, buildLaoClusters } from './shaping/lao-shaper.js';
+export { shapeUseText } from './shaping/use-shaper.js';
 export { shapeBengaliText } from './shaping/bengali-shaper.js';
 export { shapeTamilText } from './shaping/tamil-shaper.js';
 export { shapeTeluguText } from './shaping/telugu-shaper.js';
@@ -283,14 +309,18 @@ export { shapeTibetanText } from './shaping/tibetan-shaper.js';
 export { shapeKhmerText } from './shaping/khmer-shaper.js';
 export { shapeMyanmarText } from './shaping/myanmar-shaper.js';
 export { shapeDevanagariText } from './shaping/devanagari-shaper.js';
+export { shapeLatinMarksText } from './shaping/latin-marks.js';
 export {
-    containsThai, containsArabic, containsHebrew,
+    containsThai, containsLao, containsArabic, containsHebrew,
+    containsTaiTham, containsNewTaiLue, containsTaiLe, containsCham,
     containsBengali, containsTamil, containsTelugu, containsDevanagari,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsEthiopic,
     containsMath,
     isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,
     isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isEthiopicCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint, isMathCodepoint,
+    isLaoCodepoint, isTaiThamCodepoint, isNewTaiLueCodepoint,
+    isTaiLeCodepoint, isChamCodepoint,
 } from './shaping/script-registry.js';
 export { needsUnicodeFont, detectFallbackLangs, detectCharLang } from './shaping/script-detect.js';
 export { splitTextByFont } from './shaping/multi-font.js';
@@ -303,10 +333,28 @@ export type { UseCategory, UseClassifiedCp, UseCluster } from './shaping/use-lit
 export { classifyUseCategory, classifyClusters } from './shaping/use-lite.js';
 export { shapeArabicText } from './shaping/arabic-shaper.js';
 
+// ── Shaping — Universal Shaping Engine (v1.8.0) ─────────────────────
+//
+// Classification and cluster segmentation driven by a table generated from
+// the Unicode Character Database, covering every complex script rather than
+// the three the hand-written classifier above knows. The older
+// `classifyUseCategory` / `classifyClusters` pair stays exported and
+// unchanged: the bundled Indic shapers still consume it, and it is a public
+// API since 1.3.0.
+export { SCRIPT_SHAPERS, findShaper } from './shaping/shaper-registry.js';
+export type { ScriptShaper } from './shaping/shaper-registry.js';
+export {
+    useCategory, useCategories, splitUseSyllables, reorderUseCluster,
+    USE_UNICODE_VERSION,
+} from './shaping/use-engine.js';
+export type {
+    UseClusterCategory, UseSyllable, UseSyllableType,
+} from './shaping/use-engine.js';
+
 // ── Colour Glyphs — COLR/CPAL emoji (v1.3.0) ────────────────────────
 export type {
     CpalColor, ColorStop, GradientExtend, SolidPaint, LinearGradientPaint,
-    RadialGradientPaint, ColorPaint, ColorLayer, ColorGlyph,
+    RadialGradientPaint, ColorPaint, ColorLayer, ColorGlyph, ClipOutline,
 } from './types/pdf-types.js';
 export type { OutlinePoint, Contour, GlyfFont } from './fonts/glyf-outline.js';
 export { parseGlyfFont, extractGlyphContours } from './fonts/glyf-outline.js';
@@ -338,6 +386,8 @@ export type { ExtractTextOptions, ExtractedTextRun, ExtractedPageText } from './
 export { extractText } from './parser/pdf-text-extract.js';
 export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
 export { validatePdfUA } from './parser/pdf-ua-validator.js';
+export type { PdfXValidationResult } from './parser/pdf-x-validator.js';
+export { validatePdfX } from './parser/pdf-x-validator.js';
 export {
     inflateSync, setInflateImpl, initNodeDecompression as initNodeDecompression_parser,
     setMaxInflateOutputSize, getMaxInflateOutputSize, DEFAULT_MAX_INFLATE_OUTPUT,

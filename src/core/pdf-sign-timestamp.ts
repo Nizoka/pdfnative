@@ -25,7 +25,7 @@ import {
 } from './pdf-signature.js';
 
 /** id-aa-signatureTimeStampToken — 1.2.840.113549.1.9.16.2.14 (raw OID bytes). */
-const OID_SIGNATURE_TIMESTAMP = new Uint8Array([0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x09, 0x10, 0x02, 0x0e]);
+const OID_SIGNATURE_TIMESTAMP = /*#__PURE__*/ new Uint8Array([0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x09, 0x10, 0x02, 0x0e]);
 
 /** Options for {@link signPdfBytesWithTimestamp}. */
 export interface PdfSignTimestampOptions extends PdfSignOptions {

@@ -217,6 +217,55 @@ means the surface does not offer it.</p>
 <td>— (fixed <code>lang</code> enum; fonts resolved from the local <code>pdfnative</code> install)</td>
 <td><code>registerFont</code> / <code>registerFonts</code> (re-exported)</td>
 </tr>
+<tr>
+<td>Typography (paragraph breaking, justification, hyphenation, kerning, OpenType features)</td>
+<td><code>layout.typography</code> (<code>TypographyOptions</code>) + <code>setHyphenationProvider</code> / <code>bindUnits</code> / <code>bindShortWords</code> / <code>applyPunctuationSpacing</code> <em>(v1.8.0; every option opt-in and byte-identical when absent)</em></td>
+<td><code>render</code> (<code>layout.typography</code> in the document JSON or a <code>--layout</code> file — no dedicated flag) <em>(v1.4.0)</em></td>
+<td>— (the document tools validate a fixed layout schema; typography is not in it yet)</td>
+<td>— (no typography prop yet)</td>
+</tr>
+<tr>
+<td>CMYK content colours</td>
+<td><code>[c, m, y, k]</code> tuples (percent) or <code>&#39;c m y k&#39;</code> strings on any colour field; <code>parseColor</code> / <code>resolveColor</code> / <code>fillOp</code> / <code>strokeOp</code> <em>(v1.8.0)</em></td>
+<td><code>render</code> (four-element colour fields in the document JSON) <em>(v1.4.0)</em></td>
+<td>— (colour fields are validated as hex strings or RGB tuples)</td>
+<td>— (colour props are typed for RGB)</td>
+</tr>
+<tr>
+<td>CMYK / Gray OutputIntent with RGB content kept conforming</td>
+<td><code>layout.outputIntent</code> with a CMYK or Gray ICC profile <em>(v1.8.0; RGB content routed through a calibrated <code>/DefaultRGB</code>; no press profile shipped)</em></td>
+<td><code>render</code> (<code>layout.outputIntent</code> in a <code>--layout</code> file with the profile bytes) <em>(v1.4.0)</em></td>
+<td>— (RGB OutputIntent only)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>PDF/X-4 conformance claim</td>
+<td><code>layout: { pdfx: &#39;pdfx4&#39;, outputIntent, metadata.trapped }</code> <em>(v1.8.0; exclusive with <code>tagged</code> and encryption)</em></td>
+<td><code>render</code> (<code>layout.pdfx</code> in the document JSON or a <code>--layout</code> file; the <code>PDF/X</code> / <code>layout.pdfx</code> errors surface as runtime failures until mapped to <code>E_INPUT</code>) <em>(v1.4.0)</em></td>
+<td>— (<code>pdfx</code> is not in the layout schema)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Validate PDF/X-4</td>
+<td><code>validatePdfX</code> <em>(v1.8.0; structural ISO 15930-7 prerequisites, not a certified preflight)</em></td>
+<td>— (<code>inspect --check</code> knows <code>pdfua</code> only)</td>
+<td>— (<code>validate_pdf</code> checks PDF/UA only)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Printer&#39;s marks: registration colour and colour control bars</td>
+<td><code>layout.print.marks</code> (<code>true</code>, or <code>{ colourBars: true | { tints, size } }</code>) <em>(v1.8.0; bars off by default and byte-neutral when off)</em></td>
+<td><code>render</code> (<code>print.marks</code> in the document JSON or a <code>--layout</code> file) <em>(v1.4.0)</em></td>
+<td><code>generate_basic_pdf</code> (<code>marks: true</code> only) <em>(v1.6.0)</em></td>
+<td><code>&lt;Document print={{ marks: true }}&gt;</code> (boolean marks only)</td>
+</tr>
+<tr>
+<td>Reproducible bytes</td>
+<td><code>layout.creationDate</code>, or <code>setDefaultCreationDate(date)</code> once per process; <code>getDefaultCreationDate</code> <em>(v1.8.0; pin <code>TZ</code> too for cross-host identity)</em></td>
+<td><code>render</code> (<code>layout.creationDate</code> in the document JSON or a <code>--layout</code> file) <em>(v1.4.0)</em></td>
+<td><code>generate_basic_pdf</code> (<code>creationDate</code>, ISO-8601, on all nine document tools) <em>(v1.6.0)</em></td>
+<td><code>layout.creationDate</code> render option</td>
+</tr>
 </tbody></table>
 <h2 id="honest-notes">Honest notes<a class="heading-anchor" href="#honest-notes" aria-label="Link to this section">#</a></h2>
 <ul>

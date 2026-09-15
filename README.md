@@ -22,8 +22,8 @@ pdfnative ships as four coordinated packages — pick whichever entry point fits
 
 | Package | Latest | Use it for |
 |---|:---:|---|
-| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.7.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
-| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.4.0** | Render JSON → PDF, sign with the **complete PAdES ladder** (`sign --timestamp` B-T, `ltv` B-LT with air-gapped collect → embed, `doc-timestamp` B-LTA; RSA-SHA256/384/512 + ECDSA, native constant-time crypto by default), inspect, verify, **compare** (CI text + structure diff), signature-safe **metadata** edits, **merge / split / extract** pages, **annotate**, **govern** (AI-governance / HITL gate), declarative **batch `--manifest`** pipelines, and emit JSON Schemas from the shell. Pins pdfnative `^1.7.0`: 22 scripts + COLRv1 emoji, `--font math`, charts v2, print production, `render --strict` PDF/A gating, and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. Node ≥ 22. |
+| [`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.8.0** | The library itself — call from Node, browsers, Workers, Deno, Bun. |
+| [`pdfnative-cli`](https://www.npmjs.com/package/pdfnative-cli) | **v1.4.0** | Render JSON → PDF, sign with the **complete PAdES ladder** (`sign --timestamp` B-T, `ltv` B-LT with air-gapped collect → embed, `doc-timestamp` B-LTA; RSA-SHA256/384/512 + ECDSA, native constant-time crypto by default), inspect, verify, **compare** (CI text + structure diff), signature-safe **metadata** edits, **merge / split / extract** pages, **annotate**, **govern** (AI-governance / HITL gate), declarative **batch `--manifest`** pipelines, and emit JSON Schemas from the shell. Pins pdfnative `^1.7.0`: 27 scripts + COLRv1 emoji, `--font math`, charts v2, print production, `render --strict` PDF/A gating, and an agent-native `--json`/`E_*`/`--dry-run`/`--summary` contract. Node ≥ 22. |
 | [`pdfnative-mcp`](https://www.npmjs.com/package/pdfnative-mcp) | **v1.6.0** | Use pdfnative from Claude Desktop, Cursor, Continue, Zed (or any MCP client, stdio or HTTP) — **28 production tools** spanning the engine's full document model: all 13 block kinds in `generate_basic_pdf`, layout options, build-time `encrypt` that keeps the AcroForm, image watermarks, print production (page boxes, bleed, marks, `/UserUnit`, OutputIntent), charts v2 (stacked / area / scatter, dual axis, log & time scales), the complete PAdES ladder B-B → B-LTA (`sign_pdf` with RFC 3161 timestamps, `add_ltv`, `timestamp_pdf`, `verify_pdf ltv: true`), `update_metadata`, the read-only `inspect_layout` pagination preview, honest PDF/A (`embedFonts` / `strict` / diagnostics), six MCP prompts, token-frugal read modes (`verbosity` / `fields`), the network-free `draft_governance_issue` (AI-governance / HITL), and the MCP **2026-07-28** spec with automatic legacy fallback. No outbound request by default — the only permitted egress is operator-configured TSA / OCSP / CRL. Pins pdfnative `^1.7.0`. |
 | [`pdfnative-react`](https://www.npmjs.com/package/pdfnative-react) | **v1.2.0** | Write PDFs as declarative JSX — `<Document>`, `<Page>`, `<Table>`, `<Barcode>`, `<Svg>`, `<FormField>`… compiled on-device to pdfnative blocks by a custom React 19 reconciler. Charts v2 (9 kinds, dual axes, log/time scales), print production (`<Document print>`), the PDF/A diagnostics channel (`layout.strict` / `onDiagnostic`), HTTP caching on `renderToResponse` (`etag` / `cacheControl`), 25 lint rules, client hooks & components (`usePdf`, `PDFViewer`, `PDFDownloadLink`), and a versioned `DocSpec` grammar (`docSpecSchema()`) for AI agents. Peer: pdfnative ^1.7.0, React ^19.0.0, Node ≥22. (A 1.6 engine would throw mid-render on the charts-v2 fields.) |
 
@@ -40,15 +40,18 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 
 - **Zero dependencies** — built from scratch in pure TypeScript. Zero runtime dependencies, tree-shakeable, auditable
 - **Conforms to ISO 32000-1** — valid xref tables, /Info metadata, proper font embedding
-- **22 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Telugu, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
-- **Thai OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
+- **27 Unicode scripts** — Thai, Japanese, Chinese (SC), Korean, Greek, Devanagari, Telugu, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Lao, Tai Tham (Lanna), New Tai Lue, Tai Le, Cham, Ethiopic
+- **Universal Shaping Engine** — cluster categories derived from the Unicode Character Database, driving Tai Tham and Cham
+- **Thai and Lao OpenType shaping** — GSUB substitution + GPOS mark-to-base + mark-to-mark positioning
 - **Arabic positional shaping** — GSUB isolated/initial/medial/final forms + lam-alef ligatures
 - **BiDi text layout** — Unicode Bidirectional Algorithm (UAX #9) with isolates (LRI/RLI/FSI/PDI) and explicit embeddings (LRE/RLE/LRO/RLO/PDF) including character-level X4–X5 overrides (v1.3.0). **v1.7.0** implements I1/I2 even embedding levels so digit runs (European, Arabic-Indic, Extended Arabic-Indic) keep logical order in RTL text, and full rule-L4 glyph mirroring through the complete 428-pair `BidiMirroring.txt` table
-- **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` drive joiner classification across the Devanagari, Bengali, and Tamil shapers, fixing nukta+virama, half-form, eyelash-ra, and ya-phalaa edge cases (v1.3.0)
-- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.5 MB with the v1.7.0 sequence ligatures, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). [Guide →](docs/guides/colour-emoji.md)
+- **Indic OpenType engine** (v1.8.0) — Devanagari, Bengali, Tamil, Telugu and Sinhala share one engine that applies the font's own GSUB features per syllable in specification order (`rphf`, `half`, `blwf`, `pstf`, `vatu`, `cjct`, `pres` … `haln`, contextual lookups included) and attaches every vowel sign to the anchor its font declares: reph over the consonant after the base, half forms, subjoined consonants, pre-base matras in front. Fed by the `otl` layout tables every font module now carries; the words of a rendering report on the Hindi, Tamil and Telugu samples are golden tests on the bundled fonts
+- **Latin combining marks** (v1.8.0) — free-standing marks (Yoruba ẹ́ ọ̀, Igbo ị́, NFD accents, Greek and Cyrillic diacritics) compose through the font's `ccmp` and GPOS anchors; Hausa, Yoruba, Igbo and Swahili render on the bundled `latin` module with no new font
+- **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` classify joiners for the Indic engine and the Khmer, Myanmar and Tibetan shapers (v1.3.0)
+- **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.5 MB with the v1.7.0 sequence ligatures, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). **Skin tones, transforms and masks** (v1.8.0): 30 gestures and people bundled in all five tones (1189 glyphs + 223 sequences, ~4.9 MB); every COLRv1 transform and variable paint is read, and `SRC_IN`/`DEST_IN` masks render as clipping paths, so flags keep their shaded wave. [Guide →](docs/guides/colour-emoji.md)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
 - **TTF subsetting** — only used glyphs embedded (dramatic file size reduction)
-- **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments). **Conformance guards** (v1.7.0): configurations that would break the declared PDF/A level (no embedded fonts, DeviceCMYK images) surface a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`. [Guide →](docs/guides/pdfa.md)
+- **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments). **Conformance guards** (v1.7.0): configurations that would break the declared PDF/A level (no embedded fonts, DeviceCMYK images) surface a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`. **CMYK intents** (v1.8.0): CMYK and Gray OutputIntent profiles, with RGB content kept conforming through a calibrated `/DefaultRGB`. [Guide →](docs/guides/pdfa.md)
 - **PDF Encryption (round-trip)** — **write** AES-128 (V4/R4) and AES-256 (V5/R6) encrypted PDFs (RC4 is never emitted), and **read** all of AES-128, AES-256, and legacy RC4 (V1–V4); owner + user passwords, granular permissions. **v1.6.0** adds a Standard Security Handler **decryptor** — `openPdf(bytes, { password })` decrypts transparently, the merge/split API ingests encrypted sources **and re-encrypts its output** (`MergeOptions.encrypt`, AES only, fresh keys) — closing the full *open → edit → re-secure* round trip. [Guide →](docs/guides/pdf-manipulation.md)
 - **Native vector charts** (v1.6.0, **charts v2 in v1.7.0**) — bar, horizontal-bar, line, pie, donut, **stacked bars, area, and scatter** `chart` blocks rendered as pure PDF path operators (zero deps, no rasterisation); multi-series, legends, "nice" axis ticks, negative values, tagged `/Figure` + alt text. v1.7.0 adds a **secondary right axis**, **log and UTC-deterministic time scales**, **per-point data labels**, and x-label collision handling (automatic stride + `labelStride` / `labelRotation`). [Guide →](docs/guides/charts.md)
 - **Text extraction** (v1.6.0) — `extractText()` decodes page content streams into per-page reading-order Unicode text plus optional positioned runs; `/ToUnicode` CMap, `/Encoding /Differences`, and WinAnsi/MacRoman decoding; works on encrypted documents (`{ password }`); hard `maxTextLength` memory cap for untrusted input. [Guide →](docs/guides/text-extraction.md)
@@ -58,13 +61,14 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **SVG rendering** — path, rect, circle, ellipse, line, polyline, polygon as native PDF operators, plus `<text>` elements rendered as upright PDF text with `x`/`y` positioning and `text-anchor` (start/middle/end) support (v1.5.0)
 - **AcroForm fields** — text, multiline, checkbox, radio, dropdown, listbox with appearance streams (ISO 32000-1 §12.7). **v1.6.0** adds **fill & flatten of existing forms**: `readFormFields()`, `fillForm()` (regenerates appearances), and `flattenForm()` — non-destructive incremental update that preserves prior signatures, **including on encrypted documents** (appended objects are encrypted under the document's existing scheme). [Guide →](docs/guides/form-filling.md)
 - **Digital signatures** — CMS/PKCS#7 detached signatures with RSA (SHA-256/384/512, v1.7.0) + ECDSA-SHA256 (P-256) and X.509 parsing (ISO 32000-1 §12.8). One-call placeholder injection via `addSignaturePlaceholder()` (v1.2.0). Pluggable **native crypto provider** (`setCryptoProvider()` / `PdfSignOptions.provider`, v1.4.0) for constant-time, hardware-backed signing (`node:crypto` / Web Crypto / HSM). **v1.7.0**: PAdES baseline profile (`profile: 'pades'` — ESS signing-certificate-v2, `ETSI.CAdES.detached`), **multiple signatures** (`allowMultiple` + `fieldName` selector), and `listSignatures()` inspection. [Guide →](docs/guides/signatures.md)
-- **Print production** (v1.7.0) — bleed/trim/art/crop **page boxes** (`layout.print`, with a one-line `bleed` shorthand), **crop & registration marks** drawn as pure vector operators outside the TrimBox, `/Trapped` metadata with XMP parity, print-dialog defaults (**duplex**, tray pick, page range, copies), caller-supplied **OutputIntent ICC profile** (tagged mode), and large-format `/UserUnit` (banners, plans). Boxes survive `mergePdfs`/`splitPdf`. Byte-identical output when unused. [Guide →](docs/guides/print.md)
+- **Print production** (v1.7.0) — bleed/trim/art/crop **page boxes** (`layout.print`, with a one-line `bleed` shorthand), **crop & registration marks** drawn as pure vector operators outside the TrimBox, `/Trapped` metadata with XMP parity, print-dialog defaults (**duplex**, tray pick, page range, copies), caller-supplied **OutputIntent ICC profile** (tagged mode), and large-format `/UserUnit` (banners, plans). Boxes survive `mergePdfs`/`splitPdf`. Byte-identical output when unused. **CMYK & PDF/X-4** (v1.8.0): CMYK colours on every colour option (`[c, m, y, k]` in percent), CMYK and Gray OutputIntents with RGB content kept conforming, marks in the all-separation registration colour and clear of both the trim line and the sheet edge, opt-in **colour control bars** (`marks: { colourBars: true }`), marks tagged as a `/Page` artifact in accessible output, a `pdfx: 'pdfx4'` conformance claim, and `validatePdfX()` to check it. [Guide →](docs/guides/print.md)
+- **Typography** (v1.8.0) — paragraphs that break across pages under **widow and orphan** rules, headings **kept with** what they introduce (with a `minLines` quota), opt-in **short-word binding** so a line never ends on "a" or "I", `align: 'justify'` written as one `TJ` array per line (spaces preserved for search and extraction), **optical margin** alignment, soft hyphens plus a `setHyphenationProvider()` seam with a document language, ISO 80000-1 **number–unit binding**, French and Canadian-French **punctuation spacing** (narrow no-break spaces rendered with a registered font), exact Adobe Core 14 **metrics**, GPOS pair **kerning** and OpenType single-substitution **features** (`onum`, `pnum`, `smcp`, …) with a diagnostic when a tag changes nothing. All opt-in under `layout.typography`; byte-identical when unset. [Guide →](docs/guides/typography.md)
 - **Long-term validation (LTV, PAdES B-B → B-LTA)** (v1.7.0) — RFC 3161 **signature timestamps** (`signPdfBytesWithTimestamp()`), embedded revocation material in `/DSS` + per-signature `/VRI` (`addValidationInfo()` — OCSP RFC 6960 + CRL RFC 5280), and **document timestamps** (`addDocumentTimestamp()`). Network transport is injected (`TimestampProvider` / `RevocationProvider`) — the engine stays offline and zero-dependency; rejected or tampered TSA tokens are never embedded. [Guide →](docs/guides/ltv.md)
 - **Streaming output** — AsyncGenerator-based progressive PDF emission with configurable chunk size, object-boundary page-by-page streaming, and **true constant-memory streaming** (`buildDocumentPDFStreamTrue()`, v1.3.0) where the full PDF binary never materialises. One-call `streamToFile()` drains any stream to disk with back-pressure and `AbortSignal` support (v1.4.0). [Guide →](docs/guides/streaming.md)
 - **Document outline & page labels** — nested bookmarks (`/Outlines` tree, with bold/italic/colour, collapsible nodes via `open: false`, explicit or `outline: 'auto'` from headings) and logical page numbering (`/PageLabels`: decimal, roman, alpha, prefixes, custom start) (v1.4.0). [Guide →](docs/guides/outlines.md)
 - **Viewer preferences** — `PdfLayoutOptions.viewerPreferences` controls initial `/PageLayout` & `/PageMode` plus the `/ViewerPreferences` dict (hide toolbar/menubar, fit/center window, display doc title, non-full-screen mode, reading direction, print scaling) — PDF/A-safe (v1.4.0). **v1.7.0** adds the print-dialog defaults: `duplex`, `pickTrayByPDFSize`, `printPageRange`, `numCopies`. [Guide →](docs/guides/viewer-preferences.md)
 - **Font-data validator** — opt-in `validateFontData()` structurally checks custom font modules (SFNT magic, base64 integrity, cmap coverage, glyph-id range, width array, finite metrics) and returns `{ valid, errors, warnings }` (v1.4.0). [Guide →](docs/guides/font-validation.md)
-- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0). **Page-tree manipulation** (v1.4.0): `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a clean object graph (inherited attributes resolved, annotations/signatures optionally dropped, deterministic trailer `/ID`, bounded-depth copy, 256 MiB output cap via `maxOutputSize`). **Round-trip readers** (v1.5.0): `getPageLabels()` parses `/PageLabels` back into a typed `PageLabelRange[]`; `getAnnotations()` / `getPageRef()` read page annotations, and `PdfModifier.addAnnotation()` injects new ones incrementally. **v1.6.0**: a Standard Security Handler **decryptor** (`openPdf(bytes, { password })`, RC4/AES-128/AES-256) lets the reader and page-tree API ingest encrypted sources, and **constant-memory streaming** variants `streamMergedPdfs()` / `streamSplitPdf()` / `streamExtractPages()` emit merges/splits in fixed-size chunks (byte-identical to the buffered functions). [Guide →](docs/guides/pdf-manipulation.md)
+- **PDF parser & modifier** — read existing PDFs (tokenizer, xref, object parser, FlateDecode inflate) + incremental modification. Read-only PDF/UA structural checker `validatePdfUA()` (ISO 14289-1: MarkInfo, StructTree, ParentTree, Lang, per-page MCID uniqueness) (v1.3.0), and its PDF/X-4 counterpart `validatePdfX()` (ISO 15930-7: header, XMP identification, OutputIntent profile, page boxes, embedded fonts, annotations, device colour) (v1.8.0). **Page-tree manipulation** (v1.4.0): `mergePdfs()`, `splitPdf()`, `extractPages()` rebuild a clean object graph (inherited attributes resolved, annotations/signatures optionally dropped, deterministic trailer `/ID`, bounded-depth copy, 256 MiB output cap via `maxOutputSize`). **Round-trip readers** (v1.5.0): `getPageLabels()` parses `/PageLabels` back into a typed `PageLabelRange[]`; `getAnnotations()` / `getPageRef()` read page annotations, and `PdfModifier.addAnnotation()` injects new ones incrementally. **v1.6.0**: a Standard Security Handler **decryptor** (`openPdf(bytes, { password })`, RC4/AES-128/AES-256) lets the reader and page-tree API ingest encrypted sources, and **constant-memory streaming** variants `streamMergedPdfs()` / `streamSplitPdf()` / `streamExtractPages()` emit merges/splits in fixed-size chunks (byte-identical to the buffered functions). [Guide →](docs/guides/pdf-manipulation.md)
 - **Markup annotations** — typed annotation model (text, highlight, underline, strikeout, squiggly, square, circle, line, freetext) via `buildAnnotation()` / `buildAnnotationBody()`, plus `PdfReader.getAnnotations()` and `PdfModifier.addAnnotation()` for round-trip read/write (v1.5.0); **v1.6.0** lets `addAnnotation()` operate on encrypted documents (RC4/AES sources, annotations stored encrypted). [Guide →](docs/guides/annotations.md)
 - **Layout debug & inspection** — opt-in `layout: { debug: true }` overlays margin / content / cell boxes for visual layout debugging; `inspectDocumentLayout()` returns a programmatic per-page block-geometry report. Byte-identical when debug is off (v1.5.0). [Guide →](docs/guides/debugging.md)
 - **Math & technical symbols** — bundleable math font under lang `'math'`; mathematical operators, Greek, arrows, and technical symbols route automatically via script detection (v1.5.0)
@@ -77,7 +81,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 2691+ tests across 123 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 95.41% statement coverage measured at the v1.6.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 3824+ tests across 160 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -99,11 +103,13 @@ npm install pdfnative
 - 📘 **Quick Start:** [docs/guides/quickstart.md](docs/guides/quickstart.md) — Node.js, browser, Web Worker, streaming.
 - 🏛️ **Architecture:** [docs/guides/architecture.md](docs/guides/architecture.md) — modules, builders, generation pipeline.
 - ♿ **Accessibility:** [docs/guides/accessibility.md](docs/guides/accessibility.md) — tagged PDF, PDF/UA, PDF/A.
+- ✍️ **Typography:** [docs/guides/typography.md](docs/guides/typography.md) — page breaking under widow and orphan rules, justification, hyphenation, spacing rules, kerning, OpenType features (v1.8.0).
+- 🖨️ **Print production:** [docs/guides/print.md](docs/guides/print.md) — page boxes, printer's marks and colour bars, CMYK colours and OutputIntents, PDF/X-4 and `validatePdfX()`.
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
-- 🎮 **Playgrounds:** ten interactive demos at [docs/playgrounds/](docs/playgrounds/) — [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 242 sample PDFs across 37 categories (48 generators) (see [Sample PDFs](#sample-pdfs) below).
+- 🎮 **Playgrounds:** twelve interactive demos at [docs/playgrounds/](docs/playgrounds/) — [typography](docs/playgrounds/typography.html) (each typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 292 sample PDFs across 38 categories (49 generators) (see [Sample PDFs](#sample-pdfs) below).
 - 🎓 **Learn:** [docs/learn/](docs/learn/) — an eight-step guided path from installing the package to generating 100,000 pages, live at [pdfnative.dev/learn/](https://pdfnative.dev/learn/).
 - 🤖 **Machine-readable:** [llms.txt](llms.txt) (doc index for LLMs), [AGENTS.md](AGENTS.md) (agent guidance), and [docs/assets/ecosystem.json](docs/assets/ecosystem.json) — the canonical manifest of ecosystem versions and counts, enforced by `npm run verify:docs`.
 
@@ -118,7 +124,7 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | PDF/A (ISO 19005) | 1b, 2b, 2u, 3b | — | — | — | — |
 | Tagged PDF / PDF/UA | ✅ | — | ✅ | — | — |
 | Encryption (read + write) | AES-128/256 + RC4 read | write (RC4) | write | — | write |
-| Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic, Devanagari, Bengali, Tamil | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
+| Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Khmer, Myanmar, Tibetan, Lao, USE, Latin marks | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
 | BiDi (RTL) layout | ✅ | — | — | — | — |
 | Modify existing PDFs | ✅ (incremental) | — | — | ✅ | — |
 | Forms (create + fill + flatten) | ✅ all three | create | create | create + fill | — |
@@ -230,7 +236,9 @@ registerFonts({
   my: () => import('pdfnative/fonts/noto-myanmar-data.js'), // v1.3.0
   am: () => import('pdfnative/fonts/noto-ethiopic-data.js'), // v1.3.0
   // v1.1.0+ — optional Latin fallback for PDF/A documents with curly quotes,
-  // em-dash, ellipsis, etc. (activates automatically when needed):
+  // em-dash, ellipsis, etc. (activates automatically when needed). Since
+  // v1.8.0 it also carries Hausa ɓ ɗ ƙ ƴ, Yoruba and Igbo tone marks (ẹ́ ọ̀ ị́)
+  // and Swahili — no separate module or lang key for those languages:
   latin: () => import('pdfnative/fonts/noto-sans-data.js'),
   // v1.1.0+ — optional monochrome emoji:
   emoji: () => import('pdfnative/fonts/noto-emoji-data.js'),
@@ -254,7 +262,7 @@ const pdf = buildPDFBytes({
 | Chinese (Simplified) | `zh` | Noto Sans SC | CJK ideographs |
 | Korean | `ko` | Noto Sans KR | Hangul syllables |
 | Greek | `el` | Noto Sans Greek | Greek alphabet |
-| Hindi (Devanagari) | `hi` | Noto Sans Devanagari | GSUB conjuncts + GPOS marks |
+| Hindi (Devanagari) | `hi` | Noto Sans Devanagari | Indic OpenType engine — conjuncts, reph, half forms, matras (v1.8.0) |
 | Turkish | `tr` | Noto Sans Turkish | Latin extended (İ/ı) |
 | Vietnamese | `vi` | Noto Sans Vietnamese | Latin + combining marks |
 | Polish | `pl` | Noto Sans Polish | Latin extended (Ł/ł) |
@@ -263,8 +271,14 @@ const pdf = buildPDFBytes({
 | Russian (Cyrillic) | `ru` | Noto Sans | Cyrillic alphabet |
 | Georgian | `ka` | Noto Sans Georgian | Mkhedruli script |
 | Armenian | `hy` | Noto Sans Armenian | Armenian alphabet |
-| Bengali | `bn` | Noto Sans Bengali | GSUB conjuncts + GPOS marks |
-| Tamil | `ta` | Noto Sans Tamil | GSUB ligatures + split vowels |
+| Bengali | `bn` | Noto Sans Bengali | Indic OpenType engine — conjuncts, reph, ya-phala, split vowels (v1.8.0) |
+| Tamil | `ta` | Noto Sans Tamil | Indic OpenType engine — ligatures, pre-base and split vowels (v1.8.0) |
+| Telugu | `te` | Noto Sans Telugu | Indic OpenType engine — subjoined consonants, vattu (v1.3.0; engine v1.8.0) |
+| Sinhala | `si` | Noto Sans Sinhala | Indic OpenType engine — kombuva, rakaransaya, two-part vowels (v1.3.0; engine v1.8.0) |
+| Hausa | `latin` | Noto Sans VF | Latin with ɓ ɗ ƙ ƴ ʼ — no dedicated module (v1.8.0) |
+| Yoruba | `latin` | Noto Sans VF | Latin with ẹ ọ ṣ and combining tone marks, composed by the Latin-marks shaper (v1.8.0) |
+| Igbo | `latin` | Noto Sans VF | Latin with ị ọ ụ ṅ and combining tone marks (v1.8.0) |
+| Swahili | `latin` | Noto Sans VF | Plain Latin — renders with the base-14 fonts too (v1.8.0) |
 | Latin (PDF/A) | `latin` | Noto Sans VF | WinAnsi-extended Latin (curly quotes, em-dash, ellipsis…) |
 | Emoji | `emoji` | Noto Emoji | Monochrome emoji (BMP/SMP, Fitzpatrick, ZWJ, VS-15/16) |
 
@@ -347,13 +361,15 @@ const pdf = buildPDFBytes(params, {
 
 ### Color Formats
 
-All color values accept three formats:
+All color values accept five formats — three RGB, two CMYK (v1.8.0):
 
 | Format | Example | Description |
 |--------|---------|-------------|
 | Hex string | `'#2563EB'` or `'#26E'` | Primary format — `#RRGGBB` or `#RGB` |
 | RGB tuple | `[37, 99, 235]` | Array with values 0–255 |
 | PDF operator | `'0.145 0.388 0.922'` | Raw PDF RGB string (0.0–1.0) |
+| CMYK tuple | `[100, 60, 0, 10]` | Four-element array, ink coverage in percent 0–100 (v1.8.0) |
+| CMYK operand | `'1 0.6 0 0.1'` | Raw PDF CMYK string (0.0–1.0) (v1.8.0) |
 
 ```typescript
 import { parseColor } from 'pdfnative';
@@ -361,9 +377,10 @@ import { parseColor } from 'pdfnative';
 parseColor('#2563EB');           // '0.145 0.388 0.922'
 parseColor([37, 99, 235]);       // '0.145 0.388 0.922'
 parseColor('0.145 0.388 0.922'); // '0.145 0.388 0.922'
+parseColor([0, 0, 0, 100]);      // '0 0 0 1'  (CMYK, v1.8.0)
 ```
 
-All inputs are validated and normalized before interpolation into PDF content streams, preventing operator injection.
+The component count decides the colour space: three components write `rg` / `RG`, four write `k` / `K`. All inputs are validated and normalized before interpolation into PDF content streams, preventing operator injection. Under a PDF/A or PDF/X claim whose OutputIntent is not CMYK, a CMYK colour raises `PDFA_DEVICE_CMYK_CONTENT` / `PDFX_DEVICE_CMYK` — see the [print guide](docs/guides/print.md#cmyk-colours-v180).
 
 ### Font Sizes
 
@@ -483,7 +500,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **242 sample PDFs** in `test-output/` (git-ignored), organized in 37 categories produced by 48 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
+This creates **292 sample PDFs** in `test-output/` (git-ignored), organized in 38 categories produced by 49 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -507,7 +524,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `sample-hy.pdf` | Armenian |
 | `sample-bn.pdf` | Bengali (GSUB conjuncts + GPOS marks) |
 | `sample-ta.pdf` | Tamil (GSUB + split vowel decomposition) |
-| `sample-multi.pdf` | Mixed: all 22 scripts in one PDF |
+| `sample-multi.pdf` | Mixed: all 27 scripts in one PDF |
 | `sample-pagination.pdf` | 200 rows, multi-page layout |
 
 ### Diverse Use Cases (non-financial)
@@ -547,6 +564,10 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `alphabet-armenian.pdf` | 38 letters, ligatures |
 | `alphabet-bengali.pdf` | Vowels, consonants, conjuncts, digits |
 | `alphabet-tamil.pdf` | Vowels, consonants, compound characters, digits |
+| `alphabet-hausa.pdf` | Boko alphabet, hooked letters ɓ ɗ ƙ ƴ, digraphs, ʼy (v1.8.0) |
+| `alphabet-yoruba.pdf` | ẹ ọ ṣ, tone marks on ẹ / ọ, syllabic ń ǹ (v1.8.0) |
+| `alphabet-igbo.pdf` | ị ọ ụ ṅ, tone marks, digraphs (v1.8.0) |
+| `alphabet-swahili.pdf` | Plain Latin — proof that no module is required (v1.8.0) |
 
 ### PDF/A Conformance Variants
 
@@ -596,20 +617,37 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-image.pdf` | Image embedding (JPEG, centered) |
 | `doc-custom-colors.pdf` | Color formats (hex, tuple, PDF operator) |
 | `doc-japanese.pdf` | Japanese Unicode document (headings, lists, table) |
-| `doc-arabic.pdf` | Arabic RTL document (headings, lists, table, BiDi) |
-| `doc-hebrew.pdf` | Hebrew RTL document (headings, lists, table, BiDi) |
-| `doc-thai.pdf` | Thai user manual (GSUB+GPOS shaping, pricing table) |
-| `doc-bengali.pdf` | Bengali document (GSUB conjuncts + GPOS marks) |
-| `doc-tamil.pdf` | Tamil document (GSUB substitution + split vowels) |
-| `doc-devanagari.pdf` | Hindi (Devanagari) document — GSUB conjuncts, reph reordering, matra reordering, split vowels |
-| `doc-telugu.pdf` | Telugu document (virama conjuncts + GPOS marks, no reph) |
-| `doc-sinhala.pdf` | Sinhala document (virama conjuncts + pre-base kombuva reordering) |
-| `doc-tibetan.pdf` | Tibetan document (vertical subjoined-consonant stacking) |
-| `doc-khmer.pdf` | Khmer document (USE-lite: coeng subscripts, pre-base vowels) |
-| `doc-myanmar.pdf` | Myanmar document (USE-lite: medials, pre-base reordering) |
-| `doc-amharic.pdf` | Amharic/Ethiopic document (syllabic abugida, no reordering) |
+| `doc-arabic.pdf` | Arabic one-page conformance document — stacked harakat, lam-alef, Persian/Urdu letters in mixed BiDi, Arabic-Indic digits (rewritten v1.8.0) |
+| `doc-hebrew.pdf` | Hebrew one-page conformance document — niqqud, dagesh, shin/sin dots, mixed LTR (rewritten v1.8.0) |
+| `doc-thai.pdf` | Thai one-page conformance document — tone marks over vowels, sara am, stacked marks (rewritten v1.8.0) |
+| `doc-bengali.pdf` | Bengali one-page conformance document — reph, ya-phala, ra-phala, ক্ষ জ্ঞ, split vowels ো ৌ, chandrabindu (rewritten v1.8.0) |
+| `doc-tamil.pdf` | Tamil one-page conformance document — ி after its consonant, ெ ே ை before, split ொ ோ ௌ, pulli, ரூ ஸ்ரீ ligatures (rewritten v1.8.0) |
+| `doc-devanagari.pdf` | Hindi one-page conformance document — ि reordering, reph, rakar, half forms, क्ष ज्ञ त्र, nukta, anusvara, digits (rewritten v1.8.0) |
+| `doc-telugu.pdf` | Telugu one-page conformance document — subjoined consonants, vattu, ై, anusvara, digits (rewritten v1.8.0) |
+| `doc-sinhala.pdf` | Sinhala one-page conformance document — kombuva, rakaransaya ශ්‍රී, yansaya, two-part vowels, hal kirima (rewritten v1.8.0) |
+| `doc-tibetan.pdf` | Tibetan one-page conformance document — consonant stacks, vowel signs, tsheg and shad (rewritten v1.8.0) |
+| `doc-khmer.pdf` | Khmer one-page conformance document — coeng subscripts, pre-base vowels, series (rewritten v1.8.0) |
+| `doc-myanmar.pdf` | Myanmar one-page conformance document — kinzi, medials, stacked consonants (rewritten v1.8.0) |
+| `doc-amharic.pdf` | Amharic one-page conformance document — syllabary orders, ። ፣ punctuation, Ethiopic digits (rewritten v1.8.0) |
+| `doc-hausa.pdf` | Hausa one-page conformance document — ɓ ɗ ƙ ƴ, capitals Ɓ Ɗ Ƙ Ƴ, ʼy, digraphs, on the `latin` module (v1.8.0) |
+| `doc-yoruba.pdf` | Yoruba one-page conformance document — ẹ ọ ṣ, acute and grave tone marks on ẹ / ọ, syllabic ń ǹ (v1.8.0) |
+| `doc-igbo.pdf` | Igbo one-page conformance document — ị ọ ụ ṅ with tone marks, digraphs (v1.8.0) |
+| `doc-swahili.pdf` | Swahili one-page conformance document — plain Latin, numbers and dates (v1.8.0) |
+| `doc-lao.pdf` | Lao one-page conformance document — leading vowels, tone marks over vowels, tall and descender variants, sara am, ຫຼ ໜ ໝ ligatures (v1.8.0) |
+| `doc-taitham.pdf` | Northern Thai (Tai Tham) one-page conformance document — sakot stacks, pre-base vowels, medials, tone marks, Hora digits (v1.8.0) |
+| `doc-newtailue.pdf` | Tai Lue (New Tai Lue) one-page conformance document — spacing vowels before and after, combining finals, tone letters (v1.8.0) |
+| `doc-taile.pdf` | Tai Nüa (Tai Le) one-page conformance document — spacing vowels, tone letters, finals (v1.8.0) |
+| `doc-cham.pdf` | Cham one-page conformance document — pre-base vowels, medials, finals, Cham digits (v1.8.0) |
+| `doc-korean.pdf` | Korean one-page conformance document — precomposed syllables, complex batchim, compatibility jamo, Hanja, character-level wrapping (v1.8.0) |
+| `doc-greek.pdf` | Greek one-page conformance document — tonos, dialytika, final sigma, polytonic, Greek punctuation (v1.8.0) |
+| `doc-cyrillic.pdf` | Russian one-page conformance document — ё й щ, stress marks (U+0301), Ukrainian and Serbian letters, guillemets (v1.8.0) |
+| `doc-georgian.pdf` | Georgian one-page conformance document — Mkhedruli, Mtavruli, Asomtavruli, Nuskhuri, consonant clusters (v1.8.0) |
+| `doc-armenian.pdf` | Armenian one-page conformance document — both cases, և ligature, Armenian punctuation, dram sign (v1.8.0) |
+| `doc-turkish.pdf` | Turkish one-page conformance document — İ ı, ğ ş ç ö ü, circumflex, capitalisation, lira sign (v1.8.0) |
+| `doc-vietnamese.pdf` | Vietnamese one-page conformance document — six tones, stacked diacritics, ơ ư đ, capitals with tones, dong sign (v1.8.0) |
+| `doc-polish.pdf` | Polish one-page conformance document — ogonek, kreska, ł ż, digraphs, pangram, low-high quotes (v1.8.0) |
 | `doc-chinese-catalog.pdf` | Chinese product catalog (tables, ordering info) |
-| `doc-multi-language.pdf` | Multi-language showcase: all 22 Unicode scripts in one PDF |
+| `doc-multi-language.pdf` | Multi-language showcase: all 27 Unicode scripts in one PDF |
 | `doc-invoice.pdf` | Invoice template (line items, totals, payment link) |
 | `doc-report-multipage.pdf` | 3-page technical report (7 sections, 4 tables) |
 | `doc-contract-bilingual.pdf` | Bilingual EN/AR contract (legal sections, signatures) |
@@ -937,27 +975,70 @@ const pdf = buildPDFBytes(params, {
 
 | Function | Description |
 |----------|-------------|
-| `parseColor(input)` | Parse hex / tuple / PDF string → validated PDF RGB string |
+| `parseColor(input)` | Parse hex / RGB tuple / CMYK tuple / PDF string → validated PDF RGB **or CMYK** operand string (CMYK inputs since v1.8.0) |
+| `resolveColor(input)` | Resolve any `PdfColor` to a `ResolvedColor` — `{ space: 'rgb' \| 'cmyk', operands }` (v1.8.0) |
+| `fillOp(input)` / `strokeOp(input)` | Complete fill (`rg` / `k`) or stroke (`RG` / `K`) operator for any `PdfColor`, space chosen by component count (v1.8.0) |
 | `isValidPdfRgb(str)` | Check if string is valid `"R G B"` format (0.0–1.0) |
 | `normalizeColors(colors)` | Validate and normalize all fields in a PdfColors object |
+
+Types (v1.8.0): `PdfCmykTuple` (`readonly [c, m, y, k]`, percent), `PdfCmykString` (`'c m y k'`, 0.0–1.0), `PdfColorSpace` (`'rgb' | 'cmyk'`), `ResolvedColor`. `PdfColor` is the union of every accepted form.
+
+### Typography (v1.8.0)
+
+Everything is opt-in under `layout.typography` (`TypographyOptions`) and byte-identical when absent. The helpers below are the same transforms the builder applies, exposed for text you lay out yourself.
+
+| Function | Description |
+|----------|-------------|
+| `bindUnits(text, units?)` | Bind a number to the unit symbol that follows it with a no-break space (ISO 80000-1); `units` defaults to `DEFAULT_UNITS` |
+| `bindShortWords(text, opts?)` | Bind one-letter words — or `{ maxLength, words }` — to the word that follows with a no-break space (house style, opt-in) |
+| `applyPunctuationSpacing(text, rules)` | Turn the plain spaces around punctuation into no-break or narrow no-break spaces per `PunctuationSpacingRule[]` |
+| `DEFAULT_UNITS` | Built-in unit-symbol list used by `bindUnits()` and `unitBinding: true` |
+| `PUNCTUATION_SPACING_PRESETS` | The `'fr'` and `'fr-CA'` rule sets, keyed by `PunctuationSpacingPreset` |
+| `setHyphenationProvider(fn)` / `getHyphenationProvider()` | Install (or clear with `null`) the process-wide `HyphenationProvider` — `(word, lang?) => readonly number[]` break indices, `lang` being `typography.hyphenationLanguage`; the library bundles no dictionary |
+
+Types (block-level `keepWithNext` on headings and paragraphs, and `splittable` on paragraphs, override the document setting): `TypographyOptions` (`splitParagraphs`, `orphans`, `widows`, `keepHeadingsWithNext` — `true` or `{ minLines }`, `bindShortWords`, `unitBinding`, `punctuationSpacing`, `opticalMargins`, `metrics`, `fontFeatures`, `kerning`, `hyphenationLanguage`), `HyphenationProvider`, `UnitBindingOptions` (`{ units }`), `PunctuationSpacingRule` (`{ char, side, space }`), `PunctuationSpacingPreset` (`'fr' | 'fr-CA'`), `Base14Metrics` (`'approximate' | 'exact'`). A `fontFeatures` tag that changes nothing raises the `TYPOGRAPHY_FEATURE_INEFFECTIVE` diagnostic. [Guide →](docs/guides/typography.md)
+
+### Print & PDF/X (v1.8.0)
+
+| Function | Description |
+|----------|-------------|
+| `validatePdfX(bytes)` | Read-only PDF/X-4 structural checker (ISO 15930-7) — header, XMP identification, OutputIntent profile, page boxes, embedded fonts, annotations, actions, `LZWDecode`, transfer functions, device colour; returns `PdfXValidationResult` `{ valid, errors, warnings }`. Not a certified preflight |
+| `PDF_X_CONFORMANCE_TARGETS` | `['pdfx4']` — the accepted `layout.pdfx` values, the single source of truth for downstream tooling; `PdfXConformanceTarget` is its element type |
+
+Types: `PrintOptions` (`layout.print`: `bleed`, `trimBox`, `bleedBox`, `artBox`, `cropBox`, `marks`, `userUnit`), `PrinterMarksOptions` (`crop`, `registration`, `length`, `offset`, `weight`, `colourBars`), `ColourBarOptions` (`tints`, `size`), `CustomOutputIntent` (`iccProfile`, `outputConditionIdentifier`, `registryName`, `outputCondition`, `info` — RGB, CMYK or Gray), `PdfXConformanceTarget`, `PdfXValidationResult`. The build-time coherence errors a PDF/X claim can throw are listed verbatim in [docs/data/errors.json](docs/data/errors.json) (`buildErrors`). [Guide →](docs/guides/print.md)
+
+### Reproducible builds (v1.8.0)
+
+| Function | Description |
+|----------|-------------|
+| `setDefaultCreationDate(date)` | Pin the instant every subsequent build is stamped with when `layout.creationDate` is absent (`null` restores the wall clock) — fixes `/CreationDate`, `/ModDate`, the XMP dates and therefore the trailer `/ID`, so unencrypted output becomes a pure function of its inputs |
+| `getDefaultCreationDate()` | The pinned date, or `null` |
+
+**Reproducible bytes.** Precedence is `layout.creationDate`, then the pinned default, then `new Date()`. Every date is written in UTC with an explicit `+00'00'` offset (v1.8.0), so a pinned instant yields identical bytes on any host without a `TZ` pin. Encryption keys and IVs stay random by design; `PdfSignOptions.signingTime` and the modifier's modification dates keep their own options. `npm run verify:samples` is the byte-regression pattern a consumer can copy.
 
 ### Compression
 
 | Function | Description |
 |----------|-------------|
 | `initNodeCompression()` | Initialize native zlib (async, call once in ESM before `compress: true`) |
-| `setDeflateImpl(fn)` | Inject custom DEFLATE function (e.g. for browser polyfill) |
+| `setDeflateImpl(fn)` | Inject a synchronous **zlib-wrapped** (RFC 1950) deflate — fflate's `zlibSync`, pako's `deflate`, `node:zlib` `deflateSync`. Since v1.8.0 the result is validated and a raw-DEFLATE function throws at build time ([#78](https://github.com/Nizoka/pdfnative/issues/78)) |
+| `setDeflateRawImpl(fn)` | Inject a synchronous **raw** DEFLATE (RFC 1951) compressor — fflate's `deflateSync`, zipnative, anything built for ZIP; pdfnative adds the zlib envelope itself (v1.8.0) |
+| `wrapZlib(raw, source)` | Wrap a raw DEFLATE payload in the zlib envelope — 2-byte header plus an Adler-32 computed over `source`, the uncompressed input (RFC 1950 §2.2); the adapter `setDeflateRawImpl` applies (v1.8.0) |
 
-**Browser compression** — In browser environments without native zlib, inject a third-party DEFLATE via `setDeflateImpl`:
+**Browser compression** — In browser environments without native zlib, inject a synchronous third-party compressor. Pick the entry point that matches what the compressor returns:
 
 ```typescript
-import { setDeflateImpl, buildPDFBytes } from 'pdfnative';
-import { deflateSync } from 'fflate'; // or pako
+import { setDeflateImpl, setDeflateRawImpl, buildPDFBytes } from 'pdfnative';
+import { zlibSync, deflateSync } from 'fflate'; // pako.deflate is zlib-wrapped too
 
-setDeflateImpl(deflateSync);
+setDeflateImpl(zlibSync);          // zlib-wrapped output (RFC 1950) — what /FlateDecode expects
+// or, for a raw-DEFLATE function (RFC 1951): pdfnative wraps it with wrapZlib() for you
+setDeflateRawImpl(deflateSync);
 
 const pdf = buildPDFBytes(params, { compress: true });
 ```
+
+Passing fflate's raw `deflateSync` to `setDeflateImpl()` — what the v1.7.0 README recommended — produced pages that rendered blank; v1.8.0 rejects it with an error naming the fix. `CompressionStream` cannot be adapted: it is asynchronous and PDF assembly is synchronous.
 
 ### Fonts
 
@@ -971,19 +1052,29 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `createEncodingContext(fontEntries)` | Create encoding context |
 | `validateFontData(data)` | Opt-in structural validation of custom font data — returns `{ valid, errors, warnings }` (v1.4.0) |
 
+Colour-glyph types (`ColorLayer`, `ColorPaint`, …) describe the bundled COLRv1 data; `ClipOutline` (v1.8.0) is one outline of a colour-layer clip — `{ glyphId, transform? }` — used by the `SRC_IN` / `DEST_IN` masks rendered as clipping paths.
+
 ### Shaping
 
 | Function | Description |
 |----------|-------------|
 | `shapeThaiText(str, fontData)` | Thai OpenType shaping (GSUB + GPOS) |
-| `shapeBengaliText(str, fontData)` | Bengali GSUB conjuncts + GPOS marks |
-| `shapeTamilText(str, fontData)` | Tamil GSUB + split vowel decomposition |
-| `shapeDevanagariText(str, fontData)` | Devanagari cluster shaping + GSUB/GPOS |
-| `shapeTeluguText(str, fontData)` | Telugu GSUB conjuncts + GPOS marks (v1.3.0) |
-| `shapeSinhalaText(str, fontData)` | Sinhala conjuncts + pre-base reorder + GSUB/GPOS (v1.3.0) |
+| `shapeBengaliText(str, fontData)` | Bengali on the Indic OpenType engine — reph, ya-phala, conjuncts, split vowels (engine v1.8.0) |
+| `shapeTamilText(str, fontData)` | Tamil on the Indic OpenType engine — pre-base and split vowels, ligatures (engine v1.8.0) |
+| `shapeDevanagariText(str, fontData)` | Devanagari on the Indic OpenType engine — reph, rakar, half forms, conjuncts, matras (engine v1.8.0) |
+| `shapeTeluguText(str, fontData)` | Telugu on the Indic OpenType engine — subjoined consonants, vattu (v1.3.0; engine v1.8.0) |
+| `shapeSinhalaText(str, fontData)` | Sinhala on the Indic OpenType engine — kombuva, rakaransaya, two-part vowels (v1.3.0; engine v1.8.0) |
+| `shapeLatinMarksText(str, fontData)` | Latin combining marks — `ccmp`, mark-to-base, mark-to-mark for Yoruba, Igbo and NFD text (v1.8.0) |
 | `shapeTibetanText(str, fontData)` | Tibetan vertical subjoined stacking (v1.3.0) |
 | `shapeKhmerText(str, fontData)` | Khmer USE-lite — coeng subscripts + pre-base vowels (v1.3.0) |
 | `shapeMyanmarText(str, fontData)` | Myanmar USE-lite — medials + virama stacking (v1.3.0) |
+| `shapeLaoText(str, fontData)` | Lao OpenType shaping — GSUB + GPOS mark positioning (v1.8.0) |
+| `buildLaoClusters(str)` | Lao syllable clusters (base + marks) before shaping (v1.8.0) |
+| `shapeUseText(str, fontData)` | Universal Shaping Engine — Tai Tham, Cham, and any registered font's script with no dedicated shaper (v1.8.0) |
+| `splitUseSyllables(cps)` / `reorderUseCluster(cps)` | USE syllable segmentation (`UseSyllable[]`) and cluster reordering (v1.8.0) |
+| `useCategory(cp)` / `useCategories(cps)` | USE cluster category of one codepoint / a sequence, from the tables generated out of the Unicode Character Database (v1.8.0) |
+| `USE_UNICODE_VERSION` | The UCD version the generated USE data was derived from (v1.8.0) |
+| `SCRIPT_SHAPERS` / `findShaper(text)` | The shaper registry (`readonly ScriptShaper[]`, in dispatch order) and its single dispatch — the first shaper whose script the text contains, or `null` (v1.8.0) |
 | `detectFallbackLangs(texts, primaryLang)` | Detect needed fallback fonts |
 | `detectCharLang(codePoint)` | Map codepoint to preferred font language |
 | `splitTextByFont(str, fontEntries)` | Multi-font text run splitting |
@@ -999,6 +1090,10 @@ const pdf = buildPDFBytes(params, { compress: true });
 | `containsSinhala(text)` / `containsTibetan(text)` / `containsKhmer(text)` / `containsMyanmar(text)` / `containsEthiopic(text)` | Detect script content (v1.3.0) |
 | `isSinhalaCodepoint(cp)` / `isTibetanCodepoint(cp)` / `isKhmerCodepoint(cp)` / `isMyanmarCodepoint(cp)` / `isEthiopicCodepoint(cp)` | Codepoint predicates (v1.3.0) |
 | `containsMath(text)` / `isMathCodepoint(cp)` | Detect / test mathematical symbols → lang `'math'` (v1.5.0) |
+| `containsLao(text)` / `containsTaiTham(text)` / `containsNewTaiLue(text)` / `containsTaiLe(text)` / `containsCham(text)` | Detect script content (v1.8.0) |
+| `isLaoCodepoint(cp)` / `isTaiThamCodepoint(cp)` / `isNewTaiLueCodepoint(cp)` / `isTaiLeCodepoint(cp)` / `isChamCodepoint(cp)` | Codepoint predicates (v1.8.0) |
+
+Types (v1.8.0): `ScriptShaper` (`{ id, detect, shape }`), `UseClusterCategory`, `UseSyllable` (`{ type, start, end }`), `UseSyllableType`.
 
 ### Layout Constants
 
@@ -1021,14 +1116,14 @@ pdfnative ships as a library, but three official companion packages cover the mo
 
 [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) v1.4.0 is the **official CLI**, built on `pdfnative` v1.7.0. It exposes 21 commands in five groups — create & edit (`render`, `fill`, `annotate`, `metadata`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `ltv`, `doc-timestamp`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`, `compare`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — for use in shell scripts, Makefiles, GitHub Actions, and Docker images. Zero extra runtime dependencies, npm-provenance-signed, with a CycloneDX SBOM attached to every release. Requires Node ≥ 22.
 
-**New in v1.1.0:** **22 Unicode scripts + COLRv1 colour emoji** through the `--font`/`--lang` shortcuts, **true constant-memory streaming** (`--stream-true`), a `--max-blocks` cap for very large documents, and a **PDF/UA (ISO 14289-1) structural validator** (`inspect --pdfua` / `--check pdfua`). It also adds an **agent-native contract** — a global `--json` status/error envelope, stable `E_*` error codes, a `--dry-run` validation mode, the new **`schema`** command (Draft 2020-12), and token-economy output projection (`--summary` / `--fields` + compact JSON) that cuts agent output ~90 %. **100 % backward-compatible.**
+**New in v1.1.0:** **27 Unicode scripts + COLRv1 colour emoji** through the `--font`/`--lang` shortcuts, **true constant-memory streaming** (`--stream-true`), a `--max-blocks` cap for very large documents, and a **PDF/UA (ISO 14289-1) structural validator** (`inspect --pdfua` / `--check pdfua`). It also adds an **agent-native contract** — a global `--json` status/error envelope, stable `E_*` error codes, a `--dry-run` validation mode, the new **`schema`** command (Draft 2020-12), and token-economy output projection (`--summary` / `--fields` + compact JSON) that cuts agent output ~90 %. **100 % backward-compatible.**
 
 <!-- verify-docs:allow version-token (historical: CLI v1.2.0 shipped on the pdfnative 1.5.0 engine) -->
 **New in v1.2.0:** five new commands — **`merge`**, **`split`**, **`extract`** (page-tree manipulation via pdfnative 1.5.0), **`annotate`** (markup annotations via incremental save, so existing signatures stay intact), and **`govern`** (the AI-governance / Human-in-the-Loop contract: `govern rules` / `govern policy` / `govern verify-issue`, with a stable `E_POLICY` error code). Plus PDF bookmarks (`--outline auto` or an explicit tree), the bundled math font (`--font math`), layout introspection (`--inspect-layout` / `--debug-layout`), and native constant-time crypto by default in `sign` (opt out with `--pure-crypto`).
 
 **New in v1.3.0:** five more commands on the pdfnative 1.6 engine — **`fill`** (fill, flatten, and export existing AcroForms via incremental save, encrypted PDFs included), **`encrypt`** / **`decrypt`** (AES-128/256 re-securing and password removal; RC4 never emitted), **`extract-text`** (reading-order Unicode text as text/JSON/NDJSON, `--runs`, `--password`), and **`doctor`** (offline environment preflight). Also native vector charts in `render`, `--password` + `--encrypt` re-encryption on merge/split/extract, an agent capability manifest (`schema manifest` + `llms.txt`), and PowerShell completion.
 
-**New in v1.4.0:** the **complete PAdES ladder** from the shell — `sign --timestamp <tsa-url>` (RFC 3161, B-T), **`ltv`** (B-LT `/DSS`; `collect` gathers revocation evidence as replayable JSON so `embed` can run fully offline in air-gapped environments), and **`doc-timestamp`** (B-LTA document-timestamp revisions) — plus **`metadata`** (signature-safe `/Info` + XMP edits), **`compare`** (text + structure diff with CI exit codes), **`batch --manifest`** declarative pipelines with `@id` references and an `--allow-network` opt-in, `render --strict` PDF/A gating, `inspect --signatures`, RSA-SHA384/512, and a global `--max-inflate-size` zip-bomb cap. Every network path is an explicit opt-in behind an SSRF guard. Built on pdfnative 1.7.0, Node ≥ 22.
+**New in v1.4.0:** the **complete PAdES ladder** from the shell — `sign --timestamp <tsa-url>` (RFC 3161, B-T), **`ltv`** (B-LT `/DSS`; `collect` gathers revocation evidence as replayable JSON so `embed` can run fully offline in air-gapped environments), and **`doc-timestamp`** (B-LTA document-timestamp revisions) — plus **`metadata`** (signature-safe `/Info` + XMP edits), **`compare`** (text + structure diff with CI exit codes), **`batch --manifest`** declarative pipelines with `@id` references and an `--allow-network` opt-in, `render --strict` PDF/A gating, `inspect --signatures`, RSA-SHA384/512, and a global `--max-inflate-size` zip-bomb cap. Every network path is an explicit opt-in behind an SSRF guard. Requires pdfnative ≥ 1.7.0, Node ≥ 22.
 
 ```bash
 # render with full layout coverage (encryption + watermark + PDF/A-2b)
@@ -1070,7 +1165,7 @@ See the [CLI Guide](https://pdfnative.dev/guides/cli.html) for the full v1.4.0 r
 
 **v1.5.0:** adds `add_chart`, `read_form_fields`, `fill_form`, `encrypt_pdf`, `decrypt_pdf` (**24 tools**)<!-- verify-docs:allow stale-token (historical: MCP v1.5.0 total) -->, `password` support on the read-only and page-tree tools, MCP resources (`pdfnative://output/…`), and tool annotations — via the pdfnative 1.6.0 engine.
 
-**v1.6.0:** adds `add_ltv`, `timestamp_pdf`, `update_metadata`, `inspect_layout` (**28 tools**), all 13 block kinds in `generate_basic_pdf`, layout options and build-time `encrypt` on the document tools, image watermarks, print production, charts v2, honest PDF/A (`embedFonts` / `strict` / diagnostics), PAdES timestamps on `sign_pdf`, four new recipe prompts, and the MCP 2026-07-28 spec — via the pdfnative 1.7.0 engine.
+**v1.6.0:** adds `add_ltv`, `timestamp_pdf`, `update_metadata`, `inspect_layout` (**28 tools**), all 13 block kinds in `generate_basic_pdf`, layout options and build-time `encrypt` on the document tools, image watermarks, print production, charts v2, honest PDF/A (`embedFonts` / `strict` / diagnostics), PAdES timestamps on `sign_pdf`, four new recipe prompts, and the MCP 2026-07-28 spec — via the pdfnative 1.7.0 engine. <!-- verify-docs:allow version-token (historical engine reference) -->
 
 ```bash
 npx -y pdfnative-mcp
@@ -1083,7 +1178,7 @@ npx -y pdfnative-mcp
 | `generate_basic_pdf` | Multi-page documents from structured blocks — all 13 block kinds since v1.6.0 (incl. tables, images, links, TOC, barcodes, SVG, form fields); optional `outline`, `pageLabels`, `pdfA`, layout options, build-time `encrypt`, print production |
 | `add_table` | Smart tables (`wrap`, `repeatHeader`, `zebra`, `caption`, `minRowHeight`, `cellPadding`, `cellBorders`, `cellVAlign`) |
 | `add_barcode` | QR Code, Code 128, EAN-13, Data Matrix, PDF417 |
-| `add_international_text` | 25 `lang` font codes (22 Unicode scripts + `latin` + `emoji` + explicit `math`) with BiDi and OpenType shaping |
+| `add_international_text` | 25 `lang` font codes (27 Unicode scripts + `latin` + `emoji` + explicit `math`) with BiDi and OpenType shaping |
 | `add_form` | Interactive AcroForm PDFs (`text`, `textarea`, `checkbox`, `radio`, `dropdown`, `listbox` since v1.6.0) |
 | `embed_image` | Embed a JPEG or PNG image (base64), with `align` / `alt` since v1.6.0 |
 | `prepare_signature_placeholder` | PDF with a `/Sig` field ready to be signed (optional — `sign_pdf` auto-injects one); `subFilter` / `reserveTimestamp` since v1.6.0 |
@@ -1129,7 +1224,7 @@ See the [MCP Integration Guide](https://pdfnative.dev/guides/mcp.html) and the [
 
 ### pdfnative-react — declarative JSX renderer
 
-[`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) v1.2.0 turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency pdfnative engine — no DOM, no headless browser, no SaaS round-trips. A custom React reconciler compiles your component tree synchronously into the pdfnative block model. v1.2.0 follows the pdfnative 1.7.0 engine: charts v2 (9 kinds, secondary axis, log/time scales, data labels), print production via `<Document print>`, the PDF/A diagnostics channel (`layout.strict` / `onDiagnostic`), HTTP caching on `renderToResponse` (`etag` / `cacheControl`), and 25 lint rules — all additive. Requires **React 19**, **pdfnative ^1.7.0** and **Node.js ≥ 22**. React and pdfnative are peer dependencies; the package itself adds one runtime dependency, `react-reconciler`. The pdfnative engine remains dependency-free.
+[`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) v1.2.0 turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency pdfnative engine — no DOM, no headless browser, no SaaS round-trips. A custom React reconciler compiles your component tree synchronously into the pdfnative block model. v1.2.0 (peer `pdfnative ^1.7.0`) follows the 1.7.0 engine: charts v2 (9 kinds, secondary axis, log/time scales, data labels), print production via `<Document print>`, the PDF/A diagnostics channel (`layout.strict` / `onDiagnostic`), HTTP caching on `renderToResponse` (`etag` / `cacheControl`), and 25 lint rules — all additive. Requires **React 19**, **pdfnative ^1.7.0** and **Node.js ≥ 22**. React and pdfnative are peer dependencies; the package itself adds one runtime dependency, `react-reconciler`. The pdfnative engine remains dependency-free.
 
 ```tsx
 import { Document, Heading, Text, Table, renderToBytes } from 'pdfnative-react';
@@ -1201,8 +1296,10 @@ src/
 ├── shaping/
 │   ├── script-registry.ts # Centralized Unicode range constants & script predicates
 │   ├── thai-shaper.ts    # Thai GSUB + GPOS shaping pipeline
-│   ├── bengali-shaper.ts # Bengali GSUB conjuncts + GPOS mark positioning
-│   ├── tamil-shaper.ts   # Tamil GSUB + split vowel decomposition
+│   ├── indic-engine.ts   # Indic OpenType engine (Devanagari, Bengali, Tamil, Telugu, Sinhala configs)
+│   ├── bengali-shaper.ts # Bengali cluster analysis + engine config
+│   ├── tamil-shaper.ts   # Tamil cluster analysis + engine config
+│   ├── latin-marks.ts    # Latin combining marks (ccmp + GPOS anchors)
 │   ├── script-detect.ts  # Unicode script range detection (uses script-registry)
 │   ├── multi-font.ts     # Cross-script font run splitting
 │   ├── bidi.ts           # Unicode Bidirectional Algorithm (UAX #9)
@@ -1211,10 +1308,10 @@ src/
     ├── worker-api.ts     # Worker/main-thread dispatch
     └── pdf-worker.ts     # Self-contained worker entry
 
-fonts/                    # Pre-built font data modules (22 scripts)
+fonts/                    # Pre-built font data modules (27 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (48 generators, 242 PDFs)
-tests/                    # 2691+ tests (123 files: unit + integration + fuzz + parser + docs)
+scripts/                  # Modular sample PDF generation (49 generators, 292 PDFs)
+tests/                    # 3824+ tests (160 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1226,26 +1323,28 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (2691+ tests)
-npm run test:coverage    # vitest with v8 coverage (95.41% statements at the v1.6.0 release; CI gates: 88/80/85/90)
-npm run test:generate       # Generate 242 sample PDFs → test-output/
+npm run test             # vitest run (3824+ tests)
+npm run test:coverage    # vitest with v8 coverage (91.5 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
+npm run test:generate       # Generate 292 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
 npm run typecheck:scripts   # tsc --project tsconfig.scripts.json
 npm run typecheck:all       # Typecheck src/ + tests/ + scripts/
 npm run bench               # Performance benchmarks (vitest bench)
+npm run fonts:download      # Source TTFs → fonts/ttf/ (git-ignored): pinned by commit, release tag and SHA-256 in fonts/SOURCES.json; the five Latin subsets are cut from Noto Sans by the library itself — nothing binary is committed
+npm run verify:fonts        # Every fonts/*-data.js reproduces byte for byte from its source
 ```
 
 ### Quality Metrics
 
 | Metric | Value |
 |--------|-------|
-| Tests | 2691+ (123 files) |
-| Statement coverage | 95.41% (measured at the v1.6.0 release; CI enforces ≥88%, vitest.config.ts) |
-| Branch coverage | 87.79% (measured at the v1.6.0 release; CI enforces ≥80%) |
-| Function coverage | 98.5% (measured at the v1.6.0 release; CI enforces ≥85%; lines gate: ≥90%) |
-| Fuzz tests | 89 tests in 5 files (`tests/fuzzing/`) |
+| Tests | 3824+ (160 files) |
+| Statement coverage | 91.5 % (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
+| Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
+| Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |
+| Fuzz tests | 89 cases in 5 suites (`tests/fuzzing/`) |
 | Benchmarks | Latin 500 rows ~10ms, Unicode ~13ms (Apple M1, Node 22) |
 | Dependencies | 0 runtime |
 | CI | Node 22/24 matrix |
@@ -1253,7 +1352,7 @@ npm run bench               # Performance benchmarks (vitest bench)
 
 ## Known Limitations — Visual vs. Semantic PDF
 
-pdfnative generates **visually pixel-perfect** PDFs for all 22 supported scripts. However, PDF is fundamentally a *visual* format (a digital printer), not a *semantic* one. This distinction matters for **text extraction** (copy-paste, `pdftotext`, screen readers):
+pdfnative generates **visually pixel-perfect** PDFs for all 27 supported scripts. However, PDF is fundamentally a *visual* format (a digital printer), not a *semantic* one. This distinction matters for **text extraction** (copy-paste, `pdftotext`, screen readers):
 
 ### Complex Text Layout (CTL) scripts
 
@@ -1265,13 +1364,14 @@ For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tone
 | CJK (Japanese, Chinese, Korean) | ✅ Perfect | ✅ Perfect |
 | Vietnamese (combining diacritics) | ✅ Perfect | ⚠️ May show Win-1252 fallback artifacts |
 | Thai (GSUB + GPOS shaping) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Devanagari (matras, conjuncts) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Tamil (split vowels, GSUB) | ✅ Perfect | ⚠️ Split vowel recomposition may fail |
+| Devanagari (matras, conjuncts) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); marks may be reordered by spatial extractors |
+| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); marks may be reordered by spatial extractors |
+| Tamil (split vowels, GSUB) | ✅ Perfect | ✅ Ligatures map to their letters (v1.8.0); split vowels may be reordered by spatial extractors |
+| Yoruba / Igbo (Latin combining marks) | ✅ Perfect | ✅ Composed marks map to base + mark (v1.8.0) |
 
 ### Why this happens
 
-This is an inherent limitation of the PDF spec (ISO 32000-1), not a bug in pdfnative. The ToUnicode CMap correctly maps glyph IDs back to Unicode code points, but extractors that rely on spatial reconstruction rather than CMap lookup will produce artifacts. This behavior is shared by most PDF generators that don't use Tagged PDF.
+This is an inherent limitation of the PDF spec (ISO 32000-1), not a bug in pdfnative. The ToUnicode CMap correctly maps glyph IDs back to Unicode code points — since v1.8.0 a conjunct, a subjoined form or a composed mark produced by the Indic engine or the Latin-marks shaper maps to all of its source code points — but extractors that rely on spatial reconstruction rather than CMap lookup will produce artifacts. This behavior is shared by most PDF generators that don't use Tagged PDF.
 
 ### Tagged PDF, /ActualText & PDF/A — Implemented ✅
 
@@ -1286,7 +1386,7 @@ const pdf2u = buildPDFBytes(params, { tagged: 'pdfa2u' }); // PDF/A-2u (Unicode)
 When `tagged` is set, the output includes:
 
 - **Tagged PDF (PDF/UA)** — full structure tree (`/Document → /Table → /TR → /TH|/TD`, `/H1-H3`, `/P`, `/L → /LI`, `/Figure`, `/Link`) with `/Span` marked content operators and `/StructParents` on every page
-- **/ActualText** — original Unicode string attached as UTF-16BE hex to every `/Span BDC...EMC` sequence, solving text extraction for GPOS-repositioned glyphs (Thai, Arabic, Devanagari)
+- **/ActualText** — original Unicode string attached as UTF-16BE hex to every `/Span BDC...EMC` sequence, solving text extraction for GPOS-repositioned glyphs (Thai, Arabic, Devanagari). Since v1.8.0 `extractText()` returns the `/ActualText` of a span instead of the glyphs shown inside it, so text extracted from tagged output matches what the writer declared
 - **PDF/A-2b compliance** (default) — PDF 1.7, XMP metadata with `pdfaid:part=2` + `pdfaid:conformance=B`, sRGB ICC OutputIntent (`GTS_PDFA1`), `/MarkInfo << /Marked true >>` on Catalog
 - **PDF/A-1b compatibility** — explicit `tagged: 'pdfa1b'` uses PDF 1.4, `pdfaid:part=1`
 - **PDF/A-2u variant** — `tagged: 'pdfa2u'` uses PDF 1.7, `pdfaid:conformance=U`
@@ -1409,7 +1509,7 @@ const pdf = buildPDFBytes(params, {
 | Browser | Stored-block fallback (valid FlateDecode) | No size reduction |
 | Deno / Bun | CJS require fallback | Depends on compat layer |
 
-For browser contexts with full compression, call `setDeflateImpl()` with a custom DEFLATE function.
+For browser contexts with full compression, call `setDeflateImpl()` with a synchronous zlib-wrapped (RFC 1950) deflate such as fflate's `zlibSync`, or `setDeflateRawImpl()` (v1.8.0) with a raw RFC 1951 one such as fflate's `deflateSync` — pdfnative adds the zlib envelope. A raw function handed to `setDeflateImpl()` throws at build time since v1.8.0 instead of producing blank pages.
 
 ## Browser & Runtime Compatibility
 
@@ -1431,7 +1531,7 @@ pdfnative targets ES2020 and works in any environment that supports `Uint8Array`
 
 ## Origin
 
-pdfnative was born inside [**plika.app**](https://plika.app) — a personal finance application where high-quality, multi-language PDF generation (bank statements, transaction reports) was a core requirement. Rather than depending on heavy third-party libraries, the PDF engine was built from scratch with zero dependencies, strict ISO compliance, and native support for 22 Unicode scripts.
+pdfnative was born inside [**plika.app**](https://plika.app) — a personal finance application where high-quality, multi-language PDF generation (bank statements, transaction reports) was a core requirement. Rather than depending on heavy third-party libraries, the PDF engine was built from scratch with zero dependencies, strict ISO compliance, and native support for 27 Unicode scripts.
 
 The decision was then made to extract the engine into an independent open-source library so that everyone can benefit from production-grade PDF generation — not just plika.app users.
 
@@ -1480,4 +1580,4 @@ If you use pdfnative in academic, governmental, or compliance work, please cite 
 
 MIT — see [LICENSE](LICENSE).
 
-Font data files in `fonts/` are licensed under [SIL Open Font License 1.1](https://scripts.sil.org/OFL). Unicode Character Database source files in `scripts/data/` are © Unicode, Inc., used under the [Unicode License v3](https://www.unicode.org/license.txt). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for the aggregated notices.
+Font data files in `fonts/` are Modified Versions (glyph subsets built by pdfnative) of the Noto fonts, © Google and The Noto Project Authors, under the [SIL Open Font License 1.1](https://openfontlicense.org); their sources are pinned in `fonts/SOURCES.json` and downloaded, never committed. Unicode Character Database source files in `scripts/data/` are © Unicode, Inc., used under the [Unicode License v3](https://www.unicode.org/license.txt). The base-14 widths are transcribed from Adobe's Core 14 AFM files. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for the per-font notices.

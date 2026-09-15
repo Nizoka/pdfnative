@@ -60,12 +60,22 @@ Every output written with `tagged` set ships:
   `/P`, `/L → /LI`, `/Figure`, `/Link`).
 - `/ActualText` UTF-16BE on every marked content `/Span`.
 - An XMP metadata stream with `pdfaid:part` and `pdfaid:conformance`.
-- An sRGB ICC `OutputIntent` (`GTS_PDFA1`).
+- An ICC `OutputIntent` (`GTS_PDFA1`): the built-in sRGB profile, or your own
+  RGB, CMYK (since v1.8.0) or Gray profile via `outputIntent`. Under a CMYK or
+  Gray intent, RGB content is remapped through a calibrated `/DefaultRGB` so
+  the claim holds — see the [print guide](print.html#custom-outputintent-taggedpdf-a).
+  Mind the profile version: PDF/A-1b requires an ICC v2 profile
+  (ISO 19005-1 §6.2.2); v4 profiles are allowed from PDF/A-2 on
+  (ISO 19005-2 §6.2.4.2). pdfnative checks the profile's signature, size
+  field and data colour space, and since v1.8.0 raises
+  `PDFA_ICC_PROFILE_VERSION` when a v4 (or later) profile is combined with
+  a `pdfa1b` claim — supply a v2 profile for 1b, or claim `pdfa2b`.
 - `/MarkInfo << /Marked true >>` on the catalog.
 - A trailer `/ID` derived deterministically from the document title and
   creation timestamp.
-- `/Info CreationDate` byte-equivalent to `xmp:CreateDate`, both with
-  timezone offsets.
+- `/Info CreationDate` byte-equivalent to `xmp:CreateDate`, both in UTC
+  with an explicit `+00'00'` / `+00:00` offset (since v1.8.0; the host
+  time zone no longer appears in the file).
 
 ## Conformance diagnostics (v1.7.0)
 
@@ -76,8 +86,10 @@ them through a single diagnostics channel:
 | Code | Trigger |
 |------|---------|
 | `PDFA_NO_FONT_ENTRIES` | A `'pdfa*'` level (or `tagged: true`) requested with no `fontEntries` — the file would claim PDF/A while referencing unembedded standard-14 Helvetica (ISO 19005 §6.2.11.4.1). |
-| `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim with an sRGB `OutputIntent` (ISO 19005-2 §6.2.4.3). |
+| `PDFA_DEVICE_CMYK_IMAGE` | A DeviceCMYK image embedded under a PDF/A claim whose `OutputIntent` is not CMYK (ISO 19005-2 §6.2.4.3). Silent under a CMYK intent since v1.8.0. |
+| `PDFA_DEVICE_CMYK_CONTENT` | A CMYK colour (`[c, m, y, k]` or `'C M Y K'`) painted under a PDF/A claim whose `OutputIntent` is not CMYK (same §6.2.4.3 rule). Since v1.8.0. |
 | `PDFA_UNEMBEDDED_FORM_FONT` | AcroForm fields under a PDF/A claim — form appearances render through an unembedded base-14 `/Helv` font (same §6.2.11.4.1 rule). Flatten the form or drop the level. |
+| `PDFA_ICC_PROFILE_VERSION` | An ICC v4 (or later) `outputIntent` profile under a `pdfa1b` claim — ISO 19005-1 §6.2.2 restricts PDF/A-1 to v2 profiles; v4 is allowed from PDF/A-2 on (ISO 19005-2 §6.2.4.2). Supply a v2 profile or claim `pdfa2b`. Since v1.8.0. |
 
 By default each diagnostic is a `console.warn`, deduplicated **once per code
 per build**. Two layout options change that:
@@ -101,7 +113,10 @@ Each `PdfDiagnostic` carries a machine-readable `code`, a `severity`
 (`'warning'`), and an actionable `message` that includes the remedy.
 `onDiagnostic` is ignored when `strict` is set — diagnostics throw instead.
 The code list is a stable, additions-only union (`PdfDiagnosticCode`), so a
-sink written today keeps compiling as future codes are added.
+sink written today keeps compiling as future codes are added. The PDF/X-4
+claim (v1.8.0) reports through the same channel with `PDFX_NO_FONT_ENTRIES`,
+`PDFX_DEVICE_CMYK` and `PDFX_ANNOTATIONS` — see the
+[print guide](print.html#pdfx-4-v180).
 
 > **On the MCP surface** _(pdfnative-mcp 1.6.0)_, the same honesty is exposed
 > as three opt-in inputs on every document tool: `embedFonts: true` embeds
@@ -176,7 +191,7 @@ engine PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfn
 and again as a blocking gate before every npm publish.
 
 Detection is automatic and guarded: every sample declaring
-`pdfaid:part` — currently the 18 PDF/A-claiming samples — is validated
+`pdfaid:part` — currently the 21 PDF/A-claiming samples — is validated
 without any registration, and a **coverage canary** fails the run if the
 detected count drifts from `declared.pdfaSamples` in
 `docs/assets/ecosystem.json` (bump it when adding or removing a
@@ -301,7 +316,7 @@ pdfnative validates this at the build boundary — passing both
 |---------|----------|-------|
 | PDF/A-1b (`'pdfa1b'`) | PDF 1.4 | Most conservative — required by some legacy archival systems. No transparency, no JPEG2000, no AES. |
 | PDF/A-2b (`true` / `'pdfa2b'`) | PDF 1.7 | Default. Allows transparency, layers, embedded TrueType. |
-| PDF/A-2u (`'pdfa2u'`) | PDF 1.7 | 2b + Unicode mapping for every glyph. Required when `/ActualText` and ToUnicode CMap completeness matter (recommended for accessibility). |
+| PDF/A-2u (`'pdfa2u'`) | PDF 1.7 | 2b + Unicode mapping for every glyph. Required when `/ActualText` and ToUnicode CMap completeness matter (recommended for accessibility). Glyphs a shaper produces (Indic conjuncts, Khmer subscripts, Lao and Tai Tham forms) have no cmap entry and therefore no ToUnicode line; under a tagged level every marked-content span carries `/ActualText` with the source characters, which ISO 19005-2 accepts as the Unicode mapping. |
 | PDF/A-3b (`'pdfa3b'`) | PDF 1.7 | 2b + arbitrary `/EmbeddedFile` attachments (XML, source data, etc.). |
 
 All four flavours share the same XMP / OutputIntent / structure-tree

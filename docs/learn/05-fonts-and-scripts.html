@@ -153,11 +153,11 @@ const bytes = buildDocumentPDFBytes({
 
     <h2>Two words you will meet</h2>
     <ul>
-      <li><strong>Shaping</strong> — in many scripts, letters change form depending on their neighbours, and marks have to be positioned over specific parts of a glyph. pdfnative implements this (OpenType GSUB/GPOS) for 22 writing systems, so you pass ordinary text and get correct output.</li>
+      <li><strong>Shaping</strong> — in many scripts, letters change form depending on their neighbours, and marks have to be positioned over specific parts of a glyph. pdfnative implements this (OpenType GSUB/GPOS) for the 27 writing systems it bundles — the five Indic scripts through one OpenType engine that applies the font's own features — so you pass ordinary text and get correct output. Latin text with tone marks (Yoruba, Igbo) is composed the same way on the <code>latin</code> module.</li>
       <li><strong>BiDi</strong> — Arabic and Hebrew read right to left, and mixing them with Latin needs a defined ordering algorithm (Unicode UAX #9). It is applied for you.</li>
     </ul>
 
-    <p>See the <a href="../playgrounds/all-scripts.html">all-scripts playground</a> for all 22 rendered in one document, in your browser.</p>
+    <p>See the <a href="../playgrounds/all-scripts.html">all-scripts playground</a> for all 27 rendered in one document, in your browser.</p>
 
     <div class="ln-check">
       <strong>You should now be able to</strong> produce a document in a non-Latin script, and explain why registration exists.

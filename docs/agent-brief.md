@@ -6,19 +6,23 @@
 > Longer forms: [llms.txt](https://pdfnative.dev/llms.txt) (index),
 > [llms-full.txt](https://pdfnative.dev/llms-full.txt) (full corpus),
 > [llms-index.json](https://pdfnative.dev/llms-index.json) (per-page sizes and anchors).
-> _Verified on 2026-08-29 against the source tree by `npm run verify:docs`._
+> _Verified on 2026-09-15 against the source tree by `npm run verify:docs`._
 
 ## What it is
 
 pdfnative is a zero-runtime-dependency TypeScript library that generates and
 parses ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) conformant PDFs on-device —
 Node ≥ 22, browsers, Deno, Bun, Web Workers. No SaaS round-trip, no telemetry,
-no sockets. Current version: 1.7.0. It writes (documents, tables, charts,
-barcodes, SVG, forms, watermarks, signatures with long-term validation, print
-production) and reads (parse, decrypt, extract text, read/fill/flatten forms,
-merge/split/extract pages, verify structure) — 22 Unicode scripts, with
+no sockets. Current version: 1.8.0. It writes (documents, tables, charts,
+barcodes, SVG, forms, watermarks, signatures with long-term validation,
+typeset paragraphs, CMYK and PDF/X-4 print production) and reads (parse,
+decrypt, extract text, read/fill/flatten forms, merge/split/extract pages,
+verify PDF/UA and PDF/X-4 structure) — 27 Unicode scripts, with
 OpenType GSUB/GPOS shaping for the complex ones (Thai, Arabic, Devanagari,
-Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar) and full UAX #9 BiDi.
+Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Lao, Tai Tham,
+New Tai Lue, Tai Le, Cham; the five Indic scripts on one OpenType engine
+since 1.8.0), Latin combining marks (Yoruba, Igbo, NFD text) on the
+bundled `latin` module, and full UAX #9 BiDi.
 
 ## Choose your surface
 
@@ -71,6 +75,50 @@ Functions an agent reaches for most, all exported from `'pdfnative'`:
 | `signPdfBytes(bytes, options)` | PAdES CMS signature (RSA-SHA256/384/512, ECDSA P-256); `addSignaturePlaceholder` prepares the `/Sig` field. |
 | `listSignatures(bytes)` | Inventory of signatures and document timestamps. |
 | `buildDocumentPDFStreamTrue(params)` | Constant-memory streaming for very large documents. |
+| `validatePdfX(bytes)` | Read-only PDF/X-4 structural check → `{ valid, errors, warnings }` (v1.8.0). |
+| `setDefaultCreationDate(date)` | Pin every date the writer emits (and so the trailer `/ID`) for reproducible bytes; or pass `layout.creationDate` per build (v1.8.0). |
+| `setHyphenationProvider(fn)` | Install a `(word, lang?) => number[]` break-point provider for `typography` (v1.8.0). |
+
+## What 1.8.0 adds (all opt-in, byte-identical when absent)
+
+```ts
+const bytes = buildDocumentPDFBytes({
+  title: 'Annual report',
+  metadata: { trapped: 'False' },                             // PDF/X needs a known trapping state
+  blocks: [
+    { type: 'heading', text: '1. Results', level: 2 },
+    { type: 'paragraph', text: longText, align: 'justify' },   // justification is per paragraph
+  ],
+  layout: {
+    typography: {
+      splitParagraphs: true, widows: 2, orphans: 2,           // paragraphs may break across pages
+      keepHeadingsWithNext: { minLines: 3 },                  // or true (= 2 lines)
+      opticalMargins: true, unitBinding: true,                // hanging punctuation; "12 kg" never splits
+      punctuationSpacing: 'fr',                               // needs a registered font for U+202F
+      bindShortWords: true,                                   // no line ends on "a" / "I"
+      metrics: 'exact', kerning: true, fontFeatures: ['onum'],
+      hyphenationLanguage: 'en',                              // passed to the provider
+    },
+    // Print: CMYK colours are [c, m, y, k] in percent on any color field.
+    print: { bleed: 14.17, marks: { colourBars: true } },     // 5 mm bleed; bars are off by default
+    // pressProfileBytes: your printer's .icc (an output / prtr profile). For tests, the synthetic
+    // profile at https://pdfnative.dev/assets/synthetic-cmyk.icc validates but characterises no press.
+    outputIntent: { iccProfile: pressProfileBytes, outputConditionIdentifier: 'FOGRA39' },
+    pdfx: 'pdfx4',                                            // exclusive with tagged and encryption
+  },
+});
+const report = validatePdfX(bytes);                           // { valid, errors, warnings }
+```
+
+Option types are exported: `TypographyOptions`, `PrintOptions`,
+`PrinterMarksOptions`, `ColourBarOptions`, `CustomOutputIntent`,
+`PdfXConformanceTarget`. Every option's default and diagnostic is in the
+[typography guide](https://pdfnative.dev/guides/typography.md) and the
+[print guide](https://pdfnative.dev/guides/print.md); the eight diagnostic
+codes (`PDFA_*`, `PDFX_*`, `TYPOGRAPHY_FEATURE_INEFFECTIVE`) and the
+build-time error messages (`buildErrors`: PDF/X coherence, print geometry,
+OutputIntent profile) are in
+[errors.json](https://pdfnative.dev/data/errors.json), each with its remedy.
 
 ## What agents get wrong (verified pitfalls)
 
@@ -102,6 +150,23 @@ Functions an agent reaches for most, all exported from `'pdfnative'`:
    `streamDocumentPdf`, `streamPdf` and `buildPdfStream` have never existed;
    <!-- verify-docs:allow api-exists (same warning, continued) -->
    the streaming exports are `buildDocumentPDFStream`, `buildPDFStream` and their `…True` variants.
+8. **`setDeflateImpl()` wants zlib-wrapped output (RFC 1950), not raw DEFLATE.**
+   Since 1.8.0 it validates the function at build time and throws on raw
+   output; fflate's `deflateSync` is raw — pass `zlibSync`, or give the raw
+   function to `setDeflateRawImpl()`. Code written against the 1.7.0 README
+   snippet breaks at the first build with `compress: true`.
+9. **Four numbers are CMYK.** `parseColor([0, 0, 0, 100])` and
+   `parseColor('0 0 0 1')` return a DeviceCMYK operand string since 1.8.0;
+   both threw in 1.7.0. Code that relied on the throw to reject four-element
+   input must check the length itself.
+10. **`extractText()` returns `/ActualText`, not the shown glyphs.** Since
+    1.8.0 a tagged span extracts as the characters the writer declared — what
+    a RAG pipeline receives from tagged pdfnative output (or any tagged PDF)
+    can differ from 1.7.0, and now matches the source text.
+11. **`{date}` in a header or footer follows `layout.creationDate`** (or the
+    pinned default) since 1.8.0, not the wall clock; a pinned build renders
+    the pinned date. Every date is written in UTC (`+00'00'`), so a pinned
+    build is byte-identical across machines without a `TZ` pin.
 
 ## Verify your own output
 
@@ -109,26 +174,44 @@ pdfnative can read what it writes — use that to close the loop instead of
 shipping blind:
 
 ```ts
-import { buildDocumentPDFBytes, inspectDocumentLayout, extractText, validatePdfUA } from 'pdfnative';
+import { buildDocumentPDFBytes, inspectDocumentLayout, extractText, validatePdfUA, validatePdfX } from 'pdfnative';
 
-const params = { title: 'Report', blocks: [/* … */] };
+// tagged: true makes the file PDF/UA-checkable (an untagged file fails validatePdfUA by
+// construction); under a tagged claim, register a font (pitfall 3) or the PDF/A diagnostic fires.
+const params = { title: 'Report', blocks: [/* … */], fontEntries, layout: { tagged: true, creationDate: new Date('2026-01-01T00:00:00Z') } };
 
 // Before generating: how will it paginate?
 const layout = inspectDocumentLayout(params);
 if (layout.totalPages > 3) { /* tighten the layout */ }
 
-const bytes = buildDocumentPDFBytes(params);
+const bytes = buildDocumentPDFBytes(params);   // same bytes on every run: the date is pinned
 
 // After generating: is the content really there? Is the structure valid?
 const pages = extractText(bytes);          // → ExtractedPageText[], one per page
 if (!pages[0].text.includes('Report')) throw new Error('content missing');
 const ua = validatePdfUA(bytes);
 if (!ua.valid) console.warn(ua.errors);
+// For a print file built with layout.pdfx: 'pdfx4' (never tagged — PDF/X and tagged are exclusive):
+const x = validatePdfX(bytes);             // structural PDF/X-4 prerequisites, not a certified preflight
+if (!x.valid) console.warn(x.errors);
 ```
 
 The same loop exists on every surface: `pdfnative-cli inspect --check … --json`
 (exit 1 on failure), and the MCP tools `inspect_pdf`, `inspect_layout`,
-`validate_pdf`, `verify_pdf`.
+`validate_pdf`, `verify_pdf`. A byte-regression gate for your own documents
+is the pattern the repository uses on itself: pin the date, hash the output,
+compare on every build (`npm run verify:samples` in the pdfnative tree).
+
+## Try it without installing
+
+Twelve zero-install playgrounds run the engine in the browser from a CDN;
+each is described for agents — URL, purpose, DOM control ids, the options it
+exercises, preconditions — in
+[playgrounds.json](https://pdfnative.dev/data/playgrounds.json). The
+[typography](https://pdfnative.dev/playgrounds/typography.html) and
+[print](https://pdfnative.dev/playgrounds/print.html) playgrounds cover the
+1.8.0 options with a with/without toggle and show the code to reproduce
+each result outside the browser.
 
 ## Where to read more
 
@@ -136,4 +219,6 @@ The same loop exists on every surface: `pdfnative-cli inspect --check … --json
 - [MCP guide](https://pdfnative.dev/guides/mcp.md) — the 28 tools, schemas, error codes.
 - [CLI guide](https://pdfnative.dev/guides/cli.md) — 21 commands and the `--json` / `E_*` agent contract.
 - [surfaces.json](https://pdfnative.dev/data/surfaces.json) — the capability × surface matrix as machine-readable JSON: one row per capability, one cell per surface, with `since` versions and an honest note on every unsupported cell.
-- Every guide serves raw Markdown at the same URL with `.md`; sizes and anchors are in [llms-index.json](https://pdfnative.dev/llms-index.json).
+- [errors.json](https://pdfnative.dev/data/errors.json) — every diagnostic code with meaning and remedy, and every build-time error message a tool must classify (`buildErrors`).
+- [api.json](https://pdfnative.dev/assets/api.json) — the public API surface derived from `src/index.ts`: name, kind, module, signature, TSDoc summary.
+- Every guide serves raw Markdown at the same URL with `.md`; sizes, SHA-256 and anchors are in [llms-index.json](https://pdfnative.dev/llms-index.json).

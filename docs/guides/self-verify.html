@@ -230,6 +230,53 @@ chain, trust, timestamps, revocation) lives in <code>pdfnative-cli verify</code>
 the MCP <code>verify_pdf</code> tool, below. See
 <a href="ltv.html">Long-term validation (LTV)</a>.</p>
 </blockquote>
+<h2 id="verifier-5--validatepdfx-structural-pdfx-4-for-print">Verifier 5 — <code>validatePdfX()</code>: structural PDF/X-4 for print<a class="heading-anchor" href="#verifier-5--validatepdfx-structural-pdfx-4-for-print" aria-label="Link to this section">#</a></h2>
+<p><code>validatePdfX()</code> <em>(v1.8.0)</em> is the print counterpart of Verifier 3: a
+read-only ISO 15930-7 check over the emitted bytes — the <code>%PDF-1.6</code> header,
+no encryption, a trailer <code>/ID</code>; the XMP identification (<code>GTS_PDFXVersion</code>,
+<code>DocumentID</code>, <code>VersionID</code>, <code>RenditionClass</code>, <code>dc:title</code>, <code>Trapped</code> consistent
+with <code>/Info</code>); a <code>/GTS_PDFX</code> OutputIntent whose embedded profile is an output
+(<code>prtr</code>) profile with the <code>acsp</code> signature and a size field within the
+stream; a TrimBox or an ArtBox on every page, nested in the BleedBox and the
+MediaBox; every font embedded, in page resources and in the Form XObjects and
+patterns they reach; no annotation inside the BleedBox other than PrinterMark,
+TrapNet, Popup, Hidden or NoView; no JavaScript, <code>/OpenAction</code> or <code>/AA</code>; no
+<code>LZWDecode</code>, no transfer function; device colour in page content matching the
+intent.</p>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, validatePdfX } from &#39;pdfnative&#39;;
+
+const bytes = buildDocumentPDFBytes({ ...params, fontEntries }, {
+  pdfx: &#39;pdfx4&#39;,
+  outputIntent: { iccProfile: pressProfile, outputConditionIdentifier: &#39;FOGRA39&#39; },
+  print: { bleed: 14.17, marks: { colourBars: true } },
+});
+
+const report = validatePdfX(bytes);   // { valid, errors, warnings }
+if (!report.valid) {
+  throw new Error(`PDF/X-4 structure: ${report.errors.join(&#39;; &#39;)}`);
+}
+</code></pre>
+<p><strong>Failure → fix.</strong> Most failures never reach the validator: <code>pdfx</code> with a
+PDF/A <code>tagged</code> level, with <code>encryption</code>, without <code>outputIntent</code>, with a
+monitor (<code>mntr</code>) profile such as sRGB, with <code>trapped: &#39;Unknown&#39;</code>, or with
+both a TrimBox and an ArtBox throw at build time, with the messages listed
+under <code>buildErrors</code> in <a href="../data/errors.json"><code>docs/data/errors.json</code></a>. What
+the validator itself reports is usually an unembedded font (pass
+<code>fontEntries</code>; the build also raised <code>PDFX_NO_FONT_ENTRIES</code>), a link or form
+field inside the print area (<code>PDFX_ANNOTATIONS</code>), or a CMYK colour under an
+RGB intent (<code>PDFX_DEVICE_CMYK</code>). Warnings — a header below 1.6, a halftone
+other than <code>/Default</code>, an interpolated image — are non-blocking.</p>
+<blockquote>
+<p><strong>Honest caveat.</strong> <code>validatePdfX()</code> checks what the structure can prove and
+does not render. It does not check colour inside Form XObjects and images,
+transparency blend spaces, optional content, or anything that needs
+rendering (fonts inside annotation appearances, OPI, PostScript and
+reference XObjects, embedded files and transfer functions are checked
+since v1.8.0). veraPDF does not cover
+PDF/X, and a <code>valid</code> result means the structural prerequisites hold — a
+certified preflight (callas pdfToolbox, Acrobat Preflight) remains
+necessary before a file goes to press. See <a href="print.html">Print production</a>.</p>
+</blockquote>
 <h2 id="the-same-loop-on-the-cli">The same loop on the CLI<a class="heading-anchor" href="#the-same-loop-on-the-cli" aria-label="Link to this section">#</a></h2>
 <p><code>pdfnative-cli</code> turns the assertions into exit codes, which is what a shell or
 CI step branches on:</p>
@@ -320,6 +367,22 @@ pdfnative verify  --input signed.pdf  --strict --trust ca-root.pem
 <p><code>--dry-run</code> on the write commands validates inputs without producing output,
 which makes a cheap first CI stage; <code>--summary</code> / <code>--fields</code> keep logs and
 agent context small.</p>
+<p><strong>Reproducible bytes.</strong> <em>(v1.8.0)</em> Unencrypted output is a pure function of
+its inputs plus one instant: the creation date, which stamps <code>/CreationDate</code>,
+<code>/ModDate</code>, the XMP dates and, through them, the trailer <code>/ID</code>. Pin it with
+<code>layout.creationDate</code> per call, or once per process with
+<code>setDefaultCreationDate(date)</code> (<code>getDefaultCreationDate()</code> reads it back,
+<code>null</code> restores the wall clock). Every date is written in UTC with an
+explicit <code>+00&#39;00&#39;</code> offset, so a pinned instant yields the same bytes on any
+host without a <code>TZ</code> pin. Encryption keys and IVs stay random by design, and
+<code>PdfSignOptions.signingTime</code> keeps its own option.</p>
+<p><strong>Byte regression.</strong> With the date pinned, a SHA-256 of each artefact is a
+sufficient CI assertion. pdfnative&#39;s own <code>npm run verify:samples</code> is the
+pattern to copy: regenerate the documents, hash them, compare against a
+committed manifest that records which release last changed each hash, and
+refuse two documents of a pair that come out identical. A <code>--update</code> is a
+deliberate rebaseline, declared in the release note with the reason the
+previous bytes were wrong.</p>
 <p><strong>Agent loops.</strong> Treat every generation as unfinished until a read tool
 confirms it: after <code>generate_basic_pdf</code> (or any document tool), call
 <code>inspect_pdf</code> with the <code>check</code> list that encodes the user&#39;s requirements and
@@ -338,6 +401,8 @@ full <code>LayoutInspection</code> data shape.</li>
 documented limits.</li>
 <li><a href="pdfa.html">PDF/A conformance</a> — validating archival claims with veraPDF,
 and the build-time <code>PDFA_*</code> diagnostics.</li>
+<li><a href="print.html">Print production</a> — CMYK, OutputIntents, PDF/X-4 and what
+<code>validatePdfX()</code> does and does not check.</li>
 <li><a href="ltv.html">Long-term validation (LTV)</a> — the PAdES ladder the signature
 assertions climb.</li>
 <li><a href="cli.html">CLI guide</a> · <a href="mcp.html">MCP guide</a> — the complete surface

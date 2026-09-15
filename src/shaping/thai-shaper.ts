@@ -7,8 +7,9 @@
  * Handles:
  *   - GSUB SingleSubst: tall consonant → short variant (ป ฝ ฟ ฬ)
  *   - GPOS MarkToBase: above/below vowels + tone marks anchoring
- *   - GPOS MarkToMark: stacking marks (tone above vowel)
- *   - Sara Am (U+0E33) decomposition → nikhahit + sara aa
+ *   - GPOS MarkToMark: stacking marks (tone above vowel, tone above nikhahit)
+ *   - Sara Am (U+0E33) decomposition → nikhahit + sara aa, the nikhahit
+ *     ordered before the cluster's tone marks (HarfBuzz `preprocess_text_thai`)
  *
  * References:
  *   - Unicode Standard §16.4 Thai
@@ -18,10 +19,12 @@
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 
 // ── Thai Unicode Constants ───────────────────────────────────────────
+//
+// Re-exported, not redefined: `script-registry.ts` is the single source of
+// truth for every script's range and predicate. Thai carried a second copy
+// of both until v1.8.0, and each new script inherited the fork.
 
-/** Thai Unicode block range */
-export const THAI_START = 0x0E00;
-export const THAI_END = 0x0E7F;
+export { THAI_START, THAI_END, containsThai } from './script-registry.js';
 
 /**
  * Thai character classification by combining class.
@@ -46,10 +49,24 @@ const THAI_CLASS: Record<number, number> = {
 };
 
 /**
+ * The above marks a nikhahit split off from sara am must be placed before.
+ *
+ * Unicode stores น้ำ as consonant, tone mark, sara am; the Thai OpenType
+ * specification renders it consonant, nikhahit, tone mark, sara aa, so the
+ * tone stacks on the nikhahit through the font's mark-to-mark anchors rather
+ * than the nikhahit landing on the tone. This is HarfBuzz's `is_tone_mark`
+ * set (`hb-ot-shaper-thai.cc`): the above vowels ิ ี ึ ื and every sign from
+ * ็ to ๎, tone marks included. ั (U+0E31) is deliberately absent, as there.
+ */
+function isThaiToneMark(cp: number): boolean {
+    return (cp >= 0x0E34 && cp <= 0x0E37) || (cp >= 0x0E47 && cp <= 0x0E4E);
+}
+
+/**
  * Tall consonants whose ascender may clash with above marks.
  * ป (U+0E1B), ฝ (U+0E1D), ฟ (U+0E1F), ฬ (U+0E2C)
  */
-const TALL_CONSONANTS = new Set([0x0E1B, 0x0E1D, 0x0E1F, 0x0E2C]);
+const TALL_CONSONANTS = /*#__PURE__*/ new Set([0x0E1B, 0x0E1D, 0x0E1F, 0x0E2C]);
 
 // ── Interface for cluster ────────────────────────────────────────────
 
@@ -64,7 +81,9 @@ interface ThaiCluster {
 
 /**
  * Build text clusters: each cluster = { base, aboves, belows, leadings }.
- * Sara Am (U+0E33) is decomposed into Nikhahit (U+0E4D) + Sara Aa (U+0E32).
+ * Sara Am (U+0E33) is decomposed into Nikhahit (U+0E4D) + Sara Aa (U+0E32);
+ * the nikhahit is inserted before any tone mark already collected on the
+ * cluster (see `isThaiToneMark`), the sara aa becomes the next base.
  */
 export function buildThaiClusters(str: string): ThaiCluster[] {
     const clusters: ThaiCluster[] = [];
@@ -73,10 +92,16 @@ export function buildThaiClusters(str: string): ThaiCluster[] {
         const cp = str.codePointAt(i) ?? 0;
         const step = cp > 0xFFFF ? 2 : 1;
 
-        // Sara Am decomposition — U+0E33 → U+0E4D (nikhahit) + U+0E32 (sara aa)
+        // Sara Am decomposition — U+0E33 → U+0E4D (nikhahit) + U+0E32 (sara aa).
+        // The nikhahit goes before the tone marks already on the cluster, so
+        // that น้ำ is drawn น ํ ้ า and the tone stacks on the nikhahit.
         if (cp === 0x0E33) {
             if (clusters.length > 0) {
-                clusters[clusters.length - 1].aboves.push(0x0E4D);
+                const aboves = clusters[clusters.length - 1].aboves;
+                let at = aboves.length;
+                while (at > 0 && isThaiToneMark(aboves[at - 1])) at--;
+                if (at === aboves.length) aboves.push(0x0E4D);
+                else aboves.splice(at, 0, 0x0E4D);
             } else {
                 clusters.push({ base: 0x0E4D, aboves: [], belows: [], leadings: [] });
             }
@@ -253,13 +278,3 @@ export function shapeThaiText(str: string, fontData: FontData): ShapedGlyph[] {
     return shaped;
 }
 
-/**
- * Check whether a string contains any Thai characters.
- */
-export function containsThai(str: string): boolean {
-    for (let i = 0; i < str.length; i++) {
-        const c = str.charCodeAt(i);
-        if (c >= THAI_START && c <= THAI_END) return true;
-    }
-    return false;
-}

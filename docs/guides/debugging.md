@@ -96,6 +96,67 @@ block — including table slicing across page breaks.
 - **Inspection** — automate it: assert block positions in a test, drive a
   layout linter, or feed geometry to another tool.
 
+## Diagnostics and build-time errors (v1.8.0)
+
+Geometry is one thing to debug; the other is a build that warns or refuses.
+Every engine diagnostic code and every build-time message a downstream tool
+must classify is listed in [`docs/data/errors.json`](../data/errors.json)
+(`diagnostics` and `buildErrors`) — read that file first when a message is
+unfamiliar.
+
+**`TYPOGRAPHY_FEATURE_INEFFECTIVE`** — a `typography.fontFeatures` tag
+changed nothing: no registered font declares it, or the font declares it but
+no glyph in the document was substituted. The classic case is `tnum` or
+`lnum` with the bundled Noto Sans, whose figures are tabular and lining by
+default, so there is nothing to substitute (`pnum` and `onum` do change
+glyphs there). It is a warning — `console.warn` once per build by default,
+every occurrence through `layout.onDiagnostic`, a thrown error under
+`layout.strict` — because the same document may be built with different
+fonts. Drop the tag, or register a font whose GSUB declares it; the effective
+tags are the keys of the font module's `features` table.
+
+```ts
+buildDocumentPDFBytes(params, {
+  typography: { fontFeatures: ['tnum'] },
+  onDiagnostic: (d) => console.error(d.code, d.message), // TYPOGRAPHY_FEATURE_INEFFECTIVE
+});
+```
+
+**PDF/X coherence errors** — `pdfx: 'pdfx4'` is checked before any byte is
+written, and an incoherent layout throws one of seven messages (each with
+its remedy):
+
+| Message | Remedy |
+|---|---|
+| `layout.pdfx: unknown target '${target}' — use one of ${PDF_X_CONFORMANCE_TARGETS}` | Use `'pdfx4'`. |
+| `layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them` | Build the print file and the archival file as two documents. |
+| `PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx` | Drop one of the two. |
+| `PDF/X-4 requires layout.outputIntent: the ICC profile of the printing condition, e.g. ISO Coated v2 or GRACoL from your printer. pdfnative ships no press profile` | Pass the output ICC profile your printer names. |
+| `PDF/X-4 requires an output (printer) profile as layout.outputIntent — the supplied profile's class is '${deviceClass}'` | Use a press profile (device class `prtr`), not a monitor profile such as sRGB. |
+| `PDF/X requires the trapping state to be known — set metadata.trapped to 'True' or 'False', or omit it for 'False'` | State `'True'` or `'False'`; pdfnative never traps, so `'False'` is accurate for its output. |
+| `PDF/X pages carry a TrimBox or an ArtBox, not both — drop print.artBox, or print.trimBox and print.bleed` | Keep one of the two boxes. |
+
+The messages start with `PDF/X` or `layout.pdfx`; a CLI or server that maps
+`print.`, `chart:` and `outputIntent.` prefixes to an input-error code should
+add those two.
+
+**`setDeflateImpl()` throws on raw DEFLATE** — since v1.8.0 the injected
+compressor is validated, and a function that returns a raw RFC 1951 payload
+(fflate's `deflateSync`, `CompressionStream`'s `'deflate-raw'`) fails at
+build time instead of producing pages that render blank
+([#78](https://github.com/Nizoka/pdfnative/issues/78)). Pass a
+zlib-wrapping function to `setDeflateImpl()` — fflate's `zlibSync`, pako's
+`deflate`, `node:zlib` `deflateSync` — or hand the raw one to
+`setDeflateRawImpl()` and let pdfnative add the envelope. An asynchronous
+compressor cannot be adapted at all; PDF assembly is synchronous.
+
+**`punctuationSpacing: 'fr'` looks like `'fr-CA'`** — the `'fr'` preset
+sets a narrow no-break space (U+202F) before `;` `!` `?`. WinAnsi has no
+such character, so on the base-14 (non-embedded) path it degrades to an
+ordinary space and the two presets become indistinguishable. Register a
+Latin font that carries the glyph — Noto Sans does — and pass it in
+`fontEntries`; the narrow space is then rendered and extracts as U+202F.
+
 ## Sample
 
 [layout-debug-overlay.ts](https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/layout-debug-overlay.ts)

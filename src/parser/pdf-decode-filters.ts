@@ -251,7 +251,7 @@ export function applyDecodeFilter(name: string, data: Uint8Array): Uint8Array {
 }
 
 /** Known non-Flate decode filter names (for membership checks). */
-export const KNOWN_DECODE_FILTERS = new Set<string>([
+export const KNOWN_DECODE_FILTERS = /*#__PURE__*/ new Set<string>([
     'ASCIIHexDecode', 'AHx',
     'ASCII85Decode', 'A85',
     'LZWDecode', 'LZW',

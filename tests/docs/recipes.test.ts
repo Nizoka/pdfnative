@@ -191,6 +191,28 @@ describe('recipe: update-metadata', () => {
     });
 });
 
+describe('recipe: typography-report', () => {
+    it('breaks paragraphs without adding pages and keeps the text extractable', async () => {
+        const { run } = await import('../../recipes/typography-report.js');
+        const { splitPages, atomicPages, text } = await run();
+        expect(splitPages).toBeLessThanOrEqual(atomicPages);
+        expect(text).toContain('150');
+    });
+});
+
+describe('recipe: print-pdfx4', () => {
+    it('builds a PDF/X-4 that validatePdfX accepts, with CMYK colour', { timeout: 60_000 }, async () => {
+        const { run } = await import('../../recipes/print-pdfx4.js');
+        const { buildSyntheticCmykProfile } = await import('../../scripts/lib/synthetic-cmyk-profile.js');
+        const { bytes, report } = await run({ iccProfile: buildSyntheticCmykProfile() });
+        expect(report.errors).toEqual([]);
+        expect(report.valid).toBe(true);
+        const pdf = latin1(bytes);
+        expect(pdf).toContain('/S /GTS_PDFX');
+        expect(pdf).toContain('0 0 0 1 k');
+    });
+});
+
 // ── Index consistency ────────────────────────────────────────────────
 
 interface IndexEntry {

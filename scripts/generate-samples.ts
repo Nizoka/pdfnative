@@ -4,13 +4,28 @@
  * Generates sample PDFs for every supported language + Latin baseline.
  * Output: test-output/*.pdf (git-ignored directory).
  *
- * Run:   npm run test:generate
- * Then:  open test-output/ and visually inspect each PDF.
+ * Usage:
+ *   npm run test:generate                          # table of every sample at a terminal
+ *   npx tsx scripts/generate-samples.ts --quiet    # one summary line + failures
+ *   npx tsx scripts/generate-samples.ts --verbose  # the table, even through a pipe
+ *   npx tsx scripts/generate-samples.ts --json     # machine-readable summary
+ *
+ * Quiet is the default when stdout is not a terminal (CI, `scripts/gate.ts`,
+ * an agent capturing the output), so a piped run prints a handful of lines.
+ * Then: open test-output/ and visually inspect each PDF.
+ *
+ * Exit codes:
+ *   0 — every sample written
+ *   1 — a generator threw
+ *   2 — bad usage
  */
 
-import { initNodeCompression } from '../src/index.js';
+// Must be first: pins process.env.TZ before anything formats a PDF date.
+import './helpers/tz.js';
+
+import { initNodeCompression, setDefaultCreationDate } from '../src/index.js';
 import { registerAllFonts } from './helpers/fonts.js';
-import { createContext, printSummary } from './helpers/io.js';
+import { createContext, parseOutputMode, printSummary, SAMPLE_CREATION_DATE, type OutputMode } from './helpers/io.js';
 
 import { generate as generateFinancial } from './generators/financial-statements.js';
 import { generate as generateDiverse } from './generators/diverse-use-cases.js';
@@ -60,8 +75,17 @@ import { generate as generateFormFill } from './generators/form-fill-showcase.js
 import { generate as generateChart } from './generators/chart-showcase.js';
 import { generate as generateTextExtract } from './generators/text-extract-showcase.js';
 import { generate as generateIncrementalMetadata } from './generators/incremental-metadata.js';
+import { generate as generateTypography } from './generators/typography-showcase.js';
 
-async function generateAll(): Promise<void> {
+async function generateAll(mode: OutputMode): Promise<void> {
+    const startedAt = Date.now();
+
+    // Pin the creation instant so the whole suite is byte-reproducible and
+    // `npm run verify:samples` can detect regressions by hash. Encrypted and
+    // signed samples stay non-deterministic by design; the harness normalises
+    // those before hashing.
+    setDefaultCreationDate(SAMPLE_CREATION_DATE);
+
     registerAllFonts();
     await initNodeCompression();
 
@@ -73,7 +97,7 @@ async function generateAll(): Promise<void> {
     // ── Diverse use-cases (12 non-financial tables) ──────────────
     await generateDiverse(ctx);
 
-    // ── Alphabet / character coverage (22 scripts) ───────────────
+    // ── Alphabet / character coverage (27 scripts) ───────────────
     await generateAlphabet(ctx);
 
     // ── PDF/A variants (4 conformance levels) ────────────────────
@@ -205,11 +229,25 @@ async function generateAll(): Promise<void> {
     // ── Incremental metadata update (v1.7.0) ─────────────────────
     await generateIncrementalMetadata(ctx);
 
+    // ── Typographic page breaking (v1.8.0) ───────────────────────
+    await generateTypography(ctx);
+
     // ── Summary ──────────────────────────────────────────────────
-    printSummary(ctx.results, ctx.outputDir);
+    printSummary(ctx.results, ctx.outputDir, {
+        quiet: mode.quiet,
+        json: mode.json,
+        seconds: (Date.now() - startedAt) / 1000,
+        skipped: ctx.skipped,
+    });
 }
 
-generateAll().catch((err: unknown) => {
+const mode = parseOutputMode(process.argv.slice(2));
+if ('error' in mode) {
+    process.stderr.write(`${mode.error}\n`);
+    process.exit(2);
+}
+
+generateAll(mode).catch((err: unknown) => {
     console.error('❌ Sample generation failed:', err);
     process.exit(1);
 });

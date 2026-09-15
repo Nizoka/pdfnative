@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Print production — pdfnative</title>
-  <meta name="description" content="Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, duplex print defaults, custom OutputIntent ICC, and large-format /UserUnit.">
+  <meta name="description" content="Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, CMYK colours and OutputIntents, PDF/X-4 with validatePdfX, and large-format /UserUnit.">
   <link rel="canonical" href="https://pdfnative.dev/guides/print.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/print.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/print.html">
@@ -15,7 +15,7 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/print.html">
   <meta property="og:title" content="Print production — pdfnative">
-  <meta property="og:description" content="Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, duplex print defaults, custom OutputIntent ICC, and large-format /UserUnit.">
+  <meta property="og:description" content="Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, CMYK colours and OutputIntents, PDF/X-4 with validatePdfX, and large-format /UserUnit.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Print production — bleed, trim & printer's marks","item":"https://pdfnative.dev/guides/print.html"}]},{"@type":"TechArticle","headline":"Print production — bleed, trim & printer's marks","description":"Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, duplex print defaults, custom OutputIntent ICC, and large-format /UserUnit.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/print.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Print production — bleed, trim & printer's marks","item":"https://pdfnative.dev/guides/print.html"}]},{"@type":"TechArticle","headline":"Print production — bleed, trim & printer's marks","description":"Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, CMYK colours and OutputIntents, PDF/X-4 with validatePdfX, and large-format /UserUnit.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/print.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -65,7 +65,7 @@
 <!-- guide:render:start -->
 <h1 id="print-production--bleed-trim--printers-marks">Print production — bleed, trim &amp; printer&#39;s marks</h1>
 <blockquote>
-<p><strong>New in v1.7.0.</strong> Print-ready PDFs with zero dependencies: page geometry boxes (<code>/TrimBox</code>, <code>/BleedBox</code>, <code>/ArtBox</code>, <code>/CropBox</code>), crop and registration marks drawn as pure vector operators, <code>/Trapped</code> metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format <code>/UserUnit</code>. Everything is opt-in — output is byte-identical when unused.</p>
+<p><strong>New in v1.7.0, extended in v1.8.0.</strong> Print-ready PDFs with zero dependencies: page geometry boxes (<code>/TrimBox</code>, <code>/BleedBox</code>, <code>/ArtBox</code>, <code>/CropBox</code>), crop and registration marks drawn as pure vector operators, <code>/Trapped</code> metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format <code>/UserUnit</code>. Since v1.8.0: CMYK colours, CMYK and Gray OutputIntents, marks in the registration colour, a PDF/X-4 conformance claim and <code>validatePdfX()</code>. Everything is opt-in — output is byte-identical when unused.</p>
 </blockquote>
 <h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-ts">import { buildDocumentPDFBytes, PAGE_SIZES } from &#39;pdfnative&#39;;
@@ -130,15 +130,29 @@ const pdf = buildDocumentPDFBytes(params, {
 <p>Boxes are validated (within the MediaBox, trim within bleed) and are pure page-dictionary metadata — the layout engine is untouched, so design the page at <em>trim + 2×bleed</em> and enlarge the margins by the bleed, letting backgrounds run to the page edge.</p>
 <p><code>mergePdfs</code> / <code>splitPdf</code> / <code>extractPages</code> preserve all four boxes (and <code>/UserUnit</code>).</p>
 <h2 id="printers-marks-14113">Printer&#39;s marks (§14.11.3)<a class="heading-anchor" href="#printers-marks-14113" aria-label="Link to this section">#</a></h2>
-<p><code>print.marks: true</code> draws, on every page, strictly <strong>outside</strong> the TrimBox:</p>
+<p><code>print.marks: true</code> draws, on every page, strictly <strong>outside</strong> the TrimBox and strictly <strong>on</strong> the sheet:</p>
 <ul>
 <li><strong>Crop marks</strong> — 8 corner hairlines (default 0.25 pt, 14 pt long, 5 pt clear of the trim edge) showing where to cut.</li>
 <li><strong>Registration targets</strong> — circle-and-cross targets on the four edge midpoints, used to align separations.</li>
 </ul>
-<p>Fine-tune with an object: <code>marks: { crop, registration, length, offset, weight }</code>.</p>
+<p>Every mark keeps at least 0.5 pt (or the stroke weight, if heavier) from both the trim line and the media edge, so no ink prints on the cut and nothing is lost off the edge. In a tight strip the registration target is re-centred and shrunk to fit; below a 6.6 pt strip it is dropped for that edge rather than drawn clipped. Fine-tune with an object: <code>marks: { crop, registration, length, offset, weight, colourBars }</code>.</p>
 <blockquote>
-<p>Marks are stroked in RGB black. A true all-separation <em>registration colour</em> requires CMYK content support, which is on the roadmap together with PDF/X — see below.</p>
+<p>Marks are stroked in black. Under a CMYK OutputIntent (v1.8.0) they use the <em>registration colour</em> instead — the <code>All</code> separation, which a RIP puts on every plate, so the marks register cyan, magenta, yellow and black against each other.</p>
 </blockquote>
+<h3 id="colour-bars-v180">Colour bars (v1.8.0)<a class="heading-anchor" href="#colour-bars-v180" aria-label="Link to this section">#</a></h3>
+<p><code>marks: { colourBars: true }</code> adds a colour control bar to the bottom bleed strip: cyan, magenta, yellow and black at 100 %, then the same four at 50 %, as square DeviceCMYK fills with 1 pt gutters, starting just right of the bottom-left crop mark. <code>colourBars: { tints: false }</code> keeps the four solids only; <code>size</code> (default 12 pt) sets the patch side and is clamped to the strip height minus the clearance.</p>
+<p><strong>Use a bleed of 5 mm (14.17 pt) or more.</strong> A 3 mm bleed clamps the patches to ≈ 7.5 pt, below the aperture of a densitometer. The bar is skipped silently when the strip is under 4 pt or when it would reach the bottom registration target (very narrow pages). The patches are DeviceCMYK, so under a non-CMYK OutputIntent the usual <code>PDFA_DEVICE_CMYK_CONTENT</code> / <code>PDFX_DEVICE_CMYK</code> diagnostic applies — pair them with a CMYK profile.</p>
+<pre><code class="language-ts">const BLEED = 14.17; // 5 mm
+buildDocumentPDFBytes(params, {
+  pageWidth: PAGE_SIZES.A4.width + 2 * BLEED,
+  pageHeight: PAGE_SIZES.A4.height + 2 * BLEED,
+  pdfx: &#39;pdfx4&#39;,
+  outputIntent: { iccProfile, outputConditionIdentifier: &#39;FOGRA39&#39;, registryName: &#39;http://www.color.org&#39; },
+  print: { bleed: BLEED, marks: { colourBars: true } },
+});
+</code></pre>
+<h3 id="marks-in-tagged-documents">Marks in tagged documents<a class="heading-anchor" href="#marks-in-tagged-documents" aria-label="Link to this section">#</a></h3>
+<p>Under <code>tagged</code> (PDF/A or plain tagged PDF) the whole marks block — crop marks, registration targets and colour bars — is wrapped in <code>/Artifact &lt;&lt; /Type /Page &gt;&gt; BDC … EMC</code>, the artifact type ISO 32000-1 Table 330 reserves for &quot;production aids such as cut marks and colour bars&quot;, so screen readers and text extractors skip it. Untagged output is unchanged.</p>
 <h2 id="trapped-and-prepress-metadata">/Trapped and prepress metadata<a class="heading-anchor" href="#trapped-and-prepress-metadata" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-ts">buildDocumentPDFBytes({ ...params, metadata: { trapped: &#39;False&#39; } }, { tagged: &#39;pdfa2b&#39; });
 </code></pre>
@@ -188,20 +202,83 @@ buildDocumentPDFBytes(params, {
   },
 });
 </code></pre>
-<p>RGB profiles only — pdfnative emits RGB content, and a mismatched intent fails PDF/A validation (a CMYK profile throws with an actionable message). Omitted, the historical built-in profile is used byte-identically.</p>
+<p>RGB profiles since v1.7.0; <strong>CMYK and Gray profiles since v1.8.0</strong>. The profile&#39;s ICC header decides the stream&#39;s <code>/N</code>. Omitted, the historical built-in sRGB profile is used byte-identically. The profile is checked before any byte is written: it must be at least 128 bytes, carry the <code>acsp</code> signature at byte 36 (v1.8.0), declare a size field that fits the supplied buffer (v1.8.0 — a partial download is the usual cause of a mismatch) and name RGB, CMYK or Gray as its data colour space; each failure throws with the message listed under <code>buildErrors</code> in <a href="../data/errors.json"><code>docs/data/errors.json</code></a>. The ICC <em>version</em> is not checked — PDF/A-1b needs a v2 profile, see the <a href="pdfa.html">PDF/A guide</a>.</p>
+<p>pdfnative ships no CMYK profile — press profiles (ISO Coated v2, GRACoL, SWOP) are large and often licensed. Use the one your printer names. For tests and demos only, a synthetic output profile (<code>prtr</code>, CMYK, structurally complete, characterising no printing condition) is served at <a href="https://pdfnative.dev/assets/synthetic-cmyk.icc" target="_blank" rel="noopener">https://pdfnative.dev/assets/synthetic-cmyk.icc</a>; the repository builds it with <code>scripts/lib/synthetic-cmyk-profile.ts</code> and the print playground embeds it.</p>
+<p>Under a CMYK or Gray intent, the colours pdfnative draws in RGB — default text, rules, charts, emoji, RGB images, form fields — are remapped through a calibrated sRGB <code>/DefaultRGB</code> in every resource dictionary that paints. Device RGB under a CMYK intent would otherwise break the conformance claim (ISO 19005-2 §6.2.4.3); remapping tells the print workflow what the colours mean rather than rewriting them as naive CMYK. veraPDF accepts the result under PDF/A-1b and PDF/A-2b.</p>
+<p>The reverse has no inline remedy: a CMYK colour under an RGB or Gray intent raises <code>PDFA_DEVICE_CMYK_CONTENT</code> (or <code>PDFX_DEVICE_CMYK</code> under PDF/X).</p>
+<h2 id="cmyk-colours-v180">CMYK colours (v1.8.0)<a class="heading-anchor" href="#cmyk-colours-v180" aria-label="Link to this section">#</a></h2>
+<p>Every colour option accepts two CMYK forms besides the RGB ones:</p>
+<table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Example</th>
+<th>Unit</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Tuple</td>
+<td><code>[100, 60, 0, 10]</code></td>
+<td>ink coverage in percent, 0–100 — the unit print software states</td>
+</tr>
+<tr>
+<td>Operand string</td>
+<td><code>&#39;1 0.6 0 0.1&#39;</code></td>
+<td>PDF&#39;s own 0.0–1.0</td>
+</tr>
+</tbody></table>
+<pre><code class="language-ts">buildDocumentPDFBytes({
+  title: &#39;Press sheet&#39;,
+  blocks: [
+    { type: &#39;paragraph&#39;, text: &#39;Process cyan&#39;, color: [100, 0, 0, 0] },
+    { type: &#39;paragraph&#39;, text: &#39;Rich black&#39;, color: [60, 40, 40, 100] },
+  ],
+}, layout);
+</code></pre>
+<p>The component count decides the space: three components write <code>rg</code>/<code>RG</code>, four write <code>k</code>/<code>K</code>. Every input accepted before v1.8.0 is RGB and renders as it did. Two places adapt: chart tints remove ink rather than mixing toward white, and an outline item&#39;s <code>/C</code> — DeviceRGB by definition — receives a device-formula RGB approximation. <code>resolveColor()</code>, <code>fillOp()</code> and <code>strokeOp()</code> expose the same resolution to your own content.</p>
+<h2 id="pdfx-4-v180">PDF/X-4 (v1.8.0)<a class="heading-anchor" href="#pdfx-4-v180" aria-label="Link to this section">#</a></h2>
+<p><code>pdfx: &#39;pdfx4&#39;</code> claims PDF/X-4 (ISO 15930-7), the exchange format presses expect for colour-managed jobs with transparency:</p>
+<pre><code class="language-ts">import { readFileSync } from &#39;node:fs&#39;;
+import { buildDocumentPDFBytes, validatePdfX } from &#39;pdfnative&#39;;
+
+const pdf = buildDocumentPDFBytes({ ...params, fontEntries }, {
+  pdfx: &#39;pdfx4&#39;,
+  outputIntent: {
+    iccProfile: new Uint8Array(readFileSync(&#39;ISOcoated_v2_eci.icc&#39;)),
+    outputConditionIdentifier: &#39;FOGRA39&#39;,
+    registryName: &#39;http://www.color.org&#39;,
+  },
+  print: { bleed: 8.5, marks: true },
+});
+
+const report = validatePdfX(pdf); // { valid, errors, warnings }
+</code></pre>
+<p>What the claim writes:</p>
+<ul>
+<li>a <code>%PDF-1.6</code> header (PDF/X-4 is based on PDF 1.6);</li>
+<li>an XMP packet with <code>pdfxid:GTS_PDFXVersion</code> = <code>PDF/X-4</code>, <code>xmpMM:DocumentID</code>, <code>VersionID</code> and <code>RenditionClass</code>, and the XMP dates — and no PDF/A identification;</li>
+<li>a <code>/GTS_PDFX</code> OutputIntent carrying your profile;</li>
+<li>a TrimBox on every page — the BleedBox when <code>print.bleedBox</code> is set and no TrimBox is, the MediaBox when <code>print</code> sets neither (a TrimBox must lie within the BleedBox);</li>
+<li><code>/Trapped</code> in <code>/Info</code> and XMP: <code>False</code> unless <code>metadata.trapped</code> says <code>True</code>.</li>
+</ul>
+<p>What throws before any byte is written: <code>pdfx</code> with a PDF/A <code>tagged</code> level (one claim per file), with <code>encryption</code>, without <code>outputIntent</code>, with a profile that is not an output (<code>prtr</code>) profile, with <code>trapped: &#39;Unknown&#39;</code>, or with both a TrimBox and an ArtBox.</p>
+<p>What raises a diagnostic: <code>PDFX_NO_FONT_ENTRIES</code> (every font must be embedded — pass <code>fontEntries</code>), <code>PDFX_DEVICE_CMYK</code> (CMYK colour under a non-CMYK profile) and <code>PDFX_ANNOTATIONS</code> (links and form fields have no place in a print file).</p>
+<h3 id="checking-the-result">Checking the result<a class="heading-anchor" href="#checking-the-result" aria-label="Link to this section">#</a></h3>
+<p><code>validatePdfX(bytes)</code> checks what the structure can prove: header (a version above 1.6 is an error, below it a warning), encryption and <code>/ID</code>; the XMP identification and trapping, consistent with <code>/Info</code>; the OutputIntent and its embedded output profile; page boxes; embedded fonts, including those reached only through Form XObjects, patterns and annotation appearance streams; annotations in the print area (Hidden, NoView, Popup, PrinterMark and TrapNet are exempt) and JavaScript actions; <code>/OpenAction</code>, additional actions and a JavaScript name tree; embedded files (the <code>/EmbeddedFiles</code> name tree, <code>/FileAttachment</code> annotations, <code>/EmbeddedFile</code> streams); OPI dictionaries, PostScript XObjects and reference XObjects; the <code>LZWDecode</code> filter and transfer functions anywhere in the file — any <code>/TR</code>, and any <code>/TR2</code> other than <code>/Default</code>, is an error (halftones and interpolated images are warnings); and device colour in page content against the intent. Not checked: colour inside Form XObjects and images, transparency blend spaces, optional content, and anything that needs rendering — the validator parses, it does not render. veraPDF does not cover PDF/X, so a <code>valid</code> result means the structural prerequisites hold; confirm a file bound for press with a certified preflight (callas pdfToolbox, Acrobat Preflight).</p>
 <h2 id="large-formats--userunit">Large formats — <code>/UserUnit</code><a class="heading-anchor" href="#large-formats--userunit" aria-label="Link to this section">#</a></h2>
 <p>PDF user space caps pages at 14 400 units (200 in). For banners and plans, <code>print.userUnit</code> scales the unit (1 unit = <code>userUnit</code>/72 inch, up to 75 000):</p>
 <pre><code class="language-ts">// A 5 m × 1 m banner: 1417 × 283 units at 10/72 inch per unit.
 buildDocumentPDFBytes(params, { pageWidth: 1417, pageHeight: 283, print: { userUnit: 10 } });
 </code></pre>
 <p><code>/UserUnit</code> needs PDF 1.6+, so the header is raised to <code>%PDF-1.7</code> when the option is set — and it is rejected under <code>tagged: &#39;pdfa1b&#39;</code> (PDF/A-1 is PDF 1.4; use <code>pdfa2b</code> or later).</p>
-<h2 id="limits--scope-v170">Limits &amp; scope (v1.7.0)<a class="heading-anchor" href="#limits--scope-v170" aria-label="Link to this section">#</a></h2>
+<h2 id="limits--scope-v180">Limits &amp; scope (v1.8.0)<a class="heading-anchor" href="#limits--scope-v180" aria-label="Link to this section">#</a></h2>
 <ul>
-<li>Marks are RGB black; <strong>no CMYK content</strong>, spot colours, colour bars or <strong>PDF/X</strong> conformance claims yet — all on the roadmap as one coherent CMYK workstream.</li>
+<li><strong>Not yet:</strong> spot colours (<code>/Separation</code> inks other than registration), PDF/X-1a, PDF/X-3 and PDF/X-4p, and a single file carrying both a PDF/A and a PDF/X claim.</li>
+<li>Colour emoji and CPAL palettes stay RGB; under a CMYK intent they are covered by <code>/DefaultRGB</code>.</li>
 <li>One geometry per document (pages share the same boxes), matching the single-page-size layout model.</li>
-<li>The OutputIntent (custom or built-in) is emitted under <code>tagged</code> modes only.</li>
+<li>The OutputIntent (custom or built-in) is emitted under <code>tagged</code> modes and under <code>pdfx</code> only.</li>
 </ul>
-<p>See the <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/print-showcase.ts" target="_blank" rel="noopener">print samples</a>: <code>print/print-bleed-marks.pdf</code>, <code>print/print-explicit-boxes.pdf</code>, <code>print/print-large-format.pdf</code>.</p>
+<p>See the <a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/print-showcase.ts" target="_blank" rel="noopener">print samples</a>: <code>print/print-bleed-marks.pdf</code>, <code>print/print-explicit-boxes.pdf</code>, <code>print/print-large-format.pdf</code>, <code>print/print-cmyk-pdfx4.pdf</code>, <code>print/print-cmyk-pdfa2b.pdf</code>. The CMYK samples embed a synthetic stand-in profile generated by the sample script; it characterises no printing condition.</p>
 <!-- guide:render:end -->
   </article>
 </main>

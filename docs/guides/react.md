@@ -1,6 +1,6 @@
 # pdfnative-react — Declarative JSX Renderer Guide
 
-> **Tracks the latest published `pdfnative-react`** (v1.2.0, built on pdfnative 1.7.0), with **React 19** and `pdfnative` ^1.7.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
+> **Tracks the latest published `pdfnative-react`** (v1.2.0, requires pdfnative ≥ 1.7.0), with **React 19** and `pdfnative` ^1.7.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-react releases](https://github.com/Nizoka/pdfnative-react/releases).
 
 [`pdfnative-react`](https://github.com/Nizoka/pdfnative-react) turns declarative **JSX** into real, on-device PDFs powered by the zero-dependency [`pdfnative`](https://github.com/Nizoka/pdfnative) engine — no DOM, no headless browser, no SaaS round-trips. Your documents never leave the process.
 
@@ -381,7 +381,7 @@ try {
 
 ### What's new in v1.2.0
 
-v1.2.0 follows the pdfnative 1.7.0 engine — charts v2, print production, and the conformance channel — and is **100 % additive**: no component, hook or function was removed or changed shape. The only floor that moves is the `pdfnative` peer, `^1.6.0` → `^1.7.0`.
+v1.2.0 follows the pdfnative 1.7.0 engine — charts v2, print production, and the conformance channel — and is **100 % additive**: no component, hook or function was removed or changed shape. The only floor that moves is the `pdfnative` peer, `^1.6.0` → `^1.7.0`. <!-- verify-docs:allow version-token (historical: what v1.2.0 shipped with) -->
 
 | Area | v1.1.0 | v1.2.0 |
 |---|---|---|

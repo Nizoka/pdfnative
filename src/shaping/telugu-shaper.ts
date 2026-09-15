@@ -1,8 +1,14 @@
 /**
- * pdfnative — Telugu Mini-Shaper
- * ================================
+ * pdfnative — Telugu Shaper
+ * ===========================
  * Pure JS OpenType GSUB + GPOS shaping for Telugu script.
  * Zero external dependency.
+ *
+ * Since v1.8.0 the shaping itself runs in `indic-engine.ts`: this module
+ * owns the Telugu `IndicScriptConfig` (script tags `tel2` / `telu`, explicit
+ * reph, below-base forms after the base only, so subjoined consonants and
+ * vattu come from the font's `blwf` / `vatu` features) and the cluster
+ * analyser the tests use.
  *
  * Handles:
  *   - Syllable cluster building (base + virama-mediated conjuncts / subjoined
@@ -27,7 +33,7 @@
 
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { TELUGU_START, TELUGU_END, containsTelugu } from './script-registry.js';
-import { tryLigature } from './gsub-driver.js';
+import { shapeIndicText, type IndicScriptConfig } from './indic-engine.js';
 import { classifyUseCategory } from './use-lite.js';
 
 // Re-export range constants
@@ -210,151 +216,37 @@ export function buildTeluguClusters(str: string): TeluguCluster[] {
 // ── Telugu Shaper ────────────────────────────────────────────────────
 
 /**
+ * Telugu as the Indic engine sees it: a reph only through an explicit
+ * Ra + virama + ZWJ, `blwf` reaching the consonants after the base only
+ * (every one of them stacks below it), no pre-base vowel sign, and ై kept
+ * as the single glyph the font carries.
+ *
+ * @since 1.8.0
+ */
+export const TELUGU_CONFIG: IndicScriptConfig = {
+    id: 'telugu',
+    scriptTags: ['tel2', 'telu', 'DFLT'],
+    consonants: [[0x0C15, 0x0C39], [0x0C58, 0x0C5A]],
+    virama: VIRAMA,
+    ra: 0x0C30,
+    rephMode: 'explicit',
+    rephPosition: 'afterPost',
+    blwfMode: 'postOnly',
+    splitMatras: {},
+};
+
+/**
  * Shape a string of Telugu text into an array of positioned glyphs.
  *
+ * Since v1.8.0 the work is done by the shared Indic engine over the font's
+ * per-feature OpenType tables (`FontData.otl`): the subjoined consonants
+ * come from `blwf`, the vowel-sign forms from `abvs` / `blws` / `psts`.
+ * See `indic-engine.ts`.
+ *
  * @param str - Raw Telugu string
- * @param fontData - Font data with cmap, ligatures, markAnchors, metrics, widths
- * @returns Array of positioned glyphs
+ * @param fontData - Font data with cmap, otl, markAnchors, widths
+ * @returns Array of positioned glyphs in visual order
  */
 export function shapeTeluguText(str: string, fontData: FontData): ShapedGlyph[] {
-    const { cmap, ligatures, markAnchors, widths, defaultWidth } = fontData;
-    const shaped: ShapedGlyph[] = [];
-
-    function resolveGid(cp: number): number {
-        const normCp = (cp === 0x202F || cp === 0xA0) ? 0x20 : cp;
-        return cmap[normCp] || 0;
-    }
-
-    function tryLig(gids: number[]) {
-        return tryLigature(gids, ligatures);
-    }
-
-    function getAdv(gid: number): number {
-        return widths[gid] !== undefined ? widths[gid] : defaultWidth;
-    }
-
-    function getBaseAnchor(baseGid: number, markClass: number): [number, number] | null {
-        const base = markAnchors && markAnchors.bases && markAnchors.bases[baseGid];
-        if (!base) return null;
-        return base[markClass] ?? null;
-    }
-
-    function getMarkAnchor(markGid: number): { classIdx: number; x: number; y: number } | null {
-        const mark = markAnchors && markAnchors.marks && markAnchors.marks[markGid];
-        if (!mark) return null;
-        return { classIdx: mark[0], x: mark[1], y: mark[2] };
-    }
-
-    function emitGlyph(gid: number, isZero: boolean, baseGid?: number): void {
-        if (isZero && baseGid !== undefined) {
-            const markAnchor = getMarkAnchor(gid);
-            if (markAnchor) {
-                const baseAnchorPt = getBaseAnchor(baseGid, markAnchor.classIdx);
-                if (baseAnchorPt) {
-                    const baseAdv = getAdv(baseGid);
-                    shaped.push({
-                        gid, dx: baseAnchorPt[0] - markAnchor.x - baseAdv,
-                        dy: baseAnchorPt[1] - markAnchor.y, isZeroAdvance: true,
-                    });
-                    return;
-                }
-            }
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: true });
-        } else {
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: false });
-        }
-    }
-
-    const clusters = buildTeluguClusters(str);
-
-    for (const cluster of clusters) {
-        const { codepoints } = cluster;
-
-        // Find the effective base consonant GID
-        let baseGid = 0;
-        for (let ci = 0; ci < codepoints.length; ci++) {
-            const ct = teluguCharType(codepoints[ci]);
-            if (ct === 0) {
-                baseGid = resolveGid(codepoints[ci]);
-            } else if (ct >= 2) {
-                break;
-            }
-        }
-
-        // Emit consonant cluster — try ligature matching first.
-        const clusterGids: number[] = [];
-        const clusterEndIdx: number[] = [];
-        let matraStart = codepoints.length;
-        for (let ci = 0; ci < codepoints.length; ci++) {
-            const ct = teluguCharType(codepoints[ci]);
-            if (ct === 0 || ct === 7) {
-                clusterGids.push(resolveGid(codepoints[ci]));
-                clusterEndIdx.push(ci);
-            } else if (ct >= 2) {
-                matraStart = ci;
-                break;
-            } else if (ct < 0 || ct === 1 || ct === 9) {
-                // Non-Telugu char, independent vowel, or digit — emit directly
-                emitGlyph(resolveGid(codepoints[ci]), false);
-            }
-        }
-
-        const ligResult = tryLig(clusterGids);
-        if (ligResult) {
-            emitGlyph(ligResult.resultGid, false);
-            baseGid = ligResult.resultGid;
-
-            let gi = ligResult.consumed;
-            while (gi < clusterGids.length) {
-                const subSeq = clusterGids.slice(gi);
-                const subLig = tryLig(subSeq);
-                if (subLig) {
-                    emitGlyph(subLig.resultGid, false);
-                    gi += subLig.consumed;
-                } else {
-                    const origCi = clusterEndIdx[gi];
-                    const ct = teluguCharType(codepoints[origCi]);
-                    if (ct === 7) {
-                        emitGlyph(clusterGids[gi], true, baseGid);
-                    } else {
-                        emitGlyph(clusterGids[gi], false);
-                    }
-                    gi++;
-                }
-            }
-        } else {
-            // No ligature match — emit individual consonant + virama glyphs.
-            for (let ci = 0; ci < matraStart; ci++) {
-                const cp = codepoints[ci];
-                const ct = teluguCharType(cp);
-                if (ct === 0) {
-                    emitGlyph(resolveGid(cp), false);
-                } else if (ct === 7) {
-                    emitGlyph(resolveGid(cp), true, baseGid);
-                }
-            }
-        }
-
-        // Emit matras and modifiers.
-        for (let ci = matraStart; ci < codepoints.length; ci++) {
-            const cp = codepoints[ci];
-            const ct = teluguCharType(cp);
-            if (ct === 2 || ct === 3) {
-                // Above/below mark — GPOS positioned (zero advance).
-                emitGlyph(resolveGid(cp), true, baseGid);
-            } else if (ct === 5) {
-                // Right-spacing matra — normal advance.
-                emitGlyph(resolveGid(cp), false);
-            } else if (ct === 6) {
-                // Modifiers / length marks — zero-advance marks.
-                emitGlyph(resolveGid(cp), true, baseGid);
-            } else if (ct === 9) {
-                emitGlyph(resolveGid(cp), false);
-            } else {
-                emitGlyph(resolveGid(cp), false);
-            }
-        }
-    }
-
-    return shaped;
+    return shapeIndicText(str, fontData, TELUGU_CONFIG);
 }

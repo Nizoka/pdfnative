@@ -29,14 +29,66 @@ export interface FontData {
     readonly ttfBase64: string;
     readonly gsub: Record<number, number>;
     readonly ligatures?: Record<number, number[][]> | null;
+    /**
+     * OpenType single substitutions, kept apart per feature tag:
+     * `{ 'tnum': { fromGid: toGid }, … }`.
+     *
+     * Distinct from {@link gsub}, which unions every SingleSubst lookup in
+     * the font because the Indic and Thai shapers want them all. Splitting by
+     * tag is what allows a caller to ask for tabular figures without also
+     * getting every contextual alternate in the face.
+     *
+     * Absent or `null` on fonts built before v1.8.0, and on fonts declaring
+     * none of the supported tags — feature requests are then no-ops.
+     *
+     * @since 1.8.0
+     */
+    readonly features?: Record<string, Record<number, number>> | null;
+    /**
+     * GPOS pair kerning: `{ leftGid: { rightGid: adjustment } }`, in design
+     * units, negative to pull a pair together.
+     *
+     * Kerning is the most visible refinement a font carries — "AV", "To" and
+     * "Yo" are set with their nominal advances without it — and pdfnative
+     * extracted none of it before v1.8.0. Class-based GPOS subtables are
+     * expanded to glyph pairs at build time, so applying them is a two-level
+     * lookup with no shaping state.
+     *
+     * Absent or `null` on fonts built before v1.8.0 and on fonts with no pair
+     * positioning, including the four Latin subsets whose GPOS was stripped
+     * when they were subsetted.
+     *
+     * @since 1.8.0
+     */
+    readonly kern?: KernTable | null;
+    /**
+     * GPOS MarkToBase anchors. `marks[gid]` is `[classIdx, x, y, …]` — one
+     * triple per GPOS subtable that covers the mark, in lookup order (a font
+     * anchors the same vowel sign on plain consonants in one subtable and on
+     * conjunct ligatures in another); `bases[gid][classIdx]` is the matching
+     * attachment point. Mark classes are unique across subtables since
+     * v1.8.0; modules built before carry a single triple per mark.
+     */
     readonly markAnchors: {
         readonly bases: Record<number, Record<number, [number, number]>>;
-        readonly marks: Record<number, [number, number, number]>;
+        readonly marks: Record<number, readonly number[]>;
     } | null;
+    /** GPOS MarkToMark anchors, with the same per-subtable triples in `mark2Classes`. */
     readonly mark2mark: {
         readonly mark1Anchors: Record<number, Record<number, [number, number]>>;
-        readonly mark2Classes: Record<number, [number, number, number]>;
+        readonly mark2Classes: Record<number, readonly number[]>;
     } | null;
+    /**
+     * OpenType Layout kept per script and feature: the GSUB lookups the Indic
+     * engine applies in specification order (`rphf`, `blwf`, `half`, `pstf`,
+     * `pres`, …) and `ccmp` for Latin combining marks, plus the GDEF mark
+     * class. Absent or `null` on modules built before v1.8.0, on fonts with
+     * no such features, and on font-data objects a caller assembled by hand —
+     * the shapers then fall back to {@link ligatures} and {@link gsub}.
+     *
+     * @since 1.8.0
+     */
+    readonly otl?: OtlTables | null;
     /**
      * Colour glyph table (COLR/CPAL), keyed by base glyph id. Present only
      * for colour fonts such as Noto Color Emoji (opt-in via the
@@ -56,6 +108,61 @@ export interface FontData {
      * the historical per-codepoint behaviour. (v1.7.0)
      */
     readonly sequences?: Record<number, number[][]> | null;
+}
+
+// ── OpenType Layout tables (v1.8.0) ───────────────────────────────────
+
+/**
+ * One GSUB lookup as a font-data module serialises it: `t` is the OpenType
+ * lookup type, `f` the raw lookupFlag (bit 3 = IgnoreMarks), `m` the
+ * substitutions keyed by first glyph id.
+ *
+ * @since 1.8.0
+ */
+export type OtlLookup =
+    | { readonly t: 1; readonly f: number; readonly m: Readonly<Record<number, number>> }
+    | { readonly t: 2; readonly f: number; readonly m: Readonly<Record<number, readonly number[]>> }
+    | { readonly t: 4; readonly f: number; readonly m: Readonly<Record<number, readonly (readonly number[])[]>> }
+    | { readonly t: 6; readonly f: number; readonly m: readonly OtlChainRule[] };
+
+/**
+ * One contextual substitution rule (GSUB LookupType 5 or 6): the glyph sets
+ * the backtrack (`b`, closest glyph first), input (`i`, first glyph
+ * included) and lookahead (`l`) must match — each an index into
+ * {@link OtlTables.gsub.sets} — and the lookups to apply at the matched
+ * input positions (`a`, `[inputIndex, lookupIndex]` pairs in order).
+ *
+ * @since 1.8.0
+ */
+export interface OtlChainRule {
+    readonly b: readonly number[];
+    readonly i: readonly number[];
+    readonly l: readonly number[];
+    readonly a: readonly (readonly number[])[];
+}
+
+/**
+ * OpenType Layout data a font-data module carries for the shapers: GSUB
+ * lookups indexed per script and feature tag (in application order) and the
+ * GDEF mark-class ranges.
+ *
+ * @since 1.8.0
+ */
+export interface OtlTables {
+    readonly gsub: {
+        /** `scripts[scriptTag][featureTag]` → ascending lookup indices. */
+        readonly scripts: Readonly<Record<string, Readonly<Record<string, readonly number[]>>>>;
+        /** Each lookup once, keyed by its index in the font's LookupList. */
+        readonly lookups: Readonly<Record<number, OtlLookup>>;
+        /**
+         * Glyph sets the contextual rules share, each a flat list of
+         * inclusive glyph-id ranges `[s1, e1, s2, e2, …]`. Present when the
+         * font has contextual lookups.
+         */
+        readonly sets?: readonly (readonly number[])[];
+    };
+    /** GDEF GlyphClassDef class 3 (marks) as inclusive glyph-id ranges. */
+    readonly gdef?: { readonly marks: readonly (readonly [number, number])[] };
 }
 
 // ── Colour Glyph Types (COLR/CPAL — v1.3.0) ──────────────────────────
@@ -120,6 +227,18 @@ export interface SweepGradientPaint {
 /** A paint used to fill a colour-glyph layer. */
 export type ColorPaint = SolidPaint | LinearGradientPaint | RadialGradientPaint | SweepGradientPaint;
 
+/**
+ * One outline taking part in a colour-layer clip.
+ *
+ * @since 1.8.0
+ */
+export interface ClipOutline {
+    /** Glyph id of the outline (in the font's `glyf` table). */
+    readonly glyphId: number;
+    /** Affine transform `[a b c d e f]` of the outline, identity when absent. */
+    readonly transform?: readonly [number, number, number, number, number, number];
+}
+
 /** A single colour-glyph layer: a base outline filled by a paint. */
 export interface ColorLayer {
     /** Glyph id of the base outline (in the font's `glyf` table). */
@@ -144,6 +263,28 @@ export interface ColorLayer {
      * @since 1.4.0
      */
     readonly blendMode?: string;
+    /**
+     * Optional clip sets applied before the layer is painted: each set is the
+     * union of the outlines it lists, and the sets are intersected. Flattened
+     * from a COLRv1 `PaintComposite` in `SRC_IN` or `DEST_IN` mode whose mask
+     * is made of glyph shapes, with no transparency group. A PDF clip is a
+     * binary mask, so a partly translucent mask is carried as its nearest
+     * binary mask: its layers at or above half opacity.
+     *
+     * @since 1.8.0
+     */
+    readonly clip?: readonly (readonly ClipOutline[])[];
+    /**
+     * When true, the layer paints the whole region its {@link clip} allows
+     * rather than the outline of {@link glyphId}, and its paint geometry is
+     * already in glyph space, so {@link transform} is absent. This carries a
+     * masked fill with no outline of its own — the shaded wave across Noto's
+     * flags. `glyphId` still names one of the mask outlines, so a consumer
+     * unaware of this field draws something plausible rather than nothing.
+     *
+     * @since 1.8.0
+     */
+    readonly fillsClip?: boolean;
 }
 
 /** A resolved colour glyph: ordered layers painted back-to-front. */
@@ -189,12 +330,23 @@ export interface FontEntry {
 
 // ── Shaping Types ────────────────────────────────────────────────────
 
-/** A single positioned glyph output from the Thai shaper. */
+/** A single positioned glyph output by a shaper, in visual order. */
 export interface ShapedGlyph {
     readonly gid: number;
     readonly dx: number;
     readonly dy: number;
     readonly isZeroAdvance: boolean;
+    /**
+     * The source code points this glyph stands for — every component of a
+     * ligature, the composed vowel sign behind a decomposed one, nothing for
+     * a glyph that only carries part of a code point already reported by its
+     * neighbour. Set by the Indic engine and the Latin combining-mark shaper
+     * so the ToUnicode CMap can name conjuncts and contextual forms that have
+     * no cmap entry of their own; older shapers leave it unset.
+     *
+     * @since 1.8.0
+     */
+    readonly cps?: readonly number[];
 }
 
 /** A text run produced by the encoding context's textRuns() method. */
@@ -205,6 +357,51 @@ export interface TextRun {
     readonly shaped: ShapedGlyph[] | null;
     readonly hexStr: string | null;
     readonly widthPt: number;
+    /**
+     * Operand for a `TJ` array when the run carries kerning adjustments, e.g.
+     * `<0024> 40 <0057>`. The emitter writes `TJ` instead of `Tj` when this is
+     * present; {@link widthPt} already accounts for the adjustments.
+     *
+     * @since 1.8.0
+     */
+    readonly tjStr?: string;
+}
+
+/**
+ * One class-based PairPos subtable (OpenType format 2).
+ *
+ * Left and right glyphs are assigned classes, and the adjustment lives in a
+ * matrix indexed by the pair of classes. Only classes the subtable can
+ * actually reach are listed, and the matrix is sparse.
+ *
+ * @since 1.8.0
+ */
+export interface KernClassSubtable {
+    /** Left glyph → class index. An absent glyph is outside the coverage. */
+    readonly l: Record<number, number>;
+    /** Right glyph → class index. An absent glyph is class 0, the default. */
+    readonly r: Record<number, number>;
+    /** Number of right-hand classes, the matrix row stride. */
+    readonly n: number;
+    /** Sparse adjustments keyed by `leftClass * n + rightClass`. */
+    readonly m: Record<number, number>;
+}
+
+/**
+ * A font's pair kerning, mirroring the two OpenType PairPos formats.
+ *
+ * The class form is kept rather than expanded to glyph pairs: expanding
+ * Noto Sans produced 71 094 pairs and 594 KB — a fifth of the module — which
+ * every consumer would parse whether or not they enable kerning. In class
+ * form the same data is 46 KB.
+ *
+ * @since 1.8.0
+ */
+export interface KernTable {
+    /** Format-1 subtables: explicit glyph pairs. */
+    readonly p: Record<number, Record<number, number>> | null;
+    /** Format-2 subtables: class-based, consulted in order. */
+    readonly c: readonly KernClassSubtable[] | null;
 }
 
 /** Encoding context encapsulating text encoding and font reference logic. */
@@ -219,12 +416,61 @@ export interface EncodingContext {
     readonly fontData?: FontData;
     readonly getUsedGids?: () => Map<string, Set<number>>;
     /**
+     * Glyphs reachable only through a substitution — an OpenType feature such
+     * as `smcp` or `onum` — mapped back to the codepoint of the glyph they
+     * replaced, per font ref. The font's cmap cannot name them, so without
+     * this table their ToUnicode entry would be missing and the text would
+     * extract as U+FFFD. Present only on Unicode contexts. (v1.8.0)
+     */
+    readonly getToUnicodeOverrides?: () => Map<string, Map<number, number | readonly number[]>>;
+    /**
      * Colour-emoji collector — present only when an `'emoji-color'` font
      * (carrying `colorGlyphs`) is registered. Used by the text emitter to
      * draw colour-emoji Form XObjects inline. (v1.3.0)
      */
     readonly colorEmoji?: ColorEmojiCollector;
+    /**
+     * Which base-14 advance widths the Latin path measures with.
+     * `'approximate'` (the default, and how it is left when absent) is the
+     * historical bucketed estimate; `'exact'` uses the Adobe Core 14 AFM
+     * tables. (v1.8.0)
+     */
+    readonly metrics?: Base14Metrics;
+    /**
+     * Language tag passed to the hyphenation provider
+     * ({@link TypographyOptions.hyphenationLanguage}). (v1.8.0)
+     */
+    readonly lang?: string;
+    /**
+     * Substitutions performed per requested OpenType feature tag since the
+     * context was derived. Present only on a feature-derived context; lets
+     * the builders report a tag that changed nothing. (v1.8.0)
+     */
+    readonly getFeatureUsage?: () => ReadonlyMap<string, number>;
+    /**
+     * Derive a context that applies the given OpenType features to every
+     * glyph it encodes and measures.
+     *
+     * Returns the same context when nothing would change — no registered
+     * font, or none of the tags declared by the fonts in play.
+     *
+     * @since 1.8.0
+     */
+    readonly withFeatures?: (tags: readonly string[]) => EncodingContext;
 }
+
+/**
+ * Base-14 measurement mode.
+ *
+ * - `'approximate'` — the historical estimate: 556 for digits, 680 for
+ *   capitals, 500 for lowercase and 556 for everything else. Fast, and what
+ *   every release up to 1.7.0 emitted.
+ * - `'exact'` — the Adobe Core 14 AFM advances, correct for punctuation,
+ *   accented letters and currency.
+ *
+ * @since 1.8.0
+ */
+export type Base14Metrics = 'approximate' | 'exact';
 
 // ── PDF Parameters ───────────────────────────────────────────────────
 
@@ -304,13 +550,28 @@ export type PdfRgbString = `${number} ${number} ${number}`;
 export type PdfRgbTuple = readonly [r: number, g: number, b: number];
 
 /**
+ * PDF CMYK color string in operator format: "C M Y K" (values 0.0–1.0).
+ * @since 1.8.0
+ */
+export type PdfCmykString = `${number} ${number} ${number} ${number}`;
+
+/**
+ * CMYK color as a 4-tuple of ink coverage in percent, 0–100 — the unit print
+ * software uses. `[0, 0, 0, 100]` is solid black.
+ * @since 1.8.0
+ */
+export type PdfCmykTuple = readonly [c: number, m: number, y: number, k: number];
+
+/**
  * Color input accepted by pdfnative.
  *
  * - Hex string: `"#2563EB"` or `"#26E"` (primary — standard web format)
  * - RGB tuple: `[37, 99, 235]` values 0–255 (alternative — programmatic)
  * - PDF operator string: `"0.145 0.388 0.922"` values 0.0–1.0 (advanced — native PDF format)
+ * - CMYK tuple: `[100, 60, 0, 10]` percent 0–100, emitted as DeviceCMYK (since 1.8.0)
+ * - PDF CMYK string: `"1 0.6 0 0.1"` values 0.0–1.0 (since 1.8.0)
  */
-export type PdfColor = PdfRgbString | PdfRgbTuple | (string & {});
+export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | (string & {});
 
 /**
  * Color palette for the PDF.
@@ -396,10 +657,27 @@ export interface WorkerGenerationOptions {
 export type PdfDiagnosticCode =
     /** PDF/A level requested with no `fontEntries` — unembedded standard-14 fonts (ISO 19005 §6.2.11.4.1). (#69) */
     | 'PDFA_NO_FONT_ENTRIES'
-    /** DeviceCMYK image under a PDF/A claim with an sRGB OutputIntent (ISO 19005-2 §6.2.4.3). */
+    /** DeviceCMYK image under a PDF/A claim whose OutputIntent is not CMYK (ISO 19005-2 §6.2.4.3). */
     | 'PDFA_DEVICE_CMYK_IMAGE'
     /** AcroForm fields under a PDF/A claim — form appearances use an unembedded base-14 /Helv font (ISO 19005 §6.2.11.4.1). */
-    | 'PDFA_UNEMBEDDED_FORM_FONT';
+    | 'PDFA_UNEMBEDDED_FORM_FONT'
+    /** CMYK content colour under a PDF/A claim whose OutputIntent is not CMYK (ISO 19005-2 §6.2.4.3). @since 1.8.0 */
+    | 'PDFA_DEVICE_CMYK_CONTENT'
+    /** An ICC v4 OutputIntent profile under a PDF/A-1 claim, which admits v2 only (ISO 19005-1 §6.2.2). @since 1.8.0 */
+    | 'PDFA_ICC_PROFILE_VERSION'
+    /** PDF/X-4 requested with no `fontEntries` — unembedded standard-14 fonts (ISO 15930-7). @since 1.8.0 */
+    | 'PDFX_NO_FONT_ENTRIES'
+    /** CMYK colour or image under a PDF/X-4 claim whose OutputIntent is not CMYK (ISO 15930-7). @since 1.8.0 */
+    | 'PDFX_DEVICE_CMYK'
+    /** Link annotations or form fields on a PDF/X-4 page (ISO 15930-7). @since 1.8.0 */
+    | 'PDFX_ANNOTATIONS'
+    /**
+     * A `typography.fontFeatures` tag that changed nothing: no registered font
+     * declares it, or the font declares it but no glyph in the document was
+     * substituted (Noto Sans's default figures are already lining and
+     * tabular, so `lnum` and `tnum` have nothing to do). @since 1.8.0
+     */
+    | 'TYPOGRAPHY_FEATURE_INEFFECTIVE';
 
 /** A single conformance diagnostic surfaced by the builders. */
 export interface PdfDiagnostic {
@@ -411,6 +689,246 @@ export interface PdfDiagnostic {
 
 /** Sink for conformance diagnostics. Pass `() => {}` to silence. */
 export type PdfDiagnosticHandler = (diagnostic: PdfDiagnostic) => void;
+
+/**
+ * Fine typographic control over how text blocks break across pages.
+ *
+ * Every setting is opt-in: with `typography` omitted, paragraphs stay atomic
+ * and output is byte-identical to earlier releases.
+ *
+ * @since 1.8.0
+ */
+export interface TypographyOptions {
+    /**
+     * Allow a paragraph to break across a page boundary at a line boundary.
+     *
+     * Historically a paragraph was atomic: one that did not fit in the
+     * remaining space moved to the next page whole, which leaves large gaps in
+     * running text, and one taller than a full page simply overflowed off the
+     * bottom. With this on, a paragraph is laid out line by line, the way
+     * tables have always been laid out row by row.
+     *
+     * {@link orphans} and {@link widows} constrain where those breaks may fall
+     * and only apply when this is on.
+     *
+     * Default: `false` (atomic, byte-identical).
+     */
+    readonly splitParagraphs?: boolean;
+    /**
+     * Minimum number of a paragraph's lines that must remain at the foot of a
+     * page for a break to be allowed there. Fewer, and the whole paragraph
+     * moves to the next page rather than leaving a stranded first line.
+     *
+     * Requires {@link splitParagraphs}. Default: `2`.
+     */
+    readonly orphans?: number;
+    /**
+     * Minimum number of a paragraph's lines that must be carried to the next
+     * page. Fewer, and the break is pulled earlier so the remainder is not a
+     * single stranded last line.
+     *
+     * Requires {@link splitParagraphs}. Default: `2`.
+     */
+    readonly widows?: number;
+    /**
+     * Keep every heading with the content that follows it: a heading that
+     * would be the last item on a page moves to the next page along with it.
+     *
+     * Independent of {@link splitParagraphs} — a heading stranded at the foot
+     * of a page is the most visible break fault in a generated report, and
+     * fixing it needs no line-level layout.
+     *
+     * Individual blocks can opt in or out with their own `keepWithNext`.
+     *
+     * `true` reserves at least two lines of a following paragraph, what
+     * Word and InDesign do by default. `{ minLines }` raises that quota —
+     * three is a common house style. The reservation never drops below
+     * {@link orphans}, and a paragraph that cannot spare that many lines and
+     * still carry {@link widows} over follows the heading whole. Tables are
+     * unaffected: a heading is kept with a table's caption, header and first
+     * row.
+     *
+     * Default: `false`.
+     */
+    readonly keepHeadingsWithNext?: boolean | {
+        /** Minimum lines of the following paragraph kept on the heading's page. Floored at 1. Default: `2`. */
+        readonly minLines?: number;
+    };
+    /**
+     * Bind a numerical value to the unit symbol that follows it with a
+     * no-break space, so `150 €`, `12 kg` or `30 %` never break across a
+     * line. ISO 80000-1 §7.1 asks for this in every language, so it carries
+     * no locale and no cultural assumption.
+     *
+     * Pass `true` for the built-in symbol list, or an object whose `units`
+     * replace that list. Only an existing plain space is converted, and only
+     * before a recognised unit standing on its own — "150 personnes" stays
+     * breakable.
+     *
+     * Default: `false`.
+     */
+    readonly unitBinding?: boolean | UnitBindingOptions;
+    /**
+     * Bind short words to the word that follows them with a no-break space,
+     * so a line never ends on "a", "w" or "I".
+     *
+     * A house style, not a typographic law — which is why it is opt-in. It
+     * is orthography in Polish, Czech, Slovak, Russian, Ukrainian and
+     * Hungarian, whose one-letter prepositions and conjunctions must not
+     * close a line, and a preference elsewhere: Chicago and Bringhurst do
+     * not forbid an English line ending on an article.
+     *
+     * `true` binds words of one letter (letters only, case-insensitive).
+     * `maxLength` widens the rule to words of up to that many letters (three
+     * at most); `words` restricts it to an explicit list instead, for
+     * example `['w', 'z', 'i', 'a', 'o', 'u']` for Polish. Only an existing
+     * plain space is converted, never one at the end of the text or before
+     * punctuation; a digit is never a word, and a unit already bound to its
+     * number is left alone. Idempotent. Applies wherever
+     * {@link punctuationSpacing} does.
+     *
+     * The no-break space is visible to text extraction, and each binding
+     * removes a break opportunity a narrow column may need.
+     *
+     * Default: `false`.
+     */
+    readonly bindShortWords?: boolean | {
+        /** Longest word the rule applies to, 1 to 3 letters. Default: `1`. */
+        readonly maxLength?: number;
+        /** Explicit words to bind, replacing the letter-count rule. */
+        readonly words?: readonly string[];
+    };
+    /**
+     * Replace the plain spaces around punctuation with no-break ones.
+     *
+     * Unlike unit binding, this is **not** universal: French sets a narrow
+     * space before `;` `!` `?`, Canadian French sets none, English, German,
+     * Italian and Spanish set none anywhere, and Polish has an unrelated rule
+     * about one-letter prepositions. So it takes either the name of a preset
+     * the library can state precisely (`'fr'`, `'fr-CA'`) or an explicit list
+     * of rules describing any other convention.
+     *
+     * Only existing spaces are converted; nothing is inserted where the
+     * author wrote none. Applies to headings, paragraphs, lists, link labels
+     * and table content.
+     *
+     * Default: `undefined` (no change).
+     */
+    readonly punctuationSpacing?: PunctuationSpacingPreset | readonly PunctuationSpacingRule[];
+    /**
+     * Let punctuation hang past the edge it sits against, so the optical edge
+     * of a column reads straight.
+     *
+     * A line beginning with an opening quote, or ending in a full stop, looks
+     * indented even with its glyph origin exactly on the margin, because the
+     * mark is mostly white space inside its own box. Hanging it back out is
+     * the classic fix, and the most visible difference between typeset and
+     * generated pages.
+     *
+     * Applies to paragraphs: the leading mark of left-aligned and justified
+     * lines, and the trailing mark of justified and right-aligned ones.
+     * Offsets are a fraction of the mark's own advance and are conservative.
+     *
+     * Default: `false`.
+     */
+    readonly opticalMargins?: boolean;
+    /**
+     * Which advance widths the base-14 (Latin, non-embedded) path measures
+     * with.
+     *
+     * The historical estimate buckets every digit at 556, every capital at
+     * 680, every lowercase at 500 and everything else at 556 — which covers
+     * most punctuation and every accented letter. A line of French or a
+     * column of currency therefore measures visibly wrong, showing up as
+     * mis-wrapped lines, truncation that cuts too early or too late, and
+     * right-aligned text that misses its margin.
+     *
+     * `'exact'` reads the Adobe Core 14 AFM advances instead. It is opt-in
+     * because better measurement necessarily moves line breaks: an existing
+     * document re-wraps, which is a change of output rather than a bug fix.
+     *
+     * Only affects the base-14 path. Registered (embedded) fonts always
+     * measure from their own `hmtx` table.
+     *
+     * Default: `'approximate'`.
+     */
+    readonly metrics?: Base14Metrics;
+    /**
+     * OpenType features to apply to the document's text, by tag.
+     *
+     * The one that earns its keep is `'tnum'`: proportional digits make a
+     * column of amounts ragged, because `1` is narrower than `8`. Tabular
+     * figures give every digit the same advance, which is the difference
+     * between a financial table that lines up and one that does not.
+     *
+     * Only single substitutions are supported — one glyph in, one glyph out.
+     * That is what makes them safe to apply without a shaping engine.
+     * Available tags: `tnum`, `pnum`, `lnum`, `onum`, `zero`, `ordn`, `sups`,
+     * `subs`, `smcp`, `c2sc`, `case`. Contextual and ligature features
+     * (`liga`, `calt`, `frac`) are out of scope.
+     *
+     * Requires a registered font: the non-embedded base-14 faces carry no
+     * OpenType tables. Asking for a tag a font does not declare is a silent
+     * no-op, since the same document may be built with different fonts.
+     * Later tags win where two features touch the same glyph.
+     *
+     * Default: none.
+     */
+    readonly fontFeatures?: readonly string[];
+    /**
+     * Apply the font's pair kerning.
+     *
+     * Without it "AV", "To" and "Yo" are set with their nominal advances,
+     * which is the single most visible difference between typeset and
+     * generated text. Adjustments are emitted as `TJ` arrays, so a kerned run
+     * stays one text-showing operator and viewer selection and extraction are
+     * unaffected.
+     *
+     * Requires a registered font carrying a `kern` table — the base-14 faces
+     * have no OpenType data, and the four Latin subsets had their GPOS
+     * stripped when they were subsetted. Opt-in because it necessarily moves
+     * glyphs and therefore changes output.
+     *
+     * Default: `false`.
+     */
+    readonly kerning?: boolean;
+    /**
+     * Language tag (BCP 47, e.g. `'fr'`, `'en-US'`) handed to the installed
+     * {@link setHyphenationProvider | hyphenation provider} with every word,
+     * so one provider can select the right pattern set. No effect without a
+     * provider; the library never assumes a language on its own.
+     *
+     * @since 1.8.0
+     */
+    readonly hyphenationLanguage?: string;
+}
+
+/** Built-in punctuation-spacing conventions. @since 1.8.0 */
+export type PunctuationSpacingPreset = 'fr' | 'fr-CA';
+
+/**
+ * One punctuation-spacing rule: the plain space on `side` of `char` becomes
+ * the given no-break space.
+ *
+ * @since 1.8.0
+ */
+export interface PunctuationSpacingRule {
+    /** The punctuation character the rule applies to. */
+    readonly char: string;
+    /** Which side of the character the space sits on. */
+    readonly side: 'before' | 'after';
+    /** `'nbsp'` for U+00A0, `'narrow'` for U+202F. */
+    readonly space: 'nbsp' | 'narrow';
+}
+
+/** Configuration for {@link TypographyOptions.unitBinding}. @since 1.8.0 */
+export interface UnitBindingOptions {
+    /**
+     * Unit symbols to recognise, replacing the built-in list entirely.
+     * Longer symbols win over shorter prefixes automatically.
+     */
+    readonly units?: readonly string[];
+}
 
 /** Layout options (all optional, A4 defaults applied). */
 export interface PdfLayoutOptions {
@@ -445,6 +963,18 @@ export interface PdfLayoutOptions {
      */
     readonly tagged?: boolean | 'pdfa1b' | 'pdfa2b' | 'pdfa2u' | 'pdfa3b';
     /**
+     * Claim PDF/X-4 conformance (ISO 15930-7) for print production.
+     *
+     * Requires `outputIntent` with the printer's output ICC profile (CMYK,
+     * RGB or Gray), and writes a `%PDF-1.6` header, the PDF/X-4 XMP
+     * identification, a `/GTS_PDFX` OutputIntent, a TrimBox on every page
+     * (the MediaBox when `print` sets none), and `/Trapped` (`False` unless
+     * `metadata.trapped` says `True`). All fonts must be embedded, so pass
+     * `fontEntries`. Cannot be combined with `tagged` or `encryption`.
+     * Check the result with `validatePdfX()`. @since 1.8.0
+     */
+    readonly pdfx?: 'pdfx4';
+    /**
      * Escalate conformance diagnostics (e.g. a PDF/A level requested with
      * no embedded fonts) to thrown errors instead of warnings, before any
      * output bytes are produced. Default `false`. @since 1.7.0
@@ -464,7 +994,8 @@ export interface PdfLayoutOptions {
     readonly print?: PrintOptions;
     /**
      * Caller-supplied OutputIntent ICC profile for tagged/PDF-A output —
-     * replaces the built-in minimal sRGB profile. RGB profiles only.
+     * replaces the built-in minimal sRGB profile. RGB profiles since 1.7.0;
+     * CMYK and Gray profiles since 1.8.0.
      * Ignored when `tagged` is off (no OutputIntent is emitted there).
      * See {@link CustomOutputIntent}. @since 1.7.0
      */
@@ -488,16 +1019,41 @@ export interface PdfLayoutOptions {
      * - Browser / edge runtimes: no native deflate is available by default. The library
      *   falls back to a valid DEFLATE **stored-block** wrapper (0x78 0x01 header + Adler-32
      *   checksum, no actual compression). All PDF readers accept this as valid FlateDecode,
-     *   but the output will be slightly larger than the uncompressed baseline due to the
-     *   DEFLATE framing overhead (~5 bytes per 64 KB block).
+     *   but the output is in fact slightly **larger** than the uncompressed baseline, because
+     *   of the DEFLATE framing overhead (~5 bytes per 64 KB block).
      *
-     *   To enable real compression in the browser, supply a deflate implementation via
-     *   `setDeflateImpl()` before calling `buildPDF` / `buildDocumentPDF`:
+     *   To get real compression there, inject a **synchronous** compressor. The recommended
+     *   route is `setDeflateRawImpl()`, which takes plain RFC 1951 output — what portable
+     *   compressors actually emit — and lets pdfnative add the zlib envelope itself:
      *   ```ts
-     *   import { deflate } from 'fflate'; // or 'pako', or CompressionStream
-     *   import { setDeflateImpl } from 'pdfnative';
-     *   setDeflateImpl((buf) => deflate(buf));
+     *   import { getCodec, METHOD_DEFLATE } from 'zipnative';
+     *   import { setDeflateRawImpl } from 'pdfnative';
+     *
+     *   const codec = getCodec(METHOD_DEFLATE);
+     *   setDeflateRawImpl((buf) => codec.compressSync!(buf, { level: 6, deterministic: true }));
      *   ```
+     *   zipnative is a zero-dependency pure-TypeScript encoder, so this keeps the whole stack
+     *   dependency-free; `deterministic: true` pins its pure encoder, so the emitted PDF is
+     *   byte-identical on every runtime. On a typical text-heavy document this takes the
+     *   output to roughly a quarter of its uncompressed size, where the stored-block fallback
+     *   would have made it marginally bigger.
+     *
+     *   `setDeflateImpl()` remains available for a compressor that already emits the
+     *   RFC 1950 envelope:
+     *   ```ts
+     *   import { zlibSync } from 'fflate';   // NOT `deflateSync`, which is raw
+     *   setDeflateImpl((buf) => zlibSync(buf));
+     *   ```
+     *   ```ts
+     *   import pako from 'pako';             // `pako.deflate` already wraps
+     *   setDeflateImpl((buf) => pako.deflate(buf));
+     *   ```
+     *   Two traps, both rejected at build time with an explanatory error rather than
+     *   silently producing blank pages: passing **raw** RFC 1951 output to `setDeflateImpl`
+     *   (fflate's `deflateSync`, `CompressionStream`'s `'deflate-raw'`), and passing an
+     *   **asynchronous** compressor to either entry point, which returns `undefined` or a
+     *   `Promise` rather than bytes. `CompressionStream` cannot be adapted at all, because
+     *   PDF assembly is synchronous.
      *
      * Image streams (JPEG/PNG) are NOT recompressed — they already use DCTDecode/FlateDecode.
      * XMP metadata streams are NOT compressed when tagged mode is active (PDF/A safety).
@@ -584,6 +1140,16 @@ export interface PdfLayoutOptions {
      * @since 1.3.0
      */
     readonly creationDate?: Date;
+    /**
+     * Fine typographic control: where a paragraph may break across pages and
+     * how many of its lines must stay together.
+     *
+     * Entirely opt-in. Omitted, every setting keeps its historical behaviour
+     * and output is byte-identical.
+     *
+     * @since 1.8.0
+     */
+    readonly typography?: TypographyOptions;
     /**
      * How a conforming viewer should present the document when it is first
      * opened: initial page layout, page mode (bookmark/thumbnail panel, full
@@ -711,7 +1277,14 @@ export interface ViewerPreferences {
 /** A page box rectangle `[x0, y0, x1, y1]` in points, PDF user space. */
 export type PageBox = readonly [number, number, number, number];
 
-/** Printer's-marks options for {@link PrintOptions.marks}. */
+/**
+ * Printer's-marks options for {@link PrintOptions.marks}.
+ *
+ * Marks are stroked in black. Under a CMYK `outputIntent` (since 1.8.0)
+ * they use the registration colour instead — the `All` separation, which
+ * prints on every plate so each separation can be registered against the
+ * others.
+ */
 export interface PrinterMarksOptions {
     /** Draw corner crop (trim) marks. Default `true`. */
     readonly crop?: boolean;
@@ -723,14 +1296,42 @@ export interface PrinterMarksOptions {
     readonly offset?: number;
     /** Mark stroke weight in points. Default `0.25` (hairline). */
     readonly weight?: number;
+    /**
+     * Colour control bars in the bottom bleed strip: solid C, M, Y, K
+     * patches (and, with `tints`, the same four at 50 %), each `size` pt
+     * square with 1 pt gutters, painted in DeviceCMYK with no stroke.
+     * Default off. `size` defaults to 12 pt and is clamped to the strip
+     * height minus the 0.5 pt clearance on each side — a 3 mm bleed leaves
+     * ≈ 7.5 pt patches, below a densitometer aperture, so use a bleed of
+     * 5 mm (14.17 pt) or more. The bars are skipped silently when the
+     * strip is under 4 pt or when they would collide with the bottom
+     * registration target. Under a non-CMYK `outputIntent` the existing
+     * DeviceCMYK diagnostic fires (`PDFX_DEVICE_CMYK` /
+     * `PDFA_DEVICE_CMYK_CONTENT`); no additional diagnostic is emitted.
+     * @since 1.8.0
+     */
+    readonly colourBars?: boolean | ColourBarOptions;
+}
+
+/**
+ * Configuration for {@link PrinterMarksOptions.colourBars} — the object form
+ * of the option. `true` is `{ tints: true, size: 12 }`.
+ * @since 1.8.0
+ */
+export interface ColourBarOptions {
+    /** Also paint the 50 % tint of each process colour. Default `true`. */
+    readonly tints?: boolean;
+    /** Patch edge in points, clamped to the bleed strip. Default 12. */
+    readonly size?: number;
 }
 
 /**
  * Professional print-production options (`layout.print`, v1.7.0): page
  * geometry boxes (ISO 32000-1 §14.11.2), printer's marks (§14.11.3) and
  * large-format `/UserUnit`. Purely additive — output is byte-identical
- * when the option is absent. Marks are drawn in RGB black; true
- * all-separation registration colour arrives with CMYK content support.
+ * when the option is absent. Marks are drawn in RGB black, or — since
+ * v1.8.0, under a CMYK `outputIntent` — in the all-separation registration
+ * colour (`/Separation /All`).
  */
 export interface PrintOptions {
     /**
@@ -768,12 +1369,20 @@ export interface PrintOptions {
 /**
  * Caller-supplied OutputIntent for tagged/PDF-A documents (v1.7.0):
  * replaces the built-in minimal sRGB profile with a real ICC profile
- * (e.g. sRGB IEC61966-2.1 v4, Adobe RGB). RGB profiles only — pdfnative
- * emits RGB content; a CMYK intent would contradict it (veraPDF rejects
- * mismatches). Omitted → the historical built-in profile, byte-identical.
+ * (e.g. sRGB IEC61966-2.1 v4, Adobe RGB, or — since 1.8.0 — a CMYK press
+ * profile such as ISO Coated v2 or GRACoL, or a Gray one).
+ *
+ * Under a CMYK or Gray intent, the RGB colours pdfnative draws by default
+ * (text, rules, charts, emoji, images) are remapped through a calibrated
+ * sRGB `/DefaultRGB`, which keeps the file conforming. CMYK colours under
+ * a non-CMYK intent raise `PDFA_DEVICE_CMYK_CONTENT`. pdfnative ships no
+ * CMYK profile: press profiles are large and often licensed, so the
+ * caller supplies the one their printer names.
+ *
+ * Omitted → the historical built-in profile, byte-identical.
  */
 export interface CustomOutputIntent {
-    /** Raw ICC profile bytes (must declare an RGB data colour space). */
+    /** Raw ICC profile bytes, declaring an RGB, CMYK or Gray data colour space. */
     readonly iccProfile: Uint8Array;
     /** `/OutputConditionIdentifier` — e.g. `"sRGB IEC61966-2.1"`. */
     readonly outputConditionIdentifier: string;

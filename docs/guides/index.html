@@ -34,7 +34,7 @@
         "inLanguage": "en",
         "@id": "https://pdfnative.dev/guides/#collection",
         "name": "pdfnative documentation guides",
-        "description": "All 31 reference guides for the pdfnative ecosystem.",
+        "description": "All 32 reference guides for the pdfnative ecosystem.",
         "url": "https://pdfnative.dev/guides/",
         "isPartOf": {
           "@type": "WebSite",
@@ -43,7 +43,7 @@
         },
         "mainEntity": {
           "@type": "ItemList",
-          "numberOfItems": 31,
+          "numberOfItems": 32,
           "itemListOrder": "https://schema.org/ItemListUnordered",
           "itemListElement": [
             {
@@ -231,6 +231,12 @@
               "position": 31,
               "name": "Viewer preferences",
               "url": "https://pdfnative.dev/guides/viewer-preferences.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 32,
+              "name": "Typography",
+              "url": "https://pdfnative.dev/guides/typography.html"
             }
           ]
         }
@@ -346,7 +352,11 @@
       </li>
       <li>
         <a href="print.html">Print production →</a>
-        <span class="guide-toc-desc">Bleed, trim, art &amp; crop boxes, crop and registration marks, <code>/Trapped</code>, duplex print defaults, custom OutputIntent ICC, large-format <code>/UserUnit</code> — print-ready PDFs with zero dependencies.</span>
+        <span class="guide-toc-desc">Bleed, trim, art &amp; crop boxes, crop and registration marks, <code>/Trapped</code>, duplex print defaults, custom OutputIntent ICC, large-format <code>/UserUnit</code> — print-ready PDFs with zero dependencies. v1.8.0 adds CMYK colours, CMYK and Gray OutputIntents, registration-colour marks, the <code>pdfx: 'pdfx4'</code> claim and <code>validatePdfX()</code>.</span>
+      </li>
+      <li>
+        <a href="typography.html">Typography →</a>
+        <span class="guide-toc-desc">v1.8.0 — paragraphs that break across pages with widow and orphan control, keep-with-next, justification and optical margins, soft hyphens and a hyphenation seam, unit binding and punctuation spacing, exact base-14 metrics, pair kerning and OpenType features such as <code>tnum</code>. All opt-in, byte-identical when off.</span>
       </li>
       <li>
         <a href="signatures.html">Digital signatures →</a>
@@ -427,7 +437,7 @@
     </ul>
 
     <h2>Looking for samples?</h2>
-    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">48 generators producing 242 sample PDFs</a> covering every feature: financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, smart tables, outlines &amp; page labels, PDF manipulation, viewer preferences, font validation, math symbols, layout debugging, annotations, form fill/flatten, charts, and stress tests.</p>
+    <p>The repository ships with <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">49 generators producing 292 sample PDFs</a> covering every feature: financial statements, multi-language documents, barcodes, SVG, watermarks, forms, encryption, signatures, streaming, parser, smart tables, outlines &amp; page labels, PDF manipulation, viewer preferences, font validation, math symbols, layout debugging, annotations, form fill/flatten, charts, and stress tests.</p>
 
     <h2>Interactive playgrounds</h2>
     <ul class="guide-toc-list">
@@ -436,7 +446,7 @@
         <span class="guide-toc-desc">Stress-test BiDi (Arabic + Hebrew + Thai), Tamil deep conjuncts, Bengali &amp; Devanagari reph + ligature chains, and isolated Arabic harakat directly in the browser.</span>
       </li>
       <li>
-        <a href="../playgrounds/all-scripts.html">All 22 scripts + emoji →</a>
+        <a href="../playgrounds/all-scripts.html">All 27 scripts + emoji →</a>
         <span class="guide-toc-desc">The flagship showcase: render a single PDF spanning every Unicode script pdfnative supports — Latin to CJK, Arabic, Indic, Thai — plus native COLRv1 colour emoji.</span>
       </li>
       <li>

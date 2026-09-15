@@ -1,5 +1,15 @@
 name: CI
 
+# The job runs `scripts/gate.ts --ci`, the single definition of "green": the
+# step list lives in that file's STEPS table (typecheck:all, lint,
+# verify:unicode, test:coverage, build, dist-check, verify:bundle, verify:docs,
+# test:generate, verify:samples) and is not repeated here, so CI and the
+# contributor loop cannot drift apart. `--require-all` turns any SKIP into a
+# FAIL: a runner missing a tool goes red instead of quietly passing.
+#
+# `npm audit` runs outside the gate on purpose: the gate is hermetic (no
+# network) so its verdict is the same on a laptop and on a runner.
+
 on:
   push:
     branches: [main, master]
@@ -32,9 +42,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The job id and the matrix are load-bearing: the main ruleset requires the
+  # status checks `ci (22)` and `ci (24)` (.github/rulesets/main.json).
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     strategy:
       fail-fast: false
@@ -42,7 +54,14 @@ jobs:
         node-version: [22, 24]
 
     steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -50,26 +69,22 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
 
+      # No lifecycle script of any dependency runs on the runner; the
+      # repository's own .npmrc says the same for every developer machine.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Audit dependencies
         run: npm audit --audit-level=high
 
-      - name: Type check
-        run: npm run typecheck:all
+      - name: Run the quality gate (CI profile)
+        run: npx tsx scripts/gate.ts --ci --require-all
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Test with coverage
-        run: npm run test:coverage
-
-      - name: Build
-        run: npm run build
-
-      - name: Verify dist output
-        run: |
-          test -f dist/index.js
-          test -f dist/index.cjs
-          test -f dist/index.d.ts
+      - name: Upload the gate logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gate-logs-node${{ matrix.node-version }}
+          path: test-output/.gate/
+          retention-days: 7
+          if-no-files-found: ignore

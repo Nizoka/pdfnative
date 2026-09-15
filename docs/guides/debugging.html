@@ -179,6 +179,84 @@ block — including table slicing across page breaks.</p>
 <li><strong>Inspection</strong> — automate it: assert block positions in a test, drive a
 layout linter, or feed geometry to another tool.</li>
 </ul>
+<h2 id="diagnostics-and-build-time-errors-v180">Diagnostics and build-time errors (v1.8.0)<a class="heading-anchor" href="#diagnostics-and-build-time-errors-v180" aria-label="Link to this section">#</a></h2>
+<p>Geometry is one thing to debug; the other is a build that warns or refuses.
+Every engine diagnostic code and every build-time message a downstream tool
+must classify is listed in <a href="../data/errors.json"><code>docs/data/errors.json</code></a>
+(<code>diagnostics</code> and <code>buildErrors</code>) — read that file first when a message is
+unfamiliar.</p>
+<p><strong><code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code></strong> — a <code>typography.fontFeatures</code> tag
+changed nothing: no registered font declares it, or the font declares it but
+no glyph in the document was substituted. The classic case is <code>tnum</code> or
+<code>lnum</code> with the bundled Noto Sans, whose figures are tabular and lining by
+default, so there is nothing to substitute (<code>pnum</code> and <code>onum</code> do change
+glyphs there). It is a warning — <code>console.warn</code> once per build by default,
+every occurrence through <code>layout.onDiagnostic</code>, a thrown error under
+<code>layout.strict</code> — because the same document may be built with different
+fonts. Drop the tag, or register a font whose GSUB declares it; the effective
+tags are the keys of the font module&#39;s <code>features</code> table.</p>
+<pre><code class="language-ts">buildDocumentPDFBytes(params, {
+  typography: { fontFeatures: [&#39;tnum&#39;] },
+  onDiagnostic: (d) =&gt; console.error(d.code, d.message), // TYPOGRAPHY_FEATURE_INEFFECTIVE
+});
+</code></pre>
+<p><strong>PDF/X coherence errors</strong> — <code>pdfx: &#39;pdfx4&#39;</code> is checked before any byte is
+written, and an incoherent layout throws one of seven messages (each with
+its remedy):</p>
+<table>
+<thead>
+<tr>
+<th>Message</th>
+<th>Remedy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>layout.pdfx: unknown target &#39;${target}&#39; — use one of ${PDF_X_CONFORMANCE_TARGETS}</code></td>
+<td>Use <code>&#39;pdfx4&#39;</code>.</td>
+</tr>
+<tr>
+<td><code>layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them</code></td>
+<td>Build the print file and the archival file as two documents.</td>
+</tr>
+<tr>
+<td><code>PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx</code></td>
+<td>Drop one of the two.</td>
+</tr>
+<tr>
+<td><code>PDF/X-4 requires layout.outputIntent: the ICC profile of the printing condition, e.g. ISO Coated v2 or GRACoL from your printer. pdfnative ships no press profile</code></td>
+<td>Pass the output ICC profile your printer names.</td>
+</tr>
+<tr>
+<td><code>PDF/X-4 requires an output (printer) profile as layout.outputIntent — the supplied profile&#39;s class is &#39;${deviceClass}&#39;</code></td>
+<td>Use a press profile (device class <code>prtr</code>), not a monitor profile such as sRGB.</td>
+</tr>
+<tr>
+<td><code>PDF/X requires the trapping state to be known — set metadata.trapped to &#39;True&#39; or &#39;False&#39;, or omit it for &#39;False&#39;</code></td>
+<td>State <code>&#39;True&#39;</code> or <code>&#39;False&#39;</code>; pdfnative never traps, so <code>&#39;False&#39;</code> is accurate for its output.</td>
+</tr>
+<tr>
+<td><code>PDF/X pages carry a TrimBox or an ArtBox, not both — drop print.artBox, or print.trimBox and print.bleed</code></td>
+<td>Keep one of the two boxes.</td>
+</tr>
+</tbody></table>
+<p>The messages start with <code>PDF/X</code> or <code>layout.pdfx</code>; a CLI or server that maps
+<code>print.</code>, <code>chart:</code> and <code>outputIntent.</code> prefixes to an input-error code should
+add those two.</p>
+<p><strong><code>setDeflateImpl()</code> throws on raw DEFLATE</strong> — since v1.8.0 the injected
+compressor is validated, and a function that returns a raw RFC 1951 payload
+(fflate&#39;s <code>deflateSync</code>, <code>CompressionStream</code>&#39;s <code>&#39;deflate-raw&#39;</code>) fails at
+build time instead of producing pages that render blank
+(<a href="https://github.com/Nizoka/pdfnative/issues/78" target="_blank" rel="noopener">#78</a>). Pass a
+zlib-wrapping function to <code>setDeflateImpl()</code> — fflate&#39;s <code>zlibSync</code>, pako&#39;s
+<code>deflate</code>, <code>node:zlib</code> <code>deflateSync</code> — or hand the raw one to
+<code>setDeflateRawImpl()</code> and let pdfnative add the envelope. An asynchronous
+compressor cannot be adapted at all; PDF assembly is synchronous.</p>
+<p><strong><code>punctuationSpacing: &#39;fr&#39;</code> looks like <code>&#39;fr-CA&#39;</code></strong> — the <code>&#39;fr&#39;</code> preset
+sets a narrow no-break space (U+202F) before <code>;</code> <code>!</code> <code>?</code>. WinAnsi has no
+such character, so on the base-14 (non-embedded) path it degrades to an
+ordinary space and the two presets become indistinguishable. Register a
+Latin font that carries the glyph — Noto Sans does — and pass it in
+<code>fontEntries</code>; the narrow space is then rendered and extracts as U+202F.</p>
 <h2 id="sample">Sample<a class="heading-anchor" href="#sample" aria-label="Link to this section">#</a></h2>
 <p><a href="https://github.com/Nizoka/pdfnative/blob/main/scripts/generators/layout-debug-overlay.ts" target="_blank" rel="noopener">layout-debug-overlay.ts</a>
 renders the same document twice — once clean, once with the overlay — and prints

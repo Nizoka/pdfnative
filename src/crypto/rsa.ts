@@ -12,21 +12,21 @@ import type * as Asn1Module from './asn1.js';
 // ── DigestInfo prefixes (RFC 8017 §9.2) ─────────────────────────────
 
 /** SHA-256 DigestInfo prefix — prepend to 32-byte hash before PKCS#1 padding. */
-const DIGESTINFO_SHA256 = new Uint8Array([
+const DIGESTINFO_SHA256 = /*#__PURE__*/ new Uint8Array([
     0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
     0x05, 0x00, 0x04, 0x20,
 ]);
 
 /** SHA-384 DigestInfo prefix — prepend to 48-byte hash before PKCS#1 padding. */
-const DIGESTINFO_SHA384 = new Uint8Array([
+const DIGESTINFO_SHA384 = /*#__PURE__*/ new Uint8Array([
     0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
     0x05, 0x00, 0x04, 0x30,
 ]);
 
 /** SHA-512 DigestInfo prefix — prepend to 64-byte hash before PKCS#1 padding. */
-const DIGESTINFO_SHA512 = new Uint8Array([
+const DIGESTINFO_SHA512 = /*#__PURE__*/ new Uint8Array([
     0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
     0x05, 0x00, 0x04, 0x40,
@@ -305,11 +305,17 @@ export function parseRsaPublicKey(der: Uint8Array): RsaPublicKey {
     };
 }
 
-// Lazy ASN.1 import to avoid circular dependency at module load time
-let _asn1: typeof Asn1Module | undefined;
-function requireAsn1() {
+/**
+ * The ASN.1 functions key parsing needs, injected to avoid a circular
+ * dependency at module load time. Narrowed to what is used: handing the
+ * whole module namespace over would make a bundler materialise it as an
+ * object every consumer has to carry.
+ */
+export type RsaAsn1 = Pick<typeof Asn1Module, 'derDecode' | 'asn1Integer'>;
+
+let _asn1: RsaAsn1 | undefined;
+function requireAsn1(): RsaAsn1 {
     if (!_asn1) {
-        // This is a synchronous require-like pattern using import
         // In practice, this module is always loaded after asn1.ts
         throw new Error('ASN.1 module must be imported before RSA key parsing. Import asn1.ts first.');
     }
@@ -317,6 +323,6 @@ function requireAsn1() {
 }
 
 /** Initialize the ASN.1 dependency for key parsing functions. */
-export function initRsaAsn1(asn1Module: typeof Asn1Module): void {
+export function initRsaAsn1(asn1Module: RsaAsn1): void {
     _asn1 = asn1Module;
 }

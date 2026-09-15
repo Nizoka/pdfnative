@@ -186,6 +186,57 @@ document (or the right field) and re-check. `isDocTimestamp` distinguishes
 > the MCP `verify_pdf` tool, below. See
 > [Long-term validation (LTV)](ltv.html).
 
+## Verifier 5 — `validatePdfX()`: structural PDF/X-4 for print
+
+`validatePdfX()` _(v1.8.0)_ is the print counterpart of Verifier 3: a
+read-only ISO 15930-7 check over the emitted bytes — the `%PDF-1.6` header,
+no encryption, a trailer `/ID`; the XMP identification (`GTS_PDFXVersion`,
+`DocumentID`, `VersionID`, `RenditionClass`, `dc:title`, `Trapped` consistent
+with `/Info`); a `/GTS_PDFX` OutputIntent whose embedded profile is an output
+(`prtr`) profile with the `acsp` signature and a size field within the
+stream; a TrimBox or an ArtBox on every page, nested in the BleedBox and the
+MediaBox; every font embedded, in page resources and in the Form XObjects and
+patterns they reach; no annotation inside the BleedBox other than PrinterMark,
+TrapNet, Popup, Hidden or NoView; no JavaScript, `/OpenAction` or `/AA`; no
+`LZWDecode`, no transfer function; device colour in page content matching the
+intent.
+
+```ts
+import { buildDocumentPDFBytes, validatePdfX } from 'pdfnative';
+
+const bytes = buildDocumentPDFBytes({ ...params, fontEntries }, {
+  pdfx: 'pdfx4',
+  outputIntent: { iccProfile: pressProfile, outputConditionIdentifier: 'FOGRA39' },
+  print: { bleed: 14.17, marks: { colourBars: true } },
+});
+
+const report = validatePdfX(bytes);   // { valid, errors, warnings }
+if (!report.valid) {
+  throw new Error(`PDF/X-4 structure: ${report.errors.join('; ')}`);
+}
+```
+
+**Failure → fix.** Most failures never reach the validator: `pdfx` with a
+PDF/A `tagged` level, with `encryption`, without `outputIntent`, with a
+monitor (`mntr`) profile such as sRGB, with `trapped: 'Unknown'`, or with
+both a TrimBox and an ArtBox throw at build time, with the messages listed
+under `buildErrors` in [`docs/data/errors.json`](../data/errors.json). What
+the validator itself reports is usually an unembedded font (pass
+`fontEntries`; the build also raised `PDFX_NO_FONT_ENTRIES`), a link or form
+field inside the print area (`PDFX_ANNOTATIONS`), or a CMYK colour under an
+RGB intent (`PDFX_DEVICE_CMYK`). Warnings — a header below 1.6, a halftone
+other than `/Default`, an interpolated image — are non-blocking.
+
+> **Honest caveat.** `validatePdfX()` checks what the structure can prove and
+> does not render. It does not check colour inside Form XObjects and images,
+> transparency blend spaces, optional content, or anything that needs
+> rendering (fonts inside annotation appearances, OPI, PostScript and
+> reference XObjects, embedded files and transfer functions are checked
+> since v1.8.0). veraPDF does not cover
+> PDF/X, and a `valid` result means the structural prerequisites hold — a
+> certified preflight (callas pdfToolbox, Acrobat Preflight) remains
+> necessary before a file goes to press. See [Print production](print.html).
+
 ## The same loop on the CLI
 
 `pdfnative-cli` turns the assertions into exit codes, which is what a shell or
@@ -272,6 +323,24 @@ pdfnative verify  --input signed.pdf  --strict --trust ca-root.pem
 which makes a cheap first CI stage; `--summary` / `--fields` keep logs and
 agent context small.
 
+**Reproducible bytes.** _(v1.8.0)_ Unencrypted output is a pure function of
+its inputs plus one instant: the creation date, which stamps `/CreationDate`,
+`/ModDate`, the XMP dates and, through them, the trailer `/ID`. Pin it with
+`layout.creationDate` per call, or once per process with
+`setDefaultCreationDate(date)` (`getDefaultCreationDate()` reads it back,
+`null` restores the wall clock). Every date is written in UTC with an
+explicit `+00'00'` offset, so a pinned instant yields the same bytes on any
+host without a `TZ` pin. Encryption keys and IVs stay random by design, and
+`PdfSignOptions.signingTime` keeps its own option.
+
+**Byte regression.** With the date pinned, a SHA-256 of each artefact is a
+sufficient CI assertion. pdfnative's own `npm run verify:samples` is the
+pattern to copy: regenerate the documents, hash them, compare against a
+committed manifest that records which release last changed each hash, and
+refuse two documents of a pair that come out identical. A `--update` is a
+deliberate rebaseline, declared in the release note with the reason the
+previous bytes were wrong.
+
 **Agent loops.** Treat every generation as unfinished until a read tool
 confirms it: after `generate_basic_pdf` (or any document tool), call
 `inspect_pdf` with the `check` list that encodes the user's requirements and
@@ -291,6 +360,8 @@ into a paste-into-context form.
   documented limits.
 - [PDF/A conformance](pdfa.html) — validating archival claims with veraPDF,
   and the build-time `PDFA_*` diagnostics.
+- [Print production](print.html) — CMYK, OutputIntents, PDF/X-4 and what
+  `validatePdfX()` does and does not check.
 - [Long-term validation (LTV)](ltv.html) — the PAdES ladder the signature
   assertions climb.
 - [CLI guide](cli.html) · [MCP guide](mcp.html) — the complete surface

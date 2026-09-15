@@ -9,17 +9,34 @@
  *   - COLR v0 — layered solid fills.
  *   - COLR v1 — PaintColrLayers, PaintGlyph, PaintColrGlyph, PaintSolid,
  *     PaintLinearGradient, PaintRadialGradient, PaintSweepGradient,
- *     PaintTransform, PaintTranslate, PaintScale (+ around-center),
- *     PaintComposite (blend-mode-mappable composite modes).
+ *     **every transform paint** (formats 12–31: transform, translate, the
+ *     four scale forms, rotate, skew, each with its around-centre and
+ *     variable variant), and PaintComposite for the composite modes PDF can
+ *     express as a blend mode.
  *
- * Unsupported paints (variable paints, Porter-Duff structural composite
- * modes Clear/Src/Dest/Xor/…) cause the affected glyph to be skipped so the
+ * Variable paints (v1.8.0). Each odd format 3–31 is the variable twin of the
+ * even one below it: the same fields plus an index into the font's variation
+ * store. At the default instance every delta is zero, so the stored values
+ * already are the resolved values and the index is never read. pdfnative
+ * resolves COLR exactly once, when a font module is compiled, against that
+ * default instance — the subsetter does not even keep `fvar`/`gvar` — so
+ * this is exact rather than approximate. Instantiating a colour font at some
+ * other axis position is not supported and would need the variation store.
+ *
+ * Structural masks (v1.8.0). PaintComposite in SRC_IN or DEST_IN mode is
+ * carried without a transparency group: a mask made of glyph shapes becomes
+ * a clip set on the painted layers, and a uniform mask an alpha multiplier.
+ * A PDF clip is binary, so a partly translucent outline mask is replaced by
+ * its nearest binary mask — see `Mask` for the error bound and for why, on
+ * Noto's flags, the result is exact. This is what draws the shaded wave
+ * across every flag, which v1.7.0 had to drop.
+ *
+ * Unsupported paints (the remaining Porter-Duff structural composite modes
+ * Clear/Src/Dest/Xor/…) cause the affected glyph to be skipped so the
  * caller can fall back to the monochrome emoji font. This keeps output
- * correct (never garbled) while covering the overwhelming majority of
- * Noto Color Emoji glyphs. One best-effort degradation (v1.7.0): a
+ * correct (never garbled). One best-effort degradation (v1.7.0) remains: a
  * PaintComposite whose SOURCE subtree is unsupported renders its backdrop
- * alone — Noto's flags are exactly this shape (flat artwork backdrop +
- * SRC_IN-masked wave-shading source), so they render as flat flags.
+ * alone rather than losing the whole glyph.
  *
  * Zero external dependency.
  *
@@ -28,7 +45,7 @@
  *   - https://learn.microsoft.com/typography/opentype/spec/colr
  */
 
-import type { CpalColor, ColorGlyph, ColorLayer, ColorPaint, ColorStop, GradientExtend } from '../types/pdf-types.js';
+import type { CpalColor, ClipOutline, ColorGlyph, ColorLayer, ColorPaint, ColorStop, GradientExtend } from '../types/pdf-types.js';
 
 /** 6-tuple affine matrix `[a b c d e f]`: x' = a·x + c·y + e, y' = b·x + d·y + f. */
 type Mat = [number, number, number, number, number, number];
@@ -133,11 +150,23 @@ function resolveColor(ctx: ColrContext, paletteIndex: number, alpha: number): Cp
 
 const EXTEND: GradientExtend[] = ['pad', 'repeat', 'reflect'];
 
-/** Read a ColorLine at `offset`, baking `m` into nothing (stops are scalar). */
-function readColorLine(ctx: ColrContext, offset: number): { stops: ColorStop[]; extend: GradientExtend } {
+/**
+ * Read a ColorLine at `offset`. Stops are scalar, so no matrix applies.
+ *
+ * A VarColorLine carries the same fields with four extra bytes per stop —
+ * that stop's index into the variation store — so the only difference here
+ * is the stride. See {@link readTransformPaint} for why the index itself is
+ * never read.
+ */
+function readColorLine(
+    ctx: ColrContext,
+    offset: number,
+    variable = false,
+): { stops: ColorStop[]; extend: GradientExtend } {
     const { view } = ctx;
     const extend = EXTEND[view.getUint8(offset)] ?? 'pad';
     const numStops = view.getUint16(offset + 1);
+    const stride = variable ? 10 : 6;
     const stops: ColorStop[] = [];
     let p = offset + 3;
     for (let i = 0; i < numStops; i++) {
@@ -145,9 +174,14 @@ function readColorLine(ctx: ColrContext, offset: number): { stops: ColorStop[]; 
         const paletteIndex = view.getUint16(p + 2);
         const alpha = f2dot14(view, p + 4);
         stops.push({ offset: stopOffset, color: resolveColor(ctx, paletteIndex, alpha) });
-        p += 6;
+        p += stride;
     }
     return { stops, extend };
+}
+
+/** Whether `m` is the identity, by value. */
+function isIdentity(m: Mat): boolean {
+    return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
 }
 
 /** Apply matrix `m` to a point. */
@@ -170,8 +204,18 @@ function avgScale(m: Mat): number {
 function resolveFill(ctx: ColrContext, offset: number, m: Mat): ColorPaint {
     const { view } = ctx;
     const format = view.getUint8(offset);
-    switch (format) {
-        case 2: { // PaintSolid
+
+    // Formats 12–31 are the transforms, plain and variable alike.
+    const transform = readTransformPaint(view, offset, format);
+    if (transform) return resolveFill(ctx, offset + transform.sub, compose(m, transform.t));
+
+    // Each odd format below is the variable twin of the even one above it:
+    // identical fields plus a trailing variation index, and a colour line
+    // whose stops are four bytes wider. See readTransformPaint for why the
+    // index is not read.
+    const variable = (format & 1) === 1;
+    switch (format & ~1) {
+        case 2: { // PaintSolid / PaintVarSolid
             const paletteIndex = view.getUint16(offset + 1);
             const alpha = f2dot14(view, offset + 3);
             return { kind: 'solid', color: resolveColor(ctx, paletteIndex, alpha) };
@@ -181,7 +225,7 @@ function resolveFill(ctx: ColrContext, offset: number, m: Mat): ColorPaint {
             const x0 = view.getInt16(offset + 4), y0 = view.getInt16(offset + 6);
             const x1 = view.getInt16(offset + 8), y1 = view.getInt16(offset + 10);
             // (x2,y2) is the rotation vector; for axial PDF shading we use p0→p1.
-            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset);
+            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset, variable);
             return { kind: 'linear', p0: apply(m, x0, y0), p1: apply(m, x1, y1), stops, extend };
         }
         case 6: { // PaintRadialGradient
@@ -190,17 +234,20 @@ function resolveFill(ctx: ColrContext, offset: number, m: Mat): ColorPaint {
             const r0 = view.getUint16(offset + 8);
             const x1 = view.getInt16(offset + 10), y1 = view.getInt16(offset + 12);
             const r1 = view.getUint16(offset + 14);
-            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset);
+            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset, variable);
             const s = avgScale(m);
             return { kind: 'radial', c0: apply(m, x0, y0), r0: r0 * s, c1: apply(m, x1, y1), r1: r1 * s, stops, extend };
         }
         case 8: { // PaintSweepGradient (conic) — v1.4.0
             const colorLineOffset = getUint24(view, offset + 1);
             const cx = view.getInt16(offset + 4), cy = view.getInt16(offset + 6);
-            // Angles: F2Dot14 value × 180° (counter-clockwise from +x axis).
-            const startAngle = f2dot14(view, offset + 8) * 180;
-            const endAngle = f2dot14(view, offset + 10) * 180;
-            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset);
+            // Sweep angles are BiasedAngles: F2Dot14 fractions of a half turn
+            // carrying a bias of 1.0, so that a full +360° can be encoded.
+            // Dropping the bias put every sweep gradient exactly half a turn
+            // out (fixed in v1.8.0).
+            const startAngle = (f2dot14(view, offset + 8) + 1) * 180;
+            const endAngle = (f2dot14(view, offset + 10) + 1) * 180;
+            const { stops, extend } = readColorLine(ctx, offset + colorLineOffset, variable);
             // Fold the matrix rotation into the angles; translate the centre.
             const rot = Math.atan2(m[1], m[0]) * 180 / Math.PI;
             return {
@@ -212,24 +259,86 @@ function resolveFill(ctx: ColrContext, offset: number, m: Mat): ColorPaint {
                 extend,
             };
         }
-        case 12: { // PaintTransform → fold into inner transform
-            const subOffset = getUint24(view, offset + 1);
-            const transformOffset = getUint24(view, offset + 4);
-            const t = readAffine(view, offset + transformOffset);
-            return resolveFill(ctx, offset + subOffset, compose(m, t));
-        }
-        case 14: { // PaintTranslate
-            const subOffset = getUint24(view, offset + 1);
-            const dx = view.getInt16(offset + 4), dy = view.getInt16(offset + 6);
-            return resolveFill(ctx, offset + subOffset, compose(m, [1, 0, 0, 1, dx, dy]));
-        }
-        case 16: { // PaintScale
-            const subOffset = getUint24(view, offset + 1);
-            const sx = f2dot14(view, offset + 4), sy = f2dot14(view, offset + 6);
-            return resolveFill(ctx, offset + subOffset, compose(m, [sx, 0, 0, sy, 0, 0]));
-        }
         default:
             throw new UnsupportedPaint(`fill paint format ${format}`);
+    }
+}
+
+/**
+ * An `Angle`, in radians. COLR stores angles as F2Dot14 fractions of a half
+ * turn, so 1.0 is 180°.
+ */
+function angleRad(view: DataView, pos: number): number {
+    return f2dot14(view, pos) * Math.PI;
+}
+
+/** Rotation by `rad`, counter-clockwise. */
+function rotation(rad: number): Mat {
+    const c = Math.cos(rad);
+    const s = Math.sin(rad);
+    return [c, s, -s, c, 0, 0];
+}
+
+/** Skew by the two angles, in radians. */
+function skewing(xRad: number, yRad: number): Mat {
+    return [1, Math.tan(yRad), Math.tan(xRad), 1, 0, 0];
+}
+
+/** `t` applied about `(cx, cy)` rather than about the origin. */
+function aroundCenter(t: Mat, cx: number, cy: number): Mat {
+    return compose([1, 0, 0, 1, cx, cy], compose(t, [1, 0, 0, 1, -cx, -cy]));
+}
+
+/**
+ * Read any of the twenty transform paints (formats 12–31): the matrix it
+ * describes and the offset of the paint it wraps. Returns `null` for a
+ * format outside that range.
+ *
+ * Each odd format is the variable twin of the even one below it — the same
+ * fields followed by a `VarIndexBase`, an index into the font's variation
+ * store. **At the default instance every delta is zero**, so the stored
+ * values already are the resolved values and the index is never needed.
+ * pdfnative resolves COLR exactly once, when the font module is compiled,
+ * against that default instance — the subsetter does not even keep `fvar`
+ * or `gvar` — so reading a variable paint as its plain twin is exact here,
+ * not an approximation. Instantiating a colour font on a non-default axis
+ * position would need the variation store, and is not supported.
+ */
+function readTransformPaint(
+    view: DataView,
+    offset: number,
+    format: number,
+): { sub: number; t: Mat } | null {
+    if (format < 12 || format > 31) return null;
+    const sub = getUint24(view, offset + 1);
+    const i16 = (at: number): number => view.getInt16(offset + at);
+    const f14 = (at: number): number => f2dot14(view, offset + at);
+    const rad = (at: number): number => angleRad(view, offset + at);
+
+    // `format & ~1` folds each variable twin onto its plain form.
+    switch (format & ~1) {
+        case 12: // PaintTransform
+            return { sub, t: readAffine(view, offset + getUint24(view, offset + 4)) };
+        case 14: // PaintTranslate
+            return { sub, t: [1, 0, 0, 1, i16(4), i16(6)] };
+        case 16: // PaintScale
+            return { sub, t: [f14(4), 0, 0, f14(6), 0, 0] };
+        case 18: // PaintScaleAroundCenter
+            return { sub, t: aroundCenter([f14(4), 0, 0, f14(6), 0, 0], i16(8), i16(10)) };
+        case 20: // PaintScaleUniform
+            return { sub, t: [f14(4), 0, 0, f14(4), 0, 0] };
+        case 22: // PaintScaleUniformAroundCenter
+            return { sub, t: aroundCenter([f14(4), 0, 0, f14(4), 0, 0], i16(6), i16(8)) };
+        case 24: // PaintRotate
+            return { sub, t: rotation(rad(4)) };
+        case 26: // PaintRotateAroundCenter
+            return { sub, t: aroundCenter(rotation(rad(4)), i16(6), i16(8)) };
+        case 28: // PaintSkew
+            return { sub, t: skewing(rad(4), rad(6)) };
+        case 30: // PaintSkewAroundCenter
+            return { sub, t: aroundCenter(skewing(rad(4), rad(6)), i16(8), i16(10)) };
+        default:
+            return null;
     }
 }
 
@@ -245,6 +354,122 @@ function readAffine(view: DataView, pos: number): Mat {
 }
 
 /**
+ * What the mask of a structural composite reduces to.
+ *
+ *   - `everywhere` — a fill with no outline covers the whole glyph at one
+ *     alpha. Masking by it multiplies the painted layers' alpha, which is
+ *     exact wherever those layers do not overlap one another.
+ *   - `outlines` — glyph shapes whose union is the mask.
+ *
+ * A PDF clip is a binary mask, so an outline mask whose layers are partly
+ * translucent has no exact clip. It is replaced by the **nearest binary
+ * mask**: a layer counts when its coverage reaches one half, and is left out
+ * below that. Wherever the true mask alpha is α, the rendered alpha is then
+ * off by at most min(α, 1 − α) — never more than the fallback, which drops
+ * the masked paint altogether and is off by α everywhere.
+ *
+ * Measured on Noto Color Emoji, where this matters: 254 of the 296 masks
+ * pair an opaque flag body with a 20 %-opacity dark layer of the same shape,
+ * whose bounding box matches the body's to within 0.1 %. The approximation
+ * therefore differs from the true composite only on that sliver, at 20 %.
+ *
+ * A blended mask, or a mask that is itself masked, yields `null`, and the
+ * caller falls back.
+ */
+type Mask =
+    | { readonly kind: 'everywhere'; readonly alpha: number }
+    | { readonly kind: 'outlines'; readonly outlines: ClipOutline[] };
+
+/** The alpha a paint is guaranteed to reach over its whole area, 0–1. */
+function coverage(paint: ColorPaint): number {
+    if (paint.kind === 'solid') return paint.color[3] / 255;
+    return Math.min(...paint.stops.map(s => s.color[3])) / 255;
+}
+
+/** A layer with its paint's alpha multiplied by `alpha`. */
+function withAlpha(layer: ColorLayer, alpha: number): ColorLayer {
+    const scale = (c: CpalColor): CpalColor => [c[0], c[1], c[2], Math.round(c[3] * alpha)];
+    const paint = layer.paint;
+    const scaled: ColorPaint = paint.kind === 'solid'
+        ? { ...paint, color: scale(paint.color) }
+        : { ...paint, stops: paint.stops.map(s => ({ offset: s.offset, color: scale(s.color) })) };
+    return { ...layer, paint: scaled };
+}
+
+/** Skip any chain of transform paints, folding them into `m`. */
+function stripTransforms(view: DataView, offset: number, m: Mat): { offset: number; m: Mat } {
+    let off = offset;
+    let mat = m;
+    for (let guard = 0; guard < 32; guard++) {
+        const t = readTransformPaint(view, off, view.getUint8(off));
+        if (!t) break;
+        mat = compose(mat, t.t);
+        off += t.sub;
+    }
+    return { offset: off, m: mat };
+}
+
+function resolveMask(ctx: ColrContext, offset: number, m: Mat, depth: number): Mask | null {
+    const { view } = ctx;
+    const inner = stripTransforms(view, offset, m);
+    const format = view.getUint8(inner.offset);
+    try {
+        if (format >= 2 && format <= 9) {
+            return { kind: 'everywhere', alpha: coverage(resolveFill(ctx, inner.offset, inner.m)) };
+        }
+        const layers: ColorLayer[] = [];
+        collectLayers(ctx, inner.offset, inner.m, layers, depth + 1);
+        const outlines: ClipOutline[] = [];
+        for (const layer of layers) {
+            if (layer.blendMode || layer.clip || layer.fillsClip) return null;
+            // Nearest binary mask: see Mask.
+            if (coverage(layer.paint) < 0.5) continue;
+            outlines.push(layer.transform
+                ? { glyphId: layer.glyphId, transform: layer.transform }
+                : { glyphId: layer.glyphId });
+        }
+        return outlines.length > 0 ? { kind: 'outlines', outlines } : null;
+    } catch (e) {
+        if (e instanceof UnsupportedPaint) return null;
+        throw e;
+    }
+}
+
+/**
+ * Collect a subtree painted through an outline mask. A bare fill — a
+ * gradient with no outline of its own, as in the wave over Noto's flags —
+ * becomes one layer that fills the mask region; anything else keeps its own
+ * layers, each gaining the mask as a further clip.
+ */
+function collectMasked(
+    ctx: ColrContext,
+    offset: number,
+    m: Mat,
+    out: ColorLayer[],
+    depth: number,
+    blendMode: string | undefined,
+    mask: ClipOutline[],
+): void {
+    const inner = stripTransforms(ctx.view, offset, m);
+    const format = ctx.view.getUint8(inner.offset);
+    if (format >= 2 && format <= 9) {
+        const layer: ColorLayer = {
+            glyphId: mask[0].glyphId,
+            paint: resolveFill(ctx, inner.offset, inner.m),
+            clip: [mask],
+            fillsClip: true,
+        };
+        out.push(blendMode ? { ...layer, blendMode } : layer);
+        return;
+    }
+    const start = out.length;
+    collectLayers(ctx, offset, m, out, depth, blendMode);
+    for (let i = start; i < out.length; i++) {
+        out[i] = { ...out[i], clip: [mask, ...(out[i].clip ?? [])] };
+    }
+}
+
+/**
  * Collect the flat layer list for a base-glyph paint subtree, applying the
  * accumulated *outline* transform `m` and recursing through structural paints.
  * `blendMode` is the PDF `/BM` name inherited from an enclosing
@@ -254,6 +479,16 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
     if (depth > 16) throw new UnsupportedPaint('paint recursion too deep');
     const { view } = ctx;
     const format = view.getUint8(offset);
+
+    // Formats 12–31 are the transforms, plain and variable alike. They fold
+    // into the accumulated matrix and recurse; nothing else about them is
+    // structural.
+    const transform = readTransformPaint(view, offset, format);
+    if (transform) {
+        collectLayers(ctx, offset + transform.sub, compose(m, transform.t), out, depth + 1, blendMode);
+        return;
+    }
+
     switch (format) {
         case 1: { // PaintColrLayers
             const numLayers = view.getUint8(offset + 1);
@@ -270,7 +505,10 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
             const subOffset = getUint24(view, offset + 1);
             const glyphId = view.getUint16(offset + 4);
             const paint = resolveFill(ctx, offset + subOffset, IDENTITY);
-            const layer: ColorLayer = m === IDENTITY ? { glyphId, paint } : { glyphId, paint, transform: m };
+            // Structural, not `m === IDENTITY`: that only held because every
+            // matrix helper returns a fresh array, which is a property no
+            // future helper is obliged to keep.
+            const layer: ColorLayer = isIdentity(m) ? { glyphId, paint } : { glyphId, paint, transform: m };
             out.push(blendMode ? { ...layer, blendMode } : layer);
             return;
         }
@@ -281,29 +519,34 @@ function collectLayers(ctx: ColrContext, offset: number, m: Mat, out: ColorLayer
             collectLayers(ctx, paintOffset, m, out, depth + 1, blendMode);
             return;
         }
-        case 12: { // PaintTransform
-            const subOffset = getUint24(view, offset + 1);
-            const transformOffset = getUint24(view, offset + 4);
-            const t = readAffine(view, offset + transformOffset);
-            collectLayers(ctx, offset + subOffset, compose(m, t), out, depth + 1, blendMode);
-            return;
-        }
-        case 14: { // PaintTranslate
-            const subOffset = getUint24(view, offset + 1);
-            const dx = view.getInt16(offset + 4), dy = view.getInt16(offset + 6);
-            collectLayers(ctx, offset + subOffset, compose(m, [1, 0, 0, 1, dx, dy]), out, depth + 1, blendMode);
-            return;
-        }
-        case 16: { // PaintScale
-            const subOffset = getUint24(view, offset + 1);
-            const sx = f2dot14(view, offset + 4), sy = f2dot14(view, offset + 6);
-            collectLayers(ctx, offset + subOffset, compose(m, [sx, 0, 0, sy, 0, 0]), out, depth + 1, blendMode);
-            return;
-        }
+        // Formats 12–31 are handled before this switch; see below.
         case 32: { // PaintComposite — v1.4.0, source-degradation v1.7.0
             const sourceOffset = getUint24(view, offset + 1);
             const mode = view.getUint8(offset + 4);
             const backdropOffset = getUint24(view, offset + 5);
+            // Structural masks (v1.8.0). SRC_IN keeps the source only where the
+            // backdrop is; DEST_IN keeps the backdrop only where the source is.
+            // An outline mask becomes a PDF clip and a uniform one an alpha
+            // multiplier — no transparency group, no extra indirect object.
+            // Noto Color Emoji uses SRC_IN to lay a shaded wave across every
+            // flag; until now the wave was dropped and the flag drawn flat.
+            if (mode === 5 || mode === 6) {
+                const painted = offset + (mode === 5 ? sourceOffset : backdropOffset);
+                const masking = offset + (mode === 5 ? backdropOffset : sourceOffset);
+                const mask = resolveMask(ctx, masking, m, depth);
+                if (mask === null) throw new UnsupportedPaint(`composite mode ${mode} with a mask PDF cannot clip to`);
+                if (mask.kind === 'outlines') {
+                    collectMasked(ctx, painted, m, out, depth + 1, blendMode, mask.outlines);
+                } else {
+                    const start = out.length;
+                    collectLayers(ctx, painted, m, out, depth + 1, blendMode);
+                    if (mask.alpha < 1) {
+                        for (let i = start; i < out.length; i++) out[i] = withAlpha(out[i], mask.alpha);
+                    }
+                }
+                return;
+            }
+
             const bm = compositeModeToBlendMode(mode);
             if (bm === null) throw new UnsupportedPaint(`composite mode ${mode}`);
             // Paint the backdrop first (inheriting any outer blend), then the

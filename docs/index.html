@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pdfnative — Zero-dependency PDF generation for TypeScript</title>
-  <meta name="description" content="Zero-dependency PDF library for TypeScript: generate, parse, extract text, fill forms, encrypt, sign with PAdES LTV. ISO 32000-1, PDF/A, 22 Unicode scripts, native charts, streaming. CLI, MCP server and React renderer included.">
-  <meta name="keywords" content="pdf, typescript, javascript, pdf generation, pdf parser, text extraction, extract text from pdf, fill pdf form, flatten pdf, decrypt pdf, encrypt pdf, pdf charts, zero dependencies, unicode, arabic, thai, hebrew, bidi, pdf-a, tagged-pdf, pades, acroform, accessibility, encryption, aes, rsa, ecdsa, cms, pkcs7, rfc-3161, digital-signatures, sign pdf, ltv, long-term validation, document timestamp, ocsp, crl, rtl, persian, barcodes, qr-code, svg, opentype, emoji, noto, cjk, mcp, model-context-protocol, claude, cursor, ai, llm, react, jsx, react-pdf, pdfnative-cli, pdfnative-mcp, pdfnative-react">
+  <meta name="description" content="Zero-dependency PDF library for TypeScript: generate, parse, extract text, fill forms, encrypt, sign with PAdES LTV. ISO 32000-1, PDF/A, PDF/X-4 and CMYK, typography (justification, kerning, hyphenation), 27 Unicode scripts with Indic and Universal shaping, native charts, reproducible output. CLI, MCP server and React renderer included.">
+  <meta name="keywords" content="pdf, typescript, javascript, pdf generation, pdf parser, text extraction, extract text from pdf, fill pdf form, flatten pdf, decrypt pdf, encrypt pdf, pdf charts, zero dependencies, unicode, arabic, thai, hebrew, bidi, pdf-a, tagged-pdf, pades, acroform, accessibility, encryption, aes, rsa, ecdsa, cms, pkcs7, rfc-3161, digital-signatures, sign pdf, ltv, long-term validation, document timestamp, ocsp, crl, rtl, persian, barcodes, qr-code, svg, opentype, emoji, noto, cjk, mcp, model-context-protocol, claude, cursor, ai, llm, react, jsx, react-pdf, pdfnative-cli, pdfnative-mcp, pdfnative-react, cmyk, pdf/x-4, pdfx, output intent, icc profile, typography, kerning, hyphenation, justification, widows orphans, pagination, indic shaping, devanagari, bengali, tamil, telugu, sinhala, lao, tai tham, cham, hausa, yoruba, igbo, swahili, universal shaping engine, colrv1, color fonts, reproducible pdf, deterministic output, pdf validation, pdf/x validator">
   <meta name="author" content="Nizoka">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="theme-color" content="#2563eb">
@@ -16,7 +16,7 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/">
   <meta property="og:title" content="pdfnative — Zero-dependency PDF generation for TypeScript">
-  <meta property="og:description" content="Pure native PDF library. Zero dependencies. Generate, parse, extract text, fill forms, encrypt & decrypt, sign with PAdES LTV. ISO 32000-1, PDF/A, 22 Unicode scripts. CLI + MCP server.">
+  <meta property="og:description" content="Pure native PDF library. Zero dependencies. Generate, parse, extract text, fill forms, encrypt & decrypt, sign with PAdES LTV. ISO 32000-1, PDF/A, PDF/X-4 & CMYK, typography, 27 Unicode scripts. CLI + MCP server.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -24,7 +24,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="pdfnative — Zero-dependency PDF generation for TypeScript">
-  <meta name="twitter:description" content="Pure native PDF library. Zero deps. Generate, parse, extract text, fill forms, encrypt & decrypt, sign with PAdES LTV. ISO 32000-1. PDF/A. 22 scripts. CLI + MCP.">
+  <meta name="twitter:description" content="Pure native PDF library. Zero deps. Generate, parse, extract, fill, encrypt, sign (PAdES LTV). ISO 32000-1. PDF/A. PDF/X-4 & CMYK. Typography. 27 Unicode scripts. CLI + MCP.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
 
   <link rel="canonical" href="https://pdfnative.dev/">
@@ -73,14 +73,27 @@
         "@id": "https://pdfnative.dev/#library",
         "inLanguage": "en",
         "name": "pdfnative",
-        "description": "Pure native PDF library — no runtime dependencies in the engine, producing documents that conform to ISO 32000-1. Generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (AES-128/256), PAdES digital signatures with long-term validation (LTV: RFC 3161 timestamps, /DSS, document timestamps), native vector charts (stacked, area, scatter, log & time axes), print production (page boxes, printer's marks, /Trapped, /UserUnit, custom OutputIntent).",
+        "description": "Pure native PDF library — no runtime dependencies in the engine, producing documents that conform to ISO 32000-1. Generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (AES-128/256), PAdES digital signatures with long-term validation (LTV: RFC 3161 timestamps, /DSS, document timestamps), native vector charts (stacked, area, scatter, log & time axes), typography (widows and orphans, justification, hyphenation seam, pair kerning, OpenType features), 27 Unicode scripts shaped by Indic and Universal shaping engines, CMYK colour and PDF/X-4 with validatePdfX(), print production (page boxes, printer's marks, colour bars, /Trapped, /UserUnit, custom OutputIntent), reproducible UTC-dated output.",
+        "keywords": "pdf, typescript, zero-dependency, pdf/a, pdf/x-4, cmyk, pades, ltv, typography, kerning, hyphenation, justification, unicode, indic, bidi, colrv1, reproducible",
+        "featureList": [
+          "PDF generation conforming to ISO 32000-1 (PDF 1.7)",
+          "PDF/A-1b, 2b, 2u, 3b and PDF/X-4 conformance, veraPDF-validated",
+          "CMYK colour, CMYK and Gray OutputIntents, registration colour, colour bars",
+          "Typography: widows and orphans, justification, hyphenation seam, pair kerning, OpenType features",
+          "27 Unicode scripts, Indic and Universal shaping engines, UAX #9 BiDi",
+          "PAdES B-B to B-LTA digital signatures with RFC 3161 timestamps, OCSP and CRL",
+          "Parse, merge and split, extract text with positions, fill and flatten AcroForms, encrypt and decrypt",
+          "COLRv1 colour emoji with flag, ZWJ and skin-tone sequences",
+          "Reproducible UTC-dated output, held byte for byte by a sample manifest"
+        ],
         "url": "https://pdfnative.dev",
         "codeRepository": "https://github.com/Nizoka/pdfnative",
         "programmingLanguage": "TypeScript",
         "license": "https://opensource.org/licenses/MIT",
         "runtimePlatform": ["Node.js", "Browser", "Deno", "Bun"],
-        "softwareVersion": "1.7.0",
+        "softwareVersion": "1.8.0",
         "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "PDF library",
         "operatingSystem": "Cross-platform",
         "isAccessibleForFree": true,
         "author": { "@type": "Organization", "name": "Nizoka", "url": "https://pdfnative.dev" },
@@ -117,7 +130,7 @@
         "@id": "https://pdfnative.dev/#react",
         "inLanguage": "en",
         "name": "pdfnative-react",
-        "description": "React renderer for pdfnative — declarative JSX components compiled on-device to PDF by a custom React reconciler. Charts v2, print production, PDF/A diagnostics channel, HTTP caching on renderToResponse, live preview hooks, streaming, 22 Unicode scripts, token-frugal DocSpec for AI agents.",
+        "description": "React renderer for pdfnative — declarative JSX components compiled on-device to PDF by a custom React reconciler. Charts v2, print production, PDF/A diagnostics channel, HTTP caching on renderToResponse, live preview hooks, streaming, 27 Unicode scripts, token-frugal DocSpec for AI agents.",
         "url": "https://github.com/Nizoka/pdfnative-react",
         "codeRepository": "https://github.com/Nizoka/pdfnative-react",
         "programmingLanguage": "TypeScript",
@@ -176,7 +189,7 @@
   <div class="container">
     <h1>Pure Native <span class="gradient">PDF Generation</span></h1>
     <p class="hero-sub">
-      No runtime dependencies. Conforms to ISO 32000-1. 22 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
+      No runtime dependencies. Conforms to ISO 32000-1. 27 Unicode scripts with BiDi and OpenType shaping. TypeScript-first.
     </p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="learn/">Get Started →</a>
@@ -212,11 +225,11 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">2691+</div>
+    <div class="metric-value">3824+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
-    <div class="metric-value">95%+</div>
+    <div class="metric-value">90%+</div>
     <div class="metric-label">Stmt coverage</div>
   </div>
   <div class="metric">
@@ -252,8 +265,8 @@
 
       <div class="feature-card">
         <div class="feature-icon fi-unicode"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
-        <h3>22 Unicode Scripts</h3>
-        <p>Thai, Arabic, Hebrew, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Amharic, CJK, Cyrillic, Greek, Devanagari, and more. Full UAX #9 BiDi — isolates + explicit embeddings (LRE/RLE/LRO/RLO/PDF). OpenType GSUB/GPOS shaping for Thai, Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, and Myanmar. Plus COLRv1 colour emoji — with 51 flag and 22 ZWJ sequences as single colour ligatures since v1.7.0. <a href="guides/colour-emoji.html">Emoji guide →</a></p>
+        <h3>27 Unicode Scripts</h3>
+        <p>Thai, Lao, Tai Tham, New Tai Lue, Tai Le, Cham, Arabic, Hebrew, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Amharic, CJK, Cyrillic, Greek, Devanagari, and more. Full UAX #9 BiDi — isolates + explicit embeddings (LRE/RLE/LRO/RLO/PDF). OpenType GSUB/GPOS shaping for Thai, Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, and Myanmar — the five Indic scripts on one OpenType engine since v1.8.0, and Latin tone marks (Yoruba, Igbo, Hausa) composed on the bundled Noto Sans. Plus COLRv1 colour emoji — with 51 flag and 22 ZWJ sequences as single colour ligatures since v1.7.0. <a href="guides/colour-emoji.html">Emoji guide →</a></p>
       </div>
 
       <div class="feature-card">
@@ -275,9 +288,15 @@
       </div>
 
       <div class="feature-card">
+        <div class="feature-icon fi-content"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></div>
+        <h3>Typography, CMYK &amp; PDF/X-4</h3>
+        <p><strong>Typeset, not just generated</strong> (v1.8.0): paragraphs break across pages under <code>widows</code> / <code>orphans</code> rules, headings stay with what they introduce, body text justifies with hanging punctuation, soft hyphens and a pluggable hyphenation provider, ISO 80000-1 unit binding, punctuation-spacing presets, exact base-14 metrics, pair kerning and OpenType <code>fontFeatures</code> — every option opt-in and byte-identical when off. <strong>Press-ready</strong>: <code>[c, m, y, k]</code> colours, CMYK and Gray OutputIntents that keep a PDF/A claim valid, registration-colour marks and colour control bars, a <code>pdfx: 'pdfx4'</code> claim, and <code>validatePdfX()</code> to check the file before it leaves. <a href="guides/typography.html">Typography guide →</a> &middot; <a href="guides/print.html">Print guide →</a> &middot; <a href="playgrounds/typography.html">Playground →</a></p>
+      </div>
+
+      <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 2691+ tests across 123 files, 95%+ statement coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 3824+ tests across 160 files, 90%+ statement coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -461,7 +480,7 @@ const pdf = buildDocumentPDFBytes({
       </div>
       <p class="demo-note">
         Need more? Browse all
-        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">48 generators (242 sample PDFs)</a>
+        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">49 generators (292 sample PDFs)</a>
         on GitHub.
       </p>
     </div>
@@ -475,7 +494,7 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Four adoption paths — pick the one that fits your stack. All four are zero-config and zero-build.</p>
     <div class="onboarding-grid">
       <div class="onboarding-card">
-        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.7.0</span></h3>
+        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.8.0</span></h3>
         <p class="ob-tag">For TypeScript / JavaScript apps.</p>
 <pre><code class="language-bash">npm install pdfnative</code></pre>
 <pre><code class="language-typescript">import { buildDocumentPDFBytes, extractText } from 'pdfnative';
@@ -777,7 +796,7 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/main/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative 1.7.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (21 commands: render · fill · sign · ltv · compare and more), pdfnative-mcp (MCP server, 28 tools, any MCP client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 22 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative 1.8.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (21 commands: render · fill · sign · ltv · compare and more), pdfnative-mcp (MCP server, 28 tools, any MCP client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 27 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
   </div>
@@ -812,7 +831,7 @@ const pdf = renderToBytes(
             <tr><td><code>generate_basic_pdf</code></td><td>Multi-page documents — all 13 block kinds since v1.6.0 (incl. tables, images, links, TOC, barcodes, SVG, form fields, charts). Optional <code>pdfA</code>, layout options, build-time <code>encrypt</code>, print production.</td></tr>
             <tr><td><code>add_table</code></td><td>Tabular reports — now with optional <code>autoFitColumns</code> and <code>clipCells</code> (pdfnative v1.2 <code>TableBlock</code>).</td></tr>
             <tr><td><code>add_barcode</code></td><td>QR Code, Code 128, EAN-13, Data Matrix, PDF417</td></tr>
-            <tr><td><code>add_international_text</code></td><td>25 <code>lang</code> font codes (22 Unicode scripts + <code>latin</code> + <code>emoji</code> + explicit <code>math</code>) with BiDi &amp; OpenType shaping. <code>lang</code> accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
+            <tr><td><code>add_international_text</code></td><td>25 <code>lang</code> font codes (27 Unicode scripts + <code>latin</code> + <code>emoji</code> + explicit <code>math</code>) with BiDi &amp; OpenType shaping. <code>lang</code> accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
             <tr><td><code>add_form</code></td><td>Interactive AcroForm fields — <code>text</code>, <code>textarea</code>, <code>checkbox</code>, <code>radio</code>, <code>dropdown</code>, plus <code>listbox</code> and <code>placeholder</code> (v1.6.0)</td></tr>
             <tr><td><code>embed_image</code></td><td>JPEG / PNG image embedding, with <code>align</code> / <code>alt</code> (v1.6.0)</td></tr>
             <tr><td><code>prepare_signature_placeholder</code></td><td>PDF with <code>/Sig</code> field ready to sign; <code>subFilter</code> / <code>reserveTimestamp</code> (v1.6.0)</td></tr>
@@ -1017,6 +1036,7 @@ const bytes = renderToBytes(
           <li><a href="guides/signatures.html">Signatures</a></li>
           <li><a href="guides/ltv.html">Long-term validation</a></li>
           <li><a href="guides/print.html">Print production</a></li>
+          <li><a href="guides/typography.html">Typography</a></li>
           <li><a href="guides/colour-emoji.html">Colour emoji</a></li>
           <li><a href="guides/faq.html">FAQ</a></li>
           <li><a href="guides/troubleshooting.html">Troubleshooting</a></li>
@@ -1028,7 +1048,7 @@ const bytes = renderToBytes(
         <ul>
           <li><a href="playgrounds/">All playgrounds</a></li>
           <li><a href="playgrounds/extreme-scripts.html">Extreme scripts</a></li>
-          <li><a href="playgrounds/all-scripts.html">All 22 scripts</a></li>
+          <li><a href="playgrounds/all-scripts.html">All 27 scripts</a></li>
           <li><a href="playgrounds/toolkit.html">PDF Toolkit</a></li>
           <li><a href="playgrounds/inspect.html">Inspect &amp; verify</a></li>
           <li><a href="playgrounds/charts.html">Charts</a></li>
@@ -1037,6 +1057,8 @@ const bytes = renderToBytes(
           <li><a href="playgrounds/cli.html">CLI builder</a></li>
           <li><a href="playgrounds/mcp.html">MCP tool explorer</a></li>
           <li><a href="playgrounds/react.html">React renderer</a></li>
+          <li><a href="playgrounds/typography.html">Typography</a></li>
+          <li><a href="playgrounds/print.html">Print &amp; PDF/X</a></li>
         </ul>
       </div>
     </div>

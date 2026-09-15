@@ -1,6 +1,6 @@
 # Troubleshooting
 
-> **Symptom-first fixes for the classic failures** — tofu boxes (a font registered but never loaded), RTL text appearing backwards, oversized files, PDF/A validation errors, parser rejections — each with the check that identifies it and the change that fixes it.
+> **Symptom-first fixes for the classic failures** — tofu boxes (a font registered but never loaded), RTL text appearing backwards, oversized files, PDF/A validation errors, PDF/X-4 builds that throw, a font feature that does nothing, a compressor that produced blank pages, parser rejections — each with the check that identifies it and the change that fixes it.
 
 ## Font Not Rendering (Boxes or Blank)
 
@@ -93,6 +93,55 @@ renders `)X(`. If you see either symptom, upgrade pdfnative.
 2. **PDF/A + encryption conflict:** ISO 19005-1 §6.3.2 forbids encryption in PDF/A. Use one or the other.
 
 3. **Transparency in PDF/A-1b:** Watermarks with opacity < 1.0 are blocked in PDF/A-1b (ISO 19005-1 §6.4). Use PDF/A-2b or remove transparency.
+
+## PDF/X-4 Build Throws (v1.8.0)
+
+**Symptom:** `buildDocumentPDFBytes()` with `pdfx: 'pdfx4'` throws before producing bytes.
+
+**Cause:** the PDF/X claim is checked for coherence up front. The message names the conflict — one of these seven, listed with every other build-time message in [`docs/data/errors.json`](../data/errors.json):
+
+1. `layout.pdfx: unknown target '${target}' — use one of ${PDF_X_CONFORMANCE_TARGETS}` — use `'pdfx4'`.
+2. `layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them` — build the print file and the archival file separately.
+3. `PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx` — drop one.
+4. `PDF/X-4 requires layout.outputIntent: the ICC profile of the printing condition, e.g. ISO Coated v2 or GRACoL from your printer. pdfnative ships no press profile` — pass the profile your printer names.
+5. `PDF/X-4 requires an output (printer) profile as layout.outputIntent — the supplied profile's class is '${deviceClass}'` — sRGB is a monitor (`mntr`) profile; use a press (`prtr`) profile.
+6. `PDF/X requires the trapping state to be known — set metadata.trapped to 'True' or 'False', or omit it for 'False'` — pdfnative never traps, so `'False'` is accurate.
+7. `PDF/X pages carry a TrimBox or an ArtBox, not both — drop print.artBox, or print.trimBox and print.bleed` — keep one box.
+
+Once the build succeeds, `validatePdfX(bytes)` reports what the structure can prove (`{ valid, errors, warnings }`); a certified preflight remains necessary before press. See [Print production](print.html).
+
+## Font Feature Has No Effect (v1.8.0)
+
+**Symptom:** `typography: { fontFeatures: ['tnum'] }` changes nothing and the console shows `TYPOGRAPHY_FEATURE_INEFFECTIVE`.
+
+**Cause:** no registered font declares the tag, or it declares it but no glyph in the document was substituted. With the bundled Noto Sans, `tnum` and `lnum` are no-ops because its figures are already tabular and lining; `pnum` and `onum` do substitute. Features need a registered font — the base-14 faces carry no OpenType tables.
+
+**Fix:** drop the tag, or register a font whose GSUB declares it for the characters you set (the effective tags are the keys of the font module's `features` table). Capture the diagnostic with `layout.onDiagnostic`, or make it fatal with `layout.strict: true`.
+
+## Blank Pages After `setDeflateImpl()` / Build Throws Naming It
+
+**Symptom:** on v1.7.0, every page rendered blank and `extractText()` returned `''`; on v1.8.0 the build throws a message pointing at `setDeflateImpl()`.
+
+**Cause:** the injected compressor returns raw DEFLATE (RFC 1951) — fflate's `deflateSync`, `CompressionStream`'s `'deflate-raw'` — while `/FlateDecode` needs the zlib envelope (RFC 1950). The v1.7.0 README recommended the raw function; v1.8.0 validates the result and refuses it ([#78](https://github.com/Nizoka/pdfnative/issues/78)).
+
+**Fix:**
+```typescript
+import { setDeflateImpl, setDeflateRawImpl } from 'pdfnative';
+import { zlibSync, deflateSync } from 'fflate';
+
+setDeflateImpl(zlibSync);        // zlib-wrapped — the contract of setDeflateImpl()
+// or keep the raw function and let pdfnative add the envelope (v1.8.0):
+setDeflateRawImpl(deflateSync);
+```
+An asynchronous compressor (callback, Promise or `CompressionStream`) cannot be adapted; use `initNodeCompression()` on Node or a synchronous library elsewhere.
+
+## French Punctuation Spacing Looks Canadian
+
+**Symptom:** `typography: { punctuationSpacing: 'fr' }` renders no space before `;` `!` `?`, exactly like `'fr-CA'`.
+
+**Cause:** `'fr'` inserts a narrow no-break space (U+202F), which WinAnsi cannot encode. On the base-14 (non-embedded) path it degrades to an ordinary space.
+
+**Fix:** register a Latin font that carries the glyph (Noto Sans does) and pass it in `fontEntries`; the narrow space is then rendered as written and extracts as U+202F.
 
 ## "Document has too many blocks" / Very Large Documents
 

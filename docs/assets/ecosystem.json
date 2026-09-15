@@ -1,9 +1,9 @@
 {
   "$comment": "Single source of truth for every version, count and inventory quoted anywhere in the documentation. Edit THIS file, then run `npm run verify:docs` — it reports every doc that disagrees. Never hand-edit a number in a doc without updating this manifest first.",
-  "verifiedOn": "2026-08-29",
+  "verifiedOn": "2026-09-15",
   "packages": {
     "pdfnative": {
-      "version": "1.7.0",
+      "version": "1.8.0",
       "pinField": null,
       "pin": null,
       "repo": "https://github.com/Nizoka/pdfnative"
@@ -109,23 +109,26 @@
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 123,
-    "sampleGenerators": 48,
-    "samplePdfs": 242,
-    "guides": 31,
-    "playgrounds": 10,
+    "testFiles": 160,
+    "sampleGenerators": 49,
+    "samplePdfs": 292,
+    "sampleCategories": 38,
+    "guides": 32,
+    "playgrounds": 12,
     "learnSteps": 8,
-    "recipes": 15
+    "recipes": 17
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 2691,
-    "scripts": 22,
-    "bundledFontModules": 26,
+    "tests": 3824,
+    "coverageStatements": 90,
+    "coverageMeasured": 91.5,
+    "scripts": 27,
+    "bundledFontModules": 31,
     "blockTypes": 13,
     "barcodeFormats": 5,
     "chartTypes": 9,
-    "pdfaSamples": 18,
+    "pdfaSamples": 21,
     "pdfaLevels": [
       "pdfa1b",
       "pdfa2b",
@@ -151,9 +154,9 @@
   "assertions": [
     {
       "id": "pdfa-sample-count",
-      "canonical": "18 PDF/A-claiming samples",
+      "canonical": "{declared.pdfaSamples} PDF/A-claiming samples",
       "match": "\\b(\\d+)\\s+PDF/A-claiming samples\\b",
-      "expect": 18,
+      "expectFrom": "declared.pdfaSamples",
       "requireIn": [
         "docs/guides/pdfa.md",
         "CONTRIBUTING.md"
@@ -194,17 +197,19 @@
     },
     {
       "id": "test-count-homepage",
-      "$comment": "The homepage quoted a stale test count for a full release train; no assertion covered it. canonical-present pins the current figure where it is displayed.",
-      "canonical": "2691+ tests across 123 files",
+      "$comment": "The homepage quoted a stale test count for a full release train; no assertion covered it. The canonical sentence is resolved from declared.tests / derived.testFiles, so it can no longer drift from them; count-tokens polices every other 'N tests' / 'across N files' token in the corpus.",
+      "canonical": "{declared.tests}+ tests across {derived.testFiles} files",
+      "match": "\\b(\\d+)\\+?\\s+tests across\\b",
+      "expectFrom": "declared.tests",
       "requireIn": [
         "docs/index.html"
       ]
     },
     {
       "id": "script-count",
-      "canonical": "22 scripts",
+      "canonical": "27 scripts",
       "match": "\\b(\\d+)\\s+(?:supported\\s+|Unicode\\s+|writing\\s+)?scripts\\b",
-      "expect": 22,
+      "expect": 27,
       "requireIn": [
         "docs/index.html",
         "README.md",

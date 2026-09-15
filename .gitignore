@@ -8,8 +8,12 @@ Thumbs.db
 .env.*
 .vscode/
 
-# Raw TTF source fonts (large binaries, download separately)
-fonts/ttf/
+# Raw TTF source fonts (large binaries): downloaded by `npm run fonts:download`
+# at the commit, release tag and SHA-256 pinned in fonts/SOURCES.json, or — for
+# the five Latin subsets — derived by the same script from NotoSans-VF.ttf with
+# the library's own subsetTTF() (fonts/subsets/ holds their code-point lists).
+# Nothing under fonts/ttf/ is committed.
+fonts/ttf/*
 
 # Generated sample PDFs for visual inspection
 test-output/
@@ -22,5 +26,9 @@ release-notes/draft-*.md
 !.github/drafts/README.md
 !.github/drafts/TEMPLATE.md
 
-# Release PR description scratchpads (per-version, never committed)
+# Release PR description scratchpads (per-version, never committed;
+# the committed template is release-notes/PR_TEMPLATE.md)
 RELEASE_PR_*.md
+
+# Claude Code per-machine settings (the shared ones are .claude/settings.json)
+.claude/settings.local.json

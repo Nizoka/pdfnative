@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Extreme Scripts Playground — pdfnative</title>
-  <meta name="description" content="Interactive playground for extreme-script shaping: Arabic + Hebrew + Thai BiDi, Tamil deep conjuncts, Bengali + Devanagari reph and ligatures, Arabic isolated harakat. Edit the inputs and generate a PDF in your browser.">
+  <meta name="description" content="Interactive playground for extreme-script shaping: Arabic + Hebrew + Thai BiDi, Tamil deep conjuncts, Bengali + Devanagari reph and ligatures, Arabic isolated harakat, Tai Tham and Cham through the Universal Shaping Engine. Edit the inputs and generate a PDF in your browser.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/extreme-scripts.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/extreme-scripts.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/extreme-scripts.html">
@@ -35,7 +35,7 @@
     "operatingSystem": "Any (browser-based)",
     "browserRequirements": "Requires JavaScript and HTML5",
     "url": "https://pdfnative.dev/playgrounds/extreme-scripts.html",
-    "description": "Interactive playground for extreme-script shaping: Arabic + Hebrew + Thai BiDi, Tamil deep conjuncts, Bengali + Devanagari reph and ligatures, Arabic isolated harakat — generate a PDF in your browser.",
+    "description": "Interactive playground for extreme-script shaping: Arabic + Hebrew + Thai BiDi, Tamil deep conjuncts, Bengali + Devanagari reph and ligatures, Arabic isolated harakat, Tai Tham and Cham through the Universal Shaping Engine — generate a PDF in your browser.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
@@ -73,7 +73,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html" aria-current="page">Extreme scripts</a>
-    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./all-scripts.html">All 27 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -82,11 +82,13 @@
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html">React renderer</a>
+    <a href="./typography.html">Typography</a>
+    <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
     <h1>Extreme Scripts Playground</h1>
-    <p>Stress-test the pdfnative shaping pipeline against the most demanding inputs: deep BiDi mixing across 3+ scripts, Tamil ultra-conjuncts, Bengali &amp; Devanagari with reph + multi-halant ligature chains, and isolated Arabic harakat. Pick a preset, edit the text, and click <strong>Generate PDF</strong>.</p>
+    <p>Stress-test the pdfnative shaping pipeline against the most demanding inputs: deep BiDi mixing across 3+ scripts, Tamil ultra-conjuncts, Bengali &amp; Devanagari with reph + multi-halant ligature chains, isolated Arabic harakat, and — since 1.8.0 — Tai Tham and Cham, the two scripts shaped by the Universal Shaping Engine. Pick a preset, edit the text, and click <strong>Generate PDF</strong>.</p>
 
     <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
 
@@ -99,6 +101,7 @@
         <option value="tamil">Tamil ultra-extreme — conjuncts &amp; split vowels</option>
         <option value="bengali">Bengali + Devanagari — reph &amp; ligature chains</option>
         <option value="harakat">Arabic harakat — isolated diacritics</option>
+        <option value="use">Universal Shaping Engine — Tai Tham and Cham (1.8.0)</option>
       </select>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
       <span id="timer" style="font-size:13px;color:#64748b;"></span>
@@ -115,15 +118,17 @@
 
     <details style="margin-top:24px;">
       <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
-      <pre style="margin-top:12px;"><code id="code-view" class="language-typescript"></code></pre>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="copy-btn" id="copy" type="button" style="padding:4px 10px;font-size:12px;background:var(--c-primary);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Copy</button></div>
+      <pre style="margin-top:8px;"><code id="code-view" class="language-typescript"></code></pre>
     </details>
 
     <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
       <strong style="color:#065f46;">Shaping &amp; BiDi coverage:</strong>
       <ul style="margin-top:8px;color:#065f46;">
+        <li><strong>Universal Shaping Engine (1.8.0)</strong> — Tai Tham (Lanna) sakot stacks, pre-base vowels and medial consonants, and Cham pre-base vowel reordering, medials and finals, shaped from the generated USE data in <code>src/shaping/</code>. The preset above registers <code>nod</code> and <code>cjm</code> and renders a paragraph of each.</li>
         <li>Arabic harakat (<span lang="ar" dir="rtl">تشكيل</span> — fatha, kasra, damma, sukun, shadda…) now anchor on the preceding base glyph using font-provided GPOS MarkBasePos data, with fallback to (0, 0) when anchors are missing. Closes the visual half of <a href="https://github.com/Nizoka/pdfnative/issues/25" target="_blank" rel="noopener">#25</a>.</li>
         <li>UAX #9 isolates (LRI / RLI / FSI / PDI, U+2066–U+2069) handled via three-tier dispatcher with full recursion. Nested and unmatched isolates supported.</li>
-        <li>Shared GSUB / GPOS drivers — Bengali / Tamil / Devanagari / Arabic shapers route through a single ligature lookup and a single mark-base anchor helper.</li>
+        <li>One Indic OpenType engine (since 1.8.0) — Bengali, Tamil and Devanagari (Telugu and Sinhala too) apply the font's own <code>rphf</code> / <code>half</code> / <code>blwf</code> / <code>pstf</code> / <code>akhn</code> / <code>pres</code> features per syllable, so the reph lands over the consonant after the base, the Tamil i-matra stays right of its consonant, and every vowel sign takes the anchor the font declares; Arabic keeps its positional shaper and shares the mark-attachment helper.</li>
       </ul>
       <p style="color:#065f46;margin-top:8px;font-size:14px;">UAX #9 explicit embeddings (LRE / RLE / LRO / RLO / PDF) with character-level X4–X5 direction overrides, and native COLRv1 colour emoji, are now shipped — try the embeddings &amp; colour-emoji presets above.</p>
     </div>
@@ -233,6 +238,22 @@ const PRESETS = {
       '',
       'النص الكامل المركَّب: ٱلسَّلَامُ عَلَيْكُمْ وَرَحْمَةُ ٱللَّٰهِ وَبَرَكَاتُهُ.'
     ].join('\n')
+  },
+  use: {
+    title: 'Universal Shaping Engine — Tai Tham and Cham',
+    heading: 'USE — Tai Tham (Lanna) and Cham (1.8.0)',
+    langs: ['nod', 'cjm'],
+    // Sample strings from the repository's generators (scripts/generators/document-builder.ts and
+    // scripts/data/alphabet-data.ts); the English framing routes to the base font.
+    body: [
+      'ᨤᩮᨻ᩠ᨸᩉ – Tai Tham (Lanna): ᨲ᩠ᩅ ᨠᩮ ᨿᩢ᩠ᨿ — pdfnative shapes Tai Tham through the Universal Shaping Engine: sakot stacks, pre-base vowels, medial consonants.',
+      '',
+      'Tai Tham sakot stacks: ᨠ᩠ᨠ ᨲ᩠ᩅ ᨿ᩠ᨿ · pre-base vowels: ᨠᩮ ᨠᩯ ᨠᩰ ᨠᩱ ᨠᩲ · tone marks: ᨠ᩵ ᨠ᩶ ᨠ᩷ ᨠ᩸ · digits: ᪀ ᪁ ᪂ ᪃ ᪄ ᪅ ᪆ ᪇ ᪈ ᪉',
+      '',
+      'ꨀꨪꨌꨲ – Cham: ꨀꨯ ꨀꨵꨶ ꨀꩌ — Cham reorders its two pre-base vowels and composes medial consonants, both driven by the engine.',
+      '',
+      'Cham pre-base vowels: ꨀꨯ ꨀꨰ · medials: ꨀꨳ ꨀꨴ ꨀꨵ ꨀꨶ ꨀꨵꨶ · finals: ꨀꩃ ꨀꩌ ꨀꩍ · digits: ꩐ ꩑ ꩒ ꩓ ꩔ ꩕ ꩖ ꩗ ꩘ ꩙'
+    ].join('\n')
   }
 };
 
@@ -243,6 +264,8 @@ const FONT_MODULE_BY_LANG = {
   ta: 'noto-tamil-data.js',
   bn: 'noto-bengali-data.js',
   hi: 'noto-devanagari-data.js',
+  nod: 'noto-taitham-data.js',
+  cjm: 'noto-cham-data.js',
   latin: 'noto-sans-data.js',
   emoji: 'noto-color-emoji-data.js'
 };
@@ -277,7 +300,7 @@ function updateCodeView(id) {
     "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
     '',
     'registerFonts({',
-    ...p.langs.map(l => `  ${l}: () => import('https://esm.sh/pdfnative@1.7.0/fonts/${FONT_MODULE_BY_LANG[l]}'),`),
+    ...p.langs.map(l => `  ${l}: () => import('https://esm.sh/pdfnative@1.8.0/fonts/${FONT_MODULE_BY_LANG[l]}'),`),
     '});',
     '',
     `const langs = ${JSON.stringify(p.langs)};`,
@@ -299,7 +322,7 @@ function updateCodeView(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.7.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.7.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -327,7 +350,7 @@ async function generate() {
     setStatus('Loading fonts: ' + p.langs.join(', ') + '…', 'info');
     const registry = {};
     for (const lang of p.langs) {
-      registry[lang] = () => import(`https://esm.sh/pdfnative@1.7.0/fonts/${FONT_MODULE_BY_LANG[lang]}`);
+      registry[lang] = () => import(`https://esm.sh/pdfnative@1.8.0/fonts/${FONT_MODULE_BY_LANG[lang]}`);
     }
     mod.registerFonts(registry);
     const fonts = await Promise.all(p.langs.map(mod.loadFontData));
@@ -355,6 +378,13 @@ async function generate() {
 
 $('preset').addEventListener('change', e => applyPreset(e.target.value));
 $('generate').addEventListener('click', generate);
+$('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(codeView.textContent);
+    const btn = $('copy'); const old = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = old; }, 1500);
+  } catch (e) { alert('Clipboard write failed: ' + (e && e.message ? e.message : e)); }
+});
 applyPreset('bidi');
 </script>
 <script src="../app.js" defer></script>

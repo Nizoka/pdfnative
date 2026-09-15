@@ -1,0 +1,42 @@
+#!/bin/sh
+# pdfnative — opt-in pre-commit hook.
+#
+# Installed with `npm run hooks:install` (sets core.hooksPath to .githooks);
+# removed with `npm run hooks:uninstall`. Never activated automatically.
+#
+# 1. Lints when a staged source file is TypeScript or an ES/CommonJS module.
+# 2. Refuses a staged text file whose *staged content* contains a carriage
+#    return: `.gitattributes` says `* text=auto`, so a CRLF blob in the index
+#    means the file was force-added or classified as binary, and it would
+#    reach every checkout with the wrong line endings.
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+if printf '%s\n' "$staged" | grep -Eq '\.(ts|mjs|cjs)$'; then
+    if ! npm run lint --silent; then
+        echo 'pre-commit: lint failed (npm run lint)' >&2
+        exit 1
+    fi
+fi
+
+cr=$(printf '\r')
+bad=''
+for path in $staged; do
+    # `text: unset` marks a binary attribute (*.pdf, *.ttf, ...); skip those.
+    case "$(git check-attr text -- "$path")" in
+        *': text: unset') continue ;;
+    esac
+    if git show ":$path" | grep -l "$cr" >/dev/null 2>&1; then
+        bad="$bad
+  $path"
+    fi
+done
+
+if [ -n "$bad" ]; then
+    echo "pre-commit: staged text file(s) contain CRLF line endings:$bad" >&2
+    echo 'Convert to LF (git add --renormalize <file>, or your editor) and stage again.' >&2
+    exit 1
+fi
+
+exit 0

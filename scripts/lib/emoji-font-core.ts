@@ -18,6 +18,8 @@
 import { parseColrCpal } from '../../src/fonts/colr-parser.js';
 import { subsetTTF } from '../../src/fonts/font-subsetter.js';
 import type { ColorGlyph } from '../../src/types/pdf-types.js';
+import { parseGlyfFont } from '../../src/fonts/glyf-outline.js';
+import { compactClips } from './clip-compaction.js';
 
 export interface EmojiModuleStats {
     /** Colour glyphs successfully resolved and kept. */
@@ -363,6 +365,12 @@ export function buildEmojiFontModule(
     const colorGlyphs = parseColrCpal(ttf);
     if (!colorGlyphs) throw new Error('Font has no COLR/CPAL table');
 
+    // Masked layers carry every outline of their mask; most add nothing to
+    // the union. Prune before embedding, so the subset and the module only
+    // carry the outlines that shape the clip (see clip-compaction.ts).
+    const glyfFont = parseGlyfFont(ttf);
+    const compact = (glyph: ColorGlyph): ColorGlyph => (glyfFont ? compactClips(glyph, glyfFont) : glyph);
+
     // ── Build the requested subset ───────────────────────────────────
     const subCmap: Record<number, number> = {};
     const subWidths: Record<number, number> = {};
@@ -378,9 +386,9 @@ export function buildEmojiFontModule(
         if (gid === undefined || !colorGlyphs[gid]) { missing++; missingCodepoints.push(cp); continue; }
         subCmap[cp] = gid;
         subWidths[gid] = widthsAll[gid];
-        subColor[gid] = colorGlyphs[gid];
+        subColor[gid] = compact(colorGlyphs[gid]);
         usedGids.add(gid);
-        for (const layer of colorGlyphs[gid].layers) usedGids.add(layer.glyphId);
+        for (const id of outlineIdsOf(subColor[gid])) usedGids.add(id);
         kept++;
     }
 
@@ -416,9 +424,9 @@ export function buildEmojiFontModule(
             const stripped = seq.filter(cp => cp !== 0xFE0F);
             if (stripped.length !== seq.length) registerVariant(stripped, ligGid);
             subWidths[ligGid] = widthsAll[ligGid];
-            subColor[ligGid] = colorGlyphs[ligGid];
+            subColor[ligGid] = compact(colorGlyphs[ligGid]);
             usedGids.add(ligGid);
-            for (const layer of colorGlyphs[ligGid].layers) usedGids.add(layer.glyphId);
+            for (const id of outlineIdsOf(subColor[ligGid])) usedGids.add(id);
             keptSequences++;
         }
         // Longest-first so the runtime longest-match takes the first hit;
@@ -516,4 +524,20 @@ export function allColorCodepoints(ttf: Uint8Array): number[] {
         if (colorGlyphs[gid]) out.push(cp);
     }
     return out.sort((a, b) => a - b);
+}
+
+/**
+ * Every outline a colour glyph draws or clips to. A clipped layer (v1.8.0)
+ * reads the outlines of its mask as well as its own, and the subset must keep
+ * all of them — a mask whose outlines were dropped clips everything away.
+ */
+function outlineIdsOf(glyph: ColorGlyph): number[] {
+    const ids: number[] = [];
+    for (const layer of glyph.layers) {
+        ids.push(layer.glyphId);
+        for (const set of layer.clip ?? []) {
+            for (const outline of set) ids.push(outline.glyphId);
+        }
+    }
+    return ids;
 }

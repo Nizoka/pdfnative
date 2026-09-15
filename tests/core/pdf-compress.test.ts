@@ -1,18 +1,21 @@
 ﻿/**
- * pdfnative â€” PDF Compression Tests
+ * pdfnative — PDF Compression Tests
  * ====================================
  * Unit tests for FlateDecode stream compression (pdf-compress.ts).
  *
  * Tests: adler32, deflateStored, deflateSync, compressStream, uint8ToBinaryString.
  */
 
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterEach } from 'vitest';
 import {
     adler32,
     deflateStored,
     deflateSync,
     compressStream,
     uint8ToBinaryString,
+    setDeflateImpl,
+    setDeflateRawImpl,
+    wrapZlib,
     _resetZlibCache,
     initNodeCompression,
 } from '../../src/core/pdf-compress.js';
@@ -251,5 +254,167 @@ describe('uint8ToBinaryString', () => {
         const str = uint8ToBinaryString(original);
         const back = toBytes(str);
         expect(back).toEqual(original);
+    });
+});
+
+// ── setDeflateImpl contract (issue #78) ──────────────────────────────
+//
+// The JSDoc used to recommend implementations that fail silently: raw
+// RFC 1951 DEFLATE produced streams no reader can inflate (blank pages,
+// empty text extraction), and the async callback API returned undefined.
+// deflateSync() now rejects both with an explanatory error.
+
+describe('setDeflateImpl contract enforcement', () => {
+    afterEach(async () => {
+        _resetZlibCache();
+        await initNodeCompression();
+    });
+
+    it('accepts a synchronous zlib-wrapped implementation', () => {
+        setDeflateImpl((buf) => deflateStored(buf));
+        const out = deflateSync(toBytes('hello world'));
+        expect(out).toBeInstanceOf(Uint8Array);
+        expect(out[0] & 0x0f).toBe(8);
+        expect(((out[0] << 8) | out[1]) % 31).toBe(0);
+    });
+
+    it('rejects raw RFC 1951 DEFLATE (fflate deflateSync)', () => {
+        // Strip the 2-byte zlib header and the 4-byte Adler-32 trailer to
+        // emulate what fflate's `deflateSync` returns.
+        setDeflateImpl((buf) => deflateStored(buf).subarray(2, -4));
+        expect(() => deflateSync(toBytes('hello'))).toThrow(/raw DEFLATE \(RFC 1951\)/);
+        expect(() => deflateSync(toBytes('hello'))).toThrow(/zlibSync/);
+    });
+
+    it('rejects an implementation returning undefined (async callback API)', () => {
+        setDeflateImpl((() => undefined) as unknown as (b: Uint8Array) => Uint8Array);
+        expect(() => deflateSync(toBytes('hello'))).toThrow(/returned undefined/);
+        expect(() => deflateSync(toBytes('hello'))).toThrow(/must be synchronous/);
+    });
+
+    it('rejects an implementation returning a Promise (CompressionStream)', () => {
+        setDeflateImpl(((buf: Uint8Array) => Promise.resolve(buf)) as unknown as (b: Uint8Array) => Uint8Array);
+        expect(() => deflateSync(toBytes('hello'))).toThrow(/returned a Promise/);
+    });
+
+    it('names the offending API in the message so the fix is obvious', () => {
+        setDeflateImpl((buf) => deflateStored(buf).subarray(2, -4));
+        expect(() => deflateSync(toBytes('x'))).toThrow(/setDeflateImpl/);
+    });
+
+    it('falls back to the stored-block writer when no implementation is set', () => {
+        setDeflateImpl(null);
+        const out = deflateSync(toBytes('hello'));
+        expect(out).toBeInstanceOf(Uint8Array);
+        expect(out[0]).toBe(0x78);
+    });
+
+    it('does not corrupt a document built through compressStream', () => {
+        setDeflateImpl((buf) => deflateStored(buf));
+        const round = compressStream('BT /F1 12 Tf (hi) Tj ET');
+        expect(round.length).toBeGreaterThan(0);
+        expect(round.charCodeAt(0)).toBe(0x78);
+    });
+});
+
+// ── setDeflateRawImpl / wrapZlib (v1.8.0) ────────────────────────────
+//
+// Raw RFC 1951 is what portable compressors emit (ZIP method 8, zipnative,
+// fflate's deflateSync, CompressionStream's 'deflate-raw'). pdfnative adds
+// the RFC 1950 envelope so callers cannot get it wrong.
+
+describe('setDeflateRawImpl', () => {
+    /** Strip a zlib envelope, leaving the raw RFC 1951 payload. */
+    const toRaw = (data: Uint8Array): Uint8Array => deflateStored(data).subarray(2, -4);
+
+    afterEach(async () => {
+        _resetZlibCache();
+        await initNodeCompression();
+    });
+
+    it('wraps raw output so the result inflates back to the input', () => {
+        setDeflateRawImpl(toRaw);
+        const input = toBytes('The quick brown fox jumps over the lazy dog.');
+        const out = deflateSync(input);
+        expect(out[0]).toBe(0x78);
+        expect(((out[0] << 8) | out[1]) % 31).toBe(0);
+        expect(new Uint8Array(zlibInflateSync(out))).toEqual(input);
+    });
+
+    it('outranks an auto-resolved node:zlib', async () => {
+        // Node's zlib is available here, but an explicit raw impl is a
+        // deliberate choice and must win — that is the whole point when
+        // pinning a cross-runtime encoder.
+        _resetZlibCache();
+        await initNodeCompression();
+        let called = 0;
+        setDeflateRawImpl((buf) => { called++; return toRaw(buf); });
+        deflateSync(toBytes('hello'));
+        expect(called).toBe(1);
+    });
+
+    it('yields to an explicit setDeflateImpl', () => {
+        let rawCalls = 0;
+        let zlibCalls = 0;
+        setDeflateRawImpl((buf) => { rawCalls++; return toRaw(buf); });
+        setDeflateImpl((buf) => { zlibCalls++; return deflateStored(buf); });
+        deflateSync(toBytes('hello'));
+        expect(zlibCalls).toBe(1);
+        expect(rawCalls).toBe(0);
+    });
+
+    it('rejects an asynchronous raw implementation', () => {
+        setDeflateRawImpl(((buf: Uint8Array) => Promise.resolve(buf)) as unknown as (b: Uint8Array) => Uint8Array);
+        expect(() => deflateSync(toBytes('hello'))).toThrow(/a Promise was returned/);
+        expect(() => deflateSync(toBytes('hello'))).toThrow(/setDeflateRawImpl/);
+    });
+
+    it('rejects a raw implementation returning undefined', () => {
+        setDeflateRawImpl((() => undefined) as unknown as (b: Uint8Array) => Uint8Array);
+        expect(() => deflateSync(toBytes('hello'))).toThrow(/undefined was returned/);
+    });
+
+    it('can be removed with null', async () => {
+        setDeflateRawImpl(toRaw);
+        setDeflateRawImpl(null);
+        _resetZlibCache();
+        await initNodeCompression();
+        const input = toBytes('back to node zlib');
+        expect(new Uint8Array(zlibInflateSync(deflateSync(input)))).toEqual(input);
+    });
+});
+
+describe('wrapZlib', () => {
+    it('produces a stream node:zlib can inflate', () => {
+        const input = toBytes('round trip through the wrapper');
+        const raw = deflateStored(input).subarray(2, -4);
+        const wrapped = wrapZlib(raw, input);
+        expect(new Uint8Array(zlibInflateSync(wrapped))).toEqual(input);
+    });
+
+    it('checksums the uncompressed source, not the compressed payload', () => {
+        const input = toBytes('checksum me');
+        const raw = deflateStored(input).subarray(2, -4);
+        const wrapped = wrapZlib(raw, input);
+        const trailer = wrapped.subarray(wrapped.length - 4);
+        const sum = adler32(input);
+        expect(Array.from(trailer)).toEqual([
+            (sum >>> 24) & 0xff, (sum >>> 16) & 0xff, (sum >>> 8) & 0xff, sum & 0xff,
+        ]);
+        // The compressed payload has a different checksum, so a naive
+        // implementation checksumming `raw` would not match.
+        expect(adler32(raw)).not.toBe(sum);
+    });
+
+    it('emits a header that satisfies the RFC 1950 modulo-31 rule', () => {
+        const wrapped = wrapZlib(new Uint8Array([1, 2, 3]), new Uint8Array([4, 5]));
+        expect(wrapped[0] & 0x0f).toBe(8);
+        expect(((wrapped[0] << 8) | wrapped[1]) % 31).toBe(0);
+    });
+
+    it('handles empty input', () => {
+        const input = new Uint8Array(0);
+        const raw = deflateStored(input).subarray(2, -4);
+        expect(new Uint8Array(zlibInflateSync(wrapZlib(raw, input)))).toEqual(input);
     });
 });

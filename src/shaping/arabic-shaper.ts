@@ -118,7 +118,7 @@ interface ArabicPresForm {
     readonly medi?: number;
 }
 
-const ARABIC_PRES_FORMS: ReadonlyMap<number, ArabicPresForm> = new Map([
+const ARABIC_PRES_FORMS: ReadonlyMap<number, ArabicPresForm> = /*#__PURE__*/ new Map([
     [0x0621, { isol: 0xFE80 }],
     [0x0622, { isol: 0xFE81, fina: 0xFE82 }],
     [0x0623, { isol: 0xFE83, fina: 0xFE84 }],
@@ -177,7 +177,7 @@ const ARABIC_PRES_FORMS: ReadonlyMap<number, ArabicPresForm> = new Map([
 ]);
 
 /** Lam-Alef ligature presentation forms: [isolatedCP, finalCP]. */
-const LAM_ALEF_PRES: ReadonlyMap<number, readonly [number, number]> = new Map([
+const LAM_ALEF_PRES: ReadonlyMap<number, readonly [number, number]> = /*#__PURE__*/ new Map([
     [0x0622, [0xFEF5, 0xFEF6]],  // LAM + ALEF WITH MADDA ABOVE
     [0x0623, [0xFEF7, 0xFEF8]],  // LAM + ALEF WITH HAMZA ABOVE
     [0x0625, [0xFEF9, 0xFEFA]],  // LAM + ALEF WITH HAMZA BELOW
@@ -238,7 +238,7 @@ function resolvePositionalForms(codePoints: number[]): PositionalForm[] {
 
 /** Alef variants that form ligatures with Lam. */
 const LAM = 0x0644;
-const ALEF_VARIANTS = new Set([0x0622, 0x0623, 0x0625, 0x0627]);
+const ALEF_VARIANTS = /*#__PURE__*/ new Set([0x0622, 0x0623, 0x0625, 0x0627]);
 
 /**
  * Check if a codepoint pair should form a Lam-Alef ligature.

@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 445,
+  "exportCount": 503,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -68,6 +68,13 @@
       "summary": "Supported barcode formats."
     },
     {
+      "name": "Base14Metrics",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type Base14Metrics = 'approximate' | 'exact';",
+      "summary": "Base-14 measurement mode."
+    },
+    {
       "name": "BidiRun",
       "kind": "type",
       "module": "src/shaping/bidi.ts",
@@ -101,6 +108,13 @@
       "module": "src/types/pdf-document-types.ts",
       "signature": "export type ChartType = 'bar' | 'barH' | 'line' | 'pie' | 'donut'",
       "summary": "Supported chart types (v1.6.0; `stackedBar`/`stackedBarH`/`area`/`scatter` since v1.7.0)."
+    },
+    {
+      "name": "ClipOutline",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ClipOutline",
+      "summary": "One outline taking part in a colour-layer clip."
     },
     {
       "name": "CmsDigestAlgorithm",
@@ -164,6 +178,13 @@
       "module": "src/types/pdf-types.ts",
       "signature": "export interface ColorStop",
       "summary": "A gradient colour stop: `offset` in [0,1] with a resolved colour."
+    },
+    {
+      "name": "ColourBarOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface ColourBarOptions",
+      "summary": "Configuration for PrinterMarksOptions.colourBars — the object form of the option."
     },
     {
       "name": "ColumnDef",
@@ -262,6 +283,13 @@
       "module": "src/parser/pdf-inflate.ts",
       "signature": "export const DEFAULT_MAX_INFLATE_OUTPUT = 100 * 1024 * 1024;",
       "summary": "Default maximum decompressed size (bytes) for inflate operations."
+    },
+    {
+      "name": "DEFAULT_UNITS",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export const DEFAULT_UNITS: readonly string[] = [",
+      "summary": "Unit symbols bound to the number in front of them by default."
     },
     {
       "name": "DecryptionContext",
@@ -502,6 +530,13 @@
       "summary": "Heading block — rendered at a predefined size based on level."
     },
     {
+      "name": "HyphenationProvider",
+      "kind": "type",
+      "module": "src/core/hyphenation.ts",
+      "signature": "export type HyphenationProvider = (word: string, lang?: string) => readonly number[];",
+      "summary": "Returns the positions inside `word` where a hyphen may be inserted."
+    },
+    {
       "name": "INFO_LN",
       "kind": "value",
       "module": "src/core/pdf-layout.ts",
@@ -540,7 +575,7 @@
       "name": "KNOWN_DECODE_FILTERS",
       "kind": "value",
       "module": "src/parser/pdf-decode-filters.ts",
-      "signature": "export const KNOWN_DECODE_FILTERS = new Set<string>([",
+      "signature": "export const KNOWN_DECODE_FILTERS = /*#__PURE__*/ new Set<string>([",
       "summary": "Known non-Flate decode filter names (for membership checks)."
     },
     {
@@ -663,6 +698,27 @@
       "summary": "Options for openPdf."
     },
     {
+      "name": "OtlChainRule",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface OtlChainRule",
+      "summary": "One contextual substitution rule (GSUB LookupType 5 or 6): the glyph sets the backtrack (`b`, closest glyph first), input (`i`, first glyph included) and lookahead (`l`) must match — each an index into OtlTables.gsub.sets — and the lookups "
+    },
+    {
+      "name": "OtlLookup",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type OtlLookup =",
+      "summary": "One GSUB lookup as a font-data module serialises it: `t` is the OpenType lookup type, `f` the raw lookupFlag (bit 3 = IgnoreMarks), `m` the substitutions keyed by first glyph id."
+    },
+    {
+      "name": "OtlTables",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface OtlTables",
+      "summary": "OpenType Layout data a font-data module carries for the shapers: GSUB lookups indexed per script and feature tag (in application order) and the GDEF mark-class ranges."
+    },
+    {
       "name": "OutlineItem",
       "kind": "type",
       "module": "src/types/pdf-document-types.ts",
@@ -698,6 +754,13 @@
       "summary": "Canonical list of PDF/A conformance targets accepted by the `tagged` layout option."
     },
     {
+      "name": "PDF_X_CONFORMANCE_TARGETS",
+      "kind": "value",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export const PDF_X_CONFORMANCE_TARGETS = ['pdfx4'] as const;",
+      "summary": "PDF/X conformance targets accepted by the `pdfx` layout option."
+    },
+    {
       "name": "PG_H",
       "kind": "value",
       "module": "src/core/pdf-layout.ts",
@@ -710,6 +773,13 @@
       "module": "src/core/pdf-layout.ts",
       "signature": "export const PG_W = 595.28; // A4 width (210mm)",
       "summary": null
+    },
+    {
+      "name": "PUNCTUATION_SPACING_PRESETS",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export const PUNCTUATION_SPACING_PRESETS: Readonly<Record<PunctuationSpacingPreset, readonly PunctuationSpacingRule[]>> =",
+      "summary": "Built-in punctuation-spacing conventions."
     },
     {
       "name": "PageBox",
@@ -845,11 +915,32 @@
       "summary": "Relationship of an embedded file to the PDF document (ISO 19005-3 §6.8)."
     },
     {
+      "name": "PdfCmykString",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfCmykString = `${number} ${number} ${number} ${number}`;",
+      "summary": "PDF CMYK color string in operator format: \"C M Y K\" (values 0.0–1.0)."
+    },
+    {
+      "name": "PdfCmykTuple",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PdfCmykTuple = readonly [c: number, m: number, y: number, k: number];",
+      "summary": "CMYK color as a 4-tuple of ink coverage in percent, 0–100 — the unit print software uses."
+    },
+    {
       "name": "PdfColor",
       "kind": "type",
       "module": "src/types/pdf-types.ts",
-      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | (string & {});",
+      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | (string & {});",
       "summary": "Color input accepted by pdfnative."
+    },
+    {
+      "name": "PdfColorSpace",
+      "kind": "type",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export type PdfColorSpace = 'rgb' | 'cmyk';",
+      "summary": "The colour space a resolved colour belongs to."
     },
     {
       "name": "PdfColors",
@@ -1048,6 +1139,20 @@
       "summary": "Union of all PDF object types (ISO 32000-1 §7.3)."
     },
     {
+      "name": "PdfXConformanceTarget",
+      "kind": "type",
+      "module": "src/core/pdf-tags.ts",
+      "signature": "export type PdfXConformanceTarget = typeof PDF_X_CONFORMANCE_TARGETS[number];",
+      "summary": "Type alias for the string literal members of PDF_X_CONFORMANCE_TARGETS."
+    },
+    {
+      "name": "PdfXValidationResult",
+      "kind": "type",
+      "module": "src/parser/pdf-x-validator.ts",
+      "signature": "export interface PdfXValidationResult",
+      "summary": "Result of a PDF/X structural validation."
+    },
+    {
       "name": "PrintOptions",
       "kind": "type",
       "module": "src/types/pdf-types.ts",
@@ -1060,6 +1165,20 @@
       "module": "src/types/pdf-types.ts",
       "signature": "export interface PrinterMarksOptions",
       "summary": "Printer's-marks options for PrintOptions.marks."
+    },
+    {
+      "name": "PunctuationSpacingPreset",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type PunctuationSpacingPreset = 'fr' | 'fr-CA';",
+      "summary": "Built-in punctuation-spacing conventions."
+    },
+    {
+      "name": "PunctuationSpacingRule",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PunctuationSpacingRule",
+      "summary": "One punctuation-spacing rule: the plain space on `side` of `char` becomes the given no-break space."
     },
     {
       "name": "QRErrorLevel",
@@ -1088,6 +1207,13 @@
       "module": "src/core/pdf-form.ts",
       "signature": "export interface RadioGroupContext",
       "summary": "Context for building a radio button child widget within a group."
+    },
+    {
+      "name": "ResolvedColor",
+      "kind": "type",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export interface ResolvedColor",
+      "summary": "A colour reduced to the operands a PDF operator takes, plus the space those operands are in — which is what decides the operator itself."
     },
     {
       "name": "ResolvedPrintBoxes",
@@ -1125,6 +1251,20 @@
       "summary": "RSA public key."
     },
     {
+      "name": "SCRIPT_SHAPERS",
+      "kind": "value",
+      "module": "src/shaping/shaper-registry.ts",
+      "signature": "export const SCRIPT_SHAPERS: readonly ScriptShaper[] = [",
+      "summary": "Every shaped script, in dispatch order."
+    },
+    {
+      "name": "ScriptShaper",
+      "kind": "type",
+      "module": "src/shaping/shaper-registry.ts",
+      "signature": "export interface ScriptShaper",
+      "summary": "One complex script the engine can shape."
+    },
+    {
       "name": "ShapeAnnotation",
       "kind": "type",
       "module": "src/core/pdf-annot-markup.ts",
@@ -1136,7 +1276,7 @@
       "kind": "type",
       "module": "src/types/pdf-types.ts",
       "signature": "export interface ShapedGlyph",
-      "summary": "A single positioned glyph output from the Thai shaper."
+      "summary": "A single positioned glyph output by a shaper, in visual order."
     },
     {
       "name": "SigDictMetadata",
@@ -1300,6 +1440,27 @@
       "summary": "Parsed TSTInfo from a TimeStampToken (RFC 3161 §2.4.2)."
     },
     {
+      "name": "TypographyOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface TypographyOptions",
+      "summary": "Fine typographic control over how text blocks break across pages."
+    },
+    {
+      "name": "USE_UNICODE_VERSION",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": null,
+      "summary": null
+    },
+    {
+      "name": "UnitBindingOptions",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface UnitBindingOptions",
+      "summary": "Configuration for TypographyOptions.unitBinding."
+    },
+    {
       "name": "UseCategory",
       "kind": "type",
       "module": "src/shaping/use-lite.ts",
@@ -1319,6 +1480,27 @@
       "module": "src/shaping/use-lite.ts",
       "signature": "export interface UseCluster",
       "summary": "A USE-lite cluster: a base plus its prefixed/suffixed marks and signs."
+    },
+    {
+      "name": "UseClusterCategory",
+      "kind": "type",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export type UseClusterCategory = string;",
+      "summary": "A USE cluster category: one of the base categories (`B`, `H`, `R`, …) or a positional variant (`VPre`, `MAbv`, `FBlw`, …)."
+    },
+    {
+      "name": "UseSyllable",
+      "kind": "type",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export interface UseSyllable",
+      "summary": "One cluster, as a half-open range over the input code points."
+    },
+    {
+      "name": "UseSyllableType",
+      "kind": "type",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export type UseSyllableType =",
+      "summary": "The kind of cluster the grammar matched."
     },
     {
       "name": "ViewerPreferences",
@@ -1454,6 +1636,27 @@
       "summary": "Apply a single PDF stream filter by name."
     },
     {
+      "name": "applyPunctuationSpacing",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export function applyPunctuationSpacing(text: string, rules: readonly PunctuationSpacingRule[]): string",
+      "summary": "Replace the plain spaces adjacent to punctuation with no-break ones, following an explicit set of rules."
+    },
+    {
+      "name": "bindShortWords",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export function bindShortWords(text: string, opts?: ShortWordBinding): string",
+      "summary": "Bind short words to the word that follows them with a no-break space, so a line never ends on \"a\", \"w\" or \"I\"."
+    },
+    {
+      "name": "bindUnits",
+      "kind": "value",
+      "module": "src/core/pdf-typography.ts",
+      "signature": "export function bindUnits(text: string, units: readonly string[] = DEFAULT_UNITS): string",
+      "summary": "Bind numbers to the units that follow them with a no-break space (ISO 80000-1 §7.1)."
+    },
+    {
       "name": "buildAcroFormDict",
       "kind": "value",
       "module": "src/core/pdf-form.ts",
@@ -1478,7 +1681,7 @@
       "name": "buildAppearanceStreamDict",
       "kind": "value",
       "module": "src/core/pdf-form.ts",
-      "signature": "export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number): string",
+      "signature": "export function buildAppearanceStreamDict(w: number, h: number, streamLength: number, fontObjNum?: number, extraResources = ''): string",
       "summary": "Build the Form XObject dictionary header for an appearance stream."
     },
     {
@@ -1573,6 +1776,13 @@
       "summary": "Build a PDF link annotation object for an internal page link (GoTo action)."
     },
     {
+      "name": "buildLaoClusters",
+      "kind": "value",
+      "module": "src/shaping/lao-shaper.ts",
+      "signature": "export function buildLaoClusters(str: string): LaoCluster[]",
+      "summary": "Split Lao text into clusters of `{ base, aboves, belows, leadings }`."
+    },
+    {
       "name": "buildLinkAnnotation",
       "kind": "value",
       "module": "src/core/pdf-annot.ts",
@@ -1625,7 +1835,7 @@
       "name": "buildPrinterMarksOps",
       "kind": "value",
       "module": "src/core/pdf-print.ts",
-      "signature": "export function buildPrinterMarksOps( trim: PageBox, pgW: number, pgH: number, marks: boolean | PrinterMarksOptions, ): string",
+      "signature": "export function buildPrinterMarksOps( trim: PageBox, pgW: number, pgH: number, marks: boolean | PrinterMarksOptions, registrationColour = false, artifact = false, ): string",
       "summary": "Build the printer's-marks operator block for one page geometry."
     },
     {
@@ -1734,6 +1944,13 @@
       "summary": "Check whether a string contains any Bengali characters."
     },
     {
+      "name": "containsCham",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsCham(str: string): boolean",
+      "summary": "Check whether a string contains any Cham characters."
+    },
+    {
       "name": "containsDevanagari",
       "kind": "value",
       "module": "src/shaping/script-registry.ts",
@@ -1762,6 +1979,13 @@
       "summary": "Check whether a string contains any Khmer characters."
     },
     {
+      "name": "containsLao",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsLao(str: string): boolean",
+      "summary": "Check whether a string contains any Lao characters."
+    },
+    {
       "name": "containsMath",
       "kind": "value",
       "module": "src/shaping/script-registry.ts",
@@ -1776,6 +2000,13 @@
       "summary": "Check whether a string contains any Myanmar characters."
     },
     {
+      "name": "containsNewTaiLue",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsNewTaiLue(str: string): boolean",
+      "summary": "Check whether a string contains any New Tai Lue characters."
+    },
+    {
       "name": "containsRTL",
       "kind": "value",
       "module": "src/shaping/bidi.ts",
@@ -1788,6 +2019,20 @@
       "module": "src/shaping/script-registry.ts",
       "signature": "export function containsSinhala(str: string): boolean",
       "summary": "Check whether a string contains any Sinhala characters."
+    },
+    {
+      "name": "containsTaiLe",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTaiLe(str: string): boolean",
+      "summary": "Check whether a string contains any Tai Le characters."
+    },
+    {
+      "name": "containsTaiTham",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsTaiTham(str: string): boolean",
+      "summary": "Check whether a string contains any Tai Tham (Lanna) characters."
     },
     {
       "name": "containsTamil",
@@ -1828,7 +2073,7 @@
       "name": "createEncodingContext",
       "kind": "value",
       "module": "src/core/encoding-context.ts",
-      "signature": "export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false): EncodingContext",
+      "signature": "export function createEncodingContext( fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false, metrics: Base14Metrics = 'approximate', lang?: string, ): EncodingContext",
       "summary": "Create an encoding context that encapsulates text encoding and font reference logic."
     },
     {
@@ -2133,6 +2378,20 @@
       "summary": "Fill the form fields of an existing PDF and return a new PDF (incremental update — original bytes are preserved, so any existing signature stays valid for its revision)."
     },
     {
+      "name": "fillOp",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function fillOp(input: PdfColor): string",
+      "summary": "The complete non-stroking colour operator for a colour, operands included."
+    },
+    {
+      "name": "findShaper",
+      "kind": "value",
+      "module": "src/shaping/shaper-registry.ts",
+      "signature": "export function findShaper(text: string): ScriptShaper | null",
+      "summary": "The first registered shaper claiming `text`, or `null` when no complex script is present and the caller should take its plain encoding path."
+    },
+    {
       "name": "findStartxref",
       "kind": "value",
       "module": "src/parser/pdf-xref-parser.ts",
@@ -2180,6 +2439,20 @@
       "module": "src/crypto/crypto-provider.ts",
       "signature": "export function getCryptoProvider(): CryptoProvider | null",
       "summary": "The currently-installed global CryptoProvider, or `null` if none."
+    },
+    {
+      "name": "getDefaultCreationDate",
+      "kind": "value",
+      "module": "src/core/pdf-reproducible.ts",
+      "signature": "export function getDefaultCreationDate(): Date | null",
+      "summary": "The currently pinned default creation instant, or `null` when unset."
+    },
+    {
+      "name": "getHyphenationProvider",
+      "kind": "value",
+      "module": "src/core/hyphenation.ts",
+      "signature": "export function getHyphenationProvider(): HyphenationProvider | null",
+      "summary": "The installed provider, or `null`."
     },
     {
       "name": "getMaxInflateOutputSize",
@@ -2242,7 +2515,7 @@
       "kind": "value",
       "module": "src/fonts/encoding.ts",
       "signature": "export function helveticaWidth(str: string, sz: number): number",
-      "summary": "Approximate text width in points using Helvetica character metrics."
+      "summary": null
     },
     {
       "name": "hmacSha256",
@@ -2308,6 +2581,13 @@
       "summary": "Check if a codepoint falls in the Bengali Unicode block."
     },
     {
+      "name": "isChamCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isChamCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Cham Unicode block."
+    },
+    {
       "name": "isCyrillicCodepoint",
       "kind": "value",
       "module": "src/shaping/script-registry.ts",
@@ -2350,6 +2630,13 @@
       "summary": "Check if a codepoint falls in any Khmer Unicode block."
     },
     {
+      "name": "isLaoCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isLaoCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Lao Unicode block."
+    },
+    {
       "name": "isLinkAnnotation",
       "kind": "value",
       "module": "src/core/pdf-annot.ts",
@@ -2376,6 +2663,13 @@
       "module": "src/parser/pdf-object-parser.ts",
       "signature": "export function isName(v: PdfValue | undefined): v is PdfName",
       "summary": null
+    },
+    {
+      "name": "isNewTaiLueCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isNewTaiLueCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the New Tai Lue Unicode block."
     },
     {
       "name": "isRef",
@@ -2411,6 +2705,20 @@
       "module": "src/parser/pdf-object-parser.ts",
       "signature": "export function isStream(v: PdfValue): v is PdfStream",
       "summary": null
+    },
+    {
+      "name": "isTaiLeCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTaiLeCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Tai Le Unicode block."
+    },
+    {
+      "name": "isTaiThamCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isTaiThamCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Tai Tham (Lanna) Unicode block."
     },
     {
       "name": "isTamilCodepoint",
@@ -2522,7 +2830,7 @@
       "kind": "value",
       "module": "src/core/pdf-color.ts",
       "signature": "export function parseColor(input: PdfColor): string",
-      "summary": "Parse a color input into a validated PDF RGB operator string."
+      "summary": "Parse a color input into validated PDF operands."
     },
     {
       "name": "parseColrCpal",
@@ -2728,6 +3036,13 @@
       "summary": "Render SVG content as PDF path operators."
     },
     {
+      "name": "reorderUseCluster",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export function reorderUseCluster(cps: readonly number[]): number[]",
+      "summary": "Reorder one cluster into visual order."
+    },
+    {
       "name": "resetFontRegistry",
       "kind": "value",
       "module": "src/fonts/font-loader.ts",
@@ -2740,6 +3055,13 @@
       "module": "src/shaping/bidi.ts",
       "signature": "export function resolveBidiRuns(text: string): BidiRun[]",
       "summary": "Resolve bidirectional text into ordered runs with embedding levels."
+    },
+    {
+      "name": "resolveColor",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function resolveColor(input: PdfColor): ResolvedColor",
+      "summary": "Resolve any accepted colour input to its operands and colour space."
     },
     {
       "name": "resolveLayout",
@@ -2805,11 +3127,32 @@
       "summary": "Install (or clear) a global signature CryptoProvider."
     },
     {
+      "name": "setDefaultCreationDate",
+      "kind": "value",
+      "module": "src/core/pdf-reproducible.ts",
+      "signature": "export function setDefaultCreationDate(date: Date | null): void",
+      "summary": "Pin the default creation instant for every subsequent build."
+    },
+    {
       "name": "setDeflateImpl",
       "kind": "value",
       "module": "src/core/pdf-compress.ts",
       "signature": "export function setDeflateImpl(fn: ((buf: Uint8Array) => Uint8Array) | null): void",
       "summary": "Inject a custom deflate implementation (e.g."
+    },
+    {
+      "name": "setDeflateRawImpl",
+      "kind": "value",
+      "module": "src/core/pdf-compress.ts",
+      "signature": "export function setDeflateRawImpl(fn: ((buf: Uint8Array) => Uint8Array) | null): void",
+      "summary": "Inject a **raw** DEFLATE (RFC 1951) compressor; pdfnative adds the zlib wrapper itself."
+    },
+    {
+      "name": "setHyphenationProvider",
+      "kind": "value",
+      "module": "src/core/hyphenation.ts",
+      "signature": "export function setHyphenationProvider(fn: HyphenationProvider | null): void",
+      "summary": "Install a hyphenation provider, or `null` to remove it."
     },
     {
       "name": "setInflateImpl",
@@ -2889,6 +3232,20 @@
       "summary": "Shape a string of Khmer text into an array of positioned glyphs."
     },
     {
+      "name": "shapeLaoText",
+      "kind": "value",
+      "module": "src/shaping/lao-shaper.ts",
+      "signature": "export function shapeLaoText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Lao text into positioned glyphs."
+    },
+    {
+      "name": "shapeLatinMarksText",
+      "kind": "value",
+      "module": "src/shaping/latin-marks.ts",
+      "signature": "export function shapeLatinMarksText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a Latin (or Greek, or Cyrillic) run that carries combining marks."
+    },
+    {
       "name": "shapeMyanmarText",
       "kind": "value",
       "module": "src/shaping/myanmar-shaper.ts",
@@ -2931,6 +3288,13 @@
       "summary": "Shape a string of Tibetan text into an array of positioned glyphs."
     },
     {
+      "name": "shapeUseText",
+      "kind": "value",
+      "module": "src/shaping/use-shaper.ts",
+      "signature": "export function shapeUseText(str: string, fd: FontData): ShapedGlyph[]",
+      "summary": "Shape text through the Universal Shaping Engine."
+    },
+    {
       "name": "signPdfBytes",
       "kind": "value",
       "module": "src/core/pdf-signature.ts",
@@ -2964,6 +3328,13 @@
       "module": "src/shaping/multi-font.ts",
       "signature": "export function splitTextByFont(str: string, fontEntries: FontEntry[]): FontRun[]",
       "summary": "Split a string into text runs, each assigned to the font whose cmap covers it."
+    },
+    {
+      "name": "splitUseSyllables",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export function splitUseSyllables(cps: readonly number[]): UseSyllable[]",
+      "summary": "Split a code-point sequence into USE clusters."
     },
     {
       "name": "streamByteLength",
@@ -3008,6 +3379,13 @@
       "summary": "Strip invisible Unicode bidirectional formatting characters."
     },
     {
+      "name": "strokeOp",
+      "kind": "value",
+      "module": "src/core/pdf-color.ts",
+      "signature": "export function strokeOp(input: PdfColor): string",
+      "summary": "The complete stroking colour operator for a colour, operands included."
+    },
+    {
       "name": "toBytes",
       "kind": "value",
       "module": "src/core/pdf-stream.ts",
@@ -3036,6 +3414,20 @@
       "summary": "Truncate string so that its rendered width does not exceed `maxWidthPt`, appending the Unicode ellipsis (…, U+2026) when truncation occurs."
     },
     {
+      "name": "useCategories",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export function useCategories(cps: readonly number[]): UseClusterCategory[]",
+      "summary": "Classify a whole code-point sequence in one pass."
+    },
+    {
+      "name": "useCategory",
+      "kind": "value",
+      "module": "src/shaping/use-engine.ts",
+      "signature": "export function useCategory(cp: number): UseClusterCategory",
+      "summary": "The USE cluster category of a code point."
+    },
+    {
       "name": "validateAttachments",
       "kind": "value",
       "module": "src/core/pdf-tags.ts",
@@ -3062,6 +3454,13 @@
       "module": "src/parser/pdf-ua-validator.ts",
       "signature": "export function validatePdfUA(bytes: Uint8Array): PdfUAValidationResult",
       "summary": "Validate the PDF/UA (ISO 14289-1) structural prerequisites of a tagged PDF."
+    },
+    {
+      "name": "validatePdfX",
+      "kind": "value",
+      "module": "src/parser/pdf-x-validator.ts",
+      "signature": "export function validatePdfX(bytes: Uint8Array): PdfXValidationResult",
+      "summary": "Validate the PDF/X-4 (ISO 15930-7) structural prerequisites of a file."
     },
     {
       "name": "validatePrintOptions",
@@ -3118,6 +3517,13 @@
       "module": "src/core/pdf-document.ts",
       "signature": null,
       "summary": null
+    },
+    {
+      "name": "wrapZlib",
+      "kind": "value",
+      "module": "src/core/pdf-compress.ts",
+      "signature": "export function wrapZlib(raw: Uint8Array, source: Uint8Array): Uint8Array",
+      "summary": "Wrap a raw RFC 1951 DEFLATE payload in a zlib (RFC 1950) envelope."
     }
   ]
 }

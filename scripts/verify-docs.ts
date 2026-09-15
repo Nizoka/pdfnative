@@ -27,6 +27,19 @@ import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, mkdtemp
 import { join, relative, resolve, dirname, posix, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
+import { findNonEnglishProse } from './lib/prose-language.js';
+import {
+    INSTRUCTIONS_DIR,
+    RULES_DIR,
+    checkAgentConfigParity,
+    checkClaudeRulesBudget,
+    checkEol,
+    checkNodeVersionPin,
+    checkPrTemplateParity,
+    checkSkillShape,
+    checkTagRuleset,
+    type Finding,
+} from './lib/agent-config.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const MANIFEST_PATH = join(ROOT, 'docs', 'assets', 'ecosystem.json');
@@ -110,6 +123,15 @@ interface Assertion {
     match?: string;
     /** The value the captured number must equal. */
     expect?: number;
+    /**
+     * `declared.<key>` or `derived.<key>`: the manifest field `expect` is
+     * resolved from, so the assertion cannot drift from the counter it
+     * polices (a literal `expect` that disagrees fails manifest-shape). The
+     * canonical sentence follows the same value: `{declared.<key>}` /
+     * `{derived.<key>}` placeholders are substituted, and a bare leading
+     * number is checked against it.
+     */
+    expectFrom?: string;
     /** Legacy blocklist form, still honoured for un-migrated assertions. */
     forbid?: string;
     requireIn: string[];
@@ -200,6 +222,48 @@ if (cli?.commandGroups) {
     }
 }
 
+/**
+ * `declared.<key>` / `derived.<key>` → the manifest number, or undefined when
+ * the reference is malformed or the field is not a number.
+ */
+function manifestRef(ref: string): number | undefined {
+    const m = /^(declared|derived)\.([A-Za-z_]\w*)$/.exec(ref);
+    if (!m) return undefined;
+    const value = (m[1] === 'declared' ? manifest.declared : manifest.derived)[m[2]];
+    return typeof value === 'number' ? value : undefined;
+}
+
+/** Substitute `{declared.x}` / `{derived.x}` placeholders in a canonical sentence. */
+function resolveCanonical(canonical: string): string {
+    return canonical.replace(/\{((?:declared|derived)\.\w+)\}/g, (whole, ref: string) => {
+        const value = manifestRef(ref);
+        return value === undefined ? whole : String(value);
+    });
+}
+
+// assertions-vs-declared: an assertion's `expect` and canonical sentence are
+// tied to the counter they police. The 1.8.0 audit found `pdfa-sample-count`
+// carrying its own copy of `declared.pdfaSamples` — two numbers, one truth.
+for (const assertion of manifest.assertions) {
+    if (assertion.expectFrom === undefined) continue;
+    const resolved = manifestRef(assertion.expectFrom);
+    if (resolved === undefined) {
+        fail(MANIFEST_REL, 1, 'manifest-shape', `assertion "${assertion.id}" has expectFrom "${assertion.expectFrom}", which is not a numeric declared.* or derived.* field`);
+        continue;
+    }
+    if (assertion.expect !== undefined && assertion.expect !== resolved) {
+        fail(MANIFEST_REL, 1, 'manifest-shape', `assertion "${assertion.id}" says expect ${assertion.expect} but ${assertion.expectFrom} is ${resolved} — drop the literal, expectFrom is the source`);
+    }
+    const canonical = resolveCanonical(assertion.canonical);
+    const lead = /^(\d[\d , ]*)/.exec(canonical);
+    if (lead && !assertion.canonical.startsWith('{') && Number(lead[1].replace(/[\s ,]/g, '')) !== resolved) {
+        fail(MANIFEST_REL, 1, 'manifest-shape', `assertion "${assertion.id}" canonical "${assertion.canonical}" contradicts ${assertion.expectFrom} = ${resolved} — use a {${assertion.expectFrom}} placeholder`);
+    }
+    for (const placeholder of canonical.matchAll(/\{((?:declared|derived)\.\w+)\}/g)) {
+        fail(MANIFEST_REL, 1, 'manifest-shape', `assertion "${assertion.id}" canonical references {${placeholder[1]}}, which is not a numeric manifest field`);
+    }
+}
+
 // ── Rule: derived-counts ────────────────────────────────────────────
 
 const actualDerived: Record<string, number> = {
@@ -225,10 +289,49 @@ const actualDerived: Record<string, number> = {
         : 0,
 };
 
+// Two hand-maintained `declared.*` figures the tree CAN check, added after
+// the 1.8.0 review found that mutating `declared.tests` to 9999 passed every
+// rule: the font-module count is a directory listing, and the test count is
+// whatever the last gate run recorded (`test-output/.gate/vitest.json` is
+// written by `npm run gate`, whose `test` step precedes `verify:docs`).
+{
+    const fontsDir = join(ROOT, 'fonts');
+    const modules = existsSync(fontsDir) ? readdirSync(fontsDir).filter((f) => f.endsWith('-data.js')).length : 0;
+    if (modules > 0 && manifest.declared['bundledFontModules'] !== modules) {
+        fail(MANIFEST_REL, 1, 'derived-counts', `declared.bundledFontModules says ${manifest.declared['bundledFontModules']} but fonts/ holds ${modules} *-data.js modules — update the manifest, not the docs`);
+    }
+    // Only a report newer than every test file is evidence; an older one
+    // predates a test that was added since and would fail the wrong side.
+    const vitestJson = join(ROOT, 'test-output', '.gate', 'vitest.json');
+    const newestTest = walk(join(ROOT, 'tests'), (p) => p.endsWith('.test.ts'))
+        .reduce((max, p) => Math.max(max, statSync(p).mtimeMs), 0);
+    if (existsSync(vitestJson) && statSync(vitestJson).mtimeMs >= newestTest) {
+        // Every test of the suite — passed, failed and skipped — which is the
+        // figure the gate prints. Passed-plus-failed would depend on the
+        // environment: the tests that need a downloaded source font (`runIf`)
+        // are skipped on CI, where `fonts:download` never runs, and counted
+        // locally, so the same tree would report two different numbers.
+        let total: number | undefined;
+        try {
+            const report = JSON.parse(read(vitestJson)) as { numTotalTests?: number; numPassedTests?: number; numFailedTests?: number; numPendingTests?: number; numTodoTests?: number };
+            total = typeof report.numTotalTests === 'number'
+                ? report.numTotalTests
+                : typeof report.numPassedTests === 'number'
+                    ? report.numPassedTests + (report.numFailedTests ?? 0) + (report.numPendingTests ?? 0) + (report.numTodoTests ?? 0)
+                    : undefined;
+        } catch {
+            total = undefined;
+        }
+        if (typeof total === 'number' && total > 0 && manifest.declared['tests'] !== total) {
+            fail(MANIFEST_REL, 1, 'derived-counts', `declared.tests says ${manifest.declared['tests']} but the last gate run counted ${total} tests — update the manifest (and every doc quoting it)`);
+        }
+    }
+}
+
 // A misspelt derived key (e.g. "recipies") would silently drop both the typo
 // AND the real counter from verification — reject unknown keys outright.
 {
-    const KNOWN_DERIVED = new Set([...Object.keys(actualDerived), 'samplePdfs', '$comment']);
+    const KNOWN_DERIVED = new Set([...Object.keys(actualDerived), 'samplePdfs', 'sampleCategories', '$comment']);
     for (const key of Object.keys(manifest.derived)) {
         if (!KNOWN_DERIVED.has(key)) {
             fail(MANIFEST_REL, 1, 'manifest-shape', `derived.${key} is not computed by any rule — typo, or add it to derived-counts`);
@@ -261,6 +364,23 @@ if (samplePdfs > 0 && declaredSamplePdfs !== undefined) {
     }
 }
 
+// sampleCategories is the number of category directories under test-output/
+// (one per generator family: `financial/`, `shaping/`, …). Same doctrine as
+// samplePdfs: only asserted once samples exist on disk, a shortfall warns, an
+// overcount fails.
+const TEST_OUTPUT = join(ROOT, 'test-output');
+const sampleCategories = existsSync(TEST_OUTPUT)
+    ? readdirSync(TEST_OUTPUT).filter((f) => !f.startsWith('.') && statSync(join(TEST_OUTPUT, f)).isDirectory()).length
+    : 0;
+const declaredCategories = manifest.derived['sampleCategories'];
+if (samplePdfs > 0 && declaredCategories !== undefined) {
+    if (sampleCategories > declaredCategories) {
+        fail(MANIFEST_REL, 1, 'derived-counts', `derived.sampleCategories says ${declaredCategories} but test-output/ has ${sampleCategories} directories — update the manifest, not the docs`);
+    } else if (sampleCategories < declaredCategories) {
+        warn(MANIFEST_REL, 1, 'derived-counts', `test-output/ holds ${sampleCategories} of ${declaredCategories} declared sample categories — run \`npm run test:generate\` for a full check`);
+    }
+}
+
 for (const [key, actual] of Object.entries(actualDerived)) {
     const declared = manifest.derived[key];
     if (declared !== undefined && declared !== actual) {
@@ -289,9 +409,11 @@ function isSuppressed(lines: string[], lineNo: number, rule: string): boolean {
 
 for (const assertion of manifest.assertions) {
     const pattern = assertion.match ?? assertion.forbid;
+    const expect = assertion.expectFrom !== undefined ? manifestRef(assertion.expectFrom) : assertion.expect;
+    const canonical = resolveCanonical(assertion.canonical);
     if (pattern) {
         const re = new RegExp(pattern, 'g');
-        const isEquality = assertion.match !== undefined && assertion.expect !== undefined;
+        const isEquality = assertion.match !== undefined && expect !== undefined;
         for (const file of DOC_FILES) {
             const text = read(file);
             const lines = text.split(/\r?\n/);
@@ -303,14 +425,14 @@ for (const assertion of manifest.assertions) {
                 if (isEquality) {
                     // "2 388" and "2,388" are the same number as 2388.
                     const found = Number(m[1].replace(/[\s  ,]/g, ''));
-                    if (!Number.isFinite(found) || found === assertion.expect) continue;
-                    fail(rel(file), line, 'stale-token', `"${m[0].trim()}" — the manifest says ${assertion.expect} (${assertion.id})`);
+                    if (!Number.isFinite(found) || found === expect) continue;
+                    fail(rel(file), line, 'stale-token', `"${m[0].trim()}" — the manifest says ${expect} (${assertion.id})`);
                 } else {
                     fail(
                         rel(file),
                         line,
                         'stale-token',
-                        `"${m[0].trim()}" contradicts the manifest — canonical value is "${assertion.canonical}"`,
+                        `"${m[0].trim()}" contradicts the manifest — canonical value is "${canonical}"`,
                     );
                 }
             }
@@ -322,8 +444,8 @@ for (const assertion of manifest.assertions) {
             fail(MANIFEST_REL, 1, 'canonical-present', `assertion "${assertion.id}" requires ${required}, which does not exist`);
             continue;
         }
-        if (!read(full).includes(assertion.canonical)) {
-            fail(required, 1, 'canonical-present', `must state the canonical value "${assertion.canonical}" (assertion "${assertion.id}")`);
+        if (!read(full).includes(canonical)) {
+            fail(required, 1, 'canonical-present', `must state the canonical value "${canonical}" (assertion "${assertion.id}")`);
         }
     }
 }
@@ -356,16 +478,448 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
         `\\b${escaped}(?![\\w-])[^\\n'"\`/().]{0,60}?(?<![\\^~\\d.§])(?<![<>≥≤=]\\s{0,3})\\bv?(\\d+\\.\\d+\\.\\d+)\\b`,
         'g',
     );
+    // Two forms the prose regex cannot reach, both of which carried
+    // "pdfnative v1.7.0" through the 1.8.0 bump: a Markdown table row whose
+    // package name is a link (`[\`pdfnative\`](url) | **v1.7.0**`) and the
+    // homepage's static badge (`data-pn-badge="pdfnative">v1.7.0<`), which
+    // JavaScript overwrites at runtime but a non-JS fetcher reads as is.
+    const structural = [
+        new RegExp(`\\[\`${escaped}\`\\]\\([^)]*\\)\\s*\\|\\s*\\*{0,2}v?(\\d+\\.\\d+\\.\\d+)\\*{0,2}`, 'g'),
+        new RegExp(`data-pn-badge=["']${escaped}["'][^>]*>\\s*v?(\\d+\\.\\d+\\.\\d+)\\s*<`, 'g'),
+    ];
     for (const file of DOC_FILES) {
         const text = read(file);
         const lines = text.split(/\r?\n/);
-        re.lastIndex = 0;
+        for (const pattern of [re, ...structural]) {
+            pattern.lastIndex = 0;
+            let m: RegExpExecArray | null;
+            while ((m = pattern.exec(text)) !== null) {
+                if (m[1] === pkg.version) continue;
+                const line = lineOf(text, m.index);
+                if (isSuppressed(lines, line, 'version-token') || isSuppressed(lines, line, 'stale-token')) continue;
+                fail(rel(file), line, 'version-token', `"${m[0].trim()}" — the manifest says ${name} is ${pkg.version}`);
+            }
+        }
+    }
+}
+
+// ── Rule: count-tokens ──────────────────────────────────────────────
+
+/**
+ * The counters quoted in prose — "3214+ tests across 150 files", "271 sample
+ * PDFs", "49 generators", "90%+ statement coverage", "Current version:" —
+ * were only ever pinned where an assertion happened to name them, and the
+ * 1.8.0 audit found the same sentence carrying three different figures across
+ * the README, the homepage and llms.txt. Every such token in the corpus must
+ * now equal its manifest counter (a `+` suffix is a floor and is allowed).
+ * Coverage is bounded rather than matched: `declared.coverageStatements` is
+ * the integer floor of the measured figure, so a doc may state "90%+" or the
+ * measured "90.9 %" but never a percentage whose integer part is higher.
+ *
+ * Companion-package guides (cli, mcp, react) quote THEIR OWN test suites and
+ * coverage; those figures are a companion-repo concern and are skipped, as
+ * the api-exists span scan already does. Historical prose opts out with
+ * `verify-docs:allow count-tokens` (a `stale-token` allow is honoured too).
+ */
+{
+    interface CountToken {
+        readonly pattern: RegExp;
+        readonly source: string;
+        readonly mode: 'equal' | 'floor';
+        readonly requireIn?: readonly string[];
+    }
+    const COUNT_TOKENS: readonly CountToken[] = [
+        {
+            pattern: /\b(\d{1,3}(?:[ , ]\d{3})*|\d+)\+?\s+tests\b/g,
+            source: 'declared.tests',
+            mode: 'equal',
+            requireIn: ['AGENTS.md', 'README.md'],
+        },
+        { pattern: /\bacross\s+(\d+)\+?\s+(?:test\s+)?files\b/g, source: 'derived.testFiles', mode: 'equal' },
+        { pattern: /\((\d+)\+?\s+(?:test\s+)?files\b/g, source: 'derived.testFiles', mode: 'equal' },
+        { pattern: /\b(\d+)\+?\s+test files\b/g, source: 'derived.testFiles', mode: 'equal' },
+        { pattern: /\b(\d+)\s+sample PDFs\b/g, source: 'derived.samplePdfs', mode: 'equal' },
+        { pattern: /\b(\d+)\s+reference PDFs\b/g, source: 'derived.samplePdfs', mode: 'equal' },
+        { pattern: /\b(\d+)\s+(?:sample\s+)?generators\b/g, source: 'derived.sampleGenerators', mode: 'equal' },
+        { pattern: /\b(\d+)\s+PDF\/A-claiming samples\b/g, source: 'declared.pdfaSamples', mode: 'equal' },
+        // "across 38 categories" — a chart's "2 series, 4 categories" alt text
+        // is not a sample-tree claim, so the preposition is part of the token.
+        { pattern: /\b(?:across|in|into)\s+(\d+)\s+(?:sample\s+)?categories\b/g, source: 'derived.sampleCategories', mode: 'equal' },
+        { pattern: /(\d+(?:\.\d+)?)\s?%\+?\s+statement coverage\b/g, source: 'declared.coverageStatements', mode: 'floor' },
+        { pattern: /(\d+(?:\.\d+)?)\s?%\+?\s+statements\b/g, source: 'declared.coverageStatements', mode: 'floor' },
+        // "27 Unicode scripts", "27 scripts", "27-script world tour" — the
+        // homepage heading and the all-scripts playground kept 22 through
+        // the 1.8.0 bump while every sentence around them said 27. Word
+        // numerals count too: the playground index said "Ten" playgrounds.
+        { pattern: /\b(\d+)[ -](?:Unicode\s+)?scripts?\b/gi, source: 'declared.scripts', mode: 'equal' },
+        { pattern: /\b(\d+|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen)\s+(?:zero-install\s+|hands-on\s+|interactive\s+|live\s+)?(?:pdfnative\s+)?playgrounds\b/gi, source: 'derived.playgrounds', mode: 'equal' },
+    ];
+    const NUMERALS: Record<string, number> = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16 };
+    const COMPANION_DOC = /docs[\\/](?:guides|playgrounds)[\\/](?:react|cli|mcp)\.(?:md|html)$/;
+    const corpus = DOC_FILES.filter((f) => !COMPANION_DOC.test(f));
+    const texts = new Map(corpus.map((f) => [f, read(f)] as const));
+
+    for (const token of COUNT_TOKENS) {
+        const expected = manifestRef(token.source);
+        if (expected === undefined) {
+            fail(MANIFEST_REL, 1, 'manifest-shape', `${token.source} is missing — count-tokens needs it to police "${token.pattern.source}"`);
+            continue;
+        }
+        const seenIn = new Set<string>();
+        for (const file of corpus) {
+            const text = texts.get(file)!;
+            const lines = text.split(/\r?\n/);
+            token.pattern.lastIndex = 0;
+            let m: RegExpExecArray | null;
+            while ((m = token.pattern.exec(text)) !== null) {
+                seenIn.add(rel(file));
+                const found = NUMERALS[m[1].toLowerCase()] ?? Number(m[1].replace(/[\s ,]/g, ''));
+                if (!Number.isFinite(found)) continue;
+                // A coverage figure quoted with a decimal claims a measurement,
+                // not a floor: it must equal declared.coverageMeasured when the
+                // manifest records one (three different decimals shipped in 1.8.0).
+                const measured = manifest.declared['coverageMeasured'];
+                if (token.mode === 'floor' && m[1].includes('.') && typeof measured === 'number') {
+                    if (Math.abs(found - measured) > 0.001) {
+                        const line = lineOf(text, m.index);
+                        if (isSuppressed(lines, line, 'count-tokens') || isSuppressed(lines, line, 'stale-token')) continue;
+                        fail(rel(file), line, 'count-tokens', `"${m[0].trim()}" — the manifest says the measured figure is ${measured} % (declared.coverageMeasured)`);
+                    }
+                    continue;
+                }
+                const ok = token.mode === 'equal' ? found === expected : Math.floor(found) <= expected;
+                if (ok) continue;
+                const line = lineOf(text, m.index);
+                if (isSuppressed(lines, line, 'count-tokens') || isSuppressed(lines, line, 'stale-token')) continue;
+                const verdict = token.mode === 'equal'
+                    ? `the manifest says ${expected} (${token.source})`
+                    : `the manifest floor is ${expected} % (${token.source}) — a doc may not claim more coverage than was measured`;
+                fail(rel(file), line, 'count-tokens', `"${m[0].trim()}" — ${verdict}`);
+            }
+        }
+        for (const required of token.requireIn ?? []) {
+            if (!existsSync(join(ROOT, required))) {
+                fail(required, 1, 'count-tokens', `missing — it must state the ${token.source} count`);
+            } else if (!seenIn.has(required)) {
+                fail(required, 1, 'count-tokens', `never states the ${token.source} count ("${expected} tests") — it is the figure agents quote`);
+            }
+        }
+    }
+
+    // "Current version: X.Y.Z" is the one place llms.txt and the agent brief
+    // name the library version in prose without the package name beside it,
+    // so version-token cannot see it.
+    const CURRENT_VERSION = /Current version:\s*(\d+\.\d+\.\d+)/g;
+    const coreVersion = manifest.packages['pdfnative'].version;
+    for (const file of corpus) {
+        const text = texts.get(file)!;
+        const lines = text.split(/\r?\n/);
+        CURRENT_VERSION.lastIndex = 0;
         let m: RegExpExecArray | null;
-        while ((m = re.exec(text)) !== null) {
-            if (m[1] === pkg.version) continue;
+        while ((m = CURRENT_VERSION.exec(text)) !== null) {
+            if (m[1] === coreVersion) continue;
             const line = lineOf(text, m.index);
-            if (isSuppressed(lines, line, 'version-token') || isSuppressed(lines, line, 'stale-token')) continue;
-            fail(rel(file), line, 'version-token', `"${m[0].trim()}" — the manifest says ${name} is ${pkg.version}`);
+            if (isSuppressed(lines, line, 'count-tokens') || isSuppressed(lines, line, 'version-token')) continue;
+            fail(rel(file), line, 'count-tokens', `"${m[0].trim()}" — the manifest says pdfnative is ${coreVersion}`);
+        }
+    }
+}
+
+// ── Rule: claude-md-budget ──────────────────────────────────────────
+
+/**
+ * The three agent entry files are loaded into every session's context, so
+ * their size is a tax on every task. CLAUDE.md must start by importing
+ * AGENTS.md (one source of truth, not a fork), both stay under 120 lines, the
+ * Copilot file under 16 KiB, and no line in any of them exceeds 240
+ * characters — a line longer than that is a paragraph pretending to be a
+ * bullet, and it is the first thing a diff reviewer skips.
+ */
+{
+    const MAX_LINE = 240;
+    const budgets: Array<{ file: string; maxLines?: number; maxBytes?: number; firstLine?: string }> = [
+        { file: 'CLAUDE.md', maxLines: 120, firstLine: '@AGENTS.md' },
+        { file: 'AGENTS.md', maxLines: 120 },
+        { file: '.github/copilot-instructions.md', maxBytes: 16384 },
+    ];
+    for (const budget of budgets) {
+        const full = join(ROOT, budget.file);
+        if (!existsSync(full)) {
+            fail(budget.file, 1, 'claude-md-budget', 'missing — every agent entry file must exist');
+            continue;
+        }
+        const text = read(full);
+        const lines = text.replace(/\r\n/g, '\n').split('\n');
+        const lineCount = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+        if (budget.maxLines !== undefined && lineCount > budget.maxLines) {
+            fail(budget.file, 1, 'claude-md-budget', `${lineCount} lines — the budget is ${budget.maxLines}; move detail to .github/instructions/`);
+        }
+        const bytes = Buffer.byteLength(text, 'utf8');
+        if (budget.maxBytes !== undefined && bytes > budget.maxBytes) {
+            fail(budget.file, 1, 'claude-md-budget', `${bytes} bytes — the budget is ${budget.maxBytes}; move detail to .github/instructions/`);
+        }
+        lines.forEach((line, i) => {
+            if (line.length > MAX_LINE) {
+                fail(budget.file, i + 1, 'claude-md-budget', `line is ${line.length} characters — the limit is ${MAX_LINE}`);
+            }
+        });
+        if (budget.firstLine !== undefined) {
+            const first = lines.find((l) => l.trim() !== '')?.trim();
+            if (first !== budget.firstLine) {
+                fail(budget.file, 1, 'claude-md-budget', `first non-empty line is "${first ?? ''}" — it must be "${budget.firstLine}" so Claude Code loads AGENTS.md instead of a fork of it`);
+            }
+        }
+    }
+}
+
+// ── Rule: governance-sources ────────────────────────────────────────
+
+/**
+ * `.github/ai-governance.json` tells agents which files to load before
+ * proposing a change. A path that no longer exists teaches them nothing, and
+ * an always-loaded set over 16 KiB taxes every session — the on_demand list
+ * exists so that the bulk can be loaded by topic instead.
+ */
+{
+    const GOVERNANCE = join(ROOT, '.github', 'ai-governance.json');
+    const MAX_SOURCES_BYTES = 16 * 1024;
+    if (existsSync(GOVERNANCE)) {
+        let policy: { capability_manifest?: { sources?: unknown; on_demand?: unknown } } = {};
+        try {
+            policy = JSON.parse(read(GOVERNANCE)) as typeof policy;
+        } catch (err) {
+            fail('.github/ai-governance.json', 1, 'governance-sources', `not valid JSON — ${(err as Error).message}`);
+        }
+        const asPaths = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+        const sources = asPaths(policy.capability_manifest?.sources);
+        const onDemand = asPaths(policy.capability_manifest?.on_demand);
+        let total = 0;
+        for (const [list, entries] of [['sources', sources], ['on_demand', onDemand]] as const) {
+            for (const p of entries) {
+                const full = join(ROOT, p);
+                if (!existsSync(full)) {
+                    fail('.github/ai-governance.json', 1, 'governance-sources', `capability_manifest.${list} names "${p}", which does not exist`);
+                } else if (list === 'sources' && statSync(full).isFile()) {
+                    total += statSync(full).size;
+                }
+            }
+        }
+        if (total >= MAX_SOURCES_BYTES) {
+            fail('.github/ai-governance.json', 1, 'governance-sources', `capability_manifest.sources total ${total} bytes — the always-loaded set must stay under ${MAX_SOURCES_BYTES}; move a file to on_demand`);
+        }
+    }
+}
+
+// ── Rule: node-pin-parity ───────────────────────────────────────────
+
+/**
+ * One Node pin, three readers: `.nvmrc` (setup-node in every workflow),
+ * `engines.node` in package.json (npm) and the CI matrix. A workflow that
+ * hard-codes its own version drifts the day the pin moves; the CI matrix is
+ * the one sanctioned exception because it deliberately spans versions, and
+ * it must still include the pinned major.
+ */
+{
+    const NVMRC = join(ROOT, '.nvmrc');
+    const PKG = join(ROOT, 'package.json');
+    const WORKFLOWS = join(ROOT, '.github', 'workflows');
+    let pinnedMajor: number | null = null;
+    if (!existsSync(NVMRC)) {
+        fail('.nvmrc', 1, 'node-pin-parity', 'missing — every workflow reads its Node version from it');
+    } else {
+        const raw = read(NVMRC).trim();
+        const m = /^v?(\d+)/.exec(raw);
+        if (!m) fail('.nvmrc', 1, 'node-pin-parity', `"${raw}" is not a Node version`);
+        else pinnedMajor = Number(m[1]);
+    }
+    if (existsSync(PKG)) {
+        const pkg = JSON.parse(read(PKG)) as { engines?: { node?: string }; packageManager?: string };
+        const enginesMajor = /(\d+)/.exec(pkg.engines?.node ?? '')?.[1];
+        if (enginesMajor === undefined) {
+            fail('package.json', 1, 'node-pin-parity', 'engines.node is missing or names no major version');
+        } else if (pinnedMajor !== null && Number(enginesMajor) !== pinnedMajor) {
+            fail('package.json', 1, 'node-pin-parity', `engines.node "${pkg.engines?.node}" but .nvmrc pins ${pinnedMajor} — the two majors must agree`);
+        }
+        if (typeof pkg.packageManager !== 'string' || !pkg.packageManager.startsWith('npm@')) {
+            fail('package.json', 1, 'node-pin-parity', `packageManager must be present and start with "npm@" (found ${JSON.stringify(pkg.packageManager ?? null)})`);
+        }
+    }
+    if (existsSync(WORKFLOWS)) {
+        for (const name of readdirSync(WORKFLOWS).filter((f) => /\.ya?ml$/.test(f))) {
+            const relPath = `.github/workflows/${name}`;
+            const text = read(join(WORKFLOWS, name));
+            const uses = [...text.matchAll(/uses:\s*actions\/setup-node@/g)];
+            if (uses.length === 0) continue;
+            const withFile = [...text.matchAll(/node-version-file:\s*\.nvmrc\b/g)].length;
+            if (withFile >= uses.length) continue;
+            const matrix = /node-version:\s*\$\{\{\s*matrix\.node-version\s*\}\}/.test(text)
+                && /node-version:\s*\[([^\]]*)\]/.exec(text);
+            if (name === 'ci.yml' && matrix) {
+                const majors = matrix[1].split(',').map((s) => Number(s.trim().replace(/['"]/g, '')));
+                if (pinnedMajor !== null && !majors.includes(pinnedMajor)) {
+                    fail(relPath, lineOf(text, matrix.index), 'node-pin-parity', `matrix [${matrix[1].trim()}] does not include the .nvmrc major ${pinnedMajor}`);
+                }
+                continue;
+            }
+            fail(relPath, lineOf(text, uses[0].index), 'node-pin-parity', 'actions/setup-node must read `node-version-file: .nvmrc` (only ci.yml may span a matrix)');
+        }
+    }
+}
+
+// ── Rule: ruleset-parity ────────────────────────────────────────────
+
+/**
+ * `.github/rulesets/main.json` is the committed copy of the branch
+ * protection, and its required status checks are matched by NAME against
+ * the jobs GitHub actually reports. A context naming a job that no workflow
+ * defines is never satisfied — every PR to main is blocked, or, if the
+ * maintainer removes it in the UI, the committed copy lies. `sample-regression`
+ * must be required: the byte manifest is the release's safety net.
+ */
+{
+    const RULESET = join(ROOT, '.github', 'rulesets', 'main.json');
+    const WORKFLOWS = join(ROOT, '.github', 'workflows');
+    if (existsSync(RULESET)) {
+        let ruleset: { rules?: Array<{ type?: string; parameters?: { required_status_checks?: Array<{ context?: string }> } }> } = {};
+        let parsed = true;
+        try {
+            ruleset = JSON.parse(read(RULESET)) as typeof ruleset;
+        } catch (err) {
+            parsed = false;
+            fail('.github/rulesets/main.json', 1, 'ruleset-parity', `not valid JSON — ${(err as Error).message}`);
+        }
+        if (parsed) {
+            // Job ids and display names, plus every matrix value, from each workflow.
+            const jobs = new Set<string>();
+            const matrixValues = new Map<string, Set<string>>();
+            if (existsSync(WORKFLOWS)) {
+                for (const name of readdirSync(WORKFLOWS).filter((f) => /\.ya?ml$/.test(f))) {
+                    const lines = read(join(WORKFLOWS, name)).replace(/\r\n/g, '\n').split('\n');
+                    let inJobs = false;
+                    let current: string | null = null;
+                    for (const line of lines) {
+                        if (/^jobs:\s*$/.test(line)) { inJobs = true; continue; }
+                        if (!inJobs) continue;
+                        if (/^\S/.test(line)) { inJobs = false; continue; }
+                        const id = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
+                        if (id) {
+                            current = id[1];
+                            jobs.add(current);
+                            matrixValues.set(current, new Set());
+                            continue;
+                        }
+                        if (!current) continue;
+                        const jobName = /^ {4}name:\s*(.+?)\s*$/.exec(line);
+                        if (jobName) jobs.add(jobName[1].replace(/^["']|["']$/g, ''));
+                        const list = /^ {8}[A-Za-z0-9_-]+:\s*\[([^\]]*)\]\s*$/.exec(line);
+                        if (list) {
+                            for (const v of list[1].split(',')) matrixValues.get(current)!.add(v.trim().replace(/['"]/g, ''));
+                        }
+                    }
+                }
+            }
+            const contexts: string[] = [];
+            for (const rule of ruleset.rules ?? []) {
+                if (rule.type !== 'required_status_checks') continue;
+                for (const check of rule.parameters?.required_status_checks ?? []) {
+                    if (typeof check.context === 'string') contexts.push(check.context);
+                }
+            }
+            for (const context of contexts) {
+                if (jobs.has(context)) continue;
+                const m = /^(.+?)\s*\((.+)\)$/.exec(context);
+                if (m && jobs.has(m[1]) && m[2].split(',').every((v) => matrixValues.get(m[1])?.has(v.trim()))) continue;
+                fail('.github/rulesets/main.json', 1, 'ruleset-parity', `required status check "${context}" names no job in .github/workflows/ — every PR to main would block on it`);
+            }
+            if (!contexts.includes('sample-regression')) {
+                fail('.github/rulesets/main.json', 1, 'ruleset-parity', '"sample-regression" is not a required status check — the byte manifest must block merges');
+            }
+        }
+    }
+}
+
+// ── Rules: agent-config-parity, claude-rules-sync, claude-rules-budget,
+//           pr-template-parity, eol-lf, skills-shape, and the .node-version /
+//           tags.json extensions of node-pin-parity and ruleset-parity ─────
+
+/**
+ * The Claude Code configuration is a second copy of the governance policy:
+ * the "Never Read" bullet of CLAUDE.md and the deny list of settings.json,
+ * the HITL commands and the guard hook, the instruction files and the rules
+ * generated from them, the skills and the templates they hand to agents. Each
+ * pair drifts silently — a glob added to the prose but not to the deny list
+ * is read anyway; a stale rule teaches last release's contract. The checks
+ * are pure functions in scripts/lib/agent-config.ts; this block only reads
+ * files and spawns `node --check` and `git ls-files --eol`.
+ */
+{
+    const report = (findings: readonly Finding[], rule: string): void => {
+        for (const f of findings) (f.severity === 'error' ? fail : warn)(f.file, f.line, rule, f.message);
+    };
+    const readOr = (p: string): string | null => (existsSync(join(ROOT, p)) ? read(join(ROOT, p)) : null);
+    const claudeMd = readOr('CLAUDE.md') ?? '';
+
+    // agent-config-parity
+    const hookPath = join(ROOT, '.claude', 'hooks', 'guard.mjs');
+    const hookExists = existsSync(hookPath);
+    const hookCheck = hookExists ? spawnSync(process.execPath, ['--check', hookPath], { encoding: 'utf8', windowsHide: true }) : null;
+    report(
+        checkAgentConfigParity({
+            settingsText: readOr('.claude/settings.json'),
+            claudeMd,
+            hook: { exists: hookExists, checkStatus: hookCheck?.status ?? null, checkStderr: hookCheck?.stderr ?? '' },
+        }),
+        'agent-config-parity',
+    );
+
+    // claude-rules-sync — the generator's own check mode.
+    const { diffClaudeRules, readRuleFiles } = await import('./build-claude-rules.ts');
+    const diff = diffClaudeRules(ROOT);
+    for (const bad of diff.invalid) fail(`${INSTRUCTIONS_DIR}/${bad.source}`, 1, 'claude-rules-sync', `${bad.error} — the generator refuses it`);
+    for (const f of diff.missing) fail(`${RULES_DIR}/${f}`, 1, 'claude-rules-sync', 'missing — run `npm run agents:rules`');
+    for (const f of diff.stale) fail(`${RULES_DIR}/${f}`, 1, 'claude-rules-sync', 'differs from its instruction file — edit the .github/instructions/ source, then run `npm run agents:rules`');
+    for (const f of diff.extra) fail(`${RULES_DIR}/${f}`, 1, 'claude-rules-sync', 'has no instruction source — delete it, or add the .github/instructions/<area>.instructions.md it should come from');
+
+    // claude-rules-budget
+    report(checkClaudeRulesBudget({ claudeMd, resolveImport: (name) => readOr(name), rules: readRuleFiles(ROOT) }), 'claude-rules-budget');
+
+    // pr-template-parity
+    report(checkPrTemplateParity(readOr('.github/pull_request_template.md'), readOr('CONTRIBUTING.md') ?? ''), 'pr-template-parity');
+
+    // eol-lf — git checkouts only (the test sandbox is a plain directory).
+    const gitOut = (...args: string[]): string | null => {
+        const r = spawnSync('git', ['-C', ROOT, ...args], { encoding: 'utf8', windowsHide: true });
+        return r.status === 0 ? r.stdout : null;
+    };
+    const top = gitOut('rev-parse', '--show-toplevel')?.trim().replace(/\\/g, '/');
+    if (top !== undefined && top === ROOT.replace(/\\/g, '/')) {
+        report(checkEol(gitOut('ls-files', '--eol') ?? ''), 'eol-lf');
+    }
+
+    // node-pin-parity — .node-version agrees with engines.node and the CI floor.
+    const pkgText = readOr('package.json');
+    const engines = pkgText === null ? null : ((JSON.parse(pkgText) as { engines?: { node?: string } }).engines?.node ?? null);
+    const ciMatrix = /node-version:\s*\[([^\]]*)\]/.exec(readOr('.github/workflows/ci.yml') ?? '')?.[1]
+        .split(',').map((s) => Number(s.trim().replace(/['"]/g, ''))).filter((n) => Number.isFinite(n)) ?? [];
+    report(checkNodeVersionPin({ nodeVersion: readOr('.node-version'), enginesNode: engines, ciMatrix }), 'node-pin-parity');
+
+    // ruleset-parity — the tag protection is committed too.
+    report(checkTagRuleset(readOr('.github/rulesets/tags.json')), 'ruleset-parity');
+
+    // skills-shape — walk() skips dot-directories, so .claude/skills is listed here.
+    const skillsDir = join(ROOT, '.claude', 'skills');
+    if (existsSync(skillsDir)) {
+        for (const dir of readdirSync(skillsDir).sort()) {
+            if (!statSync(join(skillsDir, dir)).isDirectory()) continue;
+            report(
+                checkSkillShape({
+                    dir,
+                    text: readOr(`.claude/skills/${dir}/SKILL.md`),
+                    existsInSkill: (name) => existsSync(join(skillsDir, dir, name)),
+                    existsInRepo: (p) => existsSync(join(ROOT, p)),
+                }),
+                'skills-shape',
+            );
         }
     }
 }
@@ -625,7 +1179,16 @@ for (const file of HTML_FILES) {
 }
 
 const MD_LINK = /\]\(([^)\s#]+)(?:#[^)\s]*)?\)/g;
-const MD_DOCS = walk(join(ROOT, 'docs'), (p) => p.endsWith('.md'));
+// docs/ Markdown, plus the three repo-root documents an agent reads from
+// GitHub: the README, the CHANGELOG (four links to draft files deleted two
+// releases earlier survived until the 1.8.0 final review) and the current
+// release note.
+const MD_DOCS = [
+    ...walk(join(ROOT, 'docs'), (p) => p.endsWith('.md')),
+    ...['README.md', 'CHANGELOG.md', `release-notes/v${manifest.packages['pdfnative']?.version ?? ''}.md`]
+        .map((p) => join(ROOT, p))
+        .filter((p) => existsSync(p)),
+];
 for (const file of MD_DOCS) {
     const text = read(file);
     MD_LINK.lastIndex = 0;
@@ -635,6 +1198,30 @@ for (const file of MD_DOCS) {
         if (/^(https?:|mailto:|data:|\/\/)/.test(href)) continue;
         if (!existsSync(resolve(dirname(file), href))) {
             fail(rel(file), lineOf(text, m.index), 'internal-links', `"${href}" does not resolve on disk`);
+        }
+    }
+}
+
+// Absolute links into the site itself resolve against docs/ like relative
+// ones, fragment included: `https://pdfnative.dev/#api` pointed at an id the
+// homepage never had.
+const SITE_LINK = /(?:\]\(|href=["'])https:\/\/pdfnative\.dev\/([^)"'\s#]*)(?:#([^)"'\s]+))?/g;
+for (const file of [...MD_DOCS, ...HTML_FILES]) {
+    const text = read(file);
+    SITE_LINK.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = SITE_LINK.exec(text)) !== null) {
+        let target = m[1];
+        if (target === '' || target.endsWith('/')) target += 'index.html';
+        if (!posix.basename(target).includes('.')) target += '.html';
+        const abs = join(ROOT, 'docs', target);
+        const line = lineOf(text, m.index);
+        if (!existsSync(abs)) {
+            fail(rel(file), line, 'internal-links', `"https://pdfnative.dev/${m[1]}" has no page under docs/`);
+            continue;
+        }
+        if (m[2] && abs.endsWith('.html') && !new RegExp(`\\bid=["']${m[2].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["']`).test(read(abs))) {
+            fail(rel(file), line, 'internal-links', `"https://pdfnative.dev/${m[1]}#${m[2]}" — no id "${m[2]}" in docs/${target}`);
         }
     }
 }
@@ -758,6 +1345,59 @@ if (existsSync(SITEMAP)) {
             }
         }
     }
+
+    // ── Rule: sitemap-lastmod-vs-git ────────────────────────────────
+    //
+    // The audit-window bound above cannot see a page edited AFTER its
+    // lastmod was written. Where git history is available (a full local
+    // clone — the maintainer's gate, not CI's shallow checkout, where a
+    // grafted HEAD would date every file today), each <url>'s lastmod must
+    // be on or after the last commit touching any of its source files, and
+    // never after the manifest's verifiedOn. One `git log` over docs/ dates
+    // every tracked file; a page edited since is a page whose lastmod lies.
+    const git = (...args: string[]): string | null => {
+        const r = spawnSync('git', ['-C', ROOT, ...args], { encoding: 'utf8', windowsHide: true });
+        return r.status === 0 ? r.stdout : null;
+    };
+    const toplevel = git('rev-parse', '--show-toplevel')?.trim().replace(/\\/g, '/');
+    const shallow = git('rev-parse', '--is-shallow-repository')?.trim();
+    if (toplevel !== undefined && toplevel === ROOT.replace(/\\/g, '/') && shallow === 'false') {
+        const tracked = new Set((git('ls-files', '--', 'docs') ?? '').split(/\r?\n/).filter(Boolean));
+        const lastCommit = new Map<string, string>();
+        const log = git('log', '--format=%x01%cs', '--name-only', '--', 'docs') ?? '';
+        let date = '';
+        for (const raw of log.split(/\r?\n/)) {
+            if (raw.startsWith('')) { date = raw.slice(1).trim(); continue; }
+            const file = raw.trim();
+            if (file && !lastCommit.has(file)) lastCommit.set(file, date);
+        }
+        const sourcesOf = (loc: string): string[] => {
+            let path = loc.replace(/^https?:\/\/[^/]+/, '').replace(/^\//, '');
+            if (path === '' || path.endsWith('/')) path += 'index.html';
+            const out = [`docs/${path}`];
+            const guide = /^guides\/([^/]+)\.html$/.exec(path);
+            if (guide && guide[1] !== 'index') out.push(`docs/guides/${guide[1]}.md`);
+            return out;
+        };
+        for (const urlBlock of xml.matchAll(/<url>([\s\S]*?)<\/url>/g)) {
+            const body = urlBlock[1];
+            const loc = /<loc>\s*([^<]+?)\s*<\/loc>/.exec(body)?.[1];
+            const lastmod = /<lastmod>\s*(\d{4}-\d{2}-\d{2})\s*<\/lastmod>/.exec(body)?.[1];
+            if (!loc || !lastmod) continue;
+            const line = lineOf(xml, urlBlock.index!);
+            if (lastmod > manifest.verifiedOn) {
+                fail('docs/sitemap.xml', line, 'sitemap-lastmod-vs-git', `${loc} lastmod ${lastmod} is after the manifest's verifiedOn ${manifest.verifiedOn}`);
+                continue;
+            }
+            for (const src of sourcesOf(loc)) {
+                if (!tracked.has(src)) continue;
+                const committed = lastCommit.get(src);
+                if (committed !== undefined && committed > lastmod) {
+                    fail('docs/sitemap.xml', line, 'sitemap-lastmod-vs-git', `${loc} lastmod ${lastmod} but ${src} was last committed ${committed} — re-audit the page (release-prepare bumps it) or set lastmod to ${committed}`);
+                }
+            }
+        }
+    }
 }
 
 // ── Rule: cdn-sri ───────────────────────────────────────────────────
@@ -807,6 +1447,62 @@ const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
               !/name=["']robots["'][^>]*noindex/i.test(read(join(ROOT, 'docs', 'playgrounds', f))),
       )
     : [];
+
+// ── Rule: playgrounds-manifest ──────────────────────────────────────
+
+/**
+ * `docs/data/playgrounds.json` is the machine-readable inventory of the live
+ * playgrounds — the only way an agent learns that a playground exists, what
+ * it exercises and which DOM controls drive it (the 1.8.0 review found the
+ * two new playgrounds absent from every agent-facing surface). Every live
+ * page is listed exactly once, every listed page exists, the count equals
+ * `derived.playgrounds`, and every control id names a real element.
+ */
+{
+    const MANIFEST_FILE = join(ROOT, 'docs', 'data', 'playgrounds.json');
+    const relManifest = 'docs/data/playgrounds.json';
+    if (!existsSync(MANIFEST_FILE)) {
+        fail(relManifest, 1, 'playgrounds-manifest', 'missing — the live playgrounds must be inventoried for agents');
+    } else {
+        interface Control { readonly id: string; readonly kind?: string }
+        interface Entry { readonly id: string; readonly file: string; readonly url?: string; readonly controls?: readonly Control[]; readonly exercises?: readonly string[] }
+        let entries: Entry[] = [];
+        try {
+            entries = (JSON.parse(read(MANIFEST_FILE)) as { playgrounds?: Entry[] }).playgrounds ?? [];
+        } catch (err) {
+            fail(relManifest, 1, 'playgrounds-manifest', `not valid JSON — ${(err as Error).message}`);
+        }
+        const listed = new Map<string, Entry>();
+        for (const entry of entries) {
+            if (listed.has(entry.file)) fail(relManifest, 1, 'playgrounds-manifest', `"${entry.file}" is listed twice`);
+            listed.set(entry.file, entry);
+            if (!PLAYGROUNDS.includes(entry.file)) {
+                fail(relManifest, 1, 'playgrounds-manifest', `lists "${entry.file}", which is not a live playground`);
+                continue;
+            }
+            if (entry.url && entry.url !== `https://pdfnative.dev/playgrounds/${entry.file}`) {
+                fail(relManifest, 1, 'playgrounds-manifest', `"${entry.id}" url does not point at /playgrounds/${entry.file}`);
+            }
+            const page = read(join(ROOT, 'docs', 'playgrounds', entry.file));
+            const ids = new Set([...page.matchAll(/\bid=["']([^"']+)["']/g)].map((m) => m[1]));
+            for (const control of entry.controls ?? []) {
+                if (!ids.has(control.id)) {
+                    fail(relManifest, 1, 'playgrounds-manifest', `"${entry.id}" names control #${control.id}, which ${entry.file} does not contain`);
+                }
+            }
+            if (!entry.exercises || entry.exercises.length === 0) {
+                fail(relManifest, 1, 'playgrounds-manifest', `"${entry.id}" lists nothing under exercises — say which options and exports the page drives`);
+            }
+        }
+        for (const file of PLAYGROUNDS) {
+            if (!listed.has(file)) fail(relManifest, 1, 'playgrounds-manifest', `live playground "${file}" is not listed`);
+        }
+        const declared = manifest.derived['playgrounds'];
+        if (declared !== undefined && listed.size !== declared) {
+            fail(relManifest, 1, 'playgrounds-manifest', `lists ${listed.size} playgrounds but derived.playgrounds says ${declared}`);
+        }
+    }
+}
 
 const SWITCHER = /<nav class="playground-switcher"[\s\S]*?<\/nav>/;
 
@@ -1055,6 +1751,13 @@ if (existsSync(LLMS_ROOT)) {
     } else if (read(LLMS_ROOT).replace(/\r\n/g, '\n') !== read(LLMS_SITE).replace(/\r\n/g, '\n')) {
         fail('docs/llms.txt', 1, 'llms-sync', 'differs from the root llms.txt — the two copies must stay identical');
     }
+    // The index must link the CURRENT release note: 1.8.0 shipped with the
+    // list stopping at v1.7.0, so an agent reading llms.txt learned nothing
+    // about the release it was installing.
+    const current = manifest.packages['pdfnative']?.version;
+    if (current && !read(LLMS_ROOT).includes(`release-notes/v${current}.md`)) {
+        fail('llms.txt', 1, 'llms-sync', `does not link release-notes/v${current}.md — the current release note must be indexed`);
+    }
 }
 
 const LLMS_FULL = join(ROOT, 'docs', 'llms-full.txt');
@@ -1077,39 +1780,107 @@ if (!existsSync(LLMS_RECIPES)) {
 
 /**
  * `docs/data/errors.json` is the served registry of the engine's diagnostic
- * codes. Two-way check against reality: every `PDFA_*` token the docs mention
- * must exist both in the registry and in src/, and every registry entry must
- * exist in src/ — a registry entry for a code the engine no longer emits
- * teaches agents a ghost.
+ * codes. The source of truth is the `PdfDiagnosticCode` union in
+ * src/types/pdf-types.ts — not a prefix list: the 1.8.0 review found
+ * `TYPOGRAPHY_FEATURE_INEFFECTIVE` declared, emitted and documented while
+ * the registry (and this rule, which only knew `PDFA_` / `PDFX_`) had
+ * never heard of it. Three directions: every union member is registered
+ * and emitted somewhere in src/ outside the union itself; every registry
+ * entry is a union member (a ghost teaches agents a code the engine never
+ * raises); every code-shaped token the docs mention is registered.
+ *
+ * `buildErrors` is the second half of the registry: the messages the
+ * builders THROW (PDF/X coherence, print geometry, OutputIntent profiles)
+ * rather than report. Each registered message must exist verbatim in src/,
+ * and every `throw new Error(…)` in src/core that names PDF/X or
+ * `layout.pdfx` must be registered — those are the strings a CLI or a
+ * server maps to an input-error code, and until 1.8.0 they lived only in a
+ * release note.
  */
 {
     const ERRORS_JSON = join(ROOT, 'docs', 'data', 'errors.json');
+    const TYPES = join(ROOT, 'src', 'types', 'pdf-types.ts');
+    const union = /export type PdfDiagnosticCode =([\s\S]*?);/.exec(existsSync(TYPES) ? read(TYPES) : '');
+    const unionCodes = new Set([...(union?.[1] ?? '').matchAll(/'([A-Z][A-Z0-9_]+)'/g)].map((m) => m[1]));
+    if (unionCodes.size === 0) {
+        fail('src/types/pdf-types.ts', 1, 'error-parity', 'the PdfDiagnosticCode union was not found — it is the source of truth for docs/data/errors.json');
+    }
     if (!existsSync(ERRORS_JSON)) {
         fail('docs/data/errors.json', 1, 'error-parity', 'missing — the engine diagnostic registry must be served');
     } else {
-        const registry = JSON.parse(read(ERRORS_JSON)) as { diagnostics: Array<{ code: string }> };
+        const registry = JSON.parse(read(ERRORS_JSON)) as {
+            diagnostics: Array<{ code: string }>;
+            buildErrors?: Array<{ message: string; thrownBy?: string }>;
+        };
         const registered = new Set(registry.diagnostics.map((d) => d.code));
-        const srcCodes = new Set<string>();
-        for (const f of walk(join(ROOT, 'src'), (p) => p.endsWith('.ts'))) {
-            for (const m of read(f).matchAll(/\bPDFA_[A-Z_]+\b/g)) srcCodes.add(m[0]);
+        const srcFiles = walk(join(ROOT, 'src'), (p) => p.endsWith('.ts') && resolve(p) !== resolve(TYPES));
+        const srcText = srcFiles.map((f) => read(f)).join('\n');
+        for (const code of unionCodes) {
+            if (!registered.has(code)) {
+                fail('docs/data/errors.json', 1, 'error-parity', `PdfDiagnosticCode declares "${code}" but the served registry does not list it`);
+            }
+            if (!srcText.includes(`'${code}'`)) {
+                fail('src/types/pdf-types.ts', 1, 'error-parity', `PdfDiagnosticCode declares "${code}" but nothing in src/ emits it`);
+            }
         }
         for (const code of registered) {
-            if (!srcCodes.has(code)) {
-                fail('docs/data/errors.json', 1, 'error-parity', `registry lists "${code}" but src/ never emits it`);
+            if (!unionCodes.has(code)) {
+                fail('docs/data/errors.json', 1, 'error-parity', `registry lists "${code}" but PdfDiagnosticCode does not declare it`);
             }
         }
-        // Third direction: a code the engine emits must be in the served
-        // registry, or agents learn an incomplete error surface.
-        for (const code of srcCodes) {
-            if (!registered.has(code)) {
-                fail('docs/data/errors.json', 1, 'error-parity', `src/ emits "${code}" but the served registry does not list it`);
-            }
-        }
+        // Any token shaped like a code of a family the union knows
+        // (PDFA_…, PDFX_…, TYPOGRAPHY_…) must be registered wherever it
+        // appears in the docs.
+        const families = [...new Set([...unionCodes].map((c) => c.slice(0, c.indexOf('_') + 1)))];
+        const codeToken = new RegExp(`\\b(?:${families.join('|')})[A-Z][A-Z0-9_]*\\b`, 'g');
         for (const file of DOC_FILES) {
             const text = read(file);
-            for (const m of text.matchAll(/\bPDFA_[A-Z_]+\b/g)) {
+            for (const m of text.matchAll(codeToken)) {
                 if (registered.has(m[0])) continue;
                 fail(rel(file), lineOf(text, m.index!), 'error-parity', `diagnostic "${m[0]}" is not in docs/data/errors.json`);
+            }
+        }
+
+        // Build-time errors.
+        const buildErrors = registry.buildErrors ?? [];
+        if (buildErrors.length === 0) {
+            fail('docs/data/errors.json', 1, 'error-parity', 'buildErrors is missing — the thrown PDF/X and print messages must be served for downstream error mapping');
+        }
+        const normalise = (s: string): string => s.replace(/\s+/g, ' ').trim();
+        const srcFlat = normalise(srcText.replace(/['`]\s*\n\s*\+\s*['`]/g, '').replace(/\\'/g, "'"));
+        for (const entry of buildErrors) {
+            // A message may carry `${…}` placeholders; the literal fragments
+            // around them must all be present in src/.
+            const fragments = normalise(entry.message).split(/\$\{[^}]*\}|<[^>]+>/).map((f) => f.trim()).filter((f) => f.length >= 12);
+            for (const fragment of fragments) {
+                if (!srcFlat.includes(fragment)) {
+                    fail('docs/data/errors.json', 1, 'error-parity', `buildErrors message "${fragment}" is not thrown anywhere in src/`);
+                }
+            }
+        }
+        const registeredText = normalise(buildErrors.map((e) => e.message).join('\n'));
+        for (const f of srcFiles) {
+            const text = read(f);
+            // A throw with one or more concatenated literals. Whitespace is
+            // matched as "lines of blanks ending in a newline, then blanks",
+            // each newline consumed exactly once, so the expression backtracks
+            // linearly (CodeQL js/redos on the earlier `\s*\+\s*|\n` form).
+            const ws = String.raw`(?:[^\S\n]*\n)*[^\S\n]*`;
+            const lit = String.raw`(?:\`[^\`]*\`|'[^'\n]*')`;
+            const throwRe = new RegExp(String.raw`throw new Error\(${ws}(${lit}(?:${ws}\+${ws}${lit})*)${ws}\)`, 'g');
+            for (const m of text.matchAll(throwRe)) {
+                const literals = [...m[1].matchAll(/'([^'\n]*)'|`([^`]*)`/g)].map((l) => l[1] ?? l[2]);
+                const joined = literals.join('');
+                // The families a downstream tool classifies: PDF/X and PDF/A
+                // coherence, print geometry, OutputIntent profiles, attachments.
+                if (!/PDF\/X|layout\.pdfx|^print\.|^outputIntent\.|PDF\/A|^File attachments/.test(joined)) continue;
+                const fragments = normalise(joined).split(/\$\{[^}]*\}/).map((s) => s.trim()).filter((s) => s.length >= 12);
+                for (const fragment of fragments) {
+                    if (!registeredText.includes(fragment)) {
+                        fail(rel(f), lineOf(text, m.index!), 'error-parity', `thrown PDF/X message "${fragment.slice(0, 60)}…" is not in docs/data/errors.json buildErrors`);
+                        break;
+                    }
+                }
             }
         }
     }
@@ -1243,6 +2014,7 @@ const STAMPED = [
     'docs/agent-brief.md',
     'docs/data/surfaces.json',
     'docs/data/errors.json',
+    'docs/data/playgrounds.json',
 ];
 for (const relPath of STAMPED) {
     const full = join(ROOT, relPath);
@@ -1385,35 +2157,79 @@ if (JSON_OUT) {
     process.exit(errors.length > 0 ? 1 : 0);
 }
 
+// ── prose-language: the project language is English ─────────────────
+//
+// Thirteen typography samples, the signature sample, the benchmark fixture
+// and a guide shipped French prose in 1.8.0 while every page declared
+// og:locale en_US. Another language is allowed only as demonstrated content
+// (a French punctuation convention, a script), marked `demo-language:` on
+// or above the line; scripts/lib/prose-language.ts is the shared detector,
+// also run by the regression suite over generators, benchmarks and tests.
+{
+    const releaseNotes = existsSync(join(ROOT, 'release-notes'))
+        ? walk(join(ROOT, 'release-notes'), (p) => p.endsWith('.md'))
+        : [];
+    for (const file of [...DOC_FILES, ...releaseNotes]) {
+        const relFile = rel(file);
+        const text = readFileSync(file, 'utf8');
+        for (const finding of findNonEnglishProse(text, file, { suppress: 'verify-docs:allow prose-language' })) {
+            fail(relFile, finding.line, 'prose-language',
+                `${finding.reason}: "${finding.snippet}" — write it in English, or mark demonstrated content with \`demo-language: <tag> (reason)\` on or above the line`);
+        }
+    }
+}
+
 const OFFLINE_RULES = [
-    'manifest-shape',
-    'derived-counts',
-    'stale-token',
-    'canonical-present',
-    'version-token',
-    'api-exists',
-    'jsonld-version',
-    'internal-links',
-    'seo-head',
-    'sitemap-parity',
-    'cdn-sri',
-    'switcher-parity',
-    'learn-chain',
-    'bench-parity',
-    'contrast',
-    'llms-sync',
-    'llms-index-sync',
-    'llms-index-quality',
-    'verified-on-parity',
-    'error-parity',
-    'anchor-parity',
-    'guide-render-sync',
-    'api-json-sync',
-    'playground-syntax',
+    'manifest-shape', // manifest fields are well-formed; assertions' expectFrom agrees with declared/derived
+    'derived-counts', // derived.* equals what the tree holds (test files, generators, guides, samples, categories)
+    'stale-token', // every assertion's counted noun matches its expect
+    'canonical-present', // every assertion's canonical sentence appears where requireIn says
+    'version-token', // "<package> vX.Y.Z" in prose equals the manifest version
+    'count-tokens', // tests / files / sample PDFs / generators / categories / coverage / "Current version" tokens equal the manifest
+    'claude-md-budget', // CLAUDE.md imports AGENTS.md; both ≤ 120 lines, Copilot file ≤ 16 KiB, no line > 240 chars
+    'governance-sources', // ai-governance.json sources/on_demand exist; always-loaded sources < 16 KiB
+    'node-pin-parity', // .nvmrc, .node-version, engines.node, the CI floor and every setup-node step agree; packageManager is npm@
+    'ruleset-parity', // every required status check in rulesets/main.json names a real job; sample-regression required; tags.json protects refs/tags/v*
+    'agent-config-parity', // settings.json parses; every CLAUDE.md "Never Read" glob is denied; HITL Bash denies present; guard hook passes node --check
+    'claude-rules-sync', // .claude/rules/ equals a fresh render of .github/instructions/ (npm run agents:rules)
+    'claude-rules-budget', // CLAUDE.md + its @imports + unscoped rules ≤ 16 KiB; a scoped rule > 32 KiB warns
+    'pr-template-parity', // every PR-template checklist item is verbatim in CONTRIBUTING.md; the template mentions npm run gate
+    'eol-lf', // (git checkouts only) tracked text blobs are LF — warn until the renormalisation commit flips EOL_LF_MODE
+    'skills-shape', // every .claude/skills/*/SKILL.md names its directory, has a description, and its referenced templates exist
+    'api-exists', // no phantom API identifier anywhere in docs or src
+    'jsonld-version', // JSON-LD softwareVersion equals the manifest
+    'internal-links', // every href/src and Markdown link resolves on disk
+    'seo-head', // lang, canonical, hreflang self-references, og:locale, description
+    'sitemap-parity', // sitemap lists every indexable page; lastmod inside the audit window
+    'sitemap-lastmod-vs-git', // (full clones only) lastmod ≥ last commit of the page's sources and ≤ verifiedOn
+    'cdn-sri', // third-party scripts carry integrity+crossorigin; pdfnative CDN imports are pinned
+    'playgrounds-manifest', // docs/data/playgrounds.json lists every live playground with real control ids; count equals derived.playgrounds
+    'switcher-parity', // playground switchers link every live playground, none link a noindex stub
+    'learn-chain', // learn path prev/next links follow manifest.learnPath
+    'bench-parity', // homepage benchmark bars round to bench/RESULTS.md
+    'contrast', // muted text tokens reach WCAG AA on every surface
+    'llms-sync', // docs/llms.txt equals root llms.txt; llms-full/recipes regenerated
+    'llms-index-sync', // docs/llms-index.json regenerated
+    'llms-index-quality', // every index summary is usable prose
+    'verified-on-parity', // every "Verified on" stamp equals manifest.verifiedOn
+    'error-parity', // docs/data/errors.json ↔ src/ diagnostic codes ↔ docs
+    'anchor-parity', // every #fragment link targets an existing id
+    'guide-render-sync', // guide shells carry the current render of their Markdown
+    'api-json-sync', // docs/assets/api.json regenerated
+    'playground-syntax', // inline module scripts pass `node --check`
+    'prose-language', // docs, recipes and release notes are English unless marked demo-language
 ] as const;
 
-if (problems.length === 0) {
-    console.log(`verify-docs: ${OFFLINE_RULES.length} rules passed across ${DOC_FILES.length} files.`);
+if (errors.length === 0) {
+    // Warnings never fail the run and are summarised per rule rather than
+    // listed — the `eol-lf` rule alone names every CRLF-stored file until the
+    // renormalisation commit, and a gate log is not the place for that list.
+    const perRule = new Map<string, number>();
+    for (const w of warnings) perRule.set(w.rule, (perRule.get(w.rule) ?? 0) + 1);
+    const suffix = warnings.length === 0
+        ? ''
+        : ` (${warnings.length} warning${warnings.length === 1 ? '' : 's'}: ${[...perRule.entries()].map(([r, n]) => `${r} ×${n}`).join(', ')})`;
+    console.log(`verify-docs: ${OFFLINE_RULES.length} rules passed across ${DOC_FILES.length} files${suffix}.`);
     console.log(`             source of truth: ${MANIFEST_REL} (verified ${manifest.verifiedOn})`);
     process.exit(0);
 }

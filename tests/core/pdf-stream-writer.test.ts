@@ -202,14 +202,19 @@ describe('validateTableStreamable', () => {
 
 // ── buildDocumentPDFStream ───────────────────────────────────────────
 
+// Every buffered/streamed pair compared byte for byte shares this instant:
+// unpinned, the two builds embed different /CreationDate values (and trailer
+// /ID) whenever they straddle a second boundary — routine under coverage.
+const pinned = { creationDate: new Date('2026-01-01T00:00:00.000Z') };
+
 describe('buildDocumentPDFStream', () => {
     it('produces same bytes as buildDocumentPDFBytes', async () => {
         const params = makeDocParams([
             { type: 'heading', text: 'Streaming Test', level: 1 },
             { type: 'paragraph', text: 'This document was built using streaming output.' },
         ]);
-        const expected = buildDocumentPDFBytes(params);
-        const actual = await collectAll(buildDocumentPDFStream(params));
+        const expected = buildDocumentPDFBytes(params, pinned);
+        const actual = await collectAll(buildDocumentPDFStream(params, pinned));
         expect(actual).toEqual(expected);
     });
 
@@ -227,9 +232,9 @@ describe('buildDocumentPDFStream', () => {
 
     it('respects minimum chunk size', async () => {
         const params = makeDocParams([{ type: 'paragraph', text: 'Test' }]);
-        const expected = buildDocumentPDFBytes(params);
+        const expected = buildDocumentPDFBytes(params, pinned);
         // Request chunk size of 1 byte — should be clamped to 1024
-        const chunks = await collectChunks(buildDocumentPDFStream(params, undefined, { chunkSize: 1 }));
+        const chunks = await collectChunks(buildDocumentPDFStream(params, pinned, { chunkSize: 1 }));
         // Each chunk should be >= 1024 bytes (except possibly the last)
         for (let i = 0; i < chunks.length - 1; i++) {
             expect(chunks[i].length).toBe(1024);
@@ -254,8 +259,8 @@ describe('buildDocumentPDFStream', () => {
 
     it('handles empty blocks', async () => {
         const params = makeDocParams([]);
-        const expected = buildDocumentPDFBytes(params);
-        const actual = await collectAll(buildDocumentPDFStream(params));
+        const expected = buildDocumentPDFBytes(params, pinned);
+        const actual = await collectAll(buildDocumentPDFStream(params, pinned));
         expect(actual).toEqual(expected);
     });
 
@@ -273,7 +278,7 @@ describe('buildDocumentPDFStream', () => {
         }
     });
 
-    it('default chunk size is 64KB', async () => {
+    it('default chunk size is 64KB', { timeout: 60_000 }, async () => {
         // Build a document large enough to span multiple 64KB chunks
         const blocks: DocumentParams['blocks'][number][] = [];
         for (let i = 0; i < 100; i++) {
@@ -296,8 +301,8 @@ describe('buildDocumentPDFStream', () => {
 describe('buildPDFStream', () => {
     it('produces same bytes as buildPDFBytes', async () => {
         const params = makeTableParams();
-        const expected = buildPDFBytes(params);
-        const actual = await collectAll(buildPDFStream(params));
+        const expected = buildPDFBytes(params, pinned);
+        const actual = await collectAll(buildPDFStream(params, pinned));
         expect(actual).toEqual(expected);
     });
 
@@ -334,8 +339,8 @@ describe('buildPDFStream', () => {
             countText: '',
             footerText: 'Footer',
         };
-        const expected = buildPDFBytes(params);
-        const actual = await collectAll(buildPDFStream(params));
+        const expected = buildPDFBytes(params, pinned);
+        const actual = await collectAll(buildPDFStream(params, pinned));
         expect(actual).toEqual(expected);
     });
 

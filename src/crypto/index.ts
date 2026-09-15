@@ -7,6 +7,10 @@
 // ── SHA-2 Hashing (+ SHA-1 for /VRI keying & OCSP CertID) ───────────
 export { sha1, sha256, sha384, sha512, hmacSha256 } from './sha.js';
 
+import { derDecode, asn1Integer, derSequence, derInteger } from './asn1.js';
+import { initRsaAsn1 } from './rsa.js';
+import { initEcdsaAsn1 } from './ecdsa.js';
+
 // ── ASN.1 DER Codec ─────────────────────────────────────────────────
 export type { Asn1Node } from './asn1.js';
 export {
@@ -74,11 +78,14 @@ export { setRevocationProvider, getRevocationProvider } from './revocation-provi
 /**
  * Initialize all crypto module cross-dependencies.
  * Must be called once before using key parsing or DER signature encoding.
+ *
+ * The modules are imported statically: a dynamic `import()` of an internal
+ * module makes a single-file bundler wrap that module — and everything it
+ * pulls in — in a lazy initialiser that no consumer can tree-shake, so a
+ * program importing one colour helper shipped the AES S-box and the SHA-256
+ * constants. The function stays `async` because its signature is public.
  */
 export async function initCrypto(): Promise<void> {
-    const asn1 = await import('./asn1.js');
-    const { initRsaAsn1 } = await import('./rsa.js');
-    const { initEcdsaAsn1 } = await import('./ecdsa.js');
-    initRsaAsn1(asn1);
-    initEcdsaAsn1(asn1);
+    initRsaAsn1({ derDecode, asn1Integer });
+    initEcdsaAsn1({ derDecode, asn1Integer, derSequence, derInteger });
 }

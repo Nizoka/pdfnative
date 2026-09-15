@@ -51,7 +51,7 @@ describe('getAnnotations round-trip', () => {
         const base = buildDocumentPDFBytes({ title: 'A', blocks: [{ type: 'paragraph', text: 'Hello' }] });
         const mod = createModifier(openPdf(base));
 
-        const note: MarkupAnnotation = { type: 'text', rect: [100, 700, 120, 720], contents: 'Révisé — voir §2', title: 'Bob' };
+        const note: MarkupAnnotation = { type: 'text', rect: [100, 700, 120, 720], contents: 'Revised — see §2', title: 'Bob' };
         const hl: MarkupAnnotation = { type: 'highlight', rect: [72, 690, 200, 702], contents: 'important' };
         mod.addAnnotation(0, buildAnnotationBody(note));
         mod.addAnnotation(0, buildAnnotationBody(hl));
@@ -60,7 +60,7 @@ describe('getAnnotations round-trip', () => {
         expect(annots.length).toBe(2);
 
         const text = annots.find(a => a.subtype === 'Text');
-        expect(text?.contents).toBe('Révisé — voir §2');
+        expect(text?.contents).toBe('Revised — see §2');
         expect(text?.title).toBe('Bob');
         expect(text?.rect).toEqual([100, 700, 120, 720]);
 

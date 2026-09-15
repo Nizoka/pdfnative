@@ -1,7 +1,7 @@
 {
   "name": "pdfnative",
-  "version": "1.7.0",
-  "description": "Zero-dependency native PDF library: generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (RC4, AES-128/256), and draw native vector charts (stacked/area/scatter, log & time axes). 22 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Telugu, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic, Cyrillic, Greek, Georgian, Armenian, Latin), BiDi, PDF/A-1b/2b/2u/3b, digital signatures with LTV (PAdES B-B to B-LTA: RFC 3161 timestamps, /DSS + /VRI, document timestamps), barcodes, SVG (with text), markup annotations, COLRv1 colour emoji incl. flag & ZWJ sequences, print production (bleed/trim boxes, printer's marks, /Trapped). Pure TypeScript ISO 32000-1 implementation, built under a human-in-the-loop AI-agent governance policy.",
+  "version": "1.8.0",
+  "description": "Zero-dependency native PDF library: generate, parse, merge/split, extract text with positions, fill & flatten AcroForms, decrypt and re-encrypt (RC4, AES-128/256), and draw native vector charts (stacked/area/scatter, log & time axes). 27 scripts (Arabic, Hebrew, Thai, CJK, Devanagari, Telugu, Bengali, Tamil, Sinhala, Tibetan, Khmer, Myanmar, Lao, Tai Tham, New Tai Lue, Tai Le, Cham, Ethiopic, Cyrillic, Greek, Georgian, Armenian, Latin incl. Hausa, Yoruba, Igbo and Swahili tone marks) shaped by Indic and Universal shaping engines, BiDi, typography (widows/orphans, justification, hyphenation seam, pair kerning, OpenType features), PDF/A-1b/2b/2u/3b, CMYK colour, CMYK/Gray OutputIntents and PDF/X-4 with validatePdfX(), digital signatures with LTV (PAdES B-B to B-LTA: RFC 3161 timestamps, /DSS + /VRI, document timestamps), barcodes, SVG (with text), markup annotations, COLRv1 colour emoji incl. flag, ZWJ and skin-tone sequences, print production (bleed/trim boxes, printer's marks, colour bars, /Trapped), reproducible UTC-dated output. Pure TypeScript ISO 32000-1 implementation, built under a human-in-the-loop AI-agent governance policy.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -56,21 +56,31 @@
     "pdfnative-build-emoji-font": "./dist/tools/build-emoji-font.js"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup --silent",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:visual": "vitest run tests/visual/",
+    "gate": "npx tsx scripts/gate.ts",
+    "gate:fast": "npx tsx scripts/gate.ts --fast",
     "test:generate": "npx tsx scripts/generate-samples.ts",
     "validate:pdfa": "npx tsx scripts/validate-pdfa.ts",
+    "verify:samples": "npx tsx scripts/verify-samples.ts",
+    "verify:fonts": "npx tsx scripts/verify-fonts.ts",
+    "verify:unicode": "npx tsx scripts/generate-use-data.ts --check",
+    "verify:bundle": "npx tsx scripts/verify-bundle.ts",
     "verify:docs": "npx tsx scripts/verify-docs.ts",
     "docs:llms": "npx tsx scripts/build-llms-full.ts",
     "docs:guides": "npx tsx scripts/build-guides.ts",
     "docs:api": "npx tsx scripts/build-api-json.ts",
     "docs:all": "npm run docs:api && npm run docs:guides && npm run docs:llms",
     "fonts:download": "npx tsx scripts/download-fonts.ts",
+    "fonts:subsets": "npx tsx scripts/build-latin-subsets.ts",
     "verify:issue": "node scripts/verify-issue.mjs",
+    "agents:rules": "npx tsx scripts/build-claude-rules.ts",
+    "hooks:install": "node scripts/install-git-hooks.mjs",
+    "hooks:uninstall": "node scripts/install-git-hooks.mjs --uninstall",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc --project tsconfig.test.json --noEmit",
@@ -100,6 +110,12 @@
     "tibetan",
     "khmer",
     "myanmar",
+    "lao",
+    "tai-tham",
+    "lanna",
+    "new-tai-lue",
+    "tai-le",
+    "cham",
     "ethiopic",
     "bidi",
     "rtl",
@@ -169,7 +185,24 @@
     "print-ready",
     "bleed",
     "crop-marks",
-    "prepress"
+    "prepress",
+    "cmyk",
+    "pdf-x",
+    "pdfx-4",
+    "icc-profile",
+    "typography",
+    "kerning",
+    "hyphenation",
+    "justification",
+    "pagination",
+    "indic",
+    "text-shaping",
+    "universal-shaping-engine",
+    "colrv1",
+    "reproducible-pdf",
+    "pdf-validation",
+    "yoruba",
+    "swahili"
   ],
   "author": "Nizoka <hello@pdfnative.dev> (https://pdfnative.dev)",
   "license": "MIT",
@@ -188,12 +221,14 @@
   "engines": {
     "node": ">=22"
   },
+  "packageManager": "npm@10.9.2",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.0.0",
     "marked": "12.0.2",
     "pdfnative-react": "^1.2.0",
@@ -202,9 +237,10 @@
     "tsx": "^4.22.4",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.57.2",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "overrides": {
-    "esbuild": "0.28.1"
+    "esbuild": "0.28.1",
+    "js-yaml": "4.3.2"
   }
 }

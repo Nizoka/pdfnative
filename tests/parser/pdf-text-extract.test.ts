@@ -12,6 +12,9 @@ import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { extractText } from '../../src/parser/pdf-text-extract.js';
 import { PdfPasswordError } from '../../src/parser/pdf-decrypt.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
+import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
+import * as notoThai from '../../fonts/noto-thai-data.js';
+import * as notoLao from '../../fonts/noto-lao-data.js';
 
 // ── Mini-PDF assembly helpers ────────────────────────────────────────
 
@@ -368,5 +371,120 @@ describe('extractText safety and determinism', () => {
         const a = extractText(bytes, { includeRuns: true });
         const b = extractText(bytes, { includeRuns: true });
         expect(a).toEqual(b);
+    });
+});
+
+// ── /ActualText on marked content (ISO 32000-1 §14.9.4) ──────────────
+
+describe('extractText honours /ActualText', () => {
+    const span = (props: string, shown: string): string =>
+        `BT /F1 12 Tf 72 700 Td /Span ${props} BDC ${shown} EMC ET`;
+
+    it('replaces the shown text with an inline literal ActualText', () => {
+        const text = extractText(onePagePdf(span('<< /ActualText (Hello) >>', '(Hxllo) Tj'), [HELVETICA]))[0].text;
+        expect(text).toBe('Hello');
+    });
+
+    it('decodes a UTF-16BE ActualText', () => {
+        const text = extractText(onePagePdf(span('<< /ActualText <FEFF00480065006C006C006F> >>', '(xxxxx) Tj'), [HELVETICA]))[0].text;
+        expect(text).toBe('Hello');
+    });
+
+    it('covers several text-showing operators inside one span', () => {
+        const text = extractText(onePagePdf(span('<< /ActualText (fine) >>', '(f) Tj (i) Tj [(n) 20 (e)] TJ'), [HELVETICA]))[0].text;
+        expect(text).toBe('fine');
+    });
+
+    it('lets the outermost span win when spans nest', () => {
+        const content = 'BT /F1 12 Tf 72 700 Td /Span << /ActualText (outer) >> BDC (a) Tj /Span << /ActualText (inner) >> BDC (b) Tj EMC (c) Tj EMC ET';
+        expect(extractText(onePagePdf(content, [HELVETICA]))[0].text).toBe('outer');
+    });
+
+    it('removes the text entirely for an empty ActualText', () => {
+        const content = 'BT /F1 12 Tf 72 700 Td (keep ) Tj /Span << /ActualText () >> BDC (drop) Tj EMC ET';
+        expect(extractText(onePagePdf(content, [HELVETICA]))[0].text.trim()).toBe('keep');
+    });
+
+    it('reads a named property list from /Resources /Properties', () => {
+        const bytes = assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> /Properties << /P1 6 0 R >> >> /Contents 4 0 R >>',
+            streamObj('', 'BT /F1 12 Tf 72 700 Td /Span /P1 BDC (xxx) Tj EMC ET'),
+            HELVETICA,
+            '<< /ActualText (Named) >>',
+        ]);
+        expect(extractText(bytes)[0].text).toBe('Named');
+    });
+
+    it('leaves marked content without ActualText alone, and does not carry a DP dict into a later BDC', () => {
+        const content = 'BT /F1 12 Tf 72 700 Td /Span << /MCID 0 >> BDC (plain) Tj EMC /Tag << /ActualText (nope) >> DP /Span BMC ( shown) Tj EMC ET';
+        expect(extractText(onePagePdf(content, [HELVETICA]))[0].text).toBe('plain shown');
+    });
+
+    it('keeps the position of the replaced text on its run', () => {
+        const runs = extractText(onePagePdf(span('<< /ActualText (Hello) >>', '(Hxllo) Tj'), [HELVETICA]), { includeRuns: true })[0].runs!;
+        expect(runs).toHaveLength(1);
+        expect(runs[0].text).toBe('Hello');
+        expect(runs[0].x).toBeCloseTo(72, 6);
+        expect(runs[0].y).toBeCloseTo(700, 6);
+    });
+
+    it('keeps maxTextLength as a bound on the text read, replacement or not', () => {
+        // The cap is a memory bound on adversarial input, so it applies to
+        // the shown text as it streams; an ActualText cannot lift it.
+        const content = span('<< /ActualText (Hi) >>', '(a much longer string that is replaced) Tj');
+        expect(() => extractText(onePagePdf(content, [HELVETICA]), { maxTextLength: 2 })).toThrow(/maxTextLength/);
+        expect(extractText(onePagePdf(content, [HELVETICA]), { maxTextLength: 100 })[0].text).toBe('Hi');
+    });
+
+    it('extracts a tagged, justified document like its untagged twin', () => {
+        const text = ('Tagged output wraps every justified line in a span whose ActualText carries '
+            + 'the characters with their spaces. ').repeat(4);
+        const params: DocumentParams = { title: 'Tagged', blocks: [{ type: 'paragraph', text, align: 'justify' }] };
+        const plain = extractText(buildDocumentPDFBytes(params))[0].text.replace(/\s+/g, ' ');
+        const tagged = extractText(buildDocumentPDFBytes(params, { tagged: true }))[0].text.replace(/\s+/g, ' ');
+        expect(tagged).toBe(plain);
+        expect(tagged).toContain('carries the characters with their spaces');
+    });
+});
+
+// ── Thai and Lao sara am: what a decomposed vowel extracts as ────────
+//
+// The shapers set ำ / ຳ as nikhahit + sara aa, with the nikhahit ordered
+// before the cluster's tone marks (v1.8.0). A ToUnicode CMap maps one glyph
+// to its code points and cannot fold two glyphs back into one, so an
+// untagged document extracts the four glyphs of น้ำ — the two stacked marks
+// in the extractor's geometric (left-to-right) order — never ำ itself and
+// never U+FFFD; a tagged one carries the source text as /ActualText.
+
+describe('extractText on Thai and Lao sara am', () => {
+    const thaiEntries: FontEntry[] = [{ fontData: notoThai as unknown as FontData, fontRef: '/F3', lang: 'th' }];
+    const laoEntries: FontEntry[] = [{ fontData: notoLao as unknown as FontData, fontRef: '/F3', lang: 'lo' }];
+    const build = (text: string, fontEntries: FontEntry[], tagged: boolean): string => {
+        const params: DocumentParams = { title: 'sara am', blocks: [{ type: 'paragraph', text }], fontEntries };
+        return extractText(buildDocumentPDFBytes(params, tagged ? { tagged: true } : {}))[0].text;
+    };
+
+    it('extracts untagged น้ำ as no nu, its two stacked marks, sara aa — decomposed, never U+FFFD', () => {
+        const text = build('น้ำ', thaiEntries, false);
+        expect(text).toMatch(/น[้ํ]{2}า/);
+        expect(text).toContain('ํ');
+        expect(text).not.toContain('ำ');
+        expect(text).not.toContain('�');
+    });
+
+    it('extracts tagged น้ำ exactly, through /ActualText', () => {
+        const text = build('น้ำ', thaiEntries, true);
+        expect(text).toContain('น้ำ');
+        expect(text).not.toContain('ํ');
+    });
+
+    it('extracts untagged ນ້ຳ decomposed and tagged ນ້ຳ exactly', () => {
+        const plain = build('ນ້ຳ', laoEntries, false);
+        expect(plain).toMatch(/ນ[້ໍ]{2}າ/);
+        expect(plain).not.toContain('ຳ');
+        expect(plain).not.toContain('�');
+        expect(build('ນ້ຳ', laoEntries, true)).toContain('ນ້ຳ');
     });
 });

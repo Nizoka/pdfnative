@@ -157,7 +157,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 countText: '20 件の取引',
                 headers: ['日付', '摘要', '区分', '金額', '状態'],
                 rows: Array.from({ length: 20 }, (_, i) => ({
-                    cells: [`${String((i % 28) + 1).padStart(2, '0')}/01`, `取引番号 ${i + 1} – 月次定期支払い`, i % 2 === 0 ? '収入' : '支出', `${i % 2 === 0 ? '+' : '-'}${((i + 1) * 5000).toLocaleString()}`, i % 3 === 0 ? '済' : ''],
+                    cells: [`${String((i % 28) + 1).padStart(2, '0')}/01`, `取引番号 ${i + 1} – 月次定期支払い`, i % 2 === 0 ? '収入' : '支出', `${i % 2 === 0 ? '+' : '-'}${((i + 1) * 5000).toLocaleString('en-US')}`, i % 3 === 0 ? '済' : ''],
                     type: i % 2 === 0 ? 'credit' : 'debit',
                     pointed: i === 0,
                 })),
@@ -183,7 +183,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 countText: '10 معاملات',
                 headers: ['التاريخ', 'الوصف', 'الفئة', 'المبلغ', 'الحالة'],
                 rows: Array.from({ length: 10 }, (_, i) => ({
-                    cells: [`${String((i % 28) + 1).padStart(2, '0')}/01`, `معاملة رقم ${i + 1}`, i % 2 === 0 ? 'دخل' : 'مصروف', `${i % 2 === 0 ? '+' : '-'}${((i + 1) * 500).toLocaleString()}`, i % 3 === 0 ? 'مراجع' : ''],
+                    cells: [`${String((i % 28) + 1).padStart(2, '0')}/01`, `معاملة رقم ${i + 1}`, i % 2 === 0 ? 'دخل' : 'مصروف', `${i % 2 === 0 ? '+' : '-'}${((i + 1) * 500).toLocaleString('en-US')}`, i % 3 === 0 ? 'مراجع' : ''],
                     type: i % 2 === 0 ? 'credit' : 'debit',
                     pointed: i === 0,
                 })),
@@ -205,7 +205,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 countText: '10 รายการ',
                 headers: ['วันที่', 'รายละเอียด', 'หมวดหมู่', 'จำนวน', 'สถานะ'],
                 rows: Array.from({ length: 10 }, (_, i) => ({
-                    cells: [`${String((i % 28) + 1).padStart(2, '0')}/01`, `รายการที่ ${i + 1} – ชำระรายเดือน`, i % 2 === 0 ? 'รายได้' : 'รายจ่าย', `${i % 2 === 0 ? '+' : '-'}${((i + 1) * 1000).toLocaleString()}`, i % 3 === 0 ? 'ตรวจ' : ''],
+                    cells: [`${String((i % 28) + 1).padStart(2, '0')}/01`, `รายการที่ ${i + 1} – ชำระรายเดือน`, i % 2 === 0 ? 'รายได้' : 'รายจ่าย', `${i % 2 === 0 ? '+' : '-'}${((i + 1) * 1000).toLocaleString('en-US')}`, i % 3 === 0 ? 'ตรวจ' : ''],
                     type: i % 2 === 0 ? 'credit' : 'debit',
                     pointed: i === 0,
                 })),

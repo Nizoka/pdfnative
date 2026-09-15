@@ -82,6 +82,7 @@ applyTo: 'src/core/pdf-tags.ts,src/core/pdf-builder.ts,src/core/pdf-document.ts,
   thrown error under `strict: true` (`onDiagnostic` is ignored when `strict`
   is set — diagnostics throw instead).
 - Current codes (stable, additions-only union `PdfDiagnosticCode`):
+  `PDFA_ICC_PROFILE_VERSION` (v1.8.0 — an ICC v4 or later OutputIntent under `pdfa1b`; ISO 19005-1 §6.2.2 allows v2 only, PDF/A-2+ allows v4; `ResolvedOutputIntent.iccVersion` reads profile byte 8),
   `PDFA_NO_FONT_ENTRIES` (base-14 text without embedded fonts under a claim),
   `PDFA_UNEMBEDDED_FORM_FONT` (any form field under a claim — the AcroForm
   `/DR /Helv` is an unembedded Type 1), `PDFA_DEVICE_CMYK_IMAGE` (CMYK JPEG

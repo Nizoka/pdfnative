@@ -1,0 +1,19 @@
+# NotoSans-Polish.ttf — code points kept from NotoSans-VF.ttf (fonts/SOURCES.json derived[])
+# One inclusive range per line: U+XXXX or U+XXXX-U+YYYY. Lines starting with # are comments.
+# Seeded from the cmap of fonts/noto-polish-data.js at 1.8.0, so coverage is unchanged; edit deliberately,
+# then: npx tsx scripts/build-latin-subsets.ts --update-manifest, rebuild the module, rebaseline.
+U+0000
+U+000D
+U+0020-U+007E
+U+00A0-U+017F
+U+0237
+U+02C6-U+02C7
+U+02C9
+U+02D8-U+02DD
+U+0326
+U+034F
+U+2000-U+2064
+U+2066-U+206F
+U+20AC
+U+FE00
+U+FEFF

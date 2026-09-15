@@ -120,15 +120,34 @@ describe('PDFA_UNEMBEDDED_FORM_FONT', () => {
         fontEntries: [latinEntry],
     };
 
-    it('flags AcroForm fields under a PDF/A claim (unembedded /Helv)', () => {
+    // v1.8.0 (#74): the form's /DR font is embedded whenever a registered
+    // font can render Latin, so this guard now fires only when none can —
+    // the one case where the conformance claim is genuinely unsatisfiable.
+    const noLatinDoc: DocumentParams = { ...formDoc, fontEntries: undefined };
+
+    it('stays silent when a registered Latin font can be embedded', () => {
         const seen: PdfDiagnostic[] = [];
         buildDocumentPDFBytes(formDoc, { tagged: 'pdfa2b', onDiagnostic: d => seen.push(d) });
+        expect(seen.some(d => d.code === 'PDFA_UNEMBEDDED_FORM_FONT')).toBe(false);
+    });
+
+    it('flags AcroForm fields under a PDF/A claim with no embeddable font', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(noLatinDoc, { tagged: 'pdfa2b', onDiagnostic: d => seen.push(d) });
         expect(seen.some(d => d.code === 'PDFA_UNEMBEDDED_FORM_FONT')).toBe(true);
     });
 
     it('throws under strict', () => {
-        expect(() => buildDocumentPDFBytes(formDoc, { tagged: 'pdfa2b', strict: true }))
+        expect(() => buildDocumentPDFBytes(noLatinDoc, { tagged: 'pdfa2b', strict: true }))
             .toThrow(/Helv/);
+    });
+
+    it('points at the fix rather than at flattening', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(noLatinDoc, { tagged: 'pdfa2b', onDiagnostic: d => seen.push(d) });
+        const msg = seen.find(d => d.code === 'PDFA_UNEMBEDDED_FORM_FONT')?.message ?? '';
+        expect(msg).toContain('Register a Latin font');
+        expect(msg).not.toContain('flatten');
     });
 
     it('stays silent without a PDF/A claim or without form fields', () => {

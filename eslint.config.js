@@ -7,7 +7,11 @@ export default tseslint.config(
     {
         languageOptions: {
             parserOptions: {
-                projectService: true,
+                projectService: {
+                    // The plain-JS maintenance scripts belong to no tsconfig;
+                    // they are linted on demand (`npx eslint scripts/x.mjs`).
+                    allowDefaultProject: ['scripts/*.mjs'],
+                },
                 tsconfigRootDir: import.meta.dirname,
             },
         },

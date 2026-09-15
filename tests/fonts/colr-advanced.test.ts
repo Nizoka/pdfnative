@@ -57,7 +57,11 @@ function colrSweep(): Uint8Array {
     // PaintSweepGradient @56
     v.setUint8(56, 8); setU24(v, 57, 14);
     v.setInt16(60, 50); v.setInt16(62, 50);     // centre
-    v.setInt16(64, 0); v.setInt16(66, 16384);   // start 0° → end 180°
+    // Sweep angles are BiasedAngles: stored value = angle/180 − 1, so 0° is
+    // −1.0 and 180° is 0.0. The fixture used to store 0.0 and 1.0 and expect
+    // 0° and 180°, which is the unbiased reading the parser had before
+    // v1.8.0 — half a turn out.
+    v.setInt16(64, -16384); v.setInt16(66, 0);  // start 0° → end 180°
     // ColorLine @70
     v.setUint8(70, 0); v.setUint16(71, 2);
     v.setInt16(73, 0); v.setUint16(75, 0); v.setInt16(77, 16384);     // stop0 pal0

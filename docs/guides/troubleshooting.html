@@ -65,7 +65,7 @@
 <!-- guide:render:start -->
 <h1 id="troubleshooting">Troubleshooting</h1>
 <blockquote>
-<p><strong>Symptom-first fixes for the classic failures</strong> — tofu boxes (a font registered but never loaded), RTL text appearing backwards, oversized files, PDF/A validation errors, parser rejections — each with the check that identifies it and the change that fixes it.</p>
+<p><strong>Symptom-first fixes for the classic failures</strong> — tofu boxes (a font registered but never loaded), RTL text appearing backwards, oversized files, PDF/A validation errors, PDF/X-4 builds that throw, a font feature that does nothing, a compressor that produced blank pages, parser rejections — each with the check that identifies it and the change that fixes it.</p>
 </blockquote>
 <h2 id="font-not-rendering-boxes-or-blank">Font Not Rendering (Boxes or Blank)<a class="heading-anchor" href="#font-not-rendering-boxes-or-blank" aria-label="Link to this section">#</a></h2>
 <p><strong>Symptom:</strong> Non-Latin text shows as empty rectangles or missing glyphs.</p>
@@ -144,6 +144,39 @@ buildPDFBytes(params, { tagged: &#39;pdfa1b&#39; }); // PDF/A-1b
 <li><p><strong>Transparency in PDF/A-1b:</strong> Watermarks with opacity &lt; 1.0 are blocked in PDF/A-1b (ISO 19005-1 §6.4). Use PDF/A-2b or remove transparency.</p>
 </li>
 </ol>
+<h2 id="pdfx-4-build-throws-v180">PDF/X-4 Build Throws (v1.8.0)<a class="heading-anchor" href="#pdfx-4-build-throws-v180" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> <code>buildDocumentPDFBytes()</code> with <code>pdfx: &#39;pdfx4&#39;</code> throws before producing bytes.</p>
+<p><strong>Cause:</strong> the PDF/X claim is checked for coherence up front. The message names the conflict — one of these seven, listed with every other build-time message in <a href="../data/errors.json"><code>docs/data/errors.json</code></a>:</p>
+<ol>
+<li><code>layout.pdfx: unknown target &#39;${target}&#39; — use one of ${PDF_X_CONFORMANCE_TARGETS}</code> — use <code>&#39;pdfx4&#39;</code>.</li>
+<li><code>layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them</code> — build the print file and the archival file separately.</li>
+<li><code>PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx</code> — drop one.</li>
+<li><code>PDF/X-4 requires layout.outputIntent: the ICC profile of the printing condition, e.g. ISO Coated v2 or GRACoL from your printer. pdfnative ships no press profile</code> — pass the profile your printer names.</li>
+<li><code>PDF/X-4 requires an output (printer) profile as layout.outputIntent — the supplied profile&#39;s class is &#39;${deviceClass}&#39;</code> — sRGB is a monitor (<code>mntr</code>) profile; use a press (<code>prtr</code>) profile.</li>
+<li><code>PDF/X requires the trapping state to be known — set metadata.trapped to &#39;True&#39; or &#39;False&#39;, or omit it for &#39;False&#39;</code> — pdfnative never traps, so <code>&#39;False&#39;</code> is accurate.</li>
+<li><code>PDF/X pages carry a TrimBox or an ArtBox, not both — drop print.artBox, or print.trimBox and print.bleed</code> — keep one box.</li>
+</ol>
+<p>Once the build succeeds, <code>validatePdfX(bytes)</code> reports what the structure can prove (<code>{ valid, errors, warnings }</code>); a certified preflight remains necessary before press. See <a href="print.html">Print production</a>.</p>
+<h2 id="font-feature-has-no-effect-v180">Font Feature Has No Effect (v1.8.0)<a class="heading-anchor" href="#font-feature-has-no-effect-v180" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> <code>typography: { fontFeatures: [&#39;tnum&#39;] }</code> changes nothing and the console shows <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>.</p>
+<p><strong>Cause:</strong> no registered font declares the tag, or it declares it but no glyph in the document was substituted. With the bundled Noto Sans, <code>tnum</code> and <code>lnum</code> are no-ops because its figures are already tabular and lining; <code>pnum</code> and <code>onum</code> do substitute. Features need a registered font — the base-14 faces carry no OpenType tables.</p>
+<p><strong>Fix:</strong> drop the tag, or register a font whose GSUB declares it for the characters you set (the effective tags are the keys of the font module&#39;s <code>features</code> table). Capture the diagnostic with <code>layout.onDiagnostic</code>, or make it fatal with <code>layout.strict: true</code>.</p>
+<h2 id="blank-pages-after-setdeflateimpl--build-throws-naming-it">Blank Pages After <code>setDeflateImpl()</code> / Build Throws Naming It<a class="heading-anchor" href="#blank-pages-after-setdeflateimpl--build-throws-naming-it" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> on v1.7.0, every page rendered blank and <code>extractText()</code> returned <code>&#39;&#39;</code>; on v1.8.0 the build throws a message pointing at <code>setDeflateImpl()</code>.</p>
+<p><strong>Cause:</strong> the injected compressor returns raw DEFLATE (RFC 1951) — fflate&#39;s <code>deflateSync</code>, <code>CompressionStream</code>&#39;s <code>&#39;deflate-raw&#39;</code> — while <code>/FlateDecode</code> needs the zlib envelope (RFC 1950). The v1.7.0 README recommended the raw function; v1.8.0 validates the result and refuses it (<a href="https://github.com/Nizoka/pdfnative/issues/78" target="_blank" rel="noopener">#78</a>).</p>
+<p><strong>Fix:</strong></p>
+<pre><code class="language-typescript">import { setDeflateImpl, setDeflateRawImpl } from &#39;pdfnative&#39;;
+import { zlibSync, deflateSync } from &#39;fflate&#39;;
+
+setDeflateImpl(zlibSync);        // zlib-wrapped — the contract of setDeflateImpl()
+// or keep the raw function and let pdfnative add the envelope (v1.8.0):
+setDeflateRawImpl(deflateSync);
+</code></pre>
+<p>An asynchronous compressor (callback, Promise or <code>CompressionStream</code>) cannot be adapted; use <code>initNodeCompression()</code> on Node or a synchronous library elsewhere.</p>
+<h2 id="french-punctuation-spacing-looks-canadian">French Punctuation Spacing Looks Canadian<a class="heading-anchor" href="#french-punctuation-spacing-looks-canadian" aria-label="Link to this section">#</a></h2>
+<p><strong>Symptom:</strong> <code>typography: { punctuationSpacing: &#39;fr&#39; }</code> renders no space before <code>;</code> <code>!</code> <code>?</code>, exactly like <code>&#39;fr-CA&#39;</code>.</p>
+<p><strong>Cause:</strong> <code>&#39;fr&#39;</code> inserts a narrow no-break space (U+202F), which WinAnsi cannot encode. On the base-14 (non-embedded) path it degrades to an ordinary space.</p>
+<p><strong>Fix:</strong> register a Latin font that carries the glyph (Noto Sans does) and pass it in <code>fontEntries</code>; the narrow space is then rendered as written and extracts as U+202F.</p>
 <h2 id="document-has-too-many-blocks--very-large-documents">&quot;Document has too many blocks&quot; / Very Large Documents<a class="heading-anchor" href="#document-has-too-many-blocks--very-large-documents" aria-label="Link to this section">#</a></h2>
 <p><strong>Symptom:</strong> Generating a multi-thousand-page report throws a &quot;too many blocks&quot; error.</p>
 <p><strong>Cause:</strong> The document builder caps the number of content blocks as a safety rail. Before v1.3.0 this was a hard-coded 10 000. As of <strong>v1.3.0</strong> the default is <strong>100 000</strong> and is configurable.</p>

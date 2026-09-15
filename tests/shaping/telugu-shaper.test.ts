@@ -148,13 +148,13 @@ describe('shapeTeluguText', () => {
         expect(mark!.isZeroAdvance).toBe(true);
     });
 
-    it('should keep right-spacing matras as normal advance', () => {
+    it('should emit the aa sign after its base', () => {
         const fd = mockFontData();
-        // క + ా (Ka + AA — right spacing)
+        // క + ా (Ka + AA). Unicode classes ా as an above sign; whether it
+        // keeps an advance is the font's call (Noto Sans Telugu gives it one
+        // and flags it a mark in GDEF), which the real-font suite covers.
         const glyphs = shapeTeluguText('\u0C15\u0C3E', fd);
-        const matra = glyphs.find((g) => g.gid === 0x0C3E - TELUGU_START + 100);
-        expect(matra).toBeDefined();
-        expect(matra!.isZeroAdvance).toBe(false);
+        expect(glyphs.map((g) => g.gid)).toEqual([0x0C15 - TELUGU_START + 100, 0x0C3E - TELUGU_START + 100]);
     });
 
     it('should form a ligature when the font provides one', () => {

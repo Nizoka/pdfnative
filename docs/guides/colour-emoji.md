@@ -7,7 +7,7 @@
 ```ts
 import { registerFont, loadFontData, buildDocumentPDFBytes } from 'pdfnative';
 
-// Opt in to the curated colour-emoji subset (1167 glyphs + 73 sequences, ~4.5 MB).
+// Opt in to the curated colour-emoji subset (1189 glyphs + 223 sequences, ~4.9 MB).
 registerFont('emoji', () => import('pdfnative/fonts/noto-color-emoji-data.js'));
 
 const emoji = await loadFontData('emoji');
@@ -44,6 +44,9 @@ and renders each colour glyph as a **PDF Form XObject**:
 | Radial gradient (`PaintRadialGradient`) | `/ShadingType 3` radial shading |
 | Sweep gradient (`PaintSweepGradient`) | flat-colour triangular wedges fanned around the centre (**v1.4.0**) |
 | Compositing (`PaintComposite`) | separable blend modes mapped to PDF `/BM` (Multiply, Screen, Overlay, Darken, Lighten, …) (**v1.4.0**) |
+| Transforms (`PaintTranslate`, `PaintScale`, `PaintRotate`, `PaintSkew`, around-centre forms) | folded into the layer matrix (**v1.8.0**) |
+| Masks (`PaintComposite` `SRC_IN` / `DEST_IN`) | nested `W n` clipping paths (**v1.8.0**) |
+| Variable paints (`PaintVar*`) | read at the font's default instance (**v1.8.0**) |
 | CPAL palette | per-stop RGB(A) colours |
 
 Each unique emoji produces **one indirect Form XObject**, deduplicated and
@@ -58,12 +61,24 @@ run emits `q s 0 0 s x y cm /CEm0 Do Q` to place the glyph.
 > keeps its backdrop layers (this is what makes flags render flat instead of
 > monochrome).
 
+> **Transforms, variable paints and masks (v1.8.0).** Every COLRv1 transform
+> paint is now read, including the scale, rotate and skew forms around a
+> centre, and sweep angles use the specification's bias. Variable paints are
+> read at the default instance — the only one a static PDF can show — so
+> they render exactly as a non-variable font would; no other instance of an
+> axis is reachable. `SRC_IN` and `DEST_IN` masks become clipping paths when
+> the mask is made of glyph outlines, which is how Noto builds them: flags
+> now show their shaded wave. A translucent mask layer is resolved to the
+> nearest binary shape, and a gradient whose stops all share one alpha keeps
+> it through `/ExtGState` `/ca`.
+
 ## Opt-in, not default
 
 Colour emoji is **opt-in** for two reasons:
 
-1. **Module size.** The curated subset is ~4.5 MB (expanded to 1167 glyphs in
-   v1.6.0, plus 73 flag/ZWJ sequences in v1.7.0); bundling it by default would
+1. **Module size.** The curated subset is ~4.9 MB (expanded to 1167 glyphs in
+   v1.6.0, plus 73 flag/ZWJ sequences in v1.7.0, then 1189 glyphs and 150
+   skin-tone sequences in v1.8.0); bundling it by default would
    bloat every consumer. Register it only when you need colour.
 2. **Byte stability.** When no colour-emoji font is registered, documents are
   byte-identical to the pre-colour-emoji path — the colour path is fully gated.
@@ -76,27 +91,30 @@ registerFont('emoji', () => import('pdfnative/fonts/noto-emoji-data.js'));
 
 ## Coverage & limits
 
-The bundled module is a **curated subset** of **1167 common single-codepoint
-emoji** (expanded from 221 in v1.6.0): the complete Emoticons and Supplemental
-Symbols & Pictographs blocks, Miscellaneous Symbols & Pictographs through
-U+1F53D (nature, food, objects, hearts, office, av/ui symbols) plus clocks and
-the emoji-presentation stragglers, and the **complete assigned Transport & Map
-block** (U+1F680–1F6FF). Since v1.7.0 it also carries **73 multi-codepoint
-sequences** — 51 flags and 22 ZWJ sequences (see the next section). Symbols &
+The bundled module is a **curated subset** of **1189 common single-codepoint
+emoji**: every emoji the font draws in colour within the Emoticons, Supplemental
+Symbols & Pictographs, Miscellaneous Symbols, Dingbats, Miscellaneous Symbols &
+Pictographs and **Transport & Map** blocks. (It held 1167 from v1.6.0; the 22
+added in v1.8.0 were already selected but were dropped at build time, because
+their artwork uses COLRv1 transforms the parser did not read yet.) It also
+carries **223 multi-codepoint sequences** — 51 flags and 22 ZWJ sequences since
+v1.7.0, and 150 skin-tone forms since v1.8.0 (see the next section). Symbols &
 Pictographs Extended-A (U+1FA70–1FAFF) is
 not bundled — use the CLI below. It ships pre-built because every file under the package
 `files` allowlist is included in the npm tarball regardless of tree-shaking — the
 full Noto Color Emoji build (thousands of glyphs, ~32 MB) would weigh down
 *every* `npm install`, even for consumers who never touch emoji. The subset keeps
-the install within a 5120 KB budget (actual: ~4.5 MB) while the lazy
+the install within a 5120 KB budget (actual: ~4.9 MB) while the lazy
 `() => import(...)` keeps it out of bundles that don't reference it.
 
-> **Out of scope for the bundled subset:** skin-tone-modified forms
-> (`👍🏽`, `👩🏻‍🚀`, …) and any flag or ZWJ sequence beyond the curated 73. The
-> combinatorial skin-tone set is deliberately CLI territory — build a module
-> with `--sequences` / `--sequence-list` below to cover exactly the forms you
-> need. An uncovered sequence degrades to the per-codepoint behaviour
-> described further down (base emoji render, joiners drop) — never worse.
+> **Out of scope for the bundled subset:** skin tones on anything but the 30
+> curated bases (`🧑🏽‍🚀`, `🏃🏿`, …), and any flag or ZWJ sequence beyond the
+> curated ones. Unicode defines 667 modifier sequences and 1 365 toned ZWJ
+> sequences, about 3 KB each — the complete set would take the module past
+> 6 MB. Build a module with `--sequences` / `--sequence-list` below to cover
+> exactly the forms you need. An uncovered sequence degrades to the
+> per-codepoint behaviour described further down (base emoji render, joiners
+> drop) — never worse.
 
 To cover the **full** Noto Color Emoji set — or any custom selection — pdfnative
 ships an official generator CLI, `pdfnative-build-emoji-font`, so you never have
@@ -133,6 +151,10 @@ sequence produces exactly one COLR Form XObject:
 - **22 ZWJ sequences** — families (`👨‍👩‍👧`), professions (`👩‍🚀`, `👨‍💻`),
   `❤️‍🔥`, `🏳️‍🌈`, `🏳️‍⚧️`, `🏴‍☠️`, `🐻‍❄️`, `😮‍💨`, and friends —
   in their skin-tone-free RGI forms.
+- **150 skin-tone forms (v1.8.0)** — 20 everyday gestures (`👍🏽`, `🙏🏿`,
+  `🤝🏻`, `✌🏾`, …) and 10 generic people (`🧑🏼`, `👵🏾`, …), each in all
+  five Fitzpatrick tones, so a document never has to show one tone for lack
+  of the others.
 
 No API change is required: register the bundled colour-emoji module as usual
 and write the sequences in your text. Three behaviours worth knowing:
@@ -146,13 +168,12 @@ and write the sequences in your text. Three behaviours worth knowing:
   variation selectors, and skin-tone modifiers are dropped, and unmatched
   regional indicators pass through the normal cmap lookup. A module without a
   `sequences` table renders byte-identically to v1.6.0.
-- **Flags render flat.** Noto's flag glyphs stack a wave-shading overlay on
-  the flat artwork via a COLRv1 `PaintComposite` SRC_IN mask that has no PDF
-  equivalent. pdfnative degrades the composite to its supported backdrop, so
-  every flag renders as its flat (unwaved) artwork rather than falling back
-  to monochrome.
+- **Flags are shaded (v1.8.0).** Noto's flag glyphs stack a wave-shading
+  overlay on the flat artwork through a COLRv1 `SRC_IN` mask. The v1.7 line
+  rendered only the flat artwork; since v1.8.0 the mask becomes a clipping
+  path and the wave renders.
 
-Skin-tone-modified sequences stay CLI-only — generate a module with
+Other skin-tone forms stay CLI territory — generate a module with
 `--sequences` / `--sequence-list` (see the [CLI guide](colour-emoji-cli.html)).
 
 ## Advanced compositing (v1.4.0)
@@ -164,7 +185,7 @@ pdfnative now maps both where a faithful PDF translation exists:
 |---|---|
 | Sweep / conic gradient (`PaintSweepGradient`, format 8) | Flat-shaded triangular **wedges** fanned around the centre — no `/Shading` resource, pure path fills. Matrix rotation is folded into the start/end angles via `Math.atan2`. |
 | Composite (`PaintComposite`, format 32) — *separable* blend modes | Backdrop + source layers, with the source tagged via a `/BM` (blend mode) `/ExtGState`: Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference, Exclusion, Hue, Saturation, Color, Luminosity. |
-| Composite — *structural* Porter-Duff modes (`SrcOver`, `DestIn`, clipping masks, …) | No exact PDF equivalent → the glyph falls back to the **monochrome** outline. Since v1.7.0, when only the composite's *source* subtree is unsupported, its partial layers roll back and the **backdrop renders alone** (best-effort) — Noto's flags degrade to their flat artwork this way. |
+| Composite — *structural* Porter-Duff modes (`Clear`, `Xor`, `DestOut`, …) | No exact PDF equivalent → the glyph falls back to the **monochrome** outline. Since v1.7.0, when only the composite's *source* subtree is unsupported, its partial layers roll back and the **backdrop renders alone** (best-effort). Since v1.8.0, `SrcIn` and `DestIn` masks built from glyph outlines render as clipping paths instead. |
 
 Sweep wedges approximate the smooth conic sweep with a fan of flat-colour
 triangles whose count scales with the angular span — close enough for emoji at
@@ -177,10 +198,25 @@ faithfully in any conformant viewer.
 
 ## Limitations
 
-- **`PaintMask`** and COLRv1 variable (animated) paints are not yet rendered;
-  glyphs using them fall back gracefully — to the backdrop layers when the
-  unsupported paint sits inside a composite's source subtree (v1.7.0), to the
-  monochrome outline otherwise. Tracked for a future release.
+- **Masks that are not glyph shapes** — a mask built from a gradient or a
+  blended subtree has no clipping-path equivalent without a transparency
+  group. Those glyphs fall back as before: to the backdrop layers when the
+  mask sits inside a composite's source subtree (v1.7.0), to the monochrome
+  outline otherwise.
+- **Variable fonts** render at the default instance only. A PDF page is
+  static, and the subsetter drops `fvar` and `gvar`.
+- **Gradient alpha** is kept only when every stop shares it, because PDF
+  shadings carry colour, not opacity. A gradient whose colours *and* alphas
+  both vary renders opaque, as it always did.
+- **Alpha-only gradient layers are omitted (v1.8.0).** Noto draws its soft
+  shadows and vignettes as gradients whose stops share one colour and fade
+  only in alpha (brown, 0 → 255). A shading cannot carry that fade, and
+  before 1.8.0 such a layer was painted as a flat opaque disc over the
+  artwork: `👩` and about fifty other glyphs (`👨`, `😊`, `🌍`, `🎂`, `🏳️‍🌈`,
+  …) came out as an opaque silhouette. Since 1.8.0 these layers are left out,
+  so the glyph shows its flat artwork without its shadow. They will render
+  faithfully as `/SMask /Luminosity` soft masks once transparency groups
+  land (ROADMAP, "COLRv1 luminosity masks").
 - **PDF/A:** gradient transparency uses `/ExtGState` alpha, which PDF/A-1b
   forbids. Use solid-layer emoji or a non-PDF/A document for colour gradients.
 

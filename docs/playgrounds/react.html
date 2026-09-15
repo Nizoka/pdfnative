@@ -98,7 +98,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 22 scripts</a>
+    <a href="./all-scripts.html">All 27 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -107,6 +107,8 @@
     <a href="./cli.html">CLI builder</a>
     <a href="./mcp.html">MCP explorer</a>
     <a href="./react.html" aria-current="page">React renderer</a>
+    <a href="./typography.html">Typography</a>
+    <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
@@ -182,8 +184,8 @@ const bytes = renderSpecToBytes({
   "imports": {
     "react": "https://esm.sh/react@19",
     "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
-    "pdfnative": "https://esm.sh/pdfnative@1.7.0",
-    "pdfnative/": "https://esm.sh/pdfnative@1.7.0/",
+    "pdfnative": "https://esm.sh/pdfnative@1.8.0",
+    "pdfnative/": "https://esm.sh/pdfnative@1.8.0/",
     "pdfnative-react": "https://esm.sh/pdfnative-react@1.2.0?external=react,pdfnative"
   }
 }
@@ -268,7 +270,7 @@ const bytes = renderSpecToBytes({
       "// Rendering is synchronous and cannot await a loader, so the font data",
       "// must be resolved BEFORE rendering. Keys are engine language codes:",
       "// 'ar', not 'arabic' — the engine looks up the code it detects.",
-      "const CDN = 'https://esm.sh/pdfnative@1.7.0/fonts';",
+      "const CDN = 'https://esm.sh/pdfnative@1.8.0/fonts';",
       "registerFonts({",
       "  latin: () => import(`${CDN}/noto-sans-data.js`),",
       "  ar:    () => import(`${CDN}/noto-arabic-data.js`),",

@@ -15,6 +15,7 @@
  */
 
 import { fmtNum } from './pdf-text.js';
+import { fillOp } from './pdf-color.js';
 
 // ── Code 128 (ISO/IEC 15417) ─────────────────────────────────────────
 
@@ -162,7 +163,7 @@ export function renderCode128(data: string, x: number, y: number, width: number,
     totalModules += 2; // quiet zones
 
     const moduleW = width / totalModules;
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
     let cx = x + moduleW; // left quiet zone
 
     for (const pat of patterns) {
@@ -293,7 +294,7 @@ export function renderEAN13(data: string, x: number, y: number, width: number, h
 
     // Render modules
     const moduleW = width / (modules.length + 2); // +2 for quiet zones
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
     let cx = x + moduleW;
 
     for (let i = 0; i < modules.length; i++) {
@@ -361,7 +362,7 @@ const QR_CAPACITY: readonly { readonly L: number; readonly M: number; readonly Q
 ];
 
 /** Reed-Solomon EC codewords per block for each version+level. */
-const QR_EC_TABLE: readonly { readonly L: readonly number[]; readonly M: readonly number[]; readonly Q: readonly number[]; readonly H: readonly number[] }[] = _buildECTable();
+const QR_EC_TABLE: readonly { readonly L: readonly number[]; readonly M: readonly number[]; readonly Q: readonly number[]; readonly H: readonly number[] }[] = /*#__PURE__*/ _buildECTable();
 
 /** Alignment pattern positions per version (ISO 18004 Table E.1). */
 const QR_ALIGN_POS: readonly (readonly number[])[] = [
@@ -460,7 +461,7 @@ export function renderQR(data: string, x: number, y: number, size: number, ecLev
     const modules = generateQR(data, ecLevel);
     const n = modules.length;
     const moduleSize = size / n;
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
 
     for (let row = 0; row < n; row++) {
         for (let col = 0; col < n; col++) {
@@ -910,8 +911,8 @@ function _computePenalty(matrix: boolean[][], size: number): number {
 // ── Reed-Solomon GF(256) ─────────────────────────────────────────────
 
 /** GF(256) log/exp tables for Reed-Solomon. */
-const GF_EXP = new Uint8Array(512);
-const GF_LOG = new Uint8Array(256);
+const GF_EXP = /*#__PURE__*/ new Uint8Array(512);
+const GF_LOG = /*#__PURE__*/ new Uint8Array(256);
 
 // Initialize GF(256) tables
 (function initGF() {
@@ -1087,7 +1088,7 @@ export function renderDataMatrix(data: string, x: number, y: number, size: numbe
     const modules = generateDataMatrix(data);
     const n = modules.length;
     const moduleSize = size / n;
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
 
     for (let row = 0; row < n; row++) {
         for (let col = 0; col < modules[row].length; col++) {
@@ -1294,7 +1295,7 @@ export function renderPDF417(data: string, x: number, y: number, width: number, 
     const totalModules = 17 + 17 + cols * 17 + 17 + 18;
     const moduleW = width / totalModules;
 
-    const ops: string[] = ['q', '0 0 0 rg'];
+    const ops: string[] = ['q', fillOp('0 0 0')];
 
     for (let r = 0; r < rows; r++) {
         const ry = y + (rows - 1 - r) * rowHeight;
@@ -1424,7 +1425,7 @@ function _pdf417RowIndicator(row: number, totalRows: number, cols: number, ecLev
 }
 
 /** PDF417 codeword bar patterns per cluster (simplified representative set). */
-const PDF417_CLUSTER_PATTERNS: readonly (readonly number[])[][] = _buildPDF417Patterns();
+const PDF417_CLUSTER_PATTERNS: readonly (readonly number[])[][] = /*#__PURE__*/ _buildPDF417Patterns();
 
 function _buildPDF417Patterns(): (readonly number[])[][] {
     // Simplified: generate basic 17-module patterns for codeword values 0-928

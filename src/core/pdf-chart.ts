@@ -22,7 +22,7 @@
 import type { ChartBlock, ChartSeries } from '../types/pdf-document-types.js';
 import type { EncodingContext } from '../types/pdf-types.js';
 import type { PdfColor } from '../types/pdf-types.js';
-import { parseColor } from './pdf-color.js';
+import { parseColor, fillOp, strokeOp, tintOperands } from './pdf-color.js';
 import { txt, fmtNum } from './pdf-text.js';
 import { helveticaWidth } from '../fonts/encoding.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
@@ -496,11 +496,9 @@ function autoAlt(block: ChartBlock): string {
 
 // ── Cartesian (bar / barH / line / stacked / area / scatter) ─────────
 
-/** Mix an "R G B" operator colour toward white (0 = unchanged, 1 = white). */
-function mixTowardWhite(rgb: string, amount: number): string {
-    return rgb.split(' ')
-        .map(c => fmtNum(Number(c) + (1 - Number(c)) * amount))
-        .join(' ');
+/** Mix operator colour toward white (0 = unchanged, 1 = white), RGB or CMYK. */
+function mixTowardWhite(operands: string, amount: number): string {
+    return tintOperands(operands, amount, fmtNum);
 }
 
 /**
@@ -611,22 +609,22 @@ function renderCartesian(
 
     // Gridlines + value-axis tick labels.
     const drawGrid = block.axis?.grid ?? true;
-    ops.push('0.85 0.85 0.85 RG', '0.5 w');
+    ops.push(strokeOp('0.85 0.85 0.85'), '0.5 w');
     for (const t of scale.tickList()) {
         const frac = scale.frac01(t);
         if (horizontal) {
             const x = plotX + frac * plotW;
             if (drawGrid) ops.push(`${fmtNum(x)} ${fmtNum(plotBottom)} m ${fmtNum(x)} ${fmtNum(plotTop)} l S`);
-            ops.push('0 0 0 rg', txtCentered(formatTick(t), x, plotBottom - LABEL_SIZE - 2, LABEL_SIZE, enc), '');
+            ops.push(fillOp('0 0 0'), txtCentered(formatTick(t), x, plotBottom - LABEL_SIZE - 2, LABEL_SIZE, enc), '');
         } else {
             const yv = plotBottom + frac * plotH;
             if (drawGrid) ops.push(`${fmtNum(plotX)} ${fmtNum(yv)} m ${fmtNum(plotX + plotW)} ${fmtNum(yv)} l S`);
-            ops.push('0 0 0 rg', txtRightAligned(formatTick(t), plotX - 4, yv - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
+            ops.push(fillOp('0 0 0'), txtRightAligned(formatTick(t), plotX - 4, yv - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
         }
     }
     // Secondary-axis tick labels (right side, no grid — avoids clutter).
     if (scale2 && !horizontal) {
-        ops.push('0 0 0 rg');
+        ops.push(fillOp('0 0 0'));
         for (const t of scale2.tickList()) {
             const yv = plotBottom + scale2.frac01(t) * plotH;
             ops.push(txt(formatTick(t), plotX + plotW + 4, yv - LABEL_SIZE / 2 + 1, '/F1', LABEL_SIZE, enc));
@@ -637,13 +635,13 @@ function renderCartesian(
         const drawXGrid = block.xAxis?.grid ?? false;
         for (const tick of xScale.tickList()) {
             const x = plotX + xScale.frac01(tick.v) * plotW;
-            if (drawXGrid) ops.push('0.85 0.85 0.85 RG', '0.5 w', `${fmtNum(x)} ${fmtNum(plotBottom)} m ${fmtNum(x)} ${fmtNum(plotTop)} l S`);
-            ops.push('0 0 0 rg', txtCentered(tick.label, x, plotBottom - LABEL_SIZE - 2, LABEL_SIZE, enc));
+            if (drawXGrid) ops.push(strokeOp('0.85 0.85 0.85'), '0.5 w', `${fmtNum(x)} ${fmtNum(plotBottom)} m ${fmtNum(x)} ${fmtNum(plotTop)} l S`);
+            ops.push(fillOp('0 0 0'), txtCentered(tick.label, x, plotBottom - LABEL_SIZE - 2, LABEL_SIZE, enc));
         }
     }
 
     // Axes.
-    ops.push('0.4 0.4 0.4 RG', '0.8 w');
+    ops.push(strokeOp('0.4 0.4 0.4'), '0.8 w');
     ops.push(`${fmtNum(plotX)} ${fmtNum(plotBottom)} m ${fmtNum(plotX)} ${fmtNum(plotTop)} l S`);
     ops.push(`${fmtNum(plotX)} ${fmtNum(plotBottom)} m ${fmtNum(plotX + plotW)} ${fmtNum(plotBottom)} l S`);
     if (scale2 && !horizontal) {
@@ -668,7 +666,7 @@ function renderCartesian(
         // Scatter: points positioned by xValues on a linear/time x-axis.
         block.series.forEach((s, si) => {
             const sc = scaleFor(s);
-            ops.push(`${seriesColor(block, si, s)} rg`);
+            ops.push(`${fillOp(seriesColor(block, si, s))}`);
             s.values.forEach((v, ci) => {
                 const xv = parseXValue((s.xValues ?? [])[ci], xType, s.label);
                 const x = plotX + (xScale as XScale).frac01(xv) * plotW;
@@ -676,7 +674,7 @@ function renderCartesian(
                 ops.push(circleFill(x, yv, 2.2));
             });
             if (dataLabels) {
-                ops.push('0 0 0 rg');
+                ops.push(fillOp('0 0 0'));
                 s.values.forEach((v, ci) => {
                     const xv = parseXValue((s.xValues ?? [])[ci], xType, s.label);
                     const x = plotX + (xScale as XScale).frac01(xv) * plotW;
@@ -709,10 +707,10 @@ function renderCartesian(
                 });
                 const xLast = xAt(s, s.values.length - 1);
                 const xFirst = xAt(s, 0);
-                ops.push(`${mixTowardWhite(color, 0.35)} rg`);
+                ops.push(`${fillOp(mixTowardWhite(color, 0.35))}`);
                 ops.push(`${poly} ${fmtNum(xLast)} ${fmtNum(zeroY)} l ${fmtNum(xFirst)} ${fmtNum(zeroY)} l h f`);
             }
-            ops.push(`${color} RG`, '1.5 w');
+            ops.push(`${strokeOp(color)}`, '1.5 w');
             let path = '';
             s.values.forEach((v, ci) => {
                 const x = xAt(s, ci);
@@ -721,7 +719,7 @@ function renderCartesian(
             });
             ops.push(`${path} S`);
             if (block.markers) {
-                ops.push(`${color} rg`);
+                ops.push(`${fillOp(color)}`);
                 s.values.forEach((v, ci) => {
                     const x = xAt(s, ci);
                     const yv = plotBottom + sFrac(v) * plotH;
@@ -729,7 +727,7 @@ function renderCartesian(
                 });
             }
             if (dataLabels) {
-                ops.push('0 0 0 rg');
+                ops.push(fillOp('0 0 0'));
                 s.values.forEach((v, ci) => {
                     const x = xAt(s, ci);
                     const yv = plotBottom + sFrac(v) * plotH;
@@ -739,7 +737,7 @@ function renderCartesian(
         });
         // Category labels (skipped when a positional x-axis draws its own).
         if (!xScale) {
-            ops.push('0 0 0 rg');
+            ops.push(fillOp('0 0 0'));
             emitCategoryLabels(ops, block, labels, plotX, slot, plotBottom, enc);
         }
     } else if (horizontal && stacked) {
@@ -758,13 +756,13 @@ function renderCartesian(
                 if (v >= 0) pos = to; else neg = to;
                 const x0 = plotX + frac01(from) * plotW;
                 const x1 = plotX + frac01(to) * plotW;
-                ops.push(`${seriesColor(block, si, s)} rg`);
+                ops.push(`${fillOp(seriesColor(block, si, s))}`);
                 ops.push(`${fmtNum(Math.min(x0, x1))} ${fmtNum(yb - barH)} ${fmtNum(Math.abs(x1 - x0))} ${fmtNum(barH)} re f`);
                 if (dataLabels && Math.abs(x1 - x0) >= helveticaWidth(fmtDataLabel(v, dataLabels), LABEL_SIZE) + 4) {
-                    ops.push('1 1 1 rg', txtCentered(fmtDataLabel(v, dataLabels), (x0 + x1) / 2, yb - barH / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
+                    ops.push(fillOp('1 1 1'), txtCentered(fmtDataLabel(v, dataLabels), (x0 + x1) / 2, yb - barH / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
                 }
             });
-            ops.push('0 0 0 rg', txtRightAligned(lab, plotX - 4, slotTop - slot / 2 - LABEL_SIZE / 2, LABEL_SIZE, enc));
+            ops.push(fillOp('0 0 0'), txtRightAligned(lab, plotX - 4, slotTop - slot / 2 - LABEL_SIZE / 2, LABEL_SIZE, enc));
         });
     } else if (horizontal) {
         // Horizontal grouped bars.
@@ -778,14 +776,14 @@ function renderCartesian(
                 const x0 = plotX + zeroFrac * plotW;
                 const x1 = plotX + frac01(v) * plotW;
                 const yb = slotTop - slot * 0.15 - barH * si;
-                ops.push(`${seriesColor(block, si, s)} rg`);
+                ops.push(`${fillOp(seriesColor(block, si, s))}`);
                 ops.push(`${fmtNum(Math.min(x0, x1))} ${fmtNum(yb - barH)} ${fmtNum(Math.abs(x1 - x0))} ${fmtNum(barH)} re f`);
                 if (dataLabels) {
                     const lx = Math.max(x0, x1) + 3 + helveticaWidth(fmtDataLabel(v, dataLabels), LABEL_SIZE) / 2;
-                    ops.push('0 0 0 rg', txtCentered(fmtDataLabel(v, dataLabels), Math.min(lx, plotX + plotW - 2), yb - barH / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
+                    ops.push(fillOp('0 0 0'), txtCentered(fmtDataLabel(v, dataLabels), Math.min(lx, plotX + plotW - 2), yb - barH / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
                 }
             });
-            ops.push('0 0 0 rg', txtRightAligned(lab, plotX - 4, slotTop - slot / 2 - LABEL_SIZE / 2, LABEL_SIZE, enc));
+            ops.push(fillOp('0 0 0'), txtRightAligned(lab, plotX - 4, slotTop - slot / 2 - LABEL_SIZE / 2, LABEL_SIZE, enc));
         });
     } else if (stacked) {
         // Vertical stacked bars.
@@ -802,14 +800,14 @@ function renderCartesian(
                 if (v >= 0) pos = to; else neg = to;
                 const y0 = plotBottom + frac01(from) * plotH;
                 const y1 = plotBottom + frac01(to) * plotH;
-                ops.push(`${seriesColor(block, si, s)} rg`);
+                ops.push(`${fillOp(seriesColor(block, si, s))}`);
                 ops.push(`${fmtNum(xb)} ${fmtNum(Math.min(y0, y1))} ${fmtNum(barW)} ${fmtNum(Math.abs(y1 - y0))} re f`);
                 if (dataLabels && Math.abs(y1 - y0) >= LABEL_SIZE + 2) {
-                    ops.push('1 1 1 rg', txtCentered(fmtDataLabel(v, dataLabels), xb + barW / 2, (y0 + y1) / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
+                    ops.push(fillOp('1 1 1'), txtCentered(fmtDataLabel(v, dataLabels), xb + barW / 2, (y0 + y1) / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
                 }
             });
         });
-        ops.push('0 0 0 rg');
+        ops.push(fillOp('0 0 0'));
         emitCategoryLabels(ops, block, labels, plotX, slot, plotBottom, enc);
     } else {
         // Vertical grouped bars.
@@ -827,17 +825,17 @@ function renderCartesian(
                 const yv = plotBottom + sc.frac01(v) * plotH;
                 const base = sc === scale ? zeroY : plotBottom + sc.frac01(0) * plotH;
                 const xb = slotX + slot * 0.15 + barW * si;
-                ops.push(`${seriesColor(block, si, s)} rg`);
+                ops.push(`${fillOp(seriesColor(block, si, s))}`);
                 ops.push(`${fmtNum(xb)} ${fmtNum(Math.min(base, yv))} ${fmtNum(barW)} ${fmtNum(Math.abs(yv - base))} re f`);
                 if (dataLabels) {
-                    ops.push('0 0 0 rg', pointLabel(v, xb + barW / 2, yv));
+                    ops.push(fillOp('0 0 0'), pointLabel(v, xb + barW / 2, yv));
                 }
             });
             if (ci % stride === 0) {
                 if (rotation > 0) {
-                    ops.push('0 0 0 rg', txtRotatedTick(lab, slotX + slot / 2, plotBottom - 4, LABEL_SIZE, enc, rotation));
+                    ops.push(fillOp('0 0 0'), txtRotatedTick(lab, slotX + slot / 2, plotBottom - 4, LABEL_SIZE, enc, rotation));
                 } else {
-                    ops.push('0 0 0 rg', txtCentered(lab, slotX + slot / 2, plotBottom - LABEL_SIZE - 2, LABEL_SIZE, enc));
+                    ops.push(fillOp('0 0 0'), txtCentered(lab, slotX + slot / 2, plotBottom - LABEL_SIZE - 2, LABEL_SIZE, enc));
                 }
             }
         });
@@ -883,7 +881,7 @@ function renderPie(
     values.forEach((v, i) => {
         const sweep = (v / total) * Math.PI * 2;
         const end = angle - sweep; // clockwise
-        ops.push(`${seriesColor(block, i)} rg`);
+        ops.push(`${fillOp(seriesColor(block, i))}`);
         ops.push(wedgePath(cx, cy, radius, innerR, angle, end));
         ops.push('f');
         // Percentage label at the slice mid-angle.
@@ -892,7 +890,7 @@ function renderPie(
             const lr = innerR > 0 ? (radius + innerR) / 2 : radius * 0.6;
             const lx = cx + Math.cos(mid) * lr;
             const ly = cy + Math.sin(mid) * lr;
-            ops.push('1 1 1 rg', txtCentered(`${Math.round((v / total) * 100)}%`, lx, ly - LABEL_SIZE / 2, LABEL_SIZE, enc));
+            ops.push(fillOp('1 1 1'), txtCentered(`${Math.round((v / total) * 100)}%`, lx, ly - LABEL_SIZE / 2, LABEL_SIZE, enc));
         }
         angle = end;
     });
@@ -963,9 +961,9 @@ function renderLegend(
     let x = bx;
     entries.forEach((label, i) => {
         const color = seriesColor(block, i, isPie ? undefined : block.series[i]);
-        ops.push(`${color} rg`, `${fmtNum(x)} ${fmtNum(y)} ${sw} ${sw} re f`);
+        ops.push(`${fillOp(color)}`, `${fmtNum(x)} ${fmtNum(y)} ${sw} ${sw} re f`);
         x += sw + 3;
-        ops.push('0 0 0 rg', txt(label, x, y, '/F1', LEGEND_SIZE, enc));
+        ops.push(fillOp('0 0 0'), txt(label, x, y, '/F1', LEGEND_SIZE, enc));
         x += helveticaWidth(label, LEGEND_SIZE) + gap * 2;
         if (x > bx + width - 40 && i < entries.length - 1) { x = bx; y -= LEGEND_SIZE + 4; }
     });

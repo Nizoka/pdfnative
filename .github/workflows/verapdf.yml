@@ -5,7 +5,9 @@ name: PDF/A Validation (veraPDF)
 # is broken — guarding against PDF/A regressions.
 #
 # veraPDF is invoked as an external CI tool (Java CLI). pdfnative remains a
-# zero-runtime-dependency library; veraPDF is not bundled or linked.
+# zero-runtime-dependency library; veraPDF is not bundled or linked. The
+# pinned release, its checksum and the install steps live in the composite
+# action .github/actions/setup-verapdf, shared with publish.yml.
 
 on:
   push:
@@ -18,6 +20,8 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/verapdf.yml'
+      - '.github/actions/setup-verapdf/**'
+      - '.github/checksums/**'
   pull_request:
     branches: [main, master]
     paths:
@@ -28,6 +32,8 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/verapdf.yml'
+      - '.github/actions/setup-verapdf/**'
+      - '.github/checksums/**'
   # Allow manually running the workflow against any branch from the
   # GitHub Actions UI. Useful for verifying veraPDF integration before
   # opening a pull request.
@@ -44,61 +50,32 @@ jobs:
   verapdf:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      # Pinned veraPDF release (greenfield) so CI and the documented local
-      # setup validate against the same validator version — a floating
-      # "latest" URL can silently change the rule set between two runs of
-      # the same commit. Bump deliberately, with the release index:
-      # https://software.verapdf.org/rel/
-      VERAPDF_INSTALL_URL: 'https://software.verapdf.org/rel/1.30/verapdf-greenfield-1.30.2-installer.zip'
 
     steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: npm
 
-      - name: Setup Java (Temurin 17 LTS)
-        uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4.9.0
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Install veraPDF CLI
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/verapdf-installer"
-          curl -fsSL -o "$HOME/verapdf-installer/installer.zip" "${VERAPDF_INSTALL_URL}"
-          unzip -q "$HOME/verapdf-installer/installer.zip" -d "$HOME/verapdf-installer"
-          INSTALLER_JAR=$(find "$HOME/verapdf-installer" -name 'verapdf-izpack-installer-*.jar' | head -n1)
-          if [ -z "${INSTALLER_JAR}" ]; then
-            echo "veraPDF installer jar not found"; exit 1
-          fi
-          mkdir -p "$HOME/verapdf"
-          # Auto-install via izpack XML descriptor (headless).
-          cat > "$HOME/verapdf/auto-install.xml" <<XML
-          <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-          <AutomatedInstallation langpack="eng">
-            <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
-            <com.izforge.izpack.panels.target.TargetPanel id="install_dir"><installpath>$HOME/verapdf</installpath></com.izforge.izpack.panels.target.TargetPanel>
-            <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select"><pack index="0" name="veraPDF GUI" selected="true"/><pack index="1" name="veraPDF Mac and *nix Scripts" selected="true"/><pack index="2" name="veraPDF Documentation" selected="false"/><pack index="3" name="veraPDF Sample Plugins" selected="false"/></com.izforge.izpack.panels.packs.PacksPanel>
-            <com.izforge.izpack.panels.install.InstallPanel id="install"/>
-            <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
-          </AutomatedInstallation>
-          XML
-          java -jar "${INSTALLER_JAR}" "$HOME/verapdf/auto-install.xml"
-          echo "VERAPDF_HOME=$HOME/verapdf" >> "$GITHUB_ENV"
-          echo "$HOME/verapdf" >> "$GITHUB_PATH"
-
-      - name: Verify veraPDF
-        run: |
-          verapdf --version
+      # Pinned veraPDF release (greenfield), checksummed, so CI and the
+      # documented local setup validate against the same validator version —
+      # a floating "latest" URL can silently change the rule set between two
+      # runs of the same commit. Bump deliberately in the action's default.
+      - name: Setup veraPDF
+        uses: ./.github/actions/setup-verapdf
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build
         run: npm run build

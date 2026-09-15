@@ -11,6 +11,7 @@
  */
 
 import type { PdfAttachment } from '../types/pdf-types.js';
+import { md5 } from './pdf-encrypt.js';
 
 // ── Marked Content Operators ─────────────────────────────────────────
 
@@ -269,23 +270,21 @@ export interface PdfMetadata {
  * @returns `{ pdfDate, xmpDate }` representing the same moment.
  */
 export function buildPdfMetadata(now: Date = new Date()): PdfMetadata {
+    // Formatted in UTC whatever the host's zone (v1.8.0): the same pinned
+    // instant used to yield a different /CreationDate, XMP date and trailer
+    // /ID on hosts in different zones, which defeated reproducible builds
+    // unless TZ was pinned too. The offset is spelt +00'00' / +00:00 rather
+    // than Z, so a build that always ran under TZ=UTC is byte-identical.
     const pad2 = (n: number) => String(n).padStart(2, '0');
-    const yyyy = now.getFullYear();
-    const mm = pad2(now.getMonth() + 1);
-    const dd = pad2(now.getDate());
-    const hh = pad2(now.getHours());
-    const mi = pad2(now.getMinutes());
-    const ss = pad2(now.getSeconds());
+    const yyyy = now.getUTCFullYear();
+    const mm = pad2(now.getUTCMonth() + 1);
+    const dd = pad2(now.getUTCDate());
+    const hh = pad2(now.getUTCHours());
+    const mi = pad2(now.getUTCMinutes());
+    const ss = pad2(now.getUTCSeconds());
 
-    // Timezone offset in minutes, west of UTC is positive in JS — invert sign for output.
-    const tzMinutes = -now.getTimezoneOffset();
-    const tzSign = tzMinutes >= 0 ? '+' : '-';
-    const tzAbs = Math.abs(tzMinutes);
-    const tzH = pad2(Math.floor(tzAbs / 60));
-    const tzM = pad2(tzAbs % 60);
-
-    const pdfDate = `D:${yyyy}${mm}${dd}${hh}${mi}${ss}${tzSign}${tzH}'${tzM}'`;
-    const xmpDate = `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}${tzSign}${tzH}:${tzM}`;
+    const pdfDate = `D:${yyyy}${mm}${dd}${hh}${mi}${ss}+00'00'`;
+    const xmpDate = `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}+00:00`;
 
     return { pdfDate, xmpDate };
 }
@@ -486,30 +485,105 @@ export function buildOutputIntentDict(
     return dict;
 }
 
+/** The data colour space an OutputIntent profile describes. @since 1.8.0 */
+export type OutputIntentSpace = 'rgb' | 'cmyk' | 'gray';
+
+/** An OutputIntent profile, read once and shared by everything that needs it. */
+export interface ResolvedOutputIntent {
+    /** The ICC profile as a binary string (1 char = 1 byte). */
+    readonly profile: string;
+    readonly space: OutputIntentSpace;
+    /** `/N` of the ICC stream: the profile's colour component count. */
+    readonly components: 1 | 3 | 4;
+    /** ICC profile/device class from header bytes 12–15, e.g. `prtr`, `mntr`. */
+    readonly deviceClass: string;
+    /**
+     * Major ICC specification version from header byte 8 (2 or 4). PDF/A-1
+     * accepts v2 profiles only (ISO 19005-1 §6.2.2); v4 is allowed from
+     * PDF/A-2 (ISO 19005-2 §6.2.4.2). @since 1.8.0
+     */
+    readonly iccVersion: number;
+}
+
+const ICC_DATA_SPACES: Readonly<Record<string, { readonly space: OutputIntentSpace; readonly components: 1 | 3 | 4 }>> = {
+    'RGB ': { space: 'rgb', components: 3 },
+    'CMYK': { space: 'cmyk', components: 4 },
+    'GRAY': { space: 'gray', components: 1 },
+};
+
 /**
- * Resolve the OutputIntent ICC profile: the caller-supplied RGB profile
- * (v1.7.0) or the built-in minimal sRGB one. A custom profile must declare
- * the `RGB ` data colour space in its ICC header (bytes 16–19) — pdfnative
- * emits RGB content, and a mismatched intent fails PDF/A validation.
- *
- * @returns The profile as a binary string (1 char = 1 byte).
+ * Resolve the OutputIntent ICC profile: the caller-supplied one (v1.7.0) or
+ * the built-in minimal sRGB one. The data colour space comes from the ICC
+ * header (bytes 16–19) and decides `/N`. Until v1.8.0 only RGB profiles were
+ * accepted, because every colour pdfnative wrote was RGB; with CMYK content
+ * colours a CMYK or Gray intent is meaningful, and RGB content under it is
+ * routed through a calibrated `/DefaultRGB` by the assemblers.
  */
-export function resolveOutputIntentProfile(custom?: { readonly iccProfile: Uint8Array }): string {
-    if (!custom) return buildMinimalSRGBProfile();
+export function resolveOutputIntent(custom?: { readonly iccProfile: Uint8Array }): ResolvedOutputIntent {
+    if (!custom) {
+        return { profile: buildMinimalSRGBProfile(), space: 'rgb', components: 3, deviceClass: 'mntr', iccVersion: 2 };
+    }
     const icc = custom.iccProfile;
     if (icc.length < 128) {
         throw new Error('outputIntent.iccProfile is too short to be an ICC profile (128-byte header required)');
     }
-    const space = String.fromCharCode(icc[16], icc[17], icc[18], icc[19]);
-    if (space !== 'RGB ') {
+    // ICC.1 §7.2: bytes 36–39 are the `acsp` signature and bytes 0–3 the
+    // profile size. A buffer that merely spells a colour space at byte 16
+    // is not a profile, and a viewer that trusts the size field would read
+    // past a truncated one — both were accepted until 1.8.0.
+    if (String.fromCharCode(icc[36], icc[37], icc[38], icc[39]) !== 'acsp') {
+        throw new Error('outputIntent.iccProfile is not an ICC profile (no `acsp` signature at byte 36)');
+    }
+    const declaredSize = ((icc[0] << 24) | (icc[1] << 16) | (icc[2] << 8) | icc[3]) >>> 0;
+    if (declaredSize < 128 || declaredSize > icc.length) {
         throw new Error(
-            `outputIntent.iccProfile declares data colour space '${space.trim()}' — only RGB profiles are `
-            + 'supported (pdfnative emits RGB content; CMYK output intents require CMYK content, deferred)',
+            `outputIntent.iccProfile header declares ${declaredSize} bytes but ${icc.length} were supplied — the profile is truncated or corrupt`,
         );
     }
-    let s = '';
-    for (let i = 0; i < icc.length; i++) s += String.fromCharCode(icc[i]);
-    return s;
+    const tag = String.fromCharCode(icc[16], icc[17], icc[18], icc[19]);
+    const data = ICC_DATA_SPACES[tag];
+    if (!data) {
+        throw new Error(
+            `outputIntent.iccProfile declares data colour space '${tag.trim()}' — an OutputIntent `
+            + 'profile must describe RGB, CMYK or Gray',
+        );
+    }
+    let profile = '';
+    for (let i = 0; i < icc.length; i++) profile += String.fromCharCode(icc[i]);
+    const deviceClass = String.fromCharCode(icc[12], icc[13], icc[14], icc[15]);
+    return { profile, space: data.space, components: data.components, deviceClass, iccVersion: icc[8] };
+}
+
+/**
+ * sRGB as a calibrated, inline colour space: D65 white point, the sRGB
+ * primaries' RGB→XYZ matrix, and a 2.2 gamma approximating sRGB's
+ * piecewise curve. CalRGB is device-independent, so it can stand in as
+ * `/DefaultRGB` without an ICC stream object.
+ */
+const CAL_RGB_SRGB = '[/CalRGB << /WhitePoint [0.9505 1 1.089] /Gamma [2.2 2.2 2.2] '
+    + '/Matrix [0.4124 0.2126 0.0193 0.3576 0.7152 0.1192 0.1805 0.0722 0.9505] >>]';
+
+/**
+ * The `/ColorSpace` resource entry that keeps RGB content valid under a
+ * non-RGB OutputIntent, or `''` when none is needed.
+ *
+ * Every colour pdfnative writes by default — black text, rules, charts,
+ * emoji — is DeviceRGB. Under a CMYK or Gray intent, device RGB is only
+ * conforming when a device-independent `/DefaultRGB` is in the resources
+ * that use it (ISO 19005-2 §6.2.4.3, ISO 32000-1 §8.6.5.6). Remapping
+ * through calibrated sRGB tells the print workflow what those colours
+ * mean, rather than rewriting them as naive CMYK. With an RGB intent (the
+ * default) nothing is added and the output stays byte-identical.
+ *
+ * @param extraEntries - Further colour-space entries for the same dictionary
+ *   (a resource dictionary holds a single `/ColorSpace`), e.g. the
+ *   registration colour of printer's marks. Only written alongside
+ *   `/DefaultRGB`.
+ * @returns A resource fragment with a leading space.
+ */
+export function defaultRgbResource(intent: ResolvedOutputIntent | null, extraEntries = ''): string {
+    if (!intent || intent.space === 'rgb') return '';
+    return ` /ColorSpace << /DefaultRGB ${CAL_RGB_SRGB}${extraEntries ? ` ${extraEntries}` : ''} >>`;
 }
 
 /**
@@ -708,6 +782,135 @@ export const PDF_A_CONFORMANCE_TARGETS = ['pdfa1b', 'pdfa2b', 'pdfa2u', 'pdfa3b'
  * @since 1.2.0
  */
 export type PdfAConformanceTarget = typeof PDF_A_CONFORMANCE_TARGETS[number];
+
+/**
+ * PDF/X conformance targets accepted by the `pdfx` layout option.
+ * @since 1.8.0
+ */
+export const PDF_X_CONFORMANCE_TARGETS = ['pdfx4'] as const;
+
+/**
+ * Type alias for the string literal members of {@link PDF_X_CONFORMANCE_TARGETS}.
+ * @since 1.8.0
+ */
+export type PdfXConformanceTarget = typeof PDF_X_CONFORMANCE_TARGETS[number];
+
+/** What a PDF/X-4 build needs once its options are known to be coherent. */
+export interface PdfXConfig {
+    /** PDF/X-4 is based on PDF 1.6 (ISO 15930-7). */
+    readonly pdfVersion: '1.6';
+    /** `/Info /Trapped` and `pdf:Trapped`: PDF/X does not accept `Unknown`. */
+    readonly trapped: 'True' | 'False';
+}
+
+/**
+ * Check a PDF/X request against the other layout options and resolve it.
+ * Every incoherent combination throws before any byte is written, with the
+ * remedy in the message.
+ *
+ * - One conformance claim per file: PDF/X and a PDF/A level are exclusive.
+ * - No encryption.
+ * - An OutputIntent is mandatory and must be an output (`prtr`) profile —
+ *   the printing condition the file is prepared for. pdfnative ships none.
+ * - Trapping must be stated: `True` or `False`, defaulting to `False`,
+ *   which is accurate for pdfnative output (it never traps).
+ *
+ * @returns The resolved configuration, or `null` when `pdfx` is not set.
+ */
+export function resolvePdfXConfig(input: {
+    readonly pdfx: string | undefined;
+    readonly tagged: boolean | string | undefined;
+    readonly encrypted: boolean;
+    readonly outputIntent: ResolvedOutputIntent | null;
+    readonly trapped: 'True' | 'False' | 'Unknown' | undefined;
+}): PdfXConfig | null {
+    if (input.pdfx === undefined) return null;
+    if (!(PDF_X_CONFORMANCE_TARGETS as readonly string[]).includes(input.pdfx)) {
+        throw new Error(`layout.pdfx: unknown target '${input.pdfx}' — use one of ${PDF_X_CONFORMANCE_TARGETS.join(', ')}`);
+    }
+    if (input.tagged) {
+        throw new Error('layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them');
+    }
+    if (input.encrypted) {
+        throw new Error('PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx');
+    }
+    if (!input.outputIntent) {
+        throw new Error(
+            'PDF/X-4 requires layout.outputIntent: the ICC profile of the printing condition, e.g. '
+            + 'ISO Coated v2 or GRACoL from your printer. pdfnative ships no press profile',
+        );
+    }
+    if (input.outputIntent.deviceClass !== 'prtr') {
+        throw new Error(
+            `PDF/X-4 requires an output (printer) profile as layout.outputIntent — the supplied profile's `
+            + `class is '${input.outputIntent.deviceClass.trim()}'`,
+        );
+    }
+    if (input.trapped === 'Unknown') {
+        throw new Error("PDF/X requires the trapping state to be known — set metadata.trapped to 'True' or 'False', or omit it for 'False'");
+    }
+    return { pdfVersion: '1.6', trapped: input.trapped ?? 'False' };
+}
+
+/**
+ * A stable `uuid:` for `xmpMM:DocumentID`, derived like the trailer `/ID`
+ * so identical inputs produce identical files.
+ */
+export function pdfxDocumentId(seed: string): string {
+    const h = Array.from(md5(new TextEncoder().encode(`pdfnative-xmp|${seed}`)), b => b.toString(16).padStart(2, '0')).join('');
+    return `uuid:${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+}
+
+/**
+ * Build the XMP packet of a PDF/X-4 file. It carries no PDF/A identification.
+ *
+ * PDF/X-4 declares conformance in XMP (`pdfxid:GTS_PDFXVersion`) and needs
+ * the document identified (`xmpMM:DocumentID`, `VersionID`,
+ * `RenditionClass`), the title, the three XMP dates, and the trapping state,
+ * all consistent with `/Info`.
+ */
+export function buildPdfXXMPMetadata(
+    title: string,
+    createDate: string,
+    trapped: 'True' | 'False',
+    documentId: string,
+    author?: string,
+    subject?: string,
+    keywords?: string,
+): string {
+    const lines: string[] = [
+        '<?xpacket begin="\xEF\xBB\xBF" id="W5M0MpCehiHzreSzNTczkc9d"?>',
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
+        ' <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
+        '  <rdf:Description rdf:about=""',
+        '    xmlns:dc="http://purl.org/dc/elements/1.1/"',
+        '    xmlns:pdf="http://ns.adobe.com/pdf/1.3/"',
+        '    xmlns:xmp="http://ns.adobe.com/xap/1.0/"',
+        '    xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"',
+        '    xmlns:pdfxid="http://www.npes.org/pdfx/ns/id/">',
+        `   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">${escapeXml(title)}</rdf:li></rdf:Alt></dc:title>`,
+    ];
+    if (author) lines.push(`   <dc:creator><rdf:Seq><rdf:li>${escapeXml(author)}</rdf:li></rdf:Seq></dc:creator>`);
+    if (subject) lines.push(`   <dc:description><rdf:Alt><rdf:li xml:lang="x-default">${escapeXml(subject)}</rdf:li></rdf:Alt></dc:description>`);
+    lines.push('   <pdf:Producer>pdfnative</pdf:Producer>');
+    if (keywords) lines.push(`   <pdf:Keywords>${escapeXml(keywords)}</pdf:Keywords>`);
+    lines.push(
+        `   <pdf:Trapped>${trapped}</pdf:Trapped>`,
+        `   <xmp:CreateDate>${createDate}</xmp:CreateDate>`,
+        `   <xmp:ModifyDate>${createDate}</xmp:ModifyDate>`,
+        `   <xmp:MetadataDate>${createDate}</xmp:MetadataDate>`,
+        `   <xmpMM:DocumentID>${documentId}</xmpMM:DocumentID>`,
+        `   <xmpMM:InstanceID>${documentId}</xmpMM:InstanceID>`,
+        '   <xmpMM:VersionID>1</xmpMM:VersionID>',
+        '   <xmpMM:RenditionClass>default</xmpMM:RenditionClass>',
+        '   <pdfxid:GTS_PDFXVersion>PDF/X-4</pdfxid:GTS_PDFXVersion>',
+        '  </rdf:Description>',
+        ' </rdf:RDF>',
+        '</x:xmpmeta>',
+        '<?xpacket end="w"?>',
+    );
+    return lines.join('\n');
+}
 
 /**
  * Parse the `tagged` layout option into a resolved PDF/A configuration.

@@ -1,4 +1,37 @@
+The font data modules in this directory (fonts/*-data.js) are Modified
+Versions, in the sense of the SIL Open Font License 1.1, of the Noto fonts
+listed in fonts/SOURCES.json and THIRD-PARTY-NOTICES.md: glyph subsets with
+their metric and layout tables extracted, built by pdfnative. The copyright
+statements of the original Font Software, retained as OFL section 2 requires:
+
 Copyright 2015-2021 Google LLC. All Rights Reserved.
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/arabic)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/armenian)
+Copyright 2025 The Noto Project Authors (https://github.com/notofonts/bengali)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/cham)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/devanagari)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/ethiopic)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/georgian)
+Copyright 2024 The Noto Project Authors (https://github.com/notofonts/hebrew)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/khmer)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/lao)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/myanmar)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/new-tai-lue)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/sinhala)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tai-le)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tai-tham)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tamil)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/telugu)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/thai)
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tibetan)
+Copyright 2022 Google LLC. All Rights Reserved.
+Copyright 2013 Google LLC
+Copyright 2022 Google Inc.
+(c) 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+
+The Noto Sans CJK fonts (Japanese, Korean, Simplified Chinese) declare the
+Reserved Font Name "Source"; pdfnative's Modified Versions do not use it.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 

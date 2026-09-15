@@ -178,6 +178,9 @@ applyTo: "src/core/**"
 - Output is memory-bounded by `maxTextLength` (throws when exceeded); the
   parser module must not import from `src/fonts/` (architecture rule) — the
   WinAnsi high-band table is a documented local copy
+- `/ActualText` on marked content is honoured since v1.8.0: a span's declared
+  text replaces the glyphs shown inside it, outermost span first — so tagged
+  pdfnative output extracts as written
 
 ## FlateDecode Compression (ISO 32000-1 §7.3.8.1)
 - Activated by `compress: true` in `PdfLayoutOptions` — backward compatible (default `false`)
@@ -190,10 +193,29 @@ applyTo: "src/core/**"
 - ICC profile streams: normal compression applies (not exempt)
 - Native zlib: `initNodeCompression()` async init for ESM via `import('node:zlib')` with string indirection
 - Stored-block fallback: `deflateStored()` wraps raw data in valid zlib container (no actual compression)
-- `setDeflateImpl(fn)` allows custom deflate injection (e.g., WASM-based compressor)
+- `setDeflateImpl(fn)` injects a synchronous **zlib-wrapped** (RFC 1950) deflate; since v1.8.0 the output is validated and a raw RFC 1951 result throws at build time (#78). `setDeflateRawImpl(fn)` takes a raw compressor and `wrapZlib(raw, source)` adds the envelope (Adler-32 over the *uncompressed* source). Precedence: `setDeflateImpl` > `setDeflateRawImpl` > auto-resolved `node:zlib` > stored blocks
 - `adler32()` implements RFC 1950 checksum for stored-block zlib wrapper
 - Platform detection: `globalThis['process']?.versions?.node` then CJS `globalThis['require']` or ESM dynamic import
 - Security: no `eval()`, no `new Function()` — uses `globalThis['require']` for CJS access
+
+## Typography (pdf-typography.ts, hyphenation.ts, pdf-pagination.ts — v1.8.0)
+- `layout.typography` (`TypographyOptions`) is opt-in end to end: with it absent, output is **byte-identical** to 1.7.0 — every change here needs the byte-identity test alongside the feature test
+- `pdf-typography.ts` holds the pure text transforms (`bindUnits`, `bindShortWords`, `applyPunctuationSpacing`, `DEFAULT_UNITS`, `PUNCTUATION_SPACING_PRESETS`) and the base-14 exact metrics / kerning / `fontFeatures` (single substitutions only) plumbing; `hyphenation.ts` is the provider seam (`setHyphenationProvider` / `getHyphenationProvider`, `(word, lang?) => number[]`, synchronous and pure) — the library bundles no dictionary
+- `pdf-pagination.ts` is the ONE planner (`paginateDocument`) shared by the document builder and `inspectDocumentLayout()`: `splitParagraphs` / `orphans` / `widows` / `keepHeadingsWithNext` (`true` or `{ minLines }`, never below `orphans`) and block-level `keepWithNext` / `splittable` live there, never in a builder. A page-count disagreement between build and inspection is a bug in this module
+- Justified lines are one `TJ` array per line with the space glyphs kept (never `Tw`); a paragraph split across pages remains one `/P` under `tagged`
+- `TYPOGRAPHY_FEATURE_INEFFECTIVE` fires (through `pdf-diagnostics.ts`) for a `fontFeatures` tag no registered font declares or that substitutes nothing
+
+## Print & PDF/X (pdf-print.ts, pdf-tags.ts, parser/pdf-x-validator.ts — v1.7.0 / v1.8.0)
+- `pdf-print.ts`: `validatePrintOptions`, `resolvePrintBoxes` (bleed shorthand → TrimBox/BleedBox), `pdfxBoxes` (the TrimBox a PDF/X claim synthesises: BleedBox when only `bleedBox` is set, MediaBox otherwise; TrimBox and ArtBox never both), `buildPrinterMarksOps` (crop + registration marks, ≥ `max(weight, 0.5)` pt clear of trim line and sheet edge; colour bars as DeviceCMYK `re f` patches in the bottom bleed strip; registration colour `/Separation /All` under a CMYK intent; the whole block `/Artifact << /Type /Page >> BDC … EMC` under `tagged`)
+- `resolvePdfXConfig({ pdfx, tagged, encrypted, outputIntent, trapped })` in `pdf-tags.ts` is the PDF/X counterpart of `resolvePdfAConfig`: `PDF_X_CONFORMANCE_TARGETS` (`['pdfx4']`) is the source of truth, and the coherence errors it throws (with `tagged`, with `encryption`, without `outputIntent`, non-`prtr` profile, `trapped: 'Unknown'`) are quoted verbatim in `docs/data/errors.json` `buildErrors` — change the message and the JSON together. PDF/X writes `%PDF-1.6`, `pdfxid:GTS_PDFXVersion`, `xmpMM:DocumentID/VersionID/RenditionClass`, a `/GTS_PDFX` OutputIntent and `/Trapped` in `/Info` and XMP
+- `parser/pdf-x-validator.ts` (`validatePdfX`) is read-only and never renders; its module header lists what is and is not checked — keep that header, the print guide and `docs/data/surfaces.json` in step. veraPDF does not cover PDF/X
+- OutputIntent profiles (`resolveOutputIntent`): ≥ 128 bytes, `acsp` at byte 36, size field within the buffer, data colour space RGB / CMYK / Gray; the ICC version is not checked. Under a CMYK or Gray intent, RGB content is covered by a calibrated `/DefaultRGB` in every painting resource dictionary
+
+## Colour (pdf-color.ts, pdf-content-colour.ts — v1.8.0)
+- `pdf-color.ts` is the one colour-operator choke point: `parseColor` (hex, RGB tuple, CMYK percent tuple, `'r g b'` / `'c m y k'` operand strings) → `resolveColor` (`{ space, operands }`) → `fillOp` / `strokeOp`, which pick `rg`/`RG` or `k`/`K` by component count. Every call site (101 at the 1.8.0 refactor) emits colour through these; never format a colour operator inline
+- CMYK never leaves its space silently: chart tints remove ink instead of mixing toward white, and an outline `/C` (DeviceRGB by definition) gets a device-formula approximation
+- `pdf-content-colour.ts` (`scanDeviceColour`) is a content-stream **tokenizer** (strings, comments, names and inline-image data skipped as ISO 32000-1 §7.2 defines them), used by the builders to check content against the OutputIntent before writing (`PDFA_DEVICE_CMYK_CONTENT`, `PDFX_DEVICE_CMYK`) and by `validatePdfX` afterwards. Never replace it with a regular expression over the stream
+- Reproducibility: `pdf-reproducible.ts` (`setDefaultCreationDate`) sits between `layout.creationDate` and `new Date()`; every date is formatted in UTC by `buildPdfMetadata` and the builders' `dateStr` (`getUTC*` getters, literal `+00'00'` / `+00:00` offsets — never `Z`, never the host's zone offset), so bytes are host-independent; `tests/core/pdf-reproducible.test.ts` builds the same document under two `TZ` values and compares
 
 ## Header/Footer Template Model
 - `PageTemplate` type: `{ left?: string; center?: string; right?: string; fontSize?: number; color?: PdfColor }`

@@ -46,8 +46,12 @@ function makeTableParams(): PdfParams {
 describe('buildDocumentPDFStreamPageByPage', () => {
     it('yields byte-identical output to buildDocumentPDFBytes', async () => {
         const params = makeDocParams();
-        const expected = buildDocumentPDFBytes(params);
-        const got = concatChunks(await collectChunks(buildDocumentPDFStreamPageByPage(params)));
+        // Pin the date so both builds embed the same /CreationDate — without
+        // this the comparison flakes when the two calls straddle a second
+        // boundary (same pattern as the table case below).
+        const layout = { creationDate: new Date('2026-01-01T00:00:00.000Z') };
+        const expected = buildDocumentPDFBytes(params, layout);
+        const got = concatChunks(await collectChunks(buildDocumentPDFStreamPageByPage(params, layout)));
         expect(got.length).toBe(expected.length);
         for (let i = 0; i < expected.length; i++) expect(got[i]).toBe(expected[i]);
     });

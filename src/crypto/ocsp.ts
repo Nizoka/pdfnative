@@ -21,11 +21,11 @@ import type { X509Certificate } from './x509.js';
 
 // SHA-1 — 1.3.14.3.2.26 (conventional CertID digest, RFC 6960 §4.1.1;
 // identification only, never a security digest — see sha1() docblock).
-const OID_SHA1 = new Uint8Array([0x2b, 0x0e, 0x03, 0x02, 0x1a]);
+const OID_SHA1 = /*#__PURE__*/ new Uint8Array([0x2b, 0x0e, 0x03, 0x02, 0x1a]);
 // id-pkix-ocsp-basic — 1.3.6.1.5.5.7.48.1.1
-const OID_OCSP_BASIC = new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x01]);
+const OID_OCSP_BASIC = /*#__PURE__*/ new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x01]);
 // id-pkix-ocsp-nonce — 1.3.6.1.5.5.7.48.1.2
-const OID_OCSP_NONCE = new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x02]);
+const OID_OCSP_NONCE = /*#__PURE__*/ new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x02]);
 
 const TAG_ENUMERATED = 0x0a;
 const TAG_CERT_STATUS_GOOD = 0x80;      // [0] IMPLICIT NULL (primitive)

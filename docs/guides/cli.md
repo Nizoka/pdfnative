@@ -1,6 +1,6 @@
 # pdfnative-cli — Command-Line Interface Guide
 
-> **Tracks the latest published `pdfnative-cli`** (v1.4.0, built on pdfnative 1.7.0 — pins `^1.7.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
+> **Tracks the latest published `pdfnative-cli`** (v1.4.0, requires pdfnative ≥ 1.7.0 — pins `^1.7.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the [documentation home](../index.html). Full history: [pdfnative-cli releases](https://github.com/Nizoka/pdfnative-cli/releases).
 
 [`pdfnative-cli`](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface** for the [`pdfnative`](https://github.com/Nizoka/pdfnative) library. It exposes 21 commands in five groups — create & edit (`render`, `fill`, `annotate`, `metadata`), page tree (`merge`, `split`, `extract`), security (`sign`, `verify`, `ltv`, `doc-timestamp`, `encrypt`, `decrypt`), read & extract (`inspect`, `extract-text`, `compare`), and automation & meta (`batch`, `doctor`, `schema`, `completion`, `govern`) — that together cover the full document lifecycle from JSON to a signed, timestamped, archive-grade PDF with the complete PAdES ladder (B-B → B-T → B-LT → B-LTA), plus page-tree editing, markup annotations, document comparison, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines.
 
@@ -223,7 +223,7 @@ Renders a JSON document into a PDF. Supports both renderer variants exposed by `
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--input <file>` | stdin | JSON file ([`DocumentParams`](https://pdfnative.dev/#api) for `--variant document`, `PdfParams` for `--variant table`) |
+| `--input <file>` | stdin | JSON file ([`DocumentParams`](https://pdfnative.dev/assets/api.json) for `--variant document`, `PdfParams` for `--variant table`) |
 | `--output <file>` | stdout | Output PDF path |
 | `--variant document\|table` | `document` | Selects `buildDocumentPDFBytes` (free-form) or `buildPDFBytes` (table-centric) |
 | `--stream` | off | Streaming output via `buildDocumentPDFStream` (`AsyncGenerator<Uint8Array>`) — recommended for >100-page documents |
@@ -335,7 +335,7 @@ pdfnative render --input report.json --inspect-layout > layout.json
 
 #### Print production, images from JSON &amp; charts v2 _(v1.4.0)_
 
-Everything here rides on the pdfnative 1.7.0 engine and is reachable through the existing `--layout` file and the document JSON — no new flags needed:
+Everything here needs pdfnative ≥ 1.7.0 and is reachable through the existing `--layout` file and the document JSON — no new flags needed:
 
 - **Image blocks in the document JSON** — `{ "type": "image", "src": "logo.png" }` (path resolved relative to the `--input` JSON, same validation as `--attachment`) or `{ "type": "image", "dataBase64": "…" }` for inline JPEG/PNG.
 - **`layout.print`** — `bleed`, `trimBox` / `bleedBox` / `artBox` / `cropBox`, vector printer's marks (`print.marks`), and `/UserUnit` (1–75 000). `merge` / `split` / `extract` now preserve these boxes too.
@@ -967,7 +967,7 @@ The CLI now covers nearly the full library surface; only Web Worker offloading r
 | **Encryption (AES-128/256)** | ✅ `--encrypt-*` | ✅ `encryption: {…}` |
 | **Watermarks** | ✅ `--watermark-*` | ✅ `watermark: {…}` |
 | **PDF/A-3 attachments** | ✅ `--attachment` | ✅ `attachments: [...]` |
-| **22 scripts + COLRv1 emoji + math** | ✅ `--font` / `--lang` | ✅ `registerFont()` / `loadFontData()` |
+| **27 scripts + COLRv1 emoji + math** | ✅ `--font` / `--lang` | ✅ `registerFont()` / `loadFontData()` |
 | **Page-tree editing (merge / split / extract)** | ✅ `merge` / `split` / `extract` | ✅ `mergePdfs()` / `splitPdf()` / `extractPages()` |
 | **Markup annotations** | ✅ `annotate` | ✅ `PdfModifier.addAnnotation()` / `buildAnnotationBody()` |
 | **Bookmarks / outline** | ✅ `render --outline` | ✅ `outline: '…'` |
@@ -1031,7 +1031,7 @@ node samples/run-all.js
 
 ### What's new in v1.4.0
 
-v1.4.0 is built on **pdfnative 1.7.0** (pin `^1.7.0`) and completes the signature story: the full **PAdES ladder** (B-B → B-T → B-LT → B-LTA) is now writable from the command line, alongside signature-safe metadata edits, a CI-grade document diff, and a declarative batch pipeline. **No contract change** — every flag, default, exit code, error code and envelope from 1.x behaves identically on Node ≥ 22.
+v1.4.0 requires **pdfnative ≥ 1.7.0** (pin `^1.7.0`) and completes the signature story: the full **PAdES ladder** (B-B → B-T → B-LT → B-LTA) is now writable from the command line, alongside signature-safe metadata edits, a CI-grade document diff, and a declarative batch pipeline. **No contract change** — every flag, default, exit code, error code and envelope from 1.x behaves identically on Node ≥ 22.
 
 | Area | v1.3.0 | v1.4.0 |
 |---|---|---|
@@ -1089,7 +1089,7 @@ v1.1.0 is built on **pdfnative 1.3.0** and surfaces its new engine capabilities 
 
 | Area | v0.3.0 | v1.1.0 |
 |---|---|---|
-| Fonts | `--font {latin,emoji}` | **22 Unicode scripts + COLRv1 colour emoji** — `--font`/`--lang` allow-list covers every bundled font (`latin`, `emoji`, `color-emoji`, and the 22 script codes incl. Telugu `te`, Sinhala `si`, Tibetan `bo`, Khmer `km`, Myanmar `my`, Amharic `am`) |
+| Fonts | `--font {latin,emoji}` | **27 Unicode scripts + COLRv1 colour emoji** — `--font`/`--lang` allow-list covers every bundled font (`latin`, `emoji`, `color-emoji`, and the 22 script codes incl. Telugu `te`, Sinhala `si`, Tibetan `bo`, Khmer `km`, Myanmar `my`, Amharic `am`) |
 | Streaming | `--stream` (single-pass), page-by-page | adds **`--stream-true`** — true constant-memory streaming via `buildDocumentPDFStreamTrue` / `buildPDFStreamTrue`; the joined binary never materialises |
 | Block cap | hard-coded ceiling | **`--max-blocks <n>`** exposes `layout.maxBlocks` (default 100 000) for very large reports |
 | Accessibility | — | **PDF/UA (ISO 14289-1) structural validator** — `inspect --pdfua` and `--check pdfua` as a CI accessibility gate |

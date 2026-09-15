@@ -4,14 +4,32 @@
  * Detects Unicode script ranges in text to determine which fonts are needed.
  */
 
-import { isEmojiCodepoint, isMathCodepoint, isEthiopicCodepoint, isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint } from './script-registry.js';
+import { isEmojiCodepoint, isMathCodepoint, isEthiopicCodepoint, isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isLaoCodepoint, isTaiThamCodepoint, isNewTaiLueCodepoint, isTaiLeCodepoint, isChamCodepoint } from './script-registry.js';
 
 /**
  * Languages requiring Unicode font embedding (non-WinAnsi scripts).
  * Latin-script languages using Helvetica built-in don't need embedding.
  */
 export function needsUnicodeFont(lang: string): boolean {
-    return ['th', 'ja', 'zh', 'ko', 'el', 'hi', 'te', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'am', 'si', 'bo', 'km', 'my', 'math', 'emoji'].includes(lang);
+    return ['th', 'lo', 'nod', 'khb', 'tdd', 'cjm', 'ja', 'zh', 'ko', 'el', 'hi', 'bn', 'ta', 'te', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'am', 'si', 'bo', 'km', 'my', 'ha', 'yo', 'ig', 'math', 'emoji'].includes(lang);
+}
+
+/**
+ * Latin letters WinAnsi cannot carry and no bundled Latin subset covers, so
+ * they route to the full Noto Sans (`'latin'`): Latin Extended-B and the IPA
+ * block (Hausa ɓ ɗ ƙ ƴ, Fula ŋ ɲ, Yoruba and Igbo nasal ǹ ń), and the
+ * combining diacritical marks (Yoruba and Igbo tone marks on ẹ ọ ị ụ, any
+ * NFD input). The four Vietnamese horn letters stay with the Vietnamese
+ * subset, which has them. (v1.8.0)
+ */
+function isExtendedLatinCodepoint(cp: number): boolean {
+    if (cp === 0x01A0 || cp === 0x01A1 || cp === 0x01AF || cp === 0x01B0) return false; // Ơ ơ Ư ư → 'vi'
+    return (cp >= 0x0180 && cp <= 0x024F)   // Latin Extended-B
+        || (cp >= 0x0250 && cp <= 0x02AF)   // IPA Extensions
+        || (cp >= 0x0300 && cp <= 0x036F)   // Combining Diacritical Marks
+        || (cp >= 0x1AB0 && cp <= 0x1AFF)   // Combining Diacritical Marks Extended
+        || (cp >= 0x1DC0 && cp <= 0x1DFF)   // Combining Diacritical Marks Supplement
+        || (cp >= 0x20D0 && cp <= 0x20FF);  // Combining Diacritical Marks for Symbols
 }
 
 /**
@@ -33,6 +51,10 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             if ((cp >= 0x0370 && cp <= 0x03FF) || (cp >= 0x1F00 && cp <= 0x1FFF)) { needed.add('el'); continue; }
             // Devanagari + Devanagari Extended → 'hi'
             if ((cp >= 0x0900 && cp <= 0x097F) || (cp >= 0xA8E0 && cp <= 0xA8FF)) { needed.add('hi'); continue; }
+            // Bengali → 'bn', Tamil → 'ta' (both routed since v1.8.0; a
+            // multi-font document sent them to the first font that had a glyph)
+            if (cp >= 0x0980 && cp <= 0x09FF) { needed.add('bn'); continue; }
+            if (cp >= 0x0B80 && cp <= 0x0BFF) { needed.add('ta'); continue; }
             // Telugu → 'te'
             if (cp >= 0x0C00 && cp <= 0x0C7F) { needed.add('te'); continue; }
             // Sinhala → 'si'
@@ -47,6 +69,14 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             if (isEthiopicCodepoint(cp)) { needed.add('am'); continue; }
             // Thai script → 'th'
             if (cp >= 0x0E00 && cp <= 0x0E7F) { needed.add('th'); continue; }
+            // Lao → 'lo'  (v1.8.0)
+            if (isLaoCodepoint(cp)) { needed.add('lo'); continue; }
+            // Tai Tham, New Tai Lue, Tai Le, Cham  (v1.8.0)
+            // ISO 639-3 codes: none of these languages has a two-letter one.
+            if (isTaiThamCodepoint(cp)) { needed.add('nod'); continue; }
+            if (isNewTaiLueCodepoint(cp)) { needed.add('khb'); continue; }
+            if (isTaiLeCodepoint(cp)) { needed.add('tdd'); continue; }
+            if (isChamCodepoint(cp)) { needed.add('cjm'); continue; }
             // Hiragana / Katakana → 'ja'
             if (cp >= 0x3040 && cp <= 0x30FF) { needed.add('ja'); continue; }
             // Hangul Syllables + Jamo + Compat Jamo → 'ko'
@@ -71,6 +101,8 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
                 cp === 0x0179 || cp === 0x017A || cp === 0x017B || cp === 0x017C) { needed.add('pl'); continue; }
             // Latin Extended-A → Turkish special chars + Turkish Lira
             if ((cp >= 0x0100 && cp <= 0x017F) || cp === 0x20BA) { needed.add('tr'); continue; }
+            // Latin Extended-B, IPA and combining marks → the full Noto Sans (v1.8.0)
+            if (isExtendedLatinCodepoint(cp)) { needed.add('latin'); continue; }
             // Hebrew → 'he'
             if (cp >= 0x0590 && cp <= 0x05FF) { needed.add('he'); continue; }
             // Arabic → 'ar'
@@ -97,11 +129,13 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
  * Returns the language code of the font most appropriate for rendering.
  *
  * @param cp - Unicode codepoint
- * @returns Language code ('el', 'hi', 'th', 'ja', 'ko', 'zh', 'vi', 'pl', 'tr', 'he', 'ar', 'ru', 'ka', 'hy', 'emoji') or null for Latin/common
+ * @returns Language code ('el', 'hi', 'bn', 'ta', 'te', 'th', 'lo', 'nod', 'khb', 'tdd', 'cjm', 'ja', 'ko', 'zh', 'vi', 'pl', 'tr', 'latin', 'he', 'ar', 'ru', 'ka', 'hy', 'emoji') or null for Latin/common
  */
 export function detectCharLang(cp: number): string | null {
     if ((cp >= 0x0370 && cp <= 0x03FF) || (cp >= 0x1F00 && cp <= 0x1FFF)) return 'el';
     if ((cp >= 0x0900 && cp <= 0x097F) || (cp >= 0xA8E0 && cp <= 0xA8FF)) return 'hi';
+    if (cp >= 0x0980 && cp <= 0x09FF) return 'bn';
+    if (cp >= 0x0B80 && cp <= 0x0BFF) return 'ta';
     if (cp >= 0x0C00 && cp <= 0x0C7F) return 'te';
     if (isSinhalaCodepoint(cp)) return 'si';
     if (isTibetanCodepoint(cp)) return 'bo';
@@ -109,6 +143,11 @@ export function detectCharLang(cp: number): string | null {
     if (isMyanmarCodepoint(cp)) return 'my';
     if (isEthiopicCodepoint(cp)) return 'am';
     if (cp >= 0x0E00 && cp <= 0x0E7F) return 'th';
+    if (isLaoCodepoint(cp)) return 'lo';
+    if (isTaiThamCodepoint(cp)) return 'nod';
+    if (isNewTaiLueCodepoint(cp)) return 'khb';
+    if (isTaiLeCodepoint(cp)) return 'tdd';
+    if (isChamCodepoint(cp)) return 'cjm';
     if (cp >= 0x3040 && cp <= 0x30FF) return 'ja';
     if ((cp >= 0xAC00 && cp <= 0xD7AF) || (cp >= 0x1100 && cp <= 0x11FF) || (cp >= 0x3130 && cp <= 0x318F)) return 'ko';
     if ((cp >= 0x4E00 && cp <= 0x9FFF) || (cp >= 0x3400 && cp <= 0x4DBF) || (cp >= 0xF900 && cp <= 0xFAFF)) return 'zh';
@@ -118,6 +157,8 @@ export function detectCharLang(cp: number): string | null {
         cp === 0x0143 || cp === 0x0144 || cp === 0x015A || cp === 0x015B ||
         cp === 0x0179 || cp === 0x017A || cp === 0x017B || cp === 0x017C) return 'pl';
     if ((cp >= 0x0100 && cp <= 0x017F) || cp === 0x20BA) return 'tr';
+    // Latin Extended-B, IPA and combining marks → the full Noto Sans (v1.8.0)
+    if (isExtendedLatinCodepoint(cp)) return 'latin';
     // Hebrew
     if (cp >= 0x0590 && cp <= 0x05FF) return 'he';
     // Arabic + Arabic Supplement + Arabic Presentation Forms

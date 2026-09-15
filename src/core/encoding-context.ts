@@ -9,22 +9,17 @@
  * independent of shaping/.
  */
 
-import type { FontEntry, FontData, TextRun, EncodingContext } from '../types/pdf-types.js';
-import { pdfString, helveticaWidth } from '../fonts/encoding.js';
-import { shapeThaiText } from '../shaping/thai-shaper.js';
-import { shapeBengaliText } from '../shaping/bengali-shaper.js';
-import { shapeTamilText } from '../shaping/tamil-shaper.js';
-import { shapeTeluguText } from '../shaping/telugu-shaper.js';
-import { shapeSinhalaText } from '../shaping/sinhala-shaper.js';
-import { shapeTibetanText } from '../shaping/tibetan-shaper.js';
-import { shapeKhmerText } from '../shaping/khmer-shaper.js';
-import { shapeMyanmarText } from '../shaping/myanmar-shaper.js';
-import { shapeDevanagariText } from '../shaping/devanagari-shaper.js';
+import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics } from '../types/pdf-types.js';
+import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi } from '../fonts/encoding.js';
+import { exactBase14Width } from '../fonts/base14-metrics.js';
+import { applyFeaturesToRuns, composeFeatureMap } from '../fonts/font-features.js';
+import { applyKerningToRuns } from '../fonts/font-kerning.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
+import { findShaper, type ScriptShaper } from '../shaping/shaper-registry.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
 import { resolveBidiRuns, containsRTL, reverseString, stripBidiControls } from '../shaping/bidi.js';
 import { hasSequenceTriggers, matchEmojiSequences } from '../shaping/emoji-sequences.js';
-import { isArabicCodepoint, containsThai, containsArabic, containsBengali, containsTamil, containsTelugu, containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsDevanagari } from '../shaping/script-registry.js';
+import { isArabicCodepoint, containsArabic } from '../shaping/script-registry.js';
 import { createColorEmojiCollector } from './color-emoji.js';
 
 // ── Helvetica Fallback Helpers ───────────────────────────────────────
@@ -42,6 +37,56 @@ function isWinAnsi(cp: number): boolean {
     if (cp === 0x0153 || cp === 0x017E || cp === 0x0178) return true;
     if (cp === 0x202F || cp === 0x09 || cp === 0x0A || cp === 0x0D) return true;
     return false;
+}
+
+/**
+ * The codepoint a no-break space is shown as in a given font.
+ *
+ * A font that carries U+00A0 or U+202F gets the real glyph: a narrow no-break
+ * space is then actually narrow (166 units in Noto Sans against 260 for the
+ * space), and both extract as what the author wrote, which is what makes
+ * `punctuationSpacing: 'fr'` distinguishable from `'fr-CA'` in the output.
+ * A font without the glyph falls back to the ordinary space so the character
+ * never reaches the cmap as .notdef. Any other codepoint passes through.
+ *
+ * @since 1.8.0
+ */
+function spaceCodepoint(fd: FontData, rawCp: number): number {
+    if (rawCp !== 0x202F && rawCp !== 0xA0) return rawCp;
+    return (fd.cmap[rawCp] ?? 0) > 0 ? rawCp : 0x20;
+}
+
+/**
+ * Shape one run with a registered shaper and measure it.
+ *
+ * Zero-advance glyphs — the combining marks a shaper stacks on their base —
+ * contribute no width, which is the difference between a Thai tone mark
+ * sitting above its vowel and pushing the line along.
+ *
+ * @since 1.8.0
+ */
+function shapedRun(
+    text: string,
+    shaper: ScriptShaper,
+    fontRef: string,
+    fd: FontData,
+    sz: number,
+    trackGid: (ref: string, gid: number) => void,
+    onGlyph?: (ref: string, gid: number, cps: readonly number[]) => void,
+): TextRun {
+    const shaped = shaper.shape(text, fd);
+    let designW = 0;
+    for (const g of shaped) {
+        trackGid(fontRef, g.gid);
+        if (onGlyph && g.cps && g.cps.length > 0) onGlyph(fontRef, g.gid, g.cps);
+        if (!g.isZeroAdvance) {
+            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+        }
+    }
+    return {
+        text, fontRef, fontData: fd, shaped, hexStr: null,
+        widthPt: designW * sz / fd.metrics.unitsPerEm,
+    };
 }
 
 interface ArabicSegment { text: string; arabic: boolean; }
@@ -169,7 +214,7 @@ function buildTextRunsCore(
         // as tofu (□) in CID-keyed fonts under PDF/A (Helvetica fallback is
         // disabled). (#58)
         if (rawCp < 0x20 || rawCp === 0x7F) { i += charLen; continue; }
-        const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
+        const cp = spaceCodepoint(fd, rawCp);
         const char = text.substring(i, i + charLen);
         const gid = fd.cmap[cp] ?? 0;
 
@@ -213,17 +258,35 @@ function buildTextRunsCore(
  *   Latin mode is used as before — strict PDF/A conformance requires the caller
  *   to register a Latin font (e.g. Noto Sans VF).
  */
-export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false): EncodingContext {
+export function createEncodingContext(
+    fontEntries: FontEntry[],
+    pdfA: boolean = false,
+    normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false,
+    metrics: Base14Metrics = 'approximate',
+    lang?: string,
+): EncodingContext {
     // Optional Unicode normalization applied at every text entry point. Off by
     // default so output stays byte-identical; opt in via `layout.normalize`.
     // Uses the native `String.prototype.normalize` (zero dependency).
     const _norm = normalize ? (s: string): string => s.normalize(normalize) : (s: string): string => s;
+
+    // Base-14 measurement. 'exact' reads the Adobe Core 14 AFM advances;
+    // 'approximate' keeps the historical bucketed estimate so output is
+    // byte-identical by default (see fonts/base14-metrics.ts).
+    // The AFM table is indexed by WinAnsi byte; soft hyphens and bidi controls
+    // are invisible and must be stripped first, as helveticaWidth does itself.
+    const latinWidth = metrics === 'exact'
+        ? (s: string, sz: number): number => exactBase14Width(toWinAnsi(stripSoftHyphens(stripBidiControls(s))), sz, false)
+        : helveticaWidth;
+
     if (!fontEntries || fontEntries.length === 0) {
         return {
             isUnicode: false,
             fontEntries: [],
+            metrics,
+            lang,
             ps: normalize ? (s: string): string => pdfString(_norm(s)) : pdfString,
-            tw: normalize ? (s: string, sz: number): number => helveticaWidth(_norm(s), sz) : helveticaWidth,
+            tw: normalize ? (s: string, sz: number): number => latinWidth(_norm(s), sz) : latinWidth,
             textRuns: () => [],
             f1: '/F1',
             f2: '/F2'
@@ -241,6 +304,40 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
         if (s) s.add(gid);
     }
 
+    // Glyphs produced by an OpenType substitution have no cmap entry, so
+    // ToUnicode must be told which character they stand for. Filled by the
+    // feature-derived context (see withFeatureSupport) and by the shapers
+    // that report source code points (a conjunct names every letter it
+    // fused, v1.8.0); empty otherwise.
+    const _toUnicodeOverrides = new Map<string, Map<number, number | readonly number[]>>();
+    function _onShapedGlyph(fontRef: string, gid: number, cps: readonly number[]): void {
+        let m = _toUnicodeOverrides.get(fontRef);
+        if (!m) { m = new Map(); _toUnicodeOverrides.set(fontRef, m); }
+        if (!m.has(gid)) m.set(gid, cps.length === 1 ? cps[0] : [...cps]);
+    }
+    const _inverseCmaps = new WeakMap<FontData, Map<number, number>>();
+    function _codepointOf(fd: FontData, gid: number): number | undefined {
+        let inv = _inverseCmaps.get(fd);
+        if (!inv) {
+            inv = new Map();
+            for (const [cp, g] of Object.entries(fd.cmap)) {
+                const cpNum = Number(cp);
+                const prev = inv.get(g);
+                if (prev === undefined || cpNum < prev) inv.set(g, cpNum);
+            }
+            _inverseCmaps.set(fd, inv);
+        }
+        return inv.get(gid);
+    }
+    function _onSubstitute(fontRef: string, fromGid: number, toGid: number, fd: FontData): void {
+        _trackGid(fontRef, toGid);
+        const cp = _codepointOf(fd, fromGid);
+        if (cp === undefined) return;
+        let m = _toUnicodeOverrides.get(fontRef);
+        if (!m) { m = new Map(); _toUnicodeOverrides.set(fontRef, m); }
+        if (!m.has(toGid)) m.set(toGid, cp);
+    }
+
     // Colour-emoji collector: activated only when a registered font carries a
     // COLR/CPAL `colorGlyphs` table (the opt-in `'emoji-color'` font). When no
     // such font is present this stays undefined and the builders are unchanged.
@@ -248,13 +345,16 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
         ? createColorEmojiCollector()
         : undefined;
 
-    return {
+    const ctx: EncodingContext = {
         isUnicode: true,
         fontEntries,
+        metrics,
+        lang,
         fontData: primary.fontData,
         f1: primary.fontRef,
         f2: primary.fontRef,
         getUsedGids() { return _usedGids; },
+        getToUnicodeOverrides() { return _toUnicodeOverrides; },
         colorEmoji: _colorEmoji,
 
         textRuns(str: string, sz: number): TextRun[] {
@@ -265,6 +365,10 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
             // text with an orphan PDF/LRI/RLI marker would otherwise reach the
             // cmap as .notdef.
             str = stripBidiControls(str);
+            // Soft hyphens are conditional: the line breaker already
+            // materialised a real hyphen wherever it broke, so any that
+            // survive to here must render as nothing (Unicode §23.2).
+            str = stripSoftHyphens(str);
             if (!str) return [];
             // ── RTL path: BiDi reordering ────────────────────────────
             if (containsRTL(str)) {
@@ -312,96 +416,9 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
                             result.push(...subRuns);
                         } else {
                             // LTR run: standard path
-                            if (containsThai(fRun.text)) {
-                                const shaped = shapeThaiText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsBengali(fRun.text)) {
-                                const shaped = shapeBengaliText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsTamil(fRun.text)) {
-                                const shaped = shapeTamilText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsTelugu(fRun.text)) {
-                                const shaped = shapeTeluguText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsSinhala(fRun.text)) {
-                                const shaped = shapeSinhalaText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsTibetan(fRun.text)) {
-                                const shaped = shapeTibetanText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsKhmer(fRun.text)) {
-                                const shaped = shapeKhmerText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsMyanmar(fRun.text)) {
-                                const shaped = shapeMyanmarText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
-                            } else if (containsDevanagari(fRun.text)) {
-                                const shaped = shapeDevanagariText(fRun.text, fd);
-                                let designW = 0;
-                                for (const g of shaped) {
-                                    _trackGid(fontRef, g.gid);
-                                    if (!g.isZeroAdvance) {
-                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                    }
-                                }
-                                result.push({ text: fRun.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm });
+                            const shaper = findShaper(fRun.text);
+                            if (shaper) {
+                                result.push(shapedRun(fRun.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph));
                             } else {
                                 // LTR non-shaped: use fallback helper
                                 const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA);
@@ -418,115 +435,9 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
             return rawRuns.flatMap(run => {
                 const fd = run.entry.fontData;
                 const fontRef = run.entry.fontRef;
-                const upm = fd.metrics.unitsPerEm;
 
-                if (containsThai(run.text)) {
-                    const shaped = shapeThaiText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsBengali(run.text)) {
-                    const shaped = shapeBengaliText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsTamil(run.text)) {
-                    const shaped = shapeTamilText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsTelugu(run.text)) {
-                    const shaped = shapeTeluguText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsSinhala(run.text)) {
-                    const shaped = shapeSinhalaText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsTibetan(run.text)) {
-                    const shaped = shapeTibetanText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsKhmer(run.text)) {
-                    const shaped = shapeKhmerText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsMyanmar(run.text)) {
-                    const shaped = shapeMyanmarText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
-
-                if (containsDevanagari(run.text)) {
-                    const shaped = shapeDevanagariText(run.text, fd);
-                    let designW = 0;
-                    for (const g of shaped) {
-                        _trackGid(fontRef, g.gid);
-                        if (!g.isZeroAdvance) {
-                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                        }
-                    }
-                    return [{ text: run.text, fontRef, fontData: fd, shaped, hexStr: null, widthPt: designW * sz / upm }];
-                }
+                const shaper = findShaper(run.text);
+                if (shaper) return [shapedRun(run.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph)];
 
                 return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid, pdfA);
             });
@@ -536,7 +447,7 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
             if (!str) return '<>';
             str = _norm(str);
             // Strip invisible BiDi controls before encoding (see textRuns above).
-            str = stripBidiControls(str);
+            str = stripSoftHyphens(stripBidiControls(str));
             if (!str) return '<>';
             const { cmap } = primary.fontData;
 
@@ -557,7 +468,7 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
                         for (let i = 0; i < bRun.text.length; i++) {
                             const rawCp = bRun.text.codePointAt(i) ?? 0;
                             if (rawCp > 0xFFFF) i++;
-                            const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
+                            const cp = spaceCodepoint(primary.fontData, rawCp);
                             const gid = cmap[cp] || 0;
                             _trackGid(primary.fontRef, gid);
                             hex += gid.toString(16).padStart(4, '0');
@@ -567,29 +478,24 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
                 return `<${hex.toUpperCase()}>`;
             }
 
-            if (!containsThai(str) && !containsBengali(str) && !containsTamil(str) && !containsTelugu(str) && !containsSinhala(str) && !containsTibetan(str) && !containsKhmer(str) && !containsMyanmar(str) && !containsDevanagari(str)) {
+            const shaper = findShaper(str);
+            if (!shaper) {
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     const rawCp = str.codePointAt(i) ?? 0;
                     if (rawCp > 0xFFFF) i++;
-                    const cp = (rawCp === 0x202F || rawCp === 0xA0) ? 0x20 : rawCp;
+                    const cp = spaceCodepoint(primary.fontData, rawCp);
                     const gid = cmap[cp] || 0;
                     _trackGid(primary.fontRef, gid);
                     hex += gid.toString(16).padStart(4, '0');
                 }
                 return `<${hex.toUpperCase()}>`;
             }
-            // Shaped text path (Thai, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari)
-            const shapeFn = containsThai(str) ? shapeThaiText
-                : containsBengali(str) ? shapeBengaliText
-                : containsTamil(str) ? shapeTamilText
-                : containsTelugu(str) ? shapeTeluguText
-                : containsSinhala(str) ? shapeSinhalaText
-                : containsTibetan(str) ? shapeTibetanText
-                : containsKhmer(str) ? shapeKhmerText
-                : containsMyanmar(str) ? shapeMyanmarText
-                : shapeDevanagariText;
-            const shaped = shapeFn(str, primary.fontData);
+            // Shaped text path: the registry's first match, as the hand-written
+            // ternary chain did. Note the chain's last arm was an UNGUARDED
+            // fall-through to Devanagari; the registry cannot reach here at all
+            // unless some predicate matched, so that hazard is gone.
+            const shaped = shaper.shape(str, primary.fontData);
             let hex = '';
             for (const g of shaped) { _trackGid(primary.fontRef, g.gid); hex += g.gid.toString(16).padStart(4, '0'); }
             return `<${hex.toUpperCase()}>`;
@@ -603,4 +509,104 @@ export function createEncodingContext(fontEntries: FontEntry[], pdfA: boolean = 
             return total;
         },
     };
+
+    return withFeatureSupport(ctx, _onSubstitute);
+}
+
+/**
+ * Apply a document's configured OpenType features to its encoding context.
+ *
+ * A no-op when no tags are configured, when the context has no registered
+ * font (the base-14 faces carry no OpenType tables), or when no font in play
+ * declares any of the tags.
+ *
+ * @since 1.8.0
+ */
+export function applyDocumentFeatures(
+    enc: EncodingContext,
+    tags: readonly string[] | undefined,
+): EncodingContext {
+    if (!tags || tags.length === 0 || !enc.withFeatures) return enc;
+    return enc.withFeatures(tags);
+}
+
+/**
+ * Derive a context that applies the fonts' pair kerning.
+ *
+ * A no-op without a registered font, or when no font in play carries a pair
+ * table — the base-14 faces have no OpenType data at all.
+ *
+ * @since 1.8.0
+ */
+export function applyDocumentKerning(enc: EncodingContext, on: boolean | undefined): EncodingContext {
+    if (on !== true || !enc.isUnicode) return enc;
+    if (!enc.fontEntries.some(fe => fe.fontData.kern)) return enc;
+
+    const kerned: EncodingContext = {
+        ...enc,
+        textRuns: (str: string, sz: number) => applyKerningToRuns(enc.textRuns(str, sz), sz),
+        tw(str: string, sz: number): number {
+            if (!str) return 0;
+            let total = 0;
+            for (const run of kerned.textRuns(str, sz)) total += run.widthPt;
+            return total;
+        },
+    };
+    return kerned;
+}
+
+/**
+ * Attach `withFeatures()` to a Unicode context.
+ *
+ * The derived context substitutes glyphs on the way out of `textRuns()`, so
+ * every caller — measurement, wrapping and emission alike — sees the same
+ * substituted glyphs without a single signature change. `ps()` is left
+ * alone: it serves the shaped and single-font hex paths, where a shaper has
+ * already chosen contextual forms that must not be overwritten.
+ *
+ * `onSubstitute` receives every glyph the features introduce, so the
+ * substituted glyphs join the subset, the `/W` array and the ToUnicode map
+ * exactly as cmap-reached glyphs do. Without it the emitted CIDs would name
+ * glyphs the subsetter dropped — blank on the page, `/DW` for the advance,
+ * U+FFFD on extraction.
+ */
+function withFeatureSupport(
+    base: EncodingContext,
+    onSubstitute: (fontRef: string, fromGid: number, toGid: number, fd: FontData) => void,
+): EncodingContext {
+    function derive(tags: readonly string[]): EncodingContext {
+        // Nothing to do when no font in play declares any of the tags. Return
+        // the wrapper, not `base`, so callers can compare by identity to see
+        // that nothing changed.
+        const applies = base.fontEntries.some(fe => composeFeatureMap(fe.fontData, tags) !== null);
+        if (!applies) return wrapper;
+
+        // Substitutions per tag, so a tag that asks for what the font already
+        // does by default can be reported instead of silently doing nothing.
+        const usage = new Map<string, number>(tags.map(t => [t, 0]));
+        const track = (fontRef: string, fromGid: number, toGid: number, fd: FontData): void => {
+            onSubstitute(fontRef, fromGid, toGid, fd);
+            for (const tag of tags) {
+                if (fd.features?.[tag]?.[fromGid] === toGid) usage.set(tag, (usage.get(tag) ?? 0) + 1);
+            }
+        };
+
+        const derived: EncodingContext = {
+            ...base,
+            textRuns: (str: string, sz: number) => applyFeaturesToRuns(base.textRuns(str, sz), tags, sz, track),
+            tw(str: string, sz: number): number {
+                if (!str) return 0;
+                let total = 0;
+                for (const run of derived.textRuns(str, sz)) total += run.widthPt;
+                return total;
+            },
+            getFeatureUsage: () => usage,
+            // Deriving again replaces the feature set rather than stacking it.
+            withFeatures: derive,
+        };
+        return derived;
+    }
+
+    const wrapper: EncodingContext = { ...base, withFeatures: derive };
+    return wrapper;
 }

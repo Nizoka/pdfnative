@@ -4,7 +4,7 @@
  * Builds a tree-shakeable colour-emoji data module from a COLR/CPAL font
  * (Noto Color Emoji) for use with pdfnative's `registerFont('emoji', …)`.
  *
- * pdfnative bundles a lean 221-glyph curated subset by default. This CLI lets
+ * pdfnative bundles a lean 1189-glyph curated subset by default. This CLI lets
  * any user of the `pdfnative` package generate a module with EXACTLY the emoji
  * they need — from a handful of codepoints up to the FULL ~3 600-glyph set —
  * without bloating every install. It dogfoods the same deterministic build
@@ -25,7 +25,8 @@
  *   --ranges <list>       Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
  *
  * Sequence selection (v1.7.0; default: none):
- *   --sequences <preset>  flags | zwj | all | none — curated flag/ZWJ sets.
+ *   --sequences <preset>  flags | zwj | skin | all | none — curated flag, ZWJ
+ *                         and skin-tone sets (`all` is the three together).
  *   --sequence-list <list>  Country codes and/or hyphen-joined hex sequences,
  *                         e.g. FR,DE,1F468-200D-1F680 (skin-tone forms welcome).
  *
@@ -70,13 +71,14 @@ Source font (one of):
 
 Glyph selection (combine freely; default: --preset curated):
   --all                   Every colour glyph in the font (large module).
-  --preset <curated|all>  Named selection ('curated' = pdfnative's 1167-glyph curated set).
+  --preset <curated|all>  Named selection ('curated' = pdfnative's 1189-glyph curated set).
   --codepoints <list>     Comma-separated hex scalars, e.g. 1F600,1F680,2764.
   --ranges <list>         Comma-separated inclusive hex ranges, e.g. 1F600-1F64F.
 
 Sequence selection (v1.7.0; default: none):
-  --sequences <preset>    flags | zwj | all | none — bundle the curated flag
-                          and/or ZWJ sequence sets (GSUB-resolved ligatures).
+  --sequences <preset>    flags | zwj | skin | all | none — bundle the curated
+                          flag, ZWJ and/or skin-tone sequence sets (GSUB-
+                          resolved ligatures; all = the three together).
   --sequence-list <list>  Comma-separated country codes and/or hyphen-joined
                           hex sequences, e.g. FR,DE,1F468-200D-1F680,
                           1F469-1F3FD-200D-2695-FE0F (skin tones welcome).

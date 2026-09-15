@@ -17,12 +17,17 @@ function bytesToLatin1(bytes: Uint8Array): string {
     return s;
 }
 
+// Pinned so the byte-identity comparisons below cannot flake when two builds
+// straddle a second boundary and embed different /CreationDate values.
+const PINNED = { creationDate: new Date('2026-01-01T00:00:00.000Z') };
+
 function doc(list: ListBlock, extra?: Partial<DocumentParams>): Uint8Array {
+    const { layout, ...rest } = extra ?? {};
     return buildDocumentPDFBytes({
         title: 'Lists',
         blocks: [{ type: 'heading', text: 'H', level: 1 }, list],
-        ...extra,
-    });
+        ...rest,
+    }, { ...PINNED, ...layout });
 }
 
 describe('nested lists', () => {

@@ -81,7 +81,10 @@ export const PAGINATION_SAMPLE: LangSample = {
             `${String((i % 28) + 1).padStart(2, '0')}/${String((i % 12) + 1).padStart(2, '0')}`,
             `Transaction number ${i + 1} – Lorem ipsum dolor sit amet`,
             i % 3 === 0 ? 'Income' : i % 3 === 1 ? 'Expense' : 'Transfer',
-            `${i % 2 === 0 ? '+' : '-'}${(Math.random() * 5000).toFixed(2)}`,
+            // Deterministic pseudo-random spread (0.00–4999.99): a fixed
+            // multiplier keeps the visual variety of the original
+            // `Math.random()` while making the sample byte-reproducible.
+            `${i % 2 === 0 ? '+' : '-'}${(((i * 7919 + 13) % 500000) / 100).toFixed(2)}`,
             i % 4 === 0 ? 'OK' : '',
         ],
         type: i % 2 === 0 ? 'credit' : 'debit',

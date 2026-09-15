@@ -4,11 +4,13 @@
 
 import { resolve } from 'path';
 import { buildDocumentPDFBytes, loadFontData } from '../../src/index.js';
-import type { DocumentParams } from '../../src/index.js';
+import type { DocumentParams, FontEntry } from '../../src/index.js';
 import type { GenerateContext } from '../helpers/io.js';
 import { makeMinimalJPEG } from '../helpers/images.js';
-import { loadMultiFontEntries } from '../helpers/fonts.js';
+import { loadMultiFontEntries, loadFontEntries } from '../helpers/fonts.js';
 import { DOC_SAMPLES } from '../data/doc-samples-data.js';
+import { LANGUAGE_DOCS } from '../data/language-docs-data.js';
+import type { LanguageDoc } from '../data/language-docs-data.js';
 
 export async function generate(ctx: GenerateContext): Promise<void> {
     // ── DOC_SAMPLES loop ─────────────────────────────────────────
@@ -73,68 +75,15 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         }
     }
 
-    // ── Unicode: Arabic RTL ──────────────────────────────────────
-    {
-        const arFd = await loadFontData('ar');
-        if (arFd) {
-            const params: DocumentParams = {
-                title: 'منشئ المستندات – العربية',
-                blocks: [
-                    { type: 'heading', text: 'الفصل الأول: مقدمة', level: 1 },
-                    { type: 'paragraph', text: 'هذا المستند يوضح قدرات منشئ المستندات في pdfnative للنصوص العربية من اليمين إلى اليسار. يدعم المحرك تشكيل الحروف العربية تلقائياً بما في ذلك الأشكال المعزولة والابتدائية والوسطى والنهائية.' },
-                    { type: 'heading', text: 'الميزات الرئيسية', level: 2 },
-                    { type: 'list', items: ['دعم ثنائي الاتجاه (BiDi) وفق معيار UAX #9', 'تشكيل الحروف العربية (GSUB) مع ربطات لام-ألف', 'ترميز CIDFont Type2 مع Identity-H', 'توافق مع PDF/A-2b (ISO 19005-2)', 'تشفير AES-128 و AES-256'], style: 'bullet' },
-                    { type: 'heading', text: 'جدول الميزات', level: 2 },
-                    { type: 'table', headers: ['الرقم', 'الميزة', 'المرحلة', 'الحالة'], rows: [
-                        { cells: ['١', 'توليد PDF الأساسي', '١', 'مكتمل'], type: 'credit', pointed: false },
-                        { cells: ['٢', 'تضمين الخطوط', '٢', 'مكتمل'], type: 'credit', pointed: false },
-                        { cells: ['٣', 'دعم العربية', '٧', 'مكتمل'], type: 'credit', pointed: true },
-                        { cells: ['٤', 'التشفير', '٩', 'مكتمل'], type: 'credit', pointed: true },
-                    ] },
-                    { type: 'paragraph', text: 'يوضح الجدول أعلاه مراحل تطوير pdfnative. جميع الميزات متوافقة مع معيار ISO 32000-1.' },
-                ],
-                footerText: 'pdfnative – نموذج مستند عربي',
-                fontEntries: [{ fontData: arFd, fontRef: '/F3', lang: 'ar' }],
-            };
-            ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-arabic.pdf'), 'document/doc-arabic.pdf', buildDocumentPDFBytes(params));
-        }
-    }
 
-    // ── Unicode: Hebrew RTL ──────────────────────────────────────
-    {
-        const heFd = await loadFontData('he');
-        if (heFd) {
-            const params: DocumentParams = {
-                title: 'בונה מסמכים – עברית',
-                blocks: [
-                    { type: 'heading', text: 'פרק ראשון: מבוא', level: 1 },
-                    { type: 'paragraph', text: 'מסמך זה מדגים את יכולות בונה המסמכים של pdfnative עבור טקסט עברי מימין לשמאל. המנוע תומך בזיהוי כיוון דו-כיווני אוטומטי לפי תקן UAX #9 ובצורות סופיות של אותיות כגון: כ/ך, מ/ם, נ/ן, פ/ף, צ/ץ.' },
-                    { type: 'heading', text: 'תכונות עיקריות', level: 2 },
-                    { type: 'list', items: ['תמיכה בכיוון דו-כיווני (BiDi)', 'צורות סופיות אוטומטיות – Sofit', 'קידוד CIDFont Type2 עם Identity-H', 'תאימות PDF/A-2b (ISO 19005-2)', 'הצפנת AES-128 ו-AES-256'], style: 'bullet' },
-                    { type: 'heading', text: 'טבלת תכונות', level: 2 },
-                    { type: 'table', headers: ['מספר', 'תכונה', 'שלב', 'מצב'], rows: [
-                        { cells: ['1', 'יצירת PDF בסיסי', '1', 'הושלם'], type: 'credit', pointed: false },
-                        { cells: ['2', 'הטמעת גופנים', '2', 'הושלם'], type: 'credit', pointed: false },
-                        { cells: ['3', 'תמיכה בעברית', '7', 'הושלם'], type: 'credit', pointed: true },
-                        { cells: ['4', 'הצפנה', '9', 'הושלם'], type: 'credit', pointed: true },
-                    ] },
-                    { type: 'paragraph', text: 'הטבלה לעיל מציגה את שלבי הפיתוח של pdfnative. כל התכונות תואמות לתקן ISO 32000-1.' },
-                ],
-                footerText: 'pdfnative – דוגמת מסמך בעברית',
-                fontEntries: [{ fontData: heFd, fontRef: '/F3', lang: 'he' }],
-            };
-            ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-hebrew.pdf'), 'document/doc-hebrew.pdf', buildDocumentPDFBytes(params));
-        }
-    }
-
-    // ── Unicode: Multi-language (all 22 scripts) ─────────────────
+    // ── Unicode: Multi-language (all 27 scripts) ─────────────────
     {
         const fontEntries = await loadMultiFontEntries();
-        if (fontEntries.length === 22) {
+        if (fontEntries.length === 27) {
             const params: DocumentParams = {
-                title: 'Multi-Language Document – 22 Scripts',
+                title: 'Multi-Language Document – 27 Scripts',
                 blocks: [
-                    { type: 'heading', text: 'pdfnative – 22 Scripts, One Engine', level: 1 },
+                    { type: 'heading', text: 'pdfnative – 27 Scripts, One Engine', level: 1 },
                     { type: 'paragraph', text: 'This document renders every script supported by pdfnative in a single PDF. Each section contains a native heading, a sample paragraph, and uses automatic font switching via script-aware Unicode block detection. All content is produced from a single DocumentParams object with a shared fontEntries array.' },
 
                     { type: 'heading', text: 'Supported Scripts', level: 2 },
@@ -161,6 +110,11 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                         { cells: ['Tibetan', 'bo', 'LTR', 'Stacking'], type: 'credit', pointed: true },
                         { cells: ['Khmer', 'km', 'LTR', 'USE-lite'], type: 'credit', pointed: true },
                         { cells: ['Myanmar', 'my', 'LTR', 'USE-lite'], type: 'credit', pointed: true },
+                        { cells: ['Lao', 'lo', 'LTR', 'GSUB + GPOS'], type: 'credit', pointed: true },
+                        { cells: ['Tai Tham (Lanna)', 'nod', 'LTR', 'USE engine'], type: 'credit', pointed: true },
+                        { cells: ['New Tai Lue', 'khb', 'LTR', 'Spacing'], type: 'credit', pointed: false },
+                        { cells: ['Tai Le', 'tdd', 'LTR', 'Spacing'], type: 'credit', pointed: false },
+                        { cells: ['Cham', 'cjm', 'LTR', 'USE engine'], type: 'credit', pointed: true },
                         { cells: ['Amharic (Ethiopic)', 'am', 'LTR', 'Syllabic'], type: 'credit', pointed: false },
                     ] },
 
@@ -238,6 +192,26 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { type: 'heading', text: '\u12A0\u121B\u122D\u129B \u2013 Amharic (Ethiopic)', level: 2 },
                     { type: 'paragraph', text: 'pdfnative \u1260\u12A0\u121B\u122D\u129B \u1241\u12CB\u1295\u124B \u12E8 PDF \u1230\u1290\u12F6\u127D\u1295 \u12ED\u134D\u1325\u122B\u120D\u1363 \u1208\u12A2\u1275\u12EE\u1335\u12EB \u1206\u1204\u12EB\u1275 \u1219\u1209 \u12F5\u130B\u134D \u130B\u122D\u1362' },
 
+                    // Lao (v1.8.0)
+                    { type: 'heading', text: '\u0EA5\u0EB2\u0EA7 \u2013 Lao', level: 2 },
+                    { type: 'paragraph', text: 'pdfnative \u0EAA\u0EB2\u0EA1\u0EB2\u0E94\u0EAA\u0EC9\u0EB2\u0E87\u0EC0\u0EAD\u0E81\u0EAA\u0EB2\u0E99 PDF \u0E9E\u0EB2\u0EAA\u0EB2\u0EA5\u0EB2\u0EA7 \u0EC4\u0E94\u0EC9\u0E84\u0EBB\u0E9A\u0E96\u0EC9\u0EA7\u0E99.' },
+
+                    // Tai Tham (Lanna) (v1.8.0)
+                    { type: 'heading', text: '\u1A24\u1A6E\u1A3B\u1A60\u1A38\u1A49 \u2013 Tai Tham (Lanna)', level: 2 },
+                    { type: 'paragraph', text: '\u1A32\u1A60\u1A45 \u1A20\u1A6E \u1A3F\u1A62\u1A60\u1A3F \u2014 pdfnative shapes Tai Tham through the Universal Shaping Engine: sakot stacks, pre-base vowels, medial consonants.' },
+
+                    // New Tai Lue (v1.8.0)
+                    { type: 'heading', text: '\u1980\u19B1\u1996\u19B1 \u2013 New Tai Lue', level: 2 },
+                    { type: 'paragraph', text: '\u1980\u19B1 \u1996\u19B1 \u19D0\u19D1\u19D2 \u2014 New Tai Lue writes its vowels as spacing letters, so pdfnative needs font routing and no reordering.' },
+
+                    // Tai Le (v1.8.0)
+                    { type: 'heading', text: '\u1956\u1966\u1970\u1952\u196D \u2013 Tai Le', level: 2 },
+                    { type: 'paragraph', text: '\u1956\u1966\u1970 \u1952\u196D \u1950\u1965\u1972 \u2014 Tai Le tones are spacing modifier letters, the simplest routing case in the library.' },
+
+                    // Cham (v1.8.0)
+                    { type: 'heading', text: '\uAA00\uAA2A\uAA0C\uAA32 \u2013 Cham', level: 2 },
+                    { type: 'paragraph', text: '\uAA00\uAA2F \uAA00\uAA35\uAA36 \uAA00\uAA4C \u2014 Cham reorders its two pre-base vowels and composes medial consonants, both driven by the engine.' },
+
                     // Japanese
                     { type: 'heading', text: '\u65E5\u672C\u8A9E \u2013 Japanese', level: 2 },
                     { type: 'paragraph', text: 'pdfnative\u306F\u65E5\u672C\u8A9E\u306EPDF\u6587\u66F8\u3092\u751F\u6210\u3057\u307E\u3059\u3002\u6F22\u5B57\u3001\u3072\u3089\u304C\u306A\u3001\u30AB\u30BF\u30AB\u30CA\u3092CIDFont Type2\u3068Identity-H\u30A8\u30F3\u30B3\u30FC\u30C7\u30A3\u30F3\u30B0\u3067\u5B8C\u5168\u306B\u30B5\u30DD\u30FC\u30C8\u3057\u307E\u3059\u3002' },
@@ -259,9 +233,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { type: 'paragraph', text: 'pdfnative \u05EA\u05D5\u05DE\u05DA \u05DE\u05DC\u05D0 \u05D1\u05E2\u05D1\u05E8\u05D9\u05EA \u05D5\u05D1\u05DB\u05EA\u05D9\u05D1\u05D4 \u05DE\u05D9\u05DE\u05D9\u05DF \u05DC\u05E9\u05DE\u05D0\u05DC \u05E2\u05DD \u05D9\u05D9\u05E9\u05D5\u05DD \u05D0\u05DC\u05D2\u05D5\u05E8\u05D9\u05EA\u05DD BiDi \u05DC\u05E4\u05D9 Unicode UAX #9.' },
 
                     { type: 'heading', text: 'Conclusion', level: 2 },
-                    { type: 'paragraph', text: 'pdfnative handles all 22 scripts with zero external dependencies, full BiDi support, OpenType shaping, and a single shared fontEntries array. This demonstrates the width of the library, not its depth – script-specific sample PDFs in the same folder show the depth of each implementation.' },
+                    { type: 'paragraph', text: 'pdfnative handles all 27 scripts with zero external dependencies, full BiDi support, OpenType shaping, and a single shared fontEntries array. This demonstrates the width of the library, not its depth – script-specific sample PDFs in the same folder show the depth of each implementation.' },
                 ],
-                footerText: 'pdfnative – Multi-language document sample (22 scripts)',
+                footerText: 'pdfnative – Multi-language document sample (27 scripts)',
                 fontEntries,
             };
             ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-multi-language.pdf'), 'document/doc-multi-language.pdf', buildDocumentPDFBytes(params));
@@ -325,35 +299,11 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // ── CJK catalog (Chinese) ────────────────────────────────────
     await generateChineseCatalog(ctx);
 
-    // ── Thai with complex script ─────────────────────────────────
-    await generateThaiDoc(ctx);
+    // ── Language conformance documents (v1.8.0) ──────────────────
+    // One page per language, every edge case of its script visible at
+    // once; the data lives in scripts/data/language-docs-data.ts.
+    for (const doc of LANGUAGE_DOCS) await generateLanguageDoc(ctx, doc);
 
-    // ── Bengali with Indic shaping ───────────────────────────────
-    await generateBengaliDoc(ctx);
-
-    // ── Tamil with Indic shaping ─────────────────────────────────
-    await generateTamilDoc(ctx);
-
-    // ── Devanagari (Hindi) with Indic shaping ────────────────────
-    await generateDevanagariDoc(ctx);
-
-    // ── Telugu with Indic shaping ────────────────────────────────
-    await generateTeluguDoc(ctx);
-
-    // ── Sinhala with Indic shaping ───────────────────────────────
-    await generateSinhalaDoc(ctx);
-
-    // ── Tibetan with vertical stacking ───────────────────────────
-    await generateTibetanDoc(ctx);
-
-    // ── Khmer with USE-lite shaping ──────────────────────────────
-    await generateKhmerDoc(ctx);
-
-    // ── Myanmar with USE-lite shaping ────────────────────────────
-    await generateMyanmarDoc(ctx);
-
-    // ── Amharic / Ethiopic (syllabic) ────────────────────────────
-    await generateAmharicDoc(ctx);
 
     // ── All block types showcase ─────────────────────────────────
     generateShowcase(ctx);
@@ -498,269 +448,40 @@ async function generateChineseCatalog(ctx: GenerateContext): Promise<void> {
         ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-chinese-catalog.pdf'), 'document/doc-chinese-catalog.pdf', buildDocumentPDFBytes(params));
 }
 
-async function generateThaiDoc(ctx: GenerateContext): Promise<void> {
-    const thFd = await loadFontData('th');
-    if (!thFd) return;
-    const params: DocumentParams = {
-        title: 'คู่มือผู้ใช้ – ระบบจัดการเอกสาร',
+/**
+ * One language conformance document: native title and paragraph, the
+ * "Edge cases" table (English labels around the native sample), a short
+ * native list, a footer. Held to one page and to real glyphs by
+ * tests/regression/language-docs.test.ts.
+ */
+export function languageDocParams(doc: LanguageDoc, fontEntries: FontEntry[]): DocumentParams {
+    return {
+        title: doc.title,
         blocks: [
-            { type: 'heading', text: 'คู่มือผู้ใช้ – ระบบจัดการเอกสาร', level: 1 },
-            { type: 'paragraph', text: 'ยินดีต้อนรับสู่ระบบจัดการเอกสารอัจฉริยะ เอกสารฉบับนี้จะแนะนำขั้นตอนการใช้งานระบบอย่างละเอียด ระบบรองรับการสร้างเอกสาร PDF หลายภาษา รวมถึงภาษาไทยที่มีสระ วรรณยุกต์ และเครื่องหมายเฉพาะ' },
-            { type: 'heading', text: 'คุณสมบัติหลัก', level: 2 },
-            { type: 'list', items: ['สร้างเอกสาร PDF คุณภาพสูงแบบอัตโนมัติ', 'รองรับภาษาไทยพร้อมการจัดวางตัวอักษรที่ถูกต้อง (GSUB + GPOS)', 'เข้ารหัส AES-128 และ AES-256', 'เป็นไปตามมาตรฐาน PDF/A-2b', 'บีบอัดข้อมูลด้วย FlateDecode'], style: 'bullet' },
-            { type: 'heading', text: 'ตารางราคาบริการ', level: 2 },
-            { type: 'table', headers: ['แพ็กเกจ', 'จำนวนเอกสาร/เดือน', 'ราคา', 'หมายเหตุ'], rows: [
-                { cells: ['เริ่มต้น', '1,000', '฿990', 'เหมาะสำหรับธุรกิจขนาดเล็ก'], type: 'credit', pointed: false },
-                { cells: ['มืออาชีพ', '10,000', '฿4,990', 'รวมการสนับสนุนทางเทคนิค'], type: 'credit', pointed: false },
-                { cells: ['องค์กร', 'ไม่จำกัด', '฿14,990', 'รวมทุกบริการ + SLA 99.9%'], type: 'credit', pointed: true },
+            { type: 'heading', text: doc.title, level: 1 },
+            { type: 'paragraph', text: `${doc.language} (${doc.script} script) \u2013 every construction of the script on one page, so a reader who knows it can judge the rendering at a glance.` },
+            { type: 'paragraph', text: doc.intro },
+            { type: 'heading', text: 'Edge cases', level: 2 },
+            { type: 'table', headers: ['What it exercises', 'Sample', 'What a correct rendering shows'], rows: doc.edgeCases.map((c, i) => ({
+                cells: [c.what, c.sample, c.note], type: 'credit' as const, pointed: i % 2 === 1,
+            })), columns: [
+                { f: 0.24, a: 'l', mx: 200, mxH: 200 },
+                { f: 0.46, a: 'l', mx: 200, mxH: 200 }, // the native sample gets the room
+                { f: 0.30, a: 'l', mx: 200, mxH: 200 },
             ] },
-            { type: 'link', text: 'ติดต่อฝ่ายสนับสนุน', url: 'https://example.com/support/th' },
+            { type: 'heading', text: 'In short', level: 2 },
+            { type: 'list', items: [...doc.list], style: 'bullet' },
         ],
-        footerText: 'pdfnative – คู่มือผู้ใช้ระบบจัดการเอกสาร',
-        fontEntries: [{ fontData: thFd, fontRef: '/F3', lang: 'th' }],
+        footerText: doc.footer,
+        fontEntries,
     };
-        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-thai.pdf'), 'document/doc-thai.pdf', buildDocumentPDFBytes(params));
 }
 
-async function generateBengaliDoc(ctx: GenerateContext): Promise<void> {
-    const bnFd = await loadFontData('bn');
-    if (!bnFd) return;
-    const params: DocumentParams = {
-        title: '\u09AC\u09BE\u0982\u09B2\u09BE \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0 \u2013 \u09AA\u09CD\u09B0\u09A4\u09BF\u09AC\u09C7\u09A6\u09A8',
-        blocks: [
-            { type: 'heading', text: '\u09AA\u09CD\u09B0\u09A5\u09AE \u0985\u09A7\u09CD\u09AF\u09BE\u09AF\u09BC: \u09AD\u09C2\u09AE\u09BF\u0995\u09BE', level: 1 },
-            { type: 'paragraph', text: '\u098F\u099F\u09BF pdfnative \u09B2\u09BE\u0987\u09AC\u09CD\u09B0\u09C7\u09B0\u09BF\u09B0 \u09AC\u09BE\u0982\u09B2\u09BE \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0 \u09A8\u09BF\u09B0\u09CD\u09AE\u09BE\u09A3\u09C7\u09B0 \u09AA\u09CD\u09B0\u09A6\u09B0\u09CD\u09B6\u09A8\u0964 \u098F\u0987 \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0\u09C7 \u09B6\u09BF\u09B0\u09CB\u09A8\u09BE\u09AE, \u0985\u09A8\u09C1\u099A\u09CD\u099B\u09C7\u09A6, \u09A4\u09BE\u09B2\u09BF\u0995\u09BE \u098F\u09AC\u0982 \u09A4\u09BE\u09B2\u09BF\u0995\u09BE \u09B0\u09AF\u09BC\u09C7\u099B\u09C7\u0964' },
-            { type: 'heading', text: '\u09AA\u09CD\u09B0\u09A7\u09BE\u09A8 \u09AC\u09C8\u09B6\u09BF\u09B7\u09CD\u099F\u09CD\u09AF', level: 2 },
-            { type: 'list', items: [
-                '\u09AC\u09BE\u0982\u09B2\u09BE OpenType \u09B6\u09C7\u09AA\u09BF\u0982 (GSUB + GPOS)',
-                '\u09B0\u09C7\u09AB \u09AA\u09C1\u09A8\u09B0\u09CD\u09AC\u09BF\u09A8\u09CD\u09AF\u09BE\u09B8 (\u09B0 + \u09CD)',
-                '\u09B9\u09B2\u09A8\u09CD\u09A4-\u09AE\u09A7\u09CD\u09AF\u09B8\u09CD\u09A5 \u09AF\u09C1\u0995\u09CD\u09A4\u09BE\u0995\u09CD\u09B7\u09B0',
-                '\u09AC\u09BF\u09AD\u0995\u09CD\u09A4 \u09B8\u09CD\u09AC\u09B0\u09AC\u09B0\u09CD\u09A3 (\u09CB, \u09CC)',
-                'PDF/A-2b \u09B8\u09AE\u09B0\u09CD\u09A5\u09A8',
-            ], style: 'bullet' },
-            { type: 'heading', text: '\u09AE\u09C2\u09B2\u09CD\u09AF \u09A4\u09BE\u09B2\u09BF\u0995\u09BE', level: 2 },
-            { type: 'table', headers: ['\u0995\u09CD\u09B0\u09AE', '\u09AA\u09B0\u09BF\u09B7\u09C7\u09AC\u09BE', '\u09AE\u09C2\u09B2\u09CD\u09AF', '\u0985\u09AC\u09B8\u09CD\u09A5\u09BE'], rows: [
-                { cells: ['\u09E7', '\u09AC\u09C7\u09B8\u09BF\u0995 PDF', '\u09E7,\u09E6\u09E6\u09E6 \u099F\u09BE\u0995\u09BE', '\u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8'], type: 'credit', pointed: false },
-                { cells: ['\u09E8', '\u09AC\u09BE\u0982\u09B2\u09BE \u09B6\u09C7\u09AA\u09BF\u0982', '\u09E8,\u09E6\u09E6\u09E6 \u099F\u09BE\u0995\u09BE', '\u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8'], type: 'credit', pointed: false },
-                { cells: ['\u09E9', '\u098F\u09A8\u0995\u09CD\u09B0\u09BF\u09AA\u09B6\u09A8', '\u09E9,\u09E6\u09E6\u09E6 \u099F\u09BE\u0995\u09BE', '\u09B8\u09AE\u09CD\u09AA\u09A8\u09CD\u09A8'], type: 'credit', pointed: true },
-            ] },
-            { type: 'paragraph', text: '\u0989\u09AA\u09B0\u09C7\u09B0 \u09A4\u09BE\u09B2\u09BF\u0995\u09BE\u099F\u09BF pdfnative-\u098F\u09B0 \u09AA\u09B0\u09BF\u09B7\u09C7\u09AC\u09BE\u09B0 \u09AE\u09C2\u09B2\u09CD\u09AF \u09A6\u09C7\u0996\u09BE\u099A\u09CD\u099B\u09C7\u0964' },
-        ],
-        footerText: 'pdfnative \u2013 \u09AC\u09BE\u0982\u09B2\u09BE \u09A8\u09A5\u09BF\u09AA\u09A4\u09CD\u09B0 \u09A8\u09AE\u09C1\u09A8\u09BE',
-        fontEntries: [{ fontData: bnFd, fontRef: '/F3', lang: 'bn' }],
-    };
-        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-bengali.pdf'), 'document/doc-bengali.pdf', buildDocumentPDFBytes(params));
-}
-
-async function generateTamilDoc(ctx: GenerateContext): Promise<void> {
-    const taFd = await loadFontData('ta');
-    if (!taFd) return;
-    const params: DocumentParams = {
-        title: '\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u0B86\u0BB5\u0BA3\u0BAE\u0BCD \u2013 \u0BAE\u0BC1\u0BA9\u0BCD\u0BAE\u0BBE\u0BA4\u0BBF\u0BB0\u0BBF',
-        blocks: [
-            { type: 'heading', text: '\u0B85\u0BA4\u0BCD\u0BA4\u0BBF\u0BAF\u0BBE\u0BAF\u0BAE\u0BCD \u0B92\u0BA9\u0BCD\u0BB1\u0BC1: \u0BAE\u0BC1\u0BA9\u0BCD\u0BA9\u0BC1\u0BB0\u0BC8', level: 1 },
-            { type: 'paragraph', text: '\u0B87\u0BA4\u0BC1 pdfnative \u0BA8\u0BC2\u0BB2\u0B95\u0BA4\u0BCD\u0BA4\u0BBF\u0BA9\u0BCD \u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u0B86\u0BB5\u0BA3\u0BAE\u0BCD \u0B89\u0BB0\u0BC1\u0BB5\u0BBE\u0B95\u0BCD\u0B95\u0BA4\u0BCD\u0BA4\u0BBF\u0BA9\u0BCD \u0BAE\u0BC1\u0BA9\u0BCD\u0BAE\u0BBE\u0BA4\u0BBF\u0BB0\u0BBF\u0BAF\u0BBE\u0B95\u0BC1\u0BAE\u0BCD. \u0B87\u0BA8\u0BCD\u0BA4 \u0B86\u0BB5\u0BA3\u0BA4\u0BCD\u0BA4\u0BBF\u0BB2\u0BCD \u0BA4\u0BB2\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1\u0B95\u0BB3\u0BCD, \u0BAA\u0BA4\u0BCD\u0BA4\u0BBF\u0B95\u0BB3\u0BCD, \u0BAA\u0B9F\u0BCD\u0B9F\u0BBF\u0BAF\u0BB2\u0BCD\u0B95\u0BB3\u0BCD \u0BAE\u0BB1\u0BCD\u0BB1\u0BC1\u0BAE\u0BCD \u0B85\u0B9F\u0BCD\u0B9F\u0BB5\u0BA3\u0BC8 \u0B89\u0BB3\u0BCD\u0BB3\u0BA9.' },
-            { type: 'heading', text: '\u0BAE\u0BC1\u0B95\u0BCD\u0B95\u0BBF\u0BAF \u0B85\u0BAE\u0BCD\u0B9A\u0B99\u0BCD\u0B95\u0BB3\u0BCD', level: 2 },
-            { type: 'list', items: [
-                '\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD OpenType \u0BB5\u0B9F\u0BBF\u0BB5\u0BAE\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1 (GSUB + GPOS)',
-                '\u0BAE\u0BC1\u0BA9\u0BCD-\u0B85\u0B9F\u0BBF\u0BAA\u0BCD\u0BAA\u0B9F\u0BC8 \u0BAE\u0BBE\u0BA4\u0BCD\u0BA4\u0BBF\u0BB0\u0BC8 \u0BAE\u0BB1\u0BC1\u0B9A\u0BC0\u0BB0\u0BAE\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1',
-                '\u0BAA\u0BBF\u0BB0\u0BBF\u0BA8\u0BCD\u0BA4 \u0B89\u0BAF\u0BBF\u0BB0\u0BCD\u0B95\u0BB3\u0BCD (\u0BCA, \u0BCB, \u0BCC)',
-                '\u0BAA\u0BC1\u0BB3\u0BCD\u0BB3\u0BBF-\u0BAE\u0BC1\u0B9F\u0BBF\u0BAA\u0BCD\u0BAA\u0BC1 \u0B87\u0BA3\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1',
-                'PDF/A-2b \u0B86\u0BA4\u0BB0\u0BB5\u0BC1',
-            ], style: 'bullet' },
-            { type: 'heading', text: '\u0BB5\u0BBF\u0BB2\u0BC8 \u0BAA\u0B9F\u0BCD\u0B9F\u0BBF\u0BAF\u0BB2\u0BCD', level: 2 },
-            { type: 'table', headers: ['\u0B8E\u0BA3\u0BCD', '\u0B9A\u0BC7\u0BB5\u0BC8', '\u0BB5\u0BBF\u0BB2\u0BC8', '\u0BA8\u0BBF\u0BB2\u0BC8'], rows: [
-                { cells: ['\u0BE7', '\u0B85\u0B9F\u0BBF\u0BAA\u0BCD\u0BAA\u0B9F\u0BC8 PDF', '\u0BE7,\u0BE6\u0BE6\u0BE6 \u0BB0\u0BC2', '\u0BAE\u0BC1\u0B9F\u0BBF\u0BA8\u0BCD\u0BA4\u0BA4\u0BC1'], type: 'credit', pointed: false },
-                { cells: ['\u0BE8', '\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u0BB5\u0B9F\u0BBF\u0BB5\u0BAE\u0BC8\u0BAA\u0BCD\u0BAA\u0BC1', '\u0BE8,\u0BE6\u0BE6\u0BE6 \u0BB0\u0BC2', '\u0BAE\u0BC1\u0B9F\u0BBF\u0BA8\u0BCD\u0BA4\u0BA4\u0BC1'], type: 'credit', pointed: false },
-                { cells: ['\u0BE9', '\u0BAE\u0BB1\u0BC1\u0B95\u0BC1\u0BB1\u0BBF\u0BAF\u0BBE\u0B95\u0BCD\u0B95\u0BAE\u0BCD', '\u0BE9,\u0BE6\u0BE6\u0BE6 \u0BB0\u0BC2', '\u0BAE\u0BC1\u0B9F\u0BBF\u0BA8\u0BCD\u0BA4\u0BA4\u0BC1'], type: 'credit', pointed: true },
-            ] },
-            { type: 'paragraph', text: '\u0BAE\u0BC7\u0BB2\u0BC7 \u0B89\u0BB3\u0BCD\u0BB3 \u0B85\u0B9F\u0BCD\u0B9F\u0BB5\u0BA3\u0BC8 pdfnative-\u0BA9\u0BCD \u0B9A\u0BC7\u0BB5\u0BC8 \u0BB5\u0BBF\u0BB2\u0BC8\u0B95\u0BB3\u0BC8\u0B95\u0BCD \u0B95\u0BBE\u0B9F\u0BCD\u0B9F\u0BC1\u0B95\u0BBF\u0BB1\u0BA4\u0BC1.' },
-        ],
-        footerText: 'pdfnative \u2013 \u0BA4\u0BAE\u0BBF\u0BB4\u0BCD \u0B86\u0BB5\u0BA3 \u0BAE\u0BBE\u0BA4\u0BBF\u0BB0\u0BBF',
-        fontEntries: [{ fontData: taFd, fontRef: '/F3', lang: 'ta' }],
-    };
-        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-tamil.pdf'), 'document/doc-tamil.pdf', buildDocumentPDFBytes(params));
-}
-
-async function generateDevanagariDoc(ctx: GenerateContext): Promise<void> {
-    const hiFd = await loadFontData('hi');
-    if (!hiFd) return;
-    const params: DocumentParams = {
-        title: '\u0939\u093F\u0928\u094D\u0926\u0940 \u0926\u0938\u094D\u0924\u093E\u0935\u0947\u095B \u2013 \u092A\u094D\u0930\u0926\u0930\u094D\u0936\u0928',
-        blocks: [
-            { type: 'heading', text: '\u0905\u0927\u094D\u092F\u093E\u092F \u0967: \u092A\u0930\u093F\u091A\u092F', level: 1 },
-            { type: 'paragraph', text: '\u092F\u0939 pdfnative \u092A\u0941\u0938\u094D\u0924\u0915\u093E\u0932\u092F \u0915\u0947 \u0926\u094D\u0935\u093E\u0930\u093E \u0939\u093F\u0928\u094D\u0926\u0940 (\u0926\u0947\u0935\u0928\u093E\u0917\u0930\u0940) \u092E\u0947\u0902 PDF \u0928\u093F\u0930\u094D\u092E\u093E\u0923 \u0915\u093E \u0928\u092E\u0942\u0928\u093E \u0939\u0948\u0964 \u0907\u0938 \u0926\u0938\u094D\u0924\u093E\u0935\u0947\u095B \u092E\u0947\u0902 \u0936\u0940\u0930\u094D\u0937\u0915, \u0905\u0928\u0941\u091A\u094D\u091B\u0947\u0926, \u0938\u0942\u091A\u0940 \u0914\u0930 \u0924\u093E\u0932\u093F\u0915\u093E \u0936\u093E\u092E\u093F\u0932 \u0939\u0948\u0902\u0964' },
-            { type: 'heading', text: '\u092E\u0941\u0916\u094D\u092F \u0935\u093F\u0936\u0947\u0937\u0924\u093E\u090F\u0901', level: 2 },
-            { type: 'list', items: [
-                '\u0926\u0947\u0935\u0928\u093E\u0917\u0930\u0940 OpenType \u0936\u0947\u092A\u093F\u0902\u0917 (GSUB + GPOS)',
-                '\u0938\u0902\u092F\u0941\u0915\u094D\u0924\u093E\u0915\u094D\u0937\u0930 \u092C\u0928\u093E\u0928\u093E (\u0915\u094D\u0937, \u091C\u094D\u091E, \u0924\u094D\u0930)',
-                '\u0930\u0947\u092B \u092A\u0941\u0928\u0930\u094D\u0935\u094D\u092F\u0935\u0938\u094D\u0925\u093E (\u0930\u094D\u0915)',
-                '\u092E\u093E\u0924\u094D\u0930\u093E \u092A\u0941\u0928\u0930\u094D\u0935\u094D\u092F\u0935\u0938\u094D\u0925\u093E (\u093F, \u0947, \u0948)',
-                '\u0935\u093F\u092D\u0915\u094D\u0924 \u0938\u094D\u0935\u0930 (\u094B, \u094C)',
-                'PDF/A-2b \u0938\u092E\u0930\u094D\u0925\u0928',
-            ], style: 'bullet' },
-            { type: 'heading', text: '\u092E\u0942\u0932\u094D\u092F \u0924\u093E\u0932\u093F\u0915\u093E', level: 2 },
-            { type: 'table', headers: ['\u0915\u094D\u0930\u092E', '\u0938\u0947\u0935\u093E', '\u092E\u0942\u0932\u094D\u092F', '\u0938\u094D\u0925\u093F\u0924\u093F'], rows: [
-                { cells: ['\u0967', '\u092C\u0941\u0928\u093F\u092F\u093E\u0926\u0940 PDF', '\u0967,\u0966\u0966\u0966 \u0930\u0941\u092A\u092F\u0947', '\u092A\u0942\u0930\u094D\u0923'], type: 'credit', pointed: false },
-                { cells: ['\u0968', '\u0939\u093F\u0928\u094D\u0926\u0940 \u0936\u0947\u092A\u093F\u0902\u0917', '\u0968,\u0966\u0966\u0966 \u0930\u0941\u092A\u092F\u0947', '\u092A\u0942\u0930\u094D\u0923'], type: 'credit', pointed: false },
-                { cells: ['\u0969', '\u090F\u0928\u0915\u094D\u0930\u093F\u092A\u0936\u0928', '\u0969,\u0966\u0966\u0966 \u0930\u0941\u092A\u092F\u0947', '\u092A\u0942\u0930\u094D\u0923'], type: 'credit', pointed: true },
-            ] },
-            { type: 'paragraph', text: '\u0909\u092A\u0930\u094B\u0915\u094D\u0924 \u0924\u093E\u0932\u093F\u0915\u093E pdfnative \u0915\u0940 \u0938\u0947\u0935\u093E\u0913\u0902 \u0915\u093E \u092E\u0942\u0932\u094D\u092F \u0926\u093F\u0916\u093E\u0924\u0940 \u0939\u0948\u0964' },
-        ],
-        footerText: 'pdfnative \u2013 \u0939\u093F\u0928\u094D\u0926\u0940 \u0926\u0938\u094D\u0924\u093E\u0935\u0947\u095B \u0928\u092E\u0942\u0928\u093E',
-        fontEntries: [{ fontData: hiFd, fontRef: '/F3', lang: 'hi' }],
-    };
-        ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-devanagari.pdf'), 'document/doc-devanagari.pdf', buildDocumentPDFBytes(params));
-}
-
-async function generateTeluguDoc(ctx: GenerateContext): Promise<void> {
-    const teFd = await loadFontData('te');
-    if (!teFd) return;
-    const params: DocumentParams = {
-        title: '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 \u0C2A\u0C24\u0C4D\u0C30\u0C02 \u2013 \u0C2A\u0C4D\u0C30\u0C26\u0C30\u0C4D\u0C36\u0C28',
-        blocks: [
-            { type: 'heading', text: '\u0C05\u0C27\u0C4D\u0C2F\u0C3E\u0C2F\u0C02 1: \u0C2A\u0C30\u0C3F\u0C1A\u0C2F\u0C02', level: 1 },
-            { type: 'paragraph', text: '\u0C07\u0C26\u0C3F pdfnative \u0C32\u0C48\u0C2C\u0C4D\u0C30\u0C30\u0C40 \u0C26\u0C4D\u0C35\u0C3E\u0C30\u0C3E \u0C24\u0C46\u0C32\u0C41\u0C17\u0C41\u0C32\u0C4B PDF \u0C30\u0C42\u0C2A\u0C4A\u0C02\u0C26\u0C3F\u0C02\u0C1A\u0C21\u0C3E\u0C28\u0C3F\u0C15\u0C3F \u0C12\u0C15 \u0C2A\u0C4D\u0C30\u0C3E\u0C2F\u0C4B\u0C17\u0C3F\u0C15 \u0C09\u0C26\u0C3E\u0C39\u0C30\u0C23. \u0C08 \u0C2A\u0C24\u0C4D\u0C30\u0C02\u0C32\u0C4B \u0C36\u0C40\u0C30\u0C4D\u0C37\u0C3F\u0C15\u0C32\u0C41, \u0C05\u0C28\u0C41\u0C1A\u0C4D\u0C1B\u0C47\u0C26\u0C3E\u0C32\u0C41, \u0C2A\u0C1F\u0C4D\u0C1F\u0C3F\u0C15\u0C32\u0C41 \u0C2E\u0C30\u0C3F\u0C2F\u0C41 \u0C24\u0C3E\u0C32\u0C3F\u0C15\u0C32 \u0C30\u0C46\u0C02\u0C21\u0C30\u0C3F\u0C02\u0C17\u0C4D \u0C09\u0C02\u0C1F\u0C41\u0C02\u0C26\u0C3F.' },
-            { type: 'heading', text: '\u0C2A\u0C4D\u0C30\u0C27\u0C3E\u0C28 \u0C05\u0C02\u0C36\u0C3E\u0C32\u0C41', level: 2 },
-            { type: 'list', items: [
-                '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 OpenType \u0C36\u0C47\u0C2A\u0C3F\u0C02\u0C17\u0C4D (GSUB + GPOS)',
-                '\u0C35\u0C3F\u0C30\u0C3E\u0C2E \u0C06\u0C27\u0C3E\u0C30\u0C3F\u0C24 \u0C2F\u0C41\u0C15\u0C4D\u0C24\u0C3E\u0C15\u0C4D\u0C37\u0C30\u0C3E\u0C32 \u0C0F\u0C30\u0C4D\u0C2A\u0C3E\u0C1F\u0C41',
-                '\u0C17\u0C41\u0C23\u0C3F\u0C02\u0C24\u0C3E\u0C32 \u0C38\u0C30\u0C48\u0C28 \u0C38\u0C4D\u0C25\u0C3E\u0C28\u0C2A\u0C30\u0C1A\u0C21\u0C02',
-                'CIDFont Type2 + Identity-H \u0C2F\u0C42\u0C28\u0C3F\u0C15\u0C4B\u0C21\u0C4D \u0C0E\u0C02\u0C15\u0C4B\u0C21\u0C3F\u0C02\u0C17\u0C4D',
-                'PDF/A-2b \u0C05\u0C28\u0C41\u0C15\u0C42\u0C32\u0C24',
-            ], style: 'bullet' },
-            { type: 'heading', text: '\u0C38\u0C47\u0C35\u0C32 \u0C24\u0C3E\u0C32\u0C3F\u0C15', level: 2 },
-            { type: 'table', headers: ['\u0C15\u0C4D\u0C30\u0C2E\u0C02', '\u0C38\u0C47\u0C35', '\u0C36\u0C41\u0C32\u0C4D\u0C15\u0C02', '\u0C38\u0C4D\u0C25\u0C3F\u0C24\u0C3F'], rows: [
-                { cells: ['1', '\u0C2A\u0C4D\u0C30\u0C3E\u0C25\u0C2E\u0C3F\u0C15 PDF \u0C30\u0C42\u0C2A\u0C4A\u0C02\u0C26\u0C3F\u0C02\u0C1A\u0C21\u0C02', '\u20B9 1,000', '\u0C2A\u0C42\u0C30\u0C4D\u0C24\u0C3F'], type: 'credit', pointed: false },
-                { cells: ['2', '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 \u0C36\u0C47\u0C2A\u0C3F\u0C02\u0C17\u0C4D \u0C2A\u0C4D\u0C30\u0C4A\u0C2B\u0C48\u0C32\u0C3F\u0C02\u0C17\u0C4D', '\u20B9 2,000', '\u0C2A\u0C42\u0C30\u0C4D\u0C24\u0C3F'], type: 'credit', pointed: false },
-                { cells: ['3', '\u0C0E\u0C02\u0C15\u0C4D\u0C30\u0C3F\u0C2A\u0C4D\u0C37\u0C28\u0C4D + PDF/A', '\u20B9 3,000', '\u0C2A\u0C42\u0C30\u0C4D\u0C24\u0C3F'], type: 'credit', pointed: true },
-            ] },
-            { type: 'paragraph', text: '\u0C2A\u0C48 \u0C24\u0C3E\u0C32\u0C3F\u0C15 pdfnative \u0C38\u0C47\u0C35\u0C32 \u0C38\u0C42\u0C1A\u0C28\u0C3E\u0C24\u0C4D\u0C2E\u0C15 \u0C27\u0C30\u0C32\u0C28\u0C41 \u0C1A\u0C42\u0C2A\u0C3F\u0C38\u0C4D\u0C24\u0C41\u0C02\u0C26\u0C3F.' },
-        ],
-        footerText: 'pdfnative \u2013 \u0C24\u0C46\u0C32\u0C41\u0C17\u0C41 \u0C2A\u0C24\u0C4D\u0C30 \u0C2E\u0C3E\u0C26\u0C30\u0C3F',
-        fontEntries: [{ fontData: teFd, fontRef: '/F3', lang: 'te' }],
-    };
-    ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-telugu.pdf'), 'document/doc-telugu.pdf', buildDocumentPDFBytes(params));
-}
-
-async function generateSinhalaDoc(ctx: GenerateContext): Promise<void> {
-    const siFd = await loadFontData('si');
-    if (!siFd) return;
-    const params: DocumentParams = {
-        title: '\u0DC3\u0DD2\u0D82\u0DC4\u0DBD \u0DBD\u0DDA\u0D9B\u0DB1\u0DBA \u2013 pdfnative',
-        blocks: [
-            { type: 'heading', text: '\u0DC3\u0DD2\u0D82\u0DC4\u0DBD', level: 1 },
-            { type: 'paragraph', text: 'pdfnative \u0DC3\u0DD2\u0D82\u0DC4\u0DBD \u0DB7\u0DCF\u0DC2\u0DCF\u0DC0\u0DD9\u0DB1\u0DCA PDF \u0DBD\u0DDA\u0D9B\u0DB1 \u0DC3\u0DEF\u0DBA\u0DD2, \u0DC3\u0D82\u0DBA\u0DDD\u0D9C \u0D85\u0D9A\u0DD4\u0DBB\u0DC4 \u0DC3\u0DC4 \u0DC3\u0DCA\u0DC0\u0DBB \u0DC3\u0D82\u0D9E\u0DCF \u0DC3\u0DB3\u0DC4\u0DCF \u0DC3\u0DB8\u0DCA\u0DB4\u0DD6\u0DBB\u0DCA\u0DAB \u0DC3\u0DC4\u0DCF\u0DBA \u0DC3\u0DB8\u0D9F.' },
-            { type: 'heading', text: 'Shaping features', level: 2 },
-            { type: 'list', items: [
-                'Sinhala OpenType shaping (GSUB + GPOS)',
-                'Virama-mediated conjunct clusters',
-                'Pre-base kombuva reordering',
-                'Two-part vowel decomposition',
-                'PDF/A-2b support',
-            ], style: 'bullet' },
-            { type: 'paragraph', text: 'pdfnative renders Sinhala script natively with zero external dependencies, using a pure-JS shaper and the bundled Noto Sans Sinhala font.' },
-        ],
-        footerText: 'pdfnative \u2013 Sinhala document sample',
-        fontEntries: [{ fontData: siFd, fontRef: '/F3', lang: 'si' }],
-    };
-    ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-sinhala.pdf'), 'document/doc-sinhala.pdf', buildDocumentPDFBytes(params));
-}
-
-async function generateTibetanDoc(ctx: GenerateContext): Promise<void> {
-    const boFd = await loadFontData('bo');
-    if (!boFd) return;
-    const params: DocumentParams = {
-        title: '\u0F56\u0F7C\u0F51\u0F0B\u0F61\u0F72\u0F42 \u2013 pdfnative',
-        blocks: [
-            { type: 'heading', text: '\u0F56\u0F7C\u0F51\u0F0B\u0F61\u0F72\u0F42', level: 1 },
-            { type: 'paragraph', text: 'pdfnative \u0F53\u0F72\u0F0B\u0F56\u0F7C\u0F51\u0F0B\u0F61\u0F72\u0F42\u0F0B\u0F42\u0F72\u0F0B PDF \u0F61\u0F72\u0F42\u0F0B\u0F46\u0F0B\u0F56\u0F5F\u0F7C\u0F0B\u0F56\u0F0B\u0F51\u0F44\u0F0B\u0F58\u0F72\u0F44\u0F0B\u0F42\u0F5E\u0F72\u0F0B\u0F56\u0F62\u0FA9\u0F7A\u0F42\u0F66\u0F0B\u0F58\u0F0B\u0F63\u0F0B\u0F62\u0F92\u0FB1\u0F56\u0F0B\u0F66\u0F90\u0FB1\u0F7C\u0F62\u0F0B\u0F56\u0FB1\u0F7A\u0F51\u0F0D' },
-            { type: 'heading', text: 'Shaping features', level: 2 },
-            { type: 'list', items: [
-                'Vertical subjoined-consonant stacking',
-                'GSUB subjoined-form ligatures',
-                'GPOS anchor positioning',
-                'Bundled Noto Serif Tibetan (OFL-1.1)',
-                'PDF/A-2b support',
-            ], style: 'bullet' },
-            { type: 'paragraph', text: 'pdfnative stacks Tibetan subjoined consonants vertically with a pure-JS shaper and zero external dependencies.' },
-        ],
-        footerText: 'pdfnative \u2013 Tibetan document sample',
-        fontEntries: [{ fontData: boFd, fontRef: '/F3', lang: 'bo' }],
-    };
-    ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-tibetan.pdf'), 'document/doc-tibetan.pdf', buildDocumentPDFBytes(params));
-}
-
-async function generateKhmerDoc(ctx: GenerateContext): Promise<void> {
-    const kmFd = await loadFontData('km');
-    if (!kmFd) return;
-    const params: DocumentParams = {
-        title: '\u1781\u17D2\u1798\u17C2\u179A \u2013 pdfnative',
-        blocks: [
-            { type: 'heading', text: '\u1781\u17D2\u1798\u17C2\u179A', level: 1 },
-            { type: 'paragraph', text: 'pdfnative \u1794\u1784\u17D2\u1780\u17BE\u178F\u17AF\u1780\u179F\u17B6\u179A PDF \u1787\u17B6\u1797\u17B6\u179F\u17B6\u1781\u17D2\u1798\u17C2\u179A \u178A\u17C4\u1799\u1798\u17B6\u1793\u1780\u17B6\u179A\u1782\u17B6\u17C6\u1791\u17D2\u179A\u1796\u17C1\u1789\u179B\u17C1\u1789\u1785\u17C6\u1796\u17C4\u17C7\u1796\u17D2\u1799\u1789\u17D2\u1787\u1793\u17C8\u1787\u17BE\u1784 \u1793\u17B7\u1784\u179F\u17D2\u179A\u17C8\u17D4' },
-            { type: 'heading', text: 'Shaping features', level: 2 },
-            { type: 'list', items: [
-                'USE-lite cluster classification',
-                'Coeng (subscript) consonant stacking',
-                'Pre-base vowel reordering',
-                'Two-part vowel decomposition',
-                'PDF/A-2b support',
-            ], style: 'bullet' },
-            { type: 'paragraph', text: 'pdfnative shapes Khmer text with a pragmatic USE-lite pure-JS shaper and zero external dependencies. Coeng subscripts and pre-base vowels are handled natively.' },
-        ],
-        footerText: 'pdfnative \u2013 Khmer document sample',
-        fontEntries: [{ fontData: kmFd, fontRef: '/F3', lang: 'km' }],
-    };
-    ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-khmer.pdf'), 'document/doc-khmer.pdf', buildDocumentPDFBytes(params));
-}
-
-async function generateMyanmarDoc(ctx: GenerateContext): Promise<void> {
-    const myFd = await loadFontData('my');
-    if (!myFd) return;
-    const params: DocumentParams = {
-        title: '\u1019\u103C\u1014\u103A\u1019\u102C \u2013 pdfnative',
-        blocks: [
-            { type: 'heading', text: '\u1019\u103C\u1014\u103A\u1019\u102C', level: 1 },
-            { type: 'paragraph', text: 'pdfnative \u101E\u100A\u103A \u1019\u103C\u1014\u103A\u1019\u102C\u1018\u102C\u101E\u102C\u1016\u103C\u1004\u1037\u103A PDF \u1005\u102C\u101B\u103D\u1000\u103A\u1005\u102C\u1010\u1019\u103A\u1038\u1019\u103B\u102C\u1038\u1000\u102D\u102F \u1016\u1014\u103A\u1010\u102E\u1038\u1015\u103C\u102E\u1038 \u1017\u103B\u100A\u103A\u1038\u1010\u103D\u1032\u1014\u103E\u1004\u1037\u103A \u101E\u101B\u1019\u103B\u102C\u1038\u1000\u102D\u102F \u1015\u103C\u100A\u1037\u103A\u1005\u102F\u1036\u1005\u103D\u102C \u1015\u1036\u1037\u1015\u102D\u102F\u1038\u101E\u100A\u103A\u104B' },
-            { type: 'heading', text: 'Shaping features', level: 2 },
-            { type: 'list', items: [
-                'USE-lite cluster classification',
-                'Medial consonant positioning',
-                'Pre-base medial-ra (U+103C) and e-vowel (U+1031) reordering',
-                'Virama-mediated consonant stacking',
-                'PDF/A-2b support',
-            ], style: 'bullet' },
-            { type: 'paragraph', text: 'pdfnative shapes Myanmar text with a pragmatic USE-lite pure-JS shaper and zero external dependencies.' },
-        ],
-        footerText: 'pdfnative \u2013 Myanmar document sample',
-        fontEntries: [{ fontData: myFd, fontRef: '/F3', lang: 'my' }],
-    };
-    ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-myanmar.pdf'), 'document/doc-myanmar.pdf', buildDocumentPDFBytes(params));
-}
-
-async function generateAmharicDoc(ctx: GenerateContext): Promise<void> {
-    const amFd = await loadFontData('am');
-    if (!amFd) return;
-    const params: DocumentParams = {
-        title: '\u12A0\u121B\u122D\u129B \u2013 pdfnative',
-        blocks: [
-            { type: 'heading', text: '\u12A0\u121B\u122D\u129B', level: 1 },
-            { type: 'paragraph', text: 'pdfnative \u1260\u12A0\u121B\u122D\u129B \u1241\u12CB\u1295\u124B \u12E8 PDF \u1230\u1290\u12F6\u127D\u1295 \u12ED\u134D\u1325\u122B\u120D\u1363 \u1208\u12A2\u1275\u12EE\u1335\u12EB \u1206\u1204\u12EB\u1275 \u1219\u1209 \u12F5\u130B\u134D \u130B\u122D\u1362' },
-            { type: 'heading', text: 'Script support', level: 2 },
-            { type: 'list', items: [
-                'Ethiopic syllabic abugida (U+1200\u2013U+137F)',
-                'No reordering required \u2013 detection + font routing',
-                'CIDFont Type2 + Identity-H encoding',
-                'Bundled Noto Sans Ethiopic (OFL-1.1)',
-                'PDF/A-2b support',
-            ], style: 'bullet' },
-            { type: 'paragraph', text: 'pdfnative renders the Ethiopic script (Amharic, Tigrinya, Geez) natively with zero external dependencies. Each syllable is a complete glyph, so no OpenType reordering is needed.' },
-        ],
-        footerText: 'pdfnative \u2013 Amharic (Ethiopic) document sample',
-        fontEntries: [{ fontData: amFd, fontRef: '/F3', lang: 'am' }],
-    };
-    ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-amharic.pdf'), 'document/doc-amharic.pdf', buildDocumentPDFBytes(params));
+async function generateLanguageDoc(ctx: GenerateContext, doc: LanguageDoc): Promise<void> {
+    const fontEntries = await loadFontEntries(doc.lang);
+    if (!fontEntries) return;
+    const filename = `${doc.filename}.pdf`;
+    ctx.writeSafe(resolve(ctx.outputDir, 'document', filename), `document/${filename}`, buildDocumentPDFBytes(languageDocParams(doc, fontEntries)));
 }
 
 function generateShowcase(ctx: GenerateContext): void {
@@ -777,7 +498,7 @@ function generateShowcase(ctx: GenerateContext): void {
             { type: 'paragraph', text: 'Standard paragraph with automatic text wrapping.' },
             { type: 'paragraph', text: 'Colored paragraph with custom formatting.', color: '#2563EB' },
             { type: 'heading', text: 'Bullet List', level: 2 },
-            { type: 'list', items: ['Zero external dependencies', '22 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
+            { type: 'list', items: ['Zero external dependencies', '27 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
             { type: 'heading', text: 'Numbered List', level: 2 },
             { type: 'list', items: ['Install: npm install pdfnative', 'Import the builder function', 'Define parameters', 'Generate bytes', 'Write to file'], style: 'numbered' },
             { type: 'heading', text: 'Embedded Table', level: 2 },

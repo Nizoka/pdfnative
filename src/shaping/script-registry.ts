@@ -39,6 +39,68 @@ export const HEBREW_PRES_END = 0xFB4F;
 export const THAI_START = 0x0E00;
 export const THAI_END = 0x0E7F;
 
+// ── Lao (v1.8.0) ─────────────────────────────────────────────────────
+
+/**
+ * Lao Unicode block.
+ *
+ * It starts exactly where Thai ends, so {@link isThaiCodepoint} already
+ * excludes Lao and gains nothing from this addition — the two scripts share
+ * a shaping mechanism, not a range.
+ */
+export const LAO_START = 0x0E80;
+export const LAO_END = 0x0EFF;
+
+// ── Tai scripts and Cham (v1.8.0) ────────────────────────────────────
+
+/**
+ * Tai Tham (Lanna), the script of Northern Thai, Tai Lü and Khün.
+ *
+ * A Universal Shaping Engine script: pre-base vowels, subjoined consonants
+ * stacked through the sakot U+1A60, medial consonants above, below and
+ * before the base.
+ */
+export const TAI_THAM_START = 0x1A20;
+export const TAI_THAM_END = 0x1AAF;
+
+/**
+ * New Tai Lue (Xishuangbanna Dai).
+ *
+ * Re-encoded in Unicode 8.0 so that its vowels are spacing letters rather
+ * than combining marks: the script needs font routing, not shaping.
+ */
+export const NEW_TAI_LUE_START = 0x1980;
+export const NEW_TAI_LUE_END = 0x19DF;
+
+/**
+ * Tai Le (Dehong Dai).
+ *
+ * Its tones are spacing modifier letters, so like New Tai Lue it needs no
+ * reordering or mark positioning.
+ */
+export const TAI_LE_START = 0x1950;
+export const TAI_LE_END = 0x197F;
+
+/**
+ * Cham, of the Cham people of Vietnam and Cambodia.
+ *
+ * A Universal Shaping Engine script: two pre-base vowels, medial
+ * consonants in all four positions, and final consonants drawn on the base.
+ */
+export const CHAM_START = 0xAA00;
+export const CHAM_END = 0xAA5F;
+
+// ── Combining marks (Latin, Greek, Cyrillic diacritics) ───────────────
+
+export const COMBINING_MARKS_START = 0x0300;
+export const COMBINING_MARKS_END = 0x036F;
+export const COMBINING_MARKS_EXT_START = 0x1AB0;
+export const COMBINING_MARKS_EXT_END = 0x1AFF;
+export const COMBINING_MARKS_SUPP_START = 0x1DC0;
+export const COMBINING_MARKS_SUPP_END = 0x1DFF;
+export const COMBINING_MARKS_SYMBOLS_START = 0x20D0;
+export const COMBINING_MARKS_SYMBOLS_END = 0x20FF;
+
 // ── Greek ────────────────────────────────────────────────────────────
 
 export const GREEK_START = 0x0370;
@@ -250,6 +312,67 @@ export function isThaiCodepoint(cp: number): boolean {
     return cp >= THAI_START && cp <= THAI_END;
 }
 
+/**
+ * Check if a codepoint falls in the Lao Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isLaoCodepoint(cp: number): boolean {
+    return cp >= LAO_START && cp <= LAO_END;
+}
+
+/**
+ * Check if a codepoint falls in the Tai Tham (Lanna) Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isTaiThamCodepoint(cp: number): boolean {
+    return cp >= TAI_THAM_START && cp <= TAI_THAM_END;
+}
+
+/**
+ * Check if a codepoint falls in the New Tai Lue Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isNewTaiLueCodepoint(cp: number): boolean {
+    return cp >= NEW_TAI_LUE_START && cp <= NEW_TAI_LUE_END;
+}
+
+/**
+ * Check if a codepoint falls in the Tai Le Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isTaiLeCodepoint(cp: number): boolean {
+    return cp >= TAI_LE_START && cp <= TAI_LE_END;
+}
+
+/**
+ * Check if a codepoint falls in the Cham Unicode block.
+ *
+ * @since 1.8.0
+ */
+export function isChamCodepoint(cp: number): boolean {
+    return cp >= CHAM_START && cp <= CHAM_END;
+}
+
+/**
+ * Whether a code point is a combining diacritical mark of the four generic
+ * blocks (U+0300–036F, U+1AB0–1AFF, U+1DC0–1DFF, U+20D0–20FF): the tone
+ * marks of Yoruba and Igbo, the accents of any NFD Latin text, the marks
+ * Greek and Cyrillic borrow. Script-specific marks (Arabic harakat, Indic
+ * vowel signs) belong to their scripts and are not counted here.
+ *
+ * @since 1.8.0
+ */
+export function isCombiningMarkCodepoint(cp: number): boolean {
+    return (cp >= COMBINING_MARKS_START && cp <= COMBINING_MARKS_END)
+        || (cp >= COMBINING_MARKS_EXT_START && cp <= COMBINING_MARKS_EXT_END)
+        || (cp >= COMBINING_MARKS_SUPP_START && cp <= COMBINING_MARKS_SUPP_END)
+        || (cp >= COMBINING_MARKS_SYMBOLS_START && cp <= COMBINING_MARKS_SYMBOLS_END);
+}
+
 /** Check if a codepoint falls in any Cyrillic Unicode block. */
 export function isCyrillicCodepoint(cp: number): boolean {
     return (cp >= CYRILLIC_START && cp <= CYRILLIC_END) ||
@@ -403,6 +526,78 @@ export function containsHebrew(text: string): boolean {
 export function containsThai(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isThaiCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any Lao characters.
+ *
+ * @since 1.8.0
+ */
+export function containsLao(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isLaoCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any Tai Tham (Lanna) characters.
+ *
+ * @since 1.8.0
+ */
+export function containsTaiTham(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isTaiThamCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any New Tai Lue characters.
+ *
+ * @since 1.8.0
+ */
+export function containsNewTaiLue(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isNewTaiLueCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any Tai Le characters.
+ *
+ * @since 1.8.0
+ */
+export function containsTaiLe(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isTaiLeCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Check whether a string contains any Cham characters.
+ *
+ * @since 1.8.0
+ */
+export function containsCham(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isChamCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Fast O(n) check for a generic combining mark (see {@link isCombiningMarkCodepoint}).
+ *
+ * @since 1.8.0
+ */
+export function containsCombiningMarks(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isCombiningMarkCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }
