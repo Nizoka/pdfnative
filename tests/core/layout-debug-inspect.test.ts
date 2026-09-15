@@ -18,10 +18,14 @@ function sampleDoc(): DocumentParams {
     };
 }
 
+// Two builds compared byte for byte must share a creation instant: unpinned,
+// /CreationDate, /ModDate and the trailer /ID differ across a second boundary.
+const pinned = { creationDate: new Date('2026-01-01T00:00:00Z') };
+
 describe('layout debug overlay', () => {
     it('debug:false is byte-identical to the default build', () => {
-        const a = buildDocumentPDFBytes(sampleDoc());
-        const b = buildDocumentPDFBytes(sampleDoc(), { debug: false });
+        const a = buildDocumentPDFBytes(sampleDoc(), pinned);
+        const b = buildDocumentPDFBytes(sampleDoc(), { ...pinned, debug: false });
         expect(Buffer.from(b).equals(Buffer.from(a))).toBe(true);
     });
 
@@ -40,8 +44,8 @@ describe('layout debug overlay', () => {
     });
 
     it('empty debug object (all layers off) is byte-identical', () => {
-        const a = buildDocumentPDFBytes(sampleDoc());
-        const b = buildDocumentPDFBytes(sampleDoc(), { debug: {} });
+        const a = buildDocumentPDFBytes(sampleDoc(), pinned);
+        const b = buildDocumentPDFBytes(sampleDoc(), { ...pinned, debug: {} });
         expect(Buffer.from(b).equals(Buffer.from(a))).toBe(true);
     });
 });
