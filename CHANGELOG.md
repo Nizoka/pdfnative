@@ -27,7 +27,7 @@ byte-identically except where the previous output was wrong (see Fixed),
 and four calls behave differently by design — `setDeflateImpl()` rejects
 a raw-DEFLATE compressor, `parseColor()` accepts CMYK input,
 `extractText()` honours `/ActualText`, `{date}` follows `creationDate` —
-see the release note's Upgrade section. 3748+ tests across 159 files; veraPDF-validated; a consumer
+see the release note's Upgrade section. 3823+ tests across 160 files; veraPDF-validated; a consumer
 importing one helper bundles that helper alone.
 
 ### Added
@@ -208,12 +208,18 @@ importing one helper bundles that helper alone.
   `attest` job attaches a CycloneDX SBOM, the tarball and their
   build-provenance attestations to the maintainer's release; new
   `dependency-review.yml` and weekly `audit.yml`; a `v*` tag ruleset.
-- **chore(fonts): pinned sources** — `fonts/SOURCES.json` (google/fonts
-  commit + SHA-256 per TTF), verified by `fonts:download` and
-  `verify:fonts`; the four hinted static instances are pinned to their
-  notofonts release archives and extracted by the script; only the five
-  Latin subsets no upstream file produces are committed under
-  `fonts/ttf/`, outside the tarball.
+- **chore(fonts): pinned sources, nothing committed** — `fonts/SOURCES.json`
+  (google/fonts commit + SHA-256 + copyright statement per TTF), verified by
+  `fonts:download` and `verify:fonts`; the four hinted static instances are
+  pinned to their notofonts release archives and extracted by the script;
+  the five Latin subsets are cut from the pinned `NotoSans-VF.ttf` by the
+  library's own `subsetTTF()` (code-point lists in `fonts/subsets/`, command
+  `scripts/build-latin-subsets.ts`, hash in `derived[]`) and re-derived by
+  `verify:fonts` before their modules are compared, so no font binary is
+  committed and every module is proven from upstream bytes.
+- **feat(fonts): `subsetTTF(ttf, gids, { keepLayoutTables })`** — optional
+  source-font mode copying `GSUB`/`GPOS`/`GDEF` verbatim; two-argument calls
+  byte-identical.
 - **chore(repo):** `.gitattributes` `* text=auto eol=lf` and
   `linguist-generated` on the generated bulk; the `eol-lf` rule warns on
   the 315 CRLF-stored files until the renormalisation commit; opt-in git
@@ -228,6 +234,16 @@ importing one helper bundles that helper alone.
 
 ### Fixed
 
+- **fix(shaping): Thai and Lao sara am under a tone mark** — the nikhahit
+  split off from ำ / ຳ is ordered before the cluster's tone marks (HarfBuzz
+  `preprocess_text_thai`), so in น้ำ and ນ້ຳ the tone stacks on the nikhahit
+  instead of the nikhahit sitting on the tone; Noto Sans Lao's unanchored
+  pali virama U+0EBA keeps its advance instead of vanishing under the next
+  glyph. Four samples re-anchored, `doc-thai` visual baseline added.
+- **fix(samples): Thai and Lao language documents** — the Thai "repetition
+  mark" row sets ๆ (it showed the abbreviation sign ฯลฯ); the Lao Pali-virama
+  row, which Noto Sans Lao cannot honour, shows the repetition and
+  abbreviation signs; tone-over-vowel and sara am rows made truthful.
 - **fix(core): AcroForm fields under a PDF/A claim** embed their `/DR` font
   instead of an unembedded base-14 `/Helv`, so interactive forms can be
   archival ([#74]).
@@ -345,6 +361,16 @@ importing one helper bundles that helper alone.
 
 ### Documentation
 
+- **docs(licences): per-font third-party notices** — every source font
+  with its upstream and copyright statement, the OFL Modified-Version
+  statement, the CJK fonts' Reserved Font Name "Source", Unicode 17.0.0 and
+  the HarfBuzz override commit, the Adobe Core 14 AFM metrics;
+  `fonts/LICENSE` carries every copyright line (OFL §2); held by test.
+- **docs(discoverability): 1.8.0 keywords** in `package.json`, the homepage
+  meta / Open Graph / JSON-LD (`keywords`, `featureList`), `llms.txt` and
+  `CITATION.cff` — typography, CMYK, PDF/X-4, Indic and Universal shaping,
+  Lao, Tai Tham, Cham, Hausa, Yoruba, Igbo, Swahili, COLRv1, reproducible
+  output.
 - **docs(guides): typography guide**; the print guide covers CMYK, CMYK
   OutputIntents, registration colour, PDF/X-4, `validatePdfX()` and what it
   does not check; the PDF/A, colour-emoji and text-extraction guides

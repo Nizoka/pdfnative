@@ -84,6 +84,7 @@ import the `parser/` reader/modifier — they operate on existing PDFs by design
 | File | Regenerate with |
 |---|---|
 | `fonts/*-data.js` + `.d.ts` | `tools/build-font-data.cjs` (CONTRIBUTING.md §Regenerating Font Data); reproducibility checked by `npm run verify:fonts` |
+| `fonts/ttf/*.ttf` (never committed) | `npm run fonts:download` — pinned downloads + the five Latin subsets cut from `NotoSans-VF.ttf` by `subsetTTF()` (`fonts:subsets`; lists in `fonts/subsets/`, hashes in `fonts/SOURCES.json`) |
 | `src/shaping/use-data.ts` | `npx tsx scripts/generate-use-data.ts` (drift checked by `npm run verify:unicode`) |
 | `docs/assets/api.json` | `npm run docs:api` |
 | `docs/guides/*.html` | `npm run docs:guides` |
@@ -93,7 +94,7 @@ import the `parser/` reader/modifier — they operate on existing PDFs by design
 
 ## Counts and versions
 
-3748 tests across 159 files, 292 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
+3823 tests across 160 files, 292 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
 `docs/assets/ecosystem.json` is the source of every count and version quoted in the docs; run `npm run verify:docs` after touching any of them.
 Coverage: ≥ 88 % statements enforced by CI (currently 91.5 % statements; the thresholds live once in `vitest.config.ts`).
 

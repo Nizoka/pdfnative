@@ -16,7 +16,7 @@ npm run fonts:download   # fetch Noto Sans TTFs → fonts/ttf/
 - Node.js 22 — the line in `.nvmrc` and `.node-version` (`nvm use` / `fnm use` / `volta` pick it up; CI also runs the suite on 24, and `engines.node` allows `>=22`).
 - npm — the version pinned by `packageManager` in `package.json` (Corepack honours it). The repository's `.npmrc` sets `ignore-scripts=true` (no dependency runs an install script here — esbuild resolves its platform binary from an optional dependency), `fund=false` and `audit-level=high`; `npm run <script>` still runs the script you name, but lifecycle hooks such as `prepublishOnly` do not fire, which is why the publish workflow builds explicitly before it packs.
 - Dev dependencies use caret ranges on purpose: `package-lock.json` plus `npm ci` is what makes an install reproducible, not narrow ranges. Let npm manage the lockfile.
-- Source fonts: `npm run fonts:download` fetches every TTF at the google/fonts commit pinned in [fonts/SOURCES.json](fonts/SOURCES.json) and refuses a file whose SHA-256 differs from the manifest; the four hinted static instances (Arabic, Armenian, Georgian, Hebrew) come from the notofonts release archives the manifest names (`origin: "release"`: repository, tag, asset, entry path), extracted and hash-checked by the same script; only the five Latin subsets (Cyrillic, Greek, Polish, Turkish, Vietnamese) are committed under `fonts/ttf/`, because no upstream file produces them — until the project regenerates them with its own `subsetTTF()` (see the roadmap).
+- Source fonts: `npm run fonts:download` fetches every TTF at the google/fonts commit pinned in [fonts/SOURCES.json](fonts/SOURCES.json) and refuses a file whose SHA-256 differs from the manifest; the four hinted static instances (Arabic, Armenian, Georgian, Hebrew) come from the notofonts release archives the manifest names (`origin: "release"`: repository, tag, asset, entry path), extracted and hash-checked by the same script; the five Latin subsets (Cyrillic, Greek, Polish, Turkish, Vietnamese) are cut by the same script from the pinned `NotoSans-VF.ttf` with the library's own `subsetTTF()`, from the code-point lists in `fonts/subsets/` (`derived[]`: tool, command, SHA-256). Nothing under `fonts/ttf/` is committed.
 
 ### First pull request in ten minutes
 
@@ -169,7 +169,7 @@ src/
 fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (49 generators, 292 PDFs) and the verification scripts
-tests/            # 159 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+tests/            # 160 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -239,13 +239,13 @@ To update the ruleset already in place, `gh api repos/Nizoka/pdfnative/rulesets`
 ## Adding a New Language / Script
 
 0. Decide whether it is a new **script** or a new **language on a script already bundled**. Hausa, Yoruba, Igbo and Swahili (v1.8.0) needed no module, no `lang` key and no shaper: the bundled `latin` module (Noto Sans) carries their letters and anchors, `detectCharLang()` routes Latin Extended-B, IPA and the combining-mark blocks to it, and the `latin-marks` shaper composes the tone marks. For such a language, add a `LangSample` plate to `scripts/data/alphabet-data.ts`, a `LanguageDoc` to `scripts/data/language-docs-data.ts` (one page, edge-case table — `tests/regression/language-docs.test.ts` enforces one page and no missing glyph), an alias in `scripts/helpers/fonts.ts`, and the README rows; stop there. The steps below are for a new script.
-1. Obtain a Noto Sans TTF for the target script — download the raw `.ttf` directly from [github.com/notofonts](https://github.com/notofonts) (click the file → **Download raw file**, no zip needed) and save to `fonts/ttf/`
-2. Run `node tools/build-font-data.cjs fonts/ttf/NotoSans-<Script>.ttf`
+1. Obtain a Noto Sans TTF for the target script — download the raw `.ttf` directly from [github.com/notofonts](https://github.com/notofonts) (click the file → **Download raw file**, no zip needed) and save to `fonts/ttf/` (git-ignored), then add its entry to `fonts/SOURCES.json` (google/fonts `dir` + `remote`, or a notofonts release `repo`/`tag`/`asset`/`path`) and record its hash and copyright statement with `npx tsx scripts/download-fonts.ts --update-manifest --commit <google/fonts sha>`; `THIRD-PARTY-NOTICES.md` and `fonts/LICENSE` gain the family (a test holds them to the manifest)
+2. Run `node tools/build-font-data.cjs fonts/ttf/NotoSans-<Script>.ttf fonts/noto-<script>-data.js`
 3. Add script ranges to `src/shaping/script-registry.ts` (centralized constants) and detection in `src/shaping/script-detect.ts`
 4. If the script needs OpenType shaping (GSUB/GPOS): an Indic script (Gujarati, Gurmukhi, Kannada, Malayalam, Odia) is an `IndicScriptConfig` for `src/shaping/indic-engine.ts` plus a one-line wrapper (see `telugu-shaper.ts`); a script the Universal Shaping Engine covers needs nothing beyond registration; anything else is a shaper in `src/shaping/` registered in `shaper-registry.ts`
 5. Register the font in your test setup
 6. Add tests for the new script detection and encoding
-7. Run `npm run verify:fonts` — every committed module must regenerate byte
+7. Run `npm run verify:fonts` — every bundled module must regenerate byte
    for byte from the source font it declares
 
 ## Regenerating Font Data
@@ -254,13 +254,24 @@ Each `fonts/*-data.js` carries a `DO NOT EDIT — Regenerate with: …` header,
 and that sentence is enforced:
 
 ```bash
-npm run fonts:download   # populate fonts/ttf/ (git-ignored)
+npm run fonts:download   # populate fonts/ttf/ (git-ignored): download the pinned sources, derive the Latin subsets
 npm run verify:fonts     # every module must reproduce exactly
 ```
 
 The check skips with instructions when the TTFs are absent, so it never blocks
 local work. It also runs on a schedule and whenever `fonts/` or either
 generator changes.
+
+**Derived subsets.** The Cyrillic, Greek, Polish, Turkish and Vietnamese
+source fonts are not downloaded: `fonts:download` cuts them from the pinned
+`NotoSans-VF.ttf` with the library's own `subsetTTF()`, from the code-point
+list each `derived[]` entry of `fonts/SOURCES.json` names under
+`fonts/subsets/` (`npx tsx scripts/build-latin-subsets.ts` does the same on
+its own; `--check` reports drift). Their recorded hash depends on the
+subsetter and on the list by design, so a change to either makes
+`verify:fonts` fail until `npx tsx scripts/build-latin-subsets.ts
+--update-manifest`, the five module rebuilds and the sample rebaseline are
+committed together, with the release note saying why.
 
 If you change a generator, expect module bytes to move. Regenerate, then prove
 nothing rendered differently:
