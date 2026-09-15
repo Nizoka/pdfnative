@@ -37,16 +37,21 @@ const table: PdfParams = {
     rows: Array.from({ length: 30 }, (_, i) => ({ cells: [`${i}`, `${i * 2}`], type: '', pointed: false })),
 };
 
+// The two builds of a parity pair run seconds apart under coverage; without a
+// pinned creation instant /CreationDate, /ModDate and the trailer /ID differ
+// across a second boundary and the comparison flakes.
+const pinned = { creationDate: new Date('2026-01-01T00:00:00Z') };
+
 describe('true-streaming byte parity', () => {
     it('buildDocumentPDFStreamTrue == buildDocumentPDFBytes', async () => {
-        const buffered = buildDocumentPDFBytes(doc);
-        const streamed = await collect(buildDocumentPDFStreamTrue(doc));
+        const buffered = buildDocumentPDFBytes(doc, pinned);
+        const streamed = await collect(buildDocumentPDFStreamTrue(doc, pinned));
         expect(Buffer.from(streamed).equals(Buffer.from(buffered))).toBe(true);
     });
 
     it('buildPDFStreamTrue == buildPDFBytes', async () => {
-        const buffered = buildPDFBytes(table);
-        const streamed = await collect(buildPDFStreamTrue(table));
+        const buffered = buildPDFBytes(table, pinned);
+        const streamed = await collect(buildPDFStreamTrue(table, pinned));
         expect(Buffer.from(streamed).equals(Buffer.from(buffered))).toBe(true);
     });
 
