@@ -128,7 +128,7 @@ const pages = manifest.playgrounds.filter(
 // The bundled Noto Sans data module is large; its first import dominates the runtime.
 describe('playground code views run outside the browser', { timeout: 60_000 }, () => {
     it('covers every page that ships a CODE object', () => {
-        expect(pages.map(p => p.id).sort()).toEqual(['authoring-plus', 'charts', 'print', 'toolkit', 'typography']);
+        expect(pages.map(p => p.id).sort()).toEqual(['authoring-plus', 'charts', 'print', 'reproducible', 'toolkit', 'typography']);
     });
 
     for (const page of pages) {

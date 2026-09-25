@@ -123,11 +123,13 @@
     <a href="./react.html">React renderer</a>
     <a href="./typography.html">Typography</a>
     <a href="./print.html">Print &amp; PDF/X</a>
+    <a href="./reproducible.html">Reproducible output</a>
+    <a href="./docspec-lint.html">DocSpec lint</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
     <h1>pdfnative-cli command builder</h1>
-    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers all twenty-one commands of <strong>pdfnative-cli v1.4.0</strong> — authoring (<code>render</code>, <code>fill</code>, <code>annotate</code>, <code>metadata</code>), the page tree (<code>merge</code>, <code>split</code>, <code>extract</code>), the complete PAdES ladder (<code>sign --timestamp</code> B-T, <code>ltv</code> B-LT, <code>doc-timestamp</code> B-LTA, plus <code>encrypt</code> / <code>decrypt</code> and <code>verify</code>), reading (<code>inspect</code>, <code>extract-text</code>, <code>compare</code>), and automation (<code>batch</code> with declarative manifests, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code>). The most-used flags have form fields; the <a href="../guides/cli.html">CLI guide</a> is the exhaustive flag reference. The builder runs entirely in your browser — nothing is uploaded.</p>
+    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers all twenty-one commands of <strong>pdfnative-cli v1.5.0</strong> (engine pdfnative ≥ 1.8.0) — authoring (<code>render</code>, <code>fill</code>, <code>annotate</code>, <code>metadata</code>), the page tree (<code>merge</code>, <code>split</code>, <code>extract</code>), the complete PAdES ladder (<code>sign --timestamp</code> B-T, <code>ltv</code> B-LT, <code>doc-timestamp</code> B-LTA, plus <code>encrypt</code> / <code>decrypt</code> and <code>verify</code>), reading (<code>inspect</code>, <code>extract-text</code>, <code>compare</code>), and automation (<code>batch</code> with declarative manifests, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code>). The most-used flags have form fields; the <a href="../guides/cli.html">CLI guide</a> is the exhaustive flag reference. The builder runs entirely in your browser — nothing is uploaded.</p>
 
     <div class="cli-presets">
       <label for="preset"><strong>Quick preset:</strong></label>
@@ -161,9 +163,21 @@
         <option value="metadata-update">metadata · signature-safe edit · v1.4</option>
         <option value="batch-manifest">batch · declarative manifest · v1.4</option>
         <option value="render-strict">render · strict PDF/A gate · v1.4</option>
+        <option value="render-typography">render · typography (justify, kerning, OpenType features) · v1.5</option>
+        <option value="render-pdfx4-cmyk">render · PDF/X-4 with output intent + strict · v1.5</option>
+        <option value="render-font-file">render · your own TTF (--font-file) · v1.5</option>
+        <option value="render-reproducible">render · reproducible output (--creation-date) · v1.5</option>
+        <option value="render-dry-run">render · dry-run pre-flight + JSON envelope · v1.5</option>
+        <option value="inspect-pdfx">inspect · PDF/X-4 report + ISO dates · v1.5</option>
+        <option value="annotate-link">annotate · link (URI) annotations · v1.5</option>
+        <option value="sign-timestamp-timeout">sign · PAdES B-T with TSA timeout · v1.5</option>
+        <option value="verify-weak-digest">verify · strict — weak SHA-1 timestamp digest · v1.5</option>
+        <option value="doctor-conformance">doctor · fonts, unicode &amp; conformance checks · v1.5</option>
+        <option value="global-flags-first">global flags before the command · v1.5</option>
       </select>
       <button id="reset" class="btn btn-secondary" style="padding: 6px 14px; font-size: 13px;">Reset</button>
     </div>
+    <p class="hint" id="preset-hint" style="display: none; margin: 8px 0 0;"></p>
 
     <div class="cli-tabs" role="tablist">
       <button class="cli-tab" role="tab" aria-selected="true"  data-tab="render">render</button>
@@ -250,7 +264,7 @@
         </div>
         <div>
           <label><input type="checkbox" data-cmd="render" data-flag="--strict"> --strict <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
-          <span class="hint">Escalate PDF/A diagnostics (unembedded form fonts, DeviceCMYK images…) into a hard failure before the first byte — exit 1 / <code>E_CHECK_FAILED</code>.</span>
+          <span class="hint">Escalate PDF/A and PDF/X diagnostics (unembedded form fonts, DeviceCMYK images, <code>PDFX_ANNOTATIONS</code>, <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>… — 9 codes since v1.5.0) into a hard failure before the first byte — exit 1 / <code>E_CHECK_FAILED</code>.</span>
         </div>
         <div>
           <label for="r-chunk">--chunk-size <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
@@ -265,7 +279,12 @@
         <div class="full">
           <label for="r-lang">--lang</label>
           <input id="r-lang" type="text" data-cmd="render" data-flag="--lang" placeholder="th,ja,ar">
-          <span class="hint">Comma-separated language codes. Non-Latin scripts need their font registered — pass the same code to <code>--font</code> (22 bundled scripts).</span>
+          <span class="hint">Comma-separated language codes. Non-Latin scripts need their font registered — pass the same code to <code>--font</code> (27 bundled scripts; <code>lo</code>, <code>nod</code>, <code>khb</code>, <code>tdd</code>, <code>cjm</code> since v1.5.0). <code>ha</code>, <code>yo</code>, <code>ig</code>, <code>sw</code> are aliases of <code>latin</code>.</span>
+        </div>
+        <div class="full">
+          <label for="r-font-file">--font-file (one per line) <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.5</span></label>
+          <textarea id="r-font-file" data-cmd="render" data-flag="--font-file" placeholder="./fonts/HouseSerif.ttf:house"></textarea>
+          <span class="hint">Register and embed a TrueType/OpenType font you ship: <code>&lt;path.ttf&gt;[:name]</code>, repeatable. Path checked, 32 MiB cap, sfnt signature required (no collections, no WOFF), validated by the font compiler; the name defaults to the file stem and is added to <code>--lang</code>.</span>
         </div>
 
         <fieldset>
@@ -287,10 +306,11 @@
                 <option value="latin">latin (Noto Sans VF)</option>
                 <option value="emoji">emoji (Noto Emoji)</option>
                 <option value="math">math (Noto Sans Math) · v1.2</option>
+                <option value="color-emoji">color-emoji</option>
                 <option value="latin,emoji">latin,emoji</option>
                 <option value="latin,math">latin,math</option>
               </select>
-              <span class="hint">Bundled font codes — besides these, any of the 22 script codes (<code>ar</code>, <code>th</code>, <code>ja</code>…) works and doubles as the <code>--lang</code> code.</span>
+              <span class="hint">Bundled font codes — besides these, any of the 27 script codes (<code>ar</code>, <code>th</code>, <code>ja</code>… plus <code>lo</code>, <code>nod</code>, <code>khb</code>, <code>tdd</code>, <code>cjm</code> since v1.5.0) works and doubles as the <code>--lang</code> code; 31 bundled font modules in total.</span>
             </div>
           </div>
         </fieldset>
@@ -313,6 +333,65 @@
               <span class="hint">Overlay layout-debug guides on a normal PDF.</span>
             </div>
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Typography <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.5</span></legend>
+          <div class="grid">
+            <div>
+              <label><input type="checkbox" data-cmd="render" data-flag="--split-paragraphs"> --split-paragraphs</label>
+              <span class="hint">Paragraphs may break across pages (widows/orphans default to 2).</span>
+            </div>
+            <div>
+              <label><input type="checkbox" data-cmd="render" data-flag="--keep-headings-with-next"> --keep-headings-with-next</label>
+              <span class="hint">A heading never ends a page alone.</span>
+            </div>
+            <div>
+              <label><input type="checkbox" data-cmd="render" data-flag="--kerning"> --kerning</label>
+              <span class="hint">Pair kerning — needs a registered font (<code>--font latin --lang latin</code>).</span>
+            </div>
+            <div>
+              <label for="r-font-features">--font-features</label>
+              <input id="r-font-features" type="text" data-cmd="render" data-flag="--font-features" placeholder="onum,smcp">
+              <span class="hint">Comma-separated OpenType features: <code>tnum</code>, <code>pnum</code>, <code>lnum</code>, <code>onum</code>, <code>zero</code>, <code>ordn</code>, <code>sups</code>, <code>subs</code>, <code>smcp</code>, <code>c2sc</code>, <code>case</code>. <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code> warns when a tag changes nothing in the font.</span>
+            </div>
+          </div>
+          <span class="hint" style="margin-top: 8px; display: block;">The full <code>layout.typography</code> set (widows/orphans, <code>unitBinding</code>, <code>punctuationSpacing</code>, <code>opticalMargins</code>, <code>hyphenationLanguage</code>…) lives in the JSON or the <code>--layout</code> file; soft hyphens (U+00AD) are always honoured.</span>
+        </fieldset>
+
+        <fieldset>
+          <legend>PDF/X-4 &amp; output intent <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.5</span></legend>
+          <div class="grid">
+            <div>
+              <label for="r-pdfx">--pdfx</label>
+              <select id="r-pdfx" data-cmd="render" data-flag="--pdfx">
+                <option value="">none (default)</option>
+                <option value="pdfx4">pdfx4 (ISO 15930-7)</option>
+              </select>
+              <span class="hint">PDF/X-4 claim. Needs an output ICC profile, every font embedded, <code>--trapped true|false</code> and a TrimBox or ArtBox per page. Exclusive with <code>--tagged pdfa*</code> and encryption.</span>
+            </div>
+            <div>
+              <label for="r-oi-icc">--output-intent-icc</label>
+              <input id="r-oi-icc" type="text" data-cmd="render" data-flag="--output-intent-icc" placeholder="press.icc">
+              <span class="hint">ICC profile for <code>layout.outputIntent</code> (RGB, CMYK or Gray; <code>prtr</code> class for PDF/X-4). 16 MiB cap, <code>acsp</code> signature checked.</span>
+            </div>
+            <div>
+              <label for="r-oi-id">--output-intent-id</label>
+              <input id="r-oi-id" type="text" data-cmd="render" data-flag="--output-intent-id" placeholder="ISO Coated v2 (ECI)">
+              <span class="hint"><code>outputConditionIdentifier</code> — defaults to the ICC file's basename. Requires <code>--output-intent-icc</code>.</span>
+            </div>
+            <div>
+              <label for="r-trapped">--trapped</label>
+              <select id="r-trapped" data-cmd="render" data-flag="--trapped">
+                <option value="">unset (default)</option>
+                <option value="true">true</option>
+                <option value="false">false</option>
+                <option value="unknown">unknown</option>
+              </select>
+              <span class="hint"><code>/Info /Trapped</code>. PDF/X needs <code>true</code> or <code>false</code>.</span>
+            </div>
+          </div>
+          <span class="hint" style="margin-top: 8px; display: block;">Colours everywhere also accept CMYK — <code>[c, m, y, k]</code> percent or <code>"c m y k"</code> operands 0–1 (DeviceCMYK). Check the result with <code>inspect --check pdfx</code>.</span>
         </fieldset>
 
         <fieldset>
@@ -367,7 +446,7 @@
         </fieldset>
 
         <fieldset>
-          <legend>Encryption (mutually exclusive with <code>--tagged pdfa*</code>)</legend>
+          <legend>Encryption (mutually exclusive with <code>--tagged pdfa*</code> and <code>--pdfx</code>)</legend>
           <div class="grid">
             <div>
               <label for="r-enc-owner">--encrypt-owner-pass</label>
@@ -473,6 +552,11 @@
               <span class="hint">Embed an RFC 3161 token (PAdES <strong>B-T</strong>). The only network opt-in on <code>sign</code> — SSRF-guarded, no silent fallback (<code>E_NETWORK</code> / <code>E_PARSE</code>).</span>
             </div>
             <div>
+              <label for="s-ts-timeout">--timestamp-timeout (ms) <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.5</span></label>
+              <input id="s-ts-timeout" type="text" data-cmd="sign" data-flag="--timestamp-timeout" placeholder="10000">
+              <span class="hint">Bound on the TSA round-trip; reported as <code>timestamp.timeoutMs</code> in the envelope. Only together with <code>--timestamp</code>.</span>
+            </div>
+            <div>
               <label for="s-ts-digest">--timestamp-digest</label>
               <select id="s-ts-digest" data-cmd="sign" data-flag="--timestamp-digest">
                 <option value="">sha256 (default)</option>
@@ -566,6 +650,18 @@
           <span class="hint">Structural signature inventory — fieldName, subFilter, byteRange, isDocTimestamp, isPlaceholder, sigObjNum, contentsLength. Never the signature bytes.</span>
         </div>
         <div>
+          <label><input type="checkbox" data-cmd="inspect" data-flag="--pdfx"> --pdfx <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.5</span></label>
+          <span class="hint">Structural ISO 15930-7 (PDF/X-4) validation report; <code>pdfxConformance</code> is always present, <code>--summary</code> adds <code>pdfx</code>.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="inspect" data-flag="--iso-dates"> --iso-dates <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.5</span></label>
+          <span class="hint">Report <code>/CreationDate</code> and <code>/ModDate</code> as ISO 8601 instead of raw PDF dates (additive).</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="inspect" data-flag="--summary"> --summary</label>
+          <span class="hint">Minimal verdict for agents; combine with the global <code>--json</code>.</span>
+        </div>
+        <div>
           <label for="i-password">--password</label>
           <input id="i-password" type="text" data-cmd="inspect" data-flag="--password" placeholder="$PDFNATIVE_PASSWORD">
           <span class="hint">Open an encrypted PDF. Prefer the env var.</span>
@@ -577,6 +673,7 @@
             <div><label><input type="checkbox" data-cmd="inspect" data-flag="--check" data-value="signed"> --check signed</label></div>
             <div><label><input type="checkbox" data-cmd="inspect" data-flag="--check" data-value="encrypted"> --check encrypted</label></div>
             <div><label><input type="checkbox" data-cmd="inspect" data-flag="--check" data-value="pdfua"> --check pdfua</label></div>
+            <div><label><input type="checkbox" data-cmd="inspect" data-flag="--check" data-value="pdfx"> --check pdfx <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.5</span></label></div>
             <div>
               <label for="i-check-sigs">--check "signatures&gt;=N" <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
               <input id="i-check-sigs" type="text" data-cmd="inspect" data-flag="--check-signatures" placeholder="1">
@@ -727,7 +824,7 @@
         <div class="full">
           <label for="a-annotations">--annotations (file path)</label>
           <input id="a-annotations" type="text" data-cmd="annotate" data-flag="--annotations" placeholder="notes.json">
-          <span class="hint">JSON array (or <code>{ "annotations": [...] }</code>): each entry a markup annotation plus a 1-based <code>page</code>.</span>
+          <span class="hint">JSON array (or <code>{ "annotations": [...] }</code>): each entry a markup annotation plus a 1-based <code>page</code>. Link entry (v1.5.0): <code>{ "type": "link", "page": 1, "rect": [72, 700, 300, 720], "url": "https://pdfnative.dev" }</code> — <code>http:</code>, <code>https:</code> or <code>mailto:</code> only, otherwise <code>E_INPUT</code>.</span>
         </div>
         <div>
           <label for="a-password">--password <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
@@ -738,7 +835,7 @@
           <label><input type="checkbox" data-cmd="annotate" data-flag="--dry-run"> --dry-run</label>
         </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Written with an <strong>incremental save</strong>, so existing signatures stay valid. Types: text, highlight, underline, strikeout, squiggly, square, circle, line, freetext. <strong>Overlay, not redaction.</strong></p>
+      <p class="hint" style="margin-top: 14px;">Written with an <strong>incremental save</strong>, so existing signatures stay valid. Types: text, highlight, underline, strikeout, squiggly, square, circle, line, freetext, and <code>link</code> (v1.5.0 — a <code>/Link</code> with a <code>/URI</code> action over a click rectangle). Colours accept CMYK too. <strong>Overlay, not redaction.</strong></p>
     </section>
 
     <!-- ─────────────── GOVERN (v1.2) ─────────────── -->
@@ -1194,7 +1291,7 @@
           <label><input type="checkbox" data-cmd="doctor" data-flag="--pretty"> --pretty</label>
         </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Five offline checks: CLI version, Node (≥ 22 since v1.4.0), WebCrypto CSPRNG, resolved <code>pdfnative</code> engine version, and the command count. The first thing to run in a new environment — and the first thing an agent should call.</p>
+      <p class="hint" style="margin-top: 14px;">Eight offline checks: <code>cli</code> version, <code>node</code> (≥ 22 since v1.4.0), <code>webcrypto</code> CSPRNG, the resolved <code>pdfnative</code> engine version, the <code>commands</code> count, and since v1.5.0 <code>fonts</code> (31 modules / 27 scripts, probed on disk), <code>unicode</code> (the USE database version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>). <code>--json</code> emits <code>{ ok, checks: [{ name, status, value, detail }] }</code>. The first thing to run in a new environment — and the first thing an agent should call.</p>
     </section>
 
     <!-- ─────────────── SCHEMA ─────────────── -->
@@ -1224,7 +1321,7 @@
             <option value="manifest">manifest (capability document)</option>
             <option value="doctor">doctor</option>
           </select>
-          <span class="hint">Versioned JSON Schemas (Draft 2020-12) — the <code>$id</code> embeds the CLI version, so agents can self-validate before invoking a command. 19 subjects in v1.4.0.</span>
+          <span class="hint">Versioned JSON Schemas (Draft 2020-12) — the <code>$id</code> embeds the CLI version, so agents can self-validate before invoking a command. 19 subjects in v1.5.0.</span>
         </div>
       </div>
     </section>
@@ -1244,6 +1341,41 @@
         </div>
       </div>
     </section>
+
+    <fieldset class="cli-form" style="margin-top: 18px;">
+      <legend>Global flags (any command) <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.5</span></legend>
+      <div class="grid">
+        <div>
+          <label for="gl-position">placement</label>
+          <select id="gl-position">
+            <option value="after">after the command (every version)</option>
+            <option value="before">before the command name (v1.5.0+)</option>
+          </select>
+          <span class="hint">Since v1.5.0 global flags may precede the command name (<code>pdfnative --json inspect …</code>). Arguments without any command exit 2 / <code>E_USAGE</code>.</span>
+        </div>
+        <div>
+          <label for="gl-creation-date">--creation-date</label>
+          <input id="gl-creation-date" type="text" data-cmd="global" data-flag="--creation-date" placeholder="2026-01-01T00:00:00Z">
+          <span class="hint">Pin the creation instant of every PDF written in this run (<code>render</code>, <code>batch</code>): <code>/CreationDate</code>, <code>xmp:CreateDate</code>, <code>{date}</code> and the trailer <code>/ID</code> derive from it, in UTC — identical SHA-256 on every host. Falls back to <code>$SOURCE_DATE_EPOCH</code>. Encrypted output is never reproducible.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="global" data-flag="--dry-run"> --dry-run</label>
+          <span class="hint">Validate and exit without writing. <code>render</code> pre-flights the real build in memory; never performs network I/O.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="global" data-flag="--json"> --json</label>
+          <span class="hint">Agent mode: JSON status/error envelope on stderr with a stable <code>E_*</code> code; data stays on stdout.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="global" data-flag="--quiet"> --quiet</label>
+          <span class="hint">Suppress progress output on stderr.</span>
+        </div>
+        <div>
+          <label><input type="checkbox" data-cmd="global" data-flag="--no-color"> --no-color</label>
+          <span class="hint">Disable ANSI colour (also respects <code>NO_COLOR</code>).</span>
+        </div>
+      </div>
+    </fieldset>
 
     <div class="cli-validation" id="validation"></div>
 
@@ -1292,11 +1424,12 @@
     annotate: {}, govern: {}, metadata: {}, ltv: {}, 'doc-timestamp': {}, encrypt: {},
     decrypt: {}, 'extract-text': {}, compare: {}, fill: {}, batch: {}, doctor: {},
     schema: {}, completion: {},
+    global: {}, // global flags (--json, --quiet, --no-color, --dry-run, --creation-date)
   };
   let activeCmd = 'render';
 
   // Repeatable flags (one occurrence per item)
-  const REPEATABLE = new Set(['--cert-chain', '--attachment', '--trust', '--check', '--extra-cert']);
+  const REPEATABLE = new Set(['--cert-chain', '--attachment', '--trust', '--check', '--extra-cert', '--font-file']);
 
   // ── DOM helpers ───────────────────────────────────
   const $  = (id) => document.getElementById(id);
@@ -1329,6 +1462,10 @@
     const evt = (el.tagName === 'SELECT' || el.type === 'checkbox') ? 'change' : 'input';
     el.addEventListener(evt, () => collect(el));
   });
+
+  // ── Global flag placement (before the command name since v1.5.0) ──
+  const globalPosition = $('gl-position');
+  globalPosition.addEventListener('change', () => render());
 
   function collect(el) {
     const cmd = el.dataset.cmd;
@@ -1388,6 +1525,40 @@
       if (pageSizeSelect.value === '__custom__' && pageSizeCustom.value && !/^\d+x\d+$/i.test(pageSizeCustom.value.trim())) {
         errors.push('Custom `--page-size` must be `WxH` in points, e.g. `595x842`.');
       }
+      // v1.5.0 — PDF/X-4 coherence (pre-checks exit 2; engine coherence errors are E_INPUT)
+      const pdfx = r['--pdfx'];
+      if (r['--output-intent-id'] && !r['--output-intent-icc']) {
+        errors.push('`--output-intent-id` needs an ICC profile: pass `--output-intent-icc <file.icc>` (or `outputIntent.iccProfile` in `--layout`) — the CLI exits 2.');
+      }
+      if (pdfx && taggedIsPdfA) {
+        errors.push('`--pdfx` and `--tagged pdfa*` are mutually exclusive: pdfnative writes one conformance claim per file (PDF/X-4 or PDF/A).');
+      }
+      if (pdfx && hasEncrypt) {
+        errors.push('`--pdfx` is mutually exclusive with encryption (PDF/X forbids encryption, ISO 15930-7).');
+      }
+      if (pdfx && !r['--output-intent-icc']) {
+        warns.push('PDF/X-4 needs an output (printer) ICC profile — add `--output-intent-icc <file.icc>` or `outputIntent` in `--layout`, otherwise the engine refuses with `E_INPUT`.');
+      }
+      if (pdfx && r['--trapped'] !== 'true' && r['--trapped'] !== 'false') {
+        warns.push('PDF/X-4 needs a known trapping state — `--trapped true` or `--trapped false` (or `metadata.trapped` in the JSON).');
+      }
+      if (pdfx && !r['--font']) {
+        warns.push('PDF/X-4 requires every font embedded — add `--font latin --lang latin` (or register the fonts your document uses).');
+      }
+      if (r['--kerning'] && !r['--font'] && !r['--font-file']) {
+        warns.push('`--kerning` needs a registered font — add `--font latin --lang latin` (or `--font-file`).');
+      }
+    }
+
+    const g = state.global;
+    if (g['--creation-date'] && Number.isNaN(Date.parse(g['--creation-date']))) {
+      errors.push('`--creation-date` must be a date the CLI can parse (ISO 8601 such as `2026-01-01T00:00:00Z`) — an unparsable value is a usage error.');
+    }
+    if (g['--creation-date'] && activeCmd !== 'render' && activeCmd !== 'batch') {
+      warns.push('`--creation-date` only affects PDFs written by `render` and `batch`; `sign --signing-time` and `metadata --mod-date` are separate.');
+    }
+    if (g['--creation-date'] && activeCmd === 'render' && Object.keys(state.render).some((k) => k.startsWith('--encrypt'))) {
+      warns.push('Encrypted output is never byte-reproducible (CSPRNG keys) — `--creation-date` still pins the dates but not the bytes.');
     }
 
     if (activeCmd === 'sign') {
@@ -1398,6 +1569,12 @@
       }
       if (s['--signing-time'] && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s['--signing-time'])) {
         errors.push('`--signing-time` must be ISO 8601 (e.g. `2026-04-28T10:00:00Z`).');
+      }
+      if (s['--timestamp-timeout'] && !s['--timestamp']) {
+        errors.push('`--timestamp-timeout` only applies together with `--timestamp <url>` — the CLI exits 2.');
+      }
+      if (s['--timestamp-timeout'] && !/^[1-9]\d*$/.test(String(s['--timestamp-timeout']).trim())) {
+        errors.push('`--timestamp-timeout` must be a positive integer number of milliseconds.');
       }
     }
 
@@ -1515,9 +1692,35 @@
     return "'" + v.replace(/'/g, `'\\''`) + "'";
   }
 
+  // Global flags as tokens, in the order they were set (--creation-date <iso>, --json, …)
+  function globalParts() {
+    const out = [];
+    Object.keys(state.global).forEach((flag) => {
+      const v = state.global[flag];
+      if (v === true) out.push(flag);
+      else out.push(flag, shellEscape(v));
+    });
+    return out;
+  }
+
   function buildCommand() {
     const bag = state[activeCmd];
-    const parts = ['npx', 'pdfnative-cli', activeCmd];
+    const globalsFirst = globalPosition.value === 'before';
+    const globals = globalParts();
+    const parts = ['npx', 'pdfnative-cli'];
+    if (globalsFirst) parts.push(...globals);
+    parts.push(activeCmd);
+    const headLen = parts.length; // tokens kept on the first line when wrapping
+    const trailingGlobals = globalsFirst ? [] : globals;
+    // Append the globals after the command, skipping a boolean the panel already emitted
+    // (govern --json, annotate/extract --dry-run, …) so no flag is repeated.
+    const pushTrailingGlobals = (acc) => {
+      for (let i = 0; i < trailingGlobals.length; i++) {
+        const tok = trailingGlobals[i];
+        if (state.global[tok] === true) { if (!acc.includes(tok)) acc.push(tok); }
+        else { acc.push(tok, trailingGlobals[i + 1]); i++; }
+      }
+    };
 
     // Special govern: a positional subcommand + optional file arg (read from DOM)
     if (activeCmd === 'govern') {
@@ -1526,6 +1729,7 @@
       const draft = $('g-draft') ? $('g-draft').value.trim() : '';
       if (sub === 'verify-issue' && draft) parts.push(shellEscape(draft));
       if (bag['--json'] === true) parts.push('--json');
+      pushTrailingGlobals(parts);
       const singleG = parts.join(' ');
       return singleG;
     }
@@ -1533,10 +1737,12 @@
     // Special schema / completion: a single positional, no flags
     if (activeCmd === 'schema') {
       parts.push($('sc-subject') ? $('sc-subject').value : 'list');
+      pushTrailingGlobals(parts);
       return parts.join(' ');
     }
     if (activeCmd === 'completion') {
       parts.push($('co-shell') ? $('co-shell').value : 'bash');
+      pushTrailingGlobals(parts);
       return parts.join(' ');
     }
 
@@ -1582,12 +1788,15 @@
       }
     });
 
+    // Global flags after the command (the default placement)
+    pushTrailingGlobals(parts);
+
     // Wrap onto multiple lines for readability if long
     const single = parts.join(' ');
     if (single.length <= 80) return single;
-    let out = parts.slice(0, 3).join(' ');
+    let out = parts.slice(0, headLen).join(' ');
     let line = '';
-    for (let i = 3; i < parts.length; i++) {
+    for (let i = headLen; i < parts.length; i++) {
       const tok = parts[i];
       const isFlag = tok.startsWith('--');
       if (isFlag && line.length > 0) { out += ' \\\n  ' + line.trim(); line = ''; }
@@ -1638,7 +1847,11 @@
     });
     pageSizeCustom.style.display = 'none';
     pageSizeCustom.value = '';
+    globalPosition.value = 'after';
     $('preset').value = '';
+    const ph = $('preset-hint');
+    ph.style.display = 'none';
+    ph.innerHTML = '';
     render();
   });
 
@@ -1672,6 +1885,29 @@
     'metadata-update':   { tab: 'metadata', fields: { 'md-input': 'report.pdf', 'md-output': 'revised.pdf', 'md-title': 'Quarterly report (revised)', 'md-keywords': 'finance,Q2' } },
     'batch-manifest':    { tab: 'batch',   fields: { 'b-manifest': 'tasks.json' }, checks: ['--continue-on-error'] },
     'render-strict':     { tab: 'render',  fields: { 'r-input': 'doc.json', 'r-output': 'archive.pdf', 'r-tagged': 'pdfa2b' }, checks: ['--strict', '--compress'] },
+    // ── v1.5.0 ──
+    'render-typography': { tab: 'render',  fields: { 'r-input': 'report.json', 'r-output': 'report.pdf', 'r-font': 'latin', 'r-lang': 'latin', 'r-font-features': 'onum,smcp' }, checks: ['--split-paragraphs', '--keep-headings-with-next', '--kerning'],
+      hint: 'Typography needs a registered font (<code>--font latin --lang latin</code>): paragraphs may split across pages with widows/orphans at 2, headings stay with the next block, pair kerning is applied and old-style numerals + small caps are requested. <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code> warns (or fails under <code>--strict</code>) when the font lacks a tag. Paragraph <code>align: "justify"</code>, <code>keepWithNext</code>, <code>splittable</code> and soft hyphens live in the JSON.' },
+    'render-pdfx4-cmyk': { tab: 'render',  fields: { 'r-input': 'catalogue.json', 'r-output': 'catalogue.pdf', 'r-font': 'latin', 'r-lang': 'latin', 'r-pdfx': 'pdfx4', 'r-oi-icc': 'press.icc', 'r-oi-id': 'ISO Coated v2 (ECI)', 'r-trapped': 'false' }, checks: ['--strict'],
+      hint: 'PDF/X-4 (ISO 15930-7): the printer ICC profile becomes the OutputIntent (<code>prtr</code> class, 16 MiB cap), every font is embedded, <code>/Trapped</code> is known and each page needs a TrimBox or ArtBox (set in the JSON). CMYK colours — <code>[c, m, y, k]</code> percent or <code>"c m y k"</code> — are written as DeviceCMYK; RGB content stays conformant through a calibrated <code>/DefaultRGB</code>. <code>--strict</code> turns <code>PDFX_*</code> diagnostics into exit 1 / <code>E_CHECK_FAILED</code>; PDF/X is exclusive with <code>--tagged pdfa*</code> and encryption. Check the result with <code>inspect --check pdfx</code>.' },
+    'render-font-file':  { tab: 'render',  fields: { 'r-input': 'brochure.json', 'r-output': 'brochure.pdf', 'r-font': 'latin', 'r-lang': 'latin' }, textareas: { 'r-font-file': './fonts/HouseSerif.ttf:house' },
+      hint: 'Ship your own TrueType/OpenType font: the file is path-checked, capped at 32 MiB, must carry an sfnt signature (no collections, no WOFF) and is parsed and validated by pdfnative\'s font compiler before registration — never loaded from JSON. The name after the colon (default: the file stem) doubles as a <code>--lang</code> code and is added automatically; reference it as <code>"font": "house"</code> in the document.' },
+    'render-reproducible': { tab: 'render', fields: { 'gl-position': 'before', 'gl-creation-date': '2026-01-01T00:00:00Z', 'r-input': 'report.json', 'r-output': 'report.pdf' }, globalChecks: ['--json'],
+      hint: '<code>--creation-date</code> is a global flag (placed before the command since v1.5.0): <code>/CreationDate</code>, <code>xmp:CreateDate</code>, the <code>{date}</code> placeholder and the trailer <code>/ID</code> all derive from it in UTC, so two runs on two hosts produce an identical SHA-256. Without the flag the CLI falls back to <code>$SOURCE_DATE_EPOCH</code> (integer seconds). <code>batch</code> tasks inherit it; the JSON envelope carries <code>creationDate</code>. Encrypted output is never byte-reproducible (CSPRNG keys).' },
+    'render-dry-run':    { tab: 'render',  fields: { 'r-input': 'doc.json', 'r-output': 'report.pdf' }, globalChecks: ['--dry-run', '--json'],
+      hint: 'Since v1.5.0 <code>render --dry-run</code> pre-flights the <em>real</em> build in memory: engine errors and conformance diagnostics surface exactly as on a real run and land in the <code>diagnostics[]</code> array of the JSON envelope — but no file is written and no network I/O is performed, even when a network flag is present.' },
+    'inspect-pdfx':      { tab: 'inspect', fields: { 'i-input': 'catalogue.pdf' }, checks: ['--pdfx', '--iso-dates', '--summary'], multiCheck: { '--check': ['pdfx'] }, globalChecks: ['--json'],
+      hint: '<code>--pdfx</code> runs pdfnative\'s structural ISO 15930-7 validator and adds the report; <code>--check pdfx</code> turns it into a CI assertion (exit 1 on failure); <code>pdfxConformance</code> is always present and <code>--summary</code> adds <code>pdfx</code> to the minimal verdict. <code>--iso-dates</code> reports <code>/CreationDate</code> and <code>/ModDate</code> as ISO 8601 instead of raw PDF dates.' },
+    'annotate-link':     { tab: 'annotate', fields: { 'a-input': 'doc.pdf', 'a-output': 'linked.pdf', 'a-annotations': 'links.json' },
+      hint: '<code>links.json</code>: <code>[{ "type": "link", "page": 1, "rect": [72, 700, 300, 720], "url": "https://pdfnative.dev" }]</code> — a <code>/Link</code> annotation with a <code>/URI</code> action over the click rectangle (1-based <code>page</code>, <code>rect</code> = <code>[x1, y1, x2, y2]</code> in points). Only <code>http:</code>, <code>https:</code> and <code>mailto:</code> URLs without control characters are accepted (<code>E_INPUT</code> otherwise). Incremental save: existing signatures stay valid.' },
+    'sign-timestamp-timeout': { tab: 'sign', fields: { 's-input': 'report.pdf', 's-output': 'signed.pdf', 's-profile': 'pades', 's-timestamp': 'https://tsa.example.com/rfc3161', 's-ts-timeout': '10000' },
+      hint: 'PAdES B-T (<code>ETSI.CAdES.detached</code>) with an RFC 3161 token; <code>--timestamp-timeout</code> bounds the TSA round-trip in milliseconds and is reported as <code>timestamp.timeoutMs</code> in the envelope. It only applies together with <code>--timestamp</code> (exit 2 otherwise); a slow or unreachable TSA fails with <code>E_NETWORK</code> — never a silent fallback.' },
+    'verify-weak-digest': { tab: 'verify', fields: { 'v-input': 'signed.pdf' }, checks: ['--strict'], globalChecks: ['--json'],
+      hint: 'Since v1.5.0 every signature report carries <code>timestampDigest</code> (the RFC 3161 messageImprint algorithm). A SHA-1 imprint is reported as the note <code>weak digest: RFC 3161 messageImprint uses SHA-1 (refused under --strict)</code> and fails under <code>--strict</code> (exit 1 / <code>E_VERIFY_FAILED</code>); without <code>--strict</code> it stays a note.' },
+    'doctor-conformance': { tab: 'doctor', globalChecks: ['--json'],
+      hint: 'Eight offline checks in <code>{ ok, checks: [{ name, status, value, detail }] }</code>: <code>cli</code>, <code>node</code>, <code>webcrypto</code>, <code>pdfnative</code>, <code>commands</code>, and since v1.5.0 <code>fonts</code> (<code>31 modules / 27 scripts</code>, each bundled module probed on disk), <code>unicode</code> (the Universal Shaping Engine database version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>). Exit 0 when every check passes.' },
+    'global-flags-first': { tab: 'inspect', fields: { 'gl-position': 'before', 'i-input': 'doc.pdf' }, checks: ['--summary'], globalChecks: ['--json', '--quiet', '--no-color'],
+      hint: 'Since v1.5.0 the global flags (<code>--json</code>, <code>--quiet</code>, <code>--no-color</code>, <code>--dry-run</code>, <code>--no-config</code>, <code>--config</code>, <code>--max-inflate-size</code>, <code>--creation-date</code>) may precede the command name — the dispatcher finds the command wherever the flags sit, and even a command flag placed first (<code>--strict render …</code>) no longer swallows the command name. Arguments without any command exit 2 / <code>E_USAGE</code> instead of printing the usage with exit 0; a bare <code>pdfnative</code> still prints the usage.' },
   };
 
   $('preset').addEventListener('change', (e) => {
@@ -1706,6 +1942,17 @@
       el.value = val;
       el.dispatchEvent(new Event('input'));
     });
+    // Apply global boolean flags (--json, --quiet, --no-color, --dry-run)
+    (p.globalChecks || []).forEach((flag) => {
+      const cb = $$(`input[type="checkbox"][data-cmd="global"][data-flag="${flag}"]`)[0];
+      if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    });
+    // Preset explanation (trusted, page-authored HTML)
+    const ph = $('preset-hint');
+    if (p.hint) { ph.innerHTML = p.hint; ph.style.display = 'block'; }
+    else { ph.innerHTML = ''; ph.style.display = 'none'; }
+    // $('reset').click() cleared the select — restore the chosen preset
+    $('preset').value = key;
   });
 
   // ── Theme toggle (parity with main site) ──────────

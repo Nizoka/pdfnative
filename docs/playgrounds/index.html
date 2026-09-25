@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playgrounds — pdfnative</title>
-  <meta name="description" content="Twelve zero-install pdfnative playgrounds: extreme scripts, all 27 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, and print &amp; PDF/X.">
+  <meta name="description" content="Fourteen zero-install pdfnative playgrounds: extreme scripts, all 27 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, reproducible output, DocSpec lint, and print &amp; PDF/X.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/">
@@ -14,13 +14,13 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/">
   <meta property="og:title" content="Playgrounds — pdfnative">
-  <meta property="og:description" content="Twelve zero-install pdfnative playgrounds: extreme scripts, all 27 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, and print &amp; PDF/X.">
+  <meta property="og:description" content="Fourteen zero-install pdfnative playgrounds: extreme scripts, all 27 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, reproducible output, DocSpec lint, and print &amp; PDF/X.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Playgrounds — pdfnative">
-  <meta name="twitter:description" content="Twelve zero-install pdfnative playgrounds — scripts, emoji, toolkit, inspect &amp; verify, charts, 100k-page scale test, CLI, MCP, React, typography, print &amp; PDF/X.">
+  <meta name="twitter:description" content="Fourteen zero-install pdfnative playgrounds — scripts, emoji, toolkit, inspect &amp; verify, charts, 100k-page scale test, CLI, MCP, React, typography, print &amp; PDF/X, reproducible output, DocSpec lint.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -52,7 +52,7 @@
         "inLanguage": "en",
         "@id": "https://pdfnative.dev/playgrounds/#collection",
         "name": "pdfnative interactive playgrounds",
-        "description": "12 zero-install playgrounds that generate and inspect real PDFs in your browser.",
+        "description": "14 zero-install playgrounds that generate and inspect real PDFs in your browser.",
         "url": "https://pdfnative.dev/playgrounds/",
         "isPartOf": {
           "@type": "WebSite",
@@ -61,12 +61,12 @@
         },
         "mainEntity": {
           "@type": "ItemList",
-          "numberOfItems": 12,
+          "numberOfItems": 14,
           "itemListElement": [
             {
               "@type": "ListItem",
               "position": 1,
-              "name": "All 22 writing systems in one document",
+              "name": "All 27 writing systems in one document",
               "url": "https://pdfnative.dev/playgrounds/all-scripts.html"
             },
             {
@@ -134,6 +134,18 @@
               "position": 12,
               "name": "Print & PDF/X — bleed, CMYK, PDF/X-4 validation",
               "url": "https://pdfnative.dev/playgrounds/print.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 13,
+              "name": "Reproducible output — pinned creationDate, identical SHA-256",
+              "url": "https://pdfnative.dev/playgrounds/reproducible.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 14,
+              "name": "DocSpec lint — 37 pdfnative-react rules on a JSON document spec",
+              "url": "https://pdfnative.dev/playgrounds/docspec-lint.html"
             }
           ]
         }
@@ -190,7 +202,7 @@
   <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; Playgrounds</p>
   <article class="guide-content">
     <h1>Interactive playgrounds</h1>
-    <p>Twelve hands-on environments that exercise the entire pdfnative ecosystem in your browser — from generating documents to inspecting the ones you already have. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
+    <p>Fourteen hands-on environments that exercise the entire pdfnative ecosystem in your browser — from generating documents to inspecting the ones you already have. No install, no API keys, no build step. Pick a card to dive in — every playground includes a switcher at the top so you can hop between them without coming back here.</p>
 
     <div class="pg-grid">
       <a class="pg-card" href="./extreme-scripts.html">
@@ -206,7 +218,7 @@
       <a class="pg-card" href="./all-scripts.html">
         <div class="pg-icon" aria-hidden="true">🌐</div>
         <h3>All 27 scripts + emoji <span class="badge">Library</span></h3>
-        <p>The flagship stress test: render <strong>every Unicode script pdfnative supports</strong> — 22 writing systems with BiDi and OpenType shaping — plus native COLRv1 colour emoji, all composited into a single PDF by one <code>buildDocumentPDFBytes()</code> call. The routing engine dispatches every code point to the right embedded font automatically.</p>
+        <p>The flagship stress test: render <strong>every Unicode script pdfnative supports</strong> — 27 writing systems with BiDi and OpenType shaping — plus native COLRv1 colour emoji, all composited into a single PDF by one <code>buildDocumentPDFBytes()</code> call. The routing engine dispatches every code point to the right embedded font automatically.</p>
         <div class="pg-tags">
           <span class="pg-tag">27 scripts</span><span class="pg-tag">Colour emoji</span><span class="pg-tag">BiDi</span><span class="pg-tag">Subsetting</span>
         </div>
@@ -312,6 +324,26 @@
         </div>
         <div class="pg-cta">Open Print &amp; PDF/X playground →</div>
       </a>
+
+      <a class="pg-card" href="./reproducible.html">
+        <div class="pg-icon" aria-hidden="true">🔁</div>
+        <h3>Reproducible output <span class="badge">Library</span> <span class="badge alt">1.8.0</span></h3>
+        <p>Build the same document twice with a pinned <code>creationDate</code> and compare the two SHA-256 digests in the page — identical bytes, then flip one input and watch them diverge. The CLI (<code>--creation-date</code> / <code>SOURCE_DATE_EPOCH</code>), MCP (<code>PDFNATIVE_MCP_CREATION_DATE</code>) and React (<code>&lt;Document creationDate&gt;</code>) equivalents are shown as copyable snippets.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">creationDate</span><span class="pg-tag">SHA-256</span><span class="pg-tag">UTC dates</span><span class="pg-tag">CI gating</span>
+        </div>
+        <div class="pg-cta">Open Reproducible output playground →</div>
+      </a>
+
+      <a class="pg-card" href="./docspec-lint.html">
+        <div class="pg-icon" aria-hidden="true">🧹</div>
+        <h3>DocSpec lint <span class="badge">React</span> <span class="badge alt">pdfnative-react 1.3.0</span></h3>
+        <p>Paste or pick a <code>DocSpec</code> — the token-frugal JSON grammar agents and content systems store — and run <code>validateSpec</code> + <code>lintSpec</code> in your browser: 37 deterministic rules (PDF/X coherence, colour bars, ineffective typography, PDF/A without fonts) reported before a single byte is rendered, then render the fixed spec to a PDF.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">DocSpec</span><span class="pg-tag">37 rules</span><span class="pg-tag">PDF/X</span><span class="pg-tag">renderSpecToBytes</span>
+        </div>
+        <div class="pg-cta">Open DocSpec lint playground →</div>
+      </a>
     </div>
 
     <h2 style="margin-top: 44px;">What about non-interactive examples?</h2>
@@ -320,6 +352,7 @@
     <h2>Resources</h2>
     <ul>
       <li><a href="../guides/">All guides</a> — quick start, architecture, accessibility, PDF/A, troubleshooting, FAQ, MCP, CLI, React</li>
+      <li><a href="../guides/use-cases.html">Ecosystem use cases</a> — the architectures these playgrounds demonstrate, with per-surface pages for the <a href="../guides/use-cases-cli.html">CLI</a>, <a href="../guides/use-cases-mcp.html">MCP</a> and <a href="../guides/use-cases-react.html">React</a></li>
       <li><a href="../#demo">Homepage live demo</a> — minimal in-page example</li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub repository</a></li>
     </ul>
@@ -344,6 +377,8 @@
       <li><a href="./react.html">React renderer</a></li>
       <li><a href="./typography.html">Typography</a></li>
       <li><a href="./print.html">Print &amp; PDF/X</a></li>
+      <li><a href="./reproducible.html">Reproducible output</a></li>
+      <li><a href="./docspec-lint.html">DocSpec lint</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
     </ul>
   </div>

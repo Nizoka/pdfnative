@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reproducible output — pdfnative playground</title>
+  <meta name="description" content="Build the same document twice in your browser with pdfnative 1.8.0, pin the creation instant with layout.creationDate or setDefaultCreationDate, and compare the SHA-256 of both builds: identical bytes for identical input, so a PDF can be hashed, diffed and gated in CI. Flip one input to watch the hashes diverge.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/reproducible.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/reproducible.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/reproducible.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/reproducible.html">
+  <meta property="og:title" content="Reproducible output — pdfnative playground">
+  <meta property="og:description" content="Pin the creation instant, build twice, compare the SHA-256: identical bytes for identical input, in the browser, zero install.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Reproducible output — pdfnative playground">
+  <meta name="twitter:description" content="Byte-identical PDFs for identical input: pin the date, build twice, hash both, flip one input to see the difference.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "inLanguage": "en",
+        "name": "pdfnative Reproducible Output Playground",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any (browser-based)",
+        "browserRequirements": "Requires JavaScript and ES modules",
+        "url": "https://pdfnative.dev/playgrounds/reproducible.html",
+        "description": "Build the same PDF twice with pdfnative, pin the creation instant with layout.creationDate or setDefaultCreationDate, and compare the SHA-256 of both builds — identical bytes for identical input — entirely in your browser. Flip the title, the date or compression to see the hashes diverge.",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "pdfnative",
+          "url": "https://pdfnative.dev"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://github.com/Nizoka"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Playgrounds",
+            "item": "https://pdfnative.dev/playgrounds/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Reproducible output"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Reproducible output (v1.8.0)</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./inspect.html">Inspect &amp; verify</a>
+    <a href="./charts.html">Charts</a>
+    <a href="./authoring-plus.html">Authoring+</a>
+    <a href="./scale.html">Scale</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./typography.html">Typography</a>
+    <a href="./print.html">Print &amp; PDF/X</a>
+    <a href="./reproducible.html" aria-current="page">Reproducible output</a>
+    <a href="./docspec-lint.html">DocSpec lint</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>Reproducible output — since 1.8.0</h1>
+    <p>pdfnative 1.8.0 writes identical bytes for identical input once the creation instant is pinned — per call with <code>layout.creationDate</code>, or once per process with <code>setDefaultCreationDate</code>; every date is written in UTC, so the bytes do not depend on the host. <code>/CreationDate</code>, the XMP dates, the <code>{date}</code> header and footer placeholder and the trailer <code>/ID</code> all derive from that one instant, which means a document can be hashed, diffed and gated in CI. Pick a preset and build it <strong>twice</strong>: the page shows the SHA-256 of each build. Then flip one input for the second build and watch the hashes diverge.</p>
+
+    <div id="snippets" style="margin-top:20px;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+      <p style="margin:0 0 8px 0;font-size:14px;"><strong>The same pin on the other surfaces</strong> <span style="color:#64748b;">— copy-only: the CLI and the MCP server do not run in the browser.</span></p>
+      <div role="tablist" aria-label="Surface" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        <button type="button" role="tab" class="snippet-tab" data-snippet="cli" aria-selected="true" style="padding:4px 12px;font-size:13px;border-radius:999px;border:1px solid #cbd5e1;background:var(--c-primary);color:#fff;cursor:pointer;">CLI</button>
+        <button type="button" role="tab" class="snippet-tab" data-snippet="mcp" aria-selected="false" style="padding:4px 12px;font-size:13px;border-radius:999px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;">MCP server</button>
+        <button type="button" role="tab" class="snippet-tab" data-snippet="react" aria-selected="false" style="padding:4px 12px;font-size:13px;border-radius:999px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;">React</button>
+      </div>
+      <div role="tabpanel" class="snippet-panel" data-snippet="cli">
+        <p style="margin:0 0 6px 0;font-size:13px;color:#475569;">The CLI pins every PDF written in one run with <code>--creation-date</code>, or with <code>SOURCE_DATE_EPOCH</code> when the flag is absent; <code>compare</code> diffs two PDFs by text and structure when bytes are not the point.</p>
+        <pre style="margin:0;font-size:12.5px;line-height:1.5;"><code class="language-bash"># pin the instant for every PDF written in this run (render, batch)
+pdfnative --creation-date 2026-01-01T00:00:00Z render --input document.json --output invoice.pdf
+
+# or through the environment (integer seconds), honoured when the flag is absent
+SOURCE_DATE_EPOCH=1767225600 pdfnative render --input document.json --output invoice.pdf
+
+# compare content rather than bytes, e.g. across engine versions
+pdfnative compare invoice.pdf invoice-rebuilt.pdf --mode both --format json</code></pre>
+      </div>
+      <div role="tabpanel" class="snippet-panel" data-snippet="mcp" hidden>
+        <p style="margin:0 0 6px 0;font-size:13px;color:#475569;">The MCP server reads one pin at startup for every document it builds. Precedence, highest first: the per-call <code>creationDate</code> → <code>PDFNATIVE_MCP_CREATION_DATE</code> → <code>SOURCE_DATE_EPOCH</code> → the clock.</p>
+        <pre style="margin:0;font-size:12.5px;line-height:1.5;"><code class="language-json">{
+  "mcpServers": {
+    "pdfnative": {
+      "command": "npx",
+      "args": ["-y", "pdfnative-mcp"],
+      "env": { "PDFNATIVE_MCP_CREATION_DATE": "2026-01-01T00:00:00Z" }
+    }
+  }
+}</code></pre>
+        <pre style="margin:8px 0 0 0;font-size:12.5px;line-height:1.5;"><code class="language-bash"># the reproducible-builds.org convention works too (integer seconds), used when the variable above is unset
+SOURCE_DATE_EPOCH=1767225600 npx -y pdfnative-mcp</code></pre>
+      </div>
+      <div role="tabpanel" class="snippet-panel" data-snippet="react" hidden>
+        <p style="margin:0 0 6px 0;font-size:13px;color:#475569;">The React renderer takes the pin as a prop of the root — sugar over <code>layout.creationDate</code> — or once per process through the engine's <code>setDefaultCreationDate</code>.</p>
+        <pre style="margin:0;font-size:12.5px;line-height:1.5;"><code class="language-typescript">import { Document, Heading, Text, renderToBytes, setDefaultCreationDate } from 'pdfnative-react';
+
+// per document: a Date or an ISO 8601 string
+const bytes = renderToBytes(
+  &lt;Document title="Invoice 2026-0001" creationDate={new Date('2026-01-01T00:00:00Z')}&gt;
+    &lt;Heading level={1}&gt;Invoice 2026-0001&lt;/Heading&gt;
+    &lt;Text&gt;Identical bytes for identical input.&lt;/Text&gt;
+  &lt;/Document&gt;,
+);
+
+// or once per process, for every render that passes no creationDate of its own
+setDefaultCreationDate(new Date('2026-01-01T00:00:00Z'));</code></pre>
+      </div>
+    </div>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
+      <label for="preset"><strong>Preset:</strong></label>
+      <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="invoice">Invoice — layout.creationDate pins one build</option>
+        <option value="report">Multi-page report — the pin covers pagination, /ID and the footer</option>
+        <option value="footer-date">Footer date — setDefaultCreationDate once per process, {date} follows</option>
+      </select>
+      <label for="creation-date" style="font-size:14px;"><strong>Creation date (UTC):</strong></label>
+      <input type="datetime-local" id="creation-date" value="2026-01-01T00:00" step="1" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+      <label for="flip" style="font-size:14px;"><strong>Second build changes:</strong></label>
+      <select id="flip" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="none">nothing — same input twice</option>
+        <option value="title">the title (one string)</option>
+        <option value="creation-date">the creation date (+1 second)</option>
+        <option value="compress">compress: true (FlateDecode containers)</option>
+      </select>
+      <button id="build" class="btn btn-primary" style="padding:8px 18px;">Build twice &amp; compare</button>
+      <span id="timer" style="font-size:13px;color:#64748b;"></span>
+    </div>
+
+    <p id="desc" style="margin-top:20px;color:#475569;font-size:15px;line-height:1.6;"></p>
+
+    <div style="margin-top:16px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center;font-size:14px;">
+      <strong>Build A</strong> <code id="hash-a" style="word-break:break-all;font-size:12.5px;">—</code>
+      <strong>Build B</strong> <code id="hash-b" style="word-break:break-all;font-size:12.5px;">—</code>
+      <strong>Verdict</strong> <span id="verdict" style="font-weight:600;">Build to compare the two SHA-256 digests.</span>
+    </div>
+
+    <details style="margin-top:16px;" open>
+      <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="copy-btn" id="copy" type="button" style="padding:4px 10px;font-size:12px;background:var(--c-primary);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Copy</button></div>
+      <pre style="margin-top:8px;"><code id="code-view" class="language-typescript"></code></pre>
+    </details>
+
+    <p style="margin-top:16px;font-weight:600;">Diagnostics (<code>layout.onDiagnostic</code>) and build log</p>
+    <pre id="diagnostics" style="margin-top:8px;white-space:pre-wrap;font-size:13px;line-height:1.5;">Build to see what each of the two builds stamped and whether they raised a diagnostic. Every preset wires layout.onDiagnostic; these builds raise none.</pre>
+
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">What the pin covers:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li><strong><code>layout.creationDate</code></strong> — the per-call pin (since 1.3.0). It sets <code>/Info /CreationDate</code> and <code>/ModDate</code>, <code>xmp:CreateDate</code> under PDF/A, the <code>{date}</code> placeholder of <code>headerTemplate</code> / <code>footerTemplate</code>, and the trailer <code>/ID</code>, an MD5 of title, creation date and object count.</li>
+        <li><strong><code>setDefaultCreationDate(date)</code></strong> — the process-wide default (1.8.0) for every build that passes no <code>creationDate</code> of its own; <code>getDefaultCreationDate()</code> reads it back and <code>setDefaultCreationDate(null)</code> restores the clock. Precedence: <code>layout.creationDate</code> → the default → <code>new Date()</code>.</li>
+        <li><strong>UTC everywhere</strong> — dates are formatted with the UTC getters and a literal <code>+00'00'</code> offset, so a pinned build is identical in every time zone; the same document built under two <code>TZ</code> values is compared in the engine's own test suite.</li>
+        <li><strong>The rest is pure</strong> — pagination, shaping, subsetting and object numbering are deterministic functions of the input, so pinning the one instant pins the whole file.</li>
+      </ul>
+    </div>
+
+    <div style="margin-top:16px;padding:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;">
+      <strong style="color:#92400e;">Honest limits:</strong>
+      <ul style="margin-top:8px;color:#92400e;">
+        <li><strong>Encrypted output is never reproducible</strong> — encryption keys, salts and every AES-CBC IV come from a CSPRNG by design.</li>
+        <li><strong>Signatures and incremental updates write their own <code>/ID</code></strong> — each revision regenerates the second <code>/ID</code> entry; <code>signingTime</code>, RFC 3161 tokens and revocation data carry independent meaning and are not covered by the pin.</li>
+        <li><strong>An engine upgrade may change bytes for identical input</strong> — a fix to a font table or a line-breaking rule is a legitimate byte change. Rebaseline once per upgrade, or compare content instead of bytes with the CLI's <code>compare</code>.</li>
+        <li><strong>Pin <code>TZ</code> too</strong> for anything you format yourself with local-time getters before handing it to the engine: the engine writes UTC, your own strings may not.</li>
+        <li><strong>Compression in the browser</strong> — without <code>setDeflateImpl</code> the browser build wraps streams in stored-block FlateDecode containers; still deterministic, but different bytes from a Node build that compresses with zlib. Compare hashes across hosts on the same code path.</li>
+      </ul>
+      <p style="color:#92400e;margin-top:8px;font-size:14px;">See the <a href="../guides/typography.html">Typography guide</a> for the layout options these presets use, and the <a href="../guides/cli.html">CLI</a>, <a href="../guides/mcp.html">MCP</a> and <a href="../guides/react.html">React</a> guides for the other surfaces' pins.</p>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/">Guides →</a></li>
+      <li><a href="./">All playgrounds →</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+const codeView = $('code-view');
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') { status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5'; }
+  else if (kind === 'success') { status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7'; }
+  else { status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd'; }
+}
+
+const DESCRIPTIONS = {
+  invoice: 'A one-page invoice built twice from the same parameters with layout.creationDate pinned. Both builds hash to the same SHA-256: /CreationDate, /ModDate and the trailer /ID derive from the pinned instant, and everything else is a pure function of the input. Flip the title and only the title changes — yet the hash moves, because /Info /Title and the /ID digest both carry it.',
+  report: 'Ten sections of running text with typography options on, a footer with page numbers, and a date the footer shows. Pagination, line breaking and object numbering are deterministic, so a multi-page build is as reproducible as a one-page one. Flip the creation date by one second: the visible footer date stays the same day, but /CreationDate and /ID change and so does the hash.',
+  'footer-date': 'No layout.creationDate at all: setDefaultCreationDate pins the instant once for the whole process, and getDefaultCreationDate reads it back. The footerTemplate carries the {date} placeholder, which resolves against the same pinned instant (YYYY-MM-DD, UTC) — the log confirms the footer text and the /CreationDate string found in the bytes. The view restores the clock with setDefaultCreationDate(null) when it is done.',
+};
+
+// Every view is self-contained: it declares the content the page renders and imports only from
+// 'pdfnative', so what the Copy button hands over runs unchanged in Node, Deno, Bun or a bundler.
+// tests/docs/playgrounds.test.ts runs each one outside the browser.
+const CODE = {
+  invoice: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+// One instant pins the whole file: /CreationDate, /ModDate, the {date} placeholder and the
+// trailer /ID (an MD5 of title + creation date + object count) all derive from it, in UTC.
+const params = {
+  title: 'Invoice 2026-0001',
+  blocks: [
+    { type: 'heading', text: 'Invoice 2026-0001', level: 1 },
+    { type: 'paragraph', text: 'Issued to Example Ltd for services delivered in December 2025. Payment is due within 30 days of the invoice date.' },
+    { type: 'table', headers: ['Item', 'Quantity', 'Unit price', 'Amount'], rows: [
+      { cells: ['Consulting', '12 h', '150.00', '1,800.00'], type: '', pointed: false },
+      { cells: ['Travel', '1', '240.00', '240.00'], type: '', pointed: false },
+      { cells: ['Total', '', '', '2,040.00'], type: '', pointed: false },
+    ] },
+  ],
+  footerText: 'pdfnative reproducible-output playground',
+};
+const layout = {
+  creationDate: new Date('2026-01-01T00:00:00Z'),   // the one input that would otherwise change per run
+  compress: false,
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+};
+
+const bytes1 = buildDocumentPDFBytes(params, layout);
+const bytes2 = buildDocumentPDFBytes(params, layout);
+
+const identical = bytes1.length === bytes2.length && bytes1.every((b, i) => b === bytes2[i]);
+const digest = await crypto.subtle.digest('SHA-256', bytes1);   // Node 22 and every browser
+const sha256 = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+console.log('identical: ' + identical + ' sha256=' + sha256);   // hash it, store it, gate it in CI
+downloadBlob(bytes1, 'reproducible-invoice.pdf');`,
+  report: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+// A multi-page document: pagination, line breaking and object numbering are deterministic,
+// so pinning the creation instant pins the whole file here too.
+const PASSAGE = 'A reproducible build is one whose output can be recreated byte for byte from the same input. For a PDF that means the creation instant must be an input rather than a side effect of the clock, and every date must be written in one time zone. With that in place a content-addressable store, a sample suite or a CI gate can compare digests instead of opening files. ';
+const blocks = [{ type: 'heading', text: 'Quarterly report', level: 1 }];
+for (let i = 1; i <= 10; i++) {
+  blocks.push({ type: 'heading', text: i + '. Regional results', level: 2 });
+  blocks.push({ type: 'paragraph', text: PASSAGE.repeat(2 + (i % 3)) });
+}
+const params = { title: 'Quarterly report', blocks };
+const layout = {
+  creationDate: new Date('2026-01-01T00:00:00Z'),
+  footerTemplate: { left: 'Quarterly report — {date}', right: 'Page {page} of {pages}' },   // {date} follows the pin
+  typography: { splitParagraphs: true, orphans: 2, widows: 2, keepHeadingsWithNext: true },
+  compress: false,
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+};
+
+const hex = async (bytes) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (b) => b.toString(16).padStart(2, '0')).join('');
+
+const bytes1 = buildDocumentPDFBytes(params, layout);
+const bytes2 = buildDocumentPDFBytes(params, layout);
+const identical = bytes1.length === bytes2.length && bytes1.every((b, i) => b === bytes2[i]);
+const sha256 = await hex(bytes1);
+console.log('identical: ' + identical + ' sha256=' + sha256);
+
+// Change one input and the digest moves: a different title is written to /Info and to the /ID digest.
+const bytes3 = buildDocumentPDFBytes({ ...params, title: 'Quarterly report (draft)' }, layout);
+console.log('changed title: sha256=' + await hex(bytes3) + ' (differs from the pinned build)');
+downloadBlob(bytes1, 'reproducible-report.pdf');`,
+  'footer-date': `import { buildDocumentPDFBytes, setDefaultCreationDate, getDefaultCreationDate, downloadBlob } from 'pdfnative';
+
+// A process-wide pin: every build that passes no layout.creationDate stamps this instant.
+// Precedence, highest first: layout.creationDate, then setDefaultCreationDate, then the clock.
+setDefaultCreationDate(new Date('2026-01-01T00:00:00Z'));
+console.log('default creation date: ' + getDefaultCreationDate().toISOString());
+
+const params = {
+  title: 'Footer date',
+  blocks: [
+    { type: 'heading', text: 'The {date} placeholder follows the pinned instant', level: 1 },
+    { type: 'paragraph', text: 'The footer of this page names the day the document was created. Before 1.8.0 that placeholder read the clock on its own; now it resolves against the same instant as /CreationDate, formatted YYYY-MM-DD in UTC, so a pinned build is reproducible in full.' },
+  ],
+};
+const layout = {
+  footerTemplate: { left: 'Built {date}', right: 'Page {page} of {pages}' },   // no creationDate here: the default applies
+  compress: false,
+  onDiagnostic: (d) => console.warn(d.code, d.message),
+};
+
+const bytes1 = buildDocumentPDFBytes(params, layout);
+const bytes2 = buildDocumentPDFBytes(params, layout);
+setDefaultCreationDate(null);   // restore the wall clock for the rest of the process
+
+const identical = bytes1.length === bytes2.length && bytes1.every((b, i) => b === bytes2[i]);
+const digest = await crypto.subtle.digest('SHA-256', bytes1);
+const sha256 = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+
+// With compress: false the content stream and /Info are plain text, so both can be read back.
+const text = new TextDecoder('latin1').decode(bytes1);
+console.log('footer shows "Built 2026-01-01": ' + text.includes('Built 2026-01-01'));
+console.log('/CreationDate is D:20260101000000+00\\'00\\': ' + text.includes('(D:20260101000000+00\\'00\\')'));
+console.log('identical: ' + identical + ' sha256=' + sha256);
+downloadBlob(bytes1, 'reproducible-footer-date.pdf');`,
+};
+
+function applyPreset(id) {
+  $('desc').textContent = DESCRIPTIONS[id];
+  codeView.textContent = CODE[id];
+  if (window.Prism) window.Prism.highlightElement(codeView);
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
+let pdfMod = null;
+async function loadPdfnative() {
+  if (pdfMod) return pdfMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFBytes === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFBytes === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFBytes === 'function') { pdfMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not load pdfnative from CDN. ' + (lastErr ? lastErr.message : ''));
+}
+
+// ── The page-side builders mirror the views above; `o` is the per-build input the flip control patches. ──
+let diagnostics = [];
+const onDiagnostic = (d) => { diagnostics.push(d); };
+
+const PASSAGE = 'A reproducible build is one whose output can be recreated byte for byte from the same input. For a PDF that means the creation instant must be an input rather than a side effect of the clock, and every date must be written in one time zone. With that in place a content-addressable store, a sample suite or a CI gate can compare digests instead of opening files. ';
+function reportBlocks() {
+  const blocks = [{ type: 'heading', text: 'Quarterly report', level: 1 }];
+  for (let i = 1; i <= 10; i++) {
+    blocks.push({ type: 'heading', text: i + '. Regional results', level: 2 });
+    blocks.push({ type: 'paragraph', text: PASSAGE.repeat(2 + (i % 3)) });
+  }
+  return blocks;
+}
+
+const PARAMS = {
+  invoice: (title) => ({
+    title,
+    blocks: [
+      { type: 'heading', text: 'Invoice 2026-0001', level: 1 },
+      { type: 'paragraph', text: 'Issued to Example Ltd for services delivered in December 2025. Payment is due within 30 days of the invoice date.' },
+      { type: 'table', headers: ['Item', 'Quantity', 'Unit price', 'Amount'], rows: [
+        { cells: ['Consulting', '12 h', '150.00', '1,800.00'], type: '', pointed: false },
+        { cells: ['Travel', '1', '240.00', '240.00'], type: '', pointed: false },
+        { cells: ['Total', '', '', '2,040.00'], type: '', pointed: false },
+      ] },
+    ],
+    footerText: 'pdfnative reproducible-output playground',
+  }),
+  report: (title) => ({ title, blocks: reportBlocks() }),
+  'footer-date': (title) => ({
+    title,
+    blocks: [
+      { type: 'heading', text: 'The {date} placeholder follows the pinned instant', level: 1 },
+      { type: 'paragraph', text: 'The footer of this page names the day the document was created. Before 1.8.0 that placeholder read the clock on its own; now it resolves against the same instant as /CreationDate, formatted YYYY-MM-DD in UTC, so a pinned build is reproducible in full.' },
+    ],
+  }),
+};
+const TITLES = { invoice: 'Invoice 2026-0001', report: 'Quarterly report', 'footer-date': 'Footer date' };
+const LAYOUTS = {
+  invoice: () => ({}),
+  report: () => ({
+    footerTemplate: { left: 'Quarterly report — {date}', right: 'Page {page} of {pages}' },
+    typography: { splitParagraphs: true, orphans: 2, widows: 2, keepHeadingsWithNext: true },
+  }),
+  'footer-date': () => ({ footerTemplate: { left: 'Built {date}', right: 'Page {page} of {pages}' } }),
+};
+
+// o = { title, creationDate, compress }. The footer-date preset pins through the process-wide default
+// instead of layout.creationDate, exactly as its view does.
+function buildOne(m, preset, o) {
+  const params = PARAMS[preset](o.title);
+  const layout = Object.assign({ compress: o.compress, onDiagnostic }, LAYOUTS[preset]());
+  if (preset === 'footer-date') {
+    m.setDefaultCreationDate(o.creationDate);
+    try { return m.buildDocumentPDFBytes(params, layout); }
+    finally { m.setDefaultCreationDate(null); }
+  }
+  layout.creationDate = o.creationDate;
+  return m.buildDocumentPDFBytes(params, layout);
+}
+
+async function sha256Hex(bytes) {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// The datetime-local value is read as UTC: what the box shows is what the PDF stamps.
+function pinnedDate() {
+  const raw = $('creation-date').value;
+  const d = raw ? new Date(raw.length === 16 ? raw + ':00Z' : raw + 'Z') : null;
+  if (!d || Number.isNaN(d.getTime())) throw new Error('Enter a valid creation date.');
+  return d;
+}
+
+function describeInput(o) {
+  return 'title=' + JSON.stringify(o.title) + ' creationDate=' + o.creationDate.toISOString() + ' compress=' + o.compress;
+}
+
+function renderLog(lines) {
+  const diag = diagnostics.length === 0
+    ? 'onDiagnostic: no diagnostics for either build.'
+    : diagnostics.map(d => '[' + d.severity + '] ' + d.code + '\n' + d.message).join('\n\n');
+  $('diagnostics').textContent = lines.join('\n') + '\n\n' + diag;
+}
+
+async function build() {
+  const preset = $('preset').value;
+  const flip = $('flip').value;
+  const t0 = performance.now();
+  diagnostics = [];
+  $('hash-a').textContent = '—'; $('hash-b').textContent = '—';
+  $('verdict').textContent = 'Building…'; $('verdict').style.color = '';
+  try {
+    const date = pinnedDate();
+    const a = { title: TITLES[preset], creationDate: date, compress: false };
+    const b = Object.assign({}, a);
+    if (flip === 'title') b.title = a.title + ' (draft)';
+    else if (flip === 'creation-date') b.creationDate = new Date(date.getTime() + 1000);
+    else if (flip === 'compress') b.compress = true;
+
+    setStatus('Loading pdfnative from CDN…', 'info');
+    const mod = await loadPdfnative();
+    setStatus('Building twice…', 'info');
+    const bytesA = buildOne(mod, preset, a);
+    const diagA = diagnostics.length;
+    const bytesB = buildOne(mod, preset, b);
+    const [hashA, hashB] = await Promise.all([sha256Hex(bytesA), sha256Hex(bytesB)]);
+    const identical = bytesA.length === bytesB.length && bytesA.every((v, i) => v === bytesB[i]);
+
+    $('hash-a').textContent = hashA;
+    $('hash-b').textContent = hashB;
+    const verdict = $('verdict');
+    verdict.textContent = identical ? 'identical' : 'different';
+    verdict.style.color = identical ? '#065f46' : '#991b1b';
+
+    renderLog([
+      'Build A: ' + bytesA.length + ' bytes — ' + describeInput(a) + (diagA ? ' — ' + diagA + ' diagnostic(s)' : ''),
+      'Build B: ' + bytesB.length + ' bytes — ' + describeInput(b) + (diagnostics.length - diagA ? ' — ' + (diagnostics.length - diagA) + ' diagnostic(s)' : ''),
+      'sha256(A) ' + (identical ? '==' : '!=') + ' sha256(B)'
+        + (flip === 'none' ? '' : ' — the second build changed ' + (flip === 'title' ? 'the title' : flip === 'creation-date' ? 'the creation date by one second' : 'compress to true')),
+      preset === 'footer-date' ? 'footer {date}: ' + a.creationDate.toISOString().slice(0, 10) + ' (UTC), set through setDefaultCreationDate' : 'pinned through layout.creationDate: ' + a.creationDate.toISOString(),
+    ]);
+    mod.downloadBlob(bytesA, 'reproducible-' + preset + '.pdf');
+    const ms = (performance.now() - t0).toFixed(0);
+    $('timer').textContent = (bytesA.length / 1024).toFixed(1) + ' KB · ' + ms + ' ms';
+    setStatus(identical
+      ? 'Two builds, one digest: the bytes are identical. Build A was downloaded' + (flip === 'none' ? '; pick something to flip and build again to see the digest move.' : '.')
+      : 'The two builds differ' + (flip === 'none' ? ' — this should not happen with a pinned date; please report it.' : ', as expected: one input changed. Build A was downloaded.'),
+      identical || flip !== 'none' ? 'success' : 'error');
+  } catch (err) {
+    renderLog(['Error: ' + (err.message || err)]);
+    $('verdict').textContent = 'error';
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  }
+}
+
+$('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('build').addEventListener('click', build);
+$('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(codeView.textContent);
+    const btn = $('copy'); const old = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = old; }, 1500);
+  } catch (e) { alert('Clipboard write failed: ' + (e && e.message ? e.message : e)); }
+});
+
+// Copy-only surface snippets: a segmented control over three panels.
+for (const tab of document.querySelectorAll('.snippet-tab')) {
+  tab.addEventListener('click', () => {
+    const id = tab.getAttribute('data-snippet');
+    for (const t of document.querySelectorAll('.snippet-tab')) {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.style.background = on ? 'var(--c-primary)' : 'transparent';
+      t.style.color = on ? '#fff' : '';
+    }
+    for (const p of document.querySelectorAll('.snippet-panel')) p.hidden = p.getAttribute('data-snippet') !== id;
+  });
+}
+applyPreset('invoice');
+
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

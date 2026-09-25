@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DocSpec Lint — pdfnative-react playground</title>
+  <meta name="description" content="Paste a DocSpec JSON, run pdfnative-react's validateSpec and lintSpec (37 rules) in the browser, read the report, fix the spec and render it to a PDF with renderSpecToBytes — no install.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/docspec-lint.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/docspec-lint.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/docspec-lint.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/docspec-lint.html">
+  <meta property="og:title" content="DocSpec Lint — pdfnative-react playground">
+  <meta property="og:description" content="Lint the token-frugal DocSpec JSON that agents and CMS store: validateSpec for the shape, lintSpec for the 37 rules that catch accessibility gaps and engine throws before rendering, then renderSpecToBytes on-device. Presets, live report, PDF preview. Zero install.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="DocSpec Lint — pdfnative-react playground">
+  <meta name="twitter:description" content="validateSpec + lintSpec (37 rules) on a DocSpec JSON in your browser, then render the clean spec to a PDF with renderSpecToBytes. Zero install.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <style>
+    .dl-presets { display: flex; gap: 8px; align-items: center; margin: 18px 0 0; flex-wrap: wrap; }
+    .dl-presets select { padding: 6px 10px; border: 1px solid var(--c-border); border-radius: 6px; font-size: 13px; background: var(--c-bg); color: var(--c-text); }
+    .dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 22px; align-items: start; }
+    @media (max-width: 900px) { .dl-grid { grid-template-columns: 1fr; } }
+    .dl-pane h3 { font-size: 15px; font-weight: 700; margin: 0 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .dl-editor { width: 100%; min-height: 420px; resize: vertical; padding: 14px; border: 1px solid var(--c-border); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.5; background: var(--c-code-bg); color: var(--c-code-text); tab-size: 2; }
+    .dl-actions { display: flex; gap: 10px; align-items: center; margin: 14px 0 0; flex-wrap: wrap; }
+    .dl-btn { padding: 9px 18px; font-size: 14px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; }
+    .dl-btn.primary { background: var(--c-primary); color: #fff; }
+    .dl-btn.primary:hover { background: var(--c-accent); }
+    .dl-btn.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+    .dl-btn.secondary { background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border); }
+    .dl-preview-frame { width: 100%; height: 420px; border: 1px solid var(--c-border); border-radius: 8px; background: #525659; }
+    .dl-status { margin-top: 12px; padding: 11px 14px; border-radius: 6px; font-size: 13px; line-height: 1.5; display: none; }
+    .dl-status.info { display: block; background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-text-dim); }
+    .dl-status.error { display: block; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; }
+    [data-theme="dark"] .dl-status.error { background: #450a0a; border-color: #7f1d1d; color: #fecaca; }
+    .dl-status.ok { display: block; background: #dcfce7; border: 1px solid #86efac; color: #166534; }
+    [data-theme="dark"] .dl-status.ok { background: #052e16; border-color: #166534; color: #bbf7d0; }
+    .dl-note { margin-top: 18px; padding: 14px 16px; border-left: 3px solid var(--c-primary); background: var(--c-surface); border-radius: 0 8px 8px 0; font-size: 13px; line-height: 1.6; }
+    .dl-report { min-height: 120px; padding: 12px 14px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface); font-size: 13px; line-height: 1.5; }
+    .dl-report .dl-summary { margin: 0 0 10px; font-weight: 600; }
+    .dl-report .dl-summary.pass { color: #166534; }
+    [data-theme="dark"] .dl-report .dl-summary.pass { color: #bbf7d0; }
+    .dl-report .dl-summary.fail { color: #991b1b; }
+    [data-theme="dark"] .dl-report .dl-summary.fail { color: #fecaca; }
+    .dl-report .dl-empty { margin: 0; color: var(--c-text-dim); }
+    .dl-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .dl-table th, .dl-table td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--c-border); }
+    .dl-table th { font-weight: 700; }
+    .dl-table code { font-size: 12px; white-space: nowrap; }
+    .dl-table .dl-hint { display: block; margin-top: 3px; color: var(--c-text-dim); }
+    .dl-table tr.fired { background: rgba(250, 204, 21, 0.14); }
+    .dl-table caption { caption-side: top; text-align: left; font-weight: 600; padding: 0 0 8px; }
+    .dl-sev { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
+    .dl-sev.error { background: #fee2e2; color: #991b1b; }
+    .dl-sev.warning { background: #fef3c7; color: #92400e; }
+    .dl-sev.info { background: #dbeafe; color: #1e40af; }
+    [data-theme="dark"] .dl-sev.error { background: #450a0a; color: #fecaca; }
+    [data-theme="dark"] .dl-sev.warning { background: #451a03; color: #fde68a; }
+    [data-theme="dark"] .dl-sev.info { background: #172554; color: #bfdbfe; }
+    .dl-rules-wrap { margin-top: 12px; max-height: 480px; overflow: auto; border: 1px solid var(--c-border); border-radius: 8px; padding: 0 10px; }
+    .dl-rules-wrap .dl-table caption { padding-top: 10px; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "@id": "https://pdfnative.dev/playgrounds/docspec-lint.html#app",
+    "inLanguage": "en",
+    "name": "pdfnative-react DocSpec Lint Playground",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any (browser-based)",
+    "browserRequirements": "Requires JavaScript and ES modules",
+    "url": "https://pdfnative.dev/playgrounds/docspec-lint.html",
+    "description": "Paste a DocSpec JSON, run pdfnative-react's validateSpec and lintSpec (37 rules) in the browser, read the report, fix the spec and render it to a PDF with renderSpecToBytes.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
+    "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="pn-version-strip" data-mode="compact" aria-label="Live published versions"></div>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; DocSpec lint</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./inspect.html">Inspect &amp; verify</a>
+    <a href="./charts.html">Charts</a>
+    <a href="./authoring-plus.html">Authoring+</a>
+    <a href="./scale.html">Scale</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./typography.html">Typography</a>
+    <a href="./print.html">Print &amp; PDF/X</a>
+    <a href="./reproducible.html">Reproducible output</a>
+    <a href="./docspec-lint.html" aria-current="page">DocSpec lint</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>DocSpec lint playground</h1>
+    <p>A <strong>DocSpec</strong> is the token-frugal JSON grammar of <a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a>: plain data — positional tuples such as <code>["h1", "Invoice"]</code> under a handful of top-level fields — that agents emit and a CMS can store, and that compiles to exactly the same document as the equivalent JSX. Paste one below (or pick a preset), click <strong>Lint</strong>, and the page runs <code>validateSpec</code> then <code>lintSpec</code> <em>in your browser</em>; when the report carries no error, <strong>Render PDF</strong> hands the very same spec to <code>renderSpecToBytes</code>. Grammar and field reference: <a href="../guides/react.html#agent-authoring--the-token-frugal-docspec">Agent authoring — the token-frugal DocSpec</a>; where it fits: <a href="../guides/use-cases.html">use cases</a>.</p>
+
+    <p><strong>What lint checks.</strong> The <em>authoring model</em>, not the bytes. <code>validateSpec</code> is the shape tier — unknown tuple kind, wrong arity, wrong payload type, path-anchored (<code>blocks[3][1]</code>) and it never throws. <code>lintSpec</code> compiles the spec once and applies 37 rules with stable <code>L_*</code> codes in pdfnative-react 1.3.0: twenty of them pre-empt an exception the engine raises at build time (the eight <code>L_CHART_*</code> errors, print geometry, the six PDF/X coherence rules, the output-intent profile check…), five mirror an engine diagnostic that becomes a throw under <code>layout.strict</code>, and the rest catch accessibility gaps (alt text, header rows, heading hierarchy, link text, field labels) or output that renders but is wrong (an empty document, a PDF/A or PDF/X claim without embedded fonts, overflow, a colour-bar strip too thin to measure). Gate on <code>report.ok</code>, which is <code>true</code> when no finding has severity <code>error</code>.</p>
+
+    <div class="dl-note">
+      <strong>What this page does not do.</strong> A clean lint report is a precondition, not a conformance certificate. A PDF/A claim (<code>tagged</code>) still needs an external <a href="https://verapdf.org" target="_blank" rel="noopener">veraPDF</a> run on the bytes, and a PDF/X-4 claim (<code>pdfx</code>) still needs the engine's <code>validatePdfX()</code> report afterwards — try it in the <a href="./print.html">Print &amp; PDF/X playground</a>. No preset here embeds fonts, so the PDF/A and PDF/X presets stop at the linter on purpose: the rules that fire are exactly the ones that would have made those files non-conformant.
+    </div>
+
+    <div class="dl-presets">
+      <label for="preset"><strong>Preset:</strong></label>
+      <select id="preset">
+        <option value="valid-invoice">Valid invoice — lints clean, renders</option>
+        <option value="pdfx-incoherent">PDF/X incoherent — pdfx + tagged, no outputIntent</option>
+        <option value="typography-ineffective">Typography ineffective — features without embedded fonts</option>
+        <option value="tagged-no-fonts">PDF/A without fonts — tagged, no fontEntries</option>
+        <option value="colour-bars-off-print">Colour bars on a 3 pt bleed — silently skipped</option>
+        <option value="schema-error">Schema error — fails validateSpec</option>
+      </select>
+      <button id="reset" class="dl-btn secondary" type="button">Reset preset</button>
+    </div>
+
+    <div class="dl-grid">
+      <div class="dl-pane">
+        <h3><span>DocSpec JSON</span></h3>
+        <textarea id="spec" class="dl-editor" spellcheck="false" aria-label="DocSpec JSON"></textarea>
+        <div class="dl-actions">
+          <button id="lint" class="dl-btn primary" type="button">Lint →</button>
+          <button id="render" class="dl-btn primary" type="button" disabled title="Enabled once the last lint reports no error">Render PDF →</button>
+          <button id="copy" class="dl-btn secondary" type="button">Copy spec</button>
+          <a id="download" class="dl-btn secondary" style="display:none;" download="docspec-lint.pdf">Download PDF</a>
+        </div>
+        <div id="status" class="dl-status info" role="status">Loading pdfnative-react from the CDN…</div>
+      </div>
+      <div class="dl-pane">
+        <h3><span>Lint report</span></h3>
+        <div id="report" class="dl-report" aria-live="polite"><p class="dl-empty">Click “Lint →” to run <code>validateSpec</code> and <code>lintSpec</code> on the spec.</p></div>
+        <h3 style="margin-top:18px;"><span>PDF preview</span></h3>
+        <iframe id="preview" class="dl-preview-frame" title="Rendered PDF preview"></iframe>
+      </div>
+    </div>
+
+    <h2 style="margin-top:40px;">The rule table</h2>
+    <p>Built at load from the package's own <code>LINT_RULES</code> export — id, severity and description come from pdfnative-react, not from this page. Rows highlighted in yellow fired in the last lint run. Branch on the code, never on the message: messages may be reworded in any release, codes may not.</p>
+    <div class="dl-rules-wrap">
+      <table id="rules" class="dl-table">
+        <caption>Loading the rule table from pdfnative-react…</caption>
+        <thead><tr><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">Description</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h2 style="margin-top:40px;">The same loop in Node</h2>
+    <p>The page calls the three exports below straight from the CDN build; in a project you install <code>pdfnative-react</code> from npm (React 19 is its peer dependency, <code>pdfnative</code> its engine) and run the identical sequence. The snippet tracks the selected preset.</p>
+<pre><code id="code-view" class="language-typescript"></code></pre>
+
+    <div class="dl-note">
+      <strong>How this demo loads.</strong> React 19, <code>pdfnative-react</code> 1.3.0 and <code>pdfnative</code> 1.8.0 are imported from the <a href="https://esm.sh" target="_blank" rel="noopener">esm.sh</a> CDN through an import map, purely to make a zero-install browser demo; nothing is uploaded and the PDF is produced on your device. No JSX is involved, so there is no transpiler on this page. <strong>This CDN tooling does not affect the published packages: the core <code>pdfnative</code> engine stays zero-dependency, and React is a peer dependency of <code>pdfnative-react</code> only.</strong>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="../">Home</a></li>
+      <li><a href="../guides/react.html">React guide</a></li>
+      <li><a href="./">All playgrounds</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative-react" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<!-- Import map: resolve bare specifiers to the esm.sh CDN (demo only) -->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@19",
+    "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
+    "pdfnative": "https://esm.sh/pdfnative@1.8.0",
+    "pdfnative/": "https://esm.sh/pdfnative@1.8.0/",
+    "pdfnative-react": "https://esm.sh/pdfnative-react@1.3.0?external=react,pdfnative"
+  }
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="../assets/versions.js" defer></script>
+
+<script>
+  // Theme toggle + hamburger parity (matches the other playgrounds)
+  (function () {
+    var themeBtn = document.querySelector('.theme-toggle');
+    if (themeBtn) {
+      var stored = localStorage.getItem('theme');
+      if (stored) document.documentElement.setAttribute('data-theme', stored);
+      themeBtn.addEventListener('click', function () {
+        var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+        if (cur) document.documentElement.setAttribute('data-theme', cur);
+        else document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', cur);
+      });
+    }
+    var hb = document.querySelector('.nav-hamburger');
+    if (hb) hb.addEventListener('click', function () {
+      var nav = document.querySelector('.nav-links');
+      if (nav) nav.classList.toggle('open');
+      hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+    });
+  })();
+</script>
+
+<script type="module">
+// Every preset is a valid 1.3.0 DocSpec (validateSpec passes) except
+// `schema-error`, which exists to show the difference between the shape tier
+// and the lint tier. The rule ids each one triggers were confirmed against
+// pdfnative-react 1.3.0 before this page shipped.
+const PRESETS = {
+  'valid-invoice': {
+    title: 'Invoice #1024',
+    footerText: 'Acme Inc',
+    creationDate: '2026-09-01T00:00:00Z',
+    metadata: { author: 'Acme Inc' },
+    blocks: [
+      ['h1', 'Invoice #1024'],
+      ['p', 'Billed to Globex Corporation. Payment is due within 30 days of the invoice date.', { align: 'justify' }],
+      ['table', { h: ['Item', 'Qty', 'Total'], r: [['Pro plan (annual)', '1', '$490.00'], ['Onboarding', '2', '$200.00']], zebra: true }],
+      ['sp', 8],
+      ['p', 'Total due: $690.00'],
+    ],
+  },
+  // L_PDFX_TAGGED_CONFLICT, L_PDFX_OUTPUT_INTENT, L_PDFX_NO_FONTS, L_TAGGED_NO_FONTS (errors) + L_PDFX_ANNOTATIONS (warning)
+  'pdfx-incoherent': {
+    title: 'Autumn poster - print run',
+    pdfx: 'pdfx4',
+    tagged: 'pdfa2b',
+    creationDate: '2026-09-01T00:00:00Z',
+    blocks: [
+      ['h1', 'Autumn poster'],
+      ['p', 'Sent to the printer as PDF/X-4.'],
+      ['link', 'Order online', { url: 'https://example.com/order' }],
+    ],
+  },
+  // L_TYPOGRAPHY_INEFFECTIVE x3 (warnings): quotas without splitParagraphs, an unknown feature tag, features without a registered font
+  'typography-ineffective': {
+    title: 'Annual report',
+    typography: { kerning: true, fontFeatures: ['tnum', 'liga'], orphans: 2, widows: 2 },
+    blocks: [
+      ['h1', 'Annual report'],
+      ['p', 'Revenue grew 24 % year over year while operating costs stayed flat.', { align: 'justify' }],
+      ['table', { h: ['Quarter', 'Revenue'], r: [['Q1', '15 400'], ['Q2', '21 200']] }],
+    ],
+  },
+  // L_TAGGED_NO_FONTS (error): a PDF/A claim without embedded fonts is a file veraPDF rejects
+  'tagged-no-fonts': {
+    title: 'Archived contract',
+    tagged: 'pdfa2b',
+    blocks: [
+      ['h1', 'Service agreement'],
+      ['p', 'This agreement is archived as PDF/A-2b.'],
+    ],
+  },
+  // L_PRINT_COLOUR_BARS (warning): under a 4 pt strip the engine skips the bars silently
+  'colour-bars-off-print': {
+    title: 'Flyer',
+    print: { bleed: 3, marks: { crop: true, colourBars: true } },
+    blocks: [
+      ['h1', 'Open day'],
+      ['p', 'Saturday 10:00 - 16:00.'],
+    ],
+  },
+  // validateSpec: V_ARITY, V_UNKNOWN_KIND, V_PAYLOAD_TYPE, V_BLOCK_SHAPE (errors) + V_UNKNOWN_FIELD (warning)
+  'schema-error': {
+    title: 'Broken spec',
+    theme: 'dark',
+    blocks: [
+      ['h1'],
+      ['banner', 'Welcome'],
+      ['p', 42],
+      'not a tuple',
+    ],
+  },
+};
+
+const $ = (id) => document.getElementById(id);
+const presetSel = $('preset');
+const editor = $('spec');
+const lintBtn = $('lint');
+const renderBtn = $('render');
+const resetBtn = $('reset');
+const copyBtn = $('copy');
+const downloadLink = $('download');
+const statusEl = $('status');
+const reportEl = $('report');
+const rulesTable = $('rules');
+const preview = $('preview');
+const codeView = $('code-view');
+
+let rx = null;          // the pdfnative-react module, once the CDN import resolves
+let lastUrl = null;     // object URL of the last rendered PDF
+let lastFired = new Set();
+
+function setStatus(kind, msg) {
+  statusEl.className = 'dl-status ' + kind;
+  statusEl.textContent = msg;
+}
+
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  for (const child of children || []) {
+    node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+  }
+  return node;
+}
+
+function severityPill(severity) {
+  return el('span', { class: 'dl-sev ' + severity }, [severity]);
+}
+
+function nodeSnippet(name) {
+  return [
+    "import { readFile, writeFile } from 'node:fs/promises';",
+    "import { validateSpec, lintSpec, renderSpecToBytes } from 'pdfnative-react';",
+    '',
+    '// The "' + name + '" preset, saved as a file. React 19 is a peer dependency;',
+    '// pdfnative is the engine underneath. No JSX, no bundler step.',
+    "const spec = JSON.parse(await readFile('" + name + ".json', 'utf8'));",
+    '',
+    '// Tier 1 - shape. Never throws; findings are path-anchored (blocks[3][1]).',
+    'const shape = validateSpec(spec);',
+    'if (!shape.ok) {',
+    '  for (const f of shape.errors) console.error(`${f.code} at ${f.path}: ${f.message}`);',
+    '  process.exit(1);',
+    '}',
+    '',
+    '// Tier 3 - the lint rules on the compiled document model.',
+    "// report.ok is true when no finding has severity 'error'.",
+    'const report = lintSpec(spec);',
+    'for (const f of report.findings) console.log(f.severity, f.code, f.message, f.hint ?? \'\');',
+    'if (!report.ok) process.exit(1);',
+    '',
+    '// Only a clean spec reaches the engine. PDF/A still needs veraPDF on the bytes;',
+    "// PDF/X-4 still needs the engine's validatePdfX() afterwards.",
+    "await writeFile('" + name + ".pdf', renderSpecToBytes(spec));",
+  ].join('\n');
+}
+
+function updateCodeView(name) {
+  codeView.textContent = nodeSnippet(name);
+  if (window.Prism) window.Prism.highlightElement(codeView);
+}
+
+function clearPreview() {
+  if (lastUrl) { URL.revokeObjectURL(lastUrl); lastUrl = null; }
+  preview.removeAttribute('src');
+  downloadLink.style.display = 'none';
+  downloadLink.removeAttribute('href');
+}
+
+function loadPreset(name) {
+  const spec = PRESETS[name] || PRESETS['valid-invoice'];
+  editor.value = JSON.stringify(spec, null, 2);
+  updateCodeView(name in PRESETS ? name : 'valid-invoice');
+  renderBtn.disabled = true;
+  reportEl.replaceChildren(el('p', { class: 'dl-empty' }, ['Click “Lint →” to run validateSpec and lintSpec on the spec.']));
+  markFired(new Set());
+  clearPreview();
+  if (rx) setStatus('info', 'Preset loaded. Click “Lint →”.');
+}
+
+function markFired(codes) {
+  lastFired = codes;
+  for (const row of rulesTable.tBodies[0].rows) {
+    row.classList.toggle('fired', codes.has(row.dataset.code));
+  }
+}
+
+function buildRulesTable(LINT_RULES) {
+  const codes = Object.keys(LINT_RULES);
+  const body = rulesTable.tBodies[0];
+  body.replaceChildren();
+  for (const code of codes) {
+    const rule = LINT_RULES[code];
+    const row = el('tr', { 'data-code': code }, [
+      el('td', null, [el('code', null, [code])]),
+      el('td', null, [severityPill(rule.severity)]),
+      el('td', null, [rule.description || '']),
+    ]);
+    body.appendChild(row);
+  }
+  const bySeverity = { error: 0, warning: 0, info: 0 };
+  for (const code of codes) bySeverity[LINT_RULES[code].severity] = (bySeverity[LINT_RULES[code].severity] || 0) + 1;
+  rulesTable.caption.textContent =
+    codes.length + ' rules exported by pdfnative-react ' + (rx && rx.version ? rx.version : '') +
+    ' (' + bySeverity.error + ' error, ' + bySeverity.warning + ' warning, ' + bySeverity.info + ' info)';
+}
+
+function renderValidationReport(validation) {
+  const total = validation.errors.length + validation.warnings.length;
+  const summary = el('p', { class: 'dl-summary fail' }, [
+    'validateSpec: ok = false — ' + validation.errors.length + ' error(s), ' + validation.warnings.length +
+    ' warning(s). The shape is wrong, so lintSpec did not run.',
+  ]);
+  const table = el('table', { class: 'dl-table' }, [
+    el('thead', null, [el('tr', null, [
+      el('th', { scope: 'col' }, ['Severity']),
+      el('th', { scope: 'col' }, ['Code']),
+      el('th', { scope: 'col' }, ['Path']),
+      el('th', { scope: 'col' }, ['Message']),
+    ])]),
+  ]);
+  const body = el('tbody');
+  for (const f of [...validation.errors, ...validation.warnings]) {
+    body.appendChild(el('tr', null, [
+      el('td', null, [severityPill(f.severity)]),
+      el('td', null, [el('code', null, [f.code])]),
+      el('td', null, [el('code', null, [f.path])]),
+      el('td', null, [f.message]),
+    ]));
+  }
+  table.appendChild(body);
+  reportEl.replaceChildren(summary, total ? table : el('p', { class: 'dl-empty' }, ['No findings.']));
+}
+
+function renderLintReport(report) {
+  const c = report.counts;
+  const summary = el('p', { class: 'dl-summary ' + (report.ok ? 'pass' : 'fail') }, [
+    'validateSpec: ok = true · lintSpec: ok = ' + String(report.ok) + ' — ' +
+    c.error + ' error, ' + c.warning + ' warning, ' + c.info + ' info',
+  ]);
+  if (report.findings.length === 0) {
+    reportEl.replaceChildren(summary, el('p', { class: 'dl-empty' }, ['No findings. The spec is ready to render.']));
+    return;
+  }
+  const table = el('table', { class: 'dl-table' }, [
+    el('thead', null, [el('tr', null, [
+      el('th', { scope: 'col' }, ['Severity']),
+      el('th', { scope: 'col' }, ['Rule']),
+      el('th', { scope: 'col' }, ['Block']),
+      el('th', { scope: 'col' }, ['Message']),
+    ])]),
+  ]);
+  const body = el('tbody');
+  for (const f of report.findings) {
+    const msg = el('td', null, [f.message]);
+    if (f.hint) msg.appendChild(el('span', { class: 'dl-hint' }, ['Fix: ' + f.hint]));
+    body.appendChild(el('tr', null, [
+      el('td', null, [severityPill(f.severity)]),
+      el('td', null, [el('code', null, [f.code])]),
+      el('td', null, [f.blockIndex === undefined ? '—' : '#' + f.blockIndex]),
+      msg,
+    ]));
+  }
+  table.appendChild(body);
+  reportEl.replaceChildren(summary, table);
+}
+
+function parseSpec() {
+  try {
+    return { spec: JSON.parse(editor.value) };
+  } catch (err) {
+    return { error: 'The textarea is not valid JSON: ' + (err && err.message ? err.message : String(err)) };
+  }
+}
+
+async function runLint() {
+  if (!rx) { setStatus('error', 'pdfnative-react has not finished loading from the CDN yet.'); return; }
+  renderBtn.disabled = true;
+  clearPreview();
+  const parsed = parseSpec();
+  if (parsed.error) {
+    setStatus('error', parsed.error);
+    reportEl.replaceChildren(el('p', { class: 'dl-empty' }, ['Fix the JSON syntax first — neither tier ran.']));
+    markFired(new Set());
+    return;
+  }
+  try {
+    const validation = rx.validateSpec(parsed.spec);
+    if (!validation.ok) {
+      renderValidationReport(validation);
+      markFired(new Set());
+      setStatus('error', 'validateSpec rejected the shape (' + validation.errors.length + ' error(s)). Fix the paths listed in the report and lint again.');
+      return;
+    }
+    const report = rx.lintSpec(parsed.spec);
+    renderLintReport(report);
+    markFired(new Set(report.findings.map((f) => f.code)));
+    renderBtn.disabled = !report.ok;
+    if (report.ok) {
+      setStatus('ok', 'Lint passed' + (report.findings.length ? ' with ' + report.findings.length + ' non-blocking finding(s)' : '') +
+        (validation.warnings.length ? '; validateSpec noted ' + validation.warnings.length + ' unknown field(s)' : '') +
+        '. “Render PDF →” is enabled.');
+    } else {
+      setStatus('error', 'Lint found ' + report.counts.error + ' error(s). Rendering stays disabled until the spec is clean — edit the JSON and lint again.');
+    }
+  } catch (err) {
+    setStatus('error', 'Lint failed:\n\n' + (err && err.stack ? err.stack : String(err)));
+  }
+}
+
+async function runRender() {
+  if (!rx) return;
+  const parsed = parseSpec();
+  if (parsed.error) { setStatus('error', parsed.error); return; }
+  renderBtn.disabled = true;
+  setStatus('info', 'Rendering with renderSpecToBytes…');
+  try {
+    let bytes = rx.renderSpecToBytes(parsed.spec);
+    if (bytes && typeof bytes.then === 'function') bytes = await bytes;
+    if (!(bytes instanceof Uint8Array)) bytes = new Uint8Array(bytes);
+    if (lastUrl) URL.revokeObjectURL(lastUrl);
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    lastUrl = URL.createObjectURL(blob);
+    preview.src = lastUrl;
+    downloadLink.href = lastUrl;
+    downloadLink.style.display = 'inline-block';
+    setStatus('ok', 'Rendered ' + bytes.length.toLocaleString() + ' bytes on this device. Use “Download PDF” to save it. Warnings the engine emits at build time (layout.onDiagnostic) go to the browser console here.');
+  } catch (err) {
+    setStatus('error', 'Render failed:\n\n' + (err && err.stack ? err.stack : String(err)));
+  } finally {
+    renderBtn.disabled = false;
+  }
+}
+
+presetSel.addEventListener('change', () => loadPreset(presetSel.value));
+resetBtn.addEventListener('click', () => loadPreset(presetSel.value));
+lintBtn.addEventListener('click', runLint);
+renderBtn.addEventListener('click', runRender);
+copyBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(editor.value).then(() => {
+    const prev = copyBtn.textContent; copyBtn.textContent = 'Copied!';
+    setTimeout(() => { copyBtn.textContent = prev; }, 1200);
+  });
+});
+editor.addEventListener('input', () => { renderBtn.disabled = true; });
+
+loadPreset('valid-invoice');
+
+// Load the satellite once; a CDN failure surfaces a clean message instead of a dead page.
+try {
+  rx = await import('pdfnative-react');
+  buildRulesTable(rx.LINT_RULES);
+  setStatus('info', 'Ready — pdfnative-react ' + (rx.version || '') + ' loaded. Click “Lint →”.');
+} catch (err) {
+  rulesTable.caption.textContent = 'Could not load LINT_RULES — pdfnative-react did not load from the CDN.';
+  setStatus('error', 'Could not load pdfnative-react from the CDN.\n' +
+    'This can happen offline or if the CDN blocks the import map.\n\n' + String(err));
+}
+</script>
+
+</body>
+</html>
