@@ -110,7 +110,7 @@ verify a signed PDF end to end (byte-range digest, CMS signature value,
 chain, trust, timestamps, revocation), use
 [`pdfnative-cli verify`](cli.html#pdfnative-verify) or the
 [`verify_pdf` MCP tool](mcp.html) — the CMS verification logic lives
-there. Since pdfnative-mcp 1.6.0, `verify_pdf` also validates
+there. Since pdfnative-mcp 1.6.0, `verify_pdf` also validates <!-- verify-docs:allow version-token (historical release entry) -->
 `/DocTimeStamp` fields as RFC 3161 tokens and reports the achieved
 PAdES level (B-B → B-LTA) with `ltv: true`.
 

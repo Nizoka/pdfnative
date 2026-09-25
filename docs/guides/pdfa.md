@@ -118,7 +118,7 @@ claim (v1.8.0) reports through the same channel with `PDFX_NO_FONT_ENTRIES`,
 `PDFX_DEVICE_CMYK` and `PDFX_ANNOTATIONS` — see the
 [print guide](print.html#pdfx-4-v180).
 
-> **On the MCP surface** _(pdfnative-mcp 1.6.0)_, the same honesty is exposed
+> **On the MCP surface** _(pdfnative-mcp ≥ 1.6.0)_, the same honesty is exposed
 > as three opt-in inputs on every document tool: `embedFonts: true` embeds
 > Noto Sans Latin so a PDF/A claim on base-14 text is actually accepted by
 > veraPDF, `strict: true` fails instead of producing a non-conformant file,

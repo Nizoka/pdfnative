@@ -1,6 +1,6 @@
 {
   "$comment": "Single source of truth for every version, count and inventory quoted anywhere in the documentation. Edit THIS file, then run `npm run verify:docs` — it reports every doc that disagrees. Never hand-edit a number in a doc without updating this manifest first.",
-  "verifiedOn": "2026-09-15",
+  "verifiedOn": "2026-09-25",
   "packages": {
     "pdfnative": {
       "version": "1.8.0",
@@ -9,9 +9,9 @@
       "repo": "https://github.com/Nizoka/pdfnative"
     },
     "pdfnative-cli": {
-      "version": "1.4.0",
+      "version": "1.5.0",
       "pinField": "dependencies",
-      "pin": "^1.7.0",
+      "pin": "^1.8.0",
       "repo": "https://github.com/Nizoka/pdfnative-cli",
       "binary": "pdfnative",
       "commandCount": 21,
@@ -50,9 +50,9 @@
       }
     },
     "pdfnative-mcp": {
-      "version": "1.6.0",
+      "version": "1.7.0",
       "pinField": "dependencies",
-      "pin": "^1.7.0",
+      "pin": "^1.8.0",
       "repo": "https://github.com/Nizoka/pdfnative-mcp",
       "toolCount": 28,
       "tools": [
@@ -91,13 +91,14 @@
         "pades_ladder",
         "print_ready",
         "reproducible_output",
+        "typography",
         "pdfa_valid"
       ]
     },
     "pdfnative-react": {
-      "version": "1.2.0",
+      "version": "1.3.0",
       "pinField": "peerDependencies",
-      "pin": "^1.7.0",
+      "pin": "^1.8.0",
       "repo": "https://github.com/Nizoka/pdfnative-react",
       "$comment": "pdfnative is declared as a PEER dependency here, not a dependency. versions.js must read both fields or the pin annotation silently never renders for this package.",
       "runtimeDependencies": [
@@ -113,14 +114,14 @@
     "sampleGenerators": 49,
     "samplePdfs": 292,
     "sampleCategories": 38,
-    "guides": 32,
-    "playgrounds": 12,
+    "guides": 35,
+    "playgrounds": 14,
     "learnSteps": 8,
     "recipes": 17
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 3824,
+    "tests": 3827,
     "coverageStatements": 90,
     "coverageMeasured": 91.5,
     "scripts": 27,

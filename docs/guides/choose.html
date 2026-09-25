@@ -220,51 +220,51 @@ means the surface does not offer it.</p>
 <tr>
 <td>Typography (paragraph breaking, justification, hyphenation, kerning, OpenType features)</td>
 <td><code>layout.typography</code> (<code>TypographyOptions</code>) + <code>setHyphenationProvider</code> / <code>bindUnits</code> / <code>bindShortWords</code> / <code>applyPunctuationSpacing</code> <em>(v1.8.0; every option opt-in and byte-identical when absent)</em></td>
-<td><code>render</code> (<code>layout.typography</code> in the document JSON or a <code>--layout</code> file — no dedicated flag) <em>(v1.4.0)</em></td>
-<td>— (the document tools validate a fixed layout schema; typography is not in it yet)</td>
-<td>— (no typography prop yet)</td>
+<td><code>render --split-paragraphs</code> / <code>--keep-headings-with-next</code> / <code>--kerning</code> / <code>--font-features</code>, or the full <code>layout.typography</code> object in the document JSON / a <code>--layout</code> file <em>(v1.5.0)</em></td>
+<td><code>typography</code> object on the nine document tools and <code>inspect_layout</code>; paragraph <code>align: &#39;justify&#39;</code> / <code>keepWithNext</code> / <code>splittable</code>, heading <code>keepWithNext</code> <em>(v1.7.0)</em></td>
+<td><code>&lt;Document typography&gt;</code> · <code>&lt;Paragraph align=&quot;justify&quot; keepWithNext splittable&gt;</code> · <code>&lt;Heading keepWithNext&gt;</code> <em>(v1.3.0)</em></td>
 </tr>
 <tr>
 <td>CMYK content colours</td>
 <td><code>[c, m, y, k]</code> tuples (percent) or <code>&#39;c m y k&#39;</code> strings on any colour field; <code>parseColor</code> / <code>resolveColor</code> / <code>fillOp</code> / <code>strokeOp</code> <em>(v1.8.0)</em></td>
-<td><code>render</code> (four-element colour fields in the document JSON) <em>(v1.4.0)</em></td>
-<td>— (colour fields are validated as hex strings or RGB tuples)</td>
-<td>— (colour props are typed for RGB)</td>
+<td><code>render</code> (<code>&quot;c m y k&quot;</code> or <code>[c, m, y, k]</code> colour fields in the document JSON) <em>(v1.5.0)</em></td>
+<td><code>&#39;0 0.6 1 0&#39;</code> or <code>[0, 60, 100, 0]</code> on every colour input <em>(v1.7.0)</em></td>
+<td><code>Color</code> accepts a CMYK tuple or string on every colour prop; <code>L_CMYK_INTENT_MISMATCH</code> <em>(v1.3.0)</em></td>
 </tr>
 <tr>
 <td>CMYK / Gray OutputIntent with RGB content kept conforming</td>
 <td><code>layout.outputIntent</code> with a CMYK or Gray ICC profile <em>(v1.8.0; RGB content routed through a calibrated <code>/DefaultRGB</code>; no press profile shipped)</em></td>
-<td><code>render</code> (<code>layout.outputIntent</code> in a <code>--layout</code> file with the profile bytes) <em>(v1.4.0)</em></td>
-<td>— (RGB OutputIntent only)</td>
-<td>—</td>
+<td><code>render --output-intent-icc &lt;file.icc&gt; --output-intent-id &lt;s&gt;</code> <em>(v1.5.0)</em></td>
+<td><code>outputIntent</code> accepts CMYK and Gray profiles on the document tools <em>(v1.7.0)</em></td>
+<td><code>&lt;Document outputIntent&gt;</code> (also a DocSpec field) <em>(v1.3.0)</em></td>
 </tr>
 <tr>
 <td>PDF/X-4 conformance claim</td>
 <td><code>layout: { pdfx: &#39;pdfx4&#39;, outputIntent, metadata.trapped }</code> <em>(v1.8.0; exclusive with <code>tagged</code> and encryption)</em></td>
-<td><code>render</code> (<code>layout.pdfx</code> in the document JSON or a <code>--layout</code> file; the <code>PDF/X</code> / <code>layout.pdfx</code> errors surface as runtime failures until mapped to <code>E_INPUT</code>) <em>(v1.4.0)</em></td>
-<td>— (<code>pdfx</code> is not in the layout schema)</td>
-<td>—</td>
+<td><code>render --pdfx pdfx4 --output-intent-icc &lt;file.icc&gt; --trapped true|false|unknown</code> (coherence errors → <code>E_INPUT</code>, <code>PDFX_*</code> diagnostics fail under <code>--strict</code>) <em>(v1.5.0)</em></td>
+<td><code>pdfx: &#39;pdfx4&#39;</code> on six document tools (needs a <code>prtr</code> <code>outputIntent</code> and <code>embedFonts: true</code>; exclusive with <code>pdfA</code> / <code>encrypt</code>) <em>(v1.7.0)</em></td>
+<td><code>&lt;Document pdfx=&quot;pdfx4&quot; outputIntent metadata={{ trapped }}&gt;</code> with eight <code>L_PDFX_*</code> lint rules <em>(v1.3.0)</em></td>
 </tr>
 <tr>
 <td>Validate PDF/X-4</td>
 <td><code>validatePdfX</code> <em>(v1.8.0; structural ISO 15930-7 prerequisites, not a certified preflight)</em></td>
-<td>— (<code>inspect --check</code> knows <code>pdfua</code> only)</td>
-<td>— (<code>validate_pdf</code> checks PDF/UA only)</td>
-<td>—</td>
+<td><code>inspect --pdfx</code> / <code>--check pdfx</code> <em>(v1.5.0)</em></td>
+<td><code>validate_pdf</code> with <code>standard: &#39;pdf-x-4&#39;</code> (result carries <code>caveats[]</code>); <code>inspect_pdf</code> reports <code>pdfX</code> <em>(v1.7.0)</em></td>
+<td>— (import <code>validatePdfX</code> from the <code>pdfnative</code> peer and run it on the rendered bytes)</td>
 </tr>
 <tr>
 <td>Printer&#39;s marks: registration colour and colour control bars</td>
 <td><code>layout.print.marks</code> (<code>true</code>, or <code>{ colourBars: true | { tints, size } }</code>) <em>(v1.8.0; bars off by default and byte-neutral when off)</em></td>
-<td><code>render</code> (<code>print.marks</code> in the document JSON or a <code>--layout</code> file) <em>(v1.4.0)</em></td>
-<td><code>generate_basic_pdf</code> (<code>marks: true</code> only) <em>(v1.6.0)</em></td>
-<td><code>&lt;Document print={{ marks: true }}&gt;</code> (boolean marks only)</td>
+<td><code>render</code> (<code>print.marks</code> incl. <code>colourBars</code> in the document JSON or a <code>--layout</code> file) <em>(v1.5.0)</em></td>
+<td><code>print.marks: true</code> <em>(v1.6.0)</em> or <code>{ colourBars: true | { tints, size } }</code> <em>(v1.7.0)</em></td>
+<td><code>&lt;Document print={{ marks: { colourBars: true } }}&gt;</code> (<code>ColourBarOptions</code>, <code>L_PRINT_COLOUR_BARS</code>) <em>(v1.3.0)</em></td>
 </tr>
 <tr>
 <td>Reproducible bytes</td>
 <td><code>layout.creationDate</code>, or <code>setDefaultCreationDate(date)</code> once per process; <code>getDefaultCreationDate</code> <em>(v1.8.0; pin <code>TZ</code> too for cross-host identity)</em></td>
-<td><code>render</code> (<code>layout.creationDate</code> in the document JSON or a <code>--layout</code> file) <em>(v1.4.0)</em></td>
-<td><code>generate_basic_pdf</code> (<code>creationDate</code>, ISO-8601, on all nine document tools) <em>(v1.6.0)</em></td>
-<td><code>layout.creationDate</code> render option</td>
+<td>global <code>--creation-date &lt;iso8601&gt;</code> (<code>SOURCE_DATE_EPOCH</code> fallback), echoed in the <code>--json</code> envelope <em>(v1.5.0)</em></td>
+<td><code>creationDate</code> on all nine document tools <em>(v1.6.0)</em>; server-wide <code>PDFNATIVE_MCP_CREATION_DATE</code> → <code>SOURCE_DATE_EPOCH</code> → clock <em>(v1.7.0)</em></td>
+<td><code>&lt;Document creationDate&gt;</code> (also a DocSpec field); <code>setDefaultCreationDate</code> / <code>getDefaultCreationDate</code> re-exported; no environment variable is read <em>(v1.3.0)</em></td>
 </tr>
 </tbody></table>
 <h2 id="honest-notes">Honest notes<a class="heading-anchor" href="#honest-notes" aria-label="Link to this section">#</a></h2>
@@ -306,8 +306,10 @@ document rewrite.</p>
 <ul>
 <li><a href="onboarding.html">Onboarding</a> — the 90-second install-and-first-call for
 each surface.</li>
-<li><a href="use-cases.html">Ecosystem use cases</a> — four production architectures that
-compose these surfaces, with diagrams.</li>
+<li><a href="use-cases.html">Ecosystem use cases</a> — five production architectures that
+compose these surfaces, with diagrams, plus per-surface cases for the
+<a href="use-cases-cli.html">CLI</a>, the <a href="use-cases-mcp.html">MCP server</a> and the
+<a href="use-cases-react.html">React renderer</a>.</li>
 <li><a href="self-verify.html">Self-verifying generation</a> — the generate → inspect →
 assert → correct loop on every surface.</li>
 <li><a href="architecture.html">Architecture</a> — how the four packages relate.</li>

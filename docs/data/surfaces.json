@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable form of the capability × surface table in docs/guides/choose.md. Hand-maintained, verified against the sources on the date below: library `call` names against src/index.ts exports, CLI `command` names against packages.pdfnative-cli.commandGroups and MCP `tool` names against packages.pdfnative-mcp.tools in docs/assets/ecosystem.json (the single source of truth for names and counts — regenerate nothing from this file), React entries against docs/guides/react.md. Each `since` is a version of that surface's OWN package (pdfnative, pdfnative-cli, pdfnative-mcp or pdfnative-react); it is omitted where the capability predates 1.0.0 or the introducing release is not documented. `supported: false` cells carry a note naming the honest alternative where one exists.",
-  "verifiedOn": "2026-09-15",
+  "verifiedOn": "2026-09-25",
   "capabilities": [
     {
       "id": "generate",
@@ -126,57 +126,57 @@
       "id": "typography",
       "label": "Typography (paragraph breaking, justification, hyphenation, kerning, OpenType features)",
       "library": { "supported": true, "call": "layout.typography (TypographyOptions) + setHyphenationProvider / bindUnits / bindShortWords / applyPunctuationSpacing", "since": "1.8.0", "notes": "Every option is opt-in and byte-identical when absent: splitParagraphs, widows, orphans, keepHeadingsWithNext (boolean or { minLines }), bindShortWords, unitBinding, punctuationSpacing, opticalMargins, metrics: 'exact', kerning, fontFeatures, hyphenationLanguage; ParagraphBlock.align: 'justify'; block-level keepWithNext (heading, paragraph) and splittable (paragraph) override the document setting. A fontFeatures tag that changes nothing raises TYPOGRAPHY_FEATURE_INEFFECTIVE." },
-      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "No dedicated flag: put layout.typography in the document JSON or in a --layout file — render forwards the layout object to the installed engine (pins ^1.7.0, so 1.8.0 resolves)." },
-      "mcp": { "supported": false, "notes": "The document tools validate a fixed layout schema and refuse unknown keys; typography is not in it yet." },
-      "react": { "supported": false, "notes": "No typography prop yet; the layout render option carries the engine's other options only." }
+      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Dedicated flags since 1.5.0: --split-paragraphs, --keep-headings-with-next, --kerning, --font-features <tag,…>; the full layout.typography object (12 keys) in the document JSON or a --layout file; paragraphs accept align: \"justify\", blocks keepWithNext and splittable. Since 1.4.0 the layout object was forwarded verbatim without flags." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.7.0", "notes": "A typography object (12 keys, all off by default) on the nine document tools and on inspect_layout; paragraph align (left|right|center|justify), keepWithNext, splittable; heading keepWithNext. kerning, fontFeatures and the 'fr' punctuation preset need embedFonts: true; no hyphenation dictionary ships. The typography prompt documents the recipe." },
+      "react": { "supported": true, "call": "<Document typography={…}> · <Paragraph align=\"justify\" keepWithNext splittable> · <Heading keepWithNext>", "since": "1.3.0", "notes": "TypographyOptions is re-exported with a compile-time lock on the twelve engine keys; setHyphenationProvider / getHyphenationProvider are re-exported; L_TYPOGRAPHY_INEFFECTIVE warns before rendering. Byte-identical when unset." }
     },
     {
       "id": "cmyk-colour",
       "label": "CMYK content colours",
       "library": { "supported": true, "call": "[c, m, y, k] tuples (percent) or 'c m y k' strings on any color field; parseColor / resolveColor / fillOp / strokeOp", "since": "1.8.0", "notes": "Emitted as DeviceCMYK (k / K). Under a PDF/A claim whose OutputIntent is not CMYK the PDFA_DEVICE_CMYK_CONTENT diagnostic fires." },
-      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Colour fields in the document JSON accept the four-element form; the engine parses them." },
-      "mcp": { "supported": false, "notes": "Colour fields are validated as hex strings or RGB tuples." },
-      "react": { "supported": false, "notes": "Colour props are typed for RGB; a four-element tuple is not accepted by the lint rules." }
+      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Colour fields in the document JSON accept 'c m y k' strings or [c, m, y, k] tuples (percent); documented and sampled since 1.5.0." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.7.0", "notes": "'0 0.6 1 0' or [0, 60, 100, 0] accepted on every colour input of every document tool and annotate_pdf. A 0–1 RGB triple renders the intended colour since 1.7.0." },
+      "react": { "supported": true, "call": "Color = hex | RGB tuple | PdfCmykTuple | PdfCmykString on every colour prop", "since": "1.3.0", "notes": "No RGB→CMYK conversion: plate values are authored. L_CMYK_INTENT_MISMATCH warns when CMYK content meets a non-CMYK OutputIntent." }
     },
     {
       "id": "output-intent-cmyk",
       "label": "CMYK / Gray OutputIntent with RGB content kept conforming",
       "library": { "supported": true, "call": "layout.outputIntent with a CMYK or Gray ICC profile (validated: acsp signature, size field, data colour space)", "since": "1.8.0", "notes": "RGB content is routed through a calibrated /DefaultRGB so PDF/A-1b and 2b claims stay veraPDF-valid; pdfnative ships no press profile." },
-      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "layout.outputIntent in a --layout file with the profile bytes; the CLI does not read .icc files itself." },
-      "mcp": { "supported": false, "notes": "The document tools expose an RGB OutputIntent only." },
-      "react": { "supported": false }
+      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Since 1.5.0 the profile is read from a file: --output-intent-icc <file.icc> (16 MiB cap, acsp signature checked) with --output-intent-id <s>; layout.outputIntent in a --layout file still works." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.7.0", "notes": "outputIntent accepts CMYK and Gray profiles on the document tools; hand-made ICC stubs are rejected with PRINT_ERROR." },
+      "react": { "supported": true, "call": "<Document outputIntent={…}>", "since": "1.3.0", "notes": "Also a DocSpec field. L_OUTPUT_INTENT_PROFILE checks the profile header before rendering." }
     },
     {
       "id": "pdfx4",
       "label": "PDF/X-4 conformance claim",
       "library": { "supported": true, "call": "layout: { pdfx: 'pdfx4', outputIntent, metadata.trapped }", "since": "1.8.0", "notes": "Mutually exclusive with tagged and with encryption; requires a prtr OutputIntent and a known trapping state. The coherence errors it throws are listed in errors.json under buildErrors." },
-      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "layout.pdfx in the document JSON or a --layout file; the thrown messages start with 'PDF/X' or 'layout.pdfx' and surface as runtime failures until the CLI maps those prefixes to E_INPUT." },
-      "mcp": { "supported": false, "notes": "pdfx is not in the document tools' layout schema." },
-      "react": { "supported": false }
+      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Dedicated flags since 1.5.0: --pdfx pdfx4, --output-intent-icc, --output-intent-id, --trapped true|false|unknown; the PDF/X coherence errors map to E_INPUT and the PDFX_* diagnostics fail the build under --strict." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.7.0", "notes": "pdfx: 'pdfx4' on generate_basic_pdf, add_table, add_chart, add_barcode, embed_image and add_international_text; requires an outputIntent with a prtr profile and embedFonts: true; exclusive with pdfA and encrypt. Under strict: true a PDFX_* diagnostic surfaces as PDF_X_COMPLIANCE_VIOLATION." },
+      "react": { "supported": true, "call": "<Document pdfx=\"pdfx4\" outputIntent={…} metadata={{ trapped }}>", "since": "1.3.0", "notes": "Also DocSpec fields. Eight L_PDFX_* lint rules (target, tagged conflict, encrypted, output intent, trapped unknown, boxes, no fonts, annotations) pre-empt the engine errors." }
     },
     {
       "id": "validate-pdfx",
       "label": "Validate PDF/X-4",
       "library": { "supported": true, "call": "validatePdfX", "since": "1.8.0", "notes": "Structural check of the ISO 15930-7 prerequisites (header, XMP identification, OutputIntent profile, page boxes, embedded fonts in page resources, reached XObjects and annotation appearances, annotations, actions, embedded files, OPI / PostScript / reference XObjects, LZW, any /TR transfer function, device colour). It does not replace a certified preflight." },
-      "cli": { "supported": false, "notes": "inspect --check knows pdfua only; a pdfx check is not exposed yet." },
-      "mcp": { "supported": false, "notes": "validate_pdf checks PDF/UA only." },
-      "react": { "supported": false }
+      "cli": { "supported": true, "command": "inspect", "since": "1.5.0", "notes": "inspect --pdfx reports pdfxConformance; --check pdfx turns the structural PDF/X-4 check into a CI assertion (exit 1 / E_CHECK_FAILED). Not a certified preflight." },
+      "mcp": { "supported": true, "tool": "validate_pdf", "since": "1.7.0", "notes": "standard: 'pdf-x-4' (default 'pdf-ua-1'); the PDF/X result carries a caveats[] list stating it is not a certified preflight. inspect_pdf reports pdfX and accepts check: 'pdfx'." },
+      "react": { "supported": false, "notes": "Deliberately not re-exported: import validatePdfX from pdfnative (already a peer) and run it on the rendered bytes — the one-line recipe is in the package docs." }
     },
     {
       "id": "colour-bars",
       "label": "Printer's marks: registration colour and colour control bars",
       "library": { "supported": true, "call": "layout.print.marks (true, or { colourBars: true | { tints, size } })", "since": "1.8.0", "notes": "Marks use the all-separation registration colour under a CMYK intent, keep at least max(weight, 0.5) pt clear of the trim line and the sheet edge, and are tagged /Artifact /Page under tagged. Colour bars are off by default and byte-neutral when off; use a 5 mm bleed." },
-      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "print.marks in the document JSON or a --layout file." },
-      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.6.0", "notes": "marks: true only; the colourBars object form is not in the schema yet." },
-      "react": { "supported": true, "call": "<Document print={{ marks: true }}>", "notes": "Boolean marks only." }
+      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "print.marks in the document JSON or a --layout file; the colourBars object form is documented and sampled since 1.5.0." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.6.0", "notes": "marks: true since 1.6.0; marks: { colourBars: true | { tints, size } } since 1.7.0." },
+      "react": { "supported": true, "call": "<Document print={{ marks: { colourBars: true } }}>", "since": "1.2.0", "notes": "Boolean marks since 1.2.0; the colourBars object (ColourBarOptions) since 1.3.0, with L_PRINT_COLOUR_BARS checking the geometry." }
     },
     {
       "id": "deterministic-output",
       "label": "Reproducible bytes",
       "library": { "supported": true, "call": "layout.creationDate, or setDefaultCreationDate(date) once per process; getDefaultCreationDate", "since": "1.8.0", "notes": "Pins /CreationDate, /ModDate, the XMP dates and therefore the trailer /ID. Dates are written in UTC with an explicit +00'00' offset, so a pinned instant is byte-identical across hosts without a TZ pin. The {date} header/footer placeholder follows the pinned date since 1.8.0." },
-      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "layout.creationDate in the document JSON or a --layout file." },
-      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.6.0", "notes": "creationDate (ISO-8601) on all nine document tools." },
-      "react": { "supported": true, "call": "layout.creationDate render option" }
+      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Since 1.5.0 a global --creation-date <iso8601> (SOURCE_DATE_EPOCH fallback) pins every command in one invocation and is echoed in the --json envelope; global flags may precede the command. layout.creationDate in the document JSON still works." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.6.0", "notes": "creationDate (ISO-8601) on all nine document tools since 1.6.0; since 1.7.0 the server-wide pin PDFNATIVE_MCP_CREATION_DATE, then SOURCE_DATE_EPOCH, then the clock — an exported SOURCE_DATE_EPOCH pins every document." },
+      "react": { "supported": true, "call": "<Document creationDate={Date | string}> · setDefaultCreationDate / getDefaultCreationDate (re-exported)", "since": "1.3.0", "notes": "Also a DocSpec field. The library reads no environment variable." }
     }
   ]
 }

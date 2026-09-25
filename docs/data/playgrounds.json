@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable inventory of the live playgrounds (docs/playgrounds/*.html, redirect stubs excluded). Hand-maintained; the playgrounds-manifest rule of scripts/verify-docs.ts checks that every live page is listed and every listed page exists, and that the count equals derived.playgrounds in docs/assets/ecosystem.json. Control ids are DOM ids on the page. selfContained: true means every code view of the page (the CODE object shown in #code-view and copied by the Copy button) declares all it uses and imports only from 'pdfnative', so it reproduces the result outside the browser; tests/docs/playgrounds.test.ts runs each such view in Node and locks that promise. false carries a note saying why the page is not covered.",
-  "verifiedOn": "2026-09-15",
+  "verifiedOn": "2026-09-25",
   "engine": "pdfnative@1.8.0 loaded from a CDN (esm.sh, jsdelivr or unpkg); nothing runs server-side",
   "playgrounds": [
     {
@@ -162,13 +162,13 @@
       "since": "1.3.0",
       "requires": ["pdfnative-cli installed (npx pdfnative-cli) to run the generated command outside the page"],
       "controls": [
-        { "id": "preset", "kind": "select", "meaning": "worked examples that fill the form; one option value per scenario (render-basic, render-pdfa, sign-meta, verify-strict, merge-basic, ltv-add, doc-timestamp-lta, compare-ci, batch-manifest…)" },
+        { "id": "preset", "kind": "select", "meaning": "worked examples that fill the form; one option value per scenario (render-basic, render-pdfa, sign-meta, verify-strict, merge-basic, ltv-add, doc-timestamp-lta, compare-ci, batch-manifest…; v1.5.0 presets render-typography, render-pdfx4-cmyk, render-font-file, render-reproducible, render-dry-run, inspect-pdfx, annotate-link, sign-timestamp-timeout, verify-weak-digest, doctor-conformance, global-flags-first)" },
         { "id": "cmd-output", "kind": "code", "meaning": "the generated shell command" },
         { "id": "copy", "kind": "button", "meaning": "copy #cmd-output to the clipboard" },
         { "id": "reset", "kind": "button" },
         { "id": "validation", "kind": "status", "meaning": "form validation messages" }
       ],
-      "exercises": ["pdfnative-cli command surface (21 commands)", "JSON-in/JSON-out flags", "PAdES ladder (sign, ltv, doc-timestamp)", "shell completion (#co-shell)"],
+      "exercises": ["pdfnative-cli command surface (21 commands)", "JSON-in/JSON-out flags", "PAdES ladder (sign, ltv, doc-timestamp)", "shell completion (#co-shell)", "v1.5.0 render flags: --split-paragraphs, --keep-headings-with-next, --kerning, --font-features, --pdfx pdfx4, --output-intent-icc, --output-intent-id, --trapped, --font-file", "global --creation-date (SOURCE_DATE_EPOCH fallback) and global flags placed before the command (#gl-position)", "inspect --pdfx / --check pdfx / --iso-dates; annotate link; sign --timestamp-timeout; verify weak-digest note; doctor fonts / unicode / conformance"],
       "codeView": "#cmd-output",
       "selfContained": false,
       "note": "The code view is a pdfnative-cli shell command, not a pdfnative program; it runs wherever pdfnative-cli is installed.",
@@ -188,7 +188,7 @@
         { "id": "copy-config", "kind": "button", "meaning": "copy #config-output to the clipboard" },
         { "id": "cards", "kind": "container", "meaning": "tool cards; each has data-action buttons (generate, copy-args) and a [data-status] line" }
       ],
-      "exercises": ["pdfnative-mcp tool surface (28 tools)", "buildDocumentPDFBytes", "mergePdfs", "splitPdf", "extractPages", "annotations", "update metadata", "inspectDocumentLayout", "governance issue draft validation"],
+      "exercises": ["pdfnative-mcp tool surface (28 tools)", "buildDocumentPDFBytes", "mergePdfs", "splitPdf", "extractPages", "annotations", "update metadata", "inspectDocumentLayout", "governance issue draft validation", "layout.typography", "PDF/X-4 (layout.pdfx, outputIntent, colour bars)", "validatePdfX", "validatePdfUA", "inspect_pdf pdfX claim", "27 scripts (lo, nod, khb, tdd, cjm)", "reproducible output (creationDate, SHA-256)", "operator environment (12 variables, #env-panel)", "7 MCP prompts (#prompts-panel)"],
       "codeView": "#config-output",
       "selfContained": false,
       "note": "The code view is an MCP client configuration, not a pdfnative program; the per-card payloads are tool arguments for pdfnative-mcp.",
@@ -202,16 +202,16 @@
       "title": "React renderer",
       "purpose": "Edit JSX and render a PDF in the browser with pdfnative-react (React 19 reconciler to pdfnative blocks), including charts v2 and print production presets, plus the DocSpec alternative.",
       "since": "1.5.0",
-      "requires": ["React 19, pdfnative-react and Babel standalone loaded from the CDN by the page"],
+      "requires": ["React 19, pdfnative-react 1.3.0 and Babel standalone loaded from the CDN by the page"],
       "controls": [
-        { "id": "rx-preset", "kind": "select", "values": ["invoice", "report", "multilingual", "charts-v2", "print"] },
+        { "id": "rx-preset", "kind": "select", "values": ["invoice", "report", "multilingual", "charts-v2", "print", "typography-justify", "print-pdfx4-cmyk", "reproducible-creationDate", "scripts-27", "lint-gate"] },
         { "id": "rx-editor", "kind": "textarea", "meaning": "JSX source" },
         { "id": "rx-run", "kind": "button", "meaning": "render the PDF" },
         { "id": "rx-reset", "kind": "button" },
         { "id": "rx-copy", "kind": "button", "meaning": "copy the JSX" },
         { "id": "rx-download", "kind": "button", "meaning": "download the rendered PDF" }
       ],
-      "exercises": ["pdfnative-react components (Document, Table, Barcode, Chart)", "registerFont (Arabic)", "charts v2", "print production (bleed, marks)", "DocSpec (compileSpec, renderSpecToBytes)"],
+      "exercises": ["pdfnative-react components (Document, Table, Barcode, Chart)", "registerFont (Arabic)", "charts v2", "print production (bleed, marks)", "DocSpec (compileSpec, renderSpecToBytes)", "Document typography + Heading keepWithNext + Paragraph align=\"justify\" splittable (typography-justify)", "Document pdfx=\"pdfx4\" + outputIntent (synthetic prtr ICC) + metadata.trapped + print.marks.colourBars, CMYK colours, resolveFonts, lintDocument, validatePdfX (print-pdfx4-cmyk)", "Document creationDate: two renderToBytes runs compared by length + SHA-256 (reproducible-creationDate)", "resolveFonts for Lao and Cham font modules (scripts-27)", "lintDocument + Object.keys(LINT_RULES).length read live, fixed tree re-linted and rendered (lint-gate)"],
       "codeView": "#rx-editor",
       "selfContained": false,
       "note": "The code view is JSX compiled by Babel standalone and rendered through pdfnative-react in the page; it needs React 19 and pdfnative-react outside the browser.",
@@ -259,6 +259,54 @@
       "selfContained": true,
       "diagnostics": "#diagnostics",
       "output": "PDF offered as a download (print-<preset>.pdf); every build's layout.onDiagnostic output is rendered in #diagnostics; the pdfx preset prints the validatePdfX() report and the errors preset prints the thrown messages in #report"
+    },
+    {
+      "id": "reproducible",
+      "file": "reproducible.html",
+      "url": "https://pdfnative.dev/playgrounds/reproducible.html",
+      "title": "Reproducible output",
+      "purpose": "Build the same document twice with the creation instant pinned (layout.creationDate or setDefaultCreationDate), compare the SHA-256 of both builds, and flip one input — title, creation date or compression — to watch the digests diverge; copy-only snippets show the same pin for the CLI, the MCP server and React.",
+      "since": "1.8.0",
+      "requires": [],
+      "controls": [
+        { "id": "preset", "kind": "select", "values": ["invoice", "report", "footer-date"] },
+        { "id": "creation-date", "kind": "datetime-local", "meaning": "the pinned creation instant, read as UTC (default 2026-01-01T00:00)" },
+        { "id": "flip", "kind": "select", "values": ["none", "title", "creation-date", "compress"], "meaning": "the one input the second build changes; none builds the same input twice" },
+        { "id": "build", "kind": "button", "meaning": "build the preset twice and compare the SHA-256 of both builds" },
+        { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
+      ],
+      "exercises": ["layout.creationDate", "setDefaultCreationDate", "getDefaultCreationDate", "footerTemplate {date}", "buildDocumentPDFBytes", "downloadBlob", "SHA-256 via crypto.subtle", "layout.onDiagnostic"],
+      "codeView": "#code-view",
+      "selfContained": true,
+      "diagnostics": "#diagnostics",
+      "output": "Build A offered as a download (reproducible-<preset>.pdf); SHA-256 of each build in #hash-a and #hash-b, identical/different in #verdict; build log and layout.onDiagnostic output rendered in #diagnostics"
+    },
+    {
+      "id": "docspec-lint",
+      "file": "docspec-lint.html",
+      "url": "https://pdfnative.dev/playgrounds/docspec-lint.html",
+      "title": "DocSpec lint",
+      "purpose": "Paste or pick a DocSpec JSON, run pdfnative-react 1.3.0's validateSpec (shape tier) and lintSpec (37 rules) in the browser, read the report with rule ids and hints, fix the spec, and render a clean spec to a PDF with renderSpecToBytes.",
+      "since": "1.8.0",
+      "requires": [
+        "React 19 and pdfnative-react 1.3.0 loaded from the CDN by the page"
+      ],
+      "controls": [
+        { "id": "preset", "kind": "select", "values": ["valid-invoice", "pdfx-incoherent", "typography-ineffective", "tagged-no-fonts", "colour-bars-off-print", "schema-error"] },
+        { "id": "spec", "kind": "textarea", "meaning": "DocSpec JSON" },
+        { "id": "lint", "kind": "button", "meaning": "run validateSpec then lintSpec; report in #report" },
+        { "id": "render", "kind": "button", "meaning": "renderSpecToBytes; enabled only when the last lint reported no error" },
+        { "id": "reset", "kind": "button" },
+        { "id": "copy", "kind": "button", "meaning": "copy the spec" },
+        { "id": "download", "kind": "button", "meaning": "download the rendered PDF" },
+        { "id": "rules", "kind": "table", "meaning": "the LINT_RULES table built at load; caption counts the rules live" }
+      ],
+      "exercises": ["validateSpec (V_ARITY, V_UNKNOWN_KIND, V_PAYLOAD_TYPE, V_BLOCK_SHAPE, V_UNKNOWN_FIELD)", "lintSpec", "LINT_RULES (37 rules)", "renderSpecToBytes", "DocSpec pdfx / outputIntent / typography / creationDate fields", "L_PDFX_TAGGED_CONFLICT, L_PDFX_OUTPUT_INTENT, L_PDFX_NO_FONTS, L_PDFX_ANNOTATIONS", "L_TYPOGRAPHY_INEFFECTIVE", "L_TAGGED_NO_FONTS", "L_PRINT_COLOUR_BARS"],
+      "codeView": "#code-view",
+      "selfContained": false,
+      "note": "The code view is the equivalent Node snippet; the page itself runs validateSpec, lintSpec and renderSpecToBytes from the pdfnative-react CDN build, which needs React 19 and pdfnative-react outside the browser.",
+      "diagnostics": "#report",
+      "output": "PDF preview in #preview and a download via #download"
     }
   ]
 }

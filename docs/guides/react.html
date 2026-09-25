@@ -66,7 +66,7 @@
 <!-- guide:render:start -->
 <h1 id="pdfnative-react--declarative-jsx-renderer-guide">pdfnative-react — Declarative JSX Renderer Guide</h1>
 <blockquote>
-<p><strong>Tracks the latest published <code>pdfnative-react</code></strong> (v1.2.0, requires pdfnative ≥ 1.7.0), with <strong>React 19</strong> and <code>pdfnative</code> ^1.7.0 as peer dependencies. Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>. Full history: <a href="https://github.com/Nizoka/pdfnative-react/releases" target="_blank" rel="noopener">pdfnative-react releases</a>.</p>
+<p><strong>Tracks the latest published <code>pdfnative-react</code></strong> (v1.3.0, requires pdfnative ≥ 1.8.0), with <strong>React 19</strong> and <code>pdfnative</code> ^1.8.0 as peer dependencies. Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>. Full history: <a href="https://github.com/Nizoka/pdfnative-react/releases" target="_blank" rel="noopener">pdfnative-react releases</a>.</p>
 </blockquote>
 <p><a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener"><code>pdfnative-react</code></a> turns declarative <strong>JSX</strong> into real, on-device PDFs powered by the zero-dependency <a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><code>pdfnative</code></a> engine — no DOM, no headless browser, no SaaS round-trips. Your documents never leave the process.</p>
 <blockquote>
@@ -106,7 +106,7 @@ const bytes = renderToBytes(
 <h2 id="installation">Installation<a class="heading-anchor" href="#installation" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-bash">npm install pdfnative-react pdfnative react
 </code></pre>
-<p><strong>Requirements:</strong> <strong>React 19</strong> and <strong>pdfnative ^1.7.0</strong> (both peer dependencies) · <strong>Node.js ≥ 22</strong>. The package adds one runtime dependency of its own, <code>react-reconciler</code>. Works in Node, browsers and SSR frameworks.</p>
+<p><strong>Requirements:</strong> <strong>React 19</strong> and <strong>pdfnative ^1.8.0</strong> (both peer dependencies) · <strong>Node.js ≥ 22</strong>. The package adds one runtime dependency of its own, <code>react-reconciler</code>. Works in Node, browsers and SSR frameworks.</p>
 <blockquote>
 <p><strong>Next.js and other React Server Component setups.</strong> The root barrel is deliberately <em>not</em> marked <code>&#39;use client&#39;</code>, and importing it from a Server Component or a <code>&#39;use server&#39;</code> file <strong>fails</strong> — the reconciler needs <code>createContext</code>, which is unavailable under React&#39;s <code>react-server</code> condition. Render from a <strong>Route Handler</strong> instead (see <a href="#server-rendering">Server rendering</a> below). The hooks and viewer components carry the directive and are published separately at <code>pdfnative-react/client</code>; import them from there in an app that mixes server and client components, because the directive does not survive bundling in the root barrel.</p>
 </blockquote>
@@ -150,7 +150,7 @@ const bytes = renderToBytes(
 </thead>
 <tbody><tr>
 <td><code>Document</code></td>
-<td>The required root (<code>title</code>, <code>footerText</code>, <code>metadata</code>, <code>fontEntries</code>, <code>layout</code>, and — v1.2.0 — <code>print</code>).</td>
+<td>The required root (<code>title</code>, <code>footerText</code>, <code>metadata</code>, <code>fontEntries</code>, <code>layout</code>, <code>tagged</code>, <code>print</code> — v1.2.0 — and, <em>(v1.3.0)</em>, <code>typography</code>, <code>pdfx</code>, <code>outputIntent</code>, <code>creationDate</code> (a <code>Date</code> or an ISO 8601 string)).</td>
 </tr>
 <tr>
 <td><code>Page</code></td>
@@ -158,11 +158,11 @@ const bytes = renderToBytes(
 </tr>
 <tr>
 <td><code>Heading</code></td>
-<td>A section heading (<code>level</code> 1–3); feeds the auto <code>TableOfContents</code>.</td>
+<td>A section heading (<code>level</code> 1–3, <code>keepWithNext</code> <em>(v1.3.0)</em>); feeds the auto <code>TableOfContents</code>.</td>
 </tr>
 <tr>
 <td><code>Paragraph</code> / <code>Text</code></td>
-<td>A wrapping paragraph (<code>fontSize</code>, <code>lineHeight</code>, <code>align</code>, <code>indent</code>, <code>color</code>).</td>
+<td>A wrapping paragraph (<code>fontSize</code>, <code>lineHeight</code>, <code>align</code> — <code>&quot;justify&quot;</code> via <code>ParagraphAlign</code> <em>(v1.3.0)</em> — <code>indent</code>, <code>color</code>, and <em>(v1.3.0)</em> <code>keepWithNext</code>, <code>splittable</code>).</td>
 </tr>
 <tr>
 <td><code>List</code> / <code>Item</code></td>
@@ -213,6 +213,7 @@ const bytes = renderToBytes(
 <td><em>Composite</em> (the one exception to the 1:1 mapping): expands to an optional <code>PageBreak</code> + a <code>Heading</code> + its children before the reconciler runs. Props: <code>title</code>, <code>level</code> (default <code>2</code>), <code>color</code>, <code>break</code>.</td>
 </tr>
 </tbody></table>
+<p>Since v1.3.0 every colour prop — <code>color</code> on headings, paragraphs, sections and links, chart palettes and series colours, table borders and zebra stripes, watermarks, headers and footers, and the document palette <code>layout.colors</code> — accepts <strong>CMYK</strong> beside hex and RGB: a <code>[c, m, y, k]</code> tuple in percent (<code>[0, 60, 100, 0]</code>) or a <code>&#39;c m y k&#39;</code> operator string (0–1), emitted as DeviceCMYK. <code>print.marks.colourBars</code> draws colour control bars in the bleed strip. See <a href="#typography-print--reproducible-output-v130">Typography, print &amp; reproducible output</a>.</p>
 <hr>
 <h2 id="server-rendering">Server rendering<a class="heading-anchor" href="#server-rendering" aria-label="Link to this section">#</a></h2>
 <p><code>renderToResponse</code> returns a web-standard <code>Response</code>, so the same call works in a
@@ -247,8 +248,15 @@ adds five props: <code>axis2</code> (a secondary Y axis — put a series on it w
 log scale is available on the <em>value</em> axes via <code>axis</code> / <code>axis2</code>
 <code>scale: &#39;log&#39;</code>), <code>dataLabels</code>, <code>labelStride</code> and <code>labelRotation</code>. The
 exported <code>ChartPropsCoversChartBlock</code> compile-time lock guarantees <code>&lt;Chart&gt;</code>
-covers every engine <code>ChartBlock</code> field — which is exactly why the <code>pdfnative</code>
-peer floor is <code>^1.7.0</code>: a 1.6 engine would throw mid-render on the v2 fields.</p>
+covers every engine <code>ChartBlock</code> field — the v2 fields are why the <code>pdfnative</code>
+peer floor first moved to <code>^1.7.0</code>, and v1.3.0 raises it to <code>^1.8.0</code> for the
+same reason: <code>layout.typography</code>, <code>layout.pdfx</code>, CMYK colour operands,
+<code>print.marks.colourBars</code> and <code>setDeflateRawImpl</code> do not exist before engine
+1.8.0, so an older engine would throw mid-render or silently write RGB. Since
+v1.3.0 <code>doctor()</code> tells a 1.7.x engine apart from a missing one — it probes
+<code>setDefaultCreationDate</code>, which first ships in 1.8.0, before the older
+capabilities — and reports the check as an error that names the peer to
+upgrade.</p>
 <h2 id="print-production--conformance-diagnostics-v120">Print production &amp; conformance diagnostics <em>(v1.2.0)</em><a class="heading-anchor" href="#print-production--conformance-diagnostics-v120" aria-label="Link to this section">#</a></h2>
 <p><code>&lt;Document print={…}&gt;</code> is document-level sugar over <code>layout.print</code> — the typed
 <code>PrintOptions</code> covers <code>bleed</code> (a shorthand that derives <code>TrimBox</code> and
@@ -257,7 +265,8 @@ vector printer&#39;s marks, and <code>/UserUnit</code>. The companion types ship
 barrel: <code>PrintOptions</code>, <code>PrinterMarksOptions</code>, <code>PageBox</code>, <code>CustomOutputIntent</code>,
 and <code>PdfColors</code>. Viewer preferences (<code>duplex</code>, <code>pickTrayByPDFSize</code>,
 <code>printPageRange</code>, <code>numCopies</code>) and a custom RGB ICC <code>outputIntent</code> pass through
-<code>layout</code> untouched.</p>
+<code>layout</code> untouched (since v1.3.0 <code>outputIntent</code> is also a <code>&lt;Document&gt;</code> prop and
+accepts CMYK and Gray profiles — see the next section).</p>
 <pre><code class="language-tsx">const bytes = renderToBytes(
   &lt;Document title=&quot;Poster&quot; print={{ bleed: 8.5, marks: { crop: true } }}&gt;
     &lt;Heading level={1}&gt;Print-ready&lt;/Heading&gt;
@@ -271,13 +280,158 @@ while <code>layout.onDiagnostic</code> (a <code>PdfDiagnosticHandler</code> rece
 <code>PdfDiagnostic</code>) lets you collect them without failing. In a DocSpec only
 <code>strict: true</code> is expressible — <code>onDiagnostic</code> is function-valued and therefore
 not JSON-representable.</p>
+<h2 id="typography-print--reproducible-output-v130">Typography, print &amp; reproducible output <em>(v1.3.0)</em><a class="heading-anchor" href="#typography-print--reproducible-output-v130" aria-label="Link to this section">#</a></h2>
+<p>v1.3.0 tracks the pdfnative 1.8.0 engine and brings its authoring surface to
+JSX and <code>DocSpec</code> alike. Everything below is opt-in: a document that uses none
+of it compiles to the same <code>DocumentParams</code> and renders to the same bytes as
+before.</p>
+<h3 id="typography">Typography<a class="heading-anchor" href="#typography" aria-label="Link to this section">#</a></h3>
+<p><code>&lt;Document typography={…}&gt;</code> is sugar over <code>layout.typography</code> (an explicit
+<code>layout</code> wins and replaces the object whole — no deep merge). It covers all
+twelve engine keys — <code>splitParagraphs</code>, <code>orphans</code>, <code>widows</code>,
+<code>keepHeadingsWithNext</code>, <code>unitBinding</code>, <code>bindShortWords</code>, <code>punctuationSpacing</code>
+(<code>&#39;fr&#39;</code>, <code>&#39;fr-CA&#39;</code> or explicit rules), <code>opticalMargins</code>, <code>metrics</code>,
+<code>fontFeatures</code>, <code>kerning</code>, <code>hyphenationLanguage</code> — under the compile-time lock
+<code>TypographyPropsCoverTypographyOptions</code>, so the next engine key is a build
+error in the renderer rather than a silent gap. Unset, the output is
+byte-identical to earlier releases.</p>
+<pre><code class="language-tsx">&lt;Document
+  fontEntries={fontEntries}                                   // kerning, features and &#39;fr&#39; need a registered font
+  typography={{
+    splitParagraphs: true, orphans: 2, widows: 2,
+    keepHeadingsWithNext: { minLines: 3 },
+    unitBinding: true, bindShortWords: true,
+    opticalMargins: true, kerning: true, fontFeatures: [&#39;smcp&#39;, &#39;onum&#39;],
+  }}
+&gt;
+  &lt;Heading level={2} keepWithNext&gt;Results&lt;/Heading&gt;
+  &lt;Paragraph align=&quot;justify&quot; splittable&gt;…&lt;/Paragraph&gt;
+&lt;/Document&gt;
+</code></pre>
+<p>Three per-block overrides ride on the same engine release: <code>align=&quot;justify&quot;</code>
+on paragraphs (<code>ParagraphAlign = Align | &#39;justify&#39;</code> — <code>Align</code> itself stays
+three-valued for images, barcodes, SVG and charts), <code>keepWithNext</code> on headings
+and paragraphs, and <code>splittable</code> on paragraphs; each overrides the document
+setting for that block only, and unset means &quot;follow the document&quot;. The limits
+are the engine&#39;s: <code>kerning</code>, <code>fontFeatures</code> and the <code>&#39;fr&#39;</code> narrow no-break
+space need a registered font (the base-14 faces carry no OpenType data and no
+U+202F, so <code>&#39;fr&#39;</code> degrades to <code>&#39;fr-CA&#39;</code>); <code>tnum</code> / <code>lnum</code> change nothing on the
+bundled Noto Sans; <code>metrics: &#39;exact&#39;</code> acts on base-14 text only. <strong>No
+hyphenation dictionary ships</strong> — soft hyphens (U+00AD) are honoured as break
+opportunities, and <code>setHyphenationProvider</code> / <code>getHyphenationProvider</code> are
+re-exported from the engine so you can plug in your own (the provider is
+process-wide; <code>hyphenationLanguage</code> is the BCP 47 tag it receives with every
+word):</p>
+<pre><code class="language-ts">import { setHyphenationProvider } from &#39;pdfnative-react&#39;;
+
+setHyphenationProvider((word, lang) =&gt; myDictionary.hyphenate(word, lang)); // returns the break offsets for a word
+setHyphenationProvider(null);                                                 // removes it
+</code></pre>
+<h3 id="cmyk-colour-and-colour-bars">CMYK colour and colour bars<a class="heading-anchor" href="#cmyk-colour-and-colour-bars" aria-label="Link to this section">#</a></h3>
+<p>The <code>Color</code> type widens to admit a four-element tuple: <code>[c, m, y, k]</code> in
+percent (<code>PdfCmykTuple</code>) or a <code>&#39;c m y k&#39;</code> operator string in 0–1
+(<code>PdfCmykString</code>), emitted as DeviceCMYK — the engine reads the colour space
+from the component count, so three values stay DeviceRGB. Every colour position
+takes it, and <code>validateSpec</code> and the JSON Schema (<code>$defs.color</code>) accept both
+forms. <code>print.marks.colourBars</code> (<code>true</code>, or a <code>ColourBarOptions</code> object
+<code>{ tints, size }</code>) draws the four process colours in the bottom bleed strip: a
+5 mm bleed (14.17 pt) fits a densitometer aperture, and under 4 pt the engine
+skips the bars silently — the lint rule <code>L_PRINT_COLOUR_BARS</code> warns in both
+cases. Under a <code>tagged</code> claim the bars are <code>/Artifact</code> content.</p>
+<pre><code class="language-tsx">&lt;Document print={{ bleed: 14.17, marks: { crop: true, registration: true, colourBars: true } }}&gt;
+  &lt;Heading level={1} color={[0, 0, 0, 100]}&gt;Press sheet&lt;/Heading&gt;
+  &lt;Paragraph color=&quot;0 1 1 0&quot;&gt;Set in DeviceCMYK.&lt;/Paragraph&gt;
+&lt;/Document&gt;
+</code></pre>
+<h3 id="pdfx-4-and-output-intents">PDF/X-4 and output intents<a class="heading-anchor" href="#pdfx-4-and-output-intents" aria-label="Link to this section">#</a></h3>
+<p><code>&lt;Document pdfx=&quot;pdfx4&quot;&gt;</code> (sugar over <code>layout.pdfx</code>; <code>DocSpec.pdfx</code>) writes the
+PDF/X-4 identification (ISO 15930-7), a <code>/GTS_PDFX</code> output intent, a TrimBox
+on every page and <code>/Trapped</code>; <code>&#39;pdfx4&#39;</code> is the only target the engine knows
+(<code>PdfXConformanceTarget</code>). <code>outputIntent</code> becomes a <code>&lt;Document&gt;</code> prop (sugar
+over <code>layout.outputIntent</code>; <code>DocSpec.outputIntent</code> carries the profile as
+bytes) and accepts RGB, CMYK and Gray profiles — honoured under <code>tagged</code>,
+required under <code>pdfx</code>. The coherence rules are the engine&#39;s, and each is an
+<code>L_PDFX_*</code> lint rule before it is a throw: <code>pdfx</code> is <strong>exclusive with <code>tagged</code></strong>
+(one conformance claim per file) and <strong>with <code>layout.encryption</code></strong>; the
+<code>outputIntent</code> must carry a real <strong>press profile</strong> (ICC device class <code>prtr</code>,
+not a monitor profile such as sRGB — none is bundled, and a hand-made ICC stub
+is rejected at build time); <code>metadata.trapped</code> must be <code>&#39;True&#39;</code> or <code>&#39;False&#39;</code>,
+never <code>&#39;Unknown&#39;</code>; every font must be embedded through <code>fontEntries</code>; and each
+page carries a TrimBox <em>or</em> an ArtBox, not both. The engine performs <strong>no
+RGB→CMYK conversion</strong>: RGB content under a CMYK or Gray intent is remapped
+through <code>/DefaultRGB</code>, and a CMYK colour under a non-CMYK intent is reported
+(<code>L_CMYK_INTENT_MISMATCH</code> says so first).</p>
+<pre><code class="language-tsx">&lt;Document
+  pdfx=&quot;pdfx4&quot;
+  fontEntries={fontEntries}
+  metadata={{ trapped: &#39;False&#39; }}
+  outputIntent={{ iccProfile: pressProfile, outputConditionIdentifier: &#39;FOGRA39&#39; }} // a prtr profile — none is bundled
+  print={{ bleed: 14.17, marks: { crop: true, colourBars: true } }}
+&gt;
+</code></pre>
+<p><code>validatePdfX</code> is deliberately <strong>not</strong> re-exported — <code>pdfnative-react</code> is an
+authoring surface, and checking the finished bytes is one engine import away,
+exactly as the package&#39;s <code>docs/RECIPES.md</code> shows:</p>
+<pre><code class="language-ts">import { validatePdfX } from &#39;pdfnative&#39;;
+
+const { valid, errors, warnings } = validatePdfX(renderToBytes(&lt;PressSheet /&gt;));
+if (!valid) throw new Error(errors.join(&#39;\n&#39;));
+</code></pre>
+<p>A <code>valid</code> result means the structural prerequisites hold — not that a certified
+preflight passed; veraPDF does not cover PDF/X.</p>
+<h3 id="reproducible-output">Reproducible output<a class="heading-anchor" href="#reproducible-output" aria-label="Link to this section">#</a></h3>
+<p><code>&lt;Document creationDate&gt;</code> — a <code>Date</code>, or an ISO 8601 string (the JSON form
+<code>DocSpec.creationDate</code> uses) — pins the creation instant; it is sugar over
+<code>layout.creationDate</code>. With engine 1.8.0 every date is written in UTC
+(<code>+00&#39;00&#39;</code>), and the <code>{date}</code> header/footer placeholder and the trailer <code>/ID</code>
+follow the pin, so a pinned document renders to the same bytes on every host
+and in every time zone. An unparseable string is an <code>E_INPUT</code> error at compile
+time, never a silent fallback to the clock. <code>setDefaultCreationDate(date)</code> and
+<code>getDefaultCreationDate()</code> (re-exported from the engine) pin every document in
+the process that has no pin of its own; <code>setDefaultCreationDate(null)</code> restores
+the clock. <strong>The library reads no environment variable</strong> — a pipeline that
+exports <code>SOURCE_DATE_EPOCH</code> applies it in one line of its own. Encrypted output
+is not reproducible by design (fresh keys, salts and IVs on every build), and
+<code>renderToResponse({ etag: true })</code> is a stable validator across hosts only when
+the document is pinned.</p>
+<pre><code class="language-tsx">&lt;Document creationDate={new Date(&#39;2026-01-01T00:00:00Z&#39;)} header={{ right: &#39;Built {date}&#39; }}&gt;   // this document
+setDefaultCreationDate(new Date(&#39;2026-01-01T00:00:00Z&#39;));                                     // every document in this process
+
+const epoch = process.env.SOURCE_DATE_EPOCH;                        // your pipeline&#39;s decision, not the library&#39;s
+if (epoch) setDefaultCreationDate(new Date(Number(epoch) * 1000));
+</code></pre>
 <h2 id="linting">Linting<a class="heading-anchor" href="#linting" aria-label="Link to this section">#</a></h2>
-<p><code>lintDocument</code> runs 25 deterministic rules over a compiled tree — no I/O, so it
+<p><code>lintDocument</code> runs 37 deterministic rules over a compiled tree — no I/O, so it
 is safe in a test or a CI step. It catches the classes of mistake a type system
 cannot, including <code>L_TAGGED_NO_FONTS</code>: declaring PDF/A without embedding a font,
-which produces a file that claims conformance it does not have. Thirteen of the
-rules pre-empt an engine throw with a named, actionable finding.</p>
-<p>v1.2.0 adds seven rules for the new surface: <code>L_CHART_LOG_SCALE</code>,
+which produces a file that claims conformance it does not have. Twenty of the
+rules pre-empt an engine throw with a named, actionable finding, and five
+mirror an engine diagnostic (a throw under <code>layout.strict</code>). For a <code>DocSpec</code>
+lint gate wired into CI, see <a href="use-cases-react.html">React use cases</a>.</p>
+<p>v1.3.0 adds twelve rules: <code>L_TYPOGRAPHY_INEFFECTIVE</code> (warning: a typography
+option that can have no effect as written — <code>orphans</code> / <code>widows</code> without
+<code>splitParagraphs</code>, an unknown <code>fontFeatures</code> tag, <code>kerning</code>, <code>fontFeatures</code> or
+the <code>&#39;fr&#39;</code> preset without a registered font, a line quota below 1),
+<code>L_PRINT_COLOUR_BARS</code> (warning: <code>colourBars</code> in a bleed strip too thin to carry
+them — under 4 pt the engine skips them silently, under 5 mm the patches fall
+below a densitometer aperture), <code>L_CMYK_INTENT_MISMATCH</code> (warning: a CMYK
+colour under a PDF/A or PDF/X claim whose output intent is not CMYK),
+<code>L_OUTPUT_INTENT_PROFILE</code> (error: <code>outputIntent.iccProfile</code> is not a usable ICC
+profile — header, <code>acsp</code> signature, size field, colour space — read from the
+bytes without the engine), the six PDF/X coherence rules <code>L_PDFX_TARGET</code> (only
+<code>&#39;pdfx4&#39;</code> exists), <code>L_PDFX_TAGGED_CONFLICT</code> (<code>pdfx</code> and <code>tagged</code> both set),
+<code>L_PDFX_ENCRYPTED</code> (PDF/X forbids encryption), <code>L_PDFX_OUTPUT_INTENT</code> (no
+<code>prtr</code> output profile, or a monitor profile such as sRGB),
+<code>L_PDFX_TRAPPED_UNKNOWN</code> (<code>metadata.trapped</code> is <code>&#39;Unknown&#39;</code>) and <code>L_PDFX_BOXES</code>
+(<code>print.artBox</code> set together with <code>print.trimBox</code> or <code>print.bleed</code>) — all
+errors, in the engine&#39;s order and with the engine&#39;s wording — and the
+diagnostic twins <code>L_PDFX_NO_FONTS</code> (error: <code>pdfx</code> without <code>fontEntries</code>, the
+engine&#39;s <code>PDFX_NO_FONT_ENTRIES</code>) and <code>L_PDFX_ANNOTATIONS</code> (warning: a link or a
+form field in a PDF/X-4 document, <code>PDFX_ANNOTATIONS</code>). A document written for
+v1.2.0 trips none of the twelve — each needs an input that did not exist
+before — so its <code>report.ok</code> is unchanged; and <code>L_OUTPUT_INTENT_IGNORED</code> no
+longer fires under <code>pdfx</code>, where the intent is mandatory rather than ignored.</p>
+<p>v1.2.0 added seven rules for its new surface: <code>L_CHART_LOG_SCALE</code>,
 <code>L_CHART_X_AXIS</code> and <code>L_CHART_LABELS</code> (charts v2 misconfigurations),
 <code>L_PRINT_BOXES</code> (print geometry — it delegates to the engine&#39;s
 <code>validatePrintOptions</code> and reports its message verbatim, so the rule can never
@@ -299,6 +453,16 @@ package can do and whether the environment supports it — the discovery pair an
 autonomous agent should call before planning work. <code>validateSpec</code>, <code>schema(subject?)</code>
 and <code>SCHEMA_SUBJECTS</code> cover DocSpec validation; <code>aiGovernancePolicy()</code>,
 <code>agentRulesText()</code> and <code>validateIssueDraft()</code> expose the human-in-the-loop contract.</p>
+<p>Since v1.3.0 the package&#39;s registry holds <code>DOC_SPEC_FIELDS</code> — the 18 top-level
+<code>DocSpec</code> fields (the 14 of v1.2.0 plus <code>pdfx</code>, <code>outputIntent</code>, <code>typography</code>
+and <code>creationDate</code>), compile-time locked to <code>keyof DocSpec</code> — and both
+<code>validateSpec</code> and <code>capabilityManifest().specFields</code> derive from it;
+<code>SCHEMA_SUBJECTS</code> is unchanged at seven. <code>toErrorEnvelope</code> turns <em>any</em> thrown
+value into the standard <code>{ ok: false, error: { code, message } }</code> envelope and
+now classifies the engine&#39;s build-time input errors — PDF/X coherence, print
+geometry, output intent, chart data — as <code>E_INPUT</code> rather than <code>E_RUNTIME</code>, by
+the exported <code>ENGINE_INPUT_ERROR_PREFIXES</code> table (every one of those throws is
+also pre-empted by a lint rule, which is the better place to catch it).</p>
 <h2 id="rendering">Rendering<a class="heading-anchor" href="#rendering" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-ts">import {
   renderToBytes,   // (node, options?) =&gt; Uint8Array
@@ -395,10 +559,15 @@ const bytes = renderSpecToBytes(spec);
 <p>Since v1.2.0 a spec can also carry a top-level <code>print</code> field (the same
 <code>PrintOptions</code> shape as <code>&lt;Document print&gt;</code>), and the generated JSON Schema
 covers every charts-v2 field — so an agent can self-validate a print-ready,
-dual-axis document before rendering it.</p>
+dual-axis document before rendering it. v1.3.0 adds the top-level <code>typography</code>,
+<code>pdfx</code>, <code>outputIntent</code> (the profile as bytes) and <code>creationDate</code> (an ISO 8601
+string) fields, <code>align: &#39;justify&#39;</code>, <code>keepWithNext</code> and <code>splittable</code> in the <code>p</code>
+options, <code>keepWithNext</code> in the heading options, and the CMYK colour forms in
+every colour position; <code>schema(&#39;doc-spec&#39;)</code> describes each key with its bounds.</p>
 <hr>
 <h2 id="fonts--environment">Fonts &amp; environment<a class="heading-anchor" href="#fonts--environment" aria-label="Link to this section">#</a></h2>
-<p>Re-exported from the engine: <code>registerFonts</code>, <code>registerFont</code>, <code>loadFontData</code>, <code>validateFontData</code>, <code>downloadBlob</code> (browser), <code>initNodeCompression</code> (Node), and — v1.2.0 — <code>setDeflateImpl</code>, which plugs a <strong>synchronous</strong> deflate implementation into the engine for compressed client-side rendering (the function&#39;s output is written verbatim, so it must produce a zlib-wrapped RFC 1950 stream — e.g. fflate&#39;s <code>zlibSync</code>; the async browser <code>CompressionStream</code> cannot be plugged in). (<code>loadFontData</code> is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the <code>fontEntries</code> render option (or on <code>&lt;Document fontEntries={…}&gt;</code>), unlocking all 22 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library.</p>
+<p>Re-exported from the engine: <code>registerFonts</code>, <code>registerFont</code>, <code>loadFontData</code>, <code>validateFontData</code>, <code>downloadBlob</code> (browser), <code>initNodeCompression</code> (Node), and — v1.2.0 — <code>setDeflateImpl</code>, which plugs a <strong>synchronous</strong> deflate implementation into the engine for compressed client-side rendering (the function&#39;s output is written verbatim, so it must produce a zlib-wrapped RFC 1950 stream — e.g. fflate&#39;s <code>zlibSync</code>; the async browser <code>CompressionStream</code> cannot be plugged in). (<code>loadFontData</code> is a pure dynamic import — it works in the browser too.) Pass non-Latin fonts via the <code>fontEntries</code> render option (or on <code>&lt;Document fontEntries={…}&gt;</code>), unlocking all 27 bundled Unicode scripts and COLRv1 colour emoji exactly as in the core library — the five scripts engine 1.8.0 adds (Lao, Tai Tham, New Tai Lue, Tai Le, Cham) and the four Latin aliases (Hausa, Yoruba, Igbo, Swahili) work through <code>resolveFonts</code> unchanged.</p>
+<p>v1.3.0 re-exports six more engine helpers: <code>setDeflateRawImpl</code> (a <strong>raw</strong> RFC 1951 compressor — the engine adds the zlib framing; since engine 1.8.0 <code>setDeflateImpl</code> rejects a raw-DEFLATE function at build time instead of writing an unreadable file), <code>wrapZlib</code> (the same framing, spelled out: <code>setDeflateImpl(wrapZlib(rawDeflate))</code>), <code>setDefaultCreationDate</code> / <code>getDefaultCreationDate</code> (the process-wide creation-date pin) and <code>setHyphenationProvider</code> / <code>getHyphenationProvider</code> (the hyphenation hook — no dictionary ships). Eleven types ship alongside from the root barrel: <code>ParagraphAlign</code>, <code>TypographyOptions</code>, <code>UnitBindingOptions</code>, <code>PunctuationSpacingRule</code>, <code>PunctuationSpacingPreset</code>, <code>Base14Metrics</code>, <code>HyphenationProvider</code>, <code>ColourBarOptions</code>, <code>PdfCmykTuple</code>, <code>PdfCmykString</code> and <code>PdfXConformanceTarget</code>; the runtime table <code>ENGINE_INPUT_ERROR_PREFIXES</code> is exported beside <code>toErrorEnvelope</code>.</p>
 <pre><code class="language-tsx">import { Document, Text, renderToBytes, registerFont, loadFontData } from &#39;pdfnative-react&#39;;
 
 registerFont(&#39;th&#39;, () =&gt; import(&#39;pdfnative/fonts/noto-thai-data.js&#39;));
@@ -462,7 +631,81 @@ try {
 </code></pre>
 <hr>
 <h2 id="release-history">Release history<a class="heading-anchor" href="#release-history" aria-label="Link to this section">#</a></h2>
-<h3 id="whats-new-in-v120">What&#39;s new in v1.2.0<a class="heading-anchor" href="#whats-new-in-v120" aria-label="Link to this section">#</a></h3>
+<h3 id="whats-new-in-v130">What&#39;s new in v1.3.0<a class="heading-anchor" href="#whats-new-in-v130" aria-label="Link to this section">#</a></h3>
+<p>v1.3.0 (released 2026-09-22) tracks the pdfnative 1.8.0 engine — typography, CMYK and PDF/X-4, reproducible output, 27 scripts — and exposes every one of its authoring capabilities through both doors, JSX and <code>DocSpec</code>. No public API was removed or renamed; every new behaviour is opt-in, and a document that uses none of it compiles to the same <code>DocumentParams</code>. The one floor that moves is the <code>pdfnative</code> peer, <code>^1.7.0</code> → <code>^1.8.0</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>v1.2.0</th>
+<th>v1.3.0</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Typography</td>
+<td>—</td>
+<td><strong><code>&lt;Document typography&gt;</code></strong> / <code>DocSpec.typography</code> — the engine&#39;s twelve keys under a compile-time lock; <code>align=&quot;justify&quot;</code> (<code>ParagraphAlign</code>), <code>keepWithNext</code>, <code>splittable</code>; <code>setHyphenationProvider</code> / <code>getHyphenationProvider</code> re-exported (no dictionary ships)</td>
+</tr>
+<tr>
+<td>Colour</td>
+<td>hex, RGB tuple, operator string</td>
+<td>+ <strong>CMYK</strong> on every colour position (<code>[c, m, y, k]</code> in percent or <code>&#39;c m y k&#39;</code>); <code>print.marks.colourBars</code> (<code>ColourBarOptions</code>)</td>
+</tr>
+<tr>
+<td>PDF/X-4</td>
+<td>—</td>
+<td><strong><code>&lt;Document pdfx=&quot;pdfx4&quot;&gt;</code></strong> / <code>DocSpec.pdfx</code> with an <code>outputIntent</code> prop that accepts CMYK and Gray profiles; the six engine coherence throws mirrored as <code>L_PDFX_*</code> rules; <code>validatePdfX</code> stays a one-line engine import</td>
+</tr>
+<tr>
+<td>Reproducible output</td>
+<td>wall clock</td>
+<td><strong><code>&lt;Document creationDate&gt;</code></strong> / <code>DocSpec.creationDate</code>, <code>setDefaultCreationDate</code> / <code>getDefaultCreationDate</code>; every date UTC, <code>{date}</code> and the trailer <code>/ID</code> follow the pin; no environment variable is read</td>
+</tr>
+<tr>
+<td>Scripts</td>
+<td>22</td>
+<td><strong>27</strong> — five engine scripts (Lao, Tai Tham, New Tai Lue, Tai Le, Cham) and four Latin aliases (Hausa, Yoruba, Igbo, Swahili), through <code>resolveFonts</code> unchanged</td>
+</tr>
+<tr>
+<td>Linting</td>
+<td>25 rules</td>
+<td><strong>37 rules</strong> (12 new; 20 pre-empt an engine throw, 5 mirror an engine diagnostic); a v1.2.0 document trips none of the new ones</td>
+</tr>
+<tr>
+<td>Agent surface</td>
+<td><code>SCHEMA_SUBJECTS</code> (7)</td>
+<td>+ <code>DOC_SPEC_FIELDS</code> (18, compile-time locked) behind <code>validateSpec</code> and <code>capabilityManifest().specFields</code>; <code>toErrorEnvelope</code> classifies engine input errors as <code>E_INPUT</code> via the exported <code>ENGINE_INPUT_ERROR_PREFIXES</code>; <code>doctor()</code> tells a 1.7.x engine apart from a missing one</td>
+</tr>
+<tr>
+<td>Exports</td>
+<td>—</td>
+<td>+ <code>setDeflateRawImpl</code>, <code>wrapZlib</code>, <code>setDefaultCreationDate</code>, <code>getDefaultCreationDate</code>, <code>setHyphenationProvider</code>, <code>getHyphenationProvider</code> and 11 types (<code>ParagraphAlign</code>, <code>TypographyOptions</code>, <code>UnitBindingOptions</code>, <code>PunctuationSpacingRule</code>, <code>PunctuationSpacingPreset</code>, <code>Base14Metrics</code>, <code>HyphenationProvider</code>, <code>ColourBarOptions</code>, <code>PdfCmykTuple</code>, <code>PdfCmykString</code>, <code>PdfXConformanceTarget</code>)</td>
+</tr>
+<tr>
+<td>Quality</td>
+<td>292 tests / 18 files · 95 %</td>
+<td>811 tests / 43 files · 96.24 % statements · 38 samples held to a byte baseline on Linux, Windows and macOS · an in-process PDF/X-4 gate beside the blocking veraPDF gate · npm Trusted Publishing with an SBOM and a provenance attestation</td>
+</tr>
+<tr>
+<td>Compatibility</td>
+<td><code>pdfnative ^1.7.0</code> peer</td>
+<td><strong><code>pdfnative ^1.8.0</code></strong> peer; React <code>^19.0.0</code> and Node ≥ 22 unchanged</td>
+</tr>
+</tbody></table>
+<p>Full changelog: <a href="https://github.com/Nizoka/pdfnative-react/releases/tag/v1.3.0" target="_blank" rel="noopener">pdfnative-react release notes v1.3.0</a>.</p>
+<p><strong>Upgrading from v1.2.0</strong> — no breaking changes; a drop-in replacement once the engine is at 1.8.0:</p>
+<ol>
+<li><strong>Rebaseline once if you compare bytes.</strong> TrueType subsets, printer&#39;s marks and shaped scripts change bytes (each was previously wrong); base-14-only documents on a UTC host are unchanged.</li>
+<li><strong>Dates are UTC</strong> (<code>+00&#39;00&#39;</code> / <code>+00:00</code>) — the same instant, a different offset string.</li>
+<li><code>{date}</code> follows a pinned <code>creationDate</code>; unpinned documents are unchanged.</li>
+<li><code>setDeflateImpl</code> rejects raw DEFLATE — pass zlib output, or use <code>setDeflateRawImpl</code>.</li>
+<li>Hand-made ICC stubs in <code>outputIntent</code> are rejected (<code>acsp</code> signature and size field are checked).</li>
+<li><code>PdfDiagnosticCode</code> gained six codes — an exhaustive <code>switch</code> with a <code>never</code> check needs them.</li>
+<li>New lint rules add nothing to existing documents; <code>report.ok</code> for a v1.2.0 document is unchanged.</li>
+<li><code>Color</code> and <code>ParagraphAlign</code> widened; <code>Align</code> is unchanged. A consumer that reads a <code>Color</code> into a three-tuple variable needs a length guard.</li>
+<li>For fork maintainers: <code>VERAPDF_REQUIRED=1</code> → <code>--require-all</code>; <code>.mjs</code> corpus scripts → <code>npx tsx scripts/&lt;name&gt;.ts</code>; <code>npm install</code> runs no lifecycle scripts; the drift-gate grep in AGENTS.md is replaced by <code>npm run verify:docs</code>.</li>
+</ol>
+<h3 id="previously-in-v120">Previously in v1.2.0<a class="heading-anchor" href="#previously-in-v120" aria-label="Link to this section">#</a></h3>
 <p>v1.2.0 follows the pdfnative 1.7.0 engine — charts v2, print production, and the conformance channel — and is <strong>100 % additive</strong>: no component, hook or function was removed or changed shape. The only floor that moves is the <code>pdfnative</code> peer, <code>^1.6.0</code> → <code>^1.7.0</code>. <!-- verify-docs:allow version-token (historical: what v1.2.0 shipped with) --></p>
 <table>
 <thead>
@@ -518,7 +761,7 @@ try {
 <td><strong><code>pdfnative ^1.7.0</code></strong> peer; React <code>^19.0.0</code> and Node ≥ 22 unchanged</td>
 </tr>
 </tbody></table>
-<p>Full changelog: <a href="https://github.com/Nizoka/pdfnative-react/releases/tag/v1.2.0" target="_blank" rel="noopener">pdfnative-react release notes v1.2.0</a>.</p>
+<p>Full changelog: <a href="https://github.com/Nizoka/pdfnative-react/releases/tag/v1.2.0" target="_blank" rel="noopener">pdfnative-react release notes v1.2.0</a>. <!-- verify-docs:allow version-token (historical link) --></p>
 <h3 id="previously-in-v110">Previously in v1.1.0<a class="heading-anchor" href="#previously-in-v110" aria-label="Link to this section">#</a></h3>
 <!-- verify-docs:allow version-token (historical release entry) -->
 <p>v1.1.0 brought the engine&#39;s 1.6 surface to the renderer — <code>&lt;Chart&gt;</code>, the <code>DocSpec</code> chart tuple, and the agent discovery pair (<code>capabilityManifest</code> / <code>doctor</code>) — on the <code>pdfnative ^1.6.0</code> peer.</p>
@@ -530,6 +773,7 @@ try {
 <li>📚 <strong>Knowledge base:</strong> <a href="https://github.com/Nizoka/pdfnative-react/blob/main/docs/KNOWLEDGE_BASE.md" target="_blank" rel="noopener">pdfnative-react/docs/KNOWLEDGE_BASE.md</a> — the compile pipeline, the react-reconciler version contract, and the agent authoring contract</li>
 <li>📁 <strong>Samples:</strong> <a href="https://github.com/Nizoka/pdfnative-react/tree/main/samples" target="_blank" rel="noopener">pdfnative-react/samples</a></li>
 <li>🧪 <strong>Try it interactively:</strong> <a href="../playgrounds/react.html">React playground</a> — render JSX to PDF in your browser</li>
+<li>📐 <strong>Use cases:</strong> <a href="use-cases-react.html">React use cases</a> — a DocSpec lint gate in CI, book-style typography in JSX, one tree for PDF/A and PDF/X-4</li>
 <li>🔧 <strong>Underlying library:</strong> <a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><code>pdfnative</code></a></li>
 <li>🤖 <strong>AI integration:</strong> <a href="mcp.html">pdfnative-mcp guide</a> · 💻 <strong>Terminal:</strong> <a href="cli.html">pdfnative-cli guide</a></li>
 <li>🐛 <strong>Report a bug:</strong> <a href="https://github.com/Nizoka/pdfnative-react/issues" target="_blank" rel="noopener">Nizoka/pdfnative-react/issues</a></li>

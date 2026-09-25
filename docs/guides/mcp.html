@@ -66,7 +66,7 @@
 <!-- guide:render:start -->
 <h1 id="pdfnative-mcp--ai-client-integration-guide">pdfnative-mcp — AI Client Integration Guide</h1>
 <blockquote>
-<p><strong>Tracks the latest published <code>pdfnative-mcp</code></strong> (v1.6.0, requires pdfnative ≥ 1.7.0). Full release notes: <a href="https://github.com/Nizoka/pdfnative-mcp/releases" target="_blank" rel="noopener">pdfnative-mcp releases</a>. Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>.</p>
+<p><strong>Tracks the latest published <code>pdfnative-mcp</code></strong> (v1.7.0, requires pdfnative ≥ 1.8.0). Full release notes: <a href="https://github.com/Nizoka/pdfnative-mcp/releases" target="_blank" rel="noopener">pdfnative-mcp releases</a>. Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>.</p>
 </blockquote>
 <p><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is an <strong>MCP server</strong> that exposes the full pdfnative library to any AI client supporting the <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> — Claude Desktop, Cursor, Continue, Zed, ChatGPT, and more.</p>
 <blockquote>
@@ -202,7 +202,17 @@ pdfnative-mcp
 <td><code>PDFNATIVE_MCP_NETWORK_TIMEOUT_MS</code> <em>(v1.6.0)</em></td>
 <td>Network timeout for TSA/OCSP/CRL requests (1000–120000 ms, default 10000).</td>
 </tr>
+<tr>
+<td><code>PDFNATIVE_MCP_CREATION_DATE</code> <em>(v1.7.0)</em></td>
+<td>ISO 8601 instant <strong>with a time zone</strong> (e.g. <code>2026-01-01T00:00:00Z</code>) that pins the creation instant of every document the process builds — <code>/CreationDate</code>, the XMP dates, the trailer <code>/ID</code> and the <code>{date}</code> header / footer placeholder. Read once at startup; an invalid value refuses to start; the source of the pin is logged on stderr.</td>
+</tr>
+<tr>
+<td><code>SOURCE_DATE_EPOCH</code> <em>(v1.7.0)</em></td>
+<td>The <a href="https://reproducible-builds.org/docs/source-date-epoch/" target="_blank" rel="noopener">reproducible-builds.org</a> convention: integer seconds since the Unix epoch, used when <code>PDFNATIVE_MCP_CREATION_DATE</code> is unset. An invalid value refuses to start.</td>
+</tr>
 </tbody></table>
+<p><strong>Creation-date precedence</strong> <em>(v1.7.0)</em>, highest first: the per-call <code>creationDate</code> → <code>PDFNATIVE_MCP_CREATION_DATE</code> → <code>SOURCE_DATE_EPOCH</code> → the wall clock. Dates are always written in UTC, so pinned output is byte-identical on every host and in every time zone. Many build environments already export <code>SOURCE_DATE_EPOCH</code>: from v1.7.0 it pins every document&#39;s creation date — unset it for the server process if that is not wanted. The pin does not cover <code>signingTime</code>, <code>modDate</code>, the regenerated second <code>/ID</code> of incremental writers, RFC 3161 tokens, revocation data, encryption or ECDSA signatures.</p>
+<p>For the shared-server architecture — one HTTP server behind <code>PDFNATIVE_MCP_PORT</code> + <code>PDFNATIVE_MCP_HTTP_TOKEN</code>, with one file sandbox whose outputs are exposed as MCP resources — see <a href="use-cases-mcp.html">MCP use cases</a>.</p>
 <blockquote>
 <p><strong>Network charter</strong> <em>(v1.6.0)</em>. The server still makes <strong>no outbound request by default</strong>. The only egress it can ever perform goes to the TSA / OCSP / CRL endpoints the <strong>operator</strong> configures via the variables above — URLs never come from tool arguments, and certificate-supplied OCSP/CRL URLs pass an SSRF guard (allow-list, http(s) only, no credentials, no redirects, internal address literals rejected, size caps, timeouts).</p>
 </blockquote>
@@ -218,31 +228,31 @@ pdfnative-mcp
 </thead>
 <tbody><tr>
 <td><code>generate_basic_pdf</code></td>
-<td>Multi-page documents from structured blocks — all <strong>13 block kinds</strong> since v1.6.0 (headings, paragraphs, lists, tables, images, links, TOC, barcodes, SVG, form fields, charts, page breaks, spacers). Accepts optional <code>pdfA</code>, layout options, build-time <code>encrypt</code>, and print-production fields.</td>
+<td>Multi-page documents from structured blocks — all <strong>13 block kinds</strong> since v1.6.0 (headings, paragraphs, lists, tables, images, links, TOC, barcodes, SVG, form fields, charts, page breaks, spacers). Accepts optional <code>pdfA</code>, layout options, build-time <code>encrypt</code>, print-production fields, and — <em>(v1.7.0)</em> — <code>typography</code> and <code>pdfx: &#39;pdfx4&#39;</code>.</td>
 </tr>
 <tr>
 <td><code>add_table</code></td>
-<td>Tabular PDF reports from column headers and data rows. Optional <code>autoFitColumns</code> and <code>clipCells</code>. Accepts <code>pdfA</code>.</td>
+<td>Tabular PDF reports from column headers and data rows. Optional <code>autoFitColumns</code> and <code>clipCells</code>. Accepts <code>pdfA</code>, <code>typography</code> and <code>pdfx</code> <em>(v1.7.0)</em>.</td>
 </tr>
 <tr>
 <td><code>add_barcode</code></td>
-<td>QR Code, Code 128, EAN-13, Data Matrix, PDF417 — embedded in a single-page PDF. Accepts <code>pdfA</code>.</td>
+<td>QR Code, Code 128, EAN-13, Data Matrix, PDF417 — embedded in a single-page PDF. Accepts <code>pdfA</code>, <code>typography</code> and <code>pdfx</code> <em>(v1.7.0)</em>.</td>
 </tr>
 <tr>
 <td><code>add_international_text</code></td>
-<td>25 <code>lang</code> font codes — the 22 writing systems plus <code>latin</code>, <code>emoji</code> and the explicit <code>math</code> script (Noto Sans Math, on-demand) — with BiDi &amp; OpenType shaping. <code>lang</code> accepts <code>string</code>, <code>string[]</code>, or comma-separated.</td>
+<td>The <strong>27 writing systems</strong> of pdfnative 1.8.0 — <code>lo</code>, <code>nod</code>, <code>khb</code>, <code>tdd</code>, <code>cjm</code> join in <em>(v1.7.0)</em> — plus <code>latin</code>, <code>emoji</code>, the explicit <code>math</code> script (Noto Sans Math, on-demand) and the <code>latin</code> aliases <code>ha</code>, <code>yo</code>, <code>ig</code>, <code>sw</code> <em>(v1.7.0)</em> — with BiDi &amp; OpenType shaping. <code>lang</code> accepts <code>string</code>, <code>string[]</code>, or comma-separated. Accepts <code>typography</code> and <code>pdfx</code> <em>(v1.7.0)</em>.</td>
 </tr>
 <tr>
 <td><code>add_form</code></td>
-<td>Interactive AcroForm PDFs with text fields, text areas, checkboxes, radio buttons, dropdowns, and list boxes <em>(v1.6.0)</em>. Accepts <code>pdfA</code>.</td>
+<td>Interactive AcroForm PDFs with text fields, text areas, checkboxes, radio buttons, dropdowns, and list boxes <em>(v1.6.0)</em>. Accepts <code>pdfA</code>. Accepts <code>typography</code> <em>(v1.7.0)</em>.</td>
 </tr>
 <tr>
 <td><code>embed_image</code></td>
-<td>Embed a JPEG or PNG image (base64-encoded) into a titled PDF document, with <code>align</code> and <code>alt</code> <em>(v1.6.0)</em>. Accepts <code>pdfA</code>.</td>
+<td>Embed a JPEG or PNG image (base64-encoded) into a titled PDF document, with <code>align</code> and <code>alt</code> <em>(v1.6.0)</em>. Accepts <code>pdfA</code>, <code>typography</code> and <code>pdfx</code> <em>(v1.7.0)</em>.</td>
 </tr>
 <tr>
 <td><code>prepare_signature_placeholder</code></td>
-<td>Create a PDF with a <code>/Sig</code> AcroForm placeholder ready to be signed; <code>subFilter</code>, <code>reserveTimestamp</code> and frozen signer metadata <em>(v1.6.0)</em>. Accepts <code>pdfA</code>.</td>
+<td>Create a PDF with a <code>/Sig</code> AcroForm placeholder ready to be signed; <code>subFilter</code>, <code>reserveTimestamp</code> and frozen signer metadata <em>(v1.6.0)</em>. Accepts <code>pdfA</code>. Accepts <code>typography</code> <em>(v1.7.0)</em>.</td>
 </tr>
 <tr>
 <td><code>sign_pdf</code></td>
@@ -258,15 +268,15 @@ pdfnative-mcp
 </tr>
 <tr>
 <td><code>inspect_pdf</code></td>
-<td>Read-only inspection. Returns <code>version</code>, <code>pageCount</code>, <code>encryption</code>, <code>pdfA</code>, <code>signatureCount</code>, <code>info</code>, optional <code>perPage</code>, optional <code>pageLabels[]</code>, and — <em>(v1.6.0)</em> — an optional <code>signatures[]</code> inventory, <code>annotations[]</code>, page boxes + <code>userUnit</code>, <code>dss</code> / <code>docTimestampCount</code> / <code>trapped</code>, plus <code>checks</code> + <code>checksPassed</code>.</td>
+<td>Read-only inspection. Returns <code>version</code>, <code>pageCount</code>, <code>encryption</code>, <code>pdfA</code>, <code>signatureCount</code>, <code>info</code>, optional <code>perPage</code>, optional <code>pageLabels[]</code>, and — <em>(v1.6.0)</em> — an optional <code>signatures[]</code> inventory, <code>annotations[]</code>, page boxes + <code>userUnit</code>, <code>dss</code> / <code>docTimestampCount</code> / <code>trapped</code>, plus <code>checks</code> + <code>checksPassed</code>. Since v1.7.0 also <code>pdfX</code> (the PDF/X claim) and <code>check: &#39;pdfx&#39;</code>.</td>
 </tr>
 <tr>
 <td><code>inspect_layout</code> <em>(v1.6.0)</em></td>
-<td>Read-only pagination <strong>dry run</strong> — page count, page geometry and each block&#39;s position for a prospective document, with no PDF produced.</td>
+<td>Read-only pagination <strong>dry run</strong> — page count, page geometry and each block&#39;s position for a prospective document, with no PDF produced. Accepts <code>typography</code> <em>(v1.7.0)</em>.</td>
 </tr>
 <tr>
 <td><code>validate_pdf</code></td>
-<td>Read-only PDF/UA structural validation (<code>valid</code>, <code>errors</code>, <code>warnings</code>).</td>
+<td>Read-only structural validation (<code>valid</code>, <code>errors</code>, <code>warnings</code>): <code>standard: &#39;pdf-ua-1&#39;</code> (default, PDF/UA) or <code>&#39;pdf-x-4&#39;</code> <em>(v1.7.0)</em> with <code>caveats[]</code>.</td>
 </tr>
 <tr>
 <td><code>verify_pdf</code></td>
@@ -274,7 +284,7 @@ pdfnative-mcp
 </tr>
 <tr>
 <td><code>add_attachment</code></td>
-<td>Embed files (e.g. Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output.</td>
+<td>Embed files (e.g. Factur-X / ZUGFeRD e-invoice XML) into PDF/A-3b output. Accepts <code>typography</code> <em>(v1.7.0)</em>.</td>
 </tr>
 <tr>
 <td><code>extract_attachments</code></td>
@@ -329,7 +339,10 @@ pdfnative-mcp
 <td>Rewrite an existing PDF&#39;s <code>/Info</code> dictionary (+ XMP) — title, author, subject, keywords, pinned <code>modDate</code> — as a non-destructive incremental update.</td>
 </tr>
 </tbody></table>
-<p>Every tool publishes an <code>outputSchema</code> advertised in <code>tools/list</code>. Since v1.6.0 the server speaks the <a href="https://modelcontextprotocol.io/specification/2026-07-28" target="_blank" rel="noopener">MCP 2026-07-28 spec</a> (stateless envelope, <code>server/discover</code>, <code>resultType</code>, cache hints) on SDK v2, while 2025-era clients (2025-11-25 / 2025-06-18 / 2025-03-26) keep working through the automatic legacy fallback.</p>
+<p>Every tool publishes an <code>outputSchema</code> advertised in <code>tools/list</code>. Since v1.6.0 the server speaks the <a href="https://modelcontextprotocol.io/specification/2026-07-28" target="_blank" rel="noopener">MCP 2026-07-28 spec</a> (stateless envelope, <code>server/discover</code>, <code>resultType</code>, cache hints) on SDK v2, while 2025-era clients (2025-11-25 / 2025-06-18 / 2025-03-26) keep working through the automatic legacy fallback. In v1.7.0 the catalogue grows to about 306 kB (the <code>typography</code> fragment and the widened colour schemas are inlined in every tool that carries them), within the server&#39;s 320 KiB budget.</p>
+<blockquote>
+<p><strong>Still deferred in v1.7.0.</strong> Custom fonts through an operator variable (<code>PDFNATIVE_MCP_FONT_DIR</code> — the variable does not exist yet; it needs a font sandbox designed with the same care as the output sandbox), a <code>link</code> annotation in <code>annotate_pdf</code> (the engine&#39;s <code>MarkupAnnotation</code> union has no <code>link</code> member; the <code>link</code> block of <code>generate_basic_pdf</code> covers new documents) and <code>redact_pdf</code> (overlay ≠ content removal) are on the roadmap, not in this release.</p>
+</blockquote>
 <hr>
 <h3 id="generate_basic_pdf"><code>generate_basic_pdf</code><a class="heading-anchor" href="#generate_basic_pdf" aria-label="Link to this section">#</a></h3>
 <p>Produces a multi-page document from a list of content blocks.</p>
@@ -349,9 +362,44 @@ pdfnative-mcp
 <p><strong>Block types supported:</strong> all <strong>13 engine block kinds</strong> since v1.6.0 — <code>heading</code> (levels 1–3), <code>paragraph</code>, <code>list</code> (<code>bullet</code> / <code>numbered</code>, nested items to depth 6), <code>table</code>, <code>image</code>, <code>link</code> (<code>http:</code> / <code>https:</code> / <code>mailto:</code> only), <code>toc</code> (a contents page with internal <code>/GoTo</code> links, pairs with <code>outline: &#39;auto&#39;</code>), <code>barcode</code>, <code>svg</code> (a safe subset: paths, shapes and text — no XML parser, no external reference ever fetched), <code>formField</code>, <code>chart</code> (same body as <code>add_chart</code>), <code>pageBreak</code>, and <code>spacer</code> (<code>height</code> in points). The <code>table</code> / <code>image</code> / <code>barcode</code> / <code>formField</code> blocks share their body with the dedicated tools, so a standalone artefact and an inline block validate and render identically.</p>
 <p><strong>Layout options</strong> <em>(v1.6.0)</em>, available on all nine document tools: <code>pageSize</code> (<code>A4</code> default, <code>Letter</code>, <code>Legal</code>, <code>A3</code>, <code>Tabloid</code>), <code>margins</code> (all four sides, 0–200 pt), running <code>headerTemplate</code> / <code>footerTemplate</code> (<code>left</code> / <code>center</code> / <code>right</code> zones with <code>{page}</code> <code>{pages}</code> <code>{title}</code> <code>{date}</code> placeholders — a <code>footerTemplate</code> replaces the default footer, so <code>footerText</code> is then ignored), <code>compress</code>, and <code>debug</code>.</p>
 <p><strong>Build-time <code>encrypt</code></strong> <em>(v1.6.0)</em>, on <code>generate_basic_pdf</code>, <code>add_table</code>, <code>add_form</code>, <code>add_international_text</code>, <code>embed_image</code>, <code>add_barcode</code> and <code>add_chart</code>: AES-128 (default) or AES-256 with owner/user passwords and permissions — and unlike <code>encrypt_pdf</code>, it <strong>keeps the AcroForm</strong>, making encrypted fillable forms reachable. Exclusive with <code>pdfA</code> (ISO 19005-1 §6.3.2); never cached.</p>
-<p><strong>Print production</strong> <em>(v1.6.0)</em>, on the nine document tools: <code>print</code> (TrimBox / BleedBox / ArtBox / CropBox, a <code>bleed</code> shorthand, crop + registration <code>marks</code>, <code>/UserUnit</code>), <code>metadata</code> (<code>/Author</code>, <code>/Subject</code>, <code>/Keywords</code>, <code>/Trapped</code> with XMP parity), and <code>outputIntent</code> (custom RGB ICC profile). <code>viewerPreferences</code> gains <code>duplex</code>, <code>pickTrayByPDFSize</code>, <code>printPageRange</code> (1-based), <code>numCopies</code>. Boxes survive <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code> and are reported by <code>inspect_pdf</code>.</p>
+<p><strong>Print production</strong> <em>(v1.6.0)</em>, on the nine document tools: <code>print</code> (TrimBox / BleedBox / ArtBox / CropBox, a <code>bleed</code> shorthand, crop + registration <code>marks</code>, <code>/UserUnit</code>), <code>metadata</code> (<code>/Author</code>, <code>/Subject</code>, <code>/Keywords</code>, <code>/Trapped</code> with XMP parity), and <code>outputIntent</code> (custom RGB ICC profile; CMYK and Gray profiles since v1.7.0). <code>viewerPreferences</code> gains <code>duplex</code>, <code>pickTrayByPDFSize</code>, <code>printPageRange</code> (1-based), <code>numCopies</code>. Boxes survive <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code> and are reported by <code>inspect_pdf</code>. Since v1.7.0 <code>print.marks</code> also takes the object form <code>{ colourBars: true | { tints, size } }</code> (<code>size</code> 4–72 pt): a C M Y K control strip with 50 % tints in the bleed — off by default, needs a bleed of about 5 mm (14.17 pt), skipped when the strip would not fit.</p>
 <p><strong>Honest PDF/A</strong> <em>(v1.6.0)</em>: text rendered through the viewer&#39;s base-14 Helvetica is not embedded, so a PDF/A claim on such a file is rejected by veraPDF. <code>embedFonts: true</code> embeds Noto Sans Latin for a valid claim; <code>strict: true</code> fails instead of producing a non-conformant file; <code>includeDiagnostics: true</code> echoes the engine&#39;s diagnostics (<code>PDFA_NO_FONT_ENTRIES</code>, <code>PDFA_UNEMBEDDED_FORM_FONT</code>, <code>PDFA_DEVICE_CMYK_IMAGE</code>).</p>
-<p><strong>Reproducible output</strong> <em>(v1.6.0)</em>: <code>creationDate</code> (ISO-8601) on all nine document tools pins <code>/Info /CreationDate</code>, the XMP dates and therefore the trailer <code>/ID</code> — byte-identical output on any host since the engine writes dates in UTC (pdfnative 1.8.0; on 1.7.0 the host time zone had to match).</p>
+<p><strong>Reproducible output</strong> <em>(v1.6.0)</em>: <code>creationDate</code> (ISO-8601) on all nine document tools pins <code>/Info /CreationDate</code>, the XMP dates and therefore the trailer <code>/ID</code> — byte-identical output on any host since the engine writes dates in UTC (pdfnative 1.8.0; on 1.7.0 the host time zone had to match). Since v1.7.0 a <code>{date}</code> placeholder in a header / footer follows the pinned instant, and the operator can pin the whole process with <code>PDFNATIVE_MCP_CREATION_DATE</code> or <code>SOURCE_DATE_EPOCH</code> (see <em>Environment variables</em>; a call&#39;s own <code>creationDate</code> still wins).</p>
+<p><strong>Typography</strong> <em>(v1.7.0)</em>: <code>typography</code> is one opt-in object — <strong>12 keys, all off by default</strong>; omitted means unchanged bytes — on the nine document tools (<code>generate_basic_pdf</code>, <code>add_table</code>, <code>add_chart</code>, <code>add_barcode</code>, <code>embed_image</code>, <code>add_form</code>, <code>add_international_text</code>, <code>add_attachment</code>, <code>prepare_signature_placeholder</code>) and on <code>inspect_layout</code>:</p>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;: &quot;Annual report&quot;,
+  &quot;embedFonts&quot;: true,
+  &quot;typography&quot;: {
+    &quot;splitParagraphs&quot;: true, &quot;orphans&quot;: 3, &quot;widows&quot;: 3,
+    &quot;keepHeadingsWithNext&quot;: { &quot;minLines&quot;: 3 },
+    &quot;opticalMargins&quot;: true, &quot;kerning&quot;: true, &quot;fontFeatures&quot;: [&quot;onum&quot;, &quot;smcp&quot;],
+    &quot;unitBinding&quot;: true, &quot;bindShortWords&quot;: true, &quot;punctuationSpacing&quot;: &quot;fr&quot;
+  },
+  &quot;blocks&quot;: [
+    { &quot;type&quot;: &quot;heading&quot;, &quot;text&quot;: &quot;Outlook&quot;, &quot;level&quot;: 2, &quot;keepWithNext&quot;: true },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;A long justified paragraph…&quot;, &quot;align&quot;: &quot;justify&quot; },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Figures by region:&quot;, &quot;keepWithNext&quot;: true, &quot;splittable&quot;: false }
+  ]
+}
+</code></pre>
+<ul>
+<li>Keys: <code>splitParagraphs</code>, <code>orphans</code> / <code>widows</code> (1–10, default 2, need <code>splitParagraphs</code>), <code>keepHeadingsWithNext</code> (<code>true</code> or <code>{ minLines }</code>), <code>unitBinding</code> (<code>true</code> or <code>{ units }</code>), <code>bindShortWords</code> (<code>true</code> or <code>{ maxLength, words }</code>), <code>punctuationSpacing</code> (<code>&#39;fr&#39;</code>, <code>&#39;fr-CA&#39;</code> or an array of <code>{ char, side, space }</code> rules), <code>opticalMargins</code>, <code>metrics</code> (<code>&#39;approximate&#39;</code> default / <code>&#39;exact&#39;</code>), <code>fontFeatures</code> (<code>tnum</code>, <code>pnum</code>, <code>lnum</code>, <code>onum</code>, <code>zero</code>, <code>ordn</code>, <code>sups</code>, <code>subs</code>, <code>smcp</code>, <code>c2sc</code>, <code>case</code>), <code>kerning</code>, <code>hyphenationLanguage</code>.</li>
+<li>Block inputs: a <code>paragraph</code> takes <code>align</code> (<code>left</code> default / <code>right</code> / <code>center</code> / <code>justify</code>), <code>keepWithNext</code> and <code>splittable</code> (overrides <code>typography.splitParagraphs</code> for that block); a <code>heading</code> takes <code>keepWithNext</code> (overrides <code>typography.keepHeadingsWithNext</code> for that block).</li>
+<li>Limits: <code>kerning</code>, <code>fontFeatures</code> and the <code>&#39;fr&#39;</code> narrow no-break space need an embedded font (<code>embedFonts: true</code>; on base-14 Helvetica <code>&#39;fr&#39;</code> degrades to <code>&#39;fr-CA&#39;</code>); <code>metrics: &#39;exact&#39;</code> acts on base-14 text only; <code>tnum</code> / <code>lnum</code> change nothing on the bundled Noto Sans (diagnostic <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>); <strong>no hyphenation dictionary is installed</strong>, so <code>hyphenationLanguage</code> has no effect on this server — soft hyphens (U+00AD) in the text are honoured. The server&#39;s <code>typography</code> prompt and its <a href="https://github.com/Nizoka/pdfnative-mcp/blob/main/docs/guides/TYPOGRAPHY.md" target="_blank" rel="noopener">TYPOGRAPHY guide</a> carry the long form; the engine side is the <a href="typography.html">Typography guide</a>.</li>
+</ul>
+<p><strong>CMYK colours</strong> <em>(v1.7.0)</em>: every colour input keeps the form it has always accepted (hex on charts, templates, <code>link</code> and <code>svg</code> blocks; a 0–1 RGB triple on watermarks and <code>annotate_pdf</code>; a free string on outline entries and table cell borders) and gains DeviceCMYK beside it — an operand string <code>&#39;c m y k&#39;</code> with components 0–1 (<code>&#39;0 0.6 1 0&#39;</code>) and a percent tuple <code>[c, m, y, k]</code> with components 0–100 (<code>[0, 60, 100, 0]</code>). Under a PDF/A claim against the default sRGB intent a CMYK colour reports <code>PDFA_DEVICE_CMYK_CONTENT</code> — keep colours RGB there, or supply a CMYK <code>outputIntent</code>.</p>
+<p><strong>PDF/X-4</strong> <em>(v1.7.0)</em>: <code>pdfx: &#39;pdfx4&#39;</code> on <code>generate_basic_pdf</code>, <code>add_table</code>, <code>add_chart</code>, <code>add_barcode</code>, <code>embed_image</code> and <code>add_international_text</code> writes a PDF/X-4 (ISO 15930-7) file — <code>%PDF-1.6</code> header, the PDF/X-4 XMP identification, a <code>/GTS_PDFX</code> output intent, a TrimBox on every page and <code>/Trapped</code>.</p>
+<pre><code class="language-jsonc">{
+  &quot;title&quot;: &quot;Spring catalogue&quot;,
+  &quot;pdfx&quot;: &quot;pdfx4&quot;,
+  &quot;embedFonts&quot;: true,
+  &quot;outputIntent&quot;: { &quot;iccProfileBase64&quot;: &quot;&lt;the printer&#39;s CMYK ICC profile, base64&gt;&quot;, &quot;outputConditionIdentifier&quot;: &quot;FOGRA39&quot; },
+  &quot;metadata&quot;: { &quot;trapped&quot;: &quot;False&quot; },
+  &quot;print&quot;: { &quot;bleed&quot;: 14.17, &quot;marks&quot;: { &quot;colourBars&quot;: true } },
+  &quot;blocks&quot;: [{ &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Four-colour job exchanged as PDF/X-4.&quot; }]
+}
+</code></pre>
+<p>It <strong>requires</strong> <code>outputIntent</code> with the ICC profile of the printing condition (device class <code>prtr</code>, CMYK or Gray — no press profile is bundled) and needs <code>embedFonts: true</code> for a conformant file (<code>PDFX_NO_FONT_ENTRIES</code> otherwise; <code>strict: true</code> refuses with <code>PDF_X_COMPLIANCE_VIOLATION</code>); it is exclusive with <code>pdfA</code> and <code>encrypt</code>; <code>metadata.trapped</code> must be <code>&#39;True&#39;</code> or <code>&#39;False&#39;</code>; a page carries a TrimBox or an ArtBox, not both. Incoherent requests are refused with <code>VALIDATION_ERROR</code> before any work is done. The profile must be a real ICC file (<code>acsp</code> signature, consistent size field) — a hand-made stub is rejected with <code>PRINT_ERROR</code>. Check the result with <code>validate_pdf { standard: &#39;pdf-x-4&#39; }</code> — a structural check, <strong>not a certified preflight</strong>; the <code>print_ready</code> prompt walks through the recipe.</p>
 <hr>
 <h3 id="add_table"><code>add_table</code><a class="heading-anchor" href="#add_table" aria-label="Link to this section">#</a></h3>
 <p>Generates a tabular report from column headers and rows.</p>
@@ -397,8 +445,11 @@ pdfnative-mcp
   ]
 }
 </code></pre>
-<p><strong>Supported <code>lang</code> codes:</strong> <code>ar</code> (Arabic), <code>he</code> (Hebrew), <code>th</code> (Thai), <code>ja</code> (Japanese), <code>zh</code> (Chinese Simplified), <code>ko</code> (Korean), <code>el</code> (Greek), <code>hi</code> (Devanagari/Hindi), <code>bn</code> (Bengali), <code>ta</code> (Tamil), <code>te</code> (Telugu), <code>si</code> (Sinhala), <code>bo</code> (Tibetan), <code>km</code> (Khmer), <code>my</code> (Myanmar), <code>am</code> (Ethiopic), <code>ru</code> (Cyrillic/Russian), <code>ka</code> (Georgian), <code>hy</code> (Armenian), <code>tr</code> (Turkish), <code>vi</code> (Vietnamese), <code>pl</code> (Polish), plus <strong><code>latin</code></strong> (Noto Sans VF), <strong><code>emoji</code></strong> (Noto Emoji/COLRv1) and the explicit <strong><code>math</code></strong> symbols font <em>(v1.4.0)</em>.</p>
-<p><code>lang</code> accepts <code>string</code>, <code>string[]</code>, or a comma-separated value — e.g. <code>&quot;ar,emoji&quot;</code> or <code>[&quot;ar&quot;, &quot;emoji&quot;]</code>. When <code>pdfA</code> is set on this tool, the <code>latin</code> font is auto-registered so curly quotes, em-dashes, and ellipses validate cleanly under PDF/A.</p>
+<p><strong>Supported <code>lang</code> codes:</strong> <code>ar</code> (Arabic), <code>he</code> (Hebrew), <code>th</code> (Thai), <code>ja</code> (Japanese), <code>zh</code> (Chinese Simplified), <code>ko</code> (Korean), <code>el</code> (Greek), <code>hi</code> (Devanagari/Hindi), <code>bn</code> (Bengali), <code>ta</code> (Tamil), <code>te</code> (Telugu), <code>si</code> (Sinhala), <code>bo</code> (Tibetan), <code>km</code> (Khmer), <code>my</code> (Myanmar), <code>am</code> (Ethiopic), <code>ru</code> (Cyrillic/Russian), <code>ka</code> (Georgian), <code>hy</code> (Armenian), <code>tr</code> (Turkish), <code>vi</code> (Vietnamese), <code>pl</code> (Polish), and — <em>(v1.7.0)</em> — <code>lo</code> (Lao), <code>nod</code> (Tai Tham), <code>khb</code> (New Tai Lue), <code>tdd</code> (Tai Le), <code>cjm</code> (Cham): the <strong>27 scripts</strong> of pdfnative 1.8.0. Plus <strong><code>latin</code></strong> (Noto Sans VF), <strong><code>emoji</code></strong> (Noto Emoji/COLRv1) and the explicit <strong><code>math</code></strong> symbols font <em>(v1.4.0)</em>. Since v1.7.0, <code>ha</code> (Hausa), <code>yo</code> (Yoruba), <code>ig</code> (Igbo) and <code>sw</code> (Swahili) are aliases of <code>latin</code>: the bundled Noto Sans anchors their tone marks, no extra font is embedded.</p>
+<p><code>lang</code> accepts <code>string</code>, <code>string[]</code>, or a comma-separated value — e.g. <code>&quot;ar,emoji&quot;</code> or <code>[&quot;ar&quot;, &quot;emoji&quot;]</code>. When <code>pdfA</code> is set on this tool, the <code>latin</code> font is auto-registered so curly quotes, em-dashes, and ellipses validate cleanly under PDF/A. The tool also accepts <code>typography</code> and <code>pdfx</code> <em>(v1.7.0)</em> — see <a href="#generate_basic_pdf"><code>generate_basic_pdf</code></a>.</p>
+<blockquote>
+<p><strong>Tai Tham under PDF/A</strong> <em>(v1.7.0)</em>: use <code>pdfA: &#39;pdfa2b&#39;</code> with <code>lang: &#39;nod&#39;</code>, not <code>pdfa2u</code> — one glyph lacks a <code>ToUnicode</code> entry in the engine, which veraPDF rejects under PDF/A-2u (tracked upstream).</p>
+</blockquote>
 <hr>
 <h3 id="add_form"><code>add_form</code><a class="heading-anchor" href="#add_form" aria-label="Link to this section">#</a></h3>
 <p>Creates an interactive AcroForm PDF.</p>
@@ -484,16 +535,23 @@ pdfnative-mcp
 <li><code>pages</code> — when <code>true</code>, includes per-page <code>index</code>, <code>width</code>, <code>height</code> — and, since v1.6.0, the declared page boxes and <code>userUnit</code>.</li>
 <li><code>signatures</code> <em>(v1.6.0)</em> — when <code>true</code>, a per-signature inventory: <code>subFilter</code>, <code>isDocTimestamp</code>, <code>isPlaceholder</code>, <code>byteRange</code>, <code>vriKey</code>.</li>
 <li><code>annotations</code> <em>(v1.6.0)</em> — when <code>true</code>, an <code>annotations[]</code> list (0-based <code>page</code>, <code>subtype</code>, <code>rect</code>, and when present <code>contents</code>, <code>title</code>, <code>color</code>, <code>quadPoints</code>, link <code>url</code>) plus <code>annotationCount</code>.</li>
-<li><code>check</code> — array of CI assertions. Allowed values: <code>pdfa</code>, <code>signed</code>, <code>encrypted</code>, <code>placeholder</code>, <code>attachments</code>, and — <em>(v1.6.0)</em> — <code>dss</code>, <code>docTimestamp</code>, <code>trapped</code>, <code>annotations</code>. The response includes <code>checks</code> (per-assertion result) and <code>checksPassed</code> (boolean AND). Since v1.6.0, <code>checks</code> contains <strong>only the requested keys</strong>.</li>
+<li><code>check</code> — array of CI assertions. Allowed values: <code>pdfa</code>, <code>signed</code>, <code>encrypted</code>, <code>placeholder</code>, <code>attachments</code>, — <em>(v1.6.0)</em> — <code>dss</code>, <code>docTimestamp</code>, <code>trapped</code>, <code>annotations</code>, and — <em>(v1.7.0)</em> — <code>pdfx</code> (the XMP claims PDF/X — the claim, not its validity; that is <code>validate_pdf standard: &#39;pdf-x-4&#39;</code>). The response includes <code>checks</code> (per-assertion result) and <code>checksPassed</code> (boolean AND). Since v1.6.0, <code>checks</code> contains <strong>only the requested keys</strong>.</li>
 <li><code>verbosity</code> — <code>&#39;full&#39;</code> (default) or <code>&#39;summary&#39;</code> (token-frugal scalar subset).</li>
 <li><code>fields</code> — optional dot-path projection of the result.</li>
 </ul>
-<p><strong>Outputs:</strong> <code>version</code>, <code>pageCount</code>, <code>encryption</code> (<code>&#39;none&#39;</code> / <code>&#39;aes-128&#39;</code> / <code>&#39;aes-256&#39;</code> / <code>&#39;rc4&#39;</code> / <code>&#39;unknown&#39;</code>), optional <code>encryptionInfo</code> (<code>{ algorithm, revision, authenticatedAs }</code>, present when the document is encrypted and opened successfully), <code>pdfA</code> (<code>null</code> or the detected claim string), <code>signatureCount</code>, <code>hasSignaturePlaceholder</code>, <code>attachments[]</code> (embedded-file summaries), <code>info</code> (decoded <code>/Info</code> entries), optional <code>perPage[]</code>, optional <code>pageLabels[]</code> (when <code>/PageLabels</code> is declared), optional <code>checks</code> + <code>checksPassed</code> — plus, presence-gated since v1.6.0, <code>dss</code>, <code>docTimestampCount</code> and <code>trapped</code>.</p>
+<p><strong>Outputs:</strong> <code>version</code>, <code>pageCount</code>, <code>encryption</code> (<code>&#39;none&#39;</code> / <code>&#39;aes-128&#39;</code> / <code>&#39;aes-256&#39;</code> / <code>&#39;rc4&#39;</code> / <code>&#39;unknown&#39;</code>), optional <code>encryptionInfo</code> (<code>{ algorithm, revision, authenticatedAs }</code>, present when the document is encrypted and opened successfully), <code>pdfA</code> (<code>null</code> or the detected claim string), <code>signatureCount</code>, <code>hasSignaturePlaceholder</code>, <code>attachments[]</code> (embedded-file summaries), <code>info</code> (decoded <code>/Info</code> entries), optional <code>perPage[]</code>, optional <code>pageLabels[]</code> (when <code>/PageLabels</code> is declared), optional <code>checks</code> + <code>checksPassed</code> — plus, presence-gated since v1.6.0, <code>dss</code>, <code>docTimestampCount</code> and <code>trapped</code>, and — <em>(v1.7.0)</em> — <code>pdfX</code>, present only when the XMP claims PDF/X (kept by <code>verbosity: &#39;summary&#39;</code>).</p>
 <p>Useful in CI as a final assertion step before publishing a PDF artifact:</p>
 <pre><code class="language-jsonc">{ &quot;tool&quot;: &quot;inspect_pdf&quot;,
   &quot;input&quot;: { &quot;pdfBase64&quot;: &quot;&lt;...&gt;&quot;, &quot;check&quot;: [&quot;pdfa&quot;, &quot;signed&quot;] } }
 // → { ..., &quot;checks&quot;: { &quot;pdfa&quot;: true, &quot;signed&quot;: true }, &quot;checksPassed&quot;: true }
 </code></pre>
+<hr>
+<h3 id="validate_pdf"><code>validate_pdf</code><a class="heading-anchor" href="#validate_pdf" aria-label="Link to this section">#</a></h3>
+<p>Read-only structural conformance check. <code>standard</code> picks the rule set: <code>&#39;pdf-ua-1&#39;</code> (default — PDF/UA, ISO 14289-1, for a Tagged PDF) or, since v1.7.0, <code>&#39;pdf-x-4&#39;</code> (PDF/X-4, ISO 15930-7).</p>
+<pre><code class="language-jsonc">{ &quot;pdfBase64&quot;: &quot;&lt;base64 PDF bytes&gt;&quot;, &quot;standard&quot;: &quot;pdf-x-4&quot; }
+// → { &quot;standard&quot;: &quot;pdf-x-4&quot;, &quot;valid&quot;: true, &quot;errors&quot;: [], &quot;warnings&quot;: [], &quot;summary&quot;: &quot;…&quot;, &quot;caveats&quot;: [&quot;…&quot;] }
+</code></pre>
+<p>The default rule set verifies catalog <code>/MarkInfo /Marked true</code>, <code>/StructTreeRoot</code> (+ <code>/ParentTree</code>), <code>/Metadata</code> (XMP), <code>/Lang</code>, and per-page MCID uniqueness. <code>&#39;pdf-x-4&#39;</code> <em>(v1.7.0)</em> checks the structural prerequisites of ISO 15930-7: PDF 1.6 header, no encryption, trailer <code>/ID</code>, the PDF/X-4 XMP identification, a <code>/GTS_PDFX</code> output intent with an embedded <code>prtr</code> ICC profile, a TrimBox or ArtBox per page nested in the BleedBox and MediaBox, every font embedded, no annotation on the printed area, no JavaScript, no embedded file, device colour consistent with the output intent. The PDF/X result has the same shape plus <code>caveats[]</code>, which states what a <code>valid: true</code> verdict does <strong>not</strong> establish: this is <strong>not a certified preflight</strong>, and veraPDF does not cover PDF/X — confirm a press job with a dedicated preflight tool. The default (<code>pdf-ua-1</code>) response is byte-identical to v1.6.0 and carries no <code>caveats</code>. Unparsable bytes are an error (<code>PDF_PARSE_FAILED</code>), not a verdict.</p>
 <hr>
 <h3 id="merge_pdfs"><code>merge_pdfs</code><a class="heading-anchor" href="#merge_pdfs" aria-label="Link to this section">#</a></h3>
 <p>Concatenates <strong>2–50</strong> PDFs into a single document via pdfnative&#39;s page-tree API. Encrypted sources are supported since v1.5.0 via <code>password</code> (a single password applied to every encrypted source), and the output can be re-encrypted via <code>encrypt</code>. Signatures and <code>/AcroForm</code> are dropped because page edits invalidate <code>/ByteRange</code>; self-contained URI <code>/Link</code> annotations are kept.</p>
@@ -535,7 +593,7 @@ pdfnative-mcp
   &quot;outputMode&quot;: &quot;base64&quot;
 }
 </code></pre>
-<p>Types: <code>text</code>, <code>highlight</code>, <code>underline</code>, <code>strikeout</code>, <code>squiggly</code>, <code>square</code>, <code>circle</code>, <code>line</code>, <code>freetext</code>. Each takes a <strong>0-based</strong> <code>page</code>, a <code>rect: [x1, y1, x2, y2]</code>, and optional <code>color</code> / <code>contents</code>. Encrypted sources → <code>ENCRYPTED_SOURCE</code>; an out-of-range <code>page</code> → a validation error.</p>
+<p>Types: <code>text</code>, <code>highlight</code>, <code>underline</code>, <code>strikeout</code>, <code>squiggly</code>, <code>square</code>, <code>circle</code>, <code>line</code>, <code>freetext</code>. Each takes a <strong>0-based</strong> <code>page</code>, a <code>rect: [x1, y1, x2, y2]</code>, and optional <code>color</code> / <code>contents</code>. <code>color</code> / <code>interiorColor</code> take a hex or operand string (including a CMYK operand string), a 0–1 RGB triple (<code>[1, 1, 0]</code>) or, since v1.7.0, a CMYK percent tuple (<code>[0, 0, 100, 0]</code>); v1.7.0 also fixes the 0–1 triple, which used to render almost black. Encrypted sources → <code>ENCRYPTED_SOURCE</code>; an out-of-range <code>page</code> → a validation error.</p>
 <blockquote>
 <p><strong>Overlay, not redaction.</strong> <code>annotate_pdf</code> is a <em>visual review layer</em>; the underlying bytes remain. It does <strong>not</strong> remove or obscure content — see the deferred <code>redact_pdf</code> note under <em>What&#39;s new in v1.4.0</em>.</p>
 </blockquote>
@@ -656,14 +714,14 @@ pdfnative-mcp
 }
 // → { &quot;pageWidth&quot;: 595.28, &quot;pageHeight&quot;: 841.89, &quot;totalPages&quot;: 1, &quot;blockCount&quot;: 2 }
 </code></pre>
-<p><strong>Inputs:</strong> <code>title</code> and <code>blocks</code> (required), plus every input that moves a block — <code>footerText</code>, <code>pdfA</code>, <code>normalize</code>, <code>embedFonts</code>, <code>pageSize</code>, <code>margins</code>, <code>headerTemplate</code>, <code>footerTemplate</code> — and <code>verbosity</code> / <code>fields</code>.</p>
+<p><strong>Inputs:</strong> <code>title</code> and <code>blocks</code> (required), plus every input that moves a block — <code>footerText</code>, <code>pdfA</code>, <code>normalize</code>, <code>embedFonts</code>, <code>pageSize</code>, <code>margins</code>, <code>headerTemplate</code>, <code>footerTemplate</code>, and since v1.7.0 <code>typography</code> (with the block-level <code>align</code>, <code>keepWithNext</code> and <code>splittable</code>) — and <code>verbosity</code> / <code>fields</code>. Pass exactly what you will give <code>generate_basic_pdf</code> and <code>totalPages</code> matches.</p>
 <p><strong>Outputs (full):</strong> <code>pageWidth</code>, <code>pageHeight</code>, <code>margins</code>, <code>totalPages</code>, and <code>pages[].blocks[]</code> with each block&#39;s <code>type</code>, <code>page</code>, <code>x</code>, <code>top</code>, <code>width</code>, <code>height</code> (2-decimal points).</p>
 <blockquote>
-<p><strong>Known engine gap:</strong> a <code>toc</code> block is measured as 0 pt, so a document with a printed contents page may paginate one page later than previewed.</p>
+<p><strong>Engine gap closed in v1.7.0:</strong> in v1.6.0 a <code>toc</code> block was measured as 0 pt, so a document with a printed contents page could paginate one page later than previewed. Since pdfnative 1.8.0 the dry run and the build share one pagination planner (pdfnative #75), so every block kind — <code>toc</code> included — is measured exactly as it is laid out.</p>
 </blockquote>
 <hr>
 <h2 id="mcp-prompts">MCP prompts<a class="heading-anchor" href="#mcp-prompts" aria-label="Link to this section">#</a></h2>
-<p>Since v1.4.0 the server advertises the MCP <strong><code>prompts</code></strong> capability; v1.6.0 grows it to <strong>six prompts</strong> — the two governance prompts plus four recipe prompts:</p>
+<p>Since v1.4.0 the server advertises the MCP <strong><code>prompts</code></strong> capability; v1.6.0 grew it to six and v1.7.0 grows it to <strong>seven prompts</strong> — the two governance prompts plus five recipe prompts:</p>
 <table>
 <thead>
 <tr>
@@ -685,17 +743,22 @@ pdfnative-mcp
 </tr>
 <tr>
 <td><code>print_ready</code> <em>(v1.6.0)</em></td>
-<td>Producing press-ready output: bleed, printer&#39;s marks, custom OutputIntent.</td>
+<td>Producing press-ready output: bleed, printer&#39;s marks and colour bars, <code>/UserUnit</code>, metadata, CMYK colours, an RGB / CMYK / Gray OutputIntent and PDF/X-4 — with what <code>validate_pdf</code> can and cannot establish.</td>
 </tr>
 <tr>
 <td><code>reproducible_output</code> <em>(v1.6.0)</em></td>
-<td>Byte-stable output via pinned <code>creationDate</code> / <code>signingTime</code> / <code>modDate</code>.</td>
+<td>Byte-stable output via pinned <code>creationDate</code> / <code>signingTime</code> / <code>modDate</code>, what stays non-deterministic, and how to prove it.</td>
+</tr>
+<tr>
+<td><code>typography</code> <em>(v1.7.0)</em></td>
+<td>Book-quality text: paragraph breaking with widows and orphans, keeping headings with their text, justification with optical margins, unit and short-word binding, French punctuation spacing, kerning and OpenType features — with what needs an embedded font and what is not available (no hyphenation dictionary).</td>
 </tr>
 <tr>
 <td><code>pdfa_valid</code> <em>(v1.6.0)</em></td>
-<td>Producing a PDF/A file that veraPDF actually accepts (<code>embedFonts</code>, <code>strict</code>, diagnostics).</td>
+<td>Producing a PDF/A file that veraPDF actually accepts (<code>embedFonts</code>, <code>strict</code>, diagnostics, level choice, attachments under PDF/A-3).</td>
 </tr>
 </tbody></table>
+<p>In v1.7.0, <code>print_ready</code>, <code>reproducible_output</code> and <code>pdfa_valid</code> were rewritten for CMYK, PDF/X-4, colour bars and the UTC / operator pin.</p>
 <h2 id="error-codes">Error codes<a class="heading-anchor" href="#error-codes" aria-label="Link to this section">#</a></h2>
 <table>
 <thead>
@@ -815,7 +878,20 @@ pdfnative-mcp
 <td><code>verify_pdf</code></td>
 <td>A CMS structure is shorter or more malformed than the parser expects.</td>
 </tr>
+<tr>
+<td><code>PDF_X_COMPLIANCE_VIOLATION</code> <em>(v1.7.0)</em></td>
+<td>document tools with <code>pdfx: &#39;pdfx4&#39;</code> and <code>strict: true</code></td>
+<td>The engine raised a <code>PDFX_*</code> diagnostic (<code>PDFX_NO_FONT_ENTRIES</code> — text not embedded; <code>PDFX_DEVICE_CMYK</code> — CMYK content under a non-CMYK printing condition; <code>PDFX_ANNOTATIONS</code> — a <code>link</code> or <code>formField</code> block on a print page). Add <code>embedFonts: true</code>, match the colours to the <code>outputIntent</code>, remove the offending blocks; <code>includeDiagnostics: true</code> echoes the codes without failing.</td>
+</tr>
+<tr>
+<td><code>DIAGNOSTIC_ESCALATED</code> <em>(v1.7.0)</em></td>
+<td>document tools with <code>strict: true</code></td>
+<td>The engine raised a diagnostic that is neither <code>PDFA_*</code> nor <code>PDFX_*</code> — today <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code> (<code>typography.fontFeatures</code> <code>tnum</code> / <code>lnum</code> on Noto Sans, or a feature without an embedded font). The message starts with <code>[CODE]</code>: drop the ineffective feature, add <code>embedFonts: true</code>, or drop <code>strict</code> and read the diagnostic with <code>includeDiagnostics: true</code>.</td>
+</tr>
 </tbody></table>
+<blockquote>
+<p><strong><code>strict</code> escalates by code</strong> <em>(v1.7.0)</em>: <code>PDFA_*</code> → <code>PDF_A_COMPLIANCE_VIOLATION</code>, <code>PDFX_*</code> → <code>PDF_X_COMPLIANCE_VIOLATION</code>, anything else → <code>DIAGNOSTIC_ESCALATED</code>. The two new codes can only be returned by a call that sets <code>strict: true</code>; a client that matched <code>PDF_A_COMPLIANCE_VIOLATION</code> for <em>every</em> strict failure should match the three. Since v1.7.0 any unexpected failure of a tool that takes PDF input is classified as <code>PDF_PARSE_FAILED</code> at the <code>tools/call</code> boundary instead of surfacing uncoded.</p>
+</blockquote>
 <blockquote>
 <p><strong>Protocol errors</strong> <em>(v1.6.0)</em>: calling an unknown tool or prompt name is now a JSON-RPC <code>-32602</code> error (<code>[UNKNOWN_TOOL]</code> / <code>[UNKNOWN_PROMPT]</code>), not an <code>isError</code> result. Likewise, an unknown or misspelt input key — top-level or nested — fails with <code>VALIDATION_ERROR</code> (&quot;Unrecognized key&quot;) instead of being silently stripped.</p>
 </blockquote>
@@ -851,7 +927,7 @@ pdfnative-mcp
 <td>2b + arbitrary <code>/EmbeddedFile</code> attachments</td>
 </tr>
 </tbody></table>
-<p>When set on <code>add_international_text</code>, the <code>latin</code> font auto-registers so non-WinAnsi Latin characters validate cleanly. Mutually exclusive with the underlying pdfnative encryption layer (ISO 19005-1 §6.3.2).</p>
+<p>When set on <code>add_international_text</code>, the <code>latin</code> font auto-registers so non-WinAnsi Latin characters validate cleanly. Mutually exclusive with the underlying pdfnative encryption layer (ISO 19005-1 §6.3.2) and, since v1.7.0, with <code>pdfx: &#39;pdfx4&#39;</code> — a document claims PDF/A or PDF/X-4, not both.</p>
 <hr>
 <h2 id="output-modes">Output modes<a class="heading-anchor" href="#output-modes" aria-label="Link to this section">#</a></h2>
 <p>Every document-producing tool accepts an <code>outputMode</code> field. The seven read-only
@@ -891,6 +967,8 @@ tools (<code>inspect_pdf</code>, <code>inspect_layout</code>, <code>validate_pdf
     &quot;blocks&quot;: [
       { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Total amount: $128,000&quot; }
     ],
+    &quot;creationDate&quot;: &quot;2026-04-26T09:00:00Z&quot;,          // pins /CreationDate, XMP dates and the trailer /ID
+    &quot;typography&quot;:   { &quot;keepHeadingsWithNext&quot;: true }, // v1.7.0 — opt-in, off by default
     &quot;outputMode&quot;: &quot;base64&quot;
   }
 }
@@ -951,7 +1029,7 @@ for the honest, step-by-step version.</li>
 <p><strong>Output PDF exceeds 50 MB.</strong><br>Split the content across multiple tool calls or reduce image/barcode count.</p>
 <hr>
 <h2 id="release-history">Release history<a class="heading-anchor" href="#release-history" aria-label="Link to this section">#</a></h2>
-<p>The current release is <strong>v1.6.0</strong> (28 tools, requires pdfnative ≥ 1.7.0 — see the header note). Per-release notes, oldest first:</p>
+<p>The current release is <strong>v1.7.0</strong> (28 tools, requires pdfnative ≥ 1.8.0 — see the header note). Per-release notes, oldest first:</p>
 <h3 id="whats-new-in-v100">What&#39;s new in v1.0.0<a class="heading-anchor" href="#whats-new-in-v100" aria-label="Link to this section">#</a></h3>
 <p>v1.0.0 is the <strong>first stable release</strong>, built on <code>pdfnative</code> 1.2.0, and commits to API stability via a per-tool <code>_meta.apiVersion</code> field. New fields are optional and backward-compatible — omitting them produces byte-identical output. Tool count: <strong>12</strong> (was 9).</p>
 <ul>
@@ -1071,12 +1149,45 @@ for the honest, step-by-step version.</li>
 <li><strong><code>inspect_pdf.checks</code> holds only the keys you asked for</strong> — read <code>checksPassed</code> or the requested key, never an absent one.</li>
 <li><strong><code>add_form</code> text areas change bytes.</strong> <code>fieldType: &#39;textarea&#39;</code> now produces a real multi-line field (<code>/Ff 4096</code>).</li>
 </ol>
+<h3 id="whats-new-in-v170">What&#39;s new in v1.7.0<a class="heading-anchor" href="#whats-new-in-v170" aria-label="Link to this section">#</a></h3>
+<p>v1.7.0 (released 2026-09-21) aligns the server with <strong>pdfnative 1.8.0</strong> (<code>^1.8.0</code>, Node ≥ 22) and keeps the catalogue at <strong>28 tools</strong> — what grows is what each of them can do. No breaking changes to the tool API: every v1.6.0 input is still accepted, every tool, property, enum value and bound is still there (a superset gate against the published 1.5.0 catalogue proves it), and default outputs are byte-identical except where pdfnative 1.8.0 corrected previously-wrong output. All new behaviour is opt-in.</p>
+<ul>
+<li><strong>Fine typography</strong> — <code>typography</code> (12 keys, all off by default) on the nine document tools and on <code>inspect_layout</code>: <code>splitParagraphs</code> with <code>orphans</code> / <code>widows</code>, <code>keepHeadingsWithNext</code>, <code>unitBinding</code>, <code>bindShortWords</code>, <code>punctuationSpacing</code> (<code>&#39;fr&#39;</code>, <code>&#39;fr-CA&#39;</code> or explicit rules), <code>opticalMargins</code>, <code>metrics: &#39;exact&#39;</code>, <code>fontFeatures</code> (11 OpenType tags), <code>kerning</code>, <code>hyphenationLanguage</code> (no dictionary installed — soft hyphens are honoured). Paragraph blocks gain <code>align</code> (<code>left</code> / <code>right</code> / <code>center</code> / <code>justify</code>), <code>keepWithNext</code> and <code>splittable</code>; heading blocks gain <code>keepWithNext</code>.</li>
+<li><strong>CMYK everywhere a colour is accepted</strong> — <code>&#39;c m y k&#39;</code> operand strings (0–1) and <code>[c, m, y, k]</code> percent tuples (0–100) beside the existing hex / RGB forms, on watermarks, header / footer templates, table cell borders, outline entries, charts, <code>link</code> and <code>svg</code> blocks and <code>annotate_pdf</code>.</li>
+<li><strong>PDF/X-4</strong> — <code>pdfx: &#39;pdfx4&#39;</code> on <code>generate_basic_pdf</code>, <code>add_table</code>, <code>add_chart</code>, <code>add_barcode</code>, <code>embed_image</code> and <code>add_international_text</code>; requires an <code>outputIntent</code> with a <code>prtr</code> ICC profile and <code>embedFonts: true</code>, exclusive with <code>pdfA</code> / <code>encrypt</code>. <code>outputIntent</code> accepts CMYK and Gray profiles beside RGB; <code>print.marks</code> accepts <code>{ colourBars: true | { tints, size } }</code>.</li>
+<li><strong><code>validate_pdf standard</code></strong> — <code>&#39;pdf-ua-1&#39;</code> (default, unchanged) or <code>&#39;pdf-x-4&#39;</code>, whose result adds <code>caveats[]</code> (structural prerequisites, not a certified preflight).</li>
+<li><strong><code>inspect_pdf</code></strong> reports <code>pdfX</code> when the XMP claims PDF/X and accepts <code>check: &#39;pdfx&#39;</code>.</li>
+<li><strong>27 scripts</strong> — <code>add_international_text.lang</code> gains <code>lo</code>, <code>nod</code>, <code>khb</code>, <code>tdd</code>, <code>cjm</code>; <code>ha</code>, <code>yo</code>, <code>ig</code>, <code>sw</code> are aliases of <code>latin</code>.</li>
+<li><strong>Reproducible on every host</strong> — every date is written in UTC; <code>{date}</code> in a header or footer follows the pinned instant; the operator can pin the whole process with <code>PDFNATIVE_MCP_CREATION_DATE</code> or <code>SOURCE_DATE_EPOCH</code> (precedence: per-call <code>creationDate</code> → <code>PDFNATIVE_MCP_CREATION_DATE</code> → <code>SOURCE_DATE_EPOCH</code> → clock). <code>server.json</code> declares all twelve operator variables.</li>
+<li><strong>A seventh MCP prompt</strong>, <code>typography</code>; <code>print_ready</code>, <code>reproducible_output</code> and <code>pdfa_valid</code> rewritten for CMYK, PDF/X-4, colour bars and the UTC / operator pin.</li>
+<li><strong>Two new error codes</strong> — <code>strict</code> escalates by diagnostic code: <code>PDFA_*</code> → <code>PDF_A_COMPLIANCE_VIOLATION</code>, <code>PDFX_*</code> → <code>PDF_X_COMPLIANCE_VIOLATION</code>, anything else → <code>DIAGNOSTIC_ESCALATED</code>.</li>
+<li><strong><code>TOOL_API_VERSION</code> 1.7.0</strong> (new optional inputs, two new error codes); the response-cache namespace changes with it, so no v1.6.0 cache entry is served.</li>
+<li><strong>Catalogue size</strong> — <code>tools/list</code> grows from about 246 kB to about 306 kB, within the 320 KiB budget the server&#39;s own check enforces; hosts that cache <code>tools/list</code> are unaffected.</li>
+<li><strong>Tests and docs</strong> — 1631 tests in 96 files <!-- verify-docs:allow stale-token (pdfnative-mcp's own suite, not the engine's) --> (v1.6.0: 937); eleven new executable examples (43 in total); new guides <code>TYPOGRAPHY.md</code> and <code>REPRODUCIBLE.md</code>.</li>
+<li><strong>Fixed</strong> — a 0–1 RGB triple (<code>watermark.color</code>, the <code>annotate_pdf</code> colours) was read by the engine as 0–255 and <code>[1, 0, 0]</code> rendered almost black; a damaged PDF could surface an uncoded failure (<code>inspect_pdf failed: parseDict…</code>) — any unexpected failure of a tool that takes PDF input is now <code>PDF_PARSE_FAILED</code>; <code>strict</code> no longer loses the diagnostic code (the server escalates from its own sink instead of forwarding <code>strict</code> to the engine).</li>
+<li><strong>Inherited from pdfnative 1.8.0</strong> — <a href="https://github.com/Nizoka/pdfnative/issues/74" target="_blank" rel="noopener">#74</a>: a PDF/A form (<code>add_form</code> / a <code>formField</code> block with <code>pdfA</code> and <code>embedFonts: true</code>) embeds the AcroForm default-resources font and validates under veraPDF; <a href="https://github.com/Nizoka/pdfnative/issues/75" target="_blank" rel="noopener">#75</a>: <code>inspect_layout</code> and the build share one pagination planner, so a <code>toc</code> block reports its real height.</li>
+</ul>
+<p><strong>Migrating from v1.6.0</strong> — no breaking changes; a drop-in replacement. Eight things to know:</p>
+<ol>
+<li><strong>Rebaseline once if you compare bytes.</strong> pdfnative 1.8.0 changes the bytes of every document that embeds a TrueType subset (hinting tables kept, <code>head.checkSumAdjustment</code> computed), of every document drawing <code>print.marks</code> (marks stop 0.5 pt short of the trim line), and of shaped text in every script with mark positioning — in each case the previous output was wrong or incomplete. Documents on base-14 fonts without those features are byte-identical on a UTC host; elsewhere item 2 changes <code>/CreationDate</code>, the XMP dates and the trailer <code>/ID</code> of every document that pins an instant.</li>
+<li><strong>Dates are UTC.</strong> <code>/CreationDate</code> and the XMP dates end in <code>+00&#39;00&#39;</code> / <code>+00:00</code> whatever the host zone. A consumer that parsed a local offset out of <code>/CreationDate</code> sees UTC; the instant is the same.</li>
+<li><strong><code>{date}</code> follows the pinned instant.</strong> A header or footer template using <code>{date}</code> on a call that sets <code>creationDate</code> now prints that date (it printed the wall-clock date). A call that pins nothing is unchanged.</li>
+<li><strong>Hand-made ICC stubs are rejected.</strong> <code>outputIntent.iccProfileBase64</code> must carry the ICC <code>acsp</code> signature and a size field no larger than the buffer — real profiles do. The failure is <code>PRINT_ERROR</code> (a profile whose device class is not <code>prtr</code> under <code>pdfx</code> is <code>VALIDATION_ERROR</code>).</li>
+<li><strong><code>extract_text</code> returns <code>/ActualText</code>.</strong> Text extracted from a tagged PDF is what the writer declared for a marked-content span, not the glyphs inside it; for tagged pdfnative output this makes complex-script extraction exact.</li>
+<li><strong>Two new error codes.</strong> <code>PDF_X_COMPLIANCE_VIOLATION</code> and <code>DIAGNOSTIC_ESCALATED</code> can only be returned by a call that sets <code>strict: true</code>. A client that matched <code>PDF_A_COMPLIANCE_VIOLATION</code> for <em>every</em> strict failure should match the three.</li>
+<li><strong>A 0–1 RGB triple renders the colour it names</strong> (see <em>Fixed</em> above).</li>
+<li><strong>Operators:</strong> <code>PDFNATIVE_MCP_CREATION_DATE</code> / <code>SOURCE_DATE_EPOCH</code> are honoured from this release. A shell that already exports <code>SOURCE_DATE_EPOCH</code> (many build environments do) now pins every document&#39;s creation date — unset it for the server process if that is not wanted. An invalid value refuses to start.</li>
+</ol>
 <hr>
 <h2 id="further-reading">Further reading<a class="heading-anchor" href="#further-reading" aria-label="Link to this section">#</a></h2>
 <ul>
 <li><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp on GitHub</a> — source, issues, CHANGELOG</li>
 <li><a href="https://www.npmjs.com/package/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp on npm</a> — version history, install stats</li>
+<li><a href="use-cases-mcp.html">MCP use cases</a> — shared-server, bearer-token and file-sandbox deployment patterns</li>
 <li><a href="quickstart.html">pdfnative Quick Start</a> — pdfnative library directly in Node.js / browser</li>
+<li><a href="cli.html">CLI guide</a> — the same engine from shell scripts and CI (<code>pdfnative-cli</code>)</li>
+<li><a href="react.html">React guide</a> — JSX → pdfnative blocks (<code>pdfnative-react</code>)</li>
+<li><a href="typography.html">Typography guide</a> — the engine side of the <code>typography</code> object</li>
 <li><a href="architecture.html">Architecture guide</a> — how pdfnative-mcp sits in the ecosystem</li>
 <li><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol specification</a> — MCP standard reference</li>
 </ul>

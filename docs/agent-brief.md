@@ -6,7 +6,7 @@
 > Longer forms: [llms.txt](https://pdfnative.dev/llms.txt) (index),
 > [llms-full.txt](https://pdfnative.dev/llms-full.txt) (full corpus),
 > [llms-index.json](https://pdfnative.dev/llms-index.json) (per-page sizes and anchors).
-> _Verified on 2026-09-15 against the source tree by `npm run verify:docs`._
+> _Verified on 2026-09-25 against the source tree by `npm run verify:docs`._
 
 ## What it is
 
@@ -27,11 +27,11 @@ bundled `latin` module, and full UAX #9 BiDi.
 ## Choose your surface
 
 - **Writing application code** → the library: `npm install pdfnative`, `import { … } from 'pdfnative'`.
-- **Driving a shell, CI, or Makefile** → `pdfnative-cli` (21 commands, JSON-in/JSON-out agent contract with stable `E_*` error codes). New in v1.4.0: the complete PAdES ladder — `sign --timestamp <tsa-url>` (B-T), `ltv collect`/`embed` (B-LT, air-gap-friendly: evidence travels as replayable JSON), `doc-timestamp` (B-LTA) — plus signature-safe `metadata` edits and `compare` (text + structure diff with CI exit codes).
-- **You are a conversational assistant with tool access** → `pdfnative-mcp` (28 tools, MCP 2026-07-28 spec; config: `npx -y pdfnative-mcp`).
-- **The host app is React 19** → `pdfnative-react` (declarative JSX compiled on-device to pdfnative blocks). New in v1.2.0: charts v2 (9 kinds, secondary axis), print production via `<Document print>`, and HTTP caching (`etag`/`cacheControl`) on `renderToResponse`.
+- **Driving a shell, CI, or Makefile** → `pdfnative-cli` (21 commands, JSON-in/JSON-out agent contract with stable `E_*` error codes). New in v1.5.0: typography flags (`--split-paragraphs`, `--keep-headings-with-next`, `--kerning`, `--font-features`), PDF/X-4 output (`--pdfx pdfx4`, `--output-intent-icc`, `--trapped`) checked by `inspect --check pdfx`, your own fonts via `--font-file`, and byte-reproducible builds (global `--creation-date` or `SOURCE_DATE_EPOCH`; global flags may precede the command). Since v1.4.0: the complete PAdES ladder — `sign --timestamp <tsa-url>` (B-T), `ltv collect`/`embed` (B-LT, air-gap-friendly: evidence travels as replayable JSON), `doc-timestamp` (B-LTA) — plus signature-safe `metadata` edits and `compare` (text + structure diff with CI exit codes).
+- **You are a conversational assistant with tool access** → `pdfnative-mcp` (28 tools, seven prompts, MCP 2026-07-28 spec; config: `npx -y pdfnative-mcp`). New in v1.7.0: a `typography` object on every document tool and `inspect_layout`, CMYK colours, `pdfx: 'pdfx4'` with `validate_pdf` `standard: 'pdf-x-4'`, 27 scripts in `add_international_text`, and `PDFNATIVE_MCP_CREATION_DATE` / `SOURCE_DATE_EPOCH` for reproducible bytes.
+- **The host app is React 19** → `pdfnative-react` (declarative JSX compiled on-device to pdfnative blocks). New in v1.3.0: `<Document typography pdfx outputIntent creationDate>`, `<Paragraph align="justify" keepWithNext splittable>`, CMYK `Color` values, 37 lint rules (`lintDocument` / `lintSpec`). Since v1.2.0: charts v2 (9 kinds, secondary axis), print production via `<Document print>`, and HTTP caching (`etag`/`cacheControl`) on `renderToResponse`.
 - Still undecided? The capability × surface matrix decides for you, cell by cell: [choose your surface](https://pdfnative.dev/guides/choose.md).
-- Worked architectures combining the surfaces (store-the-spec, air-gapped B-LTA, CI compare gate, edge caching): [use cases](https://pdfnative.dev/guides/use-cases.md).
+- Worked architectures combining the surfaces (store-the-spec, air-gapped B-LTA, CI compare gate, edge caching, zipnative as the DEFLATE codec): [use cases](https://pdfnative.dev/guides/use-cases.md); per-surface cases: [CLI](https://pdfnative.dev/guides/use-cases-cli.md), [MCP](https://pdfnative.dev/guides/use-cases-mcp.md), [React](https://pdfnative.dev/guides/use-cases-react.md).
 
 All four produce the same PDFs from the same engine. Details: [onboarding](https://pdfnative.dev/guides/onboarding.md).
 
@@ -204,14 +204,19 @@ compare on every build (`npm run verify:samples` in the pdfnative tree).
 
 ## Try it without installing
 
-Twelve zero-install playgrounds run the engine in the browser from a CDN;
+Fourteen zero-install playgrounds run the engine in the browser from a CDN;
 each is described for agents — URL, purpose, DOM control ids, the options it
 exercises, preconditions — in
 [playgrounds.json](https://pdfnative.dev/data/playgrounds.json). The
 [typography](https://pdfnative.dev/playgrounds/typography.html) and
 [print](https://pdfnative.dev/playgrounds/print.html) playgrounds cover the
 1.8.0 options with a with/without toggle and show the code to reproduce
-each result outside the browser.
+each result outside the browser; the
+[reproducible output](https://pdfnative.dev/playgrounds/reproducible.html)
+playground builds twice under a pinned `creationDate` and compares the
+SHA-256 digests, and the
+[DocSpec lint](https://pdfnative.dev/playgrounds/docspec-lint.html)
+playground runs pdfnative-react's 37 rules on a JSON document spec.
 
 ## Where to read more
 
