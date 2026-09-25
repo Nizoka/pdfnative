@@ -109,7 +109,8 @@ export function setDeflateImpl(fn: ((buf: Uint8Array) => Uint8Array) | null): vo
  * import { getCodec, METHOD_DEFLATE } from 'zipnative';
  * import { setDeflateRawImpl } from 'pdfnative';
  *
- * const codec = getCodec(METHOD_DEFLATE);
+ * const codec = getCodec(METHOD_DEFLATE); // ZipCodec | null
+ * if (!codec?.compressSync) throw new Error('zipnative DEFLATE codec unavailable');
  * setDeflateRawImpl((buf) => codec.compressSync!(buf, { level: 6, deterministic: true }));
  * ```
  * This is the recommended way to get real compression in the browser, in
