@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="ucx-title ucx-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="ucx-title">Press handoff: PDF/X-4 from a JSON template</title>
+  <desc id="ucx-desc">Architecture: a JSON template with CMYK colours, colour bars and a trim box, together with the printer's ICC output profile, is rendered by pdfnative render with the PDF/X-4 claim and the strict gate; engine coherence errors and PDF/X diagnostics fail the build before the first byte. The resulting PDF is asserted by pdfnative inspect --check pdfx, whose exit code 0 or 1 gates the handoff. A dry run of the same render gives the same verdict without writing a file. The final printer preflight, drawn dashed, happens outside pdfnative.</desc>
+
+  <defs>
+    <marker id="ucx-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ucx-ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/>
+    </marker>
+    <marker id="ucx-ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#DC2626"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#F8FAFC"/>
+  <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Press handoff: PDF/X-4 from a JSON template</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">A claim the build refuses unless it holds — pdfnative-cli v1.5.0</text>
+
+  <!-- Inputs -->
+  <rect x="40" y="104" width="210" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="145" y="129" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">brochure.json</text>
+  <text x="145" y="149" text-anchor="middle" font-size="11.5" fill="#64748B">CMYK colours · colour bars · bleed</text>
+
+  <rect x="40" y="200" width="210" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="145" y="225" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">printer.icc</text>
+  <text x="145" y="245" text-anchor="middle" font-size="11.5" fill="#64748B">the printer's prtr profile (not bundled)</text>
+
+  <line x1="250" y1="136" x2="296" y2="166" stroke="#475569" stroke-width="1.75" marker-end="url(#ucx-ah)"/>
+  <line x1="250" y1="232" x2="296" y2="202" stroke="#475569" stroke-width="1.75" marker-end="url(#ucx-ah)"/>
+
+  <!-- Render -->
+  <rect x="298" y="140" width="300" height="88" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="448" y="166" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1E40AF">render --pdfx pdfx4 --strict</text>
+  <text x="448" y="186" text-anchor="middle" font-size="11.5" fill="#3B82F6">--output-intent-icc printer.icc --trapped false</text>
+  <text x="448" y="202" text-anchor="middle" font-size="11.5" fill="#3B82F6">--font latin --lang latin (every font embedded)</text>
+  <text x="448" y="218" text-anchor="middle" font-size="11.5" fill="#3B82F6">E_INPUT / E_CHECK_FAILED before the first byte</text>
+
+  <line x1="598" y1="184" x2="634" y2="184" stroke="#475569" stroke-width="1.75" marker-end="url(#ucx-ah)"/>
+
+  <!-- Inspect -->
+  <rect x="636" y="140" width="284" height="88" rx="10" fill="#ECFEFF" stroke="#5EBECF" stroke-width="1.25"/>
+  <text x="778" y="166" text-anchor="middle" font-size="13.5" font-weight="700" fill="#155E75">inspect --check pdfx --json --summary</text>
+  <text x="778" y="186" text-anchor="middle" font-size="11.5" fill="#0E7490">structural ISO 15930-7 validator</text>
+  <text x="778" y="202" text-anchor="middle" font-size="11.5" fill="#0E7490">output intent · page boxes · fonts · annotations</text>
+  <text x="778" y="218" text-anchor="middle" font-size="11.5" fill="#0E7490">exit 0 = prerequisites hold · exit 1 = E_CHECK_FAILED</text>
+
+  <!-- Dry run -->
+  <path d="M448 228 L448 282" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#ucx-ah)"/>
+  <rect x="298" y="284" width="300" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="448" y="309" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">--dry-run --json</text>
+  <text x="448" y="329" text-anchor="middle" font-size="11.5" fill="#64748B">the real build runs in memory — same verdict, no file</text>
+
+  <!-- Outcomes -->
+  <line x1="720" y1="228" x2="662" y2="282" stroke="#16A34A" stroke-width="2" marker-end="url(#ucx-ah-green)"/>
+  <line x1="836" y1="228" x2="862" y2="282" stroke="#DC2626" stroke-width="2" marker-end="url(#ucx-ah-red)"/>
+
+  <rect x="560" y="284" width="190" height="64" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="655" y="309" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">exit 0 → hand off</text>
+  <text x="655" y="329" text-anchor="middle" font-size="11.5" fill="#16A34A">brochure.pdf claims PDF/X-4</text>
+
+  <rect x="770" y="284" width="150" height="64" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.25"/>
+  <text x="845" y="309" text-anchor="middle" font-size="13.5" font-weight="700" fill="#991B1B">exit 1 → fix</text>
+  <text x="845" y="329" text-anchor="middle" font-size="11.5" fill="#B91C1C">errors[] names the rule</text>
+
+  <!-- Printer preflight (outside pdfnative) -->
+  <line x1="655" y1="348" x2="655" y2="392" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#ucx-ah)"/>
+  <rect x="480" y="394" width="440" height="64" rx="10" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.25" stroke-dasharray="7 5"/>
+  <text x="700" y="419" text-anchor="middle" font-size="13.5" font-weight="700" fill="#475569">Printer preflight — outside pdfnative</text>
+  <text x="700" y="439" text-anchor="middle" font-size="11.5" fill="#64748B">callas pdfToolbox, Acrobat Preflight: colour appearance, the certified verdict</text>
+
+  <!-- Footer -->
+  <rect x="40" y="480" width="880" height="64" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="504" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">Structural validation evidence, not a certified preflight. PDF/X-4 only: no PDF/X-1a, no PDF/X-3, no spot colours.</text>
+  <text x="480" y="524" text-anchor="middle" font-size="12.5" fill="#475569">Exclusive with PDF/A and encryption. metadata rewrites the XMP without the PDF/X identification — re-check after editing.</text>
+</svg>

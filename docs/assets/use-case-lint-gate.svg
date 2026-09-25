@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="uclg-title uclg-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="uclg-title">A DocSpec lint gate in CI, before any PDF exists</title>
+  <desc id="uclg-desc">Architecture: a pull request carries two kinds of input, a JSX document tree and stored DocSpec JSON records. Both flow into the same lint stage, lintDocument for JSX and lintSpec for JSON, preceded by validateSpec for the JSON shape. The stage runs 37 rules on the compiled document model and writes no PDF bytes. A report with ok equal to true passes the pull-request check; a report with error findings fails it and prints each finding's code, message and hint. A dashed arrow leads from the passing report to a separate bytes stage, the hub's Case 3, where the document is rendered and compared against a golden PDF.</desc>
+
+  <defs>
+    <marker id="uclg-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="uclg-ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/>
+    </marker>
+    <marker id="uclg-ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#DC2626"/>
+    </marker>
+    <marker id="uclg-ah-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#F8FAFC"/>
+  <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">A DocSpec lint gate in CI, before any PDF exists</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">37 rules on the compiled document model, no bytes written — pdfnative-react v1.3.0</text>
+
+  <!-- Inputs -->
+  <rect x="40" y="110" width="200" height="72" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="140" y="138" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">JSX document tree</text>
+  <text x="140" y="158" text-anchor="middle" font-size="11.5" fill="#64748B">&lt;Invoice data={fixture} /&gt;</text>
+
+  <rect x="40" y="232" width="200" height="72" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="140" y="260" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">Stored DocSpec JSON</text>
+  <text x="140" y="280" text-anchor="middle" font-size="11.5" fill="#64748B">fixtures from the database</text>
+
+  <!-- validateSpec (JSON shape) -->
+  <line x1="240" y1="268" x2="286" y2="268" stroke="#475569" stroke-width="1.75" marker-end="url(#uclg-ah)"/>
+  <rect x="288" y="240" width="150" height="56" rx="10" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1.25"/>
+  <text x="363" y="263" text-anchor="middle" font-size="13" font-weight="700" fill="#3730A3">validateSpec</text>
+  <text x="363" y="281" text-anchor="middle" font-size="11" fill="#4F46E5">18 fields, types</text>
+
+  <!-- Arrows into the lint stage -->
+  <line x1="240" y1="146" x2="486" y2="146" stroke="#475569" stroke-width="1.75" marker-end="url(#uclg-ah)"/>
+  <line x1="438" y1="268" x2="486" y2="268" stroke="#475569" stroke-width="1.75" marker-end="url(#uclg-ah)"/>
+
+  <!-- Lint stage -->
+  <rect x="488" y="110" width="300" height="194" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="638" y="140" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1E40AF">lintDocument(jsx)</text>
+  <text x="638" y="162" text-anchor="middle" font-size="11.5" fill="#3B82F6">compiles the tree to DocumentParams</text>
+  <line x1="508" y1="178" x2="768" y2="178" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="638" y="202" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1E40AF">lintSpec(spec)</text>
+  <text x="638" y="224" text-anchor="middle" font-size="11.5" fill="#3B82F6">same model, same 37 rules</text>
+  <line x1="508" y1="240" x2="768" y2="240" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="638" y="262" text-anchor="middle" font-size="11.5" fill="#1D4ED8">23 errors · 13 warnings · 1 info</text>
+  <text x="638" y="282" text-anchor="middle" font-size="11.5" fill="#1D4ED8">L_PDFX_*, L_CMYK_INTENT_MISMATCH, L_TAGGED_NO_FONTS…</text>
+
+  <!-- Report -->
+  <line x1="788" y1="207" x2="834" y2="207" stroke="#475569" stroke-width="1.75" marker-end="url(#uclg-ah)"/>
+  <rect x="836" y="171" width="90" height="72" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
+  <text x="881" y="199" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">report</text>
+  <text x="881" y="219" text-anchor="middle" font-size="10.5" fill="#B45309">{ ok, findings,</text>
+  <text x="881" y="232" text-anchor="middle" font-size="10.5" fill="#B45309">counts }</text>
+
+  <!-- Outcomes -->
+  <line x1="600" y1="304" x2="360" y2="366" stroke="#16A34A" stroke-width="2" marker-end="url(#uclg-ah-green)"/>
+  <line x1="680" y1="304" x2="700" y2="366" stroke="#DC2626" stroke-width="2" marker-end="url(#uclg-ah-red)"/>
+
+  <rect x="200" y="370" width="290" height="72" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="345" y="398" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">ok: true → check passes</text>
+  <text x="345" y="420" text-anchor="middle" font-size="11.5" fill="#16A34A">no error-severity finding; warnings surfaced</text>
+
+  <rect x="540" y="370" width="330" height="72" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.25"/>
+  <text x="705" y="396" text-anchor="middle" font-size="13.5" font-weight="700" fill="#991B1B">error findings → check fails</text>
+  <text x="705" y="416" text-anchor="middle" font-size="11.5" fill="#B91C1C">each finding prints its code, message and hint —</text>
+  <text x="705" y="432" text-anchor="middle" font-size="11.5" fill="#B91C1C">the engine's own wording for the PDF/X rules</text>
+
+  <!-- Dashed hand-off to the bytes stage -->
+  <path d="M200 406 C 150 406, 120 406, 96 406" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#uclg-ah-blue)"/>
+  <rect x="24" y="362" width="72" height="88" rx="10" fill="#FFFFFF" stroke="#93C5FD" stroke-width="1.25" stroke-dasharray="6 5"/>
+  <text x="60" y="388" text-anchor="middle" font-size="11" font-weight="700" fill="#1E40AF">bytes</text>
+  <text x="60" y="404" text-anchor="middle" font-size="11" font-weight="700" fill="#1E40AF">stage</text>
+  <text x="60" y="422" text-anchor="middle" font-size="10" fill="#3B82F6">render +</text>
+  <text x="60" y="436" text-anchor="middle" font-size="10" fill="#3B82F6">compare</text>
+
+  <!-- Footer -->
+  <rect x="40" y="472" width="880" height="66" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="500" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">The model is checked, not the bytes: PDF/A still needs veraPDF, PDF/X-4 the engine's validatePdfX.</text>
+  <text x="480" y="520" text-anchor="middle" font-size="12.5" fill="#475569">The dashed hand-off is the hub's Case 3 — render the candidate and compare it with the golden PDF.</text>
+</svg>

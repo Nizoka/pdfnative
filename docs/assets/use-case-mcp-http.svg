@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="ucm-title ucm-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="ucm-title">One shared server, sandboxed files, bearer token</title>
+  <desc id="ucm-desc">Architecture: several MCP clients — desktop hosts and agent runtimes — reach one pdfnative-mcp process through an SSH tunnel or a reverse proxy the operator runs, because the server binds 127.0.0.1 only and never a public interface. Every POST to /mcp passes the loopback Host and Origin guard and the bearer-token gate configured with PDFNATIVE_MCP_HTTP_TOKEN before it reaches the stateless MCP handler; GET and DELETE answer 405. Tools called with outputMode file write inside the PDFNATIVE_MCP_OUTPUT_DIR sandbox, and the result returns a resource_link and the byte count instead of the PDF; the client reads the file back on demand through resources/read as pdfnative://output/{+path}. An opt-in PDFNATIVE_MCP_CACHE_DIR serves repeated base64-mode calls from a SHA-256 keyed cache namespaced by the tool API version and the pinned creation instant.</desc>
+
+  <defs>
+    <marker id="ucm-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ucm-ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/>
+    </marker>
+    <marker id="ucm-ah-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#F8FAFC"/>
+  <text x="480" y="40" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">One shared server, sandboxed files, bearer token</text>
+  <text x="480" y="62" text-anchor="middle" font-size="13" fill="#64748B">Streamable HTTP on loopback, file outputs as MCP resources — pdfnative-mcp v1.7.0</text>
+
+  <!-- Result path: resource_link back to the clients (routed above the row) -->
+  <path d="M700 116 L700 96 L140 96 L140 114" fill="none" stroke="#16A34A" stroke-width="1.75" stroke-dasharray="6 5" marker-end="url(#ucm-ah-green)"/>
+  <text x="420" y="90" text-anchor="middle" font-size="11" fill="#15803D">tools/call result: text + resource_link + { mode, sizeBytes } — the PDF bytes never enter the model context</text>
+
+  <!-- Clients -->
+  <rect x="40" y="116" width="210" height="88" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="145" y="143" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">MCP clients</text>
+  <text x="145" y="163" text-anchor="middle" font-size="11.5" fill="#64748B">desktop hosts · agent runtimes</text>
+  <text x="145" y="181" text-anchor="middle" font-size="11.5" fill="#64748B">via SSH tunnel or reverse proxy</text>
+
+  <line x1="250" y1="160" x2="296" y2="160" stroke="#2563EB" stroke-width="1.75" marker-end="url(#ucm-ah-blue)"/>
+
+  <!-- Gate -->
+  <rect x="298" y="116" width="260" height="88" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="428" y="139" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">http://127.0.0.1:&lt;port&gt;/mcp</text>
+  <text x="428" y="158" text-anchor="middle" font-size="11" fill="#3B82F6">POST only · Authorization: Bearer &lt;token&gt;</text>
+  <text x="428" y="174" text-anchor="middle" font-size="11" fill="#3B82F6">foreign Host / Origin → 403 · bad token → 401</text>
+  <text x="428" y="190" text-anchor="middle" font-size="11" fill="#3B82F6">GET / DELETE → 405 — stateless, no SSE</text>
+
+  <line x1="558" y1="160" x2="604" y2="160" stroke="#475569" stroke-width="1.75" marker-end="url(#ucm-ah)"/>
+
+  <!-- Server -->
+  <rect x="606" y="116" width="314" height="88" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="763" y="143" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">pdfnative-mcp v1.7.0 — 28 tools</text>
+  <text x="763" y="163" text-anchor="middle" font-size="11.5" fill="#16A34A">stateless · MCP 2026-07-28 + legacy fallback</text>
+  <text x="763" y="181" text-anchor="middle" font-size="11.5" fill="#16A34A">one process for every client</text>
+
+  <!-- Server ↔ sandbox -->
+  <line x1="740" y1="204" x2="740" y2="252" stroke="#475569" stroke-width="1.75" marker-start="url(#ucm-ah)" marker-end="url(#ucm-ah)"/>
+  <text x="752" y="232" font-size="11" fill="#64748B">file write · resources/read</text>
+
+  <!-- Output sandbox -->
+  <rect x="540" y="254" width="380" height="104" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
+  <text x="730" y="279" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">PDFNATIVE_MCP_OUTPUT_DIR — the sandbox</text>
+  <text x="730" y="298" text-anchor="middle" font-size="11" fill="#B45309">outputMode: "file" · relative outputPath · .pdf only</text>
+  <text x="730" y="314" text-anchor="middle" font-size="11" fill="#B45309">exclusive write — an existing file is never replaced</text>
+  <text x="730" y="330" text-anchor="middle" font-size="11" fill="#B45309">every file is a resource: pdfnative://output/{+path}</text>
+  <text x="730" y="346" text-anchor="middle" font-size="11" fill="#B45309">resources/list · resources/templates/list · resources/read</text>
+
+  <!-- Server → cache (routed on the right edge) -->
+  <path d="M920 172 L940 172 L940 418 L922 418" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#ucm-ah)"/>
+
+  <!-- Cache -->
+  <rect x="540" y="378" width="380" height="84" rx="10" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1.25"/>
+  <text x="730" y="402" text-anchor="middle" font-size="13" font-weight="700" fill="#3730A3">PDFNATIVE_MCP_CACHE_DIR — opt-in response cache</text>
+  <text x="730" y="421" text-anchor="middle" font-size="11" fill="#4F46E5">key: SHA-256 of { tool, apiVersion, input } · 1 h TTL · 256 MiB LRU</text>
+  <text x="730" y="437" text-anchor="middle" font-size="11" fill="#4F46E5">namespaced by tool API version + pinned creation instant</text>
+  <text x="730" y="453" text-anchor="middle" font-size="11" fill="#4F46E5">base64-mode calls only — file mode is never cached</text>
+
+  <!-- The edge that does not exist: a public interface -->
+  <line x1="380" y1="204" x2="190" y2="300" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="5 5"/>
+  <line x1="273" y1="240" x2="297" y2="264" stroke="#DC2626" stroke-width="2.5"/>
+  <line x1="297" y1="240" x2="273" y2="264" stroke="#DC2626" stroke-width="2.5"/>
+
+  <rect x="40" y="300" width="300" height="76" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.25" stroke-dasharray="5 4"/>
+  <text x="190" y="326" text-anchor="middle" font-size="13.5" font-weight="700" fill="#991B1B">0.0.0.0 / LAN interface</text>
+  <line x1="102" y1="321" x2="278" y2="321" stroke="#DC2626" stroke-width="2"/>
+  <text x="190" y="346" text-anchor="middle" font-size="11" fill="#B91C1C">never bound — the server listens on 127.0.0.1 only</text>
+  <text x="190" y="362" text-anchor="middle" font-size="11" fill="#B91C1C">remote clients arrive through a tunnel or proxy you operate</text>
+
+  <!-- Footer -->
+  <rect x="40" y="480" width="880" height="60" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="504" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">One shared token — no per-user identity, no TLS in-process: identity and transport security live in the proxy in front.</text>
+  <text x="480" y="524" text-anchor="middle" font-size="12" fill="#475569">Sub-folders in outputPath organise tenants but do not isolate them: any client with the token can list and read every resource.</text>
+</svg>

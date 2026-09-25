@@ -1,16 +1,20 @@
 # Ecosystem use cases
 
-> **Four production architectures, each built from parts the ecosystem already
+> **Five production architectures, each built from parts the ecosystem already
 > ships.** Store a kilobyte of JSON instead of a megabyte of PDF and render on
 > the reader's own device; sign to PAdES B-LTA across an air gap; gate template
-> changes in CI with a real document diff; and serve edge-rendered PDFs with
-> honest HTTP caching. Every arrow in the diagrams below is a public, shipped
-> API — nothing here is aspirational.
+> changes in CI with a real document diff; serve edge-rendered PDFs with honest
+> HTTP caching; and swap in zipnative, the sibling ZIP engine, as a
+> deterministic DEFLATE codec wherever the engine runs. Every arrow in the
+> diagrams below is a public, shipped API — nothing here is aspirational.
 
 The [capability × surface matrix](choose.html) tells you *what* each surface
 can do; this guide shows *how the surfaces compose* into systems. Each case
 names its exact building blocks, shows the load-bearing code, and states its
-limits.
+limits. Three companion pages take one surface each and go deeper on the
+releases of September 2026: [CLI use cases](use-cases-cli.html)
+(pdfnative-cli v1.5.0), [MCP use cases](use-cases-mcp.html) (pdfnative-mcp
+v1.7.0) and [React use cases](use-cases-react.html) (pdfnative-react v1.3.0).
 
 ## Case 1 — Store the spec, not the PDF
 
@@ -165,6 +169,7 @@ Rendering PDFs in a central service means queues, SaaS round-trips, or a
 container with a headless browser. The engine's zero-dependency, Fetch-native
 design removes the constraint: `renderToResponse` returns a web-standard
 `Response`, so the same code runs in a Next.js route handler, Cloudflare
+<!-- verify-docs:allow version-token (historical release entry) -->
 Workers, Deno Deploy or Bun — and since pdfnative-react 1.2.0 it speaks real
 HTTP caching.
 
@@ -198,14 +203,70 @@ the buffered validator, not both. A per-user document should say
 authorisation bug the route has — cache keys must include whatever
 distinguishes users.
 
+## Case 5 — Swap the compressor: zipnative as pdfnative's DEFLATE codec
+
+pdfnative ships no compressor of its own. In Node, `initNodeCompression`
+wires `node:zlib`; in a browser, Deno, Bun or a Worker there is nothing
+synchronous to wire, so `compress: true` falls back to stored blocks — a
+valid PDF, but not a smaller one. Case 1 renders on the reader's device,
+which is exactly where that gap sits. [zipnative](https://zipnative.dev) is
+the sibling zero-dependency ZIP engine, and its pure-TypeScript DEFLATE
+encoder is synchronous, deterministic and runtime-agnostic — precisely what
+`setDeflateRawImpl` expects: raw RFC 1951 output, to which pdfnative adds the
+zlib envelope itself.
+
+```ts
+import { getCodec, METHOD_DEFLATE } from 'zipnative';
+import { setDeflateRawImpl, buildDocumentPDFBytes } from 'pdfnative';
+
+const codec = getCodec(METHOD_DEFLATE);                 // ZipCodec | null
+if (!codec?.compressSync) throw new Error('zipnative DEFLATE codec unavailable');
+setDeflateRawImpl((buf) => codec.compressSync!(buf, { level: 6, deterministic: true }));
+
+const bytes = buildDocumentPDFBytes({
+  title: 'Invoice',
+  blocks: [{ type: 'paragraph', text: 'Compressed by zipnative, framed by pdfnative.' }],
+  layout: { compress: true, creationDate: new Date('2026-01-01T00:00:00Z') },
+});
+```
+
+What you gain, concretely:
+
+- **Real compression everywhere the engine runs** — the same call in Node, a
+  browser, Deno, Bun or a Worker — while the whole stack stays
+  dependency-free: zipnative has no runtime dependency either.
+- **Determinism** — `deterministic: true` pins zipnative's pure encoder, so
+  with a pinned `creationDate` the *compressed* PDF is byte-identical on
+  every runtime, not just the uncompressed one. The CLI, MCP and React
+  equivalents of the date pin are in the per-surface pages.
+- **Composition** — Case 1's on-device render now ships compressed streams,
+  and Case 4's edge responses shrink without a native module in the runtime.
+
+Honest limits: zipnative is one more package to install and, in Case 1, one
+more module to deliver to the device. `setDeflateRawImpl` is process-global
+state — set it once at start-up, and use it rather than `setDeflateImpl`,
+which since pdfnative 1.8.0 rejects raw DEFLATE output. A zipnative build and
+a `node:zlib` build of the same document differ in bytes (different encoder,
+identical content), so choose one compressor per pipeline and rebaseline
+once. A pure-TypeScript encoder is slower than native zlib; on a Node server
+with no cross-runtime requirement, `initNodeCompression` remains the
+default choice.
+
+Then archive it. The reverse composition — encrypt with pdfnative first,
+because ZIP's own encryption is not worth relying on, then package the
+ciphertext in a deterministic ZIP with zipnative — is documented on
+zipnative's side:
+[Encrypt first, then archive](https://zipnative.dev/guides/use-cases.html#case-5--encrypt-first-then-archive).
+
 ## Picking parts, not a platform
 
-The four cases share one property: each is assembled from surfaces that also
+The five cases share one property: each is assembled from surfaces that also
 work alone, so none of them locks you in. The specs of Case 1 render fine
 server-side the day you need a byte archive; the golden files of Case 3 are
 ordinary PDFs any tool can open; the ladder of Case 2 verifies in Adobe
-Acrobat, not just in `pdfnative verify`. Start with the case closest to your
-bottleneck and borrow pieces from the others as they become relevant.
+Acrobat, not just in `pdfnative verify`; the codec of Case 5 unplugs with
+one call. Start with the case closest to your bottleneck and borrow pieces
+from the others as they become relevant.
 
 ## See also
 
@@ -215,5 +276,11 @@ bottleneck and borrow pieces from the others as they become relevant.
 - [Self-verifying generation](self-verify.html) — the assert-your-own-output
   loop that pairs naturally with Case 3.
 - [React guide](react.html) — `DocSpec`, rendering entry points and the
-  1.2.0 HTTP caching options.
-- [CLI guide](cli.html) — the complete v1.4.0 command reference.
+  HTTP caching options.
+- [CLI guide](cli.html) — the complete v1.5.0 command reference.
+- [CLI use cases](use-cases-cli.html) · [MCP use cases](use-cases-mcp.html) ·
+  [React use cases](use-cases-react.html) — one surface each, on
+  pdfnative-cli v1.5.0, pdfnative-mcp v1.7.0 and pdfnative-react v1.3.0.
+- [zipnative use cases](https://zipnative.dev/guides/use-cases.html) — the
+  sibling ZIP engine's architectures, including the encrypt-then-archive
+  pipeline that continues Case 5.

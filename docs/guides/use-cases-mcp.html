@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP use cases — pdfnative</title>
+  <meta name="description" content="Three pdfnative-mcp v1.7.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, and PDF/A notices in 27 scripts from one tool call.">
+  <link rel="canonical" href="https://pdfnative.dev/guides/use-cases-mcp.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-mcp.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-mcp.html">
+  <link rel="alternate" type="text/markdown" href="use-cases-mcp.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/guides/use-cases-mcp.html">
+  <meta property="og:title" content="MCP use cases — pdfnative">
+  <meta property="og:description" content="One shared pdfnative-mcp server behind a bearer token with sandboxed file outputs as MCP resources, a preview-produce-read-back typesetting loop that costs a few dozen tokens, and multilingual PDF/A notices in 27 scripts — three architectures with their limits.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MCP use cases — pdfnative">
+  <meta name="twitter:description" content="Three pdfnative-mcp v1.7.0 architectures: shared HTTP server with token and file sandbox, token-frugal inspect_layout loop, and PDF/A notices in 27 scripts.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"MCP use cases","item":"https://pdfnative.dev/guides/use-cases-mcp.html"}]},{"@type":"TechArticle","headline":"MCP use cases","description":"Three pdfnative-mcp v1.7.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, and PDF/A notices in 27 scripts from one tool call.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases-mcp.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
+      <li><a href="./">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; MCP use cases</p>
+  <article id="guide-content" class="guide-content" data-md="use-cases-mcp.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="mcp-use-cases">MCP use cases</h1>
+<p>pdfnative-mcp v1.7.0 exposes the pdfnative ≥ 1.8.0 engine to conversational
+assistants as 28 tools and seven prompts, over stdio or Streamable HTTP
+(MCP 2026-07-28 with automatic legacy fallback), on Node ≥ 22. This guide is
+the MCP companion of the <a href="use-cases.html">ecosystem use cases</a>: three
+architectures assembled from inputs the <a href="mcp.html">MCP guide</a> documents, each
+with its building blocks, one load-bearing call and its limits.</p>
+<h2 id="case-1--one-shared-server-sandboxed-files-bearer-token">Case 1 — One shared server, sandboxed files, bearer token<a class="heading-anchor" href="#case-1--one-shared-server-sandboxed-files-bearer-token" aria-label="Link to this section">#</a></h2>
+<p>The default MCP deployment is one stdio process per host: every desktop and
+every agent runtime spawns its own <code>npx pdfnative-mcp</code>, every generated PDF
+travels back as base64 inside the JSON-RPC response, and nothing is shared. For
+a team — or a fleet of agents — that is N processes, N separate caches, and
+megabytes of base64 in every model context. Four operator
+variables turn the same binary into <strong>one shared server whose outputs are files
+the clients reference instead of bytes they carry</strong>.</p>
+<p><img src="../assets/use-case-mcp-http.svg" alt="Architecture: several MCP clients — desktop hosts and agent runtimes — reach one pdfnative-mcp process through an SSH tunnel or a reverse proxy the operator runs, because the server binds 127.0.0.1 only and never a public interface. Every POST to /mcp passes the loopback Host and Origin guard and the bearer-token gate configured with PDFNATIVE_MCP_HTTP_TOKEN before it reaches the stateless MCP handler; GET and DELETE answer 405. Tools called with outputMode file write inside the PDFNATIVE_MCP_OUTPUT_DIR sandbox, and the result returns a resource_link and the byte count instead of the PDF; the client reads the file back on demand through resources/read as pdfnative://output/{+path}. An opt-in PDFNATIVE_MCP_CACHE_DIR serves repeated base64-mode calls from a SHA-256 keyed cache namespaced by the tool API version and the pinned creation instant."></p>
+<p>The building blocks, all in the server&#39;s <a href="mcp.html#environment-variables">environment
+variables</a>:</p>
+<ul>
+<li><code>PDFNATIVE_MCP_PORT</code> switches the transport to Streamable HTTP at
+<code>http://127.0.0.1:&lt;port&gt;/mcp</code>. The socket is bound to <code>127.0.0.1</code> only; a
+request whose <code>Host</code> or <code>Origin</code> names anything but a loopback authority is
+answered <code>403</code> before it reaches MCP, and the <code>Origin</code> port must equal the
+server port.</li>
+<li><code>PDFNATIVE_MCP_HTTP_TOKEN</code> (at least 16 characters, no whitespace — a weaker
+value refuses to start) requires <code>Authorization: Bearer &lt;token&gt;</code> on every
+request; a missing or wrong token gets <code>401</code> + <code>WWW-Authenticate</code>. The
+comparison is constant-time and the token is never logged.</li>
+<li><code>PDFNATIVE_MCP_OUTPUT_DIR</code> enables <code>outputMode: &quot;file&quot;</code>: <code>outputPath</code> must
+be relative, end in <code>.pdf</code>, and resolve inside the sandbox (no absolute
+paths, no <code>..</code>, no NUL bytes). The write is exclusive — an existing file is
+never replaced. Every PDF in the sandbox is an MCP resource under
+<code>pdfnative://output/{+path}</code>, enumerated by <code>resources/list</code> and fetched by
+<code>resources/read</code>; the tool result itself carries a <code>resource_link</code>.</li>
+<li><code>PDFNATIVE_MCP_CACHE_DIR</code> adds a content-addressed response cache: the key is
+the SHA-256 of <code>{ tool, apiVersion, input }</code>, 1 h TTL, 256 MiB LRU, and the
+namespace includes the tool API version and the operator&#39;s pinned creation
+instant, so an engine upgrade or a change of pin never serves old bytes.</li>
+</ul>
+<pre><code class="language-bash">PDFNATIVE_MCP_PORT=3000 \
+PDFNATIVE_MCP_HTTP_TOKEN=&quot;$(openssl rand -hex 24)&quot; \
+PDFNATIVE_MCP_OUTPUT_DIR=/srv/pdfnative/out \
+PDFNATIVE_MCP_CACHE_DIR=/srv/pdfnative/cache \
+npx -y pdfnative-mcp
+# stderr: ready (HTTP transport, MCP 2026-07-28 + legacy) on http://127.0.0.1:3000/mcp — bearer token required
+</code></pre>
+<pre><code class="language-json">{ &quot;tool&quot;: &quot;generate_basic_pdf&quot;, &quot;arguments&quot;: {
+  &quot;title&quot;: &quot;Invoice INV-2026-0042&quot;,
+  &quot;outputMode&quot;: &quot;file&quot;,
+  &quot;outputPath&quot;: &quot;acme/2026/INV-2026-0042.pdf&quot;,
+  &quot;creationDate&quot;: &quot;2026-09-01T00:00:00Z&quot;,
+  &quot;blocks&quot;: [
+    { &quot;type&quot;: &quot;heading&quot;, &quot;text&quot;: &quot;Invoice INV-2026-0042&quot;, &quot;level&quot;: 1 },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Total due: 1 234,56 EUR&quot; }
+  ]
+}}
+</code></pre>
+<p>The result is one text line (<code>generate_basic_pdf: wrote &lt;n&gt; bytes to &lt;path&gt;</code>), a
+<code>resource_link</code> whose URI is <code>pdfnative://output/acme/2026/INV-2026-0042.pdf</code>,
+and <code>structuredContent: { mode: &quot;file&quot;, sizeBytes, filePath }</code> — no PDF bytes.
+A client that needs the document later calls <code>resources/read</code> with that URI and
+receives it as a base64 <code>blob</code>, or hands the URI to a human as a stable
+reference.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>Bytes never enter the model context.</strong> In file mode the response is a few
+hundred bytes whatever the document weighs (up to the 50 MiB output cap); the
+PDF is fetched only when something actually needs it.</li>
+<li><strong>Repeated work is free.</strong> Base64-mode and read-only calls with identical
+input are served from the SHA-256 cache with <code>_meta.cached: true</code> — and the
+namespace guarantees a cache hit is always bytes the current engine, API
+version and pin would produce. The encryption, signing, LTV, timestamp and
+metadata tools, and any call carrying <code>encrypt</code>, are never cached.</li>
+<li><strong>One process, one secret.</strong> N hosts share one server, one cache and one
+token instead of N stdio processes with nothing in common; pin the instant once with
+<code>PDFNATIVE_MCP_CREATION_DATE</code> and every client&#39;s output is byte-identical on
+every host.</li>
+</ul>
+<p>Honest limits: the server binds <code>127.0.0.1</code> only and never a public interface
+— remote clients reach it through an SSH tunnel or a reverse proxy you operate,
+and that proxy is also where TLS terminates, because the server speaks plain
+HTTP in-process. There is one shared token and no per-user identity: sub-folders
+in <code>outputPath</code> organise tenants but do not isolate them, since every client
+holding the token can list and read every resource. Serving is stateless:
+<code>GET</code> and <code>DELETE /mcp</code> answer <code>405</code>, so there is no SSE resumability. And
+file-mode calls are deliberately never cached — the filesystem side effect is
+part of the contract.</p>
+<h2 id="case-2--token-frugal-typesetting-loop-preview-produce-read-back">Case 2 — Token-frugal typesetting loop: preview, produce, read back<a class="heading-anchor" href="#case-2--token-frugal-typesetting-loop-preview-produce-read-back" aria-label="Link to this section">#</a></h2>
+<p>An assistant that lays out a report by rendering it, reading the PDF back and
+adjusting is paying for the bytes twice on every iteration. Since v1.6.0 the
+pagination question can be answered without rendering anything, and since
+v1.7.0 the answer accounts for typography too: <code>inspect_layout</code> accepts the
+same <code>blocks</code>, the same <code>embedFonts</code> and the same <code>typography</code> object as
+<code>generate_basic_pdf</code>, runs the builder&#39;s own pagination
+planner, and returns where every block lands. With <code>verbosity: &quot;summary&quot;</code> and a
+<code>fields</code> projection the answer is a handful of tokens.</p>
+<p>The building blocks: <code>inspect_layout</code> with <code>typography</code>, <code>embedFonts</code>,
+<code>verbosity: &quot;summary&quot;</code> and <code>fields</code>; the <code>typography</code> object (twelve keys, all
+off by default — <code>splitParagraphs</code> with <code>orphans</code> / <code>widows</code>,
+<code>keepHeadingsWithNext</code>, <code>opticalMargins</code>, <code>kerning</code>, <code>fontFeatures</code>, …) on the
+nine document tools; the block-level <code>paragraph.align</code>,
+<code>paragraph.keepWithNext</code>, <code>paragraph.splittable</code> and <code>heading.keepWithNext</code>
+on <code>generate_basic_pdf</code> and <code>inspect_layout</code>; the <code>typography</code>
+<a href="mcp.html#mcp-prompts">prompt</a> as the one-screen summary; and <code>inspect_pdf</code>
+with <code>fields: [&quot;pageCount&quot;]</code> to confirm the result. A placeholder-free example
+lives in the server repository as <code>examples/typography-report.json</code>.</p>
+<pre><code class="language-json">{ &quot;tool&quot;: &quot;inspect_layout&quot;, &quot;arguments&quot;: {
+  &quot;title&quot;: &quot;Annual report&quot;,
+  &quot;embedFonts&quot;: true,
+  &quot;typography&quot;: {
+    &quot;splitParagraphs&quot;: true, &quot;orphans&quot;: 3, &quot;widows&quot;: 3,
+    &quot;keepHeadingsWithNext&quot;: { &quot;minLines&quot;: 3 },
+    &quot;opticalMargins&quot;: true, &quot;kerning&quot;: true
+  },
+  &quot;blocks&quot;: [
+    { &quot;type&quot;: &quot;heading&quot;, &quot;text&quot;: &quot;Results&quot;, &quot;level&quot;: 1 },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;align&quot;: &quot;justify&quot;, &quot;text&quot;: &quot;The year in one long paragraph that may now continue on the next page, never leaving fewer than three lines on either side of the break.&quot; },
+    { &quot;type&quot;: &quot;heading&quot;, &quot;text&quot;: &quot;Figures&quot;, &quot;level&quot;: 2, &quot;keepWithNext&quot;: true },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;The table below summarises the year.&quot;, &quot;keepWithNext&quot;: true },
+    { &quot;type&quot;: &quot;table&quot;, &quot;headers&quot;: [&quot;Quarter&quot;, &quot;Revenue&quot;], &quot;rows&quot;: [[&quot;Q1&quot;, &quot;120&quot;], [&quot;Q2&quot;, &quot;180&quot;]] }
+  ],
+  &quot;verbosity&quot;: &quot;summary&quot;,
+  &quot;fields&quot;: [&quot;totalPages&quot;]
+}}
+</code></pre>
+<p>The structured result is <code>{ &quot;totalPages&quot;: 1 }</code> — or, without <code>fields</code>, the
+per-page list of blocks with their <code>type</code>, <code>x</code>, <code>top</code>, <code>width</code> and <code>height</code>, so
+the assistant can see that the heading did move with its table before spending
+a build. When the layout is right, call <code>generate_basic_pdf</code> with <strong>identical
+arguments</strong> (the same <code>typography</code>, the same <code>embedFonts</code>): the preview and the
+build share one planner, so the page count matches. Then <code>inspect_pdf</code> with
+<code>verbosity: &quot;summary&quot;</code> and <code>fields: [&quot;pageCount&quot;]</code> confirms it on the produced
+file for a few tokens more. The same options exist on the CLI (<code>render --split-paragraphs</code>, <code>--keep-headings-with-next</code>, <code>--kerning</code>,
+<code>--font-features</code>) and on the React <code>Document</code> root as the <code>typography</code> prop.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>Pagination decisions cost a few dozen tokens</strong>, not a rendered PDF and a
+read-back. Iterate on <code>orphans</code>, <code>keepWithNext</code> and <code>splittable</code> against the
+summary; render once.</li>
+<li><strong>Bytes arrive once.</strong> In base64 mode the PDF is a single embedded <code>resource</code>
+content block, not duplicated into <code>structuredContent</code>; in file mode it is a
+<code>resource_link</code> (Case 1).</li>
+<li><strong>Nothing moves unless asked.</strong> Every typography key is off by default, so
+omitting the object changes nothing; the only byte differences from v1.6.0
+are the engine&#39;s own 1.8.0 corrections (embedded subsets, printer&#39;s marks,
+shaped scripts — see the migration notes in the MCP guide).</li>
+</ul>
+<p>Honest limits: <code>kerning</code>, <code>fontFeatures</code> and the narrow no-break space of the
+<code>&#39;fr&#39;</code> punctuation preset need <code>embedFonts: true</code> — base-14 Helvetica has no
+GPOS / GSUB tables and no U+202F glyph, so kerning and features do nothing
+there and <code>&#39;fr&#39;</code> degrades to <code>&#39;fr-CA&#39;</code>. No hyphenation dictionary is installed:
+<code>hyphenationLanguage</code> is accepted and has no effect; soft hyphens (U+00AD) in
+long words are honoured. <code>tnum</code> and <code>lnum</code> change nothing on the bundled Noto
+Sans (diagnostic <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>, an error under
+<code>strict: true</code>). And the catalogue is large: <code>tools/list</code> is about 306 kB
+because the typography fragment is inlined in every tool that carries it —
+hosts should honour its 24 h public cache hint rather than refetch it per
+session.</p>
+<h2 id="case-3--multilingual-notices-in-27-scripts-from-a-conversation">Case 3 — Multilingual notices in 27 scripts from a conversation<a class="heading-anchor" href="#case-3--multilingual-notices-in-27-scripts-from-a-conversation" aria-label="Link to this section">#</a></h2>
+<p>A safety notice, a consent form or a receipt that must exist in the reader&#39;s
+own script is usually a font-procurement project before it is a document
+project. <code>add_international_text</code> removes the procurement: it routes each run
+of text to the bundled Noto face that covers it, shapes it with the engine&#39;s
+script shapers, always embeds the fonts, and can claim PDF/A — from a single
+tool call inside a conversation.</p>
+<p>The building blocks: <code>add_international_text</code> with a <code>lang</code> array covering the
+27 scripts — including, since v1.7.0, <code>lo</code> (Lao, dedicated shaper), <code>nod</code>
+(Tai Tham) and <code>cjm</code> (Cham) through the Universal Shaping Engine, <code>khb</code>
+(New Tai Lue) and <code>tdd</code> (Tai Le), plus the <code>latin</code> aliases <code>ha</code>, <code>yo</code>, <code>ig</code>
+and <code>sw</code> whose tone marks are anchored; <code>pdfA: &quot;pdfa2b&quot;</code> with <code>strict: true</code>
+so a diagnostic fails the call instead of shipping a wrong claim;
+<code>creationDate</code> for byte-identical output; and <code>extract_text</code>, which returns the
+<code>/ActualText</code> of tagged output so complex scripts round-trip exactly. The
+strings below are copied from the server&#39;s <code>examples/scripts-lao-tai-cham.json</code>.</p>
+<!-- demo-language: lo, nod, cjm (script coverage sample — Lao, Tai Tham and Cham, each labelled in English) -->
+<pre><code class="language-json">{ &quot;tool&quot;: &quot;add_international_text&quot;, &quot;arguments&quot;: {
+  &quot;title&quot;: &quot;Safety notice — three scripts of mainland South-East Asia&quot;,
+  &quot;lang&quot;: [&quot;lo&quot;, &quot;nod&quot;, &quot;cjm&quot;, &quot;latin&quot;],
+  &quot;pdfA&quot;: &quot;pdfa2b&quot;,
+  &quot;strict&quot;: true,
+  &quot;creationDate&quot;: &quot;2026-09-01T00:00:00Z&quot;,
+  &quot;paragraphs&quot;: [
+    &quot;Lao — ສະບາຍດີຊາວໂລກ&quot;,
+    &quot;Tai Tham (Lanna) — ᨣᩤᩴᨾᩮᩬᩥᨦ&quot;,
+    &quot;Cham — ꨀꨇꩉ ꨌꩌ&quot;
+  ]
+}}
+</code></pre>
+<p><code>lang</code> is an array so each run is routed to the font that covers it — <code>latin</code>
+carries the English labels and is added automatically under a PDF/A claim.
+The claim is <code>pdfa2b</code> on purpose (see the limits). Feed the result to
+<code>extract_text</code> and the three paragraphs come back in logical order, because
+the tagged output carries <code>/ActualText</code> for every marked-content span.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>Shaped text, not glyph soup.</strong> Lao has a dedicated shaper; Tai Tham and
+Cham go through the Universal Shaping Engine; mark positioning is the
+engine&#39;s, not the viewer&#39;s.</li>
+<li><strong>Embedded fonts, valid claim.</strong> The tool has no <code>embedFonts</code> input because
+it always embeds; with <code>strict: true</code> the PDF/A-2b claim either validates or
+the call fails with the diagnostic code — the server&#39;s own veraPDF corpus
+holds the new scripts to that.</li>
+<li><strong>Zero setup.</strong> No font files, no licences to chase, no shaping library: the
+faces come from the local <code>pdfnative</code> install as lazily loaded modules, and
+the bytes are reproducible once <code>creationDate</code> is pinned.</li>
+</ul>
+<p>Honest limits: there are no custom fonts on the MCP surface — the operator-side
+font sandbox (<code>PDFNATIVE_MCP_FONT_DIR</code>) is on the roadmap, not in v1.7.0; a
+house typeface needs the CLI (<code>render --font-file</code>) or the library. Tai Tham
+under PDF/A-2<strong>u</strong> fails veraPDF (one shaped glyph has no <code>ToUnicode</code> entry,
+rule 6.2.11.7.2), so use <code>pdfa2b</code> whenever <code>nod</code> is in the list — the other
+four new scripts pass level U. Text extraction from an <strong>untagged</strong> PDF returns
+visual order for eleven scripts; a <code>pdfA</code> claim makes the output tagged, which
+is what turns extraction exact. And <code>annotate_pdf</code> has no <code>link</code> annotation
+type yet (the engine&#39;s markup union lacks it); the <code>link</code> block of
+<code>generate_basic_pdf</code> covers new documents.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="use-cases.html">Ecosystem use cases</a> — the hub: five cross-surface
+architectures with diagrams.</li>
+<li><a href="mcp.html">MCP guide</a> — the complete v1.7.0 tool, prompt, environment and
+error reference.</li>
+<li><a href="use-cases-cli.html">CLI use cases</a> — the same engine from a shell and a CI
+runner.</li>
+<li><a href="use-cases-react.html">React use cases</a> — the same engine as JSX, on the
+server, the edge and the reader&#39;s device.</li>
+<li><a href="../playgrounds/mcp.html">MCP playground</a> — the tool catalogue and the
+call shapes, in the browser.</li>
+</ul>
+<!-- guide:render:end -->
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="./">All guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
+<script src="guide.js" defer></script>
+</body>
+</html>
