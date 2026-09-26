@@ -350,7 +350,7 @@ pdfnative render --input report.json --inspect-layout > layout.json
 
 #### Print production, images from JSON &amp; charts v2 _(v1.4.0)_
 
-Everything here needs pdfnative ≥ 1.7.0 and is reachable through the existing `--layout` file and the document JSON. v1.4.0 added no flags for it; since v1.5.0, typography and PDF/X have dedicated flags (see *Typography* and *PDF/X-4 output* above), and `layout.outputIntent` can be supplied with `--output-intent-icc`:
+Everything here needs pdfnative ≥ 1.7.0 and is reachable through the existing `--layout` file and the document JSON. v1.4.0 added no flags for it; since v1.5.0, typography and PDF/X have dedicated flags (see *PDF/X-4 output* above and *Typography* below), and `layout.outputIntent` can be supplied with `--output-intent-icc`:
 
 - **Image blocks in the document JSON** — `{ "type": "image", "src": "logo.png" }` (path resolved relative to the `--input` JSON, same validation as `--attachment`) or `{ "type": "image", "dataBase64": "…" }` for inline JPEG/PNG.
 - **`layout.print`** — `bleed`, `trimBox` / `bleedBox` / `artBox` / `cropBox`, vector printer's marks (`print.marks`), and `/UserUnit` (1–75 000). `merge` / `split` / `extract` now preserve these boxes too.
@@ -369,7 +369,7 @@ The pdfnative 1.8.0 typography engine is reachable through `layout.typography` �
 | `--kerning [true\|false]` | Pair kerning — needs a registered font (`--font` / `--font-file`) |
 | `--font-features <tag,…>` | Comma-separated four-letter OpenType features (`tnum`, `pnum`, `lnum`, `onum`, `zero`, `ordn`, `sups`, `subs`, `smcp`, `c2sc`, `case`); a tag the font cannot honour raises the `TYPOGRAPHY_FEATURE_INEFFECTIVE` diagnostic |
 
-`layout.typography` carries the engine's 12 keys verbatim: `widows`, `orphans`, `splitParagraphs`, `keepHeadingsWithNext`, `opticalMargins`, `punctuationSpacing` (`"fr"`, `"fr-CA"` or a rules array), `unitBinding`, `bindShortWords`, `hyphenationLanguage`, `kerning`, `fontFeatures`, `metrics` (`"exact"` acts on the base-14 path only). Soft hyphens (U+00AD) are honoured unconditionally. Paragraph blocks accept `align: "justify"`; any block accepts `keepWithNext` / `splittable`. Flags win over the file; nested `typography` / `outputIntent` objects merge one level deep between the document, `--layout` and the flags. `punctuationSpacing: "fr"` inserts narrow no-break spaces only where a font is embedded (`--font latin --lang latin`).
+`layout.typography` carries the engine's 12 keys verbatim: `widows`, `orphans`, `splitParagraphs`, `keepHeadingsWithNext`, `opticalMargins`, `punctuationSpacing` (`"fr"`, `"fr-CA"` or a rules array), `unitBinding`, `bindShortWords`, `hyphenationLanguage`, `kerning`, `fontFeatures`, `metrics` (`"exact"` acts on the base-14 path only). Soft hyphens (U+00AD) are honoured unconditionally. Paragraph blocks accept `align: "justify"`, `keepWithNext` and `splittable`; heading blocks accept `keepWithNext`. Flags win over the file; nested `typography` / `outputIntent` objects merge one level deep between the document, `--layout` and the flags. `punctuationSpacing: "fr"` inserts narrow no-break spaces only where a font is embedded (`--font latin --lang latin`).
 
 ```bash
 pdfnative render --input report.json --output report.pdf --font latin --lang latin \

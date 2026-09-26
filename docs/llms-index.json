@@ -5,9 +5,9 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 24743,
-      "approxTokens": 6186,
-      "sha256": "2e9297aa0c79b7395b8d536123e10bd0d2f92b0cbee5c1f2c2a052670d5b9292"
+      "bytes": 24855,
+      "approxTokens": 6214,
+      "sha256": "fbd894a728aa076d863e15da2c8840a01e00a029ffc80d0ad97b89ed73eec926"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 715949,
-      "approxTokens": 178987,
-      "sha256": "a45f393fa22ec7af86af8b9c674042417aba4e526119bfe24963492f86bc43f8"
+      "bytes": 716945,
+      "approxTokens": 179236,
+      "sha256": "087a5914f23ee67cffd351de1ad23396a410e19012136aa2fdfbcc3f62af1f42"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -61,9 +61,9 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 120769,
-      "approxTokens": 30192,
-      "sha256": "ffc272139ced7ede2c30962cb785834a8bc971938ca26409a73ba547807e8ae7"
+      "bytes": 120967,
+      "approxTokens": 30242,
+      "sha256": "dd73f07014ed65967f5b943ef61692fc45876c7055546c323968f977868c8e23"
     }
   ],
   "guides": [
@@ -213,9 +213,9 @@
         "resources",
         "citation"
       ],
-      "bytes": 97680,
-      "approxTokens": 24420,
-      "sha256": "c8a6bfb8be9f141f86984caa1755d73e7b425c9dad9a6b6f6ab37704c95efe8e"
+      "bytes": 97708,
+      "approxTokens": 24427,
+      "sha256": "493dbe769109e4ec2d1b3593216cbffcd5f618ecc8082a8d695f65a12d604821"
     },
     {
       "title": "Colour-emoji font CLI (pdfnative-build-emoji-font)",
@@ -674,13 +674,13 @@
         "case-4--any-language-orchestrator-on-the-process-contract",
         "see-also"
       ],
-      "bytes": 19223,
-      "approxTokens": 4806,
-      "sha256": "1c2e960bc67301a9c84e05362b4edc31a2549a32118024a86438a0116b8e97fb"
+      "bytes": 19287,
+      "approxTokens": 4822,
+      "sha256": "748425dfc24e21b5c642d156f947f9fce449ee1a97906c5a4c9f246d17a6cd4c"
     },
     {
       "title": "MCP use cases",
-      "summary": "pdfnative-mcp v1.7.0 exposes the pdfnative ≥ 1.8.0 engine to conversational assistants as 28 tools and seven prompts, over stdio or Streamable HTTP (MCP 2026-07-28 with automatic legacy fallback), on Node ≥ 22. This guide is the MCP companion of the ecosystem use cases: three architectures assembled from inputs the MCP guide documents, each with its building blocks, one load-bearing call and its…",
+      "summary": "Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22): one shared HTTP server whose outputs are files, a token-frugal typesetting loop, and multilingual PDF/A notices in 27 scripts.",
       "html": "https://pdfnative.dev/guides/use-cases-mcp.html",
       "markdown": "https://pdfnative.dev/guides/use-cases-mcp.md",
       "anchors": [
@@ -689,9 +689,9 @@
         "case-3--multilingual-notices-in-27-scripts-from-a-conversation",
         "see-also"
       ],
-      "bytes": 14743,
-      "approxTokens": 3686,
-      "sha256": "0124ffd7a3ede6b25a9955bbbc87aecf8090415098c611c0aab3fc365c959718"
+      "bytes": 15062,
+      "approxTokens": 3766,
+      "sha256": "2acd26c46d2ee44b48d8f05db8bd9143dc43554a79d247b7ac30d54622646247"
     },
     {
       "title": "React use cases",
@@ -704,13 +704,13 @@
         "case-3--one-component-tree-two-palettes-screen-pdfa-and-press-pdfx-4",
         "see-also"
       ],
-      "bytes": 13599,
-      "approxTokens": 3400,
-      "sha256": "1c5ff20372ae5efd92d667a65351188e0b0c111457ffeaf8b33b6c69a18bb808"
+      "bytes": 13638,
+      "approxTokens": 3410,
+      "sha256": "8dba1b7556bde3ef4b5fa8ec427befa500ff14f338057e057acb1d74d0d47a87"
     },
     {
       "title": "Ecosystem use cases",
-      "summary": "Five production architectures, each built from parts the ecosystem already ships. Store a kilobyte of JSON instead of a megabyte of PDF and render on the reader's own device; sign to PAdES B-LTA across an air gap; gate template changes in CI with a real document diff; serve edge-rendered PDFs with honest HTTP caching; and swap in zipnative, the sibling ZIP engine, as a deterministic DEFLATE…",
+      "summary": "Five production architectures, each built from parts the ecosystem already ships. Store a couple of kilobytes of JSON instead of hundreds of kilobytes of PDF and render on the reader's own device; sign to PAdES B-LTA across an air gap; gate template changes in CI with a real document diff; serve edge-rendered PDFs with honest HTTP caching; and swap in zipnative, the sibling ZIP engine, as a…",
       "html": "https://pdfnative.dev/guides/use-cases.html",
       "markdown": "https://pdfnative.dev/guides/use-cases.md",
       "anchors": [
@@ -722,9 +722,9 @@
         "picking-parts-not-a-platform",
         "see-also"
       ],
-      "bytes": 16680,
-      "approxTokens": 4170,
-      "sha256": "3c1484d1a655676e97fb1716292dd735e3e01711404b12ea059aca0777e7e801"
+      "bytes": 16916,
+      "approxTokens": 4229,
+      "sha256": "843e509893de7d90e523eacb644a1cf87ab711bce269b225940f0a146f600e16"
     },
     {
       "title": "Viewer preferences",

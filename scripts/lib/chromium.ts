@@ -3,7 +3,7 @@
  * ==========================================================================
  * Used by `scripts/verify-diagrams.ts` and by the gate's skip condition. No
  * download, no npm dependency: an installed browser or nothing.
- * `CHROME_PATH` overrides the search.
+ * `CHROME_PATH`, when set, is used as is and replaces the search.
  */
 
 import { existsSync } from 'node:fs';
@@ -12,7 +12,9 @@ import { join } from 'node:path';
 function candidates(): string[] {
     const env = process.env;
     const out: string[] = [];
-    if (env['CHROME_PATH']) out.push(env['CHROME_PATH']);
+    // An explicit override is authoritative: a wrong path fails loudly instead of
+    // silently falling back to another browser.
+    if (env['CHROME_PATH']) return [env['CHROME_PATH']];
     if (process.platform === 'win32') {
         for (const base of [env['PROGRAMFILES'], env['PROGRAMFILES(X86)'], env['LOCALAPPDATA']]) {
             if (!base) continue;
@@ -35,6 +37,8 @@ function candidates(): string[] {
 
 /** Absolute path of an installed Chromium-family browser, or null. */
 export function findChromium(): string | null {
+    const override = process.env['CHROME_PATH'];
+    if (override) return override; // used as is: a wrong path fails at launch (exit 2), never a silent skip
     for (const path of candidates()) {
         if (existsSync(path)) return path;
     }

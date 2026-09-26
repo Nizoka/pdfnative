@@ -14,12 +14,12 @@
  *
  * Usage:
  *   npm run verify:diagrams
- *   npx tsx scripts/verify-diagrams.ts --json     # { diagrams, findings: [{ file, pass, kind, message }] }
+ *   npx tsx scripts/verify-diagrams.ts --json     # { diagrams, findings: [{ file, pass, kind, message }] } (+ skipped | error)
  *
  * Exit codes:
  *   0 — no finding; or no Chromium-family browser is installed (skip).
  *   1 — one or more findings.
- *   2 — the browser ran but returned no measurement.
+ *   2 — the browser could not be launched or returned no measurement.
  *
  * Deliberate overlaps are declared in the SVG, never guessed: see
  * scripts/lib/diagram-geometry.ts (`data-overlap="intentional"`, halos).
@@ -27,8 +27,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -102,6 +101,11 @@ function measure(browser: string, dir: string, file: string, svg: string, pass: 
         '--headless=new', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--no-first-run',
         '--virtual-time-budget=3000', '--dump-dom', pathToFileURL(page).href,
     ], { encoding: 'utf8', timeout: 60_000, maxBuffer: 64 * 1024 * 1024 });
+    if (run.error || run.status !== 0) {
+        const reason = run.error ? run.error.message : `exit ${String(run.status)}`;
+        process.stderr.write(`verify-diagrams: ${browser} failed on ${file} (${pass}): ${reason}\n${(run.stderr ?? '').slice(-2000)}\n`);
+        return null;
+    }
     const encoded = /data-geometry="([A-Za-z0-9+/=]+)"/.exec(run.stdout ?? '')?.[1];
     if (encoded === undefined) return null;
     return JSON.parse(Buffer.from(encoded, 'base64').toString('utf8')) as DiagramGeometry;
@@ -110,11 +114,17 @@ function measure(browser: string, dir: string, file: string, svg: string, pass: 
 function main(): void {
     const browser = findChromium();
     if (!browser) {
-        process.stderr.write('verify-diagrams: skipped — no Chromium-family browser found (set CHROME_PATH).\n');
+        const reason = 'no Chromium-family browser found (set CHROME_PATH)';
+        process.stderr.write(`verify-diagrams: skipped — ${reason}.\n`);
+        if (json) process.stdout.write(JSON.stringify({ diagrams: 0, skipped: reason, findings: [] }) + '\n');
         return;
     }
     const files = readdirSync(ASSETS).filter((f) => f.endsWith('.svg') && !SKIP.has(f)).sort();
-    const dir = mkdtempSync(join(tmpdir(), 'pdfnative-diagrams-'));
+    // Inside the repository (git-ignored test-output/), not os.tmpdir(): a snap-packaged
+    // Chromium has a private /tmp and cannot open pages written there.
+    const scratch = join(ROOT, 'test-output');
+    mkdirSync(scratch, { recursive: true });
+    const dir = mkdtempSync(join(scratch, 'diagrams-'));
     const findings: Finding[] = [];
     try {
         for (const file of files) {
@@ -122,7 +132,9 @@ function main(): void {
             for (const pass of ['site fonts', 'Arial'] as const) {
                 const geometry = measure(browser, dir, file, svg, pass);
                 if (!geometry) {
-                    process.stderr.write(`verify-diagrams: ${file} (${pass}) — the browser returned no measurement\n`);
+                    const error = `${file} (${pass}): the browser could not be launched or returned no measurement`;
+                    process.stderr.write(`verify-diagrams: ${error}\n`);
+                    if (json) process.stdout.write(JSON.stringify({ diagrams: files.length, error, findings }) + '\n');
                     process.exitCode = 2;
                     return;
                 }

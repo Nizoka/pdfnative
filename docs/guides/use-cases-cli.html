@@ -72,8 +72,9 @@ well — byte-reproducible builds, a PDF/X-4 press handoff, a house font
 without a code change and a process contract any language can drive — and
 every flag below is documented in the <a href="cli.html">CLI guide</a>.</p>
 </blockquote>
-<p>Each case follows the hub&#39;s convention: the problem, the architecture, the
-load-bearing invocation, what you gain and where it stops. The companion pages
+<p>Each case follows the hub&#39;s convention: the problem, the load-bearing
+invocation, what you gain and where it stops — with an architecture diagram
+where data crosses components. The companion pages
 cover the same ground for the <a href="use-cases-mcp.html">MCP server</a> and the
 <a href="use-cases-react.html">React renderer</a>.</p>
 <h2 id="case-1--byte-reproducible-document-builds">Case 1 — Byte-reproducible document builds<a class="heading-anchor" href="#case-1--byte-reproducible-document-builds" aria-label="Link to this section">#</a></h2>
@@ -84,7 +85,7 @@ builds of the same template therefore never hash the same, and a release
 pipeline cannot tell &quot;the template changed&quot; from &quot;the clock moved&quot;. Since
 pdfnative 1.8.0 every date is written in UTC, and v1.5.0 adds the global
 <code>--creation-date &lt;iso8601&gt;</code> — with <code>SOURCE_DATE_EPOCH</code> as the fallback the
-reproducible-builds convention already puts in most CI shells — so that
+reproducible-builds.org variable that distribution build tools (Debian, Nix) set — so that
 <strong>unencrypted output becomes a pure function of its inputs</strong>: the same JSON
 renders to the same bytes on every host, in every timezone.</p>
 <p><img src="../assets/use-case-reproducible.svg" alt="Architecture: a JSON template and a pinned creation instant, supplied as SOURCE_DATE_EPOCH or the global --creation-date flag, are rendered by pdfnative-cli on three build hosts running Linux, macOS and Windows in different timezones. Each host produces a PDF whose SHA-256 is identical to the other two, because /CreationDate, xmp:CreateDate, the {date} placeholder and the trailer /ID all derive from the pinned instant in UTC. A CI gate compares the hashes and releases when they are equal; when the engine version differs between builds it falls back to pdfnative compare --mode both, which compares content instead of bytes."></p>

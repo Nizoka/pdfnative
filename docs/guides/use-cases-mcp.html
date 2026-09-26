@@ -64,6 +64,11 @@
   <article id="guide-content" class="guide-content" data-md="use-cases-mcp.md" data-prerendered="true">
 <!-- guide:render:start -->
 <h1 id="mcp-use-cases">MCP use cases</h1>
+<blockquote>
+<p><strong>Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22):</strong>
+one shared HTTP server whose outputs are files, a token-frugal typesetting
+loop, and multilingual PDF/A notices in 27 scripts.</p>
+</blockquote>
 <p>pdfnative-mcp v1.7.0 exposes the pdfnative ≥ 1.8.0 engine to conversational
 assistants as 28 tools and seven prompts, over stdio or Streamable HTTP
 (MCP 2026-07-28 with automatic legacy fallback), on Node ≥ 22. This guide is
@@ -75,7 +80,7 @@ with its building blocks, one load-bearing call and its limits.</p>
 every agent runtime spawns its own <code>npx pdfnative-mcp</code>, every generated PDF
 travels back as base64 inside the JSON-RPC response, and nothing is shared. For
 a team — or a fleet of agents — that is N processes, N separate caches, and
-megabytes of base64 in every model context. Four operator
+each PDF as base64 (about 4/3 of its size) in the model context. Four operator
 variables turn the same binary into <strong>one shared server whose outputs are files
 the clients reference instead of bytes they carry</strong>.</p>
 <p><img src="../assets/use-case-mcp-http.svg" alt="Architecture: several MCP clients — desktop hosts and agent runtimes — reach one pdfnative-mcp process through an SSH tunnel or a reverse proxy the operator runs, because the server binds 127.0.0.1 only and never a public interface. Every POST to /mcp passes the loopback Host and Origin guard and the bearer-token gate configured with PDFNATIVE_MCP_HTTP_TOKEN before it reaches the stateless MCP handler; GET and DELETE answer 405. Tools called with outputMode file write inside the PDFNATIVE_MCP_OUTPUT_DIR sandbox, and the result returns a resource_link and the byte count instead of the PDF; the client reads the file back on demand through resources/read as pdfnative://output/{+path}. An opt-in PDFNATIVE_MCP_CACHE_DIR serves repeated base64-mode and read-only calls from a SHA-256 keyed cache namespaced by the tool API version and the pinned creation instant."></p>
@@ -202,8 +207,9 @@ file for a few tokens more. The same options exist on the CLI (<code>render --sp
 <code>--font-features</code>) and on the React <code>Document</code> root as the <code>typography</code> prop.</p>
 <p>What you gain, concretely:</p>
 <ul>
-<li><strong>Pagination decisions cost a few dozen tokens</strong>, not a rendered PDF and a
-read-back. Iterate on <code>orphans</code>, <code>keepWithNext</code> and <code>splittable</code> against the
+<li><strong>Pagination decisions cost a few dozen tokens of response</strong> — the
+arguments are the build&#39;s own; the answer is a page count, not a rendered
+PDF and a read-back. Iterate on <code>orphans</code>, <code>keepWithNext</code> and <code>splittable</code> against the
 summary; render once.</li>
 <li><strong>Bytes arrive once.</strong> In base64 mode the PDF is a single embedded <code>resource</code>
 content block, not duplicated into <code>structuredContent</code>; in file mode it is a

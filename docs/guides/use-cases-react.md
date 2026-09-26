@@ -7,8 +7,8 @@
 > export and lint rule named below ships in v1.3.0.
 
 This guide is the React companion to the [ecosystem use cases](use-cases.html),
-which sets the convention (problem, architecture, one load-bearing code block,
-gains, limits) and covers the cross-surface architectures. The
+which sets the convention (problem, load-bearing code, gains, limits — with an
+architecture diagram where data crosses components) and covers the cross-surface architectures. The
 [React guide](react.html) is the reference for the components, the rendering
 entry points and the `DocSpec` authoring surface used here.
 

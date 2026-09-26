@@ -1,5 +1,9 @@
 # MCP use cases
 
+> **Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22):**
+> one shared HTTP server whose outputs are files, a token-frugal typesetting
+> loop, and multilingual PDF/A notices in 27 scripts.
+
 pdfnative-mcp v1.7.0 exposes the pdfnative ≥ 1.8.0 engine to conversational
 assistants as 28 tools and seven prompts, over stdio or Streamable HTTP
 (MCP 2026-07-28 with automatic legacy fallback), on Node ≥ 22. This guide is
@@ -13,7 +17,7 @@ The default MCP deployment is one stdio process per host: every desktop and
 every agent runtime spawns its own `npx pdfnative-mcp`, every generated PDF
 travels back as base64 inside the JSON-RPC response, and nothing is shared. For
 a team — or a fleet of agents — that is N processes, N separate caches, and
-megabytes of base64 in every model context. Four operator
+each PDF as base64 (about 4/3 of its size) in the model context. Four operator
 variables turn the same binary into **one shared server whose outputs are files
 the clients reference instead of bytes they carry**.
 
@@ -155,8 +159,9 @@ file for a few tokens more. The same options exist on the CLI (`render
 
 What you gain, concretely:
 
-- **Pagination decisions cost a few dozen tokens**, not a rendered PDF and a
-  read-back. Iterate on `orphans`, `keepWithNext` and `splittable` against the
+- **Pagination decisions cost a few dozen tokens of response** — the
+  arguments are the build's own; the answer is a page count, not a rendered
+  PDF and a read-back. Iterate on `orphans`, `keepWithNext` and `splittable` against the
   summary; render once.
 - **Bytes arrive once.** In base64 mode the PDF is a single embedded `resource`
   content block, not duplicated into `structuredContent`; in file mode it is a

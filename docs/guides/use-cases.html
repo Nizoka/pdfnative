@@ -66,7 +66,7 @@
 <h1 id="ecosystem-use-cases">Ecosystem use cases</h1>
 <blockquote>
 <p><strong>Five production architectures, each built from parts the ecosystem already
-ships.</strong> Store a kilobyte of JSON instead of a megabyte of PDF and render on
+ships.</strong> Store a couple of kilobytes of JSON instead of hundreds of kilobytes of PDF and render on
 the reader&#39;s own device; sign to PAdES B-LTA across an air gap; gate template
 changes in CI with a real document diff; serve edge-rendered PDFs with honest
 HTTP caching; and swap in zipnative, the sibling ZIP engine, as a
@@ -87,7 +87,7 @@ render</strong>. The document&#39;s actual information content is the text and s
 which fits in a few kilobytes of JSON. So: persist the compact
 <a href="react.html#agent-authoring--the-token-frugal-docspec"><code>DocSpec</code></a> (or a
 <code>DocumentParams</code> JSON), and let the device that <em>asks</em> for the PDF produce it.</p>
-<p><img src="../assets/use-case-spec-storage.svg" alt="Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of megabyte-sized PDFs in object storage. When a client requests a document, the server sends the JSON; the client&#39;s own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine — uncompressed by default, or compressed by plugging a synchronous deflate implementation into setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network."></p>
+<p><img src="../assets/use-case-spec-storage.svg" alt="Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of PDFs of hundreds of kilobytes in object storage. When a client requests a document, the server sends the JSON; the client&#39;s own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine — uncompressed by default, or compressed by plugging a synchronous deflate implementation into setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network."></p>
 <p>Why this works in a browser at all: the engine has <strong>zero dependencies and no
 Node-only code paths</strong> on this route. Rendering is synchronous and the output
 is a valid, uncompressed PDF — and since the bytes stay on the device, their
@@ -119,7 +119,7 @@ item.</li>
 not the PDF.</li>
 <li><strong>Diffability</strong> — specs are plain data: version them, diff them, patch a
 typo without a byte-level regeneration pipeline.</li>
-<li><strong>Re-branding for free</strong> — yesterday&#39;s specs render with today&#39;s template
+<li><strong>Re-branding without a migration</strong> — yesterday&#39;s specs render with today&#39;s template
 and fonts.</li>
 </ul>
 <p>Honest limits: the client re-renders with the engine version it has, so a spec
@@ -209,9 +209,8 @@ across engine versions where a checksum would not).</p>
 <p>Rendering PDFs in a central service means queues, SaaS round-trips, or a
 container with a headless browser. The engine&#39;s zero-dependency, Fetch-native
 design removes the constraint: <code>renderToResponse</code> returns a web-standard
-<code>Response</code>, so the same code runs in a Next.js route handler, Cloudflare</p>
-<!-- verify-docs:allow version-token (historical release entry) -->
-<p>Workers, Deno Deploy or Bun — and since pdfnative-react 1.2.0 it speaks real
+<code>Response</code>, so the same code runs in a Next.js route handler, Cloudflare
+Workers, Deno Deploy or Bun — and since pdfnative-react 1.2.0 it speaks real <!-- verify-docs:allow version-token (feature-introduction version) -->
 HTTP caching.</p>
 <p><img src="../assets/use-case-edge-cache.svg" alt="Architecture: browsers request a PDF from an edge or serverless runtime. The handler calls renderToResponse from pdfnative-react, which streams the PDF with constant memory and sets Cache-Control and a strong ETag derived from the rendered bytes. The CDN in front caches the response; repeat requests are served from cache, and revalidation requests answered with 304 Not Modified cost no render at all. No central PDF service, no headless browser, no SaaS round-trip."></p>
 <pre><code class="language-tsx">// app/invoice/[id]/route.tsx — identical on Workers / Deno / Bun.
@@ -239,9 +238,9 @@ the buffered validator, not both. A per-user document should say
 authorisation bug the route has — cache keys must include whatever
 distinguishes users.</p>
 <h2 id="case-5--swap-the-compressor-zipnative-as-pdfnatives-deflate-codec">Case 5 — Swap the compressor: zipnative as pdfnative&#39;s DEFLATE codec<a class="heading-anchor" href="#case-5--swap-the-compressor-zipnative-as-pdfnatives-deflate-codec" aria-label="Link to this section">#</a></h2>
-<p>pdfnative ships no compressor of its own. In Node, <code>initNodeCompression</code>
-wires <code>node:zlib</code>; a browser, Deno, Bun or a Worker has no built-in
-synchronous deflate, so <code>compress: true</code> falls back to stored blocks — a
+<p>pdfnative ships no compressor of its own. In Node — and in Bun and Deno 2,
+which expose <code>node:zlib</code> — <code>initNodeCompression</code> wires the native deflate; a
+browser or a Worker has no built-in synchronous deflate, so <code>compress: true</code> falls back to stored blocks — a
 valid PDF, but not a smaller one — until you inject one. Case 1 does that
 with fflate&#39;s <code>zlibSync</code> through <code>setDeflateImpl</code>.
 <a href="https://zipnative.dev" target="_blank" rel="noopener">zipnative</a> is the sibling zero-dependency ZIP engine,
@@ -263,13 +262,14 @@ const bytes = buildDocumentPDFBytes({
 </code></pre>
 <p>What you gain, concretely:</p>
 <ul>
-<li><strong>Real compression everywhere the engine runs</strong> — the same call in Node, a
-browser, Deno, Bun or a Worker — while the whole stack stays
-dependency-free: zipnative has no runtime dependency either.</li>
+<li><strong>Real compression everywhere the engine runs</strong> — the same call in a
+browser or a Worker, byte-identical to Node, Bun and Deno when they use the
+same codec — while the whole stack stays dependency-free: zipnative has no
+runtime dependency either.</li>
 <li><strong>Determinism</strong> — <code>deterministic: true</code> pins zipnative&#39;s pure encoder, so
 with a pinned <code>creationDate</code> the <em>compressed</em> PDF is byte-identical on
 every runtime, not just the uncompressed one. The CLI, MCP and React
-equivalents of the date pin are in the per-surface pages.</li>
+equivalents of the date pin are listed in <a href="use-cases-cli.html#case-1--byte-reproducible-document-builds">CLI use cases, Case 1</a>.</li>
 <li><strong>Composition</strong> — Case 1&#39;s on-device render can take a deterministic
 compressor from the same zero-dependency family instead of fflate, and
 Case 4&#39;s edge responses shrink without a native module in the runtime.</li>
@@ -311,7 +311,7 @@ HTTP caching options.</li>
 pdfnative-cli v1.5.0, pdfnative-mcp v1.7.0 and pdfnative-react v1.3.0.</li>
 <li><a href="https://zipnative.dev/guides/use-cases.html" target="_blank" rel="noopener">zipnative use cases</a> — the
 sibling ZIP engine&#39;s architectures, including the encrypt-then-archive
-pipeline that continues Case 5.</li>
+pipeline — the opposite direction of Case 5.</li>
 </ul>
 <!-- guide:render:end -->
   </article>

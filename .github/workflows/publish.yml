@@ -104,7 +104,8 @@ jobs:
         run: npm run fonts:download
 
       # Every gate step — typecheck, lint, unicode, coverage, build, bundle,
-      # docs, samples against the baseline chain, veraPDF, font reproducibility.
+      # docs, samples against the baseline chain, veraPDF, font reproducibility,
+      # diagram geometry.
       # --require-all: a missing tool fails the release instead of skipping.
       - name: Run the quality gate (publish profile)
         run: npx tsx scripts/gate.ts --publish --require-all

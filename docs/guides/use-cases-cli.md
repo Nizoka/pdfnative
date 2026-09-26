@@ -7,8 +7,9 @@
 > without a code change and a process contract any language can drive — and
 > every flag below is documented in the [CLI guide](cli.html).
 
-Each case follows the hub's convention: the problem, the architecture, the
-load-bearing invocation, what you gain and where it stops. The companion pages
+Each case follows the hub's convention: the problem, the load-bearing
+invocation, what you gain and where it stops — with an architecture diagram
+where data crosses components. The companion pages
 cover the same ground for the [MCP server](use-cases-mcp.html) and the
 [React renderer](use-cases-react.html).
 
@@ -21,7 +22,7 @@ builds of the same template therefore never hash the same, and a release
 pipeline cannot tell "the template changed" from "the clock moved". Since
 pdfnative 1.8.0 every date is written in UTC, and v1.5.0 adds the global
 `--creation-date <iso8601>` — with `SOURCE_DATE_EPOCH` as the fallback the
-reproducible-builds convention already puts in most CI shells — so that
+reproducible-builds.org variable that distribution build tools (Debian, Nix) set — so that
 **unencrypted output becomes a pure function of its inputs**: the same JSON
 renders to the same bytes on every host, in every timezone.
 

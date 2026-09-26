@@ -44,7 +44,7 @@ _Verified on 2026-09-26 against the source tree by `npm run verify:docs`; the ca
 - [Font validation](https://pdfnative.dev/guides/font-validation.html): `validateFontData()` — check a font module before registering it.
 - [Self-verifying generation](https://pdfnative.dev/guides/self-verify.html): The generate → inspect → assert → correct loop — `inspectDocumentLayout()` before building, then `extractText()` / `validatePdfUA()` / `listSignatures()` against the emitted bytes; the same loop on the CLI (`inspect --check`, stable exit codes) and MCP (`inspect_pdf`).
 - [Agentic workflows](https://pdfnative.dev/guides/agentic-workflows.html): Patterns for driving pdfnative from AI agents on public, validated APIs.
-- [Use cases](https://pdfnative.dev/guides/use-cases.html): Five ecosystem architectures (four with diagrams) — store the DocSpec instead of the PDF and render on-device, air-gapped PAdES B-LTA archiving, a CI document-regression gate with `compare`, edge-rendered PDFs with correct HTTP caching, and zipnative as the DEFLATE codec behind `setDeflateRawImpl`.
+- [Use cases](https://pdfnative.dev/guides/use-cases.html): Five ecosystem architectures (four with diagrams) — store the DocSpec instead of the PDF and render on-device, air-gapped PAdES B-LTA archiving, a CI document-regression gate with `compare`, edge-rendered PDFs with honest HTTP caching, and zipnative as the DEFLATE codec behind `setDeflateRawImpl`.
 - [CLI use cases](https://pdfnative.dev/guides/use-cases-cli.html): Four pdfnative-cli v1.5.0 architectures — byte-reproducible builds with `--creation-date` / `SOURCE_DATE_EPOCH`, a PDF/X-4 press handoff checked by `inspect --check pdfx`, a house font with `--font-file` and the typography flags, and the exit-code / JSON-envelope contract for any-language orchestrators.
 - [MCP use cases](https://pdfnative.dev/guides/use-cases-mcp.html): Three pdfnative-mcp v1.7.0 architectures — a shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal `inspect_layout` typesetting loop, and PDF/A notices in 27 scripts.
 - [React use cases](https://pdfnative.dev/guides/use-cases-react.html): Three pdfnative-react v1.3.0 architectures — a 37-rule DocSpec lint gate in CI before any PDF exists, book-style typography from JSX, and one component tree rendered to a screen PDF/A and a press PDF/X-4 file.
@@ -94,7 +94,7 @@ _Verified on 2026-09-26 against the source tree by `npm run verify:docs`; the ca
 - [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli): CLI wrapper for pdfnative (v1.5.0, requires pdfnative ≥ 1.8.0 — pins `^1.8.0`, Node ≥ 22) — render, fill, annotate, metadata, merge, split, extract, sign, verify, ltv, doc-timestamp, encrypt, decrypt, inspect, extract-text, compare, batch, doctor, schema, completion, govern.
 - [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp): Model Context Protocol server exposing pdfnative as 28 AI tools and seven prompts (v1.7.0, requires pdfnative ≥ 1.8.0).
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react): React renderer — declarative JSX components compiled on-device to pdfnative blocks (v1.3.0, React 19 + pdfnative ^1.8.0 peers).
-- [zipnative](https://zipnative.dev): Sibling zero-dependency ZIP engine from the same author — usable as pdfnative's DEFLATE codec through `setDeflateRawImpl` (use cases, Case 5); its own use cases include encrypt-with-pdfnative-then-archive.
+- [zipnative](https://zipnative.dev): Sibling zero-dependency ZIP engine from the same author — usable as pdfnative's DEFLATE codec through `setDeflateRawImpl` ([use cases, Case 5](https://pdfnative.dev/guides/use-cases.html#case-5--swap-the-compressor-zipnative-as-pdfnatives-deflate-codec)); its own use cases include encrypt-with-pdfnative-then-archive.
 
 ---
 <!-- source: README.md -->
@@ -208,7 +208,7 @@ npm install pdfnative
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
-- 🎮 **Playgrounds:** fourteen interactive demos at [docs/playgrounds/](docs/playgrounds/) — [typography](docs/playgrounds/typography.html) (each typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
+- 🎮 **Playgrounds:** fourteen interactive demos at [docs/playgrounds/](docs/playgrounds/) — [typography](docs/playgrounds/typography.html) (each typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), [reproducible](docs/playgrounds/reproducible.html) (build twice under a pinned creation date, compare SHA-256), [docspec-lint](docs/playgrounds/docspec-lint.html) (pdfnative-react's 37 lint rules), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
 - 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 292 sample PDFs across 38 categories (49 generators) (see [Sample PDFs](#sample-pdfs) below).
 - 🎓 **Learn:** [docs/learn/](docs/learn/) — an eight-step guided path from installing the package to generating 100,000 pages, live at [pdfnative.dev/learn/](https://pdfnative.dev/learn/).
 - 🤖 **Machine-readable:** [llms.txt](llms.txt) (doc index for LLMs), [AGENTS.md](AGENTS.md) (agent guidance), and [docs/assets/ecosystem.json](docs/assets/ecosystem.json) — the canonical manifest of ecosystem versions and counts, enforced by `npm run verify:docs`.
@@ -3354,7 +3354,7 @@ pdfnative render --input report.json --inspect-layout > layout.json
 
 #### Print production, images from JSON &amp; charts v2 _(v1.4.0)_
 
-Everything here needs pdfnative ≥ 1.7.0 and is reachable through the existing `--layout` file and the document JSON. v1.4.0 added no flags for it; since v1.5.0, typography and PDF/X have dedicated flags (see *Typography* and *PDF/X-4 output* above), and `layout.outputIntent` can be supplied with `--output-intent-icc`:
+Everything here needs pdfnative ≥ 1.7.0 and is reachable through the existing `--layout` file and the document JSON. v1.4.0 added no flags for it; since v1.5.0, typography and PDF/X have dedicated flags (see *PDF/X-4 output* above and *Typography* below), and `layout.outputIntent` can be supplied with `--output-intent-icc`:
 
 - **Image blocks in the document JSON** — `{ "type": "image", "src": "logo.png" }` (path resolved relative to the `--input` JSON, same validation as `--attachment`) or `{ "type": "image", "dataBase64": "…" }` for inline JPEG/PNG.
 - **`layout.print`** — `bleed`, `trimBox` / `bleedBox` / `artBox` / `cropBox`, vector printer's marks (`print.marks`), and `/UserUnit` (1–75 000). `merge` / `split` / `extract` now preserve these boxes too.
@@ -3373,7 +3373,7 @@ The pdfnative 1.8.0 typography engine is reachable through `layout.typography` �
 | `--kerning [true\|false]` | Pair kerning — needs a registered font (`--font` / `--font-file`) |
 | `--font-features <tag,…>` | Comma-separated four-letter OpenType features (`tnum`, `pnum`, `lnum`, `onum`, `zero`, `ordn`, `sups`, `subs`, `smcp`, `c2sc`, `case`); a tag the font cannot honour raises the `TYPOGRAPHY_FEATURE_INEFFECTIVE` diagnostic |
 
-`layout.typography` carries the engine's 12 keys verbatim: `widows`, `orphans`, `splitParagraphs`, `keepHeadingsWithNext`, `opticalMargins`, `punctuationSpacing` (`"fr"`, `"fr-CA"` or a rules array), `unitBinding`, `bindShortWords`, `hyphenationLanguage`, `kerning`, `fontFeatures`, `metrics` (`"exact"` acts on the base-14 path only). Soft hyphens (U+00AD) are honoured unconditionally. Paragraph blocks accept `align: "justify"`; any block accepts `keepWithNext` / `splittable`. Flags win over the file; nested `typography` / `outputIntent` objects merge one level deep between the document, `--layout` and the flags. `punctuationSpacing: "fr"` inserts narrow no-break spaces only where a font is embedded (`--font latin --lang latin`).
+`layout.typography` carries the engine's 12 keys verbatim: `widows`, `orphans`, `splitParagraphs`, `keepHeadingsWithNext`, `opticalMargins`, `punctuationSpacing` (`"fr"`, `"fr-CA"` or a rules array), `unitBinding`, `bindShortWords`, `hyphenationLanguage`, `kerning`, `fontFeatures`, `metrics` (`"exact"` acts on the base-14 path only). Soft hyphens (U+00AD) are honoured unconditionally. Paragraph blocks accept `align: "justify"`, `keepWithNext` and `splittable`; heading blocks accept `keepWithNext`. Flags win over the file; nested `typography` / `outputIntent` objects merge one level deep between the document, `--layout` and the flags. `punctuationSpacing: "fr"` inserts narrow no-break spaces only where a font is embedded (`--font latin --lang latin`).
 
 ```bash
 pdfnative render --input report.json --output report.pdf --font latin --lang latin \
@@ -10444,8 +10444,9 @@ See the [typography samples](https://github.com/Nizoka/pdfnative/blob/main/scrip
 > without a code change and a process contract any language can drive — and
 > every flag below is documented in the [CLI guide](cli.html).
 
-Each case follows the hub's convention: the problem, the architecture, the
-load-bearing invocation, what you gain and where it stops. The companion pages
+Each case follows the hub's convention: the problem, the load-bearing
+invocation, what you gain and where it stops — with an architecture diagram
+where data crosses components. The companion pages
 cover the same ground for the [MCP server](use-cases-mcp.html) and the
 [React renderer](use-cases-react.html).
 
@@ -10458,7 +10459,7 @@ builds of the same template therefore never hash the same, and a release
 pipeline cannot tell "the template changed" from "the clock moved". Since
 pdfnative 1.8.0 every date is written in UTC, and v1.5.0 adds the global
 `--creation-date <iso8601>` — with `SOURCE_DATE_EPOCH` as the fallback the
-reproducible-builds convention already puts in most CI shells — so that
+reproducible-builds.org variable that distribution build tools (Debian, Nix) set — so that
 **unencrypted output becomes a pure function of its inputs**: the same JSON
 renders to the same bytes on every host, in every timezone.
 
@@ -10751,6 +10752,10 @@ are the orchestrator's job, driven by the exit code.
 <!-- source: docs/guides/use-cases-mcp.md -->
 # MCP use cases
 
+> **Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22):**
+> one shared HTTP server whose outputs are files, a token-frugal typesetting
+> loop, and multilingual PDF/A notices in 27 scripts.
+
 pdfnative-mcp v1.7.0 exposes the pdfnative ≥ 1.8.0 engine to conversational
 assistants as 28 tools and seven prompts, over stdio or Streamable HTTP
 (MCP 2026-07-28 with automatic legacy fallback), on Node ≥ 22. This guide is
@@ -10764,7 +10769,7 @@ The default MCP deployment is one stdio process per host: every desktop and
 every agent runtime spawns its own `npx pdfnative-mcp`, every generated PDF
 travels back as base64 inside the JSON-RPC response, and nothing is shared. For
 a team — or a fleet of agents — that is N processes, N separate caches, and
-megabytes of base64 in every model context. Four operator
+each PDF as base64 (about 4/3 of its size) in the model context. Four operator
 variables turn the same binary into **one shared server whose outputs are files
 the clients reference instead of bytes they carry**.
 
@@ -10906,8 +10911,9 @@ file for a few tokens more. The same options exist on the CLI (`render
 
 What you gain, concretely:
 
-- **Pagination decisions cost a few dozen tokens**, not a rendered PDF and a
-  read-back. Iterate on `orphans`, `keepWithNext` and `splittable` against the
+- **Pagination decisions cost a few dozen tokens of response** — the
+  arguments are the build's own; the answer is a page count, not a rendered
+  PDF and a read-back. Iterate on `orphans`, `keepWithNext` and `splittable` against the
   summary; render once.
 - **Bytes arrive once.** In base64 mode the PDF is a single embedded `resource`
   content block, not duplicated into `structuredContent`; in file mode it is a
@@ -11018,8 +11024,8 @@ type yet (the engine's markup union lacks it); the `link` block of
 > export and lint rule named below ships in v1.3.0.
 
 This guide is the React companion to the [ecosystem use cases](use-cases.html),
-which sets the convention (problem, architecture, one load-bearing code block,
-gains, limits) and covers the cross-surface architectures. The
+which sets the convention (problem, load-bearing code, gains, limits — with an
+architecture diagram where data crosses components) and covers the cross-surface architectures. The
 [React guide](react.html) is the reference for the components, the rendering
 entry points and the `DocSpec` authoring surface used here.
 
@@ -11247,7 +11253,7 @@ to press. No press profile ships with either package; the ICC profile is yours.
 # Ecosystem use cases
 
 > **Five production architectures, each built from parts the ecosystem already
-> ships.** Store a kilobyte of JSON instead of a megabyte of PDF and render on
+> ships.** Store a couple of kilobytes of JSON instead of hundreds of kilobytes of PDF and render on
 > the reader's own device; sign to PAdES B-LTA across an air gap; gate template
 > changes in CI with a real document diff; serve edge-rendered PDFs with honest
 > HTTP caching; and swap in zipnative, the sibling ZIP engine, as a
@@ -11271,7 +11277,7 @@ which fits in a few kilobytes of JSON. So: persist the compact
 [`DocSpec`](react.html#agent-authoring--the-token-frugal-docspec) (or a
 `DocumentParams` JSON), and let the device that *asks* for the PDF produce it.
 
-![Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of megabyte-sized PDFs in object storage. When a client requests a document, the server sends the JSON; the client's own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine — uncompressed by default, or compressed by plugging a synchronous deflate implementation into setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network.](../assets/use-case-spec-storage.svg)
+![Architecture: a server stores kilobyte-sized DocSpec JSON documents in a database instead of PDFs of hundreds of kilobytes in object storage. When a client requests a document, the server sends the JSON; the client's own browser renders it to a PDF locally with pdfnative-react and the zero-dependency pdfnative engine — uncompressed by default, or compressed by plugging a synchronous deflate implementation into setDeflateImpl. Storage shrinks by roughly two orders of magnitude and the PDF bytes never transit the network.](../assets/use-case-spec-storage.svg)
 
 Why this works in a browser at all: the engine has **zero dependencies and no
 Node-only code paths** on this route. Rendering is synchronous and the output
@@ -11310,7 +11316,7 @@ What you gain, concretely:
   not the PDF.
 - **Diffability** — specs are plain data: version them, diff them, patch a
   typo without a byte-level regeneration pipeline.
-- **Re-branding for free** — yesterday's specs render with today's template
+- **Re-branding without a migration** — yesterday's specs render with today's template
   and fonts.
 
 Honest limits: the client re-renders with the engine version it has, so a spec
@@ -11418,8 +11424,7 @@ Rendering PDFs in a central service means queues, SaaS round-trips, or a
 container with a headless browser. The engine's zero-dependency, Fetch-native
 design removes the constraint: `renderToResponse` returns a web-standard
 `Response`, so the same code runs in a Next.js route handler, Cloudflare
-<!-- verify-docs:allow version-token (historical release entry) -->
-Workers, Deno Deploy or Bun — and since pdfnative-react 1.2.0 it speaks real
+Workers, Deno Deploy or Bun — and since pdfnative-react 1.2.0 it speaks real <!-- verify-docs:allow version-token (feature-introduction version) -->
 HTTP caching.
 
 ![Architecture: browsers request a PDF from an edge or serverless runtime. The handler calls renderToResponse from pdfnative-react, which streams the PDF with constant memory and sets Cache-Control and a strong ETag derived from the rendered bytes. The CDN in front caches the response; repeat requests are served from cache, and revalidation requests answered with 304 Not Modified cost no render at all. No central PDF service, no headless browser, no SaaS round-trip.](../assets/use-case-edge-cache.svg)
@@ -11454,9 +11459,9 @@ distinguishes users.
 
 ## Case 5 — Swap the compressor: zipnative as pdfnative's DEFLATE codec
 
-pdfnative ships no compressor of its own. In Node, `initNodeCompression`
-wires `node:zlib`; a browser, Deno, Bun or a Worker has no built-in
-synchronous deflate, so `compress: true` falls back to stored blocks — a
+pdfnative ships no compressor of its own. In Node — and in Bun and Deno 2,
+which expose `node:zlib` — `initNodeCompression` wires the native deflate; a
+browser or a Worker has no built-in synchronous deflate, so `compress: true` falls back to stored blocks — a
 valid PDF, but not a smaller one — until you inject one. Case 1 does that
 with fflate's `zlibSync` through `setDeflateImpl`.
 [zipnative](https://zipnative.dev) is the sibling zero-dependency ZIP engine,
@@ -11481,13 +11486,14 @@ const bytes = buildDocumentPDFBytes({
 
 What you gain, concretely:
 
-- **Real compression everywhere the engine runs** — the same call in Node, a
-  browser, Deno, Bun or a Worker — while the whole stack stays
-  dependency-free: zipnative has no runtime dependency either.
+- **Real compression everywhere the engine runs** — the same call in a
+  browser or a Worker, byte-identical to Node, Bun and Deno when they use the
+  same codec — while the whole stack stays dependency-free: zipnative has no
+  runtime dependency either.
 - **Determinism** — `deterministic: true` pins zipnative's pure encoder, so
   with a pinned `creationDate` the *compressed* PDF is byte-identical on
   every runtime, not just the uncompressed one. The CLI, MCP and React
-  equivalents of the date pin are in the per-surface pages.
+  equivalents of the date pin are listed in [CLI use cases, Case 1](use-cases-cli.html#case-1--byte-reproducible-document-builds).
 - **Composition** — Case 1's on-device render can take a deterministic
   compressor from the same zero-dependency family instead of fflate, and
   Case 4's edge responses shrink without a native module in the runtime.
@@ -11533,7 +11539,7 @@ from the others as they become relevant.
   pdfnative-cli v1.5.0, pdfnative-mcp v1.7.0 and pdfnative-react v1.3.0.
 - [zipnative use cases](https://zipnative.dev/guides/use-cases.html) — the
   sibling ZIP engine's architectures, including the encrypt-then-archive
-  pipeline that continues Case 5.
+  pipeline — the opposite direction of Case 5.
 
 ---
 <!-- source: docs/guides/viewer-preferences.md -->
