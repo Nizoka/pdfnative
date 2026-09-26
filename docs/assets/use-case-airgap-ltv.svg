@@ -45,7 +45,9 @@
 
   <!-- Transfer arrow -->
   <line x1="372" y1="372" x2="546" y2="372" stroke="#D97706" stroke-width="2.25" marker-end="url(#ual-ah-amber)"/>
+  <rect x="414" y="341" width="132" height="22" rx="4" fill="#F8FAFC"/>
   <text x="480" y="356" text-anchor="middle" font-size="11.5" font-weight="600" fill="#D97706">controlled transfer</text>
+  <rect x="414" y="378" width="132" height="21" rx="4" fill="#F8FAFC"/>
   <text x="480" y="392" text-anchor="middle" font-size="11" fill="#B45309">only the JSON crosses</text>
 
   <!-- Enclave zone -->

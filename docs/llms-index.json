@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 24743,
       "approxTokens": 6186,
-      "sha256": "91c68bc948140751a5ddf3a0e49a01240fe2cee112de12770be1d3b85990d841"
+      "sha256": "2e9297aa0c79b7395b8d536123e10bd0d2f92b0cbee5c1f2c2a052670d5b9292"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 715837,
-      "approxTokens": 178959,
-      "sha256": "4afc997653c9c0894496eba0fb64dfd5af914dc2df40b5b48c54cbcc1fdcd0b7"
+      "bytes": 715949,
+      "approxTokens": 178987,
+      "sha256": "a45f393fa22ec7af86af8b9c674042417aba4e526119bfe24963492f86bc43f8"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -61,9 +61,9 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 120657,
-      "approxTokens": 30164,
-      "sha256": "169f46839c2d7c672df3be55732cbe9c3a9d953039c5355ccb7e4cf6b516021c"
+      "bytes": 120769,
+      "approxTokens": 30192,
+      "sha256": "ffc272139ced7ede2c30962cb785834a8bc971938ca26409a73ba547807e8ae7"
     }
   ],
   "guides": [

@@ -29,7 +29,7 @@ pdfnative is a zero-runtime-dependency TypeScript library that writes and reads 
 |---|---|---|
 | Fast — before every commit | `npm run gate -- --fast` | typecheck:all, lint, test, verify:docs |
 | CI — the default | `npm run gate` | the CI profile |
-| Publish — release branches | `npm run gate -- --publish` | everything, incl. test:generate, verify:samples, validate:pdfa, verify:fonts, verify:bundle |
+| Publish — release branches | `npm run gate -- --publish` | everything, incl. test:generate, verify:samples, validate:pdfa, verify:fonts, verify:diagrams, verify:bundle |
 
 `--only <step>` runs one step, `--json` emits machine-readable output. One suite: `npx vitest run tests/<path>.test.ts` (dot reporter). Individual scripts (`npm run lint`, `npm run verify:docs`, …) still exist.
 
@@ -94,7 +94,7 @@ import the `parser/` reader/modifier — they operate on existing PDFs by design
 
 ## Counts and versions
 
-3827 tests across 160 files, 292 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
+3836 tests across 161 files, 292 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
 `docs/assets/ecosystem.json` is the source of every count and version quoted in the docs; run `npm run verify:docs` after touching any of them.
 Coverage: ≥ 88 % statements enforced by CI (currently 91.5 % statements; the thresholds live once in `vitest.config.ts`).
 

@@ -14,9 +14,9 @@
  * the tail of that step's log and stops.
  *
  * Usage:
- *   npm run gate                     # --ci: everything except the two optional steps
+ *   npm run gate                     # --ci: everything except the three optional steps
  *   npm run gate:fast                # typecheck, lint, test, verify:docs
- *   npx tsx scripts/gate.ts --publish   # everything, including validate:pdfa and verify:fonts
+ *   npx tsx scripts/gate.ts --publish   # everything, including validate:pdfa, verify:fonts and verify:diagrams
  *   npx tsx scripts/gate.ts --only lint
  *   npx tsx scripts/gate.ts --from build
  *   npx tsx scripts/gate.ts --ci --json
@@ -28,15 +28,16 @@
  *
  * Profiles:
  *   --fast     typecheck:all, lint, test, verify:docs
- *   --ci       every step except validate:pdfa and verify:fonts (default)
- *   --publish  every step; validate:pdfa and verify:fonts SKIP with a reason
- *              when veraPDF or fonts/ttf/ is absent, like the scripts they wrap
+ *   --ci       every step except validate:pdfa, verify:fonts and verify:diagrams (default)
+ *   --publish  every step; validate:pdfa, verify:fonts and verify:diagrams SKIP
+ *              with a reason when veraPDF, fonts/ttf/ or a Chromium-family
+ *              browser is absent, like the scripts they wrap
  *
  * Flags:
  *   --require-all  a step that would SKIP fails instead, with
  *                  `required by --require-all: <reason>`. CI and the release
- *                  workflow pass it: a runner without veraPDF or without the
- *                  source fonts must go red, never quietly skip a check.
+ *                  workflow pass it: a runner without veraPDF, the source
+ *                  fonts or a browser must go red, never quietly skip a check.
  *
  * Exit codes:
  *   0 — every selected step passed or was skipped with a reason
@@ -49,6 +50,8 @@ import { spawnSync, type SpawnSyncOptions } from 'node:child_process';
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, writeSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { findChromium } from './lib/chromium.js';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const LOG_DIR = join(REPO_ROOT, 'test-output', '.gate');
@@ -169,6 +172,10 @@ export const STEPS: readonly Step[] = [
     {
         id: 'verify:fonts', npmScript: 'verify:fonts', profiles: ['publish'],
         skipWhen: () => (sourceFontsPresent() ? null : 'fonts/ttf is absent'),
+    },
+    {
+        id: 'verify:diagrams', npmScript: 'verify:diagrams', profiles: ['publish'],
+        skipWhen: () => (findChromium() ? null : 'no Chromium-family browser (set CHROME_PATH)'),
     },
 ];
 

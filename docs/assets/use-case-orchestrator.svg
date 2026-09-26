@@ -56,7 +56,8 @@
   <!-- Lane 2: stderr -->
   <line x1="658" y1="266" x2="262" y2="266" stroke="#475569" stroke-width="2" marker-end="url(#uco-ah)"/>
   <text x="459" y="258" text-anchor="middle" font-size="11.5" font-weight="600" fill="#334155">stderr — diagnostics, then the envelope as the LAST line</text>
-  <text x="459" y="282" text-anchor="middle" font-size="11" fill="#64748B">{ ok, command, output, bytes, creationDate, diagnostics[] } or { ok: false, error: { code, message } }</text>
+  <text x="459" y="280" text-anchor="middle" font-size="10.5" fill="#64748B">{ ok, command, output, bytes, creationDate, diagnostics[] }</text>
+  <text x="459" y="294" text-anchor="middle" font-size="10.5" fill="#64748B">or { ok: false, error: { code, message } }</text>
 
   <!-- Lane 3: exit code -->
   <line x1="658" y1="320" x2="460" y2="320" stroke="#DC2626" stroke-width="2"/>
@@ -71,10 +72,10 @@
   <text x="650" y="438" text-anchor="middle" font-size="11.5" fill="#0E7490">every command, its flags, the global flags and the error codes — one JSON document,</text>
   <text x="650" y="454" text-anchor="middle" font-size="11.5" fill="#0E7490">enough to register the CLI as a tool set at runtime; schema render / status pin input and envelope</text>
 
-  <path d="M380 433 C 300 433, 220 433, 150 350" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#uco-ah)"/>
-  <text x="228" y="404" text-anchor="middle" font-size="11.5" fill="#64748B">discover once,</text>
-  <text x="228" y="420" text-anchor="middle" font-size="11.5" fill="#64748B">validate with your</text>
-  <text x="228" y="436" text-anchor="middle" font-size="11.5" fill="#64748B">own JSON Schema tooling</text>
+  <path d="M380 433 H150 V350" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#uco-ah)"/>
+  <text x="265" y="380" text-anchor="middle" font-size="11.5" fill="#64748B">discover once,</text>
+  <text x="265" y="396" text-anchor="middle" font-size="11.5" fill="#64748B">validate with your</text>
+  <text x="265" y="412" text-anchor="middle" font-size="11.5" fill="#64748B">own JSON Schema tooling</text>
 
   <!-- Footer -->
   <rect x="40" y="486" width="880" height="58" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>

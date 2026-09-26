@@ -225,7 +225,7 @@
 <!-- ═══════════════ Metrics Bar ═══════════════ -->
 <section class="metrics" aria-label="Key metrics">
   <div class="metric">
-    <div class="metric-value">3827+</div>
+    <div class="metric-value">3836+</div>
     <div class="metric-label">Tests</div>
   </div>
   <div class="metric">
@@ -296,7 +296,7 @@
       <div class="feature-card">
         <div class="feature-icon fi-production"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3>Production Ready</h3>
-        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 3827+ tests across 160 files, 90%+ statement coverage, SLSA provenance.</p>
+        <p>AsyncGenerator streaming (including object-boundary page-by-page), Web Worker off-thread generation, PDF parser &amp; modifier. 3836+ tests across 161 files, 90%+ statement coverage, SLSA provenance.</p>
       </div>
 
       <div class="feature-card">
@@ -965,13 +965,21 @@ npx pdfnative-cli verify -i signed.pdf --strict</code></pre>
       <div class="mcp-config">
         <h3>JSX in, PDF bytes out</h3>
 <pre><code class="language-bash">npm install pdfnative-react pdfnative react</code></pre>
-<pre><code class="language-typescript">import { Document, Heading, Text, Table, renderToBytes } from 'pdfnative-react';
+<pre><code class="language-typescript">import {
+  Document, Heading, Text, Table, renderToBytes,
+} from 'pdfnative-react';
 
 const bytes = renderToBytes(
   &lt;Document title="Invoice #1024" footerText="Acme Inc"&gt;
     &lt;Heading level={1}&gt;Invoice #1024&lt;/Heading&gt;
     &lt;Text&gt;Thank you for your business.&lt;/Text&gt;
-    &lt;Table headers={['Item', 'Total']} rows={[{ cells: ['Pro plan', '$49.00'], type: 'default', pointed: false }]} zebra /&gt;
+    &lt;Table
+      headers={['Item', 'Total']}
+      rows={[{
+        cells: ['Pro plan', '$49.00'], type: 'default', pointed: false,
+      }]}
+      zebra
+    /&gt;
   &lt;/Document&gt;,
 ); // → Uint8Array, a valid PDF</code></pre>
         <p>Compiles on-device — no SaaS round-trip, no Chromium. See the <a href="guides/react.html">React guide →</a> &middot; <a href="guides/use-cases-react.html">React use cases →</a> &middot; <a href="playgrounds/react.html">Try the React playground →</a> &middot; <a href="playgrounds/docspec-lint.html">Lint a DocSpec →</a></p>

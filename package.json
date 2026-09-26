@@ -70,6 +70,7 @@
     "verify:fonts": "npx tsx scripts/verify-fonts.ts",
     "verify:unicode": "npx tsx scripts/generate-use-data.ts --check",
     "verify:bundle": "npx tsx scripts/verify-bundle.ts",
+    "verify:diagrams": "npx tsx scripts/verify-diagrams.ts",
     "verify:docs": "npx tsx scripts/verify-docs.ts",
     "docs:llms": "npx tsx scripts/build-llms-full.ts",
     "docs:guides": "npx tsx scripts/build-guides.ts",

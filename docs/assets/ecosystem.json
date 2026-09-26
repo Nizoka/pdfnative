@@ -110,7 +110,7 @@
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 160,
+    "testFiles": 161,
     "sampleGenerators": 49,
     "samplePdfs": 292,
     "sampleCategories": 38,
@@ -121,7 +121,7 @@
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 3827,
+    "tests": 3836,
     "coverageStatements": 90,
     "coverageMeasured": 91.5,
     "scripts": 27,

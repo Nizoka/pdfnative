@@ -77,3 +77,4 @@ paths:
 - API Reference table in README for every public function
 - Code examples for non-obvious usage (font registration, worker setup)
 - Changelog entry for every user-visible change
+- Diagrams (`docs/assets/*.svg`) are hand-written SVG in the house style (960-unit viewBox, the shared palette and Inter stack, orthogonal connectors). Keep at least 8 units between a label and its box edge; a label that sits on a line gets an opaque background rectangle painted after the line; a deliberate overlap (a strikethrough, a group pill astride its border) carries `data-overlap="intentional"`. `npm run verify:diagrams` measures every diagram in a headless Chromium, with the site fonts and with Arial, and is a publish-gate step

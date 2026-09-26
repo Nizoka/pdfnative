@@ -81,7 +81,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 3827+ tests across 160 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 3836+ tests across 161 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **NPM provenance** — signed builds via GitHub Actions OIDC
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
 - **No telemetry, no network calls** — verifiable in source. The library never opens a socket, fetches remote fonts, or phones home
@@ -1315,7 +1315,7 @@ src/
 fonts/                    # Pre-built font data modules (27 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (49 generators, 292 PDFs)
-tests/                    # 3827+ tests (160 files: unit + integration + fuzz + parser + docs)
+tests/                    # 3836+ tests (161 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1327,7 +1327,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (3827+ tests)
+npm run test             # vitest run (3836+ tests)
 npm run test:coverage    # vitest with v8 coverage (91.5 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate 292 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1338,13 +1338,14 @@ npm run typecheck:all       # Typecheck src/ + tests/ + scripts/
 npm run bench               # Performance benchmarks (vitest bench)
 npm run fonts:download      # Source TTFs → fonts/ttf/ (git-ignored): pinned by commit, release tag and SHA-256 in fonts/SOURCES.json; the five Latin subsets are cut from Noto Sans by the library itself — nothing binary is committed
 npm run verify:fonts        # Every fonts/*-data.js reproduces byte for byte from its source
+npm run verify:diagrams     # Documentation diagrams render without overflow, overlap or a line through a label
 ```
 
 ### Quality Metrics
 
 | Metric | Value |
 |--------|-------|
-| Tests | 3827+ (160 files) |
+| Tests | 3836+ (161 files) |
 | Statement coverage | 91.5 % (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |

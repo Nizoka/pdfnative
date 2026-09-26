@@ -169,7 +169,7 @@ src/
 fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (49 generators, 292 PDFs) and the verification scripts
-tests/            # 160 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+tests/            # 161 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -196,7 +196,7 @@ bench/            # Performance benchmarks (vitest bench)
 - [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run verify:samples && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A validation](#pdfa-validation-verapdf); new PDF/A-claiming samples bump `declared.pdfaSamples`; an intended output change is rebaselined with `npx tsx scripts/verify-samples.ts --update` and explained in the commit)
 - [ ] If docs/, playgrounds, README or llms files changed: `npm run verify:docs` passes
 - [ ] CHANGELOG.md updated if user-facing changes
-- [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `verify:docs`
+- [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `verify:docs`, `verify:diagrams` (documentation diagrams render without overflow or overlap)
 
 ## Commit Messages
 
