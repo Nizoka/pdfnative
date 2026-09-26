@@ -468,7 +468,7 @@ pdfnative render --input doc.json --output report.pdf \
 <tbody><tr>
 <td><code>--pdfx pdfx4</code></td>
 <td>—</td>
-<td>Claim PDF/X-4 (ISO 15930-7). Requires a printer (<code>prtr</code>) output intent, every font embedded (<code>--font latin --lang latin</code> or <code>--font-file</code>), a <code>trapped</code> state of <code>true</code> or <code>false</code>, and a TrimBox or ArtBox per page. Engine coherence errors (missing output profile, unknown trapping state, <code>layout.pdfx</code> combined with <code>layout.tagged</code>, …) map to <code>E_INPUT</code>; the <code>--json</code> envelope carries <code>pdfx: &quot;pdfx4&quot;</code></td>
+<td>Claim PDF/X-4 (ISO 15930-7). Requires a printer (<code>prtr</code>) output intent and every font embedded (<code>--font latin --lang latin</code> or <code>--font-file</code>). <code>--trapped unknown</code> is refused; omitted, the file declares <code>/Trapped /False</code>. Each page gets a TrimBox — from <code>layout.print</code> (bleed or <code>trimBox</code>), else the BleedBox or MediaBox — unless it sets an ArtBox; both is an error. Engine coherence errors (missing output profile, <code>--trapped unknown</code>, <code>layout.pdfx</code> combined with <code>layout.tagged</code>, TrimBox and ArtBox together, …) map to <code>E_INPUT</code>; the <code>--json</code> envelope carries <code>pdfx: &quot;pdfx4&quot;</code></td>
 </tr>
 <tr>
 <td><code>--output-intent-icc &lt;file.icc&gt;</code></td>
@@ -483,7 +483,7 @@ pdfnative render --input doc.json --output report.pdf \
 <tr>
 <td><code>--trapped true|false|unknown</code></td>
 <td>—</td>
-<td><code>/Info /Trapped</code> (also XMP); wins over <code>metadata.trapped</code> in the JSON. PDF/X needs <code>true</code> or <code>false</code></td>
+<td><code>/Info /Trapped</code> (also XMP); wins over <code>metadata.trapped</code> in the JSON. Under <code>--pdfx</code>, <code>unknown</code> is refused and omitted means <code>false</code></td>
 </tr>
 </tbody></table>
 <p>Colours everywhere — document JSON, <code>--layout</code> and colour flags — accept CMYK beside hex / RGB: <code>&quot;c m y k&quot;</code> operands in 0–1 or <code>[c,m,y,k]</code> in percent (<code>DeviceCMYK</code>). <code>layout.print.marks.colourBars: true | { tints, size }</code> adds printer&#39;s colour bars to the marks. Re-check the result with <code>pdfnative inspect --check pdfx</code> (structural validation evidence, not a certified preflight).</p>
@@ -799,7 +799,7 @@ echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;tex
 </tr>
 <tr>
 <td><code>--timestamp-timeout &lt;ms&gt;</code> <em>(v1.5.0)</em></td>
-<td>—</td>
+<td><code>10000</code></td>
 <td>Upper bound on the TSA round-trip (positive integer; a usage error without <code>--timestamp</code>). Reported as <code>timestamp.timeoutMs</code> in the <code>--json</code> envelope</td>
 </tr>
 <tr>
@@ -1889,7 +1889,7 @@ SOURCE_DATE_EPOCH=1767225600 pdfnative render --input doc.json --output c.pdf
 pdfnative inspect --input brochure.pdf --check pdfx     # exit 0 when the structural claim holds
 pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.errors
 </code></pre>
-<p><code>press.icc</code> must be a printer (<code>prtr</code>) CMYK profile; every page needs a TrimBox or ArtBox (<code>layout.print</code>). <code>--strict</code> turns the <code>PDFX_*</code> diagnostics into <code>E_CHECK_FAILED</code> before any byte is written.</p>
+<p><code>press.icc</code> must be a printer (<code>prtr</code>) CMYK profile. Each page gets a TrimBox automatically (from <code>layout.print</code>, else the BleedBox or MediaBox) unless it sets an ArtBox — never both. <code>--strict</code> turns the <code>PDFX_*</code> diagnostics into <code>E_CHECK_FAILED</code> before any byte is written.</p>
 <h3 id="house-font--typography-flags-v150">House font + typography flags <em>(v1.5.0)</em><a class="heading-anchor" href="#house-font--typography-flags-v150" aria-label="Link to this section">#</a></h3>
 <pre><code class="language-bash">pdfnative render --input report.json --output report.pdf \
   --font-file fonts/House-Regular.ttf:house --lang house \

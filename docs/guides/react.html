@@ -355,8 +355,8 @@ required under <code>pdfx</code>. The coherence rules are the engine&#39;s, and 
 (one conformance claim per file) and <strong>with <code>layout.encryption</code></strong>; the
 <code>outputIntent</code> must carry a real <strong>press profile</strong> (ICC device class <code>prtr</code>,
 not a monitor profile such as sRGB — none is bundled, and a hand-made ICC stub
-is rejected at build time); <code>metadata.trapped</code> must be <code>&#39;True&#39;</code> or <code>&#39;False&#39;</code>,
-never <code>&#39;Unknown&#39;</code>; every font must be embedded through <code>fontEntries</code>; and each
+is rejected at build time); <code>metadata.trapped</code> is <code>&#39;True&#39;</code> or <code>&#39;False&#39;</code>,
+never <code>&#39;Unknown&#39;</code> (omitted, the engine writes <code>&#39;False&#39;</code>); every font must be embedded through <code>fontEntries</code>; and each
 page carries a TrimBox <em>or</em> an ArtBox, not both. The engine performs <strong>no
 RGB→CMYK conversion</strong>: RGB content under a CMYK or Gray intent is remapped
 through <code>/DefaultRGB</code>, and a CMYK colour under a non-CMYK intent is reported

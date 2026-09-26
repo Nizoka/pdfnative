@@ -574,6 +574,9 @@ copyBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(editor.value).then(() => {
     const prev = copyBtn.textContent; copyBtn.textContent = 'Copied!';
     setTimeout(() => { copyBtn.textContent = prev; }, 1200);
+  }).catch(() => {
+    const prev = copyBtn.textContent; copyBtn.textContent = 'Copy failed';
+    setTimeout(() => { copyBtn.textContent = prev; }, 1500);
   });
 });
 editor.addEventListener('input', () => { renderBtn.disabled = true; });

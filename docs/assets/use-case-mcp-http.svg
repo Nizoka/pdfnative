@@ -65,7 +65,7 @@
   <text x="730" y="402" text-anchor="middle" font-size="13" font-weight="700" fill="#3730A3">PDFNATIVE_MCP_CACHE_DIR — opt-in response cache</text>
   <text x="730" y="421" text-anchor="middle" font-size="11" fill="#4F46E5">key: SHA-256 of { tool, apiVersion, input } · 1 h TTL · 256 MiB LRU</text>
   <text x="730" y="437" text-anchor="middle" font-size="11" fill="#4F46E5">namespaced by tool API version + pinned creation instant</text>
-  <text x="730" y="453" text-anchor="middle" font-size="11" fill="#4F46E5">base64-mode calls only — file mode is never cached</text>
+  <text x="730" y="453" text-anchor="middle" font-size="11" fill="#4F46E5">base64-mode and read-only calls — file mode is never cached</text>
 
   <!-- The edge that does not exist: a public interface -->
   <line x1="380" y1="204" x2="190" y2="300" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="5 5"/>

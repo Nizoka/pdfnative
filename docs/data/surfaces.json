@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable form of the capability × surface table in docs/guides/choose.md. Hand-maintained, verified against the sources on the date below: library `call` names against src/index.ts exports, CLI `command` names against packages.pdfnative-cli.commandGroups and MCP `tool` names against packages.pdfnative-mcp.tools in docs/assets/ecosystem.json (the single source of truth for names and counts — regenerate nothing from this file), React entries against docs/guides/react.md. Each `since` is a version of that surface's OWN package (pdfnative, pdfnative-cli, pdfnative-mcp or pdfnative-react); it is omitted where the capability predates 1.0.0 or the introducing release is not documented. `supported: false` cells carry a note naming the honest alternative where one exists.",
-  "verifiedOn": "2026-09-25",
+  "verifiedOn": "2026-09-26",
   "capabilities": [
     {
       "id": "generate",
@@ -174,7 +174,7 @@
       "id": "deterministic-output",
       "label": "Reproducible bytes",
       "library": { "supported": true, "call": "layout.creationDate, or setDefaultCreationDate(date) once per process; getDefaultCreationDate", "since": "1.8.0", "notes": "Pins /CreationDate, /ModDate, the XMP dates and therefore the trailer /ID. Dates are written in UTC with an explicit +00'00' offset, so a pinned instant is byte-identical across hosts without a TZ pin. The {date} header/footer placeholder follows the pinned date since 1.8.0." },
-      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Since 1.5.0 a global --creation-date <iso8601> (SOURCE_DATE_EPOCH fallback) pins every command in one invocation and is echoed in the --json envelope; global flags may precede the command. layout.creationDate in the document JSON still works." },
+      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Since 1.5.0 a global --creation-date <iso8601> (SOURCE_DATE_EPOCH fallback) pins every PDF written in one invocation (render, and every task of a batch) and is echoed in the --json envelope; sign --signing-time and metadata --mod-date stay separate instants. Global flags may precede the command. layout.creationDate in the document JSON still works." },
       "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.6.0", "notes": "creationDate (ISO-8601) on all nine document tools since 1.6.0; since 1.7.0 the server-wide pin PDFNATIVE_MCP_CREATION_DATE, then SOURCE_DATE_EPOCH, then the clock — an exported SOURCE_DATE_EPOCH pins every document." },
       "react": { "supported": true, "call": "<Document creationDate={Date | string}> · setDefaultCreationDate / getDefaultCreationDate (re-exported)", "since": "1.3.0", "notes": "Also a DocSpec field. The library reads no environment variable." }
     }

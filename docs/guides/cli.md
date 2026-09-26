@@ -268,10 +268,10 @@ One conformance claim per file — `--pdfx` is mutually exclusive with `--tagged
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pdfx pdfx4` | — | Claim PDF/X-4 (ISO 15930-7). Requires a printer (`prtr`) output intent, every font embedded (`--font latin --lang latin` or `--font-file`), a `trapped` state of `true` or `false`, and a TrimBox or ArtBox per page. Engine coherence errors (missing output profile, unknown trapping state, `layout.pdfx` combined with `layout.tagged`, …) map to `E_INPUT`; the `--json` envelope carries `pdfx: "pdfx4"` |
+| `--pdfx pdfx4` | — | Claim PDF/X-4 (ISO 15930-7). Requires a printer (`prtr`) output intent and every font embedded (`--font latin --lang latin` or `--font-file`). `--trapped unknown` is refused; omitted, the file declares `/Trapped /False`. Each page gets a TrimBox — from `layout.print` (bleed or `trimBox`), else the BleedBox or MediaBox — unless it sets an ArtBox; both is an error. Engine coherence errors (missing output profile, `--trapped unknown`, `layout.pdfx` combined with `layout.tagged`, TrimBox and ArtBox together, …) map to `E_INPUT`; the `--json` envelope carries `pdfx: "pdfx4"` |
 | `--output-intent-icc <file.icc>` | — | ICC profile for `layout.outputIntent` (RGB, CMYK or Gray; `prtr` class for PDF/X-4). 16 MiB cap, `acsp` signature checked, then validated by the engine |
 | `--output-intent-id <s>` | ICC file basename | `outputConditionIdentifier` of the output intent |
-| `--trapped true\|false\|unknown` | — | `/Info /Trapped` (also XMP); wins over `metadata.trapped` in the JSON. PDF/X needs `true` or `false` |
+| `--trapped true\|false\|unknown` | — | `/Info /Trapped` (also XMP); wins over `metadata.trapped` in the JSON. Under `--pdfx`, `unknown` is refused and omitted means `false` |
 
 Colours everywhere — document JSON, `--layout` and colour flags — accept CMYK beside hex / RGB: `"c m y k"` operands in 0–1 or `[c,m,y,k]` in percent (`DeviceCMYK`). `layout.print.marks.colourBars: true | { tints, size }` adds printer's colour bars to the marks. Re-check the result with `pdfnative inspect --check pdfx` (structural validation evidence, not a certified preflight).
 
@@ -417,7 +417,7 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 | `--timestamp <tsa-url>` *(v1.4.0)* | — | Embed an **RFC 3161 timestamp token** from the given TSA (PAdES **B-T** — combine with `--profile pades` for a true ETSI baseline). The only network opt-in on `sign` — SSRF-guarded, no fallback: transport failure is `E_NETWORK`, a malformed response is `E_PARSE`. `--dry-run` never touches the network |
 | `--timestamp-digest <algo>` *(v1.4.0)* | `sha256` | TSA digest: `sha256`, `sha384`, or `sha512` |
 | `--timestamp-nonce <hex>` *(v1.4.0)* | random | Explicit RFC 3161 nonce (testing / reproducibility) |
-| `--timestamp-timeout <ms>` *(v1.5.0)* | — | Upper bound on the TSA round-trip (positive integer; a usage error without `--timestamp`). Reported as `timestamp.timeoutMs` in the `--json` envelope |
+| `--timestamp-timeout <ms>` *(v1.5.0)* | `10000` | Upper bound on the TSA round-trip (positive integer; a usage error without `--timestamp`). Reported as `timestamp.timeoutMs` in the `--json` envelope |
 | `--digest <algo>` *(v1.4.0)* | `sha256` | CMS digest for RSA keys: `sha256`, `sha384`, or `sha512`. Combining `sha384`/`sha512` with `--algorithm ecdsa-sha256` is a usage error (exit 2) — ECDSA is SHA-256 only |
 | `--profile <p>` *(v1.4.0)* | `pkcs7` | `pkcs7` or `pades` — `pades` emits `ETSI.CAdES.detached` with the ESS signing-certificate-v2 attribute and omits signing-time |
 | `--allow-multiple` *(v1.4.0)* | off | Add a signature to an already-signed PDF instead of refusing (the 1.x idempotent default is preserved) |
@@ -987,7 +987,7 @@ pdfnative inspect --input brochure.pdf --check pdfx     # exit 0 when the struct
 pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.errors
 ```
 
-`press.icc` must be a printer (`prtr`) CMYK profile; every page needs a TrimBox or ArtBox (`layout.print`). `--strict` turns the `PDFX_*` diagnostics into `E_CHECK_FAILED` before any byte is written.
+`press.icc` must be a printer (`prtr`) CMYK profile. Each page gets a TrimBox automatically (from `layout.print`, else the BleedBox or MediaBox) unless it sets an ArtBox — never both. `--strict` turns the `PDFX_*` diagnostics into `E_CHECK_FAILED` before any byte is written.
 
 ### House font + typography flags _(v1.5.0)_
 

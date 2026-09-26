@@ -250,7 +250,7 @@ Produces a multi-page document from a list of content blocks.
 }
 ```
 
-It **requires** `outputIntent` with the ICC profile of the printing condition (device class `prtr`, CMYK or Gray — no press profile is bundled) and needs `embedFonts: true` for a conformant file (`PDFX_NO_FONT_ENTRIES` otherwise; `strict: true` refuses with `PDF_X_COMPLIANCE_VIOLATION`); it is exclusive with `pdfA` and `encrypt`; `metadata.trapped` must be `'True'` or `'False'`; a page carries a TrimBox or an ArtBox, not both. Incoherent requests are refused with `VALIDATION_ERROR` before any work is done. The profile must be a real ICC file (`acsp` signature, consistent size field) — a hand-made stub is rejected with `PRINT_ERROR`. Check the result with `validate_pdf { standard: 'pdf-x-4' }` — a structural check, **not a certified preflight**; the `print_ready` prompt walks through the recipe.
+It **requires** `outputIntent` with the ICC profile of the printing condition (device class `prtr`, CMYK or Gray — no press profile is bundled) and needs `embedFonts: true` for a conformant file (`PDFX_NO_FONT_ENTRIES` otherwise; `strict: true` refuses with `PDF_X_COMPLIANCE_VIOLATION`); it is exclusive with `pdfA` and `encrypt`; `metadata.trapped` must not be `'Unknown'` (omitted = `'False'`); a page carries a TrimBox or an ArtBox, not both. Incoherent requests are refused with `VALIDATION_ERROR` before any work is done. The profile must be a real ICC file (`acsp` signature, consistent size field) — a hand-made stub is rejected with `PRINT_ERROR`. Check the result with `validate_pdf { standard: 'pdf-x-4' }` — a structural check, **not a certified preflight**; the `print_ready` prompt walks through the recipe.
 
 ---
 

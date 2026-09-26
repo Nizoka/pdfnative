@@ -6,7 +6,7 @@
 > Longer forms: [llms.txt](https://pdfnative.dev/llms.txt) (index),
 > [llms-full.txt](https://pdfnative.dev/llms-full.txt) (full corpus),
 > [llms-index.json](https://pdfnative.dev/llms-index.json) (per-page sizes and anchors).
-> _Verified on 2026-09-25 against the source tree by `npm run verify:docs`._
+> _Verified on 2026-09-26 against the source tree by `npm run verify:docs`._
 
 ## What it is
 

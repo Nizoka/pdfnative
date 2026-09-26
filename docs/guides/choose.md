@@ -68,7 +68,7 @@ means the surface does not offer it.
 | PDF/X-4 conformance claim | `layout: { pdfx: 'pdfx4', outputIntent, metadata.trapped }` _(v1.8.0; exclusive with `tagged` and encryption)_ | `render --pdfx pdfx4 --output-intent-icc <file.icc> --trapped true\|false\|unknown` (coherence errors → `E_INPUT`, `PDFX_*` diagnostics fail under `--strict`) _(v1.5.0)_ | `pdfx: 'pdfx4'` on six document tools (needs a `prtr` `outputIntent` and `embedFonts: true`; exclusive with `pdfA` / `encrypt`) _(v1.7.0)_ | `<Document pdfx="pdfx4" outputIntent metadata={{ trapped }}>` with eight `L_PDFX_*` lint rules _(v1.3.0)_ |
 | Validate PDF/X-4 | `validatePdfX` _(v1.8.0; structural ISO 15930-7 prerequisites, not a certified preflight)_ | `inspect --pdfx` / `--check pdfx` _(v1.5.0)_ | `validate_pdf` with `standard: 'pdf-x-4'` (result carries `caveats[]`); `inspect_pdf` reports `pdfX` _(v1.7.0)_ | — (import `validatePdfX` from the `pdfnative` peer and run it on the rendered bytes) |
 | Printer's marks: registration colour and colour control bars | `layout.print.marks` (`true`, or `{ colourBars: true \| { tints, size } }`) _(v1.8.0; bars off by default and byte-neutral when off)_ | `render` (`print.marks` incl. `colourBars` in the document JSON or a `--layout` file) _(v1.5.0)_ | `print.marks: true` _(v1.6.0)_ or `{ colourBars: true \| { tints, size } }` _(v1.7.0)_ | `<Document print={{ marks: { colourBars: true } }}>` (`ColourBarOptions`, `L_PRINT_COLOUR_BARS`) _(v1.3.0)_ |
-| Reproducible bytes | `layout.creationDate`, or `setDefaultCreationDate(date)` once per process; `getDefaultCreationDate` _(v1.8.0; pin `TZ` too for cross-host identity)_ | global `--creation-date <iso8601>` (`SOURCE_DATE_EPOCH` fallback), echoed in the `--json` envelope _(v1.5.0)_ | `creationDate` on all nine document tools _(v1.6.0)_; server-wide `PDFNATIVE_MCP_CREATION_DATE` → `SOURCE_DATE_EPOCH` → clock _(v1.7.0)_ | `<Document creationDate>` (also a DocSpec field); `setDefaultCreationDate` / `getDefaultCreationDate` re-exported; no environment variable is read _(v1.3.0)_ |
+| Reproducible bytes | `layout.creationDate`, or `setDefaultCreationDate(date)` once per process; `getDefaultCreationDate` _(v1.8.0; dates are written in UTC, so no `TZ` pin is needed)_ | global `--creation-date <iso8601>` (`SOURCE_DATE_EPOCH` fallback), echoed in the `--json` envelope _(v1.5.0)_ | `creationDate` on all nine document tools _(v1.6.0)_; server-wide `PDFNATIVE_MCP_CREATION_DATE` → `SOURCE_DATE_EPOCH` → clock _(v1.7.0)_ | `<Document creationDate>` (also a DocSpec field); `setDefaultCreationDate` / `getDefaultCreationDate` re-exported; no environment variable is read _(v1.3.0)_ |
 
 ## Honest notes
 
@@ -112,7 +112,7 @@ document rewrite.
 - [Onboarding](onboarding.html) — the 90-second install-and-first-call for
   each surface.
 - [Ecosystem use cases](use-cases.html) — five production architectures that
-  compose these surfaces, with diagrams, plus per-surface cases for the
+  compose these surfaces, four with diagrams, plus per-surface cases for the
   [CLI](use-cases-cli.html), the [MCP server](use-cases-mcp.html) and the
   [React renderer](use-cases-react.html).
 - [Self-verifying generation](self-verify.html) — the generate → inspect →

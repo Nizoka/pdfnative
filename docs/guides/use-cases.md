@@ -88,9 +88,10 @@ offline inside the enclave**.
 
 ```bash
 # Connected zone — sign with a timestamp (B-T), then gather the evidence.
+# --profile pades → ETSI.CAdES.detached; --timestamp → RFC 3161, SSRF-guarded.
 pdfnative sign --input contract.pdf --output signed.pdf \
-  --profile pades \                                    # ETSI.CAdES.detached
-  --timestamp https://tsa.example.com/rfc3161          # RFC 3161, SSRF-guarded
+  --profile pades \
+  --timestamp https://tsa.example.com/rfc3161
 pdfnative ltv collect --input signed.pdf --online --output ltv-data.json
 
 # ── controlled transfer of ltv-data.json across the air gap ──
@@ -139,12 +140,14 @@ not**.
 ```yaml
 # .github/workflows/documents.yml
 - name: Render candidate (hard-fail on PDF/A diagnostics)
-  run: pdfnative render --input templates/invoice.json \
-         --output out/candidate.pdf --tagged pdfa2b --strict
+  run: |
+    pdfnative render --input templates/invoice.json \
+      --output out/candidate.pdf --tagged pdfa2b --strict
 
 - name: Diff against the golden file
-  run: pdfnative compare golden/invoice.pdf out/candidate.pdf \
-         --mode both --ignore-whitespace --format json
+  run: |
+    pdfnative compare golden/invoice.pdf out/candidate.pdf \
+      --mode both --ignore-whitespace --format json
   # identical → exit 0 · different → report on stdout, then exit 1 / E_CHECK_FAILED
 ```
 
@@ -206,14 +209,14 @@ distinguishes users.
 ## Case 5 — Swap the compressor: zipnative as pdfnative's DEFLATE codec
 
 pdfnative ships no compressor of its own. In Node, `initNodeCompression`
-wires `node:zlib`; in a browser, Deno, Bun or a Worker there is nothing
-synchronous to wire, so `compress: true` falls back to stored blocks — a
-valid PDF, but not a smaller one. Case 1 renders on the reader's device,
-which is exactly where that gap sits. [zipnative](https://zipnative.dev) is
-the sibling zero-dependency ZIP engine, and its pure-TypeScript DEFLATE
-encoder is synchronous, deterministic and runtime-agnostic — precisely what
-`setDeflateRawImpl` expects: raw RFC 1951 output, to which pdfnative adds the
-zlib envelope itself.
+wires `node:zlib`; a browser, Deno, Bun or a Worker has no built-in
+synchronous deflate, so `compress: true` falls back to stored blocks — a
+valid PDF, but not a smaller one — until you inject one. Case 1 does that
+with fflate's `zlibSync` through `setDeflateImpl`.
+[zipnative](https://zipnative.dev) is the sibling zero-dependency ZIP engine,
+and its pure-TypeScript DEFLATE encoder is synchronous, deterministic and
+runtime-agnostic — precisely what `setDeflateRawImpl` expects: raw RFC 1951
+output, to which pdfnative adds the zlib envelope itself.
 
 ```ts
 import { getCodec, METHOD_DEFLATE } from 'zipnative';
@@ -239,8 +242,9 @@ What you gain, concretely:
   with a pinned `creationDate` the *compressed* PDF is byte-identical on
   every runtime, not just the uncompressed one. The CLI, MCP and React
   equivalents of the date pin are in the per-surface pages.
-- **Composition** — Case 1's on-device render now ships compressed streams,
-  and Case 4's edge responses shrink without a native module in the runtime.
+- **Composition** — Case 1's on-device render can take a deterministic
+  compressor from the same zero-dependency family instead of fflate, and
+  Case 4's edge responses shrink without a native module in the runtime.
 
 Honest limits: zipnative is one more package to install and, in Case 1, one
 more module to deliver to the device. `setDeflateRawImpl` is process-global

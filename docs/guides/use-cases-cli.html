@@ -15,7 +15,7 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/use-cases-cli.html">
   <meta property="og:title" content="CLI use cases — pdfnative">
-  <meta property="og:description" content="Byte-reproducible document builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, and an any-language orchestrator on the process contract — four CLI architectures with diagrams, each built from shipped flags.">
+  <meta property="og:description" content="Byte-reproducible document builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, and an any-language orchestrator on the process contract — four CLI architectures, three with diagrams, each built from shipped flags.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -265,7 +265,10 @@ opportunities inside a word are the soft hyphens the author wrote, which are
 honoured unconditionally. <code>metrics: &quot;exact&quot;</code> acts on the base-14 path only —
 once a font is registered, that font measures the text. A custom font covers
 only the code points in its own cmap; everything else falls to the other
-registered fonts, so pair it with <code>--font latin</code> for a Latin fallback.
+registered fonts, so pair it with <code>--font latin --lang house-serif,latin</code> for
+a Latin fallback — <code>--font</code> alone registers the module without embedding it,
+and the first font in <code>--lang</code> order that covers a code point wins, so the
+house face goes first.
 <code>--kerning</code> needs a registered font. And <code>tnum</code> on Noto Sans is a no-op — the
 bundled module declares the feature, but its figures are already tabular and
 lining, so the tag substitutes nothing, which is exactly what the diagnostic
@@ -282,18 +285,19 @@ on — never the human message.</p>
 <p><img src="../assets/use-case-orchestrator.svg" alt="Architecture: an orchestrator written in any language spawns one pdfnative process per task and reads three lanes back — the artefact on stdout (PDF bytes, extracted text, or the JSON report of inspect, verify and batch), the JSON envelope as the last line of stderr, and the exit code 0, 1 or 2. A side box shows pdfnative schema manifest, which lists every command, its flags, the global flags and the 12 stable error codes as one JSON document, so the orchestrator can register the CLI as a tool set at runtime. A dry run validates the same inputs without writing a file or touching the network."></p>
 <pre><code class="language-python">import json, subprocess
 
-def pdfnative(*args: str) -&gt; tuple[dict | None, str]:
-    &quot;&quot;&quot;One process per task: (stderr envelope or None, stdout artefact).&quot;&quot;&quot;
+def pdfnative(*args: str) -&gt; tuple[int, dict | None, str]:
+    &quot;&quot;&quot;One process per task: (exit code, stderr envelope or None, stdout artefact).&quot;&quot;&quot;
     p = subprocess.run([&quot;pdfnative&quot;, &quot;--json&quot;, &quot;--quiet&quot;, *args], capture_output=True, text=True)
     lines = p.stderr.strip().splitlines()
-    envelope = json.loads(lines[-1]) if lines else None          # the envelope is the LAST stderr line
-    if p.returncode != 0:                                         # 1 = runtime error, 2 = usage error
-        raise RuntimeError(f&quot;{envelope[&#39;error&#39;][&#39;code&#39;]}: {envelope[&#39;error&#39;][&#39;message&#39;]}&quot;)
-    return envelope, p.stdout
+    envelope = json.loads(lines[-1]) if lines else None           # the envelope is the LAST stderr line
+    failed_check = p.returncode == 1 and envelope is not None and envelope[&quot;error&quot;][&quot;code&quot;] == &quot;E_CHECK_FAILED&quot;
+    if p.returncode != 0 and not failed_check:                     # 1 = runtime error, 2 = usage error
+        raise RuntimeError(f&quot;{envelope[&#39;error&#39;][&#39;code&#39;]}: {envelope[&#39;error&#39;][&#39;message&#39;]}&quot; if envelope else f&quot;exit {p.returncode}&quot;)
+    return p.returncode, envelope, p.stdout
 
 pdfnative(&quot;render&quot;, &quot;--input&quot;, &quot;doc.json&quot;, &quot;--output&quot;, &quot;out.pdf&quot;, &quot;--dry-run&quot;)  # preflight; never touches the network
-status, _ = pdfnative(&quot;render&quot;, &quot;--input&quot;, &quot;doc.json&quot;, &quot;--output&quot;, &quot;out.pdf&quot;)   # status[&quot;bytes&quot;], status[&quot;creationDate&quot;]
-_, verdict = pdfnative(&quot;inspect&quot;, &quot;--input&quot;, &quot;out.pdf&quot;, &quot;--check&quot;, &quot;pdfa&quot;, &quot;--summary&quot;)  # JSON on stdout, exit 0/1
+_, status, _ = pdfnative(&quot;render&quot;, &quot;--input&quot;, &quot;doc.json&quot;, &quot;--output&quot;, &quot;out.pdf&quot;)  # status[&quot;bytes&quot;]; status[&quot;creationDate&quot;] when pinned
+code, _, verdict = pdfnative(&quot;inspect&quot;, &quot;--input&quot;, &quot;out.pdf&quot;, &quot;--check&quot;, &quot;pdfa&quot;, &quot;--summary&quot;)  # verdict JSON on stdout; code 0 pass, 1 fail
 </code></pre>
 <p>The contract is discoverable at runtime. <code>pdfnative schema manifest</code> emits one
 JSON document listing every command, its flags, the global flags and the
@@ -334,7 +338,7 @@ ladder these cases build on.</li>
 <li><a href="cli.html">CLI guide</a> — the complete v1.5.0 command reference behind every
 flag above.</li>
 <li><a href="use-cases-mcp.html">MCP use cases</a> and <a href="use-cases-react.html">React use cases</a>
-— the same four problems seen from the other two surfaces.</li>
+— three cases each, the same engine seen from the other two surfaces.</li>
 <li><a href="../playgrounds/cli.html">CLI playground</a> — compose a <code>pdfnative</code> invocation
 in the browser.</li>
 <li><a href="../playgrounds/reproducible.html">Reproducible output playground</a> — pin a

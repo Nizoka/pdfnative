@@ -26,7 +26,7 @@
     <loc>https://pdfnative.dev/guides/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -226,7 +226,7 @@
     <loc>https://pdfnative.dev/guides/cli.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/cli.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/cli.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -234,7 +234,7 @@
     <loc>https://pdfnative.dev/guides/mcp.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/mcp.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/mcp.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -242,7 +242,7 @@
     <loc>https://pdfnative.dev/guides/react.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/react.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/react.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -380,7 +380,7 @@
     <loc>https://pdfnative.dev/learn/08-next-steps.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/learn/08-next-steps.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/learn/08-next-steps.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -412,7 +412,7 @@
     <loc>https://pdfnative.dev/playgrounds/reproducible.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/reproducible.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/reproducible.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -420,7 +420,7 @@
     <loc>https://pdfnative.dev/playgrounds/docspec-lint.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/docspec-lint.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/docspec-lint.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -436,7 +436,7 @@
     <loc>https://pdfnative.dev/playgrounds/cli.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/cli.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/cli.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -452,7 +452,7 @@
     <loc>https://pdfnative.dev/playgrounds/react.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/react.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/react.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -463,7 +463,7 @@
     <loc>https://pdfnative.dev/llms.txt</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/llms.txt"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/llms.txt"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -471,7 +471,7 @@
     <loc>https://pdfnative.dev/agent-brief.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/agent-brief.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/agent-brief.md"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
@@ -479,7 +479,7 @@
     <loc>https://pdfnative.dev/llms-full.txt</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/llms-full.txt"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/llms-full.txt"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -535,7 +535,7 @@
     <loc>https://pdfnative.dev/guides/cli.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/cli.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/cli.md"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -599,7 +599,7 @@
     <loc>https://pdfnative.dev/guides/mcp.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/mcp.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/mcp.md"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -663,7 +663,7 @@
     <loc>https://pdfnative.dev/guides/react.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/react.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/react.md"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -719,7 +719,7 @@
     <loc>https://pdfnative.dev/guides/choose.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/choose.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/choose.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -735,7 +735,7 @@
     <loc>https://pdfnative.dev/guides/use-cases.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -743,7 +743,7 @@
     <loc>https://pdfnative.dev/guides/use-cases-cli.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-cli.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-cli.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -751,7 +751,7 @@
     <loc>https://pdfnative.dev/guides/use-cases-mcp.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-mcp.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-mcp.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -759,7 +759,7 @@
     <loc>https://pdfnative.dev/guides/use-cases-react.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-react.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-react.html"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -767,7 +767,7 @@
     <loc>https://pdfnative.dev/guides/choose.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/choose.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/choose.md"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -783,7 +783,7 @@
     <loc>https://pdfnative.dev/guides/use-cases.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases.md"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -791,7 +791,7 @@
     <loc>https://pdfnative.dev/guides/use-cases-cli.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-cli.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-cli.md"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -799,7 +799,7 @@
     <loc>https://pdfnative.dev/guides/use-cases-mcp.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-mcp.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-mcp.md"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -807,7 +807,7 @@
     <loc>https://pdfnative.dev/guides/use-cases-react.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-react.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-react.md"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -815,7 +815,7 @@
     <loc>https://pdfnative.dev/llms-recipes.txt</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/llms-recipes.txt"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/llms-recipes.txt"/>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>

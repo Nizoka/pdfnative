@@ -15,7 +15,7 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/use-cases-react.html">
   <meta property="og:title" content="React use cases — pdfnative">
-  <meta property="og:description" content="A DocSpec lint gate in CI, long-form typography in JSX, and one component tree with two palettes for PDF/A and PDF/X-4 — three architectures built on pdfnative-react v1.3.0, each with diagrams and shipped APIs.">
+  <meta property="og:description" content="A DocSpec lint gate in CI, long-form typography in JSX, and one component tree with two palettes for PDF/A and PDF/X-4 — three architectures built on pdfnative-react v1.3.0, two with diagrams, all on shipped APIs.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -72,7 +72,7 @@ component tree into a screen PDF/A file and a press PDF/X-4 file. Every prop,
 export and lint rule named below ships in v1.3.0.</p>
 </blockquote>
 <p>This guide is the React companion to the <a href="use-cases.html">ecosystem use cases</a>,
-which sets the convention (problem, diagram, one load-bearing code block,
+which sets the convention (problem, architecture, one load-bearing code block,
 gains, limits) and covers the cross-surface architectures. The
 <a href="react.html">React guide</a> is the reference for the components, the rendering
 entry points and the <code>DocSpec</code> authoring surface used here.</p>
@@ -101,10 +101,11 @@ import { lintDocument, lintSpec, validateSpec } from &#39;pdfnative-react&#39;;
 import type { DocSpec } from &#39;pdfnative-react&#39;;
 import { Invoice } from &#39;../src/documents/Invoice.js&#39;;
 import stored from &#39;./fixtures/stored-specs.json&#39;; // DocSpecs as the database holds them
+import fixture from &#39;./fixtures/invoice.json&#39;;
 
 describe(&#39;document lint gate&#39;, () =&gt; {
   it(&#39;the JSX invoice has no blocking finding&#39;, () =&gt; {
-    const report = lintDocument(&lt;Invoice invoice={fixture} /&gt;, { overflow: true });
+    const report = lintDocument(&lt;Invoice data={fixture} /&gt;, { overflow: true });
     expect(report.findings.filter((f) =&gt; f.severity === &#39;error&#39;)).toEqual([]);
   });
   it.each(stored)(&#39;stored spec $title still validates and lints&#39;, (spec: unknown) =&gt; {
@@ -134,7 +135,8 @@ stored specs in the fixture come from.</li>
 still verified by veraPDF on the rendered file, and a PDF/X-4 claim by the
 engine&#39;s structural validator, which is deliberately not re-exported — it is
 one import away, as <code>docs/RECIPES.md</code> in the package shows:</p>
-<pre><code class="language-ts">import { validatePdfX } from &#39;pdfnative&#39;;
+<pre><code class="language-tsx">import { validatePdfX } from &#39;pdfnative&#39;;
+import { renderToBytes } from &#39;pdfnative-react&#39;;
 const { valid, errors } = validatePdfX(renderToBytes(&lt;PressSheet /&gt;));
 </code></pre>
 <p><code>L_OVERFLOW</code> (a block taller than the page) needs a full layout pass and is
@@ -259,7 +261,8 @@ to press. No press profile ships with either package; the ICC profile is yours.<
 <h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
 <ul>
 <li><a href="use-cases.html">Ecosystem use cases</a> — the hub: stored specs, air-gapped
-PAdES B-LTA, the CI regression gate and edge caching.</li>
+PAdES B-LTA, the CI regression gate, edge caching and zipnative as the
+DEFLATE codec.</li>
 <li><a href="react.html">React guide</a> — components, rendering entry points and the
 <code>DocSpec</code> authoring surface.</li>
 <li><a href="use-cases-cli.html">CLI use cases</a> and <a href="use-cases-mcp.html">MCP use cases</a>

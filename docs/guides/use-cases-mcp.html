@@ -78,7 +78,7 @@ a team — or a fleet of agents — that is N processes, N separate caches, and
 megabytes of base64 in every model context. Four operator
 variables turn the same binary into <strong>one shared server whose outputs are files
 the clients reference instead of bytes they carry</strong>.</p>
-<p><img src="../assets/use-case-mcp-http.svg" alt="Architecture: several MCP clients — desktop hosts and agent runtimes — reach one pdfnative-mcp process through an SSH tunnel or a reverse proxy the operator runs, because the server binds 127.0.0.1 only and never a public interface. Every POST to /mcp passes the loopback Host and Origin guard and the bearer-token gate configured with PDFNATIVE_MCP_HTTP_TOKEN before it reaches the stateless MCP handler; GET and DELETE answer 405. Tools called with outputMode file write inside the PDFNATIVE_MCP_OUTPUT_DIR sandbox, and the result returns a resource_link and the byte count instead of the PDF; the client reads the file back on demand through resources/read as pdfnative://output/{+path}. An opt-in PDFNATIVE_MCP_CACHE_DIR serves repeated base64-mode calls from a SHA-256 keyed cache namespaced by the tool API version and the pinned creation instant."></p>
+<p><img src="../assets/use-case-mcp-http.svg" alt="Architecture: several MCP clients — desktop hosts and agent runtimes — reach one pdfnative-mcp process through an SSH tunnel or a reverse proxy the operator runs, because the server binds 127.0.0.1 only and never a public interface. Every POST to /mcp passes the loopback Host and Origin guard and the bearer-token gate configured with PDFNATIVE_MCP_HTTP_TOKEN before it reaches the stateless MCP handler; GET and DELETE answer 405. Tools called with outputMode file write inside the PDFNATIVE_MCP_OUTPUT_DIR sandbox, and the result returns a resource_link and the byte count instead of the PDF; the client reads the file back on demand through resources/read as pdfnative://output/{+path}. An opt-in PDFNATIVE_MCP_CACHE_DIR serves repeated base64-mode and read-only calls from a SHA-256 keyed cache namespaced by the tool API version and the pinned creation instant."></p>
 <p>The building blocks, all in the server&#39;s <a href="mcp.html#environment-variables">environment
 variables</a>:</p>
 <ul>
@@ -93,7 +93,7 @@ request; a missing or wrong token gets <code>401</code> + <code>WWW-Authenticate
 comparison is constant-time and the token is never logged.</li>
 <li><code>PDFNATIVE_MCP_OUTPUT_DIR</code> enables <code>outputMode: &quot;file&quot;</code>: <code>outputPath</code> must
 be relative, end in <code>.pdf</code>, and resolve inside the sandbox (no absolute
-paths, no <code>..</code>, no NUL bytes). The write is exclusive — an existing file is
+paths, no NUL bytes, nothing that resolves outside the sandbox). The write is exclusive — an existing file is
 never replaced. Every PDF in the sandbox is an MCP resource under
 <code>pdfnative://output/{+path}</code>, enumerated by <code>resources/list</code> and fetched by
 <code>resources/read</code>; the tool result itself carries a <code>resource_link</code>.</li>
@@ -102,12 +102,15 @@ the SHA-256 of <code>{ tool, apiVersion, input }</code>, 1 h TTL, 256 MiB LRU, a
 namespace includes the tool API version and the operator&#39;s pinned creation
 instant, so an engine upgrade or a change of pin never serves old bytes.</li>
 </ul>
-<pre><code class="language-bash">PDFNATIVE_MCP_PORT=3000 \
-PDFNATIVE_MCP_HTTP_TOKEN=&quot;$(openssl rand -hex 24)&quot; \
+<pre><code class="language-bash"># One shared secret: keep it in your secret store and give the same value to every client.
+TOKEN=&quot;$(openssl rand -hex 24)&quot;
+PDFNATIVE_MCP_PORT=3000 \
+PDFNATIVE_MCP_HTTP_TOKEN=&quot;$TOKEN&quot; \
 PDFNATIVE_MCP_OUTPUT_DIR=/srv/pdfnative/out \
 PDFNATIVE_MCP_CACHE_DIR=/srv/pdfnative/cache \
 npx -y pdfnative-mcp
-# stderr: ready (HTTP transport, MCP 2026-07-28 + legacy) on http://127.0.0.1:3000/mcp — bearer token required
+# stderr: [pdfnative-mcp] ready (HTTP transport, MCP 2026-07-28 + legacy) on http://127.0.0.1:3000/mcp — bearer token required
+# every client request: Authorization: Bearer $TOKEN
 </code></pre>
 <pre><code class="language-json">{ &quot;tool&quot;: &quot;generate_basic_pdf&quot;, &quot;arguments&quot;: {
   &quot;title&quot;: &quot;Invoice INV-2026-0042&quot;,
@@ -131,7 +134,7 @@ reference.</p>
 <li><strong>Bytes never enter the model context.</strong> In file mode the response is a few
 hundred bytes whatever the document weighs (up to the 50 MiB output cap); the
 PDF is fetched only when something actually needs it.</li>
-<li><strong>Repeated work is free.</strong> Base64-mode and read-only calls with identical
+<li><strong>Repeated calls are served from disk.</strong> Base64-mode and read-only calls with identical
 input are served from the SHA-256 cache with <code>_meta.cached: true</code> — and the
 namespace guarantees a cache hit is always bytes the current engine, API
 version and pin would produce. The encryption, signing, LTV, timestamp and
@@ -282,7 +285,7 @@ type yet (the engine&#39;s markup union lacks it); the <code>link</code> block o
 <h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
 <ul>
 <li><a href="use-cases.html">Ecosystem use cases</a> — the hub: five cross-surface
-architectures with diagrams.</li>
+architectures, four with diagrams.</li>
 <li><a href="mcp.html">MCP guide</a> — the complete v1.7.0 tool, prompt, environment and
 error reference.</li>
 <li><a href="use-cases-cli.html">CLI use cases</a> — the same engine from a shell and a CI

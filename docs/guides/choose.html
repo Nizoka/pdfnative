@@ -261,7 +261,7 @@ means the surface does not offer it.</p>
 </tr>
 <tr>
 <td>Reproducible bytes</td>
-<td><code>layout.creationDate</code>, or <code>setDefaultCreationDate(date)</code> once per process; <code>getDefaultCreationDate</code> <em>(v1.8.0; pin <code>TZ</code> too for cross-host identity)</em></td>
+<td><code>layout.creationDate</code>, or <code>setDefaultCreationDate(date)</code> once per process; <code>getDefaultCreationDate</code> <em>(v1.8.0; dates are written in UTC, so no <code>TZ</code> pin is needed)</em></td>
 <td>global <code>--creation-date &lt;iso8601&gt;</code> (<code>SOURCE_DATE_EPOCH</code> fallback), echoed in the <code>--json</code> envelope <em>(v1.5.0)</em></td>
 <td><code>creationDate</code> on all nine document tools <em>(v1.6.0)</em>; server-wide <code>PDFNATIVE_MCP_CREATION_DATE</code> → <code>SOURCE_DATE_EPOCH</code> → clock <em>(v1.7.0)</em></td>
 <td><code>&lt;Document creationDate&gt;</code> (also a DocSpec field); <code>setDefaultCreationDate</code> / <code>getDefaultCreationDate</code> re-exported; no environment variable is read <em>(v1.3.0)</em></td>
@@ -307,7 +307,7 @@ document rewrite.</p>
 <li><a href="onboarding.html">Onboarding</a> — the 90-second install-and-first-call for
 each surface.</li>
 <li><a href="use-cases.html">Ecosystem use cases</a> — five production architectures that
-compose these surfaces, with diagrams, plus per-surface cases for the
+compose these surfaces, four with diagrams, plus per-surface cases for the
 <a href="use-cases-cli.html">CLI</a>, the <a href="use-cases-mcp.html">MCP server</a> and the
 <a href="use-cases-react.html">React renderer</a>.</li>
 <li><a href="self-verify.html">Self-verifying generation</a> — the generate → inspect →

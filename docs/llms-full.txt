@@ -2,7 +2,7 @@
 
 > Pure native PDF generation library in TypeScript. Zero runtime dependencies, tree-shakeable, producing output that conforms to ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A-1b/2b/2u/3b) — the latter validated against the veraPDF reference validator in CI. Works in Node.js, browsers, Deno, Bun, and Web Workers. 27 Unicode scripts with OpenType GSUB/GPOS shaping (Indic and Universal shaping engines) and full UAX #9 BiDi. Typography (widows and orphans, justification, hyphenation seam, pair kerning, OpenType features). CMYK colour, CMYK/Gray OutputIntents and PDF/X-4 with `validatePdfX()`. Reproducible UTC-dated output. PAdES digital signatures with long-term validation (B-B → B-LTA). Current version: 1.8.0.
 
-_Verified on 2026-09-25 against the source tree by `npm run verify:docs`; the canonical manifest is <https://pdfnative.dev/assets/ecosystem.json>._
+_Verified on 2026-09-26 against the source tree by `npm run verify:docs`; the canonical manifest is <https://pdfnative.dev/assets/ecosystem.json>._
 
 ## Docs
 
@@ -44,7 +44,7 @@ _Verified on 2026-09-25 against the source tree by `npm run verify:docs`; the ca
 - [Font validation](https://pdfnative.dev/guides/font-validation.html): `validateFontData()` — check a font module before registering it.
 - [Self-verifying generation](https://pdfnative.dev/guides/self-verify.html): The generate → inspect → assert → correct loop — `inspectDocumentLayout()` before building, then `extractText()` / `validatePdfUA()` / `listSignatures()` against the emitted bytes; the same loop on the CLI (`inspect --check`, stable exit codes) and MCP (`inspect_pdf`).
 - [Agentic workflows](https://pdfnative.dev/guides/agentic-workflows.html): Patterns for driving pdfnative from AI agents on public, validated APIs.
-- [Use cases](https://pdfnative.dev/guides/use-cases.html): Five ecosystem architectures (four with diagrams) — store the DocSpec instead of the PDF and render on-device, air-gapped PAdES B-LTA archiving, a CI document-regression gate with `compare`, zipnative as the DEFLATE codec behind `setDeflateRawImpl`, and edge-rendered PDFs with correct HTTP caching.
+- [Use cases](https://pdfnative.dev/guides/use-cases.html): Five ecosystem architectures (four with diagrams) — store the DocSpec instead of the PDF and render on-device, air-gapped PAdES B-LTA archiving, a CI document-regression gate with `compare`, edge-rendered PDFs with correct HTTP caching, and zipnative as the DEFLATE codec behind `setDeflateRawImpl`.
 - [CLI use cases](https://pdfnative.dev/guides/use-cases-cli.html): Four pdfnative-cli v1.5.0 architectures — byte-reproducible builds with `--creation-date` / `SOURCE_DATE_EPOCH`, a PDF/X-4 press handoff checked by `inspect --check pdfx`, a house font with `--font-file` and the typography flags, and the exit-code / JSON-envelope contract for any-language orchestrators.
 - [MCP use cases](https://pdfnative.dev/guides/use-cases-mcp.html): Three pdfnative-mcp v1.7.0 architectures — a shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal `inspect_layout` typesetting loop, and PDF/A notices in 27 scripts.
 - [React use cases](https://pdfnative.dev/guides/use-cases-react.html): Three pdfnative-react v1.3.0 architectures — a 37-rule DocSpec lint gate in CI before any PDF exists, book-style typography from JSX, and one component tree rendered to a screen PDF/A and a press PDF/X-4 file.
@@ -74,7 +74,7 @@ _Verified on 2026-09-25 against the source tree by `npm run verify:docs`; the ca
 - [Print](https://pdfnative.dev/playgrounds/print.html): bleed and marks, CMYK colours, a CMYK OutputIntent (bundled synthetic profile or your own `.icc`), PDF/X-4 with the `validatePdfX()` report, and the PDF/X coherence errors.
 - [All scripts](https://pdfnative.dev/playgrounds/all-scripts.html): every one of the 27 scripts plus colour emoji in one document. [Extreme scripts](https://pdfnative.dev/playgrounds/extreme-scripts.html): BiDi, Indic, Arabic and USE stress tests.
 - [Inspect](https://pdfnative.dev/playgrounds/inspect.html): drop any PDF — metadata, text, PDF/UA and PDF/X-4 checks, signatures, forms, encryption. [Toolkit](https://pdfnative.dev/playgrounds/toolkit.html): outlines, page labels, merge/split/extract, forms, encryption.
-- [Charts](https://pdfnative.dev/playgrounds/charts.html), [Authoring+](https://pdfnative.dev/playgrounds/authoring-plus.html), [Scale](https://pdfnative.dev/playgrounds/scale.html) (1k–100k pages in a Worker), and the ecosystem explorers [CLI](https://pdfnative.dev/playgrounds/cli.html), [MCP](https://pdfnative.dev/playgrounds/mcp.html), [React](https://pdfnative.dev/playgrounds/react.html).
+- [Charts](https://pdfnative.dev/playgrounds/charts.html), [Authoring+](https://pdfnative.dev/playgrounds/authoring-plus.html), [Scale](https://pdfnative.dev/playgrounds/scale.html) (1k–100k pages in a Worker), the ecosystem explorers [CLI](https://pdfnative.dev/playgrounds/cli.html), [MCP](https://pdfnative.dev/playgrounds/mcp.html), [React](https://pdfnative.dev/playgrounds/react.html), [Reproducible output](https://pdfnative.dev/playgrounds/reproducible.html) (build twice under a pinned creation date, compare the SHA-256) and [DocSpec lint](https://pdfnative.dev/playgrounds/docspec-lint.html) (pdfnative-react's 37 rules on a JSON spec).
 - Machine-readable inventory: [playgrounds.json](https://pdfnative.dev/data/playgrounds.json).
 
 ## Machine-readable artefacts
@@ -2944,7 +2944,7 @@ means the surface does not offer it.
 | PDF/X-4 conformance claim | `layout: { pdfx: 'pdfx4', outputIntent, metadata.trapped }` _(v1.8.0; exclusive with `tagged` and encryption)_ | `render --pdfx pdfx4 --output-intent-icc <file.icc> --trapped true\|false\|unknown` (coherence errors → `E_INPUT`, `PDFX_*` diagnostics fail under `--strict`) _(v1.5.0)_ | `pdfx: 'pdfx4'` on six document tools (needs a `prtr` `outputIntent` and `embedFonts: true`; exclusive with `pdfA` / `encrypt`) _(v1.7.0)_ | `<Document pdfx="pdfx4" outputIntent metadata={{ trapped }}>` with eight `L_PDFX_*` lint rules _(v1.3.0)_ |
 | Validate PDF/X-4 | `validatePdfX` _(v1.8.0; structural ISO 15930-7 prerequisites, not a certified preflight)_ | `inspect --pdfx` / `--check pdfx` _(v1.5.0)_ | `validate_pdf` with `standard: 'pdf-x-4'` (result carries `caveats[]`); `inspect_pdf` reports `pdfX` _(v1.7.0)_ | — (import `validatePdfX` from the `pdfnative` peer and run it on the rendered bytes) |
 | Printer's marks: registration colour and colour control bars | `layout.print.marks` (`true`, or `{ colourBars: true \| { tints, size } }`) _(v1.8.0; bars off by default and byte-neutral when off)_ | `render` (`print.marks` incl. `colourBars` in the document JSON or a `--layout` file) _(v1.5.0)_ | `print.marks: true` _(v1.6.0)_ or `{ colourBars: true \| { tints, size } }` _(v1.7.0)_ | `<Document print={{ marks: { colourBars: true } }}>` (`ColourBarOptions`, `L_PRINT_COLOUR_BARS`) _(v1.3.0)_ |
-| Reproducible bytes | `layout.creationDate`, or `setDefaultCreationDate(date)` once per process; `getDefaultCreationDate` _(v1.8.0; pin `TZ` too for cross-host identity)_ | global `--creation-date <iso8601>` (`SOURCE_DATE_EPOCH` fallback), echoed in the `--json` envelope _(v1.5.0)_ | `creationDate` on all nine document tools _(v1.6.0)_; server-wide `PDFNATIVE_MCP_CREATION_DATE` → `SOURCE_DATE_EPOCH` → clock _(v1.7.0)_ | `<Document creationDate>` (also a DocSpec field); `setDefaultCreationDate` / `getDefaultCreationDate` re-exported; no environment variable is read _(v1.3.0)_ |
+| Reproducible bytes | `layout.creationDate`, or `setDefaultCreationDate(date)` once per process; `getDefaultCreationDate` _(v1.8.0; dates are written in UTC, so no `TZ` pin is needed)_ | global `--creation-date <iso8601>` (`SOURCE_DATE_EPOCH` fallback), echoed in the `--json` envelope _(v1.5.0)_ | `creationDate` on all nine document tools _(v1.6.0)_; server-wide `PDFNATIVE_MCP_CREATION_DATE` → `SOURCE_DATE_EPOCH` → clock _(v1.7.0)_ | `<Document creationDate>` (also a DocSpec field); `setDefaultCreationDate` / `getDefaultCreationDate` re-exported; no environment variable is read _(v1.3.0)_ |
 
 ## Honest notes
 
@@ -2988,7 +2988,7 @@ document rewrite.
 - [Onboarding](onboarding.html) — the 90-second install-and-first-call for
   each surface.
 - [Ecosystem use cases](use-cases.html) — five production architectures that
-  compose these surfaces, with diagrams, plus per-surface cases for the
+  compose these surfaces, four with diagrams, plus per-surface cases for the
   [CLI](use-cases-cli.html), the [MCP server](use-cases-mcp.html) and the
   [React renderer](use-cases-react.html).
 - [Self-verifying generation](self-verify.html) — the generate → inspect →
@@ -3271,10 +3271,10 @@ One conformance claim per file — `--pdfx` is mutually exclusive with `--tagged
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pdfx pdfx4` | — | Claim PDF/X-4 (ISO 15930-7). Requires a printer (`prtr`) output intent, every font embedded (`--font latin --lang latin` or `--font-file`), a `trapped` state of `true` or `false`, and a TrimBox or ArtBox per page. Engine coherence errors (missing output profile, unknown trapping state, `layout.pdfx` combined with `layout.tagged`, …) map to `E_INPUT`; the `--json` envelope carries `pdfx: "pdfx4"` |
+| `--pdfx pdfx4` | — | Claim PDF/X-4 (ISO 15930-7). Requires a printer (`prtr`) output intent and every font embedded (`--font latin --lang latin` or `--font-file`). `--trapped unknown` is refused; omitted, the file declares `/Trapped /False`. Each page gets a TrimBox — from `layout.print` (bleed or `trimBox`), else the BleedBox or MediaBox — unless it sets an ArtBox; both is an error. Engine coherence errors (missing output profile, `--trapped unknown`, `layout.pdfx` combined with `layout.tagged`, TrimBox and ArtBox together, …) map to `E_INPUT`; the `--json` envelope carries `pdfx: "pdfx4"` |
 | `--output-intent-icc <file.icc>` | — | ICC profile for `layout.outputIntent` (RGB, CMYK or Gray; `prtr` class for PDF/X-4). 16 MiB cap, `acsp` signature checked, then validated by the engine |
 | `--output-intent-id <s>` | ICC file basename | `outputConditionIdentifier` of the output intent |
-| `--trapped true\|false\|unknown` | — | `/Info /Trapped` (also XMP); wins over `metadata.trapped` in the JSON. PDF/X needs `true` or `false` |
+| `--trapped true\|false\|unknown` | — | `/Info /Trapped` (also XMP); wins over `metadata.trapped` in the JSON. Under `--pdfx`, `unknown` is refused and omitted means `false` |
 
 Colours everywhere — document JSON, `--layout` and colour flags — accept CMYK beside hex / RGB: `"c m y k"` operands in 0–1 or `[c,m,y,k]` in percent (`DeviceCMYK`). `layout.print.marks.colourBars: true | { tints, size }` adds printer's colour bars to the marks. Re-check the result with `pdfnative inspect --check pdfx` (structural validation evidence, not a certified preflight).
 
@@ -3420,7 +3420,7 @@ Applies a CMS/PKCS#7 digital signature to an existing PDF.
 | `--timestamp <tsa-url>` *(v1.4.0)* | — | Embed an **RFC 3161 timestamp token** from the given TSA (PAdES **B-T** — combine with `--profile pades` for a true ETSI baseline). The only network opt-in on `sign` — SSRF-guarded, no fallback: transport failure is `E_NETWORK`, a malformed response is `E_PARSE`. `--dry-run` never touches the network |
 | `--timestamp-digest <algo>` *(v1.4.0)* | `sha256` | TSA digest: `sha256`, `sha384`, or `sha512` |
 | `--timestamp-nonce <hex>` *(v1.4.0)* | random | Explicit RFC 3161 nonce (testing / reproducibility) |
-| `--timestamp-timeout <ms>` *(v1.5.0)* | — | Upper bound on the TSA round-trip (positive integer; a usage error without `--timestamp`). Reported as `timestamp.timeoutMs` in the `--json` envelope |
+| `--timestamp-timeout <ms>` *(v1.5.0)* | `10000` | Upper bound on the TSA round-trip (positive integer; a usage error without `--timestamp`). Reported as `timestamp.timeoutMs` in the `--json` envelope |
 | `--digest <algo>` *(v1.4.0)* | `sha256` | CMS digest for RSA keys: `sha256`, `sha384`, or `sha512`. Combining `sha384`/`sha512` with `--algorithm ecdsa-sha256` is a usage error (exit 2) — ECDSA is SHA-256 only |
 | `--profile <p>` *(v1.4.0)* | `pkcs7` | `pkcs7` or `pades` — `pades` emits `ETSI.CAdES.detached` with the ESS signing-certificate-v2 attribute and omits signing-time |
 | `--allow-multiple` *(v1.4.0)* | off | Add a signature to an already-signed PDF instead of refusing (the 1.x idempotent default is preserved) |
@@ -3990,7 +3990,7 @@ pdfnative inspect --input brochure.pdf --check pdfx     # exit 0 when the struct
 pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.errors
 ```
 
-`press.icc` must be a printer (`prtr`) CMYK profile; every page needs a TrimBox or ArtBox (`layout.print`). `--strict` turns the `PDFX_*` diagnostics into `E_CHECK_FAILED` before any byte is written.
+`press.icc` must be a printer (`prtr`) CMYK profile. Each page gets a TrimBox automatically (from `layout.print`, else the BleedBox or MediaBox) unless it sets an ArtBox — never both. `--strict` turns the `PDFX_*` diagnostics into `E_CHECK_FAILED` before any byte is written.
 
 ### House font + typography flags _(v1.5.0)_
 
@@ -5924,7 +5924,7 @@ Produces a multi-page document from a list of content blocks.
 }
 ```
 
-It **requires** `outputIntent` with the ICC profile of the printing condition (device class `prtr`, CMYK or Gray — no press profile is bundled) and needs `embedFonts: true` for a conformant file (`PDFX_NO_FONT_ENTRIES` otherwise; `strict: true` refuses with `PDF_X_COMPLIANCE_VIOLATION`); it is exclusive with `pdfA` and `encrypt`; `metadata.trapped` must be `'True'` or `'False'`; a page carries a TrimBox or an ArtBox, not both. Incoherent requests are refused with `VALIDATION_ERROR` before any work is done. The profile must be a real ICC file (`acsp` signature, consistent size field) — a hand-made stub is rejected with `PRINT_ERROR`. Check the result with `validate_pdf { standard: 'pdf-x-4' }` — a structural check, **not a certified preflight**; the `print_ready` prompt walks through the recipe.
+It **requires** `outputIntent` with the ICC profile of the printing condition (device class `prtr`, CMYK or Gray — no press profile is bundled) and needs `embedFonts: true` for a conformant file (`PDFX_NO_FONT_ENTRIES` otherwise; `strict: true` refuses with `PDF_X_COMPLIANCE_VIOLATION`); it is exclusive with `pdfA` and `encrypt`; `metadata.trapped` must not be `'Unknown'` (omitted = `'False'`); a page carries a TrimBox or an ArtBox, not both. Incoherent requests are refused with `VALIDATION_ERROR` before any work is done. The profile must be a real ICC file (`acsp` signature, consistent size field) — a hand-made stub is rejected with `PRINT_ERROR`. Check the result with `validate_pdf { standard: 'pdf-x-4' }` — a structural check, **not a certified preflight**; the `print_ready` prompt walks through the recipe.
 
 ---
 
@@ -8396,8 +8396,8 @@ required under `pdfx`. The coherence rules are the engine's, and each is an
 (one conformance claim per file) and **with `layout.encryption`**; the
 `outputIntent` must carry a real **press profile** (ICC device class `prtr`,
 not a monitor profile such as sRGB — none is bundled, and a hand-made ICC stub
-is rejected at build time); `metadata.trapped` must be `'True'` or `'False'`,
-never `'Unknown'`; every font must be embedded through `fontEntries`; and each
+is rejected at build time); `metadata.trapped` is `'True'` or `'False'`,
+never `'Unknown'` (omitted, the engine writes `'False'`); every font must be embedded through `fontEntries`; and each
 page carries a TrimBox *or* an ArtBox, not both. The engine performs **no
 RGB→CMYK conversion**: RGB content under a CMYK or Gray intent is remapped
 through `/DefaultRGB`, and a CMYK colour under a non-CMYK intent is reported
@@ -10659,7 +10659,10 @@ opportunities inside a word are the soft hyphens the author wrote, which are
 honoured unconditionally. `metrics: "exact"` acts on the base-14 path only —
 once a font is registered, that font measures the text. A custom font covers
 only the code points in its own cmap; everything else falls to the other
-registered fonts, so pair it with `--font latin` for a Latin fallback.
+registered fonts, so pair it with `--font latin --lang house-serif,latin` for
+a Latin fallback — `--font` alone registers the module without embedding it,
+and the first font in `--lang` order that covers a code point wins, so the
+house face goes first.
 `--kerning` needs a registered font. And `tnum` on Noto Sans is a no-op — the
 bundled module declares the feature, but its figures are already tabular and
 lining, so the tag substitutes nothing, which is exactly what the diagnostic
@@ -10681,18 +10684,19 @@ on — never the human message.
 ```python
 import json, subprocess
 
-def pdfnative(*args: str) -> tuple[dict | None, str]:
-    """One process per task: (stderr envelope or None, stdout artefact)."""
+def pdfnative(*args: str) -> tuple[int, dict | None, str]:
+    """One process per task: (exit code, stderr envelope or None, stdout artefact)."""
     p = subprocess.run(["pdfnative", "--json", "--quiet", *args], capture_output=True, text=True)
     lines = p.stderr.strip().splitlines()
-    envelope = json.loads(lines[-1]) if lines else None          # the envelope is the LAST stderr line
-    if p.returncode != 0:                                         # 1 = runtime error, 2 = usage error
-        raise RuntimeError(f"{envelope['error']['code']}: {envelope['error']['message']}")
-    return envelope, p.stdout
+    envelope = json.loads(lines[-1]) if lines else None           # the envelope is the LAST stderr line
+    failed_check = p.returncode == 1 and envelope is not None and envelope["error"]["code"] == "E_CHECK_FAILED"
+    if p.returncode != 0 and not failed_check:                     # 1 = runtime error, 2 = usage error
+        raise RuntimeError(f"{envelope['error']['code']}: {envelope['error']['message']}" if envelope else f"exit {p.returncode}")
+    return p.returncode, envelope, p.stdout
 
 pdfnative("render", "--input", "doc.json", "--output", "out.pdf", "--dry-run")  # preflight; never touches the network
-status, _ = pdfnative("render", "--input", "doc.json", "--output", "out.pdf")   # status["bytes"], status["creationDate"]
-_, verdict = pdfnative("inspect", "--input", "out.pdf", "--check", "pdfa", "--summary")  # JSON on stdout, exit 0/1
+_, status, _ = pdfnative("render", "--input", "doc.json", "--output", "out.pdf")  # status["bytes"]; status["creationDate"] when pinned
+code, _, verdict = pdfnative("inspect", "--input", "out.pdf", "--check", "pdfa", "--summary")  # verdict JSON on stdout; code 0 pass, 1 fail
 ```
 
 The contract is discoverable at runtime. `pdfnative schema manifest` emits one
@@ -10736,7 +10740,7 @@ are the orchestrator's job, driven by the exit code.
 - [CLI guide](cli.html) — the complete v1.5.0 command reference behind every
   flag above.
 - [MCP use cases](use-cases-mcp.html) and [React use cases](use-cases-react.html)
-  — the same four problems seen from the other two surfaces.
+  — three cases each, the same engine seen from the other two surfaces.
 - [CLI playground](../playgrounds/cli.html) — compose a `pdfnative` invocation
   in the browser.
 - [Reproducible output playground](../playgrounds/reproducible.html) — pin a
@@ -10763,7 +10767,7 @@ megabytes of base64 in every model context. Four operator
 variables turn the same binary into **one shared server whose outputs are files
 the clients reference instead of bytes they carry**.
 
-![Architecture: several MCP clients — desktop hosts and agent runtimes — reach one pdfnative-mcp process through an SSH tunnel or a reverse proxy the operator runs, because the server binds 127.0.0.1 only and never a public interface. Every POST to /mcp passes the loopback Host and Origin guard and the bearer-token gate configured with PDFNATIVE_MCP_HTTP_TOKEN before it reaches the stateless MCP handler; GET and DELETE answer 405. Tools called with outputMode file write inside the PDFNATIVE_MCP_OUTPUT_DIR sandbox, and the result returns a resource_link and the byte count instead of the PDF; the client reads the file back on demand through resources/read as pdfnative://output/{+path}. An opt-in PDFNATIVE_MCP_CACHE_DIR serves repeated base64-mode calls from a SHA-256 keyed cache namespaced by the tool API version and the pinned creation instant.](../assets/use-case-mcp-http.svg)
+![Architecture: several MCP clients — desktop hosts and agent runtimes — reach one pdfnative-mcp process through an SSH tunnel or a reverse proxy the operator runs, because the server binds 127.0.0.1 only and never a public interface. Every POST to /mcp passes the loopback Host and Origin guard and the bearer-token gate configured with PDFNATIVE_MCP_HTTP_TOKEN before it reaches the stateless MCP handler; GET and DELETE answer 405. Tools called with outputMode file write inside the PDFNATIVE_MCP_OUTPUT_DIR sandbox, and the result returns a resource_link and the byte count instead of the PDF; the client reads the file back on demand through resources/read as pdfnative://output/{+path}. An opt-in PDFNATIVE_MCP_CACHE_DIR serves repeated base64-mode and read-only calls from a SHA-256 keyed cache namespaced by the tool API version and the pinned creation instant.](../assets/use-case-mcp-http.svg)
 
 The building blocks, all in the server's [environment
 variables](mcp.html#environment-variables):
@@ -10779,7 +10783,7 @@ variables](mcp.html#environment-variables):
   comparison is constant-time and the token is never logged.
 - `PDFNATIVE_MCP_OUTPUT_DIR` enables `outputMode: "file"`: `outputPath` must
   be relative, end in `.pdf`, and resolve inside the sandbox (no absolute
-  paths, no `..`, no NUL bytes). The write is exclusive — an existing file is
+  paths, no NUL bytes, nothing that resolves outside the sandbox). The write is exclusive — an existing file is
   never replaced. Every PDF in the sandbox is an MCP resource under
   `pdfnative://output/{+path}`, enumerated by `resources/list` and fetched by
   `resources/read`; the tool result itself carries a `resource_link`.
@@ -10789,12 +10793,15 @@ variables](mcp.html#environment-variables):
   instant, so an engine upgrade or a change of pin never serves old bytes.
 
 ```bash
+# One shared secret: keep it in your secret store and give the same value to every client.
+TOKEN="$(openssl rand -hex 24)"
 PDFNATIVE_MCP_PORT=3000 \
-PDFNATIVE_MCP_HTTP_TOKEN="$(openssl rand -hex 24)" \
+PDFNATIVE_MCP_HTTP_TOKEN="$TOKEN" \
 PDFNATIVE_MCP_OUTPUT_DIR=/srv/pdfnative/out \
 PDFNATIVE_MCP_CACHE_DIR=/srv/pdfnative/cache \
 npx -y pdfnative-mcp
-# stderr: ready (HTTP transport, MCP 2026-07-28 + legacy) on http://127.0.0.1:3000/mcp — bearer token required
+# stderr: [pdfnative-mcp] ready (HTTP transport, MCP 2026-07-28 + legacy) on http://127.0.0.1:3000/mcp — bearer token required
+# every client request: Authorization: Bearer $TOKEN
 ```
 
 ```json
@@ -10822,7 +10829,7 @@ What you gain, concretely:
 - **Bytes never enter the model context.** In file mode the response is a few
   hundred bytes whatever the document weighs (up to the 50 MiB output cap); the
   PDF is fetched only when something actually needs it.
-- **Repeated work is free.** Base64-mode and read-only calls with identical
+- **Repeated calls are served from disk.** Base64-mode and read-only calls with identical
   input are served from the SHA-256 cache with `_meta.cached: true` — and the
   namespace guarantees a cache hit is always bytes the current engine, API
   version and pin would produce. The encryption, signing, LTV, timestamp and
@@ -10989,7 +10996,7 @@ type yet (the engine's markup union lacks it); the `link` block of
 ## See also
 
 - [Ecosystem use cases](use-cases.html) — the hub: five cross-surface
-  architectures with diagrams.
+  architectures, four with diagrams.
 - [MCP guide](mcp.html) — the complete v1.7.0 tool, prompt, environment and
   error reference.
 - [CLI use cases](use-cases-cli.html) — the same engine from a shell and a CI
@@ -11010,7 +11017,7 @@ type yet (the engine's markup union lacks it); the `link` block of
 > export and lint rule named below ships in v1.3.0.
 
 This guide is the React companion to the [ecosystem use cases](use-cases.html),
-which sets the convention (problem, diagram, one load-bearing code block,
+which sets the convention (problem, architecture, one load-bearing code block,
 gains, limits) and covers the cross-surface architectures. The
 [React guide](react.html) is the reference for the components, the rendering
 entry points and the `DocSpec` authoring surface used here.
@@ -11045,10 +11052,11 @@ import { lintDocument, lintSpec, validateSpec } from 'pdfnative-react';
 import type { DocSpec } from 'pdfnative-react';
 import { Invoice } from '../src/documents/Invoice.js';
 import stored from './fixtures/stored-specs.json'; // DocSpecs as the database holds them
+import fixture from './fixtures/invoice.json';
 
 describe('document lint gate', () => {
   it('the JSX invoice has no blocking finding', () => {
-    const report = lintDocument(<Invoice invoice={fixture} />, { overflow: true });
+    const report = lintDocument(<Invoice data={fixture} />, { overflow: true });
     expect(report.findings.filter((f) => f.severity === 'error')).toEqual([]);
   });
   it.each(stored)('stored spec $title still validates and lints', (spec: unknown) => {
@@ -11080,8 +11088,9 @@ still verified by veraPDF on the rendered file, and a PDF/X-4 claim by the
 engine's structural validator, which is deliberately not re-exported — it is
 one import away, as `docs/RECIPES.md` in the package shows:
 
-```ts
+```tsx
 import { validatePdfX } from 'pdfnative';
+import { renderToBytes } from 'pdfnative-react';
 const { valid, errors } = validatePdfX(renderToBytes(<PressSheet />));
 ```
 
@@ -11221,7 +11230,8 @@ to press. No press profile ships with either package; the ICC profile is yours.
 ## See also
 
 - [Ecosystem use cases](use-cases.html) — the hub: stored specs, air-gapped
-  PAdES B-LTA, the CI regression gate and edge caching.
+  PAdES B-LTA, the CI regression gate, edge caching and zipnative as the
+  DEFLATE codec.
 - [React guide](react.html) — components, rendering entry points and the
   `DocSpec` authoring surface.
 - [CLI use cases](use-cases-cli.html) and [MCP use cases](use-cases-mcp.html)
@@ -11323,9 +11333,10 @@ offline inside the enclave**.
 
 ```bash
 # Connected zone — sign with a timestamp (B-T), then gather the evidence.
+# --profile pades → ETSI.CAdES.detached; --timestamp → RFC 3161, SSRF-guarded.
 pdfnative sign --input contract.pdf --output signed.pdf \
-  --profile pades \                                    # ETSI.CAdES.detached
-  --timestamp https://tsa.example.com/rfc3161          # RFC 3161, SSRF-guarded
+  --profile pades \
+  --timestamp https://tsa.example.com/rfc3161
 pdfnative ltv collect --input signed.pdf --online --output ltv-data.json
 
 # ── controlled transfer of ltv-data.json across the air gap ──
@@ -11374,12 +11385,14 @@ not**.
 ```yaml
 # .github/workflows/documents.yml
 - name: Render candidate (hard-fail on PDF/A diagnostics)
-  run: pdfnative render --input templates/invoice.json \
-         --output out/candidate.pdf --tagged pdfa2b --strict
+  run: |
+    pdfnative render --input templates/invoice.json \
+      --output out/candidate.pdf --tagged pdfa2b --strict
 
 - name: Diff against the golden file
-  run: pdfnative compare golden/invoice.pdf out/candidate.pdf \
-         --mode both --ignore-whitespace --format json
+  run: |
+    pdfnative compare golden/invoice.pdf out/candidate.pdf \
+      --mode both --ignore-whitespace --format json
   # identical → exit 0 · different → report on stdout, then exit 1 / E_CHECK_FAILED
 ```
 
@@ -11441,14 +11454,14 @@ distinguishes users.
 ## Case 5 — Swap the compressor: zipnative as pdfnative's DEFLATE codec
 
 pdfnative ships no compressor of its own. In Node, `initNodeCompression`
-wires `node:zlib`; in a browser, Deno, Bun or a Worker there is nothing
-synchronous to wire, so `compress: true` falls back to stored blocks — a
-valid PDF, but not a smaller one. Case 1 renders on the reader's device,
-which is exactly where that gap sits. [zipnative](https://zipnative.dev) is
-the sibling zero-dependency ZIP engine, and its pure-TypeScript DEFLATE
-encoder is synchronous, deterministic and runtime-agnostic — precisely what
-`setDeflateRawImpl` expects: raw RFC 1951 output, to which pdfnative adds the
-zlib envelope itself.
+wires `node:zlib`; a browser, Deno, Bun or a Worker has no built-in
+synchronous deflate, so `compress: true` falls back to stored blocks — a
+valid PDF, but not a smaller one — until you inject one. Case 1 does that
+with fflate's `zlibSync` through `setDeflateImpl`.
+[zipnative](https://zipnative.dev) is the sibling zero-dependency ZIP engine,
+and its pure-TypeScript DEFLATE encoder is synchronous, deterministic and
+runtime-agnostic — precisely what `setDeflateRawImpl` expects: raw RFC 1951
+output, to which pdfnative adds the zlib envelope itself.
 
 ```ts
 import { getCodec, METHOD_DEFLATE } from 'zipnative';
@@ -11474,8 +11487,9 @@ What you gain, concretely:
   with a pinned `creationDate` the *compressed* PDF is byte-identical on
   every runtime, not just the uncompressed one. The CLI, MCP and React
   equivalents of the date pin are in the per-surface pages.
-- **Composition** — Case 1's on-device render now ships compressed streams,
-  and Case 4's edge responses shrink without a native module in the runtime.
+- **Composition** — Case 1's on-device render can take a deterministic
+  compressor from the same zero-dependency family instead of fflate, and
+  Case 4's edge responses shrink without a native module in the runtime.
 
 Honest limits: zipnative is one more package to install and, in Case 1, one
 more module to deliver to the device. `setDeflateRawImpl` is process-global

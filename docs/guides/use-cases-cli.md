@@ -223,7 +223,10 @@ opportunities inside a word are the soft hyphens the author wrote, which are
 honoured unconditionally. `metrics: "exact"` acts on the base-14 path only —
 once a font is registered, that font measures the text. A custom font covers
 only the code points in its own cmap; everything else falls to the other
-registered fonts, so pair it with `--font latin` for a Latin fallback.
+registered fonts, so pair it with `--font latin --lang house-serif,latin` for
+a Latin fallback — `--font` alone registers the module without embedding it,
+and the first font in `--lang` order that covers a code point wins, so the
+house face goes first.
 `--kerning` needs a registered font. And `tnum` on Noto Sans is a no-op — the
 bundled module declares the feature, but its figures are already tabular and
 lining, so the tag substitutes nothing, which is exactly what the diagnostic
@@ -245,18 +248,19 @@ on — never the human message.
 ```python
 import json, subprocess
 
-def pdfnative(*args: str) -> tuple[dict | None, str]:
-    """One process per task: (stderr envelope or None, stdout artefact)."""
+def pdfnative(*args: str) -> tuple[int, dict | None, str]:
+    """One process per task: (exit code, stderr envelope or None, stdout artefact)."""
     p = subprocess.run(["pdfnative", "--json", "--quiet", *args], capture_output=True, text=True)
     lines = p.stderr.strip().splitlines()
-    envelope = json.loads(lines[-1]) if lines else None          # the envelope is the LAST stderr line
-    if p.returncode != 0:                                         # 1 = runtime error, 2 = usage error
-        raise RuntimeError(f"{envelope['error']['code']}: {envelope['error']['message']}")
-    return envelope, p.stdout
+    envelope = json.loads(lines[-1]) if lines else None           # the envelope is the LAST stderr line
+    failed_check = p.returncode == 1 and envelope is not None and envelope["error"]["code"] == "E_CHECK_FAILED"
+    if p.returncode != 0 and not failed_check:                     # 1 = runtime error, 2 = usage error
+        raise RuntimeError(f"{envelope['error']['code']}: {envelope['error']['message']}" if envelope else f"exit {p.returncode}")
+    return p.returncode, envelope, p.stdout
 
 pdfnative("render", "--input", "doc.json", "--output", "out.pdf", "--dry-run")  # preflight; never touches the network
-status, _ = pdfnative("render", "--input", "doc.json", "--output", "out.pdf")   # status["bytes"], status["creationDate"]
-_, verdict = pdfnative("inspect", "--input", "out.pdf", "--check", "pdfa", "--summary")  # JSON on stdout, exit 0/1
+_, status, _ = pdfnative("render", "--input", "doc.json", "--output", "out.pdf")  # status["bytes"]; status["creationDate"] when pinned
+code, _, verdict = pdfnative("inspect", "--input", "out.pdf", "--check", "pdfa", "--summary")  # verdict JSON on stdout; code 0 pass, 1 fail
 ```
 
 The contract is discoverable at runtime. `pdfnative schema manifest` emits one
@@ -300,7 +304,7 @@ are the orchestrator's job, driven by the exit code.
 - [CLI guide](cli.html) — the complete v1.5.0 command reference behind every
   flag above.
 - [MCP use cases](use-cases-mcp.html) and [React use cases](use-cases-react.html)
-  — the same four problems seen from the other two surfaces.
+  — three cases each, the same engine seen from the other two surfaces.
 - [CLI playground](../playgrounds/cli.html) — compose a `pdfnative` invocation
   in the browser.
 - [Reproducible output playground](../playgrounds/reproducible.html) — pin a

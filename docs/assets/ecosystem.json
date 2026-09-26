@@ -1,6 +1,6 @@
 {
   "$comment": "Single source of truth for every version, count and inventory quoted anywhere in the documentation. Edit THIS file, then run `npm run verify:docs` — it reports every doc that disagrees. Never hand-edit a number in a doc without updating this manifest first.",
-  "verifiedOn": "2026-09-25",
+  "verifiedOn": "2026-09-26",
   "packages": {
     "pdfnative": {
       "version": "1.8.0",

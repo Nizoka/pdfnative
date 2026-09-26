@@ -7,7 +7,7 @@
 > export and lint rule named below ships in v1.3.0.
 
 This guide is the React companion to the [ecosystem use cases](use-cases.html),
-which sets the convention (problem, diagram, one load-bearing code block,
+which sets the convention (problem, architecture, one load-bearing code block,
 gains, limits) and covers the cross-surface architectures. The
 [React guide](react.html) is the reference for the components, the rendering
 entry points and the `DocSpec` authoring surface used here.
@@ -42,10 +42,11 @@ import { lintDocument, lintSpec, validateSpec } from 'pdfnative-react';
 import type { DocSpec } from 'pdfnative-react';
 import { Invoice } from '../src/documents/Invoice.js';
 import stored from './fixtures/stored-specs.json'; // DocSpecs as the database holds them
+import fixture from './fixtures/invoice.json';
 
 describe('document lint gate', () => {
   it('the JSX invoice has no blocking finding', () => {
-    const report = lintDocument(<Invoice invoice={fixture} />, { overflow: true });
+    const report = lintDocument(<Invoice data={fixture} />, { overflow: true });
     expect(report.findings.filter((f) => f.severity === 'error')).toEqual([]);
   });
   it.each(stored)('stored spec $title still validates and lints', (spec: unknown) => {
@@ -77,8 +78,9 @@ still verified by veraPDF on the rendered file, and a PDF/X-4 claim by the
 engine's structural validator, which is deliberately not re-exported — it is
 one import away, as `docs/RECIPES.md` in the package shows:
 
-```ts
+```tsx
 import { validatePdfX } from 'pdfnative';
+import { renderToBytes } from 'pdfnative-react';
 const { valid, errors } = validatePdfX(renderToBytes(<PressSheet />));
 ```
 
@@ -218,7 +220,8 @@ to press. No press profile ships with either package; the ICC profile is yours.
 ## See also
 
 - [Ecosystem use cases](use-cases.html) — the hub: stored specs, air-gapped
-  PAdES B-LTA, the CI regression gate and edge caching.
+  PAdES B-LTA, the CI regression gate, edge caching and zipnative as the
+  DEFLATE codec.
 - [React guide](react.html) — components, rendering entry points and the
   `DocSpec` authoring surface.
 - [CLI use cases](use-cases-cli.html) and [MCP use cases](use-cases-mcp.html)

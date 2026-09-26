@@ -307,8 +307,6 @@
                 <option value="emoji">emoji (Noto Emoji)</option>
                 <option value="math">math (Noto Sans Math) · v1.2</option>
                 <option value="color-emoji">color-emoji</option>
-                <option value="latin,emoji">latin,emoji</option>
-                <option value="latin,math">latin,math</option>
               </select>
               <span class="hint">Bundled font codes — besides these, any of the 27 script codes (<code>ar</code>, <code>th</code>, <code>ja</code>… plus <code>lo</code>, <code>nod</code>, <code>khb</code>, <code>tdd</code>, <code>cjm</code> since v1.5.0) works and doubles as the <code>--lang</code> code; 31 bundled font modules in total.</span>
             </div>
@@ -378,7 +376,7 @@
             <div>
               <label for="r-oi-id">--output-intent-id</label>
               <input id="r-oi-id" type="text" data-cmd="render" data-flag="--output-intent-id" placeholder="ISO Coated v2 (ECI)">
-              <span class="hint"><code>outputConditionIdentifier</code> — defaults to the ICC file's basename. Requires <code>--output-intent-icc</code>.</span>
+              <span class="hint"><code>outputConditionIdentifier</code> — defaults to the ICC file's basename. Requires <code>--output-intent-icc</code>, or <code>outputIntent.iccProfile</code> in the <code>--layout</code> file.</span>
             </div>
             <div>
               <label for="r-trapped">--trapped</label>
@@ -388,7 +386,7 @@
                 <option value="false">false</option>
                 <option value="unknown">unknown</option>
               </select>
-              <span class="hint"><code>/Info /Trapped</code>. PDF/X needs <code>true</code> or <code>false</code>.</span>
+              <span class="hint"><code>/Info /Trapped</code>. Under <code>--pdfx</code>, <code>unknown</code> is refused and unset means <code>false</code>.</span>
             </div>
           </div>
           <span class="hint" style="margin-top: 8px; display: block;">Colours everywhere also accept CMYK — <code>[c, m, y, k]</code> percent or <code>"c m y k"</code> operands 0–1 (DeviceCMYK). Check the result with <code>inspect --check pdfx</code>.</span>
@@ -1528,7 +1526,8 @@
       // v1.5.0 — PDF/X-4 coherence (pre-checks exit 2; engine coherence errors are E_INPUT)
       const pdfx = r['--pdfx'];
       if (r['--output-intent-id'] && !r['--output-intent-icc']) {
-        errors.push('`--output-intent-id` needs an ICC profile: pass `--output-intent-icc <file.icc>` (or `outputIntent.iccProfile` in `--layout`) — the CLI exits 2.');
+        if (r['--layout']) warns.push('`--output-intent-id` without `--output-intent-icc` only works when the `--layout` file carries `outputIntent.iccProfile` — otherwise the CLI exits 2.');
+        else errors.push('`--output-intent-id` needs an ICC profile: pass `--output-intent-icc <file.icc>` (or `outputIntent.iccProfile` in `--layout`) — the CLI exits 2.');
       }
       if (pdfx && taggedIsPdfA) {
         errors.push('`--pdfx` and `--tagged pdfa*` are mutually exclusive: pdfnative writes one conformance claim per file (PDF/X-4 or PDF/A).');
@@ -1539,11 +1538,11 @@
       if (pdfx && !r['--output-intent-icc']) {
         warns.push('PDF/X-4 needs an output (printer) ICC profile — add `--output-intent-icc <file.icc>` or `outputIntent` in `--layout`, otherwise the engine refuses with `E_INPUT`.');
       }
-      if (pdfx && r['--trapped'] !== 'true' && r['--trapped'] !== 'false') {
-        warns.push('PDF/X-4 needs a known trapping state — `--trapped true` or `--trapped false` (or `metadata.trapped` in the JSON).');
+      if (pdfx && r['--trapped'] === 'unknown') {
+        warns.push('PDF/X-4 refuses `--trapped unknown` (E_INPUT) — pass `true` or `false`, or omit the flag: the file then declares /Trapped /False.');
       }
-      if (pdfx && !r['--font']) {
-        warns.push('PDF/X-4 requires every font embedded — add `--font latin --lang latin` (or register the fonts your document uses).');
+      if (pdfx && !r['--lang'] && !r['--font-file']) {
+        warns.push('PDF/X-4 requires every font embedded — add `--font latin --lang latin` or `--font-file <path.ttf>` (otherwise PDFX_NO_FONT_ENTRIES, an error under `--strict`).');
       }
       if (r['--kerning'] && !r['--font'] && !r['--font-file']) {
         warns.push('`--kerning` needs a registered font — add `--font latin --lang latin` (or `--font-file`).');
@@ -1889,9 +1888,9 @@
     'render-typography': { tab: 'render',  fields: { 'r-input': 'report.json', 'r-output': 'report.pdf', 'r-font': 'latin', 'r-lang': 'latin', 'r-font-features': 'onum,smcp' }, checks: ['--split-paragraphs', '--keep-headings-with-next', '--kerning'],
       hint: 'Typography needs a registered font (<code>--font latin --lang latin</code>): paragraphs may split across pages with widows/orphans at 2, headings stay with the next block, pair kerning is applied and old-style numerals + small caps are requested. <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code> warns (or fails under <code>--strict</code>) when the font lacks a tag. Paragraph <code>align: "justify"</code>, <code>keepWithNext</code>, <code>splittable</code> and soft hyphens live in the JSON.' },
     'render-pdfx4-cmyk': { tab: 'render',  fields: { 'r-input': 'catalogue.json', 'r-output': 'catalogue.pdf', 'r-font': 'latin', 'r-lang': 'latin', 'r-pdfx': 'pdfx4', 'r-oi-icc': 'press.icc', 'r-oi-id': 'ISO Coated v2 (ECI)', 'r-trapped': 'false' }, checks: ['--strict'],
-      hint: 'PDF/X-4 (ISO 15930-7): the printer ICC profile becomes the OutputIntent (<code>prtr</code> class, 16 MiB cap), every font is embedded, <code>/Trapped</code> is known and each page needs a TrimBox or ArtBox (set in the JSON). CMYK colours — <code>[c, m, y, k]</code> percent or <code>"c m y k"</code> — are written as DeviceCMYK; RGB content stays conformant through a calibrated <code>/DefaultRGB</code>. <code>--strict</code> turns <code>PDFX_*</code> diagnostics into exit 1 / <code>E_CHECK_FAILED</code>; PDF/X is exclusive with <code>--tagged pdfa*</code> and encryption. Check the result with <code>inspect --check pdfx</code>.' },
-    'render-font-file':  { tab: 'render',  fields: { 'r-input': 'brochure.json', 'r-output': 'brochure.pdf', 'r-font': 'latin', 'r-lang': 'latin' }, textareas: { 'r-font-file': './fonts/HouseSerif.ttf:house' },
-      hint: 'Ship your own TrueType/OpenType font: the file is path-checked, capped at 32 MiB, must carry an sfnt signature (no collections, no WOFF) and is parsed and validated by pdfnative\'s font compiler before registration — never loaded from JSON. The name after the colon (default: the file stem) doubles as a <code>--lang</code> code and is added automatically; reference it as <code>"font": "house"</code> in the document.' },
+      hint: 'PDF/X-4 (ISO 15930-7): the printer ICC profile becomes the OutputIntent (<code>prtr</code> class, 16 MiB cap), every font is embedded, <code>/Trapped</code> is declared (<code>unknown</code> is refused, unset means <code>false</code>) and each page carries a TrimBox — from <code>layout.print</code> in the JSON, else the MediaBox — or an ArtBox, not both. CMYK colours — <code>[c, m, y, k]</code> percent or <code>"c m y k"</code> — are written as DeviceCMYK; RGB content stays conformant through a calibrated <code>/DefaultRGB</code>. <code>--strict</code> turns <code>PDFX_*</code> diagnostics into exit 1 / <code>E_CHECK_FAILED</code>; PDF/X is exclusive with <code>--tagged pdfa*</code> and encryption. Check the result with <code>inspect --check pdfx</code>.' },
+    'render-font-file':  { tab: 'render',  fields: { 'r-input': 'brochure.json', 'r-output': 'brochure.pdf', 'r-font': 'latin', 'r-lang': 'house,latin' }, textareas: { 'r-font-file': './fonts/HouseSerif.ttf:house' },
+      hint: 'Ship your own TrueType/OpenType font: the file is path-checked, capped at 32 MiB, must carry an sfnt signature (no collections, no WOFF) and is parsed and validated by pdfnative\'s font compiler before registration — never loaded from JSON. The name after the colon (default: the file stem) doubles as a <code>--lang</code> code and is appended when absent. There is no per-block font property: each code point goes to the first font in <code>--lang</code> order whose cmap covers it, so list <code>house</code> first and keep <code>latin</code> as the fallback for glyphs the house font lacks.' },
     'render-reproducible': { tab: 'render', fields: { 'gl-position': 'before', 'gl-creation-date': '2026-01-01T00:00:00Z', 'r-input': 'report.json', 'r-output': 'report.pdf' }, globalChecks: ['--json'],
       hint: '<code>--creation-date</code> is a global flag (placed before the command since v1.5.0): <code>/CreationDate</code>, <code>xmp:CreateDate</code>, the <code>{date}</code> placeholder and the trailer <code>/ID</code> all derive from it in UTC, so two runs on two hosts produce an identical SHA-256. Without the flag the CLI falls back to <code>$SOURCE_DATE_EPOCH</code> (integer seconds). <code>batch</code> tasks inherit it; the JSON envelope carries <code>creationDate</code>. Encrypted output is never byte-reproducible (CSPRNG keys).' },
     'render-dry-run':    { tab: 'render',  fields: { 'r-input': 'doc.json', 'r-output': 'report.pdf' }, globalChecks: ['--dry-run', '--json'],

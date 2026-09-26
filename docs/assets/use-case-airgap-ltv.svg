@@ -13,7 +13,7 @@
 
   <rect width="960" height="560" fill="#F8FAFC"/>
   <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Air-gapped PAdES B-LTA archiving</text>
-  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">Evidence is collected online as replayable JSON, embedded fully offline — CLI v1.4.0</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">Evidence is collected online as replayable JSON, embedded fully offline — pdfnative-cli (since 1.4.0)</text>
 
   <!-- Connected zone -->
   <rect x="40" y="96" width="370" height="360" rx="14" fill="#FFFFFF" stroke="#93C5FD" stroke-width="1.5"/>
