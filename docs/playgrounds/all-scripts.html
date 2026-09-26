@@ -116,7 +116,8 @@
     <input id="heading" type="text" style="width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;">
 
     <h2 style="margin-top:24px;">Body paragraphs <span style="font-weight:400;color:#64748b;font-size:14px;">(one per line; blank line for a new paragraph)</span></h2>
-    <textarea id="body" rows="16" style="width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;line-height:1.5;"></textarea>
+    <p style="margin:4px 0 8px;color:#64748b;font-size:13px;">Each paragraph takes the direction of its first strong letter (UAX #9 P2/P3) — a paragraph that starts in Arabic or Hebrew is laid out right-to-left, as in the PDF.</p>
+    <textarea id="body" rows="16" dir="auto" style="unicode-bidi:plaintext;width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;line-height:1.5;"></textarea>
 
     <details style="margin-top:24px;">
       <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
