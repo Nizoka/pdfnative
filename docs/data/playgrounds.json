@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable inventory of the live playgrounds (docs/playgrounds/*.html, redirect stubs excluded). Hand-maintained; the playgrounds-manifest rule of scripts/verify-docs.ts checks that every live page is listed and every listed page exists, and that the count equals derived.playgrounds in docs/assets/ecosystem.json. Control ids are DOM ids on the page. selfContained: true means every code view of the page (the CODE object shown in #code-view and copied by the Copy button) declares all it uses and imports only from 'pdfnative', so it reproduces the result outside the browser; tests/docs/playgrounds.test.ts runs each such view in Node and locks that promise. false carries a note saying why the page is not covered.",
-  "verifiedOn": "2026-09-26",
+  "verifiedOn": "2026-09-27",
   "engine": "pdfnative@1.8.0 loaded from a CDN (esm.sh, jsdelivr or unpkg); nothing runs server-side",
   "playgrounds": [
     {
