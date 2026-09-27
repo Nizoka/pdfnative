@@ -40,9 +40,9 @@
     .rx-btn.primary:disabled { opacity: 0.6; cursor: progress; }
     .rx-btn.secondary { background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border); }
     .rx-preview-frame { width: 100%; height: 560px; border: 1px solid var(--c-border); border-radius: 8px; background: #525659; }
-    .rx-status { margin-top: 12px; padding: 11px 14px; border-radius: 6px; font-size: 13px; line-height: 1.5; display: none; }
+    .rx-status { margin-top: 12px; padding: 11px 14px; border-radius: 6px; font-size: 13px; line-height: 1.5; display: none; white-space: pre-wrap; }
     .rx-status.info { display: block; background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-text-dim); }
-    .rx-status.error { display: block; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; }
+    .rx-status.error { display: block; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; font-family: ui-monospace, monospace; font-size: 12px; }
     [data-theme="dark"] .rx-status.error { background: #450a0a; border-color: #7f1d1d; color: #fecaca; }
     .rx-status.ok { display: block; background: #dcfce7; border: 1px solid #86efac; color: #166534; }
     [data-theme="dark"] .rx-status.ok { background: #052e16; border-color: #166534; color: #bbf7d0; }
@@ -109,6 +109,8 @@
     <a href="./react.html" aria-current="page">React renderer</a>
     <a href="./typography.html">Typography</a>
     <a href="./print.html">Print &amp; PDF/X</a>
+    <a href="./reproducible.html">Reproducible output</a>
+    <a href="./docspec-lint.html">DocSpec lint</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
@@ -116,7 +118,7 @@
     <p>Edit the JSX on the left, click <strong>Render PDF</strong>, and a real PDF is produced <em>in your browser</em> by <a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a>. A custom React reconciler compiles the component tree into pdfnative blocks — no DOM, no headless browser, no upload. See the <a href="../guides/react.html">React guide</a> for the full component reference.</p>
 
     <div class="rx-note">
-      <strong>How this demo loads.</strong> React 19, <code>pdfnative-react</code>, and <code>pdfnative</code> are imported from the <a href="https://esm.sh" target="_blank" rel="noopener">esm.sh</a> CDN, and JSX is transpiled in-page with Babel standalone — purely to make a zero-install browser demo. In a real project you install the packages from npm and your bundler handles JSX. <strong>This CDN tooling does not affect the published packages: the core <code>pdfnative</code> engine stays zero-dependency, and React is a peer dependency of <code>pdfnative-react</code> only.</strong>
+      <strong>How this demo loads.</strong> React 19, <code>pdfnative-react</code> 1.3.0, and <code>pdfnative</code> 1.8.0 are imported from the <a href="https://esm.sh" target="_blank" rel="noopener">esm.sh</a> CDN, and JSX is transpiled in-page with Babel standalone — purely to make a zero-install browser demo. In a real project you install the packages from npm (<code>pdfnative-react</code> ≥ 1.3.0 needs <code>pdfnative</code> ≥ 1.8.0) and your bundler handles JSX. <strong>This CDN tooling does not affect the published packages: the core <code>pdfnative</code> engine stays zero-dependency, and React is a peer dependency of <code>pdfnative-react</code> only.</strong>
     </div>
 
     <div class="rx-presets">
@@ -127,6 +129,11 @@
         <option value="multilingual">Multilingual — registerFont + Arabic</option>
         <option value="charts-v2">Charts v2 — stacked bars + scatter, dual axis · v1.2</option>
         <option value="print">Print production — bleed + printer's marks · v1.2</option>
+        <option value="typography-justify">Typography — justify, widows/orphans, keepWithNext · v1.3</option>
+        <option value="print-pdfx4-cmyk">PDF/X-4 — CMYK intent, colour bars, validatePdfX · v1.3</option>
+        <option value="reproducible-creationDate">Reproducible — creationDate, two renders, one SHA-256 · v1.3</option>
+        <option value="scripts-27">27 scripts — resolveFonts for Lao + Cham · v1.3</option>
+        <option value="lint-gate">Lint gate — lintDocument, LINT_RULES, fix and render · v1.3</option>
       </select>
       <button id="rx-reset" class="rx-btn secondary">Reset preset</button>
     </div>
@@ -161,7 +168,7 @@ const bytes = renderSpecToBytes({
     ['table', { h: ['Item', 'Total'], r: [['Pro plan', '$49.00']], zebra: true }],
   ],
 });</code></pre>
-    <p>Since v1.2.0 a spec can also carry a top-level <code>print</code> field (bleed, page boxes, printer's marks) and every charts-v2 field — all covered by the published JSON Schema, so an agent can self-validate a print-ready, dual-axis document before rendering. See the <a href="../guides/react.html">React guide</a> for the full component and DocSpec reference.</p>
+    <p>Since v1.2.0 a spec can also carry a top-level <code>print</code> field (bleed, page boxes, printer's marks) and every charts-v2 field; v1.3.0 adds <code>typography</code>, <code>pdfx</code>, <code>outputIntent</code>, <code>creationDate</code>, CMYK colours and <code>print.marks.colourBars</code> — all covered by the published JSON Schema, so an agent can self-validate a print-ready, dual-axis, byte-reproducible document before rendering, and <code>lintSpec()</code> runs the same 37 rules as <code>lintDocument()</code> on it. See the <a href="../guides/react.html">React guide</a> for the full component and DocSpec reference.</p>
   </article>
 </main>
 
@@ -186,7 +193,7 @@ const bytes = renderSpecToBytes({
     "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
     "pdfnative": "https://esm.sh/pdfnative@1.8.0",
     "pdfnative/": "https://esm.sh/pdfnative@1.8.0/",
-    "pdfnative-react": "https://esm.sh/pdfnative-react@1.2.0?external=react,pdfnative"
+    "pdfnative-react": "https://esm.sh/pdfnative-react@1.3.0?external=react,pdfnative"
   }
 }
 </script>
@@ -224,6 +231,13 @@ const bytes = renderSpecToBytes({
 (function () {
   'use strict';
 
+  // Every preset is the body of an async function. The playground wraps it with
+  //   import React from 'react';
+  //   import { registerFonts, registerFont, loadFontData } from 'pdfnative';
+  //   import { Document, Heading, Paragraph, …, renderToBytes, resolveFonts, lintDocument, LINT_RULES } from 'pdfnative-react';
+  // A preset may return a <Document> element (the page renders it) or a
+  // Uint8Array it rendered itself with renderToBytes(). `note(text)` appends a
+  // line to the status box under the editor — in your project, use your logger.
   var PRESETS = {
     invoice: [
       "<Document title=\"Invoice #1024\" metadata={{ author: 'Acme Inc' }} footerText=\"Acme Inc · Thank you\">",
@@ -300,9 +314,9 @@ const bytes = renderSpecToBytes({
       ");",
     ].join("\n"),
     'charts-v2': [
-      "// Charts v2 (pdfnative-react 1.2.0 on the 1.7.0 engine): nine chart",
+      "// Charts v2 (pdfnative-react 1.3.0 on the 1.8.0 engine): nine chart",
       "// kinds, a secondary right axis, and data labels — all pure vector.",
-      "<Document title=\"Charts v2\" footerText=\"pdfnative-react 1.2.0\">",
+      "<Document title=\"Charts v2\" footerText=\"pdfnative-react 1.3.0\">",
       "  <Heading level={1}>Charts v2</Heading>",
       "  <Chart",
       "    chartType=\"stackedBar\"",
@@ -342,9 +356,11 @@ const bytes = renderSpecToBytes({
       "</Document>",
     ].join("\n"),
     print: [
-      "// Print production (v1.2.0): the print prop derives TrimBox and BleedBox",
-      "// from the bleed shorthand and draws vector printer's marks — the same",
-      "// layout.print surface the engine exposes, typed as PrintOptions.",
+      "// Print production (since v1.2.0): the print prop derives TrimBox and",
+      "// BleedBox from the bleed shorthand and draws vector printer's marks — the",
+      "// same layout.print surface the engine exposes, typed as PrintOptions.",
+      "// Colour bars (marks.colourBars) and the PDF/X-4 claim are in the",
+      "// \"PDF/X-4\" preset — they need v1.3.0 on the 1.8.0 engine.",
       "<Document",
       "  title=\"Print-ready poster\"",
       "  print={{ bleed: 8.5, marks: { crop: true, registration: true } }}",
@@ -355,6 +371,243 @@ const bytes = renderSpecToBytes({
       "    prepress tool to see the boxes. Screen viewers simply show the page.",
       "  </Paragraph>",
       "</Document>",
+    ].join("\n"),
+    'typography-justify': [
+      "// The typography engine (pdfnative-react 1.3.0 on the 1.8.0 engine).",
+      "// `typography` is sugar over layout.typography and EVERY key is off by",
+      "// default: a document that sets none renders byte-identically to earlier",
+      "// releases. The five keys below need no registered font; kerning,",
+      "// fontFeatures and the 'fr' punctuation preset do (see docs/TYPOGRAPHY.md).",
+      "const PROSE =",
+      "  'Typography is the craft of endowing human language with a durable visual ' +",
+      "  'form, and thereby with an independent existence. A page that breaks in ' +",
+      "  'the wrong place asks the reader to work; one that is set with care ' +",
+      "  'disappears, and only the text remains. ';",
+      "",
+      "return (",
+      "  <Document",
+      "    title=\"Typography\"",
+      "    footer={{ center: 'Page {page} of {pages}' }}",
+      "    typography={{",
+      "      splitParagraphs: true,                  // paragraphs may break across pages, line by line",
+      "      orphans: 2,                             // never a lone first line at the foot of a page",
+      "      widows: 2,                              // never a lone last line at the top of the next",
+      "      keepHeadingsWithNext: { minLines: 3 },  // a heading takes three lines of its paragraph along",
+      "      opticalMargins: true,                   // hanging punctuation on the justified edge",
+      "    }}",
+      "  >",
+      "    <Heading level={1}>The typography engine</Heading>",
+      "    <Paragraph>",
+      "      Two long justified paragraphs follow. With splitParagraphs on they flow",
+      "      across the page break at a line boundary, and the orphan and widow",
+      "      limits decide where that break may fall.",
+      "    </Paragraph>",
+      "    {/* keepWithNext on a block overrides keepHeadingsWithNext for that block only */}",
+      "    <Heading level={2} keepWithNext>Justified, splittable, kept with its text</Heading>",
+      "    <Paragraph align=\"justify\" splittable>{PROSE.repeat(14)}</Paragraph>",
+      "    <Heading level={2} keepWithNext>A second column of prose</Heading>",
+      "    <Paragraph align=\"justify\" splittable>{PROSE.repeat(14)}</Paragraph>",
+      "    {/* splittable={false} pins a block to one page whatever the document says */}",
+      "    <Paragraph splittable={false}>",
+      "      \"Justify\" sets every line but the last flush on both margins, as one TJ",
+      "      array per line with the spaces kept — so text extraction still reads",
+      "      the words apart.",
+      "    </Paragraph>",
+      "  </Document>",
+      ");",
+    ].join("\n"),
+    'print-pdfx4-cmyk': [
+      "// PDF/X-4 (ISO 15930-7) — a press sheet with a CMYK output intent, CMYK",
+      "// colours, crop marks and colour bars, and a known trapping state.",
+      "// pdfx=\"pdfx4\" writes a PDF 1.6 header, the PDF/X-4 XMP identification, a",
+      "// /GTS_PDFX output intent, a TrimBox per page and /Trapped. It requires:",
+      "//   - outputIntent: the printer's output profile (ICC device class 'prtr').",
+      "//     pdfnative ships none. The synthetic profile fetched below is",
+      "//     structurally valid but characterises NO press — never use it for a job.",
+      "//   - embedded fonts (fontEntries) — without them PDFX_NO_FONT_ENTRIES warns; layout.strict turns it into a throw.",
+      "//   - metadata.trapped 'True' or 'False' (never 'Unknown').",
+      "//   - no `tagged`, no encryption; a TrimBox OR an ArtBox, not both.",
+      "// Each constraint is an L_PDFX_* lint rule before it is an engine throw.",
+      "const iccUrl = new URL('../assets/synthetic-cmyk.icc', location.href);",
+      "const res = await fetch(iccUrl);",
+      "if (!res.ok) throw new Error(`Could not fetch ${iccUrl}: HTTP ${res.status}`);",
+      "const iccProfile = new Uint8Array(await res.arrayBuffer());",
+      "",
+      "// resolveFonts = registerFonts + loadFontData + FontEntry[] in one call.",
+      "const CDN = 'https://esm.sh/pdfnative@1.8.0/fonts';",
+      "const fontEntries = await resolveFonts({ latin: () => import(`${CDN}/noto-sans-data.js`) });",
+      "if (fontEntries.length !== 1) throw new Error('The Latin font module failed to load.');",
+      "",
+      "// Colour bars need a bleed of 5 mm (14.17 pt) or more: under 4 pt the",
+      "// engine skips them; under 5 mm L_PRINT_COLOUR_BARS warns and the 12 pt patches are clamped to the strip.",
+      "const BLEED = 14.17;",
+      "const TRIM_W = 595.28, TRIM_H = 841.89; // A4 trim; the page is trim + bleed",
+      "",
+      "const doc = (",
+      "  <Document",
+      "    title=\"Press sheet\"",
+      "    pdfx=\"pdfx4\"",
+      "    fontEntries={fontEntries}",
+      "    metadata={{ author: 'Acme Inc', trapped: 'False' }} // pdfnative never traps",
+      "    outputIntent={{",
+      "      iccProfile, // your press profile goes here (ISO Coated v2, GRACoL, ...)",
+      "      outputConditionIdentifier: 'Synthetic CMYK (demo only - not a press condition)',",
+      "    }}",
+      "    print={{ bleed: BLEED, marks: { crop: true, registration: true, colourBars: true } }}",
+      "    layout={{ pageWidth: TRIM_W + 2 * BLEED, pageHeight: TRIM_H + 2 * BLEED }}",
+      "  >",
+      "    {/* four values = DeviceCMYK: a percent tuple or a 'c m y k' operand string */}",
+      "    <Heading level={1} color={[0, 0, 0, 100]}>Press sheet</Heading>",
+      "    <Paragraph color=\"0 1 1 0\">",
+      "      Rich red body text, set in DeviceCMYK. Under a CMYK output intent every",
+      "      colour here is a plate value, not a screen colour.",
+      "    </Paragraph>",
+      "    <Table",
+      "      headers={['Plate', 'Coverage']}",
+      "      rows={[",
+      "        { cells: ['Cyan', '100 %'] },",
+      "        { cells: ['Magenta', '100 %'] },",
+      "        { cells: ['Black', '100 %'] },",
+      "      ]}",
+      "      zebra={[0, 0, 0, 6]}",
+      "    />",
+      "    <Paragraph>",
+      "      Crop marks and registration targets are stroked in the registration",
+      "      colour outside the trim; the colour bars sit in the bottom bleed strip.",
+      "    </Paragraph>",
+      "  </Document>",
+      ");",
+      "",
+      "// Lint first: every PDF/X coherence rule is a finding before it is a throw.",
+      "const report = lintDocument(doc);",
+      "note(`lintDocument: ok=${report.ok} (${report.counts.error} error, ${report.counts.warning} warning, ${report.counts.info} info)`);",
+      "for (const f of report.findings) note(`  ${f.severity} ${f.code}: ${f.message}`);",
+      "if (!report.ok) throw new Error('Lint errors — fix the document before claiming PDF/X-4.');",
+      "",
+      "// Render here so the engine's structural PDF/X check can run on the bytes.",
+      "// A `valid` verdict means the ISO 15930-7 prerequisites hold; it is not a",
+      "// certified preflight (callas pdfToolbox, Acrobat Preflight) — use one before press.",
+      "const bytes = renderToBytes(doc);",
+      "const { validatePdfX } = await import('pdfnative');",
+      "const check = validatePdfX(bytes);",
+      "note(`validatePdfX: ${check.valid ? 'valid' : 'INVALID'} (${check.errors.length} errors, ${check.warnings.length} warnings)`);",
+      "for (const e of check.errors) note(`  - ${e}`);",
+      "return bytes;",
+    ].join("\n"),
+    'reproducible-creationDate': [
+      "// Reproducible output — the same bytes on every host, from a pinned instant.",
+      "// Unencrypted pdfnative output is a pure function of its inputs plus one",
+      "// date: /CreationDate, /ModDate, the XMP dates, the {date} placeholder and",
+      "// therefore the trailer /ID all derive from the creation instant, and since",
+      "// engine 1.8.0 every date is written in UTC (+00'00') whatever the host zone.",
+      "// Three ways to pin, highest precedence first:",
+      "//   1. <Document creationDate>  — per document (a Date or an ISO 8601 string);",
+      "//   2. setDefaultCreationDate(date) — process-wide (null restores the clock);",
+      "//   3. nothing — the wall clock. The library reads no environment variable.",
+      "// Not covered by design: layout.encryption (fresh keys, salts and IVs).",
+      "const doc = (",
+      "  <Document",
+      "    title=\"Reproducible\"",
+      "    creationDate=\"2026-01-01T00:00:00Z\"   // an unparseable string is E_INPUT, never a silent clock fallback",
+      "    header={{ right: 'Built {date}' }}     // follows the pin: 2026-01-01",
+      "  >",
+      "    <Heading level={1}>Reproducible output</Heading>",
+      "    <Paragraph>Same inputs, same instant, same bytes — on every host.</Paragraph>",
+      "  </Document>",
+      ");",
+      "",
+      "// Render twice and compare: length and SHA-256 (WebCrypto, in this browser).",
+      "const sha256 = async (bytes) => Array.from(",
+      "  new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),",
+      "  b => b.toString(16).padStart(2, '0'),",
+      ").join('');",
+      "",
+      "const first = renderToBytes(doc);",
+      "const second = renderToBytes(doc);",
+      "const [h1, h2] = await Promise.all([sha256(first), sha256(second)]);",
+      "note(`render 1: ${first.length} bytes  sha256 ${h1}`);",
+      "note(`render 2: ${second.length} bytes  sha256 ${h2}`);",
+      "note(h1 === h2 && first.length === second.length ? 'IDENTICAL — the two renders are byte-for-byte the same.' : 'DIFFERENT — the two renders diverge.');",
+      "",
+      "const text = new TextDecoder('latin1').decode(first);",
+      "note(`/CreationDate in the file: ${(/\\/CreationDate \\(([^)]*)\\)/.exec(text) || [])[1] || 'not found'} (UTC, whatever your time zone is)`);",
+      "",
+      "// Remove creationDate above and render twice more: the hashes differ, and",
+      "// so does the trailer /ID — the wall clock is part of the output.",
+      "return first;",
+    ].join("\n"),
+    'scripts-27': [
+      "// Two of the five scripts pdfnative 1.8.0 adds — Lao (its own shaper) and",
+      "// Cham (the Universal Shaping Engine) — beside the Latin module, through",
+      "// resolveFonts. 27 bundled Unicode scripts in all; the other three new ones",
+      "// are Tai Tham (nod, noto-taitham-data.js), New Tai Lue (khb,",
+      "// noto-newtailue-data.js) and Tai Le (tdd, noto-taile-data.js).",
+      "// Keys are engine language codes; each value is a font-module loader.",
+      "const CDN = 'https://esm.sh/pdfnative@1.8.0/fonts';",
+      "const fontEntries = await resolveFonts({",
+      "  latin: () => import(`${CDN}/noto-sans-data.js`),",
+      "  lo:    () => import(`${CDN}/noto-lao-data.js`),",
+      "  cjm:   () => import(`${CDN}/noto-cham-data.js`),",
+      "});",
+      "",
+      "// resolveFonts skips a loader that yields nothing, so the count is the",
+      "// check — a missing module would otherwise render as ????? without an error.",
+      "if (fontEntries.length !== 3) {",
+      "  throw new Error(`Expected 3 font entries, got ${fontEntries.length}: ${fontEntries.map(e => e.lang).join(', ')}`);",
+      "}",
+      "note(`Fonts embedded: ${fontEntries.map(e => `${e.lang} (${e.fontRef})`).join(', ')}`);",
+      "",
+      "// The non-English strings are demonstrated content: they exist to show the",
+      "// script's shaping, not to say anything. demo-language: lo, cjm, yo (script demonstrations)",
+      "return (",
+      "  <Document title=\"27 scripts\" fontEntries={fontEntries}>",
+      "    <Heading level={1}>Lao and Cham on the 1.8.0 engine</Heading>",
+      "    <Paragraph>Lao (lo): ສະບາຍດີ — ນ້ຳ, ກ່ຳ — the tone mark stacks on the nikhahit of sara am.</Paragraph>",
+      "    <Paragraph>Cham (cjm): ꨌꩌ ꨀꨯꨱ — shaped by the Universal Shaping Engine.</Paragraph>",
+      "    <Paragraph>Latin keeps rendering with the same module as English: Yoruba (yo) Ẹ káàbọ̀, ọjọ́ dára.</Paragraph>",
+      "  </Document>",
+      ");",
+    ].join("\n"),
+    'lint-gate': [
+      "// lintDocument runs on the compiled document model, so it covers JSX and",
+      "// DocSpec (lintSpec) identically. It is pure: it never logs and never throws",
+      "// for a finding — what you do with the report is your call (CI gate,",
+      "// dev-mode warning, an agent's self-check loop). LINT_RULES is the rule",
+      "// table, keyed by code; read the count from it, never hard-code it.",
+      "note(`LINT_RULES: ${Object.keys(LINT_RULES).length} rules in pdfnative-react ${(await import('pdfnative-react')).version}`);",
+      "",
+      "// A document that claims PDF/X-4 with none of what the claim needs (two",
+      "// L_PDFX_* errors the engine would otherwise raise mid-render) and skips a",
+      "// heading level (an accessibility warning) — the linter says so before the render.",
+      "const broken = (",
+      "  <Document title=\"Broken press sheet\" pdfx=\"pdfx4\">",
+      "    <Heading level={1}>Quarterly report</Heading>",
+      "    <Heading level={3}>Revenue</Heading>        {/* skips level 2 */}",
+      "    <Paragraph>Twelve thousand.</Paragraph>",
+      "  </Document>",
+      ");",
+      "const report = lintDocument(broken);",
+      "note(`broken: ok=${report.ok} (${report.counts.error} error, ${report.counts.warning} warning, ${report.counts.info} info)`);",
+      "for (const f of report.findings) {",
+      "  note(`  ${f.severity.toUpperCase()} ${f.code}${f.blockIndex === undefined ? '' : ` [block ${f.blockIndex}]`}: ${f.message}`);",
+      "  if (f.hint) note(`      -> ${f.hint}`);",
+      "}",
+      "",
+      "// The fix. A browser demo has no press profile to hand, so the honest fix",
+      "// drops the claim it cannot satisfy (the \"PDF/X-4\" preset shows the claim",
+      "// done right, with an output intent and embedded fonts) and repairs the",
+      "// heading hierarchy. The same gate is re-run on the fixed tree.",
+      "const fixed = (",
+      "  <Document title=\"Quarterly report\">",
+      "    <Heading level={1}>Quarterly report</Heading>",
+      "    <Heading level={2}>Revenue</Heading>",
+      "    <Paragraph>Twelve thousand.</Paragraph>",
+      "  </Document>",
+      ");",
+      "const again = lintDocument(fixed);",
+      "note(`fixed: ok=${again.ok} (${again.findings.length} finding(s))`);",
+      "if (!again.ok) throw new Error('The fixed document still has lint errors.');",
+      "return fixed;",
     ].join("\n"),
   };
 
@@ -408,6 +661,9 @@ const bytes = renderSpecToBytes({
     }
     runBtn.disabled = true;
     setStatus('info', 'Transpiling JSX and rendering…');
+    // Lines a preset reports through note(); shown under the byte count.
+    var notes = [];
+    function note(text) { notes.push(String(text)); }
     try {
       var src = editor.value;
       // Wrap the user's JSX into a default-exported async function. If the user
@@ -420,9 +676,9 @@ const bytes = renderSpecToBytes({
       var body = hasReturn ? src : 'return (\n' + src + '\n);';
       var moduleSrc =
         "import React from 'react';\n" +
-        "import { registerFonts, loadFontData } from 'pdfnative';\n" +
-        "import { Document, Page, Section, Heading, Paragraph, Text, List, Item, Table, Row, Cell, Image, Link, Spacer, PageBreak, Barcode, Chart, Svg, FormField, TableOfContents, Toc, renderToBytes } from 'pdfnative-react';\n" +
-        "export default async function build() {\n" + body + "\n}\n";
+        "import { registerFonts, registerFont, loadFontData } from 'pdfnative';\n" +
+        "import { Document, Page, Section, Heading, Paragraph, Text, List, Item, Table, Row, Cell, Image, Link, Spacer, PageBreak, Barcode, Chart, Svg, FormField, TableOfContents, Toc, renderToBytes, resolveFonts, lintDocument, LINT_RULES } from 'pdfnative-react';\n" +
+        "export default async function build(note) {\n" + body + "\n}\n";
 
       var out = Babel.transform(moduleSrc, {
         presets: [['react', { runtime: 'classic', pragma: 'React.createElement', pragmaFrag: 'React.Fragment' }]],
@@ -438,8 +694,11 @@ const bytes = renderSpecToBytes({
         URL.revokeObjectURL(modUrl);
       }
 
-      var element = await mod.default();
-      var bytes = await renderMaybeAsync(element);
+      // A preset returns either a <Document> element, which the page renders,
+      // or the bytes it rendered itself (the reproducible and PDF/X-4 presets
+      // need the bytes in hand to hash or validate them).
+      var result = await mod.default(note);
+      var bytes = result instanceof Uint8Array ? result : await renderMaybeAsync(result);
       if (!(bytes instanceof Uint8Array)) {
         bytes = new Uint8Array(bytes);
       }
@@ -450,9 +709,11 @@ const bytes = renderSpecToBytes({
       preview.src = lastUrl;
       downloadLink.href = lastUrl;
       downloadLink.style.display = 'inline-block';
-      setStatus('ok', 'Rendered ' + bytes.length.toLocaleString() + ' bytes. Use “Download PDF” to save it.');
+      setStatus('ok', 'Rendered ' + bytes.length.toLocaleString() + ' bytes. Use “Download PDF” to save it.' +
+        (notes.length ? '\n\n' + notes.join('\n') : ''));
     } catch (err) {
-      setStatus('error', 'Render failed:\n\n' + (err && err.stack ? err.stack : String(err)));
+      setStatus('error', (notes.length ? notes.join('\n') + '\n\n' : '') +
+        'Render failed:\n\n' + (err && err.stack ? err.stack : String(err)));
     } finally {
       runBtn.disabled = false;
     }

@@ -29,7 +29,7 @@ pdfnative is a zero-runtime-dependency TypeScript library that writes and reads 
 |---|---|---|
 | Fast — before every commit | `npm run gate -- --fast` | typecheck:all, lint, test, verify:docs |
 | CI — the default | `npm run gate` | the CI profile |
-| Publish — release branches | `npm run gate -- --publish` | everything, incl. test:generate, verify:samples, validate:pdfa, verify:fonts, verify:bundle |
+| Publish — release branches | `npm run gate -- --publish` | everything, incl. test:generate, verify:samples, validate:pdfa, verify:fonts, verify:diagrams, verify:bundle |
 
 `--only <step>` runs one step, `--json` emits machine-readable output. One suite: `npx vitest run tests/<path>.test.ts` (dot reporter). Individual scripts (`npm run lint`, `npm run verify:docs`, …) still exist.
 
@@ -94,7 +94,7 @@ import the `parser/` reader/modifier — they operate on existing PDFs by design
 
 ## Counts and versions
 
-3824 tests across 160 files, 292 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
+3836 tests across 161 files, 292 sample PDFs across 38 categories (49 generators), 21 PDF/A-claiming samples, 27 scripts.
 `docs/assets/ecosystem.json` is the source of every count and version quoted in the docs; run `npm run verify:docs` after touching any of them.
 Coverage: ≥ 88 % statements enforced by CI (currently 91.5 % statements; the thresholds live once in `vitest.config.ts`).
 
@@ -111,8 +111,8 @@ Issue drafts go to `.github/drafts/` and are validated with `npm run verify:issu
 
 ## Ecosystem
 
-- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) — terminal wrapper with a JSON-in/JSON-out agent contract and the full PAdES ladder; requires pdfnative ≥ 1.7.0, Node ≥ 22.
-- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) — Model Context Protocol server exposing the engine to conversational assistants; requires pdfnative ≥ 1.7.0.
-- [pdfnative-react](https://github.com/Nizoka/pdfnative-react) — React renderer (JSX → pdfnative blocks via a custom reconciler); React 19 and pdfnative ≥ 1.7.0 are peer dependencies of that package only.
+- [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) — terminal wrapper with a JSON-in/JSON-out agent contract and the full PAdES ladder; requires pdfnative ≥ 1.8.0, Node ≥ 22.
+- [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) — Model Context Protocol server exposing the engine to conversational assistants; requires pdfnative ≥ 1.8.0.
+- [pdfnative-react](https://github.com/Nizoka/pdfnative-react) — React renderer (JSX → pdfnative blocks via a custom reconciler); React 19 and pdfnative ≥ 1.8.0 are peer dependencies of that package only.
 
 See also: [ROADMAP.md](ROADMAP.md), [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [llms.txt](llms.txt).

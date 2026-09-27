@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="ucr-title ucr-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="ucr-title">Byte-reproducible document builds</title>
+  <desc id="ucr-desc">Architecture: a JSON template and a pinned creation instant, supplied as SOURCE_DATE_EPOCH or the global --creation-date flag, are rendered by pdfnative-cli on three build hosts running Linux, macOS and Windows in different timezones. Each host produces a PDF whose SHA-256 is identical to the other two, because /CreationDate, xmp:CreateDate, the {date} placeholder and the trailer /ID all derive from the pinned instant in UTC. A CI gate compares the hashes and releases when they are equal; when the engine version differs between builds it falls back to pdfnative compare --mode both, which compares content instead of bytes.</desc>
+
+  <defs>
+    <marker id="ucr-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ucr-ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#F8FAFC"/>
+  <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Byte-reproducible document builds</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">One pinned instant, identical bytes on every host — pdfnative-cli v1.5.0</text>
+
+  <!-- Inputs -->
+  <rect x="230" y="92" width="220" height="60" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="340" y="117" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">template.json</text>
+  <text x="340" y="137" text-anchor="middle" font-size="11.5" fill="#64748B">the same document definition</text>
+
+  <rect x="500" y="92" width="240" height="60" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="620" y="117" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1E40AF">pinned instant</text>
+  <text x="620" y="137" text-anchor="middle" font-size="11.5" fill="#3B82F6">SOURCE_DATE_EPOCH or --creation-date</text>
+
+  <!-- Fan-out bus -->
+  <line x1="340" y1="152" x2="340" y2="170" stroke="#475569" stroke-width="1.75"/>
+  <line x1="620" y1="152" x2="620" y2="170" stroke="#475569" stroke-width="1.75"/>
+  <line x1="190" y1="170" x2="770" y2="170" stroke="#475569" stroke-width="1.75"/>
+  <line x1="190" y1="170" x2="190" y2="194" stroke="#475569" stroke-width="1.75" marker-end="url(#ucr-ah)"/>
+  <line x1="480" y1="170" x2="480" y2="194" stroke="#475569" stroke-width="1.75" marker-end="url(#ucr-ah)"/>
+  <line x1="770" y1="170" x2="770" y2="194" stroke="#475569" stroke-width="1.75" marker-end="url(#ucr-ah)"/>
+
+  <!-- Build hosts -->
+  <rect x="70" y="196" width="240" height="60" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
+  <text x="190" y="220" text-anchor="middle" font-size="13.5" font-weight="700" fill="#92400E">Linux runner</text>
+  <text x="190" y="240" text-anchor="middle" font-size="11.5" fill="#B45309">TZ=UTC · pdfnative render</text>
+
+  <rect x="360" y="196" width="240" height="60" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
+  <text x="480" y="220" text-anchor="middle" font-size="13.5" font-weight="700" fill="#92400E">macOS runner</text>
+  <text x="480" y="240" text-anchor="middle" font-size="11.5" fill="#B45309">TZ=America/Los_Angeles · pdfnative render</text>
+
+  <rect x="650" y="196" width="240" height="60" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
+  <text x="770" y="220" text-anchor="middle" font-size="13.5" font-weight="700" fill="#92400E">Windows runner</text>
+  <text x="770" y="240" text-anchor="middle" font-size="11.5" fill="#B45309">TZ=Europe/Paris · pdfnative render</text>
+
+  <line x1="190" y1="256" x2="190" y2="294" stroke="#475569" stroke-width="1.75" marker-end="url(#ucr-ah)"/>
+  <line x1="480" y1="256" x2="480" y2="294" stroke="#475569" stroke-width="1.75" marker-end="url(#ucr-ah)"/>
+  <line x1="770" y1="256" x2="770" y2="294" stroke="#475569" stroke-width="1.75" marker-end="url(#ucr-ah)"/>
+
+  <!-- Identical hashes -->
+  <rect x="70" y="296" width="240" height="60" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="190" y="320" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">SHA-256 — identical</text>
+  <text x="190" y="340" text-anchor="middle" font-size="11.5" fill="#16A34A">same /CreationDate, {date} and /ID</text>
+
+  <rect x="360" y="296" width="240" height="60" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="480" y="320" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">SHA-256 — identical</text>
+  <text x="480" y="340" text-anchor="middle" font-size="11.5" fill="#16A34A">every date written in UTC</text>
+
+  <rect x="650" y="296" width="240" height="60" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="770" y="320" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">SHA-256 — identical</text>
+  <text x="770" y="340" text-anchor="middle" font-size="11.5" fill="#16A34A">envelope carries creationDate</text>
+
+  <!-- Converge -->
+  <line x1="190" y1="356" x2="190" y2="374" stroke="#16A34A" stroke-width="1.75"/>
+  <line x1="480" y1="356" x2="480" y2="374" stroke="#16A34A" stroke-width="1.75"/>
+  <line x1="770" y1="356" x2="770" y2="374" stroke="#16A34A" stroke-width="1.75"/>
+  <line x1="190" y1="374" x2="770" y2="374" stroke="#16A34A" stroke-width="1.75"/>
+  <line x1="480" y1="374" x2="480" y2="396" stroke="#16A34A" stroke-width="2" marker-end="url(#ucr-ah-green)"/>
+
+  <!-- CI gate -->
+  <rect x="200" y="398" width="560" height="74" rx="10" fill="#ECFEFF" stroke="#5EBECF" stroke-width="1.25"/>
+  <text x="480" y="422" text-anchor="middle" font-size="13.5" font-weight="700" fill="#155E75">CI gate</text>
+  <text x="480" y="442" text-anchor="middle" font-size="11.5" fill="#0E7490">hashes equal → release · hashes differ → the template, a font or the engine changed</text>
+  <text x="480" y="460" text-anchor="middle" font-size="11.5" fill="#0E7490">engine upgraded between builds? pdfnative compare golden candidate --mode both (content, not bytes)</text>
+
+  <!-- Footer -->
+  <rect x="40" y="486" width="880" height="58" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="510" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">Never reproducible: encrypted output (CSPRNG file keys) and a signed revision's /ID drawn at signing time.</text>
+  <text x="480" y="530" text-anchor="middle" font-size="12.5" fill="#475569">sign --signing-time and metadata --mod-date stay separate instants; an engine upgrade changes bytes legitimately — rebaseline once.</text>
+</svg>

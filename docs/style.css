@@ -422,6 +422,8 @@ textarea:focus-visible,
   margin-top: 40px;
   align-items: start;
 }
+/* Grid items default to min-width: auto — a long code line would widen its column past the container. */
+.mcp-layout > * { min-width: 0; }
 .mcp-layout h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
 .mcp-table {
   width: 100%;

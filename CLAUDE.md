@@ -20,7 +20,7 @@ Everything in AGENTS.md applies. This file adds only what is specific to Claude 
 
 - `npm run gate -- --fast` — typecheck:all, lint, test, verify:docs. Run before proposing a commit.
 - `npm run gate` — the CI profile (default).
-- `npm run gate -- --publish` — everything, incl. test:generate, verify:samples, validate:pdfa, verify:fonts, verify:bundle. Release branches only.
+- `npm run gate -- --publish` — everything, incl. test:generate, verify:samples, validate:pdfa, verify:fonts, verify:diagrams, verify:bundle. Release branches only.
 - `--only <step>` for one step, `--json` for machine output; logs in `test-output/.gate/<step>.log` — open only the failing step's log.
 - When the gate exceeds the Bash timeout, run it in the background; read the result with `--json` and open only the failing step's log.
   The sample generator and the veraPDF runner are already quiet outside a TTY.

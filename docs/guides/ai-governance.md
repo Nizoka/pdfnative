@@ -142,6 +142,7 @@ without parsing prose. Key fields:
 The contract `applies_to` the whole ecosystem — `pdfnative`, `pdfnative-cli`,
 `pdfnative-mcp`, and `pdfnative-react`.
 
+<!-- verify-docs:allow version-token (historical release entry) -->
 Since pdfnative-mcp 1.6.0, that package's mirror of the charter also states
 the **single permitted egress class**: the server makes no outbound request by
 default, and the only network calls it can ever perform go to the TSA / OCSP /

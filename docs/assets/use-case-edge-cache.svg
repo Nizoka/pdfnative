@@ -13,7 +13,7 @@
 
   <rect width="960" height="560" fill="#F8FAFC"/>
   <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Edge-rendered PDFs with honest HTTP caching</text>
-  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">renderToResponse + etag / cacheControl — pdfnative-react v1.2.0</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">renderToResponse + etag / cacheControl — pdfnative-react (since 1.2.0)</text>
 
   <!-- Browsers -->
   <rect x="40" y="140" width="180" height="150" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>

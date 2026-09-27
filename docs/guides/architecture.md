@@ -164,7 +164,7 @@ For setup instructions, tool reference, and per-client configuration, see the [M
 
 ### pdfnative-react
 
-[pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.2.0 is the **declarative React renderer**. A custom React reconciler compiles a JSX component tree — synchronously, with no DOM — into the pdfnative `DocumentParams` model, which the engine renders to bytes:
+[pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.3.0 is the **declarative React renderer**. A custom React reconciler compiles a JSX component tree — synchronously, with no DOM — into the pdfnative `DocumentParams` model, which the engine renders to bytes:
 
 ```
 [React / Next.js / Remix component tree]

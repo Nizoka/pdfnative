@@ -36,7 +36,7 @@ scripts/
 ```
 
 ## Current State (maintain these thresholds)
-- Test and test-file counts live in `docs/assets/ecosystem.json` (`declared.tests`, `derived.testFiles`; currently 160 test files + 1 benchmark file) and are enforced by `npm run verify:docs`
+- Test and test-file counts live in `docs/assets/ecosystem.json` (`declared.tests`, `derived.testFiles`; currently 161 test files + 1 benchmark file) and are enforced by `npm run verify:docs`
 - Sample PDFs: `derived.samplePdfs` in the same manifest (currently 292), byte-pinned by `tests/regression/baselines/samples.sha256.json`
 - Statements: ≥ 88 % enforced by CI (currently ≈ 91.5 % statements)
 - Branches: ~88% (threshold: 80%)

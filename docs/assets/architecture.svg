@@ -74,7 +74,7 @@
 
   <!-- ════════════ ECOSYSTEM BAND ════════════ -->
   <rect x="28" y="92" width="904" height="120" rx="16" fill="url(#g-eco)" stroke="#C7D2FE" stroke-width="1.25"/>
-  <rect x="44" y="83" width="112" height="20" rx="10" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="1"/>
+  <rect data-overlap="intentional" x="44" y="83" width="112" height="20" rx="10" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="1"/>
   <circle cx="58" cy="93" r="3" fill="#6366F1"/>
   <text x="68" y="97" font-size="10.5" font-weight="700" fill="#4F46E5" letter-spacing="0.6">ECOSYSTEM</text>
 
@@ -87,7 +87,7 @@
   <path d="M87 143 l7 6 l-7 6 M96 155 h8" fill="none" stroke="#0E7490" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="124" y="146" font-size="15.5" font-weight="700" fill="#155E75">pdfnative-cli</text>
   <text x="124" y="164" font-size="11" font-weight="600" fill="#0E7490">Command-line interface</text>
-  <text x="124" y="181" font-size="10" fill="#0891B2">render · fill · sign · ltv · compare · 21 commands</text>
+  <text x="124" y="181" font-size="10" fill="#0891B2">render · fill · sign · compare · 21 commands</text>
 
   <!-- pdfnative-mcp -->
   <g filter="url(#soft-sm)">
@@ -123,7 +123,7 @@
 
   <!-- ════════════ LIBRARY BAND ════════════ -->
   <rect x="28" y="238" width="904" height="304" rx="16" fill="url(#g-lib)" stroke="#E2E8F0" stroke-width="1.25"/>
-  <rect x="44" y="229" width="158" height="20" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+  <rect data-overlap="intentional" x="44" y="229" width="158" height="20" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
   <circle cx="58" cy="239" r="3" fill="#2563EB"/>
   <text x="68" y="243" font-size="10.5" font-weight="700" fill="#334155" letter-spacing="0.6">PDFNATIVE LIBRARY</text>
 

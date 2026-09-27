@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React use cases — pdfnative</title>
+  <meta name="description" content="Three pdfnative-react v1.3.0 architectures: a 37-rule DocSpec lint gate in CI before any PDF exists, book-style typography from JSX, and one component tree rendered to a screen PDF/A and a press PDF/X-4 file.">
+  <link rel="canonical" href="https://pdfnative.dev/guides/use-cases-react.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-react.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-react.html">
+  <link rel="alternate" type="text/markdown" href="use-cases-react.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/guides/use-cases-react.html">
+  <meta property="og:title" content="React use cases — pdfnative">
+  <meta property="og:description" content="A DocSpec lint gate in CI, long-form typography in JSX, and one component tree with two palettes for PDF/A and PDF/X-4 — three architectures built on pdfnative-react v1.3.0, two with diagrams, all on shipped APIs.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="React use cases — pdfnative">
+  <meta name="twitter:description" content="Three pdfnative-react v1.3.0 architectures: a 37-rule lint gate before any PDF exists, book-style typography in JSX, and one tree for screen PDF/A and press PDF/X-4.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"React use cases","item":"https://pdfnative.dev/guides/use-cases-react.html"}]},{"@type":"TechArticle","headline":"React use cases","description":"Three pdfnative-react v1.3.0 architectures: a 37-rule DocSpec lint gate in CI before any PDF exists, book-style typography from JSX, and one component tree rendered to a screen PDF/A and a press PDF/X-4 file.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases-react.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
+      <li><a href="./">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; React use cases</p>
+  <article id="guide-content" class="guide-content" data-md="use-cases-react.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="react-use-cases">React use cases</h1>
+<blockquote>
+<p><strong>Three architectures built on pdfnative-react v1.3.0 (peer <code>pdfnative ^1.8.0</code>,
+React <code>^19.0.0</code>, Node ≥ 22).</strong> Lint a document model in CI before any PDF
+exists; typeset long-form documents like a book from JSX; and render one
+component tree into a screen PDF/A file and a press PDF/X-4 file. Every prop,
+export and lint rule named below ships in v1.3.0.</p>
+</blockquote>
+<p>This guide is the React companion to the <a href="use-cases.html">ecosystem use cases</a>,
+which sets the convention (problem, load-bearing code, gains, limits — with an
+architecture diagram where data crosses components) and covers the cross-surface architectures. The
+<a href="react.html">React guide</a> is the reference for the components, the rendering
+entry points and the <code>DocSpec</code> authoring surface used here.</p>
+<h2 id="case-1--a-docspec-lint-gate-in-ci-before-any-pdf-exists">Case 1 — A DocSpec lint gate in CI, before any PDF exists<a class="heading-anchor" href="#case-1--a-docspec-lint-gate-in-ci-before-any-pdf-exists" aria-label="Link to this section">#</a></h2>
+<p>Most document bugs are visible in the model long before a byte is written: a
+PDF/A claim with no embedded fonts, a chart with two series in a pie, a
+<code>pdfx</code> document whose output intent is a monitor profile. pdfnative-react
+compiles JSX and <code>DocSpec</code> to the same <code>DocumentParams</code>, and <code>lintDocument</code> /
+<code>lintSpec</code> run <strong>37 rules</strong> on that model — 23 errors, 13 warnings, 1 info —
+without rendering. The twelve rules added in v1.3.0 cover the engine 1.8.0
+surface: <code>L_TYPOGRAPHY_INEFFECTIVE</code>, <code>L_PRINT_COLOUR_BARS</code>,
+<code>L_CMYK_INTENT_MISMATCH</code>, <code>L_OUTPUT_INTENT_PROFILE</code> and the eight
+<code>L_PDFX_*</code> rules (<code>L_PDFX_TARGET</code>, <code>L_PDFX_TAGGED_CONFLICT</code>,
+<code>L_PDFX_ENCRYPTED</code>, <code>L_PDFX_OUTPUT_INTENT</code>, <code>L_PDFX_TRAPPED_UNKNOWN</code>,
+<code>L_PDFX_BOXES</code>, <code>L_PDFX_NO_FONTS</code>, <code>L_PDFX_ANNOTATIONS</code>).</p>
+<p><img src="../assets/use-case-lint-gate.svg" alt="Architecture: a pull request carries two kinds of input, a JSX document tree and stored DocSpec JSON records. Both flow into the same lint stage, lintDocument for JSX and lintSpec for JSON, preceded by validateSpec for the JSON shape. The stage runs 37 rules on the compiled document model and writes no PDF bytes. A report with ok equal to true passes the pull-request check; a report with error findings fails it and prints each finding&#39;s code, message and hint. A dashed arrow leads from the passing report to a separate bytes stage, the hub&#39;s Case 3, where the document is rendered and compared against a golden PDF."></p>
+<p>The stored-spec route pairs <code>validateSpec</code> (is this JSON a <code>DocSpec</code> at all —
+unknown fields, wrong types, the 18 <code>DOC_SPEC_FIELDS</code> including the 1.3.0
+<code>pdfx</code>, <code>outputIntent</code>, <code>typography</code> and <code>creationDate</code>) with <code>lintSpec</code> (is
+it a document the engine will accept and a reader can use). Both return plain
+data: a <code>LintReport</code> is <code>{ ok, findings, counts }</code>, where <code>ok</code> is <code>false</code> only
+when a finding has severity <code>&#39;error&#39;</code>.</p>
+<pre><code class="language-tsx">// tests/documents.lint.test.tsx — runs on every pull request; writes nothing.
+import { describe, expect, it } from &#39;vitest&#39;;
+import { lintDocument, lintSpec, validateSpec } from &#39;pdfnative-react&#39;;
+import type { DocSpec } from &#39;pdfnative-react&#39;;
+import { Invoice } from &#39;../src/documents/Invoice.js&#39;;
+import stored from &#39;./fixtures/stored-specs.json&#39;; // DocSpecs as the database holds them
+import fixture from &#39;./fixtures/invoice.json&#39;;
+
+describe(&#39;document lint gate&#39;, () =&gt; {
+  it(&#39;the JSX invoice has no blocking finding&#39;, () =&gt; {
+    const report = lintDocument(&lt;Invoice data={fixture} /&gt;, { overflow: true });
+    expect(report.findings.filter((f) =&gt; f.severity === &#39;error&#39;)).toEqual([]);
+  });
+  it.each(stored)(&#39;stored spec $title still validates and lints&#39;, (spec: unknown) =&gt; {
+    expect(validateSpec(spec).errors).toEqual([]);        // shape: fields and types
+    const report = lintSpec(spec as DocSpec);             // model: engine + accessibility
+    expect(report.ok, JSON.stringify(report.findings, null, 2)).toBe(true);
+  });
+});
+</code></pre>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>Throws become findings.</strong> Of the 37 rules, twenty pre-empt an exception the
+engine raises at build time and five mirror an engine diagnostic (a warning
+on the default channel, a throw under <code>layout.strict</code>). For the six PDF/X
+coherence rules the finding&#39;s message is the engine&#39;s message.</li>
+<li><strong>One report for both doors.</strong> JSX and JSON compile to the same model, so a
+rule written once covers the component tree your developers write and the
+specs your agents or your database produce. The rule table is exported as
+<code>LINT_RULES</code>, the code list as <code>LINT_RULE_CODES</code>.</li>
+<li><strong>Composes with the hub.</strong> This is the model stage; hub
+<a href="use-cases.html#case-3--a-document-regression-gate-in-ci">Case 3</a> is the
+bytes stage (<code>render</code> + <code>compare</code> against a golden PDF), and hub
+<a href="use-cases.html#case-1--store-the-spec-not-the-pdf">Case 1</a> is where the
+stored specs in the fixture come from.</li>
+</ul>
+<p>Honest limits: lint checks the <strong>model, not the bytes</strong>. A PDF/A claim is
+still verified by veraPDF on the rendered file, and a PDF/X-4 claim by the
+engine&#39;s structural validator, which is deliberately not re-exported — it is
+one import away, as <code>docs/RECIPES.md</code> in the package shows:</p>
+<pre><code class="language-tsx">import { validatePdfX } from &#39;pdfnative&#39;;
+import { renderToBytes } from &#39;pdfnative-react&#39;;
+const { valid, errors } = validatePdfX(renderToBytes(&lt;PressSheet /&gt;));
+</code></pre>
+<p><code>L_OVERFLOW</code> (a block taller than the page) needs a full layout pass and is
+opt-in through <code>{ overflow: true }</code> — it costs about as much as rendering.
+There is no visual check: nothing in the model says whether the page <em>looks</em>
+right.</p>
+<h2 id="case-2--long-form-documents-typeset-like-a-book-in-jsx">Case 2 — Long-form documents typeset like a book, in JSX<a class="heading-anchor" href="#case-2--long-form-documents-typeset-like-a-book-in-jsx" aria-label="Link to this section">#</a></h2>
+<p>A report that runs to forty pages exposes every default of a naive
+paginator: a heading stranded at the foot of a page, a single line carried to
+the next one, ragged right margins in a two-column brief. Engine 1.8.0 ships a
+typography engine, and pdfnative-react v1.3.0 exposes it as a <code>&lt;Document&gt;</code>
+prop (<code>typography</code>, sugar over <code>layout.typography</code>) with per-block overrides:
+<code>&lt;Heading keepWithNext&gt;</code>, <code>&lt;Paragraph align=&quot;justify&quot; keepWithNext splittable&gt;</code>.</p>
+<pre><code class="language-tsx">import { Document, Heading, Paragraph, Table, inspectDocument, renderToBytes,
+         resolveFonts, setHyphenationProvider } from &#39;pdfnative-react&#39;;
+const fontEntries = await resolveFonts({ latin: () =&gt; import(&#39;pdfnative/fonts/noto-sans-data.js&#39;) });
+setHyphenationProvider((word, lang) =&gt; hyphenate(word, lang)); // optional: your Liang-pattern library
+
+const book = (
+  &lt;Document title=&quot;Field guide&quot; fontEntries={fontEntries}
+            typography={{ splitParagraphs: true, orphans: 2, widows: 2,
+                          keepHeadingsWithNext: { minLines: 3 }, opticalMargins: true,
+                          kerning: true, fontFeatures: [&#39;onum&#39;], hyphenationLanguage: &#39;en&#39; }}&gt;
+    &lt;Heading level={1}&gt;Chapter 1&lt;/Heading&gt;
+    &lt;Heading level={2} keepWithNext&gt;Habitat&lt;/Heading&gt;
+    &lt;Paragraph align=&quot;justify&quot; splittable&gt;{chapterOne}&lt;/Paragraph&gt;
+    &lt;Paragraph keepWithNext&gt;Table 1 summarises the ranges:&lt;/Paragraph&gt;
+    &lt;Table rows={ranges} /&gt;
+  &lt;/Document&gt;
+);
+const { totalPages } = inspectDocument(book);          // the same planner, no bytes
+if (totalPages &gt; 48) throw new Error(`page budget exceeded: ${totalPages} pages`);
+const bytes = renderToBytes(book);
+</code></pre>
+<p><code>inspectDocument</code> runs the planner that <code>renderToBytes</code> uses and returns the
+page count and every block&#39;s placement, so a page budget or a &quot;table 1 is on
+the same page as its caption&quot; assertion is a unit test, not a PDF you open.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>All twelve engine keys, locked at compile time.</strong> <code>splitParagraphs</code>,
+<code>orphans</code>, <code>widows</code>, <code>keepHeadingsWithNext</code>, <code>unitBinding</code>,
+<code>bindShortWords</code>, <code>punctuationSpacing</code>, <code>opticalMargins</code>, <code>metrics</code>,
+<code>fontFeatures</code>, <code>kerning</code> and <code>hyphenationLanguage</code> are typed against the
+engine&#39;s <code>TypographyOptions</code>; a key the engine adds later is a build error
+in pdfnative-react, not a silently ignored prop.</li>
+<li><strong>Byte-identical when unset.</strong> A document without <code>typography</code> compiles to
+the same <code>DocumentParams</code> as before; every key is opt-in.</li>
+<li><strong>Ineffective settings are warnings before render.</strong>
+<code>L_TYPOGRAPHY_INEFFECTIVE</code> reports <code>orphans</code> / <code>widows</code> without
+<code>splitParagraphs</code>, an unknown <code>fontFeatures</code> tag, a line quota below 1, and
+<code>kerning</code>, <code>fontFeatures</code> or the <code>&#39;fr&#39;</code> punctuation preset without a
+registered font.</li>
+</ul>
+<p>Honest limits: <code>kerning</code>, <code>fontFeatures</code> and the narrow no-break space of
+<code>punctuationSpacing: &#39;fr&#39;</code> need a registered font (<code>fontEntries</code>) — the
+base-14 faces carry no OpenType tables and no U+202F. <code>tnum</code> and <code>lnum</code> are
+no-ops on the bundled Noto Sans, whose figures are tabular and lining already.
+No hyphenation dictionary ships: soft hyphens (U+00AD) are honoured, and a
+provider set through <code>setHyphenationProvider</code> receives <code>hyphenationLanguage</code>
+with every word. The React renderer does not sign, fill forms or post-process
+existing PDFs — hand its bytes to the CLI or the engine for that.</p>
+<h2 id="case-3--one-component-tree-two-palettes-screen-pdfa-and-press-pdfx-4">Case 3 — One component tree, two palettes: screen PDF/A and press PDF/X-4<a class="heading-anchor" href="#case-3--one-component-tree-two-palettes-screen-pdfa-and-press-pdfx-4" aria-label="Link to this section">#</a></h2>
+<p>The same catalogue goes to a customer portal and to a printer, and the two
+files have contradictory requirements: the portal wants a tagged PDF/A-2b file
+with sRGB colours; the press wants PDF/X-4 with CMYK plate values, a printer
+output intent, a bleed and colour bars — and PDF/X forbids the <code>tagged</code>
+claim. In v1.3.0 every colour prop accepts a CMYK value beside hex and RGB, and
+<code>pdfx</code>, <code>outputIntent</code> and <code>print</code> are <code>&lt;Document&gt;</code> props, so the palette is
+the only thing that changes between the two renders.</p>
+<p><img src="../assets/use-case-two-palettes.svg" alt="Architecture: one Sheet component tree receives a palette prop and is rendered twice. The first wrapper is a Document with tagged set to pdfa2b and the screen palette in hex; it produces the portal PDF, a tagged PDF/A-2b file under the built-in sRGB output intent. The second wrapper is a Document with pdfx set to pdfx4, a CMYK ICC output intent, trapped set to False and print bleed with crop marks and colour bars; it receives the press palette as CMYK tuples and produces the press PDF. A guard labelled L_CMYK_INTENT_MISMATCH sits on the screen path: a CMYK value that leaks into the PDF/A render is a lint warning, mirroring the engine diagnostic PDFA_DEVICE_CMYK_CONTENT."></p>
+<pre><code class="language-tsx">import { Document, Heading, Paragraph, renderToBytes } from &#39;pdfnative-react&#39;;
+const palette = {
+  screen: { ink: &#39;#111827&#39;, accent: &#39;#2563EB&#39; },              // hex, for the portal
+  press:  { ink: [0, 0, 0, 100], accent: [100, 60, 0, 0] },   // C M Y K in percent, for the press
+} as const;
+
+const Sheet = ({ p }: { p: (typeof palette)[keyof typeof palette] }) =&gt; (
+  &lt;&gt;
+    &lt;Heading color={p.ink}&gt;Spring catalogue&lt;/Heading&gt;
+    &lt;Paragraph color={p.accent}&gt;Prices valid until 30 June.&lt;/Paragraph&gt;
+  &lt;/&gt;
+);
+
+const portal = renderToBytes(
+  &lt;Document tagged=&quot;pdfa2b&quot; fontEntries={fontEntries}&gt;&lt;Sheet p={palette.screen} /&gt;&lt;/Document&gt;);
+const press = renderToBytes(
+  &lt;Document pdfx=&quot;pdfx4&quot; fontEntries={fontEntries} metadata={{ trapped: &#39;False&#39; }}
+            outputIntent={{ iccProfile: pressProfile, outputConditionIdentifier: &#39;FOGRA39&#39; }}
+            print={{ bleed: 14.17, marks: { crop: true, colourBars: true } }}&gt;
+    &lt;Sheet p={palette.press} /&gt;&lt;/Document&gt;);
+</code></pre>
+<p><code>iccProfile</code> is the printer&#39;s ICC profile as bytes (a <code>prtr</code> device class —
+a monitor profile such as sRGB is refused by <code>L_PDFX_OUTPUT_INTENT</code>), and
+<code>trapped: &#39;False&#39;</code> states the trapping status PDF/X requires — pdfnative never
+traps. A 5 mm bleed (14.17 pt) is the strip the engine recommends for the
+colour bars: below it the patches fall under a densitometer aperture and
+<code>L_PRINT_COLOUR_BARS</code> warns; under 4 pt the engine skips the bars.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>One tree, two conformance claims.</strong> The components, the copy and the
+layout are written once; <code>tagged=&quot;pdfa2b&quot;</code> and <code>pdfx=&quot;pdfx4&quot;</code> are wrapper
+props, not forks of the template.</li>
+<li><strong>A leaked press token is a lint warning.</strong> A CMYK value inside the PDF/A
+render trips <code>L_CMYK_INTENT_MISMATCH</code> (the built-in PDF/A intent is sRGB),
+mirroring the engine&#39;s <code>PDFA_DEVICE_CMYK_CONTENT</code> diagnostic; a monitor
+profile on the press render trips <code>L_PDFX_OUTPUT_INTENT</code>. Skip the linter
+and the profile error reaches <code>toErrorEnvelope</code> as <code>E_INPUT</code>, while the
+CMYK leak stays a <code>PDFA_DEVICE_CMYK_CONTENT</code> diagnostic (a throw only under
+<code>layout.strict</code>).</li>
+<li><strong>Press marks without a prepress tool.</strong> <code>print.marks.colourBars</code> draws the
+four process colours at 100 % and 50 % in the bottom bleed strip; the crop
+marks stop 0.5 pt short of the trim line.</li>
+</ul>
+<p>Honest limits: there is <strong>no RGB → CMYK conversion</strong> — plate values are
+authored, and the engine performs no colour management beyond mapping RGB
+content under a CMYK or Gray intent through <code>/DefaultRGB</code>. <code>pdfx</code> and <code>tagged</code>
+are mutually exclusive (one conformance claim per file), so the press file is
+not tagged. The bytes-level PDF/X-4 check is the engine&#39;s <code>validatePdfX</code>
+import shown in Case 1, and a <code>valid</code> result means the structural
+prerequisites hold — confirm the file with a certified preflight before it goes
+to press. No press profile ships with either package; the ICC profile is yours.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="use-cases.html">Ecosystem use cases</a> — the hub: stored specs, air-gapped
+PAdES B-LTA, the CI regression gate, edge caching and zipnative as the
+DEFLATE codec.</li>
+<li><a href="react.html">React guide</a> — components, rendering entry points and the
+<code>DocSpec</code> authoring surface.</li>
+<li><a href="use-cases-cli.html">CLI use cases</a> and <a href="use-cases-mcp.html">MCP use cases</a>
+— the sibling per-surface guides.</li>
+<li><a href="../playgrounds/react.html">React playground</a> — the JSX renderer in the
+browser.</li>
+<li><a href="../playgrounds/docspec-lint.html">DocSpec lint playground</a> — paste a
+<code>DocSpec</code>, read the 37-rule report.</li>
+</ul>
+<!-- guide:render:end -->
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="./">All guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
+<script src="guide.js" defer></script>
+</body>
+</html>

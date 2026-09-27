@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLI use cases — pdfnative</title>
+  <meta name="description" content="Four pdfnative-cli v1.5.0 architectures: byte-reproducible builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, and a process contract any orchestrator can drive.">
+  <link rel="canonical" href="https://pdfnative.dev/guides/use-cases-cli.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-cli.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-cli.html">
+  <link rel="alternate" type="text/markdown" href="use-cases-cli.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/guides/use-cases-cli.html">
+  <meta property="og:title" content="CLI use cases — pdfnative">
+  <meta property="og:description" content="Byte-reproducible document builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, and an any-language orchestrator on the process contract — four CLI architectures, three with diagrams, each built from shipped flags.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CLI use cases — pdfnative">
+  <meta name="twitter:description" content="Four pdfnative-cli v1.5.0 use cases: reproducible builds, PDF/X-4 press handoff, a house font from disk, and a process contract for any orchestrator.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"CLI use cases","item":"https://pdfnative.dev/guides/use-cases-cli.html"}]},{"@type":"TechArticle","headline":"CLI use cases","description":"Four pdfnative-cli v1.5.0 architectures: byte-reproducible builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, and a process contract any orchestrator can drive.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases-cli.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
+      <li><a href="./">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; CLI use cases</p>
+  <article id="guide-content" class="guide-content" data-md="use-cases-cli.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="cli-use-cases">CLI use cases</h1>
+<blockquote>
+<p><strong>Four architectures on pdfnative-cli v1.5.0 (pdfnative ≥ 1.8.0, Node ≥ 22),
+each assembled from flags that ship today.</strong> They extend the
+<a href="use-cases.html">ecosystem use cases</a> with what only a command line does
+well — byte-reproducible builds, a PDF/X-4 press handoff, a house font
+without a code change and a process contract any language can drive — and
+every flag below is documented in the <a href="cli.html">CLI guide</a>.</p>
+</blockquote>
+<p>Each case follows the hub&#39;s convention: the problem, the load-bearing
+invocation, what you gain and where it stops — with an architecture diagram
+where data crosses components. The companion pages
+cover the same ground for the <a href="use-cases-mcp.html">MCP server</a> and the
+<a href="use-cases-react.html">React renderer</a>.</p>
+<h2 id="case-1--byte-reproducible-document-builds">Case 1 — Byte-reproducible document builds<a class="heading-anchor" href="#case-1--byte-reproducible-document-builds" aria-label="Link to this section">#</a></h2>
+<p>A rendered PDF carries the wall clock in four places: <code>/Info /CreationDate</code>,
+<code>xmp:CreateDate</code>, the <code>{date}</code> header and footer placeholder, and the trailer
+<code>/ID</code> (an MD5 over the title, the creation date and the object count). Two
+builds of the same template therefore never hash the same, and a release
+pipeline cannot tell &quot;the template changed&quot; from &quot;the clock moved&quot;. Since
+pdfnative 1.8.0 every date is written in UTC, and v1.5.0 adds the global
+<code>--creation-date &lt;iso8601&gt;</code> — with <code>SOURCE_DATE_EPOCH</code> as the fallback the
+reproducible-builds.org variable that distribution build tools (Debian, Nix) set — so that
+<strong>unencrypted output becomes a pure function of its inputs</strong>: the same JSON
+renders to the same bytes on every host, in every timezone.</p>
+<p><img src="../assets/use-case-reproducible.svg" alt="Architecture: a JSON template and a pinned creation instant, supplied as SOURCE_DATE_EPOCH or the global --creation-date flag, are rendered by pdfnative-cli on three build hosts running Linux, macOS and Windows in different timezones. Each host produces a PDF whose SHA-256 is identical to the other two, because /CreationDate, xmp:CreateDate, the {date} placeholder and the trailer /ID all derive from the pinned instant in UTC. A CI gate compares the hashes and releases when they are equal; when the engine version differs between builds it falls back to pdfnative compare --mode both, which compares content instead of bytes."></p>
+<pre><code class="language-bash"># Any CI shell — the pin travels through the environment, or as a global flag.
+export SOURCE_DATE_EPOCH=1767225600             # 2026-01-01T00:00:00Z
+pdfnative --json --quiet render --input templates/report.json \
+  --output out/report.pdf --tagged pdfa2b --font latin --lang latin \
+  2&gt; status.json          # {&quot;ok&quot;:true,…,&quot;creationDate&quot;:&quot;2026-01-01T00:00:00.000Z&quot;}
+sha256sum out/report.pdf  # identical on Linux, macOS and Windows, in any TZ
+
+# The same pin, explicit — global flags may precede the command since v1.5.0,
+# and every render inside a manifest run inherits it.
+pdfnative --creation-date 2026-01-01T00:00:00Z batch --manifest pipeline.json
+
+# Across engine versions, gate on content instead of bytes.
+pdfnative compare golden/report.pdf out/report.pdf --mode both --format json
+</code></pre>
+<p>Precedence is explicit: the <code>--creation-date</code> flag wins over
+<code>layout.creationDate</code> in the document or a <code>--layout</code> file, which wins over
+<code>SOURCE_DATE_EPOCH</code>, which wins over the wall clock. An unparsable value in
+either the flag or the variable is a usage error (exit 2), never a silent
+fall-back to the clock — that would defeat the convention. The pin becomes the
+process-wide default, so a <code>batch --manifest</code> run applies it to every task,
+and the <code>--json</code> envelope carries <code>creationDate</code> whenever a pin is active — the
+one place to notice a <code>SOURCE_DATE_EPOCH</code> inherited from a build shell nobody
+remembers exporting.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>Hash-based release gating</strong> — a SHA-256 in the artefact manifest becomes a
+real assertion: a changed hash means a changed template, font or engine, not
+a changed clock.</li>
+<li><strong><code>{date}</code> footers that stop drifting</strong> — the placeholder follows the pinned
+instant, so a dated footer no longer breaks the golden file every morning.</li>
+<li><strong>Content-addressed caches and deduplication</strong> — identical input yields
+identical bytes, so a cache keyed on the JSON is a cache keyed on the PDF.</li>
+<li><strong>One flag for a whole pipeline</strong> — the pin covers every render of a
+<code>batch</code> run without touching the manifest.</li>
+</ul>
+<p>The other surfaces pin the same instant their own way: the MCP server reads
+<code>PDFNATIVE_MCP_CREATION_DATE</code> and then <code>SOURCE_DATE_EPOCH</code> at start-up, while
+the React renderer takes <code>&lt;Document creationDate&gt;</code> per document or
+<code>setDefaultCreationDate</code> per process and deliberately reads no environment
+variable.</p>
+<p>Honest limits: <strong>encrypted output is never reproducible</strong> — the file keys come
+from a CSPRNG by design. <code>sign</code> appends an incremental revision whose <code>/ID</code> is
+drawn at signing time, and <code>sign --signing-time</code> and <code>metadata --mod-date</code> are
+separate, deliberately unpinned instants: a signature&#39;s time has a legal
+meaning of its own. An engine upgrade legitimately changes bytes without
+changing content — pdfnative 1.8.0 itself moved every date to UTC and kept
+the hinting tables in TrueType subsets — so rebaseline once per upgrade, or
+gate with <code>compare --mode both</code>, which survives exactly that.</p>
+<h2 id="case-2--press-handoff-pdfx-4-from-a-json-template">Case 2 — Press handoff: PDF/X-4 from a JSON template<a class="heading-anchor" href="#case-2--press-handoff-pdfx-4-from-a-json-template" aria-label="Link to this section">#</a></h2>
+<p>A printer&#39;s preflight is the most expensive place to learn that a logo was
+RGB, a form font was not embedded or the output intent was missing: the job is
+already late. PDF/X-4 (ISO 15930-7) is the exchange format press workflows
+expect, and v1.5.0 writes it from the same JSON template as every other
+document — with the claim <strong>refused at build time</strong> when its prerequisites do
+not hold, rather than discovered at the printer.</p>
+<p><img src="../assets/use-case-press-pdfx.svg" alt="Architecture: a JSON template with CMYK colours, colour bars and a trim box, together with the printer&#39;s ICC output profile, is rendered by pdfnative render with the PDF/X-4 claim and the strict gate; engine coherence errors and PDF/X diagnostics fail the build before the first byte. The resulting PDF is asserted by pdfnative inspect --check pdfx, whose exit code 0 or 1 gates the handoff. A dry run of the same render gives the same verdict without writing a file. The final printer preflight, drawn dashed, happens outside pdfnative."></p>
+<pre><code class="language-bash"># The template carries CMYK colours (&quot;c m y k&quot; in 0–1 or [c,m,y,k] in percent),
+# layout.print.bleed (derives the TrimBox) and layout.print.marks.colourBars.
+# --output-intent-icc: the printer&#39;s prtr profile (16 MiB cap);
+# --trapped: PDF/X needs true|false, never unknown;
+# --font latin --lang latin: every font embedded;
+# --strict: PDFX_* diagnostics fail before any byte.
+pdfnative render --input templates/brochure.json --output out/brochure.pdf \
+  --pdfx pdfx4 \
+  --output-intent-icc press/printer.icc \
+  --output-intent-id &quot;ISO Coated v2 (ECI)&quot; \
+  --trapped false \
+  --font latin --lang latin \
+  --strict
+
+# Same verdict, nothing written — --dry-run runs the real build in memory.
+pdfnative --json --dry-run render --input templates/brochure.json \
+  --pdfx pdfx4 --output-intent-icc press/printer.icc --trapped false \
+  --font latin --lang latin --strict
+
+# Assert the claim on any file: exit 0 when the prerequisites hold, 1 otherwise.
+pdfnative inspect --input out/brochure.pdf --check pdfx --json --summary
+</code></pre>
+<p>Two layers refuse a bad file. Engine coherence errors — no output intent, an
+ICC profile without the <code>acsp</code> signature, <code>layout.pdfx</code> combined with
+<code>layout.tagged</code>, an unknown trapping state — map to <code>E_INPUT</code> and produce no
+output at all. Under <code>--strict</code>, the conformance diagnostics
+<code>PDFX_NO_FONT_ENTRIES</code>, <code>PDFX_DEVICE_CMYK</code> and <code>PDFX_ANNOTATIONS</code> escalate to
+<code>E_CHECK_FAILED</code> before the first output byte; without it they are stderr
+warnings and a <code>diagnostics[]</code> array in the envelope, which also carries
+<code>pdfx: &quot;pdfx4&quot;</code>. On the receiving side, <code>inspect</code> always reports the XMP claim
+as <code>pdfxConformance</code>, <code>--pdfx</code> adds the full structural report and
+<code>--check pdfx</code> turns it into an exit code; <code>--summary</code> keeps the verdict to
+five fields.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>The claim is refused at build time</strong> — a template that cannot be PDF/X-4
+never produces a file that says it is.</li>
+<li><strong>A dry-run verdict without writing</strong> — the same errors, escalations and
+diagnostics as the real run, with <code>dryRun: true</code> and no <code>bytes</code> in the
+envelope; nothing touches the disk.</li>
+<li><strong>The profile comes from the command line</strong> — <code>--output-intent-icc</code> reads a
+path you name (or the layout JSON carries the profile as an inline byte
+array, under the same 16 MiB cap); no JSON payload can ever name a file on
+disk.</li>
+<li><strong>One template, two markets</strong> — the same JSON renders to PDF/A for the
+archive and PDF/X-4 for the press by changing the conformance flags.</li>
+</ul>
+<p>The MCP server exposes the same claim as <code>pdfx: &#39;pdfx4&#39;</code> on its generation
+tools and checks it with <code>validate_pdf</code> and <code>standard: &#39;pdf-x-4&#39;</code>; the React
+renderer takes <code>pdfx=&quot;pdfx4&quot;</code> on <code>&lt;Document&gt;</code> and leaves the check to the
+engine&#39;s <code>validatePdfX</code>, one import away.</p>
+<p>Honest limits: <code>inspect --check pdfx</code> is pdfnative&#39;s <strong>structural validator,
+not a certified preflight</strong> — it checks the output intent, the page boxes,
+font embedding and forbidden annotations, not colour appearance or rendering;
+the printer&#39;s preflight still runs. Only PDF/X-4 is exposed: no PDF/X-1a, no
+PDF/X-3, no spot colours. <code>metadata</code> rewrites the XMP without the PDF/X
+identification, so re-check any file you edit afterwards. The claim is
+exclusive with PDF/A (<code>--tagged</code>) and with encryption — the pre-check exits 2
+before the build. And no press profile ships: the <code>synthetic-cmyk.icc</code> under
+the CLI&#39;s samples is structurally valid and colourimetrically meaningless —
+ask the printer for theirs.</p>
+<h2 id="case-3--a-house-font-and-book-typesetting-without-a-code-change">Case 3 — A house font and book typesetting without a code change<a class="heading-anchor" href="#case-3--a-house-font-and-book-typesetting-without-a-code-change" aria-label="Link to this section">#</a></h2>
+<p>Corporate templates arrive with a licensed house font, and long documents need
+the rules a typesetter takes for granted — widows and orphans, a heading that
+never ends a page alone, paragraphs that may split, kerning, old-style
+numerals. Before v1.5.0 a font outside the bundled set meant a wrapper script
+around the library, and the typography options needed TypeScript. Now
+<code>--font-file</code> registers the file from disk and four flags plus
+<code>layout.typography</code> cover the rest — <strong>from the command line, against the
+same JSON</strong>.</p>
+<pre><code class="language-bash"># House font from disk, typesetting rules from the layout file — no TypeScript.
+# --font-file: TTF/OTF, 32 MiB cap, validated before registration;
+# book/typography.json holds {&quot;typography&quot;:{&quot;widows&quot;:2,&quot;orphans&quot;:2,&quot;opticalMargins&quot;:true}};
+# --strict: TYPOGRAPHY_FEATURE_INEFFECTIVE fails the build.
+pdfnative render --input book/manuscript.json --output out/book.pdf \
+  --font-file fonts/HouseSerif-Regular.ttf:house-serif \
+  --split-paragraphs --keep-headings-with-next \
+  --kerning --font-features onum,smcp \
+  --layout book/typography.json \
+  --strict
+
+# Preflight the font and the feature tags without writing anything.
+pdfnative --json --dry-run render --input book/manuscript.json \
+  --font-file fonts/HouseSerif-Regular.ttf:house-serif --font-features onum,smcp
+</code></pre>
+<p><code>--font-file &lt;path.ttf&gt;[:name]</code> is repeatable and guarded the same way as
+every other binary input: the path is checked against traversal, the file is
+capped at 32 MiB, the sfnt signature is required (TrueType collections and
+WOFF containers are refused), and the program is parsed and then validated
+with the engine&#39;s <code>validateFontData</code> before it is registered — format and
+validation failures are <code>E_INPUT</code>, warnings go to stderr. The name defaults
+to the file stem (<code>[a-z0-9-]</code>); a malformed name or one that collides with a
+bundled shortcut is a usage error (exit 2). The name is added to <code>--lang</code>, so
+the font is embedded as a CIDFont Type2 subset like every other.
+Fonts are never loaded from a JSON payload — only from this flag.</p>
+<p>The four flags are shortcuts for the most common <code>layout.typography</code> keys; the
+full set (<code>widows</code>, <code>orphans</code>, <code>splitParagraphs</code>, <code>keepHeadingsWithNext</code>,
+<code>opticalMargins</code>, <code>punctuationSpacing</code>, <code>unitBinding</code>, <code>bindShortWords</code>,
+<code>kerning</code>, <code>fontFeatures</code>, <code>metrics</code>, <code>hyphenationLanguage</code>) lives in the JSON — the document, a
+<code>--layout</code> file and the flags merge one level deep, flags winning. Paragraph
+blocks accept <code>align: &quot;justify&quot;</code>, <code>keepWithNext</code> and <code>splittable</code>, and any
+text may carry soft hyphens (U+00AD). Under <code>--strict</code>, a feature tag the font
+does not implement is not a silent no-op: <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>
+fails the build, and <code>--dry-run --json</code> reports it in <code>diagnostics[]</code> before
+anything is written.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>A house font without a build step</strong> — the licensed TTF stays a file on
+disk, registered per invocation.</li>
+<li><strong>Book rules in data, not code</strong> — a <code>typography.json</code> reviewed like any
+other configuration.</li>
+<li><strong>Feature tags that are asserted</strong> — the build says when <code>onum</code> or <code>smcp</code>
+changed nothing in this font, instead of shipping lining numerals quietly.</li>
+</ul>
+<p>Honest limits: there is <strong>no hyphenation dictionary</strong> — the engine ships a
+provider seam and no patterns, the CLI does not expose the seam, and
+<code>hyphenationLanguage</code> passes through with nothing to drive; the only break
+opportunities inside a word are the soft hyphens the author wrote, which are
+honoured unconditionally. <code>metrics: &quot;exact&quot;</code> acts on the base-14 path only —
+once a font is registered, that font measures the text. A custom font covers
+only the code points in its own cmap; everything else falls to the other
+registered fonts, so pair it with <code>--font latin --lang house-serif,latin</code> for
+a Latin fallback — <code>--font</code> alone registers the module without embedding it,
+and the first font in <code>--lang</code> order that covers a code point wins, so the
+house face goes first.
+<code>--kerning</code> needs a registered font. And <code>tnum</code> on Noto Sans is a no-op — the
+bundled module declares the feature, but its figures are already tabular and
+lining, so the tag substitutes nothing, which is exactly what the diagnostic
+reports.</p>
+<h2 id="case-4--any-language-orchestrator-on-the-process-contract">Case 4 — Any-language orchestrator on the process contract<a class="heading-anchor" href="#case-4--any-language-orchestrator-on-the-process-contract" aria-label="Link to this section">#</a></h2>
+<p>The MCP server is the right integration for a conversational assistant; a
+Python job queue, a Go service or a Jenkins step wants a <strong>process contract</strong>,
+not a protocol. The CLI&#39;s contract has three channels and nothing else: the
+artefact on stdout, diagnostics and a JSON envelope on stderr, and an exit
+code of 0 (success), 1 (runtime error) or 2 (usage error). Under <code>--json</code> the
+envelope is always the <strong>last line of stderr</strong>, <code>--quiet</code> drops everything
+before it, and every failure carries one of 12 stable <code>E_*</code> codes to branch
+on — never the human message.</p>
+<p><img src="../assets/use-case-orchestrator.svg" alt="Architecture: an orchestrator written in any language spawns one pdfnative process per task and reads three lanes back — the artefact on stdout (PDF bytes, extracted text, or the JSON report of inspect, verify and batch), the JSON envelope as the last line of stderr, and the exit code 0, 1 or 2. A side box shows pdfnative schema manifest, which lists every command, its flags, the global flags and the 12 stable error codes as one JSON document, so the orchestrator can register the CLI as a tool set at runtime. A dry run validates the same inputs without writing a file or touching the network."></p>
+<pre><code class="language-python">import json, subprocess
+
+def pdfnative(*args: str) -&gt; tuple[int, dict | None, str]:
+    &quot;&quot;&quot;One process per task: (exit code, stderr envelope or None, stdout artefact).&quot;&quot;&quot;
+    p = subprocess.run([&quot;pdfnative&quot;, &quot;--json&quot;, &quot;--quiet&quot;, *args], capture_output=True, text=True)
+    lines = p.stderr.strip().splitlines()
+    envelope = json.loads(lines[-1]) if lines else None           # the envelope is the LAST stderr line
+    failed_check = p.returncode == 1 and envelope is not None and envelope[&quot;error&quot;][&quot;code&quot;] == &quot;E_CHECK_FAILED&quot;
+    if p.returncode != 0 and not failed_check:                     # 1 = runtime error, 2 = usage error
+        raise RuntimeError(f&quot;{envelope[&#39;error&#39;][&#39;code&#39;]}: {envelope[&#39;error&#39;][&#39;message&#39;]}&quot; if envelope else f&quot;exit {p.returncode}&quot;)
+    return p.returncode, envelope, p.stdout
+
+pdfnative(&quot;render&quot;, &quot;--input&quot;, &quot;doc.json&quot;, &quot;--output&quot;, &quot;out.pdf&quot;, &quot;--dry-run&quot;)  # preflight; never touches the network
+_, status, _ = pdfnative(&quot;render&quot;, &quot;--input&quot;, &quot;doc.json&quot;, &quot;--output&quot;, &quot;out.pdf&quot;)  # status[&quot;bytes&quot;]; status[&quot;creationDate&quot;] when pinned
+code, _, verdict = pdfnative(&quot;inspect&quot;, &quot;--input&quot;, &quot;out.pdf&quot;, &quot;--check&quot;, &quot;pdfa&quot;, &quot;--summary&quot;)  # verdict JSON on stdout; code 0 pass, 1 fail
+</code></pre>
+<p>The contract is discoverable at runtime. <code>pdfnative schema manifest</code> emits one
+JSON document listing every command, its flags, the global flags and the
+error codes — enough to register the CLI as a tool set without reading a
+manual — and <code>schema render</code>, <code>schema status</code> and the other subjects are
+JSON Schemas (Draft 2020-12) whose <code>$id</code> embeds the CLI version, so your own
+validator checks the input before the process starts and detects drift after
+an upgrade. <code>--dry-run</code> validates the same inputs the real run would — JSON
+parsed, layout assembled, fonts and profiles read, credentials loaded — and
+<strong>never performs network I/O</strong> on the commands that implement it (<code>render</code>,
+<code>sign</code>, <code>ltv</code>, <code>doc-timestamp</code>, <code>batch</code>), even when a network flag is
+present; <code>verify</code> has no dry run, so <code>--revocation online</code> always fetches.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>One contract for 21 commands</strong> — render, sign, verify, merge, extract,
+compare and the rest all answer through the same three channels and the
+same 12 codes.</li>
+<li><strong>Token-cheap stdout</strong> — <code>--summary</code> collapses <code>inspect</code>, <code>verify</code> and
+<code>batch</code> to the fields an orchestrator gates on, <code>--fields a,b.c</code> projects
+any path, and the JSON is compact by default under <code>--json</code>.</li>
+<li><strong>Offline by default</strong> — the only network opt-ins are explicit flags
+(<code>sign --timestamp</code>, <code>ltv collect|add --online</code>, <code>doc-timestamp --url</code>,
+<code>verify --revocation online</code>), each behind an SSRF guard, each failing with
+<code>E_NETWORK</code> rather than a silent fallback.</li>
+</ul>
+<p>Honest limits: <code>inspect</code>, <code>verify</code> and <code>batch</code> put their result <strong>on stdout as
+JSON</strong>, not in the envelope — on success there may be no stderr line at all,
+which is why the wrapper above returns both channels. <code>ltv</code> and <code>compare</code> take
+positional arguments and are not callable from a <code>batch --manifest</code> pipeline
+yet; run them as their own process. And the CLI is stateless by design — one
+process per task, no daemon, no session — so concurrency, retries and queueing
+are the orchestrator&#39;s job, driven by the exit code.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="use-cases.html">Ecosystem use cases</a> — the hub: five cross-surface
+architectures, including the CI regression gate and the air-gapped PAdES
+ladder these cases build on.</li>
+<li><a href="cli.html">CLI guide</a> — the complete v1.5.0 command reference behind every
+flag above.</li>
+<li><a href="use-cases-mcp.html">MCP use cases</a> and <a href="use-cases-react.html">React use cases</a>
+— three cases each, the same engine seen from the other two surfaces.</li>
+<li><a href="../playgrounds/cli.html">CLI playground</a> — compose a <code>pdfnative</code> invocation
+in the browser.</li>
+<li><a href="../playgrounds/reproducible.html">Reproducible output playground</a> — pin a
+creation date and watch the bytes stay identical.</li>
+</ul>
+<!-- guide:render:end -->
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="./">All guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
+<script src="guide.js" defer></script>
+</body>
+</html>

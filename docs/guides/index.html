@@ -34,7 +34,7 @@
         "inLanguage": "en",
         "@id": "https://pdfnative.dev/guides/#collection",
         "name": "pdfnative documentation guides",
-        "description": "All 32 reference guides for the pdfnative ecosystem.",
+        "description": "All 35 reference guides for the pdfnative ecosystem.",
         "url": "https://pdfnative.dev/guides/",
         "isPartOf": {
           "@type": "WebSite",
@@ -43,7 +43,7 @@
         },
         "mainEntity": {
           "@type": "ItemList",
-          "numberOfItems": 32,
+          "numberOfItems": 35,
           "itemListOrder": "https://schema.org/ItemListUnordered",
           "itemListElement": [
             {
@@ -237,6 +237,24 @@
               "position": 32,
               "name": "Typography",
               "url": "https://pdfnative.dev/guides/typography.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 33,
+              "name": "CLI use cases",
+              "url": "https://pdfnative.dev/guides/use-cases-cli.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 34,
+              "name": "MCP use cases",
+              "url": "https://pdfnative.dev/guides/use-cases-mcp.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 35,
+              "name": "React use cases",
+              "url": "https://pdfnative.dev/guides/use-cases-react.html"
             }
           ]
         }
@@ -316,7 +334,19 @@
       </li>
       <li>
         <a href="use-cases.html">Ecosystem use cases →</a>
-        <span class="guide-toc-desc">Four production architectures with diagrams, each built from shipped APIs — store the DocSpec JSON instead of the PDF and render on the reader's device, air-gapped PAdES B-LTA archiving (<code>ltv collect</code> → transfer → offline <code>embed</code>), a CI document-regression gate on <code>pdfnative compare</code> exit codes, and edge-rendered PDFs with real HTTP caching (<code>etag</code>/<code>cacheControl</code>).</span>
+        <span class="guide-toc-desc">Five production architectures (four with diagrams), each built from shipped APIs — store the DocSpec JSON instead of the PDF and render on the reader's device, air-gapped PAdES B-LTA archiving (<code>ltv collect</code> → transfer → offline <code>embed</code>), a CI document-regression gate on <code>pdfnative compare</code> exit codes, edge-rendered PDFs with real HTTP caching (<code>etag</code>/<code>cacheControl</code>), and zipnative as the deterministic DEFLATE codec behind <code>setDeflateRawImpl</code>. The hub for the three per-surface pages below.</span>
+      </li>
+      <li>
+        <a href="use-cases-cli.html">CLI use cases →</a>
+        <span class="guide-toc-desc">Four pdfnative-cli v1.5.0 architectures — byte-reproducible builds with <code>--creation-date</code> / <code>SOURCE_DATE_EPOCH</code> hashed and gated in CI, a PDF/X-4 press handoff refused at build time and checked by <code>inspect --check pdfx</code>, a house font with <code>--font-file</code> and the typography flags, and the exit-code / JSON-envelope contract that lets a Python or Go orchestrator drive all 21 commands.</span>
+      </li>
+      <li>
+        <a href="use-cases-mcp.html">MCP use cases →</a>
+        <span class="guide-toc-desc">Three pdfnative-mcp v1.7.0 architectures — one shared Streamable HTTP server behind a bearer token whose outputs are MCP resources, a preview-then-produce typesetting loop on <code>inspect_layout</code> that costs a few dozen tokens, and multilingual PDF/A notices in 27 scripts from one tool call. Each with its building blocks, one load-bearing call and its honest limits.</span>
+      </li>
+      <li>
+        <a href="use-cases-react.html">React use cases →</a>
+        <span class="guide-toc-desc">Three pdfnative-react v1.3.0 architectures — lint JSX and stored DocSpecs in CI with the 37 rules before a byte is written, typeset long-form documents with the twelve typography keys, and render one component tree to a tagged PDF/A-2b portal file and a CMYK PDF/X-4 press file, with the lint rule that catches a leaked plate colour.</span>
       </li>
       <li>
         <a href="quickstart.html">Quick Start →</a>
@@ -467,15 +497,23 @@
       </li>
       <li>
         <a href="../playgrounds/cli.html">CLI command builder →</a>
-        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> commands interactively — all twenty-one commands, from <code>render</code> and <code>fill</code> to the full PAdES ladder (<code>sign --timestamp</code> / <code>ltv</code> / <code>doc-timestamp</code>), <code>metadata</code>, <code>compare</code>, <code>batch --manifest</code> and <code>govern</code> — with inline validation and one-click presets. The <a href="cli.html">CLI guide</a> is the complete flag reference.</span>
+        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> commands interactively — all twenty-one commands, from <code>render</code> and <code>fill</code> to the full PAdES ladder (<code>sign --timestamp</code> / <code>ltv</code> / <code>doc-timestamp</code>), <code>metadata</code>, <code>compare</code>, <code>batch --manifest</code> and <code>govern</code> — with inline validation and one-click presets, including the v1.5.0 typography, PDF/X-4, <code>--font-file</code> and <code>--creation-date</code> flags. The <a href="cli.html">CLI guide</a> is the complete flag reference.</span>
       </li>
       <li>
         <a href="../playgrounds/mcp.html">MCP tool explorer →</a>
-        <span class="guide-toc-desc">Browse the pdfnative-mcp toolset (28 tools), copy a ready-to-paste config snippet for Claude / Cursor / Continue / Zed, and generate the same PDFs an AI assistant would receive — all in your browser.</span>
+        <span class="guide-toc-desc">Browse the pdfnative-mcp toolset (28 tools), copy a ready-to-paste config snippet for Claude / Cursor / Continue / Zed, and generate the same PDFs an AI assistant would receive — including the v1.7.0 <code>typography</code>, CMYK and PDF/X-4 payloads — all in your browser.</span>
       </li>
       <li>
         <a href="../playgrounds/react.html">React renderer →</a>
-        <span class="guide-toc-desc">Write JSX in the browser and render a real PDF on-device via pdfnative-react — components compile to pdfnative blocks with no SaaS round-trip. Loaded from a CDN for the demo; the published package stays zero-dependency at its core.</span>
+        <span class="guide-toc-desc">Write JSX in the browser and render a real PDF on-device via pdfnative-react — components compile to pdfnative blocks with no SaaS round-trip. Loaded from a CDN for the demo; the published package stays zero-dependency at its core. Presets cover the v1.3.0 typography, PDF/X-4, reproducible-output and lint surfaces.</span>
+      </li>
+      <li>
+        <a href="../playgrounds/reproducible.html">Reproducible output →</a>
+        <span class="guide-toc-desc">Build the same document twice with a pinned <code>creationDate</code>, compare the two SHA-256 digests in the page, then flip one input and watch them diverge — with copyable equivalents for the CLI, the MCP server and React.</span>
+      </li>
+      <li>
+        <a href="../playgrounds/docspec-lint.html">DocSpec lint →</a>
+        <span class="guide-toc-desc">Run pdfnative-react's <code>validateSpec</code> and <code>lintSpec</code> (37 rules) on a JSON <code>DocSpec</code> in your browser, read the findings before a byte is rendered, then render the fixed spec.</span>
       </li>
     </ul>
 

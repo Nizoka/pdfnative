@@ -16,7 +16,7 @@
 
   <rect width="960" height="560" fill="#F8FAFC"/>
   <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">A document-regression gate in CI</text>
-  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">pdfnative compare turns write-only artefacts into asserted ones — CLI v1.4.0</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">pdfnative compare turns write-only artefacts into asserted ones — pdfnative-cli (since 1.4.0)</text>
 
   <!-- PR trigger -->
   <rect x="40" y="110" width="180" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>

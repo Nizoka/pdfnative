@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="uco-title uco-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="uco-title">Any-language orchestrator on the process contract</title>
+  <desc id="uco-desc">Architecture: an orchestrator written in any language spawns one pdfnative process per task and reads three lanes back — the artefact on stdout (PDF bytes, extracted text, or the JSON report of inspect, verify and batch), the JSON envelope as the last line of stderr, and the exit code 0, 1 or 2. A side box shows pdfnative schema manifest, which lists every command, its flags, the global flags and the 12 stable error codes as one JSON document, so the orchestrator can register the CLI as a tool set at runtime. A dry run validates the same inputs without writing a file or touching the network.</desc>
+
+  <defs>
+    <marker id="uco-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="uco-ah-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+    <marker id="uco-ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/>
+    </marker>
+    <marker id="uco-ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#DC2626"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#F8FAFC"/>
+  <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Any-language orchestrator on the process contract</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">One process per task, three channels back, one exit code — pdfnative-cli v1.5.0</text>
+
+  <!-- Orchestrator -->
+  <rect x="40" y="118" width="220" height="228" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="150" y="146" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">Orchestrator</text>
+  <text x="150" y="166" text-anchor="middle" font-size="11.5" fill="#64748B">Python · Go · Java · shell</text>
+  <text x="150" y="190" text-anchor="middle" font-size="11.5" fill="#64748B">spawns one process per task</text>
+  <text x="150" y="206" text-anchor="middle" font-size="11.5" fill="#64748B">parses the last stderr line</text>
+  <text x="150" y="222" text-anchor="middle" font-size="11.5" fill="#64748B">branches on error.code</text>
+  <text x="150" y="238" text-anchor="middle" font-size="11.5" fill="#64748B">never on the message</text>
+  <text x="150" y="270" text-anchor="middle" font-size="11.5" fill="#64748B">retries, queueing and</text>
+  <text x="150" y="286" text-anchor="middle" font-size="11.5" fill="#64748B">concurrency stay here —</text>
+  <text x="150" y="302" text-anchor="middle" font-size="11.5" fill="#64748B">the CLI is stateless</text>
+
+  <!-- pdfnative process -->
+  <rect x="660" y="118" width="260" height="228" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="790" y="146" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1E40AF">pdfnative --json --quiet &lt;command&gt;</text>
+  <text x="790" y="166" text-anchor="middle" font-size="11.5" fill="#3B82F6">21 commands, one contract</text>
+  <text x="790" y="190" text-anchor="middle" font-size="11.5" fill="#3B82F6">global flags may precede the command</text>
+  <text x="790" y="206" text-anchor="middle" font-size="11.5" fill="#3B82F6">--dry-run: validates, writes nothing,</text>
+  <text x="790" y="222" text-anchor="middle" font-size="11.5" fill="#3B82F6">never touches the network</text>
+  <text x="790" y="254" text-anchor="middle" font-size="11.5" fill="#3B82F6">offline by default — network only</text>
+  <text x="790" y="270" text-anchor="middle" font-size="11.5" fill="#3B82F6">behind explicit opt-in flags,</text>
+  <text x="790" y="286" text-anchor="middle" font-size="11.5" fill="#3B82F6">each SSRF-guarded (E_NETWORK)</text>
+
+  <!-- Invocation -->
+  <line x1="260" y1="150" x2="658" y2="150" stroke="#475569" stroke-width="1.75" marker-end="url(#uco-ah)"/>
+  <text x="459" y="142" text-anchor="middle" font-size="11.5" fill="#475569">argv — flags after the command name; --input / --output paths</text>
+
+  <!-- Lane 1: stdout -->
+  <line x1="658" y1="212" x2="262" y2="212" stroke="#2563EB" stroke-width="2" marker-end="url(#uco-ah-blue)"/>
+  <text x="459" y="204" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1E40AF">stdout — the artefact</text>
+  <text x="459" y="228" text-anchor="middle" font-size="11" fill="#3B82F6">PDF bytes, extracted text, or the JSON report of inspect / verify / batch</text>
+
+  <!-- Lane 2: stderr -->
+  <line x1="658" y1="266" x2="262" y2="266" stroke="#475569" stroke-width="2" marker-end="url(#uco-ah)"/>
+  <text x="459" y="258" text-anchor="middle" font-size="11.5" font-weight="600" fill="#334155">stderr — diagnostics, then the envelope as the LAST line</text>
+  <text x="459" y="280" text-anchor="middle" font-size="10.5" fill="#64748B">{ ok, command, output, bytes, creationDate, diagnostics[] }</text>
+  <text x="459" y="294" text-anchor="middle" font-size="10.5" fill="#64748B">or { ok: false, error: { code, message } }</text>
+
+  <!-- Lane 3: exit code -->
+  <line x1="658" y1="320" x2="460" y2="320" stroke="#DC2626" stroke-width="2"/>
+  <line x1="460" y1="320" x2="262" y2="320" stroke="#16A34A" stroke-width="2" marker-end="url(#uco-ah-green)"/>
+  <text x="459" y="312" text-anchor="middle" font-size="11.5" font-weight="600" fill="#334155">exit code</text>
+  <text x="459" y="336" text-anchor="middle" font-size="11" fill="#475569">0 success · 1 runtime error (one of 12 stable E_* codes) · 2 usage error</text>
+
+  <!-- schema manifest side box -->
+  <path d="M790 346 L790 392" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#uco-ah)"/>
+  <rect x="380" y="394" width="540" height="78" rx="10" fill="#ECFEFF" stroke="#5EBECF" stroke-width="1.25"/>
+  <text x="650" y="418" text-anchor="middle" font-size="13.5" font-weight="700" fill="#155E75">pdfnative schema manifest</text>
+  <text x="650" y="438" text-anchor="middle" font-size="11.5" fill="#0E7490">every command, its flags, the global flags and the error codes — one JSON document,</text>
+  <text x="650" y="454" text-anchor="middle" font-size="11.5" fill="#0E7490">enough to register the CLI as a tool set at runtime; schema render / status pin input and envelope</text>
+
+  <path d="M380 433 H150 V350" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#uco-ah)"/>
+  <text x="265" y="380" text-anchor="middle" font-size="11.5" fill="#64748B">discover once,</text>
+  <text x="265" y="396" text-anchor="middle" font-size="11.5" fill="#64748B">validate with your</text>
+  <text x="265" y="412" text-anchor="middle" font-size="11.5" fill="#64748B">own JSON Schema tooling</text>
+
+  <!-- Footer -->
+  <rect x="40" y="486" width="880" height="58" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="510" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">inspect / verify / batch put their JSON on stdout, not in the envelope — add --summary or --fields to keep it small.</text>
+  <text x="480" y="530" text-anchor="middle" font-size="12.5" fill="#475569">ltv and compare are not manifest-callable inside batch yet; run them as their own process and let the exit code drive the flow.</text>
+</svg>

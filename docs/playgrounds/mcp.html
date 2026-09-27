@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCP Tool Explorer — pdfnative</title>
   <meta name="description" content="Browse all 28 pdfnative-mcp tools, read example prompts and JSON payloads, and generate the exact PDFs an AI assistant receives — in your browser.">
-  <meta name="keywords" content="pdfnative-mcp, Model Context Protocol, MCP server, AI PDF generation, Claude Desktop, Cursor, PDF tools, generate PDF, merge PDF, split PDF, PDF/A, digital signature, PAdES, LTV, document timestamp, update PDF metadata, layout preview">
+  <meta name="keywords" content="pdfnative-mcp, Model Context Protocol, MCP server, AI PDF generation, Claude Desktop, Cursor, PDF tools, generate PDF, merge PDF, split PDF, PDF/A, PDF/X-4, CMYK, typography, reproducible PDF, digital signature, PAdES, LTV, document timestamp, update PDF metadata, layout preview">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/mcp.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/mcp.html">
@@ -56,6 +56,15 @@
     .mcp-config-tabs button[aria-selected="true"] { color: var(--c-primary); border-bottom-color: var(--c-primary); }
     .mcp-config-block pre { position: relative; }
     .mcp-config-block .copy-btn { position: absolute; top: 8px; right: 8px; padding: 4px 10px; font-size: 12px; background: var(--c-primary); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .mcp-tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--c-surface); color: var(--c-text-dim); border: 1px solid var(--c-border); }
+    .mcp-tag.new { color: var(--c-primary); border-color: var(--c-primary); }
+    .mcp-card .simulated { font-size: 12px; color: var(--c-text-dim); margin: 0; padding: 6px 10px; border-left: 3px solid var(--c-border); }
+    .mcp-env-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .mcp-env-table th, .mcp-env-table td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--c-border); }
+    .mcp-env-table th { font-weight: 600; color: var(--c-text); }
+    .mcp-env-table code { overflow-wrap: anywhere; }
+    .mcp-inline-list { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 8px 0; list-style: none; }
+    .mcp-inline-list li code { background: var(--c-surface); padding: 2px 8px; border-radius: 4px; font-size: 12px; }
   </style>
   <script type="application/ld+json">
   {
@@ -73,7 +82,7 @@
       "@type": "SoftwareApplication",
       "inLanguage": "en",
       "name": "pdfnative-mcp",
-      "softwareVersion": "1.6.0",
+      "softwareVersion": "1.7.0",
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "Node.js",
       "url": "https://github.com/Nizoka/pdfnative-mcp"
@@ -126,11 +135,13 @@
     <a href="./react.html">React renderer</a>
     <a href="./typography.html">Typography</a>
     <a href="./print.html">Print &amp; PDF/X</a>
+    <a href="./reproducible.html">Reproducible output</a>
+    <a href="./docspec-lint.html">DocSpec lint</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
-    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> into Claude Desktop, Cursor, Continue, Zed, or any other MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>28 tools</strong> — including the v1.6.0 PAdES ladder <code>add_ltv</code> / <code>timestamp_pdf</code> (with RFC 3161 timestamps on <code>sign_pdf</code>), <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, all 13 block kinds in <code>generate_basic_pdf</code>, print production and charts v2, the v1.5.0 <code>add_chart</code> / form / encryption tools, the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, and the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code> — a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code> on <code>add_international_text</code>, token-frugal read modes (<code>verbosity</code> / <code>fields</code>), and a per-tool <code>_meta.apiVersion</code> stability contract. Each card below shows a real example prompt, the pdfnative library payload this browser demo executes (the MCP tool schemas differ — see the <a href="../guides/mcp.html">MCP guide</a> for the exact schemas), and a <strong>Generate PDF</strong> button that produces the very PDF the AI assistant would receive — running the underlying <a href="https://www.npmjs.com/package/pdfnative">pdfnative</a> library directly in your browser. No API keys, no install, no LLM cost.</p>
+    <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> <strong>v1.7.0</strong> (pins pdfnative <code>^1.8.0</code>, requires pdfnative ≥ 1.8.0 and Node ≥ 22; <code>_meta.apiVersion</code> = <code>TOOL_API_VERSION</code> <code>1.7.0</code>) into Claude Desktop, Cursor, Continue, Zed, or any other MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>28 tools</strong> — the catalogue did not grow in v1.7.0; what each tool can do did: a <code>typography</code> option on the nine document tools and on <code>inspect_layout</code> (paragraphs that split with orphan / widow control, justification with optical margins, kerning and OpenType features), <strong>CMYK colours</strong> on every colour input (<code>[c, m, y, k]</code> percent tuples or <code>'c m y k'</code> operand strings), <strong>PDF/X-4</strong> output (<code>pdfx: "pdfx4"</code>, CMYK or Gray output intents, colour bars) with a structural check in <code>validate_pdf</code> <code>{ standard: "pdf-x-4" }</code>, <strong>27 scripts</strong> in <code>add_international_text</code> (Lao, Tai Tham, New Tai Lue, Tai Le and Cham join), and <strong>reproducible output</strong> (every date written in UTC; a per-call <code>creationDate</code>, or an operator-wide pin through <code>PDFNATIVE_MCP_CREATION_DATE</code> / <code>SOURCE_DATE_EPOCH</code>). Still there from earlier releases: the v1.6.0 PAdES ladder <code>add_ltv</code> / <code>timestamp_pdf</code> (with RFC 3161 timestamps on <code>sign_pdf</code>), <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, all 13 block kinds in <code>generate_basic_pdf</code>, print production and charts v2, the v1.5.0 <code>add_chart</code> / form / encryption tools, the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and token-frugal read modes (<code>verbosity</code> / <code>fields</code>). Each card below shows a real example prompt, the payload it runs, and a button that produces the very PDF (or report) the AI assistant would receive — <strong>simulated with the pdfnative engine in your browser; the server returns the same shape</strong>. Older cards show the pdfnative library payload this page executes (the MCP schemas differ — see the <a href="../guides/mcp.html">MCP guide</a>); the v1.7.0 cards show the exact MCP tool-call payload and map it to the engine in front of you. No API keys, no install, no LLM cost.</p>
 
     <p style="font-size: 14px; color: var(--c-text-dim);">For the full integration story (config, security model, signed-document workflow), see the <a href="../guides/mcp.html">MCP guide</a>.</p>
 
@@ -147,18 +158,57 @@
       <p style="font-size: 13px; color: var(--c-text-dim); margin-top: 10px;"><strong>Other clients:</strong> any tool that speaks the <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> over stdio works — Cline, Windsurf, Goose, Aider, LibreChat, Sourcegraph Cody, Gemini CLI, and your own custom client. Use the same <code>command: "npx"</code> / <code>args: ["-y", "pdfnative-mcp"]</code> pair in whatever JSON shape your client expects.</p>
     </div>
 
-    <h2 style="margin-top: 36px;">2. Try the tools</h2>
+    <div class="mcp-config-block" id="env-panel">
+      <h2 style="font-size: 18px; margin-bottom: 8px;">2. Operator environment — the 12 variables</h2>
+      <p style="font-size: 14px; color: var(--c-text-dim);">Everything the server reads from its process environment, as declared in <code>server.json</code> (MCP registry schema <code>2025-12-11</code>). All are optional; none is ever settable from a tool argument. Set them in the <code>env</code> block of your client config. The two tagged <span class="mcp-tag new">v1.7.0</span> are new in this release.</p>
+      <table class="mcp-env-table">
+        <thead><tr><th scope="col">Variable</th><th scope="col">Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>PDFNATIVE_MCP_OUTPUT_DIR</code></td><td>Absolute path of a sandboxed directory where <code>outputMode: "file"</code> may write PDFs. Unset: every tool returns base64 only.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_CACHE_DIR</code></td><td>Opt-in content-addressed response cache (SHA-256 keyed, 1 h TTL, 256 MiB LRU, plaintext at rest). Never caches encrypt / decrypt, sign, timestamp, <code>add_ltv</code>, <code>update_metadata</code>, encrypted builds or file output. The namespace carries the creation-date pin below.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_PORT</code></td><td>Serve Streamable HTTP on this loopback port instead of stdio (stateless). Unauthenticated unless the token below is set.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_HTTP_TOKEN</code></td><td>Secret. Bearer token for the HTTP transport (≥ 16 chars, no whitespace); <code>/mcp</code> answers 401 without it. Never logged.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_MAX_INFLATE_BYTES</code></td><td>Per-stream FlateDecode decompression cap in bytes (zip-bomb mitigation; default 104857600 = 100 MiB). Integer ≥ 1024; an invalid value refuses to start.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_CREATION_DATE</code> <span class="mcp-tag new">v1.7.0</span></td><td>ISO 8601 instant with a time zone (e.g. <code>2026-01-01T00:00:00Z</code>) pinned as the creation date of every generated document — reproducible bytes on any host. An invalid value refuses to start.</td></tr>
+          <tr><td><code>SOURCE_DATE_EPOCH</code> <span class="mcp-tag new">v1.7.0</span></td><td>The reproducible-builds.org convention: integer seconds since the Unix epoch, used as the pin when <code>PDFNATIVE_MCP_CREATION_DATE</code> is unset. A shell that already exports it pins every document. An invalid value refuses to start.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_TSA_URL</code></td><td>http(s) URL of the RFC 3161 timestamp authority used by <code>sign_pdf</code> <code>timestamp: true</code> and <code>timestamp_pdf</code> (PAdES B-T / B-LTA). Unset: those calls fail with <code>TSA_NOT_CONFIGURED</code> and no request is made.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_TSA_AUTH</code></td><td>Secret. Optional <code>Authorization</code> header value sent to the TSA (<code>Basic …</code> or <code>Bearer …</code>). Never logged or echoed.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_REVOCATION</code></td><td><code>ocsp</code>, <code>crl</code> or <code>ocsp,crl</code>: enables online revocation collection for <code>add_ltv</code> <code>mode: "online"</code> (PAdES B-LT). Unset: that mode fails with <code>REVOCATION_NOT_CONFIGURED</code>; <code>mode: "offline"</code> stays offline.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_NETWORK_ALLOWED_HOSTS</code></td><td>Comma-separated allow-list of OCSP / CRL responder hosts (<code>host</code>, <code>host:port</code> or <code>*.suffix</code>). Mandatory when the revocation variable is set; http(s) only, no credentials, no redirects, internal addresses rejected unless listed verbatim.</td></tr>
+          <tr><td><code>PDFNATIVE_MCP_NETWORK_TIMEOUT_MS</code></td><td>Per-request timeout for TSA / OCSP / CRL calls in milliseconds, 1000–120000 (default 10000).</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size: 13px; color: var(--c-text-dim); margin-top: 10px;" id="env-precedence"><strong>Creation-date precedence:</strong> per-call <code>creationDate</code> → <code>PDFNATIVE_MCP_CREATION_DATE</code> → <code>SOURCE_DATE_EPOCH</code> → the wall clock. The pin is read once at boot and its source is logged on stderr; a call's own <code>creationDate</code> always wins. Not covered by any pin, by design: <code>signingTime</code>, <code>modDate</code>, RFC 3161 tokens and revocation data, encryption (fresh key, salts, IVs), ECDSA signatures.</p>
+    </div>
+
+    <div class="mcp-config-block" id="prompts-panel">
+      <h2 style="font-size: 18px; margin-bottom: 8px;">3. Prompts and error codes</h2>
+      <p style="font-size: 14px; color: var(--c-text-dim);">The server advertises the <code>prompts</code> capability with <strong>7 prompts</strong> — read-only recipes an agent can load before it calls a tool (<code>typography</code> is new in v1.7.0; <code>print_ready</code>, <code>reproducible_output</code> and <code>pdfa_valid</code> were rewritten for CMYK, PDF/X-4, colour bars and the UTC / operator pin):</p>
+      <ul class="mcp-inline-list" id="prompt-list">
+        <li><code>governance_contract</code></li>
+        <li><code>draft_issue_workflow</code></li>
+        <li><code>pades_ladder</code></li>
+        <li><code>print_ready</code></li>
+        <li><code>reproducible_output</code></li>
+        <li><code>typography</code> <span class="mcp-tag new">v1.7.0</span></li>
+        <li><code>pdfa_valid</code></li>
+      </ul>
+      <p style="font-size: 14px; color: var(--c-text-dim); margin-top: 14px;"><strong>Strict-mode error codes.</strong> With <code>strict: true</code> the server escalates the first engine diagnostic to a stable error code, chosen from the diagnostic's own code (<code>src/diagnostics.ts</code>, <code>escalate()</code>): <code>PDFA_*</code> → <code>PDF_A_COMPLIANCE_VIOLATION</code>; <code>PDFX_*</code> (<code>PDFX_NO_FONT_ENTRIES</code>, <code>PDFX_DEVICE_CMYK</code>, <code>PDFX_ANNOTATIONS</code>) → <code>PDF_X_COMPLIANCE_VIOLATION</code> <span class="mcp-tag new">v1.7.0</span>; anything else (today <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>) → <code>DIAGNOSTIC_ESCALATED</code> <span class="mcp-tag new">v1.7.0</span>, whose message starts with <code>[CODE]</code>. The two new codes can only be returned by a call that sets <code>strict: true</code>; <code>includeDiagnostics: true</code> echoes the codes without failing. Other codes you will meet on this page: <code>VALIDATION_ERROR</code> (an incoherent PDF/X request is refused before any work), <code>PRINT_ERROR</code> (a file that is not an ICC profile), <code>ENCRYPTED_SOURCE</code>, <code>GOVERNANCE_VIOLATION</code>, <code>PDF_PARSE_FAILED</code>. The PDF/X-4 card below prints the engine code and the server code it maps to whenever the build raises a <code>PDFX_*</code> diagnostic.</p>
+    </div>
+
+    <h2 style="margin-top: 36px;">4. Try the tools</h2>
     <p id="loader-status" style="font-size: 13px; color: var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once per page load.</p>
-    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), the v1.4.0 <code>annotate_pdf</code>, and the v1.6.0 <code>update_metadata</code> — all of which build their own source PDFs in the browser and run the real pdfnative 1.8.0 API. Two cards produce no PDF by design: <code>inspect_layout</code> returns a pagination report (run it to see the JSON), and <code>draft_governance_issue</code> validates a report locally, network-free — use its <em>Copy args</em> button. Eleven of the 28 tools have no card here: nine need a real PDF as input and run best from your own MCP client (<code>validate_pdf</code>, <code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code>, <code>decrypt_pdf</code>), and two need the operator-configured network providers a browser page cannot supply (<code>add_ltv</code>, <code>timestamp_pdf</code> — TSA / OCSP / CRL endpoints set via environment variables). See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
+    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), the v1.4.0 <code>annotate_pdf</code>, the v1.6.0 <code>update_metadata</code>, and the six <span class="mcp-tag new">v1.7.0</span> cards — <code>generate_basic_pdf</code> with <code>typography</code>, <code>generate_basic_pdf</code> as PDF/X-4 with CMYK colours and colour bars, <code>validate_pdf</code> <code>{ standard: "pdf-x-4" }</code>, <code>inspect_pdf</code> <code>{ check: ["pdfx", "trapped"] }</code>, <code>add_international_text</code> with the five new scripts, and a reproducible <code>generate_basic_pdf</code> that is built twice and hashed — all of which build their own source PDFs in the browser and run the real pdfnative 1.8.0 API. Three cards produce no PDF by design: <code>inspect_layout</code> returns a pagination report, <code>validate_pdf</code> and <code>inspect_pdf</code> (PDF/X) return structured reports (run them to see the JSON), and <code>draft_governance_issue</code> validates a report locally, network-free — use its <em>Copy args</em> button. Ten of the 28 tools have no card here: eight need a real PDF as input and run best from your own MCP client (<code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code>, <code>decrypt_pdf</code>), and two need the operator-configured network providers a browser page cannot supply (<code>add_ltv</code>, <code>timestamp_pdf</code> — TSA / OCSP / CRL endpoints set via the environment variables above). See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
 
     <div class="mcp-cards" id="cards"></div>
 
-    <h2 style="margin-top: 40px;">3. Now ask your AI assistant</h2>
+    <h2 style="margin-top: 40px;">5. Now ask your AI assistant</h2>
     <p>Once you've pasted the config snippet above and restarted your client, ask it anything PDF-shaped:</p>
     <ul>
       <li><em>"Generate a 3-page invoice for ACME Corp totalling €1 200 and embed a QR code that links to the payment portal."</em></li>
       <li><em>"Create a Thai-language welcome letter with our logo as a header."</em></li>
       <li><em>"Draft a contract with a signature placeholder and inspect the resulting PDF for me."</em></li>
+      <li><em>"Set this report in justified text with widows and orphans of 3, then produce a PDF/X-4 version for the printer and validate it."</em></li>
     </ul>
     <p>The AI assistant will pick the right tools, fill the JSON arguments, and pdfnative will render the PDF — no code from you.</p>
 
@@ -167,6 +217,7 @@
       <li><a href="../guides/mcp.html">MCP guide</a> — full configuration, security model, signed-document workflow</li>
       <li><a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp on GitHub</a></li>
       <li><a href="../guides/cli.html">CLI guide</a> &middot; <a href="./cli.html">CLI playground</a></li>
+      <li><a href="./typography.html">Typography playground</a> &middot; <a href="./print.html">Print &amp; PDF/X playground</a> &middot; <a href="./reproducible.html">Reproducible output playground</a> — the engine features behind the v1.7.0 cards</li>
       <li><a href="https://modelcontextprotocol.io">Model Context Protocol specification</a></li>
     </ul>
   </article>
@@ -252,6 +303,34 @@
   // pdfnative LIBRARY payload this browser demo executes; the MCP tool schemas
   // differ — see ../guides/mcp.html for the exact schemas. `build(p, m)` returns
   // Uint8Array bytes given those args + the loaded module.
+  //
+  // v1.7.0 cards (`mcp: true`) instead carry the exact MCP `arguments` from the server's
+  // examples/ and a `run(args, m)` that maps them to the engine and returns
+  // { bytes?, report?, status } — the report is the shape the server's tool returns.
+
+  // The running-text sentence of examples/typography-report.json (repeated to force page breaks).
+  const TYPO_SENTENCE = 'Typography is the craft of endowing human language with a durable visual form. A page that breaks in the wrong place, strands a heading at its foot or opens rivers of white between words asks the reader to work; one that is set with care disappears, and only the text remains.';
+
+  // The PDF/X-4 arguments (examples/pdfx4-cmyk-validate.json, step 1), shared by three cards.
+  const pdfxArgs = {
+    title: 'Spring catalogue',
+    pdfx: 'pdfx4',
+    embedFonts: true,
+    creationDate: '2026-01-01T00:00:00Z',
+    outputIntent: {
+      iccProfileBase64: '<synthetic CMYK prtr ICC, base64 — this page fetches ../assets/synthetic-cmyk.icc instead>',
+      outputConditionIdentifier: 'Synthetic CMYK (pdfnative test profile)',
+    },
+    metadata: { trapped: 'False' },
+    print: { bleed: 14.17, marks: { colourBars: true } },
+    watermark: { text: 'CATALOGUE', opacity: 1, color: [0, 0, 0, 8] },
+    blocks: [
+      { type: 'heading', text: 'Spring catalogue', level: 1 },
+      { type: 'paragraph', text: 'Four-colour job exchanged as PDF/X-4.' },
+      { type: 'chart', chartType: 'bar', categories: ['Q1', 'Q2'], series: [{ label: 'Orders', values: [120, 180], color: '1 0.6 0 0.1' }] },
+    ],
+  };
+
   const TOOLS = [
     {
       id: 'generate_basic_pdf',
@@ -272,6 +351,124 @@
         metadata: { author: 'People Team', subject: 'Welcome' },
       },
       build: (p, m) => m.buildDocumentPDFBytes(p),
+    },
+    {
+      id: 'generate_basic_pdf',
+      key: 'generate_basic_pdf_typography',
+      tag: 'v1.7.0 · typography',
+      mcp: true,
+      purpose: 'The same tool with the v1.7.0 typography option (12 keys, all off by default): paragraphs that split across pages with orphan / widow control, headings kept with their text, justification with optical margins, kerning and OpenType features on the embedded Noto Sans.',
+      prompt: 'Set this report like a book: justified paragraphs, no widows or orphans, headings never stranded at the foot of a page, old-style figures and small caps.',
+      args: {
+        title: 'On Typography',
+        embedFonts: true,
+        creationDate: '2026-01-01T00:00:00Z',
+        typography: {
+          splitParagraphs: true,
+          orphans: 3,
+          widows: 3,
+          keepHeadingsWithNext: { minLines: 3 },
+          opticalMargins: true,
+          kerning: true,
+          fontFeatures: ['onum', 'smcp'],
+          hyphenationLanguage: 'en-GB',
+        },
+        blocks: [
+          { type: 'heading', text: 'Why it matters', level: 1 },
+          { type: 'paragraph', text: repeatSentence(TYPO_SENTENCE, 5), align: 'justify' },
+          { type: 'paragraph', text: repeatSentence(TYPO_SENTENCE, 6), align: 'justify' },
+          { type: 'heading', text: 'Figures in running text', level: 2, keepWithNext: true },
+          { type: 'paragraph', text: 'In 1984 the press printed 12 650 copies; by 2026 it had reached 3 481 902. Old-style figures sit quietly in the line, the way lower-case letters do.', align: 'justify' },
+          { type: 'paragraph', text: 'A Donau­dampf­schiff­fahrts­gesell­schaft is a long word; its soft hyphens give the line a place to break. ' + repeatSentence(TYPO_SENTENCE, 4), align: 'justify', splittable: true },
+          { type: 'paragraph', text: 'The table below summarises the settings used on this page.', keepWithNext: true },
+          { type: 'table', headers: ['Setting', 'Value'], rows: [['splitParagraphs', 'true'], ['orphans / widows', '3 / 3'], ['fontFeatures', 'onum, smcp'], ['kerning', 'true']], zebra: true },
+        ],
+      },
+      noteHtml: 'This is <code>examples/typography-report.json</code> from the server repository. The page maps <code>typography</code> to <code>layout.typography</code>, <code>embedFonts: true</code> to an embedded Noto Sans <code>fontEntries</code> entry (what makes <code>kerning</code> and <code>fontFeatures</code> effective — base-14 Helvetica has no GPOS / GSUB), <code>creationDate</code> to <code>layout.creationDate</code>, and passes <code>align</code> / <code>keepWithNext</code> / <code>splittable</code> through as block fields. <code>hyphenationLanguage</code> has no effect here or on the server: no hyphenation dictionary is installed, so the soft hyphens (U+00AD) in the long compound are what give the line a break. Diagnostics collected through <code>layout.onDiagnostic</code> are echoed as <code>includeDiagnostics: true</code> would return them.',
+      button: 'Generate PDF',
+      run: async (a, m) => {
+        const fontEntries = await latinEntries(m);
+        const collector = collectDiagnostics(a.strict === true);
+        const doc = toLibraryDoc(a, { onDiagnostic: collector.onDiagnostic }, fontEntries);
+        const bytes = m.buildDocumentPDFBytes(doc);
+        const pages = m.openPdf(bytes).getPages().length;
+        return {
+          bytes,
+          report: { pageCount: pages, embeddedFont: 'Noto Sans (embedFonts: true)', typography: a.typography, diagnostics: collector.diagnostics },
+          status: `Generated ${(bytes.length / 1024).toFixed(1)} KB, ${pages} page(s), ${collector.diagnostics.length} diagnostic(s).`,
+        };
+      },
+    },
+    {
+      id: 'generate_basic_pdf',
+      key: 'generate_basic_pdf_pdfx4',
+      tag: 'v1.7.0 · PDF/X-4',
+      mcp: true,
+      purpose: 'The same tool as a PDF/X-4 print exchange file (ISO 15930-7): pdfx: "pdfx4", a CMYK printing condition as outputIntent, CMYK colours, a 5 mm bleed with crop marks and the colour control strip, /Trapped declared. Available on six generation tools.',
+      prompt: 'Give the printer a PDF/X-4 of the spring catalogue: four-colour, 5 mm bleed with crop marks and colour bars, and validate it before you hand it over.',
+      args: pdfxArgs,
+      noteHtml: 'Step 1 of <code>examples/pdfx4-cmyk-validate.json</code>. The server takes the printer’s profile as <code>outputIntent.iccProfileBase64</code> (device class <code>prtr</code>, CMYK or Gray — <strong>none is bundled</strong>); this page fetches the repository’s synthetic CMYK profile <code>../assets/synthetic-cmyk.icc</code>, a structurally complete ICC v2 <code>prtr</code> profile that characterises no press — never send a file built with it to a printer. The page maps the arguments to <code>layout.pdfx</code>, <code>layout.outputIntent</code>, <code>layout.print.marks.colourBars</code>, CMYK tuples / operand strings and <code>metadata.trapped</code>, then runs the engine’s <code>validatePdfX()</code> on the bytes and prints what the server’s <code>validate_pdf</code> returns with <code>standard: "pdf-x-4"</code> (<code>{ standard, valid, errors, warnings, summary, caveats }</code>). Any <code>PDFX_*</code> diagnostic is printed with the engine code and the server code <code>strict: true</code> would return. The second button repeats the build without <code>embedFonts</code> and with <code>strict: true</code>, so you can see <code>PDFX_NO_FONT_ENTRIES</code> become <code>PDF_X_COMPLIANCE_VIOLATION</code>.',
+      button: 'Generate PDF/X-4 + validate',
+      altButton: 'Strict, no embedFonts',
+      run: async (a, m) => {
+        const { bytes, diagnostics } = await makePdfXSample(m, a, { embedFonts: true, strict: false });
+        const validate = pdfXReport(m, bytes);
+        return {
+          bytes,
+          report: { validate_pdf: validate, diagnostics },
+          status: `Generated ${(bytes.length / 1024).toFixed(1)} KB PDF/X-4 — validatePdfX: ${validate.valid ? 'valid' : 'NOT valid'} (${validate.errors.length} error(s), ${validate.warnings.length} warning(s)).`,
+        };
+      },
+      altRun: async (a, m) => {
+        try {
+          const { bytes, diagnostics } = await makePdfXSample(m, a, { embedFonts: false, strict: true });
+          return { report: { unexpected: 'the build raised no diagnostic', diagnostics, validate_pdf: pdfXReport(m, bytes) }, status: 'No diagnostic was raised.' };
+        } catch (e) {
+          if (!e || !e.toolCode) throw e;
+          return {
+            report: { error: { code: e.toolCode, engineDiagnostic: e.engineCode, message: e.message } },
+            status: `Refused as ${e.toolCode} (engine diagnostic ${e.engineCode}) — no bytes produced, as on the server.`,
+          };
+        }
+      },
+    },
+    {
+      id: 'generate_basic_pdf',
+      key: 'generate_basic_pdf_reproducible',
+      tag: 'v1.7.0 · reproducible',
+      mcp: true,
+      purpose: 'Byte-identical output: every date is written in UTC, so a pinned creationDate makes the bytes the same across calls and across hosts, whatever the time zone. The {date} placeholder follows the pinned instant.',
+      prompt: 'Generate the quarterly statement with a dated footer, and make sure I get exactly the same bytes every time the pipeline runs.',
+      args: {
+        title: 'Quarterly statement',
+        creationDate: '2026-01-01T00:00:00Z',
+        footerTemplate: { left: 'Generated {date}', right: '{page}/{pages}' },
+        blocks: [
+          { type: 'heading', text: 'Quarterly statement', level: 1 },
+          { type: 'paragraph', text: 'The same inputs produce the same file on every machine.' },
+        ],
+      },
+      noteHtml: 'This is <code>examples/reproducible-footer-date.json</code>. The page builds the document <strong>twice</strong> with <code>layout.creationDate</code> and compares byte length and SHA-256 (<code>crypto.subtle</code>) — the report shows both digests. On the server the same pin can come from the operator instead of the call: <code>PDFNATIVE_MCP_CREATION_DATE</code> or <code>SOURCE_DATE_EPOCH</code> (read once at boot, applied through the engine’s <code>setDefaultCreationDate()</code>) — a server process environment this page cannot simulate; a call’s own <code>creationDate</code> still wins. Not covered by any pin: <code>signingTime</code>, <code>modDate</code>, RFC 3161 timestamps, encryption.',
+      button: 'Build twice + compare',
+      run: async (a, m) => {
+        const build = () => m.buildDocumentPDFBytes(toLibraryDoc(a, {}, []));
+        const first = build();
+        const second = build();
+        const [h1, h2] = await Promise.all([sha256Hex(first), sha256Hex(second)]);
+        const identical = first.length === second.length && h1 === h2;
+        return {
+          bytes: first,
+          report: {
+            creationDate: a.creationDate,
+            pinSource: 'per-call creationDate (server precedence: creationDate → PDFNATIVE_MCP_CREATION_DATE → SOURCE_DATE_EPOCH → wall clock)',
+            footerDate: '{date} renders 2026-01-01 — the pinned instant, not today',
+            run1: { bytes: first.length, sha256: h1 },
+            run2: { bytes: second.length, sha256: h2 },
+            byteIdentical: identical,
+          },
+          status: identical ? `Two builds, ${first.length} bytes each, identical SHA-256 ${h1.slice(0, 16)}…` : 'The two builds differ — please report this.',
+        };
+      },
     },
     {
       id: 'add_table',
@@ -359,6 +556,59 @@
           .filter(Boolean);
         const { lang: _drop, ...rest } = p;
         return m.buildDocumentPDFBytes({ ...rest, fontEntries });
+      },
+    },
+    {
+      id: 'add_international_text',
+      key: 'add_international_text_27_scripts',
+      tag: 'v1.7.0 · 27 scripts',
+      mcp: true,
+      purpose: 'The five scripts added in v1.7.0 (pdfnative 1.8): Lao (lo, dedicated shaper), Tai Tham / Lanna (nod) and Cham (cjm) through the Universal Shaping Engine, New Tai Lue (khb) and Tai Le (tdd) — 27 scripts in all; ha / yo / ig / sw are aliases of latin.',
+      prompt: 'Typeset a one-page sampler of the scripts of mainland South-East Asia: Lao, Tai Tham, New Tai Lue, Tai Le and Cham, as an archival PDF/A-2b.',
+      args: {
+        title: 'Scripts of mainland South-East Asia',
+        lang: ['lo', 'nod', 'khb', 'tdd', 'cjm', 'latin'],
+        pdfA: 'pdfa2b',
+        strict: true,
+        creationDate: '2026-01-01T00:00:00Z',
+        paragraphs: [
+          'Lao — ສະບາຍດີຊາວໂລກ',
+          'Tai Tham (Lanna) — ᨣᩤᩴᨾᩮᩬᩥᨦ',
+          'New Tai Lue — ᦎᦷᦑᦺᦟᦹᧉ',
+          'Tai Le — ᥖᥭᥰ ᥖᥬᥲ ᥑᥨᥒᥰ',
+          'Cham — ꨀꨇꩉ ꨌꩌ',
+        ],
+      },
+      noteHtml: 'This is <code>examples/scripts-lao-tai-cham.json</code> (demonstration strings in five scripts; the labels are English). All five font modules ship with pdfnative 1.8.0 — <code>noto-lao</code>, <code>noto-taitham</code>, <code>noto-newtailue</code>, <code>noto-taile</code>, <code>noto-cham</code> — so every script in the payload is simulated, loaded from the CDN exactly as the server loads them from <code>node_modules</code>. As on the server, each <code>paragraphs</code> entry becomes one paragraph block, <code>lang</code> is routed run by run to the font that covers it, fonts are always embedded, <code>pdfA</code> maps to <code>layout.tagged</code>, and <code>strict: true</code> makes the first engine diagnostic a refusal. The claim is <code>pdfa2b</code> on purpose: one shaped Tai Tham glyph has no Unicode mapping in pdfnative 1.8.0, so veraPDF rejects <code>nod</code> at level U.',
+      button: 'Generate PDF',
+      run: async (a, m) => {
+        m.registerFonts({
+          lo: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-lao-data.js'),
+          nod: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-taitham-data.js'),
+          khb: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-newtailue-data.js'),
+          tdd: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-taile-data.js'),
+          cjm: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-cham-data.js'),
+          latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js'),
+        });
+        const loaded = await Promise.all(a.lang.map((l) => m.loadFontData(l)));
+        const fontEntries = loaded
+          .map((fd, i) => (fd ? { fontData: fd, fontRef: `/F${3 + i}`, lang: a.lang[i] } : null))
+          .filter(Boolean);
+        const missing = a.lang.filter((_, i) => !loaded[i]);
+        if (missing.length) throw new Error(`Font data failed to load for ${missing.join(', ')} (FONT_LOAD_FAILED on the server).`);
+        const collector = collectDiagnostics(a.strict === true);
+        const blocks = a.paragraphs.map((text) => ({ type: 'paragraph', text }));
+        const bytes = m.buildDocumentPDFBytes({
+          title: a.title,
+          fontEntries,
+          blocks,
+          layout: { normalize: 'NFC', tagged: a.pdfA, creationDate: new Date(a.creationDate), onDiagnostic: collector.onDiagnostic },
+        });
+        return {
+          bytes,
+          report: { fontsEmbedded: fontEntries.map((f) => f.lang), pdfA: a.pdfA, diagnostics: collector.diagnostics },
+          status: `Generated ${(bytes.length / 1024).toFixed(1)} KB with ${fontEntries.length} embedded fonts (${a.lang.join(', ')}).`,
+        };
       },
     },
     {
@@ -454,6 +704,72 @@
             { type: 'paragraph', text: 'This is the kind of file an AI assistant would hand to inspect_pdf. The tool returns metadata, page geometry, signature info, and PDF/A status as structured JSON — driven by the tool outputSchema.' },
           ],
         });
+      },
+    },
+    {
+      id: 'validate_pdf',
+      key: 'validate_pdf_pdfx4',
+      tag: 'v1.7.0 · standard',
+      mcp: true,
+      purpose: 'Read-only, render-free structural conformance check. standard: "pdf-ua-1" (default, unchanged — PDF/UA, ISO 14289-1) or "pdf-x-4" (new — PDF/X-4, ISO 15930-7: OutputIntent with a prtr ICC profile, TrimBox, embedded fonts, no annotations / JavaScript / embedded files). The PDF/X result adds caveats[].',
+      prompt: 'Before I send the catalogue to the printer, check that it meets the PDF/X-4 structural prerequisites — and tell me what that check does not prove.',
+      args: {
+        pdfBase64: '<base64 of the PDF/X-4 card output>',
+        standard: 'pdf-x-4',
+      },
+      noteHtml: 'Step 2 of <code>examples/pdfx4-cmyk-validate.json</code>. The server runs the engine’s <code>validatePdfX()</code> (or <code>validatePdfUA()</code> for the default standard) on the decoded bytes — this page runs the same functions on the file produced by the PDF/X-4 card above (it builds that sample first if you have not clicked it yet) and prints the server’s response shape: <code>{ standard, valid, errors, warnings, summary, caveats }</code>. The <code>caveats</code> are the server’s own words: <code>valid: true</code> means the structural prerequisites hold — it is <strong>not a certified preflight</strong>. The second button switches the standard to the default <code>pdf-ua-1</code> on the same bytes (a print file is not built for PDF/UA, so expect errors — that is the point of the switch).',
+      button: 'Validate as pdf-x-4',
+      altButton: 'Validate as pdf-ua-1 (default)',
+      run: async (a, m) => {
+        const bytes = await pdfXBytes(m);
+        const report = pdfXReport(m, bytes);
+        return { report, status: `${report.summary} (${bytes.length} bytes checked in your browser)` };
+      },
+      altRun: async (a, m) => {
+        requireFn(m, 'validatePdfUA');
+        const bytes = await pdfXBytes(m);
+        const r = m.validatePdfUA(bytes);
+        const report = { standard: 'pdf-ua-1', valid: r.valid, errors: [...r.errors], warnings: [...r.warnings], summary: validateSummary('PDF/UA', r) };
+        return { report, status: report.summary };
+      },
+    },
+    {
+      id: 'inspect_pdf',
+      key: 'inspect_pdf_pdfx',
+      tag: 'v1.7.0 · pdfX',
+      mcp: true,
+      purpose: 'inspect_pdf now reports pdfX when the XMP claims PDF/X (absent otherwise) and accepts "pdfx" in check — the claim, not its validity; validity is validate_pdf’s job.',
+      prompt: 'Assert for the CI gate that this file claims PDF/X-4 and that /Trapped is declared.',
+      args: {
+        pdfBase64: '<base64 of the PDF/X-4 card output>',
+        check: ['pdfx', 'trapped'],
+        verbosity: 'summary',
+      },
+      noteHtml: 'Step 3 of <code>examples/pdfx4-cmyk-validate.json</code>. The page opens the PDF/X-4 sample with the engine’s <code>openPdf()</code>, decodes the catalog <code>/Metadata</code> stream and reads <code>pdfxid:GTS_PDFXVersion</code> exactly as the server does, reads <code>/Info /Trapped</code>, and prints the <code>verbosity: "summary"</code> subset of the server’s report (<code>version</code>, <code>pageCount</code>, <code>pdfX</code>, <code>trapped</code>, <code>checks</code>, <code>checksPassed</code>). The full server report also carries encryption, PDF/A claim, signature and attachment counts, page geometry and page labels.',
+      button: 'Inspect (summary)',
+      run: async (a, m) => {
+        const bytes = await pdfXBytes(m);
+        const reader = m.openPdf(bytes);
+        const header = new TextDecoder('latin1').decode(bytes.subarray(0, 16));
+        const versionMatch = /%PDF-(\d\.\d)/.exec(header);
+        const xmp = readXmp(m, reader);
+        const pdfX = detectPdfXClaim(xmp);
+        const trapped = readTrapped(reader);
+        const checks = {};
+        for (const c of a.check) {
+          if (c === 'pdfx') checks.pdfx = pdfX !== null;
+          if (c === 'trapped') checks.trapped = trapped !== null;
+        }
+        const checksPassed = Object.values(checks).every(Boolean);
+        const report = {
+          version: versionMatch ? versionMatch[1] : 'unknown',
+          pageCount: reader.getPages().length,
+          ...(pdfX !== null ? { pdfX } : {}),
+          ...(trapped !== null ? { trapped } : {}),
+          checks,
+          checksPassed,
+        };
+        return { report, status: `pdfX claim: ${pdfX ?? 'none'} · /Trapped: ${trapped ?? 'absent'} · checksPassed: ${checksPassed}` };
       },
     },
     {
@@ -614,7 +930,8 @@
         const reader = m.openPdf(src);
         const mod = m.createModifier(reader);
         if (typeof mod.updateMetadata !== 'function') {
-          throw new Error('updateMetadata() requires pdfnative ≥ 1.7.0 — the CDN served an older build. Try reloading.');
+          // verify-docs:allow version-token (API floor note: the modifier's updateMetadata() landed in pdfnative 1.7.0; this page pins 1.8.0)
+          throw new Error('updateMetadata() is missing — the CDN served a pdfnative build older than the pinned 1.8.0. Try reloading.');
         }
         mod.updateMetadata({
           title: 'Quarterly Report — Final',
@@ -662,29 +979,174 @@
     }
   }
 
+  // ─────────────────────────── v1.7.0 simulation helpers ───────────────────────────
+  // Everything below runs the pdfnative engine in the browser; the server returns the same shape.
+
+  function repeatSentence(sentence, n) {
+    return Array.from({ length: n }, () => sentence).join(' ');
+  }
+
+  // Noto Sans Latin — what `embedFonts: true` embeds on the server (src/diagnostics.ts, latinFontEntries()).
+  async function latinEntries(m) {
+    m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });
+    const fontData = await m.loadFontData('latin');
+    if (!fontData) throw new Error('Noto Sans Latin font data failed to load (FONT_LOAD_FAILED on the server).');
+    return [{ fontData, fontRef: '/F3', lang: 'latin' }];
+  }
+
+  // The repository's synthetic CMYK output profile (docs/assets/synthetic-cmyk.icc): an ICC v2 `prtr`
+  // profile with CMYK data and a Lab connection space, structurally complete so validators accept it.
+  // It characterises no printing condition — a real job needs the printer's profile.
+  let cmykProfilePromise = null;
+  function fetchCmykProfile() {
+    if (!cmykProfilePromise) {
+      cmykProfilePromise = fetch('../assets/synthetic-cmyk.icc')
+        .then(async (r) => {
+          if (!r.ok) throw new Error(`Could not fetch ../assets/synthetic-cmyk.icc (HTTP ${r.status}).`);
+          return new Uint8Array(await r.arrayBuffer());
+        })
+        .catch((e) => { cmykProfilePromise = null; throw e; });
+    }
+    return cmykProfilePromise;
+  }
+
+  // Mirror of the server's escalate() (src/diagnostics.ts): the strict-mode error code is chosen
+  // from the diagnostic's own code.
+  function serverCodeFor(d) {
+    if (d.code.startsWith('PDFA_')) return 'PDF_A_COMPLIANCE_VIOLATION';
+    if (d.code.startsWith('PDFX_')) return 'PDF_X_COMPLIANCE_VIOLATION';
+    return 'DIAGNOSTIC_ESCALATED';
+  }
+  // Per-call diagnostics sink, as the server installs one on every build (collectDiagnostics()).
+  // Under strict it throws at the first diagnostic — before any bytes are produced.
+  function collectDiagnostics(strict) {
+    const diagnostics = [];
+    const onDiagnostic = (d) => {
+      const toolCode = serverCodeFor(d);
+      if (strict) {
+        const err = new Error(`${toolCode}: ${toolCode === 'DIAGNOSTIC_ESCALATED' ? `[${d.code}] ` : ''}${d.message}`);
+        err.toolCode = toolCode;
+        err.engineCode = d.code;
+        throw err;
+      }
+      diagnostics.push({ code: d.code, message: d.message, severity: d.severity, strictWouldReturn: toolCode }); // strictWouldReturn is a playground annotation, not a server field
+    };
+    return { onDiagnostic, diagnostics };
+  }
+
+  // MCP document arguments → the pdfnative library call (DocumentParams + layout). Only the keys the
+  // v1.7.0 cards use are mapped; the server's own mapping lives in src/tools/*.ts.
+  function toLibraryDoc(a, extraLayout, fontEntries) {
+    const blocks = (a.blocks || []).map((b) => (b.type === 'table' && Array.isArray(b.rows)
+      ? { ...b, rows: b.rows.map((r) => (Array.isArray(r) ? { cells: r } : r)) }
+      : b));
+    const layout = { ...extraLayout };
+    if (a.typography) layout.typography = a.typography;
+    if (a.creationDate) layout.creationDate = new Date(a.creationDate);
+    if (a.headerTemplate) layout.headerTemplate = a.headerTemplate;
+    if (a.footerTemplate) layout.footerTemplate = a.footerTemplate;
+    if (a.print) layout.print = a.print;
+    if (a.pdfx) layout.pdfx = a.pdfx;
+    if (a.pdfA) layout.tagged = a.pdfA;
+    if (a.watermark) layout.watermark = { text: { text: a.watermark.text, opacity: a.watermark.opacity, color: a.watermark.color } };
+    const doc = { title: a.title, blocks, layout };
+    if (a.metadata) doc.metadata = a.metadata;
+    if (fontEntries && fontEntries.length) doc.fontEntries = fontEntries;
+    return doc;
+  }
+
+  // The server's PDF/X caveats, verbatim (src/tools/validate-pdf.ts, PDF_X_CAVEATS).
+  const PDF_X_CAVEATS = [
+    'Structural prerequisites only: this is not a certified preflight. Confirm a press job with callas pdfToolbox or Acrobat Preflight — veraPDF does not cover PDF/X and no open reference validator exists.',
+    'Not checked: colour inside Form XObjects and images, transparency blend spaces, optional content, and anything that needs rendering (overprint, ink coverage, resolution).',
+  ];
+  let lastPdfX = null; // bytes of the last PDF/X-4 build — the validate / inspect cards read them
+
+  async function makePdfXSample(m, a, opts) {
+    requireFn(m, 'validatePdfX');
+    const [fontEntries, iccProfile] = await Promise.all([opts.embedFonts ? latinEntries(m) : Promise.resolve([]), fetchCmykProfile()]);
+    const collector = collectDiagnostics(opts.strict);
+    const doc = toLibraryDoc(a, {
+      outputIntent: { iccProfile, outputConditionIdentifier: a.outputIntent.outputConditionIdentifier },
+      onDiagnostic: collector.onDiagnostic,
+    }, fontEntries);
+    const bytes = m.buildDocumentPDFBytes(doc);
+    if (opts.embedFonts) lastPdfX = bytes;
+    return { bytes, diagnostics: collector.diagnostics };
+  }
+  async function pdfXBytes(m) {
+    if (lastPdfX) return lastPdfX;
+    return (await makePdfXSample(m, pdfxArgs, { embedFonts: true, strict: false })).bytes;
+  }
+  // The server's summary wording (src/tools/validate-pdf.ts).
+  function validateSummary(label, r) {
+    return r.valid
+      ? `${label} structural prerequisites hold${r.warnings.length > 0 ? ` (${r.warnings.length} warning(s))` : ''}.`
+      : `${label} validation failed with ${r.errors.length} error(s)${r.warnings.length > 0 ? ` and ${r.warnings.length} warning(s)` : ''}.`;
+  }
+  function pdfXReport(m, bytes) {
+    const r = m.validatePdfX(bytes);
+    return { standard: 'pdf-x-4', valid: r.valid, errors: [...r.errors], warnings: [...r.warnings], summary: validateSummary('PDF/X-4', r), caveats: PDF_X_CAVEATS };
+  }
+
+  // XMP packet of the catalog /Metadata stream, as inspect_pdf reads it (src/tools/inspect-pdf.ts, readXmp()).
+  function readXmp(m, reader) {
+    const meta = reader.resolveValue(reader.getCatalog().get('Metadata') ?? null);
+    if (!meta || meta.type !== 'stream') return null;
+    try { return new TextDecoder('utf-8').decode(reader.decodeStream(meta)); } catch (e) { return null; }
+  }
+  function detectPdfXClaim(xml) {
+    if (xml === null) return null;
+    const match = /pdfxid:GTS_PDFXVersion\s*=\s*"([^"]{1,40})"|<pdfxid:GTS_PDFXVersion>\s*([^<]{1,40}?)\s*<\/pdfxid:GTS_PDFXVersion>/.exec(xml);
+    return match === null ? null : (match[1] ?? match[2]);
+  }
+  function readTrapped(reader) {
+    const info = reader.getInfo();
+    if (!info) return null;
+    const v = reader.resolveValue(info.get('Trapped') ?? null);
+    if (v && typeof v === 'object' && v.type === 'name') return v.value;
+    return typeof v === 'boolean' ? (v ? 'True' : 'False') : null;
+  }
+
+  async function sha256Hex(bytes) {
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
   // ─────────────────────────── Card rendering ───────────────────────────
   const cards = document.getElementById('cards');
   TOOLS.forEach((t, idx) => {
     const card = document.createElement('div');
     card.className = 'mcp-card';
+    if (t.key) card.id = 'card-' + t.key;
+    const payloadJson = t.mcp ? JSON.stringify({ tool: t.id, arguments: t.args }, null, 2) : JSON.stringify(t.args, null, 2);
+    const payloadSummary = t.mcp
+      ? 'MCP tool-call payload (what the assistant sends)'
+      : ((t.build || t.runJson) ? 'Payload (pdfnative library form)' : 'MCP tool-call payload (schema example)');
+    const payloadNote = t.mcp
+      ? '<p class="purpose" style="margin:0 0 6px;">Exact MCP arguments (from the server’s <code>examples/</code>); the page maps them to the pdfnative library call described in the note above.</p>'
+      : ((t.build || t.runJson) ? '<p class="purpose" style="margin:0 0 6px;">This is the pdfnative library payload the browser demo executes; the MCP tool schema differs — see the <a href="../guides/mcp.html">MCP guide</a>.</p>' : '');
     card.innerHTML = `
-      <h3><code>${t.id}</code></h3>
+      <h3><code>${t.id}</code>${t.tag ? `<span class="mcp-tag new">${t.tag}</span>` : ''}</h3>
       <p class="purpose">${t.purpose}</p>
       <div class="prompt">${t.prompt}</div>
       ${t.noteHtml ? `<p class="purpose">${t.noteHtml}</p>` : ''}
+      ${t.mcp ? '<p class="simulated">Simulated with the pdfnative engine in your browser; the server returns the same shape.</p>' : ''}
       <details>
-        <summary>${(t.build || t.runJson) ? 'Payload (pdfnative library form)' : 'MCP tool-call payload (schema example)'}</summary>
+        <summary>${payloadSummary}</summary>
         <div>
-          ${(t.build || t.runJson) ? '<p class="purpose" style="margin:0 0 6px;">This is the pdfnative library payload the browser demo executes; the MCP tool schema differs — see the <a href="../guides/mcp.html">MCP guide</a>.</p>' : ''}
-          <pre><code class="language-json">${escapeHtml(JSON.stringify(t.args, null, 2))}</code></pre>
+          ${payloadNote}
+          <pre><code class="language-json">${escapeHtml(payloadJson)}</code></pre>
         </div>
       </details>
       <div class="actions">
         ${t.build ? `<button class="primary" data-action="run" data-tool="${idx}" disabled>Generate PDF</button>` : ''}
         ${t.runJson ? `<button class="primary" data-action="run" data-tool="${idx}" disabled>Preview layout</button>` : ''}
+        ${t.run ? `<button class="primary" data-action="run" data-tool="${idx}" disabled>${t.button || 'Generate PDF'}</button>` : ''}
+        ${t.altRun ? `<button class="secondary" data-action="alt" data-tool="${idx}" disabled>${t.altButton || 'Alternative'}</button>` : ''}
         <button class="secondary" data-action="copy-args" data-tool="${idx}">Copy args</button>
       </div>
-      ${t.runJson ? '<pre data-result hidden></pre>' : ''}
+      ${(t.runJson || t.run) ? '<pre data-result hidden></pre>' : ''}
       <div class="status" data-status></div>
     `;
     cards.appendChild(card);
@@ -712,7 +1174,7 @@
     if (pdfnativeMod && typeof pdfnativeMod.buildDocumentPDFBytes === 'function') {
       status.textContent = 'pdfnative loaded — try any tool below.';
       status.style.color = 'var(--c-success)';
-      document.querySelectorAll('button[data-action="run"]').forEach((b) => { b.disabled = false; });
+      document.querySelectorAll('button[data-action="run"], button[data-action="alt"]').forEach((b) => { b.disabled = false; });
     } else {
       status.textContent = 'Failed to load pdfnative from CDN: ' + (loadErr && loadErr.message ? loadErr.message : 'unknown error');
       status.style.color = '#b91c1c';
@@ -729,7 +1191,7 @@
 
     if (btn.dataset.action === 'copy-args') {
       try {
-        await navigator.clipboard.writeText(JSON.stringify(tool.args, null, 2));
+        await navigator.clipboard.writeText(tool.mcp ? JSON.stringify({ tool: tool.id, arguments: tool.args }, null, 2) : JSON.stringify(tool.args, null, 2));
         status.textContent = 'Tool arguments copied.';
         status.className = 'status success';
         setTimeout(() => { status.textContent = ''; status.className = 'status'; }, 1800);
@@ -737,13 +1199,25 @@
       return;
     }
 
-    if (btn.dataset.action === 'run') {
+    if (btn.dataset.action === 'run' || btn.dataset.action === 'alt') {
       if (!pdfnativeMod) return;
       btn.disabled = true;
       status.textContent = tool.runJson ? 'Measuring…' : 'Generating…'; status.className = 'status';
       try {
         const t0 = performance.now();
-        if (tool.runJson) {
+        if (tool.run) {
+          const fn = btn.dataset.action === 'alt' ? tool.altRun : tool.run;
+          const res = await fn(tool.args, pdfnativeMod);
+          const elapsed = (performance.now() - t0).toFixed(0);
+          const out = card.querySelector('[data-result]');
+          if (res.report !== undefined) {
+            out.textContent = JSON.stringify(res.report, null, 2);
+            out.hidden = false;
+          }
+          if (res.bytes) downloadPdf(res.bytes, (res.filename || (tool.key || tool.id)) + '.pdf');
+          status.textContent = `${res.status || 'Done.'} (${elapsed} ms)`;
+          status.className = 'status success';
+        } else if (tool.runJson) {
           const report = await tool.runJson(tool.args, pdfnativeMod);
           const elapsed = (performance.now() - t0).toFixed(0);
           const out = card.querySelector('[data-result]');
