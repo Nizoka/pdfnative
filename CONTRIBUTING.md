@@ -169,7 +169,7 @@ src/
 fonts/            # 36 pre-built font-data modules (32 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (50 generators, 292 PDFs) and the verification scripts
-tests/            # 171 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+tests/            # 172 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 

@@ -695,8 +695,10 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
             const fontBytes = getDecodedFontBytes(fd);
             const usedGids = enc.getUsedGids ? enc.getUsedGids().get(fe.fontRef) : null;
+            // Identity CIDToGIDMap: the viewer never reads the font's cmap, so
+            // the embed carries one over the used glyphs only (v1.9.0).
             const ttfBinary = usedGids && usedGids.size > 0
-                ? subsetTTF(fontBytes, usedGids)
+                ? subsetTTF(fontBytes, usedGids, { lean: { cmap: fd.cmap } })
                 : uint8ToBinaryString(fontBytes);
 
             const fm = fd.metrics;

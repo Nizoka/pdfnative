@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 25304,
       "approxTokens": 6326,
-      "sha256": "eeada69e4a696062d3cd8c403002196f8d78d6626c294634cd3dfe53f7929e0a"
+      "sha256": "eed427030ffcbb78397334493b94365e0a3f0acb45d467142baa8edb656c9db4"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -21,7 +21,7 @@
       "description": "Full corpus: index + README + every guide, one request.",
       "bytes": 725902,
       "approxTokens": 181476,
-      "sha256": "010bbf084d2961fcd0f88db5f7e2d388027c5a28371d81265bce91f483424eaf"
+      "sha256": "2e15cb6eaf8267940c1aca7beaa2978d3375c3fa77193a3fd426e496ea372e33"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 127502,
       "approxTokens": 31876,
-      "sha256": "62ca0fef1eec8c84652bdb29bf2109052743fadd62eff23ab257fbafb48da879"
+      "sha256": "eec98df6c8692cfcd9ccd1d6c429d01dfe18b18e47f0e483cf969350f1e82f98"
     }
   ],
   "guides": [

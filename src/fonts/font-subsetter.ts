@@ -47,6 +47,112 @@ export interface SubsetTTFOptions {
      * the kept set), or a substitution may land on an emptied outline.
      */
     readonly keepLayoutTables?: boolean;
+    /**
+     * The lean embed for a CIDFontType2 with `/CIDToGIDMap /Identity` (v1.9.0):
+     * a viewer selects glyphs by id, so the source font's `cmap` (tens of
+     * kilobytes for a Noto face) and `post` glyph names serve nobody. The
+     * `cmap` is rebuilt over the kept glyphs only, from the code point → glyph
+     * map given here (format 4, plus format 12 when a kept code point lies
+     * beyond the BMP), `post` becomes a format-3 header, and `gasp` is dropped.
+     * Outlines, metrics, names and hinting are untouched. Never for a simple
+     * TrueType font, whose `cmap` the viewer reads.
+     */
+    readonly lean?: { readonly cmap: Readonly<Record<number, number>> };
+}
+
+/** A `post` table of format 3: the 32-byte header, no glyph names (ISO/IEC 14496-22 §5.2.8). */
+function postFormat3(source: Uint8Array): Uint8Array {
+    const out = new Uint8Array(32);
+    out.set(source.subarray(4, Math.min(32, source.length)), 4); // italicAngle … maxMemType1 as they were
+    new DataView(out.buffer).setUint32(0, 0x00030000);
+    return out;
+}
+
+/**
+ * A `cmap` over the kept glyphs: a (3,1) format-4 subtable for the BMP and,
+ * when a kept code point lies beyond it, a (3,10) format-12 subtable for the
+ * whole range. Glyph ids are the source font's (the subset retains them).
+ */
+function leanCmap(cmap: Readonly<Record<number, number>>, kept: ReadonlySet<number>): Uint8Array {
+    const pairs: [number, number][] = [];
+    for (const key of Object.keys(cmap)) {
+        const cp = Number(key);
+        const gid = cmap[cp];
+        if (Number.isInteger(cp) && cp >= 0 && cp <= 0x10FFFF && gid > 0 && kept.has(gid)) pairs.push([cp, gid]);
+    }
+    pairs.sort((a, b) => a[0] - b[0]);
+    const bmp = pairs.filter(p => p[0] <= 0xFFFF);
+    const supplementary = pairs.some(p => p[0] > 0xFFFF);
+
+    // Format 4: one segment per run of consecutive code points, glyph ids
+    // through glyphIdArray (idRangeOffset), the mandatory 0xFFFF terminator.
+    const segments: { start: number; end: number; gids: number[] }[] = [];
+    for (const [cp, gid] of bmp) {
+        const last = segments[segments.length - 1];
+        if (last && cp === last.end + 1 && cp !== 0xFFFF) { last.end = cp; last.gids.push(gid); }
+        else segments.push({ start: cp, end: cp, gids: [gid] });
+    }
+    const segCount = segments.length + 1;
+    let glyphIdCount = 0;
+    for (const s of segments) glyphIdCount += s.gids.length;
+    const f4Length = 16 + segCount * 8 + glyphIdCount * 2;
+    const f4 = new Uint8Array(f4Length);
+    const v4 = new DataView(f4.buffer);
+    let searchRange = 1, entrySelector = 0;
+    while (searchRange * 2 <= segCount) { searchRange *= 2; entrySelector++; }
+    searchRange *= 2;
+    v4.setUint16(0, 4);
+    v4.setUint16(2, f4Length);
+    v4.setUint16(4, 0);
+    v4.setUint16(6, segCount * 2);
+    v4.setUint16(8, searchRange);
+    v4.setUint16(10, entrySelector);
+    v4.setUint16(12, segCount * 2 - searchRange);
+    const endAt = 14, startAt = endAt + segCount * 2 + 2, deltaAt = startAt + segCount * 2, rangeAt = deltaAt + segCount * 2, glyphsAt = rangeAt + segCount * 2;
+    let gi = 0;
+    segments.forEach((s, i) => {
+        v4.setUint16(endAt + i * 2, s.end);
+        v4.setUint16(startAt + i * 2, s.start);
+        v4.setUint16(deltaAt + i * 2, 0);
+        v4.setUint16(rangeAt + i * 2, (segCount - i) * 2 + gi * 2);
+        for (const gid of s.gids) { v4.setUint16(glyphsAt + gi * 2, gid); gi++; }
+    });
+    const t = segments.length;
+    v4.setUint16(endAt + t * 2, 0xFFFF);
+    v4.setUint16(startAt + t * 2, 0xFFFF);
+    v4.setUint16(deltaAt + t * 2, 1);
+    v4.setUint16(rangeAt + t * 2, 0);
+
+    // Format 12: groups of consecutive code points with consecutive glyph ids.
+    let f12: Uint8Array | null = null;
+    if (supplementary) {
+        const groups: [number, number, number][] = [];
+        for (const [cp, gid] of pairs) {
+            const last = groups[groups.length - 1];
+            if (last && cp === last[1] + 1 && gid === last[2] + (last[1] - last[0]) + 1) last[1] = cp;
+            else groups.push([cp, cp, gid]);
+        }
+        f12 = new Uint8Array(16 + groups.length * 12);
+        const v12 = new DataView(f12.buffer);
+        v12.setUint16(0, 12);
+        v12.setUint32(4, f12.length);
+        v12.setUint32(12, groups.length);
+        groups.forEach((g, i) => { v12.setUint32(16 + i * 12, g[0]); v12.setUint32(20 + i * 12, g[1]); v12.setUint32(24 + i * 12, g[2]); });
+    }
+
+    const records = f12 ? 2 : 1;
+    const header = 4 + records * 8;
+    const out = new Uint8Array(header + f4.length + (f12 ? f12.length : 0));
+    const v = new DataView(out.buffer);
+    v.setUint16(0, 0);
+    v.setUint16(2, records);
+    v.setUint16(4, 3); v.setUint16(6, 1); v.setUint32(8, header);
+    out.set(f4, header);
+    if (f12) {
+        v.setUint16(12, 3); v.setUint16(14, 10); v.setUint32(16, header + f4.length);
+        out.set(f12, header + f4.length);
+    }
+    return out;
 }
 
 /**
@@ -200,6 +306,8 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>, 
         // Source-font mode (v1.8.0): the layout tables stay valid because glyph ids are
         // retained, so they are copied as they are — never rewritten.
         if (options?.keepLayoutTables) { PDF_TABLES.add('GSUB'); PDF_TABLES.add('GPOS'); PDF_TABLES.add('GDEF'); }
+        // The lean embed (v1.9.0): no `gasp`, a `cmap` over the kept glyphs, a nameless `post`.
+        if (options?.lean) PDF_TABLES.delete('gasp');
         const tableTags = Object.keys(tables).filter(t => PDF_TABLES.has(t)).sort();
         const newTableData: Record<string, Uint8Array> = {};
         for (const tag of tableTags) {
@@ -208,6 +316,10 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>, 
         }
         newTableData['glyf'] = newGlyf;
         newTableData['loca'] = newLoca;
+        if (options?.lean) {
+            if (newTableData['cmap']) newTableData['cmap'] = leanCmap(options.lean.cmap, allGids);
+            if (newTableData['post']) newTableData['post'] = postFormat3(newTableData['post']);
+        }
 
         // Update head: indexToLocFormat = 1 (long); checkSumAdjustment is
         // zeroed here so the table checksum below excludes it, and computed
