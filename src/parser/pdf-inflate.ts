@@ -10,6 +10,49 @@
  * ISO 32000-1 §7.3.8.1: FlateDecode expects zlib format (RFC 1950).
  */
 
+// ── Limit error ──────────────────────────────────────────────────────
+
+/**
+ * A stream could not be decoded because its output would exceed the
+ * configured safety cap ({@link setMaxInflateOutputSize} for FlateDecode,
+ * the fixed cap of the other filters). Distinct from a corrupt stream so a
+ * caller can tell "this page was not read" from "this page is empty" (#89);
+ * `extractText()` rethrows it by default. Carries `code: 'PDF_STREAM_LIMIT'`.
+ *
+ * @since 1.9.0
+ */
+export class PdfStreamLimitError extends Error {
+    readonly code = 'PDF_STREAM_LIMIT';
+    /** The filter whose output hit the cap (`FlateDecode`, `LZWDecode`, …). */
+    readonly filter: string;
+    /** The cap in bytes. */
+    readonly limit: number;
+    constructor(filter: string, limit: number) {
+        super(`${filter} output exceeds the ${limit}-byte limit (potential zip bomb) — raise setMaxInflateOutputSize() if this document is trusted`);
+        this.name = 'PdfStreamLimitError';
+        this.filter = filter;
+        this.limit = limit;
+    }
+}
+
+/**
+ * Wrap a native `zlib.inflateSync` so Node's `ERR_BUFFER_TOO_LARGE` (raised
+ * by `maxOutputLength`) surfaces as the same {@link PdfStreamLimitError} the
+ * pure-JS path throws — one error type on both platforms.
+ */
+function nativeInflate(fn: (buf: Uint8Array, opts?: { maxOutputLength?: number }) => Uint8Array): (buf: Uint8Array) => Uint8Array {
+    return (buf: Uint8Array): Uint8Array => {
+        try {
+            return new Uint8Array(fn(buf, { maxOutputLength: _maxInflateOutput }));
+        } catch (err) {
+            if ((err as { code?: unknown }).code === 'ERR_BUFFER_TOO_LARGE') {
+                throw new PdfStreamLimitError('FlateDecode', _maxInflateOutput);
+            }
+            throw err;
+        }
+    };
+}
+
 // ── Platform Detection ───────────────────────────────────────────────
 
 let _zlibInflateSync: ((buf: Uint8Array) => Uint8Array) | null | undefined;
@@ -77,7 +120,7 @@ function getZlibInflateSync(): ((buf: Uint8Array) => Uint8Array) | null {
             const zlib = mod('node:zlib');
             const fn = zlib['inflateSync'] as ((buf: Uint8Array, opts?: { maxOutputLength?: number }) => Uint8Array) | undefined;
             if (typeof fn === 'function') {
-                _zlibInflateSync = (buf: Uint8Array) => new Uint8Array(fn(buf, { maxOutputLength: _maxInflateOutput }));
+                _zlibInflateSync = nativeInflate(fn);
                 return _zlibInflateSync;
             }
         }
@@ -106,7 +149,7 @@ export async function initNodeDecompression(): Promise<void> {
         const zlib = await (import(modName) as Promise<Record<string, unknown>>);
         const fn = zlib['inflateSync'] as ((buf: Uint8Array, opts?: { maxOutputLength?: number }) => Uint8Array) | undefined;
         if (typeof fn === 'function') {
-            _zlibInflateSync = (buf: Uint8Array) => new Uint8Array(fn(buf, { maxOutputLength: _maxInflateOutput }));
+            _zlibInflateSync = nativeInflate(fn);
         } else {
             _zlibInflateSync = null;
         }
@@ -304,7 +347,7 @@ function inflateRaw(data: Uint8Array, startOffset: number): InflateResult {
 
     function ensureCapacity(needed: number): void {
         if (outPos + needed > maxOutput) {
-            throw new Error(`inflate: decompressed output exceeds maximum of ${maxOutput} bytes (potential zip bomb)`);
+            throw new PdfStreamLimitError('FlateDecode', maxOutput);
         }
         while (outPos + needed > out.length) {
             const newSize = Math.min(out.length * 2, maxOutput);

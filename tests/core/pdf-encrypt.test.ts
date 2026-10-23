@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-    aesCBC, md5, createMd5, sha256,
+    aesCBC, md5, createMd5, sha256, sha384, sha512, writeBitLengthBE,
     computePermissions, generateDocId,
     initEncryption, encryptStream, encryptString,
     buildEncryptDict, buildIdArray,
@@ -145,6 +145,47 @@ describe('sha256', () => {
     it('should return 32 bytes', () => {
         const hash = sha256(new Uint8Array([1, 2, 3]));
         expect(hash.length).toBe(32);
+    });
+});
+
+// ── FIPS 180-4 §5.1.1 message length — both words (v1.9.0) ──────────
+// sha256() used to write only the low 32 bits of the bit count, so every
+// input of 2^29 octets (512 MiB) and more hashed wrong, silently. The helper
+// is locked at the boundary rather than by hashing 512 MiB in CI.
+
+describe('writeBitLengthBE', () => {
+    const field = (byteLength: number): [number, number] => {
+        const dv = new DataView(new ArrayBuffer(8));
+        writeBitLengthBE(dv, 0, byteLength);
+        return [dv.getUint32(0), dv.getUint32(4)];
+    };
+
+    it('writes the bit count of small messages in the low word only', () => {
+        expect(field(0)).toEqual([0, 0]);
+        expect(field(3)).toEqual([0, 24]);
+        expect(field(55)).toEqual([0, 440]);
+    });
+
+    it('fills the low word exactly at 2^29 − 1 octets', () => {
+        expect(field(2 ** 29 - 1)).toEqual([0, 0xFFFFFFF8]);
+    });
+
+    it('carries into the high word from 2^29 octets on', () => {
+        expect(field(2 ** 29)).toEqual([1, 0]);
+        expect(field(2 ** 29 + 1)).toEqual([1, 8]);
+        expect(field(2 ** 32)).toEqual([8, 0]);
+        expect(field(2 ** 40 + 5)).toEqual([2048, 40]);
+    });
+
+    it('stays exact up to the safe-integer range', () => {
+        expect(field(Number.MAX_SAFE_INTEGER)).toEqual([Math.floor(Number.MAX_SAFE_INTEGER / 2 ** 29), (Number.MAX_SAFE_INTEGER % 2 ** 29) * 8]);
+    });
+
+    it('is the length writer of sha256, sha384 and sha512 (NIST vectors still hold)', () => {
+        const abc = new Uint8Array([0x61, 0x62, 0x63]);
+        expect(bytesToHex(sha256(abc))).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+        expect(bytesToHex(sha384(abc))).toBe('cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7');
+        expect(bytesToHex(sha512(abc))).toBe('ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f');
     });
 });
 

@@ -12,6 +12,7 @@
  *
  * @since 1.1.0
  */
+import { PdfStreamLimitError } from './pdf-inflate.js';
 
 // Cap to defend against zip-bomb-style adversarial streams. Must mirror the
 // output cap used by `pdf-inflate.ts` so all decoders behave consistently.
@@ -20,9 +21,7 @@ const MAX_DECODE_OUTPUT = 256 * 1024 * 1024; // 256 MiB
 /** Throw when a decoder would produce more than the safety cap. */
 function checkOutputSize(n: number, filter: string): void {
     if (n > MAX_DECODE_OUTPUT) {
-        throw new Error(
-            `${filter} output exceeds ${MAX_DECODE_OUTPUT} bytes (possible zip-bomb)`,
-        );
+        throw new PdfStreamLimitError(filter, MAX_DECODE_OUTPUT);
     }
 }
 

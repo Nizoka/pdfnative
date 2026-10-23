@@ -445,3 +445,32 @@ describe('data labels', () => {
         expect(content).not.toContain('(120)');
     });
 });
+
+describe('series without a label (#82)', () => {
+    const unlabelled: ChartBlock = {
+        type: 'chart', chartType: 'bar',
+        series: [{ values: [10, 20, 30] }, { values: [15, 25, 35] }],
+    };
+
+    it('renders instead of throwing, with Series N in the legend', () => {
+        const content = pageContent(chartDoc(unlabelled));
+        expect(content).toContain('(Series 1)');
+        expect(content).toContain('(Series 2)');
+    });
+
+    it('names the series by position in validation messages', () => {
+        expect(() => chartDoc({ type: 'chart', chartType: 'bar', series: [{ values: [] }] }))
+            .toThrow('chart: series "Series 1" has no values');
+        expect(() => chartDoc({ type: 'chart', chartType: 'bar', series: [{ label: 'A', values: [1] }, { values: [1, Number.NaN] }] }))
+            .toThrow('chart: series "Series 2" contains a non-finite value');
+    });
+
+    it('rejects a non-string label', () => {
+        expect(() => chartDoc({ type: 'chart', chartType: 'bar', series: [{ label: 42 as unknown as string, values: [1] }] }))
+            .toThrow('chart: series 1 has a non-string label');
+    });
+
+    it('keeps labelled charts byte-identical', () => {
+        expect(chartDoc(barChart)).toEqual(chartDoc({ ...barChart }));
+    });
+});

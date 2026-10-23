@@ -19,8 +19,9 @@
 
 import { sha1 } from '../crypto/sha.js';
 import { parseCmsSignedData } from '../crypto/cms-utils.js';
-import { parseCertificate, isSelfSigned, type X509Certificate } from '../crypto/x509.js';
-import { buildOcspRequest } from '../crypto/ocsp.js';
+import { parseCertificate, isSelfSigned, verifyCertSignature, type X509Certificate } from '../crypto/x509.js';
+import { buildOcspRequest, parseOcspResponse, ocspResponseMatchesCertificate, type OcspResponse } from '../crypto/ocsp.js';
+import { parseCrl, type ParsedCrl } from '../crypto/crl.js';
 import { getRevocationProvider, type RevocationProvider } from '../crypto/revocation-provider.js';
 import { openPdf } from '../parser/pdf-reader.js';
 import { createModifier } from '../parser/pdf-modifier.js';
@@ -161,7 +162,10 @@ export async function collectValidationInfo(
         return idx;
     };
 
-    for (const der of options.extraCertificates ?? []) internCert(der);
+    // Out-of-band chain completion: shipped in /Certs AND referenced from
+    // every /VRI entry — a validator reads a signature's chain from its VRI
+    // (an intermediate listed only in /Certs went unseen before 1.9.0).
+    const extraIdx = (options.extraCertificates ?? []).map(internCert);
 
     const signatures = listSignatures(pdfBytes).filter(s => !s.isPlaceholder);
     if (signatures.length === 0) {
@@ -176,21 +180,9 @@ export async function collectValidationInfo(
         const entry = { key: vriKeyForContents(sig.contents), certs: [] as number[], ocsps: [] as number[], crls: [] as number[] };
         vri.push(entry);
 
-        // Trim the zero padding: the DER blob is length-prefixed, but the
-        // CMS parser tolerates trailing zeros, so pass as-is.
-        const cmsDers: Uint8Array[] = [];
-        try {
-            const cms = parseCmsSignedData(sig.contents);
-            for (const c of cms.certificates) cmsDers.push(c);
-            for (const token of extractTimestampTokens(cms.unsignedAttrs)) {
-                try {
-                    for (const c of parseCmsSignedData(token).certificates) cmsDers.push(c);
-                } catch { /* malformed token — covered by the outer certs */ }
-            }
-        } catch {
-            throw new Error(`collectValidationInfo: signature ${entry.key.slice(0, 8)}… does not parse as CMS SignedData`);
-        }
+        const cmsDers = certificatesOfSignature(sig.contents, `collectValidationInfo: signature ${entry.key.slice(0, 8)}…`);
         for (const der of cmsDers) entry.certs.push(internCert(der));
+        for (const idx of extraIdx) if (!entry.certs.includes(idx)) entry.certs.push(idx);
 
         // Chain + revocation per certificate in this signature's pool.
         for (const idx of [...entry.certs]) {
@@ -238,6 +230,195 @@ function findIssuer(cert: X509Certificate, pool: Map<string, ChainCert>): X509Ce
         if (toHex(candidate.subject.raw) === toHex(cert.issuer.raw)) return candidate;
     }
     return null;
+}
+
+/**
+ * The issuer of `cert` in the pool, by name AND signature: when several
+ * pool certificates carry the issuer's subject Name (two PKIs with the same
+ * naming, a renewed CA), the one whose key verifies the certificate wins;
+ * a name-only match is the fallback when no candidate verifies (unsupported
+ * signature algorithm).
+ */
+function findVerifiedIssuer(cert: X509Certificate, pool: Map<string, ChainCert>): X509Certificate | null {
+    const issuerName = toHex(cert.issuer.raw);
+    let byName: X509Certificate | null = null;
+    for (const { cert: candidate } of pool.values()) {
+        if (candidate === cert || toHex(candidate.subject.raw) !== issuerName) continue;
+        let verified = false;
+        try { verified = verifyCertSignature(cert, candidate); } catch { verified = false; }
+        if (verified) return candidate;
+        byName ??= candidate;
+    }
+    return byName;
+}
+
+/**
+ * The certificate DERs a signature carries: those of its CMS SignedData plus
+ * those of every RFC 3161 token in its unsigned attributes. The zero padding
+ * after the DER blob is tolerated by the CMS parser, so `/Contents` is
+ * passed as-is.
+ */
+function certificatesOfSignature(contents: Uint8Array, who: string): Uint8Array[] {
+    const out: Uint8Array[] = [];
+    try {
+        const cms = parseCmsSignedData(contents);
+        for (const c of cms.certificates) out.push(c);
+        for (const token of extractTimestampTokens(cms.unsignedAttrs)) {
+            try {
+                for (const c of parseCmsSignedData(token).certificates) out.push(c);
+            } catch { /* malformed token — covered by the outer certs */ }
+        }
+    } catch {
+        throw new Error(`${who} does not parse as CMS SignedData`);
+    }
+    return out;
+}
+
+/** Validation material collected out of band — three flat lists of DER. @since 1.9.0 */
+export interface LtvMaterial {
+    /** Certificate DERs: chains, TSA and OCSP responder certificates. */
+    readonly certificates?: readonly Uint8Array[];
+    /** Full OCSPResponse DERs. */
+    readonly ocspResponses?: readonly Uint8Array[];
+    /** Full CertificateList (CRL) DERs. */
+    readonly crls?: readonly Uint8Array[];
+}
+
+/** Options for {@link composeLtvData}. @since 1.9.0 */
+export interface ComposeLtvOptions {
+    /**
+     * How the material is attributed to the document's signatures:
+     *
+     * - `'all'` (default) — every item is referenced from every `/VRI`
+     *   entry, the Adobe-tolerant superset: nothing a validator might need
+     *   is left out of a signature's entry.
+     * - `'chain'` — each `/VRI` entry references only what validates that
+     *   signature: the certificates of its CMS and timestamp tokens plus
+     *   the issuers reachable from them in the material, the OCSP responses
+     *   whose CertID names one of those certificates, and the CRLs issued
+     *   by one of their issuers. Material that matches no signature still
+     *   ships in `/DSS` `/Certs`, `/OCSPs` and `/CRLs`.
+     */
+    readonly match?: 'all' | 'chain';
+}
+
+/**
+ * Compose the {@link LtvData} that {@link embedValidationInfo} expects from
+ * flat lists of certificates, OCSP responses and CRLs collected out of band —
+ * an air-gapped pipeline, a corporate PKI export, a cached validator run (#90).
+ * Synchronous and offline: no provider is consulted. Replaces the glue every
+ * caller had to write: `listSignatures()`, drop the placeholders,
+ * `vriKeyForContents()` per signature, then reference the items.
+ *
+ * ```ts
+ * const data = composeLtvData(signedPdf, { certificates, ocspResponses, crls }, { match: 'chain' });
+ * const ltv = embedValidationInfo(signedPdf, data);
+ * ```
+ *
+ * @param pdfBytes - A PDF with at least one signed signature field.
+ * @param material - The flat lists; each may be empty or absent.
+ * @param options - `match: 'all'` (default) or `'chain'`.
+ * @returns LtvData whose `vri[]` has one entry per signed signature.
+ * @throws Error when the document has no signed signature or the material is empty.
+ * @since 1.9.0
+ */
+export function composeLtvData(pdfBytes: Uint8Array, material: LtvMaterial, options: ComposeLtvOptions = {}): LtvData {
+    const match = options.match ?? 'all';
+    const given = {
+        certificates: material.certificates ?? [],
+        ocspResponses: material.ocspResponses ?? [],
+        crls: material.crls ?? [],
+    };
+    if (given.certificates.length + given.ocspResponses.length + given.crls.length === 0) {
+        throw new Error('composeLtvData: no material — pass at least one certificate, OCSP response or CRL');
+    }
+    const signatures = listSignatures(pdfBytes).filter(s => !s.isPlaceholder);
+    if (signatures.length === 0) {
+        throw new Error('composeLtvData: the document has no signed signature to enable LTV for');
+    }
+
+    const certPool = new Map<string, ChainCert>();
+    const certIndex = new Map<string, number>();
+    const certificates: Uint8Array[] = [];
+    const internCert = (der: Uint8Array): number => {
+        const key = toHex(der);
+        let idx = certIndex.get(key);
+        if (idx === undefined) {
+            idx = certificates.length;
+            certificates.push(der);
+            certIndex.set(key, idx);
+            try {
+                certPool.set(key, { der, cert: parseCertificate(der) });
+            } catch {
+                // Unparseable cert still ships in /Certs — validators decide.
+            }
+        }
+        return idx;
+    };
+    const dedup = (list: readonly Uint8Array[]): Uint8Array[] => {
+        const seen = new Set<string>();
+        const out: Uint8Array[] = [];
+        for (const der of list) {
+            const key = toHex(der);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(der);
+        }
+        return out;
+    };
+
+    for (const der of given.certificates) internCert(der);
+    const ocspResponses = dedup(given.ocspResponses);
+    const crls = dedup(given.crls);
+    const parsedOcsps: (OcspResponse | null)[] = ocspResponses.map(der => { try { return parseOcspResponse(der); } catch { return null; } });
+    const parsedCrls: (ParsedCrl | null)[] = crls.map(der => { try { return parseCrl(der); } catch { return null; } });
+
+    const vri: { key: string; certs: number[]; ocsps: number[]; crls: number[] }[] = [];
+    for (const sig of signatures) {
+        const key = vriKeyForContents(sig.contents);
+        const sigCerts = certificatesOfSignature(sig.contents, `composeLtvData: signature ${key.slice(0, 8)}…`).map(internCert);
+        const entry = { key, certs: [...new Set(sigCerts)], ocsps: [] as number[], crls: [] as number[] };
+        vri.push(entry);
+
+        if (match === 'all') {
+            for (let i = 0; i < certificates.length; i++) if (!entry.certs.includes(i)) entry.certs.push(i);
+            entry.ocsps = ocspResponses.map((_, i) => i);
+            entry.crls = crls.map((_, i) => i);
+            continue;
+        }
+
+        // Chain closure: the signature's own certificates plus every issuer
+        // reachable from them in the pool (CMS certificates included).
+        const closure: X509Certificate[] = [];
+        const queue = entry.certs.map(i => certPool.get(toHex(certificates[i]))?.cert).filter((c): c is X509Certificate => c !== undefined);
+        const seen = new Set<string>();
+        while (queue.length > 0) {
+            const cert = queue.shift() as X509Certificate;
+            const k = toHex(cert.raw);
+            if (seen.has(k)) continue;
+            seen.add(k);
+            closure.push(cert);
+            const idx = certIndex.get(k);
+            if (idx !== undefined && !entry.certs.includes(idx)) entry.certs.push(idx);
+            if (isSelfSigned(cert)) continue;
+            const issuer = findVerifiedIssuer(cert, certPool);
+            if (issuer !== null) queue.push(issuer);
+        }
+        for (const cert of closure) {
+            const issuer = isSelfSigned(cert) ? cert : findVerifiedIssuer(cert, certPool);
+            if (issuer === null) continue;
+            parsedOcsps.forEach((resp, i) => {
+                if (resp !== null && !entry.ocsps.includes(i) && ocspResponseMatchesCertificate(resp, cert, issuer)) entry.ocsps.push(i);
+            });
+            const issuerName = toHex(cert.issuer.raw);
+            parsedCrls.forEach((crl, i) => {
+                if (crl !== null && !entry.crls.includes(i) && toHex(crl.issuerRaw) === issuerName) entry.crls.push(i);
+            });
+        }
+    }
+
+    // All material ships, referenced or not: /DSS arrays are document-wide.
+    return { certificates, ocspResponses, crls, vri };
 }
 
 /**

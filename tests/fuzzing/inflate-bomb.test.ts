@@ -15,6 +15,7 @@ import {
     getMaxInflateOutputSize,
     DEFAULT_MAX_INFLATE_OUTPUT,
     initNodeDecompression_parser,
+    PdfStreamLimitError,
 } from '../../src/index.js';
 
 // Pre-compressed payloads built from Node zlib (zlib format with header — what inflateSync expects)
@@ -51,10 +52,27 @@ describe('inflate — output size cap', () => {
         expect(out.length).toBe(1024 * 1024);
     });
 
-    it('throws when output would exceed the cap (native path)', async () => {
+    it('throws PdfStreamLimitError when output would exceed the cap (native path)', async () => {
         await initNodeDecompression_parser();
         setMaxInflateOutputSize(1024); // 1 KB cap, payload expands to 1 MB
-        expect(() => inflateSync(LARGE_PAYLOAD)).toThrow();
+        let caught: unknown;
+        try { inflateSync(LARGE_PAYLOAD); } catch (err) { caught = err; }
+        // Node's ERR_BUFFER_TOO_LARGE is translated to the engine's own error
+        // (v1.9.0, #89), so native and pure-JS paths report the cap alike.
+        expect(caught).toBeInstanceOf(PdfStreamLimitError);
+        expect((caught as PdfStreamLimitError).code).toBe('PDF_STREAM_LIMIT');
+        expect((caught as PdfStreamLimitError).limit).toBe(1024);
+    });
+
+    it('throws PdfStreamLimitError from the pure-JS decoder too', () => {
+        // setInflateImpl(null) pins the resolved native function to null, so
+        // inflateSync() takes the pure-JS decoder on the capped input.
+        setMaxInflateOutputSize(1024);
+        setInflateImpl(null);
+        let caught: unknown;
+        try { inflateSync(LARGE_PAYLOAD); } catch (err) { caught = err; }
+        expect(caught).toBeInstanceOf(PdfStreamLimitError);
+        expect((caught as PdfStreamLimitError).filter).toBe('FlateDecode');
     });
 
     it('throws when output would exceed the cap (pure-JS fallback)', () => {

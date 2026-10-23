@@ -9,6 +9,7 @@
  * The builder is **pure** and emits an inline dictionary string — page
  * labels require no indirect objects. Output is PDF/A-safe.
  */
+import { encodePdfTextString } from './pdf-text.js';
 
 /** Page-numbering style for a {@link PageLabelRange}. */
 export type PageLabelStyle =
@@ -38,11 +39,6 @@ const STYLE_OP: Record<Exclude<PageLabelStyle, 'none'>, string> = {
     alpha: 'a',
     Alpha: 'A',
 };
-
-/** Escape a PDF literal string (backslash + parentheses). */
-function escapePdfLiteral(s: string): string {
-    return s.replace(/[\\()]/g, c => '\\' + c);
-}
 
 /**
  * Build the inline `/PageLabels` number-tree dictionary string.
@@ -75,7 +71,7 @@ export function buildPageLabelsDict(ranges: readonly PageLabelRange[], pageCount
             entryParts.push(`/S /${STYLE_OP[style]}`);
         }
         if (r.prefix !== undefined && r.prefix !== '') {
-            entryParts.push(`/P (${escapePdfLiteral(r.prefix)})`);
+            entryParts.push(`/P ${encodePdfTextString(r.prefix)}`);
         }
         if (r.start !== undefined && r.start !== 1) {
             if (!Number.isInteger(r.start) || r.start < 1) {

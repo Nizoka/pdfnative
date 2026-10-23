@@ -7,10 +7,12 @@
  * /Differences, WinAnsi fallback, no-mapping U+FFFD).
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
+import { initNodeCompression } from '../../src/core/pdf-compress.js';
 import { extractText } from '../../src/parser/pdf-text-extract.js';
 import { PdfPasswordError } from '../../src/parser/pdf-decrypt.js';
+import { initNodeDecompression, setMaxInflateOutputSize, DEFAULT_MAX_INFLATE_OUTPUT, PdfStreamLimitError } from '../../src/parser/pdf-inflate.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 import * as notoThai from '../../fonts/noto-thai-data.js';
@@ -486,5 +488,63 @@ describe('extractText on Thai and Lao sara am', () => {
         expect(plain).not.toContain('ຳ');
         expect(plain).not.toContain('�');
         expect(build('ນ້ຳ', laoEntries, true)).toContain('ນ້ຳ');
+    });
+});
+
+// ── Stream-error policy (v1.9.0, #89) ────────────────────────────────
+// A content stream over the decompression cap used to be skipped silently,
+// so a capped page extracted as an empty page. The cap now surfaces as a
+// PdfStreamLimitError by default; 'skip' restores the old lenience.
+
+describe('extractText stream-error policy (#89)', () => {
+    const long: DocumentParams = {
+        title: 'Cap',
+        blocks: Array.from({ length: 12 }, (_, i) => ({ type: 'paragraph' as const, text: `Lorem ipsum dolor sit amet ${i} `.repeat(30) })),
+    };
+    let compressed: Uint8Array;
+
+    beforeAll(async () => {
+        await initNodeCompression();
+        await initNodeDecompression();
+        compressed = buildDocumentPDFBytes(long, { compress: true });
+    });
+
+    afterEach(() => {
+        setMaxInflateOutputSize(DEFAULT_MAX_INFLATE_OUTPUT);
+    });
+
+    it('extracts the compressed page under the default cap', () => {
+        expect(extractText(compressed)[0].text).toContain('Lorem');
+    });
+
+    it('throws PdfStreamLimitError when a page stream exceeds the cap (default policy)', () => {
+        setMaxInflateOutputSize(1024);
+        let caught: unknown;
+        try { extractText(compressed); } catch (err) { caught = err; }
+        expect(caught).toBeInstanceOf(PdfStreamLimitError);
+        expect((caught as PdfStreamLimitError).code).toBe('PDF_STREAM_LIMIT');
+        expect((caught as PdfStreamLimitError).filter).toBe('FlateDecode');
+        expect((caught as PdfStreamLimitError).limit).toBe(1024);
+        expect((caught as Error).message).toContain('setMaxInflateOutputSize');
+    });
+
+    it("'skip' restores the pre-1.9.0 behaviour (empty pages, no throw)", () => {
+        setMaxInflateOutputSize(1024);
+        const pages = extractText(compressed, { onStreamError: 'skip' });
+        expect(pages.length).toBeGreaterThanOrEqual(1);
+        expect(pages.every(p => p.text === '')).toBe(true);
+    });
+
+    it("'throw' also reports a corrupt stream, which the default still skips", () => {
+        // A content stream declaring FlateDecode over bytes that are not a zlib stream.
+        const broken = assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+            streamObj('/Filter /FlateDecode', 'this is not deflate data at all'),
+            HELVETICA,
+        ]);
+        expect(extractText(broken)[0].text).toBe('');
+        expect(() => extractText(broken, { onStreamError: 'throw' })).toThrow();
     });
 });

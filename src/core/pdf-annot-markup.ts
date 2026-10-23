@@ -19,6 +19,7 @@
 
 import { fmtNum, encodePdfTextString } from './pdf-text.js';
 import { parseColor, fillOp } from './pdf-color.js';
+import { linkActionEntries } from './pdf-annot.js';
 import type { PdfColor } from '../types/pdf-types.js';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -91,13 +92,29 @@ export interface FreeTextAnnotation extends AnnotationBase {
     readonly fontSize?: number;
 }
 
+/**
+ * URI link annotation (`/Subtype /Link` with a `/URI` action) — the
+ * incremental-update counterpart of the document builder's `link` block, so
+ * a clickable link can be added to an EXISTING document (#91). The URL goes
+ * through the same scheme allow-list (`http:`, `https:`, `mailto:`) and
+ * control-character rejection as `buildLinkAnnotation()`.
+ *
+ * @since 1.9.0
+ */
+export interface LinkMarkupAnnotation extends AnnotationBase {
+    readonly type: 'link';
+    /** Target URL — `http:`, `https:` or `mailto:` only. */
+    readonly url: string;
+}
+
 /** Any builder-supported annotation. */
 export type MarkupAnnotation =
     | TextAnnotation
     | TextMarkupAnnotation
     | ShapeAnnotation
     | LineAnnotation
-    | FreeTextAnnotation;
+    | FreeTextAnnotation
+    | LinkMarkupAnnotation;
 
 // ── Subtype mapping ──────────────────────────────────────────────────
 
@@ -111,7 +128,11 @@ const SUBTYPE: Record<MarkupAnnotation['type'], string> = {
     circle: 'Circle',
     line: 'Line',
     freetext: 'FreeText',
+    link: 'Link',
 };
+
+/** The annotation types {@link buildAnnotationBody} accepts, for its error message. */
+const KNOWN_TYPES = Object.keys(SUBTYPE).join(', ');
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -159,6 +180,11 @@ export function buildAnnotation(annot: MarkupAnnotation, objNum: number): string
  * @returns The annotation dictionary string.
  */
 export function buildAnnotationBody(annot: MarkupAnnotation): string {
+    if (!Object.prototype.hasOwnProperty.call(SUBTYPE, annot.type)) {
+        // A JS caller (or a JSON document) can pass anything; before 1.9.0
+        // this serialised `/Subtype /undefined` without a word (#91).
+        throw new Error(`Unknown annotation type "${String((annot as { type: unknown }).type)}" — expected one of: ${KNOWN_TYPES}`);
+    }
     const entries: string[] = [
         `/Type /Annot`,
         `/Subtype /${SUBTYPE[annot.type]}`,
@@ -167,6 +193,10 @@ export function buildAnnotationBody(annot: MarkupAnnotation): string {
     ];
 
     switch (annot.type) {
+        case 'link': {
+            entries.push(linkActionEntries(annot.url));
+            break;
+        }
         case 'text': {
             if (annot.open !== undefined) entries.push(`/Open ${annot.open ? 'true' : 'false'}`);
             if (annot.icon !== undefined) entries.push(`/Name /${annot.icon}`);

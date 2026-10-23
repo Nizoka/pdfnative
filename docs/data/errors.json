@@ -251,6 +251,20 @@
       "since": "1.7.0",
       "when": "print.userUnit is set together with tagged: 'pdfa1b'.",
       "remedy": "Claim PDF/A-2b or later, or drop userUnit."
+    },
+    {
+      "message": "Unknown annotation type \"${type}\" — expected one of: ${knownTypes}",
+      "thrownBy": "buildAnnotationBody / buildAnnotation",
+      "since": "1.9.0",
+      "when": "The annotation object carries a `type` outside the MarkupAnnotation union (a JS caller or a JSON document). Before 1.9.0 the builder serialised `/Subtype /undefined` without a word (#91).",
+      "remedy": "Use one of the listed types; `link` (URI link, since 1.9.0) covers the former gap."
+    },
+    {
+      "message": "${filter} output exceeds the ${limit}-byte limit (potential zip bomb) — raise setMaxInflateOutputSize() if this document is trusted",
+      "thrownBy": "inflateSync / applyDecodeFilter, rethrown by extractText (onStreamError: 'limit' default), openPdf().decodeStream, validatePdfX, validatePdfUA (class PdfStreamLimitError, code PDF_STREAM_LIMIT)",
+      "since": "1.9.0",
+      "when": "A stream would decompress to more bytes than the safety cap (setMaxInflateOutputSize, default 100 MB, for FlateDecode; 256 MiB for the other filters). extractText used to skip the stream silently and return an empty page (#89).",
+      "remedy": "Classify by `code === 'PDF_STREAM_LIMIT'` (or `instanceof PdfStreamLimitError`). Raise the cap for trusted input, or pass `onStreamError: 'skip'` to extractText for the pre-1.9.0 behaviour."
     }
   ]
 }

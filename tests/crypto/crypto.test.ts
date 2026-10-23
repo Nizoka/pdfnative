@@ -494,6 +494,20 @@ describe('RSA sign/verify', () => {
 // ECDSA P-256 Sign / Verify
 // ════════════════════════════════════════════════════════════════════
 
+// v1.9.0 (#88) — the digest-level ECDSA verifier and the DER signature
+// codecs are reachable from the package root, symmetrical with rsaVerifyHash.
+describe('ECDSA root exports', () => {
+    it('exports ecdsaVerifyHash, ecdsaSignHash, encodeDerSignature and decodeDerSignature', async () => {
+        const root = await import('../../src/index.js');
+        expect(typeof root.ecdsaVerifyHash).toBe('function');
+        expect(typeof root.ecdsaSignHash).toBe('function');
+        expect(typeof root.encodeDerSignature).toBe('function');
+        expect(typeof root.decodeDerSignature).toBe('function');
+        expect(root.ecdsaVerifyHash).toBe(ecdsaVerifyHash);
+        expect(typeof root.rsaVerifyHash).toBe('function');
+    });
+});
+
 describe('ECDSA P-256', () => {
     // Test private key (deterministic for reproducible tests)
     const testPrivKey: EcPrivateKey = {

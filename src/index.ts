@@ -159,6 +159,7 @@ export type {
     ShapeAnnotation,
     LineAnnotation,
     FreeTextAnnotation,
+    LinkMarkupAnnotation,
     MarkupAnnotation,
 } from './core/pdf-annot-markup.js';
 export { buildAnnotation, buildAnnotationBody } from './core/pdf-annot-markup.js';
@@ -228,8 +229,8 @@ export type { PdfSignTimestampOptions } from './core/pdf-sign-timestamp.js';
 export { signPdfBytesWithTimestamp } from './core/pdf-sign-timestamp.js';
 export type { PdfSignatureInfo } from './core/pdf-sig-utils.js';
 export { listSignatures } from './core/pdf-sig-utils.js';
-export type { LtvData, CollectLtvOptions } from './core/pdf-dss.js';
-export { collectValidationInfo, embedValidationInfo, addValidationInfo, vriKeyForContents } from './core/pdf-dss.js';
+export type { LtvData, CollectLtvOptions, LtvMaterial, ComposeLtvOptions } from './core/pdf-dss.js';
+export { collectValidationInfo, embedValidationInfo, addValidationInfo, vriKeyForContents, composeLtvData } from './core/pdf-dss.js';
 export type { AddDocumentTimestampOptions } from './core/pdf-doc-timestamp.js';
 export { addDocumentTimestamp } from './core/pdf-doc-timestamp.js';
 
@@ -251,7 +252,11 @@ export { derDecode, derSequence, derInteger, derOid, derOctetString, derBitStrin
 export type { RsaPublicKey, RsaPrivateKey, RsaDigest } from './crypto/rsa.js';
 export { rsaSign, rsaVerify, rsaSignHash, rsaVerifyHash, parseRsaPrivateKey, parseRsaPublicKey } from './crypto/rsa.js';
 export type { EcPublicKey, EcPrivateKey } from './crypto/ecdsa.js';
-export { ecdsaSign, ecdsaVerify, ecPublicKeyFromPrivate, encodeEcPublicKey, decodeEcPublicKey } from './crypto/ecdsa.js';
+export {
+    ecdsaSign, ecdsaVerify, ecdsaSignHash, ecdsaVerifyHash,
+    ecPublicKeyFromPrivate, encodeEcPublicKey, decodeEcPublicKey,
+    encodeDerSignature, decodeDerSignature,
+} from './crypto/ecdsa.js';
 export type { X509Name, X509Certificate } from './crypto/x509.js';
 export { parseCertificate, verifyCertSignature, isSelfSigned, certHasEku } from './crypto/x509.js';
 export type { SignatureAlgorithm, CmsSignOptions, CmsDigestAlgorithm, CmsProfile } from './crypto/cms.js';
@@ -265,8 +270,8 @@ export type { ParsedCms } from './crypto/cms-utils.js';
 export { parseCmsSignedData, addUnsignedAttribute, buildAttribute } from './crypto/cms-utils.js';
 export type { TimestampRequestOptions, TimestampResponse, TstInfo } from './crypto/rfc3161.js';
 export { buildTimestampRequest, parseTimestampResponse, parseTimestampToken, verifyTimestampImprint } from './crypto/rfc3161.js';
-export type { OcspRequestOptions, OcspCertStatus, OcspResponse } from './crypto/ocsp.js';
-export { buildOcspRequest, parseOcspResponse } from './crypto/ocsp.js';
+export type { OcspRequestOptions, OcspCertStatus, OcspResponse, OcspCertId } from './crypto/ocsp.js';
+export { buildOcspRequest, parseOcspResponse, ocspResponseMatchesCertificate } from './crypto/ocsp.js';
 export type { CrlRevokedEntry, ParsedCrl } from './crypto/crl.js';
 export { parseCrl, isSerialRevoked } from './crypto/crl.js';
 export type { TimestampProvider } from './crypto/timestamp-provider.js';
@@ -382,8 +387,9 @@ export type { PdfModifier, PdfMetadataUpdate } from './parser/pdf-modifier.js';
 export { createModifier } from './parser/pdf-modifier.js';
 export type { PageRange, MergeOptions, PdfSourceInput, StreamMergeOptions, SplitPdfStream } from './parser/pdf-pagetree.js';
 export { mergePdfs, splitPdf, extractPages, streamMergedPdfs, streamExtractPages, streamSplitPdf } from './parser/pdf-pagetree.js';
-export type { ExtractTextOptions, ExtractedTextRun, ExtractedPageText } from './parser/pdf-text-extract.js';
+export type { ExtractTextOptions, ExtractedTextRun, ExtractedPageText, StreamErrorPolicy } from './parser/pdf-text-extract.js';
 export { extractText } from './parser/pdf-text-extract.js';
+export { decodePdfTextString } from './parser/pdf-text-string.js';
 export type { PdfUAValidationResult } from './parser/pdf-ua-validator.js';
 export { validatePdfUA } from './parser/pdf-ua-validator.js';
 export type { PdfXValidationResult } from './parser/pdf-x-validator.js';
@@ -391,6 +397,7 @@ export { validatePdfX } from './parser/pdf-x-validator.js';
 export {
     inflateSync, setInflateImpl, initNodeDecompression as initNodeDecompression_parser,
     setMaxInflateOutputSize, getMaxInflateOutputSize, DEFAULT_MAX_INFLATE_OUTPUT,
+    PdfStreamLimitError,
 } from './parser/pdf-inflate.js';
 export {
     decodeASCIIHex, decodeASCII85, decodeLZW, decodeRunLength,

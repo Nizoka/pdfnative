@@ -24,6 +24,13 @@ export {
     compileFontData,
 } from './font-compiler.js';
 
+// Synthetic ICC output profiles for fixtures and tests (#86) — never for
+// real print, which needs the printer's own characterised profile.
+export {
+    buildSyntheticCmykProfile,
+    buildSyntheticGrayProfile,
+} from './synthetic-profiles.js';
+
 export type {
     FontDataObject,
     CompiledFontMetrics,

@@ -38,6 +38,8 @@ import {
     dictGetName, dictGetNum,
 } from './pdf-object-parser.js';
 import type { PdfDict, PdfStream, PdfValue } from './pdf-object-parser.js';
+import { decodePdfTextString } from './pdf-text-string.js';
+import { PdfStreamLimitError } from './pdf-inflate.js';
 
 // ── Public types ─────────────────────────────────────────────────────
 
@@ -55,7 +57,24 @@ export interface ExtractTextOptions {
      * untrusted input).
      */
     readonly maxTextLength?: number;
+    /**
+     * What to do when a content stream (page, Form XObject or ToUnicode
+     * CMap) cannot be decoded:
+     *
+     * - `'limit'` (default) — a stream that exceeds the decompression cap
+     *   ({@link PdfStreamLimitError}) is rethrown, so "this page was not
+     *   read" is never mistaken for "this page is empty" (#89); a corrupt
+     *   stream is skipped and the rest of the page is kept, as before.
+     * - `'throw'` — any undecodable stream throws.
+     * - `'skip'` — the pre-1.9.0 behaviour: every failure is skipped.
+     *
+     * @since 1.9.0
+     */
+    readonly onStreamError?: StreamErrorPolicy;
 }
+
+/** How {@link extractText} treats a stream it cannot decode. @since 1.9.0 */
+export type StreamErrorPolicy = 'limit' | 'throw' | 'skip';
 
 /** One text-showing operation (`Tj`, one `TJ` string, `'` or `"`). */
 export interface ExtractedTextRun {
@@ -412,7 +431,7 @@ function buildWidths(reader: PdfReader, fontDict: PdfDict, isType0: boolean): (c
 }
 
 /** Build (and memoise per font object) the decoder for a resource font. */
-function buildFontDecoder(reader: PdfReader, fontVal: PdfValue): FontDecoder | null {
+function buildFontDecoder(reader: PdfReader, fontVal: PdfValue, streamErrors: StreamErrorPolicy = 'skip'): FontDecoder | null {
     const fontDict = reader.resolveValue(fontVal);
     if (fontDict === null || !isDict(fontDict)) return null;
     const subtype = dictGetName(fontDict, 'Subtype');
@@ -426,7 +445,8 @@ function buildFontDecoder(reader: PdfReader, fontVal: PdfValue): FontDecoder | n
             const parsed = parseToUnicodeCMap(reader.decodeStream(tuVal));
             toUnicode = parsed.map;
             if (isType0) cmapCodeLen = parsed.codeLen === 1 ? 2 : parsed.codeLen;
-        } catch {
+        } catch (err) {
+            onStreamError(err, streamErrors);
             toUnicode = null; // malformed CMap — fall back to encoding table
         }
     }
@@ -452,6 +472,16 @@ interface ExtractionSink {
     readonly runs: MutableRun[];
     totalChars: number;
     readonly maxChars: number;
+    readonly streamErrors: StreamErrorPolicy;
+}
+
+/**
+ * Apply the stream-error policy to a decode failure: rethrow when the policy
+ * says so, otherwise return so the caller skips the stream.
+ */
+function onStreamError(err: unknown, policy: StreamErrorPolicy): void {
+    if (policy === 'throw') throw err;
+    if (policy === 'limit' && err instanceof PdfStreamLimitError) throw err;
 }
 
 interface TextState {
@@ -464,22 +494,6 @@ interface TextState {
     wordSpacing: number;
     hScale: number;
     leading: number;
-}
-
-/**
- * Decode a PDF text string (ISO 32000-1 §7.9.2.2): UTF-16BE behind a byte
- * order mark, otherwise PDFDocEncoding, whose printable range coincides
- * with Latin-1 for the characters an ActualText realistically carries.
- */
-function decodeTextString(raw: string): string {
-    if (raw.length >= 2 && raw.charCodeAt(0) === 0xFE && raw.charCodeAt(1) === 0xFF) {
-        let out = '';
-        for (let i = 2; i + 1 < raw.length; i += 2) {
-            out += String.fromCharCode(((raw.charCodeAt(i) & 0xFF) << 8) | (raw.charCodeAt(i + 1) & 0xFF));
-        }
-        return out;
-    }
-    return raw;
 }
 
 /** Skip an inline image: scan past `ID` up to a whitespace-delimited `EI`. */
@@ -590,7 +604,7 @@ function interpretContent(
         const props = propertiesDict !== null ? reader.resolveValue(propertiesDict.get(name) ?? null) : null;
         if (props === null || !isDict(props)) return null;
         const at = reader.resolveValue(props.get('ActualText') ?? null);
-        return typeof at === 'string' ? decodeTextString(at) : null;
+        return typeof at === 'string' ? decodePdfTextString(at) : null;
     };
     const nextLine = (tx: number, ty: number): void => {
         st.tlm = matMul([1, 0, 0, 1, tx, ty], st.tlm);
@@ -628,7 +642,7 @@ function interpretContent(
                     else if (inner.type === 'dictClose') { nesting--; key = null; }
                     else if (nesting === 1 && inner.type === 'name') key = inner.value as string;
                     else if (nesting === 1 && inner.type === 'string' && key === 'ActualText') {
-                        pendingActualText = decodeTextString(inner.value as string);
+                        pendingActualText = decodePdfTextString(inner.value as string);
                         key = null;
                     } else key = null;
                 }
@@ -646,7 +660,7 @@ function interpretContent(
                             st.fontName = nameOp.name;
                             if (!fontCache.has(nameOp.name)) {
                                 const fv = fontsDict?.get(nameOp.name);
-                                fontCache.set(nameOp.name, fv !== undefined ? buildFontDecoder(reader, fv) : null);
+                                fontCache.set(nameOp.name, fv !== undefined ? buildFontDecoder(reader, fv, sink.streamErrors) : null);
                             }
                             st.decoder = fontCache.get(nameOp.name) ?? null;
                         }
@@ -766,7 +780,7 @@ function interpretContent(
                                 }
                                 const formRes = reader.resolveValue(xo.dict.get('Resources') ?? null);
                                 let decoded: Uint8Array | null = null;
-                                try { decoded = reader.decodeStream(xo); } catch { decoded = null; }
+                                try { decoded = reader.decodeStream(xo); } catch (err) { onStreamError(err, sink.streamErrors); decoded = null; }
                                 if (decoded !== null) {
                                     interpretContent(
                                         reader, decoded,
@@ -872,7 +886,8 @@ export function extractText(bytes: Uint8Array, options?: ExtractTextOptions): Ex
         indices = Array.from({ length: reader.pageCount }, (_, i) => i);
     }
 
-    const sink: ExtractionSink = { runs: [], totalChars: 0, maxChars };
+    const streamErrors: StreamErrorPolicy = options?.onStreamError ?? 'limit';
+    const sink: ExtractionSink = { runs: [], totalChars: 0, maxChars, streamErrors };
     const results: ExtractedPageText[] = [];
 
     for (const pageIndex of indices) {
@@ -897,8 +912,11 @@ export function extractText(bytes: Uint8Array, options?: ExtractTextOptions): Ex
                 const d = reader.decodeStream(s);
                 decodedParts.push(d);
                 total += d.length + 1;
-            } catch {
-                // Undecodable content stream — skip it, keep the rest.
+            } catch (err) {
+                // A stream over the decompression cap is reported (policy
+                // 'limit', the default); a corrupt one is skipped and the
+                // rest of the page kept.
+                onStreamError(err, streamErrors);
             }
         }
         const content = new Uint8Array(total === 0 ? 0 : total);

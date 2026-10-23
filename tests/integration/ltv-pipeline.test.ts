@@ -10,7 +10,7 @@ import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { addSignaturePlaceholder } from '../../src/core/pdf-sig-placeholder.js';
 import { signPdfBytes, estimateContentsSize } from '../../src/core/pdf-signature.js';
 import { signPdfBytesWithTimestamp } from '../../src/core/pdf-sign-timestamp.js';
-import { addValidationInfo, collectValidationInfo, embedValidationInfo, vriKeyForContents } from '../../src/core/pdf-dss.js';
+import { addValidationInfo, collectValidationInfo, embedValidationInfo, vriKeyForContents, composeLtvData } from '../../src/core/pdf-dss.js';
 import { addDocumentTimestamp } from '../../src/core/pdf-doc-timestamp.js';
 import { listSignatures } from '../../src/core/pdf-sig-utils.js';
 import { openPdf } from '../../src/parser/pdf-reader.js';
@@ -18,7 +18,8 @@ import { isDict, isRef, isArray, isStream, type PdfValue } from '../../src/parse
 import { parseCmsSignedData } from '../../src/crypto/cms-utils.js';
 import { parseTimestampToken, verifyTimestampImprint } from '../../src/crypto/rfc3161.js';
 import { sha256 } from '../../src/crypto/sha.js';
-import { createMockPki, createMockTimestampProvider, createMockRevocationProvider } from '../../scripts/helpers/mock-pki.js';
+import { createMockPki, createMockTimestampProvider, createMockRevocationProvider, MOCK_OCSP_URL } from '../../scripts/helpers/mock-pki.js';
+import { buildOcspRequest } from '../../src/crypto/ocsp.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
 const pki = createMockPki();
@@ -189,6 +190,87 @@ describe('PAdES B-LT (/DSS + /VRI)', () => {
     it('refuses documents without a signed signature', async () => {
         await expect(addValidationInfo(makeUnsigned(), { revocationProvider: revocation }))
             .rejects.toThrow(/no signed signature/);
+    });
+});
+
+// v1.9.0 (#90) — compose LtvData from flat lists collected out of band.
+describe('composeLtvData (offline material → /VRI)', () => {
+    async function material(): Promise<{ signed: Uint8Array; data: Awaited<ReturnType<typeof collectValidationInfo>> }> {
+        const signed = signBb(makeUnsigned());
+        const data = await collectValidationInfo(signed, { revocationProvider: revocation });
+        return { signed, data };
+    }
+
+    it("'all' references every item from every /VRI entry", async () => {
+        const { signed, data } = await material();
+        const composed = composeLtvData(signed, {
+            certificates: [...data.certificates, pki.tsaCert.raw],
+            ocspResponses: data.ocspResponses,
+            crls: data.crls,
+        });
+        expect(composed.vri).toHaveLength(1);
+        expect(composed.certificates).toHaveLength(3);
+        expect([...composed.vri[0].certs].sort()).toEqual([0, 1, 2]);
+        expect(composed.vri[0].ocsps).toEqual(data.ocspResponses.map((_, i) => i));
+        expect(composed.vri[0].crls).toEqual(data.crls.map((_, i) => i));
+        // Ready for embedValidationInfo, and byte-identical twice.
+        const a = embedValidationInfo(signed, composed);
+        expect(a).toEqual(embedValidationInfo(signed, composed));
+        expect(openPdf(a).getCatalog().has('DSS')).toBe(true);
+    });
+
+    it("'chain' references only what validates the signature", async () => {
+        const { signed, data } = await material();
+        // The TSA certificate is issued by the same root but takes no part in
+        // this (untimestamped) signature: it ships in /Certs, unreferenced.
+        const outsider = pki.tsaCert.raw;
+        const composed = composeLtvData(signed, {
+            certificates: [outsider, ...data.certificates],
+            ocspResponses: data.ocspResponses,
+            crls: data.crls,
+        }, { match: 'chain' });
+
+        const outsiderIdx = composed.certificates.findIndex(c => c.length === outsider.length && c.every((b, i) => b === outsider[i]));
+        expect(outsiderIdx).toBe(0);
+        expect(composed.vri[0].certs).not.toContain(outsiderIdx);
+        // signer + root are the chain
+        expect(composed.vri[0].certs).toHaveLength(2);
+        const chainDers = composed.vri[0].certs.map(i => composed.certificates[i]);
+        for (const expected of [pki.signerCert.raw, pki.rootCert.raw]) {
+            expect(chainDers.some(c => c.length === expected.length && c.every((b, i) => b === expected[i]))).toBe(true);
+        }
+        // the OCSP response for the signer matches through its CertID, the
+        // CRL through its issuer Name
+        expect(composed.vri[0].ocsps).toEqual(data.ocspResponses.map((_, i) => i));
+        expect(composed.vri[0].crls).toEqual(data.crls.map((_, i) => i));
+        expect(composed.certificates).toHaveLength(3);
+    });
+
+    it("'chain' leaves a response for another certificate unreferenced", async () => {
+        const { signed, data } = await material();
+        // An OCSP response about the TSA certificate: a valid response, but not about this chain.
+        const tsaResponse = await revocation.fetchOcsp!(MOCK_OCSP_URL, buildOcspRequest(pki.tsaCert, pki.rootCert));
+        const composed = composeLtvData(signed, {
+            certificates: data.certificates,
+            ocspResponses: [tsaResponse, ...data.ocspResponses],
+        }, { match: 'chain' });
+        expect(composed.ocspResponses).toHaveLength(data.ocspResponses.length + 1);
+        expect(composed.vri[0].ocsps).not.toContain(0);
+        expect(composed.vri[0].ocsps).toEqual(data.ocspResponses.map((_, i) => i + 1));
+    });
+
+    it('rejects empty material and unsigned documents', () => {
+        const signed = signBb(makeUnsigned());
+        expect(() => composeLtvData(signed, {})).toThrow(/no material/);
+        expect(() => composeLtvData(makeUnsigned(), { certificates: [pki.rootCert.raw] })).toThrow(/no signed signature/);
+    });
+
+    it('collectValidationInfo references extraCertificates from the /VRI entry', async () => {
+        const signed = signBb(makeUnsigned());
+        const data = await collectValidationInfo(signed, { revocationProvider: revocation, extraCertificates: [pki.tsaCert.raw] });
+        const tsaIdx = data.certificates.findIndex(c => c.length === pki.tsaCert.raw.length && c.every((b, i) => b === pki.tsaCert.raw[i]));
+        expect(tsaIdx).toBeGreaterThanOrEqual(0);
+        expect(data.vri[0].certs).toContain(tsaIdx);
     });
 });
 

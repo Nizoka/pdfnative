@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { buildOcspRequest, parseOcspResponse } from '../../src/crypto/ocsp.js';
+import { buildOcspRequest, parseOcspResponse, ocspResponseMatchesCertificate } from '../../src/crypto/ocsp.js';
 import { parseCrl, isSerialRevoked } from '../../src/crypto/crl.js';
 import { sha1, sha256 } from '../../src/crypto/sha.js';
 import { rsaVerifyHash } from '../../src/crypto/rsa.js';
@@ -82,6 +82,27 @@ describe('mock OCSP responder round-trip', () => {
         expect(response.responderCertificates).toHaveLength(1);
         expect(toHex(response.responderCertificates[0])).toBe(toHex(pki.ocspCert.raw));
         expect(response.raw.length).toBeGreaterThan(0);
+    });
+
+    it('surfaces the SingleResponse CertID and matches it to the certificate (v1.9.0)', async () => {
+        const provider = createMockRevocationProvider(pki);
+        const request = buildOcspRequest(pki.signerCert, pki.rootCert);
+        const response = parseOcspResponse(await provider.fetchOcsp!(MOCK_OCSP_URL, request));
+
+        expect(response.certId).toBeDefined();
+        expect(response.certId?.serialNumber).toBe(pki.signerCert.serialNumber);
+        expect(toHex(response.certId!.hashAlgorithm)).toBe('2b0e03021a'); // SHA-1
+        expect(toHex(response.certId!.issuerNameHash)).toBe(toHex(sha1(pki.signerCert.issuer.raw)));
+        expect(toHex(response.certId!.issuerKeyHash)).toBe(toHex(sha1(pki.rootCert.publicKeyBytes)));
+
+        expect(ocspResponseMatchesCertificate(response, pki.signerCert, pki.rootCert)).toBe(true);
+        // Another certificate under the same issuer, or another issuer: no match.
+        expect(ocspResponseMatchesCertificate(response, pki.tsaCert, pki.rootCert)).toBe(false);
+        expect(ocspResponseMatchesCertificate(response, pki.signerCert, pki.ocspCert)).toBe(false);
+        // An unsuccessful response carries no CertID and never matches.
+        const failed = parseOcspResponse(new Uint8Array([0x30, 0x03, 0x0a, 0x01, 0x01]));
+        expect(failed.certId).toBeUndefined();
+        expect(ocspResponseMatchesCertificate(failed, pki.signerCert, pki.rootCert)).toBe(false);
     });
 
     it('reports revoked with a revocationTime', async () => {

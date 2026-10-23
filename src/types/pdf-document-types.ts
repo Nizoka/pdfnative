@@ -349,8 +349,12 @@ export interface FormFieldBlock {
 
 /** A single data series in a {@link ChartBlock}. */
 export interface ChartSeries {
-    /** Series label (shown in the legend). */
-    readonly label: string;
+    /**
+     * Series label (shown in the legend). Optional since 1.9.0: a series
+     * without one is listed as `Series N` (1-based position) in the legend
+     * and in validation messages (#82).
+     */
+    readonly label?: string;
     /** Numeric values, one per category. */
     readonly values: readonly number[];
     /** Optional colour override (hex, tuple, or PDF RGB). */

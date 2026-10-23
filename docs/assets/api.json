@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 503,
+  "exportCount": 516,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -192,6 +192,13 @@
       "module": "src/types/pdf-types.ts",
       "signature": "export interface ColumnDef",
       "summary": "Column definition for the table layout."
+    },
+    {
+      "name": "ComposeLtvOptions",
+      "kind": "type",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export interface ComposeLtvOptions",
+      "summary": "Options for composeLtvData."
     },
     {
       "name": "Contour",
@@ -621,6 +628,13 @@
       "summary": "Link block — clickable hyperlink text."
     },
     {
+      "name": "LinkMarkupAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface LinkMarkupAnnotation extends AnnotationBase",
+      "summary": "URI link annotation (`/Subtype /Link` with a `/URI` action) — the incremental-update counterpart of the document builder's `link` block, so a clickable link can be added to an EXISTING document (#91)."
+    },
+    {
       "name": "ListBlock",
       "kind": "type",
       "module": "src/types/pdf-document-types.ts",
@@ -640,6 +654,13 @@
       "module": "src/core/pdf-dss.ts",
       "signature": "export interface LtvData",
       "summary": "Transport-free validation material, serializable and replayable."
+    },
+    {
+      "name": "LtvMaterial",
+      "kind": "type",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export interface LtvMaterial",
+      "summary": "Validation material collected out of band — three flat lists of DER."
     },
     {
       "name": "MAX_PARSE_DEPTH",
@@ -668,6 +689,13 @@
       "module": "src/parser/pdf-pagetree.ts",
       "signature": "export interface MergeOptions",
       "summary": "Options for the page-tree manipulation API (mergePdfs, splitPdf, extractPages)."
+    },
+    {
+      "name": "OcspCertId",
+      "kind": "type",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export interface OcspCertId",
+      "summary": "CertID of a SingleResponse (RFC 6960 §4.1.1)."
     },
     {
       "name": "OcspCertStatus",
@@ -1111,6 +1139,13 @@
       "summary": null
     },
     {
+      "name": "PdfStreamLimitError",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export class PdfStreamLimitError extends Error",
+      "summary": "A stream could not be decoded because its output would exceed the configured safety cap (setMaxInflateOutputSize for FlateDecode, the fixed cap of the other filters)."
+    },
+    {
       "name": "PdfToken",
       "kind": "type",
       "module": "src/parser/pdf-tokenizer.ts",
@@ -1312,6 +1347,13 @@
       "module": "src/parser/pdf-pagetree.ts",
       "signature": "export interface SplitPdfStream",
       "summary": "One emitted document from streamSplitPdf."
+    },
+    {
+      "name": "StreamErrorPolicy",
+      "kind": "type",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export type StreamErrorPolicy = 'limit' | 'throw' | 'skip';",
+      "summary": "How extractText treats a stream it cannot decode."
     },
     {
       "name": "StreamMergeOptions",
@@ -1916,6 +1958,13 @@
       "summary": "Collect validation material for every signed signature in the document."
     },
     {
+      "name": "composeLtvData",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export function composeLtvData(pdfBytes: Uint8Array, material: LtvMaterial, options: ComposeLtvOptions = {}): LtvData",
+      "summary": "Compose the LtvData that embedValidationInfo expects from flat lists of certificates, OCSP responses and CRLs collected out of band — an air-gapped pipeline, a corporate PKI export, a cached validator run (#90)."
+    },
+    {
       "name": "computeColumnPositions",
       "kind": "value",
       "module": "src/core/pdf-layout.ts",
@@ -2112,6 +2161,13 @@
       "summary": "Decode an ASCIIHexDecode stream."
     },
     {
+      "name": "decodeDerSignature",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function decodeDerSignature(der: Uint8Array): { r: bigint; s: bigint }",
+      "summary": "Decode a DER-encoded ECDSA signature to { r, s }."
+    },
+    {
       "name": "decodeEcPublicKey",
       "kind": "value",
       "module": "src/crypto/ecdsa.ts",
@@ -2124,6 +2180,13 @@
       "module": "src/parser/pdf-decode-filters.ts",
       "signature": "export function decodeLZW(data: Uint8Array): Uint8Array",
       "summary": "Decode an LZWDecode stream with variable-width codes (9–12 bits) and automatic table reset on the CLEAR code (256)."
+    },
+    {
+      "name": "decodePdfTextString",
+      "kind": "value",
+      "module": "src/parser/pdf-text-string.ts",
+      "signature": "export function decodePdfTextString(raw: string): string",
+      "summary": "Decode a PDF text string that the parser returned as a byte-per-char string (ISO 32000-1 §7.9.2.2): UTF-16BE behind `FE FF`, UTF-8 behind `EF BB BF`, otherwise PDFDocEncoding."
     },
     {
       "name": "decodeRunLength",
@@ -2287,11 +2350,25 @@
       "summary": "Sign a message with ECDSA P-256 + SHA-256, using RFC 6979 deterministic k."
     },
     {
+      "name": "ecdsaSignHash",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecdsaSignHash(hash: Uint8Array, privateKey: EcPrivateKey): { r: bigint; s: bigint }",
+      "summary": "Sign a pre-computed SHA-256 hash with ECDSA P-256."
+    },
+    {
       "name": "ecdsaVerify",
       "kind": "value",
       "module": "src/crypto/ecdsa.ts",
       "signature": "export function ecdsaVerify(message: Uint8Array, r: bigint, s: bigint, publicKey: EcPublicKey): boolean",
       "summary": "Verify an ECDSA P-256 + SHA-256 signature."
+    },
+    {
+      "name": "ecdsaVerifyHash",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecdsaVerifyHash(hash: Uint8Array, r: bigint, s: bigint, publicKey: EcPublicKey): boolean",
+      "summary": "Verify an ECDSA P-256 signature against a pre-computed hash."
     },
     {
       "name": "embedValidationInfo",
@@ -2306,6 +2383,13 @@
       "module": "src/core/pdf-barcode.ts",
       "signature": "export function encodeCode128(data: string): number[]",
       "summary": "Encode a string as Code 128 symbol values."
+    },
+    {
+      "name": "encodeDerSignature",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function encodeDerSignature(r: bigint, s: bigint): Uint8Array",
+      "summary": "Encode an ECDSA signature { r, s } as DER (for CMS)."
     },
     {
       "name": "encodeEcPublicKey",
@@ -2803,6 +2887,13 @@
       "module": "src/core/pdf-color.ts",
       "signature": "export function normalizeColors(colors: PdfColors): PdfColors",
       "summary": "Validate and normalize all color fields in a PdfColors object."
+    },
+    {
+      "name": "ocspResponseMatchesCertificate",
+      "kind": "value",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export function ocspResponseMatchesCertificate(response: OcspResponse, cert: X509Certificate, issuer: X509Certificate): boolean",
+      "summary": "Does this OCSP response speak about `cert`, issued by `issuer`?"
     },
     {
       "name": "openPdf",
