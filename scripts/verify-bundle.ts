@@ -52,13 +52,17 @@ const MARKERS = {
 };
 
 const PROBES: readonly Probe[] = [
-    // Budgets sit about 50 % above the sizes measured at 1.8.0 (2.6 KB,
-    // 1.9 KB, 52 KB): loose enough for a bug fix, tight enough that a
-    // dependency creeping back into a leaf export fails the gate — the
-    // original 8 / 8 / 96 KB budgets would have let a 3× regression through.
+    // Budgets sit about 50 % above the sizes measured at the last release
+    // (1.8.0: 2.6 KB, 1.9 KB, 52 KB; 1.9.0: 4.2 KB, 2.4 KB, 56 KB): loose
+    // enough for a bug fix, tight enough that a dependency creeping back into
+    // a leaf export fails the gate — the original 8 / 8 / 96 KB budgets would
+    // have let a 3× regression through. parseColor grew by 1.6 KB in 1.9.0
+    // because the PdfColor union gained spot colours and ink mixes, which the
+    // parser itself must read (name encoding, tint validation); the budget
+    // moved to 6 KB with it.
     {
         exports: ['parseColor'],
-        maxBytes: 4 * 1024,
+        maxBytes: 6 * 1024,
         mustNotContain: [MARKERS.useGrammar, MARKERS.aes, MARKERS.sha256, MARKERS.fontData],
     },
     {

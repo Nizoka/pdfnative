@@ -59,6 +59,7 @@ it re-anchors. 4138+ tests across 174 files; veraPDF-validated.
 - **The joint PDF/A + PDF/X refusal** became two messages, one per excluded level (1b, 3b); the single 1.8.0 message is gone (compatibility ledger C14).
 - **`scanDeviceColour()`** reports the named colour spaces a stream selects (`named`); every 1.8.0 field is unchanged (C16).
 - **Every embedded TrueType subset** is lean (C6); every font module header carries a `Copyright:` line (C15).
+- **`verify:bundle`** — the `parseColor` probe budget moves from 4 to 6 KB (4.2 KB measured: spot colours and ink mixes in the `PdfColor` union); the other probes are unchanged.
 - **`setup-verapdf`** hands its install directory back as an output instead of writing `GITHUB_ENV`; `ci.yml`, `codeql.yml` and the publish workflow lost their path filters; every audit-mode `harden-runner` carries a dated reason.
 - **SECURITY.md** states the supported runtimes (Node 22 and 24 LTS required, 26 advisory; Deno, Bun and browsers smoke-tested) and the compatibility promise; the FAQ and the pipeline say SLSA Build L2 (the "L3-equivalent" claim is gone).
 
