@@ -26,6 +26,7 @@ import type {
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
 import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures, pdfaGlyphWithoutUnicodeDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
+import { spotColourResources, type SpotFunctionStream } from './pdf-spot.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { buildToUnicodeCMap, buildSubsetWidthArray, unmappedUsedGids } from '../fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
@@ -422,8 +423,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const printMarksOps = printOpts?.marks && printResolved?.trim
         ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks, registrationColour, tagged)
         : '';
-    const pageColorSpaceRes = defaultRgbResource(
-        outputIntent, registrationColour && printMarksOps ? REGISTRATION_COLOR_SPACE_ENTRY : '');
+    const registrationEntry = registrationColour && printMarksOps ? REGISTRATION_COLOR_SPACE_ENTRY : '';
 
     const mcidAlloc = tagged ? createMCIDAllocator() : undefined;
 
@@ -599,6 +599,26 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
         emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
     }
+    // Object numbers of the DeviceN tint transforms: right after /Info and
+    // the base-14 ToUnicode CMap, before the tagged tail chains on.
+    const spotFnStart = preBaseObjCount + 2 + (latinToUniObjNum ? 1 : 0);
+    // Spot colours (v1.9.0): the /Separation and /DeviceN resources behind
+    // every spot name the pages select, from layout.print.spotColours. The
+    // DeviceN tint transforms are stream objects; an ink the content names
+    // but nobody declared throws here.
+    const usedColourSpaceNames: string[] = [];
+    for (const s of pageStreams) for (const n of scanDeviceColour(s).named) if (!usedColourSpaceNames.includes(n)) usedColourSpaceNames.push(n);
+    const spotFunctions: SpotFunctionStream[] = [];
+    const spotRes = spotColourResources(printOpts?.spotColours, usedColourSpaceNames, fn => {
+        spotFunctions.push(fn);
+        return `${spotFnStart + spotFunctions.length - 1} 0 R`;
+    });
+    if (spotRes.cmykAlternate && outputIntent && outputIntent.space !== 'cmyk') {
+        emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
+    }
+    const pageColorSpaceRes = defaultRgbResource(
+        outputIntent, [registrationEntry, spotRes.entries].filter(Boolean).join(' '));
+
     reportIneffectiveFeatures(layoutOptions?.typography?.fontFeatures, fontEntries, enc, emitDiagnostic);
 
     // Build the table structure element (inserted before footer /P elements)
@@ -838,9 +858,15 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         totalObjs = latinToUniObjNum;
     }
 
+    // Spot colour tint transforms (v1.9.0): the DeviceN functions the page
+    // resources reference, chained here like the base-14 ToUnicode CMap —
+    // forward references the page dictionaries already carry.
+    for (let i = 0; i < spotFunctions.length; i++) emitStreamObj(spotFnStart + i, spotFunctions[i].dict, spotFunctions[i].data);
+    if (spotFunctions.length > 0) totalObjs = spotFnStart + spotFunctions.length - 1;
+
     // ── Tagged PDF objects (StructTreeRoot, XMP, ICC, OutputIntent) ──
     let xmpObjNum = 0;
-    let outputIntentObjNum = 0;
+    let outputIntentsStr = '';
     let afArrayStr = '';
     let embeddedFilesNamesDict = '';
 
@@ -860,9 +886,14 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
         // XMP metadata stream (skip compression for PDF/A validator compatibility)
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(pdfxConfig
-            ? buildPdfXXMPMetadata(infoTitle, isoDate, pdfxConfig.trapped, pdfxDocumentId(`${infoTitle}|${pdfDate}`), params.metadata?.author, params.metadata?.subject, params.metadata?.keywords)
-            : buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
+        // PDF/X alone has its own packet; PDF/A, alone or with PDF/X-4 (the
+        // dual claim, v1.9.0), has the PDF/A packet with the PDF/X
+        // identification added.
+        const pdfxId = pdfxConfig ? pdfxDocumentId(`${infoTitle}|${pdfDate}`) : '';
+        const xmpContent = utf8EncodeBinaryString(pdfxConfig && !tagged
+            ? buildPdfXXMPMetadata(infoTitle, isoDate, pdfxConfig.trapped, pdfxId, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords)
+            : buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined,
+                pdfxConfig ? pdfxConfig.trapped : params.metadata?.trapped, pdfxConfig ? { documentId: pdfxId } : undefined));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
@@ -876,10 +907,22 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             `<< /N ${intent.components} /Length ${intent.profile.length}`, intent.profile);
         totalObjs = iccObjNum;
 
-        // OutputIntent
-        outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfx ? 'GTS_PDFX' : pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
-        totalObjs = outputIntentObjNum;
+        // One OutputIntent per claim, both on the same profile stream under a
+        // dual claim (ISO 19005-2 §6.2.3 requires them to share it).
+        const intentRefs: string[] = [];
+        if (tagged) {
+            const n = totalObjs + 1;
+            emitObj(n, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
+            totalObjs = n;
+            intentRefs.push(`${n} 0 R`);
+        }
+        if (pdfx) {
+            const n = totalObjs + 1;
+            emitObj(n, buildOutputIntentDict(iccObjNum, 'GTS_PDFX', layoutOptions?.outputIntent));
+            totalObjs = n;
+            intentRefs.push(`${n} 0 R`);
+        }
+        outputIntentsStr = intentRefs.join(' ');
 
         // Embedded file attachments (PDF/A-3 only)
         if (attachments && attachments.length > 0) {
@@ -906,7 +949,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             `<< /Type /Catalog /Pages 2 0 R ` +
             (tagged ? `/MarkInfo << /Marked true >> /StructTreeRoot ${structTreeRootObjNum} 0 R ` : '') +
             `/Metadata ${xmpObjNum} 0 R ` +
-            `/OutputIntents [${outputIntentObjNum} 0 R]`;
+            `/OutputIntents [${outputIntentsStr}]`;
         if (afArrayStr) {
             catalogContent += ` /AF [${afArrayStr}] ${embeddedFilesNamesDict}`;
         }

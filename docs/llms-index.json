@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 25304,
       "approxTokens": 6326,
-      "sha256": "cfce903e104dfc61d76f0a1da7ee20d57f1a0eca861b103f7f142d76219066fa"
+      "sha256": "85f6067a779ef4dbd789f9157d4137ad2e702c12c119bb1e22475234aeb9dca1"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -21,7 +21,7 @@
       "description": "Full corpus: index + README + every guide, one request.",
       "bytes": 725902,
       "approxTokens": 181476,
-      "sha256": "0293c0d992a462f7481edb1638194bd12dbc7c511ce1e09151355f15f722960d"
+      "sha256": "612543b1aba9d51df49940c5bc9f96ceee3cf4bce75e98d471e9780667b687d3"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -33,9 +33,9 @@
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 149047,
-      "approxTokens": 37262,
-      "sha256": "f55106b626d81923a8b9113890734e18f33033afc3ce5d331b43d89b1d6bf9b0"
+      "bytes": 149101,
+      "approxTokens": 37275,
+      "sha256": "5bde07bd255b54149753bd498c00f5c2dc43d20e5a698808221b9218d07ff40d"
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
@@ -47,9 +47,9 @@
     {
       "url": "https://pdfnative.dev/data/errors.json",
       "description": "The engine error registry: every diagnostic code of the PdfDiagnosticCode union and every build-time error message (PDF/X, print, OutputIntent), two-way checked against src/ by the error-parity rule.",
-      "bytes": 17178,
-      "approxTokens": 4295,
-      "sha256": "c0bbd2b584e78f074966636df1d9d41e528660f44e666294848ce46540546660"
+      "bytes": 20766,
+      "approxTokens": 5192,
+      "sha256": "23bbd0ec7affc08cf04df0c042e67e98ac198aacaa6954b379c58a26233a7d27"
     },
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 127502,
       "approxTokens": 31876,
-      "sha256": "cc8251955b7fa9467b06d9431b36233ef009a131162e70082fae3a310464d998"
+      "sha256": "7e9bd672b2b2040e2f3d49166d6e11ef354f7a3f2731132418fc14df15567748"
     }
   ],
   "guides": [

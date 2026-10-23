@@ -593,6 +593,31 @@ export type PdfCmykString = `${number} ${number} ${number} ${number}`;
 export type PdfCmykTuple = readonly [c: number, m: number, y: number, k: number];
 
 /**
+ * A spot colour: one ink declared in `layout.print.spotColours`, painted at
+ * `tint` (0–1, default 1). Emitted as a `/Separation` colour space named
+ * after the ink, with the declared alternate for proofing.
+ *
+ * @since 1.9.0
+ */
+export interface PdfSpotColor {
+    /** The ink's name as declared — `'PANTONE 300 C'`, `'Varnish'`. */
+    readonly spot: string;
+    /** Tint 0–1 (1 = solid). Default 1. */
+    readonly tint?: number;
+}
+
+/**
+ * A mix of declared spot inks, each at a tint 0–1: a `/DeviceN` colour
+ * space over those inks whose tint transform combines their alternates.
+ *
+ * @since 1.9.0
+ */
+export interface PdfInkMix {
+    /** Ink name → tint 0–1. Every ink must be declared in `layout.print.spotColours`. */
+    readonly inks: Readonly<Record<string, number>>;
+}
+
+/**
  * Color input accepted by pdfnative.
  *
  * - Hex string: `"#2563EB"` or `"#26E"` (primary — standard web format)
@@ -600,8 +625,23 @@ export type PdfCmykTuple = readonly [c: number, m: number, y: number, k: number]
  * - PDF operator string: `"0.145 0.388 0.922"` values 0.0–1.0 (advanced — native PDF format)
  * - CMYK tuple: `[100, 60, 0, 10]` percent 0–100, emitted as DeviceCMYK (since 1.8.0)
  * - PDF CMYK string: `"1 0.6 0 0.1"` values 0.0–1.0 (since 1.8.0)
+ * - Spot colour `{ spot: 'PANTONE 300 C', tint: 0.5 }` and ink mix `{ inks: { … } }`,
+ *   over the inks declared in `layout.print.spotColours` (since 1.9.0)
  */
-export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | (string & {});
+export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | PdfSpotColor | PdfInkMix | (string & {});
+
+/**
+ * A spot ink the document may paint with: its name (the `/Separation`
+ * colorant and the plate name a RIP shows) and its alternate in a process
+ * space — CMYK percentages for a press job, RGB 0–255 for an RGB
+ * OutputIntent — used wherever the ink itself is not available.
+ *
+ * @since 1.9.0
+ */
+export interface SpotColourDef {
+    readonly name: string;
+    readonly alternate: PdfCmykTuple | PdfRgbTuple;
+}
 
 /**
  * Color palette for the PDF.
@@ -1012,7 +1052,11 @@ export interface PdfLayoutOptions {
      * identification, a `/GTS_PDFX` OutputIntent, a TrimBox on every page
      * (the MediaBox when `print` sets none), and `/Trapped` (`False` unless
      * `metadata.trapped` says `True`). All fonts must be embedded, so pass
-     * `fontEntries`. Cannot be combined with `tagged` or `encryption`.
+     * `fontEntries`. Cannot be combined with `encryption`. Since 1.9.0 it
+     * combines with `tagged: 'pdfa2b'` or `'pdfa2u'` into one file that
+     * claims both PDF/A-2 and PDF/X-4 (two OutputIntents on one profile,
+     * both identifications in XMP); PDF/A-1 (PDF 1.4) and PDF/A-3 (embedded
+     * files) cannot share a file with PDF/X-4.
      * Check the result with `validatePdfX()`. @since 1.8.0
      */
     readonly pdfx?: 'pdfx4';
@@ -1423,6 +1467,16 @@ export interface PrintOptions {
      * needed; forbidden under `tagged: 'pdfa1b'` (PDF/A-1 is PDF 1.4).
      */
     readonly userUnit?: number;
+    /**
+     * The spot inks the document paints with (`{ spot }` and `{ inks }`
+     * colour values). Each is written as a `/Separation` colour space with
+     * its alternate; a mix as a `/DeviceN` space. A CMYK alternate under a
+     * non-CMYK OutputIntent raises the same diagnostic as a device CMYK
+     * colour. Painting an ink that is not declared throws.
+     *
+     * @since 1.9.0
+     */
+    readonly spotColours?: readonly SpotColourDef[];
 }
 
 /**

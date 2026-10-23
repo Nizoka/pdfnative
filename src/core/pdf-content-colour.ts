@@ -15,20 +15,40 @@
  * @module core/pdf-content-colour
  */
 
+/** Decode the `#xx` escapes of a name token (ISO 32000-1 §7.3.5). */
+function decodeName(token: string): string {
+    if (!token.includes('#')) return token;
+    const bytes: number[] = [];
+    for (let i = 0; i < token.length; i++) {
+        if (token[i] === '#' && /^[0-9A-Fa-f]{2}$/.test(token.slice(i + 1, i + 3))) { bytes.push(parseInt(token.slice(i + 1, i + 3), 16)); i += 2; }
+        else bytes.push(token.charCodeAt(i) & 0xFF);
+    }
+    return new TextDecoder().decode(new Uint8Array(bytes));
+}
+
 /** The device colour spaces a content stream selects. */
 export interface DeviceColourUse {
     readonly rgb: boolean;
     readonly cmyk: boolean;
     readonly gray: boolean;
+    /**
+     * The non-device colour-space resource names `cs` / `CS` select (a
+     * spot colour's `Spot_…`, the registration `CSReg`), decoded (`#20`
+     * read as a space, as a dictionary key is), each once, in order of first
+     * use. @since 1.9.0
+     */
+    readonly named: readonly string[];
 }
 
-const DEVICE_SPACE_BY_NAME: Readonly<Record<string, keyof DeviceColourUse>> = {
+type DeviceSpace = 'rgb' | 'cmyk' | 'gray';
+
+const DEVICE_SPACE_BY_NAME: Readonly<Record<string, DeviceSpace>> = {
     DeviceRGB: 'rgb',
     DeviceCMYK: 'cmyk',
     DeviceGray: 'gray',
 };
 
-const OPERATOR_SPACE: Readonly<Record<string, keyof DeviceColourUse>> = {
+const OPERATOR_SPACE: Readonly<Record<string, DeviceSpace>> = {
     rg: 'rgb', RG: 'rgb',
     k: 'cmyk', K: 'cmyk',
     g: 'gray', G: 'gray',
@@ -47,7 +67,8 @@ const isDelimiter = (c: number): boolean =>
  * `rg`/`RG`, `k`/`K`, `g`/`G` operators, and `cs`/`CS` naming a device space.
  */
 export function scanDeviceColour(content: string): DeviceColourUse {
-    const use = { rgb: false, cmyk: false, gray: false };
+    const named: string[] = [];
+    const use: Record<DeviceSpace, boolean> = { rgb: false, cmyk: false, gray: false };
     const n = content.length;
     let lastName = '';
     let i = 0;
@@ -112,8 +133,9 @@ export function scanDeviceColour(content: string): DeviceColourUse {
         if (space) {
             use[space] = true;
         } else if (token === 'cs' || token === 'CS') {
-            const named = DEVICE_SPACE_BY_NAME[lastName];
-            if (named) use[named] = true;
+            const device = DEVICE_SPACE_BY_NAME[lastName];
+            if (device) use[device] = true;
+            else if (lastName !== '') { const decoded = decodeName(lastName); if (!named.includes(decoded)) named.push(decoded); }
         } else if (token === 'ID') {
             // Inline image data is binary: skip to the `EI` that ends it.
             const end = content.slice(i).search(/\sEI(?=\s|$)/);
@@ -122,5 +144,5 @@ export function scanDeviceColour(content: string): DeviceColourUse {
         lastName = '';
     }
 
-    return use;
+    return { ...use, named };
 }

@@ -55,8 +55,11 @@ describe('resolvePdfXConfig', () => {
 
     it('rejects every incoherent combination with its remedy', () => {
         expect(() => resolvePdfXConfig({ ...base, pdfx: 'pdfx1a' })).toThrow(/unknown target 'pdfx1a'/);
-        expect(() => resolvePdfXConfig({ ...base, tagged: 'pdfa2b' })).toThrow(/one conformance claim per file/);
-        expect(() => resolvePdfXConfig({ ...base, tagged: true })).toThrow(/cannot be combined/);
+        expect(() => resolvePdfXConfig({ ...base, tagged: 'pdfa1b' })).toThrow(/cannot be combined with tagged: 'pdfa1b'/);
+        expect(() => resolvePdfXConfig({ ...base, tagged: 'pdfa3b' })).toThrow(/cannot be combined with tagged: 'pdfa3b'/);
+        // PDF/A-2 and PDF/X-4 share a file since 1.9.0.
+        expect(resolvePdfXConfig({ ...base, tagged: true })).toEqual({ pdfVersion: '1.6', trapped: 'False' });
+        expect(resolvePdfXConfig({ ...base, tagged: 'pdfa2u' })).toEqual({ pdfVersion: '1.6', trapped: 'False' });
         expect(() => resolvePdfXConfig({ ...base, encrypted: true })).toThrow(/forbids encryption/);
         expect(() => resolvePdfXConfig({ ...base, outputIntent: null })).toThrow(/requires layout.outputIntent/);
         expect(() => resolvePdfXConfig({ ...base, outputIntent: resolveOutputIntent({ iccProfile: fakeIcc('RGB ', 'mntr') }) }))
@@ -163,7 +166,7 @@ describe('document builder under pdfx', () => {
     });
 
     it('throws before writing on an incoherent request', () => {
-        expect(() => buildDocumentPDFBytes(doc, { ...x4, tagged: 'pdfa2b' })).toThrow(/cannot be combined/);
+        expect(() => buildDocumentPDFBytes(doc, { ...x4, tagged: 'pdfa1b' })).toThrow(/cannot be combined with tagged: 'pdfa1b'/);
         expect(() => buildDocumentPDFBytes(doc, { ...x4, outputIntent: undefined })).toThrow(/requires layout.outputIntent/);
         expect(() => buildDocumentPDFBytes(doc, { ...x4, encryption: { userPassword: 'u', ownerPassword: 'o' } })).toThrow(/forbids encryption/);
         expect(() => buildDocumentPDFBytes({ ...doc, metadata: { trapped: 'Unknown' } }, x4)).toThrow(/trapping/);
@@ -274,5 +277,69 @@ describe('inspectDocumentLayout under pdfx', () => {
         const asX = inspectDocumentLayout(mixed, x4);
         const asA = inspectDocumentLayout(mixed, { tagged: 'pdfa2b' });
         expect(asX.pages.map(p => p.blocks.map(b => b.height))).toEqual(asA.pages.map(p => p.blocks.map(b => b.height)));
+    });
+});
+
+describe('dual claim: PDF/A-2 and PDF/X-4 in one file (1.9.0)', () => {
+    const dual: Partial<PdfLayoutOptions> = { ...x4, tagged: 'pdfa2b' };
+    const latin1 = (b: Uint8Array): string => { let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return s; };
+
+    it('writes both identifications in one XMP packet, with the PDF/X ID schema declared for PDF/A', () => {
+        const s = latin1(buildDocumentPDFBytes(doc, dual));
+        expect(s.startsWith('%PDF-1.6')).toBe(true);
+        expect(s).toContain('<pdfaid:part>2</pdfaid:part>');
+        expect(s).toContain('<pdfaid:conformance>B</pdfaid:conformance>');
+        expect(s).toContain('<pdfxid:GTS_PDFXVersion>PDF/X-4</pdfxid:GTS_PDFXVersion>');
+        expect(s).toMatch(/<xmpMM:DocumentID>uuid:[0-9a-f-]{36}<\/xmpMM:DocumentID>/);
+        expect(s).toContain('<xmpMM:RenditionClass>default</xmpMM:RenditionClass>');
+        expect(s).toContain('<pdf:Trapped>False</pdf:Trapped>');
+        expect(s).toContain('<pdfaSchema:namespaceURI>http://www.npes.org/pdfx/ns/id/</pdfaSchema:namespaceURI>');
+        expect(s).toContain('<pdfaProperty:name>GTS_PDFXVersion</pdfaProperty:name>');
+        expect(s).toContain('<pdfaProperty:name>Trapped</pdfaProperty:name>');
+        expect(s).toContain('/Trapped /False');
+    });
+
+    it('writes one OutputIntent per claim, both on the same profile stream', () => {
+        const s = latin1(buildDocumentPDFBytes(doc, dual));
+        const intents = /\/OutputIntents \[(\d+) 0 R (\d+) 0 R\]/.exec(s);
+        expect(intents).not.toBeNull();
+        const dictOf = (n: string): string => new RegExp(`\\n${n} 0 obj\\n([^\\n]*)`).exec(s)?.[1] ?? '';
+        const a = dictOf(intents![1]);
+        const x = dictOf(intents![2]);
+        expect(a).toContain('/S /GTS_PDFA1');
+        expect(x).toContain('/S /GTS_PDFX');
+        const profile = (d: string): string => /\/DestOutputProfile (\d+) 0 R/.exec(d)?.[1] ?? '';
+        expect(profile(a)).toBe(profile(x));
+        expect((s.match(/\/Type \/OutputIntent/g) ?? []).length).toBe(2);
+    });
+
+    it('passes validatePdfX, which notes the PDF/A claim as a warning', () => {
+        const result = validatePdfX(buildDocumentPDFBytes(doc, dual));
+        expect(result.errors).toEqual([]);
+        expect(result.warnings.join('\n')).toMatch(/also claims PDF\/A/);
+    });
+
+    it('accepts pdfa2u and the table builder alike', () => {
+        const s = latin1(buildDocumentPDFBytes(doc, { ...x4, tagged: 'pdfa2u' }));
+        expect(s).toContain('<pdfaid:conformance>U</pdfaid:conformance>');
+        expect(s).toContain('<pdfxid:GTS_PDFXVersion>PDF/X-4</pdfxid:GTS_PDFXVersion>');
+        const tableParams: PdfParams = { title: 'T', infoItems: [], balanceText: '', countText: '1 row', footerText: 'f', headers: ['A'], rows: [{ cells: ['x'], type: 'credit', pointed: false }], fontEntries: [latin] };
+        const t = latin1(buildPDFBytes(tableParams, dual));
+        expect(t).toContain('<pdfaid:part>2</pdfaid:part>');
+        expect((t.match(/\/Type \/OutputIntent/g) ?? []).length).toBe(2);
+    });
+
+    it('refuses PDF/A-1b and PDF/A-3b next to PDF/X-4 with the reason', () => {
+        expect(() => buildDocumentPDFBytes(doc, { ...x4, tagged: 'pdfa1b' })).toThrow(/PDF\/A-1 is PDF 1\.4/);
+        expect(() => buildDocumentPDFBytes(doc, { ...x4, tagged: 'pdfa3b' })).toThrow(/embedded files/);
+    });
+
+    it('leaves a PDF/A-only and a PDF/X-only file as they were: one intent, one identification', () => {
+        const a = latin1(buildDocumentPDFBytes(doc, { tagged: 'pdfa2b', creationDate: x4.creationDate, onDiagnostic: () => {} }));
+        expect((a.match(/\/Type \/OutputIntent/g) ?? []).length).toBe(1);
+        expect(a).not.toContain('pdfxid');
+        const x = latin1(buildDocumentPDFBytes(doc, x4));
+        expect((x.match(/\/Type \/OutputIntent/g) ?? []).length).toBe(1);
+        expect(x).not.toContain('pdfaid');
     });
 });

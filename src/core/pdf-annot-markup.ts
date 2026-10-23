@@ -18,7 +18,7 @@
  */
 
 import { fmtNum, encodePdfTextString } from './pdf-text.js';
-import { parseColor, fillOp } from './pdf-color.js';
+import { fillOp, processOperands } from './pdf-color.js';
 import { linkActionEntries } from './pdf-annot.js';
 import type { PdfColor } from '../types/pdf-types.js';
 
@@ -151,7 +151,7 @@ function commonEntries(a: AnnotationBase): string {
     const parts: string[] = [];
     if (a.contents !== undefined) parts.push(`/Contents ${encodePdfTextString(a.contents)}`);
     if (a.title !== undefined) parts.push(`/T ${encodePdfTextString(a.title)}`);
-    if (a.color !== undefined) parts.push(`/C [${parseColor(a.color)}]`);
+    if (a.color !== undefined) parts.push(`/C [${processOperands(a.color, 'An annotation colour')}]`);
     if (a.opacity !== undefined) parts.push(`/CA ${fmtNum(a.opacity)}`);
     if (a.modified !== undefined) parts.push(`/M ${encodePdfTextString(a.modified)}`);
     parts.push(`/F ${a.flags ?? 4}`);
@@ -214,7 +214,7 @@ export function buildAnnotationBody(annot: MarkupAnnotation): string {
         }
         case 'square':
         case 'circle': {
-            if (annot.interiorColor !== undefined) entries.push(`/IC [${parseColor(annot.interiorColor)}]`);
+            if (annot.interiorColor !== undefined) entries.push(`/IC [${processOperands(annot.interiorColor, 'An annotation interior colour')}]`);
             entries.push(`/BS << /W ${fmtNum(annot.borderWidth ?? 1)} >>`);
             break;
         }
@@ -225,7 +225,7 @@ export function buildAnnotationBody(annot: MarkupAnnotation): string {
         }
         case 'freetext': {
             const sz = annot.fontSize ?? 12;
-            const col = annot.color !== undefined ? parseColor(annot.color) : '0 0 0';
+            const col = annot.color !== undefined ? processOperands(annot.color, 'An annotation colour') : '0 0 0';
             // /DA sets the free-text default appearance (font + size + colour).
             entries.push(`/DA (/Helv ${fmtNum(sz)} Tf ${fillOp(col)})`);
             break;

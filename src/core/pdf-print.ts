@@ -27,6 +27,7 @@
 import type { PageBox, PrintOptions, PrinterMarksOptions } from '../types/pdf-types.js';
 import { fmtNum } from './pdf-text.js';
 import { fillOp, strokeOp } from './pdf-color.js';
+import { validateSpotColours } from './pdf-spot.js';
 
 /** Resolved print geometry: the page-dict fragment and the trim rectangle. */
 export interface ResolvedPrintBoxes {
@@ -57,6 +58,7 @@ export function validatePrintOptions(
     pgH: number,
     tagged: boolean | string | undefined,
 ): void {
+    validateSpotColours(print.spotColours);
     const media: PageBox = [0, 0, pgW, pgH];
 
     if (print.bleed !== undefined) {

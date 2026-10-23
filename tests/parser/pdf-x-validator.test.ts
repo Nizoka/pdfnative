@@ -240,3 +240,54 @@ describe('validatePdfX: annotations, actions, resources and filters', () => {
         expect(all).toMatch(/1 embedded file stream/);
     });
 });
+
+describe('validatePdfX: colour inside XObjects and spot colour alternates (1.9.0)', () => {
+    /** A minimal PDF/X skeleton with a prtr profile of `space`, page content `content`, and extra objects from 6 on. */
+    function skeleton(space: string, content: string, resources: string, extra: readonly string[] = []): Uint8Array {
+        const icc = latin1Bytes(String.fromCharCode(...fakeIcc(space)));
+        let iccStr = ''; for (let i = 0; i < icc.length; i++) iccStr += String.fromCharCode(icc[i]);
+        return assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R /OutputIntents [5 0 R] >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /TrimBox [0 0 612 792] /Resources << ${resources} >> /Contents 4 0 R >>`,
+            stream('', content),
+            `<< /Type /OutputIntent /S /GTS_PDFX /OutputConditionIdentifier (x) /DestOutputProfile 6 0 R >>`,
+            stream(`/N ${space === 'CMYK' ? 4 : 3}`, iccStr),
+            ...extra,
+        ]);
+    }
+    const colourErrors = (bytes: Uint8Array): string[] => validatePdfX(bytes).errors.filter(e => /Device(RGB|CMYK) colour/.test(e));
+
+    it('sees device colour painted inside a Form XObject, with the form\'s own resources in force', () => {
+        const bytes = skeleton('RGB ', '/Fx Do', '/XObject << /Fx 7 0 R >>', [
+            stream('/Type /XObject /Subtype /Form /BBox [0 0 10 10]', '0 0 0 1 k 0 0 5 5 re f'),
+        ]);
+        expect(colourErrors(bytes)).toEqual(['Page 1, form /Fx: DeviceCMYK colour under a RGB OutputIntent without /DefaultCMYK (ISO 15930-7).']);
+        // The same form under a CMYK intent is fine; and a form with its own /DefaultCMYK passes under RGB.
+        expect(colourErrors(skeleton('CMYK', '/Fx Do', '/XObject << /Fx 7 0 R >>', [stream('/Type /XObject /Subtype /Form /BBox [0 0 10 10]', '0 0 0 1 k')]))).toEqual([]);
+        expect(colourErrors(skeleton('RGB ', '/Fx Do', '/XObject << /Fx 7 0 R >>', [
+            stream('/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << /ColorSpace << /DefaultCMYK [/ICCBased 6 0 R] >> >>', '0 0 0 1 k'),
+        ]))).toEqual([]);
+    });
+
+    it('sees the colour space of an image XObject', () => {
+        const bytes = skeleton('RGB ', '/Im1 Do', '/XObject << /Im1 7 0 R >>', [
+            stream('/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceCMYK /BitsPerComponent 8', '\0\0\0\0'),
+        ]);
+        expect(colourErrors(bytes)).toEqual(['Page 1, image /Im1: DeviceCMYK colour under a RGB OutputIntent without /DefaultCMYK (ISO 15930-7).']);
+        expect(colourErrors(skeleton('CMYK', '/Im1 Do', '/XObject << /Im1 7 0 R >>', [
+            stream('/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8', '\0\0\0'),
+        ]))).toEqual(['Page 1, image /Im1: DeviceRGB colour under a CMYK OutputIntent without /DefaultRGB (ISO 15930-7).']);
+    });
+
+    it('checks the alternate of a Separation or DeviceN the content selects, not of an unused one', () => {
+        const sep = '/Spot_Gold [/Separation /Gold /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [0 0.2 0.8 0] /N 1 >>]';
+        expect(colourErrors(skeleton('RGB ', '/Spot_Gold cs 1 scn 0 0 5 5 re f', `/ColorSpace << ${sep} >>`)))
+            .toEqual(['Page 1, colour space /Spot_Gold: DeviceCMYK colour under a RGB OutputIntent without /DefaultCMYK (ISO 15930-7).']);
+        expect(colourErrors(skeleton('CMYK', '/Spot_Gold cs 1 scn 0 0 5 5 re f', `/ColorSpace << ${sep} >>`))).toEqual([]);
+        expect(colourErrors(skeleton('RGB ', '0 0 5 5 re f', `/ColorSpace << ${sep} >>`))).toEqual([]);
+        const devn = '/DeviceN_A__B [/DeviceN [/A /B] /DeviceRGB 7 0 R]';
+        expect(colourErrors(skeleton('CMYK', '/DeviceN_A__B cs 1 0 scn', `/ColorSpace << ${devn} >>`, ['<< /FunctionType 2 /Domain [0 1 0 1] /C0 [1 1 1] /C1 [0 0 0] /N 1 >>'])))
+            .toEqual(['Page 1, colour space /DeviceN_A__B: DeviceRGB colour under a CMYK OutputIntent without /DefaultRGB (ISO 15930-7).']);
+    });
+});

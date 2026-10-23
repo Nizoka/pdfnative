@@ -369,6 +369,7 @@ export function buildXMPMetadata(
     modifyDate?: string,
     metadataDate?: string,
     trapped?: 'True' | 'False' | 'Unknown',
+    pdfx?: { readonly documentId: string },
 ): string {
     const escapedTitle = escapeXml(title);
     // dc:creator describes the document author (per Dublin Core),
@@ -383,6 +384,7 @@ export function buildXMPMetadata(
         '    xmlns:dc="http://purl.org/dc/elements/1.1/"',
         '    xmlns:pdf="http://ns.adobe.com/pdf/1.3/"',
         '    xmlns:xmp="http://ns.adobe.com/xap/1.0/"',
+        ...(pdfx ? ['    xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"', '    xmlns:pdfxid="http://www.npes.org/pdfx/ns/id/"'] : []),
         '    xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">',
         `   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">${escapedTitle}</rdf:li></rdf:Alt></dc:title>`,
     ];
@@ -418,8 +420,21 @@ export function buildXMPMetadata(
     if (emitTrapped) {
         lines.push(`   <pdf:Trapped>${trapped}</pdf:Trapped>`);
     }
+    // A dual PDF/A + PDF/X claim (v1.9.0) adds the PDF/X-4 identification
+    // and the document identifiers it requires; the PDF/X ID schema is not
+    // one the XMP 2005 specification predefines, so PDF/A needs it declared
+    // through the extension schema below, like pdf:Trapped.
+    if (pdfx) {
+        lines.push(
+            `   <xmpMM:DocumentID>${pdfx.documentId}</xmpMM:DocumentID>`,
+            `   <xmpMM:InstanceID>${pdfx.documentId}</xmpMM:InstanceID>`,
+            '   <xmpMM:VersionID>1</xmpMM:VersionID>',
+            '   <xmpMM:RenditionClass>default</xmpMM:RenditionClass>',
+            '   <pdfxid:GTS_PDFXVersion>PDF/X-4</pdfxid:GTS_PDFXVersion>',
+        );
+    }
     lines.push('  </rdf:Description>');
-    if (emitTrapped) {
+    if (emitTrapped || pdfx) {
         lines.push(
             '  <rdf:Description rdf:about=""',
             '    xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"',
@@ -427,21 +442,46 @@ export function buildXMPMetadata(
             '    xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#">',
             '   <pdfaExtension:schemas>',
             '    <rdf:Bag>',
-            '     <rdf:li rdf:parseType="Resource">',
-            '      <pdfaSchema:schema>Adobe PDF Schema</pdfaSchema:schema>',
-            '      <pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI>',
-            '      <pdfaSchema:prefix>pdf</pdfaSchema:prefix>',
-            '      <pdfaSchema:property>',
-            '       <rdf:Seq>',
-            '        <rdf:li rdf:parseType="Resource">',
-            '         <pdfaProperty:name>Trapped</pdfaProperty:name>',
-            '         <pdfaProperty:valueType>Text</pdfaProperty:valueType>',
-            '         <pdfaProperty:category>internal</pdfaProperty:category>',
-            '         <pdfaProperty:description>Indicates whether the document has been trapped</pdfaProperty:description>',
-            '        </rdf:li>',
-            '       </rdf:Seq>',
-            '      </pdfaSchema:property>',
-            '     </rdf:li>',
+        );
+        if (emitTrapped) {
+            lines.push(
+                '     <rdf:li rdf:parseType="Resource">',
+                '      <pdfaSchema:schema>Adobe PDF Schema</pdfaSchema:schema>',
+                '      <pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI>',
+                '      <pdfaSchema:prefix>pdf</pdfaSchema:prefix>',
+                '      <pdfaSchema:property>',
+                '       <rdf:Seq>',
+                '        <rdf:li rdf:parseType="Resource">',
+                '         <pdfaProperty:name>Trapped</pdfaProperty:name>',
+                '         <pdfaProperty:valueType>Text</pdfaProperty:valueType>',
+                '         <pdfaProperty:category>internal</pdfaProperty:category>',
+                '         <pdfaProperty:description>Indicates whether the document has been trapped</pdfaProperty:description>',
+                '        </rdf:li>',
+                '       </rdf:Seq>',
+                '      </pdfaSchema:property>',
+                '     </rdf:li>',
+            );
+        }
+        if (pdfx) {
+            lines.push(
+                '     <rdf:li rdf:parseType="Resource">',
+                '      <pdfaSchema:schema>PDF/X ID Schema</pdfaSchema:schema>',
+                '      <pdfaSchema:namespaceURI>http://www.npes.org/pdfx/ns/id/</pdfaSchema:namespaceURI>',
+                '      <pdfaSchema:prefix>pdfxid</pdfaSchema:prefix>',
+                '      <pdfaSchema:property>',
+                '       <rdf:Seq>',
+                '        <rdf:li rdf:parseType="Resource">',
+                '         <pdfaProperty:name>GTS_PDFXVersion</pdfaProperty:name>',
+                '         <pdfaProperty:valueType>Text</pdfaProperty:valueType>',
+                '         <pdfaProperty:category>internal</pdfaProperty:category>',
+                '         <pdfaProperty:description>The PDF/X version the document claims</pdfaProperty:description>',
+                '        </rdf:li>',
+                '       </rdf:Seq>',
+                '      </pdfaSchema:property>',
+                '     </rdf:li>',
+            );
+        }
+        lines.push(
             '    </rdf:Bag>',
             '   </pdfaExtension:schemas>',
             '  </rdf:Description>',
@@ -621,13 +661,18 @@ const CAL_RGB_SRGB = '[/CalRGB << /WhitePoint [0.9505 1 1.089] /Gamma [2.2 2.2 2
  * default) nothing is added and the output stays byte-identical.
  *
  * @param extraEntries - Further colour-space entries for the same dictionary
- *   (a resource dictionary holds a single `/ColorSpace`), e.g. the
- *   registration colour of printer's marks. Only written alongside
- *   `/DefaultRGB`.
+ *   (a resource dictionary holds a single `/ColorSpace`): the registration
+ *   colour of printer's marks, the spot colour spaces the page paints with
+ *   (v1.9.0). Written whether or not `/DefaultRGB` is needed.
  * @returns A resource fragment with a leading space.
  */
 export function defaultRgbResource(intent: ResolvedOutputIntent | null, extraEntries = ''): string {
-    if (!intent || intent.space === 'rgb') return '';
+    const needsDefaultRgb = intent !== null && intent.space !== 'rgb';
+    if (!needsDefaultRgb) {
+        // No remapping needed; the dictionary still carries any spot colour
+        // spaces the page selects (v1.9.0).
+        return extraEntries ? ` /ColorSpace << ${extraEntries} >>` : '';
+    }
     return ` /ColorSpace << /DefaultRGB ${CAL_RGB_SRGB}${extraEntries ? ` ${extraEntries}` : ''} >>`;
 }
 
@@ -871,7 +916,10 @@ export interface PdfXConfig {
  * Every incoherent combination throws before any byte is written, with the
  * remedy in the message.
  *
- * - One conformance claim per file: PDF/X and a PDF/A level are exclusive.
+ * - PDF/X-4 combines with PDF/A-2 (`tagged: true | 'pdfa2b' | 'pdfa2u'`,
+ *   since 1.9.0): one file, two claims, two OutputIntents on one profile.
+ *   PDF/A-1 (PDF 1.4) and PDF/A-3 (embedded files) cannot share a file
+ *   with PDF/X-4 (PDF 1.6, no embedded files).
  * - No encryption.
  * - An OutputIntent is mandatory and must be an output (`prtr`) profile —
  *   the printing condition the file is prepared for. pdfnative ships none.
@@ -891,8 +939,11 @@ export function resolvePdfXConfig(input: {
     if (!(PDF_X_CONFORMANCE_TARGETS as readonly string[]).includes(input.pdfx)) {
         throw new Error(`layout.pdfx: unknown target '${input.pdfx}' — use one of ${PDF_X_CONFORMANCE_TARGETS.join(', ')}`);
     }
-    if (input.tagged) {
-        throw new Error('layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them');
+    if (input.tagged === 'pdfa1b') {
+        throw new Error("layout.pdfx cannot be combined with tagged: 'pdfa1b' — PDF/A-1 is PDF 1.4 and PDF/X-4 is PDF 1.6; claim 'pdfa2b' or 'pdfa2u' alongside PDF/X-4");
+    }
+    if (input.tagged === 'pdfa3b') {
+        throw new Error("layout.pdfx cannot be combined with tagged: 'pdfa3b' — PDF/A-3 allows embedded files, which PDF/X-4 forbids; claim 'pdfa2b' or 'pdfa2u' alongside PDF/X-4");
     }
     if (input.encrypted) {
         throw new Error('PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx');

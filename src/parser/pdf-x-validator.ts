@@ -30,11 +30,17 @@
  *     form, `/TR2` other than `/Default` — in any ExtGState; a halftone
  *     other than `/Default` and an image with `/Interpolate true` are
  *     warnings
- *   - Device colour in page content matching the OutputIntent, or covered
- *     by a `/DefaultRGB` / `/DefaultCMYK` colour space in page resources
+ *   - Device colour matching the OutputIntent, or covered by a
+ *     `/DefaultRGB` / `/DefaultCMYK` colour space in the resources in
+ *     force: in page content, in the content of every Form XObject it
+ *     reaches (recursively, with the form's own resources), in the colour
+ *     space of every image, and in the alternate space of every Separation
+ *     or DeviceN colour space the content selects (v1.9.0; until then page
+ *     content only)
  *
- * Not checked: colour inside Form XObjects and images, transparency blend
- * spaces, optional content, and anything that needs rendering. veraPDF does
+ * Not checked: DeviceGray against the intent, transparency blend spaces,
+ * optional content, shading and pattern colour spaces, and anything that
+ * needs rendering. veraPDF does
  * not cover PDF/X; before sending a file to press, confirm it with a
  * certified preflight tool (callas pdfToolbox, Acrobat Preflight). A `valid`
  * result means the structural prerequisites hold.
@@ -331,23 +337,97 @@ export function validatePdfX(bytes: Uint8Array): PdfXValidationResult {
             }
         }
 
-        // Device colour against the OutputIntent.
+        // Device colour against the OutputIntent — in the page content, the
+        // forms and images it reaches, and the alternates of its spot colours.
         if (intentSpace !== null) {
-            const use = scanDeviceColour(pageContent(reader, page));
-            const colorSpaces = resources ? resolveDict(reader, resources.get('ColorSpace')) : null;
-            const hasDefault = (key: string): boolean => colorSpaces?.has(key) ?? false;
-            if (use.rgb && intentSpace !== 'RGB ' && !hasDefault('DefaultRGB')) {
-                errors.push(`${at}: DeviceRGB colour under a ${intentSpace.trim()} OutputIntent without /DefaultRGB (${STANDARD}).`);
-            }
-            if (use.cmyk && intentSpace !== 'CMYK' && !hasDefault('DefaultCMYK')) {
-                errors.push(`${at}: DeviceCMYK colour under a ${intentSpace.trim()} OutputIntent without /DefaultCMYK (${STANDARD}).`);
-            }
+            checkColour(reader, pageContent(reader, page), resources, resources, at, intentSpace, errors, new Set());
         }
     }
 
     sweepObjects(reader, errors, warnings);
 
     return { valid: errors.length === 0, errors, warnings };
+}
+
+/**
+ * Device colour against the OutputIntent in one content stream and the
+ * resources in force for it: the colour operators, the alternate space of
+ * every Separation or DeviceN colour space the content selects, the colour
+ * space of every image XObject, then recursively the content of every Form
+ * XObject (with its own resources, else the inherited ones). A device
+ * colour the intent does not cover passes when the resources carry the
+ * matching `/DefaultRGB` / `/DefaultCMYK`. `seen` breaks cycles.
+ *
+ * @since 1.9.0 (page content only before)
+ */
+function checkColour(
+    reader: Reader,
+    content: string,
+    resources: PdfDict | null,
+    inherited: PdfDict | null,
+    at: string,
+    intentSpace: string,
+    errors: string[],
+    seen: Set<PdfDict>,
+): void {
+    const res = resources ?? inherited;
+    const colorSpaces = res ? resolveDict(reader, res.get('ColorSpace')) : null;
+    const hasDefault = (key: string): boolean => colorSpaces?.has(key) ?? false;
+    const deviceCheck = (space: 'RGB' | 'CMYK', where: string): void => {
+        if (space === 'RGB' && intentSpace !== 'RGB ' && !hasDefault('DefaultRGB')) {
+            errors.push(`${where}: DeviceRGB colour under a ${intentSpace.trim()} OutputIntent without /DefaultRGB (${STANDARD}).`);
+        }
+        if (space === 'CMYK' && intentSpace !== 'CMYK' && !hasDefault('DefaultCMYK')) {
+            errors.push(`${where}: DeviceCMYK colour under a ${intentSpace.trim()} OutputIntent without /DefaultCMYK (${STANDARD}).`);
+        }
+    };
+    const use = scanDeviceColour(content);
+    if (use.rgb) deviceCheck('RGB', at);
+    if (use.cmyk) deviceCheck('CMYK', at);
+    for (const name of use.named) {
+        const cs = colorSpaces ? reader.resolveValue(colorSpaces.get(name) ?? null) : null;
+        const alt = paintedDeviceSpace(reader, cs);
+        if (alt) deviceCheck(alt, `${at}, colour space /${name}`);
+    }
+    const xobjects = res ? resolveDict(reader, res.get('XObject')) : null;
+    if (!xobjects) return;
+    for (const [name, value] of xobjects) {
+        const v = reader.resolveValue(value);
+        if (!isStream(v) || seen.has(v.dict)) continue;
+        seen.add(v.dict);
+        const subtype = dictGetName(v.dict, 'Subtype');
+        if (subtype === 'Image') {
+            const alt = paintedDeviceSpace(reader, reader.resolveValue(v.dict.get('ColorSpace') ?? null));
+            if (alt) deviceCheck(alt, `${at}, image /${name}`);
+        } else if (subtype === 'Form') {
+            const text = streamText(reader, v);
+            if (text !== null) {
+                checkColour(reader, text, resolveDict(reader, v.dict.get('Resources')), res, `${at}, form /${name}`, intentSpace, errors, seen);
+            }
+        }
+    }
+}
+
+/**
+ * The device space a colour-space value paints on a composite device:
+ * itself for DeviceRGB / DeviceCMYK, the alternate of a Separation or
+ * DeviceN, the base of an Indexed space; `null` for ICCBased, calibrated,
+ * gray and pattern spaces, which the intent rules do not restrict here.
+ */
+function paintedDeviceSpace(reader: Reader, cs: PdfValue | null): 'RGB' | 'CMYK' | null {
+    if (cs !== null && isName(cs)) {
+        const n = cs.value;
+        return n === 'DeviceRGB' ? 'RGB' : n === 'DeviceCMYK' ? 'CMYK' : null;
+    }
+    if (isArray(cs) && cs.length >= 2) {
+        const family = reader.resolveValue(cs[0] as PdfValue);
+        if (!isName(family)) return null;
+        if ((family.value === 'Separation' || family.value === 'DeviceN') && cs.length >= 3) {
+            return paintedDeviceSpace(reader, reader.resolveValue(cs[2] as PdfValue));
+        }
+        if (family.value === 'Indexed') return paintedDeviceSpace(reader, reader.resolveValue(cs[1] as PdfValue));
+    }
+    return null;
 }
 
 /** Annotation flag bits (ISO 32000-1 Table 165). */

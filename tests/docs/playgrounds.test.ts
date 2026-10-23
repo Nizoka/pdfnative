@@ -151,7 +151,7 @@ describe('playground code views run outside the browser', { timeout: 60_000 }, (
                     // No PDF: four incoherent PDF/X configurations, four thrown messages.
                     expect(result.bytes).toBeNull();
                     expect(result.error).toHaveLength(4);
-                    expect(result.error[0]).toContain('layout.pdfx and layout.tagged cannot be combined');
+                    expect(result.error[0]).toContain("layout.pdfx cannot be combined with tagged: 'pdfa1b'");
                     expect(result.error[1]).toContain('PDF/X forbids encryption');
                     expect(result.error[2]).toContain('PDF/X-4 requires layout.outputIntent');
                     expect(result.error[3]).toContain('PDF/X requires the trapping state to be known');

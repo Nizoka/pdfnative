@@ -974,14 +974,14 @@
       "name": "PdfColor",
       "kind": "type",
       "module": "src/types/pdf-types.ts",
-      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | (string & {});",
+      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | PdfSpotColor | PdfInkMix | (string & {});",
       "summary": "Color input accepted by pdfnative."
     },
     {
       "name": "PdfColorSpace",
       "kind": "type",
       "module": "src/core/pdf-color.ts",
-      "signature": "export type PdfColorSpace = 'rgb' | 'cmyk';",
+      "signature": "export type PdfColorSpace = 'rgb' | 'cmyk' | 'separation' | 'devicen';",
       "summary": "The colour space a resolved colour belongs to."
     },
     {

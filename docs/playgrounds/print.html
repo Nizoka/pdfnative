@@ -223,7 +223,7 @@ const DESCRIPTIONS = {
   cmyk: 'Text and a chart in process colours: [100, 0, 0, 0] is cyan, [60, 40, 40, 100] a rich black. No profile needed — the colours are written with the k and K operators. Tick the PDF/A-2b claim to add tagged: \'pdfa2b\' without a CMYK OutputIntent: the file is still written, and layout.onDiagnostic reports PDFA_DEVICE_CMYK_CONTENT (and PDFA_NO_FONT_ENTRIES, since the text is base-14 Helvetica) in the diagnostics box below the code.',
   pdfa: 'The same page as PDF/A-2b with a CMYK profile as OutputIntent — yours if you chose a file, otherwise the synthetic one inlined in this page. RGB text is remapped through a calibrated /DefaultRGB and the marks use the registration colour, so the claim holds.',
   pdfx: 'The same page claimed as PDF/X-4: PDF 1.6 header, PDF/X-4 XMP identification, a /GTS_PDFX OutputIntent (your profile, or the synthetic one), TrimBoxes and /Trapped. The validatePdfX() report is shown below after generation.',
-  errors: 'No PDF is produced. Four deliberately incoherent PDF/X configurations — a PDF/A level next to the PDF/X claim, encryption, a missing OutputIntent, and metadata.trapped: \'Unknown\' — are each passed to buildDocumentPDFBytes() inside a try/catch, and the exact message the builder throws is shown below. Every one of them is rejected before a byte is written.',
+  errors: 'No PDF is produced. Four deliberately incoherent PDF/X configurations — PDF/A-1b next to the PDF/X-4 claim (PDF/A-2b and 2u combine with it since 1.9.0), encryption, a missing OutputIntent, and metadata.trapped: \'Unknown\' — are each passed to buildDocumentPDFBytes() inside a try/catch, and the exact message the builder throws is shown below. Every one of them is rejected before a byte is written.',
 };
 
 // Every view is self-contained: it declares the content the page renders and imports only from
@@ -348,9 +348,9 @@ const params = {
   blocks: [{ type: 'paragraph', text: 'Process cyan, [100, 0, 0, 0].', color: [100, 0, 0, 0] }],
 };
 
-// PDF/X-4 is one claim per file: the builder refuses each of these before writing a byte.
+// The builder refuses each of these before writing a byte. (PDF/A-2b or 2u next to PDF/X-4 is a legal dual claim since 1.9.0.)
 const attempts = [
-  ["pdfx: 'pdfx4' + tagged: 'pdfa2b'",             params, { pdfx: 'pdfx4', tagged: 'pdfa2b', outputIntent }],
+  ["pdfx: 'pdfx4' + tagged: 'pdfa1b'",             params, { pdfx: 'pdfx4', tagged: 'pdfa1b', outputIntent }],
   ["pdfx: 'pdfx4' + encryption: { ownerPassword }", params, { pdfx: 'pdfx4', encryption: { ownerPassword: 'press' }, outputIntent }],
   ["pdfx: 'pdfx4' without outputIntent",           params, { pdfx: 'pdfx4' }],
   ["pdfx: 'pdfx4' + metadata.trapped: 'Unknown'",  { ...params, metadata: { trapped: 'Unknown' } }, { pdfx: 'pdfx4', outputIntent }],
