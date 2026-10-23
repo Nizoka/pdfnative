@@ -173,6 +173,7 @@ describe('no-break spaces reach the font', () => {
         const s = new TextDecoder('latin1').decode(fr);
         // An ordinary space is shown, then the pen pulls back 111/1000 em so
         // the gap measures the 167/1000 em of a narrow no-break space.
+        // demo-language: fr (the fr preset is a French typographic convention; the sentence is the fixture)
         expect(s).toContain('[(Vraiment ) 111 (? Oui ) 111 (! Ainsi ) 111 (; Total\xA0: 42. Et une \xAB\xA0citation\xA0\xBB pour finir.)] TJ');
         // The full no-break space (U+00A0) is a WinAnsi byte and stays inside the literal.
         expect(s).toContain('Total\xA0:');
@@ -200,6 +201,7 @@ describe('no-break spaces reach the font', () => {
         const base14: DocumentParams = { ...spaced, fontEntries: undefined };
         const none = buildDocumentPDFBytes(base14, { creationDate: PINNED });
         const s = new TextDecoder('latin1').decode(none);
+        // demo-language: fr (the fr preset is a French typographic convention; the sentence is the fixture)
         expect(s).toContain('(Vraiment ? Oui ! Ainsi ; Total : 42. Et une \xAB citation \xBB pour finir.) Tj');
         expect(s).not.toContain('] TJ');
     });

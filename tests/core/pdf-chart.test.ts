@@ -10,9 +10,13 @@ import { niceTicks, renderChartBlock } from '../../src/core/pdf-chart.js';
 import type { ChartBlock } from '../../src/types/pdf-document-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
+// Pinned so the byte-determinism tests cannot flake across a second boundary
+// (the creation instant seeds /CreationDate, the XMP dates and the trailer /ID).
+const PINNED = new Date('2026-01-01T00:00:00Z');
+
 function chartDoc(chart: ChartBlock, tagged = false): Uint8Array {
     const params: DocumentParams = { title: 'Charts', blocks: [chart] as never };
-    return buildDocumentPDFBytes(params, tagged ? { tagged: true } : undefined);
+    return buildDocumentPDFBytes(params, tagged ? { tagged: true, creationDate: PINNED } : { creationDate: PINNED });
 }
 
 function pageContent(pdf: Uint8Array): string {

@@ -1584,7 +1584,7 @@
       "kind": "type",
       "module": "src/core/pdf-watermark.ts",
       "signature": "export interface WatermarkState",
-      "summary": "Resolved watermark state for use during PDF assembly."
+      "summary": null
     },
     {
       "name": "WatermarkText",
