@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 25217,
       "approxTokens": 6304,
-      "sha256": "bf847d1a5cad785b805e53e7856396dd6c4bb0c9e56ef1e7992c694d4437f06e"
+      "sha256": "5b319ddb6e71a0cc54464ed83953bdfab9c812beedd5186cae393e13039ebad3"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -21,7 +21,7 @@
       "description": "Full corpus: index + README + every guide, one request.",
       "bytes": 719126,
       "approxTokens": 179782,
-      "sha256": "c28b805ffd62400b2670fa397352cae53f9de07c4d03805e32de9d87ca964baf"
+      "sha256": "7c47396807d0ddc3a04e6fe6ca22627b04dcdf4c6214045efd29a622cb744970"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -47,9 +47,9 @@
     {
       "url": "https://pdfnative.dev/data/errors.json",
       "description": "The engine error registry: every diagnostic code of the PdfDiagnosticCode union and every build-time error message (PDF/X, print, OutputIntent), two-way checked against src/ by the error-parity rule.",
-      "bytes": 16384,
-      "approxTokens": 4096,
-      "sha256": "a2ba0651dca2e0ff469e0a51c44fb27af5bb3aa5f084fb78d9e9d4059ff315c0"
+      "bytes": 17178,
+      "approxTokens": 4295,
+      "sha256": "c0bbd2b584e78f074966636df1d9d41e528660f44e666294848ce46540546660"
     },
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 121181,
       "approxTokens": 30295,
-      "sha256": "49bbeceb3790565fe4da1fb604222b58dbb471a1fa49e89b61f2021ea9c74453"
+      "sha256": "0c3c8ba06565da1901fa5ef35794d3dd7b45bf067dcb49c8737f8a18f561a1af"
     }
   ],
   "guides": [

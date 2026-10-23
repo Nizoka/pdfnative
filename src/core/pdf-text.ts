@@ -9,7 +9,7 @@ import type { FontData, ShapedGlyph, EncodingContext } from '../types/pdf-types.
 import { toWinAnsi, helveticaWidth, helveticaBoldWidth, stripSoftHyphens, narrowNoBreakSpaceCorrection } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { stripBidiControls } from '../shaping/bidi.js';
-import { wrapSpan } from './pdf-tags.js';
+import { wrapSpan, wrapActualText } from './pdf-tags.js';
 
 /** Format a number as PDF operator value (2 decimal places). */
 export const fmtNum = (v: number): string => v.toFixed(2);
@@ -119,6 +119,20 @@ function latinShow(str: string, enc: EncodingContext): string {
 }
 
 /**
+ * Does a shaped run's text contain a character the shaper decomposes into
+ * glyphs no per-glyph ToUnicode mapping can recompose? Thai sara am (U+0E33)
+ * and Lao am (U+0EB3) are drawn as nikhahit + sara aa; the run then carries
+ * `/ActualText` so extraction returns the author's code point (1.9.0).
+ */
+function needsActualText(text: string): boolean {
+    for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i);
+        if (c === 0x0E33 || c === 0x0EB3) return true;
+    }
+    return false;
+}
+
+/**
  * Text at absolute position (x, y) with font.
  * Multi-font: splits text into runs by cmap coverage.
  */
@@ -143,7 +157,11 @@ export function txt(
         if (enc.colorEmoji && run.fontData.colorGlyphs && run.hexStr) {
             penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
         } else if (run.shaped) {
-            parts.push(txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData));
+            // Thai and Lao sara am is drawn as nikhahit + sara aa: no per-glyph
+            // mapping can give the single code point back, so the run carries
+            // its text as /ActualText, legal in untagged output too (1.9.0).
+            const op = txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData);
+            parts.push(needsActualText(run.text) ? wrapActualText(op, run.text) : op);
             penX += run.widthPt;
         } else if (run.tjStr) {
             // Kerned: one TJ array keeps the run a single text-showing

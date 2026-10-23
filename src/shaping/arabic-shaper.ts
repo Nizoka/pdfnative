@@ -304,7 +304,7 @@ export function shapeArabicText(str: string, fontData: FontData): ShapedGlyph[] 
                 const ligCP = isFinal ? ligForms[1] : ligForms[0];
                 const ligGid = cmap[ligCP];
                 if (ligGid) {
-                    glyphs.push({ gid: ligGid, dx: 0, dy: 0, isZeroAdvance: false });
+                    glyphs.push({ gid: ligGid, dx: 0, dy: 0, isZeroAdvance: false, cps: [cp, codePoints[i + 1]] });
                     lastBaseGid = ligGid;
                     i++; // Skip the Alef
                     continue;
@@ -342,12 +342,12 @@ export function shapeArabicText(str: string, fontData: FontData): ShapedGlyph[] 
             const baseAdv = widths[lastBaseGid] !== undefined ? widths[lastBaseGid] : defaultWidth;
             const offset = positionMarkOnBase(markAnchors, gid, lastBaseGid, baseAdv);
             if (offset) {
-                glyphs.push({ gid, dx: offset.dx, dy: offset.dy, isZeroAdvance: true });
+                glyphs.push({ gid, dx: offset.dx, dy: offset.dy, isZeroAdvance: true, cps: [cp] });
                 continue;
             }
         }
 
-        glyphs.push({ gid, dx: 0, dy: 0, isZeroAdvance });
+        glyphs.push({ gid, dx: 0, dy: 0, isZeroAdvance, cps: [cp] });
         if (!isZeroAdvance) lastBaseGid = gid;
     }
 

@@ -17,6 +17,12 @@ import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 import * as notoThai from '../../fonts/noto-thai-data.js';
 import * as notoLao from '../../fonts/noto-lao-data.js';
+import * as notoSc from '../../fonts/noto-sc-data.js';
+import * as notoKhmer from '../../fonts/noto-khmer-data.js';
+import * as notoMyanmar from '../../fonts/noto-myanmar-data.js';
+import * as notoTaiTham from '../../fonts/noto-taitham-data.js';
+import * as notoTibetan from '../../fonts/noto-tibetan-data.js';
+import * as notoArabic from '../../fonts/noto-arabic-data.js';
 
 // ── Mini-PDF assembly helpers ────────────────────────────────────────
 
@@ -468,11 +474,13 @@ describe('extractText on Thai and Lao sara am', () => {
         return extractText(buildDocumentPDFBytes(params, tagged ? { tagged: true } : {}))[0].text;
     };
 
-    it('extracts untagged น้ำ as no nu, its two stacked marks, sara aa — decomposed, never U+FFFD', () => {
+    it('extracts untagged น้ำ exactly: the shaped run carries /ActualText (1.9.0)', () => {
+        // Drawn as no nu + nikhahit + mai tho + sara aa, which no per-glyph
+        // ToUnicode mapping can turn back into ำ; before 1.9.0 the untagged
+        // document extracted the four code points.
         const text = build('น้ำ', thaiEntries, false);
-        expect(text).toMatch(/น[้ํ]{2}า/);
-        expect(text).toContain('ํ');
-        expect(text).not.toContain('ำ');
+        expect(text).toContain('น้ำ');
+        expect(text).not.toContain('ํ');
         expect(text).not.toContain('�');
     });
 
@@ -482,12 +490,19 @@ describe('extractText on Thai and Lao sara am', () => {
         expect(text).not.toContain('ํ');
     });
 
-    it('extracts untagged ນ້ຳ decomposed and tagged ນ້ຳ exactly', () => {
+    it('extracts untagged and tagged ນ້ຳ exactly', () => {
         const plain = build('ນ້ຳ', laoEntries, false);
-        expect(plain).toMatch(/ນ[້ໍ]{2}າ/);
-        expect(plain).not.toContain('ຳ');
+        expect(plain).toContain('ນ້ຳ');
         expect(plain).not.toContain('�');
         expect(build('ນ້ຳ', laoEntries, true)).toContain('ນ້ຳ');
+    });
+
+    it('wraps only runs that hold a sara am; other Thai runs keep their 1.8.0 operators', () => {
+        const params: DocumentParams = { title: 'sara am', blocks: [{ type: 'paragraph', text: 'สวัสดี' }], fontEntries: thaiEntries };
+        const s = new TextDecoder('latin1').decode(buildDocumentPDFBytes(params));
+        expect(s).not.toContain('/ActualText');
+        const withAm: DocumentParams = { ...params, blocks: [{ type: 'paragraph', text: 'น้ำ' }] };
+        expect(new TextDecoder('latin1').decode(buildDocumentPDFBytes(withAm))).toMatch(/\/Span << \/ActualText <FEFF0E190E490E33> >> BDC/);
     });
 });
 
@@ -546,5 +561,56 @@ describe('extractText stream-error policy (#89)', () => {
         ]);
         expect(extractText(broken)[0].text).toBe('');
         expect(() => extractText(broken, { onStreamError: 'throw' })).toThrow();
+    });
+});
+
+// ── ToUnicode coverage for every shaper (1.9.0, #84, #87) ────────────
+// Untagged documents extracted Kangxi radicals for CJK ideographs and U+FFFD
+// for Khmer, Myanmar and Tai Tham stacks: the CMap named shared glyphs by
+// the lowest code point and the shapers that compose glyphs reported no
+// source code points. Every shaper fills `cps` now, and the glyph a text
+// actually encoded names itself.
+
+describe('extractText round-trips untagged text through the ToUnicode CMap (#84, #87)', () => {
+    const entry = (m: unknown, lang: string): FontEntry[] => [{ fontData: m as FontData, fontRef: '/F3', lang }];
+    const roundTrip = (text: string, fontEntries: FontEntry[]): string =>
+        extractText(buildDocumentPDFBytes({ title: 'rt', blocks: [{ type: 'paragraph', text }], fontEntries }))[0].text
+            .split('\n').filter(l => l !== 'rt' && l !== '1/1').join('\n');
+
+    it('CJK ideographs extract as ideographs, not as the Kangxi radicals sharing their glyphs', () => {
+        const text = roundTrip('月度账户对账单', entry(notoSc, 'zh'));
+        expect(text).toBe('月度账户对账单');
+        expect(text.codePointAt(0)).toBe(0x6708);
+    });
+
+    it('Khmer coeng stacks and Myanmar kinzi extract as their source code points, never U+FFFD', () => {
+        for (const [text, entries] of [
+            ['ស្ត្រី ក្រុម ខ្មែរ', entry(notoKhmer, 'km')],
+            ['အင်္ဂလိပ်', entry(notoMyanmar, 'my')],
+        ] as const) {
+            const out = roundTrip(text, entries);
+            expect(out, text).not.toContain('�');
+            // Geometric reading order may permute marks within a cluster: compare as code-point multisets.
+            expect([...out.replace(/\s/g, '')].sort().join(''), text).toBe([...text.replace(/\s/g, '')].sort().join(''));
+        }
+    });
+
+    it('Tai Tham ligatures (the #87 glyph) extract as their letters', () => {
+        const text = 'ᨣᩤᩴᨾᩮᩬᩥᨦ';
+        const out = roundTrip(text, entry(notoTaiTham, 'nod'));
+        expect(out).not.toContain('�');
+        expect([...out].sort().join('')).toBe([...text].sort().join(''));
+    });
+
+    it('Tibetan stacks extract as their letters', () => {
+        const text = 'བསྒྲུབས';
+        const out = roundTrip(text, entry(notoTibetan, 'bo'));
+        expect(out).not.toContain('�');
+        expect([...out].sort().join('')).toBe([...text].sort().join(''));
+    });
+
+    it('Extended Arabic-Indic digits extract as typed, not as the Arabic-Indic twins sharing the glyphs', () => {
+        const out = roundTrip('۱۲۳۸۹', entry(notoArabic, 'ar'));
+        expect([...out].sort().join('')).toBe([...'۱۲۳۸۹'].sort().join(''));
     });
 });

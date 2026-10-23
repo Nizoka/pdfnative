@@ -91,12 +91,21 @@ describe('buildToUnicodeCMap', () => {
         const cmap: Record<number, number> = { 0x0915: 56, 0x094D: 103, 0x0937: 86 };
         const overrides = new Map<number, number | readonly number[]>([
             [90, [0x0915, 0x094D, 0x0937]],
-            [56, 0x0041], // ignored: the cmap already names gid 56
         ]);
         const result = buildToUnicodeCMap(cmap, new Set([56, 90]), overrides);
         expect(result).toContain('<005A> <0915094D0937>');
         expect(result).toContain('<0038> <0915>');
-        expect(result).not.toContain('<0041>');
+    });
+
+    it('lets what the shaper reported outrank the inverted cmap (1.9.0)', () => {
+        // An Arabic final form: the glyph is reachable from its presentation
+        // form code point in the cmap, but the shaper produced it for the
+        // base letter — which is what extraction should give back.
+        const cmap: Record<number, number> = { 0x0628: 10, 0xFE90: 11 };
+        const overrides = new Map<number, number | readonly number[]>([[11, 0x0628]]);
+        const result = buildToUnicodeCMap(cmap, new Set([10, 11]), overrides);
+        expect(result).toContain('<000B> <0628>');
+        expect(result).not.toContain('<FE90>');
     });
 
     it('spells a supplementary code point inside a multi-code-point destination as surrogates', () => {

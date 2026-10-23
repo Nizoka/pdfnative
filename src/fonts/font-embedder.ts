@@ -7,6 +7,8 @@
  *   - Compact /W width array builder
  */
 
+import { preferredCodepoint } from './unicode-preference.js';
+
 /**
  * Decode a base64 string to a single-byte binary string.
  * Each character maps to exactly one byte (charCode ≤ 0xFF).
@@ -26,6 +28,57 @@ export function base64ToByteString(b64: string): string {
 }
 
 /**
+ * The code point(s) each glyph is named by, from the strongest evidence down:
+ * the code point the document actually encoded for the glyph (`encoded`),
+ * then what a shaper reported for a glyph it produced (`overrides`), then the
+ * inverted cmap — where a glyph several code points share is named by the
+ * ordinary character rather than a compatibility form, the lowest code point
+ * among equals ({@link preferredCodepoint}, 1.9.0, #84). A legitimately
+ * mapped U+0000 keeps its glyph (strict `undefined` checks).
+ */
+function resolveGlyphNames(
+    cmap: Record<number, number>,
+    overrides?: ReadonlyMap<number, number | readonly number[]>,
+    encoded?: ReadonlyMap<number, number>,
+): Record<number, number | readonly number[]> {
+    const glyphToUnicode: Record<number, number | readonly number[]> = {};
+    for (const [cp, gid] of Object.entries(cmap)) {
+        const cpNum = Number(cp);
+        const prev = glyphToUnicode[gid];
+        if (prev === undefined) glyphToUnicode[gid] = cpNum;
+        else if (typeof prev === 'number') glyphToUnicode[gid] = preferredCodepoint(prev, cpNum);
+    }
+    // Glyph 0 is `.notdef`: naming it would hide a character the font does
+    // not cover behind a Unicode value (PDF/A-2 forbids the glyph outright).
+    if (overrides) {
+        for (const [gid, cp] of overrides) if (gid !== 0) glyphToUnicode[gid] = cp;
+    }
+    if (encoded) {
+        for (const [gid, cp] of encoded) if (gid !== 0) glyphToUnicode[gid] = cp;
+    }
+    delete glyphToUnicode[0];
+    return glyphToUnicode;
+}
+
+/**
+ * The used glyph ids a ToUnicode CMap built from the same evidence would
+ * leave unnamed — what a PDF/A level-U claim cannot tolerate (ISO 19005-2
+ * §6.2.11.7.2). Glyph 0 (`.notdef`) counts: a character the font does not
+ * cover is still a used code without a Unicode value.
+ *
+ * @since 1.9.0
+ */
+export function unmappedUsedGids(
+    cmap: Record<number, number>,
+    usedGids: ReadonlySet<number>,
+    overrides?: ReadonlyMap<number, number | readonly number[]>,
+    encoded?: ReadonlyMap<number, number>,
+): number[] {
+    const names = resolveGlyphNames(cmap, overrides, encoded);
+    return [...usedGids].filter(gid => names[gid] === undefined).sort((a, b) => a - b);
+}
+
+/**
  * Build a PDF ToUnicode CMap stream for CIDFont.
  * Maps glyph IDs back to Unicode code points for text selection/search.
  *
@@ -36,30 +89,18 @@ export function base64ToByteString(b64: string): string {
  *   reached through GSUB, not the cmap, and must map back to the character
  *   it replaced; a conjunct or a contextual form a shaper produced names
  *   every code point it stands for (a `bfchar` destination may hold several,
- *   ISO 32000-1 §9.10.3). Consulted only for glyphs the cmap does not
- *   already cover. (v1.8.0)
+ *   ISO 32000-1 §9.10.3). Since 1.9.0 an override outranks the inverted
+ *   cmap: it is what the text actually produced. (v1.8.0)
+ * @param encoded - Glyph ID → the code point the document encoded for it
+ *   through the cmap; the strongest evidence, consulted first (v1.9.0, #84).
  */
 export function buildToUnicodeCMap(
     cmap: Record<number, number>,
     usedGids: Set<number>,
     overrides?: ReadonlyMap<number, number | readonly number[]>,
+    encoded?: ReadonlyMap<number, number>,
 ): string {
-    // Invert cmap: glyphId → unicode codepoint (keep lowest codepoint).
-    // Strict undefined check: a legitimately-mapped U+0000 must not be
-    // overwritten by a later (higher) codepoint sharing the glyph.
-    const glyphToUnicode: Record<number, number | readonly number[]> = {};
-    for (const [cp, gid] of Object.entries(cmap)) {
-        const cpNum = Number(cp);
-        const prev = glyphToUnicode[gid];
-        if (prev === undefined || (typeof prev === 'number' && cpNum < prev)) {
-            glyphToUnicode[gid] = cpNum;
-        }
-    }
-    if (overrides) {
-        for (const [gid, cp] of overrides) {
-            if (glyphToUnicode[gid] === undefined) glyphToUnicode[gid] = cp;
-        }
-    }
+    const glyphToUnicode = resolveGlyphNames(cmap, overrides, encoded);
 
     // Build bfchar entries (max 100 per block per PDF spec)
     const entries: [number, number | readonly number[]][] = Object.entries(glyphToUnicode)

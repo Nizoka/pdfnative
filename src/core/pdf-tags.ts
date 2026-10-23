@@ -30,6 +30,23 @@ export function wrapSpan(content: string, actualText: string, mcid: number): str
 }
 
 /**
+ * Wrap content in a marked content sequence carrying only `/ActualText` — no
+ * MCID, so it is legal in untagged output (ISO 32000-1 §14.9.4, marked
+ * content need not belong to a structure element). The text extractor
+ * replaces the glyphs inside with the declared text, which is how a cluster
+ * the shaper decomposes (Thai and Lao sara am, drawn as nikhahit + sara aa)
+ * extracts as the single code point the author wrote (1.9.0).
+ *
+ * @param content - PDF content stream operators to wrap
+ * @param actualText - Original Unicode text (UTF-16BE encoded for PDF)
+ * @returns Wrapped content stream with BDC/EMC
+ * @since 1.9.0
+ */
+export function wrapActualText(content: string, actualText: string): string {
+    return `/Span << /ActualText ${escapePdfUtf16(actualText)} >> BDC\n${content}\nEMC`;
+}
+
+/**
  * Wrap content in a generic marked content sequence (no ActualText).
  *
  * @param content - PDF content stream operators to wrap

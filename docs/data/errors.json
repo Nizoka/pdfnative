@@ -83,6 +83,15 @@
       "standard": "Not a conformance rule — an authoring diagnostic (OpenType feature tags, ISO/IEC 14496-22 §6.2)",
       "remedy": "Drop the tag, or register a font whose GSUB declares it for the characters you set; the effective tags are the keys of the font module's features table.",
       "guide": "https://pdfnative.dev/guides/typography.md"
+    },
+    {
+      "code": "PDFA_GLYPH_WITHOUT_UNICODE",
+      "severity": "warning",
+      "since": "1.9.0",
+      "raisedWhen": "A document claims PDF/A-2u (tagged: 'pdfa2u') while a font's used glyphs are not all named by its ToUnicode CMap — a glyph id 0 (.notdef, a character the font does not cover) or a shaped form no shaper reported. Every bundled shaper reports its glyphs since 1.9.0, so the common cause is an uncovered character (#87).",
+      "standard": "ISO 19005-2 §6.2.11.7.2 (every used character code maps to Unicode; veraPDF fails the file)",
+      "remedy": "Register a font that covers the text, or claim 'pdfa2b' (no Unicode requirement); a shaped form left unreported is a bug — file an issue with the text.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
     }
   ],
   "sink": {

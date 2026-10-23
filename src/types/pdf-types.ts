@@ -424,6 +424,14 @@ export interface EncodingContext {
      */
     readonly getToUnicodeOverrides?: () => Map<string, Map<number, number | readonly number[]>>;
     /**
+     * The code point the document actually encoded for each glyph it reached
+     * through the cmap, per font ref — the strongest evidence of what a glyph
+     * stands for when several code points share it (月 and the Kangxi
+     * radical ⽉, the two Arabic digit sets). Consulted first by the
+     * ToUnicode CMap builder. Present only on Unicode contexts. (v1.9.0, #84)
+     */
+    readonly getToUnicodeEncoded?: () => Map<string, Map<number, number>>;
+    /**
      * Colour-emoji collector — present only when an `'emoji-color'` font
      * (carrying `colorGlyphs`) is registered. Used by the text emitter to
      * draw colour-emoji Form XObjects inline. (v1.3.0)
@@ -676,6 +684,13 @@ export type PdfDiagnosticCode =
     | 'PDFX_DEVICE_CMYK'
     /** Link annotations or form fields on a PDF/X-4 page (ISO 15930-7). @since 1.8.0 */
     | 'PDFX_ANNOTATIONS'
+    /**
+     * A PDF/A level-U claim (`pdfa2u`) over a font whose used glyphs the
+     * ToUnicode CMap cannot all name — a shaper-produced form the font's
+     * cmap does not reach, or a `.notdef` — so ISO 19005-2 §6.2.11.7.2
+     * (every character code maps to Unicode) fails in veraPDF. @since 1.9.0
+     */
+    | 'PDFA_GLYPH_WITHOUT_UNICODE'
     /**
      * A `typography.fontFeatures` tag that changed nothing: no registered font
      * declares it, or the font declares it but no glyph in the document was

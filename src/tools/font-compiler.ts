@@ -587,6 +587,7 @@ const OTL_SCRIPT_TAGS = [
     'DFLT',
     'dev2', 'deva', 'bng2', 'beng', 'tml2', 'taml', 'tel2', 'telu', 'sinh',
     'gur2', 'guru', 'gjr2', 'gujr', 'ory2', 'orya', 'knd2', 'knda', 'mlm2', 'mlym',
+    'tibt', 'khmr', 'mym2', 'mymr', 'cham',
     'latn',
 ];
 
@@ -594,6 +595,7 @@ const OTL_SCRIPT_TAGS = [
 const OTL_FEATURE_TAGS = [
     'locl', 'ccmp', 'nukt', 'akhn', 'rphf', 'rkrf', 'pref', 'blwf', 'abvf', 'half',
     'pstf', 'vatu', 'cjct', 'pres', 'abvs', 'blws', 'psts', 'haln', 'calt',
+    'rlig', 'liga', 'clig',
 ];
 
 /** Under `DFLT` and `latn` only glyph composition is kept. */

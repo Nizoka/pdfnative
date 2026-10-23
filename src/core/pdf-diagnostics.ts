@@ -189,6 +189,23 @@ export function reportIneffectiveFeatures(
     if (unused.length > 0) emit(typographyFeatureIneffectiveDiagnostic(unused, 'unused'));
 }
 
+/**
+ * Diagnostic payload for a level-U PDF/A claim over a font with used glyphs
+ * the ToUnicode CMap cannot name (v1.9.0, #87).
+ */
+export function pdfaGlyphWithoutUnicodeDiagnostic(fontName: string, unmapped: readonly number[]): PdfDiagnostic {
+    const shown = unmapped.slice(0, 8).join(', ') + (unmapped.length > 8 ? ', …' : '');
+    return {
+        code: 'PDFA_GLYPH_WITHOUT_UNICODE',
+        severity: 'warning',
+        message: `tagged: 'pdfa2u' claims PDF/A-2u while font ${fontName} uses ${unmapped.length} glyph(s) the `
+            + `ToUnicode CMap cannot name (glyph ids ${shown}): ISO 19005-2 §6.2.11.7.2 requires every used `
+            + 'character code to map to Unicode, and veraPDF fails the file. A glyph id 0 means a character the '
+            + 'font does not cover (register a font that covers it); another id is a shaped form the shaper did '
+            + "not report (file an issue with the text). Or claim 'pdfa2b', which has no Unicode requirement.",
+    };
+}
+
 /** Diagnostic payload for annotations or form fields under a PDF/X-4 claim (v1.8.0). */
 export function pdfxAnnotationsDiagnostic(): PdfDiagnostic {
     return {

@@ -9,6 +9,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { buildPDFBytes } from '../../src/core/pdf-builder.js';
 import * as notoSansData from '../../fonts/noto-sans-data.js';
+import * as notoTaiThamData from '../../fonts/noto-taitham-data.js';
 import type { FontData, FontEntry, PdfDiagnostic, PdfParams } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
@@ -217,5 +218,52 @@ describe('base-14 ToUnicode under tagged mode (conformance hardening)', () => {
         // The WinAnsi bfchar CMap (Euro at 0x80) is the base-14 one; the
         // CIDFont ToUnicode is gid-keyed. No base-14 dict exists here.
         expect(pdf).not.toContain('/BaseFont /Helvetica ');
+    });
+});
+
+// 1.9.0 (#87) — a level-U claim over a font whose used glyphs the ToUnicode
+// CMap cannot all name. Every bundled shaper now reports its glyphs, so the
+// remaining trigger is a character the font does not cover (glyph 0).
+
+describe('PDFA_GLYPH_WITHOUT_UNICODE (level U, #87)', () => {
+    const taiTham: FontEntry = { fontData: notoTaiThamData as unknown as FontData, fontRef: '/F3', lang: 'nod' };
+    const covered: DocumentParams = { title: 'U', blocks: [{ type: 'paragraph', text: 'ᨣᩤᩴᨾᩮᩬᩥᨦ' }], fontEntries: [taiTham] };
+    const uncovered: DocumentParams = { ...covered, blocks: [{ type: 'paragraph', text: 'ᨠ☃' }] };
+
+    it('stays silent when every used glyph is named (the #87 Tai Tham ligature included)', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(covered, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).not.toContain('PDFA_GLYPH_WITHOUT_UNICODE');
+    });
+
+    it('warns through onDiagnostic for a .notdef under pdfa2u, and names the font and glyph', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        const d = seen.find(x => x.code === 'PDFA_GLYPH_WITHOUT_UNICODE');
+        expect(d).toBeDefined();
+        expect(d?.message).toContain('NotoSansTaiTham');
+        expect(d?.message).toContain('glyph ids 0');
+        expect(d?.message).toContain('6.2.11.7.2');
+    });
+
+    it('throws under strict', () => {
+        expect(() => buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2u', strict: true }))
+            .toThrow(/ToUnicode CMap cannot name/);
+    });
+
+    it('does not fire under pdfa2b, which has no Unicode requirement', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2b', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).not.toContain('PDFA_GLYPH_WITHOUT_UNICODE');
+    });
+
+    it('is raised by the table builder too', () => {
+        const seen: PdfDiagnostic[] = [];
+        const params: PdfParams = {
+            title: 'U', infoItems: [], balanceText: '', countText: '', footerText: '',
+            headers: ['ᨠ☃'], rows: [{ cells: ['ᨠ'], type: '', pointed: false }], fontEntries: [taiTham],
+        };
+        buildPDFBytes(params, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).toContain('PDFA_GLYPH_WITHOUT_UNICODE');
     });
 });

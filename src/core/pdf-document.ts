@@ -23,11 +23,11 @@ import type {
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic, reportIneffectiveFeatures, pdfaGlyphWithoutUnicodeDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
+import { buildToUnicodeCMap, buildSubsetWidthArray, unmappedUsedGids } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
 import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
@@ -731,9 +731,16 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
             const fm = fd.metrics;
             const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
+            const overrides = enc.getToUnicodeOverrides?.().get(fe.fontRef);
+            const encoded = enc.getToUnicodeEncoded?.().get(fe.fontRef);
             const toUnicodeCMap = usedGids && usedGids.size > 0
-                ? buildToUnicodeCMap(fd.cmap, usedGids, enc.getToUnicodeOverrides?.().get(fe.fontRef))
+                ? buildToUnicodeCMap(fd.cmap, usedGids, overrides, encoded)
                 : buildToUnicodeCMap(fd.cmap, new Set());
+            // A level-U claim needs every used code named (ISO 19005-2 §6.2.11.7.2, #87).
+            if (pdfaConfig.pdfaConformance === 'U' && usedGids && usedGids.size > 0) {
+                const unmapped = unmappedUsedGids(fd.cmap, usedGids, overrides, encoded);
+                if (unmapped.length > 0) emitDiagnostic(pdfaGlyphWithoutUnicodeDiagnostic(bfName, unmapped));
+            }
 
             const subsetW = buildSubsetWidthArray(fd.widths, usedGids ?? new Set());
             const wArray = subsetW || fd.pdfWidthArray;

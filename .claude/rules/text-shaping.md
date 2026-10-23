@@ -14,7 +14,7 @@ paths:
 5. Output: `ShapedGlyph[]` with `{ gid, dx, dy, isZeroAdvance }`
 
 ## GSUB/GPOS Data Format
-- GSUB SingleSubst: `Record<number, number>` — simple GID → GID substitution map (`fontData.gsub`, every default-feature lookup merged; the Thai/Lao/Khmer/Myanmar/Tibetan shapers consume it)
+- GSUB SingleSubst: `Record<number, number>` — simple GID → GID substitution map (`fontData.gsub`, every default-feature lookup merged; the Thai/Lao shapers consume it, the Khmer and Myanmar modules do not read it, Tibetan moved to `otl` in 1.9.0)
 - GSUB LigatureSubst: `Record<number, number[][]>` — first-glyph GID → arrays of `[resultGID, ...componentGIDs]`; stored in `fontData.ligatures`; `tryLigature()` pattern used by Tibetan, Khmer and Myanmar, and the fallback of the Indic engine for a font without `otl`
 - **`fontData.otl` (v1.8.0)** — the per-script, per-feature layout the Indic engine and the Latin combining-mark shaper apply: `gsub.scripts[scriptTag][featureTag]` → ascending lookup indices; `gsub.lookups[index]` = `{ t, f, m }` with `t` 1 (single `{from: to}`), 2 (multiple `{from: [gid…]}`), 4 (ligature `{first: [[result, c2…]…]}`) or 6 (contextual — type 5 written in the chained shape — `[{ b, i, l, a }]` whose backtrack/input/lookahead index `gsub.sets` glyph-range lists and whose `a` is `[[inputIndex, lookupIndex]…]`); `f` = raw lookupFlag (bit 3 IgnoreMarks honoured through `gdef.marks`); Extension lookups resolved at build time; the lookups a contextual rule invokes are serialised even when no feature lists them. Types `OtlTables`, `OtlLookup`, `OtlChainRule` in `src/types/pdf-types.ts`
 - MarkToBase anchors: `{ bases: { baseGID: { markClass: [x, y] } }, marks: { markGID: [class, x, y, class2, x2, y2, …] } }` — since v1.8.0 mark classes are unique across GPOS subtables and a mark carries **one triple per subtable that covers it**, in lookup order (Noto Sans Devanagari anchors े once on plain consonants, again on conjunct ligatures); `findMarkToBase()` tries the triples, the old `getMarkAnchor()` reads the first. Before 1.8.0 every subtable's class 0 collided and only the last survived — above vowel signs landed on below-base anchors
@@ -145,11 +145,15 @@ One engine, `shapeIndicText(str, fontData, cfg)`, behind the five exported shape
 - Ethiopic (U+1200–U+137F) is a syllabic abugida: each codepoint is a complete consonant+vowel syllable, so **no GSUB/GPOS reordering is required** — detection + font routing only (lang `'am'`)
 - `containsEthiopic(text)`: fast O(n) check imported from `script-registry.ts`
 
-## Tibetan OpenType Shaping Pipeline (tibetan-shaper.ts)
-1. **Vertical stacking**: subjoined consonants (U+0F90–U+0FBC) stack below the head consonant
-2. **GSUB/GPOS**: subjoined-form ligatures via shared `gsub-driver`, anchor positioning via shared `gpos-positioner`
+## Tibetan OpenType Shaping Pipeline (tibetan-shaper.ts) — on the OTL engine since v1.9.0
+1. **The font's own layout**: `applyGsubFeatures()` runs the `tibt` (else `DFLT`) GSUB features `ccmp`, `abvs`, `blws`, `calt` in that order — Noto Serif Tibetan selects head and subjoined forms and composes the frequent stacks through contextual lookups (its `blws` alone is ~1 100 lookups), so `fontData.ligatures` + the merged `gsub` singles cannot reproduce them (#81)
+2. **Attachment**: `attachMarks()` — mark-to-base through every anchor triple (`findMarkToBase`), mark-to-mark for the rest of the column; a mark is what GDEF says
+3. **Fallback**: font data without `otl` (hand-made modules, the mock-font suite) keeps the pre-1.9.0 path — pre-baked `ligatures`, then mark-to-base of what is left unstacked
+- Every glyph names its code points (`cps`): a stack is one glyph naming its letters, so the ToUnicode CMap covers it untagged
+- `OTL_SCRIPT_TAGS` of both generators keep `tibt`, `khmr`, `mym2`/`mymr` and `cham` since 1.9.0 (Khmer and Myanmar still shape through their USE-lite modules; the tables are there for the migration the ROADMAP lists); `OTL_FEATURE_TAGS` add `rlig`, `liga`, `clig`
 - Tibetan ranges: U+0F00–U+0FFF; bundled font is Noto Serif Tibetan
 - `containsTibetan(text)`: fast O(n) check imported from `script-registry.ts`
+- Locks: `tests/shaping/tibetan-real-font.test.ts` on the bundled font, the mock suite for the fallback path
 
 ## Khmer OpenType Shaping Pipeline (khmer-shaper.ts) — USE-lite
 1. **Cluster building** via `classifyUseCategory()` (use-lite.ts)

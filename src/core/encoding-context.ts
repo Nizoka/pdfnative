@@ -12,6 +12,7 @@
 import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics } from '../types/pdf-types.js';
 import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi, narrowNoBreakSpaceCorrection } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
+import { preferredCodepoint } from '../fonts/unicode-preference.js';
 import { applyFeaturesToRuns, composeFeatureMap } from '../fonts/font-features.js';
 import { applyKerningToRuns } from '../fonts/font-kerning.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
@@ -139,7 +140,7 @@ function buildTextRunsWithFallback(
     fontRef: string,
     fd: FontData,
     sz: number,
-    trackGid: (ref: string, gid: number) => void,
+    trackGid: (ref: string, gid: number, cp?: number) => void,
     pdfA: boolean = false,
 ): TextRun[] {
     // Emoji-sequence pre-pass (v1.7.0): fonts carrying a `sequences` table
@@ -172,7 +173,7 @@ function buildTextRunsCore(
     fontRef: string,
     fd: FontData,
     sz: number,
-    trackGid: (ref: string, gid: number) => void,
+    trackGid: (ref: string, gid: number, cp?: number) => void,
     pdfA: boolean = false,
 ): TextRun[] {
     const upm = fd.metrics.unitsPerEm;
@@ -232,7 +233,7 @@ function buildTextRunsCore(
             if (mode === 'hel') flushHel();
             mode = 'cid';
             cidChars += char;
-            trackGid(fontRef, gid);
+            trackGid(fontRef, gid, cp);
             cidHex += gid.toString(16).padStart(4, '0');
             const gw = fd.widths[gid];
             cidDesignW += gw !== undefined ? gw : fd.defaultWidth;
@@ -299,9 +300,18 @@ export function createEncodingContext(
     const _usedGids = new Map<string, Set<number>>();
     for (const fe of fontEntries) _usedGids.set(fe.fontRef, new Set());
 
-    function _trackGid(fontRef: string, gid: number): void {
+    // The code point the text encoded for each glyph reached through the
+    // cmap, per font — what names the glyph in ToUnicode before any
+    // inference (1.9.0, #84). First evidence wins.
+    const _encoded = new Map<string, Map<number, number>>();
+    function _trackGid(fontRef: string, gid: number, cp?: number): void {
         const s = _usedGids.get(fontRef);
         if (s) s.add(gid);
+        if (cp !== undefined) {
+            let m = _encoded.get(fontRef);
+            if (!m) { m = new Map(); _encoded.set(fontRef, m); }
+            if (!m.has(gid)) m.set(gid, cp);
+        }
     }
 
     // Glyphs produced by an OpenType substitution have no cmap entry, so
@@ -323,7 +333,7 @@ export function createEncodingContext(
             for (const [cp, g] of Object.entries(fd.cmap)) {
                 const cpNum = Number(cp);
                 const prev = inv.get(g);
-                if (prev === undefined || cpNum < prev) inv.set(g, cpNum);
+                inv.set(g, prev === undefined ? cpNum : preferredCodepoint(prev, cpNum));
             }
             _inverseCmaps.set(fd, inv);
         }
@@ -355,6 +365,7 @@ export function createEncodingContext(
         f2: primary.fontRef,
         getUsedGids() { return _usedGids; },
         getToUnicodeOverrides() { return _toUnicodeOverrides; },
+        getToUnicodeEncoded() { return _encoded; },
         colorEmoji: _colorEmoji,
 
         textRuns(str: string, sz: number): TextRun[] {
@@ -486,7 +497,7 @@ export function createEncodingContext(
                     if (rawCp > 0xFFFF) i++;
                     const cp = spaceCodepoint(primary.fontData, rawCp);
                     const gid = cmap[cp] || 0;
-                    _trackGid(primary.fontRef, gid);
+                    _trackGid(primary.fontRef, gid, cp);
                     hex += gid.toString(16).padStart(4, '0');
                 }
                 return `<${hex.toUpperCase()}>`;
@@ -497,7 +508,11 @@ export function createEncodingContext(
             // unless some predicate matched, so that hazard is gone.
             const shaped = shaper.shape(str, primary.fontData);
             let hex = '';
-            for (const g of shaped) { _trackGid(primary.fontRef, g.gid); hex += g.gid.toString(16).padStart(4, '0'); }
+            for (const g of shaped) {
+                _trackGid(primary.fontRef, g.gid);
+                if (g.cps && g.cps.length > 0) _onShapedGlyph(primary.fontRef, g.gid, g.cps);
+                hex += g.gid.toString(16).padStart(4, '0');
+            }
             return `<${hex.toUpperCase()}>`;
         },
 

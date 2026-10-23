@@ -102,13 +102,14 @@ export function positionMarkOnBase(
     baseGid: number,
     baseAdv: number,
 ): { dx: number; dy: number } | null {
-    const mark = getMarkAnchor(markAnchors, markGid);
-    if (!mark) return null;
-    const base = getBaseAnchor(markAnchors, baseGid, mark.classIdx);
-    if (!base) return null;
+    // Every subtable triple the mark carries is tried (1.9.0, #81): reading
+    // the first one alone missed most pairs of Noto Serif Tibetan, whose
+    // subjoined consonants anchor through their second class.
+    const found = findMarkToBase(markAnchors, markGid, baseGid);
+    if (!found) return null;
     return {
-        dx: base[0] - mark.x - baseAdv,
-        dy: base[1] - mark.y,
+        dx: found.base[0] - found.mark[0] - baseAdv,
+        dy: found.base[1] - found.mark[1],
     };
 }
 

@@ -232,10 +232,10 @@ export function shapeLaoText(str: string, fontData: FontData): ShapedGlyph[] {
         const hasDescender = DESCENDER_CONSONANTS.has(cluster.base);
 
         for (const lvCp of cluster.leadings) {
-            shaped.push({ gid: cmap[lvCp] || 0, dx: 0, dy: 0, isZeroAdvance: false });
+            shaped.push({ gid: cmap[lvCp] || 0, dx: 0, dy: 0, isZeroAdvance: false, cps: [lvCp] });
         }
 
-        shaped.push({ gid: baseGid, dx: 0, dy: 0, isZeroAdvance: false });
+        shaped.push({ gid: baseGid, dx: 0, dy: 0, isZeroAdvance: false, cps: [cluster.base] });
 
         // Above marks, each stacked on the previous one where the font says so.
         let prevGid: number | null = null;
@@ -261,7 +261,7 @@ export function shapeLaoText(str: string, fontData: FontData): ShapedGlyph[] {
                 }
             }
 
-            shaped.push({ gid: markGid, dx, dy, isZeroAdvance: true });
+            shaped.push({ gid: markGid, dx, dy, isZeroAdvance: true, cps: [cluster.aboves[ai]] });
             prevGid = markGid;
             prevDx = dx;
             prevDy = dy;
@@ -301,14 +301,14 @@ export function shapeLaoText(str: string, fontData: FontData): ShapedGlyph[] {
                 // glyph — the rule `attachMarks()` applies in gpos-positioner.
                 const adv = getAdv(markGid);
                 if (adv > 0) {
-                    shaped.push({ gid: markGid, dx: 0, dy: 0, isZeroAdvance: false });
+                    shaped.push({ gid: markGid, dx: 0, dy: 0, isZeroAdvance: false, cps: [cluster.belows[bi]] });
                     advSinceBase += adv;
                     prevBelowGid = null;
                     continue;
                 }
             }
 
-            shaped.push({ gid: markGid, dx, dy, isZeroAdvance: true });
+            shaped.push({ gid: markGid, dx, dy, isZeroAdvance: true, cps: [cluster.belows[bi]] });
             prevBelowGid = markGid;
             prevBelowDx = dx;
             prevBelowDy = dy;

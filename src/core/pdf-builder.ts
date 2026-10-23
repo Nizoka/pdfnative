@@ -24,10 +24,10 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures, pdfaGlyphWithoutUnicodeDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
-import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
+import { buildToUnicodeCMap, buildSubsetWidthArray, unmappedUsedGids } from '../fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
 import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
 import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
@@ -669,9 +669,16 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
             const fm = fd.metrics;
             const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
+            const overrides = enc.getToUnicodeOverrides?.().get(fe.fontRef);
+            const encoded = enc.getToUnicodeEncoded?.().get(fe.fontRef);
             const toUnicodeCMap = usedGids && usedGids.size > 0
-                ? buildToUnicodeCMap(fd.cmap, usedGids, enc.getToUnicodeOverrides?.().get(fe.fontRef))
+                ? buildToUnicodeCMap(fd.cmap, usedGids, overrides, encoded)
                 : buildToUnicodeCMap(fd.cmap, new Set());
+            // A level-U claim needs every used code named (ISO 19005-2 §6.2.11.7.2, #87).
+            if (pdfaConfig.pdfaConformance === 'U' && usedGids && usedGids.size > 0) {
+                const unmapped = unmappedUsedGids(fd.cmap, usedGids, overrides, encoded);
+                if (unmapped.length > 0) emitDiagnostic(pdfaGlyphWithoutUnicodeDiagnostic(bfName, unmapped));
+            }
 
             const subsetW = buildSubsetWidthArray(fd.widths, usedGids ?? new Set());
             const wArray = subsetW || fd.pdfWidthArray;
