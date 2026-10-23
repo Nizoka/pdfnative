@@ -85,6 +85,24 @@
       "guide": "https://pdfnative.dev/guides/typography.md"
     },
     {
+      "code": "PDFA1_JPX_IMAGE",
+      "severity": "warning",
+      "since": "1.9.0",
+      "raisedWhen": "A JPEG 2000 image (JP2 file or J2K codestream, embedded with /JPXDecode) appears in a document claiming PDF/A-1b. The header stays PDF 1.4 as the claim demands; the filter is what breaks it.",
+      "standard": "ISO 19005-1 §6.1.10 (only the filters of PDF 1.4; veraPDF rejects the file)",
+      "remedy": "Claim PDF/A-2 or later (tagged: 'pdfa2b'), or convert the image to JPEG or PNG.",
+      "guide": "https://pdfnative.dev/guides/images.md"
+    },
+    {
+      "code": "PDFA_JPX_IMAGE",
+      "severity": "warning",
+      "since": "1.9.0",
+      "raisedWhen": "A JPEG 2000 image under a PDF/A-2 or PDF/A-3 claim has a colour channel count other than 1, 3 or 4, or carries an opacity channel (the XObject would set /SMaskInData 1).",
+      "standard": "ISO 19005-2 §6.2.8.3 (JPEG 2000 image constraints; veraPDF rejects the file)",
+      "remedy": "Re-encode the image with 1, 3 or 4 colour channels and no alpha, or drop the PDF/A level.",
+      "guide": "https://pdfnative.dev/guides/images.md"
+    },
+    {
       "code": "PDFA_GLYPH_WITHOUT_UNICODE",
       "severity": "warning",
       "since": "1.9.0",

@@ -66,8 +66,8 @@ _Verified on 2026-10-23 against the source tree by `npm run verify:docs`; the ca
 ## Source
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
-- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 49 sample generators producing 292 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 4044+ tests across 170 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; 91.5 % statements at v1.8.0.
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 50 sample generators producing 292 reference PDFs.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 4058+ tests across 171 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; 91.5 % statements at v1.8.0.
 
 ## Playgrounds (zero-install, the engine runs in the browser from a CDN)
 

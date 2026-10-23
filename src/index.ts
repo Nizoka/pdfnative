@@ -141,9 +141,9 @@ export { buildDocumentPDF, buildDocumentPDFBytes, wrapText } from './core/pdf-do
 export { inspectDocumentLayout } from './core/pdf-layout-inspect.js';
 
 // ── Core — Image Support ────────────────────────────────────────────
-export type { ParsedImage } from './core/pdf-image.js';
+export type { ParsedImage, JpxInfo } from './core/pdf-image.js';
 export {
-    detectImageFormat, parseJPEG, parsePNG, parseImage,
+    detectImageFormat, parseJPEG, parsePNG, parseJPX, parseImage,
     buildImageXObject, buildSMaskXObject, buildImageOperators,
 } from './core/pdf-image.js';
 

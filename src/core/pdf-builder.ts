@@ -24,7 +24,7 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures, pdfaGlyphWithoutUnicodeDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures, pdfa1JpxImageDiagnostic, pdfaJpxImageDiagnostic, pdfaGlyphWithoutUnicodeDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { spotColourResources, type SpotFunctionStream } from './pdf-spot.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
@@ -408,6 +408,17 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         : null;
     // A translucent watermark gives the page a transparency group (1.9.0).
     const pageGroup = pageTransparencyGroup(wmState !== null && translucentStates(wmState.extGStates) && !(tagged && pdfaConfig.pdfaPart === 1), outputIntent);
+    // A JPEG 2000 watermark image (v1.9.0) needs the PDF 1.5 header; under
+    // PDF/A the claim's rules apply (see the document builder).
+    const wmJpx = wmState?.parsedImage?.filter === '/JPXDecode' ? wmState.parsedImage : null;
+    if (wmJpx && tagged) {
+        if (pdfaConfig.pdfaPart === 1) emitDiagnostic(pdfa1JpxImageDiagnostic());
+        else {
+            if (wmJpx.jpx && wmJpx.jpx.channels !== 1 && wmJpx.jpx.channels !== 3 && wmJpx.jpx.channels !== 4) emitDiagnostic(pdfaJpxImageDiagnostic(`${wmJpx.jpx.channels} colour channels`));
+            if (wmJpx.jpx?.alpha) emitDiagnostic(pdfaJpxImageDiagnostic('an opacity channel'));
+        }
+    }
+    const needsPdf15 = wmJpx !== null && !(tagged && pdfaConfig.pdfaPart === 1);
     const wmExtraObjs = wmState
         ? wmState.extGStates.size + (wmState.imageXObj ? 1 : 0)
         : 0;
@@ -638,7 +649,8 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     // PDF/X-4 is PDF 1.6, which /UserUnit also needs.
     const pdfVersion = pdfxConfig ? pdfxConfig.pdfVersion
         : printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
-            ? '1.7' : pdfaConfig.pdfVersion;
+            ? '1.7'
+            : needsPdf15 && pdfaConfig.pdfVersion < '1.5' ? '1.5' : pdfaConfig.pdfVersion;
     emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 

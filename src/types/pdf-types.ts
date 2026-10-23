@@ -746,6 +746,10 @@ export type PdfDiagnosticCode =
     | 'PDFX_DEVICE_CMYK'
     /** Link annotations or form fields on a PDF/X-4 page (ISO 15930-7). @since 1.8.0 */
     | 'PDFX_ANNOTATIONS'
+    /** A JPEG 2000 image under a PDF/A-1 claim, whose PDF 1.4 base has no JPXDecode filter (ISO 19005-1 §6.1.10). @since 1.9.0 */
+    | 'PDFA1_JPX_IMAGE'
+    /** A JPEG 2000 image under a PDF/A-2+ claim that breaks ISO 19005-2 §6.2.8.3: a channel count other than 1, 3 or 4, or an opacity channel (/SMaskInData). @since 1.9.0 */
+    | 'PDFA_JPX_IMAGE'
     /**
      * A PDF/A level-U claim (`pdfa2u`) over a font whose used glyphs the
      * ToUnicode CMap cannot all name — a shaper-produced form the font's

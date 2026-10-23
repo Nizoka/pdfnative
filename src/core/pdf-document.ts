@@ -23,7 +23,7 @@ import type {
     OutlineItem,
 } from '../types/pdf-document-types.js';
 import { buildImageXObject } from './pdf-image.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic, reportIneffectiveFeatures, pdfaGlyphWithoutUnicodeDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfaUnembeddedFormFontDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, pdfxAnnotationsDiagnostic, reportIneffectiveFeatures, pdfaGlyphWithoutUnicodeDiagnostic, pdfa1JpxImageDiagnostic, pdfaJpxImageDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { spotColourResources, type SpotFunctionStream } from './pdf-spot.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
@@ -301,6 +301,19 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     const wmState: WatermarkState | null = watermarkOpts
         ? buildWatermarkState(watermarkOpts, pgW, pgH, enc)
         : null;
+    // JPEG 2000 images (v1.9.0): the JPXDecode filter needs PDF 1.5; under
+    // PDF/A the claim's own rules apply (no JPX in PDF/A-1, 1/3/4 colour
+    // channels and no opacity channel in PDF/A-2+).
+    const jpxImages = [...resolvedImages.map(i => i.parsed), ...(wmState?.parsedImage ? [wmState.parsedImage] : [])]
+        .filter(p => p.filter === '/JPXDecode');
+    if (tagged) {
+        for (const p of jpxImages) {
+            if (pdfaConfig.pdfaPart === 1) { emitDiagnostic(pdfa1JpxImageDiagnostic()); break; }
+            if (p.jpx && p.jpx.channels !== 1 && p.jpx.channels !== 3 && p.jpx.channels !== 4) emitDiagnostic(pdfaJpxImageDiagnostic(`${p.jpx.channels} colour channels`));
+            if (p.jpx?.alpha) emitDiagnostic(pdfaJpxImageDiagnostic('an opacity channel'));
+        }
+    }
+    const needsPdf15 = jpxImages.length > 0 && !(tagged && pdfaConfig.pdfaPart === 1);
     const wmExtraObjs = wmState
         ? wmState.extGStates.size + (wmState.imageXObj ? 1 : 0)
         : 0;
@@ -669,7 +682,8 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // PDF/X-4 is PDF 1.6, which /UserUnit also needs.
     const pdfVersion = pdfxConfig ? pdfxConfig.pdfVersion
         : printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
-            ? '1.7' : pdfaConfig.pdfVersion;
+            ? '1.7'
+            : needsPdf15 && pdfaConfig.pdfVersion < '1.5' ? '1.5' : pdfaConfig.pdfVersion;
     emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 

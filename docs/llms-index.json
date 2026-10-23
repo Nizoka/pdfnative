@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 25304,
       "approxTokens": 6326,
-      "sha256": "85f6067a779ef4dbd789f9157d4137ad2e702c12c119bb1e22475234aeb9dca1"
+      "sha256": "eeada69e4a696062d3cd8c403002196f8d78d6626c294634cd3dfe53f7929e0a"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -21,7 +21,7 @@
       "description": "Full corpus: index + README + every guide, one request.",
       "bytes": 725902,
       "approxTokens": 181476,
-      "sha256": "612543b1aba9d51df49940c5bc9f96ceee3cf4bce75e98d471e9780667b687d3"
+      "sha256": "010bbf084d2961fcd0f88db5f7e2d388027c5a28371d81265bce91f483424eaf"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -33,9 +33,9 @@
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 149101,
-      "approxTokens": 37275,
-      "sha256": "5bde07bd255b54149753bd498c00f5c2dc43d20e5a698808221b9218d07ff40d"
+      "bytes": 149750,
+      "approxTokens": 37438,
+      "sha256": "e6b2baadc3be2c6a30a7377c9f3a77bbae1d8ae3728e3398b0fff2fdd32c69bd"
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
@@ -47,9 +47,9 @@
     {
       "url": "https://pdfnative.dev/data/errors.json",
       "description": "The engine error registry: every diagnostic code of the PdfDiagnosticCode union and every build-time error message (PDF/X, print, OutputIntent), two-way checked against src/ by the error-parity rule.",
-      "bytes": 20766,
-      "approxTokens": 5192,
-      "sha256": "23bbd0ec7affc08cf04df0c042e67e98ac198aacaa6954b379c58a26233a7d27"
+      "bytes": 21887,
+      "approxTokens": 5472,
+      "sha256": "e49bf3e4c8f03967fcb1eac75149713a813350ce5f801c7c3e0c1dbfe5c96cf7"
     },
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 127502,
       "approxTokens": 31876,
-      "sha256": "7e9bd672b2b2040e2f3d49166d6e11ef354f7a3f2731132418fc14df15567748"
+      "sha256": "62ca0fef1eec8c84652bdb29bf2109052743fadd62eff23ab257fbafb48da879"
     }
   ],
   "guides": [
@@ -485,7 +485,7 @@
       ],
       "bytes": 8067,
       "approxTokens": 2017,
-      "sha256": "af474502d02e3d2c8562b988f83ec89ddf1d42b01824828437dac7527f499744"
+      "sha256": "72164ab3f73a0b1899cd672020eae8d9acf932195f6324ce880f232cb6acfc81"
     },
     {
       "title": "pdfnative-react — Declarative JSX Renderer Guide",

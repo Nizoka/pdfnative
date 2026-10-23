@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 537,
+  "exportCount": 539,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -591,6 +591,13 @@
       "module": "src/core/pdf-annot.ts",
       "signature": "export interface InternalLink",
       "summary": "Internal link annotation (GoTo action — page destination)."
+    },
+    {
+      "name": "JpxInfo",
+      "kind": "type",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export interface JpxInfo",
+      "summary": "What a JPEG 2000 image declares about itself (ISO/IEC 15444-1), read from the JP2 header boxes and the codestream's SIZ marker."
     },
     {
       "name": "KNOWN_DECODE_FILTERS",
@@ -2346,7 +2353,7 @@
       "name": "detectImageFormat",
       "kind": "value",
       "module": "src/core/pdf-image.ts",
-      "signature": "export function detectImageFormat(bytes: Uint8Array): 'jpeg' | 'png' | null",
+      "signature": "export function detectImageFormat(bytes: Uint8Array): 'jpeg' | 'png' | 'jpx' | null",
       "summary": "Detect the image format from magic bytes."
     },
     {
@@ -3061,7 +3068,7 @@
       "kind": "value",
       "module": "src/core/pdf-image.ts",
       "signature": "export function parseImage(bytes: Uint8Array): ParsedImage",
-      "summary": "Parse an image from raw bytes (auto-detect JPEG or PNG)."
+      "summary": "Parse an image from raw bytes (auto-detect JPEG, PNG or JPEG 2000)."
     },
     {
       "name": "parseIndirectObject",
@@ -3076,6 +3083,13 @@
       "module": "src/core/pdf-image.ts",
       "signature": "export function parseJPEG(bytes: Uint8Array): ParsedImage",
       "summary": "Parse a JPEG image to extract dimensions and color space."
+    },
+    {
+      "name": "parseJPX",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function parseJPX(bytes: Uint8Array): ParsedImage",
+      "summary": "Parse a JPEG 2000 image — a JP2 file (ISO/IEC 15444-1 Annex I boxes) or a raw codestream — for the facts the Image XObject needs."
     },
     {
       "name": "parseOcspResponse",

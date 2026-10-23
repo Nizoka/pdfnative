@@ -206,6 +206,35 @@ export function pdfaGlyphWithoutUnicodeDiagnostic(fontName: string, unmapped: re
     };
 }
 
+/**
+ * Diagnostic payload for a JPEG 2000 image under a PDF/A-1 claim (v1.9.0):
+ * PDF/A-1 is built on PDF 1.4, which has no JPXDecode filter.
+ */
+export function pdfa1JpxImageDiagnostic(): PdfDiagnostic {
+    return {
+        code: 'PDFA1_JPX_IMAGE',
+        severity: 'warning',
+        message: "a JPEG 2000 image was embedded under tagged: 'pdfa1b' — PDF/A-1 is PDF 1.4, which has no "
+            + 'JPXDecode filter (ISO 19005-1 §6.1.10; veraPDF rejects the file). Claim PDF/A-2 or later '
+            + "(tagged: 'pdfa2b'), or convert the image to JPEG or PNG.",
+    };
+}
+
+/**
+ * Diagnostic payload for a JPEG 2000 image that breaks the PDF/A-2 image
+ * constraints (v1.9.0): ISO 19005-2 §6.2.8.3 requires 1, 3 or 4 colour
+ * channels and no /SMaskInData.
+ */
+export function pdfaJpxImageDiagnostic(reason: string): PdfDiagnostic {
+    return {
+        code: 'PDFA_JPX_IMAGE',
+        severity: 'warning',
+        message: `a JPEG 2000 image with ${reason} was embedded under a PDF/A claim — ISO 19005-2 §6.2.8.3 `
+            + 'requires 1, 3 or 4 colour channels and no opacity channel (/SMaskInData); veraPDF rejects the '
+            + 'file. Re-encode the image without the extra channels, or drop the PDF/A level.',
+    };
+}
+
 /** Diagnostic payload for annotations or form fields under a PDF/X-4 claim (v1.8.0). */
 export function pdfxAnnotationsDiagnostic(): PdfDiagnostic {
     return {
