@@ -252,7 +252,7 @@ export interface PageBreakBlock {
     readonly type: 'pageBreak';
 }
 
-/** Image block — embeds a JPEG or PNG image. */
+/** Image block — embeds a JPEG, PNG or JPEG 2000 image (the file bytes as written; v1.9.0 for JPEG 2000). */
 export interface ImageBlock {
     readonly type: 'image';
     readonly data: Uint8Array;

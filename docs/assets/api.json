@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 539,
+  "exportCount": 542,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -569,7 +569,7 @@
       "kind": "type",
       "module": "src/types/pdf-document-types.ts",
       "signature": "export interface ImageBlock",
-      "summary": "Image block — embeds a JPEG or PNG image."
+      "summary": "Image block — embeds a JPEG, PNG or JPEG 2000 image (the file bytes as written; v1.9.0 for JPEG 2000)."
     },
     {
       "name": "InspectedBlock",
@@ -1048,6 +1048,13 @@
       "summary": "An info key/value pair displayed in the header section."
     },
     {
+      "name": "PdfInkMix",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfInkMix",
+      "summary": "A mix of declared spot inks, each at a tint 0–1: a `/DeviceN` colour space over those inks whose tint transform combines their alternates."
+    },
+    {
       "name": "PdfLayoutOptions",
       "kind": "type",
       "module": "src/types/pdf-types.ts",
@@ -1151,6 +1158,13 @@
       "module": "src/parser/pdf-pagetree.ts",
       "signature": "export type PdfSourceInput = Uint8Array | { readonly bytes: Uint8Array; readonly password?: string };",
       "summary": "A merge source: raw PDF bytes, or bytes paired with the password needed to decrypt an encrypted source."
+    },
+    {
+      "name": "PdfSpotColor",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfSpotColor",
+      "summary": "A spot colour: one ink declared in `layout.print.spotColours`, painted at `tint` (0–1, default 1)."
     },
     {
       "name": "PdfStream",
@@ -1368,6 +1382,13 @@
       "module": "src/parser/pdf-pagetree.ts",
       "signature": "export interface SplitPdfStream",
       "summary": "One emitted document from streamSplitPdf."
+    },
+    {
+      "name": "SpotColourDef",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface SpotColourDef",
+      "summary": "A spot ink the document may paint with: its name (the `/Separation` colorant and the plate name a RIP shows) and its alternate in a process space — CMYK percentages for a press job, RGB 0–255 for an RGB OutputIntent — used wherever the ink "
     },
     {
       "name": "StreamErrorPolicy",

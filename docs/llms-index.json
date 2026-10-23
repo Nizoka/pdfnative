@@ -7,21 +7,21 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 25304,
       "approxTokens": 6326,
-      "sha256": "50d6fc0472194fa3ebbd693e047186348939f480fe50e2a67af52a124a359107"
+      "sha256": "7113a8901145d074cb38b2052b4436a9e9971b47d7c38b9417179f72186660c0"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
       "bytes": 16316,
       "approxTokens": 4079,
-      "sha256": "3ada1739616003b4dadc06dface57e03aca78aeb0d2fb104af1bd769324bad82"
+      "sha256": "f9ba65b90e03b58bb87663a5a1fceaa50c2eb7e318e8a8a1b8fbb0fd5b0750f0"
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
       "bytes": 726522,
       "approxTokens": 181631,
-      "sha256": "486acee1f6fadcc97c7fdf99a1506f3545010c0127171b677eec0e8ee8fb7bd4"
+      "sha256": "b67ad84442b762ba72b3629f94e834b596ac226f869bb4d5731d4273aaceb2c9"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -33,37 +33,37 @@
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 149750,
-      "approxTokens": 37438,
-      "sha256": "e6b2baadc3be2c6a30a7377c9f3a77bbae1d8ae3728e3398b0fff2fdd32c69bd"
+      "bytes": 150830,
+      "approxTokens": 37708,
+      "sha256": "38069e6232f630aa4b64704908d9e6491bec049bd47ecc09ce4726d5723e4ddd"
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
       "description": "The capability × surface matrix (library / CLI / MCP / React) behind the choose guide, with an honest note on every unsupported cell.",
       "bytes": 19871,
       "approxTokens": 4968,
-      "sha256": "0613acc8614bd16166817adb17b498649d5158a87ace83beac8cc078bac5670a"
+      "sha256": "8e80ab353e6e36c99378e864719057432b294c5605c728283772b718aa62b08a"
     },
     {
       "url": "https://pdfnative.dev/data/errors.json",
       "description": "The engine error registry: every diagnostic code of the PdfDiagnosticCode union and every build-time error message (PDF/X, print, OutputIntent), two-way checked against src/ by the error-parity rule.",
       "bytes": 21887,
       "approxTokens": 5472,
-      "sha256": "e49bf3e4c8f03967fcb1eac75149713a813350ce5f801c7c3e0c1dbfe5c96cf7"
+      "sha256": "bdc0625b0fcd446b9c4dbf51354f65a50598fbfb53f0086d2237ccf23c031f8b"
     },
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
       "description": "Inventory of the live playgrounds — URL, purpose, DOM controls, options exercised, preconditions — so an agent can drive or reproduce one without scraping the page.",
       "bytes": 25585,
       "approxTokens": 6396,
-      "sha256": "4088561f243470497a81202fb13bf0fd9b82a28f8564379a5d6a7eebd2168a8b"
+      "sha256": "7c36c883bcb52d732d1a1346d17409184e7f663382b294fe5fe5a13d3f8ef131"
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 127701,
       "approxTokens": 31925,
-      "sha256": "f959e65e9d228c3f7afcf55c3942a131693c910fcf649b5e4100e5bad3587f20"
+      "sha256": "7bb9f00b3231ffce2f2eb0ccdb61a963c9998d7d8d735f4c9deb3eeaa4b22c47"
     }
   ],
   "guides": [
@@ -84,7 +84,7 @@
       ],
       "bytes": 7485,
       "approxTokens": 1871,
-      "sha256": "87c8b82b8cc3c82b8c046e9b1515acc8820d928b0e4b38e2a03241eba256967c"
+      "sha256": "5645c5dd5ebf11a73b55084125eb6e7b11051474daa81e28ff2d0f9ab11a44fe"
     },
     {
       "title": "Agentic workflows",
@@ -442,7 +442,7 @@
       ],
       "bytes": 17649,
       "approxTokens": 4412,
-      "sha256": "ac047f9b7823fe03cbb375461ccdbd1ff55dc6aca94dbd1314d35ad36b9f2447"
+      "sha256": "723b8847c1a5515a4faf5957a28b37ad015f4b7a483848649fe34c1843997ab1"
     },
     {
       "title": "Print production — bleed, trim & printer's marks",
@@ -485,7 +485,7 @@
       ],
       "bytes": 8067,
       "approxTokens": 2017,
-      "sha256": "72164ab3f73a0b1899cd672020eae8d9acf932195f6324ce880f232cb6acfc81"
+      "sha256": "21c85502f6d5530c8454ad0ac0dc5d24419986a416e9e33268e5dae9a9263cd9"
     },
     {
       "title": "pdfnative-react — Declarative JSX Renderer Guide",

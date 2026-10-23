@@ -480,7 +480,7 @@ const pdf = buildDocumentPDFBytes({
       </div>
       <p class="demo-note">
         Need more? Browse all
-        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">50 generators (292 sample PDFs)</a>
+        <a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">50 generators (310 sample PDFs)</a>
         on GitHub.
       </p>
     </div>
@@ -820,7 +820,7 @@ const pdf = renderToBytes(
 <section class="section section-alt" id="mcp">
   <div class="container">
     <h2 class="section-title">Use pdfnative from Any AI Client</h2>
-    <!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
+    <!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.9.0 (27 scripts)) -->
       <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the pdfnative engine as 28 tools and seven prompts to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with the complete PAdES ladder (<code>sign_pdf</code> with RFC 3161 timestamps, <code>add_ltv</code>, <code>timestamp_pdf</code>), <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, all 13 block kinds in <code>generate_basic_pdf</code>, print production, charts v2, page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, a <code>pdfA</code> flag on every document tool, and token-frugal read modes — on the MCP 2026-07-28 spec with automatic legacy fallback. v1.7.0 brings the pdfnative 1.9.0 engine to the same 28 tools: a <code>typography</code> object on every document tool, CMYK colours and PDF/X-4 (<code>pdfx: 'pdfx4'</code>, <code>validate_pdf</code> with <code>standard: 'pdf-x-4'</code>), 27 scripts, a seventh prompt, and byte-reproducible output pinned by <code>PDFNATIVE_MCP_CREATION_DATE</code> or <code>SOURCE_DATE_EPOCH</code>.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
@@ -832,7 +832,7 @@ const pdf = renderToBytes(
             <tr><td><code>generate_basic_pdf</code></td><td>Multi-page documents — all 13 block kinds since v1.6.0 (incl. tables, images, links, TOC, barcodes, SVG, form fields, charts). Optional <code>pdfA</code>, layout options, build-time <code>encrypt</code>, print production; <code>creationDate</code> (v1.6.0); <code>typography</code>, CMYK colours, <code>pdfx: 'pdfx4'</code> with a CMYK or Gray <code>outputIntent</code> and colour bars (v1.7.0).</td></tr>
             <tr><td><code>add_table</code></td><td>Tabular reports — now with optional <code>autoFitColumns</code> and <code>clipCells</code> (pdfnative v1.2 <code>TableBlock</code>).</td></tr>
             <tr><td><code>add_barcode</code></td><td>QR Code, Code 128, EAN-13, Data Matrix, PDF417</td></tr>
-<!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
+<!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.9.0 (27 scripts)) -->
             <tr><td><code>add_international_text</code></td><td><code>lang</code> font codes for all 27 Unicode scripts (<code>lo</code>, <code>nod</code>, <code>khb</code>, <code>tdd</code>, <code>cjm</code> since v1.7.0) + <code>latin</code> + <code>emoji</code> + explicit <code>math</code>, with BiDi &amp; OpenType shaping. <code>lang</code> accepts <code>string</code>, <code>string[]</code>, or comma-separated — e.g. <code>["ar", "emoji"]</code>.</td></tr>
             <tr><td><code>add_form</code></td><td>Interactive AcroForm fields — <code>text</code>, <code>textarea</code>, <code>checkbox</code>, <code>radio</code>, <code>dropdown</code>, plus <code>listbox</code> and <code>placeholder</code> (v1.6.0)</td></tr>
             <tr><td><code>embed_image</code></td><td>JPEG / PNG image embedding, with <code>align</code> / <code>alt</code> (v1.6.0)</td></tr>
@@ -885,7 +885,7 @@ const pdf = renderToBytes(
 <section class="section" id="cli">
   <div class="container">
     <h2 class="section-title">Use pdfnative from your shell, CI, or Makefile</h2>
-    <!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
+    <!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.9.0 (27 scripts)) -->
       <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. 21 commands in five groups, zero extra runtime dependencies, stdin/stdout pipelines, npm-provenance-signed. It covers the whole document lifecycle: author with <code>render</code>, <code>fill</code>, <code>annotate</code> and <code>metadata</code>, restructure with <code>merge</code> / <code>split</code> / <code>extract</code>, secure with <code>sign</code> / <code>verify</code> / <code>ltv</code> / <code>doc-timestamp</code> / <code>encrypt</code> / <code>decrypt</code> — the complete PAdES ladder, B-B → B-LTA — read back with <code>inspect</code>, <code>extract-text</code> and <code>compare</code>, and automate with <code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code> and the AI-governance <code>govern</code> gate. Installing the package puts a <code>pdfnative</code> binary on your PATH. v1.5.0 brings the pdfnative 1.9.0 engine to the shell: typography flags, PDF/X-4 output checked by <code>inspect --check pdfx</code>, CMYK colours, your own fonts via <code>--font-file</code>, 27 scripts, and byte-reproducible builds pinned by a global <code>--creation-date</code> or <code>SOURCE_DATE_EPOCH</code>.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">

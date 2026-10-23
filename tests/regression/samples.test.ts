@@ -82,10 +82,11 @@ describe.runIf(havecorpus)('sample regression baseline', { timeout: 120_000 }, (
         // The chain is the point: a large share of the entries must still be
         // held to what 1.7.0 emitted, not silently re-anchored to the current
         // tree (which is what a rebaseline with no previous manifest does).
-        // 1.8.0 keeps 122 of 271: every sample embedding a hinted TrueType
-        // face was re-anchored once, deliberately, when the subsetter started
-        // keeping the hinting tables. The provenance note in the manifest
-        // accounts for each group.
+        // 1.8.0 kept 122 of 271 (the subsetter started keeping the hinting
+        // tables); 1.9.0 keeps 131 of 292: the lean embeds re-anchor every
+        // document with a TrueType subset, the full UAX #9 every right-to-left
+        // document, and the transparency group and tagged-table semantics the
+        // rest — sixteen causes, each a ledger entry of the release note.
         const baseline = loadBaseline()!;
         const inherited = Object.values(baseline.entries)
             .filter(e => e.since !== baseline.baselineVersion).length;

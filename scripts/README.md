@@ -1,6 +1,6 @@
 # scripts/ – Sample PDF Generation and the Quality Gate
 
-Generates 292 sample PDFs (50 generators) for visual inspection across all supported languages, features, and edge cases, and hosts `gate.ts`, the one definition of what "green" means for this repository.
+Generates 310 sample PDFs (50 generators) for visual inspection across all supported languages, features, and edge cases, and hosts `gate.ts`, the one definition of what "green" means for this repository.
 
 `run-compat.ts` (`npm run compat:previous`) replays the previous release's test suite, as tagged, against the current sources (`tests/compat/allow-<version>.json` lists what it may skip, each with a reason and a compatibility-ledger entry).
 

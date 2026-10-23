@@ -96,7 +96,7 @@ The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, play
 pdfnative's PDF/A claims are backed by the official reference validator,
 [veraPDF](https://verapdf.org). `npm run validate:pdfa` scans `test-output/`
 (run `npm run test:generate` first), **auto-detects** every PDF that declares
-`pdfaid:part` in its XMP — currently the 21 PDF/A-claiming samples — and
+`pdfaid:part` in its XMP — currently the 24 PDF/A-claiming samples — and
 validates each against its declared profile (1b/2b/2u/3b). Detection is
 automatic: a new sample that claims PDF/A is validated without registering
 anything, and a coverage canary fails the run if the detected count drifts
@@ -172,7 +172,7 @@ src/
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # 36 pre-built font-data modules (32 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (50 generators, 292 PDFs) and the verification scripts
+scripts/          # Modular sample PDF generation (50 generators, 310 PDFs) and the verification scripts
 tests/            # 174 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
