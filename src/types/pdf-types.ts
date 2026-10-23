@@ -404,6 +404,14 @@ export interface KernTable {
     readonly c: readonly KernClassSubtable[] | null;
 }
 
+/**
+ * Base direction of a paragraph: detected from its first strong character
+ * (`'auto'`, UAX #9 P2–P3) or forced.
+ *
+ * @since 1.9.0
+ */
+export type TextDirection = 'auto' | 'ltr' | 'rtl';
+
 /** Encoding context encapsulating text encoding and font reference logic. */
 export interface EncodingContext {
     readonly isUnicode: boolean;
@@ -431,6 +439,20 @@ export interface EncodingContext {
      * ToUnicode CMap builder. Present only on Unicode contexts. (v1.9.0, #84)
      */
     readonly getToUnicodeEncoded?: () => Map<string, Map<number, number>>;
+    /**
+     * Derive a context for one paragraph: its bidirectional levels are resolved
+     * once over the whole logical text (UAX #9 P1–I2) and every line drawn
+     * through the derived context is reordered from them (L1–L4), so a
+     * wrapped line keeps the direction of the paragraph it belongs to. Returns
+     * the context itself when the paragraph needs no bidirectional resolution.
+     * Present only on Unicode contexts. (v1.9.0)
+     */
+    readonly withParagraph?: (text: string, direction?: TextDirection) => EncodingContext;
+    /**
+     * The paragraph embedding level (0 or 1) of the paragraph a context was
+     * derived for through `withParagraph`; absent otherwise. (v1.9.0)
+     */
+    readonly paragraphLevel?: number;
     /**
      * Colour-emoji collector — present only when an `'emoji-color'` font
      * (carrying `colorGlyphs`) is registered. Used by the text emitter to
@@ -1148,6 +1170,22 @@ export interface PdfLayoutOptions {
      * @since 1.3.0
      */
     readonly normalize?: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false;
+    /**
+     * Base direction of the document's paragraphs (UAX #9).
+     *
+     * - `'auto'`: each paragraph takes the direction of its first strong
+     *   character (P2–P3) — a Hebrew or Arabic paragraph is laid out
+     *   right-to-left and right-aligned by default, a Latin one left-to-right.
+     * - `'rtl'` / `'ltr'`: every paragraph is forced to that base direction.
+     * - omitted: the 1.8.0 behaviour — bidirectional text is still resolved
+     *   per paragraph, but alignment defaults to the left whatever the script.
+     *
+     * A paragraph block's own `direction` overrides this. Byte-identical when
+     * omitted.
+     *
+     * @since 1.9.0
+     */
+    readonly direction?: TextDirection;
     /**
      * Override the PDF creation date embedded in `/Info /CreationDate` and
      * XMP metadata. Accepts any `Date` object.

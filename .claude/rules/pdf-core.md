@@ -122,8 +122,8 @@ paths:
 - `annotsByPage` grouping ensures each page references only its own annotations
 
 ## BiDi Text Support (UAX #9)
-- BiDi resolution integrated at encoding level — `textRuns()` and `ps()` in encoding.ts check `containsRTL()` first
-- When RTL detected: `resolveBidiRuns()` produces visual-order runs with embedding levels
+- BiDi resolution integrated at encoding level — `textRuns()` and `ps()` in `encoding-context.ts` check `containsRTL()` first; since 1.9.0 the full UAX #9 algorithm (see text-shaping instructions), resolved once per paragraph through `EncodingContext.withParagraph()` and reordered per line
+- When RTL detected: `resolveBidiRuns()` (or the paragraph's levels) produces visual-order runs with embedding levels; `layout.direction` / `ParagraphBlock.direction` set the base direction and the default alignment
 - RTL Arabic runs: un-reverse to logical order → `shapeArabicText()` → reverse shaped glyphs for visual order
 - RTL Hebrew runs: already reversed by BiDi — encode directly (no positional shaping needed)
 - LTR runs: standard encoding path (no BiDi processing)

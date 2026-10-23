@@ -9,7 +9,7 @@
  * independent of shaping/.
  */
 
-import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics } from '../types/pdf-types.js';
+import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics, TextDirection } from '../types/pdf-types.js';
 import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi, narrowNoBreakSpaceCorrection } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { preferredCodepoint } from '../fonts/unicode-preference.js';
@@ -18,7 +18,8 @@ import { applyKerningToRuns } from '../fonts/font-kerning.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
 import { findShaper, type ScriptShaper } from '../shaping/shaper-registry.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
-import { resolveBidiRuns, containsRTL, reverseString, stripBidiControls } from '../shaping/bidi.js';
+import { resolveBidiRuns, resolveBidiLevels, bidiRunsForLine, containsRTL, reverseString, stripBidiControls } from '../shaping/bidi.js';
+import type { BidiRun } from '../shaping/bidi.js';
 import { hasSequenceTriggers, matchEmojiSequences } from '../shaping/emoji-sequences.js';
 import { isArabicCodepoint, containsArabic } from '../shaping/script-registry.js';
 import { createColorEmojiCollector } from './color-emoji.js';
@@ -369,151 +370,11 @@ export function createEncodingContext(
         colorEmoji: _colorEmoji,
 
         textRuns(str: string, sz: number): TextRun[] {
-            if (!str) return [];
-            str = _norm(str);
-            // Strip invisible BiDi controls. The BiDi resolver below consumes
-            // them when it runs, but it only runs on RTL paragraphs — pure-LTR
-            // text with an orphan PDF/LRI/RLI marker would otherwise reach the
-            // cmap as .notdef.
-            str = stripBidiControls(str);
-            // Soft hyphens are conditional: the line breaker already
-            // materialised a real hyphen wherever it broke, so any that
-            // survive to here must render as nothing (Unicode §23.2).
-            str = stripSoftHyphens(str);
-            if (!str) return [];
-            // ── RTL path: BiDi reordering ────────────────────────────
-            if (containsRTL(str)) {
-                const bidiRuns = resolveBidiRuns(str);
-                const result: TextRun[] = [];
-
-                for (const bRun of bidiRuns) {
-                    const isRTL = bRun.level % 2 === 1;
-                    const fontRuns = splitTextByFont(bRun.text, fontEntries);
-
-                    for (const fRun of fontRuns) {
-                        const fd = fRun.entry.fontData;
-                        const upm = fd.metrics.unitsPerEm;
-                        const fontRef = fRun.entry.fontRef;
-
-                        if (isRTL && containsArabic(fRun.text)) {
-                            // Split into Arabic-shapeable segments and non-Arabic segments.
-                            // Non-Arabic chars (e.g. em-dash) without a CIDFont glyph must
-                            // fall back to Helvetica, not pass through shapeArabicText()
-                            // where they would produce .notdef (gid 0).
-                            const segments = splitArabicNonArabic(fRun.text, fd);
-                            for (const seg of segments) {
-                                if (seg.arabic) {
-                                    const logical = reverseString(seg.text);
-                                    const shaped = shapeArabicText(logical, fd);
-                                    const visual = shaped.slice().reverse();
-                                    let designW = 0;
-                                    for (const g of visual) {
-                                        _trackGid(fontRef, g.gid);
-                                        if (!g.isZeroAdvance) {
-                                            designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
-                                        }
-                                    }
-                                    result.push({ text: seg.text, fontRef, fontData: fd, shaped: visual, hexStr: null, widthPt: designW * sz / upm });
-                                } else {
-                                    // Non-Arabic segment: use Helvetica fallback
-                                    const subRuns = buildTextRunsWithFallback(seg.text, fontRef, fd, sz, _trackGid, pdfA);
-                                    result.push(...subRuns);
-                                }
-                            }
-                        } else if (isRTL) {
-                            // RTL non-Arabic (Hebrew etc.): text already reversed by BiDi
-                            // Use fallback helper to handle Latin chars not covered by CIDFont
-                            const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA);
-                            result.push(...subRuns);
-                        } else {
-                            // LTR run: standard path
-                            const shaper = findShaper(fRun.text);
-                            if (shaper) {
-                                result.push(shapedRun(fRun.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph));
-                            } else {
-                                // LTR non-shaped: use fallback helper
-                                const subRuns = buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA);
-                                result.push(...subRuns);
-                            }
-                        }
-                    }
-                }
-                return result;
-            }
-
-            // ── LTR path: existing logic ─────────────────────────────
-            const rawRuns = splitTextByFont(str, fontEntries);
-            return rawRuns.flatMap(run => {
-                const fd = run.entry.fontData;
-                const fontRef = run.entry.fontRef;
-
-                const shaper = findShaper(run.text);
-                if (shaper) return [shapedRun(run.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph)];
-
-                return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid, pdfA);
-            });
+            return runsOf(str, sz, resolvePerLine);
         },
 
         ps(str: string): string {
-            if (!str) return '<>';
-            str = _norm(str);
-            // Strip invisible BiDi controls before encoding (see textRuns above).
-            str = stripSoftHyphens(stripBidiControls(str));
-            if (!str) return '<>';
-            const { cmap } = primary.fontData;
-
-            // BiDi path for RTL text
-            if (containsRTL(str)) {
-                const bidiRuns = resolveBidiRuns(str);
-                let hex = '';
-                for (const bRun of bidiRuns) {
-                    const isRTL = bRun.level % 2 === 1;
-                    if (isRTL && containsArabic(bRun.text)) {
-                        const logical = reverseString(bRun.text);
-                        const shaped = shapeArabicText(logical, primary.fontData);
-                        for (let i = shaped.length - 1; i >= 0; i--) {
-                            _trackGid(primary.fontRef, shaped[i].gid);
-                            hex += shaped[i].gid.toString(16).padStart(4, '0');
-                        }
-                    } else {
-                        for (let i = 0; i < bRun.text.length; i++) {
-                            const rawCp = bRun.text.codePointAt(i) ?? 0;
-                            if (rawCp > 0xFFFF) i++;
-                            const cp = spaceCodepoint(primary.fontData, rawCp);
-                            const gid = cmap[cp] || 0;
-                            _trackGid(primary.fontRef, gid);
-                            hex += gid.toString(16).padStart(4, '0');
-                        }
-                    }
-                }
-                return `<${hex.toUpperCase()}>`;
-            }
-
-            const shaper = findShaper(str);
-            if (!shaper) {
-                let hex = '';
-                for (let i = 0; i < str.length; i++) {
-                    const rawCp = str.codePointAt(i) ?? 0;
-                    if (rawCp > 0xFFFF) i++;
-                    const cp = spaceCodepoint(primary.fontData, rawCp);
-                    const gid = cmap[cp] || 0;
-                    _trackGid(primary.fontRef, gid, cp);
-                    hex += gid.toString(16).padStart(4, '0');
-                }
-                return `<${hex.toUpperCase()}>`;
-            }
-            // Shaped text path: the registry's first match, as the hand-written
-            // ternary chain did. Note the chain's last arm was an UNGUARDED
-            // fall-through to Devanagari; the registry cannot reach here at all
-            // unless some predicate matched, so that hazard is gone.
-            const shaped = shaper.shape(str, primary.fontData);
-            let hex = '';
-            for (const g of shaped) {
-                _trackGid(primary.fontRef, g.gid);
-                if (g.cps && g.cps.length > 0) _onShapedGlyph(primary.fontRef, g.gid, g.cps);
-                hex += g.gid.toString(16).padStart(4, '0');
-            }
-            return `<${hex.toUpperCase()}>`;
+            return psOf(str, resolvePerLine);
         },
 
         tw(str: string, sz: number): number {
@@ -523,7 +384,194 @@ export function createEncodingContext(
             for (const run of runs) total += run.widthPt;
             return total;
         },
+
+        withParagraph(text: string, direction?: TextDirection): EncodingContext {
+            const para = _norm(text);
+            // Nothing right-to-left anywhere and no forced RTL base: every line
+            // resolves to its logical order — the undirected context serves.
+            if (direction !== 'rtl' && !containsRTL(para)) return ctx;
+            const { paraLevel, levels } = resolveBidiLevels(para, direction ?? 'auto');
+            let cursor = 0;
+            let lastAt = -1;
+            const resolve = (line: string): BidiRun[] | null => {
+                // In an LTR paragraph a line without right-to-left characters
+                // keeps its logical order; in an RTL paragraph even a Latin-only
+                // line carries the paragraph level (its neutrals, its alignment).
+                if (paraLevel === 0 && !containsRTL(line)) return null;
+                let at = lastAt >= 0 && para.startsWith(line, lastAt) ? lastAt : para.indexOf(line, cursor);
+                if (at === -1) at = para.indexOf(line);
+                // A line the wrapper rewrote (a materialised hyphen, a dropped
+                // soft hyphen) is no substring of the paragraph: resolve it alone.
+                if (at === -1) return resolveBidiRuns(line);
+                lastAt = at;
+                cursor = at + line.length;
+                return bidiRunsForLine(line, levels.slice(at, cursor), paraLevel);
+            };
+            const derived: EncodingContext = {
+                ...ctx,
+                paragraphLevel: paraLevel,
+                textRuns: (str: string, sz: number) => runsOf(str, sz, resolve),
+                ps: (str: string) => psOf(str, resolve),
+                tw(str: string, sz: number): number {
+                    if (!str) return 0;
+                    let total = 0;
+                    for (const run of derived.textRuns(str, sz)) total += run.widthPt;
+                    return total;
+                },
+            };
+            return derived;
+        },
     };
+
+    /** Per-line resolution: the text is its own paragraph (UAX #9 P1 on one line). */
+    function resolvePerLine(str: string): BidiRun[] | null {
+        return containsRTL(str) ? resolveBidiRuns(str) : null;
+    }
+
+    /**
+     * The runs of one line. The resolver sees the text with its directional
+     * formatting characters (they steer the algorithm) and leaves them out of
+     * the runs; soft hyphens are conditional and vanish here — the line
+     * breaker materialised a real hyphen wherever it broke (Unicode §23.2).
+     */
+    function runsOf(str: string, sz: number, resolve: (line: string) => BidiRun[] | null): TextRun[] {
+        if (!str) return [];
+        str = _norm(str);
+        const bidiRuns = resolve(str);
+        if (bidiRuns !== null) {
+            const result: TextRun[] = [];
+            for (const bRun of bidiRuns) {
+                const runText = stripSoftHyphens(bRun.text);
+                if (!runText) continue;
+                const isRTL = bRun.level % 2 === 1;
+                const fontRuns = splitTextByFont(runText, fontEntries);
+                for (const fRun of fontRuns) {
+                    const fd = fRun.entry.fontData;
+                    const upm = fd.metrics.unitsPerEm;
+                    const fontRef = fRun.entry.fontRef;
+
+                    if (isRTL && containsArabic(fRun.text)) {
+                        // Split into Arabic-shapeable segments and non-Arabic segments.
+                        // Non-Arabic chars (e.g. em-dash) without a CIDFont glyph must
+                        // fall back to Helvetica, not pass through shapeArabicText()
+                        // where they would produce .notdef (gid 0).
+                        const segments = splitArabicNonArabic(fRun.text, fd);
+                        for (const seg of segments) {
+                            if (seg.arabic) {
+                                const logical = reverseString(seg.text);
+                                const shaped = shapeArabicText(logical, fd);
+                                const visual = shaped.slice().reverse();
+                                let designW = 0;
+                                for (const g of visual) {
+                                    _trackGid(fontRef, g.gid);
+                                    if (g.cps && g.cps.length > 0) _onShapedGlyph(fontRef, g.gid, g.cps);
+                                    if (!g.isZeroAdvance) {
+                                        designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
+                                    }
+                                }
+                                result.push({ text: seg.text, fontRef, fontData: fd, shaped: visual, hexStr: null, widthPt: designW * sz / upm });
+                            } else {
+                                // Non-Arabic segment: use Helvetica fallback
+                                result.push(...buildTextRunsWithFallback(seg.text, fontRef, fd, sz, _trackGid, pdfA));
+                            }
+                        }
+                    } else if (isRTL) {
+                        // RTL non-Arabic (Hebrew etc.): text already reversed by BiDi.
+                        // Use fallback helper to handle Latin chars not covered by CIDFont.
+                        result.push(...buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA));
+                    } else {
+                        // LTR run: standard path
+                        const shaper = findShaper(fRun.text);
+                        if (shaper) {
+                            result.push(shapedRun(fRun.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph));
+                        } else {
+                            result.push(...buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA));
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        // ── LTR path ─────────────────────────────────────────────────
+        // A directional formatting character left here has no glyph in any
+        // font and would reach the cmap as .notdef.
+        str = stripSoftHyphens(stripBidiControls(str));
+        if (!str) return [];
+        const rawRuns = splitTextByFont(str, fontEntries);
+        return rawRuns.flatMap(run => {
+            const fd = run.entry.fontData;
+            const fontRef = run.entry.fontRef;
+
+            const shaper = findShaper(run.text);
+            if (shaper) return [shapedRun(run.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph)];
+
+            return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid, pdfA);
+        });
+    }
+
+    /** Single-font hex string of one line (the table builder's path). */
+    function psOf(str: string, resolve: (line: string) => BidiRun[] | null): string {
+        if (!str) return '<>';
+        str = _norm(str);
+        const { cmap } = primary.fontData;
+
+        const bidiRuns = resolve(str);
+        if (bidiRuns !== null) {
+            let hex = '';
+            for (const bRun of bidiRuns) {
+                const runText = stripSoftHyphens(bRun.text);
+                if (!runText) continue;
+                const isRTL = bRun.level % 2 === 1;
+                if (isRTL && containsArabic(runText)) {
+                    const logical = reverseString(runText);
+                    const shaped = shapeArabicText(logical, primary.fontData);
+                    for (let i = shaped.length - 1; i >= 0; i--) {
+                        const g = shaped[i];
+                        _trackGid(primary.fontRef, g.gid);
+                        if (g.cps && g.cps.length > 0) _onShapedGlyph(primary.fontRef, g.gid, g.cps);
+                        hex += g.gid.toString(16).padStart(4, '0');
+                    }
+                } else {
+                    for (let i = 0; i < runText.length; i++) {
+                        const rawCp = runText.codePointAt(i) ?? 0;
+                        if (rawCp > 0xFFFF) i++;
+                        const cp = spaceCodepoint(primary.fontData, rawCp);
+                        const gid = cmap[cp] || 0;
+                        _trackGid(primary.fontRef, gid, cp);
+                        hex += gid.toString(16).padStart(4, '0');
+                    }
+                }
+            }
+            return `<${hex.toUpperCase()}>`;
+        }
+
+        str = stripSoftHyphens(stripBidiControls(str));
+        if (!str) return '<>';
+        const shaper = findShaper(str);
+        if (!shaper) {
+            let hex = '';
+            for (let i = 0; i < str.length; i++) {
+                const rawCp = str.codePointAt(i) ?? 0;
+                if (rawCp > 0xFFFF) i++;
+                const cp = spaceCodepoint(primary.fontData, rawCp);
+                const gid = cmap[cp] || 0;
+                _trackGid(primary.fontRef, gid, cp);
+                hex += gid.toString(16).padStart(4, '0');
+            }
+            return `<${hex.toUpperCase()}>`;
+        }
+        // Shaped text path: the registry's first match. Every glyph reports
+        // its code points so the ToUnicode CMap covers it.
+        const shaped = shaper.shape(str, primary.fontData);
+        let hex = '';
+        for (const g of shaped) {
+            _trackGid(primary.fontRef, g.gid);
+            if (g.cps && g.cps.length > 0) _onShapedGlyph(primary.fontRef, g.gid, g.cps);
+            hex += g.gid.toString(16).padStart(4, '0');
+        }
+        return `<${hex.toUpperCase()}>`;
+    }
 
     return withFeatureSupport(ctx, _onSubstitute);
 }
@@ -557,6 +605,7 @@ export function applyDocumentKerning(enc: EncodingContext, on: boolean | undefin
     if (on !== true || !enc.isUnicode) return enc;
     if (!enc.fontEntries.some(fe => fe.fontData.kern)) return enc;
 
+    const baseParagraph = enc.withParagraph;
     const kerned: EncodingContext = {
         ...enc,
         textRuns: (str: string, sz: number) => applyKerningToRuns(enc.textRuns(str, sz), sz),
@@ -566,6 +615,13 @@ export function applyDocumentKerning(enc: EncodingContext, on: boolean | undefin
             for (const run of kerned.textRuns(str, sz)) total += run.widthPt;
             return total;
         },
+        // A paragraph context derived from the kerned context kerns too.
+        withParagraph: baseParagraph === undefined
+            ? undefined
+            : (text: string, direction?: TextDirection): EncodingContext => {
+                const para = baseParagraph(text, direction);
+                return para === enc ? kerned : applyDocumentKerning(para, true);
+            },
     };
     return kerned;
 }
@@ -589,6 +645,7 @@ function withFeatureSupport(
     base: EncodingContext,
     onSubstitute: (fontRef: string, fromGid: number, toGid: number, fd: FontData) => void,
 ): EncodingContext {
+    const baseParagraph = base.withParagraph;
     function derive(tags: readonly string[]): EncodingContext {
         // Nothing to do when no font in play declares any of the tags. Return
         // the wrapper, not `base`, so callers can compare by identity to see
@@ -618,10 +675,42 @@ function withFeatureSupport(
             getFeatureUsage: () => usage,
             // Deriving again replaces the feature set rather than stacking it.
             withFeatures: derive,
+            // A paragraph context derived here applies the same features and
+            // reports into the same usage counters.
+            withParagraph: baseParagraph === undefined
+                ? undefined
+                : (text: string, direction?: TextDirection): EncodingContext => {
+                    const para = baseParagraph(text, direction);
+                    if (para === base) return derived;
+                    const featured: EncodingContext = {
+                        ...para,
+                        textRuns: (str: string, sz: number) => applyFeaturesToRuns(para.textRuns(str, sz), tags, sz, track),
+                        tw(str: string, sz: number): number {
+                            if (!str) return 0;
+                            let total = 0;
+                            for (const run of featured.textRuns(str, sz)) total += run.widthPt;
+                            return total;
+                        },
+                        getFeatureUsage: () => usage,
+                        withFeatures: derive,
+                    };
+                    return featured;
+                },
         };
         return derived;
     }
 
-    const wrapper: EncodingContext = { ...base, withFeatures: derive };
+    const wrapper: EncodingContext = {
+        ...base,
+        withFeatures: derive,
+        // The wrapper is the context callers hold: a paragraph that needs no
+        // resolution must come back as the wrapper itself, by identity.
+        withParagraph: baseParagraph === undefined
+            ? undefined
+            : (text: string, direction?: TextDirection): EncodingContext => {
+                const para = baseParagraph(text, direction);
+                return para === base ? wrapper : para;
+            },
+    };
     return wrapper;
 }

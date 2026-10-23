@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 25217,
       "approxTokens": 6304,
-      "sha256": "5b319ddb6e71a0cc54464ed83953bdfab9c812beedd5186cae393e13039ebad3"
+      "sha256": "d53a6b405dd64dfcc3d22d43fd042cf34d180ee82b3f8737c68c69d0959f04c4"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -21,7 +21,7 @@
       "description": "Full corpus: index + README + every guide, one request.",
       "bytes": 719126,
       "approxTokens": 179782,
-      "sha256": "7c47396807d0ddc3a04e6fe6ca22627b04dcdf4c6214045efd29a622cb744970"
+      "sha256": "168c81c4774b3d75bac764d7de4f3fd089815d2a8b5c33aa6eb268c98a7bcf6e"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -33,9 +33,9 @@
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 142359,
-      "approxTokens": 35590,
-      "sha256": "bb2e4ce548c3d1556c051763112d9f2f927caa83a9bc8b126af497c92a5c4f35"
+      "bytes": 144767,
+      "approxTokens": 36192,
+      "sha256": "74e55808f38eb0aeb5c8baee659df70eec73c5afe2a48439cfe401d03aff3431"
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 121181,
       "approxTokens": 30295,
-      "sha256": "0c3c8ba06565da1901fa5ef35794d3dd7b45bf067dcb49c8737f8a18f561a1af"
+      "sha256": "c4b1b4a80a776b571d25e9a90edaf05155bc140d6cb21c9576d1cdf82233ac3f"
     }
   ],
   "guides": [

@@ -41,7 +41,7 @@ describe('classifyBidiType', () => {
 
     it('should classify whitespace as WS', () => {
         expect(classifyBidiType(0x0020)).toBe('WS'); // Space
-        expect(classifyBidiType(0x0009)).toBe('WS'); // Tab
+        expect(classifyBidiType(0x0009)).toBe('S'); // Tab is a segment separator (UCD)
     });
 
     it('should classify plus/minus as ES', () => {
@@ -71,8 +71,8 @@ describe('classifyBidiType', () => {
         expect(classifyBidiType(0x2018)).toBe('ON'); // Left single quote
         expect(classifyBidiType(0x201C)).toBe('ON'); // Left double quote
         expect(classifyBidiType(0x2026)).toBe('ON'); // Ellipsis
-        expect(classifyBidiType(0x2030)).toBe('ON'); // Per mille
-        expect(classifyBidiType(0x2032)).toBe('ON'); // Prime
+        expect(classifyBidiType(0x2030)).toBe('ET'); // Per mille is a European terminator (UCD)
+        expect(classifyBidiType(0x2032)).toBe('ET'); // Prime is a European terminator (UCD)
     });
 });
 
@@ -297,12 +297,18 @@ describe('resolveBidiRuns \u2014 L4 glyph mirroring (issue #71)', () => {
         expect(runs[0].text).toBe('[(\u05D0)]');
     });
 
-    it('should not mirror LTR-enclosed brackets in an RTL paragraph', () => {
-        // fixBracketPairing keeps "(English)" at an even level \u2014 no L4 pass.
+    it('should give brackets around Latin content the paragraph direction in an RTL paragraph (N0)', () => {
+        // N0: the pair encloses only L (the opposite direction) and the context
+        // before the opener is R, so both brackets resolve to R and are mirrored
+        // (UAX #9 N0 c.2). Until 1.9.0 a fix-up kept them with the Latin word
+        // (#92). Visual order: hebrew-2 ")" English "(" hebrew-1 — each bracket
+        // glyph mirrored, so the reader sees "(English)" between the two words.
         const runs = resolveBidiRuns('\u05E9\u05DC\u05D5\u05DD (English) \u05E9\u05DC\u05D5\u05DD');
-        const ltrRun = runs.find(r => r.text.includes('English'));
-        expect(ltrRun).toBeDefined();
-        expect(ltrRun!.text).toContain('(English)');
+        expect(runs.map(r => [r.level, r.text])).toEqual([
+            [1, '\u05DD\u05D5\u05DC\u05E9 ('],
+            [2, 'English'],
+            [1, ') \u05DD\u05D5\u05DC\u05E9'],
+        ]);
     });
 
     it('should leave pure-LTR bracketed text untouched', () => {

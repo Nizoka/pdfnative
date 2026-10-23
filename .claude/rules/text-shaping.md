@@ -65,21 +65,17 @@ paths:
 - Critical for Thai, Devanagari, Bengali, Tamil, and Vietnamese where combining marks get spatially repositioned
 - Since v1.8.0 the Indic engine and the Latin combining-mark shaper also report the source code points of every glyph they emit (`ShapedGlyph.cps`), and the encoding context writes them into the ToUnicode CMap as multi-code-point `bfchar` destinations — a conjunct or a contextual form with no cmap entry extracts as its letters even in untagged output
 
-## BiDi Resolution (UAX #9)
-- Simplified UBA: paragraph level detection (P2-P3), weak type resolution (W1-W7), neutral resolution (N1-N2), and — since v1.7.0 — implicit even-level embedding (I1/I2) so digit runs (EN/AN, incl. Extended Arabic-Indic) keep logical order inside RTL text
-- `BidiType` classification: L (Latin), R (Hebrew), AL (Arabic), EN, AN, ES, ET, CS, WS, ON, NSM, BN
-- Character classification order matters: check NSM/BN/AN/EN specific ranges BEFORE broad Arabic block (0x0600-06FF)
-- General Punctuation (U+2010–U+2027, U+2030–U+205E) classified as ON — covers dashes, quotes, ellipsis, primes
-- `resolveBidiRuns(text)`: main API — returns `BidiRun[]` in visual order (L2 reordering: runs reversed for RTL paragraphs so LTR text renders first at leftmost position)
-- `containsRTL(text)`: fast O(n) check for Arabic/Hebrew content
-- Glyph mirroring via `BIDI_MIRRORING_PAIRS` (`bidi-mirroring-data.ts`): the complete 428-pair UCD `BidiMirroring.txt` table under rule L4 (since v1.7.0 — replaces the former ~40-pair `MIRROR_MAP`)
-- `reverseString()`: surrogate-pair safe reversal for RTL run reordering
-- Levels: 0 = LTR, 1 = RTL, 2 = LTR embedded in RTL
-
-### Practical BiDi Fixups (post-N2)
-- **Punctuation affinity**: in RTL paragraphs, sentence punctuation (`.` `,` `;` `:` `!` `?`) that follows an LTR word is reassigned to L so it stays in the same visual run as the preceding text — prevents "pdfnative." from splitting into "pdfnative" + floating "."
-- **Bracket pairing**: opening brackets `(` `[` `{` that enclose LTR content get reassigned to L along with their matching closer, keeping `(BiDi)` as a single LTR run instead of splitting across RTL/LTR boundaries
-- These fixups run only for RTL paragraphs (paraLevel=1), after `resolveNeutralTypes()` and before `assignLevels()`
+## BiDi Resolution (UAX #9) — the full algorithm since v1.9.0
+- `src/shaping/bidi.ts` implements the Unicode Bidirectional Algorithm completely: P2–P3, the X1–X8 directional status stack (depth 125, overflow counters, LRE/RLE/LRO/RLO/PDF, LRI/RLI/FSI/PDI with BD9 matching), X9–X10 isolating run sequences with sos/eos, W1–W7, N0 paired brackets (BD14–BD16), N1–N2, I1–I2, then L1, L2 and L4 per line. Levels go up to 125, not 0/1/2
+- Conformance: `tests/shaping/bidi-conformance.test.ts` runs the vendored `scripts/data/BidiCharacterTest-subset.txt` (every 11th line of the UCD's BidiCharacterTest 17.0.0, 8 337 lines) comparing paragraph level, every level and the visual order; `BIDI_CHARACTER_TEST=<path>` runs the whole file (91 707 lines, all passing at 1.9.0). A failing line is a bug in the resolver, never a line to skip
+- Classification is generated: `bidi-class-data.ts` (Bidi_Class ranges from `DerivedBidiClass.txt`, @missing defaults included — RLM is R, ALM is AL, tab is S, U+2030 is ET), `bidi-brackets-data.ts` (`BidiBrackets.txt`), `bidi-mirroring-data.ts` (`BidiMirroring.txt`, 428 pairs). `npm run verify:unicode` (`scripts/verify-unicode.ts`) drift-checks the four generated Unicode modules (USE data included); never hand-edit them
+- `BidiType` is the UCD Bidi_Class short name — the 23 values, isolate and embedding controls included
+- API: `resolveBidiRuns(text)` resolves and reorders one single-line paragraph into `BidiRun[]` (visual order, odd-level runs reversed and mirrored, directional formatting characters left out); `resolveBidiLevels(text, direction)` resolves a whole paragraph once (`'auto' | 'ltr' | 'rtl'`, one level per code unit); `bidiRunsForLine(line, levels, paraLevel)` and `bidiLineLevels(...)` apply L1–L4 to one wrapped line of it. `normalizeBidiEmbeddings()` is deprecated (kept for callers that want isolate-only text)
+- `containsRTL(text)`: true for R, AL (RLM and ALM included) or a right-to-left control (RLE, RLO, RLI) — the gate before the resolver
+- There are no post-N2 fix-ups any more (#92): sentence punctuation after a Latin word in an RTL paragraph resolves through N1/N2 (it takes the paragraph direction when its neighbours disagree), and brackets around Latin content take the paragraph direction under N0 when the context before them is RTL. Chrome, ICU and fribidi agree; the 1.8.0 output did not
+- Per-paragraph resolution: `EncodingContext.withParagraph(text, direction)` resolves the levels once for the paragraph and every line drawn through the derived context reorders from them (`renderParagraph` does this; the kerning and feature wrappers propagate it). A continuation line starting with a Latin word stays part of its RTL paragraph; its trailing neutrals take the paragraph level. Lines the wrapper rewrote (hyphenation) fall back to per-line resolution
+- `layout.direction` / `ParagraphBlock.direction` (`'auto' | 'ltr' | 'rtl'`): sets the base direction and, when present, the default alignment (right for an RTL paragraph; a justified one is ragged-left on its last line). Omitted = 1.8.0 alignment, byte-identical for LTR documents
+- Justification of a line with right-to-left runs (`txtJustifiedVisual` in `pdf-text.ts`) shares the slack over the word gaps of the visual runs — inside a Hebrew run, inside a shaped Arabic run (`txtShaped(..., spaceExtra)`) or between runs; a kerned run with a space cannot be cut and leaves the line ragged
 
 ## Arabic Positional Shaping
 - GSUB-based: determines positional form (isolated/initial/medial/final) per character
@@ -92,8 +88,8 @@ paths:
 - Hebrew: right-to-left ordering without positional shaping (no GSUB needed)
 
 ## Encoding Pipeline Integration
-- RTL text detected by `containsRTL()` in encoding.ts (`textRuns()` and `ps()` functions)
-- When RTL detected: `resolveBidiRuns(str)` called to produce visual-order runs with embedding levels
+- RTL text detected by `containsRTL()` in `encoding-context.ts` (`runsOf()` behind `textRuns()`, `psOf()` behind `ps()`) on the text **with** its directional formatting characters — they steer the algorithm and the resolver leaves them out of the runs; soft hyphens are stripped per run afterwards (since 1.9.0; before, controls were stripped first and LRM/RLM had no effect)
+- When RTL detected: the line's resolver — `resolveBidiRuns(str)` per line, or the paragraph's levels through `withParagraph()` — produces visual-order runs with embedding levels
 - RTL Arabic runs: `splitArabicNonArabic()` segments into Arabic (shaped) and non-Arabic (Helvetica fallback) sub-runs
 - RTL Arabic shaping: `reverseString()` back to logical order → `shapeArabicText()` → `.slice().reverse()` for visual output
 - RTL Hebrew runs: text already reversed by BiDi → encode character-by-character (no positional shaping)

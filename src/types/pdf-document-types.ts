@@ -5,7 +5,7 @@
  * Supports headings, paragraphs, lists, tables, spacers, and page breaks.
  */
 
-import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor, DocumentMetadata } from './pdf-types.js';
+import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor, DocumentMetadata, TextDirection } from './pdf-types.js';
 import type { BarcodeFormat, QRErrorLevel } from '../core/pdf-barcode.js';
 import type { SvgRenderOptions } from '../core/pdf-svg.js';
 import type { FormFieldType } from '../core/pdf-form.js';
@@ -45,6 +45,16 @@ export interface ParagraphBlock {
      * @since 1.8.0 — the `'justify'` value.
      */
     readonly align?: 'left' | 'right' | 'center' | 'justify';
+    /**
+     * Base direction of this paragraph, overriding `layout.direction`:
+     * `'auto'` detects it from the first strong character, `'rtl'` / `'ltr'`
+     * force it. A right-to-left paragraph is right-aligned unless `align`
+     * says otherwise, and a justified one leaves its last line ragged on the
+     * left. Omitted: the document setting, else the 1.8.0 behaviour.
+     *
+     * @since 1.9.0
+     */
+    readonly direction?: TextDirection;
     readonly indent?: number;
     readonly color?: PdfColor;
     /**

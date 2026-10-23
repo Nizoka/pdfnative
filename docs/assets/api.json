@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 516,
+  "exportCount": 522,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -73,6 +73,20 @@
       "module": "src/types/pdf-types.ts",
       "signature": "export type Base14Metrics = 'approximate' | 'exact';",
       "summary": "Base-14 measurement mode."
+    },
+    {
+      "name": "BidiDirection",
+      "kind": "type",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export type BidiDirection = TextDirection;",
+      "summary": "Base direction of a paragraph: detected (P2–P3), or forced — the layout option's type."
+    },
+    {
+      "name": "BidiLevels",
+      "kind": "type",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export interface BidiLevels",
+      "summary": "A paragraph's resolved embedding levels, one per UTF-16 code unit."
     },
     {
       "name": "BidiRun",
@@ -1426,6 +1440,13 @@
       "summary": "Sticky-note text annotation (`/Subtype /Text`)."
     },
     {
+      "name": "TextDirection",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type TextDirection = 'auto' | 'ltr' | 'rtl';",
+      "summary": "Base direction of a paragraph: detected from its first strong character (`'auto'`, UAX #9 P2–P3) or forced."
+    },
+    {
       "name": "TextMarkupAnnotation",
       "kind": "type",
       "module": "src/core/pdf-annot-markup.ts",
@@ -1683,6 +1704,20 @@
       "module": "src/core/pdf-typography.ts",
       "signature": "export function applyPunctuationSpacing(text: string, rules: readonly PunctuationSpacingRule[]): string",
       "summary": "Replace the plain spaces adjacent to punctuation with no-break ones, following an explicit set of rules."
+    },
+    {
+      "name": "bidiLineLevels",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function bidiLineLevels(line: string, lineLevels: readonly number[], paraLevel: number): number[]",
+      "summary": "The final levels of one line (UAX #9 L1 applied to the paragraph levels of that line): segment separators and the whitespace or formatting characters before one or at the end of the line take the paragraph level."
+    },
+    {
+      "name": "bidiRunsForLine",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function bidiRunsForLine(line: string, lineLevels: readonly number[], paraLevel: number): BidiRun[]",
+      "summary": "Reorder one line of a paragraph from the paragraph's resolved levels (UAX #9 L1, L2 and L4): the line's slice of the levels, trailing whitespace reset to the paragraph level, runs reversed and mirrored."
     },
     {
       "name": "bindShortWords",
@@ -2060,7 +2095,7 @@
       "kind": "value",
       "module": "src/shaping/bidi.ts",
       "signature": "export function containsRTL(text: string): boolean",
-      "summary": "Check if text contains any RTL characters (Arabic or Hebrew) or an explicit directional override (LRO U+202D / RLO U+202E)."
+      "summary": "Check whether text needs bidirectional resolution: it holds a right-to-left character (R or AL, which includes the RLM and ALM marks) or a right-to-left explicit control (RLE, RLO, RLI)."
     },
     {
       "name": "containsSinhala",
@@ -2879,7 +2914,7 @@
       "kind": "value",
       "module": "src/shaping/bidi.ts",
       "signature": "export function normalizeBidiEmbeddings(text: string): string",
-      "summary": "UAX #9 explicit embedding normalization (v1.2.0, refined v1.3.0)."
+      "summary": "Map the legacy explicit embedding characters LRE (U+202A) / RLE (U+202B) and the PDF (U+202C) closing them to their isolate equivalents LRI / RLI / PDI; overrides (LRO/RLO and their PDF) are preserved and orphan PDFs dropped."
     },
     {
       "name": "normalizeColors",
@@ -3141,11 +3176,18 @@
       "summary": "Clear all registered fonts and cache (useful for testing)."
     },
     {
+      "name": "resolveBidiLevels",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function resolveBidiLevels(text: string, direction: BidiDirection = 'auto'): BidiLevels",
+      "summary": "Resolve the embedding levels of a whole paragraph (UAX #9 P2–I2), once."
+    },
+    {
       "name": "resolveBidiRuns",
       "kind": "value",
       "module": "src/shaping/bidi.ts",
       "signature": "export function resolveBidiRuns(text: string): BidiRun[]",
-      "summary": "Resolve bidirectional text into ordered runs with embedding levels."
+      "summary": "Resolve bidirectional text into ordered runs with embedding levels: the whole UAX #9 pipeline (P2–I2, then L1–L4) on a single-line paragraph with its base direction detected."
     },
     {
       "name": "resolveColor",

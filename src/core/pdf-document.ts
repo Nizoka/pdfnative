@@ -394,7 +394,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                     break;
                 }
                 case 'paragraph': {
-                    const result = renderParagraph(block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, undefined, opticalMargins);
+                    const result = renderParagraph(block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, undefined, opticalMargins, layout?.direction);
                     ops.push(...result.ops);
                     y = result.y;
                     break;
@@ -424,7 +424,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 }
                 case '__paraSlice': {
                     const result = renderParagraph(
-                        block.block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, block.slice, opticalMargins,
+                        block.block, y, enc, mg.l, cw, pgW, mg.r, tagCtx, documentChildren, block.slice, opticalMargins, layout?.direction,
                     );
                     ops.push(...result.ops);
                     y = result.y;

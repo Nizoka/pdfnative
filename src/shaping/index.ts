@@ -63,8 +63,10 @@ export type { FontRun } from './multi-font.js';
 export {
     resolveBidiRuns, containsRTL, reverseString,
     normalizeBidiEmbeddings, stripBidiControls,
+    resolveBidiLevels, bidiRunsForLine, bidiLineLevels,
+    classifyBidiType, detectParagraphLevel, mirrorCodePoint,
 } from './bidi.js';
-export type { BidiRun } from './bidi.js';
+export type { BidiRun, BidiType, BidiDirection, BidiLevels } from './bidi.js';
 
 // ── OpenType drivers ─────────────────────────────────────────────────
 export { hasSequenceTriggers, matchEmojiSequences } from './emoji-sequences.js';

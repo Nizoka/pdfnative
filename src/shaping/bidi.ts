@@ -1,31 +1,51 @@
 /**
- * pdfnative — Simplified Unicode Bidirectional Algorithm
- * =======================================================
- * Pure JS implementation of a subset of UAX #9 (Unicode Bidirectional Algorithm).
- * Sufficient for real-world Arabic/Hebrew + Latin mixed text in PDF documents.
+ * pdfnative — Unicode Bidirectional Algorithm (UAX #9)
+ * =====================================================
+ * Pure JS implementation of the Unicode Bidirectional Algorithm, complete
+ * since v1.9.0 and checked line by line against the Unicode Character
+ * Database's BidiCharacterTest (`tests/shaping/bidi-conformance.test.ts`).
  *
- * Supported:
- *   - Embedding levels 0 (LTR) and 1 (RTL)
- *   - Character types: L, R, AL, EN, AN, ES, ET, CS, WS, ON, NSM, BN
- *   - Weak type resolution (W1-W7)
- *   - Neutral type resolution (N1-N2)
- *   - Reordering (L2 — reverse RTL runs)
- *   - Paragraph level detection (P2-P3)
- *   - Isolates (LRI U+2066, RLI U+2067, FSI U+2068, PDI U+2069) — v1.1.0
- *   - Explicit embeddings (LRE/RLE) via sealed-isolate normalization — v1.2.0
- *   - Explicit overrides (LRO/RLO) with UAX #9 X4/X5 character-level type
- *     forcing — every inner code point is forced to L (LRO) or R (RLO) — v1.3.0
- *   - Even embedding levels for numbers (I1/I2) so digit runs keep logical
- *     order in RTL context, and glyph mirroring for paired delimiters in
- *     odd-level runs (L4, full BidiMirroring.txt table) — v1.7.0
+ * The rules, in the order the algorithm applies them:
+ *   - P2–P3  paragraph level from the first strong character outside isolates
+ *            (or forced through `direction`)
+ *   - X1–X8  explicit embeddings, overrides and isolates: the directional
+ *            status stack (depth 125), overflow counters, LRE/RLE/LRO/RLO/PDF,
+ *            LRI/RLI/FSI/PDI with BD9 matching
+ *   - X9–X10 removal of the explicit formatting characters and BN, level
+ *            runs chained into isolating run sequences with sos/eos
+ *   - W1–W7  weak types (NSM, EN/AN, AL, separators, terminators)
+ *   - N0     paired brackets (BD14–BD16 over BidiBrackets.txt, the two
+ *            canonical equivalences, 63-deep pairing stack)
+ *   - N1–N2  the remaining neutrals and isolate formatting characters
+ *   - I1–I2  implicit levels (numbers always land on an even level, so a
+ *            digit run keeps its logical order in RTL text)
+ *   - L1     segment separators and trailing whitespace back to the paragraph
+ *            level, per line
+ *   - L2     reordering from the highest level down to the lowest odd level
+ *   - L4     glyph mirroring of every odd-level character (BidiMirroring.txt)
  *
- * Not supported (lite simplifications):
- *   - Strict per-character override interleaving with nested isolates /
- *     embeddings *inside* an override scope: pdfnative forces the whole scope
- *     to the override direction (the common, intended use of LRO/RLO)
- *   - Embedding leakage for N1/N2 neutral resolution across LRE/RLE
- *     boundaries (we treat them as sealed like isolates)
- *   - Levels > 2
+ * Classification comes from the generated `bidi-class-data.ts` (the UCD's
+ * DerivedBidiClass.txt, @missing defaults included); brackets from
+ * `bidi-brackets-data.ts`; mirrors from `bidi-mirroring-data.ts`. The three
+ * are regenerated from `scripts/data/` and drift-checked by
+ * `npm run verify:unicode`.
+ *
+ * Paragraphs and lines: `resolveBidiLevels()` resolves a paragraph once
+ * (P1–I2) and `bidiRunsForLine()` reorders each wrapped line from those
+ * levels (L1–L4), as UAX #9 prescribes — a continuation line that starts
+ * with a Latin word stays part of its RTL paragraph. `resolveBidiRuns()`
+ * does both for a single-line text.
+ *
+ * History: 1.1.0 isolates, 1.2.0 embeddings mapped to isolates, 1.3.0
+ * overrides, 1.7.0 I1/I2 and the full L4 table, 1.9.0 the full algorithm
+ * (#92: the pre-1.9.0 resolver re-typed sentence punctuation after a Latin
+ * word as L in RTL paragraphs and gave bracket pairs around Latin content
+ * level L; both deviated from N1/N2 and N0).
+ *
+ * Deliberate simplification: a paragraph separator (type B) inside the text
+ * resets the explicit state (X8) and takes the paragraph level, but the
+ * paragraph level itself is not re-detected after it — callers split
+ * paragraphs on line breaks before resolving (P1).
  *
  * References:
  *   - Unicode Standard Annex #9: https://unicode.org/reports/tr9/
@@ -33,305 +53,671 @@
  */
 
 import { BIDI_MIRRORING_PAIRS } from './bidi-mirroring-data.js';
+import { BIDI_BRACKET_PAIRS } from './bidi-brackets-data.js';
+import { BIDI_CLASS_RANGES, BIDI_CLASS_NAMES } from './bidi-class-data.js';
+import type { TextDirection } from '../types/pdf-types.js';
 
 // ── Bidi Character Types ─────────────────────────────────────────────
 
-/** Bidirectional character type classification. */
-export type BidiType = 'L' | 'R' | 'AL' | 'EN' | 'AN' | 'ES' | 'ET' | 'CS' | 'WS' | 'ON' | 'NSM' | 'BN';
+/** Bidirectional character type (the UCD Bidi_Class property, short names). */
+export type BidiType = (typeof BIDI_CLASS_NAMES)[number];
 
 /** A run of text with a resolved embedding level. */
 export interface BidiRun {
+    /** The run's characters in visual order (an odd-level run is reversed and mirrored). */
     readonly text: string;
-    readonly level: number;   // 0 = LTR, 1 = RTL
-    readonly start: number;   // Offset in the source text
+    /** Resolved embedding level: even = left-to-right, odd = right-to-left. */
+    readonly level: number;
+    /** Offset of the run's first logical character in the source text. */
+    readonly start: number;
 }
 
 // ── Character Type Classification ────────────────────────────────────
 
+/** Code points below this bound are classified through a flat table built once. */
+const FAST_TABLE_LIMIT = 0x0800;
+let fastTable: Uint8Array | null = null;
+
+function buildFastTable(): Uint8Array {
+    const table = new Uint8Array(FAST_TABLE_LIMIT); // 0 = L
+    for (let i = 0; i + 2 < BIDI_CLASS_RANGES.length; i += 3) {
+        const start = BIDI_CLASS_RANGES[i];
+        if (start >= FAST_TABLE_LIMIT) break;
+        const end = Math.min(BIDI_CLASS_RANGES[i + 1], FAST_TABLE_LIMIT - 1);
+        table.fill(BIDI_CLASS_RANGES[i + 2], start, end + 1);
+    }
+    return table;
+}
+
 /**
- * Classify a Unicode code point into its bidi character type.
- * Based on Unicode Character Database BidiClass property.
+ * Classify a Unicode code point into its bidi character type
+ * (Bidi_Class, from the generated UCD table; L for unlisted code points).
  *
  * @param cp - Unicode code point
- * @returns Bidi character type classification
+ * @returns Bidi character type
  */
 export function classifyBidiType(cp: number): BidiType {
-    // ── Specific types BEFORE broad block ranges ─────────────────────
-
-    // Non-spacing marks (must be before Arabic block check)
-    if ((cp >= 0x0300 && cp <= 0x036F) || // Combining Diacritical Marks
-        (cp >= 0x0591 && cp <= 0x05BD) || // Hebrew marks
-        (cp >= 0x05BF && cp <= 0x05BF) ||
-        (cp >= 0x05C1 && cp <= 0x05C2) ||
-        (cp >= 0x05C4 && cp <= 0x05C5) ||
-        (cp >= 0x05C7 && cp <= 0x05C7) ||
-        (cp >= 0x0610 && cp <= 0x061A) || // Arabic marks
-        (cp >= 0x064B && cp <= 0x065F) || // Arabic harakat
-        (cp >= 0x0670 && cp <= 0x0670) || // Arabic superscript alef
-        (cp >= 0x06D6 && cp <= 0x06DC) ||
-        (cp >= 0x06DF && cp <= 0x06E4) ||
-        (cp >= 0x06E7 && cp <= 0x06E8) ||
-        (cp >= 0x06EA && cp <= 0x06ED) ||
-        (cp >= 0xFE20 && cp <= 0xFE2F)) return 'NSM';
-
-    // Boundary neutrals (must be before Arabic Presentation Forms-B).
-    // Isolate format characters (LRI/RLI/FSI/PDI) are also classified as BN
-    // here — their directional effect is handled separately by the isolate
-    // pre-pass in resolveBidiRuns. UAX #9 actually defines them as their own
-    // types, but treating them as BN inside the core algorithm gives correct
-    // results once the recursion has carved out the inner sub-paragraphs.
-    if (cp === 0x200B || cp === 0x200C || cp === 0x200D ||
-        cp === 0x200E || cp === 0x200F || cp === 0xFEFF ||
-        cp === 0x2066 || cp === 0x2067 || cp === 0x2068 || cp === 0x2069) return 'BN';
-
-    // Arabic-Indic digits (must be before Arabic block)
-    if (cp >= 0x0660 && cp <= 0x0669) return 'AN';
-    // Extended Arabic-Indic digits — EN per DerivedBidiClass.txt, not AN.
-    // W2 converts them to AN when the last strong type is AL (Arabic/Persian
-    // context), which is the correct UAX #9 pipeline; pre-baking AN here
-    // would misplace them after Latin text (e.g. "ISO ۱۲۳").
-    if (cp >= 0x06F0 && cp <= 0x06F9) return 'EN';
-
-    // European digits 0-9
-    if (cp >= 0x0030 && cp <= 0x0039) return 'EN';
-
-    // European separators
-    if (cp === 0x002B || cp === 0x002D) return 'ES'; // + -
-    // European terminators
-    if (cp === 0x0023 || cp === 0x0024 || cp === 0x0025 ||
-        cp === 0x00A2 || cp === 0x00A3 || cp === 0x00A4 || cp === 0x00A5 ||
-        cp === 0x20AC || cp === 0x20B9 || cp === 0x20BA) return 'ET';
-
-    // Common separators
-    if (cp === 0x002C || cp === 0x002E || cp === 0x002F || cp === 0x003A || cp === 0x00A0) return 'CS';
-
-    // Whitespace
-    if (cp === 0x0020 || cp === 0x0009 || cp === 0x000A || cp === 0x000D ||
-        cp === 0x000C || cp === 0x2000 || cp === 0x200A ||
-        cp === 0x2028 || cp === 0x2029 || cp === 0x202F || cp === 0x205F || cp === 0x3000) return 'WS';
-
-    // ── Broad block ranges ───────────────────────────────────────────
-
-    // Arabic block U+0600-06FF → AL
-    if (cp >= 0x0600 && cp <= 0x06FF) return 'AL';
-    // Arabic Supplement U+0750-077F → AL
-    if (cp >= 0x0750 && cp <= 0x077F) return 'AL';
-    // Arabic Extended-A U+08A0-08FF → AL
-    if (cp >= 0x08A0 && cp <= 0x08FF) return 'AL';
-    // Arabic Presentation Forms-A U+FB50-FDFF → AL
-    if (cp >= 0xFB50 && cp <= 0xFDFF) return 'AL';
-    // Arabic Presentation Forms-B U+FE70-FEFE → AL (FEFF is BN, handled above)
-    if (cp >= 0xFE70 && cp <= 0xFEFE) return 'AL';
-
-    // Hebrew U+0590-05FF → R (marks already handled above as NSM)
-    if (cp >= 0x05D0 && cp <= 0x05EA) return 'R'; // Hebrew letters
-    if (cp >= 0x05F0 && cp <= 0x05F4) return 'R'; // Hebrew yod/punctuation
-    // Misc Hebrew/RTL: Syriac, Thaana
-    if (cp >= 0x0700 && cp <= 0x074F) return 'R'; // Syriac
-    if (cp >= 0x0780 && cp <= 0x07BF) return 'R'; // Thaana
-    if (cp >= 0xFB1D && cp <= 0xFB4F) return 'R'; // Hebrew Presentation Forms
-
-    // Latin, CJK, etc. → L (default)
-    if (cp >= 0x0041 && cp <= 0x005A) return 'L'; // A-Z
-    if (cp >= 0x0061 && cp <= 0x007A) return 'L'; // a-z
-    if (cp >= 0x00C0 && cp <= 0x024F) return 'L'; // Latin Extended
-    if (cp >= 0x0370 && cp <= 0x03FF) return 'L'; // Greek
-    if (cp >= 0x0400 && cp <= 0x04FF) return 'L'; // Cyrillic
-    if (cp >= 0x0E00 && cp <= 0x0E7F) return 'L'; // Thai
-    if (cp >= 0x0900 && cp <= 0x097F) return 'L'; // Devanagari
-    if (cp >= 0x3040 && cp <= 0x30FF) return 'L'; // Japanese Kana
-    if (cp >= 0x4E00 && cp <= 0x9FFF) return 'L'; // CJK
-    if (cp >= 0xAC00 && cp <= 0xD7AF) return 'L'; // Hangul
-
-    // Punctuation → ON (Other Neutral)
-    if (cp >= 0x0021 && cp <= 0x002F) return 'ON';
-    if (cp >= 0x003A && cp <= 0x0040) return 'ON';
-    if (cp >= 0x005B && cp <= 0x0060) return 'ON';
-    if (cp >= 0x007B && cp <= 0x007E) return 'ON';
-    if (cp >= 0x00A1 && cp <= 0x00BF) return 'ON';
-    // General Punctuation: dashes, quotes, leaders, etc. (U+2010–U+205E)
-    if (cp >= 0x2010 && cp <= 0x2027) return 'ON';
-    if (cp >= 0x2030 && cp <= 0x205E) return 'ON';
-
-    // Default: Left-to-right for unclassified
+    if (cp < FAST_TABLE_LIMIT) {
+        if (fastTable === null) fastTable = buildFastTable();
+        return BIDI_CLASS_NAMES[fastTable[cp]];
+    }
+    let lo = 0;
+    let hi = BIDI_CLASS_RANGES.length / 3 - 1;
+    while (lo <= hi) {
+        const mid = (lo + hi) >>> 1;
+        const start = BIDI_CLASS_RANGES[mid * 3];
+        if (cp < start) hi = mid - 1;
+        else if (cp > BIDI_CLASS_RANGES[mid * 3 + 1]) lo = mid + 1;
+        else return BIDI_CLASS_NAMES[BIDI_CLASS_RANGES[mid * 3 + 2]];
+    }
     return 'L';
 }
+
+const isIsolateInitiator = (t: BidiType): boolean => t === 'LRI' || t === 'RLI' || t === 'FSI';
+/** Types X9 removes from the algorithm's view. */
+const isRemovedByX9 = (t: BidiType): boolean =>
+    t === 'BN' || t === 'LRE' || t === 'RLE' || t === 'LRO' || t === 'RLO' || t === 'PDF';
+/** Neutral and isolate formatting types (NI) for N1/N2. */
+const isNeutralOrIsolate = (t: BidiType): boolean =>
+    t === 'B' || t === 'S' || t === 'WS' || t === 'ON' || t === 'LRI' || t === 'RLI' || t === 'FSI' || t === 'PDI';
 
 // ── Paragraph Level Detection (P2-P3) ────────────────────────────────
 
 /**
  * Determine the paragraph embedding level.
- * P2: Find first strong character (L, R, AL).
- * P3: If R or AL → level 1, else level 0.
+ * P2: find the first strong character (L, R, AL), skipping the characters
+ * between an isolate initiator and its matching PDI (or the end of the
+ * text when it has none). P3: R or AL → 1, otherwise 0.
  *
- * @param types - Array of bidi character types for the paragraph
+ * @param types - Bidi character types of the paragraph
  * @returns 0 for LTR, 1 for RTL
  */
-export function detectParagraphLevel(types: BidiType[]): number {
+export function detectParagraphLevel(types: readonly BidiType[]): number {
+    let depth = 0;
     for (const t of types) {
-        if (t === 'L') return 0;
-        if (t === 'R' || t === 'AL') return 1;
+        if (isIsolateInitiator(t)) depth++;
+        else if (t === 'PDI') { if (depth > 0) depth--; }
+        else if (depth === 0) {
+            if (t === 'L') return 0;
+            if (t === 'R' || t === 'AL') return 1;
+        }
     }
     return 0; // default LTR
 }
 
-// ── Weak Type Resolution (W1-W7) ────────────────────────────────────
+// ── Explicit levels (X1–X8) and isolating run sequences (X9–X10) ─────
+
+/** Maximum explicit embedding level (BD2). */
+const MAX_DEPTH = 125;
+
+interface StatusEntry {
+    readonly level: number;
+    /** Directional override status: 'N' neutral, else the forced type. */
+    readonly override: 'N' | 'L' | 'R';
+    readonly isolate: boolean;
+}
+
+/** The outcome of P2–I2 for one paragraph, per code point. */
+interface ParagraphResolution {
+    readonly paraLevel: number;
+    readonly levels: number[];
+    /** Original Bidi_Class per code point (L1 and the run assembly read it). */
+    readonly original: BidiType[];
+}
 
 /**
- * Apply weak type resolution rules W1-W7 from UAX #9.
- * Modifies types array in place.
+ * BD9: the matching PDI of every isolate initiator (-1 when unmatched) and
+ * whether each PDI closes an initiator.
  */
-function resolveWeakTypes(types: BidiType[], paraLevel: number): void {
+function matchIsolates(types: readonly BidiType[]): { matchingPdi: Int32Array; pdiMatched: Uint8Array } {
     const len = types.length;
-
-    // W1: NSM → type of previous character (or paragraph embedding direction)
-    let prevType: BidiType = paraLevel === 0 ? 'L' : 'R';
+    const matchingPdi = new Int32Array(len).fill(-1);
+    const pdiMatched = new Uint8Array(len);
+    const open: number[] = [];
     for (let i = 0; i < len; i++) {
-        if (types[i] === 'BN') continue;
-        if (types[i] === 'NSM') {
-            types[i] = prevType;
+        const t = types[i];
+        if (isIsolateInitiator(t)) open.push(i);
+        else if (t === 'PDI' && open.length > 0) {
+            const opener = open.pop() as number;
+            matchingPdi[opener] = i;
+            pdiMatched[i] = 1;
+        } else if (t === 'B') open.length = 0;
+    }
+    return { matchingPdi, pdiMatched };
+}
+
+/**
+ * Resolve one paragraph (code points) through P2–I2.
+ *
+ * @param codePoints - The paragraph in logical order
+ * @param forcedLevel - Paragraph level to use instead of P2–P3
+ */
+function resolveParagraph(codePoints: readonly number[], forcedLevel?: number): ParagraphResolution {
+    const len = codePoints.length;
+    const original: BidiType[] = new Array(len);
+    for (let i = 0; i < len; i++) original[i] = classifyBidiType(codePoints[i]);
+    const types: BidiType[] = original.slice();
+    const levels: number[] = new Array(len).fill(0);
+    const paraLevel = forcedLevel !== undefined ? forcedLevel : detectParagraphLevel(original);
+    if (len === 0) return { paraLevel, levels, original };
+
+    // Fast path — no explicit formatting character and no paragraph separator
+    // (the common case): X1–X8 leave every character at the paragraph level,
+    // so the retained characters form one isolating run sequence.
+    let hasExplicit = false;
+    for (let i = 0; i < len; i++) {
+        const t = original[i];
+        if (t === 'B' || t === 'PDI' || isIsolateInitiator(t) || (isRemovedByX9(t) && t !== 'BN')) { hasExplicit = true; break; }
+    }
+    if (!hasExplicit) {
+        levels.fill(paraLevel);
+        const explicit = levels.slice();
+        const removed = new Uint8Array(len);
+        const seq: number[] = [];
+        for (let i = 0; i < len; i++) {
+            if (original[i] === 'BN') removed[i] = 1;
+            else seq.push(i);
         }
-        prevType = types[i];
+        if (seq.length > 0) resolveSequence(seq, types, original, codePoints, explicit, levels, paraLevel, removed, len);
+        settleRemovedLevels(levels, removed, paraLevel, len);
+        return { paraLevel, levels, original };
     }
 
-    // W2: EN after AL → AN
-    let lastStrong: BidiType = paraLevel === 0 ? 'L' : 'R';
+    const { matchingPdi, pdiMatched } = matchIsolates(original);
+
+    // X1: the directional status stack.
+    const stack: StatusEntry[] = [{ level: paraLevel, override: 'N', isolate: false }];
+    let overflowIsolate = 0;
+    let overflowEmbedding = 0;
+    let validIsolate = 0;
+    const nextOdd = (l: number): number => (l + 1) | 1;
+    const nextEven = (l: number): number => (l + 2) & ~1;
+
     for (let i = 0; i < len; i++) {
-        if (types[i] === 'BN') continue;
-        if (types[i] === 'R' || types[i] === 'L' || types[i] === 'AL') {
-            lastStrong = types[i];
-        } else if (types[i] === 'EN' && lastStrong === 'AL') {
-            types[i] = 'AN';
-        }
-    }
-
-    // W3: AL → R
-    for (let i = 0; i < len; i++) {
-        if (types[i] === 'AL') types[i] = 'R';
-    }
-
-    // W4: ES between EN → EN; CS between EN → EN; CS between AN → AN
-    for (let i = 1; i < len - 1; i++) {
-        if (types[i] === 'BN') continue;
-        if (types[i] === 'ES' && types[i - 1] === 'EN' && types[i + 1] === 'EN') {
-            types[i] = 'EN';
-        } else if (types[i] === 'CS') {
-            if (types[i - 1] === 'EN' && types[i + 1] === 'EN') types[i] = 'EN';
-            else if (types[i - 1] === 'AN' && types[i + 1] === 'AN') types[i] = 'AN';
-        }
-    }
-
-    // W5: ET adjacent to EN → EN
-    for (let i = 0; i < len; i++) {
-        if (types[i] === 'ET') {
-            // Check backward
-            let found = false;
-            for (let j = i - 1; j >= 0; j--) {
-                if (types[j] === 'EN') { found = true; break; }
-                if (types[j] !== 'ET' && types[j] !== 'BN') break;
-            }
-            if (!found) {
-                // Check forward
-                for (let j = i + 1; j < len; j++) {
-                    if (types[j] === 'EN') { found = true; break; }
-                    if (types[j] !== 'ET' && types[j] !== 'BN') break;
+        const t = original[i];
+        const top = stack[stack.length - 1];
+        switch (t) {
+            case 'RLE': case 'LRE': case 'RLO': case 'LRO': {
+                // X2–X5
+                levels[i] = top.level;
+                const rtl = t === 'RLE' || t === 'RLO';
+                const newLevel = rtl ? nextOdd(top.level) : nextEven(top.level);
+                if (newLevel <= MAX_DEPTH && overflowIsolate === 0 && overflowEmbedding === 0) {
+                    const override = t === 'RLO' ? 'R' : t === 'LRO' ? 'L' : 'N';
+                    stack.push({ level: newLevel, override, isolate: false });
+                } else if (overflowIsolate === 0) {
+                    overflowEmbedding++;
                 }
-            }
-            if (found) types[i] = 'EN';
-        }
-    }
-
-    // W6: remaining ES, ET, CS → ON
-    for (let i = 0; i < len; i++) {
-        if (types[i] === 'ES' || types[i] === 'ET' || types[i] === 'CS') {
-            types[i] = 'ON';
-        }
-    }
-
-    // W7: EN preceded by L (in run direction) → L
-    lastStrong = paraLevel === 0 ? 'L' : 'R';
-    for (let i = 0; i < len; i++) {
-        if (types[i] === 'BN') continue;
-        if (types[i] === 'L' || types[i] === 'R') {
-            lastStrong = types[i];
-        } else if (types[i] === 'EN' && lastStrong === 'L') {
-            types[i] = 'L';
-        }
-    }
-}
-
-// ── Neutral Type Resolution (N1-N2) ─────────────────────────────────
-
-/**
- * Apply neutral type resolution rules N1-N2 from UAX #9.
- * Modifies types array in place.
- */
-function resolveNeutralTypes(types: BidiType[], paraLevel: number): void {
-    const len = types.length;
-    const paraDir: BidiType = paraLevel === 0 ? 'L' : 'R';
-
-    for (let i = 0; i < len; i++) {
-        if (types[i] !== 'ON' && types[i] !== 'WS' && types[i] !== 'BN') continue;
-
-        // Find start of neutral run
-        const start = i;
-        while (i < len && (types[i] === 'ON' || types[i] === 'WS' || types[i] === 'BN')) i++;
-        const end = i; // exclusive
-
-        // Find surrounding strong types
-        let prevStrong: BidiType = paraDir;
-        for (let j = start - 1; j >= 0; j--) {
-            if (types[j] === 'L' || types[j] === 'R' || types[j] === 'EN' || types[j] === 'AN') {
-                prevStrong = (types[j] === 'EN' || types[j] === 'AN') ? 'R' : types[j];
                 break;
             }
-        }
-
-        let nextStrong: BidiType = paraDir;
-        for (let j = end; j < len; j++) {
-            if (types[j] === 'L' || types[j] === 'R' || types[j] === 'EN' || types[j] === 'AN') {
-                nextStrong = (types[j] === 'EN' || types[j] === 'AN') ? 'R' : types[j];
+            case 'RLI': case 'LRI': case 'FSI': {
+                // X5a–X5c
+                levels[i] = top.level;
+                if (top.override !== 'N') types[i] = top.override;
+                let rtl = t === 'RLI';
+                if (t === 'FSI') {
+                    const end = matchingPdi[i] === -1 ? len : matchingPdi[i];
+                    rtl = detectParagraphLevel(original.slice(i + 1, end)) === 1;
+                }
+                const newLevel = rtl ? nextOdd(top.level) : nextEven(top.level);
+                if (newLevel <= MAX_DEPTH && overflowIsolate === 0 && overflowEmbedding === 0) {
+                    validIsolate++;
+                    stack.push({ level: newLevel, override: 'N', isolate: true });
+                } else {
+                    overflowIsolate++;
+                }
                 break;
             }
-        }
-
-        // N1: If same direction, neutrals inherit that direction
-        // N2: Otherwise, inherit paragraph embedding level direction
-        const resolved: BidiType = (prevStrong === nextStrong) ? prevStrong : paraDir;
-        for (let j = start; j < end; j++) {
-            types[j] = resolved;
+            case 'PDI': {
+                // X6a
+                if (overflowIsolate > 0) overflowIsolate--;
+                else if (validIsolate > 0) {
+                    overflowEmbedding = 0;
+                    while (!stack[stack.length - 1].isolate) stack.pop();
+                    stack.pop();
+                    validIsolate--;
+                }
+                const now = stack[stack.length - 1];
+                levels[i] = now.level;
+                if (now.override !== 'N') types[i] = now.override;
+                break;
+            }
+            case 'PDF': {
+                // X7
+                levels[i] = top.level;
+                if (overflowIsolate > 0) { /* nothing */ }
+                else if (overflowEmbedding > 0) overflowEmbedding--;
+                else if (!top.isolate && stack.length >= 2) stack.pop();
+                break;
+            }
+            case 'B': {
+                // X8: everything is terminated at a paragraph separator.
+                levels[i] = paraLevel;
+                stack.length = 1;
+                overflowIsolate = 0;
+                overflowEmbedding = 0;
+                validIsolate = 0;
+                break;
+            }
+            case 'BN':
+                levels[i] = top.level; // X9 removes it; the level is refined below
+                break;
+            default:
+                // X6
+                levels[i] = top.level;
+                if (top.override !== 'N') types[i] = top.override;
         }
     }
-}
 
-// ── Level Assignment ─────────────────────────────────────────────────
+    // The explicit levels X1–X8 produced: X10 reads them for sos/eos while
+    // `levels` receives the implicit levels of I1/I2 sequence by sequence.
+    const explicit = levels.slice();
 
-/**
- * Assign embedding levels based on resolved types and paragraph level.
- *
- * Implements UAX #9 I1/I2 within the 0/1/2-level model:
- * - I1 (even paragraph level): R → 1, AN/EN → 2
- * - I2 (odd paragraph level):  L/EN/AN → 2
- *
- * Numbers always land on an EVEN level, so the odd-run reversal in step 6
- * never character-reverses a digit sequence — digits keep logical order
- * (most significant digit first) in both paragraph directions.
- */
-function assignLevels(types: BidiType[], paraLevel: number): number[] {
-    const levels: number[] = [];
-    for (const t of types) {
-        if (paraLevel === 0) {
-            // I1: R → 1; AN, and EN in an R context (W7 already converted
-            // L-context EN to L), → 2.
-            if (t === 'R') levels.push(1);
-            else if (t === 'AN' || t === 'EN') levels.push(2);
-            else levels.push(0);
+    // X9: the characters the rest of the algorithm ignores.
+    const removed = new Uint8Array(len);
+    for (let i = 0; i < len; i++) if (isRemovedByX9(original[i])) removed[i] = 1;
+
+    // X10: level runs over the retained characters.
+    const runs: number[][] = [];
+    const runOfPdi = new Map<number, number>();
+    let current: number[] | null = null;
+    let currentLevel = -1;
+    for (let i = 0; i < len; i++) {
+        if (removed[i]) continue;
+        if (current === null || levels[i] !== currentLevel) {
+            current = [i];
+            currentLevel = levels[i];
+            runs.push(current);
+            if (original[i] === 'PDI' && pdiMatched[i]) runOfPdi.set(i, runs.length - 1);
         } else {
-            // I2: L, EN and AN → 2; everything else stays at the RTL base 1.
-            levels.push((t === 'L' || t === 'EN' || t === 'AN') ? 2 : 1);
+            current.push(i);
         }
     }
-    return levels;
+
+    // Chain level runs into isolating run sequences (BD13).
+    const consumed = new Uint8Array(runs.length);
+    for (let r = 0; r < runs.length; r++) {
+        if (consumed[r]) continue;
+        const first = runs[r][0];
+        if (original[first] === 'PDI' && pdiMatched[first] && runs[r].length > 0 && r > 0) {
+            // Appended to its initiator's sequence when that initiator ends a run;
+            // otherwise (the initiator shares its run with the isolate's content,
+            // an overflow isolate) this run starts a sequence of its own.
+            const initiator = findInitiator(matchingPdi, first);
+            if (initiator !== -1 && isLastOfItsRun(runs, initiator, removed, len)) continue;
+        }
+        const seq: number[] = [];
+        let r2 = r;
+        for (;;) {
+            consumed[r2] = 1;
+            const run = runs[r2];
+            for (const i of run) seq.push(i);
+            const last = run[run.length - 1];
+            if (!isIsolateInitiator(original[last]) || matchingPdi[last] === -1) break;
+            const next = runOfPdi.get(matchingPdi[last]);
+            if (next === undefined || consumed[next]) break;
+            r2 = next;
+        }
+        resolveSequence(seq, types, original, codePoints, explicit, levels, paraLevel, removed, len);
+    }
+
+    settleRemovedLevels(levels, removed, paraLevel, len);
+    return { paraLevel, levels, original };
+}
+
+/**
+ * Retained X9 characters take the level of the preceding retained character
+ * (else the following, else the paragraph level) so they stay inside the run
+ * they belong to (UAX #9 §5.2).
+ */
+function settleRemovedLevels(levels: number[], removed: Uint8Array, paraLevel: number, len: number): void {
+    for (let i = 0; i < len; i++) {
+        if (!removed[i]) continue;
+        let j = i - 1;
+        while (j >= 0 && removed[j]) j--;
+        if (j >= 0) { levels[i] = levels[j]; continue; }
+        let k = i + 1;
+        while (k < len && removed[k]) k++;
+        levels[i] = k < len ? levels[k] : paraLevel;
+    }
+}
+
+/** The isolate initiator a matched PDI closes. */
+function findInitiator(matchingPdi: Int32Array, pdi: number): number {
+    for (let i = pdi - 1; i >= 0; i--) if (matchingPdi[i] === pdi) return i;
+    return -1;
+}
+
+/** Whether the retained character after `index` starts a new level run (or there is none). */
+function isLastOfItsRun(runs: readonly number[][], index: number, removed: Uint8Array, len: number): boolean {
+    let next = index + 1;
+    while (next < len && removed[next]) next++;
+    if (next >= len) return true;
+    for (const run of runs) if (run[0] === next) return true;
+    return false;
+}
+
+// ── One isolating run sequence: W1–W7, N0, N1–N2, I1–I2 ─────────────
+
+/** Strong direction a resolved type counts as under N0–N2 (EN and AN count as R). */
+function strongDirection(type: BidiType): 'L' | 'R' | null {
+    if (type === 'L') return 'L';
+    if (type === 'R' || type === 'AL' || type === 'EN' || type === 'AN') return 'R';
+    return null;
+}
+
+function resolveSequence(
+    seq: readonly number[],
+    types: BidiType[],
+    original: readonly BidiType[],
+    codePoints: readonly number[],
+    explicit: readonly number[],
+    levels: number[],
+    paraLevel: number,
+    removed: Uint8Array,
+    len: number,
+): void {
+    const n = seq.length;
+    const level = explicit[seq[0]];
+    const t: BidiType[] = new Array(n);
+    for (let k = 0; k < n; k++) t[k] = types[seq[k]];
+
+    // sos / eos (X10).
+    let prev = seq[0] - 1;
+    while (prev >= 0 && removed[prev]) prev--;
+    const sos: 'L' | 'R' = Math.max(level, prev >= 0 ? explicit[prev] : paraLevel) % 2 === 1 ? 'R' : 'L';
+    const lastIdx = seq[n - 1];
+    let eosLevel = paraLevel;
+    if (!isIsolateInitiator(original[lastIdx])) {
+        let next = lastIdx + 1;
+        while (next < len && removed[next]) next++;
+        if (next < len) eosLevel = explicit[next];
+    }
+    const eos: 'L' | 'R' = Math.max(level, eosLevel) % 2 === 1 ? 'R' : 'L';
+
+    // W1: NSM takes the type of the previous character (ON after an isolate control).
+    for (let k = 0; k < n; k++) {
+        if (t[k] !== 'NSM') continue;
+        if (k === 0) t[k] = sos;
+        else {
+            const p = t[k - 1];
+            t[k] = isIsolateInitiator(p) || p === 'PDI' ? 'ON' : p;
+        }
+    }
+    // W2: EN after AL → AN.
+    let lastStrong: BidiType = sos;
+    for (let k = 0; k < n; k++) {
+        const v = t[k];
+        if (v === 'L' || v === 'R' || v === 'AL') lastStrong = v;
+        else if (v === 'EN' && lastStrong === 'AL') t[k] = 'AN';
+    }
+    // W3: AL → R.
+    for (let k = 0; k < n; k++) if (t[k] === 'AL') t[k] = 'R';
+    // W4: a single separator between two numbers of the same kind.
+    for (let k = 1; k + 1 < n; k++) {
+        const v = t[k];
+        if (v === 'ES' && t[k - 1] === 'EN' && t[k + 1] === 'EN') t[k] = 'EN';
+        else if (v === 'CS') {
+            if (t[k - 1] === 'EN' && t[k + 1] === 'EN') t[k] = 'EN';
+            else if (t[k - 1] === 'AN' && t[k + 1] === 'AN') t[k] = 'AN';
+        }
+    }
+    // W5: a sequence of ET adjacent to EN → EN.
+    for (let k = 0; k < n; k++) {
+        if (t[k] !== 'ET') continue;
+        let end = k;
+        while (end < n && t[end] === 'ET') end++;
+        if ((k > 0 && t[k - 1] === 'EN') || (end < n && t[end] === 'EN')) {
+            for (let j = k; j < end; j++) t[j] = 'EN';
+        }
+        k = end - 1;
+    }
+    // W6: remaining separators and terminators → ON.
+    for (let k = 0; k < n; k++) if (t[k] === 'ES' || t[k] === 'ET' || t[k] === 'CS') t[k] = 'ON';
+    // W7: EN with L as the last strong type → L.
+    lastStrong = sos;
+    for (let k = 0; k < n; k++) {
+        const v = t[k];
+        if (v === 'L' || v === 'R') lastStrong = v;
+        else if (v === 'EN' && lastStrong === 'L') t[k] = 'L';
+    }
+
+    // N0: paired brackets.
+    resolveBracketPairs(t, seq, original, codePoints, level, sos);
+
+    // N1–N2: neutrals and isolate formatting characters.
+    const embedding: 'L' | 'R' = level % 2 === 1 ? 'R' : 'L';
+    for (let k = 0; k < n; k++) {
+        if (!isNeutralOrIsolate(t[k])) continue;
+        let end = k;
+        while (end < n && isNeutralOrIsolate(t[end])) end++;
+        const before: 'L' | 'R' = k === 0 ? sos : (strongDirection(t[k - 1]) ?? sos);
+        const after: 'L' | 'R' = end === n ? eos : (strongDirection(t[end]) ?? eos);
+        const resolved: BidiType = before === after ? before : embedding;
+        for (let j = k; j < end; j++) t[j] = resolved;
+        k = end - 1;
+    }
+
+    // I1–I2.
+    for (let k = 0; k < n; k++) {
+        const v = t[k];
+        const i = seq[k];
+        let resolvedLevel = level;
+        if (level % 2 === 0) {
+            if (v === 'R') resolvedLevel = level + 1;
+            else if (v === 'AN' || v === 'EN') resolvedLevel = level + 2;
+        } else if (v === 'L' || v === 'EN' || v === 'AN') {
+            resolvedLevel = level + 1;
+        }
+        levels[i] = resolvedLevel;
+        types[i] = v;
+    }
+}
+
+// ── Paired Brackets (UAX #9 BD14–BD16, N0) ───────────────────────────
+
+/** BD16 canonical equivalents: the angle brackets U+2329/U+232A decompose to U+3008/U+3009. */
+function canonicalBracket(cp: number): number {
+    if (cp === 0x2329) return 0x3008;
+    if (cp === 0x232A) return 0x3009;
+    return cp;
+}
+
+let bracketMap: Map<number, number> | null = null;
+/** Opening bracket → its paired closer (BidiBrackets.txt), built on first use. */
+function getBracketMap(): Map<number, number> {
+    if (bracketMap === null) {
+        bracketMap = new Map();
+        for (let i = 0; i + 1 < BIDI_BRACKET_PAIRS.length; i += 2) bracketMap.set(BIDI_BRACKET_PAIRS[i], BIDI_BRACKET_PAIRS[i + 1]);
+    }
+    return bracketMap;
+}
+
+/** BD16 stack depth: at the 64th unmatched opener, pairing stops for the sequence. */
+const MAX_BRACKET_DEPTH = 63;
+
+/**
+ * BD16: the bracket pairs of one isolating run sequence, as (open, close)
+ * positions within the sequence sorted by the opener. Only characters whose
+ * current type is ON take part (an opener overridden to L or R is no bracket).
+ */
+function identifyBracketPairs(t: readonly BidiType[], seq: readonly number[], codePoints: readonly number[]): [number, number][] {
+    const openers = getBracketMap();
+    const stack: { closer: number; pos: number }[] = [];
+    const pairs: [number, number][] = [];
+    for (let k = 0; k < seq.length; k++) {
+        if (t[k] !== 'ON') continue;
+        const cp = codePoints[seq[k]];
+        const closer = openers.get(cp);
+        if (closer !== undefined) {
+            if (stack.length >= MAX_BRACKET_DEPTH) break;
+            stack.push({ closer: canonicalBracket(closer), pos: k });
+            continue;
+        }
+        const canon = canonicalBracket(cp);
+        for (let s = stack.length - 1; s >= 0; s--) {
+            if (stack[s].closer === canon) {
+                pairs.push([stack[s].pos, k]);
+                stack.length = s;
+                break;
+            }
+        }
+    }
+    pairs.sort((a, b) => a[0] - b[0]);
+    return pairs;
+}
+
+/**
+ * N0: a bracket pair takes the embedding direction when a strong type of
+ * that direction sits inside it; otherwise the opposite direction when one
+ * sits inside and the context before the opener (or sos) is that direction
+ * too; otherwise the embedding direction; a pair with no strong type inside
+ * keeps its neutrals. Marks (NSM at classification) following a resolved
+ * bracket take the bracket's type.
+ */
+function resolveBracketPairs(
+    t: BidiType[],
+    seq: readonly number[],
+    original: readonly BidiType[],
+    codePoints: readonly number[],
+    level: number,
+    sos: 'L' | 'R',
+): void {
+    const pairs = identifyBracketPairs(t, seq, codePoints);
+    if (pairs.length === 0) return;
+    const embedding: 'L' | 'R' = level % 2 === 1 ? 'R' : 'L';
+    const opposite: 'L' | 'R' = embedding === 'R' ? 'L' : 'R';
+    for (const [open, close] of pairs) {
+        let foundEmbedding = false;
+        let foundOpposite = false;
+        for (let k = open + 1; k < close; k++) {
+            const d = strongDirection(t[k]);
+            if (d === embedding) { foundEmbedding = true; break; }
+            if (d === opposite) foundOpposite = true;
+        }
+        let resolved: 'L' | 'R' | null = null;
+        if (foundEmbedding) resolved = embedding;
+        else if (foundOpposite) {
+            let context: 'L' | 'R' = sos;
+            for (let k = open - 1; k >= 0; k--) {
+                const d = strongDirection(t[k]);
+                if (d !== null) { context = d; break; }
+            }
+            resolved = context === opposite ? opposite : embedding;
+        }
+        if (resolved === null) continue;
+        t[open] = resolved;
+        t[close] = resolved;
+        for (const at of [open, close]) {
+            for (let k = at + 1; k < seq.length && original[seq[k]] === 'NSM'; k++) t[k] = resolved;
+        }
+    }
+}
+
+// ── Lines: L1, L2, L4 ────────────────────────────────────────────────
+
+/**
+ * L1: segment and paragraph separators, and the whitespace, isolate
+ * formatting characters and retained X9 characters before one or at the end
+ * of the line, take the paragraph level.
+ */
+function applyL1(levels: number[], original: readonly BidiType[], paraLevel: number, len: number): void {
+    const resettable = (t: BidiType): boolean =>
+        t === 'WS' || t === 'LRI' || t === 'RLI' || t === 'FSI' || t === 'PDI' || isRemovedByX9(t);
+    let i = len - 1;
+    while (i >= 0 && resettable(original[i])) { levels[i] = paraLevel; i--; }
+    for (let k = 0; k < len; k++) {
+        const t = original[k];
+        if (t !== 'S' && t !== 'B') continue;
+        levels[k] = paraLevel;
+        for (let j = k - 1; j >= 0 && resettable(original[j]); j--) levels[j] = paraLevel;
+    }
+}
+
+/**
+ * L2: the visual order of the line's code points — from the highest level
+ * down to the lowest odd level, reverse every maximal sequence at that level
+ * or higher.
+ */
+function visualOrder(levels: readonly number[], len: number): number[] {
+    const order: number[] = new Array(len);
+    const lv: number[] = new Array(len);
+    let max = 0;
+    let minOdd = Number.MAX_SAFE_INTEGER;
+    for (let i = 0; i < len; i++) {
+        order[i] = i;
+        lv[i] = levels[i];
+        if (levels[i] > max) max = levels[i];
+        if (levels[i] % 2 === 1 && levels[i] < minOdd) minOdd = levels[i];
+    }
+    if (minOdd === Number.MAX_SAFE_INTEGER) {
+        // Only even levels: the lowest odd level is the one below the maximum
+        // (a level-2 number in a level-0 paragraph is reversed twice: ≥2, ≥1).
+        if (max === 0) return order;
+        minOdd = max - 1;
+    }
+    for (let target = max; target >= minOdd; target--) {
+        for (let i = 0; i < len; i++) {
+            if (lv[i] < target) continue;
+            let end = i;
+            while (end < len && lv[end] >= target) end++;
+            for (let a = i, b = end - 1; a < b; a++, b--) {
+                const o = order[a]; order[a] = order[b]; order[b] = o;
+                const l = lv[a]; lv[a] = lv[b]; lv[b] = l;
+            }
+            i = end - 1;
+        }
+    }
+    return order;
+}
+
+/** The invisible directional formatting characters `stripBidiControls()` removes (never drawn). */
+function isBidiControl(cp: number): boolean {
+    return cp === 0x200E || cp === 0x200F || cp === 0x061C
+        || (cp >= 0x202A && cp <= 0x202E)
+        || (cp >= 0x2066 && cp <= 0x2069);
+}
+
+/**
+ * Build the visual-order runs of one line from its resolved levels: L2 over
+ * the levels, then maximal stretches of logically contiguous characters at
+ * one level, odd-level stretches reversed and mirrored (L4). The directional
+ * formatting characters (marks, embeddings, overrides, isolates) have done
+ * their work by now and are left out of the runs — they have no glyph; ZWJ,
+ * ZWNJ and the other BN characters stay, the shapers read them.
+ *
+ * @param text - The line
+ * @param codePoints - The line's code points
+ * @param cpToStr - Code-point index → code-unit offset map (length = cp + 1)
+ * @param levels - One resolved level per code point
+ * @param len - Number of code points
+ */
+function assembleRuns(text: string, codePoints: readonly number[], cpToStr: readonly number[], levels: readonly number[], len: number): BidiRun[] {
+    if (len === 0) return [];
+    const order = visualOrder(levels, len);
+    const runs: BidiRun[] = [];
+    let k = 0;
+    while (k < len) {
+        const first = order[k];
+        const level = levels[first];
+        const odd = level % 2 === 1;
+        let last = first;
+        let k2 = k + 1;
+        while (k2 < len && levels[order[k2]] === level && order[k2] === last + (odd ? -1 : 1)) {
+            last = order[k2];
+            k2++;
+        }
+        const lo = odd ? last : first;
+        const hi = odd ? first : last;
+        let from = lo;
+        while (from <= hi && isBidiControl(codePoints[from])) from++;
+        if (from <= hi) {
+            const logical = stripBidiControls(text.substring(cpToStr[from], cpToStr[hi + 1]));
+            runs.push({ text: odd ? reverseAndMirror(logical) : logical, level, start: cpToStr[from] });
+        }
+        k = k2;
+    }
+    return runs;
 }
 
 // ── Glyph Mirroring (UAX #9 L4) ──────────────────────────────────────
@@ -364,160 +750,60 @@ export function mirrorCodePoint(cp: number): number {
     return getMirrorMap().get(cp) ?? cp;
 }
 
-// ── Practical Fixups ─────────────────────────────────────────────────
-
-/** Sentence-terminating punctuation codepoints. */
-const SENTENCE_PUNCT = /*#__PURE__*/ new Set([
-    0x002E, // .
-    0x002C, // ,
-    0x003B, // ;
-    0x003A, // :
-    0x0021, // !
-    0x003F, // ?
-]);
-
-/**
- * In RTL paragraphs, keep sentence punctuation (. , ; : ! ?) attached to
- * the preceding LTR word. Standard N2 assigns paragraph direction (R) when
- * neighbors disagree, causing "pdfnative." to split into "pdfnative" + ".".
- * We reassign the punctuation to L so it stays in the same LTR run.
- */
-function fixPunctuationAffinity(types: BidiType[], codePoints: readonly number[], len: number): void {
-    for (let i = 1; i < len; i++) {
-        if (types[i] === 'R' && SENTENCE_PUNCT.has(codePoints[i])) {
-            // Check if preceding non-WS character is L
-            let prevIdx = i - 1;
-            while (prevIdx >= 0 && (types[prevIdx] === 'WS' || types[prevIdx] === 'BN')) prevIdx--;
-            if (prevIdx >= 0 && types[prevIdx] === 'L') {
-                types[i] = 'L';
-            }
-        }
-    }
-}
-
-/**
- * Simplified bracket pairing for parentheses, square brackets, and curly braces.
- * When brackets enclose LTR content in an RTL paragraph, the opener and closer
- * should share the LTR level so they visually surround the content.
- * Handles: ( ), [ ], { }
- */
-function fixBracketPairing(types: BidiType[], codePoints: readonly number[], len: number): void {
-    const OPEN_BRACKETS: Record<number, number> = {
-        0x0028: 0x0029, // ( → )
-        0x005B: 0x005D, // [ → ]
-        0x007B: 0x007D, // { → }
-    };
-
-    for (let i = 0; i < len; i++) {
-        const closer = OPEN_BRACKETS[codePoints[i]];
-        if (closer === undefined) continue;
-        // Found an opening bracket — find the matching closer
-        let depth = 1;
-        let closeIdx = -1;
-        for (let j = i + 1; j < len; j++) {
-            if (codePoints[j] === codePoints[i]) depth++;
-            else if (codePoints[j] === closer) {
-                depth--;
-                if (depth === 0) { closeIdx = j; break; }
-            }
-        }
-        if (closeIdx === -1) continue;
-        // Check if the content between brackets contains any L
-        let hasL = false;
-        for (let j = i + 1; j < closeIdx; j++) {
-            if (types[j] === 'L') { hasL = true; break; }
-        }
-        if (hasL) {
-            // Assign opener and closer to L so they stay with the LTR content
-            types[i] = 'L';
-            types[closeIdx] = 'L';
-        }
-    }
-}
-
-// ── Isolate Pair Detection (UAX #9 §3.3.2) ───────────────────────────
-
-type IsolateKind = 'LRI' | 'RLI' | 'FSI';
-
-interface IsolatePair {
-    /** Codepoint index of the LRI/RLI/FSI marker. */
-    readonly open: number;
-    /** Codepoint index of the matching PDI. */
-    readonly close: number;
-    readonly kind: IsolateKind;
-}
-
-/**
- * Find all outermost matched isolate pairs (LRI/RLI/FSI ... PDI) in a
- * codepoint sequence. Nested pairs are intentionally returned only at the
- * outermost level; the recursive call in `resolveBidiRuns` handles deeper
- * nesting by re-running this scan inside the inner substring.
- *
- * Unmatched openers are ignored (treated as plain BN), matching browser
- * behaviour — UAX #9 BD9 says the formatting character is left in place
- * with no directional effect.
- */
-function findOutermostIsolatePairs(codePoints: readonly number[]): IsolatePair[] {
-    const pairs: IsolatePair[] = [];
-    let i = 0;
-    while (i < codePoints.length) {
-        const cp = codePoints[i];
-        if (cp === 0x2066 || cp === 0x2067 || cp === 0x2068) {
-            let depth = 1;
-            let close = -1;
-            for (let j = i + 1; j < codePoints.length; j++) {
-                const cj = codePoints[j];
-                if (cj === 0x2066 || cj === 0x2067 || cj === 0x2068) depth++;
-                else if (cj === 0x2069) {
-                    depth--;
-                    if (depth === 0) { close = j; break; }
-                }
-            }
-            if (close === -1) { i++; continue; } // unmatched opener — skip
-            const kind: IsolateKind = cp === 0x2066 ? 'LRI' : cp === 0x2067 ? 'RLI' : 'FSI';
-            pairs.push({ open: i, close, kind });
-            i = close + 1;
-        } else {
-            i++;
-        }
-    }
-    return pairs;
-}
-
 // ── Main API ─────────────────────────────────────────────────────────
 
+/** Split a string into code points with a parallel code-point → code-unit offset map (length cp + 1). */
+function splitCodePoints(text: string): { codePoints: number[]; cpToStr: number[] } {
+    const codePoints: number[] = [];
+    const cpToStr: number[] = [];
+    for (let i = 0; i < text.length;) {
+        cpToStr.push(i);
+        const cp = text.codePointAt(i) ?? 0;
+        codePoints.push(cp);
+        i += cp > 0xFFFF ? 2 : 1;
+    }
+    cpToStr.push(text.length);
+    return { codePoints, cpToStr };
+}
+
 /**
- * UAX #9 explicit embedding normalization (v1.2.0, refined v1.3.0).
+ * Resolve bidirectional text into ordered runs with embedding levels: the
+ * whole UAX #9 pipeline (P2–I2, then L1–L4) on a single-line paragraph with
+ * its base direction detected. For wrapped paragraphs use
+ * {@link resolveBidiLevels} once and {@link bidiRunsForLine} per line.
  *
- * Maps the legacy explicit *embedding* characters into their sealed-isolate
- * equivalents so the rest of the pipeline can process them via the existing
- * isolate machinery:
+ * @param text - Input text in logical order
+ * @returns Runs in visual order (left to right); the invisible directional
+ *   formatting characters are not part of any run
+ */
+export function resolveBidiRuns(text: string): BidiRun[] {
+    if (!text) return [];
+    const { codePoints, cpToStr } = splitCodePoints(text);
+    const res = resolveParagraph(codePoints);
+    applyL1(res.levels, res.original, res.paraLevel, codePoints.length);
+    return assembleRuns(text, codePoints, cpToStr, res.levels, codePoints.length);
+}
+
+/**
+ * Map the legacy explicit embedding characters LRE (U+202A) / RLE (U+202B)
+ * and the PDF (U+202C) closing them to their isolate equivalents LRI / RLI /
+ * PDI; overrides (LRO/RLO and their PDF) are preserved and orphan PDFs
+ * dropped.
  *
- * - LRE (U+202A) → LRI (U+2066)
- * - RLE (U+202B) → RLI (U+2067)
- * - PDF (U+202C) → PDI (U+2069), but only when popping a matched LRE/RLE
- *   from the stack (otherwise preserved or dropped, see below)
- *
- * The explicit *override* characters LRO (U+202D) / RLO (U+202E) and the
- * PDF (U+202C) that closes them are **preserved verbatim** — they carry
- * character-level type-override semantics (UAX #9 X4/X5) that the isolate
- * machinery cannot express. They are resolved separately by
- * {@link resolveBidiRuns} via the override pre-pass, which forces every
- * inner code point to L (LRO) or R (RLO). A PDF that would pop an override
- * frame is therefore left in place for that pre-pass to consume.
- *
- * This split keeps the ≥ 95 % common embedding cases on the fast isolate
- * path while giving LRO/RLO faithful character-level override behaviour.
+ * Until 1.8.0 the resolver ran this before resolving. Since 1.9.0 it
+ * implements X1–X8 natively and no longer needs it; the function remains for
+ * callers that want isolate-only text (an embedding and an isolate differ in
+ * how neutrals at their boundary resolve — N1/N2 see across an embedding,
+ * never across an isolate).
  *
  * @param text - Raw input text in logical order
- * @returns Text with embeddings mapped to isolates; overrides preserved.
+ * @returns Text with embeddings mapped to isolates; overrides preserved
+ * @deprecated since 1.9.0 — `resolveBidiRuns` handles embeddings directly
  */
 export function normalizeBidiEmbeddings(text: string): string {
     const LRE = 0x202A, RLE = 0x202B, PDF_CP = 0x202C, LRO = 0x202D, RLO = 0x202E;
     const LRI = 0x2066, RLI = 0x2067, PDI = 0x2069;
 
-    // Quick fast-path: no *embedding* markers present (overrides are handled
-    // elsewhere and must pass through untouched).
     let hasEmbed = false;
     for (let i = 0; i < text.length; i++) {
         const c = text.charCodeAt(i);
@@ -528,456 +814,141 @@ export function normalizeBidiEmbeddings(text: string): string {
     }
     if (!hasEmbed) return text;
 
-    // Stack frames carry their kind so a PDF closes the right construct:
-    //   'E' = embedding (LRE/RLE) → emit LRI/RLI ... PDI
-    //   'O' = override   (LRO/RLO) → preserved verbatim for the override pass
     const stack: Array<'E' | 'O'> = [];
     const out: number[] = [];
-    const MAX_DEPTH = 125;
-
     for (let i = 0; i < text.length;) {
         const cp = text.codePointAt(i) ?? 0;
         const cpLen = cp > 0xFFFF ? 2 : 1;
         if (cp === LRE || cp === RLE) {
-            if (stack.length >= MAX_DEPTH) { i += cpLen; continue; } // BD13 fallback
+            if (stack.length >= MAX_DEPTH) { i += cpLen; continue; }
             stack.push('E');
             out.push(cp === LRE ? LRI : RLI);
-            i += cpLen;
         } else if (cp === LRO || cp === RLO) {
-            // Preserve overrides verbatim for the X4/X5 override pre-pass.
             if (stack.length >= MAX_DEPTH) { i += cpLen; continue; }
             stack.push('O');
             out.push(cp);
-            i += cpLen;
         } else if (cp === PDF_CP) {
             const frame = stack.pop();
             if (frame === 'E') out.push(PDI);
-            else if (frame === 'O') out.push(PDF_CP); // keep — override pass consumes it
-            // Orphan PDF: drop silently per UAX #9 BD15.
-            i += cpLen;
+            else if (frame === 'O') out.push(PDF_CP);
         } else {
             out.push(cp);
-            i += cpLen;
         }
+        i += cpLen;
     }
-    // Unclosed embedding frames: no PDI inserted — the inner text remains
-    // scoped by the LRI/RLI we already emitted, which the isolate
-    // pipeline will close at end-of-text fall-through.
-
     let result = '';
     for (let i = 0; i < out.length; i++) result += String.fromCodePoint(out[i]);
     return result;
 }
 
-/**
- * Find the matching PDF (U+202C) that closes the explicit directional
- * construct opened at `openCp`, balancing nested LRE/RLE/LRO/RLO openers.
- *
- * @returns Codepoint index of the closing PDF, or -1 if unmatched.
- */
-function matchingPdfIndex(codePoints: readonly number[], openCp: number): number {
-    let depth = 1;
-    for (let j = openCp + 1; j < codePoints.length; j++) {
-        const cj = codePoints[j];
-        if (cj === 0x202A || cj === 0x202B || cj === 0x202D || cj === 0x202E) depth++;
-        else if (cj === 0x202C) { depth--; if (depth === 0) return j; }
-    }
-    return -1;
+// ── Per-paragraph resolution (v1.9.0) ────────────────────────────────
+
+/** Base direction of a paragraph: detected (P2–P3), or forced — the layout option's type. @since 1.9.0 */
+export type BidiDirection = TextDirection;
+
+/** A paragraph's resolved embedding levels, one per UTF-16 code unit. @since 1.9.0 */
+export interface BidiLevels {
+    /** The paragraph embedding level: 0 (LTR) or 1 (RTL). */
+    readonly paraLevel: number;
+    /** Resolved level per code unit of the paragraph text (both units of a surrogate pair carry the level). */
+    readonly levels: readonly number[];
 }
 
 /**
- * Find the matching PDI (U+2069) that closes the isolate opened at `openCp`,
- * balancing nested LRI/RLI/FSI openers.
+ * Resolve the embedding levels of a whole paragraph (UAX #9 P2–I2), once.
+ * Lines wrapped from the paragraph then reorder from these levels through
+ * {@link bidiRunsForLine}: a continuation line starting with a Latin word
+ * stays part of its RTL paragraph instead of being resolved as a paragraph
+ * of its own. `direction` forces the base direction (`'rtl'`, `'ltr'`) or
+ * detects it (`'auto'`, the default).
  *
- * @returns Codepoint index of the closing PDI, or -1 if unmatched.
+ * @param text - Paragraph text in logical order
+ * @param direction - Base direction; `'auto'` applies P2–P3
+ * @returns Paragraph level and per-code-unit levels
+ * @since 1.9.0
  */
-function matchingPdiIndex(codePoints: readonly number[], openCp: number): number {
-    let depth = 1;
-    for (let j = openCp + 1; j < codePoints.length; j++) {
-        const cj = codePoints[j];
-        if (cj === 0x2066 || cj === 0x2067 || cj === 0x2068) depth++;
-        else if (cj === 0x2069) { depth--; if (depth === 0) return j; }
+export function resolveBidiLevels(text: string, direction: BidiDirection = 'auto'): BidiLevels {
+    const forced = direction === 'rtl' ? 1 : direction === 'ltr' ? 0 : undefined;
+    const levels = new Array<number>(text.length).fill(forced ?? 0);
+    if (!text) return { paraLevel: forced ?? 0, levels };
+    const { codePoints, cpToStr } = splitCodePoints(text);
+    const res = resolveParagraph(codePoints, forced);
+    for (let k = 0; k < codePoints.length; k++) {
+        for (let u = cpToStr[k]; u < cpToStr[k + 1]; u++) levels[u] = res.levels[k];
     }
-    return -1;
+    return { paraLevel: res.paraLevel, levels };
 }
 
 /**
- * UAX #9 X4/X5 override pre-pass.
+ * Reorder one line of a paragraph from the paragraph's resolved levels
+ * (UAX #9 L1, L2 and L4): the line's slice of the levels, trailing
+ * whitespace reset to the paragraph level, runs reversed and mirrored.
  *
- * Resolves the outermost LRO (U+202D) / RLO (U+202E) … PDF (U+202C) scopes by
- * forcing **every** inner code point to a single direction — L for LRO, R for
- * RLO — regardless of its natural bidi type. This is what distinguishes an
- * override from an embedding/isolate: digits and opposite-direction runs inside
- * the scope are laid out uniformly rather than reordered.
- *
- * Top-level embedding scopes (LRE/RLE) found between overrides are left in the
- * gap text and resolved by the recursive {@link resolveBidiRuns} call, so mixed
- * embedding + override input composes correctly. Nested directional controls
- * *inside* an override scope are stripped and absorbed by the uniform forcing
- * (pdfnative's documented "lite" behaviour — the whole point of an override is a
- * single forced direction).
- *
- * @returns Resolved runs, or `null` when the text has no top-level override.
- * @since 1.3.0
+ * @param line - The line text, a substring of the paragraph
+ * @param lineLevels - The paragraph levels of exactly that substring (one per code unit)
+ * @param paraLevel - The paragraph embedding level
+ * @returns Runs in visual order, offsets relative to the line
+ * @since 1.9.0
  */
-function tryResolveOverrides(text: string, forcedLevel?: number): BidiRun[] | null {
-    const LRE = 0x202A, RLE = 0x202B, LRO = 0x202D, RLO = 0x202E;
-    // Fast path: no override markers at all.
-    if (text.indexOf('\u202D') === -1 && text.indexOf('\u202E') === -1) return null;
-
-    const codePoints: number[] = [];
-    const cpToStr: number[] = [];
-    for (let i = 0; i < text.length;) {
-        cpToStr.push(i);
-        const cp = text.codePointAt(i) ?? 0;
-        codePoints.push(cp);
-        i += cp > 0xFFFF ? 2 : 1;
-    }
-    cpToStr.push(text.length);
+export function bidiRunsForLine(line: string, lineLevels: readonly number[], paraLevel: number): BidiRun[] {
+    if (!line) return [];
+    const { codePoints, cpToStr } = splitCodePoints(line);
     const len = codePoints.length;
-
-    // Collect top-level (depth-0) override spans, skipping top-level embedding
-    // and isolate scopes (their inner overrides are resolved when the recursion
-    // descends into them).
-    interface OverrideSpan { open: number; close: number; rtl: boolean; }
-    const spans: OverrideSpan[] = [];
-    let i = 0;
-    while (i < len) {
-        const cp = codePoints[i];
-        if (cp === LRO || cp === RLO) {
-            const close = matchingPdfIndex(codePoints, i);
-            if (close === -1) { i++; continue; } // unmatched opener — ignore
-            spans.push({ open: i, close, rtl: cp === RLO });
-            i = close + 1;
-        } else if (cp === LRE || cp === RLE) {
-            // Skip the whole embedding scope; recursion handles it later.
-            const close = matchingPdfIndex(codePoints, i);
-            i = close === -1 ? i + 1 : close + 1;
-        } else if (cp === 0x2066 || cp === 0x2067 || cp === 0x2068) {
-            // Skip the whole isolate scope; recursion handles inner overrides.
-            const close = matchingPdiIndex(codePoints, i);
-            i = close === -1 ? i + 1 : close + 1;
-        } else {
-            i++;
-        }
-    }
-    if (spans.length === 0) return null;
-
-    const out: BidiRun[] = [];
-    const emitGap = (cpStart: number, cpEnd: number): void => {
-        if (cpStart >= cpEnd) return;
-        const segText = text.substring(cpToStr[cpStart], cpToStr[cpEnd]);
-        const baseStrIdx = cpToStr[cpStart];
-        const segRuns = forcedLevel === undefined
-            ? resolveBidiRuns(segText)
-            : resolveBidiRunsForced(segText, forcedLevel);
-        for (const r of segRuns) {
-            out.push({ text: r.text, level: r.level, start: r.start + baseStrIdx });
-        }
-    };
-
-    let cursor = 0;
-    for (const span of spans) {
-        emitGap(cursor, span.open);
-        // Inner content (between the opener and its PDF), with all directional
-        // controls stripped — the override forces a single uniform direction.
-        const innerRaw = text.substring(cpToStr[span.open + 1], cpToStr[span.close]);
-        const inner = stripBidiControls(innerRaw);
-        if (inner) {
-            const level = span.rtl ? 1 : 0;
-            // RLO scopes resolve to level 1 — reverse and apply L4 mirroring,
-            // exactly as for naturally-resolved odd-level runs.
-            const runText = span.rtl ? reverseAndMirror(inner) : inner;
-            out.push({ text: runText, level, start: cpToStr[span.open + 1] });
-        }
-        cursor = span.close + 1;
-    }
-    emitGap(cursor, len);
-    return out;
+    const levels = lineLevelsOf(codePoints, cpToStr, lineLevels, paraLevel);
+    return assembleRuns(line, codePoints, cpToStr, levels, len);
 }
 
-/**
- * Resolve bidirectional text into ordered runs with embedding levels.
- *
- * Implements UAX #9 with isolate support (LRI/RLI/FSI ... PDI) and
- * explicit-embedding/override normalization (LRE/RLE/LRO/RLO/PDF →
- * isolate-equivalent). When the input contains matched isolate pairs,
- * the inner content is resolved as a sealed sub-paragraph with its
- * own forced or auto-detected direction, preventing the outer context
- * from leaking into it (and vice versa).
- *
- * @param text - Input text in logical order
- * @returns Array of BidiRun objects in visual order
- */
-export function resolveBidiRuns(text: string): BidiRun[] {
-    if (!text) return [];
-
-    // X4/X5: resolve outermost LRO/RLO override scopes first (they force every
-    // inner code point to a single direction and cannot be expressed as
-    // isolates). Returns null when there is no top-level override.
-    const overrideRuns = tryResolveOverrides(text);
-    if (overrideRuns) return overrideRuns;
-
-    // Normalize explicit embeddings (LRE/RLE) → isolate equivalents.
-    const normalized = normalizeBidiEmbeddings(text);
-    if (normalized !== text) {
-        // Recurse on the normalized text (now contains only isolates / overrides).
-        return resolveBidiRuns(normalized);
-    }
-
-    // Extract code points + a parallel cp→str byte-offset map so we can
-    // slice substrings cheaply when recursing into isolate ranges.
-    const codePoints: number[] = [];
-    const cpToStr: number[] = [];
-    for (let i = 0; i < text.length;) {
-        cpToStr.push(i);
-        const cp = text.codePointAt(i) ?? 0;
-        codePoints.push(cp);
-        i += cp > 0xFFFF ? 2 : 1;
-    }
-    cpToStr.push(text.length); // sentinel
-
-    const isolates = findOutermostIsolatePairs(codePoints);
-    if (isolates.length === 0) {
-        return resolveBidiCore(text, codePoints, cpToStr);
-    }
-
-    // Compute parent paragraph level from strong types OUTSIDE isolated
-    // ranges (UAX #9 P2/P3 in the presence of isolates).
-    const insideIsolate = new Array<boolean>(codePoints.length).fill(false);
-    for (const p of isolates) {
-        for (let k = p.open; k <= p.close; k++) insideIsolate[k] = true;
-    }
-    const outerTypes: BidiType[] = codePoints.map((cp, idx) =>
-        insideIsolate[idx] ? 'BN' : classifyBidiType(cp));
-    const parentLevel = detectParagraphLevel(outerTypes);
-
-    const out: BidiRun[] = [];
-    const emitSegment = (cpStart: number, cpEnd: number, forced?: number): void => {
-        if (cpStart >= cpEnd) return;
-        const segText = text.substring(cpToStr[cpStart], cpToStr[cpEnd]);
-        const segCps = codePoints.slice(cpStart, cpEnd);
-        const baseStrIdx = cpToStr[cpStart];
-        const segCpToStr = cpToStr.slice(cpStart, cpEnd + 1).map(x => x - baseStrIdx);
-        // Recurse to handle any nested isolates inside this segment.
-        const segRuns = forced === undefined
-            ? resolveBidiRuns(segText)
-            : resolveBidiCore(segText, segCps, segCpToStr, forced);
-        for (const r of segRuns) {
-            out.push({ text: r.text, level: r.level, start: r.start + baseStrIdx });
-        }
-    };
-
-    let cursor = 0;
-    for (const pair of isolates) {
-        emitSegment(cursor, pair.open, parentLevel);
-        // Inner content excludes the LRI/RLI/FSI marker and the PDI marker.
-        const innerStart = pair.open + 1;
-        const innerEnd = pair.close;
-        let innerLevel: number;
-        if (pair.kind === 'LRI') innerLevel = 0;
-        else if (pair.kind === 'RLI') innerLevel = 1;
-        else {
-            // FSI: auto-detect from first strong character inside the isolate.
-            const innerTypes = codePoints.slice(innerStart, innerEnd).map(classifyBidiType);
-            innerLevel = detectParagraphLevel(innerTypes);
-        }
-        // Recurse so nested isolates are also resolved.
-        if (innerStart < innerEnd) {
-            const innerText = text.substring(cpToStr[innerStart], cpToStr[innerEnd]);
-            const innerRuns = resolveBidiRunsForced(innerText, innerLevel);
-            const baseStrIdx = cpToStr[innerStart];
-            for (const r of innerRuns) {
-                out.push({ text: r.text, level: r.level, start: r.start + baseStrIdx });
-            }
-        }
-        cursor = pair.close + 1;
-    }
-    emitSegment(cursor, codePoints.length, parentLevel);
-    return out;
-}
-
-/**
- * Internal helper: resolve text with a forced paragraph level, handling
- * any nested isolates first.
- */
-function resolveBidiRunsForced(text: string, forcedLevel: number): BidiRun[] {
-    if (!text) return [];
-
-    // X4/X5: resolve override scopes before isolate handling, inheriting the
-    // forced paragraph level for the surrounding (non-override) gaps.
-    const overrideRuns = tryResolveOverrides(text, forcedLevel);
-    if (overrideRuns) return overrideRuns;
-
-    const codePoints: number[] = [];
-    const cpToStr: number[] = [];
-    for (let i = 0; i < text.length;) {
-        cpToStr.push(i);
-        const cp = text.codePointAt(i) ?? 0;
-        codePoints.push(cp);
-        i += cp > 0xFFFF ? 2 : 1;
-    }
-    cpToStr.push(text.length);
-
-    const isolates = findOutermostIsolatePairs(codePoints);
-    if (isolates.length === 0) {
-        return resolveBidiCore(text, codePoints, cpToStr, forcedLevel);
-    }
-
-    const out: BidiRun[] = [];
-    const emit = (cpStart: number, cpEnd: number, forced: number): void => {
-        if (cpStart >= cpEnd) return;
-        const segText = text.substring(cpToStr[cpStart], cpToStr[cpEnd]);
-        const segCps = codePoints.slice(cpStart, cpEnd);
-        const baseStrIdx = cpToStr[cpStart];
-        const segCpToStr = cpToStr.slice(cpStart, cpEnd + 1).map(x => x - baseStrIdx);
-        const segRuns = resolveBidiCore(segText, segCps, segCpToStr, forced);
-        for (const r of segRuns) {
-            out.push({ text: r.text, level: r.level, start: r.start + baseStrIdx });
-        }
-    };
-
-    let cursor = 0;
-    for (const pair of isolates) {
-        emit(cursor, pair.open, forcedLevel);
-        const innerStart = pair.open + 1;
-        const innerEnd = pair.close;
-        let innerLevel: number;
-        if (pair.kind === 'LRI') innerLevel = 0;
-        else if (pair.kind === 'RLI') innerLevel = 1;
-        else {
-            const innerTypes = codePoints.slice(innerStart, innerEnd).map(classifyBidiType);
-            innerLevel = detectParagraphLevel(innerTypes);
-        }
-        if (innerStart < innerEnd) {
-            const innerText = text.substring(cpToStr[innerStart], cpToStr[innerEnd]);
-            const innerRuns = resolveBidiRunsForced(innerText, innerLevel);
-            const baseStrIdx = cpToStr[innerStart];
-            for (const r of innerRuns) {
-                out.push({ text: r.text, level: r.level, start: r.start + baseStrIdx });
-            }
-        }
-        cursor = pair.close + 1;
-    }
-    emit(cursor, codePoints.length, forcedLevel);
-    return out;
-}
-
-/**
- * Core BiDi resolver: full UAX #9 W1-W7 / N1-N2 / L2 pipeline on a single
- * paragraph. Isolate handling is performed in the public dispatchers above.
- *
- * @param text - Source text (already known to contain no outer isolate pairs)
- * @param codePoints - Parallel codepoint array
- * @param cpToStr - Codepoint-index → string-byte-offset map (length = cp+1)
- * @param forcedLevel - Optional override for the paragraph embedding level
- */
-function resolveBidiCore(
-    text: string,
-    codePoints: readonly number[],
-    cpToStr: readonly number[],
-    forcedLevel?: number,
-): BidiRun[] {
+/** The line's levels per code point after L1. */
+function lineLevelsOf(codePoints: readonly number[], cpToStr: readonly number[], lineLevels: readonly number[], paraLevel: number): number[] {
     const len = codePoints.length;
-    if (len === 0) return [];
-
-    // Step 1: Classify
-    const types: BidiType[] = codePoints.map(classifyBidiType);
-
-    // Step 2: Detect paragraph level (P2-P3) unless overridden by an isolate.
-    const paraLevel = forcedLevel !== undefined ? forcedLevel : detectParagraphLevel(types);
-
-    // Step 3: Resolve weak types (W1-W7)
-    resolveWeakTypes(types, paraLevel);
-
-    // Step 4: Resolve neutral types (N1-N2)
-    resolveNeutralTypes(types, paraLevel);
-
-    // Step 4b: Practical fixups for common mixed RTL/LTR patterns.
-    // Standard N2 assigns paragraph direction to neutrals between opposing strong
-    // types. This causes periods after LTR words to drift into RTL runs and
-    // bracket pairs around LTR content to split across runs. We fix these by
-    // keeping sentence punctuation with the preceding LTR text and by pairing
-    // brackets with their enclosed content.
-    if (paraLevel === 1) {
-        fixPunctuationAffinity(types, codePoints, len);
-        fixBracketPairing(types, codePoints, len);
+    const levels: number[] = new Array(len);
+    const original: BidiType[] = new Array(len);
+    for (let k = 0; k < len; k++) {
+        levels[k] = lineLevels[cpToStr[k]] ?? paraLevel;
+        original[k] = classifyBidiType(codePoints[k]);
     }
-
-    // Step 5: Assign levels
-    const levels = assignLevels(types, paraLevel);
-
-    // Step 6: Build runs of same level (uses the cpToStr map passed in by the dispatcher).
-    const runs: BidiRun[] = [];
-    let runStart = 0;
-    let runLevel = levels[0];
-
-    for (let i = 1; i <= len; i++) {
-        if (i === len || levels[i] !== runLevel) {
-            const start = cpToStr[runStart];
-            const end = cpToStr[i];
-            let runText = text.substring(start, end);
-            // Reverse odd-level (RTL) runs for visual order, applying UAX #9 L4
-            // glyph mirroring in the same pass: reversal swaps the *positions*
-            // of paired delimiters, but each glyph must still be replaced by
-            // its Bidi_Mirroring_Glyph so it faces its content. Logical "(X)"
-            // with RTL X reverses to ")X̄(" positionally; without L4 the
-            // rightmost glyph would be "(" opening away from the content —
-            // mirroring yields the correct visual "(X̄)". Even-level runs
-            // (including digit runs, which I1/I2 place at level 2) are
-            // untouched — L4 applies only at odd embedding levels.
-            if (runLevel % 2 === 1) {
-                runText = reverseAndMirror(runText);
-            }
-            runs.push({ text: runText, level: runLevel, start });
-            if (i < len) {
-                runStart = i;
-                runLevel = levels[i];
-            }
-        }
-    }
-
-    // L2 reordering, run-based: within every maximal contiguous sequence of
-    // runs at level >= 1, reverse the *order* of the runs (character reversal
-    // inside odd runs already happened above). For an RTL paragraph every run
-    // is at level >= 1, so the whole array reverses — English text renders
-    // first (leftmost) and Hebrew/Arabic last, as txt() draws left-to-right.
-    // For an LTR paragraph this reorders R/AN/EN sub-sequences (e.g. Arabic
-    // words followed by Arabic-Indic digits) without touching L runs.
-    let blockStart = 0;
-    while (blockStart < runs.length) {
-        if (runs[blockStart].level >= 1) {
-            let blockEnd = blockStart;
-            while (blockEnd < runs.length && runs[blockEnd].level >= 1) blockEnd++;
-            for (let a = blockStart, b = blockEnd - 1; a < b; a++, b--) {
-                const tmp = runs[a];
-                runs[a] = runs[b];
-                runs[b] = tmp;
-            }
-            blockStart = blockEnd;
-        } else {
-            blockStart++;
-        }
-    }
-
-    return runs;
+    applyL1(levels, original, paraLevel, len);
+    return levels;
 }
 
 /**
- * Check if text contains any RTL characters (Arabic or Hebrew) or an explicit
- * directional override (LRO U+202D / RLO U+202E). The override markers are
- * included so a direct caller that has not yet stripped controls still routes
- * through the bidi resolver, where the X4/X5 override pass applies.
+ * The final levels of one line (UAX #9 L1 applied to the paragraph levels of
+ * that line): segment separators and the whitespace or formatting characters
+ * before one or at the end of the line take the paragraph level. One level
+ * per code unit, like {@link resolveBidiLevels}. This is what the UCD's
+ * BidiCharacterTest reports; {@link bidiRunsForLine} reorders from it.
+ *
+ * @param line - The line text, a substring of the paragraph
+ * @param lineLevels - The paragraph levels of exactly that substring (one per code unit)
+ * @param paraLevel - The paragraph embedding level
+ * @since 1.9.0
+ */
+export function bidiLineLevels(line: string, lineLevels: readonly number[], paraLevel: number): number[] {
+    const out = new Array<number>(line.length).fill(paraLevel);
+    if (!line) return out;
+    const { codePoints, cpToStr } = splitCodePoints(line);
+    const levels = lineLevelsOf(codePoints, cpToStr, lineLevels, paraLevel);
+    for (let k = 0; k < codePoints.length; k++) {
+        for (let u = cpToStr[k]; u < cpToStr[k + 1]; u++) out[u] = levels[k];
+    }
+    return out;
+}
+
+/**
+ * Check whether text needs bidirectional resolution: it holds a
+ * right-to-left character (R or AL, which includes the RLM and ALM marks) or
+ * a right-to-left explicit control (RLE, RLO, RLI). Pure left-to-right text
+ * with left-to-right controls or Arabic digits only resolves to its logical
+ * order and skips the resolver.
  *
  * @param text - Input text string
- * @returns True if text contains R/AL bidi types or an LRO/RLO override
+ * @returns True when an odd embedding level can result
  */
 export function containsRTL(text: string): boolean {
     for (let i = 0; i < text.length;) {
         const cp = text.codePointAt(i) ?? 0;
-        if (cp === 0x202D || cp === 0x202E) return true; // LRO / RLO override
         const t = classifyBidiType(cp);
-        if (t === 'R' || t === 'AL') return true;
+        if (t === 'R' || t === 'AL' || t === 'RLE' || t === 'RLO' || t === 'RLI') return true;
         i += cp > 0xFFFF ? 2 : 1;
     }
     return false;
@@ -986,15 +957,12 @@ export function containsRTL(text: string): boolean {
 /**
  * Strip invisible Unicode bidirectional formatting characters.
  *
- * The BiDi resolver consumes these characters when it runs, but the
- * resolver is only invoked when `containsRTL()` is true. For pure-LTR
- * paragraphs that nonetheless contain directional formatters (e.g. an
- * orphan PDF U+202C left over after `normalizeBidiEmbeddings()`), the
- * marker would reach the font encoder as a regular codepoint and
- * render as `.notdef` (tofu) since no font ships a glyph for it.
+ * The resolver consumes these characters when it runs; text that reaches a
+ * font encoder with them would render them as `.notdef` (tofu), since no
+ * font ships a glyph for them.
  *
  * Stripped codepoints:
- * - LRM / RLM (U+200E, U+200F)
+ * - LRM / RLM (U+200E, U+200F) and ALM (U+061C)
  * - LRE / RLE / PDF / LRO / RLO (U+202A–U+202E)
  * - LRI / RLI / FSI / PDI (U+2066–U+2069)
  *
@@ -1005,67 +973,49 @@ export function containsRTL(text: string): boolean {
  */
 export function stripBidiControls(text: string): string {
     if (!text) return text;
-    // Fast path: scan once; only rebuild if a control is present.
-    // U+061C ARABIC LETTER MARK is the Arabic counterpart of LRM/RLM: an
-    // invisible implicit directional mark (UAX #9 §2.5). It was not listed
-    // here, so it reached the cmap and drew whatever glyph the font had for
-    // it — an empty one in Noto Sans Arabic, and .notdef in any font without
-    // it, which is a tofu box in Persian and Arabic text.
-    const isControl = (c: number): boolean =>
-        c === 0x200E || c === 0x200F
-        || c === 0x061C
-        || (c >= 0x202A && c <= 0x202E)
-        || (c >= 0x2066 && c <= 0x2069);
-
     let needs = false;
     for (let i = 0; i < text.length; i++) {
-        if (isControl(text.charCodeAt(i))) { needs = true; break; }
+        if (isBidiControl(text.charCodeAt(i))) { needs = true; break; }
     }
     if (!needs) return text;
     let out = '';
     for (let i = 0; i < text.length; i++) {
-        if (isControl(text.charCodeAt(i))) continue;
+        if (isBidiControl(text.charCodeAt(i))) continue;
         out += text[i];
     }
     return out;
 }
 
-// ── Internal Helpers ─────────────────────────────────────────────────
-
 /**
- * Reverse a string while keeping surrogate pairs intact.
+ * Reverse a string, keeping surrogate pairs intact.
+ * Used to convert a visual-order RTL run back to logical order before
+ * Arabic shaping.
  *
- * @param str - Input string to reverse
- * @returns Reversed string with valid surrogate pair ordering
+ * @param str - String to reverse
+ * @returns Reversed string
  */
 export function reverseString(str: string): string {
-    const cps: number[] = [];
+    const cps: string[] = [];
     for (let i = 0; i < str.length;) {
         const cp = str.codePointAt(i) ?? 0;
-        cps.push(cp);
-        i += cp > 0xFFFF ? 2 : 1;
+        const len = cp > 0xFFFF ? 2 : 1;
+        cps.push(str.substring(i, i + len));
+        i += len;
     }
-    cps.reverse();
-    return String.fromCodePoint(...cps);
+    return cps.reverse().join('');
 }
 
 /**
- * Reverse a string and substitute each code point with its
- * Bidi_Mirroring_Glyph (UAX #9 rule L4). Used for odd-level (RTL) runs,
- * where the positional swap from reversal must be paired with glyph
- * mirroring so delimiters keep facing their content.
- *
- * @param str - Input string in logical order
- * @returns Visually-ordered string with mirrored delimiters
- * @since 1.7.0
+ * Reverse a run and apply L4 glyph mirroring to every code point —
+ * the visual form of an odd-level run.
  */
 function reverseAndMirror(str: string): string {
-    const cps: number[] = [];
+    const parts: string[] = [];
     for (let i = 0; i < str.length;) {
         const cp = str.codePointAt(i) ?? 0;
-        cps.push(mirrorCodePoint(cp));
-        i += cp > 0xFFFF ? 2 : 1;
+        const len = cp > 0xFFFF ? 2 : 1;
+        parts.push(String.fromCodePoint(mirrorCodePoint(cp)));
+        i += len;
     }
-    cps.reverse();
-    return String.fromCodePoint(...cps);
+    return parts.reverse().join('');
 }

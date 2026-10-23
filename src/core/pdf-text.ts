@@ -5,10 +5,10 @@
  * Supports both Latin (WinAnsi) and Unicode (CIDFont) modes.
  */
 
-import type { FontData, ShapedGlyph, EncodingContext } from '../types/pdf-types.js';
+import type { FontData, ShapedGlyph, EncodingContext, TextRun } from '../types/pdf-types.js';
 import { toWinAnsi, helveticaWidth, helveticaBoldWidth, stripSoftHyphens, narrowNoBreakSpaceCorrection } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
-import { stripBidiControls } from '../shaping/bidi.js';
+import { stripBidiControls, containsRTL } from '../shaping/bidi.js';
 import { wrapSpan, wrapActualText } from './pdf-tags.js';
 
 /** Format a number as PDF operator value (2 decimal places). */
@@ -24,7 +24,8 @@ export function txtShaped(
     y: number,
     font: string,
     sz: number,
-    fontData: FontData
+    fontData: FontData,
+    spaceExtra: number = 0,
 ): string {
     const { metrics, widths: glyphWidths, defaultWidth } = fontData;
     const upm = metrics.unitsPerEm;
@@ -39,9 +40,18 @@ export function txtShaped(
         const gy = fmtNum(y + g.dy * scale);
         parts.push(`BT ${font} ${sz} Tf ${gx} ${gy} Td <${hexGid}> Tj ET`);
         if (!g.isZeroAdvance) penX += adv;
+        // Justification widens the word gaps inside a shaped run (1.9.0).
+        if (spaceExtra !== 0 && isSpaceGlyph(g, fontData)) penX += spaceExtra;
     }
 
     return parts.join('\n');
+}
+
+/** Whether a shaped glyph draws a plain space (U+0020). */
+function isSpaceGlyph(g: ShapedGlyph, fontData: FontData): boolean {
+    if (g.cps !== undefined) return g.cps.length === 1 && g.cps[0] === 0x20;
+    const spaceGid = fontData.cmap[0x20];
+    return spaceGid !== undefined && spaceGid !== 0 && g.gid === spaceGid;
 }
 
 /** Format a scale factor with finer precision (emoji `cm` scaling). */
@@ -319,6 +329,13 @@ export function txtJustified(
     const words = str.split(' ').filter(w => w !== '');
     if (words.length < 2) return txt(str, x, y, font, sz, enc);
 
+    // A line with right-to-left runs — or any line of a right-to-left
+    // paragraph — is justified over its visual runs: placing the words one
+    // after another in logical order would reverse the reading order (1.9.0).
+    if (enc.isUnicode && (enc.paragraphLevel === 1 || containsRTL(str))) {
+        return txtJustifiedVisual(str, x, y, font, sz, enc, targetWidth);
+    }
+
     // Each word carries its trailing space so the space glyph is emitted; the
     // last word does not. Measured as emitted, so kerning across the word /
     // space boundary is accounted for in Unicode mode.
@@ -391,6 +408,138 @@ export function txtJustified(
     }
     flush();
     return parts.join('\n');
+}
+
+/** How one text run takes part in justification. */
+interface JustifiedPiece {
+    readonly run: TextRun;
+    /** Word gaps the run contributes (plain spaces it draws). */
+    readonly gaps: number;
+    /** TJ items for a hex run, each space-ending piece followed by the gap marker `null`. */
+    readonly items: (string | null)[] | null;
+}
+
+/**
+ * Justify a line whose runs are in visual order (bidirectional text): the
+ * extra space is shared by every word gap wherever it lands after
+ * reordering — inside a Hebrew run, inside a shaped Arabic run (the space
+ * glyph's advance grows) or between runs. Runs that cannot be split at their
+ * spaces (a kerned `TJ` run) leave the line ragged instead.
+ *
+ * @since 1.9.0
+ */
+function txtJustifiedVisual(
+    str: string,
+    x: number,
+    y: number,
+    font: string,
+    sz: number,
+    enc: EncodingContext,
+    targetWidth: number,
+): string {
+    const runs = enc.textRuns(str, sz);
+    if (runs.length === 0) return '';
+    const pieces: JustifiedPiece[] = [];
+    let natural = 0;
+    let gaps = 0;
+    for (const run of runs) {
+        natural += run.widthPt;
+        const emoji = enc.colorEmoji !== undefined && run.fontData.colorGlyphs !== undefined && run.hexStr !== null;
+        if (emoji) { pieces.push({ run, gaps: 0, items: null }); continue; }
+        if (run.shaped) {
+            let n = 0;
+            for (const g of run.shaped) if (!g.isZeroAdvance && isSpaceGlyph(g, run.fontData)) n++;
+            pieces.push({ run, gaps: n, items: null });
+            gaps += n;
+            continue;
+        }
+        const items = splitRunAtSpaces(run, enc);
+        if (items === null) return txt(str, x, y, font, sz, enc); // unsplittable: ragged
+        const n = items.filter(it => it === null).length;
+        pieces.push({ run, gaps: n, items });
+        gaps += n;
+    }
+    const extra = targetWidth - natural;
+    const spaceW = measureFor(' ', sz, enc);
+    if (gaps === 0 || extra <= 0 || extra / gaps > spaceW * MAX_JUSTIFY_STRETCH) {
+        return txt(str, x, y, font, sz, enc);
+    }
+    const gapExtra = extra / gaps;
+    const tjGap = fmtNum(-(gapExtra * 1000 / sz));
+
+    const parts: string[] = [];
+    let penX = x;
+    let segFont: string | null = null;
+    let segStart = 0;
+    let segAdvance = 0;
+    let segItems: string[] = [];
+    const flush = (): void => {
+        if (segFont === null) return;
+        parts.push(`BT ${segFont} ${sz} Tf ${fmtNum(segStart)} ${fmtNum(y)} Td [${segItems.join(' ')}] TJ ET`);
+        penX = segStart + segAdvance;
+        segFont = null;
+        segAdvance = 0;
+        segItems = [];
+    };
+    for (const piece of pieces) {
+        const { run } = piece;
+        if (piece.items === null) {
+            flush();
+            if (run.shaped) {
+                parts.push(txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData, gapExtra));
+                penX += run.widthPt + gapExtra * piece.gaps;
+            } else {
+                penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
+            }
+            continue;
+        }
+        if (segFont !== null && segFont !== run.fontRef) flush();
+        if (segFont === null) { segFont = run.fontRef; segStart = penX; }
+        for (const it of piece.items) segItems.push(it === null ? tjGap : it);
+        segAdvance += run.widthPt + gapExtra * piece.gaps;
+    }
+    flush();
+    return parts.join('\n');
+}
+
+/**
+ * The TJ items of a hex run cut after each plain space, `null` marking a
+ * gap. A base-14 (literal) run is cut on its text; a CID run on its glyph
+ * string, one glyph per code point. Returns `null` when the run carries
+ * spaces it cannot be cut around (a kerned run, a ligature run).
+ */
+function splitRunAtSpaces(run: TextRun, enc: EncodingContext): (string | null)[] | null {
+    const text = run.text;
+    if (!text.includes(' ')) return [run.tjStr ?? run.hexStr ?? ''];
+    if (run.tjStr !== undefined || run.hexStr === null) return null;
+    const hex = run.hexStr;
+    const items: (string | null)[] = [];
+    if (hex.startsWith('(')) {
+        // Base-14 literal: cut the text, re-encode each piece.
+        let piece = '';
+        for (let i = 0; i < text.length; i++) {
+            piece += text[i];
+            if (text[i] === ' ') { items.push(...latinTjItems(piece, enc), null); piece = ''; }
+        }
+        if (piece) items.push(...latinTjItems(piece, enc));
+        return items;
+    }
+    // CID hex: four hex digits per code point.
+    const body = hex.slice(1, -1);
+    let cpCount = 0;
+    for (let i = 0; i < text.length; i++) { const c = text.charCodeAt(i); if (c < 0xD800 || c > 0xDBFF) cpCount++; }
+    if (body.length !== cpCount * 4) return null;
+    let acc = '';
+    let gi = 0;
+    for (let i = 0; i < text.length; i++) {
+        const cp = text.codePointAt(i) ?? 0;
+        if (cp > 0xFFFF) i++;
+        acc += body.slice(gi * 4, gi * 4 + 4);
+        gi++;
+        if (cp === 0x20) { items.push(`<${acc}>`, null); acc = ''; }
+    }
+    if (acc) items.push(`<${acc}>`);
+    return items;
 }
 
 /** Tagged text at absolute position — wraps in /Span BDC…EMC with /ActualText. */

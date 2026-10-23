@@ -7,13 +7,14 @@
  *
  * Dev-time only — never runs at build or runtime.
  *
- * Run:   npx tsx scripts/generate-bidi-mirroring.ts
+ * Run:     npx tsx scripts/generate-bidi-mirroring.ts
+ * Check:   npx tsx scripts/generate-bidi-mirroring.ts --check (what `npm run verify:unicode` runs)
  *
  * To upgrade the Unicode version, replace scripts/data/BidiMirroring.txt
  * with the new UCD release (keep its copyright header) and re-run.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -79,5 +80,14 @@ ${pairLines}
 ];
 `;
 
-writeFileSync(outPath, moduleSource, 'utf8');
-console.log(`bidi-mirroring-data.ts: ${mappings.length} mappings (Unicode ${unicodeVersion}) → ${outPath}`);
+if (process.argv.includes('--check')) {
+    const current = existsSync(outPath) ? readFileSync(outPath, 'utf8').replace(/\r\n/g, '\n') : '';
+    if (current !== moduleSource) {
+        process.stderr.write('bidi-mirroring-data.ts is stale — regenerate with: npx tsx scripts/generate-bidi-mirroring.ts' + '\n');
+        process.exit(1);
+    }
+    process.stdout.write(`bidi-mirroring-data.ts: up to date (${mappings.length} mappings, Unicode ${unicodeVersion})` + '\n');
+} else {
+    writeFileSync(outPath, moduleSource, 'utf8');
+    process.stdout.write(`bidi-mirroring-data.ts: ${mappings.length} mappings (Unicode ${unicodeVersion}) → ${outPath}` + '\n');
+}

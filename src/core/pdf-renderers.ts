@@ -13,6 +13,7 @@ import type {
     EncodingContext,
     PageTemplate,
     ColumnDef,
+    TextDirection,
 } from '../types/pdf-types.js';
 import type {
     DocumentBlock,
@@ -482,6 +483,7 @@ export function renderParagraph(
     documentChildren: (StructElement | MCRef)[],
     slice?: ParagraphSlice,
     optical: boolean = false,
+    direction?: TextDirection,
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
     const sz = block.fontSize ?? DEFAULT_PARA_SIZE;
@@ -489,7 +491,17 @@ export function renderParagraph(
     const lineH = sz * lhMul;
     const color = parseColor(block.color ?? '0.216 0.255 0.318');
     const indent = block.indent ?? 0;
-    const align = block.align ?? 'left';
+    // Bidirectional levels are resolved once for the whole paragraph (UAX #9
+    // P1): every line is drawn through the paragraph context, so a wrapped
+    // line keeps the direction of its paragraph. The context is `enc` itself
+    // when nothing in the paragraph runs right to left.
+    const dir = block.direction ?? direction;
+    const penc = enc.withParagraph?.(block.text, dir) ?? enc;
+    // Alignment follows the paragraph direction only when the author asked
+    // for direction handling; without it, 1.8.0 placed every paragraph on the
+    // left and still does.
+    const rtl = dir !== undefined && penc.paragraphLevel === 1;
+    const align = block.align ?? (rtl ? 'right' : 'left');
 
     const availW = cw - indent;
     // Unsliced (the historical path) renders the whole paragraph; a slice
@@ -522,27 +534,30 @@ export function renderParagraph(
         const lineX = mgL + indent - hangL;
         const lineW = availW + hangL + hangR;
 
+        // A justified right-to-left paragraph leaves its last line ragged on
+        // the left: that line is right-aligned.
+        const raggedRight = align === 'justify' && !justifyThis && rtl;
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             pChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
-            if (align === 'right') {
-                ops.push(txtRTagged(line, pgW - mgR + hangR, y - sz, enc.f1, sz, enc, mcid));
+            if (align === 'right' || raggedRight) {
+                ops.push(txtRTagged(line, pgW - mgR + hangR, y - sz, enc.f1, sz, penc, mcid));
             } else if (align === 'center') {
-                ops.push(txtCTagged(line, mgL + indent, y - sz, enc.f1, sz, availW, enc, mcid));
+                ops.push(txtCTagged(line, mgL + indent, y - sz, enc.f1, sz, availW, penc, mcid));
             } else if (justifyThis) {
-                ops.push(wrapSpan(txtJustified(line, lineX, y - sz, enc.f1, sz, enc, lineW), line, mcid));
+                ops.push(wrapSpan(txtJustified(line, lineX, y - sz, enc.f1, sz, penc, lineW), line, mcid));
             } else {
-                ops.push(txtTagged(line, lineX, y - sz, enc.f1, sz, enc, mcid));
+                ops.push(txtTagged(line, lineX, y - sz, enc.f1, sz, penc, mcid));
             }
         } else {
-            if (align === 'right') {
-                ops.push(txtR(line, pgW - mgR + hangR, y - sz, enc.f1, sz, enc));
+            if (align === 'right' || raggedRight) {
+                ops.push(txtR(line, pgW - mgR + hangR, y - sz, enc.f1, sz, penc));
             } else if (align === 'center') {
-                ops.push(txtC(line, mgL + indent, y - sz, enc.f1, sz, availW, enc));
+                ops.push(txtC(line, mgL + indent, y - sz, enc.f1, sz, availW, penc));
             } else if (justifyThis) {
-                ops.push(txtJustified(line, lineX, y - sz, enc.f1, sz, enc, lineW));
+                ops.push(txtJustified(line, lineX, y - sz, enc.f1, sz, penc, lineW));
             } else {
-                ops.push(txt(line, lineX, y - sz, enc.f1, sz, enc));
+                ops.push(txt(line, lineX, y - sz, enc.f1, sz, penc));
             }
         }
         y -= lineH;
