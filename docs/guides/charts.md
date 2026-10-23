@@ -53,7 +53,7 @@ interface ChartBlock {
   chartType: 'bar' | 'barH' | 'line' | 'pie' | 'donut'
     | 'stackedBar' | 'stackedBarH' | 'area' | 'scatter';    // last four: v1.7.0
   series: {
-    label: string;
+    label?: string;              // optional since v1.9.0 — an unlabelled series is listed as "Series N"
     values: number[];
     color?: PdfColor;
     xValues?: (number | string)[]; // x positions for scatter / linear / time x-axes (v1.7.0)

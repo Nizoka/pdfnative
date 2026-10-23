@@ -5,30 +5,30 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 25304,
-      "approxTokens": 6326,
-      "sha256": "7113a8901145d074cb38b2052b4436a9e9971b47d7c38b9417179f72186660c0"
+      "bytes": 26461,
+      "approxTokens": 6615,
+      "sha256": "a4522c873583cd03e4a226b824861b034c6ea9a5bc7479e1fd1c5199f7681007"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
-      "bytes": 16316,
-      "approxTokens": 4079,
-      "sha256": "f9ba65b90e03b58bb87663a5a1fceaa50c2eb7e318e8a8a1b8fbb0fd5b0750f0"
+      "bytes": 18462,
+      "approxTokens": 4616,
+      "sha256": "e02292f66fbeab5b9a6ec3c22a94a209f8c5f78d1eb49e5c2e5a9c15d00f7eec"
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 726522,
-      "approxTokens": 181631,
-      "sha256": "b67ad84442b762ba72b3629f94e834b596ac226f869bb4d5731d4273aaceb2c9"
+      "bytes": 755008,
+      "approxTokens": 188752,
+      "sha256": "465da410ee7566b78f139baffc9f17a01f88f86d683caeabdfaf469764088115"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
       "description": "Executable recipes: CI-verified, copy-ready code for the most common tasks.",
-      "bytes": 31003,
-      "approxTokens": 7751,
-      "sha256": "faf1a021939607550a9ab58ba0ea909b033629d62c68b4c900bf529955adc469"
+      "bytes": 46544,
+      "approxTokens": 11636,
+      "sha256": "8432d0879a1e408f535c8b2ff91f05327a14e2689cbf859cc68dd82ae2d3da08"
     },
     {
       "url": "https://pdfnative.dev/assets/api.json",
@@ -54,16 +54,16 @@
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
       "description": "Inventory of the live playgrounds — URL, purpose, DOM controls, options exercised, preconditions — so an agent can drive or reproduce one without scraping the page.",
-      "bytes": 25585,
-      "approxTokens": 6396,
-      "sha256": "7c36c883bcb52d732d1a1346d17409184e7f663382b294fe5fe5a13d3f8ef131"
+      "bytes": 32326,
+      "approxTokens": 8082,
+      "sha256": "48552edc183fbe82578b51df75aca2982137d80e2bc53009e9a053e664bc7d60"
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 127701,
-      "approxTokens": 31925,
-      "sha256": "7bb9f00b3231ffce2f2eb0ccdb61a963c9998d7d8d735f4c9deb3eeaa4b22c47"
+      "bytes": 129771,
+      "approxTokens": 32443,
+      "sha256": "1dccab920c815df966db3eb21cd555d6e93de9af895980584ac3f36b7eaf2d60"
     }
   ],
   "guides": [
@@ -82,9 +82,9 @@
         "testing-your-pdfs-are-accessible",
         "further-reading"
       ],
-      "bytes": 7485,
-      "approxTokens": 1871,
-      "sha256": "5645c5dd5ebf11a73b55084125eb6e7b11051474daa81e28ff2d0f9ab11a44fe"
+      "bytes": 7696,
+      "approxTokens": 1924,
+      "sha256": "ee9cbbf3a4c582cd8a0686fe9498e2889d3046cb8971d1f1e521922aacfc881d"
     },
     {
       "title": "Agentic workflows",
@@ -133,9 +133,9 @@
         "writing-annotations-into-an-existing-pdf",
         "sample"
       ],
-      "bytes": 3981,
-      "approxTokens": 995,
-      "sha256": "6d5881449a4e6dd00de6a57d384d6a2f178f2d719f84e5ca22dc265969a065db"
+      "bytes": 4527,
+      "approxTokens": 1132,
+      "sha256": "b1fc527299238294c471b5bd0636a6242fd41957443808eed21abc2997965eb3"
     },
     {
       "title": "Architecture Guide",
@@ -168,9 +168,9 @@
         "limits--scope-v170",
         "see-also"
       ],
-      "bytes": 9748,
-      "approxTokens": 2437,
-      "sha256": "09787328c08d4f830a0b8befcaa77ea49e53683bb2b238e3ece9b39b54c643ab"
+      "bytes": 9836,
+      "approxTokens": 2459,
+      "sha256": "c37366979e325ed44eff52b071d588c293c765e1541f6fd285da13e6c859779c"
     },
     {
       "title": "Choosing your surface",
@@ -328,6 +328,24 @@
       "sha256": "a03749190764665220f88972e2e7029eb6e65e7acdcae90e40f8bc9d249552c8"
     },
     {
+      "title": "Images — JPEG, PNG and JPEG 2000",
+      "summary": "JPEG and PNG since v1.0.0; JPEG 2000 since v1.9.0. An `image` block embeds the file's own bytes — nothing is decoded, recompressed or rasterised: a JPEG travels as `/DCTDecode`, a PNG as `/FlateDecode` with its alpha channel split into a soft mask, a JPEG 2000 file as `/JPXDecode` with the colour and opacity the codestream declares.",
+      "html": "https://pdfnative.dev/guides/images.html",
+      "markdown": "https://pdfnative.dev/guides/images.md",
+      "anchors": [
+        "tldr",
+        "formats",
+        "inspecting-an-image-before-embedding-it",
+        "images-under-pdfa-and-pdfx",
+        "watermark-images",
+        "samples-and-playground",
+        "see-also"
+      ],
+      "bytes": 5917,
+      "approxTokens": 1479,
+      "sha256": "6435d434c5e0629f02c2d1cd0feda29cd8499851a214a4ffe6b0aed5ce7410a9"
+    },
+    {
       "title": "Long-term validation (LTV) — PAdES B-B to B-LTA",
       "summary": "New in v1.7.0. pdfnative signs PDFs that stay verifiable for decades: PAdES baseline signatures (ETSI EN 319 142-1), RFC 3161 signature timestamps, embedded revocation material (`/DSS` + `/VRI`), and document timestamps — all with zero runtime dependencies and zero network access in the engine. Transport is injected by your code.",
       "html": "https://pdfnative.dev/guides/ltv.html",
@@ -340,11 +358,11 @@
         "multiple-signatures",
         "testing-without-a-real-tsa-or-ca",
         "verification-checklist",
-        "limits--scope-v170"
+        "limits--scope-v190"
       ],
-      "bytes": 8882,
-      "approxTokens": 2221,
-      "sha256": "46ab59cd17f71fe0a2dbd4355a2727443530aa3f82a550a0e8d193d2e1f6b3ab"
+      "bytes": 10119,
+      "approxTokens": 2530,
+      "sha256": "d3bd3175a89f8dd384c64582a3c2411a26e11787712d39686b594e68fc01ca9f"
     },
     {
       "title": "pdfnative-mcp — AI Client Integration Guide",
@@ -434,15 +452,18 @@
         "tldr",
         "conformance-diagnostics-v170",
         "v110-status--fully-validated",
+        "level-u--every-glyph-must-map-to-text-v190",
+        "images-under-pdfa-v190",
+        "pdfa-and-pdfx-together-v190",
         "validating-your-output",
         "pdfa-vs-encryption",
         "choosing-a-flavour",
         "hard-invariants-for-contributors",
         "see-also"
       ],
-      "bytes": 17649,
-      "approxTokens": 4412,
-      "sha256": "723b8847c1a5515a4faf5957a28b37ad015f4b7a483848649fe34c1843997ab1"
+      "bytes": 19276,
+      "approxTokens": 4819,
+      "sha256": "6dd7284386c3e00db858567fd3b265def817e9d411fc4d3588671ffdf1c60250"
     },
     {
       "title": "Print production — bleed, trim & printer's marks",
@@ -458,12 +479,14 @@
         "custom-outputintent-taggedpdf-a",
         "cmyk-colours-v180",
         "pdfx-4-v180",
+        "spot-colours-v190",
+        "pdfa-and-pdfx-in-one-file-v190",
         "large-formats--userunit",
-        "limits--scope-v180"
+        "limits--scope-v190"
       ],
-      "bytes": 14351,
-      "approxTokens": 3588,
-      "sha256": "857bca7651167861c6fd8e355ff58c9f34dda6da9e72b77aaed672c26fb5a198"
+      "bytes": 17695,
+      "approxTokens": 4424,
+      "sha256": "550371e2043ff6cfb3361fddd9a0af0c28935d2efdaec76eb95cf730f6fc7f21"
     },
     {
       "title": "Quick Start",
@@ -517,6 +540,25 @@
       "sha256": "5f158e11b4253ea7b0913e13ae887bd51a9668447b2126d489c7da0b70c6857d"
     },
     {
+      "title": "Right-to-left documents — Arabic, Hebrew and bidirectional text",
+      "summary": "New in v1.9.0. pdfnative resolves bidirectional text with the whole Unicode Bidirectional Algorithm (UAX #9): explicit embeddings, overrides and isolates, bracket pairing, the neutral rules that put punctuation on the right side of a right-to-left run, and per-paragraph resolution so a wrapped line reorders like the line a browser would draw.",
+      "html": "https://pdfnative.dev/guides/rtl.html",
+      "markdown": "https://pdfnative.dev/guides/rtl.md",
+      "anchors": [
+        "tldr",
+        "what-the-algorithm-does-for-you",
+        "directional-controls",
+        "alignment-and-justification",
+        "text-extraction-of-right-to-left-output",
+        "programmatic-access",
+        "samples",
+        "see-also"
+      ],
+      "bytes": 8719,
+      "approxTokens": 2180,
+      "sha256": "686573a727a9c0eac1e38bf65c3b1009c04cbdce5ceccf6495f2180b6d7af824"
+    },
+    {
       "title": "Self-verifying generation",
       "summary": "pdfnative can read what it writes, so a generated PDF never has to ship unchecked. Plan pagination with `inspectDocumentLayout()` *before* building, then run `extractText()`, `validatePdfUA()` and `listSignatures()` / `openPdf()` against the emitted bytes, assert what matters, and correct the input until every assertion holds.",
       "html": "https://pdfnative.dev/guides/self-verify.html",
@@ -556,9 +598,9 @@
         "full-example",
         "related-guides"
       ],
-      "bytes": 17751,
-      "approxTokens": 4438,
-      "sha256": "c4a51deeefa601605dcf220b5ccc8110d4d653ee6d2495e461f905440d37470c"
+      "bytes": 18040,
+      "approxTokens": 4510,
+      "sha256": "dd1bf7879e310895e60a2991fbc20523e4fcce21677517650e332ed523251953"
     },
     {
       "title": "Streaming output",
@@ -587,6 +629,7 @@
         "tldr",
         "tableblock-fields-all-optional",
         "columndefkind-field-optional",
+        "row-height-and-deep-descenders-v190",
         "how-multi-page-tables-are-sliced",
         "tagged-mode--pdfua",
         "tagged-mode--zebra",
@@ -595,9 +638,9 @@
         "reference",
         "see-also"
       ],
-      "bytes": 15436,
-      "approxTokens": 3859,
-      "sha256": "c41e3fbb8a0ae5b68209b9e3649985b0323df7a5fa4652372ad624dc88672f6d"
+      "bytes": 16646,
+      "approxTokens": 4162,
+      "sha256": "32b62599bca2c9d753be38f4f09933f76327f5b25dc667dc843839c9b8ae1106"
     },
     {
       "title": "Text extraction",
@@ -615,9 +658,9 @@
         "samples",
         "see-also"
       ],
-      "bytes": 7389,
-      "approxTokens": 1847,
-      "sha256": "702395512294b71ad185b900bd23d4b9afe7f0be02ed2e93279042c768ebc7b7"
+      "bytes": 8449,
+      "approxTokens": 2112,
+      "sha256": "ba50b11056eea4a4f9730b9bc0fc3dc8cee4c79520a13481cc9624d11d1fbada"
     },
     {
       "title": "Troubleshooting",
@@ -637,9 +680,9 @@
         "parser-fails-on-external-pdf",
         "build--import-issues"
       ],
-      "bytes": 9362,
-      "approxTokens": 2341,
-      "sha256": "42927ebf3334831ddabf098e335048ed4e530f697f1d7c34363e192edd7448a9"
+      "bytes": 9978,
+      "approxTokens": 2495,
+      "sha256": "e73f3efd73b9584a7d998fb09826bca8339ae90084a3e1ac8de15ef6ed1aa4e8"
     },
     {
       "title": "Typography — page breaks, justification, kerning & OpenType features",
@@ -658,9 +701,9 @@
         "limits--scope",
         "see-also"
       ],
-      "bytes": 11903,
-      "approxTokens": 2976,
-      "sha256": "a7f55ad7de7ba8e014d971461e0fa964ea6c79fe0e7cbc4b60ebec5d72bc9dc6"
+      "bytes": 12213,
+      "approxTokens": 3053,
+      "sha256": "57d5f18a37eecd938591b6b2c6fa89d0da3f122ce883e4ea70a4921bd39fcfa5"
     },
     {
       "title": "CLI use cases",

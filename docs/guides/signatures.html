@@ -332,7 +332,10 @@ ESS <code>signing-certificate-v2</code> attribute.</p>
 </tr>
 </tbody></table>
 <p>That is the complete <code>SignatureAlgorithm</code> union — the RSA variants widened
-to SHA-384/512 in v1.7.0; ECDSA is offered with SHA-256 only.</p>
+to SHA-384/512 in v1.7.0; ECDSA is offered with SHA-256 only. Since v1.9.0 the
+ECDSA primitives are exported beside the RSA ones — <code>ecdsaVerifyHash(hash, r, s, publicKey)</code>,
+<code>ecdsaSignHash</code>, <code>encodeDerSignature</code>, <code>decodeDerSignature</code> — for a verifier that
+has already hashed the signed range (<a href="https://github.com/Nizoka/pdfnative/issues/88" target="_blank" rel="noopener">#88</a>).</p>
 <p>All primitives live under <a href="https://github.com/Nizoka/pdfnative/tree/main/src/crypto" target="_blank" rel="noopener">src/crypto/</a>:
 SHA-256/384/512 in <code>sha.ts</code>, ASN.1 DER in <code>asn1.ts</code>, RSA modular
 arithmetic in <code>rsa.ts</code>, ECDSA P-256 in <code>ecdsa.ts</code>, X.509 parsing in

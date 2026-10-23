@@ -79,6 +79,32 @@ Functions an agent reaches for most, all exported from `'pdfnative'`:
 | `setDefaultCreationDate(date)` | Pin every date the writer emits (and so the trailer `/ID`) for reproducible bytes; or pass `layout.creationDate` per build (v1.8.0). |
 | `setHyphenationProvider(fn)` | Install a `(word, lang?) => number[]` break-point provider for `typography` (v1.8.0). |
 
+## What 1.9.0 adds (all opt-in, byte-identical when absent)
+
+```ts
+const bytes = buildDocumentPDFBytes({
+  title: 'تقرير',
+  fontEntries: [{ fontData: notoArabic, fontRef: '/F3', lang: 'arabic' }],
+  blocks: [
+    { type: 'paragraph', text: 'بلغت الإيرادات 1,250 مليون ريال.' },               // UAX #9 in full: punctuation, numbers, brackets
+    { type: 'paragraph', text: 'pdfnative CLI', direction: 'rtl' },                 // per-paragraph override
+    { type: 'heading', text: 'Brand', level: 1, color: { spot: 'PANTONE 300 C' } }, // a declared ink
+    { type: 'image', data: jp2Bytes, width: 200, alt: 'Scan' },                    // JPEG 2000: /JPXDecode pass-through, PDF 1.5
+  ],
+}, {
+  direction: 'auto',                                                        // detected base direction → right alignment, visual-order justification
+  print: { spotColours: [{ name: 'PANTONE 300 C', alternate: [100, 44, 0, 0] }] },
+  tagged: 'pdfa2b', pdfx: 'pdfx4', outputIntent,                            // one file, two claims (not with pdfa1b / pdfa3b)
+});
+```
+
+- Five more scripts on the Indic engine: `gu`, `pa`, `kn`, `ml`, `or` (`noto-gujarati`, `noto-gurmukhi`, `noto-kannada`, `noto-malayalam`, `noto-oriya`) — 32 scripts, 36 modules.
+- Every shaper's glyphs are named in `/ToUnicode`; `tagged: 'pdfa2u'` raises `PDFA_GLYPH_WITHOUT_UNICODE` for a glyph that still has none.
+- `extractText()` throws `PdfStreamLimitError` (`PDF_STREAM_LIMIT`) on an over-cap stream — `onStreamError: 'skip'` for the old lenience.
+- `decodePdfTextString()`, `composeLtvData()` (offline LTV material, `match: 'chain'`), `{ type: 'link' }` markup annotations, `ecdsaVerifyHash`, `ChartSeries.label` optional, `buildSyntheticGrayProfile()` on `pdfnative/tools`.
+- Embedded subsets are lean (cmap over the used glyphs, no gasp): every CIDFont document is smaller and its bytes differ from 1.8.0 — rebaseline a downstream byte manifest once.
+- Pitfall: `direction` unset keeps the 1.8.0 left alignment; `direction: 'auto'` is what a browser does. Pitfall: a spot colour needs its `spotColours` declaration or the build refuses.
+
 ## What 1.8.0 adds (all opt-in, byte-identical when absent)
 
 ```ts
@@ -204,7 +230,7 @@ compare on every build (`npm run verify:samples` in the pdfnative tree).
 
 ## Try it without installing
 
-Fourteen zero-install playgrounds run the engine in the browser from a CDN;
+Fifteen zero-install playgrounds run the engine in the browser from a CDN;
 each is described for agents — URL, purpose, DOM control ids, the options it
 exercises, preconditions — in
 [playgrounds.json](https://pdfnative.dev/data/playgrounds.json). The

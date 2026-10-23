@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Right-to-left documents — pdfnative</title>
+  <meta name="description" content="Right-to-left documents in pdfnative — the whole Unicode Bidirectional Algorithm (UAX #9) since v1.9.0: embeddings, overrides and isolates, bracket pairs, the neutral rules, per-paragraph resolution; the direction option for right alignment and visual-order justification; directional controls; what text extraction returns for Arabic and Hebrew output.">
+  <link rel="canonical" href="https://pdfnative.dev/guides/rtl.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/rtl.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/rtl.html">
+  <link rel="alternate" type="text/markdown" href="rtl.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/guides/rtl.html">
+  <meta property="og:title" content="Right-to-left documents — pdfnative">
+  <meta property="og:description" content="Right-to-left documents in pdfnative — the whole Unicode Bidirectional Algorithm (UAX #9) since v1.9.0: embeddings, overrides and isolates, bracket pairs, the neutral rules, per-paragraph resolution; the direction option for right alignment and visual-order justification; directional controls; what text extraction returns for Arabic and Hebrew output.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Right-to-left documents — pdfnative">
+  <meta name="twitter:description" content="Arabic, Hebrew and bidirectional text with the whole UAX #9 — zero dependencies.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Right-to-left documents — Arabic, Hebrew and bidirectional text","item":"https://pdfnative.dev/guides/rtl.html"}]},{"@type":"TechArticle","headline":"Right-to-left documents — Arabic, Hebrew and bidirectional text","description":"Right-to-left documents in pdfnative — the whole Unicode Bidirectional Algorithm (UAX #9) since v1.9.0: embeddings, overrides and isolates, bracket pairs, the neutral rules, per-paragraph resolution; the direction option for right alignment and visual-order justification; directional controls; what text extraction returns for Arabic and Hebrew output.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/rtl.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
+      <li><a href="./">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Right-to-left documents</p>
+  <article id="guide-content" class="guide-content" data-md="rtl.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="right-to-left-documents--arabic-hebrew-and-bidirectional-text">Right-to-left documents — Arabic, Hebrew and bidirectional text</h1>
+<blockquote>
+<p><strong>New in v1.9.0.</strong> pdfnative resolves bidirectional text with the whole Unicode Bidirectional Algorithm (UAX #9): explicit embeddings, overrides and isolates, bracket pairing, the neutral rules that put punctuation on the right side of a right-to-left run, and per-paragraph resolution so a wrapped line reorders like the line a browser would draw. A <code>direction</code> option on the layout or on a paragraph aligns right-to-left paragraphs to the right margin and justifies them in visual order. Nothing changes for a document that never sets it, except where the previous output was wrong — see the release note&#39;s Upgrade section.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+import type { FontData } from &#39;pdfnative&#39;;
+import * as notoArabic from &#39;pdfnative/fonts/noto-arabic-data.js&#39;;
+import * as notoHebrew from &#39;pdfnative/fonts/noto-hebrew-data.js&#39;;
+
+const pdf = buildDocumentPDFBytes(
+  {
+    title: &#39;تقرير ربع سنوي&#39;,
+    fontEntries: [
+      { fontData: notoArabic as unknown as FontData, fontRef: &#39;/F3&#39;, lang: &#39;arabic&#39; },
+      { fontData: notoHebrew as unknown as FontData, fontRef: &#39;/F4&#39;, lang: &#39;hebrew&#39; },
+    ],
+    blocks: [
+      { type: &#39;heading&#39;, text: &#39;الفصل الأول (المقدمة)&#39;, level: 1 },
+      { type: &#39;paragraph&#39;, text: &#39;بلغت الإيرادات 1,250 مليون ريال في عام 2026، أي بزيادة 12% مقارنة بالعام السابق.&#39; },
+      { type: &#39;paragraph&#39;, text: &#39;Mixed line: the product name &quot;pdfnative&quot; stays Latin inside the Arabic sentence — المنتج pdfnative يعمل بلا تبعيات.&#39;, direction: &#39;rtl&#39; },
+      { type: &#39;paragraph&#39;, text: &#39;שלום עולם — a Hebrew paragraph detected as right-to-left from its first letter.&#39; },
+    ],
+  },
+  { direction: &#39;auto&#39; },
+);
+</code></pre>
+<p><code>direction: &#39;auto&#39;</code> reads each paragraph&#39;s base direction from its first strong character (UAX #9 P2–P3); a right-to-left paragraph is aligned to the right margin and, when justified, its lines keep their visual order. Set <code>direction</code> on one <code>ParagraphBlock</code> to force a paragraph, or leave the option out for the 1.8.0 behaviour (left alignment, left-to-right base).</p>
+<h2 id="what-the-algorithm-does-for-you">What the algorithm does for you<a class="heading-anchor" href="#what-the-algorithm-does-for-you" aria-label="Link to this section">#</a></h2>
+<p>The resolver (<code>src/shaping/bidi.ts</code>) implements UAX #9 for Unicode 17.0.0, with the <code>Bidi_Class</code> and <code>Bidi_Paired_Bracket</code> properties generated from the Unicode Character Database (<code>scripts/data/DerivedBidiClass.txt</code>, <code>BidiBrackets.txt</code>; drift is checked by <code>npm run verify:unicode</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Rules</th>
+<th>Effect in a document</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P2–P3</td>
+<td>The paragraph&#39;s base direction comes from its first strong letter (Arabic, Hebrew, Syriac, Thaana, N&#39;Ko… are R or AL; Latin, Cyrillic, CJK… are L).</td>
+</tr>
+<tr>
+<td>X1–X10</td>
+<td><code>LRE</code>/<code>RLE</code>/<code>PDF</code> embeddings, <code>LRO</code>/<code>RLO</code> overrides and <code>LRI</code>/<code>RLI</code>/<code>FSI</code>/<code>PDI</code> isolates nest to the standard&#39;s depth of 125; isolating run sequences are resolved as one unit.</td>
+</tr>
+<tr>
+<td>W1–W7</td>
+<td>European and Arabic-Indic digits keep their reading order inside a right-to-left run (<code>1405</code> never becomes <code>5041</code>), and a currency sign or separator attaches to its number.</td>
+</tr>
+<tr>
+<td>N0</td>
+<td>Paired brackets — <code>( )</code>, <code>[ ]</code>, <code>{ }</code>, <code>« »</code> and the other 63 pairs of BidiBrackets.txt — resolve as a pair, so <code>(abc)</code> inside Arabic keeps both brackets around its content.</td>
+</tr>
+<tr>
+<td>N1–N2</td>
+<td>Neutral punctuation between two right-to-left letters, or between a letter and the paragraph edge, follows the paragraph: a full stop ending a Hebrew sentence is drawn at its left end, where a Hebrew reader expects it.</td>
+</tr>
+<tr>
+<td>I1–I2</td>
+<td>Embedding levels are assigned; the resolver passes every line of the Unicode BidiCharacterTest (the gate runs a stratified subset, <code>BIDI_CHARACTER_TEST=&lt;path to the full file&gt;</code> runs all of it).</td>
+</tr>
+<tr>
+<td>L1–L4</td>
+<td>Resolved once per paragraph, reordered per line after wrapping: trailing whitespace takes the paragraph level, runs are reversed from the highest level down, and glyphs with a mirrored counterpart (<code>(</code> ↔ <code>)</code>, <code>&lt;</code> ↔ <code>&gt;</code>, <code>«</code> ↔ <code>»</code>) are swapped in right-to-left runs.</td>
+</tr>
+</tbody></table>
+<p>Before 1.9.0 the resolver was a lighter implementation: punctuation attached to the preceding Latin word, brackets inside a Latin run of an Arabic paragraph were not paired, and every line was resolved on its own, so a word wrapped onto the next line could change its neighbours&#39; order. All three are gone; the samples that showed them are re-anchored in the byte manifest (release note, ledger entries C1–C3).</p>
+<h2 id="directional-controls">Directional controls<a class="heading-anchor" href="#directional-controls" aria-label="Link to this section">#</a></h2>
+<p>Every control of UAX #9 is honoured and none is drawn:</p>
+<ul>
+<li><strong>Marks</strong> — <code>U+200E</code> LEFT-TO-RIGHT MARK, <code>U+200F</code> RIGHT-TO-LEFT MARK, <code>U+061C</code> ARABIC LETTER MARK: a strong character of zero width, the usual way to force a trailing punctuation mark or an isolated number to one side.</li>
+<li><strong>Embeddings and overrides</strong> — <code>U+202A</code>–<code>U+202E</code> (<code>LRE</code>, <code>RLE</code>, <code>PDF</code>, <code>LRO</code>, <code>RLO</code>): an override forces the characters it encloses into one direction regardless of their class.</li>
+<li><strong>Isolates</strong> — <code>U+2066</code>–<code>U+2069</code> (<code>LRI</code>, <code>RLI</code>, <code>FSI</code>, <code>PDI</code>): an isolate keeps a quoted string, a user name or a product name from influencing the text around it; <code>FSI</code> detects the inner direction from the first strong character.</li>
+</ul>
+<p>The controls never reach the glyph stream (they have no glyph and no width), and <code>extractText()</code> does not return them; the joiners the shapers need — <code>U+200D</code> ZERO WIDTH JOINER, <code>U+200C</code> ZERO WIDTH NON-JOINER, <code>U+00AD</code> SOFT HYPHEN — stay in the run so Arabic shaping and hyphenation see them.</p>
+<h2 id="alignment-and-justification">Alignment and justification<a class="heading-anchor" href="#alignment-and-justification" aria-label="Link to this section">#</a></h2>
+<p><code>direction</code> decides the default alignment of a paragraph: <code>&#39;rtl&#39;</code> (set, or detected by <code>&#39;auto&#39;</code>) aligns to the right margin, <code>&#39;ltr&#39;</code> to the left. An explicit <code>align</code> on the block wins. Justified text (<code>layout.typography.justify</code>, see the <a href="typography.html">typography guide</a>) in a right-to-left paragraph distributes the slack over the word gaps of the visual line, so the last line of a paragraph stays ragged on the left where a right-to-left reader expects it.</p>
+<p>Headings, list items and table cells reorder their text with the same resolver; alignment inside table cells follows <code>ColumnDef.align</code>.</p>
+<h2 id="text-extraction-of-right-to-left-output">Text extraction of right-to-left output<a class="heading-anchor" href="#text-extraction-of-right-to-left-output" aria-label="Link to this section">#</a></h2>
+<p><code>extractText()</code> returns text in <strong>geometric</strong> order — runs sorted by their position on the page, left to right. For a right-to-left line that is the visual order, so a logical sentence comes back reversed, as it does from any PDF reader&#39;s copy-and-paste. Two things make the text usable all the same:</p>
+<ul>
+<li>The <code>/ToUnicode</code> CMap maps every glyph the Arabic shaper produced — positional forms, the lam-alef ligatures — back to its source letters (v1.9.0, every shaper), so the letters are right even where the order is visual.</li>
+<li>A tagged document (<code>tagged: true</code> or any PDF/A level) carries the paragraph&#39;s logical text as <code>/ActualText</code>, and <code>extractText()</code> returns that text in logical order.</li>
+</ul>
+<p>See the <a href="text-extraction.html">text-extraction guide</a> for the rules.</p>
+<h2 id="programmatic-access">Programmatic access<a class="heading-anchor" href="#programmatic-access" aria-label="Link to this section">#</a></h2>
+<p>The resolver is exported for tools that lay out text themselves:</p>
+<pre><code class="language-ts">import { resolveBidiLevels, bidiLineLevels, resolveBidiRuns, stripBidiControls } from &#39;pdfnative&#39;;
+
+const levels = resolveBidiLevels(&#39;abc אבג 123&#39;, &#39;auto&#39;);   // UAX #9 P2–I2 on the whole paragraph
+const line = bidiLineLevels(&#39;abc אבג 123&#39;, levels.levels, levels.paragraphLevel); // L1 for one wrapped line
+const runs = resolveBidiRuns(&#39;abc אבג 123&#39;);               // ordered visual runs with their levels
+</code></pre>
+<p><code>resolveBidiRuns(text)</code> runs the whole pipeline on one string; <code>resolveBidiLevels(text, direction)</code> resolves a paragraph once so the lines of a wrapped paragraph can be reordered against the same levels; <code>bidiLineLevels(line, levels, paragraphLevel)</code> applies L1 to one line; <code>stripBidiControls(text)</code> removes the controls when a plain string is wanted.</p>
+<h2 id="samples">Samples<a class="heading-anchor" href="#samples" aria-label="Link to this section">#</a></h2>
+<p><code>npm run test:generate</code> writes the right-to-left samples under <code>test-output/bidi/</code>: <code>bidi-algorithm.pdf</code> (the rules, one per paragraph), <code>bidi-arabic-shaping.pdf</code>, <code>bidi-digits-mirroring.pdf</code>, <code>bidi-embeddings-showcase.pdf</code> (every control), <code>persian-showcase.pdf</code>, and <code>bidi-uax9-conformance.pdf</code> (v1.9.0: punctuation, brackets, isolates and a justified right-to-left paragraph, with <code>direction: &#39;auto&#39;</code>). The <a href="../playgrounds/extreme-scripts.html">extreme-scripts playground</a> renders the same constructions in the browser.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="typography.html">Typography</a> — justification, hyphenation, spacing rules.</li>
+<li><a href="text-extraction.html">Text extraction</a> — geometric order, <code>/ActualText</code>, <code>/ToUnicode</code> guarantees.</li>
+<li><a href="troubleshooting.html#rtl-text-backwards">Troubleshooting — RTL text backwards</a>.</li>
+<li><a href="https://www.unicode.org/reports/tr9/" target="_blank" rel="noopener">Unicode Standard Annex #9</a> — the algorithm.</li>
+</ul>
+<!-- guide:render:end -->
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="./">All guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
+<script src="guide.js" defer></script>
+</body>
+</html>

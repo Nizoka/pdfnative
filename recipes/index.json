@@ -1,5 +1,16 @@
 [
   {
+    "file": "annotate-link.ts",
+    "task": "Add a URL link annotation to an existing PDF as an incremental update",
+    "surface": "library",
+    "since": "1.9.0",
+    "expects": [
+      "pdf contains '/Subtype /Link'",
+      "pdf contains '/URI (https://pdfnative.dev)'",
+      "the update keeps the original bytes as its prefix"
+    ]
+  },
+  {
     "file": "arabic-rtl.ts",
     "task": "Render shaped right-to-left Arabic text with an embedded Noto font",
     "surface": "library",
@@ -31,6 +42,29 @@
     ]
   },
   {
+    "file": "dual-pdfa-pdfx.ts",
+    "task": "Claim PDF/A-2b and PDF/X-4 in the same document",
+    "surface": "library",
+    "since": "1.9.0",
+    "expects": [
+      "validatePdfX(bytes).valid === true",
+      "pdf contains 'pdfaid:part'",
+      "pdf contains '/S /GTS_PDFX'",
+      "pdf contains '/S /GTS_PDFA1'"
+    ]
+  },
+  {
+    "file": "extract-roundtrip.ts",
+    "task": "Write shaped Devanagari, Thai and Arabic text and read every letter back",
+    "surface": "library",
+    "since": "1.9.0",
+    "expects": [
+      "text of page 0 contains 'क्षमता'",
+      "text of page 0 contains 'น้ำ'",
+      "every letter of 'مرحبا' extracts"
+    ]
+  },
+  {
     "file": "form-fill-roundtrip.ts",
     "task": "Author an AcroForm, fill it, and read the value back",
     "surface": "library",
@@ -52,6 +86,18 @@
     ]
   },
   {
+    "file": "jpx-image.ts",
+    "task": "Embed a JPEG 2000 image as a JPXDecode pass-through",
+    "surface": "library",
+    "since": "1.9.0",
+    "expects": [
+      "pages === 1",
+      "pdf contains '/JPXDecode'",
+      "pdf contains '/SMaskInData 1'",
+      "header === '%PDF-1.5'"
+    ]
+  },
+  {
     "file": "layout-preview.ts",
     "task": "Preview pagination and block geometry without rendering a PDF",
     "surface": "library",
@@ -59,6 +105,18 @@
     "expects": [
       "totalPages === 2",
       "first block type === 'heading' on page 0 with width > 0"
+    ]
+  },
+  {
+    "file": "ltv-compose-offline.ts",
+    "task": "Embed LTV material collected offline into a signed PDF, keeping only what the chain needs",
+    "surface": "library",
+    "since": "1.9.0",
+    "expects": [
+      "signatures.length === 1",
+      "pdf contains '/DSS'",
+      "pdf contains '/VRI'",
+      "data.certificates.length === 2"
     ]
   },
   {
@@ -103,6 +161,17 @@
     ]
   },
   {
+    "file": "rtl-document.ts",
+    "task": "Render Arabic and Hebrew paragraphs with detected base direction and right alignment",
+    "surface": "library",
+    "since": "1.9.0",
+    "expects": [
+      "pages === 1",
+      "pdf contains '/Identity-H'",
+      "every letter of the Arabic heading extracts"
+    ]
+  },
+  {
     "file": "signed-pades.ts",
     "task": "Sign a document with a PAdES B-B (ETSI.CAdES.detached) signature",
     "surface": "library",
@@ -111,6 +180,17 @@
       "signatures.length === 1",
       "signatures[0].subFilter === 'ETSI.CAdES.detached'",
       "signatures[0].isPlaceholder === false"
+    ]
+  },
+  {
+    "file": "spot-colours.ts",
+    "task": "Paint text in named spot inks and a two-ink mix, with process alternates",
+    "surface": "library",
+    "since": "1.9.0",
+    "expects": [
+      "pages === 1",
+      "pdf contains '/Separation'",
+      "pdf contains '/DeviceN'"
     ]
   },
   {

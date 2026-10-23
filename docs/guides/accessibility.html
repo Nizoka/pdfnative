@@ -127,7 +127,7 @@
 <li><code>/H1</code>, <code>/H2</code>, <code>/H3</code> for headings</li>
 <li><code>/P</code> for paragraphs</li>
 <li><code>/L</code> → <code>/LI</code> for lists</li>
-<li><code>/Table</code> → <code>/TR</code> → <code>/TH</code> / <code>/TD</code> for tables</li>
+<li><code>/Table</code> → <code>/TR</code> → <code>/TH</code> / <code>/TD</code> for tables — since v1.9.0 every <code>/TH</code> carries <code>/A &lt;&lt; /O /Table /Scope /Column &gt;&gt;</code> and an <code>/ID</code>, every <code>/TD</code> names its header in <code>/Headers</code>, and the <code>/StructTreeRoot</code> registers the ids in an <code>/IDTree</code> (ISO 14289-1 §7.5)</li>
 <li><code>/Figure</code> for images, barcodes, SVG (with <code>/Alt</code> text)</li>
 <li><code>/Link</code> for hyperlinks (with <code>/Contents</code> description)</li>
 <li><code>/Form</code> for AcroForm fields</li>

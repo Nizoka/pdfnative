@@ -5,6 +5,98 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] – 2026-10-24
+
+The conformance and fidelity release: the whole Unicode Bidirectional
+Algorithm (UAX #9) with per-paragraph resolution, a `direction` option and
+right-to-left justification; five more Indic scripts (Gujarati, Gurmukhi,
+Kannada, Malayalam, Odia — 32 in all, 36 bundled font modules); every
+glyph of every shaper mapped back to its text in `/ToUnicode`, with a
+level-U guard; mark anchors read through every class and Tibetan on the
+OpenType engine; spot colours (`/Separation`, `/DeviceN`) and a joint
+PDF/A-2 + PDF/X-4 claim, with `validatePdfX()` reading inside XObjects;
+JPEG 2000 images passed through as `/JPXDecode`; embedded TrueType subsets
+up to 61 % smaller; twelve issues closed (#80–#92) and the SHA-256 length
+word fixed. Underneath, the zero-breaking-change policy is now proven on
+every pull request — the previous release's test suite and API registry
+replayed against the current sources — and CI runs on Windows and macOS as
+required checks, lints its own workflows, smoke-tests the built package on
+Deno, Bun and Chromium, fuzzes the parser surface and publishes through a
+guard → build → publish → attest pipeline that attests the bytes the
+registry serves. Zero runtime dependencies; 39 exports
+added, none removed; every new behaviour opt-in; existing inputs render
+byte-identically except where the previous output was wrong — sixteen
+causes, each listed in the release note's Upgrade section with the samples
+it re-anchors. 4126+ tests across 174 files; veraPDF-validated.
+
+### Added
+
+- **feat(shaping): full UAX #9** — explicit embeddings, overrides and isolates (X1–X10, 125 levels deep), bracket pairs (N0, `BidiBrackets.txt`), the neutral rules N1–N2, per-paragraph resolution with per-line L1–L4; `layout.direction` and `ParagraphBlock.direction` (`'auto' | 'ltr' | 'rtl'`) align right-to-left paragraphs to the right margin and justify them in visual order; `resolveBidiLevels()`, `bidiLineLevels()`, `bidiRunsForLine()` exported; every line of the Unicode 17.0 BidiCharacterTest passes, a stratified subset runs at the gate ([#92]).
+- **feat(shaping,fonts): Gujarati, Gurmukhi, Kannada, Malayalam and Odia** on the Indic engine (`gu`, `pa`, `kn`, `ml`, `or`), with `rephMode: 'logical'` (the Malayalam dot reph), `rephPosition: 'beforeSub' | 'afterMain'`, medial consonants, UCD-classified split matras and chillus; five Noto Sans modules pinned in `fonts/SOURCES.json`; five one-page language documents and alphabet plates.
+- **feat(fonts): ToUnicode for every shaper's glyphs** — the code point actually encoded has priority over the inverted cmap, every shaper reports `cps`, Thai and Lao sara am carry `/Span /ActualText` in untagged output (opt out with `layout.actualText: false`), and `PDFA_GLYPH_WITHOUT_UNICODE` (warn, throw under `strict`) guards level U ([#84], [#87]).
+- **feat(core): spot colours** — `layout.print.spotColours` declares inks with a process alternate; `{ spot, tint }` and `{ inks }` colour values paint through `/Separation` and `/DeviceN` spaces with generated tint transforms; `scanDeviceColour()` reports the named spaces a content stream selects; the print showcase gains `print-spot-colours.pdf`.
+- **feat(core): PDF/A + PDF/X dual claim** — `tagged: 'pdfa2b' | 'pdfa2u'` with `pdfx: 'pdfx4'` in one file: `pdfaid` and `pdfxid` in the XMP with the PDF/X ID extension schema, two OutputIntents (`/GTS_PDFA1`, `/GTS_PDFX`) sharing one ICC stream; refused with a level-specific message for PDF/A-1b and 3b.
+- **feat(parser): `validatePdfX()` inside XObjects** — device colour in Form XObjects (own or inherited resources) and images, and `/Separation`, `/DeviceN` and `/Indexed` alternates, checked against the OutputIntent.
+- **feat(core): JPEG 2000 pass-through** — `image` blocks and `watermark.image` accept JP2 files and raw codestreams as `/JPXDecode`; colour space and bit depth are left to the codestream when its header declares them, an opacity channel becomes `/SMaskInData 1`, the header is raised to PDF 1.5; `parseJPX()`, `JpxInfo`, `detectImageFormat() → 'jpx'`; `PDFA1_JPX_IMAGE` (ISO 19005-1 §6.1.10) and `PDFA_JPX_IMAGE` (ISO 19005-2 §6.2.8.3), warnings that throw under `strict`; a new `images/` sample category and generator.
+- **feat(fonts): lean CIDFontType2 embeds** — `subsetTTF(ttf, gids, { lean: { cmap } })` rebuilds the `cmap` over the kept glyphs (format 4, plus format 12 beyond the BMP), writes a format-3 `post` and drops `gasp`; both builders use it for every embedded subset (Noto Sans: 108.9 → 42.4 KB for one paragraph); every font module header carries the font's copyright statement.
+- **feat(core): layout** — rows reserve the deepest descender of the text they hold ([#80]); a table of contents longer than its page paginates, with every link on the page that draws it ([#83]); `ColumnDef.kind: 'amount'` in `buildPDF`; U+202F on the base-14 path as a `TJ` adjustment; a page transparency group (`/Group /S /Transparency`) where constant alpha is painted; `/Scope`, `/Headers` and an `/IDTree` for tagged tables, with `validatePdfUA()` rules.
+- **feat(parser): `decodePdfTextString()`** — one decoder for ISO 32000-1 text strings (UTF-16BE and UTF-8 BOMs, the full PDFDocEncoding table), used by every reader and exported ([#85]).
+- **feat(parser): `PdfStreamLimitError`** (`PDF_STREAM_LIMIT`) from the inflater and the decode filters; `extractText({ onStreamError })` — `'limit'` (default) rethrows the cap, `'throw'` reports any undecodable stream, `'skip'` keeps the lenient behaviour ([#89]).
+- **feat(core): `composeLtvData()`** — build `LtvData` from flat lists of certificates, OCSP responses and CRLs collected out of band; `match: 'chain'` keeps only what validates each signature; `parseOcspResponse()` exposes the CertID ([#90]).
+- **feat(core): `/Link` markup annotations** — `{ type: 'link', rect, url }` in `MarkupAnnotation`, through the URL allow-list ([#91]).
+- **feat(crypto): `ecdsaVerifyHash`, `ecdsaSignHash`, `encodeDerSignature`, `decodeDerSignature`** exported from the root ([#88]).
+- **feat(tools): `buildSyntheticGrayProfile()` and `buildSyntheticCmykProfile()`** on `pdfnative/tools` ([#86]).
+- **feat(chart): optional `ChartSeries.label`** — an unlabelled series is listed as "Series N" ([#82]).
+- **feat(ci): the zero-breaking-change policy, proven** — `npm run compat:previous` (`scripts/run-compat.ts`) replays the previous release's test suite against the current sources on every pull request, with `tests/compat/allow-<previous>.json` naming what it may skip and why; `tests/tools/api-compat.test.ts` holds every 1.8.0 export, diagnostic code and build-error message; SECURITY.md §Compatibility promise states the rules.
+- **feat(ci): Windows and macOS** as required checks, `workflow lint` (zizmor, actionlint), a `runtimes` smoke job (Deno 2.9.7, Bun 1.4.2, headless Chromium), `node-current` (Node 26, advisory), weekly benchmarks, ClusterFuzzLite with seven targets over the parser surface (`fuzz/`), CodeQL `security-extended` with the `actions` language, Dependabot cooldowns.
+- **feat(ci): the release pipeline** — guard → build → publish → attest: a tag-only guard before any approval, a build job without a token, a publishing job that installs nothing and verifies the handed-on digests with an npm client pinned by content, an attest job that fetches the published tarball back and attests the registry's bytes with CycloneDX, SPDX and toolchain SBOMs and a Sigstore bundle (SLSA Build L2).
+- **docs:** guides *Right-to-left documents* and *Images*; the *Images* playground (fifteen in all); seven recipes (`rtl-document`, `jpx-image`, `spot-colours`, `dual-pdfa-pdfx`, `annotate-link`, `extract-roundtrip`, `ltv-compose-offline`); the `images/` and `bidi-uax9-conformance` samples; `tagged-pdfa2u-taitham` under veraPDF.
+
+### Changed
+
+- **Shaping fidelity** — mark anchors are read through every class in every shaper (`positionMarkOnBase`, Khmer, Myanmar, Tibetan, USE), Tibetan runs on the OpenType engine (`applyGsubFeatures` + `attachMarks`), and both generators keep `tibt`, `khmr`, `mymr`/`mym2`, `lana` and `cham` layout tables; the Tibetan, Khmer, Myanmar, Tai Tham and Cham modules are rebuilt ([#81]).
+- **`extractText()` throws `PdfStreamLimitError` by default** when a stream exceeds the inflate cap, instead of returning an empty page ([#89]); pass `onStreamError: 'skip'` for the 1.8.0 lenience.
+- **The joint PDF/A + PDF/X refusal** became two messages, one per excluded level (1b, 3b); the single 1.8.0 message is gone (compatibility ledger C14).
+- **`scanDeviceColour()`** reports the named colour spaces a stream selects (`named`); every 1.8.0 field is unchanged (C16).
+- **Every embedded TrueType subset** is lean (C6); every font module header carries a `Copyright:` line (C15).
+- **`setup-verapdf`** hands its install directory back as an output instead of writing `GITHUB_ENV`; `ci.yml`, `codeql.yml` and the publish workflow lost their path filters; every audit-mode `harden-runner` carries a dated reason.
+- **SECURITY.md** states the supported runtimes (Node 22 and 24 LTS required, 26 advisory; Deno, Bun and browsers smoke-tested) and the compatibility promise; the FAQ and the pipeline say SLSA Build L2 (the "L3-equivalent" claim is gone).
+
+### Fixed
+
+- **fix(core): `sha256()` and the SHA-512 core wrote one word of the FIPS 180-4 bit length** — inputs of 2^29 octets and more hashed wrong; `writeBitLengthBE` writes both words.
+- **fix(core): deep descenders clipped in table rows** — Myanmar stacks and Khmer subscripts clear the cell border; Latin rows are byte-identical ([#80]).
+- **fix(core): a table of contents longer than its page** no longer overflows the margin; `inspectDocumentLayout()` agrees with the build ([#83]).
+- **fix(chart): a series without `label`** no longer throws a `TypeError`; a non-string label is rejected; the legend is measured with the context's metrics in Unicode mode ([#82]).
+- **fix(parser): PDF text strings** in `/Info`, outlines, page labels and signature `/T` are decoded as ISO 32000-1 §7.9.2.2 specifies; non-Latin-1 characters written to `/P`, `/T`, `/V` and `/Opt` are no longer truncated ([#85]).
+- **fix(core): LTV** — `extraCertificates` are referenced from every `/VRI` entry ([#90]).
+- **fix(core): annotations** — a type outside the union throws instead of writing `/Subtype /undefined` ([#91]).
+- **fix(shaping): BiDi** — punctuation no longer attaches to the preceding Latin word in a right-to-left paragraph, brackets inside a Latin run of an Arabic paragraph are paired and mirrored, and a wrapped line no longer changes its neighbours' order (C1–C3, [#92]).
+- **fix(shaping): Malayalam `pref` and a ligature swallowing its base** in the Indic engine; General Punctuation and whitespace Bidi classes corrected to the UCD (U+2030 and U+2032 are ET, TAB is S).
+- **fix(parser): a stray `)`, `{` or `}` made the tokenizer return an empty keyword without advancing**, so every token loop — the ToUnicode CMap reader among them — spun forever on a one-byte corruption; found by the fuzz targets before their first container run.
+- **fix(tools): `parseFontData()` read past the end of a malformed font** (DataView `RangeError`); the reader is bounds-checked and refuses with a plain `Error`, in both generators.
+- **fix(ci):** a docs-only pull request no longer leaves the required checks pending (`ci.yml` path filter removed); a `workflow_dispatch` on a branch can no longer publish (the guard refuses before any approval); the attest job no longer attests a rebuild; `package-manager-cache: false` on every release setup-node.
+
+### Documentation
+
+- Guides *Right-to-left documents* ([rtl.md](docs/guides/rtl.md)) and *Images* ([images.md](docs/guides/images.md)); *Print production* (spot colours, the dual claim, `validatePdfX()` inside XObjects), *Text extraction* (ToUnicode guarantees, `onStreamError`), *Tables* (descenders, `/Scope`), *Outlines* (paginated TOC), *Annotations* (links), *LTV* (offline material), *Signatures* (`ecdsaVerifyHash`), *Charts* (optional label), *Accessibility* (table header semantics, transparency group), *PDF/A* (JPEG 2000 rules, the dual claim), *Typography* (U+202F on base-14), *Troubleshooting* (RTL).
+- The *Images* playground; seven recipes; `docs/data/errors.json` with every new code and message; `docs/assets/api.json` regenerated.
+- SECURITY.md §Supported runtimes and §Compatibility promise; CONTRIBUTING §Compatibility with the previous release and the required-checks list; `.github/instructions/testing` (fuzz targets, compat replay) and `font-engineering` (lean embeds, copyright header).
+
+[#80]: https://github.com/Nizoka/pdfnative/issues/80
+[#81]: https://github.com/Nizoka/pdfnative/issues/81
+[#82]: https://github.com/Nizoka/pdfnative/issues/82
+[#83]: https://github.com/Nizoka/pdfnative/issues/83
+[#84]: https://github.com/Nizoka/pdfnative/issues/84
+[#85]: https://github.com/Nizoka/pdfnative/issues/85
+[#86]: https://github.com/Nizoka/pdfnative/issues/86
+[#87]: https://github.com/Nizoka/pdfnative/issues/87
+[#88]: https://github.com/Nizoka/pdfnative/issues/88
+[#89]: https://github.com/Nizoka/pdfnative/issues/89
+[#90]: https://github.com/Nizoka/pdfnative/issues/90
+[#91]: https://github.com/Nizoka/pdfnative/issues/91
+[#92]: https://github.com/Nizoka/pdfnative/issues/92
+
 ## [1.8.0] – 2026-09-15
 
 The typography and print release: paragraphs that break across pages

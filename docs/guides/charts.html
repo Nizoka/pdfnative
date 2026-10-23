@@ -153,7 +153,7 @@ paragraph, or table.</p>
   chartType: &#39;bar&#39; | &#39;barH&#39; | &#39;line&#39; | &#39;pie&#39; | &#39;donut&#39;
     | &#39;stackedBar&#39; | &#39;stackedBarH&#39; | &#39;area&#39; | &#39;scatter&#39;;    // last four: v1.7.0
   series: {
-    label: string;
+    label?: string;              // optional since v1.9.0 — an unlabelled series is listed as &quot;Series N&quot;
     values: number[];
     color?: PdfColor;
     xValues?: (number | string)[]; // x positions for scatter / linear / time x-axes (v1.7.0)

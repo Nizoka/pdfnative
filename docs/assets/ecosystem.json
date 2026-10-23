@@ -116,10 +116,10 @@
     "sampleGenerators": 50,
     "samplePdfs": 310,
     "sampleCategories": 39,
-    "guides": 35,
-    "playgrounds": 14,
+    "guides": 37,
+    "playgrounds": 15,
     "learnSteps": 8,
-    "recipes": 17
+    "recipes": 24
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",

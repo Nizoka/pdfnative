@@ -238,6 +238,89 @@ function parseHeader(source: string): { task: string; surface: string; since: st
     return { task: tags.task!, surface: tags.surface!, since: tags.since!, expects: tags.expects };
 }
 
+describe('recipe: rtl-document', () => {
+    it('renders the Arabic and Hebrew paragraphs on one page and extracts every letter of the heading', { timeout: 60_000 }, async () => {
+        const { run, HEADING } = await import('../../recipes/rtl-document.js');
+        const { bytes, pages, text } = await run();
+        expect(pages).toBe(1);
+        expect(latin1(bytes)).toContain('/Identity-H');
+        for (const letter of new Set(HEADING.replace(/[\s()]/g, ''))) expect(text, `U+${letter.codePointAt(0)!.toString(16)}`).toContain(letter);
+    });
+});
+
+describe('recipe: jpx-image', () => {
+    it('passes the JPEG 2000 codestream through as JPXDecode with SMaskInData under a 1.5 header', async () => {
+        const { run } = await import('../../recipes/jpx-image.js');
+        const { bytes, pages, header, jpx } = await run();
+        expect(pages).toBe(1);
+        expect(header).toBe('%PDF-1.5');
+        expect(latin1(bytes)).toContain('/JPXDecode');
+        expect(latin1(bytes)).toContain('/SMaskInData 1');
+        expect(jpx).toMatchObject({ channels: 3, alpha: true, colourSpecified: true });
+    });
+});
+
+describe('recipe: spot-colours', () => {
+    it('writes a Separation space per ink and a DeviceN space for the mix', async () => {
+        const { run } = await import('../../recipes/spot-colours.js');
+        const { bytes, pages } = await run();
+        expect(pages).toBe(1);
+        const pdf = latin1(bytes);
+        expect(pdf).toContain('/Separation');
+        expect(pdf).toContain('/DeviceN');
+    });
+});
+
+describe('recipe: dual-pdfa-pdfx', () => {
+    it('claims PDF/A-2b and PDF/X-4 together and passes validatePdfX', { timeout: 60_000 }, async () => {
+        const { run } = await import('../../recipes/dual-pdfa-pdfx.js');
+        const { bytes, report } = await run();
+        expect(report.errors).toEqual([]);
+        expect(report.valid).toBe(true);
+        const pdf = latin1(bytes);
+        expect(pdf).toContain('pdfaid:part');
+        expect(pdf).toContain('/S /GTS_PDFX');
+        expect(pdf).toContain('/S /GTS_PDFA1');
+    });
+});
+
+describe('recipe: annotate-link', () => {
+    it('appends a /Link annotation with a /URI action as an incremental update', async () => {
+        const { run } = await import('../../recipes/annotate-link.js');
+        const { original, bytes } = await run();
+        const pdf = latin1(bytes);
+        expect(pdf).toContain('/Subtype /Link');
+        expect(pdf).toContain('/URI (https://pdfnative.dev)');
+        expect(latin1(bytes.subarray(0, original.length))).toBe(latin1(original));
+    });
+});
+
+describe('recipe: extract-roundtrip', () => {
+    it('reads the Devanagari conjunct, Thai sara am and every Arabic letter back', { timeout: 60_000 }, async () => {
+        const { run, SAMPLES } = await import('../../recipes/extract-roundtrip.js');
+        const { text } = await run();
+        expect(text).toContain('क्षमता');
+        expect(text).toContain('น้ำ');
+        for (const letter of new Set(SAMPLES.arabic.replace(/\s/g, ''))) expect(text, `U+${letter.codePointAt(0)!.toString(16)}`).toContain(letter);
+    });
+});
+
+describe('recipe: ltv-compose-offline', () => {
+    it('embeds the chain certificates into a /DSS with a /VRI for the signature', { timeout: 60_000 }, async () => {
+        const { run } = await import('../../recipes/ltv-compose-offline.js');
+        const pki = createMockPki();
+        const { bytes, signatures, data } = await run(
+            { cert: pki.signerCert, key: pki.signerKey, chain: [pki.rootCert] },
+            { certificates: [pki.rootCert.raw, pki.signerCert.raw, createMockPki().rootCert.raw] }, // the other PKI's root validates nothing here and must be dropped
+        );
+        expect(signatures.length).toBe(1);
+        expect(data.certificates.length).toBe(2);
+        const pdf = latin1(bytes);
+        expect(pdf).toContain('/DSS');
+        expect(pdf).toContain('/VRI');
+    });
+});
+
 describe('recipes/index.json', () => {
     it('mirrors the header tags of every recipe on disk, with none missing', async () => {
         const fs = await nodeFs();

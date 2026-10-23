@@ -112,6 +112,7 @@ Which tags change anything depends on the font. Noto Sans, the bundled Latin fac
 
 ## Limits & scope
 
+- Since v1.9.0 `punctuationSpacing: 'fr'` renders its narrow no-break space (U+202F) on the base-14 path as well — the space is shown and the pen pulled back 111/1000 em in a `TJ` array, a 167/1000 em gap, and every width estimate measures it so; a registered font is no longer needed for the French preset.
 - No automatic hyphenation dictionary — install a provider, or write soft hyphens.
 - Justification distributes space between words only; there is no letter-spacing or glyph scaling. A justified line is one `TJ` array per line, so the content stream grows by the adjustments, not by a text object per word.
 - Kerning and features read the registered font's tables: base-14 text gets neither, and the base-14 path has no narrow no-break space.

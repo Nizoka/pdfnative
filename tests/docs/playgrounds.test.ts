@@ -128,7 +128,7 @@ const pages = manifest.playgrounds.filter(
 // The bundled Noto Sans data module is large; its first import dominates the runtime.
 describe('playground code views run outside the browser', { timeout: 60_000 }, () => {
     it('covers every page that ships a CODE object', () => {
-        expect(pages.map(p => p.id).sort()).toEqual(['authoring-plus', 'charts', 'print', 'reproducible', 'toolkit', 'typography']);
+        expect(pages.map(p => p.id).sort()).toEqual(['authoring-plus', 'charts', 'images', 'print', 'reproducible', 'toolkit', 'typography']);
     });
 
     for (const page of pages) {
@@ -158,6 +158,14 @@ describe('playground code views run outside the browser', { timeout: 60_000 }, (
                     return;
                 }
 
+                if (page.id === 'images' && key === 'pdfa1') {
+                    // No PDF: PDF/A-1 has no JPXDecode filter, and the builder says so before writing.
+                    expect(result.bytes).toBeNull();
+                    expect(result.error).toHaveLength(1);
+                    expect(result.error[0]).toContain('PDF/A-1 is PDF 1.4, which has no JPXDecode filter');
+                    return;
+                }
+
                 expect(pdfHeader(result.bytes), 'downloadBlob received a PDF').toBe('%PDF-');
 
                 if (page.id === 'print' && key === 'pdfx') {
@@ -176,6 +184,15 @@ describe('playground code views run outside the browser', { timeout: 60_000 }, (
                 }
                 if (page.id === 'print') {
                     expect(result.warn, 'a coherent print job raises no diagnostic').toEqual([]);
+                }
+                if (page.id === 'images') {
+                    if (key === 'pdfa2b') {
+                        // The fixture carries an opacity channel, which ISO 19005-2 §6.2.8.3 does not allow.
+                        expect(result.warn.some(l => l.startsWith('PDFA_JPX_IMAGE'))).toBe(true);
+                    } else {
+                        expect(result.warn, 'an image document raises no diagnostic').toEqual([]);
+                    }
+                    expect(pdfHeader(result.bytes)).toBe('%PDF-');
                 }
             });
         }

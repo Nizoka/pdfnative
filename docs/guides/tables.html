@@ -288,6 +288,8 @@ const bytes = buildDocumentPDFBytes({
 <p><strong>Behaviour change for document-builder tables without <code>kind</code>.</strong> Previously the renderer applied Helvetica-Bold + credit/debit colour to whichever column happened to be at index 3. The current renderer removes that heuristic — opt in explicitly via <code>kind: &#39;amount&#39;</code>. The legacy <code>buildPDF()</code> (financial-statement) path keeps the historical heuristic for byte-identical v1.0/v1.1 output.</p>
 </blockquote>
 <hr>
+<h2 id="row-height-and-deep-descenders-v190">Row height and deep descenders (v1.9.0)<a class="heading-anchor" href="#row-height-and-deep-descenders-v190" aria-label="Link to this section">#</a></h2>
+<p>A row reserves, below its baseline, the deepest descender of the fonts its text uses (<code>|descent| / unitsPerEm × size</code>) beyond the historical bottom allowance, and the baseline is lifted by that band — so a Myanmar stack, a Khmer subscript or a Thai tone mark under a vowel clears the cell border instead of being clipped by it (<a href="https://github.com/Nizoka/pdfnative/issues/80" target="_blank" rel="noopener">#80</a>). Rows set in the base-14 fonts reserve nothing extra and are byte-identical to 1.8.0; rows holding such text grow by the band, which moves the following rows and can change where a long table breaks.</p>
 <h2 id="how-multi-page-tables-are-sliced">How multi-page tables are sliced<a class="heading-anchor" href="#how-multi-page-tables-are-sliced" aria-label="Link to this section">#</a></h2>
 <p>pdfnative uses a two-phase pipeline:</p>
 <ol>
@@ -320,6 +322,8 @@ const bytes = buildDocumentPDFBytes({
 <p>The structure is <strong>single</strong> even when the table spans multiple pages. <code>_paginateBlocks()</code> shares a <code>tableStructAccum</code> array across all slices of the same table; the final slice commits it as <code>{ type: &#39;Table&#39;, children: tableStructAccum }</code>. Each <code>/TR</code> carries the correct <code>/StructParents</code> for its page so screen readers reconstruct the logical reading order correctly (ISO 14289-1 §7.10.6).</p>
 <p>Repeated headers in <code>repeatHeader: true</code> mode are <strong>not</strong> re-emitted in the structure tree — they are visual continuations only. The single <code>/TR</code> for the header sits at the top of the <code>/Table</code> element.</p>
 <hr>
+<h3 id="header-semantics-v190">Header semantics (v1.9.0)<a class="heading-anchor" href="#header-semantics-v190" aria-label="Link to this section">#</a></h3>
+<p>Every <code>/TH</code> carries <code>/A &lt;&lt; /O /Table /Scope /Column &gt;&gt;</code> and an <code>/ID</code>, every <code>/TD</code> names the header cell of its column in <code>/Headers</code>, and the <code>/StructTreeRoot</code> registers the ids in an <code>/IDTree</code> — what PDF/UA readers use to announce &quot;Amount: 3 000.00&quot; instead of a bare number (ISO 14289-1 §7.5). Sliced tables keep the association per slice: the repeated header row of each page gets its own ids and the cells of that page point to them. <code>validatePdfUA()</code> reports a <code>/TH</code> without <code>/Scope</code> as an error and a <code>/TD</code> without <code>/Headers</code> as a warning.</p>
 <h2 id="tagged-mode--zebra">Tagged-mode + zebra<a class="heading-anchor" href="#tagged-mode--zebra" aria-label="Link to this section">#</a></h2>
 <p>Zebra fills are decorative — they do not appear in the structure tree. PDF/UA conformance is preserved.</p>
 <blockquote>

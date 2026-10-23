@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playgrounds — pdfnative</title>
-  <meta name="description" content="Fourteen zero-install pdfnative playgrounds: extreme scripts, all 32 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, reproducible output, DocSpec lint, and print &amp; PDF/X.">
+  <meta name="description" content="Fifteen zero-install pdfnative playgrounds: extreme scripts, all 32 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, reproducible output, DocSpec lint, print &amp; PDF/X, and images (JPEG, PNG, JPEG 2000).">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/">
@@ -14,13 +14,13 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/">
   <meta property="og:title" content="Playgrounds — pdfnative">
-  <meta property="og:description" content="Fourteen zero-install pdfnative playgrounds: extreme scripts, all 32 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, reproducible output, DocSpec lint, and print &amp; PDF/X.">
+  <meta property="og:description" content="Fifteen zero-install pdfnative playgrounds: extreme scripts, all 32 scripts + emoji, a document toolkit, an inspect &amp; verify report, native charts, authoring+, a 100,000-page scale test, CLI, MCP, React, typography, reproducible output, DocSpec lint, print &amp; PDF/X, and images (JPEG, PNG, JPEG 2000).">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Playgrounds — pdfnative">
-  <meta name="twitter:description" content="Fourteen zero-install pdfnative playgrounds — scripts, emoji, toolkit, inspect &amp; verify, charts, 100k-page scale test, CLI, MCP, React, typography, print &amp; PDF/X, reproducible output, DocSpec lint.">
+  <meta name="twitter:description" content="Fifteen zero-install pdfnative playgrounds — scripts, emoji, toolkit, inspect &amp; verify, charts, 100k-page scale test, CLI, MCP, React, typography, print &amp; PDF/X, reproducible output, DocSpec lint, images.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -52,7 +52,7 @@
         "inLanguage": "en",
         "@id": "https://pdfnative.dev/playgrounds/#collection",
         "name": "pdfnative interactive playgrounds",
-        "description": "14 zero-install playgrounds that generate and inspect real PDFs in your browser.",
+        "description": "15 zero-install playgrounds that generate and inspect real PDFs in your browser.",
         "url": "https://pdfnative.dev/playgrounds/",
         "isPartOf": {
           "@type": "WebSite",
@@ -146,6 +146,12 @@
               "position": 14,
               "name": "DocSpec lint — 37 pdfnative-react rules on a JSON document spec",
               "url": "https://pdfnative.dev/playgrounds/docspec-lint.html"
+            },
+            {
+              "@type": "ListItem",
+              "position": 15,
+              "name": "Images — JPEG, PNG and JPEG 2000 embedded as pass-through streams",
+              "url": "https://pdfnative.dev/playgrounds/images.html"
             }
           ]
         }
@@ -344,6 +350,15 @@
         </div>
         <div class="pg-cta">Open DocSpec lint playground →</div>
       </a>
+      <a class="pg-card" href="./images.html">
+        <div class="pg-icon" aria-hidden="true">🖼️</div>
+        <h3>Images <span class="badge">v1.9.0</span></h3>
+        <p>Embed a JPEG, a PNG or a <strong>JPEG 2000</strong> file without decoding it: the JPXDecode fixture whose codestream declares its own colour and opacity (<code>/SMaskInData 1</code>, a PDF 1.5 header), the three formats on one page and under PDF/A-2b, the PDF/A-1b refusal, and a file from your disk — with the diagnostics each build raised.</p>
+        <div class="pg-tags">
+          <span class="pg-tag">JPXDecode</span><span class="pg-tag">PNG alpha → SMask</span><span class="pg-tag">PDF/A rules</span><span class="pg-tag">parseImage</span>
+        </div>
+        <div class="pg-cta">Open Images playground →</div>
+      </a>
     </div>
 
     <h2 style="margin-top: 44px;">What about non-interactive examples?</h2>
@@ -379,6 +394,7 @@
       <li><a href="./print.html">Print &amp; PDF/X</a></li>
       <li><a href="./reproducible.html">Reproducible output</a></li>
       <li><a href="./docspec-lint.html">DocSpec lint</a></li>
+      <li><a href="./images.html">Images</a></li>
       <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
     </ul>
   </div>

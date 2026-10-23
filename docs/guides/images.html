@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Images — pdfnative</title>
+  <meta name="description" content="Images in pdfnative — JPEG, PNG and, since v1.9.0, JPEG 2000 embedded as the file's own bytes: DCTDecode, FlateDecode with the alpha channel as a soft mask, JPXDecode with colour and opacity from the codestream; parseImage, parseJPX and detectImageFormat; the PDF/A and PDF/X rules per level.">
+  <link rel="canonical" href="https://pdfnative.dev/guides/images.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/images.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/images.html">
+  <link rel="alternate" type="text/markdown" href="images.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/guides/images.html">
+  <meta property="og:title" content="Images — pdfnative">
+  <meta property="og:description" content="Images in pdfnative — JPEG, PNG and, since v1.9.0, JPEG 2000 embedded as the file's own bytes: DCTDecode, FlateDecode with the alpha channel as a soft mask, JPXDecode with colour and opacity from the codestream; parseImage, parseJPX and detectImageFormat; the PDF/A and PDF/X rules per level.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Images — pdfnative">
+  <meta name="twitter:description" content="JPEG, PNG and JPEG 2000 embedded without decoding — the PDF/A rules per level.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Images — JPEG, PNG and JPEG 2000","item":"https://pdfnative.dev/guides/images.html"}]},{"@type":"TechArticle","headline":"Images — JPEG, PNG and JPEG 2000","description":"Images in pdfnative — JPEG, PNG and, since v1.9.0, JPEG 2000 embedded as the file's own bytes: DCTDecode, FlateDecode with the alpha channel as a soft mask, JPXDecode with colour and opacity from the codestream; parseImage, parseJPX and detectImageFormat; the PDF/A and PDF/X rules per level.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/images.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
+      <li><a href="./">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; Images</p>
+  <article id="guide-content" class="guide-content" data-md="images.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="images--jpeg-png-and-jpeg-2000">Images — JPEG, PNG and JPEG 2000</h1>
+<blockquote>
+<p><strong>JPEG and PNG since v1.0.0; JPEG 2000 since v1.9.0.</strong> An <code>image</code> block embeds the file&#39;s own bytes — nothing is decoded, recompressed or rasterised: a JPEG travels as <code>/DCTDecode</code>, a PNG as <code>/FlateDecode</code> with its alpha channel split into a soft mask, a JPEG 2000 file as <code>/JPXDecode</code> with the colour and opacity the codestream declares. The library reads only the headers it needs to write the Image XObject.</p>
+</blockquote>
+<h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
+<pre><code class="language-ts">import { readFileSync } from &#39;node:fs&#39;;
+import { buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+
+const pdf = buildDocumentPDFBytes({
+  title: &#39;Product sheet&#39;,
+  blocks: [
+    { type: &#39;heading&#39;, text: &#39;Product sheet&#39;, level: 1 },
+    { type: &#39;image&#39;, data: readFileSync(&#39;photo.jpg&#39;), width: 320, height: 240, align: &#39;center&#39;, alt: &#39;The product, three-quarter view&#39; },
+    { type: &#39;image&#39;, data: readFileSync(&#39;logo.png&#39;), width: 120 },
+    { type: &#39;image&#39;, data: readFileSync(&#39;scan.jp2&#39;), width: 400, alt: &#39;Scanned invoice, page 1&#39; },
+  ],
+});
+</code></pre>
+<p><code>width</code> and <code>height</code> are in points; give one and the other follows the image&#39;s aspect ratio. <code>align</code> places the image in the column; <code>alt</code> becomes the <code>/Alt</code> of the <code>/Figure</code> structure element in tagged mode and is what a screen reader announces.</p>
+<h2 id="formats">Formats<a class="heading-anchor" href="#formats" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Detected by</th>
+<th>Written as</th>
+<th>What is read from the file</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>JPEG</td>
+<td><code>FF D8 FF</code></td>
+<td><code>/DCTDecode</code>, the file&#39;s bytes as the stream</td>
+<td>Width, height and component count from the SOF marker (1 = <code>/DeviceGray</code>, 3 = <code>/DeviceRGB</code>, 4 = <code>/DeviceCMYK</code>).</td>
+</tr>
+<tr>
+<td>PNG</td>
+<td>the 8-byte signature</td>
+<td><code>/FlateDecode</code> with a PNG predictor (<code>/Predictor 15</code>), the IDAT chunks concatenated</td>
+<td>Width, height, bit depth and colour type from IHDR. Greyscale and RGB, with or without alpha; an alpha channel is separated into an <code>/SMask</code> image. 8-bit only; interlaced files are refused.</td>
+</tr>
+<tr>
+<td>JPEG 2000 (v1.9.0)</td>
+<td>the JP2 signature box, or a raw codestream (<code>FF 4F FF 51</code>)</td>
+<td><code>/JPXDecode</code>, the file&#39;s bytes as the stream</td>
+<td>From the JP2 header (<code>ihdr</code>, <code>colr</code>, <code>cdef</code>) or the codestream&#39;s SIZ marker: width, height, channel count, bit depth, whether a colour space is declared, whether an opacity channel is present.</td>
+</tr>
+</tbody></table>
+<p>A JPEG 2000 image is a pass-through in the strictest sense: ISO 32000-1 §7.4.9 lets the viewer take the colour space, bit depth and opacity from the codestream, so the XObject omits <code>/ColorSpace</code> and <code>/BitsPerComponent</code> when the file declares its colour (<code>colr</code> box) and sets <code>/SMaskInData 1</code> when it carries an opacity channel. A raw codestream without a <code>colr</code> box is written with the device space its channel count implies. The file header becomes <code>%PDF-1.5</code>, the version that introduced <code>/JPXDecode</code>.</p>
+<p>What the library does <strong>not</strong> do: decode a JPEG 2000 codestream (no wavelet transform exists in pdfnative; viewers with JPX support — Acrobat, Chrome&#39;s PDFium, Firefox&#39;s pdf.js — draw it), convert formats, resample, or read TIFF and WebP (see the <a href="https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md" target="_blank" rel="noopener">roadmap</a>).</p>
+<h2 id="inspecting-an-image-before-embedding-it">Inspecting an image before embedding it<a class="heading-anchor" href="#inspecting-an-image-before-embedding-it" aria-label="Link to this section">#</a></h2>
+<p>The parsers behind the block are exported:</p>
+<pre><code class="language-ts">import { detectImageFormat, parseImage, parseJPX } from &#39;pdfnative&#39;;
+
+detectImageFormat(bytes);          // &#39;jpeg&#39; | &#39;png&#39; | &#39;jpx&#39; | null
+const img = parseImage(bytes);     // { width, height, colorSpace, bitsPerComponent, filter, data, smask, jpx? }
+if (img.jpx) {
+  img.jpx.channels;                // 1, 3 or 4 for a PDF/A-2 file
+  img.jpx.alpha;                   // an opacity channel → /SMaskInData 1
+  img.jpx.colourSpecified;         // a colr box: /ColorSpace is left to the codestream
+  img.jpx.bitDepth;
+}
+</code></pre>
+<p><code>parseJPX(bytes)</code> reads a JPEG 2000 file directly; <code>parseImage</code> dispatches on the detected format and throws a plain <code>Error</code> naming the defect for a truncated or unsupported file (a 16-bit or interlaced PNG, an image with no header).</p>
+<h2 id="images-under-pdfa-and-pdfx">Images under PDF/A and PDF/X<a class="heading-anchor" href="#images-under-pdfa-and-pdfx" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><strong>PDF/A-1</strong> (<code>tagged: &#39;pdfa1b&#39;</code>) forbids <code>/JPXDecode</code> (ISO 19005-1 §6.1.10): a JPEG 2000 image under PDF/A-1 raises <code>PDFA1_JPX_IMAGE</code> — a warning through <code>onDiagnostic</code> (the file is still written, with the PDF 1.4 header the claim demands, and veraPDF rejects it), an error that stops the build under <code>strict</code>.</li>
+<li><strong>PDF/A-2 and PDF/A-3</strong> accept JPEG 2000 under ISO 19005-2 §6.2.8.3: one, three or four colour channels, and no opacity channel in the codestream. A file outside those rules raises <code>PDFA_JPX_IMAGE</code> (a warning through <code>onDiagnostic</code>, an error under <code>strict</code>), and the build still writes it. Both codes are catalogued in <a href="../data/errors.json"><code>errors.json</code></a>.</li>
+<li><strong>PDF/A in general</strong> requires every colour to resolve to the OutputIntent: a CMYK JPEG under the default sRGB intent raises <code>PDFA_DEVICE_CMYK_CONTENT</code>; see the <a href="pdfa.html">PDF/A guide</a>.</li>
+<li><strong>PDF/X-4</strong>: <code>validatePdfX()</code> checks the <code>/ColorSpace</code> of every image, including images inside Form XObjects (v1.9.0), against the OutputIntent; a JPEG 2000 image that leaves its colour to the codestream passes the check as the specification allows.</li>
+</ul>
+<h2 id="watermark-images">Watermark images<a class="heading-anchor" href="#watermark-images" aria-label="Link to this section">#</a></h2>
+<p>An image can also be the watermark of every page — <code>layout.watermark.image</code> with <code>opacity</code> and <code>angle</code>; the same three formats are accepted. See the <a href="https://github.com/Nizoka/pdfnative#layout-customization" target="_blank" rel="noopener">watermarks section</a> of the README.</p>
+<h2 id="samples-and-playground">Samples and playground<a class="heading-anchor" href="#samples-and-playground" aria-label="Link to this section">#</a></h2>
+<p><code>npm run test:generate</code> writes <code>test-output/images/image-jpx-jp2.pdf</code> (a JP2 file with a <code>colr</code> box and an opacity channel), <code>image-jpx-raw.pdf</code> (a raw codestream) and <code>image-formats-pdfa2b.pdf</code> (JPEG, PNG and JPEG 2000 on one PDF/A-2b page). The <a href="../playgrounds/images.html">images playground</a> embeds a JPEG, a PNG or a JPEG 2000 file from your disk and shows the Image XObject it wrote.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="pdfa.html">PDF/A conformance</a> — the image rules per level.</li>
+<li><a href="print.html">Print production</a> — colour spaces, OutputIntents, <code>validatePdfX()</code>.</li>
+<li><a href="accessibility.html">Accessibility</a> — <code>/Figure</code> and <code>alt</code>.</li>
+</ul>
+<!-- guide:render:end -->
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="./">All guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
+<script src="guide.js" defer></script>
+</body>
+</html>

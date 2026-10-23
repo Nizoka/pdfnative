@@ -125,9 +125,15 @@ ISO 32000-1 §12.5.</p>
 <td><code>/FreeText</code></td>
 <td>Typewriter / callout text</td>
 </tr>
+<tr>
+<td><code>link</code></td>
+<td><code>/Link</code></td>
+<td>A clickable region with a <code>/URI</code> action (v1.9.0) — <code>url</code> goes through the same allow-list as the document builder&#39;s links: <code>http</code>, <code>https</code> and <code>mailto</code>; <code>javascript:</code>, <code>file:</code> and <code>data:</code> are refused</td>
+</tr>
 </tbody></table>
 <p>Every type shares <code>AnnotationBase</code>: <code>rect</code>, and optional <code>contents</code>, <code>color</code>,
-<code>opacity</code>, <code>title</code>, <code>modified</code>, <code>flags</code>.</p>
+<code>opacity</code>, <code>title</code>, <code>modified</code>, <code>flags</code>. A <code>type</code> outside the union throws
+<code>Unknown annotation type</code> instead of writing <code>/Subtype /undefined</code> (v1.9.0, <a href="https://github.com/Nizoka/pdfnative/issues/91" target="_blank" rel="noopener">#91</a>); the <a href="https://github.com/Nizoka/pdfnative/blob/main/recipes/annotate-link.ts" target="_blank" rel="noopener">annotate-link recipe</a> adds a link to an existing PDF as an incremental update.</p>
 <h2 id="building-annotations">Building annotations<a class="heading-anchor" href="#building-annotations" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-ts">import { buildAnnotation } from &#39;pdfnative&#39;;
 import type { MarkupAnnotation } from &#39;pdfnative&#39;;

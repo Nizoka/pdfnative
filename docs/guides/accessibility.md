@@ -38,7 +38,7 @@ When `tagged` is enabled, the document gets:
   - `/H1`, `/H2`, `/H3` for headings
   - `/P` for paragraphs
   - `/L` → `/LI` for lists
-  - `/Table` → `/TR` → `/TH` / `/TD` for tables
+  - `/Table` → `/TR` → `/TH` / `/TD` for tables — since v1.9.0 every `/TH` carries `/A << /O /Table /Scope /Column >>` and an `/ID`, every `/TD` names its header in `/Headers`, and the `/StructTreeRoot` registers the ids in an `/IDTree` (ISO 14289-1 §7.5)
   - `/Figure` for images, barcodes, SVG (with `/Alt` text)
   - `/Link` for hyperlinks (with `/Contents` description)
   - `/Form` for AcroForm fields

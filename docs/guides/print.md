@@ -1,6 +1,6 @@
 # Print production — bleed, trim & printer's marks
 
-> **New in v1.7.0, extended in v1.8.0.** Print-ready PDFs with zero dependencies: page geometry boxes (`/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`), crop and registration marks drawn as pure vector operators, `/Trapped` metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format `/UserUnit`. Since v1.8.0: CMYK colours, CMYK and Gray OutputIntents, marks in the registration colour, a PDF/X-4 conformance claim and `validatePdfX()`. Everything is opt-in — output is byte-identical when unused.
+> **New in v1.7.0, extended in v1.8.0.** Print-ready PDFs with zero dependencies: page geometry boxes (`/TrimBox`, `/BleedBox`, `/ArtBox`, `/CropBox`), crop and registration marks drawn as pure vector operators, `/Trapped` metadata with XMP parity, print-dialog defaults (duplex, tray, page range, copies), a caller-supplied OutputIntent ICC profile, and large-format `/UserUnit`. Since v1.8.0: CMYK colours, CMYK and Gray OutputIntents, marks in the registration colour, a PDF/X-4 conformance claim and `validatePdfX()`. Since v1.9.0: spot colours (`/Separation` inks and `/DeviceN` mixes with process alternates), a joint PDF/A-2 + PDF/X-4 claim, and `validatePdfX()` reading inside Form XObjects and images. Everything is opt-in — output is byte-identical when unused.
 
 ## TL;DR
 
@@ -174,13 +174,58 @@ What the claim writes:
 - a TrimBox on every page — the BleedBox when `print.bleedBox` is set and no TrimBox is, the MediaBox when `print` sets neither (a TrimBox must lie within the BleedBox);
 - `/Trapped` in `/Info` and XMP: `False` unless `metadata.trapped` says `True`.
 
-What throws before any byte is written: `pdfx` with a PDF/A `tagged` level (one claim per file), with `encryption`, without `outputIntent`, with a profile that is not an output (`prtr`) profile, with `trapped: 'Unknown'`, or with both a TrimBox and an ArtBox.
+What throws before any byte is written: `pdfx` with `tagged: 'pdfa1b'` or `'pdfa3b'` (PDF/A-2b and 2u combine with it since v1.9.0 — see below), with `encryption`, without `outputIntent`, with a profile that is not an output (`prtr`) profile, with `trapped: 'Unknown'`, or with both a TrimBox and an ArtBox.
 
 What raises a diagnostic: `PDFX_NO_FONT_ENTRIES` (every font must be embedded — pass `fontEntries`), `PDFX_DEVICE_CMYK` (CMYK colour under a non-CMYK profile) and `PDFX_ANNOTATIONS` (links and form fields have no place in a print file).
 
 ### Checking the result
 
 `validatePdfX(bytes)` checks what the structure can prove: header (a version above 1.6 is an error, below it a warning), encryption and `/ID`; the XMP identification and trapping, consistent with `/Info`; the OutputIntent and its embedded output profile; page boxes; embedded fonts, including those reached only through Form XObjects, patterns and annotation appearance streams; annotations in the print area (Hidden, NoView, Popup, PrinterMark and TrapNet are exempt) and JavaScript actions; `/OpenAction`, additional actions and a JavaScript name tree; embedded files (the `/EmbeddedFiles` name tree, `/FileAttachment` annotations, `/EmbeddedFile` streams); OPI dictionaries, PostScript XObjects and reference XObjects; the `LZWDecode` filter and transfer functions anywhere in the file — any `/TR`, and any `/TR2` other than `/Default`, is an error (halftones and interpolated images are warnings); and device colour in page content against the intent. Not checked: colour inside Form XObjects and images, transparency blend spaces, optional content, and anything that needs rendering — the validator parses, it does not render. veraPDF does not cover PDF/X, so a `valid` result means the structural prerequisites hold; confirm a file bound for press with a certified preflight (callas pdfToolbox, Acrobat Preflight).
+
+## Spot colours (v1.9.0)
+
+Declare the inks once, with the process alternate a viewer or a press without the ink falls back to, and paint with them anywhere a colour is accepted:
+
+```ts
+const pdf = buildDocumentPDFBytes(
+  {
+    blocks: [
+      { type: 'heading', text: 'Brand blue', level: 1, color: { spot: 'PANTONE 300 C' } },           // solid
+      { type: 'paragraph', text: 'A 40 % tint.', color: { spot: 'PANTONE 300 C', tint: 0.4 } },
+      { type: 'paragraph', text: 'A duotone.', color: { inks: { 'PANTONE 300 C': 0.6, Gold: 0.3 } } }, // two-ink mix
+    ],
+  },
+  {
+    print: {
+      spotColours: [
+        { name: 'PANTONE 300 C', alternate: [100, 44, 0, 0] },  // CMYK percent, or an RGB tuple
+        { name: 'Gold', alternate: [0, 17, 74, 17] },
+      ],
+    },
+  },
+);
+```
+
+What is written: one `/Separation` colour space per ink the content selects, with a type-2 tint transform to the alternate; one `/DeviceN` space per mix, with a type-4 PostScript tint transform; `cs`/`scn` and `CS`/`SCN` operators with the tint operands. An ink used in a colour but missing from `spotColours`, a tint outside 0–1 or a duplicate name is refused before writing (the messages are in [`errors.json`](../data/errors.json)). `scanDeviceColour()` reports the named spaces a stream selects (`named`), and `validatePdfX()` resolves each alternate against the OutputIntent, so a CMYK alternate under a CMYK intent passes and an RGB alternate is reported. The registration colour of the printer's marks is unchanged (`/All`). Colour bars still paint process inks; a bar built from spot inks is on the roadmap.
+
+## PDF/A and PDF/X in one file (v1.9.0)
+
+An archive master that is also a press master: `tagged: 'pdfa2b'` (or `'pdfa2u'`) next to `pdfx: 'pdfx4'`.
+
+```ts
+const pdf = buildDocumentPDFBytes({ ...params, fontEntries, metadata: { trapped: 'False' } }, {
+  tagged: 'pdfa2b',
+  pdfx: 'pdfx4',
+  outputIntent: { iccProfile, outputConditionIdentifier: 'FOGRA39', registryName: 'http://www.color.org' },
+});
+validatePdfX(pdf).valid; // true — and veraPDF accepts the PDF/A-2b side
+```
+
+Both resolvers run and both sets of diagnostics apply (the level-U glyph guard included under `'pdfa2u'`). The XMP carries `pdfaid:part`/`conformance` and `pdfxid:GTS_PDFXVersion` with the PDF/X ID extension schema; the catalogue carries two OutputIntents — `/GTS_PDFA1` and `/GTS_PDFX` — sharing one ICC stream; the header is `%PDF-1.6`. PDF/A-1b (PDF 1.4) and PDF/A-3b (embedded files, which PDF/X-4 forbids) still refuse the combination, each with its own message. The `print-dual-pdfa2b-pdfx4` sample is validated by veraPDF and `validatePdfX()` in CI.
+
+### Inside XObjects (v1.9.0)
+
+`validatePdfX()` descends into Form XObjects (their own `/Resources`, else the page's) and reads every image's `/ColorSpace`, resolving `/Separation`, `/DeviceN` and `/Indexed` through their alternate or base space, so device colour hidden in an annotation appearance or a watermark form no longer escapes the OutputIntent check. A JPEG 2000 image that leaves its colour to the codestream passes, as ISO 15930-7 allows.
 
 ## Large formats — `/UserUnit`
 
@@ -193,9 +238,9 @@ buildDocumentPDFBytes(params, { pageWidth: 1417, pageHeight: 283, print: { userU
 
 `/UserUnit` needs PDF 1.6+, so the header is raised to `%PDF-1.7` when the option is set — and it is rejected under `tagged: 'pdfa1b'` (PDF/A-1 is PDF 1.4; use `pdfa2b` or later).
 
-## Limits & scope (v1.8.0)
+## Limits & scope (v1.9.0)
 
-- **Not yet:** spot colours (`/Separation` inks other than registration), PDF/X-1a, PDF/X-3 and PDF/X-4p, and a single file carrying both a PDF/A and a PDF/X claim.
+- **Not yet:** PDF/X-1a, PDF/X-3 and PDF/X-4p; colour bars built from spot inks (`colourBars` paints process inks); a PDF/A-1 or PDF/A-3 file carrying a PDF/X claim.
 - Colour emoji and CPAL palettes stay RGB; under a CMYK intent they are covered by `/DefaultRGB`.
 - One geometry per document (pages share the same boxes), matching the single-page-size layout model.
 - The OutputIntent (custom or built-in) is emitted under `tagged` modes and under `pdfx` only.

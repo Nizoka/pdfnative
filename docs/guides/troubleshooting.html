@@ -124,11 +124,19 @@ await initNodeCompression();
 <li>Glyph mirroring for brackets and other paired delimiters (the full 428-pair
 Unicode BidiMirroring table since v1.7.0, per UAX #9 rule L4)</li>
 </ul>
-<p><strong>Reversed digits or backwards parentheses in RTL text?</strong> Fixed in v1.7.0 with
-no API change: digit runs now take even embedding levels (UAX #9 rules I1/I2),
-so a number like <code>1405</code> keeps its digit order instead of rendering <code>5041</code>, and
-rule L4 mirrors delimiters during reversal, so a logical <code>(X)</code> no longer
-renders <code>)X(</code>. If you see either symptom, upgrade pdfnative.</p>
+<p><strong>Right-to-left paragraph aligned to the left, or punctuation on the wrong side?</strong>
+Since v1.9.0 the resolver implements UAX #9 in full (neutrals N1–N2, bracket
+pairs N0, isolates, overrides, per-paragraph resolution). Alignment is a
+separate decision: set <code>direction: &#39;auto&#39;</code> on the layout (or on the paragraph)
+and a paragraph detected as right-to-left is aligned to the right margin and
+justified in visual order; without it the 1.8.0 left alignment stays. A
+punctuation mark that still lands on the wrong side is a text that needs a
+directional mark — <code>U+200F</code> RIGHT-TO-LEFT MARK after a trailing number, for
+instance — exactly as in a browser. See the <a href="rtl.html">right-to-left guide</a>.</p>
+<p><strong>Reversed digits or backwards parentheses?</strong> Digit runs take even levels
+(I1/I2) and paired delimiters are mirrored (L4) since v1.7.0; v1.9.0 pairs the
+brackets themselves (N0), so a logical <code>(X)</code> inside Arabic keeps both
+parentheses around X. If you see either symptom, upgrade pdfnative.</p>
 <h2 id="pdfa-validation-fails">PDF/A Validation Fails<a class="heading-anchor" href="#pdfa-validation-fails" aria-label="Link to this section">#</a></h2>
 <p><strong>Symptom:</strong> veraPDF reports non-conformance.</p>
 <p><strong>Common issues:</strong></p>
