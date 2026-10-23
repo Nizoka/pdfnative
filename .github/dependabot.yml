@@ -1,5 +1,10 @@
 version: 2
 
+# Every ecosystem waits seven days before it proposes a new version: a
+# freshly published release is the window in which a compromised maintainer
+# account or a hijacked package is still undetected (zizmor
+# dependabot-cooldown; Dependabot's own default is three days). The cooldown
+# applies to version updates only — security updates are never delayed.
 updates:
   - package-ecosystem: npm
     directory: /
@@ -7,6 +12,8 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
     labels:
       - dependencies
     commit-message:
@@ -38,8 +45,50 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     labels:
       - dependencies
       - ci
     commit-message:
       prefix: "chore(ci):"
+    # One pull request for every action bump of a week. The workflows test
+    # requires each action at ONE SHA across the whole tree, so a bump that
+    # lands in some files and not others is refused anyway; grouped, the
+    # files move together.
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # The fuzzing engine Jazzer.js, pinned with its lockfile under
+  # .clusterfuzzlite/engine so the build image installs exactly those bytes.
+  - package-ecosystem: npm
+    directory: /.clusterfuzzlite/engine
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 2
+    cooldown:
+      default-days: 7
+    labels:
+      - dependencies
+      - ci
+
+  # The ClusterFuzzLite base image (.clusterfuzzlite/Dockerfile), pinned by
+  # digest. gcr.io is a public registry Dependabot reads; it gives no
+  # publication date, so the cooldown cannot hold there and Dependabot
+  # records a warning instead — the review of the digest bump is the control.
+  - package-ecosystem: docker
+    directory: /.clusterfuzzlite
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 2
+    cooldown:
+      default-days: 7
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "chore(fuzz):"

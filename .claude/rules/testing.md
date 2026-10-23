@@ -26,7 +26,8 @@ tests/
 ├── shaping/        # thai-shaper, bengali-shaper, tamil-shaper, script-detect, script-registry, multi-font, bidi, arabic-shaper
 ├── worker/         # worker-api
 ├── integration/    # full PDF generation end-to-end, pdf-compression
-├── fuzzing/        # edge-case & adversarial input tests
+├── fuzzing/        # edge-case & adversarial input tests; targets.test.ts runs the ClusterFuzzLite targets of fuzz/ on the seeds _fuzz-seeds.ts builds
+├── compat/         # the previous release's api.json and errors.json as tagged, plus the allow-list of scripts/run-compat.ts (compat:previous)
 ├── docs/           # documentation verifier mirror test (verify-docs)
 ├── tools/          # font-data tooling tests
 ├── visual/         # dual-mode visual-regression suite
@@ -38,7 +39,7 @@ scripts/
 ```
 
 ## Current State (maintain these thresholds)
-- Test and test-file counts live in `docs/assets/ecosystem.json` (`declared.tests`, `derived.testFiles`; currently 172 test files + 1 benchmark file) and are enforced by `npm run verify:docs`
+- Test and test-file counts live in `docs/assets/ecosystem.json` (`declared.tests`, `derived.testFiles`; currently 174 test files + 1 benchmark file) and are enforced by `npm run verify:docs`
 - Sample PDFs: `derived.samplePdfs` in the same manifest (currently 292), byte-pinned by `tests/regression/baselines/samples.sha256.json`
 - Statements: ≥ 88 % enforced by CI (currently ≈ 91.5 % statements)
 - Branches: ~88% (threshold: 80%)
@@ -90,6 +91,11 @@ scripts/
 - Byte-identity tests are the complement, not the substitute: the option-absent build equals the pre-feature bytes, and the option-present build carries the asserted structure
 - Parser fixes get a **synthetic fixture built in the test** — a minimal PDF or font table assembled from constants that exhibits exactly the malformed or edge-case input, not a committed binary and not a full sample (see the hand-built GSUB tables in `tests/tools/font-compiler.test.ts`, the 1.8.0 fix B-007 for single substitutions read from the wrong offset, and `buildRC4Pdf` in `tests/parser/pdf-decrypt.test.ts`)
 - Diagnostics: assert the code through `onDiagnostic` (and the throw under `strict`), not the `console.warn` text; every code asserted must exist in `docs/data/errors.json`
+
+## Fuzz targets and the compat replay
+- `fuzz/<target>.js` are the ClusterFuzzLite targets (plain ESM, importing `pdfnative` / `pdfnative/tools` by name; vitest aliases them to `src/`, the container's self-reference to `dist/`). Contract: an `Error` the library throws is a result; a `TypeError`, `RangeError`, `ReferenceError`, `SyntaxError` or `URIError` is a bug and must be rethrown — never widen a target's catch to `catch {}`
+- A new target: add it to `FUZZ_TARGETS` and its seed list to the seed builder in `tests/fuzzing/_fuzz-seeds.ts`, a `READS` entry in `targets.test.ts`, and its `compile_javascript_fuzzer` line plus the seed-zip loop name in `.clusterfuzzlite/build.sh`; the engine (Jazzer.js) lives only in `.clusterfuzzlite/engine`, never in `package.json`
+- A behaviour change that fails a test of the previous release goes into `tests/compat/allow-<previous>.json` with its reason and the ledger entry (`C1`…) of the release note — never by editing or deleting the archived test; an API signature or error-message change goes into the ledger maps of `tests/tools/api-compat.test.ts`
 
 ## Anti-Patterns
 - Tests that depend on execution order

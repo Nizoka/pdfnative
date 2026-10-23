@@ -26,6 +26,7 @@ export default defineConfig({
     resolve: {
         alias: [
             { find: /^pdfnative\/fonts\/(.*)$/, replacement: `${rootUrl('./fonts')}/$1` },
+            { find: /^pdfnative\/tools$/, replacement: rootUrl('./src/tools/index.ts') },
             { find: /^pdfnative$/, replacement: rootUrl('./src/index.ts') },
         ],
     },

@@ -752,16 +752,29 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
             if (uses.length === 0) continue;
             const withFile = [...text.matchAll(/node-version-file:\s*\.nvmrc\b/g)].length;
             if (withFile >= uses.length) continue;
-            const matrix = /node-version:\s*\$\{\{\s*matrix\.node-version\s*\}\}/.test(text)
-                && /node-version:\s*\[([^\]]*)\]/.exec(text);
-            if (name === 'ci.yml' && matrix) {
-                const majors = matrix[1].split(',').map((s) => Number(s.trim().replace(/['"]/g, '')));
-                if (pinnedMajor !== null && !majors.includes(pinnedMajor)) {
-                    fail(relPath, lineOf(text, matrix.index), 'node-pin-parity', `matrix [${matrix[1].trim()}] does not include the .nvmrc major ${pinnedMajor}`);
+            const usesMatrix = /node-version:\s*\$\{\{\s*matrix\.node-version\s*\}\}/.test(text);
+            if (name === 'ci.yml' && usesMatrix) {
+                // A list (`node-version: [22, 24]`) or include entries (`- { name: …, node-version: 22, … }`).
+                const list = /node-version:\s*\[([^\]]*)\]/.exec(text);
+                const majors = list
+                    ? list[1].split(',').map((s) => Number(s.trim().replace(/['"]/g, '')))
+                    : [...text.matchAll(/^\s+- \{[^\n]*\bnode-version:\s*(\d+)\b/gm)].map((m) => Number(m[1]));
+                if (majors.length === 0) {
+                    fail(relPath, lineOf(text, uses[0].index), 'node-pin-parity', 'ci.yml spans a matrix but no node-version list or include entry names a major');
+                } else if (pinnedMajor !== null && !majors.includes(pinnedMajor)) {
+                    fail(relPath, lineOf(text, (list ?? uses[0]).index), 'node-pin-parity', `matrix [${majors.join(', ')}] does not include the .nvmrc major ${pinnedMajor}`);
                 }
                 continue;
             }
-            fail(relPath, lineOf(text, uses[0].index), 'node-pin-parity', 'actions/setup-node must read `node-version-file: .nvmrc` (only ci.yml may span a matrix)');
+            if (name === 'node-current.yml') {
+                // The Current line, tested and not promised (SECURITY.md §Supported runtimes): one major above the pin.
+                const current = /^\s+node-version:\s*(\d+)\s*$/m.exec(text);
+                if (!current || (pinnedMajor !== null && Number(current[1]) <= pinnedMajor)) {
+                    fail(relPath, lineOf(text, uses[0].index), 'node-pin-parity', `node-current.yml must pin one Node major above the .nvmrc pin ${pinnedMajor}`);
+                }
+                continue;
+            }
+            fail(relPath, lineOf(text, uses[0].index), 'node-pin-parity', 'actions/setup-node must read `node-version-file: .nvmrc` (only ci.yml may span a matrix, and node-current.yml the Current line)');
         }
     }
 }
@@ -811,6 +824,10 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
                         if (!current) continue;
                         const jobName = /^ {4}name:\s*(.+?)\s*$/.exec(line);
                         if (jobName) jobs.add(jobName[1].replace(/^["']|["']$/g, ''));
+                        // A matrix include entry names the check GitHub reports when the job's
+                        // `name:` is `${{ matrix.name }}` (ci.yml since 1.9.0).
+                        const include = /^ {8,}- \{ name: '?([^,']+)'?,/.exec(line);
+                        if (include) jobs.add(include[1]);
                         const list = /^ {8}[A-Za-z0-9_-]+:\s*\[([^\]]*)\]\s*$/.exec(line);
                         if (list) {
                             for (const v of list[1].split(',')) matrixValues.get(current)!.add(v.trim().replace(/['"]/g, ''));

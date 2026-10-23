@@ -1,0 +1,8 @@
+# pdfnative — ClusterFuzzLite project configuration.
+# https://google.github.io/clusterfuzzlite/build-integration/
+language: javascript
+# The Ubuntu 24.04 images: Jazzer.js's native addon needs glibc 2.32, and the
+# legacy base-runner (Ubuntu 20.04, glibc 2.31) cannot load it, so every target
+# failed the bad-build check. ClusterFuzzLite reads this line and pivots both
+# build-fuzzers and run-fuzzers to their ubuntu-24-04 images.
+base_os_version: ubuntu-24-04

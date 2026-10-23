@@ -13,7 +13,7 @@ npm run fonts:download   # fetch Noto Sans TTFs → fonts/ttf/
 
 ### Requirements
 
-- Node.js 22 — the line in `.nvmrc` and `.node-version` (`nvm use` / `fnm use` / `volta` pick it up; CI also runs the suite on 24, and `engines.node` allows `>=22`).
+- Node.js 22 — the line in `.nvmrc` and `.node-version` (`nvm use` / `fnm use` / `volta` pick it up; CI runs the gate on Node 22 and 24 on Linux and on Node 22 on Windows and macOS, Node 26 advisory until it enters LTS; `engines.node` allows `>=22`).
 - npm — the version pinned by `packageManager` in `package.json` (Corepack honours it). The repository's `.npmrc` sets `ignore-scripts=true` (no dependency runs an install script here — esbuild resolves its platform binary from an optional dependency), `fund=false` and `audit-level=high`; `npm run <script>` still runs the script you name, but lifecycle hooks such as `prepublishOnly` do not fire, which is why the publish workflow builds explicitly before it packs.
 - Dev dependencies use caret ranges on purpose: `package-lock.json` plus `npm ci` is what makes an install reproducible, not narrow ranges. Let npm manage the lockfile.
 - Source fonts: `npm run fonts:download` fetches every TTF at the google/fonts commit pinned in [fonts/SOURCES.json](fonts/SOURCES.json) and refuses a file whose SHA-256 differs from the manifest; the four hinted static instances (Arabic, Armenian, Georgian, Hebrew) come from the notofonts release archives the manifest names (`origin: "release"`: repository, tag, asset, entry path), extracted and hash-checked by the same script; the five Latin subsets (Cyrillic, Greek, Polish, Turkish, Vietnamese) are cut by the same script from the pinned `NotoSans-VF.ttf` with the library's own `subsetTTF()`, from the code-point lists in `fonts/subsets/` (`derived[]`: tool, command, SHA-256). Nothing under `fonts/ttf/` is committed.
@@ -86,6 +86,10 @@ npm run bench          # Performance benchmarks (vitest bench)
 All new code must include tests. Coverage thresholds (vitest.config.ts): statements 88%, branches 80%, functions 85%, lines 90%.
 
 The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, playgrounds, recipes, scripts) live in one place, `docs/assets/ecosystem.json`, and `npm run verify:docs` reports every document that disagrees with it — update the manifest, not the prose. Its rules, each named in the failure line: `derived-counts` (the manifest against the file tree), `count-tokens` ("N tests", "N scripts" / "N Unicode scripts", "N playgrounds" — word numerals included — in every document), `version-token` (every version quoted in prose, tables and badges against the manifest), `error-parity` (every diagnostic code named in the docs exists in `docs/data/errors.json` and in `src/`, and vice versa), `playgrounds-manifest` (`docs/data/playgrounds.json` against the playground pages and their engine pins), `guide-render-sync` (every `docs/guides/*.md` has an up-to-date `.html` from `npm run docs:guides`), `llms-sync` (the llms files, the release-note link included, regenerated from their sources), `sitemap-parity`, `switcher-parity`, `bench-parity`, `claude-md-budget` (`AGENTS.md` and `CLAUDE.md` ≤ 120 lines, the Copilot file ≤ 16 KiB, no line over 240 characters), `prose-language` (English only, see Code Style), and since the 1.8.0 hardening pass `agent-config-parity` (`.claude/settings.json`, the guard hook and `CLAUDE.md` agree), `claude-rules-sync` / `claude-rules-budget` (`.claude/rules/*.md` regenerate from `.github/instructions/` by `npm run agents:rules` and stay within budget), `skills-shape`, `pr-template-parity` (the pull-request template mirrors the checklist below word for word) and `eol-lf` (tracked text files stored with CRLF — a warning until the renormalisation commit, then a failure).
+
+### Compatibility with the previous release
+
+`npm run compat:previous` runs the previous release's test suite, exactly as tagged, against the current sources (`scripts/run-compat.ts`; the tag must be fetched: `git fetch --no-tags origin +refs/tags/v1.8.0:refs/tags/v1.8.0`). The files it may skip are listed in `tests/compat/allow-<previous>.json`, each with a reason and, when the reason is a behaviour change, the compatibility-ledger entry (`C1`, `C2`, …) of the release note that justifies it. `tests/tools/api-compat.test.ts` holds the export surface and the error vocabulary to the registries of the previous release (`tests/compat/api-<previous>.json`, `errors-<previous>.json`). Both are required checks (`compat-previous`) and part of the publish gate; SECURITY.md §Compatibility promise is the policy they enforce.
 
 ## PDF/A validation (veraPDF)
 
@@ -169,7 +173,7 @@ src/
 fonts/            # 36 pre-built font-data modules (32 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (50 generators, 292 PDFs) and the verification scripts
-tests/            # 172 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+tests/            # 174 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -196,7 +200,7 @@ bench/            # Performance benchmarks (vitest bench)
 - [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run verify:samples && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A validation](#pdfa-validation-verapdf); new PDF/A-claiming samples bump `declared.pdfaSamples`; an intended output change is rebaselined with `npx tsx scripts/verify-samples.ts --update` and explained in the commit)
 - [ ] If docs/, playgrounds, README or llms files changed: `npm run verify:docs` passes
 - [ ] CHANGELOG.md updated if user-facing changes
-- [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `verify:docs`, `verify:diagrams` (documentation diagrams render without overflow or overlap)
+- [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `compat:previous` (the previous release's suite against the current sources), `verify:docs`, `verify:diagrams` (documentation diagrams render without overflow or overlap)
 
 ## Commit Messages
 
@@ -226,7 +230,7 @@ The version bump is scripted; the judgement goes into the release note.
 
 ### Branch protection
 
-The rules for `main` are versioned in [.github/rulesets/main.json](.github/rulesets/main.json), GitHub's ruleset format: no deletion, no force-push, pull request required (single maintainer, so zero approvals — but every review thread resolved, stale reviews dismissed on push, squash merges only), and the status checks `ci (22)`, `ci (24)` and `sample-regression` required and up to date with `main`. `verapdf`, the Docs workflow and the other path-filtered workflows are deliberately not required: a required check that never reports leaves a pull request stuck on "Expected — waiting for status to be reported". For the same reason the repository Admin role may bypass the ruleset through a pull request only — `ci.yml` ignores documentation-only changes, so such a pull request has no `ci` run to wait for — never by pushing to `main` directly.
+The rules for `main` are versioned in [.github/rulesets/main.json](.github/rulesets/main.json), GitHub's ruleset format: no deletion, no force-push, pull request required (single maintainer, so zero approvals — but every review thread resolved, stale reviews dismissed on push, squash merges only), and the status checks `ci (22)`, `ci (24)`, `windows`, `macos`, `compat-previous`, `workflow lint` and `sample-regression` required and up to date with `main` (v1.9.0: the two non-Linux legs, the previous release's suite and the workflow linter joined the list). No workflow that reports a required check has a path filter — a required check that never reports leaves a pull request stuck on "Expected — waiting for status to be reported", so `ci.yml` runs on documentation-only changes too. `verapdf`, the Docs, visual-regression and font-reproducibility workflows (path-filtered) and the advisory `runtimes`, `node-current`, `fuzz` and `bench` jobs are deliberately not required. The repository Admin role may bypass the ruleset through a pull request only, as an emergency measure, never by pushing to `main` directly; after a change to the required checks, import the ruleset again once the new checks have reported green on a pull request.
 
 Import the file after editing it: Settings → Rules → Rulesets → New ruleset → Import a ruleset, or from the shell:
 

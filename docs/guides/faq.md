@@ -213,8 +213,9 @@ inspect any file with `listSignatures(bytes)`. See
 ### Is the build supply-chain safe?
 
 - **Zero runtime dependencies** — `npm install pdfnative` brings in nothing transitive at runtime.
-- **NPM provenance** — every release is signed via GitHub Actions OIDC (SLSA L3-equivalent).
-- **OpenSSF Scorecard** scanned weekly; CodeQL on every push.
+- **NPM provenance** — every release is published with npm provenance signed through GitHub Actions OIDC and Sigstore (SLSA Build L2), and the attested tarball is the one fetched back from the registry, not a rebuild.
+- **OpenSSF Scorecard** scanned weekly; CodeQL (`security-extended`, workflows included) on every pull request and push; the workflows linted by zizmor and actionlint; the parser fuzzed by ClusterFuzzLite.
+- **Zero breaking changes, proven** — the previous release's test suite and API registry are replayed against every pull request (`compat-previous`).
 - **Pinned dev dependencies** managed via Dependabot.
 
 ---

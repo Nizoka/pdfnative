@@ -1,0 +1,9 @@
+{
+  "name": "pdfnative-fuzz-engine",
+  "private": true,
+  "description": "The coverage-guided fuzzing engine of .clusterfuzzlite/build.sh, pinned by this manifest's exact version and by every integrity hash of package-lock.json. Never a dependency of pdfnative.",
+  "license": "MIT",
+  "dependencies": {
+    "@jazzer.js/core": "4.0.0"
+  }
+}

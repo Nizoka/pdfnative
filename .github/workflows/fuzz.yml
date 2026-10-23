@@ -1,0 +1,133 @@
+name: Fuzz
+
+# Coverage-guided fuzzing of the parser surface, through ClusterFuzzLite. It
+# is deliberately NOT a required status check: `.github/rulesets/main.json`
+# lists the contexts that block a merge and this is not among them, which is
+# what "non-blocking" means here — not a `continue-on-error:` that hides a red
+# run.
+#
+# The seeded suites in tests/fuzzing/ are the blocking half and stay so. They
+# are deterministic and reproduce from a printed seed; this is the half that
+# explores, and the two answer different questions. What tests/fuzzing/
+# targets.test.ts adds is the link between them: the seven files in fuzz/ are
+# executed there, against src/, on every gate run — so a target that stopped
+# loading, or that started swallowing the engine errors it exists to surface,
+# goes red in seconds instead of fuzzing nothing for a week.
+#
+# Corpora live in the GitHub Actions cache (the ClusterFuzzLite default
+# filestore). A dedicated storage repository would keep them across cache
+# evictions and is the obvious next step; it needs a repository the
+# maintainer creates, so it is not assumed here.
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/*.md'
+      - 'LICENSE'
+  schedule:
+    # Sunday 04:17 UTC, off the hour so it does not queue behind every other
+    # project's midnight cron.
+    - cron: '17 4 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # `sanitizer: address` is the value CIFuzz accepts (config_utils.SANITIZERS:
+  # address, memory, undefined, coverage — `none` is refused as an invalid
+  # configuration). A Jazzer.js target is a wrapper script over pure
+  # JavaScript: OSS-Fuzz's bad_build_check skips the sanitizer and architecture
+  # checks for javascript, so nothing native is instrumented either way.
+  #
+  # Five minutes per sanitizer on the code a pull request changed. Short on
+  # purpose: this runs on every push to a branch, and a fuzzer that makes
+  # contributors wait is a fuzzer contributors route around.
+  code-change:
+    name: fuzz (code change)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read # Read the repository the fuzzers are built from.
+      security-events: write # Upload the SARIF of a crash to the Security tab (output-sarif).
+
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit # 2026-10-23: the ClusterFuzzLite base images and its filestore are not baselined yet
+
+      # ClusterFuzzLite clones the repository itself, but reads
+      # .clusterfuzzlite/project.yaml (base_os_version) from the workspace
+      # before that clone: without this checkout it finds no file, falls back
+      # to the legacy Ubuntu 20.04 images, and Jazzer.js cannot load there.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Build the fuzzers
+        id: build
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: javascript
+          sanitizer: address
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run the fuzzers
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: javascript
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: 300
+          mode: code-change
+          sanitizer: address
+          output-sarif: true
+
+  # The run that actually finds things. Thirty minutes a week against a corpus
+  # that survives between runs is what turns a PDF tokenizer fuzzer from a
+  # smoke test into a search.
+  batch:
+    name: fuzz (batch)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit # 2026-10-23: the ClusterFuzzLite base images and its filestore are not baselined yet
+
+      # ClusterFuzzLite clones the repository itself, but reads
+      # .clusterfuzzlite/project.yaml (base_os_version) from the workspace
+      # before that clone: without this checkout it finds no file, falls back
+      # to the legacy Ubuntu 20.04 images, and Jazzer.js cannot load there.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Build the fuzzers
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: javascript
+          sanitizer: address
+
+      - name: Run the fuzzers
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: javascript
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: 1800
+          mode: batch
+          sanitizer: address

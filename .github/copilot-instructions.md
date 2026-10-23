@@ -85,7 +85,7 @@ npm run verify:docs      # offline doc-consistency rules against docs/assets/eco
 npm run docs:all         # docs:api + docs:guides + docs:llms
 ```
 
-- Build tool **tsup**; test runner **vitest**; CI is GitHub Actions on Node 22/24 (lint, typecheck, test, build, veraPDF, samples, fonts, docs).
+- Build tool **tsup**; test runner **vitest**; CI: gate on Node 22/24, Windows and macOS, compat-previous, workflow lint, veraPDF, samples, docs.
 - Publish: GitHub Actions OIDC Trusted Publishing (`npm publish --access public`; provenance attached via `id-token: write`). Agents never publish.
 - Generated files are regenerated, never hand-edited: `fonts/*-data.js` + `.d.ts`, `src/shaping/use-data.ts`, `scripts/data/*.txt` (vendored UCD), `docs/assets/api.json`,
   `docs/guides/*.html`, `docs/llms*.txt` / `llms-index.json`, `tests/regression/baselines/samples.sha256.json` (`verify:samples --update`, only with a declared rebaseline),

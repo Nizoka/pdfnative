@@ -183,11 +183,24 @@ class TTFReader {
     get length(): number { return this.bytes.length; }
     skip(n: number): void { this.pos += n; }
 
-    readUint8(): number { return this.view.getUint8(this.pos++); }
-    readUint16(): number { const v = this.view.getUint16(this.pos); this.pos += 2; return v; }
-    readInt16(): number { const v = this.view.getInt16(this.pos); this.pos += 2; return v; }
-    readUint32(): number { const v = this.view.getUint32(this.pos); this.pos += 4; return v; }
+    /**
+     * A table offset or count that points past the end of the font is a
+     * malformed font, refused as such; left to the DataView it would surface
+     * as a RangeError, the engine's error for the parser's omission (found
+     * by fuzz/font-data.js, v1.9.0). Mirrored in tools/build-font-data.cjs.
+     */
+    private need(n: number): void {
+        if (this.pos < 0 || this.pos + n > this.bytes.length) {
+            throw new Error(`font data: read of ${n} byte(s) at offset ${this.pos} runs past the end of the font (${this.bytes.length} bytes)`);
+        }
+    }
+
+    readUint8(): number { this.need(1); return this.view.getUint8(this.pos++); }
+    readUint16(): number { this.need(2); const v = this.view.getUint16(this.pos); this.pos += 2; return v; }
+    readInt16(): number { this.need(2); const v = this.view.getInt16(this.pos); this.pos += 2; return v; }
+    readUint32(): number { this.need(4); const v = this.view.getUint32(this.pos); this.pos += 4; return v; }
     readTag(): string {
+        this.need(4);
         let t = '';
         for (let k = 0; k < 4; k++) t += String.fromCharCode(this.bytes[this.pos + k]);
         this.pos += 4;

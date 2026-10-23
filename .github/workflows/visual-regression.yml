@@ -45,8 +45,7 @@ jobs:
       - name: Harden the runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
-          egress-policy: audit
-
+          egress-policy: audit # 2026-10-23: endpoints not baselined yet; block once a month of audit logs names them
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false

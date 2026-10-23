@@ -72,6 +72,7 @@
     "verify:bundle": "npx tsx scripts/verify-bundle.ts",
     "verify:diagrams": "npx tsx scripts/verify-diagrams.ts",
     "verify:docs": "npx tsx scripts/verify-docs.ts",
+    "compat:previous": "npx tsx scripts/run-compat.ts",
     "docs:llms": "npx tsx scripts/build-llms-full.ts",
     "docs:guides": "npx tsx scripts/build-guides.ts",
     "docs:api": "npx tsx scripts/build-api-json.ts",

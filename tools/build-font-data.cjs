@@ -37,11 +37,20 @@ class TTFReader {
     seek(offset) { this.pos = offset; }
     skip(n) { this.pos += n; }
 
-    readUint8() { return this.buf.readUInt8(this.pos++); }
-    readUint16() { const v = this.buf.readUInt16BE(this.pos); this.pos += 2; return v; }
-    readInt16() { const v = this.buf.readInt16BE(this.pos); this.pos += 2; return v; }
-    readUint32() { const v = this.buf.readUInt32BE(this.pos); this.pos += 4; return v; }
+    // A read past the end of the font is a malformed font, refused with a
+    // plain Error — mirrors TTFReader.need() in src/tools/font-compiler.ts.
+    need(n) {
+        if (this.pos < 0 || this.pos + n > this.buf.length) {
+            throw new Error(`font data: read of ${n} byte(s) at offset ${this.pos} runs past the end of the font (${this.buf.length} bytes)`);
+        }
+    }
+
+    readUint8() { this.need(1); return this.buf.readUInt8(this.pos++); }
+    readUint16() { this.need(2); const v = this.buf.readUInt16BE(this.pos); this.pos += 2; return v; }
+    readInt16() { this.need(2); const v = this.buf.readInt16BE(this.pos); this.pos += 2; return v; }
+    readUint32() { this.need(4); const v = this.buf.readUInt32BE(this.pos); this.pos += 4; return v; }
     readTag() {
+        this.need(4);
         const t = this.buf.toString('ascii', this.pos, this.pos + 4);
         this.pos += 4;
         return t;
