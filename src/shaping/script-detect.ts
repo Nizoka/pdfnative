@@ -4,14 +4,18 @@
  * Detects Unicode script ranges in text to determine which fonts are needed.
  */
 
-import { isEmojiCodepoint, isMathCodepoint, isEthiopicCodepoint, isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isLaoCodepoint, isTaiThamCodepoint, isNewTaiLueCodepoint, isTaiLeCodepoint, isChamCodepoint } from './script-registry.js';
+import {
+    isEmojiCodepoint, isMathCodepoint, isEthiopicCodepoint, isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint,
+    isLaoCodepoint, isTaiThamCodepoint, isNewTaiLueCodepoint, isTaiLeCodepoint, isChamCodepoint,
+    isGujaratiCodepoint, isGurmukhiCodepoint, isKannadaCodepoint, isMalayalamCodepoint, isOdiaCodepoint,
+} from './script-registry.js';
 
 /**
  * Languages requiring Unicode font embedding (non-WinAnsi scripts).
  * Latin-script languages using Helvetica built-in don't need embedding.
  */
 export function needsUnicodeFont(lang: string): boolean {
-    return ['th', 'lo', 'nod', 'khb', 'tdd', 'cjm', 'ja', 'zh', 'ko', 'el', 'hi', 'bn', 'ta', 'te', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'am', 'si', 'bo', 'km', 'my', 'ha', 'yo', 'ig', 'math', 'emoji'].includes(lang);
+    return ['th', 'lo', 'nod', 'khb', 'tdd', 'cjm', 'ja', 'zh', 'ko', 'el', 'hi', 'bn', 'ta', 'te', 'gu', 'pa', 'kn', 'ml', 'or', 'tr', 'vi', 'pl', 'ar', 'he', 'ru', 'ka', 'hy', 'am', 'si', 'bo', 'km', 'my', 'ha', 'yo', 'ig', 'math', 'emoji'].includes(lang);
 }
 
 /**
@@ -57,6 +61,12 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
             if (cp >= 0x0B80 && cp <= 0x0BFF) { needed.add('ta'); continue; }
             // Telugu → 'te'
             if (cp >= 0x0C00 && cp <= 0x0C7F) { needed.add('te'); continue; }
+            // Gujarati, Gurmukhi, Kannada, Malayalam, Odia (v1.9.0)
+            if (isGujaratiCodepoint(cp)) { needed.add('gu'); continue; }
+            if (isGurmukhiCodepoint(cp)) { needed.add('pa'); continue; }
+            if (isKannadaCodepoint(cp)) { needed.add('kn'); continue; }
+            if (isMalayalamCodepoint(cp)) { needed.add('ml'); continue; }
+            if (isOdiaCodepoint(cp)) { needed.add('or'); continue; }
             // Sinhala → 'si'
             if (isSinhalaCodepoint(cp)) { needed.add('si'); continue; }
             // Tibetan → 'bo'
@@ -129,7 +139,7 @@ export function detectFallbackLangs(texts: string[], primaryLang: string): Set<s
  * Returns the language code of the font most appropriate for rendering.
  *
  * @param cp - Unicode codepoint
- * @returns Language code ('el', 'hi', 'bn', 'ta', 'te', 'th', 'lo', 'nod', 'khb', 'tdd', 'cjm', 'ja', 'ko', 'zh', 'vi', 'pl', 'tr', 'latin', 'he', 'ar', 'ru', 'ka', 'hy', 'emoji') or null for Latin/common
+ * @returns Language code ('el', 'hi', 'bn', 'ta', 'te', 'gu', 'pa', 'kn', 'ml', 'or', 'th', 'lo', 'nod', 'khb', 'tdd', 'cjm', 'ja', 'ko', 'zh', 'vi', 'pl', 'tr', 'latin', 'he', 'ar', 'ru', 'ka', 'hy', 'emoji') or null for Latin/common
  */
 export function detectCharLang(cp: number): string | null {
     if ((cp >= 0x0370 && cp <= 0x03FF) || (cp >= 0x1F00 && cp <= 0x1FFF)) return 'el';
@@ -137,6 +147,11 @@ export function detectCharLang(cp: number): string | null {
     if (cp >= 0x0980 && cp <= 0x09FF) return 'bn';
     if (cp >= 0x0B80 && cp <= 0x0BFF) return 'ta';
     if (cp >= 0x0C00 && cp <= 0x0C7F) return 'te';
+    if (isGujaratiCodepoint(cp)) return 'gu';
+    if (isGurmukhiCodepoint(cp)) return 'pa';
+    if (isKannadaCodepoint(cp)) return 'kn';
+    if (isMalayalamCodepoint(cp)) return 'ml';
+    if (isOdiaCodepoint(cp)) return 'or';
     if (isSinhalaCodepoint(cp)) return 'si';
     if (isTibetanCodepoint(cp)) return 'bo';
     if (isKhmerCodepoint(cp)) return 'km';

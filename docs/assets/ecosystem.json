@@ -112,7 +112,7 @@
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 168,
+    "testFiles": 169,
     "sampleGenerators": 49,
     "samplePdfs": 292,
     "sampleCategories": 38,
@@ -123,11 +123,11 @@
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 3952,
+    "tests": 4018,
     "coverageStatements": 90,
     "coverageMeasured": 91.5,
-    "scripts": 27,
-    "bundledFontModules": 31,
+    "scripts": 32,
+    "bundledFontModules": 36,
     "blockTypes": 13,
     "barcodeFormats": 5,
     "chartTypes": 9,
@@ -210,9 +210,9 @@
     },
     {
       "id": "script-count",
-      "canonical": "27 scripts",
+      "canonical": "32 scripts",
       "match": "\\b(\\d+)\\s+(?:supported\\s+|Unicode\\s+|writing\\s+)?scripts\\b",
-      "expect": 27,
+      "expect": 32,
       "requireIn": [
         "docs/index.html",
         "README.md",

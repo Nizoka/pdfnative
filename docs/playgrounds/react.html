@@ -98,7 +98,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -132,6 +132,7 @@
         <option value="typography-justify">Typography — justify, widows/orphans, keepWithNext · v1.3</option>
         <option value="print-pdfx4-cmyk">PDF/X-4 — CMYK intent, colour bars, validatePdfX · v1.3</option>
         <option value="reproducible-creationDate">Reproducible — creationDate, two renders, one SHA-256 · v1.3</option>
+<!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
         <option value="scripts-27">27 scripts — resolveFonts for Lao + Cham · v1.3</option>
         <option value="lint-gate">Lint gate — lintDocument, LINT_RULES, fix and render · v1.3</option>
       </select>
@@ -561,6 +562,7 @@ const bytes = renderSpecToBytes({
       "// The non-English strings are demonstrated content: they exist to show the",
       "// script's shaping, not to say anything. demo-language: lo, cjm, yo (script demonstrations)",
       "return (",
+// verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts))
       "  <Document title=\"27 scripts\" fontEntries={fontEntries}>",
       "    <Heading level={1}>Lao and Cham on the 1.8.0 engine</Heading>",
       "    <Paragraph>Lao (lo): ສະບາຍດີ — ນ້ຳ, ກ່ຳ — the tone mark stacks on the nikhahit of sara am.</Paragraph>",

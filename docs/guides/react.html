@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pdfnative-react — Declarative JSX Renderer Guide</title>
-  <meta name="description" content="Render PDFs from declarative JSX with pdfnative-react — Document/Page/Table/Barcode components compiled on-device, live preview hooks, 27 Unicode scripts. React 19.">
+  <meta name="description" content="Render PDFs from declarative JSX with pdfnative-react — Document/Page/Table/Barcode components compiled on-device, live preview hooks, every pdfnative script. React 19.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/guides/react.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/react.html">
@@ -16,20 +16,20 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/react.html">
   <meta property="og:title" content="pdfnative-react — Declarative JSX Renderer Guide">
-  <meta property="og:description" content="React renderer for pdfnative — declarative JSX components compiled on-device to PDF with zero SaaS round-trips. Live preview hooks, streaming, 27 Unicode scripts, and a token-frugal DocSpec for AI agents. React 19.">
+  <meta property="og:description" content="React renderer for pdfnative — declarative JSX components compiled on-device to PDF with zero SaaS round-trips. Live preview hooks, streaming, every pdfnative script, and a token-frugal DocSpec for AI agents. React 19.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="pdfnative-react — Declarative JSX Renderer Guide">
-  <meta name="twitter:description" content="Declarative JSX components compiled on-device to PDF. Live preview hooks, streaming, 27 Unicode scripts, token-frugal DocSpec. React 19.">
+  <meta name="twitter:description" content="Declarative JSX components compiled on-device to PDF. Live preview hooks, streaming, every pdfnative script, token-frugal DocSpec. React 19.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"pdfnative-react — Declarative JSX Renderer Guide","item":"https://pdfnative.dev/guides/react.html"}]},{"@type":"TechArticle","headline":"pdfnative-react — Declarative JSX Renderer Guide","description":"Render PDFs from declarative JSX with pdfnative-react — Document/Page/Table/Barcode components compiled on-device, live preview hooks, 27 Unicode scripts. React 19.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/react.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"pdfnative-react — Declarative JSX Renderer Guide","item":"https://pdfnative.dev/guides/react.html"}]},{"@type":"TechArticle","headline":"pdfnative-react — Declarative JSX Renderer Guide","description":"Render PDFs from declarative JSX with pdfnative-react — Document/Page/Table/Barcode components compiled on-device, live preview hooks, every pdfnative script. React 19.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/react.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -634,7 +634,7 @@ try {
 <h2 id="release-history">Release history<a class="heading-anchor" href="#release-history" aria-label="Link to this section">#</a></h2>
 <h3 id="whats-new-in-v130">What&#39;s new in v1.3.0<a class="heading-anchor" href="#whats-new-in-v130" aria-label="Link to this section">#</a></h3>
 <!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
-<p>v1.3.0 (released 2026-09-22) tracks the pdfnative 1.8.0 engine — typography, CMYK and PDF/X-4, reproducible output, 27 scripts — and exposes every one of its authoring capabilities through both doors, JSX and <code>DocSpec</code>. No public API was removed or renamed; every new behaviour is opt-in, and a document that uses none of it compiles to the same <code>DocumentParams</code>. The one floor that moves is the <code>pdfnative</code> peer, <code>^1.7.0</code> → <code>^1.8.0</code>.</p>
+<p>v1.3.0 (released 2026-09-22) tracks the pdfnative 1.8.0 engine — typography, CMYK and PDF/X-4, reproducible output, every script of that engine — and exposes every one of its authoring capabilities through both doors, JSX and <code>DocSpec</code>. No public API was removed or renamed; every new behaviour is opt-in, and a document that uses none of it compiles to the same <code>DocumentParams</code>. The one floor that moves is the <code>pdfnative</code> peer, <code>^1.7.0</code> → <code>^1.8.0</code>.</p>
 <table>
 <thead>
 <tr>

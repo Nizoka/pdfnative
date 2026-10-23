@@ -30,8 +30,8 @@
       "id": "all-scripts",
       "file": "all-scripts.html",
       "url": "https://pdfnative.dev/playgrounds/all-scripts.html",
-      "title": "All 27 scripts + emoji",
-      "purpose": "One document mixing every supported script (27 lang keys incl. the five 1.8.0 additions lo, nod, khb, tdd, cjm) plus colour or monochrome emoji, routed per code point to 29 embedded fonts.",
+      "title": "All 32 scripts + emoji",
+      "purpose": "One document mixing every supported script (32 lang keys incl. the five 1.8.0 additions lo, nod, khb, tdd, cjm and the five 1.9.0 Indic additions gu, pa, kn, ml, or) plus colour or monochrome emoji, routed per code point to 34 embedded fonts.",
       "since": "1.3.0",
       "requires": [],
       "controls": [
@@ -42,7 +42,7 @@
         { "id": "generate", "kind": "button" },
         { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
       ],
-      "exercises": ["registerFonts", "loadFontData", "buildDocumentPDFBytes", "downloadBlob", "params.fontEntries", "font routing across 27 scripts", "shaping.indic (hi, bn, ta, te, si — one OpenType engine since 1.8.0)", "shaping.use (nod, cjm)", "shaping.lao", "shaping.latin-marks (Yoruba and Igbo tone marks on the latin module)", "shaping.emoji (COLRv1 and monochrome)", "font subsetting (CIDFont Type2, Identity-H)"],
+      "exercises": ["registerFonts", "loadFontData", "buildDocumentPDFBytes", "downloadBlob", "params.fontEntries", "font routing across 32 scripts", "shaping.indic (hi, bn, ta, te, si — one OpenType engine since 1.8.0)", "shaping.use (nod, cjm)", "shaping.lao", "shaping.latin-marks (Yoruba and Igbo tone marks on the latin module)", "shaping.emoji (COLRv1 and monochrome)", "font subsetting (CIDFont Type2, Identity-H)"],
       "codeView": "#code-view",
       "selfContained": false,
       "note": "The code view is assembled from the form inputs at runtime and registers its fonts from esm.sh URLs, so it is not run by tests/docs/playgrounds.test.ts; it reproduces the result once those URLs are replaced by pdfnative/fonts/* imports.",
@@ -188,7 +188,7 @@
         { "id": "copy-config", "kind": "button", "meaning": "copy #config-output to the clipboard" },
         { "id": "cards", "kind": "container", "meaning": "tool cards; each has data-action buttons (generate, copy-args) and a [data-status] line" }
       ],
-      "exercises": ["pdfnative-mcp tool surface (28 tools)", "buildDocumentPDFBytes", "mergePdfs", "splitPdf", "extractPages", "annotations", "update metadata", "inspectDocumentLayout", "governance issue draft validation", "layout.typography", "PDF/X-4 (layout.pdfx, outputIntent, colour bars)", "validatePdfX", "validatePdfUA", "inspect_pdf pdfX claim", "27 scripts (lo, nod, khb, tdd, cjm)", "reproducible output (creationDate, SHA-256)", "operator environment (12 variables, #env-panel)", "7 MCP prompts (#prompts-panel)"],
+      "exercises": ["pdfnative-mcp tool surface (28 tools)", "buildDocumentPDFBytes", "mergePdfs", "splitPdf", "extractPages", "annotations", "update metadata", "inspectDocumentLayout", "governance issue draft validation", "layout.typography", "PDF/X-4 (layout.pdfx, outputIntent, colour bars)", "validatePdfX", "validatePdfUA", "inspect_pdf pdfX claim", "five more scripts (lo, nod, khb, tdd, cjm)", "reproducible output (creationDate, SHA-256)", "operator environment (12 variables, #env-panel)", "7 MCP prompts (#prompts-panel)"],
       "codeView": "#config-output",
       "selfContained": false,
       "note": "The code view is an MCP client configuration, not a pdfnative program; the per-card payloads are tool arguments for pdfnative-mcp.",

@@ -124,7 +124,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -141,6 +141,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
+<!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
     <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> <strong>v1.7.0</strong> (pins pdfnative <code>^1.8.0</code>, requires pdfnative ≥ 1.8.0 and Node ≥ 22; <code>_meta.apiVersion</code> = <code>TOOL_API_VERSION</code> <code>1.7.0</code>) into Claude Desktop, Cursor, Continue, Zed, or any other MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>28 tools</strong> — the catalogue did not grow in v1.7.0; what each tool can do did: a <code>typography</code> option on the nine document tools and on <code>inspect_layout</code> (paragraphs that split with orphan / widow control, justification with optical margins, kerning and OpenType features), <strong>CMYK colours</strong> on every colour input (<code>[c, m, y, k]</code> percent tuples or <code>'c m y k'</code> operand strings), <strong>PDF/X-4</strong> output (<code>pdfx: "pdfx4"</code>, CMYK or Gray output intents, colour bars) with a structural check in <code>validate_pdf</code> <code>{ standard: "pdf-x-4" }</code>, <strong>27 scripts</strong> in <code>add_international_text</code> (Lao, Tai Tham, New Tai Lue, Tai Le and Cham join), and <strong>reproducible output</strong> (every date written in UTC; a per-call <code>creationDate</code>, or an operator-wide pin through <code>PDFNATIVE_MCP_CREATION_DATE</code> / <code>SOURCE_DATE_EPOCH</code>). Still there from earlier releases: the v1.6.0 PAdES ladder <code>add_ltv</code> / <code>timestamp_pdf</code> (with RFC 3161 timestamps on <code>sign_pdf</code>), <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, all 13 block kinds in <code>generate_basic_pdf</code>, print production and charts v2, the v1.5.0 <code>add_chart</code> / form / encryption tools, the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and token-frugal read modes (<code>verbosity</code> / <code>fields</code>). Each card below shows a real example prompt, the payload it runs, and a button that produces the very PDF (or report) the AI assistant would receive — <strong>simulated with the pdfnative engine in your browser; the server returns the same shape</strong>. Older cards show the pdfnative library payload this page executes (the MCP schemas differ — see the <a href="../guides/mcp.html">MCP guide</a>); the v1.7.0 cards show the exact MCP tool-call payload and map it to the engine in front of you. No API keys, no install, no LLM cost.</p>
 
     <p style="font-size: 14px; color: var(--c-text-dim);">For the full integration story (config, security model, signed-document workflow), see the <a href="../guides/mcp.html">MCP guide</a>.</p>
@@ -526,6 +527,7 @@
     },
     {
       id: 'add_international_text',
+// verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts))
       purpose: 'Render text in any of 25 lang codes — 27 scripts plus latin, emoji and the explicit math font — with BiDi & OpenType shaping. You can pass several in one call.',
       prompt: 'Create a multilingual greeting card with English, Thai, Arabic, and a smiling-face emoji.',
       args: {
@@ -561,8 +563,10 @@
     {
       id: 'add_international_text',
       key: 'add_international_text_27_scripts',
+// verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts))
       tag: 'v1.7.0 · 27 scripts',
       mcp: true,
+// verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts))
       purpose: 'The five scripts added in v1.7.0 (pdfnative 1.8): Lao (lo, dedicated shaper), Tai Tham / Lanna (nod) and Cham (cjm) through the Universal Shaping Engine, New Tai Lue (khb) and Tai Le (tdd) — 27 scripts in all; ha / yo / ig / sw are aliases of latin.',
       prompt: 'Typeset a one-page sampler of the scripts of mainland South-East Asia: Lao, Tai Tham, New Tai Lue, Tai Le and Cham, as an archival PDF/A-2b.',
       args: {

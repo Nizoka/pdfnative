@@ -581,7 +581,7 @@ try {
 ### What's new in v1.3.0
 
 <!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
-v1.3.0 (released 2026-09-22) tracks the pdfnative 1.8.0 engine — typography, CMYK and PDF/X-4, reproducible output, 27 scripts — and exposes every one of its authoring capabilities through both doors, JSX and `DocSpec`. No public API was removed or renamed; every new behaviour is opt-in, and a document that uses none of it compiles to the same `DocumentParams`. The one floor that moves is the `pdfnative` peer, `^1.7.0` → `^1.8.0`.
+v1.3.0 (released 2026-09-22) tracks the pdfnative 1.8.0 engine — typography, CMYK and PDF/X-4, reproducible output, every script of that engine — and exposes every one of its authoring capabilities through both doors, JSX and `DocSpec`. No public API was removed or renamed; every new behaviour is opt-in, and a document that uses none of it compiles to the same `DocumentParams`. The one floor that moves is the `pdfnative` peer, `^1.7.0` → `^1.8.0`.
 
 | Area | v1.2.0 | v1.3.0 |
 |---|---|---|

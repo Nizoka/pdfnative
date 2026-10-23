@@ -27,6 +27,12 @@ export function registerAllFonts(): void {
         bn: fl(() => import('../../fonts/noto-bengali-data.js')),
         ta: fl(() => import('../../fonts/noto-tamil-data.js')),
         te: fl(() => import('../../fonts/noto-telugu-data.js')),
+        // v1.9.0 — the five remaining major Indic scripts
+        gu: fl(() => import('../../fonts/noto-gujarati-data.js')),
+        pa: fl(() => import('../../fonts/noto-gurmukhi-data.js')),
+        kn: fl(() => import('../../fonts/noto-kannada-data.js')),
+        ml: fl(() => import('../../fonts/noto-malayalam-data.js')),
+        or: fl(() => import('../../fonts/noto-oriya-data.js')),
         // v1.3.0 — linguistic expansion (often-underserved scripts)
         am: fl(() => import('../../fonts/noto-ethiopic-data.js')),
         si: fl(() => import('../../fonts/noto-sinhala-data.js')),
@@ -85,6 +91,7 @@ export async function loadMultiFontEntries(): Promise<FontEntry[]> {
         'th', 'ja', 'zh', 'ko', 'el', 'hi', 'tr', 'vi', 'pl', 'ar', 'he', 'ru',
         'ka', 'hy', 'bn', 'ta', 'te', 'si', 'bo', 'km', 'my', 'am',
         'lo', 'nod', 'khb', 'tdd', 'cjm', // v1.8.0
+        'gu', 'pa', 'kn', 'ml', 'or', // v1.9.0
     ]);
 }
 

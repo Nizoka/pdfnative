@@ -20,15 +20,26 @@ import { shapeBengaliText } from '../../src/shaping/bengali-shaper.js';
 import { shapeTamilText } from '../../src/shaping/tamil-shaper.js';
 import { shapeTeluguText } from '../../src/shaping/telugu-shaper.js';
 import { shapeSinhalaText } from '../../src/shaping/sinhala-shaper.js';
+import { shapeGujaratiText } from '../../src/shaping/gujarati-shaper.js';
+import { shapeGurmukhiText } from '../../src/shaping/gurmukhi-shaper.js';
+import { shapeKannadaText } from '../../src/shaping/kannada-shaper.js';
+import { shapeMalayalamText } from '../../src/shaping/malayalam-shaper.js';
+import { shapeOdiaText } from '../../src/shaping/odia-shaper.js';
 import { findMarkToBase } from '../../src/shaping/gpos-positioner.js';
 import * as devanagari from '../../fonts/noto-devanagari-data.js';
 import * as bengali from '../../fonts/noto-bengali-data.js';
 import * as tamil from '../../fonts/noto-tamil-data.js';
 import * as telugu from '../../fonts/noto-telugu-data.js';
 import * as sinhala from '../../fonts/noto-sinhala-data.js';
+import * as gujarati from '../../fonts/noto-gujarati-data.js';
+import * as gurmukhi from '../../fonts/noto-gurmukhi-data.js';
+import * as kannada from '../../fonts/noto-kannada-data.js';
+import * as malayalam from '../../fonts/noto-malayalam-data.js';
+import * as oriya from '../../fonts/noto-oriya-data.js';
 
 const fd = (m: unknown): FontData => m as FontData;
 const HI = fd(devanagari), BN = fd(bengali), TA = fd(tamil), TE = fd(telugu), SI = fd(sinhala);
+const GU = fd(gujarati), PA = fd(gurmukhi), KN = fd(kannada), ML = fd(malayalam), OR = fd(oriya);
 
 const cps = (s: string): number[] => Array.from(s).map(c => c.codePointAt(0) ?? 0);
 const JOINERS = new Set([0x200C, 0x200D]);
@@ -230,5 +241,175 @@ describe('Sinhala on Noto Sans Sinhala', () => {
         expect(shapeSinhalaText('කො', SI).map(g => g.cps)).toEqual([[0x0DDC], [0x0D9A], []]);
         const shaped = shapeSinhalaText('ක්ක', SI);
         expect(shaped.map(g => g.cps)).toEqual([[0x0D9A, 0x0DCA], [0x0D9A]]);
+    });
+});
+
+// ── v1.9.0 — the five scripts that joined the engine ─────────────────
+// Glyph names from `npx tsx scripts/glyph-names.ts fonts/ttf/NotoSans<Script>-Regular.ttf <gid>…`;
+// configurations from HarfBuzz hb-ot-shaper-indic.cc. Native words are
+// demonstration content (demo-language: gu pa kn ml or).
+
+describe('Gujarati on Noto Sans Gujarati (1.9.0)', () => {
+    it('ધર્મ — the reph of ર્ lands after મ (beforePost), as a zero-advance mark', () => {
+        const word = 'ધર્મ';
+        const shaped = shapeGujaratiText(word, GU);
+        expectNoNotdef(shaped);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([39, 45, 131]);     // dhagujr magujr rephgujr
+        expect(shaped[2].cps).toEqual([0x0AB0, 0x0ACD]);
+        expect(shaped[2].isZeroAdvance).toBe(true);
+    });
+
+    it('પ્રશ્ન and ક્ષ — rakar and akhn conjuncts come from the font as single glyphs', () => {
+        expect(shapeGujaratiText('પ્રશ્ન', GU).map(g => g.gid)).toEqual([224, 405]);  // paragujr shanagujr
+        expect(shapeGujaratiText('ક્ષ', GU).map(g => g.gid)).toEqual([129]);         // kassagujr
+    });
+
+    it('કિતાબ — the pre-base િ moves in front of ક', () => {
+        const word = 'કિતાબ';
+        const shaped = shapeGujaratiText(word, GU);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped[0].cps).toEqual([0x0ABF]);                    // ivowelsign1gujr
+        expect(shaped[1].cps).toEqual([0x0A95]);                    // kagujr
+    });
+});
+
+describe('Gurmukhi on Noto Sans Gurmukhi (1.9.0)', () => {
+    it('ਪ੍ਰੇਮ and ਸ੍ਵਰ — subjoined ਰ and ਵ through blwf, zero-advance below the base', () => {
+        const prem = shapeGurmukhiText('ਪ੍ਰੇਮ', PA);
+        expectNoNotdef(prem);
+        expectCpsCoverInput(prem, 'ਪ੍ਰੇਮ');
+        expect(prem.map(g => g.gid)).toEqual([37, 111, 56, 41]);  // paguru rasubscriptguru eematraguru maguru
+        expect(prem[1].cps).toEqual([0x0A4D, 0x0A30]);
+        expect(prem[1].isZeroAdvance).toBe(true);
+        expect(shapeGurmukhiText('ਸ੍ਵਰ', PA).map(g => g.gid)).toEqual([48, 113, 43]); // saguru vasubscriptguru raguru
+    });
+
+    it('ਸਿੰਘ — ਿ reorders before ਸ, tippi stays a mark on it', () => {
+        const word = 'ਸਿੰਘ';
+        const shaped = shapeGurmukhiText(word, PA);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([52, 48, 77, 20]); // imatraguru saguru tippiguru ghaguru
+        expect(shaped[2].isZeroAdvance).toBe(true);
+    });
+
+    it('ਸੱਚ and ਸ਼ਹਿਰ — addak as a mark, the nukta consonant as one glyph', () => {
+        expect(shapeGurmukhiText('ਸੱਚ', PA).map(g => g.gid)).toEqual([48, 78, 22]);       // saguru addakguru caguru
+        expect(shapeGurmukhiText('ਸ਼ਹਿਰ', PA).map(g => g.gid)).toEqual([47, 52, 49, 43]); // sanuktaguru imatraguru haguru raguru
+    });
+});
+
+describe('Kannada on Noto Sans Kannada (1.9.0)', () => {
+    it('ಕನ್ನಡ — the second ನ takes its subjoined form (blwf after the base only)', () => {
+        const word = 'ಕನ್ನಡ';
+        const shaped = shapeKannadaText(word, KN);
+        expectNoNotdef(shaped);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([23, 42, 123, 35]); // kaknda naknda nasubscriptknda ddaknda
+        expect(shaped[2].cps).toEqual([0x0CCD, 0x0CA8]);
+    });
+
+    it('ಕರ್ನಾಟಕ — the reph lands after the post-base ಾ (afterPost)', () => {
+        const word = 'ಕರ್ನಾಟಕ';
+        const shaped = shapeKannadaText(word, KN);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([23, 197, 60, 99, 33, 23]); // ka nanocrest aavowelsign reph tta ka
+        expect(shaped[3].cps).toEqual([0x0CB0, 0x0CCD]);
+    });
+
+    it('ಹೋಗು and ಕೈ — two-part signs split into an ABOVE part the font folds into the consonant and a trailing part', () => {
+        const hogu = shapeKannadaText('ಹೋಗು', KN);
+        expectCpsCoverInput(hogu, 'ಹೋಗು');
+        expect(hogu.map(g => g.gid)).toEqual([317, 64, 77, 25, 63]); // hevowelknda uuvowelsignknda lengthmarkknda gaknda uvowelsignknda
+        expect(hogu[0].cps).toEqual([0x0CB9, 0x0CCB]);
+        const kai = shapeKannadaText('ಕೈ', KN);
+        expect(kai.map(g => g.gid)).toEqual([286, 78]);                // kevowelknda ailengthmarkknda
+        expect(kai[0].cps).toEqual([0x0C95, 0x0CC8]);
+    });
+
+    it('ಸ್ತ್ರೀ and ವಿದ್ಯಾ — three-consonant stacks and the ya-sign keep every code point', () => {
+        for (const word of ['ಸ್ತ್ರೀ', 'ವಿದ್ಯಾ']) {
+            const shaped = shapeKannadaText(word, KN);
+            expectNoNotdef(shaped);
+            expectCpsCoverInput(shaped, word);
+        }
+        expect(shapeKannadaText('ಸ್ತ್ರೀ', KN).map(g => g.gid)).toEqual([56, 355, 61, 77]); // saknda tarasubscriptknda ivowelsignknda lengthmarkknda
+    });
+});
+
+describe('Malayalam on Noto Sans Malayalam (1.9.0)', () => {
+    it('പ്രകാശം and ക്രമം — the pref ്ര moves in front of its consonant', () => {
+        const word = 'പ്രകാശം';
+        const shaped = shapeMalayalamText(word, ML);
+        expectNoNotdef(shaped);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([162, 44, 23, 64, 56, 6]); // rapostmlym pamlym kamlym aavowelsignmlym shamlym anusvaramlym
+        expect(shaped[0].cps).toEqual([0x0D4D, 0x0D30]);
+        expect(shapeMalayalamText('ക്രമം', ML).map(g => g.gid)).toEqual([162, 23, 48, 6]);
+    });
+
+    it('ധൎമ്മം — the dot reph (a logical reph) lands right after the മ്മ conjunct it crowns (afterMain)', () => {
+        const word = 'ധൎമ്മം';
+        const shaped = shapeMalayalamText(word, ML);
+        expectNoNotdef(shaped);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([41, 215, 78, 6]);  // dhamlym mamamlym rephmlym anusvaramlym
+        expect(shaped[1].cps).toEqual([0x0D2E, 0x0D4D, 0x0D2E]);
+        expect(shaped[2].cps).toEqual([0x0D4E]);
+        expect(shaped[2].isZeroAdvance).toBe(true);
+    });
+
+    it('അവൻ — the chillu letter is a consonant of its own', () => {
+        const shaped = shapeMalayalamText('അവൻ', ML);
+        expectCpsCoverInput(shaped, 'അവൻ');
+        expect(shaped.map(g => g.gid)).toEqual([9, 55, 117]);        // amlym vamlym nachillumlym
+    });
+
+    it('കോഴി and കൈ — ോ splits into േ before and ാ after the base; ൈ sits before ക', () => {
+        const kozhi = shapeMalayalamText('കോഴി', ML);
+        expectCpsCoverInput(kozhi, 'കോഴി');
+        expect(kozhi.map(g => g.gid)).toEqual([72, 23, 64, 54, 65]); // eevowelsign ka aavowelsign llla ivowelsign
+        expect(kozhi[0].cps).toEqual([0x0D4B]);
+        expect(shapeMalayalamText('കൈ', ML).map(g => g.gid)).toEqual([73, 23]);
+    });
+});
+
+describe('Odia on Noto Sans Oriya (1.9.0)', () => {
+    it('ଧର୍ମ — the reph lands right after the base (afterMain)', () => {
+        const word = 'ଧର୍ମ';
+        const shaped = shapeOdiaText(word, OR);
+        expectNoNotdef(shaped);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([38, 44, 82]);       // uni0B27 uni0B2E uni0B300B4D
+        expect(shaped[2].cps).toEqual([0x0B30, 0x0B4D]);
+        expect(shaped[2].isZeroAdvance).toBe(true);
+    });
+
+    it('ବିଦ୍ୟା and ସ୍ୱର — ya-phala and the va conjunct come from the font', () => {
+        const word = 'ବିଦ୍ୟା';
+        const shaped = shapeOdiaText(word, OR);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([42, 60, 37, 214, 59]); // ba i da yaphala aa
+        expect(shaped[3].cps).toEqual([0x0B4D, 0x0B5F]);
+        expect(shapeOdiaText('ସ୍ୱର', OR).map(g => g.gid)).toEqual([377, 46]); // savaoriya ra
+    });
+
+    it('ଗୋଟିଏ and କୈ — ୋ splits into େ before and ା after; ୈ into େ and the ai length mark', () => {
+        const word = 'ଗୋଟିଏ';
+        const shaped = shapeOdiaText(word, OR);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([69, 22, 59, 30, 60, 16]); // e-sign ga aa tta i e
+        expect(shaped[0].cps).toEqual([0x0B4B]);
+        const kai = shapeOdiaText('କୈ', OR);
+        expect(kai.map(g => g.gid)).toEqual([69, 20, 75]);              // e-sign ka ai-length
+        expect(kai[0].cps).toEqual([0x0B48]);
+    });
+
+    it('ଓଡ଼ିଆ — the nukta consonant is one glyph and ି stays above its letter', () => {
+        const word = 'ଓଡ଼ିଆ';
+        const shaped = shapeOdiaText(word, OR);
+        expectNoNotdef(shaped);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([18, 80, 60, 9]);
     });
 });

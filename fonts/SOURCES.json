@@ -2,7 +2,7 @@
   "upstream": {
     "repo": "google/fonts",
     "commit": "5fb648bb932bf1cdcd5fd71a73b79097e8666c36",
-    "resolvedOn": "2026-09-15",
+    "resolvedOn": "2026-10-23",
     "note": "google/fonts main was 809e4d8b8d7e9364a914909bb777679606c178b8 on 2026-09-14; it carries Noto Sans Devanagari 2.007 (commit 2bc5d431, 2026-09-09) while noto-devanagari-data.js was built from 2.006, so the manifest pins the parent of that update, at which 21 of the 22 downloadable files were re-downloaded and matched the local tree byte for byte (Color Emoji is pinned separately, see its entry). Every sha256 is the hash of the local file that reproduces the committed module (npm run verify:fonts)."
   },
   "fonts": [
@@ -45,6 +45,46 @@
       "sha256": "e618af7bf999df192ed4f388eba2e563f2b5015034e9cbb317b5bd793bd7334d",
       "bytes": 888808,
       "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/telugu)"
+    },
+    {
+      "local": "NotoSansGujarati-Regular.ttf",
+      "dir": "notosansgujarati",
+      "remote": "NotoSansGujarati%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "9901d8552f1dd5d2c50dbd4caa6f6e174e74e8264f06594ab259ae6e7b1ac428",
+      "bytes": 672904,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/gujarati)"
+    },
+    {
+      "local": "NotoSansGurmukhi-Regular.ttf",
+      "dir": "notosansgurmukhi",
+      "remote": "NotoSansGurmukhi%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "1e6f728fa620e566f842d81e220265813faa12771214765d289c98e035adc5f2",
+      "bytes": 268608,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/gurmukhi)"
+    },
+    {
+      "local": "NotoSansKannada-Regular.ttf",
+      "dir": "notosanskannada",
+      "remote": "NotoSansKannada%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "cca4f3b3a8cb12fb261f1b43baf5d2f7f59d90fe123d41f0065ed3a183997ec9",
+      "bytes": 641372,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/kannada)"
+    },
+    {
+      "local": "NotoSansMalayalam-Regular.ttf",
+      "dir": "notosansmalayalam",
+      "remote": "NotoSansMalayalam%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "312e0e7c3cc15fa09eb42a8f749eeb246b593ed420e3c81aafe8d910c3a6fb56",
+      "bytes": 504204,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/malayalam)"
+    },
+    {
+      "local": "NotoSansOriya-Regular.ttf",
+      "dir": "notosansoriya",
+      "remote": "NotoSansOriya%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "910342275d619081b896b4ed25fd9ad6ff320c25591b810de1fcc4beb153ba82",
+      "bytes": 613116,
+      "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/oriya)"
     },
     {
       "local": "NotoSansThai-Regular.ttf",

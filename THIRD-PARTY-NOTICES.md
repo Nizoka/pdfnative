@@ -63,6 +63,11 @@ the license's terms.
 | `NotoSansTaiTham-Regular.ttf` | `noto-taitham-data.js` | google/fonts `ofl/notosanstaitham` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tai-tham) |
 | `NotoSansTamil-Regular.ttf` | `noto-tamil-data.js` | google/fonts `ofl/notosanstamil` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tamil) |
 | `NotoSansTelugu-Regular.ttf` | `noto-telugu-data.js` | google/fonts `ofl/notosanstelugu` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/telugu) |
+| `NotoSansGujarati-Regular.ttf` | `noto-gujarati-data.js` | google/fonts `ofl/notosansgujarati` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/gujarati) |
+| `NotoSansGurmukhi-Regular.ttf` | `noto-gurmukhi-data.js` | google/fonts `ofl/notosansgurmukhi` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/gurmukhi) |
+| `NotoSansKannada-Regular.ttf` | `noto-kannada-data.js` | google/fonts `ofl/notosanskannada` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/kannada) |
+| `NotoSansMalayalam-Regular.ttf` | `noto-malayalam-data.js` | google/fonts `ofl/notosansmalayalam` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/malayalam) |
+| `NotoSansOriya-Regular.ttf` | `noto-oriya-data.js` | google/fonts `ofl/notosansoriya` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/oriya) |
 | `NotoSansThai-Regular.ttf` | `noto-thai-data.js` | google/fonts `ofl/notosansthai` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/thai) |
 | `NotoSansTibetan-Regular.ttf` | `noto-tibetan-data.js` | google/fonts `ofl/notoseriftibetan` | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tibetan) |
 | `NotoEmoji-Regular.ttf` | `noto-emoji-data.js` | google/fonts `ofl/notoemoji` | Copyright 2013 Google LLC |

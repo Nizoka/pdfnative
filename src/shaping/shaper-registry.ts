@@ -31,6 +31,7 @@ import {
     containsThai, containsLao, containsBengali, containsTamil, containsTelugu,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar,
     containsDevanagari, containsTaiTham, containsCham, containsCombiningMarks,
+    containsGujarati, containsGurmukhi, containsKannada, containsMalayalam, containsOdia,
 } from './script-registry.js';
 import { shapeLatinMarksText } from './latin-marks.js';
 import { shapeThaiText } from './thai-shaper.js';
@@ -44,6 +45,11 @@ import { shapeTibetanText } from './tibetan-shaper.js';
 import { shapeKhmerText } from './khmer-shaper.js';
 import { shapeMyanmarText } from './myanmar-shaper.js';
 import { shapeDevanagariText } from './devanagari-shaper.js';
+import { shapeGujaratiText } from './gujarati-shaper.js';
+import { shapeGurmukhiText } from './gurmukhi-shaper.js';
+import { shapeKannadaText } from './kannada-shaper.js';
+import { shapeMalayalamText } from './malayalam-shaper.js';
+import { shapeOdiaText } from './odia-shaper.js';
 
 /**
  * One complex script the engine can shape.
@@ -79,6 +85,13 @@ export const SCRIPT_SHAPERS: readonly ScriptShaper[] = [
     { id: 'khmer', detect: containsKhmer, shape: shapeKhmerText },
     { id: 'myanmar', detect: containsMyanmar, shape: shapeMyanmarText },
     { id: 'devanagari', detect: containsDevanagari, shape: shapeDevanagariText },
+    // v1.9.0 — five more scripts on the Indic engine; disjoint blocks, so the
+    // order among them is a readability choice.
+    { id: 'gujarati', detect: containsGujarati, shape: shapeGujaratiText },
+    { id: 'gurmukhi', detect: containsGurmukhi, shape: shapeGurmukhiText },
+    { id: 'kannada', detect: containsKannada, shape: shapeKannadaText },
+    { id: 'malayalam', detect: containsMalayalam, shape: shapeMalayalamText },
+    { id: 'odia', detect: containsOdia, shape: shapeOdiaText },
     // v1.8.0 — the first two scripts shaped by the engine rather than by a
     // hand-written module. Tai Le and New Tai Lue are deliberately absent:
     // their vowels and tones are spacing letters, so they need font routing

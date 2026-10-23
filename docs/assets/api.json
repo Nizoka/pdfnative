@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 522,
+  "exportCount": 537,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -2049,11 +2049,32 @@
       "summary": "Check whether a string contains any Ethiopic characters."
     },
     {
+      "name": "containsGujarati",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsGujarati(str: string): boolean",
+      "summary": "Check whether a string contains any Gujarati characters."
+    },
+    {
+      "name": "containsGurmukhi",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsGurmukhi(str: string): boolean",
+      "summary": "Check whether a string contains any Gurmukhi characters."
+    },
+    {
       "name": "containsHebrew",
       "kind": "value",
       "module": "src/shaping/script-registry.ts",
       "signature": "export function containsHebrew(text: string): boolean",
       "summary": "Check if text contains Hebrew characters."
+    },
+    {
+      "name": "containsKannada",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsKannada(str: string): boolean",
+      "summary": "Check whether a string contains any Kannada characters."
     },
     {
       "name": "containsKhmer",
@@ -2068,6 +2089,13 @@
       "module": "src/shaping/script-registry.ts",
       "signature": "export function containsLao(str: string): boolean",
       "summary": "Check whether a string contains any Lao characters."
+    },
+    {
+      "name": "containsMalayalam",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsMalayalam(str: string): boolean",
+      "summary": "Check whether a string contains any Malayalam characters."
     },
     {
       "name": "containsMath",
@@ -2089,6 +2117,13 @@
       "module": "src/shaping/script-registry.ts",
       "signature": "export function containsNewTaiLue(str: string): boolean",
       "summary": "Check whether a string contains any New Tai Lue characters."
+    },
+    {
+      "name": "containsOdia",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsOdia(str: string): boolean",
+      "summary": "Check whether a string contains any Odia characters."
     },
     {
       "name": "containsRTL",
@@ -2742,6 +2777,27 @@
       "summary": "Check if a codepoint falls in any Georgian Unicode block."
     },
     {
+      "name": "isGujaratiCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isGujaratiCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Gujarati Unicode block."
+    },
+    {
+      "name": "isGurmukhiCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isGurmukhiCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Gurmukhi Unicode block."
+    },
+    {
+      "name": "isKannadaCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isKannadaCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Kannada Unicode block."
+    },
+    {
       "name": "isKhmerCodepoint",
       "kind": "value",
       "module": "src/shaping/script-registry.ts",
@@ -2761,6 +2817,13 @@
       "module": "src/core/pdf-annot.ts",
       "signature": "export function isLinkAnnotation(annot: Annotation): annot is LinkAnnotation",
       "summary": "Check if an annotation is an external link (has `url` property)."
+    },
+    {
+      "name": "isMalayalamCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isMalayalamCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Malayalam Unicode block."
     },
     {
       "name": "isMathCodepoint",
@@ -2789,6 +2852,13 @@
       "module": "src/shaping/script-registry.ts",
       "signature": "export function isNewTaiLueCodepoint(cp: number): boolean",
       "summary": "Check if a codepoint falls in the New Tai Lue Unicode block."
+    },
+    {
+      "name": "isOdiaCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isOdiaCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Odia Unicode block."
     },
     {
       "name": "isRef",
@@ -3358,6 +3428,27 @@
       "summary": "Shape a string of Devanagari text into an array of positioned glyphs."
     },
     {
+      "name": "shapeGujaratiText",
+      "kind": "value",
+      "module": "src/shaping/gujarati-shaper.ts",
+      "signature": "export function shapeGujaratiText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Gujarati text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeGurmukhiText",
+      "kind": "value",
+      "module": "src/shaping/gurmukhi-shaper.ts",
+      "signature": "export function shapeGurmukhiText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Gurmukhi text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeKannadaText",
+      "kind": "value",
+      "module": "src/shaping/kannada-shaper.ts",
+      "signature": "export function shapeKannadaText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Kannada text into an array of positioned glyphs."
+    },
+    {
       "name": "shapeKhmerText",
       "kind": "value",
       "module": "src/shaping/khmer-shaper.ts",
@@ -3379,11 +3470,25 @@
       "summary": "Shape a Latin (or Greek, or Cyrillic) run that carries combining marks."
     },
     {
+      "name": "shapeMalayalamText",
+      "kind": "value",
+      "module": "src/shaping/malayalam-shaper.ts",
+      "signature": "export function shapeMalayalamText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Malayalam text into an array of positioned glyphs."
+    },
+    {
       "name": "shapeMyanmarText",
       "kind": "value",
       "module": "src/shaping/myanmar-shaper.ts",
       "signature": "export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]",
       "summary": "Shape a string of Myanmar text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeOdiaText",
+      "kind": "value",
+      "module": "src/shaping/odia-shaper.ts",
+      "signature": "export function shapeOdiaText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Odia text into an array of positioned glyphs."
     },
     {
       "name": "shapeSinhalaText",

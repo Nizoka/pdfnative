@@ -10,7 +10,7 @@
  *   - Free-form document builder (headings, paragraphs, lists, tables, images, links, barcodes)
  *   - Built-in Helvetica (Latin/WinAnsi) — no font embedding needed
  *   - CIDFont Type2/Identity-H embedding for Unicode scripts
- *   - 27 Unicode scripts: Thai, Lao, Tai Tham, New Tai Lue, Tai Le, Cham, Japanese, Chinese, Korean, Greek, Devanagari, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
+ *   - 32 Unicode scripts: Thai, Lao, Tai Tham, New Tai Lue, Tai Le, Cham, Japanese, Chinese, Korean, Greek, Devanagari, Gujarati, Gurmukhi, Kannada, Malayalam, Odia, Turkish, Vietnamese, Polish, Arabic, Hebrew, Cyrillic, Georgian, Armenian, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Ethiopic
  *   - Thai and Lao OpenType shaping (GSUB + GPOS)
  *   - Universal Shaping Engine for Tai Tham and Cham, driven by Unicode data
  *   - Arabic positional shaping (GSUB isolated/initial/medial/final forms)
@@ -303,7 +303,7 @@ export type { FontLoader } from './fonts/font-loader.js';
 export type { FontValidationResult } from './fonts/font-validator.js';
 export { validateFontData } from './fonts/font-validator.js';
 
-// ── Shaping — Thai, Lao, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari, Tai Tham, Cham & Multi-Script ─
+// ── Shaping — Thai, Lao, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Devanagari, Gujarati, Gurmukhi, Kannada, Malayalam, Odia, Tai Tham, Cham & Multi-Script ─
 export { shapeThaiText } from './shaping/thai-shaper.js';
 export { shapeLaoText, buildLaoClusters } from './shaping/lao-shaper.js';
 export { shapeUseText } from './shaping/use-shaper.js';
@@ -315,14 +315,21 @@ export { shapeTibetanText } from './shaping/tibetan-shaper.js';
 export { shapeKhmerText } from './shaping/khmer-shaper.js';
 export { shapeMyanmarText } from './shaping/myanmar-shaper.js';
 export { shapeDevanagariText } from './shaping/devanagari-shaper.js';
+export { shapeGujaratiText } from './shaping/gujarati-shaper.js';
+export { shapeGurmukhiText } from './shaping/gurmukhi-shaper.js';
+export { shapeKannadaText } from './shaping/kannada-shaper.js';
+export { shapeMalayalamText } from './shaping/malayalam-shaper.js';
+export { shapeOdiaText } from './shaping/odia-shaper.js';
 export { shapeLatinMarksText } from './shaping/latin-marks.js';
 export {
     containsThai, containsLao, containsArabic, containsHebrew,
     containsTaiTham, containsNewTaiLue, containsTaiLe, containsCham,
     containsBengali, containsTamil, containsTelugu, containsDevanagari,
+    containsGujarati, containsGurmukhi, containsKannada, containsMalayalam, containsOdia,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar, containsEthiopic,
     containsMath,
     isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,
+    isGujaratiCodepoint, isGurmukhiCodepoint, isKannadaCodepoint, isMalayalamCodepoint, isOdiaCodepoint,
     isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint, isEthiopicCodepoint,
     isCyrillicCodepoint, isGeorgianCodepoint, isArmenianCodepoint, isMathCodepoint,
     isLaoCodepoint, isTaiThamCodepoint, isNewTaiLueCodepoint,

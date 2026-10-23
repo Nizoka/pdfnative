@@ -5,23 +5,23 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 25217,
-      "approxTokens": 6304,
-      "sha256": "d53a6b405dd64dfcc3d22d43fd042cf34d180ee82b3f8737c68c69d0959f04c4"
+      "bytes": 25304,
+      "approxTokens": 6326,
+      "sha256": "cfce903e104dfc61d76f0a1da7ee20d57f1a0eca861b103f7f142d76219066fa"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
-      "bytes": 16198,
-      "approxTokens": 4050,
-      "sha256": "49576c2e803adedf385e89f48947521b2f61747a9f8c8ab86e0e425516ce36fa"
+      "bytes": 16316,
+      "approxTokens": 4079,
+      "sha256": "3ada1739616003b4dadc06dface57e03aca78aeb0d2fb104af1bd769324bad82"
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 719126,
-      "approxTokens": 179782,
-      "sha256": "168c81c4774b3d75bac764d7de4f3fd089815d2a8b5c33aa6eb268c98a7bcf6e"
+      "bytes": 725902,
+      "approxTokens": 181476,
+      "sha256": "0293c0d992a462f7481edb1638194bd12dbc7c511ce1e09151355f15f722960d"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -33,9 +33,9 @@
     {
       "url": "https://pdfnative.dev/assets/api.json",
       "description": "The public API surface derived from the src/index.ts exports — name, kind, module, signature, TSDoc summary. The substitute for the unpublished index.d.ts.",
-      "bytes": 144767,
-      "approxTokens": 36192,
-      "sha256": "74e55808f38eb0aeb5c8baee659df70eec73c5afe2a48439cfe401d03aff3431"
+      "bytes": 149047,
+      "approxTokens": 37262,
+      "sha256": "f55106b626d81923a8b9113890734e18f33033afc3ce5d331b43d89b1d6bf9b0"
     },
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
@@ -54,16 +54,16 @@
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
       "description": "Inventory of the live playgrounds — URL, purpose, DOM controls, options exercised, preconditions — so an agent can drive or reproduce one without scraping the page.",
-      "bytes": 25524,
-      "approxTokens": 6381,
-      "sha256": "b32aab3165b1bfbd7c2e9d6a101983efdd7a4b1780cffc8a98de416cc4d7541f"
+      "bytes": 25585,
+      "approxTokens": 6396,
+      "sha256": "4088561f243470497a81202fb13bf0fd9b82a28f8564379a5d6a7eebd2168a8b"
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 121181,
-      "approxTokens": 30295,
-      "sha256": "c4b1b4a80a776b571d25e9a90edaf05155bc140d6cb21c9576d1cdf82233ac3f"
+      "bytes": 127502,
+      "approxTokens": 31876,
+      "sha256": "cc8251955b7fa9467b06d9431b36233ef009a131162e70082fae3a310464d998"
     }
   ],
   "guides": [
@@ -100,7 +100,7 @@
       ],
       "bytes": 15017,
       "approxTokens": 3754,
-      "sha256": "c4323fae3023c3cb81e0c4ca5410ebce8457a9afe70d16150aedefe338f4a0b8"
+      "sha256": "589c42c9901901f46e3632f170d0b8564b3906d94b495dd5392c1e773c5b8a4a"
     },
     {
       "title": "AI governance & human-in-the-loop",
@@ -213,9 +213,9 @@
         "resources",
         "citation"
       ],
-      "bytes": 98029,
-      "approxTokens": 24507,
-      "sha256": "4134a4a24a195497b206203be2cba47f2118f56afe37859cea5dd98307fc31b8"
+      "bytes": 98042,
+      "approxTokens": 24511,
+      "sha256": "910c9a741f9cd19468f4565054275e0762fd2d934c333dff0b6ac71143571e8b"
     },
     {
       "title": "Colour-emoji font CLI (pdfnative-build-emoji-font)",
@@ -290,9 +290,9 @@
         "why-pdfnative",
         "common-errors"
       ],
-      "bytes": 14365,
-      "approxTokens": 3591,
-      "sha256": "84952a9988a99a8332f0cf7870dea0e5e017e566689ec55c1156ee3a244b9e28"
+      "bytes": 14479,
+      "approxTokens": 3620,
+      "sha256": "183b88cd8d188a91db53c03c2da974113950b9de2281a9c982b88caa3be4199a"
     },
     {
       "title": "Font-data validation",
@@ -367,9 +367,9 @@
         "release-history",
         "further-reading"
       ],
-      "bytes": 83692,
-      "approxTokens": 20923,
-      "sha256": "8dbf00a58757aead3a8994a00920d10976b4c827b97b081d3243618df6492aa1"
+      "bytes": 83862,
+      "approxTokens": 20966,
+      "sha256": "27b3a2b1623444a52668333922c5062772ca20ab30776b71ea02d31d9a4c98dc"
     },
     {
       "title": "Onboarding — the pdfnative ecosystem in 90 seconds",
@@ -512,9 +512,9 @@
         "release-history",
         "resources"
       ],
-      "bytes": 40559,
-      "approxTokens": 10140,
-      "sha256": "e50e3526c8e43320e1caf715f8902f56fd2015868b6ea01465f94aebd8a291c6"
+      "bytes": 40576,
+      "approxTokens": 10144,
+      "sha256": "5f158e11b4253ea7b0913e13ae887bd51a9668447b2126d489c7da0b70c6857d"
     },
     {
       "title": "Self-verifying generation",
@@ -680,18 +680,18 @@
     },
     {
       "title": "MCP use cases",
-      "summary": "Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22): one shared HTTP server whose outputs are files, a token-frugal typesetting loop, and multilingual PDF/A notices in 27 scripts.",
+      "summary": "Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22): one shared HTTP server whose outputs are files, a token-frugal typesetting loop, and multilingual PDF/A notices in every script the engine shapes.",
       "html": "https://pdfnative.dev/guides/use-cases-mcp.html",
       "markdown": "https://pdfnative.dev/guides/use-cases-mcp.md",
       "anchors": [
         "case-1--one-shared-server-sandboxed-files-bearer-token",
         "case-2--token-frugal-typesetting-loop-preview-produce-read-back",
-        "case-3--multilingual-notices-in-27-scripts-from-a-conversation",
+        "case-3--multilingual-notices-in-every-script-from-a-conversation",
         "see-also"
       ],
-      "bytes": 15062,
-      "approxTokens": 3766,
-      "sha256": "2acd26c46d2ee44b48d8f05db8bd9143dc43554a79d247b7ac30d54622646247"
+      "bytes": 15116,
+      "approxTokens": 3779,
+      "sha256": "3891c563949084642b675188bdc57bba4101d3e611456f4951873c91e1a2c65f"
     },
     {
       "title": "React use cases",

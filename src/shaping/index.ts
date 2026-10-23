@@ -31,6 +31,11 @@ export { shapeTibetanText } from './tibetan-shaper.js';
 export { shapeKhmerText } from './khmer-shaper.js';
 export { shapeMyanmarText } from './myanmar-shaper.js';
 export { shapeDevanagariText } from './devanagari-shaper.js';
+export { shapeGujaratiText } from './gujarati-shaper.js';
+export { shapeGurmukhiText } from './gurmukhi-shaper.js';
+export { shapeKannadaText } from './kannada-shaper.js';
+export { shapeMalayalamText } from './malayalam-shaper.js';
+export { shapeOdiaText } from './odia-shaper.js';
 export { shapeArabicText } from './arabic-shaper.js';
 export { shapeLatinMarksText } from './latin-marks.js';
 export { shapeIndicText, splitIndicSyllables, applyGsubFeatures } from './indic-engine.js';
@@ -44,11 +49,13 @@ export {
     containsThai, containsLao, containsArabic, containsHebrew,
     containsTaiTham, containsNewTaiLue, containsTaiLe, containsCham,
     containsBengali, containsTamil, containsTelugu, containsDevanagari,
+    containsGujarati, containsGurmukhi, containsKannada, containsMalayalam, containsOdia,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar,
     containsEthiopic, containsMath, containsCombiningMarks, isCombiningMarkCodepoint,
     isArabicCodepoint, isHebrewCodepoint, isThaiCodepoint, isLaoCodepoint,
     isTaiThamCodepoint, isNewTaiLueCodepoint, isTaiLeCodepoint, isChamCodepoint,
     isBengaliCodepoint, isTamilCodepoint, isTeluguCodepoint, isDevanagariCodepoint,
+    isGujaratiCodepoint, isGurmukhiCodepoint, isKannadaCodepoint, isMalayalamCodepoint, isOdiaCodepoint,
     isSinhalaCodepoint, isTibetanCodepoint, isKhmerCodepoint, isMyanmarCodepoint,
     isEthiopicCodepoint, isCyrillicCodepoint, isGeorgianCodepoint,
     isArmenianCodepoint, isMathCodepoint,

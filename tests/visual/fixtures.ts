@@ -34,6 +34,11 @@ function registerVisualFonts(): void {
         my: fl(() => import('../../fonts/noto-myanmar-data.js')),
         si: fl(() => import('../../fonts/noto-sinhala-data.js')),
         te: fl(() => import('../../fonts/noto-telugu-data.js')),
+        gu: fl(() => import('../../fonts/noto-gujarati-data.js')),
+        pa: fl(() => import('../../fonts/noto-gurmukhi-data.js')),
+        kn: fl(() => import('../../fonts/noto-kannada-data.js')),
+        ml: fl(() => import('../../fonts/noto-malayalam-data.js')),
+        or: fl(() => import('../../fonts/noto-oriya-data.js')),
         yo: fl(() => import('../../fonts/noto-sans-data.js')),
         pl: fl(() => import('../../fonts/noto-polish-data.js')),
     });
@@ -224,7 +229,8 @@ export const FIXTURES: readonly Fixture[] = [
     // combining-mark shaper (Yoruba), Lao and Cham (the 1.8.0 shapers), Thai
     // (sara am under a tone mark) and Polish (a Latin subset the library
     // derives from Noto Sans itself). Built from the same data as the samples.
-    ...(['ta', 'hi', 'te', 'bn', 'yo', 'lo', 'cjm', 'th', 'pl'] as const).map((lang) => ({
+    // v1.9.0 — the five scripts that joined the Indic engine.
+    ...(['ta', 'hi', 'te', 'bn', 'yo', 'lo', 'cjm', 'th', 'pl', 'gu', 'pa', 'kn', 'ml', 'or'] as const).map((lang) => ({
         name: `doc-${LANGUAGE_DOCS.find(d => d.lang === lang)?.filename.replace(/^doc-/, '') ?? lang}`,
         build: async (): Promise<Uint8Array> => {
             registerVisualFonts();

@@ -166,10 +166,10 @@ src/
 ├── shaping/      # Script registry, Thai/Devanagari/Bengali/Tamil GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
-fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + monochrome and colour emoji)
+fonts/            # 36 pre-built font-data modules (32 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
 scripts/          # Modular sample PDF generation (49 generators, 292 PDFs) and the verification scripts
-tests/            # 168 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+tests/            # 169 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 

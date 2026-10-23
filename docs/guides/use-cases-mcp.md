@@ -2,7 +2,7 @@
 
 > **Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22):**
 > one shared HTTP server whose outputs are files, a token-frugal typesetting
-> loop, and multilingual PDF/A notices in 27 scripts.
+> loop, and multilingual PDF/A notices in every script the engine shapes.
 
 pdfnative-mcp v1.7.0 exposes the pdfnative ≥ 1.8.0 engine to conversational
 assistants as 28 tools and seven prompts, over stdio or Streamable HTTP
@@ -183,7 +183,7 @@ because the typography fragment is inlined in every tool that carries it —
 hosts should honour its 24 h public cache hint rather than refetch it per
 session.
 
-## Case 3 — Multilingual notices in 27 scripts from a conversation
+## Case 3 — Multilingual notices in every script from a conversation
 
 A safety notice, a consent form or a receipt that must exist in the reader's
 own script is usually a font-procurement project before it is a document
@@ -193,7 +193,7 @@ script shapers, always embeds the fonts, and can claim PDF/A — from a single
 tool call inside a conversation.
 
 The building blocks: `add_international_text` with a `lang` array covering the
-27 scripts — including, since v1.7.0, `lo` (Lao, dedicated shaper), `nod`
+every script of the engine it was built on — including, since v1.7.0, `lo` (Lao, dedicated shaper), `nod`
 (Tai Tham) and `cjm` (Cham) through the Universal Shaping Engine, `khb`
 (New Tai Lue) and `tdd` (Tai Le), plus the `latin` aliases `ha`, `yo`, `ig`
 and `sw` whose tone marks are anchored; `pdfA: "pdfa2b"` with `strict: true`

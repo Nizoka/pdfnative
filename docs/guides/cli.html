@@ -1708,7 +1708,7 @@ pdfnative doctor --format json --pretty
 <td>Indented JSON even under the global <code>--json</code></td>
 </tr>
 </tbody></table>
-<p>Since v1.5.0 the report also carries <code>fonts</code> (<code>31 modules / 27 scripts</code>, each bundled module probed on disk), <code>unicode</code> (the Universal Shaping Engine&#39;s Unicode version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code> — the <code>--tagged</code> / <code>--pdfx</code> targets). Fully offline.</p>
+<p>Since v1.5.0 the report also carries <code>fonts</code> (the bundled modules and scripts probed on disk), <code>unicode</code> (the Universal Shaping Engine&#39;s Unicode version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code> — the <code>--tagged</code> / <code>--pdfx</code> targets). Fully offline.</p>
 <h3 id="pdfnative-batch"><code>pdfnative batch</code><a class="heading-anchor" href="#pdfnative-batch" aria-label="Link to this section">#</a></h3>
 <p>Renders every JSON file in a directory to PDF <strong>in parallel</strong>, reusing the full <code>render</code> pipeline.</p>
 <table>
@@ -2049,7 +2049,7 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 <td>✅ <code>attachments: [...]</code></td>
 </tr>
 <tr>
-<td><strong>27 scripts + COLRv1 emoji + math</strong></td>
+<td><strong>Every bundled script + COLRv1 emoji + math</strong></td>
 <td>✅ <code>--font</code> / <code>--lang</code></td>
 <td>✅ <code>registerFont()</code> / <code>loadFontData()</code></td>
 </tr>
@@ -2300,7 +2300,7 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 <tr>
 <td><code>doctor</code></td>
 <td><code>node</code>, <code>webcrypto</code>, <code>pdfnative</code>, <code>cli</code>, <code>commands</code></td>
-<td>adds <code>fonts</code> (31 modules / 27 scripts, probed on disk), <code>unicode</code>, <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>)</td>
+<td>adds <code>fonts</code> (the bundled modules and scripts, probed on disk), <code>unicode</code>, <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>)</td>
 </tr>
 <tr>
 <td>Agent contract</td>
@@ -2495,7 +2495,7 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 <tbody><tr>
 <td>Fonts</td>
 <td><code>--font {latin,emoji}</code></td>
-<td><strong>27 Unicode scripts + COLRv1 colour emoji</strong> — <code>--font</code>/<code>--lang</code> allow-list covers every bundled font (<code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, and the 22 script codes incl. Telugu <code>te</code>, Sinhala <code>si</code>, Tibetan <code>bo</code>, Khmer <code>km</code>, Myanmar <code>my</code>, Amharic <code>am</code>)</td>
+<td><strong>Every bundled Unicode script + COLRv1 colour emoji</strong> — <code>--font</code>/<code>--lang</code> allow-list covers every bundled font (<code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, and the 22 script codes incl. Telugu <code>te</code>, Sinhala <code>si</code>, Tibetan <code>bo</code>, Khmer <code>km</code>, Myanmar <code>my</code>, Amharic <code>am</code>)</td>
 </tr>
 <tr>
 <td>Streaming</td>

@@ -70,17 +70,30 @@ export type IndicRephMode =
     | 'implicit'
     /** Only Ra + virama + ZWJ becomes a reph (Telugu, Sinhala). */
     | 'explicit'
+    /**
+     * The reph is a character of its own — the dot reph U+0D4E — written
+     * before the consonant it sits on (Malayalam). @since 1.9.0
+     */
+    | 'logical'
     /** The script has no reph. */
     | 'none';
 
 /** Where the reph glyph lands once the syllable is shaped. */
 export type IndicRephPosition =
-    /** After the base and its above-base signs, before post-base signs (Devanagari). */
+    /** After the base and its above-base signs, before post-base signs (Devanagari, Gujarati). */
     | 'beforePost'
     /** After the subjoined consonants, before every vowel sign (Bengali). */
     | 'afterSub'
-    /** After every vowel sign, before the syllable modifiers. */
-    | 'afterPost';
+    /** After every vowel sign, before the syllable modifiers (Telugu, Kannada, Sinhala). */
+    | 'afterPost'
+    /** Right after the base, before the subjoined consonants (Gurmukhi). @since 1.9.0 */
+    | 'beforeSub'
+    /**
+     * Right after the base consonant, before everything that follows it
+     * (Odia, Malayalam). The engine has no separate above-base consonant
+     * position, so this is the same slot as `beforeSub`. @since 1.9.0
+     */
+    | 'afterMain';
 
 /**
  * The per-script facts the engine needs. Everything else — which glyphs
@@ -115,7 +128,7 @@ export interface IndicScriptConfig {
 
 // ── Character classes ────────────────────────────────────────────────
 
-type Cat = 'C' | 'V' | 'H' | 'N' | 'ZWJ' | 'ZWNJ' | 'MPre' | 'MAbv' | 'MBlw' | 'MPst' | 'SM' | 'O';
+type Cat = 'C' | 'V' | 'H' | 'N' | 'R' | 'ZWJ' | 'ZWNJ' | 'MPre' | 'MAbv' | 'MBlw' | 'MPst' | 'SM' | 'O';
 
 function isConsonant(cp: number, cfg: IndicScriptConfig): boolean {
     for (const [a, b] of cfg.consonants) if (cp >= a && cp <= b) return true;
@@ -126,11 +139,19 @@ function isConsonant(cp: number, cfg: IndicScriptConfig): boolean {
 function classify(cp: number, cfg: IndicScriptConfig): Cat {
     if (cp === 0x200D) return 'ZWJ';
     if (cp === 0x200C) return 'ZWNJ';
+    // A consonant the script config names is one whatever its USE category:
+    // the Malayalam chillus (U+0D7A–U+0D7F) are Consonant_Dead to the UCD.
+    if (isConsonant(cp, cfg)) return 'C';
     switch (useCategory(cp)) {
-        case 'B': return isConsonant(cp, cfg) ? 'C' : 'V';
+        case 'B': return 'V';
         case 'GB': return 'V';
         case 'H': case 'HVM': return 'H';
         case 'CMBlw': case 'CMAbv': return 'N';
+        // A medial consonant (Gurmukhi yakash U+0A75) attaches to the
+        // consonant before it exactly as a nukta does.
+        case 'MAbv': case 'MBlw': case 'MPre': case 'MPst': return 'N';
+        // The dot reph (U+0D4E): a reph written as a character of its own.
+        case 'R': return 'R';
         case 'VPre': return 'MPre';
         case 'VAbv': return 'MAbv';
         case 'VBlw': return 'MBlw';
@@ -163,8 +184,11 @@ export interface IndicSyllable {
 /**
  * Split code points into Indic syllables:
  *
- *   consonant_syllable := (C N? (H ZWJ? | ZWJ? H))* C N? H? ZWNJ? matras* modifiers*
+ *   consonant_syllable := R? (C N? (H ZWJ? | ZWJ? H))* C N? H? ZWNJ? matras* modifiers*
  *   vowel_syllable     := V N? (H C N?)* H? matras* modifiers*
+ *
+ * `R` is the dot reph of a script with `rephMode: 'logical'` (Malayalam);
+ * elsewhere it is a stray sign.
  *
  * A virama followed by ZWNJ, or a virama not followed by a consonant, closes
  * the syllable. With `conjunctsNeedZwj` a virama continues the syllable only
@@ -178,7 +202,8 @@ export function splitIndicSyllables(cps: readonly number[], cfg: IndicScriptConf
     let i = 0;
     while (i < cps.length) {
         const start = i;
-        const c = cats[i];
+        let c = cats[i];
+        if (c === 'R' && cfg.rephMode === 'logical' && cats[i + 1] === 'C') { i++; c = cats[i]; }
         if (c !== 'C' && c !== 'V') {
             // A stray sign is its own syllable, shaped over a dotted circle
             // by a full engine; here it rides on the previous glyph.
@@ -565,9 +590,17 @@ function applyAt(items: Item[], li: number, i: number, mask: number, layout: Lay
             }
             if (!ok) continue;
             const cps = [...it.cps];
-            for (const m of matched) cps.push(...items[m].cps);
+            let swallowedBase = false;
+            for (const m of matched) {
+                cps.push(...items[m].cps);
+                if (items[m].pos === POS_BASE) swallowedBase = true;
+            }
             it.gid = lig[0];
             it.cps = cps;
+            // A ligature that takes the base in (a half form + the base, the
+            // dot-reph syllable's conjunct) is the base from now on: the reph
+            // and the signs position themselves against it.
+            if (swallowedBase) it.pos = POS_BASE;
             for (let k = matched.length - 1; k >= 0; k--) items.splice(matched[k], 1);
             return i;
         }
@@ -657,7 +690,14 @@ function applyPlan(items: Item[], layout: Layout, plan: readonly PlanStep[]): vo
     for (let k = 0; k < plan.length; k++) {
         const step = plan[k];
         const before = trace ? items.map(it => it.gid).join(' ') : '';
+        // `pref` substitutes the pre-base-reordering Ra: whatever glyph it
+        // produces moves in front of the base at final reordering (Malayalam
+        // ്ര, Khmer-style scripts). Remember the items as they were.
+        const prior = step.tag === 'pref' ? new Map<Item, number>(items.map(it => [it, it.gid])) : null;
         applyLookup(items, step.li, step.mask, layout);
+        if (prior !== null) {
+            for (const it of items) if (prior.get(it) !== it.gid) it.pref = true;
+        }
         if (trace) {
             const after = items.map(it => it.gid).join(' ');
             if (after !== before) trace(`${step.tag} lookup ${step.li} (t${layout.lookups[step.li]?.t ?? 0}): ${before} -> ${after}`);
@@ -774,10 +814,13 @@ function buildItems(cps: readonly number[], cfg: IndicScriptConfig, gidOf: (cp: 
     for (const cp of cps) {
         const parts = cfg.splitMatras[cp];
         if (parts && parts.every(p => gidOf(p) > 0)) {
-            parts.forEach((p, k) => items.push({
-                gid: gidOf(p), cat: k === 0 ? 'MPre' : 'MPst', pos: 0, mask: ALL_FEATURES,
-                cps: k === 0 ? [cp] : [], reph: false, pref: false,
-            }));
+            parts.forEach((p, k) => {
+                const own = classify(p, cfg);
+                items.push({
+                    gid: gidOf(p), cat: isMatra(own) ? own : (k === 0 ? 'MPre' : 'MPst'), pos: 0, mask: ALL_FEATURES,
+                    cps: k === 0 ? [cp] : [], reph: false, pref: false,
+                });
+            });
             continue;
         }
         items.push({ gid: gidOf(cp), cat: classify(cp, cfg), pos: 0, mask: ALL_FEATURES, cps: [cp], reph: false, pref: false });
@@ -789,7 +832,11 @@ function shapeSyllable(items: Item[], cfg: IndicScriptConfig, layout: Layout, vi
     // ── Reph ─────────────────────────────────────────────────────────
     let firstC = 0;
     let hasReph = false;
-    if (cfg.rephMode !== 'none' && items.length >= 3 && items[0].cat === 'C' && items[0].cps[0] === cfg.ra && items[1].cat === 'H') {
+    if (cfg.rephMode === 'logical' && items.length >= 2 && items[0].cat === 'R' && items[1].cat === 'C') {
+        // The dot reph is already the reph glyph: no `rphf` needed, it only
+        // moves to the script's reph position once the syllable is shaped.
+        hasReph = true; firstC = 1;
+    } else if (cfg.rephMode !== 'none' && cfg.rephMode !== 'logical' && items.length >= 3 && items[0].cat === 'C' && items[0].cps[0] === cfg.ra && items[1].cat === 'H') {
         const ra = items[0].gid;
         let forms = layout.rephForms.get(ra);
         if (forms === undefined) {
@@ -926,6 +973,8 @@ function finalReorder(items: Item[], cfg: IndicScriptConfig, hasReph: boolean): 
                 at = b2 + 1;
                 if (cfg.rephPosition === 'afterSub') {
                     while (at < items.length && items[at].pos === POS_AFTER_BASE) at++;
+                } else if (cfg.rephPosition === 'beforeSub' || cfg.rephPosition === 'afterMain') {
+                    // Right after the base: before its subjoined consonants and signs.
                 } else if (cfg.rephPosition === 'beforePost') {
                     while (at < items.length && items[at].pos !== POS_PST_M && items[at].pos !== POS_SM) at++;
                 } else {

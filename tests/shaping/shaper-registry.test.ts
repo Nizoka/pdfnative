@@ -29,7 +29,9 @@ describe('SCRIPT_SHAPERS', () => {
     it('registers every script the engine shapes', () => {
         expect(SCRIPT_SHAPERS.map(s => s.id)).toEqual([
             'thai', 'lao', 'bengali', 'tamil', 'telugu', 'sinhala',
-            'tibetan', 'khmer', 'myanmar', 'devanagari', 'taitham', 'cham',
+            'tibetan', 'khmer', 'myanmar', 'devanagari',
+            'gujarati', 'gurmukhi', 'kannada', 'malayalam', 'odia',
+            'taitham', 'cham',
             'latin-marks',
         ]);
     });
