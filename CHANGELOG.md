@@ -27,7 +27,7 @@ registry serves. Zero runtime dependencies; 39 exports
 added, none removed; every new behaviour opt-in; existing inputs render
 byte-identically except where the previous output was wrong — sixteen
 causes, each listed in the release note's Upgrade section with the samples
-it re-anchors. 4126+ tests across 174 files; veraPDF-validated.
+it re-anchors. 4138+ tests across 174 files; veraPDF-validated.
 
 ### Added
 
