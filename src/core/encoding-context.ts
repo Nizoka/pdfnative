@@ -10,7 +10,7 @@
  */
 
 import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics } from '../types/pdf-types.js';
-import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi } from '../fonts/encoding.js';
+import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi, narrowNoBreakSpaceCorrection } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { applyFeaturesToRuns, composeFeatureMap } from '../fonts/font-features.js';
 import { applyKerningToRuns } from '../fonts/font-kerning.js';
@@ -276,7 +276,7 @@ export function createEncodingContext(
     // The AFM table is indexed by WinAnsi byte; soft hyphens and bidi controls
     // are invisible and must be stripped first, as helveticaWidth does itself.
     const latinWidth = metrics === 'exact'
-        ? (s: string, sz: number): number => exactBase14Width(toWinAnsi(stripSoftHyphens(stripBidiControls(s))), sz, false)
+        ? (s: string, sz: number): number => exactBase14Width(toWinAnsi(stripSoftHyphens(stripBidiControls(s))), sz, false) - narrowNoBreakSpaceCorrection(s, sz)
         : helveticaWidth;
 
     if (!fontEntries || fontEntries.length === 0) {

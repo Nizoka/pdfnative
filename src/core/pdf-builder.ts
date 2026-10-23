@@ -56,12 +56,13 @@ import {
     buildEmbeddedFiles,
     validateAttachments,
     utf8EncodeBinaryString,
+    pageTransparencyGroup,
 } from './pdf-tags.js';
 import type { EncryptionState } from './pdf-encrypt.js';
 import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
-import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
+import { validateWatermark, buildWatermarkState, translucentStates } from './pdf-watermark.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
 import { resolveCreationDate } from './pdf-reproducible.js';
 
@@ -105,7 +106,9 @@ function _buildTableHeader(
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             const mcref: MCRef = { mcid, pageObjNum: tagCtx.pageObjNum };
-            const thEl: StructElement = { type: 'TH', children: [mcref] };
+            // Column header: /Scope and an /ID the data cells' /Headers name
+            // (ISO 32000-1 Table 349, PDF/UA §7.5). One table per document here.
+            const thEl: StructElement = { type: 'TH', children: [mcref], id: `T0H0C${i}`, attrs: '/O /Table /Scope /Column' };
             thChildren.push(thEl);
             if (columns[i].a === 'r') {
                 ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid, true));
@@ -156,9 +159,13 @@ function _buildDataRow(
 
     const tdChildren: (StructElement | MCRef)[] = [];
 
+    // Amount styling: by declaration (`ColumnDef.kind: 'amount'`, 1.9.0) when
+    // any column declares a kind; otherwise the historical fourth-column
+    // heuristic the fourteen financial samples were built on (byte-identical).
+    const declared = columns.some(c => c.kind !== undefined);
     for (let i = 0; i < cells.length; i++) {
         const t = truncate(cells[i], columns[i].mx);
-        const isAmount = (i === 3);
+        const isAmount = declared ? columns[i].kind === 'amount' : (i === 3);
         const color = isAmount ? (type === 'credit' ? colors.credit : colors.debit) : colors.text;
         const font = isAmount ? enc.f2 : enc.f1;
         ops.push(`${fillOp(color)}`);
@@ -166,7 +173,7 @@ function _buildDataRow(
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             const mcref: MCRef = { mcid, pageObjNum: tagCtx.pageObjNum };
-            const tdEl: StructElement = { type: 'TD', children: [mcref] };
+            const tdEl: StructElement = { type: 'TD', children: [mcref], attrs: `/O /Table /Headers [(T0H0C${i})]` };
             tdChildren.push(tdEl);
             if (columns[i].a === 'r') {
                 ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc, mcid));
@@ -398,6 +405,8 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const wmState: WatermarkState | null = watermarkOpts
         ? buildWatermarkState(watermarkOpts, pgW, pgH, enc)
         : null;
+    // A translucent watermark gives the page a transparency group (1.9.0).
+    const pageGroup = pageTransparencyGroup(wmState !== null && translucentStates(wmState.extGStates) && !(tagged && pdfaConfig.pdfaPart === 1), outputIntent);
     const wmExtraObjs = wmState
         ? wmState.extGStates.size + (wmState.imageXObj ? 1 : 0)
         : 0;
@@ -735,7 +744,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const structParents = tagged ? ` /StructParents ${p}` : '';
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr}${pageGroup} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes}${pageColorSpaceRes} >>${structParents} >>`
             );
@@ -780,7 +789,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const structParents = tagged ? ` /StructParents ${p}` : '';
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr}${pageGroup} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin}${pageColorSpaceRes} >>${structParents} >>`
             );

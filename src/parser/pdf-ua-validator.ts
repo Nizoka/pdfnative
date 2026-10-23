@@ -66,6 +66,61 @@ function pageContentText(
 }
 
 /**
+ * Table header semantics (ISO 14289-1 §7.5, ISO 32000-1 Table 349): every
+ * `/TH` carries a `/Scope` attribute, and in a table that has header cells
+ * every `/TD` names them through `/Headers` (a recommendation). Walks the
+ * structure tree from `/StructTreeRoot /K`, bounded in depth and size, and
+ * tolerates attribute arrays (`/A [<<…>> <<…>>]`) as well as a single dict.
+ *
+ * @since 1.9.0
+ */
+function checkTableHeaders(
+    reader: ReturnType<typeof openPdf>,
+    structRoot: PdfDict,
+    errors: string[],
+    warnings: string[],
+): void {
+    let thWithoutScope = 0;
+    let tdWithoutHeaders = 0;
+    let visited = 0;
+    const hasAttr = (el: PdfDict, key: string): boolean => {
+        const a = reader.resolveValue(el.get('A') ?? null);
+        const dicts = isArray(a) ? a.map(v => reader.resolveValue(v)) : [a];
+        return dicts.some(d => isDict(d) && d.has(key));
+    };
+    const walk = (node: PdfValue, depth: number, inTableWithTh: boolean): void => {
+        if (depth > 64 || visited > 100_000) return;
+        const el = reader.resolveValue(node);
+        if (!isDict(el)) return;
+        visited++;
+        const s = dictGetName(el, 'S');
+        if (s === 'TH' && !hasAttr(el, 'Scope')) thWithoutScope++;
+        if (s === 'TD' && inTableWithTh && !hasAttr(el, 'Headers')) tdWithoutHeaders++;
+        const kids = reader.resolveValue(el.get('K') ?? null);
+        const list = isArray(kids) ? kids : kids === null ? [] : [kids];
+        let tableHasTh = inTableWithTh;
+        if (s === 'Table') {
+            // Does this table carry header cells at all? (Any TR with a TH.)
+            tableHasTh = list.some(tr => {
+                const trEl = reader.resolveValue(tr);
+                if (!isDict(trEl) || dictGetName(trEl, 'S') !== 'TR') return false;
+                const cells = reader.resolveValue(trEl.get('K') ?? null);
+                const cellList = isArray(cells) ? cells : cells === null ? [] : [cells];
+                return cellList.some(c => { const ce = reader.resolveValue(c); return isDict(ce) && dictGetName(ce, 'S') === 'TH'; });
+            });
+        }
+        for (const kid of list) walk(kid, depth + 1, tableHasTh);
+    };
+    walk(structRoot.get('K') ?? null, 0, false);
+    if (thWithoutScope > 0) {
+        errors.push(`${thWithoutScope} table header cell(s) (/TH) carry no /Scope attribute (ISO 14289-1 §7.5).`);
+    }
+    if (tdWithoutHeaders > 0) {
+        warnings.push(`${tdWithoutHeaders} table data cell(s) (/TD) name no /Headers although the table has header cells (ISO 14289-1 §7.5).`);
+    }
+}
+
+/**
  * Validate the PDF/UA (ISO 14289-1) structural prerequisites of a tagged PDF.
  *
  * @param bytes - Complete PDF file bytes (e.g. from `buildDocumentPDFBytes`).
@@ -110,6 +165,7 @@ export function validatePdfUA(bytes: Uint8Array): PdfUAValidationResult {
         if (dictGetName(structRoot, 'Type') !== 'StructTreeRoot') {
             warnings.push('/StructTreeRoot should declare /Type /StructTreeRoot.');
         }
+        checkTableHeaders(reader, structRoot, errors, warnings);
     }
 
     // ── /Metadata (XMP) and /Lang ───────────────────────────────────

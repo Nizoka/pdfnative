@@ -6,7 +6,7 @@
  */
 
 import type { FontData, ShapedGlyph, EncodingContext } from '../types/pdf-types.js';
-import { toWinAnsi, helveticaWidth, helveticaBoldWidth, stripSoftHyphens } from '../fonts/encoding.js';
+import { toWinAnsi, helveticaWidth, helveticaBoldWidth, stripSoftHyphens, narrowNoBreakSpaceCorrection } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { stripBidiControls } from '../shaping/bidi.js';
 import { wrapSpan } from './pdf-tags.js';
@@ -81,6 +81,43 @@ function emitColorEmojiRun(
     return penX;
 }
 
+/** NARROW NO-BREAK SPACE — what `punctuationSpacing: 'fr'` puts before `; ! ?`. */
+const NNBSP = ' ';
+/**
+ * WinAnsi has no narrow space glyph: the base-14 path shows an ordinary space
+ * (278/1000 em) and pulls the pen back by this TJ adjustment so the gap is
+ * the 167/1000 em of a narrow space (ISO 32000-1 §9.4.3: a positive number
+ * moves the next glyph left by that many thousandths of the font size).
+ * {@link narrowNoBreakSpaceWidth} measures it the same way. @since 1.9.0
+ */
+const NNBSP_TJ_ADJUST = '111';
+
+/**
+ * The `TJ` items that show `str` on the base-14 path: one literal when the
+ * string has no narrow no-break space (the historical operand, byte for
+ * byte), otherwise the pieces around each U+202F, each followed by an
+ * ordinary space and the adjustment that narrows it (#roadmap, 1.9.0).
+ */
+export function latinTjItems(str: string, enc: EncodingContext): string[] {
+    if (!str.includes(NNBSP)) return [enc.ps(str)];
+    const pieces = str.split(NNBSP);
+    const items: string[] = [];
+    for (let i = 0; i < pieces.length; i++) {
+        if (i < pieces.length - 1) {
+            items.push(enc.ps(pieces[i] + ' '), NNBSP_TJ_ADJUST);
+        } else if (pieces[i].length > 0) {
+            items.push(enc.ps(pieces[i]));
+        }
+    }
+    return items;
+}
+
+/** A base-14 text-showing operator for `str`: `(…) Tj`, or a `TJ` array when a narrow space is involved. */
+function latinShow(str: string, enc: EncodingContext): string {
+    const items = latinTjItems(str, enc);
+    return items.length === 1 ? `${items[0]} Tj` : `[${items.join(' ')}] TJ`;
+}
+
 /**
  * Text at absolute position (x, y) with font.
  * Multi-font: splits text into runs by cmap coverage.
@@ -94,7 +131,7 @@ export function txt(
     enc: EncodingContext
 ): string {
     if (!enc.isUnicode) {
-        return `BT ${font} ${sz} Tf ${fmtNum(x)} ${fmtNum(y)} Td ${enc.ps(str)} Tj ET`;
+        return `BT ${font} ${sz} Tf ${fmtNum(x)} ${fmtNum(y)} Td ${latinShow(str, enc)} ET`;
     }
 
     const runs = enc.textRuns(str, sz);
@@ -182,7 +219,7 @@ export function txtC(
 function measureFor(str: string, sz: number, enc: EncodingContext, bold: boolean = false): number {
     if (enc.isUnicode) return enc.tw(str, sz);
     if (enc.metrics === 'exact') {
-        return exactBase14Width(toWinAnsi(stripSoftHyphens(stripBidiControls(str))), sz, bold);
+        return exactBase14Width(toWinAnsi(stripSoftHyphens(stripBidiControls(str))), sz, bold) - narrowNoBreakSpaceCorrection(str, sz);
     }
     return bold ? helveticaBoldWidth(str, sz) : helveticaWidth(str, sz);
 }
@@ -287,7 +324,7 @@ export function txtJustified(
     if (runs === null) {
         const items: string[] = [];
         for (let i = 0; i < pieces.length; i++) {
-            items.push(enc.ps(pieces[i]));
+            items.push(...latinTjItems(pieces[i], enc));
             if (i < pieces.length - 1) items.push(tjGap);
         }
         return `BT ${font} ${sz} Tf ${fmtNum(x)} ${fmtNum(y)} Td [${items.join(' ')}] TJ ET`;

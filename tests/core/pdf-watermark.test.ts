@@ -656,3 +656,33 @@ describe('text watermark — autoFit (v1.1.0)', () => {
         expect(rotH).toBeLessThanOrEqual(842 - safety * 2 + 0.5);
     });
 });
+
+// 1.9.0 — a page that paints with constant alpha declares its transparency
+// group and blending space (ISO 32000-1 §11.6.6); pages without alpha keep
+// their bytes, and PDF/A-1 (no transparency) never gets one.
+
+describe('page transparency group (1.9.0)', () => {
+    const docParams: DocumentParams = { title: 'G', blocks: [{ type: 'paragraph', text: 'x' }] };
+    const GROUP = '/Group << /S /Transparency /CS /DeviceRGB /I true >>';
+
+    it('is declared on every page of a document with a translucent watermark', () => {
+        const pdf = buildDocumentPDF(docParams, { watermark: { text: { text: 'DRAFT' } } });
+        expect(pdf).toContain(GROUP);
+        const two = buildDocumentPDF({ ...docParams, blocks: [{ type: 'paragraph', text: 'a' }, { type: 'pageBreak' }, { type: 'paragraph', text: 'b' }] }, { watermark: { text: { text: 'DRAFT' } } });
+        expect(two.match(/\/Group << /g)?.length).toBe(2);
+    });
+
+    it('is absent without a watermark and with an opaque one', () => {
+        expect(buildDocumentPDF(docParams)).not.toContain('/Group');
+        expect(buildDocumentPDF(docParams, { watermark: { text: { text: 'DRAFT', opacity: 1 } } })).not.toContain('/Group');
+    });
+
+    it('follows the OutputIntent blending space and skips PDF/A-1', () => {
+        // The table builder: same rule.
+        const table: PdfParams = { title: 'T', infoItems: [], balanceText: '', countText: '', footerText: '', headers: ['A'], rows: [{ cells: ['1'], type: '', pointed: false }] };
+        expect(buildPDF(table, { watermark: { text: { text: 'DRAFT' } } })).toContain(GROUP);
+        expect(buildPDF(table)).not.toContain('/Group');
+        // Under PDF/A-1b an opaque watermark is the only legal one, and no group is written.
+        expect(buildPDF(table, { tagged: 'pdfa1b', watermark: { text: { text: 'DRAFT', opacity: 1 } }, onDiagnostic: () => {} })).not.toContain('/Group');
+    });
+});

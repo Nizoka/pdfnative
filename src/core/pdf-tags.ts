@@ -76,6 +76,18 @@ export interface StructElement {
     readonly type: string;  // /Document, /Table, /TR, /TH, /TD, /P, /Span, /Figure
     readonly children: (StructElement | MCRef)[];
     objNum?: number;
+    /**
+     * Element identifier (`/ID`, a byte string), registered in the
+     * `/StructTreeRoot /IDTree` so other elements can reference it — a table
+     * cell's `/Headers` names its header cells this way (ISO 32000-1
+     * §14.8.4.3.4). @since 1.9.0
+     */
+    readonly id?: string;
+    /**
+     * Attribute dictionary body (`/A << … >>`), e.g. `/O /Table /Scope /Column`
+     * on a header cell (ISO 32000-1 Table 349). @since 1.9.0
+     */
+    readonly attrs?: string;
 }
 
 /**
@@ -206,9 +218,23 @@ export function buildStructureTree(
             `<< /Type /NumberTree /Nums [${numsArray}] >>`]);
     }
 
+    // /IDTree: a name tree from every element /ID to its object, sorted as
+    // ISO 32000-1 §7.9.6 requires (byte order). Absent when no element
+    // carries an identifier, so documents without header-scoped tables keep
+    // their 1.8.0 bytes.
+    const ids: [string, number][] = [];
+    (function collectIds(el: StructElement): void {
+        if (el.id !== undefined && el.objNum !== undefined) ids.push([el.id, el.objNum]);
+        for (const child of el.children) if ('type' in child) collectIds(child as StructElement);
+    })(root);
+    ids.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+    const idTree = ids.length > 0
+        ? ` /IDTree << /Names [${ids.map(([id, num]) => `(${id}) ${num} 0 R`).join(' ')}] >>`
+        : '';
+
     // StructTreeRoot object
     objects.push([structTreeRootObjNum,
-        `<< /Type /StructTreeRoot /K ${root.objNum} 0 R /ParentTree ${parentTreeObjNum} 0 R >>`]);
+        `<< /Type /StructTreeRoot /K ${root.objNum} 0 R /ParentTree ${parentTreeObjNum} 0 R${idTree} >>`]);
 
     // Emit all structure elements
     emitElement(root, structTreeRootObjNum);
@@ -225,8 +251,10 @@ export function buildStructureTree(
         }
         const kArray = kids.length === 1 ? kids[0] : `[${kids.join(' ')}]`;
         const elObj = el.objNum ?? 0;
+        const idEntry = el.id !== undefined ? ` /ID (${el.id})` : '';
+        const attrEntry = el.attrs !== undefined ? ` /A << ${el.attrs} >>` : '';
         objects.push([elObj,
-            `<< /Type /StructElem /S /${el.type} /P ${parentObjNum} 0 R /K ${kArray} >>`]);
+            `<< /Type /StructElem /S /${el.type} /P ${parentObjNum} 0 R${idEntry}${attrEntry} /K ${kArray} >>`]);
 
         for (const child of el.children) {
             if ('type' in child) {
@@ -584,6 +612,24 @@ const CAL_RGB_SRGB = '[/CalRGB << /WhitePoint [0.9505 1 1.089] /Gamma [2.2 2.2 2
 export function defaultRgbResource(intent: ResolvedOutputIntent | null, extraEntries = ''): string {
     if (!intent || intent.space === 'rgb') return '';
     return ` /ColorSpace << /DefaultRGB ${CAL_RGB_SRGB}${extraEntries ? ` ${extraEntries}` : ''} >>`;
+}
+
+/**
+ * The page-level transparency group (ISO 32000-1 §11.6.6) a page that paints
+ * with constant alpha or a blend mode (a translucent watermark, a COLRv1
+ * emoji layer) should declare: its blending colour space follows the
+ * OutputIntent (DeviceCMYK or DeviceGray under a press intent, DeviceRGB
+ * otherwise) and the group is isolated. Without it the blending space is
+ * the device space the viewer picks, and preflight tools warn. Returned with
+ * a leading space, empty when `transparent` is false — so pages without
+ * alpha keep their bytes.
+ *
+ * @since 1.9.0
+ */
+export function pageTransparencyGroup(transparent: boolean, intent: ResolvedOutputIntent | null): string {
+    if (!transparent) return '';
+    const cs = intent?.space === 'cmyk' ? '/DeviceCMYK' : intent?.space === 'gray' ? '/DeviceGray' : '/DeviceRGB';
+    return ` /Group << /S /Transparency /CS ${cs} /I true >>`;
 }
 
 /**

@@ -177,3 +177,66 @@ describe('paginateDocument', () => {
         expect(tocConverged!.height).toBeGreaterThan(0);
     });
 });
+
+// #83 (1.9.0) — a table of contents longer than a page breaks at entry
+// boundaries and continues on the following pages; every entry's link
+// annotation lands on the page that draws it. Before, the block was placed
+// whole and the entries past the foot were drawn at negative coordinates.
+
+describe('long table of contents paginates (#83)', () => {
+    const long = tocDoc(160);
+
+    it('splits the toc block over several pages, each slice inside the page', () => {
+        const layout = inspectDocumentLayout(long);
+        const slices = layout.pages.flatMap(p => p.blocks.filter(b => b.type === 'toc').map(b => ({ page: p.index, top: b.top, bottom: b.top - b.height })));
+        expect(slices.length).toBeGreaterThanOrEqual(3);
+        expect(slices.map(s => s.page)).toEqual(slices.map((_, i) => i));
+        for (const s of slices) expect(s.bottom).toBeGreaterThanOrEqual(DEFAULT_MARGINS.b - 1e-6);
+        expect(builtPages(long)).toBe(layout.totalPages);
+    });
+
+    it('puts every entry link on the page that draws it, none below the page', () => {
+        const reader = openPdf(buildDocumentPDFBytes(long));
+        let total = 0;
+        for (let p = 0; p < reader.pageCount; p++) {
+            for (const a of reader.getAnnotations(p)) {
+                total++;
+                expect(a.rect?.[1] ?? 0, `page ${p}`).toBeGreaterThan(0);
+                expect(a.rect?.[3] ?? PG_H + 1, `page ${p}`).toBeLessThanOrEqual(PG_H);
+            }
+        }
+        expect(total).toBe(160);
+    });
+
+    it('nests every /TOCI under one /TOC in tagged mode, across slices', () => {
+        const tagged = buildDocumentPDFBytes({ ...long, blocks: long.blocks.slice(0, 1 + 2 * 120) }, { tagged: true, onDiagnostic: () => {} });
+        const s = new TextDecoder('latin1').decode(tagged);
+        expect((s.match(/\/S \/TOC /g) ?? []).length).toBe(1);
+        expect((s.match(/\/S \/TOCI /g) ?? []).length).toBe(120);
+    });
+
+    it('converges the heading page numbers (the printed numbers match the pages)', () => {
+        const pdf = buildDocumentPDFBytes(long);
+        const reader = openPdf(pdf);
+        // Entry 160 is the last heading: its link rect sits on the last toc page and
+        // the heading itself is rendered on the page the number says.
+        const result = paginateDocument({
+            blocks: long.blocks, enc: createEncodingContext([], false, false),
+            pgH: PG_H, mg: DEFAULT_MARGINS, cw: 595.28 - DEFAULT_MARGINS.l - DEFAULT_MARGINS.r, headerH: 0,
+        });
+        const again = paginatePass({
+            blocks: long.blocks, enc: createEncodingContext([], false, false),
+            pgH: PG_H, mg: DEFAULT_MARGINS, cw: 595.28 - DEFAULT_MARGINS.l - DEFAULT_MARGINS.r, headerH: 0,
+        }, result.headings);
+        expect(again.headings.map(h => h.pageIndex)).toEqual(result.headings.map(h => h.pageIndex));
+        expect(reader.pageCount).toBe(result.pages.length);
+    });
+
+    it('keeps a fitting table of contents on the atomic path (single block, title and trailer)', () => {
+        const small = tocDoc(3);
+        const layout = inspectDocumentLayout(small);
+        const tocs = layout.pages.flatMap(p => p.blocks.filter(b => b.type === 'toc'));
+        expect(tocs).toHaveLength(1);
+        expect(tocs[0].height).toBeCloseTo(14 + 8 + 3 * 10 * 1.6 + 12, 6);
+    });
+});

@@ -622,6 +622,11 @@ export interface ColumnDef {
      * driven by `row.type`. Opt-in replacement for the pre-1.2.0
      * hardcoded `i === 3` heuristic in `renderTable`. Default: plain text
      * in `colors.text` and `enc.f1` (Helvetica-Regular).
+     *
+     * Since 1.9.0 the table builder (`buildPDF`) honours it too: as soon as
+     * any column declares a `kind`, only the `'amount'` columns are styled and
+     * the fourth-column heuristic is off; with no `kind` anywhere the
+     * historical heuristic stays, byte for byte.
      * @since 1.2.0
      */
     readonly kind?: 'amount';

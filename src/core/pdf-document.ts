@@ -58,12 +58,13 @@ import {
     buildEmbeddedFiles,
     validateAttachments,
     utf8EncodeBinaryString,
+    pageTransparencyGroup,
 } from './pdf-tags.js';
 import type { EncryptionState } from './pdf-encrypt.js';
 import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
-import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
+import { validateWatermark, buildWatermarkState, translucentStates } from './pdf-watermark.js';
 import { resolveCreationDate } from './pdf-reproducible.js';
 import { paginateDocument } from './pdf-pagination.js';
 import { prepareBlocks } from './pdf-typography.js';
@@ -455,6 +456,12 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                     y = result.y;
                     break;
                 }
+                case '__tocSlice': {
+                    const result = renderToc(block.block, headingDests, y, enc, mg.l, cw, p, pageAnnotations, tagCtx, documentChildren, block.slice);
+                    ops.push(...result.ops);
+                    y = result.y;
+                    break;
+                }
                 case 'barcode': {
                     const result = renderBarcodeBlock(block, y, mg.l, cw, tagCtx, documentChildren);
                     ops.push(...result.ops);
@@ -619,6 +626,13 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
     // emitted as trailing objects and forward-referenced from every page's
     // /XObject dict. Empty (and zero-cost) unless an 'emoji-color' font is used.
     const colorEmojiForms = enc.colorEmoji?.forms ?? [];
+    // A page that paints with constant alpha or a blend mode — a translucent
+    // watermark, a COLRv1 emoji layer — declares its transparency group and
+    // blending space (ISO 32000-1 §11.6.6; 1.9.0). PDF/A-1 admits no
+    // transparency, and validateWatermark already refuses it there.
+    const usesTransparency = (wmState !== null && translucentStates(wmState.extGStates))
+        || colorEmojiForms.some(f => /\/ca |\/CA |\/BM /.test(f.resources));
+    const pageGroup = pageTransparencyGroup(usesTransparency && !(tagged && pdfaConfig.pdfaPart === 1), outputIntent);
     const colorEmojiStart = colorEmojiForms.length > 0
         ? (latinToUniObjNum || (preBaseObjCount + 1)) + 1
         : 0;
@@ -816,7 +830,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr}${pageGroup} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << ${fontRes} >>${imgXObjRes}${wmGsRes}${pageColorSpaceRes} >>${structParents}${annotsStr} >>`
             );
@@ -987,7 +1001,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr}${pageGroup} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${imgXObjRes}${wmGsRes}${pageColorSpaceRes} >>${structParents}${annotsStr} >>`
             );
