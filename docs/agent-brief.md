@@ -6,14 +6,14 @@
 > Longer forms: [llms.txt](https://pdfnative.dev/llms.txt) (index),
 > [llms-full.txt](https://pdfnative.dev/llms-full.txt) (full corpus),
 > [llms-index.json](https://pdfnative.dev/llms-index.json) (per-page sizes and anchors).
-> _Verified on 2026-09-27 against the source tree by `npm run verify:docs`._
+> _Verified on 2026-10-23 against the source tree by `npm run verify:docs`._
 
 ## What it is
 
 pdfnative is a zero-runtime-dependency TypeScript library that generates and
 parses ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) conformant PDFs on-device —
 Node ≥ 22, browsers, Deno, Bun, Web Workers. No SaaS round-trip, no telemetry,
-no sockets. Current version: 1.8.0. It writes (documents, tables, charts,
+no sockets. Current version: 1.9.0. It writes (documents, tables, charts,
 barcodes, SVG, forms, watermarks, signatures with long-term validation,
 typeset paragraphs, CMYK and PDF/X-4 print production) and reads (parse,
 decrypt, extract text, read/fill/flatten forms, merge/split/extract pages,

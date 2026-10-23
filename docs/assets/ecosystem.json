@@ -1,9 +1,9 @@
 {
   "$comment": "Single source of truth for every version, count and inventory quoted anywhere in the documentation. Edit THIS file, then run `npm run verify:docs` — it reports every doc that disagrees. Never hand-edit a number in a doc without updating this manifest first.",
-  "verifiedOn": "2026-09-27",
+  "verifiedOn": "2026-10-23",
   "packages": {
     "pdfnative": {
-      "version": "1.8.0",
+      "version": "1.9.0",
       "pinField": null,
       "pin": null,
       "repo": "https://github.com/Nizoka/pdfnative"

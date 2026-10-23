@@ -377,7 +377,7 @@ function applyPreset(id) {
   report.style.display = 'none';
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.9.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.9.0/+esm'];
 let pdfMod = null;
 async function loadPdfnative() {
   if (pdfMod) return pdfMod;
@@ -395,7 +395,7 @@ async function loadPdfnative() {
 }
 
 async function latinEntries(m) {
-  m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });
+  m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-sans-data.js') });
   const fontData = await m.loadFontData('latin');
   return [{ fontData, fontRef: '/F3', lang: 'latin' }];
 }

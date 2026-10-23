@@ -281,6 +281,7 @@ while <code>layout.onDiagnostic</code> (a <code>PdfDiagnosticHandler</code> rece
 <code>strict: true</code> is expressible — <code>onDiagnostic</code> is function-valued and therefore
 not JSON-representable.</p>
 <h2 id="typography-print--reproducible-output-v130">Typography, print &amp; reproducible output <em>(v1.3.0)</em><a class="heading-anchor" href="#typography-print--reproducible-output-v130" aria-label="Link to this section">#</a></h2>
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 <p>v1.3.0 tracks the pdfnative 1.8.0 engine and brings its authoring surface to
 JSX and <code>DocSpec</code> alike. Everything below is opt-in: a document that uses none
 of it compiles to the same <code>DocumentParams</code> and renders to the same bytes as
@@ -632,6 +633,7 @@ try {
 <hr>
 <h2 id="release-history">Release history<a class="heading-anchor" href="#release-history" aria-label="Link to this section">#</a></h2>
 <h3 id="whats-new-in-v130">What&#39;s new in v1.3.0<a class="heading-anchor" href="#whats-new-in-v130" aria-label="Link to this section">#</a></h3>
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 <p>v1.3.0 (released 2026-09-22) tracks the pdfnative 1.8.0 engine — typography, CMYK and PDF/X-4, reproducible output, 27 scripts — and exposes every one of its authoring capabilities through both doors, JSX and <code>DocSpec</code>. No public API was removed or renamed; every new behaviour is opt-in, and a document that uses none of it compiles to the same <code>DocumentParams</code>. The one floor that moves is the <code>pdfnative</code> peer, <code>^1.7.0</code> → <code>^1.8.0</code>.</p>
 <table>
 <thead>

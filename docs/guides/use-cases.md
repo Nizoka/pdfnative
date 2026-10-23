@@ -249,6 +249,7 @@ What you gain, concretely:
 Honest limits: zipnative is one more package to install and, in Case 1, one
 more module to deliver to the device. `setDeflateRawImpl` is process-global
 state — set it once at start-up, and use it rather than `setDeflateImpl`,
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 which since pdfnative 1.8.0 rejects raw DEFLATE output. A zipnative build and
 a `node:zlib` build of the same document differ in bytes (different encoder,
 identical content), so choose one compressor per pipeline and rebaseline

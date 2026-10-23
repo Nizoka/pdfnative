@@ -360,6 +360,7 @@ Everything here needs pdfnative ≥ 1.7.0 and is reachable through the existing 
 
 #### Typography _(v1.5.0)_
 
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 The pdfnative 1.8.0 typography engine is reachable through `layout.typography` — in the document JSON or a `--layout` file — and four flags that fill the same keys:
 
 | Flag | Description |
@@ -1118,6 +1119,7 @@ npm ci && npm run build && npm run test:generate
 
 ### What's new in v1.5.0
 
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 v1.5.0 is built on **pdfnative 1.8.0** (pin `^1.8.0`) and exposes every 1.8.0 engine feature — the typography engine, CMYK colours and colour bars, PDF/X-4 output with a structural validator, five more scripts (27 in all) with `latin` aliases, custom fonts from disk, and UTC, pinnable creation dates that make output **byte-reproducible** — plus the roadmap items the engine unblocked. 21 commands, 19 schema subjects and 12 stable error codes are unchanged; the global flag count grows to 10 (`--creation-date`). **100 % backward-compatible command surface** — every envelope field is additive — but the *bytes* differ from v1.4.0 output (see *Compatibility*).
 
 | Area | v1.4.0 | v1.5.0 |
@@ -1240,6 +1242,7 @@ The v0.2.0 release expanded the CLI from ~10 flags to a near-complete projection
 
 ## Migration v1.4.0 → v1.5.0
 
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 **100 % backward-compatible command surface** — no flag, default, exit code or error code changed. The *bytes* changed with the pdfnative 1.8.0 engine (UTC dates, hinting tables kept in TrueType subsets, corrected Thai and Lao mark ordering), so hash-based consumers rebaseline once and then pin the date:
 
 ```diff

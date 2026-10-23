@@ -20,6 +20,7 @@ A rendered PDF carries the wall clock in four places: `/Info /CreationDate`,
 `/ID` (an MD5 over the title, the creation date and the object count). Two
 builds of the same template therefore never hash the same, and a release
 pipeline cannot tell "the template changed" from "the clock moved". Since
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 pdfnative 1.8.0 every date is written in UTC, and v1.5.0 adds the global
 `--creation-date <iso8601>` — with `SOURCE_DATE_EPOCH` as the fallback the
 reproducible-builds.org variable that distribution build tools (Debian, Nix) set — so that
@@ -77,6 +78,7 @@ from a CSPRNG by design. `sign` appends an incremental revision whose `/ID` is
 drawn at signing time, and `sign --signing-time` and `metadata --mod-date` are
 separate, deliberately unpinned instants: a signature's time has a legal
 meaning of its own. An engine upgrade legitimately changes bytes without
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 changing content — pdfnative 1.8.0 itself moved every date to UTC and kept
 the hinting tables in TrueType subsets — so rebaseline once per upgrade, or
 gate with `compare --mode both`, which survives exactly that.

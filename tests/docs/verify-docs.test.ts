@@ -15,6 +15,8 @@ import { tmpdir } from 'node:os';
  */
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
+/** The engine version the manifest declares — the perturbation tests must not pin a release number. */
+const CURRENT = (JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string }).version;
 const SCRIPT = join(ROOT, 'scripts', 'verify-docs.ts');
 
 interface Run {
@@ -199,8 +201,8 @@ describe('verify-docs', () => {
 
         it('version-token sees a linked package name in a Markdown table row and the homepage badge', () => {
             withSandbox((dir) => {
-                patch(dir, 'README.md', '[`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.8.0**', '[`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.7.0**');
-                patch(dir, 'docs/index.html', 'data-pn-badge="pdfnative">v1.8.0<', 'data-pn-badge="pdfnative">v1.7.0<');
+                patch(dir, 'README.md', `[\`pdfnative\`](https://www.npmjs.com/package/pdfnative) | **v${CURRENT}**`, '[`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.7.0**');
+                patch(dir, 'docs/index.html', `data-pn-badge="pdfnative">v${CURRENT}<`, 'data-pn-badge="pdfnative">v1.7.0<');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('version-token');
                 expect(run.output).toContain('README.md');
@@ -240,11 +242,11 @@ describe('verify-docs', () => {
 
         it('llms-sync requires the current release note to be indexed', () => {
             withSandbox((dir) => {
-                patch(dir, 'llms.txt', 'release-notes/v1.8.0.md', 'release-notes/v1.8.1.md');
-                patch(dir, 'docs/llms.txt', 'release-notes/v1.8.0.md', 'release-notes/v1.8.1.md');
+                patch(dir, 'llms.txt', `release-notes/v${CURRENT}.md`, 'release-notes/v0.0.1.md');
+                patch(dir, 'docs/llms.txt', `release-notes/v${CURRENT}.md`, 'release-notes/v0.0.1.md');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('llms-sync');
-                expect(run.output).toContain('does not link release-notes/v1.8.0.md');
+                expect(run.output).toContain(`does not link release-notes/v${CURRENT}.md`);
                 expect(run.status).toBe(1);
             });
         }, 120_000);

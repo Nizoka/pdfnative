@@ -91,7 +91,7 @@
         "programmingLanguage": "TypeScript",
         "license": "https://opensource.org/licenses/MIT",
         "runtimePlatform": ["Node.js", "Browser", "Deno", "Bun"],
-        "softwareVersion": "1.8.0",
+        "softwareVersion": "1.9.0",
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "PDF library",
         "operatingSystem": "Cross-platform",
@@ -237,7 +237,7 @@
     <div class="metric-label">Dependencies</div>
   </div>
   <div class="metric">
-    <div class="metric-value">22</div>
+    <div class="metric-value">27</div>
     <div class="metric-label">Unicode Scripts</div>
   </div>
   <div class="metric">
@@ -494,7 +494,7 @@ const pdf = buildDocumentPDFBytes({
     <p class="section-subtitle">Four adoption paths — pick the one that fits your stack. All four are zero-config and zero-build.</p>
     <div class="onboarding-grid">
       <div class="onboarding-card">
-        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.8.0</span></h3>
+        <h3>Library <span class="ob-badge" data-pn-badge="pdfnative">v1.9.0</span></h3>
         <p class="ob-tag">For TypeScript / JavaScript apps.</p>
 <pre><code class="language-bash">npm install pdfnative</code></pre>
 <pre><code class="language-typescript">import { buildDocumentPDFBytes, extractText } from 'pdfnative';
@@ -796,7 +796,7 @@ const pdf = renderToBytes(
     <p class="section-subtitle">Strict unidirectional dependency flow. No circular imports. Each module is independently testable.</p>
     <div class="arch-diagram">
       <a href="https://github.com/Nizoka/pdfnative/tree/main/src" target="_blank" rel="noopener">
-        <img src="assets/architecture.svg" alt="pdfnative 1.8.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (21 commands: render · fill · sign · ltv · compare and more), pdfnative-mcp (MCP server, 28 tools, any MCP client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 27 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
+        <img src="assets/architecture.svg" alt="pdfnative 1.9.0 module architecture. A header badge notes the repository's AI-agent governance with a human-in-the-loop contribution gate. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (21 commands: render · fill · sign · ltv · compare and more), pdfnative-mcp (MCP server, 28 tools, any MCP client), and pdfnative-react (on-device JSX-to-PDF). Bottom band: the zero-dependency library with a strict unidirectional flow — types → core (pdf-builder, pdf-document, pdf-encrypt, pdf-tags, outline, page labels, annotations, layout inspect) ← fonts (encoding, subset, CMap, math font, tools sub-path) ← shaping (GSUB · GPOS · BiDi · 27 scripts) ← worker — plus a standalone crypto module and a standalone parser that reads, decrypts, extracts text, modifies, annotates, merges, splits and re-encrypts PDFs. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress." width="960" height="600" loading="lazy">
       </a>
     </div>
   </div>
@@ -820,7 +820,7 @@ const pdf = renderToBytes(
 <section class="section section-alt" id="mcp">
   <div class="container">
     <h2 class="section-title">Use pdfnative from Any AI Client</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the pdfnative engine as 28 tools and seven prompts to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with the complete PAdES ladder (<code>sign_pdf</code> with RFC 3161 timestamps, <code>add_ltv</code>, <code>timestamp_pdf</code>), <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, all 13 block kinds in <code>generate_basic_pdf</code>, print production, charts v2, page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, a <code>pdfA</code> flag on every document tool, and token-frugal read modes — on the MCP 2026-07-28 spec with automatic legacy fallback. v1.7.0 brings the pdfnative 1.8.0 engine to the same 28 tools: a <code>typography</code> object on every document tool, CMYK colours and PDF/X-4 (<code>pdfx: 'pdfx4'</code>, <code>validate_pdf</code> with <code>standard: 'pdf-x-4'</code>), 27 scripts, a seventh prompt, and byte-reproducible output pinned by <code>PDFNATIVE_MCP_CREATION_DATE</code> or <code>SOURCE_DATE_EPOCH</code>.</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-mcp" target="_blank" rel="noopener">pdfnative-mcp</a> is a <strong>Model Context Protocol server</strong> that exposes the pdfnative engine as 28 tools and seven prompts to Claude Desktop, Cursor, Continue, Zed, and any other MCP-compatible AI client. One <code>npx</code> command, no code required. Now with the complete PAdES ladder (<code>sign_pdf</code> with RFC 3161 timestamps, <code>add_ltv</code>, <code>timestamp_pdf</code>), <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, all 13 block kinds in <code>generate_basic_pdf</code>, print production, charts v2, page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>, a <code>pdfA</code> flag on every document tool, and token-frugal read modes — on the MCP 2026-07-28 spec with automatic legacy fallback. v1.7.0 brings the pdfnative 1.9.0 engine to the same 28 tools: a <code>typography</code> object on every document tool, CMYK colours and PDF/X-4 (<code>pdfx: 'pdfx4'</code>, <code>validate_pdf</code> with <code>standard: 'pdf-x-4'</code>), 27 scripts, a seventh prompt, and byte-reproducible output pinned by <code>PDFNATIVE_MCP_CREATION_DATE</code> or <code>SOURCE_DATE_EPOCH</code>.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
         <h3>28 Production Tools</h3>
@@ -883,7 +883,7 @@ const pdf = renderToBytes(
 <section class="section" id="cli">
   <div class="container">
     <h2 class="section-title">Use pdfnative from your shell, CI, or Makefile</h2>
-    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. 21 commands in five groups, zero extra runtime dependencies, stdin/stdout pipelines, npm-provenance-signed. It covers the whole document lifecycle: author with <code>render</code>, <code>fill</code>, <code>annotate</code> and <code>metadata</code>, restructure with <code>merge</code> / <code>split</code> / <code>extract</code>, secure with <code>sign</code> / <code>verify</code> / <code>ltv</code> / <code>doc-timestamp</code> / <code>encrypt</code> / <code>decrypt</code> — the complete PAdES ladder, B-B → B-LTA — read back with <code>inspect</code>, <code>extract-text</code> and <code>compare</code>, and automate with <code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code> and the AI-governance <code>govern</code> gate. Installing the package puts a <code>pdfnative</code> binary on your PATH. v1.5.0 brings the pdfnative 1.8.0 engine to the shell: typography flags, PDF/X-4 output checked by <code>inspect --check pdfx</code>, CMYK colours, your own fonts via <code>--font-file</code>, 27 scripts, and byte-reproducible builds pinned by a global <code>--creation-date</code> or <code>SOURCE_DATE_EPOCH</code>.</p>
+    <p class="section-subtitle"><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener">pdfnative-cli</a> is the <strong>official command-line interface</strong>. 21 commands in five groups, zero extra runtime dependencies, stdin/stdout pipelines, npm-provenance-signed. It covers the whole document lifecycle: author with <code>render</code>, <code>fill</code>, <code>annotate</code> and <code>metadata</code>, restructure with <code>merge</code> / <code>split</code> / <code>extract</code>, secure with <code>sign</code> / <code>verify</code> / <code>ltv</code> / <code>doc-timestamp</code> / <code>encrypt</code> / <code>decrypt</code> — the complete PAdES ladder, B-B → B-LTA — read back with <code>inspect</code>, <code>extract-text</code> and <code>compare</code>, and automate with <code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code> and the AI-governance <code>govern</code> gate. Installing the package puts a <code>pdfnative</code> binary on your PATH. v1.5.0 brings the pdfnative 1.9.0 engine to the shell: typography flags, PDF/X-4 output checked by <code>inspect --check pdfx</code>, CMYK colours, your own fonts via <code>--font-file</code>, 27 scripts, and byte-reproducible builds pinned by a global <code>--creation-date</code> or <code>SOURCE_DATE_EPOCH</code>.</p>
     <div class="mcp-layout">
       <div class="mcp-tools">
         <h3>21 Production Commands</h3>

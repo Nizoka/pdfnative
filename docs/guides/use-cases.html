@@ -276,8 +276,9 @@ Case 4&#39;s edge responses shrink without a native module in the runtime.</li>
 </ul>
 <p>Honest limits: zipnative is one more package to install and, in Case 1, one
 more module to deliver to the device. <code>setDeflateRawImpl</code> is process-global
-state — set it once at start-up, and use it rather than <code>setDeflateImpl</code>,
-which since pdfnative 1.8.0 rejects raw DEFLATE output. A zipnative build and
+state — set it once at start-up, and use it rather than <code>setDeflateImpl</code>,</p>
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
+<p>which since pdfnative 1.8.0 rejects raw DEFLATE output. A zipnative build and
 a <code>node:zlib</code> build of the same document differ in bytes (different encoder,
 identical content), so choose one compressor per pipeline and rebaseline
 once. A pure-TypeScript encoder is slower than native zlib; on a Node server

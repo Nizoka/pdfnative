@@ -82,8 +82,9 @@ cover the same ground for the <a href="use-cases-mcp.html">MCP server</a> and th
 <code>xmp:CreateDate</code>, the <code>{date}</code> header and footer placeholder, and the trailer
 <code>/ID</code> (an MD5 over the title, the creation date and the object count). Two
 builds of the same template therefore never hash the same, and a release
-pipeline cannot tell &quot;the template changed&quot; from &quot;the clock moved&quot;. Since
-pdfnative 1.8.0 every date is written in UTC, and v1.5.0 adds the global
+pipeline cannot tell &quot;the template changed&quot; from &quot;the clock moved&quot;. Since</p>
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
+<p>pdfnative 1.8.0 every date is written in UTC, and v1.5.0 adds the global
 <code>--creation-date &lt;iso8601&gt;</code> — with <code>SOURCE_DATE_EPOCH</code> as the fallback the
 reproducible-builds.org variable that distribution build tools (Debian, Nix) set — so that
 <strong>unencrypted output becomes a pure function of its inputs</strong>: the same JSON
@@ -133,8 +134,9 @@ variable.</p>
 from a CSPRNG by design. <code>sign</code> appends an incremental revision whose <code>/ID</code> is
 drawn at signing time, and <code>sign --signing-time</code> and <code>metadata --mod-date</code> are
 separate, deliberately unpinned instants: a signature&#39;s time has a legal
-meaning of its own. An engine upgrade legitimately changes bytes without
-changing content — pdfnative 1.8.0 itself moved every date to UTC and kept
+meaning of its own. An engine upgrade legitimately changes bytes without</p>
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
+<p>changing content — pdfnative 1.8.0 itself moved every date to UTC and kept
 the hinting tables in TrueType subsets — so rebaseline once per upgrade, or
 gate with <code>compare --mode both</code>, which survives exactly that.</p>
 <h2 id="case-2--press-handoff-pdfx-4-from-a-json-template">Case 2 — Press handoff: PDF/X-4 from a JSON template<a class="heading-anchor" href="#case-2--press-handoff-pdfx-4-from-a-json-template" aria-label="Link to this section">#</a></h2>
