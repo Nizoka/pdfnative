@@ -157,7 +157,7 @@
     {
       "id": "validate-pdfx",
       "label": "Validate PDF/X-4",
-      "library": { "supported": true, "call": "validatePdfX", "since": "1.8.0", "notes": "Structural check of the ISO 15930-7 prerequisites (header, XMP identification, OutputIntent profile, page boxes, embedded fonts in page resources, reached XObjects and annotation appearances, annotations, actions, embedded files, OPI / PostScript / reference XObjects, LZW, any /TR transfer function, device colour). It does not replace a certified preflight." },
+      "library": { "supported": true, "call": "validatePdfX", "since": "1.8.0", "notes": "Structural check of the ISO 15930-7 prerequisites (header, XMP identification, OutputIntent profile, page boxes, embedded fonts in page resources, reached XObjects and annotation appearances, annotations, actions, embedded files, OPI / PostScript / reference XObjects, LZW, any /TR transfer function, device colour, Table 42 operators in type-4 tint transforms). It does not replace a certified preflight." },
       "cli": { "supported": true, "command": "inspect", "since": "1.5.0", "notes": "inspect --pdfx reports pdfxConformance; --check pdfx turns the structural PDF/X-4 check into a CI assertion (exit 1 / E_CHECK_FAILED). Not a certified preflight." },
       "mcp": { "supported": true, "tool": "validate_pdf", "since": "1.7.0", "notes": "standard: 'pdf-x-4' (default 'pdf-ua-1'); the PDF/X result carries a caveats[] list stating it is not a certified preflight. inspect_pdf reports pdfX and accepts check: 'pdfx'." },
       "react": { "supported": false, "notes": "Deliberately not re-exported: import validatePdfX from pdfnative (already a peer) and run it on the rendered bytes — the one-line recipe is in the package docs." }

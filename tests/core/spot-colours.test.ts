@@ -111,13 +111,100 @@ describe('spotColourResources', () => {
         const res = spotColourResources(SPOTS, ['Spot_PANTONE#20300#20C', 'DeviceN_PANTONE#20300#20C__Varnish', 'CSReg', 'Spot_PANTONE#20300#20C'], fn => { fns.push(fn); return `${40 + fns.length} 0 R`; });
         expect(res.entries).toBe(
             '/Spot_PANTONE#20300#20C [/Separation /PANTONE#20300#20C /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [1 0.44 0 0] /N 1 >>] '
-            + '/DeviceN_PANTONE#20300#20C__Varnish [/DeviceN [/PANTONE#20300#20C /Varnish] /DeviceCMYK 41 0 R]');
+            + '/DeviceN_PANTONE#20300#20C__Varnish [/DeviceN [/PANTONE#20300#20C /Varnish] /DeviceCMYK 41 0 R '
+            + '<< /Colorants << /PANTONE#20300#20C [/Separation /PANTONE#20300#20C /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [1 0.44 0 0] /N 1 >>] '
+            + '/Varnish [/Separation /Varnish /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [0 0 0 0.1] /N 1 >>] >> >>]');
         expect(res.cmykAlternate).toBe(true);
         expect(res.rgbAlternate).toBe(false);
         expect(fns).toHaveLength(1);
         expect(fns[0].dict).toBe(`<< /FunctionType 4 /Domain [0 1 0 1] /Range [0 1 0 1 0 1 0 1] /Length ${fns[0].data.length}`);
-        // Two inks, four channels: C = t1·1 + t2·0, K = t1·0 + t2·0.1, every channel clamped at 1.
-        expect(fns[0].data).toBe('{ 2 copy 0 mul exch 1 mul add 3 1 roll 2 copy 0 mul exch 0.44 mul add 3 1 roll 2 copy 0 mul exch 0 mul add 3 1 roll 2 copy 0.1 mul exch 0 mul add 3 1 roll 2 {pop} repeat 4 {dup 1 gt {pop 1} if 4 1 roll} repeat }');
+        // Two inks, four channels: C = t1·1 + t2·0, K = t1·0 + t2·0.1; the tints are popped at the end, /Range clips.
+        expect(fns[0].data).toBe('{ 2 copy 0 mul exch 1 mul add 3 1 roll 2 copy 0 mul exch 0.44 mul add 3 1 roll 2 copy 0 mul exch 0 mul add 3 1 roll 2 copy 0.1 mul exch 0 mul add 3 1 roll pop pop }');
+    });
+
+    // ISO 32000-1 Table 42: the only operators a type 4 function may use.
+    // `repeat`, `for`, `loop`, `def` and the rest of PostScript are not
+    // among them — Acrobat refuses the function ("Invalid Function
+    // resource") and the page with it. Braces appear only around the outer
+    // procedure and the operands of `if` / `ifelse`.
+    const TABLE_42 = new Set([
+        'abs', 'add', 'atan', 'ceiling', 'cos', 'cvi', 'cvr', 'div', 'exp', 'floor', 'idiv', 'ln', 'log', 'mod', 'mul', 'neg', 'round', 'sin', 'sqrt', 'sub', 'truncate',
+        // demo-language: ps (PostScript calculator operator names of ISO 32000-1 Table 42, not prose)
+        'and', 'bitshift', 'eq', 'false', 'ge', 'gt', 'le', 'lt', 'ne', 'not', 'or', 'true', 'xor',
+        'if', 'ifelse',
+        'copy', 'dup', 'exch', 'index', 'pop', 'roll',
+    ]);
+    const tokens = (code: string): string[] => code.replace(/[{}]/g, ' $& ').trim().split(/\s+/);
+
+    /** A minimal calculator over the Table 42 subset the tint transforms use; returns the stack. */
+    function evalCalculator(code: string, inputs: number[]): number[] {
+        const toks = tokens(code);
+        expect(toks[0]).toBe('{');
+        expect(toks[toks.length - 1]).toBe('}');
+        const st: number[] = [...inputs];
+        for (const t of toks.slice(1, -1)) {
+            if (/^-?\d+(\.\d+)?$/.test(t)) { st.push(Number(t)); continue; }
+            const b = (): number => { const v = st.pop(); if (v === undefined) throw new Error('stack underflow'); return v; };
+            switch (t) {
+                case 'add': { const y = b(), x = b(); st.push(x + y); break; }
+                case 'sub': { const y = b(), x = b(); st.push(x - y); break; }
+                case 'mul': { const y = b(), x = b(); st.push(x * y); break; }
+                case 'exch': { const y = b(), x = b(); st.push(y, x); break; }
+                case 'pop': b(); break;
+                case 'dup': { const x = b(); st.push(x, x); break; }
+                case 'copy': { const n = b(); st.push(...st.slice(st.length - n)); break; }
+                case 'roll': {
+                    const j = b(), n = b();
+                    const part = st.splice(st.length - n, n);
+                    const k = ((j % n) + n) % n;
+                    st.push(...part.slice(n - k), ...part.slice(0, n - k));
+                    break;
+                }
+                default: throw new Error(`operator not modelled by the test: ${t}`);
+            }
+        }
+        return st;
+    }
+
+    it('uses only ISO 32000-1 Table 42 operators and no procedure outside if / ifelse (Acrobat "Invalid Function resource")', () => {
+        const fns: { dict: string; data: string }[] = [];
+        spotColourResources([...SPOTS, { name: 'Glow', alternate: [0, 255, 0] }], ['DeviceN_PANTONE#20300#20C__Varnish', 'DeviceN_Glow__Neon'], fn => { fns.push(fn); return `${40 + fns.length} 0 R`; });
+        expect(fns).toHaveLength(2);
+        for (const fn of fns) {
+            const toks = tokens(fn.data);
+            let depth = 0;
+            toks.forEach((t, i) => {
+                if (t === '{') { depth++; return; }
+                if (t === '}') {
+                    depth--;
+                    // A procedure that closes must be consumed by if / ifelse, except the outer one.
+                    if (i < toks.length - 1) expect(['if', 'ifelse', '{']).toContain(toks[i + 1]);
+                    return;
+                }
+                if (/^-?\d+(\.\d+)?$/.test(t)) return;
+                expect(TABLE_42.has(t), `operator ${t} is not in Table 42`).toBe(true);
+            });
+            expect(depth).toBe(0);
+            expect(fn.data).not.toMatch(/\brepeat\b|\bfor\b|\bloop\b|\bdef\b/);
+            expect(fn.data.length).toBe(Number(/\/Length (\d+)/.exec(fn.dict)?.[1]));
+        }
+    });
+
+    it('evaluates to the ink sum per channel with the tints consumed (the function leaves exactly /Range outputs)', () => {
+        const fns: { dict: string; data: string }[] = [];
+        spotColourResources(SPOTS, ['DeviceN_PANTONE#20300#20C__Varnish'], fn => { fns.push(fn); return '41 0 R'; });
+        // Inputs are the tints in /Names order: PANTONE 300 C [1 0.44 0 0], Varnish [0 0 0 0.1].
+        expect(evalCalculator(fns[0].data, [0, 0]).map(v => Math.round(v * 1000) / 1000)).toEqual([0, 0, 0, 0]);
+        expect(evalCalculator(fns[0].data, [1, 0]).map(v => Math.round(v * 1000) / 1000)).toEqual([1, 0.44, 0, 0]);
+        expect(evalCalculator(fns[0].data, [0, 1]).map(v => Math.round(v * 1000) / 1000)).toEqual([0, 0, 0, 0.1]);
+        expect(evalCalculator(fns[0].data, [1, 1]).map(v => Math.round(v * 1000) / 1000)).toEqual([1, 0.44, 0, 0.1]);
+        expect(evalCalculator(fns[0].data, [0.5, 0.5]).map(v => Math.round(v * 1000) / 1000)).toEqual([0.5, 0.22, 0, 0.05]);
+        // RGB alternates: light removed from white, 1 - Σ tint·(1 - component); /Range clips a negative.
+        const rgb: { dict: string; data: string }[] = [];
+        spotColourResources([{ name: 'A', alternate: [255, 0, 0] }, { name: 'B', alternate: [0, 0, 255] }], ['DeviceN_A__B'], fn => { rgb.push(fn); return '42 0 R'; });
+        expect(rgb[0].dict).toContain('/Range [0 1 0 1 0 1]');
+        expect(evalCalculator(rgb[0].data, [1, 0]).map(v => Math.round(v * 1000) / 1000)).toEqual([1, 0, 0]);
+        expect(evalCalculator(rgb[0].data, [1, 1]).map(v => Math.round(v * 1000) / 1000)).toEqual([0, -1, 0]);
     });
 
     it('writes RGB alternates over DeviceRGB, white as the zero tint', () => {
@@ -157,7 +244,7 @@ describe('document builder with spot colours', () => {
         expect(s).toContain('/Spot_PANTONE#20300#20C cs 0.5 scn');
         expect(s).toContain('/DeviceN_PANTONE#20300#20C__Varnish cs 1 0.3 scn');
         expect(s).toMatch(/\/ColorSpace << \/Spot_PANTONE#20300#20C \[\/Separation \/PANTONE#20300#20C \/DeviceCMYK/);
-        expect(s).toMatch(/\/DeviceN_PANTONE#20300#20C__Varnish \[\/DeviceN \[\/PANTONE#20300#20C \/Varnish\] \/DeviceCMYK \d+ 0 R\]/);
+        expect(s).toMatch(/\/DeviceN_PANTONE#20300#20C__Varnish \[\/DeviceN \[\/PANTONE#20300#20C \/Varnish\] \/DeviceCMYK \d+ 0 R << \/Colorants << \/PANTONE#20300#20C \[\/Separation/);
         expect(s).toMatch(/\/FunctionType 4 \/Domain \[0 1 0 1\] \/Range \[0 1 0 1 0 1 0 1\]/);
         // No ink the content does not use.
         expect(s).not.toContain('/Spot_Varnish ');
@@ -169,7 +256,7 @@ describe('document builder with spot colours', () => {
         expect(reader.pageCount).toBe(1);
         expect(extractText(bytes)[0].text).toContain('Brand blue');
         const s = latin1(bytes);
-        const fnRef = /\/DeviceCMYK (\d+) 0 R\]/.exec(s)?.[1];
+        const fnRef = /\/DeviceCMYK (\d+) 0 R << \/Colorants/.exec(s)?.[1];
         expect(fnRef).toBeDefined();
         expect(s).toContain(`\n${fnRef} 0 obj\n<< /FunctionType 4`);
     });

@@ -200,7 +200,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { type: 'paragraph', text: 'This heading is PANTONE 300 C at 100 %: a /Separation colour space named after the ink, with [100, 44, 0, 0] as the CMYK alternate a composite proof uses. A RIP that knows the ink puts it on a fifth plate.', color: { spot: 'PANTONE 300 C' } },
                 { type: 'paragraph', text: 'The same ink at a 40 % tint — one number in the content stream, the tint transform does the rest.', color: { spot: 'PANTONE 300 C', tint: 0.4 } },
                 { type: 'paragraph', text: 'PANTONE 1235 C, the brand yellow, as a second separation.', color: { spot: 'PANTONE 1235 C' } },
-                { type: 'paragraph', text: 'Blue over a spot varnish: a /DeviceN space over both inks whose PostScript tint transform adds the two alternates and clamps every channel at 100 %.', color: { inks: { 'PANTONE 300 C': 1, 'Spot Varnish': 1 } } },
+                { type: 'paragraph', text: 'Blue over a spot varnish: a /DeviceN space over both inks whose PostScript tint transform adds the two alternates and leaves the clipping of each channel at 100 % to the /Range of the function.', color: { inks: { 'PANTONE 300 C': 1, 'Spot Varnish': 1 } } },
                 { type: 'paragraph', text: 'Process black for the running text; the colour bar and the marks stay in the registration colour.' },
                 {
                     type: 'chart', chartType: 'bar', title: 'Ink coverage per plate', categories: ['C', 'M', 'Y', 'K', '300 C'],

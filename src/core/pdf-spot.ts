@@ -88,8 +88,15 @@ function separationEntry(def: SpotColourDef): string {
 /**
  * The PostScript calculator (type 4) tint transform of a DeviceN space over
  * `defs`: every output channel is the sum of each ink's tint times that
- * ink's alternate component (CMYK: ink added; RGB: light removed from 1),
- * clamped to 0–1.
+ * ink's alternate component (CMYK: ink added; RGB: light removed from 1).
+ * A sum above 1 (or an RGB value below 0) is clipped by `/Range`
+ * (ISO 32000-1 §7.10.1), so the code needs no clamp of its own.
+ *
+ * The code uses only the operators of ISO 32000-1 Table 42 — `copy`,
+ * `mul`, `add`, `sub`, `exch`, `roll`, `pop`. In particular no `repeat`
+ * (not a calculator operator) and no procedure outside `if`/`ifelse`:
+ * Acrobat refuses the whole function otherwise ("Invalid Function
+ * resource"). The `n` tints left under the results are popped one by one.
  */
 function deviceNFunction(defs: readonly SpotColourDef[], space: 'cmyk' | 'rgb'): SpotFunctionStream {
     const n = defs.length;
@@ -106,13 +113,23 @@ function deviceNFunction(defs: readonly SpotColourDef[], space: 'cmyk' | 'rgb'):
         return `${ps} ${n + 1} 1 roll`;
     };
     const body = Array.from({ length: channels }, (_, k) => channel(k)).join(' ');
-    const clamp = space === 'cmyk'
-        ? `${channels} {dup 1 gt {pop 1} if ${channels} 1 roll} repeat`
-        : `${channels} {dup 0 lt {pop 0} if ${channels} 1 roll} repeat`;
+    const pops = Array.from({ length: n }, () => 'pop').join(' ');
     const domain = Array.from({ length: n }, () => '0 1').join(' ');
     const range = Array.from({ length: channels }, () => '0 1').join(' ');
-    const data = `{ ${body} ${n} {pop} repeat ${clamp} }`;
+    const data = `{ ${body} ${pops} }`;
     return { dict: `<< /FunctionType 4 /Domain [${domain}] /Range [${range}] /Length ${data.length}`, data };
+}
+
+/**
+ * The DeviceN attributes dictionary (ISO 32000-1 §8.6.6.5, Table 71): a
+ * `/Colorants` dictionary naming every ink of the mix with the same
+ * `/Separation` array its own resource uses, so a reader can show the inks
+ * one by one and PDF/A-2 (ISO 19005-2 §6.2.4.4) finds every colorant
+ * described with one tint transform throughout the file.
+ */
+function deviceNAttributes(defs: readonly SpotColourDef[]): string {
+    const colorants = defs.map(d => `/${pdfNameEncode(d.name)} ${separationEntry(d)}`).join(' ');
+    return `<< /Colorants << ${colorants} >> >>`;
 }
 
 /** A type-4 function as a stream object: its dictionary (open, `/Length` last) and its PostScript code. */
@@ -177,7 +194,7 @@ export function spotColourResources(
             if (space === 'cmyk') cmykAlternate = true; else rgbAlternate = true;
             const fnRef = deviceNFunctionRef(deviceNFunction(defs, space));
             const names = defs.map(d => `/${pdfNameEncode(d.name)}`).join(' ');
-            entries.push(`/${resourceName} [/DeviceN [${names}] ${space === 'cmyk' ? '/DeviceCMYK' : '/DeviceRGB'} ${fnRef}]`);
+            entries.push(`/${resourceName} [/DeviceN [${names}] ${space === 'cmyk' ? '/DeviceCMYK' : '/DeviceRGB'} ${fnRef} ${deviceNAttributes(defs)}]`);
         }
     }
     return { entries: entries.join(' '), cmykAlternate, rgbAlternate };
