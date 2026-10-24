@@ -343,10 +343,10 @@
       "remedy": "Use one of the listed types; `link` (URI link, since 1.9.0) covers the former gap."
     },
     {
-      "message": "${filter} output exceeds the ${limit}-byte limit (potential zip bomb) — raise setMaxInflateOutputSize() if this document is trusted",
+      "message": "${filter} output exceeds the ${limit}-byte limit (potential zip bomb) — ${hint}",
       "thrownBy": "inflateSync / applyDecodeFilter, rethrown by extractText (onStreamError: 'limit' default), openPdf().decodeStream, validatePdfX, validatePdfUA (class PdfStreamLimitError, code PDF_STREAM_LIMIT)",
       "since": "1.9.0",
-      "when": "A stream would decompress to more bytes than the safety cap (setMaxInflateOutputSize, default 100 MB, for FlateDecode; 256 MiB for the other filters). extractText used to skip the stream silently and return an empty page (#89).",
+      "when": "A stream would decompress to more bytes than the safety cap (setMaxInflateOutputSize, default 100 MB, for FlateDecode; a fixed 256 MiB for ASCIIHex, ASCII85, LZW and RunLength). The hint names the remedy that applies to the filter: raising setMaxInflateOutputSize() for FlateDecode, onStreamError: 'skip' for the fixed caps. extractText used to skip the stream silently and return an empty page (#89).",
       "remedy": "Classify by `code === 'PDF_STREAM_LIMIT'` (or `instanceof PdfStreamLimitError`). Raise the cap for trusted input, or pass `onStreamError: 'skip'` to extractText for the pre-1.9.0 behaviour."
     }
   ]

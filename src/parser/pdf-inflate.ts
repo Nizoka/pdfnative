@@ -28,7 +28,13 @@ export class PdfStreamLimitError extends Error {
     /** The cap in bytes. */
     readonly limit: number;
     constructor(filter: string, limit: number) {
-        super(`${filter} output exceeds the ${limit}-byte limit (potential zip bomb) — raise setMaxInflateOutputSize() if this document is trusted`);
+        // Only the FlateDecode cap is adjustable; the other decoders carry a
+        // fixed cap of their own (pdf-decode-filters.ts), so the remedy
+        // named in the message must be the one that applies.
+        const hint = filter === 'FlateDecode'
+            ? 'raise setMaxInflateOutputSize() if this document is trusted'
+            : 'the cap of this filter is fixed; pass onStreamError: \'skip\' to extractText() to read the rest of the document';
+        super(`${filter} output exceeds the ${limit}-byte limit (potential zip bomb) — ${hint}`);
         this.name = 'PdfStreamLimitError';
         this.filter = filter;
         this.limit = limit;
