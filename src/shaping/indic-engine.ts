@@ -808,7 +808,15 @@ function shapeWithLayout(str: string, fontData: FontData, cfg: IndicScriptConfig
     return attachMarks(out, fontData);
 }
 
-/** Items of one syllable, two-part vowel signs decomposed. */
+/**
+ * Items of one syllable, two-part vowel signs decomposed. Each part names
+ * its own code point of the canonical decomposition (`splitMatras` are the
+ * UCD's NFD mappings: ୋ → U+0B47 U+0B3E), so every glyph has a Unicode
+ * value in the ToUnicode CMap — one glyph id standing for several
+ * precomposed signs would otherwise map to the first one seen, and the
+ * second part had none at all (`PDFA_GLYPH_WITHOUT_UNICODE` under level U).
+ * Extracted text is the NFD form, which normalises back to the source.
+ */
 function buildItems(cps: readonly number[], cfg: IndicScriptConfig, gidOf: (cp: number) => number): Item[] {
     const items: Item[] = [];
     for (const cp of cps) {
@@ -818,7 +826,7 @@ function buildItems(cps: readonly number[], cfg: IndicScriptConfig, gidOf: (cp: 
                 const own = classify(p, cfg);
                 items.push({
                     gid: gidOf(p), cat: isMatra(own) ? own : (k === 0 ? 'MPre' : 'MPst'), pos: 0, mask: ALL_FEATURES,
-                    cps: k === 0 ? [cp] : [], reph: false, pref: false,
+                    cps: [p], reph: false, pref: false,
                 });
             });
             continue;

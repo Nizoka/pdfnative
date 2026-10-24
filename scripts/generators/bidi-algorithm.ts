@@ -147,6 +147,11 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { type: 'paragraph', text: 'פסקה מיושרת לשני הצדדים: הספרייה pdfnative יוצרת קובצי PDF ללא תלויות בזמן ריצה. המרווחים העודפים מתפזרים בין המילים לפי הסדר החזותי, והשורה האחרונה נותרת לא מלאה משמאל. השורה כוללת מספר 2026 ושם לטיני אחד.', align: 'justify' },
 
                 { type: 'heading', text: 'Forced direction', level: 2 },
+                // A trailing full stop of a forced-RTL Latin paragraph lands at
+                // the LEFT of its last word (".order"): N2 gives a neutral between
+                // a Latin letter and the paragraph edge the paragraph direction
+                // (level 1), and L2 places it before the level-2 Latin run.
+                // Chrome, ICU and fribidi draw the same — it is the proof, not a bug.
                 { type: 'paragraph', text: 'pdfnative 1.9.0 — forced right-to-left paragraph of Latin text: aligned to the right margin, letters in reading order.', direction: 'rtl' },
                 { type: 'paragraph', text: 'مرحبا — forced left-to-right paragraph of Arabic text: aligned to the left margin, words still read right to left.', direction: 'ltr' },
             ],

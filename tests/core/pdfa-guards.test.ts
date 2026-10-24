@@ -10,6 +10,8 @@ import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { buildPDFBytes } from '../../src/core/pdf-builder.js';
 import * as notoSansData from '../../fonts/noto-sans-data.js';
 import * as notoTaiThamData from '../../fonts/noto-taitham-data.js';
+import * as notoOriyaData from '../../fonts/noto-oriya-data.js';
+import { extractText } from '../../src/parser/pdf-text-extract.js';
 import type { FontData, FontEntry, PdfDiagnostic, PdfParams } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
@@ -249,6 +251,23 @@ describe('PDFA_GLYPH_WITHOUT_UNICODE (level U, #87)', () => {
     it('throws under strict', () => {
         expect(() => buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2u', strict: true }))
             .toThrow(/ToUnicode CMap cannot name/);
+    });
+
+    // 1.9.0 — the two parts of a split vowel sign each name their own code
+    // point of the canonical decomposition (ୋ → U+0B47 U+0B3E), so the
+    // substituted length mark of ୈ (gid 75 in Noto Sans Oriya) is no longer a
+    // glyph without a Unicode value, and the extracted text is the NFD form.
+    it('stays silent for Odia split vowel signs (each part of ୈ ୋ ୌ carries its NFD code point)', () => {
+        const odia: FontEntry = { fontData: notoOriyaData as unknown as FontData, fontRef: '/F3', lang: 'or' };
+        // demo-language: or (split vowel signs — ବୈଠକ, କୈ, ଗୋଟିଏ)
+        const text = 'ବୈଠକ କୈ ଗୋଟିଏ';
+        const params: DocumentParams = { title: 'U', blocks: [{ type: 'paragraph', text }], fontEntries: [odia] };
+        const seen: PdfDiagnostic[] = [];
+        const bytes = buildDocumentPDFBytes(params, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).not.toContain('PDFA_GLYPH_WITHOUT_UNICODE');
+        expect(() => buildDocumentPDFBytes(params, { tagged: 'pdfa2u', strict: true })).not.toThrow();
+        const extracted = extractText(bytes)[0].text.normalize('NFC');
+        for (const word of text.split(' ')) expect(extracted).toContain(word);
     });
 
     it('does not fire under pdfa2b, which has no Unicode requirement', () => {

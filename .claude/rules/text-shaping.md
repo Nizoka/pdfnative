@@ -47,7 +47,7 @@ paths:
 - **Continuation bias**: for common/shared characters (Latin, digits, spaces, punctuation), prefer current font if it supports the character (reduce font switches)
 - **Combining-mark lookahead (v1.8.0)**: a base followed by a generic combining mark ranks fonts 0 (no base) < 1 (base only) < 2 (base and mark) < 3 (base and an anchored mark), so Yoruba ẹ́ lands in Noto Sans in one run even when the Vietnamese subset (ẹ and U+0301, no GPOS) is registered first; text without a following mark ranks every covering font 3, exactly as before
 - Run output: `{ text, fontRef, fontData, hexStr, widthPt }`
-- Latin text always falls back to Helvetica (no embedding needed)
+- Latin text always falls back to Helvetica (no embedding needed); since 1.9.0 (ledger C17) a fallback run is measured with the AFM advances (`exactBase14Width`), whatever `typography.metrics` says — the viewer draws Helvetica with those advances and the next run of the line starts at `penX + widthPt`, so the old bucketed estimate left a gap or an overlap at every script boundary of a mixed line
 - Single-codepoint lookups via `cmap[codePoint]` — O(1) check
 
 ## Performance
@@ -95,7 +95,7 @@ paths:
 - RTL Hebrew runs: text already reversed by BiDi → encode character-by-character (no positional shaping)
 - LTR runs within mixed text: standard encoding path (no BiDi processing)
 - Helvetica continuation bias: `buildTextRunsWithFallback()` keeps WinAnsi-encodable characters (spaces, punctuation) in Helvetica mode when already in Helvetica, preventing CIDFont space-switching between Latin words
-- Helvetica width metrics: `helveticaWidth()` handles Unicode codepoints directly — em-dash (U+2014→1000), en-dash (U+2013→556), ellipsis (U+2026→1000), curly quotes, Euro sign
+- Helvetica width metrics: `helveticaWidth()` (the bucketed estimate of the pure base-14 path under `metrics: 'approximate'`) handles Unicode codepoints directly — em-dash (U+2014→1000), en-dash (U+2013→556), ellipsis (U+2026→1000), curly quotes, Euro sign; a Helvetica fallback run inside Unicode mode never uses it (AFM advances since 1.9.0, C17)
 - CRITICAL: `shapeArabicText()` expects logical-order input and returns logical-order glyphs — must reverse for visual
 - CRITICAL: `splitArabicNonArabic()` must separate non-Arabic chars (em-dash, punctuation) from Arabic shaping to avoid .notdef glyphs
 - Arabic text runs: shaped via `shapeArabicText()` → `ShapedGlyph[]` → hex-encoded (same path as Thai)

@@ -691,7 +691,7 @@ export const LANGUAGE_DOCS: readonly LanguageDoc[] = [
         intro: 'ഇത് pdfnative ലൈബ്രറി ഉപയോഗിച്ച് മലയാളത്തിൽ PDF നിർമ്മിക്കുന്നതിന്റെ ഒരു ഉദാഹരണമാണ്. ഈ രേഖയിൽ തലക്കെട്ടുകൾ, ഖണ്ഡികകൾ, പട്ടികകൾ, ലിസ്റ്റുകൾ എന്നിവയുണ്ട്; ഓരോ കൂട്ടക്ഷരവും ഒരേ പേജിൽ കാണാം.',
         edgeCases: [
             { what: 'Chillu letters', sample: 'അവൻ കാൽ അവർ അവൾ', note: 'ൻ ൽ ർ ൾ atomic chillu letters' },
-            { what: 'Stacked conjuncts', sample: 'പുസ്തകം ക്ഷമ കഷ്ടം', note: 'സ്ത ക്ഷ ഷ്ട ligatures' },
+            { what: 'Stacked conjuncts', sample: 'പുസ്തകം ക്ഷമ കഷ്ടം', note: 'ക്ഷ is one ligature; സ്ത and ഷ്ട keep a visible chandrakkala in Noto Sans Malayalam (reformed orthography; the font has no C+ു/ൂ ligatures)' },
             { what: 'Pre-base ra', sample: 'പ്രകാശം ക്രമം സ്ത്രീ', note: '്ര drawn before the cluster' },
             { what: 'Ya and va signs', sample: 'വിദ്യ സ്വന്തം ദിവ്യ', note: '്യ to the right, ്വ below' },
             { what: 'Two-part vowel signs', sample: 'കോഴി പോയി കൊച്ചി', note: 'ൊ ോ split around the consonant' },

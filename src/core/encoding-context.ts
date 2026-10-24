@@ -202,7 +202,12 @@ function buildTextRunsCore(
         result.push({
             text: helChars, fontRef: '/F1', fontData: fd, shaped: null,
             hexStr: pdfString(helChars),
-            widthPt: helveticaWidth(helChars, sz),
+            // The viewer draws Helvetica with its real advances, and the run
+            // after this one is placed at penX + widthPt: an estimate here
+            // leaves a gap (or an overlap) at every script boundary of a
+            // mixed line (v1.9.0, ledger C17). Same formula as the exact
+            // base-14 path; soft hyphens and bidi controls are invisible.
+            widthPt: exactBase14Width(toWinAnsi(stripSoftHyphens(stripBidiControls(helChars))), sz, false) - narrowNoBreakSpaceCorrection(helChars, sz),
         });
         helChars = '';
     }

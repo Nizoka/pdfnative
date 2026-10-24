@@ -8,6 +8,8 @@ import { describe, it, expect } from 'vitest';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { openPdf } from '../../src/parser/pdf-reader.js';
 import { createEncodingContext, applyDocumentKerning } from '../../src/core/encoding-context.js';
+import { exactBase14Width } from '../../src/fonts/base14-metrics.js';
+import { toWinAnsi } from '../../src/fonts/encoding.js';
 import { txt, txtJustified, txtShaped } from '../../src/core/pdf-text.js';
 import { resolveBidiRuns } from '../../src/shaping/bidi.js';
 import { shapeArabicText } from '../../src/shaping/arabic-shaper.js';
@@ -68,6 +70,67 @@ function build(blocks: DocumentParams['blocks'], layout?: Partial<PdfLayoutOptio
     // No title: every text origin in the page belongs to the paragraph under test.
     return buildDocumentPDFBytes({ title: '', blocks, fontEntries: hebrewEntries }, { creationDate: PINNED, ...layout });
 }
+
+// ── Helvetica fallback runs (ledger C17) ─────────────────────────────
+//
+// In Unicode mode a Latin character no registered font covers falls back
+// to unembedded Helvetica. The viewer draws it with the AFM advances, and
+// the next run of the line starts at penX + widthPt: until 1.9.0 widthPt
+// was the bucketed estimate (500 / 680 / 556 per class), which left a gap
+// — or an overlap — at every script boundary of a mixed line.
+
+describe('Helvetica fallback runs are measured with the AFM widths (C17)', () => {
+    const hebrewOnly: FontEntry[] = [{ fontData: hebrewFont, fontRef: '/F3', lang: 'he' }];
+    const afm = (s: string): number => exactBase14Width(toWinAnsi(s), SZ, false);
+
+    it('gives a fallback run the exact base-14 width, whatever typography.metrics says', () => {
+        for (const metrics of ['approximate', 'exact'] as const) {
+            const enc = createEncodingContext(hebrewOnly, false, false, metrics);
+            const runs = enc.textRuns('(abc) x', SZ);
+            const hel = runs.filter(r => r.fontRef === '/F1');
+            expect(hel.length).toBeGreaterThan(0);
+            for (const r of hel) expect(r.widthPt).toBeCloseTo(afm(r.text), 6);
+            // ( = 333, a b c = 556 500 556, ) = 333, space 278, x 500 (Helvetica AFM) — not 556 / 500 / 680 buckets.
+            expect(enc.tw('(abc) x', SZ)).toBeCloseTo((333 + 556 + 500 + 556 + 333 + 278 + 500) / 1000 * SZ, 6);
+        }
+    });
+
+    it('places the run after a Latin fallback run exactly at its AFM end on a mixed line', () => {
+        const content = pageContent(buildDocumentPDFBytes(
+            { title: '', blocks: [{ type: 'paragraph', text: `${HE_WORD} (abc) ${HE_WORLD} 100% done.` }], fontEntries: hebrewOnly },
+            { creationDate: PINNED, direction: 'auto' },
+        ));
+        // Every text object of the paragraph line: its font, size, x origin and literal string (Helvetica) or null (hex).
+        const objects = Array.from(content.matchAll(/BT \/(F\d) ([\d.]+) Tf ([\d.-]+) ([\d.-]+) Td (?:\(((?:\\.|[^)\\])*)\)|<[0-9A-Fa-f]+>) Tj/g))
+            .filter(m => Number(m[4]) > 60)
+            .map(m => ({ font: m[1], size: Number(m[2]), x: Number(m[3]), text: m[5] ?? null }));
+        const hel = objects.filter(o => o.font === 'F1');
+        expect(hel.length).toBeGreaterThanOrEqual(4); // "." "done" "100%" "(" "abc" ") "
+        for (const o of hel) {
+            const next = objects.filter(n => n.x > o.x + 0.01).sort((a, b) => a.x - b.x)[0];
+            if (!next) continue;
+            const text = o.text!.replace(/\\([()\\])/g, '$1');
+            expect(next.x - o.x, `after (${text})`).toBeCloseTo(exactBase14Width(toWinAnsi(text), o.size, false), 2);
+        }
+    });
+
+    it('right-aligns a line holding a fallback run to the margin with the same widths', () => {
+        // Forced left-to-right: the Hebrew word sits on the left, the Latin fallback run is the rightmost object.
+        const bytes = buildDocumentPDFBytes(
+            { title: '', blocks: [{ type: 'paragraph', text: `${HE_WORD} abc`, align: 'right', direction: 'ltr' }], fontEntries: hebrewOnly },
+            { creationDate: PINNED },
+        );
+        const content = pageContent(bytes);
+        const pageWidth = Number(/\/MediaBox \[0 0 ([\d.]+) [\d.]+\]/.exec(Buffer.from(bytes).toString('latin1'))?.[1]);
+        expect(pageWidth).toBeGreaterThan(0);
+        const objects = Array.from(content.matchAll(/BT \/(F\d) ([\d.]+) Tf ([\d.-]+) ([\d.-]+) Td (?:\(((?:\\.|[^)\\])*)\)|<[0-9A-Fa-f]+>) Tj/g))
+            .filter(m => Number(m[4]) > 60)
+            .map(m => ({ font: m[1], size: Number(m[2]), x: Number(m[3]), text: m[5] ?? null }));
+        const last = objects.sort((a, b) => a.x - b.x)[objects.length - 1];
+        expect(last.font).toBe('F1');
+        expect(last.x + exactBase14Width(toWinAnsi(last.text!), last.size, false)).toBeCloseTo(pageWidth - 36, 2); // flush with the right margin, not short of it
+    });
+});
 
 // ── EncodingContext.withParagraph ────────────────────────────────────
 

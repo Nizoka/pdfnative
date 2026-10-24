@@ -62,6 +62,8 @@ The controls never reach the glyph stream (they have no glyph and no width), and
 
 Headings, list items and table cells reorder their text with the same resolver; alignment inside table cells follows `ColumnDef.align`.
 
+**Latin inside a right-to-left document.** A Latin word, a number or a bracket that no registered font covers is drawn with unembedded Helvetica, and since 1.9.0 that run is measured with Helvetica's real advances, so the Arabic or Hebrew run after it starts exactly where it ends (before 1.9.0 an estimate left a visible gap, or an overlap, at every script boundary — ledger C17 of the release note). Register a Latin module (`registerFont('latin', …)`) when the document claims PDF/A — an unembedded font is refused there — or when the Latin text should match the Noto design.
+
 ## Text extraction of right-to-left output
 
 `extractText()` returns text in **geometric** order — runs sorted by their position on the page, left to right. For a right-to-left line that is the visual order, so a logical sentence comes back reversed, as it does from any PDF reader's copy-and-paste. Two things make the text usable all the same:

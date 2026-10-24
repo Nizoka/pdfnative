@@ -49,10 +49,21 @@ function indexOfCp(shaped: readonly ShapedGlyph[], cp: number): number {
     return shaped.findIndex(g => g.cps?.includes(cp));
 }
 
-/** Every input code point is reported by exactly one glyph (joiners excepted). */
+/**
+ * Every input code point is reported by exactly one glyph (joiners
+ * excepted). A two-part vowel sign is reported as its canonical
+ * decomposition, one part per glyph (ୋ → U+0B47 U+0B3E; 1.9.0), so the
+ * input's combining signs are compared in NFD.
+ */
 function expectCpsCoverInput(shaped: readonly ShapedGlyph[], word: string): void {
     const reported = shaped.flatMap(g => [...(g.cps ?? [])]).filter(cp => !JOINERS.has(cp)).sort((a, b) => a - b);
-    const input = cps(word).filter(cp => !JOINERS.has(cp)).sort((a, b) => a - b);
+    const input = cps(word)
+        .filter(cp => !JOINERS.has(cp))
+        .flatMap(cp => {
+            const ch = String.fromCodePoint(cp);
+            return /\p{M}/u.test(ch) ? cps(ch.normalize('NFD')) : [cp];
+        })
+        .sort((a, b) => a - b);
     expect(reported).toEqual(input);
 }
 
@@ -98,9 +109,9 @@ describe('Tamil on Noto Sans Tamil', () => {
     it('கொ — the two-part o splits into ெ before and ா after the base', () => {
         const shaped = shapeTamilText('கொ', TA);
         expect(shaped.length).toBe(3);
-        expect(shaped[0].cps).toEqual([0x0BCA]);                  // the composed sign is reported once
+        expect(shaped[0].cps).toEqual([0x0BC6]);                  // each part names its NFD code point (1.9.0)
         expect(shaped[1].cps).toEqual([0x0B95]);
-        expect(shaped[2].cps).toEqual([]);
+        expect(shaped[2].cps).toEqual([0x0BBE]);
     });
 });
 
@@ -196,7 +207,7 @@ describe('Bengali on Noto Sans Bengali', () => {
 
     it('কি and কো — pre-base signs move before ক, the two-part ো splits', () => {
         expect(shapeBengaliText('কি', BN).map(g => g.cps)).toEqual([[0x09BF], [0x0995]]);
-        expect(shapeBengaliText('কো', BN).map(g => g.cps)).toEqual([[0x09CB], [0x0995], []]);
+        expect(shapeBengaliText('কো', BN).map(g => g.cps)).toEqual([[0x09C7], [0x0995], [0x09BE]]); // NFD parts (1.9.0)
     });
 });
 
@@ -238,7 +249,7 @@ describe('Sinhala on Noto Sans Sinhala', () => {
     });
 
     it('කො and ක්ක — the kombuva moves left; no conjunct without a ZWJ', () => {
-        expect(shapeSinhalaText('කො', SI).map(g => g.cps)).toEqual([[0x0DDC], [0x0D9A], []]);
+        expect(shapeSinhalaText('කො', SI).map(g => g.cps)).toEqual([[0x0DD9], [0x0D9A], [0x0DCF]]); // NFD parts (1.9.0)
         const shaped = shapeSinhalaText('ක්ක', SI);
         expect(shaped.map(g => g.cps)).toEqual([[0x0D9A, 0x0DCA], [0x0D9A]]);
     });
@@ -321,10 +332,10 @@ describe('Kannada on Noto Sans Kannada (1.9.0)', () => {
         const hogu = shapeKannadaText('ಹೋಗು', KN);
         expectCpsCoverInput(hogu, 'ಹೋಗು');
         expect(hogu.map(g => g.gid)).toEqual([317, 64, 77, 25, 63]); // hevowelknda uuvowelsignknda lengthmarkknda gaknda uvowelsignknda
-        expect(hogu[0].cps).toEqual([0x0CB9, 0x0CCB]);
+        expect(hogu[0].cps).toEqual([0x0CB9, 0x0CC6]);                // the folded ABOVE part is U+0CC6 of the NFD
         const kai = shapeKannadaText('ಕೈ', KN);
         expect(kai.map(g => g.gid)).toEqual([286, 78]);                // kevowelknda ailengthmarkknda
-        expect(kai[0].cps).toEqual([0x0C95, 0x0CC8]);
+        expect(kai[0].cps).toEqual([0x0C95, 0x0CC6]);
     });
 
     it('ಸ್ತ್ರೀ and ವಿದ್ಯಾ — three-consonant stacks and the ya-sign keep every code point', () => {
@@ -369,7 +380,7 @@ describe('Malayalam on Noto Sans Malayalam (1.9.0)', () => {
         const kozhi = shapeMalayalamText('കോഴി', ML);
         expectCpsCoverInput(kozhi, 'കോഴി');
         expect(kozhi.map(g => g.gid)).toEqual([72, 23, 64, 54, 65]); // eevowelsign ka aavowelsign llla ivowelsign
-        expect(kozhi[0].cps).toEqual([0x0D4B]);
+        expect(kozhi[0].cps).toEqual([0x0D47]);                      // the pre-base part names U+0D47 of the NFD
         expect(shapeMalayalamText('കൈ', ML).map(g => g.gid)).toEqual([73, 23]);
     });
 });
@@ -399,10 +410,16 @@ describe('Odia on Noto Sans Oriya (1.9.0)', () => {
         const shaped = shapeOdiaText(word, OR);
         expectCpsCoverInput(shaped, word);
         expect(shaped.map(g => g.gid)).toEqual([69, 22, 59, 30, 60, 16]); // e-sign ga aa tta i e
-        expect(shaped[0].cps).toEqual([0x0B4B]);
+        // Each part of the split sign names its own code point of the NFD
+        // decomposition (U+0B4B → U+0B47 U+0B3E): glyph 69 always means
+        // U+0B47 in the ToUnicode CMap, and the length mark is never
+        // left without a Unicode value (PDFA_GLYPH_WITHOUT_UNICODE, 1.9.0).
+        expect(shaped[0].cps).toEqual([0x0B47]);
+        expect(shaped[2].cps).toEqual([0x0B3E]);
         const kai = shapeOdiaText('କୈ', OR);
         expect(kai.map(g => g.gid)).toEqual([69, 20, 75]);              // e-sign ka ai-length
-        expect(kai[0].cps).toEqual([0x0B48]);
+        expect(kai[0].cps).toEqual([0x0B47]);
+        expect(kai[2].cps).toEqual([0x0B56]);
     });
 
     it('ଓଡ଼ିଆ — the nukta consonant is one glyph and ି stays above its letter', () => {
