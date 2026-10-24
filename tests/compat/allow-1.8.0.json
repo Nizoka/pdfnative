@@ -19,6 +19,11 @@
       "reason": "Pins the exact list of registered shapers (twelve in 1.8.0); five Indic scripts were added in 1.9.0, an inventory change the current suite pins at seventeen — no 1.8.0 shaper moved or left."
     },
     {
+      "pattern": "tests/shaping/indic-real-font.test.ts",
+      "reason": "Three 1.8.0 golden tests assert that the first glyph of a split vowel sign (Tamil கொ, Bengali কো, Sinhala කො) reports the precomposed code point and the second part none; since 1.9.0 each part names its code point of the canonical decomposition so every glyph is in /ToUnicode and level U never finds a glyph without a Unicode value (the extracted NFD text normalises back to the source). The current suite holds every other assertion of the file to the same glyph sequences.",
+      "ledger": "C4"
+    },
+    {
       "pattern": "tests/visual/**",
       "reason": "Compares glyph positions and rendered pixels with the 1.8.0 baselines; mark anchors (Tibetan, Khmer, Myanmar, USE), per-paragraph BiDi and the lean subsets move them on purpose, and the regenerated baselines are reviewed in the current suite.",
       "ledger": "C7"

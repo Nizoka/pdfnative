@@ -25,9 +25,9 @@ Deno, Bun and Chromium, fuzzes the parser surface and publishes through a
 guard → build → publish → attest pipeline that attests the bytes the
 registry serves. Zero runtime dependencies; 39 exports
 added, none removed; every new behaviour opt-in; existing inputs render
-byte-identically except where the previous output was wrong — sixteen
+byte-identically except where the previous output was wrong — seventeen
 causes, each listed in the release note's Upgrade section with the samples
-it re-anchors. 4138+ tests across 174 files; veraPDF-validated.
+it re-anchors. 4151+ tests across 174 files; veraPDF-validated.
 
 ### Added
 
@@ -58,6 +58,8 @@ it re-anchors. 4138+ tests across 174 files; veraPDF-validated.
 - **`extractText()` throws `PdfStreamLimitError` by default** when a stream exceeds the inflate cap, instead of returning an empty page ([#89]); pass `onStreamError: 'skip'` for the 1.8.0 lenience.
 - **The joint PDF/A + PDF/X refusal** became two messages, one per excluded level (1b, 3b); the single 1.8.0 message is gone (compatibility ledger C14).
 - **`scanDeviceColour()`** reports the named colour spaces a stream selects (`named`); every 1.8.0 field is unchanged (C16).
+- **`validatePdfX()`** reads the type-4 tint transform of every Separation and DeviceN space the content selects and reports an operator outside ISO 32000-1 Table 42 or a procedure outside `if` / `ifelse`.
+- **`PdfStreamLimitError.message`** names the remedy that applies to the filter — `setMaxInflateOutputSize()` for FlateDecode, `onStreamError: 'skip'` for the fixed 256 MiB cap of ASCIIHex, ASCII85, LZW and RunLength; classify by `code`, not by the text.
 - **Every embedded TrueType subset** is lean (C6); every font module header carries a `Copyright:` line (C15).
 - **`verify:bundle`** — the `parseColor` probe budget moves from 4 to 6 KB (4.2 KB measured: spot colours and ink mixes in the `PdfColor` union); the other probes are unchanged.
 - **`setup-verapdf`** hands its install directory back as an output instead of writing `GITHUB_ENV`; `ci.yml`, `codeql.yml` and the publish workflow lost their path filters; every audit-mode `harden-runner` carries a dated reason.
@@ -74,6 +76,9 @@ it re-anchors. 4138+ tests across 174 files; veraPDF-validated.
 - **fix(core): annotations** — a type outside the union throws instead of writing `/Subtype /undefined` ([#91]).
 - **fix(shaping): BiDi** — punctuation no longer attaches to the preceding Latin word in a right-to-left paragraph, brackets inside a Latin run of an Arabic paragraph are paired and mirrored, and a wrapped line no longer changes its neighbours' order (C1–C3, [#92]).
 - **fix(shaping): Malayalam `pref` and a ligature swallowing its base** in the Indic engine; General Punctuation and whitespace Bidi classes corrected to the UCD (U+2030 and U+2032 are ET, TAB is S).
+- **fix(core): the DeviceN tint transform used `repeat`**, not an ISO 32000-1 Table 42 operator, so Acrobat refused the page ("Invalid Function resource") of any document painting an `{ inks }` mix; the type-4 function pops the tints one by one and leaves the clipping to `/Range`, the `/DeviceN` array carries a `/Colorants` attributes dictionary (ISO 19005-2 §6.2.4.4), and `validatePdfX()` checks the operators of every selected type-4 tint transform.
+- **fix(core): Helvetica fallback runs in Unicode mode** were advanced by the bucketed width estimate while the viewer drew the AFM advances — a gap or an overlap at every script boundary of a mixed line, right-aligned lines short of the margin; every fallback run is measured with the AFM widths (compatibility ledger C17).
+- **fix(shaping): the second part of a split vowel sign carried no code point** (Bengali, Tamil, Sinhala, Kannada, Malayalam, Odia); each part names its NFD code point, so every glyph is in `/ToUnicode` and Odia ୈ no longer raises `PDFA_GLYPH_WITHOUT_UNICODE` under level U (folded into C4).
 - **fix(parser): a stray `)`, `{` or `}` made the tokenizer return an empty keyword without advancing**, so every token loop — the ToUnicode CMap reader among them — spun forever on a one-byte corruption; found by the fuzz targets before their first container run.
 - **fix(tools): `parseFontData()` read past the end of a malformed font** (DataView `RangeError`); the reader is bounds-checked and refuses with a plain `Error`, in both generators.
 - **fix(ci):** a docs-only pull request no longer leaves the required checks pending (`ci.yml` path filter removed); a `workflow_dispatch` on a branch can no longer publish (the guard refuses before any approval); the attest job no longer attests a rebuild; `package-manager-cache: false` on every release setup-node.

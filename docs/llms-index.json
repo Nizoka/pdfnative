@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 26461,
       "approxTokens": 6615,
-      "sha256": "9daf31608867b17aec6c3383271aaf775b48162bbc97ac2f3bded9609ded1e01"
+      "sha256": "1a3075da93001bf767e9d58e6e76f49127ca5141428c2dcc727f875e15496be8"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 755008,
-      "approxTokens": 188752,
-      "sha256": "45b58a9a4ec83b48dcbedf501608a8c72b478fdc1c43d267d35adcca397bdf62"
+      "bytes": 756109,
+      "approxTokens": 189027,
+      "sha256": "0bd01d8545cf574143197ed7c6881e734ffed47bcaf0aaf99d7c3d1e5f9badfb"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -40,16 +40,16 @@
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
       "description": "The capability × surface matrix (library / CLI / MCP / React) behind the choose guide, with an honest note on every unsupported cell.",
-      "bytes": 19871,
-      "approxTokens": 4968,
-      "sha256": "8e80ab353e6e36c99378e864719057432b294c5605c728283772b718aa62b08a"
+      "bytes": 19917,
+      "approxTokens": 4979,
+      "sha256": "c69d0b6fa5d9260f72dae47cc994f42ad6cba91e457187de654e11e987fc082f"
     },
     {
       "url": "https://pdfnative.dev/data/errors.json",
       "description": "The engine error registry: every diagnostic code of the PdfDiagnosticCode union and every build-time error message (PDF/X, print, OutputIntent), two-way checked against src/ by the error-parity rule.",
-      "bytes": 21887,
-      "approxTokens": 5472,
-      "sha256": "bdc0625b0fcd446b9c4dbf51354f65a50598fbfb53f0086d2237ccf23c031f8b"
+      "bytes": 22009,
+      "approxTokens": 5502,
+      "sha256": "b00e4d8b7539a07a7b88f0404057292089eb08e3e371a07ac1a47e04d7dd67cf"
     },
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 129771,
       "approxTokens": 32443,
-      "sha256": "3912e6e11fa24a28f1c735bbdcb2b9ac36b2ea830a79746ad02ccea5bc7f4de9"
+      "sha256": "5a2c1101b468e87da0fe5cf4548f8ef5ed99008e8667152dd6ec91ea0860bc59"
     }
   ],
   "guides": [
@@ -341,9 +341,9 @@
         "samples-and-playground",
         "see-also"
       ],
-      "bytes": 5917,
-      "approxTokens": 1479,
-      "sha256": "6435d434c5e0629f02c2d1cd0feda29cd8499851a214a4ffe6b0aed5ce7410a9"
+      "bytes": 5992,
+      "approxTokens": 1498,
+      "sha256": "528ba8074f7f0c558be9eb34c7cd1139b3b62c5c98b60ff4d019e24c9afade17"
     },
     {
       "title": "Long-term validation (LTV) — PAdES B-B to B-LTA",
@@ -484,9 +484,9 @@
         "large-formats--userunit",
         "limits--scope-v190"
       ],
-      "bytes": 17695,
-      "approxTokens": 4424,
-      "sha256": "550371e2043ff6cfb3361fddd9a0af0c28935d2efdaec76eb95cf730f6fc7f21"
+      "bytes": 18133,
+      "approxTokens": 4533,
+      "sha256": "b0b176645f64b7f3ba971e77e9b84dcd528c03ede31a194707740e1e13c00b5c"
     },
     {
       "title": "Quick Start",
@@ -554,9 +554,9 @@
         "samples",
         "see-also"
       ],
-      "bytes": 8719,
-      "approxTokens": 2180,
-      "sha256": "686573a727a9c0eac1e38bf65c3b1009c04cbdce5ceccf6495f2180b6d7af824"
+      "bytes": 9307,
+      "approxTokens": 2327,
+      "sha256": "e898e6a4524e7243718d74c06cff27e4c5e24b052b1d86fd17866c68c204682c"
     },
     {
       "title": "Self-verifying generation",

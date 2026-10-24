@@ -65,7 +65,7 @@ An image can also be the watermark of every page — `layout.watermark.image` wi
 
 ## Samples and playground
 
-`npm run test:generate` writes `test-output/images/image-jpx-jp2.pdf` (a JP2 file with a `colr` box and an opacity channel), `image-jpx-raw.pdf` (a raw codestream) and `image-formats-pdfa2b.pdf` (JPEG, PNG and JPEG 2000 on one PDF/A-2b page). The [images playground](../playgrounds/images.html) embeds a JPEG, a PNG or a JPEG 2000 file from your disk and shows the Image XObject it wrote.
+`npm run test:generate` writes `test-output/images/image-jpx-jp2.pdf` (two JP2 files with a `colr` box — sRGB and greyscale — and no opacity channel; every fixture is a flat mid-grey codestream), `image-jpx-raw.pdf` (a raw codestream) and `image-formats-pdfa2b.pdf` (JPEG, PNG and JPEG 2000 on one PDF/A-2b page). The [images playground](../playgrounds/images.html) embeds a JPEG, a PNG or a JPEG 2000 file from your disk and shows the Image XObject it wrote.
 
 ## See also
 
