@@ -14,7 +14,9 @@
       "pin": "^1.8.0",
       "repo": "https://github.com/Nizoka/pdfnative-cli",
       "binary": "pdfnative",
-      "runtimeDependencies": ["pdfnative"],
+      "runtimeDependencies": [
+        "pdfnative"
+      ],
       "commandCount": 21,
       "commandGroups": {
         "Create & edit": [
@@ -55,7 +57,11 @@
       "pinField": "dependencies",
       "pin": "^1.8.0",
       "repo": "https://github.com/Nizoka/pdfnative-mcp",
-      "runtimeDependencies": ["@modelcontextprotocol/server", "pdfnative", "zod"],
+      "runtimeDependencies": [
+        "@modelcontextprotocol/server",
+        "pdfnative",
+        "zod"
+      ],
       "toolCount": 28,
       "tools": [
         "add_attachment",
@@ -123,7 +129,7 @@
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 4151,
+    "tests": 4155,
     "coverageStatements": 90,
     "coverageMeasured": 91.5,
     "scripts": 32,
@@ -132,6 +138,7 @@
     "barcodeFormats": 5,
     "chartTypes": 9,
     "pdfaSamples": 24,
+    "pdfxSamples": 4,
     "pdfaLevels": [
       "pdfa1b",
       "pdfa2b",
@@ -162,6 +169,16 @@
       "expectFrom": "declared.pdfaSamples",
       "requireIn": [
         "docs/guides/pdfa.md",
+        "CONTRIBUTING.md"
+      ]
+    },
+    {
+      "id": "pdfx-sample-count",
+      "canonical": "{declared.pdfxSamples} PDF/X-claiming samples",
+      "match": "\\b(\\d+)\\s+PDF/X-claiming samples\\b",
+      "expectFrom": "declared.pdfxSamples",
+      "requireIn": [
+        "docs/guides/print.md",
         "CONTRIBUTING.md"
       ]
     },

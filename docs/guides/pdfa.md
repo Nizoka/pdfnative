@@ -208,7 +208,10 @@ without any registration, and a **coverage canary** fails the run if the
 detected count drifts from `declared.pdfaSamples` in
 `docs/assets/ecosystem.json` (bump it when adding or removing a
 claiming sample; a mismatch with no sample change means detection or
-generation regressed).
+generation regressed). The same script holds every sample declaring
+`pdfxid:GTS_PDFXVersion` to `validatePdfX()` — veraPDF never covers
+PDF/X — with its own canary, `declared.pdfxSamples`; see the
+[print guide](print.html).
 
 > **Which samples are subject to PDF/A validation?** Only files that
 > *declare* a conformance level in their XMP (`pdfaid:part`) — the ones

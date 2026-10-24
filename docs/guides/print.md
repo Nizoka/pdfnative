@@ -225,6 +225,8 @@ Both resolvers run and both sets of diagnostics apply (the level-U glyph guard i
 
 ### Inside XObjects (v1.9.0)
 
+Every generated sample that claims PDF/X — the 4 PDF/X-claiming samples, `print/print-cmyk-pdfx4`, `print/print-gray-pdfx4`, `print/print-spot-colours` and the dual `print/print-dual-pdfa2b-pdfx4` — is held to `validatePdfX()` by `npm run validate:pdfa` (the publish gate) and by the regression suite, since veraPDF validates PDF/A and PDF/UA only; the count is the `declared.pdfxSamples` canary of `docs/assets/ecosystem.json`.
+
 `validatePdfX()` descends into Form XObjects (their own `/Resources`, else the page's) and reads every image's `/ColorSpace`, resolving `/Separation`, `/DeviceN` and `/Indexed` through their alternate or base space, so device colour hidden in an annotation appearance or a watermark form no longer escapes the OutputIntent check. A JPEG 2000 image that leaves its colour to the codestream passes, as ISO 15930-7 allows.
 
 ## Large formats — `/UserUnit`

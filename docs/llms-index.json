@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 26461,
       "approxTokens": 6615,
-      "sha256": "1a3075da93001bf767e9d58e6e76f49127ca5141428c2dcc727f875e15496be8"
+      "sha256": "d80c5284b4689e4ca7fc8f74649d2700572eca0a0b2f16afa46a6755490485c2"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 756109,
-      "approxTokens": 189027,
-      "sha256": "0bd01d8545cf574143197ed7c6881e734ffed47bcaf0aaf99d7c3d1e5f9badfb"
+      "bytes": 756856,
+      "approxTokens": 189214,
+      "sha256": "488ebe92e3235e4712932cb6c5698a38c96252f60b1368b6d9f54e2c3b28e11b"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -61,9 +61,9 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 129771,
-      "approxTokens": 32443,
-      "sha256": "5a2c1101b468e87da0fe5cf4548f8ef5ed99008e8667152dd6ec91ea0860bc59"
+      "bytes": 129879,
+      "approxTokens": 32470,
+      "sha256": "dd6bbe4ab0ddc774f9ce9f78b69e539e59731eb4a9d8f71323b44a20d2faf52c"
     }
   ],
   "guides": [
@@ -461,9 +461,9 @@
         "hard-invariants-for-contributors",
         "see-also"
       ],
-      "bytes": 19276,
-      "approxTokens": 4819,
-      "sha256": "6dd7284386c3e00db858567fd3b265def817e9d411fc4d3588671ffdf1c60250"
+      "bytes": 19481,
+      "approxTokens": 4870,
+      "sha256": "f9909d7f345dc26f056ecdda486dbee263af0ec3bf8412823f82b8e25b00ca70"
     },
     {
       "title": "Print production — bleed, trim & printer's marks",
@@ -484,9 +484,9 @@
         "large-formats--userunit",
         "limits--scope-v190"
       ],
-      "bytes": 18133,
-      "approxTokens": 4533,
-      "sha256": "b0b176645f64b7f3ba971e77e9b84dcd528c03ede31a194707740e1e13c00b5c"
+      "bytes": 18567,
+      "approxTokens": 4642,
+      "sha256": "5551c865afb92588b0c3e70511acd6e9ba4ca05b6f9afa34e92b5ed1239c3421"
     },
     {
       "title": "Quick Start",

@@ -542,6 +542,7 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
         { pattern: /\b(\d+)\s+reference PDFs\b/g, source: 'derived.samplePdfs', mode: 'equal' },
         { pattern: /\b(\d+)\s+(?:sample\s+)?generators\b/g, source: 'derived.sampleGenerators', mode: 'equal' },
         { pattern: /\b(\d+)\s+PDF\/A-claiming samples\b/g, source: 'declared.pdfaSamples', mode: 'equal' },
+        { pattern: /\b(\d+)\s+PDF\/X-claiming samples\b/g, source: 'declared.pdfxSamples', mode: 'equal' },
         // "across 38 categories" — a chart's "2 series, 4 categories" alt text
         // is not a sample-tree claim, so the preposition is part of the token.
         { pattern: /\b(?:across|in|into)\s+(\d+)\s+(?:sample\s+)?categories\b/g, source: 'derived.sampleCategories', mode: 'equal' },

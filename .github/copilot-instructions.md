@@ -76,7 +76,7 @@ npm run test:coverage    # v8 coverage (thresholds in vitest.config.ts)
 npm run test:generate    # regenerate the sample PDFs → test-output/
 npm run typecheck:all    # src/ + tests/ + scripts/
 npm run lint             # ESLint 9 + typescript-eslint strict
-npm run validate:pdfa    # veraPDF over every PDF/A-claiming sample (canary vs declared.pdfaSamples; skips when veraPDF is absent)
+npm run validate:pdfa    # veraPDF over PDF/A claims, validatePdfX() over PDF/X claims (canaries in ecosystem.json)
 npm run verify:samples   # byte manifest of test-output/ vs tests/regression/baselines/samples.sha256.json; refuses identical pairs
 npm run verify:fonts     # fonts/*-data.js reproduce byte-identically from the TTF sources
 npm run verify:unicode   # src/shaping/use-data.ts matches scripts/data/*.txt

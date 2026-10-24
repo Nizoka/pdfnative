@@ -304,7 +304,10 @@ without any registration, and a <strong>coverage canary</strong> fails the run i
 detected count drifts from <code>declared.pdfaSamples</code> in
 <code>docs/assets/ecosystem.json</code> (bump it when adding or removing a
 claiming sample; a mismatch with no sample change means detection or
-generation regressed).</p>
+generation regressed). The same script holds every sample declaring
+<code>pdfxid:GTS_PDFXVersion</code> to <code>validatePdfX()</code> — veraPDF never covers
+PDF/X — with its own canary, <code>declared.pdfxSamples</code>; see the
+<a href="print.html">print guide</a>.</p>
 <blockquote>
 <p><strong>Which samples are subject to PDF/A validation?</strong> Only files that
 <em>declare</em> a conformance level in their XMP (<code>pdfaid:part</code>) — the ones

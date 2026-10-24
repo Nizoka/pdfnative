@@ -76,7 +76,7 @@ npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (CI enforces the thresholds below)
 npm run test:generate  # Generate the sample PDFs → test-output/ (`derived.samplePdfs` in the manifest)
 npm run verify:samples # Fingerprint the samples against the committed baseline chain
-npm run validate:pdfa  # veraPDF validation of every PDF/A-claiming sample (see below)
+npm run validate:pdfa  # veraPDF over every PDF/A-claiming sample, validatePdfX() over every PDF/X-claiming one (see below)
 npm run verify:bundle  # Tree-shaking probes over dist/ (run `npm run build` first)
 npm run verify:docs    # offline rules over docs/, playgrounds, README, llms files
 npm run gate           # Everything a pull request is held to, in one command (see below)
@@ -91,7 +91,7 @@ The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, play
 
 `npm run compat:previous` runs the previous release's test suite, exactly as tagged, against the current sources (`scripts/run-compat.ts`; the tag must be fetched: `git fetch --no-tags origin +refs/tags/v1.8.0:refs/tags/v1.8.0`). The files it may skip are listed in `tests/compat/allow-<previous>.json`, each with a reason and, when the reason is a behaviour change, the compatibility-ledger entry (`C1`, `C2`, …) of the release note that justifies it. `tests/tools/api-compat.test.ts` holds the export surface and the error vocabulary to the registries of the previous release (`tests/compat/api-<previous>.json`, `errors-<previous>.json`). Both are required checks (`compat-previous`) and part of the publish gate; SECURITY.md §Compatibility promise is the policy they enforce.
 
-## PDF/A validation (veraPDF)
+## PDF/A and PDF/X validation (veraPDF, validatePdfX)
 
 pdfnative's PDF/A claims are backed by the official reference validator,
 [veraPDF](https://verapdf.org). `npm run validate:pdfa` scans `test-output/`
@@ -102,6 +102,16 @@ automatic: a new sample that claims PDF/A is validated without registering
 anything, and a coverage canary fails the run if the detected count drifts
 from `declared.pdfaSamples` in `docs/assets/ecosystem.json` (bump it when
 adding or removing a claiming sample).
+
+The same run holds every sample that declares `pdfxid:GTS_PDFXVersion` —
+currently the 4 PDF/X-claiming samples, the PDF/A-2b + PDF/X-4 dual claim
+among them — to `validatePdfX()`, pdfnative's own structural check of the
+ISO 15930-7 prerequisites: veraPDF covers PDF/A and PDF/UA, never PDF/X,
+and the project bundles no other tool. That pass needs nothing installed,
+so it runs and decides the exit code even where veraPDF is absent; its
+canary is `declared.pdfxSamples`. `tests/regression/samples.test.ts`
+repeats both counts and the PDF/X pass in the ordinary test suite whenever
+the corpus is present.
 
 Without veraPDF installed the script skips with exit 0 and prints install
 hints — local development never blocks. **CI is blocking**: the same script

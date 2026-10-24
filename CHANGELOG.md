@@ -27,7 +27,7 @@ registry serves. Zero runtime dependencies; 39 exports
 added, none removed; every new behaviour opt-in; existing inputs render
 byte-identically except where the previous output was wrong — seventeen
 causes, each listed in the release note's Upgrade section with the samples
-it re-anchors. 4151+ tests across 174 files; veraPDF-validated.
+it re-anchors. 4155+ tests across 174 files; veraPDF-validated.
 
 ### Added
 
@@ -58,6 +58,7 @@ it re-anchors. 4151+ tests across 174 files; veraPDF-validated.
 - **`extractText()` throws `PdfStreamLimitError` by default** when a stream exceeds the inflate cap, instead of returning an empty page ([#89]); pass `onStreamError: 'skip'` for the 1.8.0 lenience.
 - **The joint PDF/A + PDF/X refusal** became two messages, one per excluded level (1b, 3b); the single 1.8.0 message is gone (compatibility ledger C14).
 - **`scanDeviceColour()`** reports the named colour spaces a stream selects (`named`); every 1.8.0 field is unchanged (C16).
+- **`validate:pdfa`** also holds every PDF/X-claiming sample (`pdfxid:GTS_PDFXVersion` in XMP) to `validatePdfX()`, in the publish gate and in `tests/regression/samples.test.ts` — veraPDF covers PDF/A and PDF/UA, never PDF/X; a second coverage canary, `declared.pdfxSamples`, guards the count; `pdfaid` claims written as XMP attributes are detected too.
 - **`validatePdfX()`** reads the type-4 tint transform of every Separation and DeviceN space the content selects and reports an operator outside ISO 32000-1 Table 42 or a procedure outside `if` / `ifelse`.
 - **`PdfStreamLimitError.message`** names the remedy that applies to the filter — `setMaxInflateOutputSize()` for FlateDecode, `onStreamError: 'skip'` for the fixed 256 MiB cap of ASCIIHex, ASCII85, LZW and RunLength; classify by `code`, not by the text.
 - **Every embedded TrueType subset** is lean (C6); every font module header carries a `Copyright:` line (C15).
