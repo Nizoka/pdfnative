@@ -27,7 +27,7 @@ registry serves. Zero runtime dependencies; 39 exports
 added, none removed; every new behaviour opt-in; existing inputs render
 byte-identically except where the previous output was wrong — twenty
 causes, each listed in the release note's Upgrade section with the samples
-it re-anchors. 4206+ tests across 177 files; veraPDF-validated.
+it re-anchors. 4289+ tests across 177 files; veraPDF-validated.
 
 ### Added
 
@@ -96,6 +96,8 @@ it re-anchors. 4206+ tests across 177 files; veraPDF-validated.
 - **fix(shaping): Devanagari ई named only its first piece** — `नई दिल्ली` failed level U and `इकाई` extracted wrong; every piece of a multiple substitution names its code point and the run carries `/ActualText`. **The joiner rules inside a syllable follow HarfBuzz**: a ZWJ after a halant stops the base search (त्‍र), a pre-base sign skips such a halant (ट्‍यि), a nukta keeps the half-form request (क़्‍).
 - **fix(core): the operand-string form of a spot colour** is held to the PDF name alphabet.
 - **fix(parser): `extractText()` word gaps** use each run's measured advance instead of half an em per character — no more `അ വ ൻ` for a short Malayalam word.
+- **fix(core): one text object per line** — a shaped run was one `BT … ET` per glyph under its `/ActualText` span, and Acrobat Reader pasted a tagged cell once per glyph (รายการไทย nine times in `financial/sample-multi`, a Tai Tham line of `tagged/tagged-pdfa2u-taitham` eighty-one times); a line or cell is now a single text object, each shaped run one `TJ` array, a vertically offset mark its own `Td` + `Tj` inside it (C25).
+- **fix(shaping): a sentence-final danda sent an Odia or Gurmukhi line to the Devanagari shaper** — U+0964 sits in the Devanagari block; the registry now detects the Unicode Script property, so ଶିରୋନାମା keeps its split ୋ and ਲਾਇਬ੍ਰੇਰੀ its subjoined ra in the language documents' paragraphs (C26).
 - **fix(ci):** a docs-only pull request no longer leaves the required checks pending (`ci.yml` path filter removed); a `workflow_dispatch` on a branch can no longer publish (the guard refuses before any approval); the attest job no longer attests a rebuild; `package-manager-cache: false` on every release setup-node.
 
 ### Documentation

@@ -43,7 +43,7 @@ When `tagged` is enabled, the document gets:
   - `/Link` for hyperlinks (with `/Contents` description)
   - `/Form` for AcroForm fields
   - `/TOC` → `/TOCI` for tables of contents
-- **Marked content** (`/Span << /MCID n /ActualText <hex> >> BDC`) wrapping every text run, so screen readers receive the original Unicode even when the visible glyph is a shaped Arabic ligature or Devanagari conjunct.
+- **Marked content** (`/Span << /MCID n /ActualText <hex> >> BDC`) wrapping every text run, so screen readers receive the original Unicode even when the visible glyph is a shaped Arabic ligature or Devanagari conjunct. Each span wraps a single text object — a line or cell is one `BT … ET`, a shaped run one `TJ` array (since v1.9.0) — because Acrobat applies `/ActualText` once per text object: a cell drawn as one text object per glyph pasted its text once per glyph.
 - **Per-page parent trees** (`/StructParents` + `/ParentTree`) — required by ISO 14289-1 §7.10.3.
 - **Document metadata** in XMP (PDF/A-required).
 - **sRGB ICC OutputIntent** so colors remain stable across viewers.

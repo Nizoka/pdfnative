@@ -150,7 +150,12 @@ By design (documented, not bugs):
   with `layout.actualText: false`), which is what Chrome and Skia write,
   so extraction of an untagged Hindi, Tamil or Khmer document returns the
   words as typed rather than in drawing order. Right-to-left runs are left
-  to the reader's bidi reversal. Under `tagged: 'pdfa2u'`
+  to the reader's bidi reversal. Every such span wraps a single text
+  object: since v1.9.0 a line or cell is one `BT … ET` and a shaped run one
+  `TJ` array, because Acrobat applies `/ActualText` once per text object
+  — a cell drawn as one text object per glyph pasted its text once per
+  glyph in Acrobat Reader, while pdfnative's own extractor and Chrome,
+  which apply the span once, never showed it. Under `tagged: 'pdfa2u'`
   the `PDFA_GLYPH_WITHOUT_UNICODE` diagnostic names any glyph that still
   has no mapping (a character the font does not cover) — see the
   [PDF/A guide](pdfa.html). What remains geometric is the **order**: runs

@@ -32,6 +32,7 @@ paths:
 
 ## Content Streams
 - Text blocks: `BT ... ET` — never nest, never leave unclosed
+- **One text object per line or cell** (v1.9.0, C25): `txt()`, `txtJustified()` and the tagged emitters in `pdf-text.ts` write a line as a single `BT … ET` through the `TextObject` writer — `Tf` only when the font or size changes, each run after the first placed by a `Td` relative to the line origin (tracked in hundredths of a point, so a chain of moves lands on the rounded absolute), a shaped run as one `TJ` array whose numbers are the viewer's `/W` pen minus the layout's pen (GPOS `dx`, a zero-advance mark, the justification gap after a space; rounded as written and fed back, so nothing drifts), a mark with a vertical offset as its own `Td` + `Tj` inside the same object. A `/Span /ActualText` therefore never wraps more than one text object — Acrobat applies the span's text once per text object, and the former one `BT … ET` per shaped glyph pasted a cell once per glyph. A single-run line keeps the historical bytes (`BT /F3 9 Tf x y Td <…> Tj ET`); only a colour-emoji run (a Form XObject) closes the object. Never emit a per-glyph `BT` again; `tests/helpers/text-objects.ts` replays the operators for a test that needs a glyph's origin
 - Font selection: `/<ref> <size> Tf` must precede any text operator
 - Text positioning: `Td` for relative, `Tm` for absolute matrix
 - String encoding: `(WinAnsi)` for Helvetica, `<hex>` for CIDFont glyphs
@@ -74,6 +75,7 @@ paths:
 - `EMC` closes marked content — never leave unclosed
 - `/ActualText` carries the original Unicode string for shaped/repositioned glyphs
 - UTF-16BE encoding with `FEFF` BOM for /ActualText values
+- A span holds at most one text object (C25): the tagged structure span wraps the line's `BT … ET`, the untagged C20 span sits inside it around the run's `TJ` — a reader that applies the text once per text object (Acrobat) then pastes it once; `tests/core/actual-text-untagged.test.ts` holds every span to that
 - MCID allocation: sequential per page via `createMCIDAllocator()`
 
 ## PDF/A Compliance (ISO 19005-1 / ISO 19005-2)

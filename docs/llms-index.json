@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 26487,
       "approxTokens": 6622,
-      "sha256": "f5e5a4c346b38e077e8f4229c7471ca9f8a4926f739ca1a1587564780ee78b03"
+      "sha256": "0bddabfd5405e0dbf78946b9f50754ffb82f4fcb52d1aafbd36ed3b6755e9916"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 758825,
-      "approxTokens": 189706,
-      "sha256": "928d4bc377d91b1ea95f783a764499a59fbc723513514e8f7f6970717fa8ea3f"
+      "bytes": 759459,
+      "approxTokens": 189865,
+      "sha256": "001834377e1d83a1759866035e4562ad1f1691bb3acd905a6adad1e71450fd0a"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 130074,
       "approxTokens": 32519,
-      "sha256": "1a1e869b7f92f5d40c9f79dc6c51e318a4a1bd748b9b1a6d51ef6553c0c96f8c"
+      "sha256": "316af979a5f83abe66156f5277a7b1dfb518c808073aa93532fa38321f3fa97e"
     }
   ],
   "guides": [
@@ -82,9 +82,9 @@
         "testing-your-pdfs-are-accessible",
         "further-reading"
       ],
-      "bytes": 7696,
-      "approxTokens": 1924,
-      "sha256": "32b66c8fc6e4a7c4375a63a2c668a12e106b1b181e69e5dc6cf83fa02af4e8ea"
+      "bytes": 7953,
+      "approxTokens": 1988,
+      "sha256": "d4fa31195c380494292b1a9d9e5c79cc7857e891f7d7400e419cc6426a4b3eee"
     },
     {
       "title": "Agentic workflows",
@@ -658,9 +658,9 @@
         "samples",
         "see-also"
       ],
-      "bytes": 8890,
-      "approxTokens": 2223,
-      "sha256": "724264c2ffdab5a7b9c919f56e4b7c2868c483ac6e83803c59b85d3d9dca3fb6"
+      "bytes": 9267,
+      "approxTokens": 2317,
+      "sha256": "1f8d4d62fe698ac219d6f63a896d2affc2d7cb6902c31ef36417662247520f60"
     },
     {
       "title": "Troubleshooting",

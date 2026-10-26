@@ -761,6 +761,34 @@ export function containsDevanagari(str: string): boolean {
     return false;
 }
 
+/**
+ * Is `cp` a character whose Unicode Script property is Devanagari — not
+ * merely a code point of the Devanagari block? The block also holds the
+ * danda and double danda (U+0964–U+0965, `Script=Common`), which every
+ * Indic script borrows as its full stop, and the Vedic tone marks
+ * U+0951–U+0954 (`Script=Inherited`). HarfBuzz itemises runs by that
+ * property, so an Odia or Gurmukhi sentence ending in « । » belongs to its
+ * own shaper; dispatching on the block sent the whole line to the
+ * Devanagari configuration (no split vowel signs, no conjuncts). @since 1.9.0
+ */
+export function isDevanagariScriptCodepoint(cp: number): boolean {
+    if (cp >= 0x0951 && cp <= 0x0954) return false;
+    if (cp === 0x0964 || cp === 0x0965) return false;
+    return isDevanagariCodepoint(cp);
+}
+
+/**
+ * Does `str` contain a character of `Script=Devanagari`? The dispatch
+ * predicate of the shaper registry; {@link containsDevanagari} keeps its
+ * block-wide meaning for callers that route fonts. @since 1.9.0
+ */
+export function containsDevanagariScript(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isDevanagariScriptCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
 /** Check whether a string contains any mathematical symbols. */
 export function containsMath(str: string): boolean {
     for (let i = 0; i < str.length; i++) {

@@ -9,14 +9,182 @@ import type { FontData, ShapedGlyph, EncodingContext, TextRun } from '../types/p
 import { toWinAnsi, helveticaWidth, helveticaBoldWidth, stripSoftHyphens, narrowNoBreakSpaceCorrection } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { stripBidiControls, containsRTL } from '../shaping/bidi.js';
-import { wrapSpan, wrapActualText } from './pdf-tags.js';
+import { wrapSpan, escapePdfUtf16 } from './pdf-tags.js';
 
 /** Format a number as PDF operator value (2 decimal places). */
 export const fmtNum = (v: number): string => v.toFixed(2);
 
+// ── Text objects ─────────────────────────────────────────────────────
+
 /**
- * Render pre-shaped glyphs with GPOS offsets.
- * Each glyph emits its own BT…ET block with absolute coordinates.
+ * One text object under construction (ISO 32000-1 §9.4): `BT`, then for
+ * every run a `Tf` when the font or size changes, a `Td` relative to the
+ * current line origin and one text-showing operator, and `ET` at the end.
+ *
+ * Every operator of a line or cell lives in this one object (1.9.0, C25).
+ * Acrobat applies a `/Span /ActualText` once per text object inside it, so a
+ * line drawn as one `BT … ET` per glyph pasted the cell's text once per
+ * glyph; Skia and Chrome write one object per run, and so does this. The
+ * single-run line keeps the historical bytes: `BT /F3 9 Tf x y Td <…> Tj ET`.
+ */
+interface TextObject {
+    /** Operators so far, starting with `BT`. */
+    text: string;
+    /** The font and size the last `Tf` selected. */
+    font: string | null;
+    size: number;
+    /** Origin of the current line (`Tlm`), in hundredths of a point — exact integer arithmetic for relative `Td`. */
+    ox: number;
+    oy: number;
+    /** Runs placed so far — the second one onwards starts a new line of the stream. */
+    moves: number;
+    /** A marked-content operator was just written: the next run starts a new line too. */
+    breakBefore: boolean;
+}
+
+/** Open a text object. */
+function openTextObject(): TextObject {
+    return { text: 'BT', font: null, size: 0, ox: 0, oy: 0, moves: 0, breakBefore: false };
+}
+
+/** Append an operator: on the same line by default, on a new one for the second run onwards. */
+function appendOp(t: TextObject, op: string, newLine: boolean = false): void {
+    t.text += (newLine ? '\n' : ' ') + op;
+}
+
+/** Append a marked-content operator (`BDC` / `EMC`) on a line of its own. */
+function appendMarkedContent(t: TextObject, op: string): void {
+    appendOp(t, op, true);
+    t.breakBefore = true;
+}
+
+/** Hundredths of a point of a coordinate as `fmtNum` would print it. */
+const hundredths = (v: number): number => Math.round(Number(fmtNum(v)) * 100);
+
+/** Print hundredths of a point as a PDF number. */
+const fmtHundredths = (h: number): string => (h / 100).toFixed(2);
+
+/**
+ * Select `font` at `sz` (when they change) and move the line origin to
+ * (x, y) with a `Td` relative to the current origin. The first move of an
+ * object is the absolute position, byte for byte what the per-run `BT`
+ * blocks of earlier releases wrote; the origin is tracked in hundredths so
+ * a chain of relative moves lands exactly on the rounded absolute position.
+ */
+function moveTo(t: TextObject, font: string, sz: number, x: number, y: number): void {
+    // Each run after the first starts on a new line of the stream.
+    let newLine = t.moves > 0 || t.breakBefore;
+    t.moves++;
+    t.breakBefore = false;
+    if (t.font !== font || t.size !== sz) {
+        appendOp(t, `${font} ${sz} Tf`, newLine);
+        newLine = false;
+        t.font = font;
+        t.size = sz;
+    }
+    const hx = hundredths(x);
+    const hy = hundredths(y);
+    appendOp(t, `${fmtHundredths(hx - t.ox)} ${fmtHundredths(hy - t.oy)} Td`, newLine);
+    t.ox = hx;
+    t.oy = hy;
+}
+
+/** Close the object: `ET`, and the operators as one string. */
+function closeTextObject(t: TextObject): string {
+    return t.text + ' ET';
+}
+
+/** The x coordinate of the current line origin, in points. */
+const originX = (t: TextObject): number => t.ox / 100;
+
+/**
+ * Append a shaped run to the text object at (x, y) and return the layout pen
+ * after it.
+ *
+ * The glyphs on the baseline form one `TJ` array: each glyph is placed by the
+ * adjustment between the viewer's pen (the `/W` advances, ISO 32000-1
+ * §9.4.3, thousandths of the font size subtracted from the pen) and the
+ * layout's pen (the font's advances, the GPOS offset `dx`, a zero advance
+ * for an attached mark, the justification gap after a space). Glyphs that
+ * need no adjustment share one hex string. A glyph with a vertical offset —
+ * an anchored mark — is drawn by its own `Td` and `Tj`, and the array
+ * resumes after it with a new `Td`. Adjustments are rounded as written and
+ * fed back into the viewer's pen, so nothing drifts along a long run.
+ */
+function appendShapedRun(
+    t: TextObject,
+    shaped: readonly ShapedGlyph[],
+    x: number,
+    y: number,
+    font: string,
+    sz: number,
+    fontData: FontData,
+    spaceExtra: number,
+): number {
+    const { metrics, widths: glyphWidths, defaultWidth } = fontData;
+    const scale = sz / metrics.unitsPerEm;
+    /** The viewer advances by the `/W` entry (or `/DW`) in thousandths of the font size. */
+    const viewerScale = sz / 1000;
+    let penLayout = x;
+    let penViewer = 0;
+    /**
+     * The segment's `Td` origin is rounded to a hundredth of a point; the
+     * whole segment is shifted by that rounding rather than every glyph
+     * being pulled back to its unrounded position, so a run whose glyphs the
+     * `/W` advances already place carries no adjustment at all.
+     */
+    let shift = 0;
+    let open = false;
+    let items: string[] = [];
+    let hex = '';
+    const flushHex = (): void => {
+        if (hex !== '') { items.push(`<${hex}>`); hex = ''; }
+    };
+    const flushArray = (): void => {
+        flushHex();
+        if (items.length === 1 && items[0].startsWith('<')) appendOp(t, `${items[0]} Tj`);
+        else if (items.length > 0) appendOp(t, `[${items.join(' ')}] TJ`);
+        items = [];
+        open = false;
+    };
+
+    for (const g of shaped) {
+        const w = glyphWidths[g.gid] !== undefined ? glyphWidths[g.gid] : defaultWidth;
+        const gid = g.gid.toString(16).padStart(4, '0').toUpperCase();
+        const gx = penLayout + g.dx * scale;
+        if (g.dy !== 0) {
+            flushArray();
+            moveTo(t, font, sz, gx, y + g.dy * scale);
+            appendOp(t, `<${gid}> Tj`);
+        } else {
+            if (!open) {
+                moveTo(t, font, sz, gx, y);
+                penViewer = originX(t);
+                shift = penViewer - gx;
+                open = true;
+            } else {
+                const adj = fmtNum((penViewer - (gx + shift)) * 1000 / sz);
+                if (Number(adj) !== 0) {
+                    flushHex();
+                    items.push(adj);
+                    penViewer -= Number(adj) * viewerScale;
+                }
+            }
+            hex += gid;
+            penViewer += w * viewerScale;
+        }
+        if (!g.isZeroAdvance) penLayout += w * scale;
+        // Justification widens the word gaps inside a shaped run (1.9.0).
+        if (spaceExtra !== 0 && isSpaceGlyph(g, fontData)) penLayout += spaceExtra;
+    }
+    flushArray();
+    return penLayout;
+}
+
+/**
+ * Render pre-shaped glyphs with GPOS offsets as one text object: a `TJ`
+ * array per baseline segment, a `Td` + `Tj` per vertically offset mark
+ * ({@link appendShapedRun}). Empty input renders nothing.
  */
 export function txtShaped(
     shaped: ShapedGlyph[],
@@ -27,24 +195,15 @@ export function txtShaped(
     fontData: FontData,
     spaceExtra: number = 0,
 ): string {
-    const { metrics, widths: glyphWidths, defaultWidth } = fontData;
-    const upm = metrics.unitsPerEm;
-    const scale = sz / upm;
-    const parts: string[] = [];
-    let penX = x;
+    if (shaped.length === 0) return '';
+    const t = openTextObject();
+    appendShapedRun(t, shaped, x, y, font, sz, fontData, spaceExtra);
+    return closeTextObject(t);
+}
 
-    for (const g of shaped) {
-        const hexGid = g.gid.toString(16).padStart(4, '0').toUpperCase();
-        const adv = (glyphWidths[g.gid] !== undefined ? glyphWidths[g.gid] : defaultWidth) * scale;
-        const gx = fmtNum(penX + g.dx * scale);
-        const gy = fmtNum(y + g.dy * scale);
-        parts.push(`BT ${font} ${sz} Tf ${gx} ${gy} Td <${hexGid}> Tj ET`);
-        if (!g.isZeroAdvance) penX += adv;
-        // Justification widens the word gaps inside a shaped run (1.9.0).
-        if (spaceExtra !== 0 && isSpaceGlyph(g, fontData)) penX += spaceExtra;
-    }
-
-    return parts.join('\n');
+/** The marked-content opener of an untagged `/ActualText` span (C20), written inside the text object. */
+function actualTextBdc(text: string): string {
+    return `/Span << /ActualText ${escapePdfUtf16(text)} >> BDC`;
 }
 
 /** Whether a shaped glyph draws a plain space (U+0020). */
@@ -214,29 +373,42 @@ export function txt(
     const runs = enc.textRuns(str, sz);
     if (runs.length === 0) return '';
 
+    // One text object for the whole line (C25); only a colour-emoji run, a
+    // Form XObject that cannot sit inside `BT … ET`, closes it and the next
+    // run opens another.
     const parts: string[] = [];
+    let t: TextObject | null = null;
     let penX = x;
     for (const run of runs) {
         if (enc.colorEmoji && run.fontData.colorGlyphs && run.hexStr) {
+            if (t !== null) { parts.push(closeTextObject(t)); t = null; }
             penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
-        } else if (run.shaped) {
+            continue;
+        }
+        if (t === null) t = openTextObject();
+        if (run.shaped) {
             // A run whose glyphs are not in the order of its text (sara am,
             // a pre-base sign, a reph, a split vowel) carries its text as
             // /ActualText, legal in untagged output too (1.9.0, C20). The
             // tagged emitters wrap the whole string themselves and pass false.
-            const op = txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData);
-            parts.push(actualTextSpans && needsActualText(run, enc) ? wrapActualText(op, run.text) : op);
+            const span = actualTextSpans && needsActualText(run, enc);
+            if (span) appendMarkedContent(t, actualTextBdc(run.text));
+            appendShapedRun(t, run.shaped, penX, y, run.fontRef, sz, run.fontData, 0);
+            if (span) appendMarkedContent(t, 'EMC');
             penX += run.widthPt;
         } else if (run.tjStr) {
             // Kerned: one TJ array keeps the run a single text-showing
             // operator, so viewer selection and extraction stay intact.
-            parts.push(`BT ${run.fontRef} ${sz} Tf ${fmtNum(penX)} ${fmtNum(y)} Td [${run.tjStr}] TJ ET`);
+            moveTo(t, run.fontRef, sz, penX, y);
+            appendOp(t, `[${run.tjStr}] TJ`);
             penX += run.widthPt;
         } else {
-            parts.push(`BT ${run.fontRef} ${sz} Tf ${fmtNum(penX)} ${fmtNum(y)} Td ${run.hexStr} Tj ET`);
+            moveTo(t, run.fontRef, sz, penX, y);
+            appendOp(t, `${run.hexStr} Tj`);
             penX += run.widthPt;
         }
     }
+    if (t !== null) parts.push(closeTextObject(t));
     return parts.join('\n');
 }
 
@@ -423,49 +595,105 @@ export function txtJustified(
     }
 
     // Unicode: consecutive plain runs of one font share a TJ array; a shaped
-    // or colour-emoji run is placed on its own, as `txt()` does, and the
-    // array resumes after it.
+    // run is placed on its own inside the same text object, as `txt()` does,
+    // and the array resumes after it; a colour-emoji run closes the object.
     const parts: string[] = [];
+    const line = justifiedLine(parts, x, y, sz, enc, actualTextSpans);
+    for (let i = 0; i < pieces.length; i++) {
+        for (const run of runs[i]) line.add(run);
+        if (i < pieces.length - 1) line.gap(tjGap, gapExtra);
+    }
+    line.end();
+    return parts.join('\n');
+}
+
+/** What a justified layout hands the emitter for one run, beyond the run itself. */
+interface JustifiedRunOptions {
+    /** TJ items replacing the run's own string (its pieces around the word gaps). */
+    readonly items?: readonly string[];
+    /** The advance of those items, when it differs from the run's natural width. */
+    readonly advance?: number;
+    /** Extra width given to every space glyph of a shaped run. */
+    readonly spaceExtra?: number;
+}
+
+/**
+ * The emitter shared by the two justified layouts (one text object per
+ * line, C25): plain runs of one font accumulate into a `TJ` array (with the
+ * gap adjustments), a shaped run goes through {@link appendShapedRun} inside
+ * the same text object, a colour-emoji run closes it. The array is flushed
+ * with the `Td` of its start and the layout pen moves past its advance.
+ */
+function justifiedLine(
+    parts: string[],
+    x: number,
+    y: number,
+    sz: number,
+    enc: EncodingContext,
+    actualTextSpans: boolean,
+): { add: (run: TextRun, opts?: JustifiedRunOptions) => void; gap: (tjGap: string, gapExtra: number) => void; end: () => void } {
+    let t: TextObject | null = null;
     let penX = x;
     let segFont: string | null = null;
     let segStart = 0;
     let segAdvance = 0;
     let segItems: string[] = [];
+
     const flush = (): void => {
         if (segFont === null) return;
-        parts.push(`BT ${segFont} ${sz} Tf ${fmtNum(segStart)} ${fmtNum(y)} Td [${segItems.join(' ')}] TJ ET`);
+        if (t === null) t = openTextObject();
+        moveTo(t, segFont, sz, segStart, y);
+        appendOp(t, `[${segItems.join(' ')}] TJ`);
         penX = segStart + segAdvance;
         segFont = null;
         segAdvance = 0;
         segItems = [];
     };
 
-    for (let i = 0; i < pieces.length; i++) {
-        for (const run of runs[i]) {
-            const emoji = enc.colorEmoji !== undefined && run.fontData.colorGlyphs !== undefined && run.hexStr !== null;
-            if (run.shaped || emoji || run.hexStr === null) {
-                flush();
-                if (emoji) {
-                    penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
-                } else if (run.shaped) {
-                    const op = txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData);
-                    parts.push(actualTextSpans && needsActualText(run, enc) ? wrapActualText(op, run.text) : op);
-                    penX += run.widthPt;
-                }
-                continue;
+    const add = (run: TextRun, opts: JustifiedRunOptions = {}): void => {
+        const emoji = enc.colorEmoji !== undefined && run.fontData.colorGlyphs !== undefined && run.hexStr !== null;
+        if (run.shaped || emoji || run.hexStr === null) {
+            flush();
+            if (emoji) {
+                if (t !== null) { parts.push(closeTextObject(t)); t = null; }
+                penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
+            } else if (run.shaped) {
+                if (t === null) t = openTextObject();
+                const span = actualTextSpans && needsActualText(run, enc);
+                if (span) appendMarkedContent(t, actualTextBdc(run.text));
+                const spaceExtra = opts.spaceExtra ?? 0;
+                appendShapedRun(t, run.shaped, penX, y, run.fontRef, sz, run.fontData, spaceExtra);
+                if (span) appendMarkedContent(t, 'EMC');
+                penX += run.widthPt + spaceExtra * spaceGaps(run);
             }
-            if (segFont !== null && segFont !== run.fontRef) flush();
-            if (segFont === null) { segFont = run.fontRef; segStart = penX; }
-            segItems.push(run.tjStr ?? run.hexStr);
-            segAdvance += run.widthPt;
+            return;
         }
-        if (i < pieces.length - 1) {
-            if (segFont !== null) { segItems.push(tjGap); segAdvance += gapExtra; }
-            else penX += gapExtra;
-        }
-    }
-    flush();
-    return parts.join('\n');
+        if (segFont !== null && segFont !== run.fontRef) flush();
+        if (segFont === null) { segFont = run.fontRef; segStart = penX; }
+        if (opts.items === undefined) segItems.push(run.tjStr ?? run.hexStr);
+        else segItems.push(...opts.items);
+        segAdvance += opts.advance ?? run.widthPt;
+    };
+
+    const gap = (tjGap: string, gapExtra: number): void => {
+        if (segFont !== null) { segItems.push(tjGap); segAdvance += gapExtra; }
+        else penX += gapExtra;
+    };
+
+    const end = (): void => {
+        flush();
+        if (t !== null) parts.push(closeTextObject(t));
+    };
+
+    return { add, gap, end };
+}
+
+/** Word gaps a shaped run draws: its plain space glyphs. */
+function spaceGaps(run: TextRun): number {
+    if (!run.shaped) return 0;
+    let n = 0;
+    for (const g of run.shaped) if (!g.isZeroAdvance && isSpaceGlyph(g, run.fontData)) n++;
+    return n;
 }
 
 /** How one text run takes part in justification. */
@@ -527,38 +755,16 @@ function txtJustifiedVisual(
     const tjGap = fmtNum(-(gapExtra * 1000 / sz));
 
     const parts: string[] = [];
-    let penX = x;
-    let segFont: string | null = null;
-    let segStart = 0;
-    let segAdvance = 0;
-    let segItems: string[] = [];
-    const flush = (): void => {
-        if (segFont === null) return;
-        parts.push(`BT ${segFont} ${sz} Tf ${fmtNum(segStart)} ${fmtNum(y)} Td [${segItems.join(' ')}] TJ ET`);
-        penX = segStart + segAdvance;
-        segFont = null;
-        segAdvance = 0;
-        segItems = [];
-    };
+    const line = justifiedLine(parts, x, y, sz, enc, actualTextSpans);
     for (const piece of pieces) {
-        const { run } = piece;
         if (piece.items === null) {
-            flush();
-            if (run.shaped) {
-                const op = txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData, gapExtra);
-                parts.push(actualTextSpans && needsActualText(run, enc) ? wrapActualText(op, run.text) : op);
-                penX += run.widthPt + gapExtra * piece.gaps;
-            } else {
-                penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
-            }
+            // A shaped run widens its own space glyphs by the gap; an emoji run has none.
+            line.add(piece.run, { spaceExtra: gapExtra });
             continue;
         }
-        if (segFont !== null && segFont !== run.fontRef) flush();
-        if (segFont === null) { segFont = run.fontRef; segStart = penX; }
-        for (const it of piece.items) segItems.push(it === null ? tjGap : it);
-        segAdvance += run.widthPt + gapExtra * piece.gaps;
+        line.add(piece.run, { items: piece.items.map(it => (it === null ? tjGap : it)), advance: piece.run.widthPt + gapExtra * piece.gaps });
     }
-    flush();
+    line.end();
     return parts.join('\n');
 }
 

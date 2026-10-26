@@ -134,7 +134,7 @@
 <li><code>/TOC</code> → <code>/TOCI</code> for tables of contents</li>
 </ul>
 </li>
-<li><strong>Marked content</strong> (<code>/Span &lt;&lt; /MCID n /ActualText &lt;hex&gt; &gt;&gt; BDC</code>) wrapping every text run, so screen readers receive the original Unicode even when the visible glyph is a shaped Arabic ligature or Devanagari conjunct.</li>
+<li><strong>Marked content</strong> (<code>/Span &lt;&lt; /MCID n /ActualText &lt;hex&gt; &gt;&gt; BDC</code>) wrapping every text run, so screen readers receive the original Unicode even when the visible glyph is a shaped Arabic ligature or Devanagari conjunct. Each span wraps a single text object — a line or cell is one <code>BT … ET</code>, a shaped run one <code>TJ</code> array (since v1.9.0) — because Acrobat applies <code>/ActualText</code> once per text object: a cell drawn as one text object per glyph pasted its text once per glyph.</li>
 <li><strong>Per-page parent trees</strong> (<code>/StructParents</code> + <code>/ParentTree</code>) — required by ISO 14289-1 §7.10.3.</li>
 <li><strong>Document metadata</strong> in XMP (PDF/A-required).</li>
 <li><strong>sRGB ICC OutputIntent</strong> so colors remain stable across viewers.</li>

@@ -27,6 +27,7 @@ import { shapeMalayalamText, MALAYALAM_CONFIG } from '../../src/shaping/malayala
 import { splitIndicSyllables } from '../../src/shaping/indic-engine.js';
 import { shapeOdiaText } from '../../src/shaping/odia-shaper.js';
 import { findMarkToBase } from '../../src/shaping/gpos-positioner.js';
+import { findShaper } from '../../src/shaping/shaper-registry.js';
 import * as devanagari from '../../fonts/noto-devanagari-data.js';
 import * as bengali from '../../fonts/noto-bengali-data.js';
 import * as tamil from '../../fonts/noto-tamil-data.js';
@@ -504,5 +505,47 @@ describe('Odia on Noto Sans Oriya (1.9.0)', () => {
         expectNoNotdef(shaped);
         expectCpsCoverInput(shaped, word);
         expect(shaped.map(g => g.gid)).toEqual([18, 80, 60, 9]);
+    });
+});
+
+// Through the registry, as the builders shape: the sentence-final danda
+// U+0964 is `Script=Common` and must not pull a line to the Devanagari
+// configuration (1.9.0, C26 — the Odia and Gurmukhi documents' paragraphs
+// did, and lost their split vowel signs and conjuncts).
+describe('Odia and Gurmukhi through the registry — the danda is script-neutral (1.9.0)', () => {
+    it('ଶିରୋନାମା — the paragraph word of the Odia document: ୋ splits around ର', () => {
+        // Shaped as Devanagari, the composed sign glyph (uni0B4B, drawn
+        // around a dotted circle) moved in front of ର as a pre-base sign.
+        const word = 'ଶିରୋନାମା';
+        const shaper = findShaper(`ଏହି ଦଲିଲରେ ${word}, ଦେଖାଯାଏ।`);
+        expect(shaper?.id).toBe('odia');
+        const shaped = shaper!.shape(word, OR);
+        expectNoNotdef(shaped);
+        expectCpsCoverInput(shaped, word);
+        expect(shaped.map(g => g.gid)).toEqual([50, 60, 69, 46, 59, 39, 59, 44, 59]); // sha i e-sign ra aa na aa ma aa
+        expect(shaped[2].cps).toEqual([0x0B47]);
+        expect(shaped[4].cps).toEqual([0x0B3E]);
+        expect(shaped.some(g => g.gid === OR.cmap[0x0B4B])).toBe(false);          // never the composed glyph
+    });
+
+    it('ଗୋଟିଏ। — the danda is its own glyph at the end of an Odia run', () => {
+        const text = 'ଗୋଟିଏ।';
+        const shaper = findShaper(text);
+        expect(shaper?.id).toBe('odia');
+        const shaped = shaper!.shape(text, OR);
+        expectNoNotdef(shaped);
+        expect(shaped.map(g => g.gid)).toEqual([69, 22, 59, 30, 60, 16, 84]); // e-sign ga aa tta i e danda
+        expect(shaped[6].cps).toEqual([0x0964]);
+    });
+
+    it('ਲਾਇਬ੍ਰੇਰੀ। — the Gurmukhi subjoined ra forms with the danda on the line', () => {
+        const text = 'ਲਾਇਬ੍ਰੇਰੀ।';
+        const shaper = findShaper(text);
+        expect(shaper?.id).toBe('gurmukhi');
+        const shaped = shaper!.shape(text, PA);
+        expectNoNotdef(shaped);
+        expect(shaped.map(g => g.gid)).toEqual([44, 51, 9, 39, 111, 56, 43, 53, 262]); // la aa i ba rakar e-sign ra ii danda
+        expect(shaped[4].cps).toEqual([0x0A4D, 0x0A30]);
+        expect(shaped.some(g => g.gid === PA.cmap[0x0A4D])).toBe(false);         // no explicit virama
     });
 });

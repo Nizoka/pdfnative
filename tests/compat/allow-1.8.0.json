@@ -67,6 +67,11 @@
       "pattern": "tests/core/pdf-content-colour.test.ts",
       "reason": "Six tests compare scanDeviceColour's result with toEqual; the result gained the `named` list (the /Separation and /DeviceN names a content stream selects) so spot-colour resources can be written. An added field, every 1.8.0 field unchanged.",
       "ledger": "C16"
+    },
+    {
+      "pattern": "tests/core/pdf-text.test.ts",
+      "reason": "Three tests pin one `BT … ET` text object per shaped glyph (txtShaped) and one per run of a multi-font line; a line is one text object now, a shaped run one TJ array, so a /ActualText span never wraps more than one text object and Acrobat pastes a cell's text once instead of once per glyph. Every other assertion of the file holds in the current suite.",
+      "ledger": "C25"
     }
   ]
 }

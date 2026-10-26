@@ -30,7 +30,7 @@ import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import {
     containsThai, containsLao, containsBengali, containsTamil, containsTelugu,
     containsSinhala, containsTibetan, containsKhmer, containsMyanmar,
-    containsDevanagari, containsTaiTham, containsCham, containsCombiningMarks,
+    containsDevanagariScript, containsTaiTham, containsCham, containsCombiningMarks,
     containsGujarati, containsGurmukhi, containsKannada, containsMalayalam, containsOdia,
 } from './script-registry.js';
 import { shapeLatinMarksText } from './latin-marks.js';
@@ -84,7 +84,11 @@ export const SCRIPT_SHAPERS: readonly ScriptShaper[] = [
     { id: 'tibetan', detect: containsTibetan, shape: shapeTibetanText },
     { id: 'khmer', detect: containsKhmer, shape: shapeKhmerText },
     { id: 'myanmar', detect: containsMyanmar, shape: shapeMyanmarText },
-    { id: 'devanagari', detect: containsDevanagari, shape: shapeDevanagariText },
+    // Detected by the Script property, not the block: the danda U+0964 and
+    // the double danda U+0965 are Common and belong to whichever Indic script
+    // surrounds them, so an Odia or Gurmukhi line ending in « । » reaches
+    // its own entry below (1.9.0, C26).
+    { id: 'devanagari', detect: containsDevanagariScript, shape: shapeDevanagariText },
     // v1.9.0 — five more scripts on the Indic engine; disjoint blocks, so the
     // order among them is a readability choice.
     { id: 'gujarati', detect: containsGujarati, shape: shapeGujaratiText },

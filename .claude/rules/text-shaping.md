@@ -31,6 +31,7 @@ paths:
 
 ## Shaper Registry (shaper-registry.ts, v1.8.0) — the single dispatch
 - `SCRIPT_SHAPERS: readonly ScriptShaper[]` lists every shaped script in dispatch order as `{ id, detect, shape }`; `findShaper(text)` returns the first whose `detect` matches, or `null`
+- A `detect` predicate answers for the Unicode **Script property**, not the block (v1.9.0, C26): the Devanagari entry uses `containsDevanagariScript`, which leaves out the danda and double danda U+0964–U+0965 (`Script=Common`, the full stop of every Indic script) and the Vedic tone marks U+0951–U+0954 (`Inherited`) — otherwise an Odia or Gurmukhi line ending in « । » reaches the Devanagari configuration (first match wins) and loses its split vowel signs and conjuncts. `containsDevanagari` / `isDevanagariCodepoint` keep their block-wide meaning for font routing. A new script's block that carries Common or Inherited code points gets the same treatment; `tests/shaping/shaper-registry.test.ts` and the dispatch invariant of `tests/regression/language-docs.test.ts` hold it
 - It replaced three hand-written dispatch ladders (and the fall-through that shaped any unmatched run as Devanagari). Adding a script = one entry here plus its shaper module; never add a per-script `if` chain in `encoding.ts`, `pdf-text.ts` or a builder
 - Tai Tham and Cham (and any registered font's script with no dedicated shaper) dispatch to `use-shaper.ts` (`shapeUseText`), the Universal Shaping Engine: `use-engine.ts` (`useCategory`, `useCategories`, `splitUseSyllables`, `reorderUseCluster`) over `use-data.ts`, which is **generated** from the vendored UCD in `scripts/data/*.txt` by `npx tsx scripts/generate-use-data.ts` and drift-checked by `npm run verify:unicode` — never hand-edit it. `USE_UNICODE_VERSION` records the UCD release
 - New Tai Lue and Tai Le need no reordering (detection + font routing, like Ethiopic); Lao has its own `lao-shaper.ts` (`buildLaoClusters` + GSUB/GPOS, like Thai)
@@ -62,6 +63,7 @@ paths:
 - `/ActualText` carries the original Unicode string (pre-shaping) so text extractors get correct output
 - This solves the fundamental issue where GPOS-repositioned marks cause garbled copy-paste
 - The tagged text functions (`txtTagged`, `txtRTagged`, `txtCTagged`) delegate to `wrapSpan()` in `pdf-tags.ts`
+- The span wraps **one** text object (v1.9.0, C25): a shaped run is one `TJ` array (a vertically offset mark its own `Td` + `Tj` inside the same `BT … ET`), never one `BT … ET` per glyph — Acrobat applies `/ActualText` once per text object and pasted a cell once per glyph until then
 - Critical for Thai, Devanagari, Bengali, Tamil, and Vietnamese where combining marks get spatially repositioned
 - Since v1.8.0 the Indic engine and the Latin combining-mark shaper also report the source code points of every glyph they emit (`ShapedGlyph.cps`), and the encoding context writes them into the ToUnicode CMap as multi-code-point `bfchar` destinations — a conjunct or a contextual form with no cmap entry extracts as its letters even in untagged output
 

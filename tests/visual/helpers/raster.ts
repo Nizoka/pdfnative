@@ -64,20 +64,15 @@ function renderRun(
 ): void {
     const upm = font.unitsPerEm;
     const unitToPt = op.size / upm;
-    let penX = op.x;
 
+    // The extractor replays the text operators and hands over one glyph per
+    // op at the origin the viewer gives it (the `/W` advances, the `TJ`
+    // adjustments, the `Td` moves), so every glyph is drawn exactly there.
     for (const gid of op.gids) {
         const contours = extractGlyphContours(font, gid);
         if (contours.length > 0) {
-            fillGlyph(data, width, height, contours, penX, op.y, unitToPt, scale, pageHeight);
+            fillGlyph(data, width, height, contours, op.x, op.y, unitToPt, scale, pageHeight);
         }
-        // Per-glyph absolute Td placement is used by the generator, so the pen
-        // advance here only matters for multi-glyph Tj runs (headings). Use the
-        // font's advance approximation via the glyph bbox is unavailable; rely
-        // on hmtx-free spacing: advance by em-size is wrong, so for multi-glyph
-        // runs we space by the glyph's contour extent. To stay deterministic and
-        // simple we advance by the nominal size (covers heading fingerprints).
-        penX += op.size * 0.5;
     }
 }
 

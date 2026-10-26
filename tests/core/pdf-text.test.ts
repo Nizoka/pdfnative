@@ -92,55 +92,65 @@ describe('txtShaped', () => {
         mark2mark: null,
     };
 
-    it('should render shaped glyphs with individual BT/ET blocks', () => {
+    // 1.9.0 (C25): a shaped run is one text object — one `TJ` array per
+    // baseline segment, a `Td` + `Tj` per vertically offset mark — so a
+    // `/ActualText` span around it holds a single text object. Acrobat
+    // applies the span's text once per text object: the former one
+    // `BT … ET` per glyph pasted a cell's text once per glyph.
+    it('renders a shaped run as one text object', () => {
         const glyphs: ShapedGlyph[] = [
             { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },
         ];
-        const result = txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData);
-        expect(result).toContain('BT /F3 10 Tf');
-        expect(result).toContain('<0001>');
-        expect(result).toContain('Tj ET');
+        expect(txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData)).toBe('BT /F3 10 Tf 100.00 200.00 Td <0001> Tj ET');
     });
 
-    it('should handle zero-advance marks', () => {
-        const glyphs: ShapedGlyph[] = [
-            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },
-            { gid: 2, dx: 10, dy: 20, isZeroAdvance: true },
-        ];
-        const result = txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData);
-        const blocks = result.split('\n');
-        expect(blocks).toHaveLength(2);
-    });
-
-    it('should apply dx/dy offsets to mark positioning', () => {
-        const glyphs: ShapedGlyph[] = [
-            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },
-            { gid: 2, dx: 50, dy: 100, isZeroAdvance: true },
-        ];
-        const result = txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData);
-        // Second glyph should have offset from pen position + dx*scale
-        expect(result).toContain('<0002>');
-    });
-
-    it('should advance pen position for base glyphs', () => {
+    it('keeps consecutive base glyphs in one hex string when their /W advances place them', () => {
         const glyphs: ShapedGlyph[] = [
             { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },  // advance = 600 * 10/1000 = 6
-            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },  // second base
+            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },  // the viewer's pen lands at 106 by itself
         ];
-        const result = txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData);
-        const blocks = result.split('\n');
-        expect(blocks).toHaveLength(2);
-        // First at x=100, second at x=106
-        expect(blocks[0]).toContain('100.00');
-        expect(blocks[1]).toContain('106.00');
+        expect(txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData)).toBe('BT /F3 10 Tf 100.00 200.00 Td <00010001> Tj ET');
+    });
+
+    it('places a zero-advance mark by a TJ adjustment and pulls the pen back after it', () => {
+        const glyphs: ShapedGlyph[] = [
+            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },
+            { gid: 2, dx: 10, dy: 0, isZeroAdvance: true },   // 0.1 pt right of the pen, /W 0
+            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },   // back at 106 (the mark advanced nothing)
+        ];
+        // ISO 32000-1 §9.4.3: a TJ number is subtracted from the pen, in thousandths of the font size.
+        expect(txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData))
+            .toBe('BT /F3 10 Tf 100.00 200.00 Td [<0001> -10.00 <0002> 10.00 <0001>] TJ ET');
+    });
+
+    it('draws a vertically offset mark by its own Td and resumes after it', () => {
+        const glyphs: ShapedGlyph[] = [
+            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },
+            { gid: 2, dx: 50, dy: 100, isZeroAdvance: true }, // (106.5, 201)
+            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },   // (106, 200) — relative to the mark's origin
+        ];
+        expect(txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData))
+            .toBe('BT /F3 10 Tf 100.00 200.00 Td <0001> Tj\n6.50 1.00 Td <0002> Tj\n-0.50 -1.00 Td <0001> Tj ET');
     });
 
     it('should use defaultWidth for unmapped glyphs', () => {
         const glyphs: ShapedGlyph[] = [
             { gid: 99, dx: 0, dy: 0, isZeroAdvance: false }, // not in widths → defaultWidth=500
+            { gid: 99, dx: 0, dy: 0, isZeroAdvance: false },
         ];
-        const result = txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData);
-        expect(result).toContain('<0063>'); // 99 in hex
+        // The viewer falls back to /DW, the same 500: no adjustment between the two.
+        expect(txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData)).toContain('<00630063> Tj');
+    });
+
+    it('widens the gap after a space glyph by spaceExtra (justification)', () => {
+        const glyphs: ShapedGlyph[] = [
+            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },
+            { gid: 2, dx: 0, dy: 0, isZeroAdvance: false, cps: [0x20] }, // /W 0 here; the gap is the extra alone
+            { gid: 1, dx: 0, dy: 0, isZeroAdvance: false },
+        ];
+        // The next glyph sits 7 pt past where the viewer's pen is: -700 thousandths of 10 pt.
+        expect(txtShaped(glyphs, 100, 200, '/F3', 10, mockFontData, 7))
+            .toBe('BT /F3 10 Tf 100.00 200.00 Td [<00010002> -700.00 <0001>] TJ ET');
     });
 
     it('should handle empty shaped array', () => {
@@ -263,22 +273,16 @@ describe('txt (multi-run: mixed Latin + Thai)', () => {
         { fontData: thaiFontData, fontRef: '/F4', lang: 'th' },
     ];
 
-    it('should produce multiple BT/ET blocks for multi-run text', () => {
+    it('places every run of the line in one text object, switching fonts with Tf', () => {
         const enc = createEncodingContext(fontEntries);
         // "A" → font1, "ก" → font2 (Thai, shaped)
         const result = txt('A\u0E01', 100, 200, '/F3', 10, enc);
-        // Should contain both hex and shaped output
-        expect(result).toContain('/F3');
-        expect(result).toContain('/F4');
-        expect(result.split('\n').length).toBeGreaterThan(1);
-    });
-
-    it('should advance pen position between runs', () => {
-        const enc = createEncodingContext(fontEntries);
-        // "AB" (hex, width=13pt) then "กข" (shaped)
-        const result = txt('AB\u0E01\u0E02', 100, 200, '/F3', 10, enc);
-        expect(result).toContain('/F3');
-        expect(result).toContain('/F4');
+        expect(result).toContain('/F3 10 Tf');
+        expect(result).toContain('/F4 10 Tf');
+        expect(result.match(/\bBT\b/g)).toHaveLength(1);
+        expect(result.match(/\bET\b/g)).toHaveLength(1);
+        // The second run moves relative to the first: the width of "A" (600 units at 10 pt).
+        expect(result).toContain('\n/F4 10 Tf 6.00 0.00 Td');
     });
 });
 
@@ -297,12 +301,12 @@ describe('txt (single-run shaped: Thai only)', () => {
     };
     const fontEntries = [{ fontData: thaiFontData, fontRef: '/F4', lang: 'th' }];
 
-    it('should render shaped glyphs for Thai-only text', () => {
+    it('renders a shaped run as a single text object with one text-showing operator', () => {
         const enc = createEncodingContext(fontEntries);
         const result = txt('\u0E01\u0E02', 100, 200, '/F4', 10, enc);
-        // Shaped = individual BT/ET per glyph
         expect(result).toContain('/F4 10 Tf');
-        expect(result.split('\n').length).toBeGreaterThanOrEqual(2);
+        expect(result.match(/\bBT\b/g)).toHaveLength(1);
+        expect(result.match(/\bT[jJ]\b/g)).toHaveLength(1);
     });
 });
 

@@ -22,6 +22,8 @@ import * as oriya from '../../fonts/noto-oriya-data.js';
 import * as khmer from '../../fonts/noto-khmer-data.js';
 import * as thai from '../../fonts/noto-thai-data.js';
 import * as arabic from '../../fonts/noto-arabic-data.js';
+import * as taitham from '../../fonts/noto-taitham-data.js';
+import { showOpsPerActualTextSpan } from '../helpers/text-objects.js';
 import type { FontData, FontEntry, PdfDiagnostic, PdfLayoutOptions, PdfParams } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
@@ -130,5 +132,86 @@ describe('untagged /ActualText on reordered shaped runs (C20)', () => {
             expect(seen).toEqual([]);
             expect(extractText(pdf)[0].text).toContain('हिन्दी');
         }
+    });
+});
+
+// ── One text object per span (1.9.0, C25) ────────────────────────────
+
+/**
+ * The `BT` count inside every `/ActualText` span, and whether its `ET`s
+ * balance: a span either sits inside one text object (no `BT` at all, the
+ * untagged C20 span) or wraps exactly one (the tagged structure span).
+ * Acrobat applies the span's text once per text object — one `BT … ET` per
+ * shaped glyph, as every release before 1.9.0 wrote, pasted a cell's text
+ * once per glyph (nine times for a nine-glyph Thai word).
+ */
+function spanObjects(c: string): { bt: number; balanced: boolean }[] {
+    return [...c.matchAll(/\/ActualText[^]*?BDC([^]*?)EMC/g)].map(m => {
+        const bt = (m[1].match(/\bBT\b/g) ?? []).length;
+        const et = (m[1].match(/\bET\b/g) ?? []).length;
+        return { bt, balanced: bt === et };
+    });
+}
+
+function expectOneTextObjectPerSpan(c: string): void {
+    const spans = spanObjects(c);
+    expect(spans.length).toBeGreaterThan(0);
+    for (const s of spans) {
+        expect(s.bt).toBeLessThanOrEqual(1);
+        expect(s.balanced).toBe(true);
+    }
+}
+
+describe('one text object per /ActualText span (C25)', () => {
+    it.each(WORDS)('%s — the untagged span sits inside the line\'s one text object', (text, font) => {
+        const c = content(build(text, font));
+        expectOneTextObjectPerSpan(c);
+        for (const n of showOpsPerActualTextSpan(c)) expect(n).toBeGreaterThanOrEqual(1);
+    });
+
+    it('a reordered Indic word is one TJ array: the pre-base sign and the split sign are adjustments, not objects', () => {
+        // demo-language: or hi (every glyph on the baseline — the marks of these fonts carry their offsets in the outline)
+        for (const [text, font] of [['ଗୋଟିଏ ଲୋକ', entry(oriya, 'or')], ['हिन्दी लेनदेन', entry(devanagari, 'hi')]] as const) {
+            expect(showOpsPerActualTextSpan(content(build(text, font)))).toEqual([1]);
+        }
+    });
+
+    it('a tagged table cell is one text object with one TJ or Tj (the sample-multi report)', () => {
+        // demo-language: th (the two cells of the report: nine and five glyphs, no mark above the baseline)
+        const params: PdfParams = {
+            title: 'T', infoItems: [], balanceText: '', countText: '', footerText: '',
+            headers: ['Description', 'Category'],
+            rows: [{ cells: ['รายการไทย', 'ทดสอบ'], type: '', pointed: false }],
+            fontEntries: [entry(thai, 'th')],
+        };
+        const c = content(buildPDFBytes(params, { tagged: true, creationDate: PINNED }));
+        expectOneTextObjectPerSpan(c);
+        const thaiCells = [...c.matchAll(/\/ActualText <FEFF(0E[0-9A-F]{2})+> >> BDC([^]*?)EMC/g)].map(m => m[2]);
+        expect(thaiCells).toHaveLength(2);
+        for (const cell of thaiCells) {
+            expect(cell.match(/\bBT\b/g)).toHaveLength(1);
+            expect(cell.match(/\bT[jJ]\b/g)).toHaveLength(1);
+        }
+        expect(extractText(buildPDFBytes(params, { tagged: true, creationDate: PINNED }))[0].text.split('รายการไทย')).toHaveLength(2);
+    });
+
+    it('a tagged line mixing two fonts is still one text object, the fonts switched with Tf', () => {
+        // demo-language: nod (Tai Tham words between Latin ones, as tagged-pdfa2u-taitham sets them)
+        const fonts: FontEntry[] = [{ fontData: sans as unknown as FontData, fontRef: '/F3', lang: 'latin' }, { fontData: taitham as unknown as FontData, fontRef: '/F4', lang: 'nod' }];
+        const params: DocumentParams = { title: 'T', blocks: [{ type: 'paragraph', text: 'Tai Tham ᨠᩮᩬᩡ ᨾᩮᩬᩥᨦ and Latin again' }], fontEntries: fonts };
+        const c = content(buildDocumentPDFBytes(params, { creationDate: PINNED, tagged: 'pdfa2u' }));
+        expectOneTextObjectPerSpan(c);
+        const line = /\/ActualText <FEFF00540061006900200054[^]*?BDC([^]*?)EMC/.exec(c)?.[1] ?? ''; // "Tai T…"
+        expect(line.match(/\bBT\b/g)).toHaveLength(1);
+        // Latin in Noto Sans, Tai Tham in its font (which keeps the Latin that follows: continuation bias).
+        expect((line.match(/\/F\d+ [\d.]+ Tf/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('a mark above the baseline keeps its own Tj but never a text object of its own', () => {
+        // demo-language: th (a tone mark stacked on an above vowel, and the sara am that earns the run its span)
+        const c = content(build('ตั้งใจ น้ำ', entry(thai, 'th')));
+        expectOneTextObjectPerSpan(c);
+        expect(showOpsPerActualTextSpan(c)[0]).toBeGreaterThan(1); // the stacked tone mark has its own Td + Tj
+        expect(c.match(/\bBT\b/g)!.length).toBeLessThanOrEqual(3); // the title, the line, the page number
     });
 });

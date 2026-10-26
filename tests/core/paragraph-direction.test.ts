@@ -13,6 +13,7 @@ import { toWinAnsi } from '../../src/fonts/encoding.js';
 import { txt, txtJustified, txtShaped } from '../../src/core/pdf-text.js';
 import { resolveBidiRuns } from '../../src/shaping/bidi.js';
 import { shapeArabicText } from '../../src/shaping/arabic-shaper.js';
+import { interpretTextStrings, interpretGlyphs, type TextString } from '../helpers/text-objects.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 import type { FontData, FontEntry, PdfLayoutOptions } from '../../src/types/pdf-types.js';
 import * as notoHebrew from '../../fonts/noto-hebrew-data.js';
@@ -43,11 +44,21 @@ function pageContent(pdf: Uint8Array): string {
     return s;
 }
 
-/** Every `x y Td` x origin of a content stream fragment, in order (the page footer at y = 30 excluded). */
+/** The advances the viewer reads for the test fonts: the modules' widths on /F3 and /F4, the AFM on Helvetica. */
+function widthOf(font: string, code: number): number {
+    if (font === 'F3') return hebrewFont.widths[code] ?? hebrewFont.defaultWidth;
+    if (font === 'F4') return sansFont.widths[code] ?? sansFont.defaultWidth;
+    return exactBase14Width(String.fromCharCode(code), 1000, false);
+}
+
+/** Every string shown in a content stream fragment, in order (the page footer at y = 30 excluded). */
+function strings(ops: string): TextString[] {
+    return interpretTextStrings(ops, widthOf).filter(s => s.y > 60);
+}
+
+/** The x origin of every string shown in a content stream fragment, in order (the page footer at y = 30 excluded). */
 function origins(ops: string): number[] {
-    return Array.from(ops.matchAll(/([\d.-]+) ([\d.-]+) Td/g))
-        .filter(m => Number(m[2]) > 60)
-        .map(m => Number(m[1]));
+    return strings(ops).map(s => s.x);
 }
 
 /** The numeric items of every `[…] TJ` array. */
@@ -100,16 +111,14 @@ describe('Helvetica fallback runs are measured with the AFM widths (C17)', () =>
             { title: '', blocks: [{ type: 'paragraph', text: `${HE_WORD} (abc) ${HE_WORLD} 100% done.` }], fontEntries: hebrewOnly },
             { creationDate: PINNED, direction: 'auto' },
         ));
-        // Every text object of the paragraph line: its font, size, x origin and literal string (Helvetica) or null (hex).
-        const objects = Array.from(content.matchAll(/BT \/(F\d) ([\d.]+) Tf ([\d.-]+) ([\d.-]+) Td (?:\(((?:\\.|[^)\\])*)\)|<[0-9A-Fa-f]+>) Tj/g))
-            .filter(m => Number(m[4]) > 60)
-            .map(m => ({ font: m[1], size: Number(m[2]), x: Number(m[3]), text: m[5] ?? null }));
+        // Every string of the paragraph line: its font, size, x origin and literal text (Helvetica) or null (hex).
+        const objects = strings(content);
         const hel = objects.filter(o => o.font === 'F1');
         expect(hel.length).toBeGreaterThanOrEqual(4); // "." "done" "100%" "(" "abc" ") "
         for (const o of hel) {
             const next = objects.filter(n => n.x > o.x + 0.01).sort((a, b) => a.x - b.x)[0];
             if (!next) continue;
-            const text = o.text!.replace(/\\([()\\])/g, '$1');
+            const text = o.text!;
             expect(next.x - o.x, `after (${text})`).toBeCloseTo(exactBase14Width(toWinAnsi(text), o.size, false), 2);
         }
     });
@@ -123,9 +132,7 @@ describe('Helvetica fallback runs are measured with the AFM widths (C17)', () =>
         const content = pageContent(bytes);
         const pageWidth = Number(/\/MediaBox \[0 0 ([\d.]+) [\d.]+\]/.exec(Buffer.from(bytes).toString('latin1'))?.[1]);
         expect(pageWidth).toBeGreaterThan(0);
-        const objects = Array.from(content.matchAll(/BT \/(F\d) ([\d.]+) Tf ([\d.-]+) ([\d.-]+) Td (?:\(((?:\\.|[^)\\])*)\)|<[0-9A-Fa-f]+>) Tj/g))
-            .filter(m => Number(m[4]) > 60)
-            .map(m => ({ font: m[1], size: Number(m[2]), x: Number(m[3]), text: m[5] ?? null }));
+        const objects = strings(content);
         const last = objects.sort((a, b) => a.x - b.x)[objects.length - 1];
         expect(last.font).toBe('F1');
         expect(last.x + exactBase14Width(toWinAnsi(last.text!), last.size, false)).toBeCloseTo(pageWidth - 36, 2); // flush with the right margin, not short of it
@@ -238,14 +245,14 @@ describe('paragraph direction option', () => {
     it('leaves the last line of a justified RTL paragraph ragged on the left', () => {
         const long = Array.from({ length: 40 }, (_, i) => (i % 2 ? HE_WORLD : HE_WORD)).join(' ');
         const content = pageContent(build([{ type: 'paragraph', text: long, align: 'justify' }], { direction: 'auto' }));
-        // The paragraph's text lines (the page footer at y = 30 excluded).
-        const lines = content.split('\n').filter(l => origins(l).length > 0);
-        expect(lines.length).toBeGreaterThan(1);
+        // The paragraph's text lines, one per baseline (the page footer at y = 30 excluded).
+        const baselines = [...new Set(strings(content).map(s => s.y))].sort((a, b) => b - a);
+        expect(baselines.length).toBeGreaterThan(1);
         // Justified lines carry TJ gaps; the last line is a plain right-aligned Tj
         expect(tjNumbers(content).length).toBeGreaterThan(0);
-        const last = lines[lines.length - 1];
-        expect(last).not.toContain('TJ');
-        expect(origins(last)[0]).toBeGreaterThan(36 + 1);
+        const last = strings(content).filter(s => s.y === baselines[baselines.length - 1]);
+        for (const s of last) expect(s.op).toBe('Tj');
+        expect(last[0].x).toBeGreaterThan(36 + 1);
     });
 });
 
@@ -293,8 +300,11 @@ describe('txtShaped spaceExtra', () => {
     it('advances the pen by the extra after each space glyph of a shaped Arabic run', () => {
         // demo-language: ar (two Arabic words around one space)
         const shaped = shapeArabicText('مرحبا بك', arabicFont);
-        const plain = origins(txtShaped(shaped, 10, 500, '/F3', SZ, arabicFont));
-        const spaced = origins(txtShaped(shaped, 10, 500, '/F3', SZ, arabicFont, 7));
+        // The origin of every glyph as the viewer places it from the run's TJ adjustments and the font's /W advances.
+        const arabicWidth = (_font: string, gid: number): number => arabicFont.widths[gid] ?? arabicFont.defaultWidth;
+        const glyphXs = (ops: string): number[] => interpretGlyphs(ops, arabicWidth).map(g => g.x);
+        const plain = glyphXs(txtShaped(shaped, 10, 500, '/F3', SZ, arabicFont));
+        const spaced = glyphXs(txtShaped(shaped, 10, 500, '/F3', SZ, arabicFont, 7));
         expect(spaced.length).toBe(plain.length);
         const spaceAt = shaped.findIndex(g => g.cps?.[0] === 0x20 || g.gid === arabicFont.cmap[0x20]);
         expect(spaceAt).toBeGreaterThan(0);
